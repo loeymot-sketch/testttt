@@ -1,0 +1,75 @@
+{
+ "spec": "backend:loyalty-scan",
+ "scope": "MAP read-only du parcours SCAN QR fidélité : mint téléphone → scan borne/caisse → crédit points. Backend testttt (LoyaltyQrSigner, LoyaltyController, PosLoyaltyController, listeners), kiosk Vue, POS Vue, mobile prototype, web standalone.",
+ "summary": "Le backend du scan QR est complet et durci (token signé lqr.&lt;payload&gt;.&lt;hmac&gt;, TTL 300s, nonce anti-replay race-safe, boot guard prod sur LOYALTY_QR_SECRET), MAIS le parcours physique « client montre son QR → borne le scanne » n'existe PAS : aucun composant kiosk n'appelle POST /frontend/loyalty/scan et il n'y a ni caméra ni listener clavier-wedge — la borne fait saisir le code/téléphone au clavier virtuel via /loyalty/check. Côté téléphone, le mobile prototype émet encore le format legacy FK:&lt;code&gt; (jamais câblé sur POST /loyalty/qr) alors que le backend rejette le plaintext par défaut (accept_legacy_plaintext=false) → un QR mobile scanné serait refusé (qr_legacy_rejected). Côté caisse, le redeem est 100% saisie manuelle du loyalty_code (la regex du FormRequest rejette un token lqr). Le customer_token 'lt_' renvoyé par /scan n'est consommé par AUCUN endpoint (token mort). Le crédit de points, lui, fonctionne réellement via order.loyalty_customer_code + listener AwardLoyaltyPointsOnDelivery → loyalty_transactions.",
+ "facts": [
+  "PARCOURS ACTUEL RÉEL (sans matériel) : (1) client s'identifie à la BORNE en TAPANT son code/téléphone au clavier virtuel → KioskLoyaltyComponent.vue:536 POST frontend/loyalty/check {code} (routes/api.php:1445, auth:sanctum+throttle:10,1) ; (2) le profil est stocké dans le store → kioskCart.js:150 envoie loyalty_code dans le payload de création de commande ; (3) FrontendOrderService.php:563-564 copie request->loyalty_code → orders.loyalty_customer_code ; (4) au passage PREPARED/DELIVERED (kiosk/takeaway) l'event OrderStatusChanged déclenche app/Listeners/AwardLoyaltyPointsOnDelivery.php:40 → points=floor(total × loyalty_points_per_euro, défaut 10) (lignes 84,102) → increment users.loyalty_points + INSERT loyalty_transactions type='earn' avec balance_after et source_surface (lignes 115-136), idempotent par sentinelle -1 sur orders.loyalty_points_awarded (lignes 52-56)",
+  "MINT QR (téléphone) : POST /api/frontend/loyalty/qr — routes/api.php:1474, groupe auth:sanctum (ligne 1451), throttle:30,1 → LoyaltyController::generateQr (app/Http/Controllers/Frontend/LoyaltyController.php:850-892) → LoyaltyQrSigner::sign (app/Services/Loyalty/LoyaltyQrSigner.php:50-73) → réponse {token:'lqr.<b64url>.<b64url>', expires_at, ttl_seconds:300, loyalty_code}",
+  "SCAN (borne) : POST /api/frontend/loyalty/scan — routes/api.php:1521-1523 (auth:sanctum + throttle:20,1 ; ability kiosk:order vérifiée DANS le contrôleur, LoyaltyController.php:649) — payload EXACT : {\"method\":\"qr\",\"raw_data\":\"lqr.<payload>.<hmac>\"} → verifyAndConsume (LoyaltyQrSigner.php:94-160) : HMAC constant-time (l.117-121), exp+leeway 30s (l.134-138), nonce consommé par INSERT dans loyalty_qr_nonces_consumed avec catch UNIQUE→qr_replay (l.143-157) → réponse TOUJOURS HTTP 200 : succès {ok:true, customer_token:'lt_…', display_name(prénom), loyalty_balance_points} + header X-Loyalty-QR-Status:signed (LoyaltyController.php:802-822) ; échec {ok:false, error_code: qr_invalid_format|qr_invalid_signature|qr_expired|qr_replay|qr_unsupported_version|customer_not_found|qr_legacy_rejected|nfc_not_provisioned|scan_error}",
+  "SIMULATION E2E COMPLÈTE SANS MATÉRIEL : (a) mint — curl -X POST /api/frontend/loyalty/qr -H 'Authorization: Bearer <token_client_sanctum>' → data.token ; (b) scan — curl -X POST /api/frontend/loyalty/scan -H 'Authorization: Bearer <token_kiosk kiosk:order>' -H 'Content-Type: application/json' -d '{\"method\":\"qr\",\"raw_data\":\"<data.token>\"}' → attendu data.ok=true ; (c) rejouer le même raw_data → data.ok=false error_code=qr_replay + ligne dans loyalty_qr_nonces_consumed ; (d) crédit points — créer commande kiosk avec loyalty_code=<code> puis passer status à PREPARED → ligne loyalty_transactions type=earn ; modèle de test existant : tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest.php:73-190",
+  "LEGACY PLAINTEXT : formats 'FK:<code>', '<code>' nu, ou téléphone E.164 (LoyaltyController.php:737-757) acceptés UNIQUEMENT si config loyalty.qr.accept_legacy_plaintext=true — DÉFAUT FALSE (config/loyalty.php:68-73, verrouillé par tests/Feature/Security/CustomerTokenHmacHardenedSentinelTest.php:111) ; un e2e du chemin legacy doit poser LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=true ou config()->set ; réponse marquée header X-Loyalty-QR-Status: legacy-plaintext (LoyaltyController.php:735,819)",
+  "POS REDEEM (caisse) : POST /api/admin/pos-order/{order}/redeem-loyalty — routes/api.php:1036-1038, middleware idempotency, permission pos.redeem-loyalty dans PosLoyaltyRedeemRequest (points: int 1..100000, loyalty_code: regex ^[A-Z0-9\\+\\s\\-]+$ max 25 — app/Http/Requests/PosLoyaltyRedeemRequest.php:30-31) → PosLoyaltyController::redeem (branch check anti cross-branch l.45-56) → PosRedemptionService::applyToOrder (lookup User par loyalty_code l.114, écrit order.loyalty_customer_code l.240) ; UI = PosLoyaltyRedeemModal.vue:306, code TAPÉ à la main par le caissier (focus initial sur codeInput l.~240), clé d'idempotence bucket-minute (buildIdempotencyKey)",
+  "CLAWBACK : app/Listeners/ClawbackLoyaltyPointsOnRefund.php:43 sur event RefundCreated → LoyaltyService::clawbackEarnedPoints (l.76) ; V1 reprend le montant TOTAL même sur refund partiel (commentaire l.30-34, backlog V1.0.2) ; échec avalé pour ne jamais bloquer le refund (l.84-87)",
+  "BOOT GUARD PROD : app/Providers/AppServiceProvider.php:261-269 refuse de démarrer en production si LOYALTY_QR_SECRET vide ; sentinelles dev + longueur min 32 refusées aussi dans LoyaltyQrSigner::secret() (LoyaltyQrSigner.php:229-245)",
+  "FRONTS ÉMETTEURS DE QR : mobile prototype — mobile/components/LoyaltyQR.jsx:51 payload = qr.payload sinon 'FK:'+loyaltyCode, et mobile/data/loyalty.js:180 payload='FK:'+code (mock, jamais câblé sur POST /loyalty/qr, cf. commentaire LoyaltyController.php:845-848 « the deferred mobile cycle (V1.0.X) will wire it ») ; web standalone — AUCUN rendu QR (grep FK:/lqr vide dans /Users/1millnonstop/Downloads/web/loyalty-v2.jsx), il envoie loyalty_code dans le body de commande (api.js:434)",
+  "AUCUN consommateur frontend de /loyalty/scan dans tout resources/js ni public/js (grep 'loyalty/scan' → seulement des commentaires dans mobile/uploads/*.md et mobile/data/loyalty.js) ; la borne n'a ni listener wedge/barcode ni caméra (grep scanner|wedge|barcode dans resources/js/components/frontend/kiosk → 0 hit fonctionnel)"
+ ],
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Le scan QR borne est un endpoint ORPHELIN : aucun UI ne l'appelle, pas de wedge ni caméra — le parcours phone→QR→borne n'existe pas de bout en bout",
+   "file": "resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue",
+   "line": 536,
+   "evidence": "KioskLoyaltyComponent.vue:536 `await axios.post('frontend/loyalty/check', { code: this.code.trim() })` — identification par SAISIE clavier virtuel uniquement. grep 'loyalty/scan' dans resources/js + public/js → 0 caller (seuls hits : docs mobile/uploads/*.md et commentaire mobile/data/loyalty.js:37). Aucun listener keydown de type scanner-wedge dans les composants kiosk.",
+   "recommendation": "Pour la vague fidélité W3/W4 : soit câbler un input wedge global (buffer keydown terminé par Enter) sur la borne qui POST /frontend/loyalty/scan, soit assumer officiellement le parcours « code tapé » et documenter /scan comme réservé au futur matériel."
+  },
+  {
+   "severity": "P1",
+   "title": "QR mobile actuel (FK:<code>) REJETÉ par défaut par le backend — le wallet du prototype est incompatible avec /scan",
+   "file": "mobile/components/LoyaltyQR.jsx",
+   "line": 51,
+   "evidence": "LoyaltyQR.jsx:51 `const payload = qr ? qr.payload : ('FK:' + (loyaltyCode || ''))` et mobile/data/loyalty.js:180 `payload = 'FK:' + code` (mock local, ne mint jamais via POST /loyalty/qr). Or config/loyalty.php:68-69 accept_legacy_plaintext défaut FALSE → LoyaltyController.php:725-732 renvoie ok=false error_code=qr_legacy_rejected. Le commentaire config/loyalty.php:62-64 (« The mobile cycle has since landed ») contredit LoyaltyController.php:845-848 (« deferred mobile cycle V1.0.X will wire it ») — c'est le second qui est vrai.",
+   "recommendation": "W4 : câbler le wallet mobile sur POST /api/frontend/loyalty/qr (rotation 5 min déjà prévue UI) et afficher data.token comme contenu du QR. Ne PAS réactiver le legacy plaintext (vecteur PII documenté)."
+  },
+  {
+   "severity": "P1",
+   "title": "customer_token 'lt_…' renvoyé par /scan n'est consommé par AUCUN endpoint — token mort, le commentaire du code ment",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 788,
+   "evidence": "LoyaltyController.php:788-790 mint `'lt_'.hash_hmac('sha256', $target->id.'|'.now()->timestamp.'|'.bin2hex(random_bytes(16)), $secret)` — jamais persisté (random_bytes non stocké → invérifiable). Commentaire l.771 « Server-only usage (loyalty/balance ou pricing/preview le ré-acceptent) » : grep customer_token/'lt_' dans app/ hors LoyaltyController → 0 consommateur. La borne rattache la fidélité à la commande via loyalty_code en clair (kioskCart.js:150 → FrontendOrderService.php:563), pas via ce token.",
+   "recommendation": "Décider : soit supprimer customer_token de la réponse /scan (contrat DATA_CONTRACT §7 à amender), soit le rendre réellement vérifiable (persist hash + accepter dans la création de commande à la place de loyalty_code en clair)."
+  },
+  {
+   "severity": "P2",
+   "title": "À la CAISSE, le QR signé du téléphone est inutilisable : le redeem exige le loyalty_code plaintext tapé, la regex rejette un token lqr",
+   "file": "app/Http/Requests/PosLoyaltyRedeemRequest.php",
+   "line": 31,
+   "evidence": "PosLoyaltyRedeemRequest.php:31 `'loyalty_code' => ['required','string','min:4','max:25','regex:/^[A-Z0-9\\+\\s\\-]+$/i']` — un token `lqr.<b64url>.<b64url>` contient des '.' et '_' et dépasse 25 chars → 422. PosLoyaltyController/PosRedemptionService n'importent jamais LoyaltyQrSigner (grep LoyaltyQrSigner → seulement AppServiceProvider, LoyaltyController, le signer lui-même et 2 tests). Un scanner wedge branché sur la caisse qui lit le QR du téléphone échouerait systématiquement.",
+   "recommendation": "Si l'objectif produit est « le client montre son QR à la caisse » : ajouter un chemin verify (LoyaltyQrSigner::verifyAndConsume source_surface='pos') dans PosLoyaltyRedeemModal/PosRedemptionService, ou un endpoint POS /scan dédié. Sinon documenter que le POS = code récité/tapé."
+  },
+  {
+   "severity": "P2",
+   "title": "Route /loyalty/scan sans middleware abilities:kiosk:order (check seulement in-controller) — incohérent avec /kiosk-event et fragile au refactor",
+   "file": "routes/api.php",
+   "line": 1521,
+   "evidence": "routes/api.php:1521-1523 middleware ['auth:sanctum','throttle:20,1'] alors que /kiosk-event (l.1481-1483) et /kiosk/event (l.1527-1529) portent 'abilities:kiosk:order'. La protection réelle vit à LoyaltyController.php:649 `$user->tokenCan('kiosk:order')` → 403. Fonctionnellement fermé aujourd'hui, mais la garde disparaît si le contrôleur est réécrit.",
+   "recommendation": "Aligner : ajouter 'abilities:kiosk:order' sur la route (défense en profondeur, zéro changement de comportement)."
+  },
+  {
+   "severity": "P2",
+   "title": "Chemin legacy (si réactivé) accepte un téléphone E.164 brut comme QR → vecteur d'énumération PII connu, à ne jamais rouvrir en prod",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 753,
+   "evidence": "LoyaltyController.php:753-756 : fallback `preg_match('/^\\+?\\d{6,15}$/', $phone)` → `User::where('phone', $phone)` ; réponse succès expose display_name + loyalty_balance_points. Gated par accept_legacy_plaintext (défaut false, verrouillé par CustomerTokenHmacHardenedSentinelTest.php:111), mais tout e2e/déploiement qui pose LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=true rouvre le harvest décrit dans config/loyalty.php:52-57.",
+   "recommendation": "Dans W6 (gate sécurité) : assert e2e que l'env VPS de prod n'a PAS LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=true ; si un test l'active, le faire via config() en mémoire, jamais via .env."
+  },
+  {
+   "severity": "INFO",
+   "title": "Crédit de points multi-surface OK mais dépend de loyalty_code en clair dans le payload de commande (pas du scan signé)",
+   "file": "app/Services/FrontendOrderService.php",
+   "line": 563,
+   "evidence": "FrontendOrderService.php:563-564 `if ($request->loyalty_code) { $this->frontendOrder->loyalty_customer_code = $request->loyalty_code; }` — n'importe quel appelant kiosk:order peut créditer un code arbitraire ; le listener AwardLoyaltyPointsOnDelivery.php:66-67 résout ensuite `User::where('loyalty_code', ...)`. Le scan signé ne renforce donc PAS la création de commande : la chaîne de confiance s'arrête à la réponse du scan.",
+   "recommendation": "Backlog : accepter customer_token vérifiable (cf. finding P1 token mort) à la place du code en clair lors de la création de commande kiosk."
+  }
+ ]
+}

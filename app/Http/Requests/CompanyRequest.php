@@ -14,7 +14,9 @@ class CompanyRequest extends FormRequest
      */
     public function authorize() : bool
     {
-        return true;
+        // [ULTRA-AUDIT V4-DEPLOY 2026-07-02] Defense-in-depth : la route porte déjà `permission:settings`,
+        // mais on double le garde ici (cohérence avec les autres settings-requests, évite un return-true nu).
+        return (bool) ($this->user()?->can('settings'));
     }
 
     /**
@@ -25,7 +27,10 @@ class CompanyRequest extends FormRequest
     public function rules() : array
     {
         return [
-            'company_name'         => ['required', 'string', 'max:190'],
+            // [ULTRA-AUDIT V4-DEPLOY 2026-07-02] company_name est écrit dans .env (APP_NAME=…) par
+            // CompanyService → un `\r`/`\n`/`"` permettrait d'INJECTER une ligne .env (ex. APP_DEBUG=true).
+            // On interdit sauts de ligne + guillemets (aucun nom d'entreprise légitime n'en contient).
+            'company_name'         => ['required', 'string', 'max:190', 'regex:/^[^\r\n"]+$/'],
             'company_email'        => ['required', 'email', 'max:190'],
             'company_phone'        => ['required', 'string', 'max:20'],
             'company_website'      => ['nullable', 'url', 'max:500'],

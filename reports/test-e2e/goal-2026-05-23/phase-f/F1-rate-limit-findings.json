@@ -1,0 +1,101 @@
+{
+  "agent": "F.1 Rate-limit error UX",
+  "phase": "F (Deep error + soak + pressure)",
+  "timestamp": "2026-05-23T22:30:00Z",
+  "owner_pain_verbatim": "avant je sais bien, je valide les commandes qui sont bien sorties et après je valide une autre. Ils me demandent une erreur, attendant 60 secondes ou 30 secondes.",
+  "methodology": "Code-static inventory + empirical curl trip-test against running dev server (port 8000) + named-limiter + cache reset between tests. Playwright was not used because three concurrent F-phase agents were sharing the single browser session — curl gave deterministic per-bucket measurements.",
+  "throttle_inventory": {
+    "named_limiters": [
+      { "name": "api", "scope": "global /api/* per user.id or IP", "default_min": 120, "env_var": "API_THROTTLE_PER_MINUTE", "source": "RouteServiceProvider.php:54" },
+      { "name": "kiosk-orders", "scope": "kiosk borne order create + quote", "default_min": 5, "env_var": "KIOSK_ORDER_RATE_LIMIT", "source": "RouteServiceProvider.php:60", "hardcoded_retry_after_s": 60 },
+      { "name": "kiosk-menu", "scope": "kiosk borne menu read", "default_min": 60, "source": "RouteServiceProvider.php:73" },
+      { "name": "admin-mutation", "scope": "non-GET admin CRUD (with POS/KDS/online-order/table-order lifts)", "default_min": 60, "env_var": "ADMIN_MUTATION_RATE_LIMIT", "source": "RouteServiceProvider.php:87" },
+      { "name": "pos-quote", "scope": "POS quote endpoint", "default_min": 120, "env_var": "POS_RATE_LIMIT_QUOTE", "source": "RouteServiceProvider.php:148" },
+      { "name": "pos-order-create", "scope": "POST /api/admin/pos (order create)", "default_min": 60, "env_var": "POS_RATE_LIMIT_ORDER_CREATE", "source": "RouteServiceProvider.php:153" },
+      { "name": "pos-order-update", "scope": "counter-collect / collect-kiosk-cash / etc.", "default_min": 120, "env_var": "POS_RATE_LIMIT_ORDER_UPDATE", "source": "RouteServiceProvider.php:158" },
+      { "name": "kds-bump", "scope": "KDS bump CTA", "default_min": 120, "env_var": "KDS_RATE_LIMIT_BUMP", "source": "RouteServiceProvider.php:170" },
+      { "name": "kiosk-login", "scope": "kiosk machine login", "default_min": 30, "env_var": "KIOSK_LOGIN_RATE_LIMIT", "source": "RouteServiceProvider.php:185" },
+      { "name": "oss-public", "scope": "OSS read public", "default_min": 60, "source": "RouteServiceProvider.php:215" },
+      { "name": "login-lockout", "scope": "login lockout", "default_min": "max_attempts/decay", "env_var": "LOGIN_LOCKOUT_*", "source": "RouteServiceProvider.php:224" },
+      { "name": "menu-availability", "scope": "menu/availability/{toggle,extra/toggle,variation/toggle}", "default_min": 60, "env_var": "MENU_AVAILABILITY_RATE_LIMIT", "source": "RouteServiceProvider.php (NEW Phase F.1)" }
+    ],
+    "hardcoded_throttles_remaining": [
+      { "route": "/api/admin/menu/availability/{toggle,extra/toggle,variation/toggle}", "previous": "throttle:60,1", "now": "throttle:menu-availability (named, env-driven)" },
+      { "route": "/api/admin/kds-order/history-today", "throttle": "throttle:60,1", "risk": "low — read endpoint, not in cashier hot-path" },
+      { "route": "/api/admin/observability/client-metrics", "throttle": "throttle:60,1", "risk": "low — frontend telemetry, allowlisted in bootstrap.js GOAL-D1 (toast suppressed)" },
+      { "route": "/api/frontend/pricing/preview", "throttle": "throttle:60,1", "risk": "medium — kiosk wizard customer-side; customer browsing fast may trip if many option changes/min" },
+      { "route": "/api/frontend/upsell", "throttle": "throttle:60,1", "risk": "low — kiosk wizard one-shot suggest" }
+    ]
+  },
+  "empirical_test_pos": {
+    "method": "curl GET /api/admin/pos/walk-in-customer 140 times sequentially with admin Bearer token + X-API-KEY header, post cache:clear",
+    "pre_fix": {
+      "orders_or_calls_placed": 140,
+      "first_429_at_call": 113,
+      "retry_after_value_s": 26,
+      "endpoint_triggered": "/api/admin/pos/walk-in-customer",
+      "bucket_responsible": "global api (120/min default)",
+      "match_owner_pain": "EXACT — retry_after_s in range 26-30s for early-window trip, up to 60s for late-window trip (Laravel Limit::perMinute returns remaining-window-seconds)"
+    },
+    "post_fix": {
+      "orders_or_calls_placed": 140,
+      "first_429_at_call": null,
+      "retry_after_value_s": null,
+      "200s": 140,
+      "429s": 0,
+      "ceiling_now": 1000
+    }
+  },
+  "empirical_test_admin_menu_availability": {
+    "method": "curl POST /api/admin/menu/availability/toggle 70 times with item_id=1, branch_id=1 — burns the throttle:60,1 hardcoded bucket",
+    "pre_fix": {
+      "calls_placed": 70,
+      "first_429_at_call": 60,
+      "retry_after_value_s": 25,
+      "bucket_responsible": "hardcoded throttle:60,1 at routes/api.php:256",
+      "owner_pain_match": "EXACT — manager bulk-86-ing items from StockRuptureDashboard (V2 unified browser) burns this bucket. Historical evidence: comment at StockRuptureDashboardComponent.vue:589-599 already says '9 POSTs in 1.4s under concurrency-5 triggered 429s'."
+    },
+    "post_fix": {
+      "calls_placed": 70,
+      "first_429_at_call": null,
+      "200s": 70,
+      "429s": 0,
+      "ceiling_now": 1000
+    }
+  },
+  "polling_baseline_analysis": {
+    "pos_idle_polling_per_minute": 36,
+    "computation": "PosComponent._startKioskPolling fires every 5s (12 ticks/min) × 3 endpoints per tick (loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders) = 36 req/min/user on /api/admin/pos namespace.",
+    "headroom_before_fix": "84 req/min remaining for cashier actions (120 - 36)",
+    "headroom_after_fix": "964 req/min remaining (1000 - 36) — comfortable for any realistic fast-food cashier rush"
+  },
+  "fix_applied": true,
+  "fix_summary": "Three-part scope-minimal fix (≤50 LOC total): (1) added named-limiter `menu-availability` to RouteServiceProvider with config('app.menu_availability_rate_limit', 60) default; (2) replaced hardcoded `throttle:60,1` at routes/api.php:256 with `throttle:menu-availability` (sibling group structure preserved so it stays isolated from admin-mutation); (3) bumped local .env API_THROTTLE_PER_MINUTE=120 → 1000 and added MENU_AVAILABILITY_RATE_LIMIT=1000 — both .env.example documented with the new GOAL Phase F.1 rationale. Bonus: moved Wave Y `$adminMutationCap` closure-capture INSIDE the closure body so test-suite Config::set overrides actually take effect (was silently broken since 2026-05-21). Updated existing AvailabilityToggleSeparateThrottleSentinelTest to accept either the legacy `throttle:60,1` form or the new named bucket. Fixed RateLimitTest::test_admin_mutation_rate_limit_returns_429 with explicit Config::set pinning.",
+  "files_touched": [
+    "app/Providers/RouteServiceProvider.php",
+    "config/app.php",
+    ".env",
+    ".env.example",
+    "routes/api.php",
+    "tests/Feature/Security/RateLimitTest.php",
+    "tests/Feature/Sentinels/AvailabilityToggleSeparateThrottleSentinelTest.php"
+  ],
+  "frozen_zone_touch": false,
+  "nf525_chain_unaffected": true,
+  "test_evidence_post_fix": {
+    "command": "php artisan test --filter 'Availability|RateLimit|Throttle'",
+    "result": "151 passed, 1 skipped (pre-existing skip on POST /api/admin/pos not registered in route map for that specific test config)",
+    "verified_at": "2026-05-23T22:35:00Z"
+  },
+  "proposal_doc": null,
+  "commit_sha": "10539a012",
+  "commit_sha_note": "Initial commit was 0e044e1ad — amended 3× to embed the correct SHA in the findings JSON, final HEAD SHA above. The 'fix' content is identical across amends; only the JSON metadata refers to itself in a circular way that amend re-rolls.",
+  "verdict": "GREEN",
+  "verdict_rationale": "Empirical evidence DECISIVE: pre-fix global api bucket trips at #113 with retry_after=26s (matches owner verbatim '30 secondes') and hardcoded menu-availability bucket trips at #60 with retry_after=25s (matches owner manager bulk-86 workflow). Post-fix both buckets cleared 70-140 sequential calls with zero 429s. Phase F.1 owner pain point resolved. 151/151 PHPUnit sentinel tests pass. 0 frozen-zone diff. NF525 audit chain unaffected (rate-limit buckets are HTTP-layer only, not fiscal write path). V2 SaaS multi-tenant note: per-user 1000/min is V1 LOCAL Le Cayenne single-resto trusted-admin appropriate; V2 must reconsider with per-tenant + per-IP composite — explicitly documented in .env.example comment.",
+  "top_finding": "Global per-user `api` throttle bucket at 120/min (RouteServiceProvider.php:54, env API_THROTTLE_PER_MINUTE) was the binding constraint matching owner's '30s/60s' verbatim. POS shell idle polling alone burns 36 req/min/user (5s cadence × 3 endpoints/tick), leaving only 84 actions/min headroom — easily exhausted in a real fast-food cashier rush stacking search keystrokes + customer lookup + add-items + payment + collect-kiosk-cash. Secondary finding: hardcoded `throttle:60,1` at routes/api.php:256 (manager bulk-86 path) tripped at call #60 — historical comment at StockRuptureDashboardComponent.vue:589 confirmed prior known trip.",
+  "next_actions_v1_0_2_backlog": [
+    "BACKLOG: convert remaining 4 hardcoded `throttle:60,1` declarations (lines 1105/1113/1366/1376) to named limiters for full env-knob coverage",
+    "BACKLOG V2 SaaS: re-evaluate per-user 1000/min ceiling against per-tenant + per-IP composite throttling pattern",
+    "BACKLOG V1.0.2: extend the per-request Config::set fix pattern to all named limiters that still capture config at boot (kiosk-orders line 64, oss-public line 215 — both reading via `(int) config(...)` which is fine because the closure body re-reads each call, verified)"
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "round": 2,
+  "role": "adversarial confirmation supervisor (verify heals hold, fix nothing)",
+  "head": "16544e7fc",
+  "range": "ae621546e..16544e7fc",
+  "date": "2026-07-06",
+  "server_note": "App bundle base is APP_URL=http://127.0.0.1:8766 (two php servers: 8000 serves front HTML, 8766 = axios API base). E2E run on 8766 for same-origin session; 8000 API calls 403 cross-origin.",
+  "gates": {
+    "frozen_diff_24e8a09c3_to_HEAD_14files": {
+      "result": "CLEAN",
+      "files": ["public/js/pos-wizard.js (+299)", "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (+34)"],
+      "note": "Only the two LOCK-permitted files; 0 other frozen line touched. P1 caisse heal landed in NON-frozen PosComponent.vue; cuisine heal in NON-frozen KitchenTicketSymbolicFormatter.php / UberOrderMapper.php / KdsOrderLine.vue / kdsCustomization.js."
+    },
+    "vitest_full": { "result": "CLEAN", "passed": 2244, "skipped": 3, "failed": 0, "files": 319 },
+    "phpunit_filter_Ticket_Symbolic_Kitchen_Uber_Drink_OnionCuit_Pos_Menu": { "result": "CLEAN", "passed": 838, "incomplete": 2, "skipped": 13, "failed": 0 },
+    "fiscal_verify_chain_all": { "result": "CHAIN OK x4", "branches": [1, 7, 8, 9] },
+    "audit_logs_count": { "result": "CLEAN", "value_start": 4908, "value_end": 4909, "floor": 4821, "append_only_preserved": true }
+  },
+  "findings": [
+    {
+      "id": "A-P1-01",
+      "heal_commit": "16544e7fc",
+      "title": "P1 caisse — restore commande PARKÉE LIVRAISON ne crashe plus",
+      "status": "CONFIRMED_HEALED",
+      "evidence": {
+        "code": "PosComponent.vue (non-frozen): 2 accès gardés `(deliveryInline.addressText || '').trim()` (template + autocomplete). pos-shell.js bundle: guard x4, 0 `addressText.trim()` non gardé dans TOUS les bundles. Vitest sentinel posParkedDeliveryNullAddressGuard green.",
+        "e2e_delivery_manual_distance": "park livraison 5 avenue des Tests / distance 4km (fallback 'Saisie manuelle sans carte') -> POST 201 -> Restaurer -> ecran usable (adresse + frais 4,00 + total 5,90 restaures).",
+        "e2e_delivery_no_address_exact_null_path": "park livraison SANS adresse (addressText='' -> null) -> Restaurer -> 0 TypeError, 0 boucle, ecran usable (capture 02-restore-fresh-bundle-OK.png : adresse vide, Coca 1,90, bouton Commande actif).",
+        "e2e_takeaway_regression": "park emporter -> Restaurer -> 0 TypeError (seule erreur = loyalty/balance 422 code vide, benin pre-existant). Guard n'a PAS cassé le chemin emporter.",
+        "console_after_fresh_restore": "0 TypeError / 0 reading 'trim' (fichier console-restore-fresh.txt)."
+      },
+      "important_caveat_not_blocking": "Le PREMIER restore a bien produit la boucle 'Cannot read properties of null (reading trim)' a pos-shell.js:14116 — MAIS c'etait un module STALE en cache navigateur (session 8766 anterieure). Le serveur sert les octets CORRIGES (curl line 14116 = guard present; fetch cache:reload confirme). Apres rechargement du module frais (transferSize>0, decodedBodySize 1772062 = fichier disque) le crash disparait totalement. -> heal correct, artefact de cache pur."
+    },
+    {
+      "id": "OPS-01",
+      "heal_commit": "n/a (pre-existant, PAS une regression W6)",
+      "title": "pos-shell.js / admin-kds.js servis SANS cache-busting ni cache-headers",
+      "status": "INFORMATIONAL",
+      "severity": "P3-ops",
+      "evidence": "curl -I /js/pos-shell.js : aucun ETag/Last-Modified/Cache-Control. app.js porte ?id=<hash>, PAS pos-shell.js/admin-kds.js. Un navigateur/borne de retour peut servir un bundle perime apres deploy et RANIMER le crash jusqu'a hard-refresh.",
+      "recommendation": "Au deploiement des machines: forcer hard-reload (ou ajouter un cache-bust query au <script> des bundles POS/KDS). NON bloquant pour la convergence — le code des heals est correct."
+    },
+    {
+      "id": "C-P1-1",
+      "heal_commit": "3e9eef062",
+      "title": "P1 borne->cuisine — boisson de formule BORNE visible ticket + KDS",
+      "status": "CONFIRMED_HEALED",
+      "evidence": {
+        "borne_ticket_bytes_5533": "renderKitchenTicket(#5533) decode reel: '** BOISSON: Hawaï 33cl' present, 'Formule : Menu complet' DROPPED, 'MENU : ALG' intact (sauce frites Algerienne convertie).",
+        "borne_kds_card_A0012": "capture /kds lue (03/04): carte A0012 Borne montre 'S | CAY | STO̲ | ALG', 'MENU : ALG', '· BOISSON: Hawaï 33cl'. DOM snapshot confirme le texte.",
+        "caisse_equivalent_5534_A0013": "ticket bytes #5534 = '** BOISSON: Hawaï 33cl'; carte KDS A0013 Caisse = '· BOISSON: Hawaï 33cl'. Parite cross-surface caisse.",
+        "formule_sans_boisson_no_invention": "tickets #5368 / #5348 (Formule Avec frites, sans boisson) + cas synthetiques 'frites + boisson' -> AUCUNE ligne BOISSON inventee (garde /frite/)."
+      }
+    },
+    {
+      "id": "B-1",
+      "heal_commit": "3e9eef062",
+      "title": "P2 — 15/15 boissons actives DB en NOM COMPLET, 0 faux positif dessert/plat",
+      "status": "CONFIRMED_HEALED",
+      "evidence": {
+        "db_probe_15_drinks": "isDrinkItem() sur les 15 boissons actives DB (cat 10, status 5) = 15/15 detectees (Coca/Zero/Fanta Orange/Sprite/Oasis Tropical/Orangina/Eau Plate 50cl/Capri-Sun/Coca Cherry/Tropico/Ice Tea Peche/Fanta Citron/Fuze Tea/Hawaï/Perrier).",
+        "db_probe_desserts": "3/3 desserts reels (Glace, Tarte Daim, Tiramisu) NON classes boisson.",
+        "sanity_plats": "8 plats (Tacos L/XL, Menu Enfant Burger, Cheeseburger, Assiette Kefta, Frites, 'Menu Maxi (Frites + Boisson)', Kafteji) NON classes boisson.",
+        "e2e_kds_sample": "carte KDS A0014 en direct: 'Fuze Tea 33cl', 'Coca-Cola 33cl', 'Sprite 33cl', '4x Coca-Cola 33cl' — noms complets, 0 code 3-lettres.",
+        "twin_parity": "regex marques + volume + gardes IDENTIQUES JS kdsCustomization.isDrinkName <-> PHP isDrinkItem (verifie octet a octet)."
+      }
+    },
+    {
+      "id": "B-3",
+      "heal_commit": "3e9eef062",
+      "title": "P3 — note multi-lignes respecte les sauts a l'ecran KDS",
+      "status": "CONFIRMED_HEALED",
+      "evidence": {
+        "computed_style_live": ".kds-line__instruction-text -> getComputedStyle.whiteSpace = 'pre-line' (4 elements live).",
+        "render_test": "label 'LIGNE UN\\nLIGNE DEUX' injecte -> hauteur 42px vs 21px une ligne -> wrapsToTwoLines=true.",
+        "real_multiline_note_on_board": "element live '[COCA-COLA 33CL\\n[COCA-COLA 33CL]]' rendu sur 2 lignes.",
+        "layout": "board = 3 cartes plein-ecran cote-a-cote, 0 debordement (capture 03-kds-board-...png)."
+      }
+    },
+    {
+      "id": "B-4",
+      "heal_commit": "3e9eef062",
+      "title": "Regression hunt — note legitime sur-strippee / sauce frites / faux positif",
+      "status": "NO_REGRESSION",
+      "evidence": {
+        "notes_not_overstripped": "cleanInstruction (shape reel note sur sa propre ligne): '[Sans sel svp]' + 'BOISSON: Hawaï 33cl' TOUS DEUX conserves; '[Bien cuit merci]' conserve; note 100% MAJUSCULES '[SANS OIGNONS SVP]' conservee (bracket protege de l'anti-echo).",
+        "sauce_frites_conversion_intact": "ticket #5533 -> 'MENU : ALG' (Algerienne) toujours convertie.",
+        "no_false_positive_drink": "0 faux positif sur desserts + 8 plats + 'frites + boisson' + 'Menu complet (frites + boisson)' + 'supplement fromage'.",
+        "additive_only": "les 2 sanitizers jumeaux n'AJOUTENT que les lignes boisson-de-formule extraites; aucune nouvelle regle de strip -> impossible de sur-stripper une note."
+      }
+    }
+  ],
+  "verdict": "CLEAN"
+}

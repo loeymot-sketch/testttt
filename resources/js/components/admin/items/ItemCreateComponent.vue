@@ -13,14 +13,14 @@
                     <div class="form-col-12 sm:form-col-6">
                         <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                         <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                            id="name" class="db-field-control">
+                            id="name" class="db-field-control" data-testid="admin-item-form-name">
                         <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
                         <label for="price" class="db-field-title required">{{ $t("label.price") }}</label>
                         <input v-model="props.form.price" v-bind:class="errors.price ? 'invalid' : ''" type="text"
-                            id="price" class="db-field-control">
+                            id="price" class="db-field-control" data-testid="admin-item-form-price">
                         <small class="db-field-alert" v-if="errors.price">{{ errors.price[0] }}</small>
                     </div>
 
@@ -30,7 +30,7 @@
                             v-bind:class="errors.item_category_id ? 'invalid' : ''"
                             v-model="props.form.item_category_id" :options="itemCategories" label-by="name"
                             value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
-                            search-placeholder="--" />
+                            search-placeholder="--" data-testid="admin-item-form-category" />
                         <small class="db-field-alert" v-if="errors.item_category_id">{{
                             errors.item_category_id[0]
                             }}</small>
@@ -49,7 +49,7 @@
                     <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title">{{ $t("label.image") }}</label>
                         <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
-                            class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg">
+                            class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-item-form-image">
                         <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
                     </div>
 
@@ -152,6 +152,32 @@
                             }}</small>
                     </div>
 
+                    <!-- [v1-0-1-h5 Z5-P1-01 2026-05-17] Channels checkbox group — surface segregation UI.
+                         Server validation (ItemRequest::rules) accepts in:kiosk,pos,web only.
+                         Empty array on save = no channels[] keys appended = server keeps NULL
+                         = visible everywhere (Item::displaysOn legacy semantics). -->
+                    <div class="form-col-12" data-testid="admin-item-form-channels">
+                        <label class="db-field-title" for="item-channels-kiosk">{{ $t("label.channels") }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio" v-for="channel in ['kiosk', 'pos', 'web']" :key="channel">
+                                <div class="custom-radio">
+                                    <input type="checkbox"
+                                        :id="'item-channels-' + channel"
+                                        :value="channel"
+                                        v-model="props.form.channels"
+                                        class="custom-radio-field"
+                                        :data-testid="'admin-item-form-channel-' + channel">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label :for="'item-channels-' + channel" class="db-field-label">
+                                    {{ $t('label.channel_' + channel) }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.channels">{{ errors.channels[0] }}</small>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.channels_help') }}</p>
+                    </div>
+
                     <div class="form-col-12">
                         <label for="description" class="db-field-title">{{ $t("label.description") }}</label>
                         <textarea v-model="props.form.description" v-bind:class="errors.description ? 'invalid' : ''"
@@ -163,11 +189,11 @@
 
                     <div class="col-12">
                         <div class="flex flex-wrap gap-3 mt-4">
-                            <button type="submit" class="db-btn py-2 text-white bg-primary">
+                            <button type="submit" class="db-btn py-2 text-white bg-primary" data-testid="admin-item-form-save">
                                 <i class="lab lab-save"></i>
                                 <span>{{ $t("label.save") }}</span>
                             </button>
-                            <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                            <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
                                 <i class="lab lab-close"></i>
                                 <span>{{ $t("button.close") }}</span>
                             </button>
@@ -177,10 +203,56 @@
             </form>
         </div>
     </div>
+
+    <!-- [T-WC-AFTER-CREATE-01] Post-save CTA — guidage admin après création (Voir produit / Configurer wizard / Continuer) -->
+    <div
+        v-if="showPostSaveCta"
+        class="item-create-cta-overlay"
+        data-testid="item-create-post-save-cta"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="item-create-cta-title"
+    >
+        <div class="item-create-cta-card">
+            <h3 id="item-create-cta-title" class="item-create-cta-title">
+                {{ $t('message.item_created_success') }}
+            </h3>
+            <p class="item-create-cta-text">
+                {{ $t('message.item_created_next_step') }}
+            </p>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button
+                    v-if="wizardPerItemDemoEnabled"
+                    type="button"
+                    class="db-btn py-2 text-white bg-primary"
+                    data-testid="cta-configure-wizard"
+                    @click="goToWizard"
+                >
+                    {{ $t('label.configure_wizard') }}
+                </button>
+                <button
+                    type="button"
+                    class="db-btn py-2"
+                    data-testid="cta-view-product"
+                    @click="goToProductDetail"
+                >
+                    {{ $t('label.view_product') }}
+                </button>
+                <button
+                    type="button"
+                    class="modal-btn-outline"
+                    data-testid="cta-continue"
+                    @click="dismissCta"
+                >
+                    {{ $t('label.continue') }}
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 <script>
-import SmSidebarModalCreateComponent from "../components/buttons/SmSidebarModalCreateComponent";
-import LoadingComponent from "../components/LoadingComponent";
+import SmSidebarModalCreateComponent from "../components/buttons/SmSidebarModalCreateComponent.vue";
+import LoadingComponent from "../components/LoadingComponent.vue";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import askEnum from "../../../enums/modules/askEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
@@ -215,6 +287,8 @@ export default {
             },
             image: "",
             errors: {},
+            showPostSaveCta: false,
+            savedItemId: null,
         }
     },
     computed: {
@@ -226,6 +300,10 @@ export default {
         },
         taxes: function () {
             return this.$store.getters['tax/lists'];
+        },
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
         }
     },
     mounted() {
@@ -260,6 +338,8 @@ export default {
                 item_category_id: null,
                 tax_id: null,
                 status: statusEnum.ACTIVE,
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
+                channels: [],
             };
             if (this.image) {
                 this.image = "";
@@ -280,6 +360,8 @@ export default {
                 item_category_id: null,
                 tax_id: null,
                 status: statusEnum.ACTIVE,
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
+                channels: [],
             };
             if (this.image) {
                 this.image = "";
@@ -300,6 +382,17 @@ export default {
                 fd.append('caution', this.props.form.caution);
                 fd.append('order', 1);
                 fd.append('status', this.props.form.status);
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Append channels[] entries.
+                // Empty array → skip → server keeps existing value (legacy
+                // NULL = visible everywhere). To explicitly clear on edit
+                // (i.e. hide on all surfaces), an admin currently needs API
+                // / tinker; UI "clear-to-empty-array" is V1.0.2 backlog.
+                const channels = Array.isArray(this.props.form.channels) ? this.props.form.channels : [];
+                channels.forEach((c) => {
+                    if (['kiosk', 'pos', 'web'].indexOf(c) !== -1) {
+                        fd.append('channels[]', c);
+                    }
+                });
                 if (this.image) {
                     fd.append('image', this.image);
                 }
@@ -323,10 +416,22 @@ export default {
                         item_category_id: null,
                         tax_id: null,
                         status: statusEnum.ACTIVE,
+                        // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
+                        channels: [],
                     };
                     this.image = "";
                     this.errors = {};
-                    this.$refs.imageProperty.value = null;
+                    if (this.$refs.imageProperty) {
+                        this.$refs.imageProperty.value = null;
+                    }
+                    // [T-WC-AFTER-CREATE-01] Capture id only on CREATE (tempId === null) and surface CTA modal.
+                    if (tempId === null) {
+                        const newId = res?.data?.data?.id ?? res?.data?.id ?? null;
+                        if (newId) {
+                            this.savedItemId = newId;
+                            this.showPostSaveCta = true;
+                        }
+                    }
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.errors = {};
@@ -340,7 +445,65 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err)
             }
+        },
+        // [T-WC-AFTER-CREATE-01] Post-save CTA handlers — wizard / product detail / dismiss.
+        goToWizard: function () {
+            if (!this.wizardPerItemDemoEnabled) {
+                return;
+            }
+
+            const id = this.savedItemId;
+            this.dismissCta();
+            if (id) {
+                this.$router.push({ name: 'admin.items.composer', params: { id } });
+            }
+        },
+        goToProductDetail: function () {
+            const id = this.savedItemId;
+            this.dismissCta();
+            if (id) {
+                this.$router.push({ name: 'admin.item.show', params: { id } });
+            }
+        },
+        dismissCta: function () {
+            this.showPostSaveCta = false;
+            this.savedItemId = null;
         }
     }
 }
 </script>
+
+<style scoped>
+/* [T-WC-AFTER-CREATE-01] Self-contained CTA modal — no global CSS dependency. */
+.item-create-cta-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 1rem;
+}
+
+.item-create-cta-card {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+    padding: 1.5rem;
+    max-width: 28rem;
+    width: 100%;
+}
+
+.item-create-cta-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.item-create-cta-text {
+    font-size: 0.95rem;
+    color: #475569;
+    margin: 0;
+}
+</style>

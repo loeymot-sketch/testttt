@@ -1,0 +1,37 @@
+OSS CYCLE 2 CONVERGENCE — evidence
+==================================
+
+HEAL CONFIRMED (OSS-01): PreparingAndReadyComponent._hydrateFromRows filters unidentified rows
+  File: resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:397-419
+  const identified = (rows || []).filter(i => i && (i.queue_number || i.token));
+  -> preparingItems  = identified.filter(status===PREPARING)
+  -> preparedItems   = identified.filter(status===PREPARED)
+  Both feeds funnel here:
+    - list() store dispatch (line 420-432)
+    - OssSyncService 'sync' event (startOssSync line 244-249; service emits rows=result.data.data)
+  Template (34-38 / 59-63) renders queue_number?N°...:token -> every surviving item has an identifier.
+
+LIVE PROOF the backend still serves an unidentified row but the wall now hides it:
+  GET /api/frontend/oss-order?branch_id=1 (x-api-key) returned:
+    {"id":5399,"order_serial_no":"CARDTEST-1782949449","token":null,"queue_number":null,"order_type":25,"status":8}
+    {"id":5631,"order_serial_no":"1007265631","token":null,"queue_number":"A0032","order_type":10,"status":7}
+  5399 = KIOSK(25)/PREPARED(8), token+queue both null -> filtered out by heal (no blank <li>).
+  DB: 2 such stuck orders total (4829 WV2N944110 2026-06-13, 5399 CARDTEST 2026-07-02) — data artifacts.
+
+PII LEAK: tests/Feature/OrderStatusScreen/OssPublicNoPiiTest.php -> 1 passed (0.54s).
+  CDSOrderDetailsResource whitelists id/order_serial_no/token/queue_number/order_type/status only. No PII.
+
+BRANCH ISOLATION:
+  Admin index -> resolveBranchScope: staff abort(403) on branch mismatch / branch_id<=0. Correct.
+  Public publicIndex -> PII-free, V1 single-branch, store calls frontend/oss-order with no branch_id
+    -> pinned to first ACTIVE branch. Documented acceptable for V1 LOCAL.
+
+WRONG/STALE STATUS:
+  Query filters status IN [PREPARING(7),PREPARED(8)]; advance/non-advance windows mirror KDS;
+  fresh poll each cycle (store commits res.data.data, no cache). PREPARING/PREPARED mutually exclusive.
+
+TEST GATES (all green):
+  php artisan test tests/Feature/OSS/ tests/Feature/OrderStatusScreen/  -> 13 passed
+  npx vitest run tests/js/orderStatusScreenOssSync.spec.js               -> 1 passed
+
+VERDICT: HEAL confirmed. No NEW OSS P0/P1 found.

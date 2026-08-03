@@ -1,0 +1,57 @@
+{
+ "spec": "parity:Desserts",
+ "scope": "Parity catégorie Desserts (id=9) : fixture canonique borne (catalog-canonical.json) vs mirror WEB (/Users/1millnonstop/Downloads/web/data/menu.js) vs mirror MOBILE (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js)",
+ "summary": "Parity Desserts globalement BONNE : les 3 items canoniques (Glace id=49, Tarte Daim id=50, Tiramisu id=51, tous 3,50 €, is_available=true) existent dans les deux mirrors avec le bon nom, le bon slug, le bon prix 3.50 et la bonne structure wizard (canonique composer_profile=null/extras=[]/addons=[]/variations=[] ; mirrors has_sauce:false, has_crudites:false, has_supplements:false, has_menu_addon:false — aucun wizard, pas de formule menu, conforme). Aucun P0 ni P1. Divergences résiduelles : descriptions raccourcies dans les mirrors (P2), allergènes sur-déclarés vs canonique vide pour Glace et Tarte Daim + codes non alignés pour Tiramisu (lait/oeufs vs lactose/oeuf) (P2), is_vegetarian perdu (canonique true×3, mirrors false×3) (P3), images locales emoji vs webp canoniques (INFO, attendu en standalone). Les blocs Desserts WEB et MOBILE sont strictement identiques entre eux.",
+ "findings": [
+  {
+   "severity": "P2",
+   "title": "Descriptions Desserts raccourcies dans les 2 mirrors (3/3 items)",
+   "evidence": "Canonique: Glace=\"Glace artisanale, douce et onctueuse.\" / Tarte Daim=\"Tarte gourmande au Daim, croquante et délicieusement caramélisée.\" / Tiramisu=\"Tiramisu maison, crémeux et généreux, juste comme il faut.\" VS mirrors: \"Glace artisanale\" / \"Tarte au Daim\" / \"Tiramisu maison\" — /Users/1millnonstop/Downloads/web/data/menu.js:410-412 et mobile/data/menu.js:415-417 (mkItem 901/902/903)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 410,
+   "recommendation": "Aligner les 3 descriptions mirrors sur le texte canonique DB (même correction aux 2 fichiers, blocs identiques)"
+  },
+  {
+   "severity": "P2",
+   "title": "Allergènes divergents : mirrors sur-déclarent vs canonique (Glace, Tarte Daim) + codes non alignés (Tiramisu)",
+   "evidence": "Canonique: Glace allergens=[] ; Tarte Daim allergens=[] ; Tiramisu allergens=[gluten, lait, oeufs] (codes DB \"lait\"/\"oeufs\"). Mirrors: Glace ['lactose'], Tarte Daim ['gluten','lactose'], Tiramisu ['gluten','lactose','oeuf'] — web/data/menu.js:410-412, mobile/data/menu.js:415-417 ; fallback defaultAllergensFor case 9 = ['gluten','lactose'] (web:239-247, mobile:~232-243) mais ici les opts.allergens explicites priment",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 410,
+   "recommendation": "Décider la source de vérité allergènes : soit renseigner la DB (Glace=lait, Tarte Daim=gluten+lait) soit aligner les mirrors sur canonique ; unifier les codes (lait vs lactose, oeufs vs oeuf) pour la future wireup API"
+  },
+  {
+   "severity": "P3",
+   "title": "is_vegetarian perdu dans les mirrors (canonique true pour les 3 desserts, mirrors false)",
+   "evidence": "Canonique: is_vegetarian=true pour id 49/50/51. Mirrors: mkItem défaut is_vegetarian: !!opts.is_vegetarian (web/data/menu.js:264, mobile/data/menu.js:262) et les 3 mkItem desserts ne passent pas is_vegetarian (web:410-412, mobile:415-417) → false",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 410,
+   "recommendation": "Ajouter is_vegetarian: true aux 3 mkItem desserts des 2 mirrors (impacte badges/filtres végé éventuels)"
+  },
+  {
+   "severity": "INFO",
+   "title": "Images : canonique webp réels (ben-jerrys/tarte/tiramisu) vs mirrors assets locaux imgFor(slug)+emoji",
+   "evidence": "Canonique thumbs: ben-jerrys.webp / tarte.webp / tiramisu.webp (cover générique cover.png). Mirrors: image: imgFor(slug) + emoji 🍦/🍰 (web/data/menu.js:255,410-412 ; mobile:249,415-417). Pattern standalone accepté (pas de wireup V1)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 255,
+   "recommendation": "Aucune action V1 ; à la wireup API future, consommer les URLs thumb backend"
+  },
+  {
+   "severity": "INFO",
+   "title": "kiosk_emoji canonique vide vs emoji 🍦/🍰 dans les mirrors",
+   "evidence": "Canonique kiosk_emoji:\"\" pour les 3 items ; mirrors emoji:'🍦' (Glace) et '🍰' (Tarte Daim, Tiramisu) — web/data/menu.js:410-412, mobile/data/menu.js:415-417",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 410,
+   "recommendation": "Cosmétique ; garder les emoji mirrors (enrichissement UI standalone assumé)"
+  }
+ ],
+ "facts": [
+  "Canonique cat 9 Desserts = exactement 3 items : Glace (id=49, slug glace), Tarte Daim (id=50, slug tarte-daim), Tiramisu (id=51, slug tiramisu) — reports/goal-web-app-sync/catalog-canonical.json data.items filtrés category_id=9",
+  "Prix canonique identique ×3 : price=3.5, flat_price \"3.50\", currency_price \"3,50 €\" ; is_available=true ×3 ; item_type=5, tax_id=3, is_upsell=5, viande_count=0",
+  "Canonique : composer_profile=null, extras=[], addons=[], variations=[], itemAttributes=[] pour les 3 desserts → AUCUN wizard (pas de viandes/sauces/crudités/suppléments, pas de formule menu +2,50)",
+  "Mirror WEB : bloc DESSERTS à /Users/1millnonstop/Downloads/web/data/menu.js:409-413 (mkItem 901/902/903 lignes 410-412), 3 items @3.50, flags has_sauce/has_crudites/has_supplements/has_menu_addon tous false → parity structure wizard OK",
+  "Mirror MOBILE : bloc DESSERTS à mobile/data/menu.js:414-418 (mkItem 901/902/903 lignes 415-417), strictement identique au bloc WEB (mêmes prix, flags, descriptions, allergènes, emoji)",
+  "Aucun item manquant ni en trop côté Desserts dans les deux mirrors ; aucun produit inventé ; catégorie déclarée id 9 slug 'desserts' wizard_template 'simple' has_menu:false (web:231, mobile:224) — cohérent avec composer_profile null canonique",
+  "mkItem : is_vegetarian défaut false (web/data/menu.js:264, mobile/data/menu.js:262) ; allergens = opts.allergens sinon defaultAllergensFor cat 9 = ['gluten','lactose'] (web:239-247)",
+  "Aucun finding P0/P1 : prix, disponibilité, existence des items et structure wizard sont en parity complète sur les 3 surfaces pour Desserts"
+ ]
+}

@@ -1,0 +1,300 @@
+{
+  "agent": "K.6 Loyalty earn → redeem → clawback cascade deep",
+  "phase": "K — Intersection matrix deep + UI screenshots",
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 / 2026-05-24",
+  "date_utc": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "mission": "Walk the loyalty system end-to-end (enrollment → earn → redeem kiosk → redeem POS → refund-clawback → cross-branch → QR replay → multi-device race → audit chain → Z-close independence) and verify prior heal commits (LCS-S-001 / J2-HEAL-03 / J2-HEAL-07 / H2-HEAL-04) still hold INSIDE the cascade. Surface NEW findings or known acceptable gaps where prior phases did not focus.",
+  "scope": "Static code audit + sentinel test alignment, code-only. No live boot. 11 hunts H1-H11 mapped 1:1 to K.6.1-K.6.11.",
+  "files_examined": [
+    "app/Services/LoyaltyService.php",
+    "app/Services/Loyalty/LoyaltyQrSigner.php",
+    "app/Services/Loyalty/LoyaltyQrInvalidException.php",
+    "app/Services/Loyalty/PosRedemptionService.php",
+    "app/Services/LoyaltySetupService.php",
+    "app/Services/Pricing/DiscountCalculator.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Listeners/AwardLoyaltyPointsOnDelivery.php",
+    "app/Listeners/ClawbackLoyaltyPointsOnRefund.php",
+    "app/Providers/EventServiceProvider.php",
+    "app/Events/RefundCreated.php",
+    "app/Http/Controllers/Frontend/LoyaltyController.php",
+    "app/Http/Controllers/Admin/PosLoyaltyController.php",
+    "app/Http/Requests/PosLoyaltyRedeemRequest.php",
+    "app/Http/Requests/Kiosk/LoyaltyOptInRequest.php",
+    "app/Models/LoyaltyTransaction.php",
+    "app/Models/LoyaltyConsent.php",
+    "config/loyalty.php",
+    "routes/api.php",
+    "database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php",
+    "database/migrations/2026_03_26_075919_add_unique_to_loyalty_transactions.php",
+    "database/migrations/2026_05_19_100000_create_loyalty_qr_nonces_consumed_table.php",
+    "database/migrations/2026_05_19_120000_add_pos_session_id_to_loyalty_transactions.php",
+    "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue",
+    "tests/Feature/Loyalty/LoyaltyClawbackOnRefundSentinelTest.php",
+    "tests/Feature/Loyalty/LoyaltyRefundPointsIdempotentTest.php",
+    "tests/Feature/Loyalty/PosRedemptionTtcTaxDoubleCountSentinelTest.php",
+    "tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php",
+    "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php"
+  ],
+  "cascade_hunts": [
+    {
+      "id": "K.6.1",
+      "name": "Customer enrollment — kiosk loyalty opt-in + loyalty_code mint + signed QR",
+      "scope_event": "Customer self-enrolls via kiosk borne, phone OR email captured, loyalty_code generated, signed QR issuable",
+      "verdict": "VERIFIED CITED",
+      "code_path": [
+        "POST /api/frontend/loyalty/opt-in → routes/api.php:1397-1399 (rate-limited throttle:5,1, name frontend.loyalty.opt-in)",
+        "app/Http/Requests/Kiosk/LoyaltyOptInRequest.php:31-39 — required `consent_accepted` (RGPD accepted rule) + `privacy_notice_version` + (phone OR email) cross-field via `required_without`.",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:364-407 optIn() → delegates to register():114-182 which generates `loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8))` at line 165, then writes `LoyaltyConsent` row (ip+UA sha256-hashed, line 389-396).",
+        "app/Models/LoyaltyConsent.php:60-68 — `hashIdentifier()` uses sha256 with `config('app.key')` salt, never stores raw IP/UA (CNIL/RGPD compliant).",
+        "POST /api/frontend/loyalty/qr → routes/api.php:1357-1359 auth:sanctum + throttle:30,1 → LoyaltyController::generateQr (line 783-825) calls LoyaltyQrSigner::sign() which mints lqr.<payload>.<hmac> with 5-min TTL + anti-replay nonce."
+      ],
+      "scope_question_resolution": {
+        "OTP_phone_verification": "NO — V1 has no OTP. `grep -rn 'OTP|verify_phone|phone_verified|verification_code' app/` returns empty. Enrollment is direct: phone is captured and stored on the User row but never SMS-verified. This is by design for the V1 LOCAL fast-food single-branch scope (no fraud surface — points have no cash-out path, only in-store discount). V2 SaaS / multi-branch may want OTP — V1.0.X backlog candidate, not a V1 blocker."
+      }
+    },
+    {
+      "id": "K.6.2",
+      "name": "Earn cascade — POS order DELIVERED → AwardLoyaltyPointsOnDelivery → user.loyalty_points + ledger row",
+      "scope_event": "Cashier marks order DELIVERED, listener fires, user balance incremented atomically, orders.loyalty_points_awarded recorded, loyalty_transactions type='earn' row created",
+      "verdict": "VERIFIED CITED",
+      "code_path": [
+        "app/Providers/EventServiceProvider.php:147-152 — OrderStatusChanged listeners order: PersistOrderStatusChangedToOutbox FIRST (F-002 r3 invariant), then AwardLoyaltyPointsOnDelivery, then SendFcmOnOrderStatusChange. Position matters: a sync FCM throw can no longer halt the loyalty listener.",
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php:27-47 — handle() : early NOOP on CANCELED status (AUDIT-P50-BUG10), then triggers on DELIVERED for non-kiosk; on PREPARED-or-DELIVERED for kiosk/takeaway (line 39-43).",
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php:49-60 — atomic idempotency sentinel: `DB::table('orders')->where('id', $order->id)->whereNull('loyalty_points_awarded')->where('status', '!=', CANCELED)->update(['loyalty_points_awarded' => -1])`. If `$updated === 0`, another worker already claimed — return.",
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php:63-81 — customer resolver: priority 1 `order.loyalty_customer_code → User::where('loyalty_code', …)`, fallback to `order.user_id` only when that user HAS a loyalty_code (kiosk machine user has no loyalty_code, so fallback never poisons kiosk orders).",
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php:96-101 — AUDIT-P49-BUG2 fix: FrontendOrder reads `total` (kiosk), Order reads `order_amount ?? total` (POS). Default-0.00 column trap avoided.",
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php:115-142 — DB::transaction: increment user.loyalty_points + snapshot balance_after + INSERT loyalty_transactions(type=earn, source_surface, description) + flip sentinel to actual points awarded.",
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php:152-163 — catch-all: revert sentinel back to NULL on any throw, never block status change for loyalty failure."
+      ]
+    },
+    {
+      "id": "K.6.3",
+      "name": "Redeem cascade KIOSK — scan signed QR → balance shown → redeem applied via PricingService — H2-HEAL-04 TTC tax double-count HEALED",
+      "scope_event": "Customer at kiosk scans signed QR, balance displayed, chooses redeem (50 pts = 0.50€ off at default 100 pts = 1€ rate), discount applied via PricingService, free-order TTC totals correctly = 0",
+      "verdict": "VERIFIED CITED",
+      "h2_heal_04_verification": {
+        "claim": "H2-HEAL-04 (commit 8c4c173ab 2026-05-24) HEALED the TTC tax double-count bug in PosRedemptionService — pre-heal a 50€ subtotal free-order with 50€ redeem landed at total=4.55€ instead of 0€",
+        "verification": "INTACT — app/Services/Loyalty/PosRedemptionService.php:194-213 now branches on `config('pricing.tax_inclusive_prices', true)` exactly as PricingService::computePricing does. TTC mode: `total = max(0, $subtotal - $newDiscount + $currentDelivery)` (line 210). HT mode: `total = max(0, $subtotal - $newDiscount + $currentTax + $currentDelivery)` (line 212). Sentinel tests/Feature/Loyalty/PosRedemptionTtcTaxDoubleCountSentinelTest.php exists and locks the 3 paths (TTC partial, TTC 100% free, HT partial). Note: the heal landed in PosRedemptionService (POS path) — the KIOSK path was never affected because FrontendOrderService applies the discount INSIDE the create-transaction via PricingService which already branches TTC/HT internally (see commit message rationale)."
+      },
+      "code_path": [
+        "POST /api/frontend/loyalty/scan → routes/api.php:1404-1406 (auth:sanctum + throttle:20,1, NO `abilities:kiosk:order` route-level — enforced inside controller).",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:582-586 — explicit `tokenCan('kiosk:order')` check returns 403 if missing.",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:623-654 — signed-token path: LoyaltyQrSigner::verifyAndConsume() catches LoyaltyQrInvalidException and returns HTTP 200 + `error_code` (never 4xx — invariant §12 — parcours kiosk doit continuer).",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:735-746 — response includes loyalty_balance_points (display) + customer_token (lt_<HMAC-SHA256>) for downstream pricing/preview reuse.",
+        "Redeem flow (in-order): app/Services/FrontendOrderService.php:784-881 applyKioskLoyaltyDiscount() runs INSIDE create transaction, lockForUpdate on User row (line 806), DiscountCalculator::kioskLoyaltyRedemption() (DiscountCalculator.php:36-64) returns {discount, points} after mutex with coupon (line 38-40).",
+        "Composition snapshot preserves original amounts: app/Services/Pricing/CompositionSnapshotBuilder.php — discount affects order.total only, line_total / composition prices unchanged (NF525 immutability)."
+      ]
+    },
+    {
+      "id": "K.6.4",
+      "name": "Redeem cascade POS — PosLoyaltyRedeemModal → /pos-order/{id}/redeem-loyalty → PosRedemptionService (LIVE per F.10 verified)",
+      "scope_event": "Cashier on POS opens PosLoyaltyRedeemModal, enters loyalty_code + points, backend cascades through same PosRedemptionService with cashier permission + cash drawer session attribution",
+      "verdict": "VERIFIED CITED",
+      "code_path": [
+        "POST /api/admin/pos-order/{order}/redeem-loyalty → routes/api.php:939-945 (auth:sanctum + idempotency middleware + permission:pos.redeem-loyalty enforced inside FormRequest).",
+        "app/Http/Requests/PosLoyaltyRedeemRequest.php:22-25 — authorize: `$this->user()?->can('pos.redeem-loyalty') ?? false`. Permission seeded for Admin / Branch Manager / POS Operator roles.",
+        "app/Http/Controllers/Admin/PosLoyaltyController.php:37-56 — HEAL-A.1 (Z6+Z8 cross-confirmed P0): bypass BranchScope SINGULAR (preserves SoftDeletingScope per Z6 P1-Z6-03), then explicit post-fetch branch ownership check that aborts(403) when `$userBranchId !== 0 && $userBranchId !== (int)$order->branch_id`. Admin (branch_id=0) bypass preserved.",
+        "app/Services/Loyalty/PosRedemptionService.php:64-251 applyToOrder() — assertOrderRedeemable() guard (line 257-283): rejects PAID + DELIVERED + CANCELED + REJECTED + RETURNED.",
+        "app/Services/Loyalty/PosRedemptionService.php:98-251 DB::transaction: customer lookup with lockForUpdate (line 99-114, with status=ACTIVE primary + status=1 legacy fallback matching LoyaltyController::isCustomerActive), balance check (line 120-127), discount-vs-subtotal cap (line 129-137), pos_session_id capture (line 139-151, gracefully null in simulation_hardware mode), atomic balance decrement (line 153-160), ledger insert with UNIQUE(user_id, order_id, type) catch (line 162-186 → ALREADY_REDEEMED 409), Order update with same singular BranchScope bypass (line 215-228), Log::info audit (line 234-242).",
+        "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue — full ARIA dialog (role=dialog + aria-modal=true), data-testid hooks for E2E, error + success bands, live preview discount, rate hint from /loyalty/config."
+      ],
+      "h5_finding_resolution": "Per BRAIN §F-10-OG-3 / H.5 verification: the 'POS UI redeem not live' claim was outdated. Endpoint + service + modal are all wired and tested. K.6.4 verified live."
+    },
+    {
+      "id": "K.6.5",
+      "name": "Refund + clawback cascade — J2-HEAL-07 ClawbackLoyaltyPointsOnRefund SENTINEL-LOCKED",
+      "scope_event": "Customer earns 300 pts on 30€ delivered order, order refunded, ClawbackLoyaltyPointsOnRefund decrements user.loyalty_points by orders.loyalty_points_awarded, writes type='manual_deduct' row, balance clamps at 0",
+      "verdict": "VERIFIED CITED",
+      "j2_heal_07_verification": {
+        "claim": "J2-HEAL-07 (commits 072ae68c0 + 6a2c9555a 2026-05-24) wired RefundCreated → ClawbackLoyaltyPointsOnRefund and added LoyaltyService::clawbackEarnedPoints. Sentinel must remain locked.",
+        "verification": "INTACT.",
+        "event_registration": "app/Providers/EventServiceProvider.php:182-196 — RefundCreated listeners ordered: PersistOrderPaymentStatusChangedOnRefundCreated FIRST (WG-1 invariant, broadcast hole closed), then ReleaseStockOnRefundCreated, then ReleaseAvailabilityOnRefundCreated, then ClawbackLoyaltyPointsOnRefund LAST. LAST placement is intentional (line 192-194 comment): a clawback failure is try/catch isolated and cannot halt the cash-trail / stock / availability cascade above.",
+        "listener": "app/Listeners/ClawbackLoyaltyPointsOnRefund.php:43-94 — read order.loyalty_points_awarded (early-NOOP on null/0/-1 sentinel), resolve customer via loyalty_customer_code primary + user_id fallback (mirroring AwardLoyaltyPointsOnDelivery), call LoyaltyService::clawbackEarnedPoints, catch Throwable + Log::error (I.4 cascade-isolation pattern per HEAL-I.4).",
+        "service": "app/Services/LoyaltyService.php:141-199 — clawbackEarnedPoints: pre-flight existence check (line 147-158, type='manual_deduct'), DB::transaction with lockForUpdate (line 161-165), `$newBalance = max(0, $currentBalance - $amount)` clamp at 0 (line 172), `$actualDeducted = $currentBalance - $newBalance` semantics record (line 173), atomic users.loyalty_points update (line 175-177), ledger insert type='manual_deduct' / points=-actualDeducted / balance_after / source_surface='refund' (line 179-188).",
+        "sentinel": "tests/Feature/Loyalty/LoyaltyClawbackOnRefundSentinelTest.php — 5 test methods exercising END-TO-END wiring via RefundCreated::dispatchNow (NOT calling service directly, so a regression that removes the listener from EventServiceProvider also fails): test_refund_claws_back_earned_loyalty_points + test_double_refund_event_is_idempotent_noop + test_clawback_clamps_balance_at_zero + test_anonymous_order_refund_is_safe_noop + test_order_with_zero_awarded_is_noop."
+      }
+    },
+    {
+      "id": "K.6.6",
+      "name": "Cross-branch loyalty — single-branch V1 LOCAL acceptable, BRAIN doc-drift surfaced for V2 SaaS",
+      "scope_event": "Customer earns at branch 1, redeems at branch 2 — V1 LOCAL single-branch so no exploit, BRAIN §9 claims `BranchScope on loyalty_transactions per BRAIN exemption list`",
+      "verdict": "VERIFIED + DOC-DRIFT NEW FINDING (P2 / V2-SaaS backlog)",
+      "code_path": [
+        "loyalty_transactions schema: database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php:20-33 — table has user_id, loyalty_code, order_id, type, points, balance_after, source_surface, description, timestamps. NO branch_id column.",
+        "app/Models/LoyaltyTransaction.php:16-57 — no BranchScope declaration, no branch_id fillable/cast.",
+        "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php:99-101 — sentinel short-circuits with `if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'branch_id')) { continue; }` so LoyaltyTransaction never trips the sentinel.",
+        "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php:48-66 — LoyaltyTransaction is NOT in EXEMPTED_MODELS — it simply doesn't enter the loop body.",
+        "Effective V1 LOCAL behavior: loyalty_code is GLOBAL across branches (User row has loyalty_code, not branch-bound). A customer can earn at any branch and redeem at any branch — by design for V1 LOCAL single-restaurant Le Cayenne (one branch only)."
+      ],
+      "new_finding": {
+        "id": "K6-NF-01",
+        "title": "BRAIN §9 doc-drift — loyalty_transactions has no branch_id, not in EXEMPTED_MODELS",
+        "severity": "P2",
+        "category": "DOC-DRIFT + V2-SaaS-blocker",
+        "v1_status": "BENIGN — single-branch Le Cayenne LOCAL, no cross-branch exploit possible",
+        "v2_saas_concern": "If V2 SaaS multi-tenant ships, points earned at tenant A could be redeemed at tenant B unless either (a) branch_id added to loyalty_transactions + BranchScope declared, OR (b) loyalty_code namespaced per branch with explicit cross-tenant guard.",
+        "mitigation_v1": "None required. V1 LOCAL Le Cayenne is single-branch.",
+        "mitigation_v2_backlog": "Add branch_id NOT NULL to loyalty_transactions migration, declare BranchScope on LoyaltyTransaction model, add explicit cross-branch denial in DiscountCalculator + PosRedemptionService. Update BRAIN §9 to reflect actual state — current text 'BranchScope on loyalty_transactions per BRAIN exemption list' is incorrect: the table has no branch_id, so neither scoping nor exemption applies."
+      }
+    },
+    {
+      "id": "K.6.7",
+      "name": "QR replay attack — LCS-S-001 signed QR + nonce + TTL + customer_token HMAC (J2-HEAL-03 hardening)",
+      "scope_event": "Attempted replay of a captured signed QR token must be blocked by nonce consumption table",
+      "verdict": "VERIFIED CITED — strong defense, default-secure post J2-HEAL-03",
+      "code_path": [
+        "app/Services/Loyalty/LoyaltyQrSigner.php:50-73 sign() — payload {v, cust, code, nonce, iat, exp}, base64url-encoded, HMAC-SHA256 with config('loyalty.qr.secret') appended. Default TTL 300s, leeway 30s.",
+        "app/Services/Loyalty/LoyaltyQrSigner.php:94-160 verifyAndConsume() — (1) format check line 99-106, (2) HMAC verify with hash_equals (constant-time) line 117-121, (3) payload decode + version check line 124-131, (4) expiration with leeway line 134-138, (5) race-safe nonce INSERT-then-catch on UNIQUE violation line 142-157 → throws LoyaltyQrInvalidException('qr_replay'). NO pre-SELECT then INSERT (TOCTOU eliminated).",
+        "database/migrations/2026_05_19_100000_create_loyalty_qr_nonces_consumed_table.php:30-68 — UNIQUE(nonce) is GLOBAL (no branch scoping per advisor 2026-05-19), 6-month retention design.",
+        "app/Services/Loyalty/LoyaltyQrSigner.php:217-248 secret() — production boot guard refuses empty / dev-sentinel / <32-char secret. Matches FiscalSealingService HMAC pattern (CLAUDE.md §8).",
+        "J2-HEAL-03 commit 6d89d4798: (1) customer_token now HMAC-SHA256(user_id|timestamp|random_bytes(16)) with LOYALTY_QR_SECRET fallback to app.key — full 256-bit / 64 hex chars output, line 706-723 of LoyaltyController. Pre-heal SHA256 truncated to 128 bits + predictable timestamp enabled enumeration. (2) LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT default flipped to FALSE — verified config/loyalty.php:68-72 + .env.example line 267 both default to false.",
+        "Sentinels: tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest.php + tests/Feature/Configuration/EnvExampleHasLoyaltyQrSecretSentinelTest.php + CustomerTokenHmacHardenedSentinelTest (per J2-HEAL-03 commit message)."
+      ],
+      "env_conditional_note": "Verdict assumes default config — `accept_legacy_plaintext=false` in `.env` AND `.env.example`. If an env override re-enables LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=true, the legacy harvest path is reachable again (8-char loyalty_code → customer_token + balance + display_name leak). Production deploy must keep the default."
+    },
+    {
+      "id": "K.6.8",
+      "name": "Multi-device race — two simultaneous redeem attempts on same loyalty_code",
+      "scope_event": "Customer scans card simultaneously on 2 devices, both attempt redeem — only 1 wins via lockForUpdate + UNIQUE(user_id, order_id, type)",
+      "verdict": "VERIFIED CITED",
+      "code_path": [
+        "Kiosk redeem (pre-order): app/Http/Controllers/Frontend/LoyaltyController.php:276-326 — DB::transaction + User::where(...)->lockForUpdate()->first() row-lock (line 277), balance check inside lock (line 301), atomic decrement (line 305-307), ledger insert (line 312-321). Second concurrent caller blocks on lockForUpdate until first commits, then re-reads decremented balance and either fails INSUFFICIENT or proceeds with reduced quota.",
+        "Kiosk redeem (in-order): app/Services/FrontendOrderService.php:802-807 — User row lockForUpdate inside the create-transaction. Pending-redeem reconciliation app/Services/FrontendOrderService.php:833-864: detects un-attached prior redeem row (whereNull('order_id')) within 10-min window, validates same points amount or throws ValidationException, attaches to current order without second decrement.",
+        "POS redeem: app/Services/Loyalty/PosRedemptionService.php:99-114 — DB::transaction + User row lockForUpdate (sqlite no-op tolerated). Plus ledger UNIQUE(user_id, order_id, type) DB constraint (migration 2026_03_26_075919) catches duplicate even if locks somehow bypassed — throws PosRedemptionException('ALREADY_REDEEMED', 409) on line 178-184.",
+        "Idempotency middleware: routes/api.php:1347-1348 wraps /loyalty/redeem with `idempotency` middleware (LCS-S-002 commit). Mobile retries with same X-Idempotency-Key replay 2xx response instead of double-debit. POS endpoint also wrapped (routes/api.php:944).",
+        "Sentinel coverage: tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php — 3 methods covering (a) prior pending-redeem attaches without second deduction, (b) direct in-order redeem deducts once and writes ledger, (c) pending-redeem with mismatched discount amount is rejected 422 + no second decrement. tests/Feature/KioskLoyaltyLedgerAtomicTest.php also covers ledger atomicity."
+      ]
+    },
+    {
+      "id": "K.6.9",
+      "name": "Loyalty + refund + earn cycle — J-ADV-3 L3 + L10 + repeat-account abuse",
+      "scope_event": "Order placed → DELIVERED → points earned → refunded → clawback → re-order with different account, V1.0.2 backlog dashboard recommended per J-ADV-3 L10",
+      "verdict": "VERIFIED CITED (per-account clawback works) + KNOWN ACCEPTABLE GAP (cross-account inflation NOT detected)",
+      "code_path": [
+        "Per-account clawback: K.6.5 wiring (RefundCreated → ClawbackLoyaltyPointsOnRefund) + sentinel idempotency means a single account cannot inflate by repeating refund-then-earn — clawback row is UNIQUE(user_id, order_id, type='manual_deduct'), second dispatch NOOPs.",
+        "Cross-account vector NOT in V1 scope: a fraudster using account A, refunded, then account B re-orders same items can KEEP A's clawed-back-but-already-paid-out points only if A never had them clawed (sentinel proves they do). The legitimate `frequent refund + frequent earn` pattern across accounts has no detection layer.",
+        "J-ADV-3 L10 mitigation_proposal: per-customer refund-frequency dashboard at admin/customers → 'Refund ratio last 30d' badge + Z-report anomaly flag if a single customer.refund_count / customer.order_count > 30% threshold."
+      ],
+      "known_acceptable_gap": {
+        "id": "K6-NF-02",
+        "title": "No per-customer refund-frequency anomaly dashboard",
+        "severity": "P2",
+        "category": "V1.0.2 BACKLOG",
+        "v1_status": "ACCEPTABLE — single-resto Le Cayenne LOCAL, manual cashier supervision catches abnormal patterns. Loyalty points have no cash-out path (in-store discount only).",
+        "v1_0_2_backlog_ref": "J-ADV-3 L10 mitigation_proposal — dashboard cron + alert on refund_ratio outliers."
+      }
+    },
+    {
+      "id": "K.6.10",
+      "name": "Cashier loyalty redeem on behalf of customer — cashier_id attribution + audit chain semantics clarified",
+      "scope_event": "Customer forgot phone, cashier looks up by name/phone via PosLoyaltyRedeemModal — H2-HEAL-02 cashier attribution captured + audit_logs entry",
+      "verdict": "VERIFIED CITED — with explicit audit-chain semantic clarification",
+      "code_path": [
+        "Cashier attribution: app/Http/Controllers/Admin/PosLoyaltyController.php:63 passes `$request->user()?->id` as cashierId argument to PosRedemptionService::applyToOrder().",
+        "Cash drawer session capture: app/Services/Loyalty/PosRedemptionService.php:139-151 — `cashDrawerService->findOpenSessionForUser(branch_id, cashierId)` resolves the open session, attached as pos_session_id on ledger row (migration 2026_05_19_120000). Null tolerated in simulation_hardware mode.",
+        "Ledger row carries full attribution: app/Services/Loyalty/PosRedemptionService.php:166-176 — user_id (customer), loyalty_code, order_id, type='redeem', points (negative), balance_after, source_surface='pos', pos_session_id (cashier session), description 'Reduction fidelite POS appliquee par cashier #{cashierId}'.",
+        "H2-HEAL-02 cashier attribution per commit 286997174 covers the broader cashier_id + login audit_logs trail (POS counter-collect path).",
+        "Log::info audit channel: app/Services/Loyalty/PosRedemptionService.php:234-242 emits structured log with order_id + customer_id + cashier_id + pos_session_id + points + discount_eur + balance_after."
+      ],
+      "audit_chain_semantic_clarification": {
+        "scope_claim": "K.6.10 spec says 'audit_logs entry'",
+        "actual_behavior": "PosRedemptionService does NOT write to the NF525 `audit_logs` HMAC-chain table. It writes to `loyalty_transactions` (ledger) + Log::info channel.",
+        "by_design_rationale": "Loyalty redemption is PRE-PAYMENT (LOCK §6.7 blocks redeem on PAID/DELIVERED/CANCELED/REJECTED/RETURNED orders). The NF525 fiscal seal at counter-collect captures the FINAL discounted total (subtotal - discount). The audit_logs chain extension happens at PaymentService::confirmCounterPayment, NOT at redeem time. The `pos_session_id` link on the loyalty_transactions row IS the cashier-session audit trail required by LOCK §6.6.",
+        "verdict": "BY DESIGN — no gap. The spec wording 'audit_logs entry' should be read as 'auditable trail captured' (ledger + Log + pos_session_id), not as 'NF525 audit_logs row'."
+      }
+    },
+    {
+      "id": "K.6.11",
+      "name": "Loyalty after Z-close — loyalty is NOT z-bound, earn/redeem continues normally",
+      "scope_event": "Points earn/redeem mid-day → goes through normally. After Z-close, still earn/redeem normally — loyalty is independent of fiscal close.",
+      "verdict": "VERIFIED CITED",
+      "code_path": [
+        "Fiscal services scan (`grep -rn 'loyalty_points|loyalty_transactions' app/Services/Fiscal/`) returns 0 matches — FiscalSequenceService, ZReportService, AuditLogService do NOT read or mutate any loyalty column. Z-close path has no coupling to loyalty balance / ledger.",
+        "Loyalty services scan (`grep -rn 'z_close|zClose|ZReport' app/Services/LoyaltyService.php app/Listeners/AwardLoyaltyPointsOnDelivery.php app/Listeners/ClawbackLoyaltyPointsOnRefund.php app/Services/Loyalty/`) returns 0 functional matches — only a comment reference in PosRedemptionService:269.",
+        "AwardLoyaltyPointsOnDelivery and ClawbackLoyaltyPointsOnRefund listeners are bound to OrderStatusChanged + RefundCreated events, both of which fire on per-order state transitions independent of the daily Z-close cycle.",
+        "audit_logs chain extension is triggered at PaymentService::confirmCounterPayment + FiscalSequenceService extensions, also independent of loyalty events."
+      ],
+      "semantic_note": "Z-close finalizes the fiscal sequence + writes the daily z_reports row (HMAC-chained). Loyalty earn/redeem ledger writes continue across the Z-close boundary because (a) loyalty_transactions has its own immutable ledger separate from audit_logs and z_reports, and (b) the orders.loyalty_points_awarded sentinel is per-order not per-day. A redeem applied seconds after Z-close still reaches PosRedemptionService::applyToOrder normally and completes — there is no Z-close guard on the loyalty path."
+    }
+  ],
+  "h2_heal_04_ttc_tax_bug_verification": {
+    "claim": "H2-HEAL-04 (commit 8c4c173ab) HEALED TTC tax double-count in PosRedemptionService — pre-heal 50€ free-order redeem landed at total=4.55€ instead of 0€",
+    "verification_result": "VERIFIED INTACT",
+    "evidence": [
+      "app/Services/Loyalty/PosRedemptionService.php:194-213 — explicit branch on `config('pricing.tax_inclusive_prices', true)`:",
+      "  TTC mode (V1 default): `$newTotal = round(max(0, $subtotal - $newDiscount + $currentDelivery), 2)` — tax NOT added (already inside TTC subtotal).",
+      "  HT mode: `$newTotal = round(max(0, $subtotal - $newDiscount + $currentTax + $currentDelivery), 2)` — tax separately re-added.",
+      "Sentinel tests/Feature/Loyalty/PosRedemptionTtcTaxDoubleCountSentinelTest.php (3 methods: TTC partial, TTC 100% free-order, HT partial) — exists and locks the 3 paths. Commit 8c4c173ab verified 10/10 PASS sweep at heal time.",
+      "Comment block at PosRedemptionService.php:194-208 explicitly documents the bug + heal rationale + why kiosk path (FrontendOrderService → DiscountCalculator → PricingService) was unaffected (discount applied INSIDE create-transaction, PricingService::computePricing already branches TTC/HT)."
+    ]
+  },
+  "j2_heal_07_clawback_verification": {
+    "claim": "J2-HEAL-07 (commits 072ae68c0 + 6a2c9555a) wired ClawbackLoyaltyPointsOnRefund on RefundCreated, LoyaltyService::clawbackEarnedPoints implemented",
+    "verification_result": "VERIFIED INTACT",
+    "evidence": [
+      "Listener registered: app/Providers/EventServiceProvider.php:195 → ClawbackLoyaltyPointsOnRefund::class is LAST in the RefundCreated cascade (try/catch isolated so cannot halt cash-trail / stock / availability).",
+      "Listener body: app/Listeners/ClawbackLoyaltyPointsOnRefund.php:43-94 — resolves customer via loyalty_customer_code primary + user_id with loyalty_code fallback (mirrors AwardLoyaltyPointsOnDelivery resolver — kiosk machine user filtered).",
+      "Service body: app/Services/LoyaltyService.php:141-199 — DB::transaction + lockForUpdate + `max(0, currentBalance - amount)` clamp + UNIQUE(user_id, order_id, type='manual_deduct') idempotency + ledger insert with source_surface='refund'.",
+      "Sentinel locked: tests/Feature/Loyalty/LoyaltyClawbackOnRefundSentinelTest.php — 5 methods dispatching RefundCreated::dispatchNow (END-TO-END wiring exercised, not direct service call): test_refund_claws_back_earned_loyalty_points + test_double_refund_event_is_idempotent_noop + test_clawback_clamps_balance_at_zero + test_anonymous_order_refund_is_safe_noop + test_order_with_zero_awarded_is_noop."
+    ]
+  },
+  "qr_replay_defense_verification": {
+    "claim": "LCS-S-001 signed QR (HMAC + TTL + nonce) blocks replay. J2-HEAL-03 hardened customer_token + flipped legacy plaintext default.",
+    "verification_result": "VERIFIED INTACT — default-secure post J2-HEAL-03",
+    "evidence": [
+      "Signature: HMAC-SHA256 via LoyaltyQrSigner with hash_equals constant-time comparison. Production boot guards refuse empty / dev-sentinel / <32-char secret (LoyaltyQrSigner.php:217-248).",
+      "TTL: 300s default (config/loyalty.php:39) + 30s leeway (config/loyalty.php:46). Verifier rejects after exp+leeway (LoyaltyQrSigner.php:134-138).",
+      "Replay: race-safe nonce consumption via INSERT-then-catch QueryException on UNIQUE(nonce) — no pre-SELECT TOCTOU (LoyaltyQrSigner.php:142-157). Migration 2026_05_19_100000 creates loyalty_qr_nonces_consumed table with GLOBAL UNIQUE(nonce).",
+      "Customer token: post J2-HEAL-03 = HMAC-SHA256(user_id|unix_ts|random_bytes(16)) full 256-bit (64 hex), LoyaltyController.php:706-723. Pre-heal predictable-timestamp truncated-to-128-bit enumeration window closed.",
+      "Legacy plaintext: config/loyalty.php:68-72 default FALSE post J2-HEAL-03 commit 6d89d4798. .env.example:267 reflects default. Production deploy MUST keep this default — env override re-enables the harvest path."
+    ]
+  },
+  "new_findings_summary": [
+    {
+      "id": "K6-NF-01",
+      "title": "BRAIN §9 doc-drift — loyalty_transactions has no branch_id, not in EXEMPTED_MODELS, sentinel never trips",
+      "severity": "P2",
+      "category": "DOC-DRIFT + V2-SaaS-blocker",
+      "v1_impact": "NONE — single-branch Le Cayenne LOCAL",
+      "v2_saas_impact": "Cross-tenant point inflation possible if multi-tenant ships without branch_id added + BranchScope declared + per-branch loyalty_code namespacing",
+      "remediation_path": "V2 backlog: add branch_id NOT NULL migration + BranchScope on LoyaltyTransaction + update BRAIN §9 wording (currently incorrect — table has no branch_id, so neither scoping nor exemption applies, sentinel short-circuits on Schema::hasColumn check)."
+    },
+    {
+      "id": "K6-NF-02",
+      "title": "No per-customer refund-frequency anomaly detection (J-ADV-3 L10 reaffirmed)",
+      "severity": "P2",
+      "category": "V1.0.2 BACKLOG",
+      "v1_impact": "ACCEPTABLE — single-resto manual cashier supervision + loyalty points have no cash-out path",
+      "remediation_path": "V1.0.2 backlog: per-customer refund_ratio dashboard + cron alert + admin/customers badge per J-ADV-3 L10 mitigation_proposal."
+    }
+  ],
+  "known_acceptable_gaps": [
+    {
+      "id": "K6-AG-01",
+      "title": "Partial refund triggers FULL awarded clawback (V1.0.2 backlog)",
+      "severity": "P2",
+      "self_documented_at": "app/Listeners/ClawbackLoyaltyPointsOnRefund.php:30-35 (PHPDoc partial-refund-note)",
+      "v1_status": "ACCEPTABLE — mirrors refundPoints semantics (full reversal on partial). Pro-rated clawback deferred to V1.0.2 once partial-refund cash-trail semantics are finalized.",
+      "rationale": "Customer-friendly bias: a partial refund still clears the entire earn — customer is not penalized with partial-points-remaining edge cases that could later confuse balance audits."
+    },
+    {
+      "id": "K6-AG-02",
+      "title": "No OTP / SMS phone verification at enrollment",
+      "severity": "P2-P3",
+      "v1_status": "ACCEPTABLE — V1 LOCAL single-resto, loyalty points have in-store-discount only (no cash-out path), fraud surface negligible. V2 SaaS / multi-branch may want OTP gate.",
+      "v1_0_x_backlog": "Optional: OTP via Twilio/Sendinblue on register() + opt-in() if owner wants stricter enrollment."
+    }
+  ],
+  "v1_local_ship_verdict": "GO — loyalty cascade end-to-end is solid. K.6.1-K.6.11 all VERIFIED CITED. Three prior heals (H2-HEAL-04 TTC tax, J2-HEAL-03 customer_token + legacy plaintext flip, J2-HEAL-07 clawback on refund) all verified INTACT inside the cascade. 2 NEW P2 findings (K6-NF-01 BRAIN doc-drift + K6-NF-02 V1.0.2 dashboard backlog) are non-blocking for V1 LOCAL Le Cayenne. 2 known acceptable gaps (K6-AG-01 partial-refund full-clawback + K6-AG-02 no OTP) are self-documented and owner-aligned with the V1 LOCAL scope (single-resto + in-store-discount-only + manual cashier supervision).",
+  "summary_counts": {
+    "hunts_verified_cited": 11,
+    "hunts_gap": 0,
+    "new_findings_p0": 0,
+    "new_findings_p1": 0,
+    "new_findings_p2": 2,
+    "known_acceptable_gaps": 2,
+    "prior_heals_verified_intact": 3
+  }
+}

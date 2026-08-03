@@ -1,0 +1,154 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\AdminRoutePermissionFloorTest[39m
+  [32;1m✓[39;22m[39m [2manonymous request to admin users is unauthenticated 401[22m[39m
+  [32;1m✓[39;22m[39m [2mlow privilege chef cannot list users 403[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator can list users 200[22m[39m
+  [32;1m✓[39;22m[39m [2mnon pos consumer with table orders permission can list users 200[22m[39m
+  [32;1m✓[39;22m[39m [2madmin users index is guarded by permission middleware[22m[39m
+  [32;1m✓[39;22m[39m [2mno new unguarded admin index route appears[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\ContentSecurityPolicyHeaderTest[39m
+  [32;1m✓[39;22m[39m [2mreport only mode sets report only header[22m[39m
+  [32;1m✓[39;22m[39m [2menforce mode sets enforcing header[22m[39m
+  [32;1m✓[39;22m[39m [2mdisabled mode emits no csp header[22m[39m
+  [32;1m✓[39;22m[39m [2mdefault config mode is report only[22m[39m
+  [32;1m✓[39;22m[39m [2mmiddleware is registered in web group[22m[39m
+  [32;1m✓[39;22m[39m [2mreal web response carries csp header[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\CorsTest[39m
+  [32;1m✓[39;22m[39m [2mcors config does not contain wildcard[22m[39m
+  [32;1m✓[39;22m[39m [2mcors allows credentials only with specific origins[22m[39m
+  [32;1m✓[39;22m[39m [2mcors preflight rejects unknown origin[22m[39m
+  [32;1m✓[39;22m[39m [2mcors preflight allows app url origin[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\CustomerTokenHmacHardenedSentinelTest[39m
+  [32;1m✓[39;22m[39m [2maccept legacy plaintext defaults to false[22m[39m
+  [32;1m✓[39;22m[39m [2maccept legacy plaintext env true still opts in[22m[39m
+  [32;1m✓[39;22m[39m [2mthousand tokens for same customer are all unique[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer token format is lt prefix plus 64 hex chars[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\ExcelFormulaInjectionGuardTest[39m
+  [32;1m✓[39;22m[39m [2mle binder global est bien cable dans la config[22m[39m
+  [32;1m✓[39;22m[39m [2mles valeurs a caractere dangereux sont neutralisees en texte with data set "formule ="[22m[39m
+  [32;1m✓[39;22m[39m [2mles valeurs a caractere dangereux sont neutralisees en texte with data set "RCE cmd"[22m[39m
+  [32;1m✓[39;22m[39m [2mles valeurs a caractere dangereux sont neutralisees en texte with data set "plus +"[22m[39m
+  [32;1m✓[39;22m[39m [2mles valeurs a caractere dangereux sont neutralisees en texte with data set "moins -"[22m[39m
+  [32;1m✓[39;22m[39m [2mles valeurs a caractere dangereux sont neutralisees en texte with data set "at @"[22m[39m
+  [32;1m✓[39;22m[39m [2mun vrai export neutralise la formule injectee[22m[39m
+  [32;1m✓[39;22m[39m [2mles valeurs normales et numeriques passent inchangees[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\FirebaseKeyStorageSecurityTest[39m
+  [32;1m✓[39;22m[39m [2mpublic file service account json does not exist[22m[39m
+  [32;1m✓[39;22m[39m [2mfirebase private disk is configured under storage[22m[39m
+  [32;1m✓[39;22m[39m [2mnotification setting media collection uses firebase private disk[22m[39m
+  [32;1m✓[39;22m[39m [2mfirebase service resolves path via media not url parse[22m[39m
+  [32;1m✓[39;22m[39m [2mgitignore blocks credential files under public file[22m[39m
+  [32;1m✓[39;22m[39m [2mhtaccess denies credential files in public file directory[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\IdempotencyCrossUserLeakSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mcross customer recovery does not leak same branch[22m[39m
+  [32;1m✓[39;22m[39m [2meach customer finds their own when both have same key[22m[39m
+  [32;1m✓[39;22m[39m [2manonymous walk in recovery falls back to branch key match[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch isolation still holds with user scope[22m[39m
+  [32;1m✓[39;22m[39m [2mdb unique constraint is user scoped[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\InstallerAlreadyInstalledGuardTest[39m
+  [32;1m✓[39;22m[39m [2mune route installer qui rend une vue redirige 302 quand installe[22m[39m
+  [32;1m✓[39;22m[39m [2mla route destructive final store ne s execute pas quand installe[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\KioskTokenAdminBlockSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk only token is blocked from admin pos order index[22m[39m
+  [32;1m✓[39;22m[39m [2mwildcard admin token is not blocked by kiosk guard[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\LoyaltyCheckIdorTest[39m
+  [32;1m✓[39;22m[39m [2mun guest ne peut pas consulter le compte fidelite d autrui[22m[39m
+  [32;1m✓[39;22m[39m [2mle proprietaire peut consulter son propre compte[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\LoyaltyRegisterNoLeakTest[39m
+  [32;1m✓[39;22m[39m [2mconflit email ne divulgue pas le code ni le telephone d autrui[22m[39m
+  [32;1m✓[39;22m[39m [2mlookup par telephone seul ne divulgue pas les pii d un compte existant[22m[39m
+  [32;1m✓[39;22m[39m [2mnouveau compte recoit bien son code[22m[39m
+  [32;1m✓[39;22m[39m [2mregister public ne doit pas attacher un email a un compte existant[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\MailHostAllowlistSentinelTest[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "aws-metadata"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "loopback-v4"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "loopback-v4-edge"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "unspecified"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "rfc1918-10"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "rfc1918-172"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "rfc1918-192"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "cgnat"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "multicast"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "reserved"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "loopback-v6"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "loopback-v6-bracket"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "link-local-v6"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "unique-local-v6"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "unique-local-v6-fd"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule rejects dangerous ip with data set "unspecified-v6"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts public host with data set "mailgun"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts public host with data set "sendgrid"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts public host with data set "gmail"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts public host with data set "office365"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts public host with data set "public-ipv4"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts public host with data set "public-ipv6"[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule accepts empty string required handles it[22m[39m
+  [32;1m✓[39;22m[39m [2msafe remote host rule passes garbage strings[22m[39m
+  [32;1m✓[39;22m[39m [2mmail request rejects internal metadata ip[22m[39m
+  [32;1m✓[39;22m[39m [2mmail request rejects loopback and rfc1918[22m[39m
+  [32;1m✓[39;22m[39m [2mmail request accepts public mail host[22m[39m
+  [32;1m✓[39;22m[39m [2mproduction boot refuses dangerous mail host[22m[39m
+  [32;1m✓[39;22m[39m [2mproduction boot passes with public mail host[22m[39m
+  [32;1m✓[39;22m[39m [2mproduction boot passes when mail host unset[22m[39m
+  [32;1m✓[39;22m[39m [2mlocal env relaxes mail host boot guard[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\MessageIdorTest[39m
+  [32;1m✓[39;22m[39m [2mun appelant ne peut ni lire ni supprimer le message d autrui[22m[39m
+  [32;1m✓[39;22m[39m [2mle proprietaire peut lire et supprimer son propre message[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\OrderDetailsDeliveryBoyPiiTest[39m
+  [32;1m✓[39;22m[39m [2mdelivery boy payload excludes staff pii[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\OtpBruteForceLockoutTest[39m
+  [32;1m✓[39;22m[39m [2mun code correct reussit au premier essai[22m[39m
+  [32;1m✓[39;22m[39m [2mle brute force brule le code apres le max de tentatives[22m[39m
+  [32;1m✓[39;22m[39m [2mun bon code dans la limite reste accepte[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\PosCustomerDisplayAuthzTest[39m
+  [32;1m✓[39;22m[39m [2mun staff sans permission pos ne peut pas pousser l afficheur[22m[39m
+  [32;1m✓[39;22m[39m [2mun staff avec permission pos n est pas bloque[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\PosRefundAuthzParityTest[39m
+  [32;1m✓[39;22m[39m [2mun pos operator sans pos refund ne peut pas marquer rembourse[22m[39m
+  [32;1m✓[39;22m[39m [2mun porteur de pos refund n est pas bloque par ce gate[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\PrinterHostAllowlistSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mrejects cloud metadata ip[22m[39m
+  [32;1m✓[39;22m[39m [2mrejects rfc1918 without allowlist[22m[39m
+  [32;1m✓[39;22m[39m [2maccepts rfc1918 with allowlist[22m[39m
+  [32;1m✓[39;22m[39m [2maccepts public ipv4[22m[39m
+  [32;1m✓[39;22m[39m [2maccepts public hostname[22m[39m
+  [32;1m✓[39;22m[39m [2mrejects loopback[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\RateLimitTest[39m
+  [32;1m✓[39;22m[39m [2madmin mutation rate limit returns 429[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin rate limit[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout limiter respects auth config override[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout env example documents prod safe defaults[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\SettingsHardeningTest[39m
+  [32;1m✓[39;22m[39m [2mcompany name rejette l injection de ligne env[22m[39m
+  [32;1m✓[39;22m[39m [2mla lecture des settings notification est gatee permission settings[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\SignupGuestHijackGuardTest[39m
+  [32;1m✓[39;22m[39m [2mhijack blocked when verification disabled[22m[39m
+  [32;1m✓[39;22m[39m [2mhijack blocked when verification enabled and not verified[22m[39m
+  [32;1m✓[39;22m[39m [2mverified guest claim succeeds[22m[39m
+  [32;1m✓[39;22m[39m [2mnew signup still works when verification disabled[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m106 passed[39;22m
+  [37;1mTime:   [39;22m[39m35.83s[39m
+
+

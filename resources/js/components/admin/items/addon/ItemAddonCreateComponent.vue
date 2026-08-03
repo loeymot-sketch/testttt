@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <button type="button" @click="add" data-modal="#addonModal" class="db-btn h-[37px] text-white bg-primary">
+    <button type="button" @click="add" data-modal="#addonModal" class="db-btn h-[37px] text-white bg-primary" data-testid="admin-addon-add-button">
         <i class="lab lab-add-circle-line"></i>
         <span>{{ addButton.title }}</span>
     </button>
@@ -10,10 +10,11 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.addons") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" :aria-label="$t('button.close')"
                     @click="reset"></button>
             </div>
             <div class="modal-body">
+                <CatalogConceptHelpComponent concept="addon" />
                 <form @submit.prevent="save">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-6">
@@ -24,7 +25,7 @@
                                 @update:modelValue="variation" v-bind:class="errors.addon_item_id ? 'invalid' : ''"
                                 v-model="props.form.addon_item_id" :options="items" label-by="name" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
-                                search-placeholder="--" />
+                                search-placeholder="--" data-testid="admin-addon-form-name" />
                             <small class="db-field-alert" v-if="errors.addon_item_id">
                                 {{ errors.addon_item_id[0] }}
                             </small>
@@ -37,7 +38,8 @@
 
                             <select class="db-field-control f-b-custom-select"
                                 :id="'addon_item_id_' + variation.item_attribute_id"
-                                v-model="props.form.addon_item_variation[variation.item_attribute_id]">
+                                v-model="props.form.addon_item_variation[variation.item_attribute_id]"
+                                data-testid="admin-addon-form-price">
                                 <option value="0">--</option>
                                 <option v-for="child in variation.children" :value="child.id">{{ child.name }}
                                 </option>
@@ -48,7 +50,7 @@
 
                         <div class="form-col-12">
                             <div class="modal-btns">
-                                <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                                <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>
@@ -66,6 +68,7 @@
     </div>
 </template>
 <script>
+import CatalogConceptHelpComponent from "../CatalogConceptHelpComponent.vue";
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
@@ -73,7 +76,7 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 
 export default {
     name: "ItemAddonCreateComponent",
-    components: { LoadingComponent },
+    components: { CatalogConceptHelpComponent, LoadingComponent },
     props: ["props"],
     data() {
         return {

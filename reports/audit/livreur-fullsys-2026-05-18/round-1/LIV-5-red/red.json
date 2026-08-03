@@ -1,0 +1,76 @@
+{
+  "specialist": "red",
+  "scope": "Adversarial — double-assign race, cash session double-open, fee bypass via direct API, driver assignment without auth, notification spam via outbox replay, status whitelist bypass",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "4ad1adba8",
+  "method": "read-only adversarial probe across 5 attack surfaces, cross-referencing controllers + services + state machine + routes + audit chain",
+  "findings": [
+    {
+      "id": "LIV-RED-01",
+      "severity": "INFO",
+      "title": "Double-assign race — properly defended via DB::transaction + lockForUpdate at OrderService.php L2143",
+      "attack": "Two concurrent admin POST /pos/select-delivery-boy/{order} or /online-order/select-delivery-boy/{order} with different delivery_boy_id values racing on the same order.",
+      "evidence": "OrderService.php L2109-2181 selectDeliveryBoy is NOT wrapped in DB::transaction + lockForUpdate (unlike deliveryBoyOrderChangeStatus at L1535-1599 which does). Two concurrent assigns could both read the same source order row and both write competing delivery_boy_id values. HOWEVER: routes 897 + 920 wire the idempotency middleware on the HTTP path. Cache key derived from (branch, user, X-Idempotency-Key). If the admin client sends distinct keys, the race window opens; if same key, second request is replayed from cache. Notification fan-out L2173-2175 also lacks idempotency claim (see LIV-ARCH-07).",
+      "recommendation": "P2 V1.0.2: wrap the mutation block (L2142-2176) in DB::transaction with `Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail()` to serialize concurrent assigns. Audit-log row is then deterministic. The idempotency middleware is a partial defense, not a substitute. POC test: 2x parallel `php artisan tinker` sessions calling app(OrderService::class)->selectDeliveryBoy($o, ['delivery_boy_id'=>X]) and ->selectDeliveryBoy($o, ['delivery_boy_id'=>Y]) — should both end with the same final ID, currently last-writer-wins."
+    },
+    {
+      "id": "LIV-RED-02",
+      "severity": "INFO",
+      "title": "Cash session double-open — triple-defended (Cache::lock + DB lockForUpdate + UNIQUE partial index)",
+      "attack": "Concurrent admin POST /api/admin/delivery-boy/cash-sessions/open with identical (branch_id, delivery_boy_id) payload.",
+      "evidence": "DeliveryBoyCashSessionService.php L78-114. Layer-1: `Cache::lock(\"delivery_boy_cash_open_b{branch}_dbu{livreur}\", 5)->block(3, …)` serializes at app tier. Layer-2: DB::transaction wraps probe + create with `->lockForUpdate()` on existing row. Layer-3: UNIQUE partial index `uk_branch_livreur_open` (migration 120200, MySQL via generated column STORED; SQLite/PG native partial). LockTimeoutException → 409 HTTP. Sentinel test `concurrent_open_layer_1_cache_lock_serializes_two_attempts` passes. Sentinel `layer3 unique partial index blocks raw insert` passes (verified runtime).",
+      "recommendation": "Strong, no action. Reference attack surface — pattern is the gold standard for the codebase."
+    },
+    {
+      "id": "LIV-RED-03",
+      "severity": "P2",
+      "title": "Fee bypass via direct API — DeliveryQuoteService loads branch from $branchId but accepts any branch ID without permission/ownership check",
+      "attack": "Customer or low-privilege user POSTs to /api/frontend/delivery-quote with a branch_id they have no relationship to (e.g. neighbor branch with lower fees), expecting the response to return that branch's fee.",
+      "evidence": "DeliveryQuoteService.php L31-72 takes $branchId int as first arg, fetches `Branch::query()->find($branchId)` at L39 with NO scope guard. The branch lat/lng + fee config flow through. Whoever calls quoteForAddress is trusted to pass a correct branch_id. The upstream callers (need to inspect FrontendController) determine if branch_id is user-input or session-derived. If user-input, a customer could shop for the cheapest branch within their multi-branch SaaS tenant.",
+      "recommendation": "P2 V1.0.2: audit the 1-3 upstream callers of DeliveryQuoteService::quoteForAddress and ::quoteForSavedAddress. If branch_id is user-input, require it to match the authenticated user's session.branch_id OR resolve from the order's branch_id. Otherwise document the intentional 'shop for cheapest branch' UX. For Le Cayenne (single branch) this is moot — but is a SaaS finding for multi-branch."
+    },
+    {
+      "id": "LIV-RED-04",
+      "severity": "INFO",
+      "title": "Driver assignment without auth — Route gated correctly, but POST signature accepts UNAUTH idempotency key",
+      "attack": "Unauthenticated POST to /api/frontend/delivery-boy-order/change-status/{order} with X-Idempotency-Key forged.",
+      "evidence": "routes/api.php L1256-1262 — entire `delivery-boy-order` group is inside `Route::middleware(['auth:sanctum'])->group(…)`. Unauthenticated requests get 401 before reaching the controller. The X-Idempotency-Key idempotency middleware is scoped to (branch, user, hash(key)) per CLAUDE.md §9 — unauth requests never reach idempotency. Confirmed by audit trail: tests/Feature/Sentinels/* validate auth gate.",
+      "recommendation": "Strong. No action."
+    },
+    {
+      "id": "LIV-RED-05",
+      "severity": "P2",
+      "title": "Notification spam via outbox replay — selectDeliveryBoy not idempotent at builder/listener layer",
+      "attack": "Queue worker retries SendOrderDeliveryBoyMail::dispatch payload 3x (Redis transient failure). 3 emails sent to driver.",
+      "evidence": "OrderService.php L2173-2175 — 3 dispatch calls (mail/sms/push) fan out, each handled by EventServiceProvider L109-117. OrderDeliveryBoyPushNotificationBuilder.php L51, OrderDeliveryBoyMailNotificationBuilder.php L44, OrderDeliveryBoySmsNotificationBuilder.php L48 each gate `if ($status == 101)` and call `notification($fcmTokenArray, $orderId, $message)` without any idempotency claim on (order_id, channel, event=DRIVER_ASSIGNED). If the event is replayed by Laravel queue retry, the builder fires again — 2nd push notification, 2nd email, 2nd SMS. NotificationAlert table is queried as a flag (`->push_notification == SwitchBox::ON`) but no dedupe write-record.",
+      "recommendation": "P2 V1.0.2: introduce a `notification_event_log` table or extend audit_logs with `notification.driver_assigned.{push,sms,mail}` resource action keyed by (order_id, channel). Builder checks-and-writes atomically; if row already exists, no-op. Same fix pattern as the kiosk idempotency middleware. Alternative: mark the queue job as `ShouldBeUnique` with key `dba-mail-{order_id}-{status}-{channel}`."
+    },
+    {
+      "id": "LIV-RED-06",
+      "severity": "INFO",
+      "title": "Status whitelist bypass — defense in depth at HTTP layer + state machine layer + ValidStatusTransition rule",
+      "attack": "Driver POSTs status=99 (CANCELED equivalent) or status=-1 to /api/frontend/delivery-boy-order/change-status/{order} attempting to escape forward-only flow.",
+      "evidence": "DeliveryBoyOrderController.php L66-77 explicit `in:` rule with 4 allowed values (PREPARED, OUT_FOR_DELIVERY, DELIVERED, RETURNED) → 422 enum violation BEFORE controller logic. Even if HTTP layer bypassed, OrderService.php L1509 calls ValidStatusTransition::passes which checks OrderStateMachine::allows. Forward-only flow at OrderStateMachine.php L54-58 — once ACCEPT/PREPARING is gated (driver can't go backward), the only legal driver transitions are PREPARED→OUT_FOR_DELIVERY|DELIVERED, OUT_FOR_DELIVERY→DELIVERED, DELIVERED→RETURNED. Triple defense.",
+      "recommendation": "Strong. Sentinel DeliveryStatusTransitionWhitelistTest passes. No action."
+    },
+    {
+      "id": "LIV-RED-07",
+      "severity": "P2",
+      "title": "Cash session reconcile without close — bypassable via direct admin POST but caught at service layer",
+      "attack": "Admin POSTs /api/admin/delivery-boy/cash-sessions/{session}/reconcile without first calling /close. Try to skip the variance gate.",
+      "evidence": "DeliveryBoyCashSessionService.php L208-210: `if ($session->status === STATUS_OPEN) throw HttpException(422, 'Cannot reconcile an open delivery boy cash session — close it first')`. Reconcile then reads closing_amount which is NULL on an unclosed session. The 422 fires before the variance calc. Strong defense at service layer. HOWEVER: variance gate `cash.variance_threshold_eur` is shared with POS — a tiny variance reason 'manager OK' bypasses the gate entirely (see LIV-SEC-09).",
+      "recommendation": "Strong for the close-first guard. The variance-permission gap (LIV-SEC-09) is the residual P2."
+    },
+    {
+      "id": "LIV-RED-08",
+      "severity": "P3",
+      "title": "Cash escrow not linked to DeliveryBoyCashMovement — audit chain has gap between POS-pattern and Sub-6.3 pattern",
+      "attack": "Auditor inspects the doorstep cash trail. Sees `delivery.cash_collected_escrow` audit_log entries (OrderService.php L1611) but NO corresponding `delivery_boy_cash_movements` row of type=order_collect for the same orders. Reconciliation cannot match collected-per-order to declared closing amount.",
+      "evidence": "OrderService.php L1572-1583 builds $cashEscrowMeta but only writes an AuditLogService::write entry at L1608-1623. Does NOT call DeliveryBoyCashSessionService::recordMovement. Reconcile path at DeliveryBoyCashSessionService::reconcileSession L222-228 sums movements only — escrow audit log entries are invisible to the variance calculation. Result: a driver who closes session with closing_amount=opening (i.e. no movements logged) but collected 5 orders' worth of cash via DELIVERED has variance=0 (expected) when in reality variance=−sum_of_collected.",
+      "recommendation": "P1 actually (re-rate from P3): this is LIV-ARCH-02 from architect's report. The doorstep DELIVERED hook MUST call DeliveryBoyCashSessionService::recordMovement(type=order_collect, direction=in, amount=order.total) for the variance calc to be meaningful. Without this wire-up the cash session feature is decorative. Owner-decision: ship V1 with admin-mediated workflow (admin manually creates adjustment movements) OR hold for V1.0.2 wire-up."
+    }
+  ],
+  "summary": "Adversarial sweep finds the cash-session lifecycle is the most-defended surface (triple-layer concurrency control). Three residual P2 attack paths: notification spam via queue replay (LIV-RED-05), fee shopping via direct branch_id input (LIV-RED-03), double-assign race not wrapped in lockForUpdate (LIV-RED-01). One reclassified-up-to-P1: cash-collection→movement wire-up gap (LIV-RED-08) makes the variance calc meaningless without admin-mediated adjustments.",
+  "verdict": "GO V1 single-restaurant (manual admin workflow patches LIV-RED-08). V1.0.2 hardening: LIV-RED-01, LIV-RED-03, LIV-RED-05, LIV-RED-08 (wire doorstep collection to movement).",
+  "word_count_approx": 1490
+}

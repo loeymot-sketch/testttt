@@ -3,7 +3,8 @@
 use App\Enums\ItemType;
 
 return [
-    ItemType::VEG   => 'Veg',
-    ItemType::NON_VEG => 'Non Veg',
+    ItemType::VEG     => 'Végétarien',
+    ItemType::NON_VEG => 'Non végétarien',
+    ''                => '',
 
 ];

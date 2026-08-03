@@ -17,6 +17,12 @@ Sans l’historique du chat précédent, le dépôt est conçu pour rester compr
 5. **[`docs/PROJECT_CONTINUITY_AND_VISION.md`](docs/PROJECT_CONTINUITY_AND_VISION.md)** — vision produit (Le Cayenne), architecture, correctifs à ne pas régresser, backlog.  
 6. **[`AGENTS.md`](AGENTS.md)** — workflow multi-agents (planning → implémentation → tests → review).
 
+### Boucle de travail obligatoire (code produit)
+
+- **Rappel court** : **[`BOUCLE.md`](BOUCLE.md)** à la racine — à ouvrir en premier si tu touches au code dans une mission traçable.
+- **Contrat complet** : **[`AGENTS.md`](AGENTS.md)** §0–1 + **[`.cursor/commands/run-cycle.md`](.cursor/commands/run-cycle.md)** — commande `run-cycle <TASK_ID>`, pas seulement quand un humain le rappelle.
+- **Préflight** : `npm run verify:boucle` et `bash scripts/agent-activity-log.sh tail 50`.
+
 ### Skill Cursor (optionnel — changement de compte)
 
 - Fichier : **[`.cursor/skills/foodking-handoff/SKILL.md`](.cursor/skills/foodking-handoff/SKILL.md)** (versionné avec le repo).  

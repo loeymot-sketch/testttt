@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\CouponChanged;
 use App\Exports\CouponExport;
 use Exception;
 use App\Services\CouponService;
@@ -23,7 +24,7 @@ class CouponController extends AdminController
         $this->couponService = $coupon;
         $this->middleware(['permission:coupons'])->only('index', 'export');
         $this->middleware(['permission:coupons_create'])->only('store');
-        $this->middleware(['permission:coupons_edit'])->only('update');
+        $this->middleware(['permission:coupons_edit'])->only('update', 'toggleStatus');
         $this->middleware(['permission:coupons_delete'])->only('destroy');
         $this->middleware(['permission:coupons_show'])->only('show');
     }
@@ -40,7 +41,9 @@ class CouponController extends AdminController
     public function store(CouponRequest $request) : CouponResource | \Illuminate\Http\Response
     {
         try {
-            return new CouponResource($this->couponService->store($request));
+            $coupon = $this->couponService->store($request);
+            $this->dispatchCouponChanged($coupon, CouponChanged::CHANGE_CREATED);
+            return new CouponResource($coupon);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -62,7 +65,9 @@ class CouponController extends AdminController
         Coupon $coupon
     ) : CouponResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return new CouponResource($this->couponService->update($request, $coupon));
+            $updated = $this->couponService->update($request, $coupon);
+            $this->dispatchCouponChanged($updated, CouponChanged::CHANGE_UPDATED);
+            return new CouponResource($updated);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -71,7 +76,10 @@ class CouponController extends AdminController
     public function destroy(Coupon $coupon
     ) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
+            // Capture identity before destroy() removes the row.
+            $snapshot = clone $coupon;
             $this->couponService->destroy($coupon);
+            $this->dispatchCouponChanged($snapshot, CouponChanged::CHANGE_DELETED);
             return response('', 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
@@ -85,5 +93,32 @@ class CouponController extends AdminController
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    /**
+     * [PROMO-DASH-2026-05-06] Toggle status ACTIVE <-> INACTIVE.
+     */
+    public function toggleStatus(Coupon $coupon
+    ) : CouponResource | \Illuminate\Http\Response {
+        try {
+            $updated = $this->couponService->toggleStatus($coupon);
+            $this->dispatchCouponChanged($updated, CouponChanged::CHANGE_STATUS_TOGGLED);
+            return new CouponResource($updated);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    private function dispatchCouponChanged(Coupon $coupon, string $changeType): void
+    {
+        CouponChanged::dispatch(
+            (int) $coupon->id,
+            $changeType,
+            (string) $coupon->code,
+            $coupon->status === null ? null : (int) $coupon->status,
+            is_array($coupon->branch_scope) ? array_map('intval', $coupon->branch_scope) : [],
+            is_array($coupon->surfaces) ? $coupon->surfaces : [],
+            []
+        );
     }
 }

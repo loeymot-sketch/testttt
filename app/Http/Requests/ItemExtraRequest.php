@@ -30,9 +30,18 @@ class ItemExtraRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("item_extras", "name")->whereNull('deleted_at')->ignore($this->route('itemExtra.id'))->where('item_id', $this->route('item.id')),
+                // [AUDIT 2026-07-13 P2] Les params de route sont des MODÈLES liés
+                // (`{item}`→Item, `{itemExtra}`→ItemExtra, cf. ItemExtraController::store/update).
+                // L'ancien `route('itemExtra.id')` / `route('item.id')` (accès pointé) renvoyait
+                // NULL → `ignore(null)` + `where('item_id', null)` (→ whereNull) → la garde
+                // d'unicité par produit ne bloquait JAMAIS un doublon.
+                Rule::unique("item_extras", "name")->whereNull('deleted_at')->ignore(optional($this->route('itemExtra'))->id)->where('item_id', optional($this->route('item'))->id),
             ],
-            'price'       => ['required', new IniAmount()],
+            // [CAISSE-LOGIC-HEAL 2026-07-11 P1-D] `IniAmount()` (défaut $zero=false) rejette
+            // price ≤ 0, alors que 78/377 extras réels sont GRATUITS (crudités Salade/Tomate/
+            // Oignon…). Éditer l'un d'eux (même juste le nom) resoumettait price=0 → rejet.
+            // Aligné sur ItemVariationRequest qui utilise `IniAmount(true)` (0 autorisé, <0 rejeté).
+            'price'       => ['required', new IniAmount(true)],
             'status'      => ['required', 'numeric', 'max:24'],
             // Surface visibility: null = all surfaces; array of "kiosk", "pos", "web"
             'visible_on'  => ['nullable', 'array'],

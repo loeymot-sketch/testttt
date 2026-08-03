@@ -1,0 +1,128 @@
+{
+  "wave": "C",
+  "run_n": 1,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "POST http://127.0.0.1:8000/api/admin/kds-order/change-status/243 returned 422 Unprocessable Content (kiosk order id 243 = N°A0004). DOM at 09-kds-prete.dom.html still contains '#100526243' / 'N°A0004' in the À emporter lane (no transition to a Prête state) yet zero role=alert / .toast / .alert-* surfaced — the user-facing console got no error feedback. Kitchen staff would believe the order was bumped to ready when in fact the backend rejected the transition. Fiscal/operational risk.",
+      "fix_hint": "Inspect KDS prête handler payload: validate request body matches kdsOrderChangeStatusRequest validator. Surface 422 errors via existing ToastService or banner. Add server-side log + retry/backoff. Confirm allowed status transitions for kiosk-source orders include the prête target."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "iter15-mega-kiosk/08-pos-suivi-shows-kiosk-order.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "POS Suivi commandes shows the kiosk order N°A0004 (kiosk source badge visible) with line total '0,00 €' in the À ENVOYER column. Kiosk order is for Frites Seules at 2,00 € TTC (confirmed by 05-kiosk-payment-screen.png 'TOTAL À RÉGLER: €2,00' and 06-kiosk-payment-blocked.png chef screen). DOM grep counts three occurrences of '0,00' for three orders in the same column — pricing field reads zero across the board. Cashier will never reconcile till totals; could under-bill or block end-of-day Z report.",
+      "fix_hint": "Backend OrderListResource for /pos/suivi must include the order total field (likely missing PRICING_TAX_INCLUSIVE projection). Verify PosSuiviController returns total_with_tax/grand_total — current payload appears to expose only sub-total or omits it for kiosk-source rows. Add Playwright assert in iter15 spec."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Customer screen capture shows a generic admin login form ('Bon Retour' / Email / Mot de passe / Connexion) instead of the customer-facing 'ready / blocked' display. Network: GET /api/frontend/setting returned 429 (Too Many Requests) twice. Console: pageerror 'AxiosError'. Logo image broken (alt='logo'). The customer-facing route is rate-limited at boot and falls back to login — for a paying restaurant owner this means the lobby screen is unusable.",
+      "fix_hint": "Investigate /api/frontend/setting ThrottleRequests config: rate is too aggressive given polling fallback (no realtime). Either raise the limiter for the customer-screen UA or cache the settings response client-side. Also fix the route guard: customer screen should not redirect to admin /login."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.png",
+      "category": "empty_state_quality",
+      "severity": "P1",
+      "evidence": "Catalog grid renders product cards with EMPTY image areas (Eau Plate 50cl, Capri-Sun, etc. — only the orange '+' button on top of a blank grey rectangle). Sidebar category icons all show the SAME tacos thumbnail for TACOS / SANDWICHS / BURGERS / ASSIETTES / SALADES / POULET CROUSTILLANT. Console reveals the cause: every storage image URL (http://localhost:8000/storage/68/eau.png, .../capri_sun.png, /coca_cola.png, /coca_zero.png, /fanta.png, /oasis_tropical.png, /orangina.png, /sprite.png) is blocked by CSP because the page is served from 127.0.0.1:8000 — img-src 'self' does not match 'localhost'. From a customer POV: a kiosk with no food photos is a dead UX. From a brand POV: identical category icons look broken.",
+      "fix_hint": "Two fixes: (1) make APP_URL / asset() emit '127.0.0.1' (or 'localhost' consistently) so storage URLs match the host the page is served from; (2) add a per-category icon field instead of falling back to first-product image, OR fix the sidebar template to map category->icon."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "8 POSTs to /api/frontend/csp-report returned 400 Bad Request during catalog load (state 02). State 05 payment-screen shows the same endpoint flooded with 8 × 429 Too Many Requests. The kiosk's own CSP-report sender is broken AND being rate-limited by its own backend. Combined with C-004 (CSP blocks storage images that should load), this is a self-inflicted error storm visible in the browser DevTools that any technical owner / auditor would flag.",
+      "fix_hint": "Fix CSP-report endpoint payload validation (likely the report Content-Type 'application/csp-report' is not accepted by the FormRequest). Then disable the report-only meta CSP entirely OR move it to an HTTP header so it does not trigger the meta-CSP-disallowed error logged at idle. Raise the ThrottleRequests cap once CSP itself stops flooding."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.console.json",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "intlify reports 6 missing keys repeated multiple times during idle: kiosk.order_type.choose_label, kiosk.order_type.dine_in, kiosk.order_type.dine_in_hint, kiosk.order_type.takeaway, kiosk.order_type.takeaway_hint, kiosk.order_type.required_hint. Visible UI happens to render French strings ('Sur place' / 'À emporter' / 'CHOISISSEZ UNE OPTION POUR COMMENCER') because the component falls back, but the fallback is brittle: any locale switch or hot reload will surface raw keys. Note: dine_in keys are also missing despite owner directive 'V1 Dine-in désactivé' — keys for a deprecated feature still being rendered.",
+      "fix_hint": "Either (a) add the 6 keys to lang/fr.json + lang/en.json, or (b) gate the dine_in subtree behind feature flag pos.dine_in_enabled and remove the order_type.dine_in_* lookups when disabled."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "First console entry on kiosk idle is an error: 'The report-only Content Security Policy was delivered via a <meta> element, which is disallowed. The policy has been ignored.' This means the CSP-report meta tag is non-functional AND prints a recurring DevTools error. Pairs with C-005 (the report endpoint that nothing connects to is itself returning 400/429 because the loop runs anyway).",
+      "fix_hint": "Move the Content-Security-Policy-Report-Only directive from <meta> to an HTTP response header in the Laravel security middleware. Remove the <meta http-equiv> tag from the kiosk Blade layout."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "iter15-mega-kiosk/01-pos-supervisor-baseline.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "POS suivi baseline (BEFORE the kiosk order is placed) already shows the yellow banner 'Connexion temps réel perdue — actualisation automatique en cours...'. State 08 (after kiosk POST) shows the same banner. State 01 KDS baseline shows 'Mode secours actif — actualisation automatique toutes les 5s'. Same in state 07 and 09 (state 09 also shows top error banner 'Reconnexion en cours...'). The realtime websocket channel is dead across the entire Wave C journey — kiosk→KDS push is replaced by 5s polling. While the apps degrade gracefully, an owner would see persistent yellow/orange banners on POS and KDS at all times = looks broken.",
+      "fix_hint": "Investigate websocket server (laravel-websockets / soketi) on port 6001 — it is refusing connections. Confirm it is started in dev/CI runner setup. If env disables WS, the banners should be hidden in dev or reduced to a single tooltip; do not show 'Reconnexion en cours' top-banner permanently."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "iter15-mega-kiosk/06-kiosk-payment-blocked.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Two Vue warnings: 'Extraneous non-emits event listeners (addToCart, goToCart, startOrder, resetKiosk) were passed to component but could not be automatically inherited because component renders fragment or text root nodes. at <KioskConfirmationComponent orderNumber=\"A0004\" orderTotal=2>'. Confirmation renders OK visually, but the listeners (esp. resetKiosk used to bring user back to idle after timeout) are not bound. Risk: kiosk stays stuck on the confirmation screen instead of returning to idle for next customer.",
+      "fix_hint": "In KioskConfirmationComponent.vue: declare emits: ['addToCart','goToCart','startOrder','resetKiosk'] OR wrap the template in a single root element. Verify the auto-reset timer still fires."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "iter15-mega-kiosk/07-kds-receives-kiosk-order.png",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Kiosk order arrives in 'À emporter' lane, NOT in 'Borne' lane (Borne column header reads 'Aucune commande borne en cours' even though A0004 is a kiosk-borne order). The KDS has a dedicated Borne column but the kiosk-source order is mis-routed. From the kitchen POV: lane semantics are wrong — staff cannot filter borne-vs-takeaway. Note: the order_type may legitimately be 'à emporter' (takeaway), but the source channel is borne — UI conflates the two.",
+      "fix_hint": "Decide whether the Borne column shows source=kiosk OR order_type=borne. Currently 4 lanes (Sur place / En ligne / À emporter / Borne) seem to be order_type-based but 'Borne' isn't an order_type. Either (a) remove the Borne lane and display source as a badge, or (b) populate Borne lane from source=kiosk regardless of order_type."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Kiosk idle is rendered in DARK MODE (deep brown background, white text). Owner directive 'kiosk-design-refresh-2026-05-10' specifies LIGHT MODE + Cayenne palette (white/red/yellow). The dark-circle button top-left appears to be a theme toggle that is set to dark by default. Catalog state 02 onward uses light mode — inconsistent visual identity within a 5-second journey. Brand-consistent restaurant kiosks should not flash from dark to light on first tap.",
+      "fix_hint": "Set default theme=light in kiosk store init, or remove the dark/light toggle for V1. Verify the design refresh palette (Cayenne #F4501E) is applied uniformly across idle, catalog, payment, confirmation."
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Primary CTA 'Confirmer — €2,00' is rendered in pale-pink/peach (very light Cayenne tint) with white text. The contrast ratio is well below WCAG AA 4.5:1 — visually it looks DISABLED while it is the primary action. Elderly customers will not recognize it as the proceed button. Compare to the orange '+' product button (state 02) which uses full Cayenne — the design system is inconsistent.",
+      "fix_hint": "Use the full Cayenne #F4501E for the primary 'Confirmer' button. Reserve pale-pink for disabled state only. Consider an aria-disabled attribute when a payment method is not yet selected."
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "iter15-mega-kiosk/04-kiosk-cart-bottom-sheet.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "State 04 is labelled 'cart-bottom-sheet' but the screenshot shows the catalog screen with cart counter '0 article — €0,00' and the 'Payer' button greyed out. The intended bottom-sheet is not visible in the snapshot — either the sheet failed to open after the addToCart action (linked to C-009 emit warning) or the spec timing missed the open animation. From a reviewer POV the 'cart bottom-sheet' state proves nothing.",
+      "fix_hint": "Spec author: assert page.locator('.cart-bottom-sheet[aria-expanded=true]').isVisible() before snapping state 04. If the sheet fails to open, escalate; if it's a timing issue, await the transition end."
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "iter15-mega-kiosk/03-kiosk-wizard.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "State 03 is labelled 'kiosk-wizard' but renders the Frites & Accompagnements catalog (no wizard step) because Frites Seules is a simple item. This is a known artifact per spec author. Recording it for traceability — not a defect, but the snapshot name is misleading and could fool a future reviewer into thinking the wizard regressed silently.",
+      "fix_hint": "Spec author: rename to '03-kiosk-catalog-frites' OR pick a composite item (Tacos M with viande wizard) so the wizard step is actually exercised in iter15 Wave C."
+    },
+    {
+      "id": "C-015",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "Console contains a pageerror entry with text 'AxiosError' (empty stack) at the customer screen. Empty stack means the error escaped the global handler with no diagnostic context — for a paying owner this is the kind of black-box failure the audit was set up to catch. Combined with the 429 response on /api/frontend/setting, the customer screen is non-functional.",
+      "fix_hint": "Wrap the boot-time settings fetch in a try/catch that routes 429 to a friendly retry banner. Add an error boundary that captures axios stacks (currently lost). Check axios global interceptor in resources/js for a swallow."
+    }
+  ],
+  "summary": { "P0": 3, "P1": 6, "P2": 5, "P3": 1 },
+  "states_reviewed": 12
+}

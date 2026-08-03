@@ -1,0 +1,20 @@
+{
+  "facts": {
+    "innerTextSnippet": "Aller au contenu\nLC\nLE CAYENNE\nAccueil\nMenu\nCommandes\nFidélité\nL'enseigne\nPanier\nIB\nIkyes\n// FIDÉLITÉ · PEPPER CLUB\nMON COMPTE\nLE CAYENNE\n\nPrésente ton QR à la caisse pour cumuler. Utilise tes points dès 100 points : 100 pts = 1 € de réduction.\n\nLE CAYENNE · CLUB\n★ NOVICE\nMON SOLDE\n0pts\nVos points : 0 → utilisable : 0,00 € · 100 pts = 1 €\nNovice\n500 pts → Pepper\nExpire dans 4:58\nACTUALISER\n// IDENTIFIANT\n99B874AD\nPrésentez ce QR ou dictez votre numéro en caisse.\n// MA PROGRESSION\nNiveau 1 / 4\nNOVICE\nPEPPER\nMASTER\nLÉGENDE\n// ACHIEVEMENTS\nMES TROPHÉES.\n\n2 débloqués sur 6 — continue pour décrocher tous les badges.\n\n🎉\nPremier pas\nPremière commande\n🔥\nHabitué\n5 commandes\n🔒\nPepper\n500 points\n🔒\nMaster\n1500 points\n🔒\nLégende\n5000 points\n🔒\nTout testé\n10 plats différents\n// CUMUL & RÉDUCTIONS\nUTILISE TES POINTS.\nMes réductions\nHistorique\nComment ça marche\nMon compte\n🎁\nVos points : 0 → utilisable : 0,00 €\nMinimum 100 pts — encore 100 pts pour débloquer 1,00 € de réduction\n🔒\nLE CAYENNE\n\nSandwich Cayenne signature, tacos M & L, bols Frites/Riz, galettes — fait maison à Hénin-Beaumont. Du peuple, pour le peuple. Pas de livraison, juste du fait maison à venir chercher.\n\n// NAVIGATION\nAccueil\nMenu complet\nProgramme fidélité\nL'enseigne\n// CONTACT\n06 51 30 XX XX\ncontact@lecayenne.fr\n14 rue de la République\n62210 Hénin-Beaumont\nOuvert 11h — 00h\n// LÉGAL\nMentions légales\nCGV\nPolitique de confidentialité\nPolitique de cookies\nAllergènes\n© 2026 LE CAYENNE · CGV · CONFIDENTIALITÉ · MENTIONS LÉGALES\n📱 iOS\n🤖 Android\nPANIER\n🛒\nTon panier est vide\nFaim ? Va voir le menu.",
+    "totalSvg": 3,
+    "qrLikeSvgCount": 0,
+    "qrRectCounts": [],
+    "residue": {
+      "Ikyes": true,
+      "Benzaid": false,
+      "LECAY347": false,
+      "DEMO_V1": false,
+      "visa4242": false
+    },
+    "navHeaderText": "IB\nIkyes"
+  },
+  "consoleMsgs": [
+    "[info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "[warning] You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/"
+  ]
+}

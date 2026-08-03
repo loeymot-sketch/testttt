@@ -1,0 +1,88 @@
+{
+  "specialist": "architect",
+  "zone": "WF-4-STOCK-CASCADE",
+  "scope": "Order created -> DecrementStockOnOrderCreated -> StockService::decrementForOrder -> stock_levels + stock_movements (append, idempotency_key) -> ItemAvailabilityChanged + StockLevelChanged -> ChoiceAvailabilityResolver (item/option/addon) -> StockLowAlertsWidget. Plus compensating cancel/refund release via ReleaseStockOnOrderCanceled / ReleaseStockOnRefundCreated / ReleaseAvailabilityOnOrderCanceled / ReleaseAvailabilityOnRefundCreated.",
+  "head": "50bdd5150",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verdict": "PASS_WITH_FINDINGS",
+  "evidence_root": "reports/audit/wave-f-sync-confirmation-2026-05-19/WF-4-STOCK-CASCADE/",
+  "cascade_integrity": {
+    "listener_registration_order": "EventServiceProvider.php:145-151 — OrderCreated subscribers: PersistOrderCreatedToOutbox (SSOT-first), DecrementItemAvailabilityOnOrder, DecrementStockOnOrderCreated, SendFcmOnOrderCreated. Stock fires AFTER item-availability counter increment, which matches the architectural intent (auto-86 quota check unaffected by stock-level transaction).",
+    "after_commit_guard": "OrderCreated uses DispatchableAfterCommit (Concerns/DispatchableAfterCommit.php:30-42). Listener fires only after outer transaction commits — both decrement listeners then run their OWN inner DB::transaction. Stock writes are visible to subsequent listeners but a stock-decrement throw aborts only the inner transaction and re-throws to the dispatcher (DecrementStockOnOrderCreated:21,36).",
+    "exception_class_path_post_F6": "DecrementStockOnOrderCreated:6 imports App\\Exceptions\\Stock\\StockUnavailableException (Foundation F-6 P0 fix 5bb8c48f9). StockService:7 + StockService:112 throw the same FQCN. Catch branch at DecrementStockOnOrderCreated:17 now matches; the misleading 'DecrementStockOnOrderCreated failed' Sentry breadcrumb on the expected business-rule path is gone.",
+    "movement_idempotency_key_schema": "StockService::movementKey() = sha1('reason|order_class|order_id|line_uid|stockable_type|stockable_id'[+seed]) — UNIQUE constraint at stock_movements.idempotency_key (migration 2026_04_27_143130:19). The seed is included for release reasons (refund/cancel) so multiple partial refunds against same line are uniquely keyed by 'released:N:delta:M'. The decrement key intentionally omits the seed so retried OrderCreated dispatch absorbs as no-op.",
+    "release_ledger_idempotency": "OrderItem.released_qty + released_at (migration 2026_04_23_100000) is the per-line idempotency ledger. ReleaseStockOnRefundCreated -> StockService::releaseForOrderInTransaction:374-385 computes delta = min(requestedQty, quantity - released_qty); duplicate RefundCreated dispatches become safe no-ops (cf. test_refund_event_releases_decremented_stock_once StockReleaseOnRefundTest.php:43-46 — order is dispatched twice, on_hand returns to 2/2 not 3/2).",
+    "stock_level_changed_emission_rule": "StockService:144-146 + :446-448 — StockLevelChanged is dispatched ONLY when ($changedLevelIds !== [] && $choiceAvailabilityBoundaryChanged). The boundary is computed by isChoiceBoundaryMutation():459-467 which crosses on_hand=0 AND requires the stockable to be a variation/extra OR an addon-item line. Pure item-level decrement crossing zero emits ItemAvailabilityChanged (which propagates to outbox + kiosk cache invalidation) but NOT StockLevelChanged — preventing duplicate fan-out via PersistCatalogChangedToOutbox.",
+    "choice_availability_resolver_priority_chain": "ChoiceAvailabilityResolver:270-289 (availabilityFromLevel) — manual_unavailable_reason takes precedence over auto stock; F-016a-BIS invariant preserved. availabilityForExtra:294-303 + availabilityForVariation:308-321 — ingredient_rupture (catalog-level) takes precedence over stock_levels. availabilityForAddonItem:326-356 — catalog_inactive > catalog_unavailable > surface_hidden > branch_unavailable > stock_rupture. The 5-layer precedence is consistent across surface (POS/Kiosk reuse the same resolver via snapshotForItems)."
+  },
+  "findings": [
+    {
+      "id": "WF4-ARCH-01",
+      "severity": "P1",
+      "title": "DecrementStockOnOrderCreated re-throws on Throwable in after-commit context; F-6 cleaned the false-positive path but the orphan-fail-loud-then-rollback model still operates on a committed transaction",
+      "file": "app/Listeners/DecrementStockOnOrderCreated.php",
+      "lines": "22-37",
+      "evidence_read": "DecrementStockOnOrderCreated:22-37 says 'A hard fail surfaces the orphan rather than letting on_hand drift unchecked' and re-throws. Post-F-6 (commit 5bb8c48f9) only StockUnavailableException (expected) is caught silently at :17-21; everything else (DB pool exhaustion, schema mismatch, Throwable from a peer side-effect) propagates.",
+      "actual_behavior": "OrderCreated uses DispatchableAfterCommit (OrderCreated.php:14) — the listener fires AFTER the order transaction has committed. A Throwable re-thrown here cannot roll back the order. It propagates up the request stack (POS / kiosk client receives HTTP 500), and prevents the next subscribers from firing — notably SendFcmOnOrderCreated (line 150). The order EXISTS, the outbox row WAS written (PersistOrderCreatedToOutbox runs first per F-002 round-3), but: (a) FCM kitchen push is skipped, (b) the operator UI surfaces 'order failed' on an order that physically exists and is already broadcasted to KDS.",
+      "impact": "MID — the cascade reaches KDS via the outbox path (broadcast happens via DispatchDomainEventsJob, independent of stock listener). FCM push fan-out is skipped to staff phones. The client sees a 500 on a successful order. The on-hand drift the comment fears would happen ONLY if stock_levels.lockForUpdate / forceFill / StockMovement::create combine were to partially succeed — which the inner DB::transaction(StockService:49-51) already prevents.",
+      "recommendation": "Two architecturally-equivalent paths: (a) Soft-fail policy — log + record SyncMetricsRecorder->recordStockDecrementFailure + return; rely on a 5-min reconciliation cron (StockScanRuptureCommand sibling) to surface drift in dashboard. (b) Keep re-throw but exclude this listener from the OrderCreated cascade — wire it to a queued ShouldQueue listener so failures hit job retry rather than HTTP response. Defer decision to a unified failure-isolation policy across the 4 OrderCreated listeners (cross-validates with sibling PK1-ARCH-01 in PK-1-DATA-FLOW STATUS).",
+      "scope_minimal_fix": "DEFERRED V1.0.2 — unify with sibling PK1-ARCH-01."
+    },
+    {
+      "id": "WF4-ARCH-02",
+      "severity": "P2",
+      "title": "AvailabilityService::releaseForOrderItems uses raw DB::table('order_items') which bypasses SoftDeletes scope — silent drift if an order is soft-deleted between cancel and release",
+      "file": "app/Services/Menu/AvailabilityService.php",
+      "lines": "630-720",
+      "evidence_read": "AvailabilityService:630 uses DB::table('order_items')->where('id', $orderItemId)->lockForUpdate()->first() — RAW query bypasses SoftDeletes default scope. ReleaseAvailabilityOnOrderCanceled:27 uses $order->loadMissing('orderItems') which goes through Eloquent (SoftDeletes-scoped, excludes trashed lines). The OrderItem model uses SoftDeletes (app/Models/OrderItem.php:8,13).",
+      "actual_behavior": "ReleaseAvailabilityOnOrderCanceled builds the lineItems array from Eloquent-scoped orderItems (trashed rows excluded). Then it calls releaseForOrderItems which re-reads each line by id via raw DB query (no scope). If a line had been soft-deleted between the listener gathering it and the raw read (cross-thread admin destroy), the raw read still finds the row and proceeds to decrement counters even though the parent order considers the line dead. Inverse race is also possible: line trashed BEFORE listener gathers — Eloquent excludes it, raw read never invoked, release silent no-op (correct behavior).",
+      "impact": "LOW for V1 single-branch (no concurrent admin destroy on the cancel path), MID for V2 multi-branch. The released_qty ledger still protects against double-release on the same line. The drift would manifest as item_branch_availability.daily_consumed_qty decrementing for a trashed line.",
+      "recommendation": "Defer V1.0.2. Either (a) unify the raw DB::table query with Eloquent OrderItem::query()->find() + ->trashed() check before release, or (b) document the raw-bypass as an explicit invariant since the released_qty ledger is the SSOT and the raw path is intentional to avoid SoftDelete recursion through orderItems hasMany. Cross-team consult: AvailabilityService is shared by 3 release listeners.",
+      "scope_minimal_fix": "DEFERRED V1.0.2 — needs cross-listener audit."
+    },
+    {
+      "id": "WF4-ARCH-03",
+      "severity": "P2",
+      "title": "StockService::releaseForOrderInTransaction relies on the original decrement movement existing (line :402) — but never asserts the on_hand mutation it claims to compensate happened in the same direction",
+      "file": "app/Services/Stock/StockService.php",
+      "lines": "388-449",
+      "evidence_read": "StockService:401-404 — release short-circuits if movementKey('order_created', ...) row is absent ($requireOriginalDecrement=true path). But the function doesn't read the original movement's delta to determine if the release should be +qty or 0 — it always increments by qty (StockService:417).",
+      "actual_behavior": "If admin manually-corrected on_hand between decrement and refund, OR if a partial decrement scenario existed (multi-line where one failed and rolled back the inner txn but the SAME order is later refunded), the release would push on_hand past the pre-order baseline. The integrity invariant (release == decrement) relies on the released_qty ledger being the SSOT for compensable quantities, but with multi-line orders where one line's stock_level was missing, the released_qty cap is per-line so no compensation drift happens — but if an admin had directly mutated stock_levels.on_hand via the manual_in/manual_out reason, the refund double-counts.",
+      "impact": "LOW V1 (no admin manual_in/manual_out UI surface yet — StockMovementsAppendOnlyTest:31 documents the reason enum 'manual_in'/'manual_out' but no controller writes them). Becomes MID V1.1 when AdminStockController exposes manual adjustments.",
+      "recommendation": "Defer V1.0.2. When manual stock adjustment UI ships, add a 'cumulative_decrement' read at release-time that aggregates the matching idempotency_key reasons and caps release at the actual cumulative decrement. Today's released_qty ledger is enough because release qty == decrement qty for each line.",
+      "scope_minimal_fix": "DEFERRED V1.0.2 — no live exploit surface."
+    },
+    {
+      "id": "WF4-ARCH-04",
+      "severity": "P3",
+      "title": "Two parallel release listeners on OrderCanceled / RefundCreated (ReleaseStockOnXxx + ReleaseAvailabilityOnXxx) — no documented sequencing guarantee",
+      "file": "app/Providers/EventServiceProvider.php",
+      "lines": "161-168",
+      "evidence_read": "EventServiceProvider:161-168 — OrderCanceled subscribers: ReleaseStockOnOrderCanceled, ReleaseAvailabilityOnOrderCanceled. RefundCreated subscribers: ReleaseStockOnRefundCreated, ReleaseAvailabilityOnRefundCreated. Sync execution order matches array order. The two listeners act on DISTINCT tables (stock_movements + stock_levels vs. item_branch_availability) so no row collision.",
+      "actual_behavior": "Two independent transactions. If ReleaseStockOnOrderCanceled fails (throws), ReleaseAvailabilityOnOrderCanceled never fires — counters stay over-consumed. If the second fails, the first already committed stock_levels mutation. Neither one rolls back the other.",
+      "impact": "VERY LOW V1 — daily counter mismatch self-resolves at daily_reset_at boundary (Carbon::today). MID V1.1 if customer-facing 86-banner relies on counters in near-real-time.",
+      "recommendation": "Defer V1.0.X — document the divergence-window in the listener docblocks. A unified ReleaseCompensateOnOrderCanceled facade calling both inside a single DB::transaction is overkill for V1.",
+      "scope_minimal_fix": "DOC-ONLY — defer."
+    }
+  ],
+  "keeps": [
+    "Foundation F-6 P0-ARCH-01 import path fix (5bb8c48f9) — StockUnavailableException now resolves to App\\Exceptions\\Stock\\StockUnavailableException; expected business-rule rejection no longer mislogged as 'DecrementStockOnOrderCreated failed' Sentry breadcrumb. Verified test_failed_multi_line_decrement_rolls_back_prior_stock_changes (StockConcurrentDecrementTest.php:104-146).",
+    "StockService::mutateForOrderInTransaction lockForUpdate (StockService:90) + idempotency_key UNIQUE constraint (migration 2026_04_27_143130:19) — double defense against concurrent decrement race. Test sentinel test_atomic_guard_allows_only_available_quantity asserts 3 successes + 2 failures across 5 attempts on on_hand=3.",
+    "StockService::movementKey() SHA-1 deterministic key — order_created reason omits seed (so retries no-op), release reasons include 'released:N:delta:M' seed (so partial refunds are uniquely keyed per ledger increment). Verified test_decrement_and_partial_refund_track_addon_target_stock_from_composition_snapshot (StockReleaseOnRefundTest.php:49-121) — 3 sequential partial refunds land at idempotent stop after 2 lines released.",
+    "ChoiceAvailabilityResolver 5-layer precedence (catalog_inactive > catalog_unavailable > surface_hidden > branch_unavailable > stock_rupture > available) — F-016a-BIS manual_unavailable_reason takes priority over auto stock (ChoiceAvailabilityResolver:281-284). Test sentinels: ChoiceAvailabilityResolverIngredientRuptureTest, ChoiceAvailabilityResolverVariationIngredientRuptureTest, StockRuptureAvailabilitySyncTest::test_stock_zero_does_not_override_manual_admin_rupture_reason.",
+    "StockLevelChanged emission gated by isChoiceBoundaryMutation (StockService:459-467) — prevents duplicate kiosk cache invalidation fan-out for pure item-level decrements (which already emit ItemAvailabilityChanged + PersistCatalogChangedToOutbox).",
+    "syncItemAvailabilityForStockLevel auto-86 / auto-restock symmetry (StockService:162-215) — auto-rupture only sets is_available=false IF current reason is auto (stock_rupture / out_of_stock); manual rupture preserved across stock decrement. Auto-restock fires only when row.unavailable_reason was auto. Test sentinel test_stock_zero_does_not_override_manual_admin_rupture_reason (StockRuptureAvailabilitySyncTest).",
+    "Release ledger via OrderItem.released_qty + min(requestedQty, quantity-released_qty) cap (StockService:381-385) — partial refunds idempotent. Test sentinel test_decrement_and_partial_refund_track_addon_target_stock_from_composition_snapshot.",
+    "BranchScope global scope on StockLevel + StockMovement (StockLevel:25, StockMovement:23) — multi-tenant isolation. Admin (branch_id=0) bypass preserved.",
+    "DB::transaction wrapper at StockService:49-51 — multi-line decrement rolls back atomically if any line throws StockUnavailableException. Test sentinel test_failed_multi_line_decrement_rolls_back_prior_stock_changes asserts on_hand of available item = 1 (unchanged) AND StockMovement::count() = 0 after the rollback.",
+    "Foundation F-6 P0-DBA-01 trigger migration (ccc95e862) — stock_movements BEFORE DELETE/UPDATE triggers (MySQL SQLSTATE 45000 + SQLite RAISE ABORT) close the raw-query bypass that CleanupTestFixturesCommand:182-188 demonstrates is one line away from production code. Verified migration status: '[16] Ran'."
+  ],
+  "out_of_scope": [
+    "POS quote binding flow (HasPosQuoteBinding trait) — PK / cash audit scope.",
+    "Kiosk delivery webhook path — sync-confirmation WF-3.",
+    "FrontendOrder fiscal_alloc_error_at / fiscal sequence allocation — WF-5 fiscal cascade.",
+    "Pricing SSOT composition_snapshot integrity — Z5 SSOT-PRICING (decoded read-only here).",
+    "RBAC / Sanctum scope on stock admin endpoints — Z4 BRANCH-AUTH."
+  ],
+  "word_count": 1675
+}

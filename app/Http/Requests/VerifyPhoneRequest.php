@@ -30,6 +30,10 @@ class VerifyPhoneRequest extends FormRequest
             'code'  => ['required', 'string', 'max:32'],
             'phone' => ['required', 'string', 'max:180', new ValidPhone()],
             'token' => ['required', 'max:180'],
+            // [HEAL SIGNUP 2026-07-30] Canal EMAIL : email + prénom optionnels au verify →
+            // persistance déterministe (fallback cache email) + prénom réel dans register().
+            'email' => ['nullable', 'string', 'email:rfc', 'max:190'],
+            'first_name' => ['nullable', 'string', 'max:100'],
         ];
     }
 }

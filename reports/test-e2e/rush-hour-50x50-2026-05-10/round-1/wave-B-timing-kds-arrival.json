@@ -1,0 +1,66 @@
+{
+  "samples": [
+    {
+      "seq": 5,
+      "order_id": 1094,
+      "queue_number": "A0119",
+      "ts_post": 1778458814371,
+      "ts_kds_seen": 1778458816556,
+      "latency_ms": 2185,
+      "found_in_pile": true,
+      "probe_method": "dom-scrape"
+    },
+    {
+      "seq": 10,
+      "order_id": 1099,
+      "queue_number": "A0124",
+      "ts_post": 1778458818130,
+      "ts_kds_seen": 1778458821329,
+      "latency_ms": 3199,
+      "found_in_pile": true,
+      "probe_method": "dom-scrape"
+    },
+    {
+      "seq": 15,
+      "order_id": 1104,
+      "queue_number": "A0129",
+      "ts_post": 1778458824432,
+      "ts_kds_seen": 1778458825585,
+      "latency_ms": 1153,
+      "found_in_pile": true,
+      "probe_method": "dom-scrape"
+    },
+    {
+      "seq": 20,
+      "order_id": 1109,
+      "queue_number": "A0134",
+      "ts_post": 1778458827113,
+      "ts_kds_seen": 1778458827755,
+      "latency_ms": 642,
+      "found_in_pile": true,
+      "probe_method": "dom-scrape"
+    },
+    {
+      "seq": 25,
+      "order_id": 1114,
+      "queue_number": "A0139",
+      "ts_post": 1778458829717,
+      "ts_kds_seen": 1778458830872,
+      "latency_ms": 1155,
+      "found_in_pile": true,
+      "probe_method": "dom-scrape"
+    },
+    {
+      "seq": 35,
+      "order_id": 1123,
+      "queue_number": "A0148",
+      "ts_post": 1778458862790,
+      "ts_kds_seen": 1778458863476,
+      "latency_ms": 686,
+      "found_in_pile": true,
+      "probe_method": "dom-scrape"
+    }
+  ],
+  "p95_ms": 3199,
+  "count": 6
+}

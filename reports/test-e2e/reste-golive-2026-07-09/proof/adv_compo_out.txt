@@ -1,0 +1,5 @@
+ORDER 5622 total=8.300000
+--- order_item id=5395 item_id=22 qty=1 price=7.400000 unit=
+snapshot_type=array
+snapshot_json={"lines":[{"quantity":1,"line_total":0,"unit_price":0,"attribute_id":5,"variation_id":281,"attribute_name":"Sauce (1ère Gratuite)","variation_name":"Algérienne"},{"quantity":1,"line_total":0,"unit_price":0,"attribute_id":6,"variation_id":450,"attribute_name":"Type de Pain","variation_name":"Pain"}],"addons":[],"extras":[{"extra_id":329,"quantity":1,"extra_name":"Oignons frits","line_total":0.9,"unit_price":0.9}],"captured_at":"2026-07-09T13:21:36+02:00","schema_version":1}
+HAS booted updating guard file lines: 51 

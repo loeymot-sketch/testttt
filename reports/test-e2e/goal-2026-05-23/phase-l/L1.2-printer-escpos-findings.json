@@ -1,0 +1,294 @@
+{
+  "agent": "L.1.2 Printer ESC/POS DEEP",
+  "phase": "L — Ultra-final pre-cloud Wave L-A",
+  "mission": "Audit EscPosPrinterService wiring, browser-print path operational friction, edge cases, NF525 compliance gaps, print queue under load, and produce a migration checklist for the day owner branches a real ESC/POS thermal printer.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "scope": "READ-ONLY static cascade audit of the printer surface area. Attest prior G.5 + H.6 findings rather than re-discover them (per advisor: 'don't double-count severity across the convergence'). Surface printer-specific deltas G.5/H.6 did not cover. Produce migration checklist for ESC/POS-day.",
+  "method": "Code-static walk of: EscPosPrinterService → PrinterTransport binding (TcpPrinterTransport vs NullPrinterTransport vs printing.bypass) → PrinterController routes (testPrint + openDrawer ONLY — no printReceipt method) → ReceiptComponent.vue handlePrintClient/Kitchen → vue3-print-nb v-print → window.print() → PosReceiptPrintController increment + audit. Cross-checked kioskPrinter.js (Electron bridge — alternate ESC/POS path) + kioskHardware.js bridge wrapper. Verified prior IDs G5-F-001 / G5-F-002 / G5-F-003 / G5-F-004 / H6-F-002 against current code. Captured 4 NEW printer-specific deltas this phase L surfaces.",
+  "files_examined": [
+    "app/Services/Hardware/EscPosPrinterService.php (full read — 3 public methods only: sendRaw, testPrint, openDrawer)",
+    "app/Services/Hardware/EscPosCommandBuilder.php (full read — encodeForPrinter L87 defined but ZERO callers; sanitize L130 only strips control chars)",
+    "app/Services/Hardware/PrinterTransport/PrinterTransportInterface.php (full read — 2-method contract send + lastError)",
+    "app/Services/Hardware/PrinterTransport/TcpPrinterTransport.php (full read — fsockopen 2.0s timeout, no paper-status query, no ESC/POS DLE EOT)",
+    "app/Services/Hardware/PrinterTransport/NullPrinterTransport.php (full read — already viable mock for tests + bypass)",
+    "app/Providers/AppServiceProvider.php:31-45 (PrinterTransportInterface binding; bypass → Null, prod → Tcp)",
+    "app/Providers/AppServiceProvider.php:177-190 (PRINTING_BYPASS_MODE=true forbidden in production hard guard)",
+    "config/printing.php (full read — bypass.enabled, screen marker text, log channel)",
+    "app/Models/Printer.php (full read — fillable width_chars, options array cast for code_page)",
+    "app/Http/Controllers/Admin/PrinterController.php (full read — testPrint route wired, NO printReceipt route)",
+    "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php (full read — increment + audit BEFORE any physical print attempt; same issue G5-F-004 attested)",
+    "app/Http/Controllers/Admin/Pos/CashDrawerController.php (uses EscPosPrinterService::openDrawer)",
+    "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php (uses EscPosPrinterService::openDrawer)",
+    "tests/Feature/PrinterServiceTest.php (full read — encodeForPrinter sentinel exists at L112-123 but only tests the builder; no test asserts textLine/centerLine/lineKV ACTUALLY call it)",
+    "tests/Feature/Bypass/BypassRuntimeBehaviorTest.php:99-110 (EscPosPrinterService::sendRaw → BypassAuditLogger::printingBypassed audit trail wired)",
+    "resources/js/components/admin/pos/ReceiptComponent.vue (full read — vue3-print-nb v-print directive → window.print; paperWidthMm HARDCODED 58 at L432)",
+    "resources/js/components/admin/pos/ReceiptDuplicataMarker.vue (DUPLICATA marker — Wave Q-3 wired, GREEN)",
+    "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue (REMBOURSEMENT marker — dead UI per G5-F-001)",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:248-249, 766 (reprint button → requestReprint → fetch + open modal — does NOT increment until print clicked)",
+    "resources/js/helpers/kioskPrinter.js (full read — Electron bridge ESC/POS builder, DIVERGENT from PHP EscPosCommandBuilder)",
+    "resources/js/services/kioskHardware.js (full read — printReceipt / printEscPos wrappers, contract {ok,error?})",
+    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue:141,335-339,380-415 (auto-print on isKioskBridge() + browser fallback window.print)",
+    "routes/api.php:881 (print-receipt POST with idempotency middleware), 920 (test-print POST)",
+    "reports/test-e2e/goal-2026-05-23/phase-g/G5-printer-receipt-findings.json (prior — 4 findings to attest)",
+    "reports/test-e2e/goal-2026-05-23/phase-h/H6-i18n-encoding-findings.json (prior — H6-F-002 latent encodeForPrinter dead code to attest)"
+  ],
+  "escpos_service_inventory": {
+    "public_methods": [
+      {
+        "name": "sendRaw(Printer, string $bytes): bool",
+        "wired_callers": ["self (used internally by testPrint)"],
+        "external_callers_in_app_code": [],
+        "wiring_note": "BypassAuditLogger::printingBypassed() now invoked at L23-28 (BYPASS-AUDIT-HEAL P1). Was a dead-code branch flagged by RED."
+      },
+      {
+        "name": "testPrint(Printer): bool",
+        "wired_callers": ["PrinterController::testPrint via /admin/printers/{printer}/test-print"],
+        "wiring_note": "Admin diagnostic only. Hardcoded ASCII strings 'FOODKING POS', 'Test print OK', plus printer.name + station + ISO date. Calls selectCodePage(19) [V14 C-β heal] BUT does NOT call encodeForPrinter on printer.name — so an accented printer name (`Caisse Cafétéria`) would still print mojibake on real CP858 hardware."
+      },
+      {
+        "name": "openDrawer(?int printerId, int branchId): array",
+        "wired_callers": [
+          "CashDrawerController::open",
+          "CashDrawerSessionController (multiple methods)"
+        ],
+        "wiring_note": "Z6-P1-WGS heal: explicit withoutGlobalScope(BranchScope::class) for admin cross-branch drawer kick. Returns structured {success, error?, printer_id?, bytes_sent?} — never throws (caller-friendly). BypassAuditLogger::printingBypassed() also wired at L118-123."
+      }
+    ],
+    "missing_methods_for_v1": [
+      "printReceipt(Order $order, array $options = []): array — would render NF525 receipt + cut + open drawer (CASH) and return {success, error?}. Required for any ESC/POS-day migration.",
+      "printKitchenTicket(Order $order, Station $station): array — kitchen-station-specific ticket (no fiscal totals, just items + instructions).",
+      "queryStatus(Printer): array — DLE EOT n=4 (paper status) / n=3 (offline/cover-open). Currently the TCP transport just fwrite + close; no inbound query."
+    ]
+  },
+  "browser_print_path": {
+    "framework": "vue3-print-nb (v-print directive)",
+    "trigger_chain": [
+      "1. POS cashier clicks 'Ticket client' button in ReceiptComponent modal (line 41-44).",
+      "2. handlePrintClientClick (L532-583) sets isPrinting=true, awaits POST admin/pos/orders/{id}/print-receipt.",
+      "3. PosReceiptPrintController::increment performs atomic DB UPDATE (receipt_print_count +=1, branch-scoped at L43-48), reads back fresh count, emits audit_logs row via AuditLogService (hash-chained). Returns JSON {receipt_print_count, is_duplicata, audit_emitted}.",
+      "4. UI updates localPrintCount. If audit_emitted=false, alertService.warning('pos.receipt_audit_chain_warning') — print proceeds anyway (operational continuity per W9.B contract).",
+      "5. await this.$nextTick(); trigger.click() on the hidden v-print button → vue3-print-nb opens a hidden iframe with the #print-receipt-client DOM cloned, then calls iframe.contentWindow.print() which spawns the OS print dialog.",
+      "6. Cashier selects printer + clicks Print in the OS dialog (1 manual click per receipt). No success/failure callback returns to the app.",
+      "7. Final fallback: if hiddenPrintClientButton ref unavailable, window.print() is called directly (L578)."
+    ],
+    "kitchen_path": "Identical structure (handlePrintKitchenClick L587-603) but NO API call — kitchen ticket is non-fiscal, no increment, no audit. Renders #print-receipt-kitchen with full instructions + addons + extras.",
+    "operational_friction": {
+      "per_receipt_clicks": "1 cashier click (POS button) + 1 OS-dialog click (Print confirm) = 2 clicks per receipt MINIMUM. macOS / Windows can be configured for 'Always use this printer + skip dialog' but this is OS-level and per-user — not enforceable from the web app.",
+      "no_success_callback": "window.print() is fire-and-forget. App has zero observability on paper-out / printer-offline / out-of-paper / cover-open.",
+      "browser_print_dialog_modal": "window.print() BLOCKS the browser tab synchronously until the dialog closes. During that time, no other UI interaction in that tab (cart edit, next order start) can occur.",
+      "queued_prints": "If cashier triggers 5 prints back-to-back, the browser queues 5 dialog confirmations sequentially. There is NO web standard for batched / silent print queueing. Some browsers may merge into a single 'multi-document' job; behavior is undefined and printer-driver-dependent."
+    },
+    "kiosk_path_separate": "Kiosk uses a DIFFERENT printer cascade: KioskConfirmationComponent.vue L380-415 calls resources/js/helpers/kioskPrinter.js → kioskHardware.printReceipt (Electron IPC) → falls back to printEscPos with locally-built ESC/POS lines → ultimate fallback window.print(). When running under Electron (real kiosk), bypasses browser entirely. In dev / browser, falls through to window.print like POS."
+  },
+  "edge_cases": [
+    {
+      "id": "L1.2-EC-01",
+      "scenario": "Printer disconnected (cable yanked between job submissions)",
+      "browser_path_behavior": "window.print() opens dialog. Cashier selects printer that OS still lists as 'available' (cached). OS spooler queues the job. Spooler error surfaces in OS notification only — app sees nothing. receipt_print_count + audit row already advanced.",
+      "escpos_path_behavior_if_wired": "TcpPrinterTransport::send: @fsockopen returns false within 2.0s timeout → lastError='tcp_open_failed:...' → sendRaw returns false → caller can re-queue / surface alert. Net: ESC/POS direct gives the app real-time failure visibility browser path cannot.",
+      "current_mitigation": "G5-F-004 (P2) noted. Cashier observes missing paper, retries → second POST → DUPLICATA stamp on first physical paper customer receives. Audit chain integrity preserved; semantic clarity degraded.",
+      "verdict_current": "ATTEST G5-F-004 P2 — unchanged"
+    },
+    {
+      "id": "L1.2-EC-02",
+      "scenario": "Paper out mid-print",
+      "browser_path_behavior": "Identical to EC-01. window.print has no paper-status callback.",
+      "escpos_path_behavior_if_wired": "Pure TCP fwrite does NOT detect paper-out either (transport layer success != device acceptance). To detect, need DLE EOT n=4 query before/after job, response parse. Currently TcpPrinterTransport does not implement queries (one-way fwrite + close).",
+      "verdict_current": "ATTEST G5-F-004 P2 — note: even ESC/POS-day migration requires extending the transport with bi-directional query support, not just adding a printReceipt method."
+    },
+    {
+      "id": "L1.2-EC-03",
+      "scenario": "Multiple receipts queued under rush (DUPLICATA + new sale + REMBOURSEMENT)",
+      "browser_path_behavior": "Each ReceiptComponent invocation triggers its own modal lifecycle. POS cannot show 2 receipt modals simultaneously (single #receiptModal DOM id). Cashier must close one before opening next. v-print spawns a separate hidden iframe per click — those iframes can stack in DOM but only the latest window.print call is visible to the user as a dialog. Net effect: serialized at the UI gate, not a true queue.",
+      "escpos_path_behavior_if_wired": "Direct fsockopen + fwrite is synchronous. Two concurrent calls to sendRaw on the same Printer row would race the socket open. Need either (a) a per-printer Cache::lock similar to FiscalSequenceService, or (b) a queued spool job. Mitigation: model the print spool as a Laravel queue (low) with per-printer mutex.",
+      "verdict_current": "GREEN at UI gate (single modal serialization). Future ESC/POS migration MUST add per-printer mutex to avoid socket race."
+    },
+    {
+      "id": "L1.2-EC-04",
+      "scenario": "Format width variations (58mm vs 80mm thermal)",
+      "browser_path_behavior": "ReceiptComponent.vue:432 hardcodes paperWidthMm=58. CSS media-print rules (L628-632) clamp width: 58mm. Receipt prints at 58mm regardless of actual installed printer width. On an 80mm printer, the paper is over-wide and content sits in the left ~58mm strip.",
+      "escpos_path_behavior_if_wired": "Printer.width_chars field exists (default 48 per PrinterServiceTest.printerData = 80mm). EscPosCommandBuilder::lineKV/separator/centerLine accept widthChars param. testPrint correctly reads $printer->width_chars ?: 48. NEW printReceipt method MUST read printer->width_chars and adapt — and DOM ReceiptComponent must align (58mm=32chars, 80mm=48chars).",
+      "verdict_current": "NEW DELTA — paperWidthMm hardcoded 58 in ReceiptComponent is a strategic discrepancy vs Printer.width_chars model field. Currently masked because (a) Le Cayenne LOCAL dev DB has ZERO printer rows (`DB::table('printers')->get()` returned `[]` 2026-05-24) and (b) print path is browser-driven (CSS clamp). Surfaces immediately when ESC/POS path is wired. See L1.2-F-01."
+    },
+    {
+      "id": "L1.2-EC-05",
+      "scenario": "Two divergent ESC/POS code paths (PHP backend + JS kiosk Electron)",
+      "observation": "PHP EscPosCommandBuilder (app/Services/Hardware/EscPosCommandBuilder.php) and JS kioskPrinter.js (resources/js/helpers/kioskPrinter.js) BOTH build ESC/POS byte streams independently. Different default width (PHP defaults to 48 / 80mm, JS RECEIPT_WIDTH=32 / 58mm), different command tables (PHP doubleSize uses GS!\\x11 / 'normal+wider+taller', JS DOUBLE_SIZE uses ESC!\\x30 / 'double width + double height'), different sanitization (PHP strips control chars only, JS no sanitization). NF525 customer-ticket parity not enforced across surfaces.",
+      "verdict_current": "NEW DELTA — strategic choice for ESC/POS-day: converge on one builder (recommended: PHP server-side, since fiscal/audit lives backend), retire JS builder. See L1.2-F-02."
+    }
+  ],
+  "nf525_compliance_via_escpos_when_wired": {
+    "must_include_in_printReceipt": [
+      "Header: company_name + branch.address + branch.phone + SIRET + VAT intra + register_id + operator name (NF525 §V identification)",
+      "Order metadata: order_serial_no + order_date + order_time + queue_number (or token)",
+      "Composition: EVERY composition_snapshot line — item_variations (lines), item_extras (extras), AND item_addons (composer-driven menu_formule + bowl meat/sauce). G5-F-002 attests addons silently dropped on current HTML receipt — ESC/POS migration MUST not perpetuate.",
+      "Fiscal totals: subtotal_without_tax + each tax_lines entry (tax_name + tax_rate + base_ht + tax_amount) + discount + delivery_charge (if DELIVERY) + grand total",
+      "Payment breakdown: per-tranche method label + amount + change (cash) — currently buildPaymentsBreakdown via posReceiptBuilder.js",
+      "DUPLICATA marker if receipt_print_count >= 2 (Wave Q-3 wired client-side)",
+      "REMBOURSEMENT marker if parent_order_id > 0 (G5-F-001 attests parent_order_id NOT exposed by OrderDetailsResource — dead UI; ESC/POS migration MUST require G5-F-001 heal first)",
+      "NF525 footer: fiscal_sequence_no + audit_chain_signature + Z-report ref (nf525FooterLines in current template)",
+      "FR canonical currency `12,50 €` (comma + nbsp + €). G5-F-003 attests current HTML prints `12.50€` (period, no nbsp) — divergence with PaymentComponent. ESC/POS migration MUST canonicalize at the same call site (use AppLibrary heal path A — SSOT) so all surfaces converge."
+    ],
+    "duplicata_status": "GREEN — ReceiptDuplicataMarker.vue + receipt_print_count + audit_logs.action='pos.receipt.reprint' all wired (Wave Q-3). Re-print is the cashier-driven re-render of the same #receiptModal. ESC/POS migration: pass same flag to printReceipt(order, ['duplicata' => $count>=2]).",
+    "remboursement_status": "RED (ATTEST G5-F-001 P0) — UI marker present but parent_order_id field NEVER serialized by OrderDetailsResource. ESC/POS migration is BLOCKED on G5-F-001 heal landing first (otherwise refunds print as normal sales on thermal hardware too).",
+    "reproducibility": "GREEN — receipt_print_count is the ledger of how many times receipt was issued. Re-print from PosOrdersTrackerComponent (button :data-testid=`tracker-reprint-${order.id}`) fetches full order via /admin/pos/orders/{id} and re-opens #receiptModal. Same data, regenerated DOM. Customer can request re-print anytime (NF525 Article 286-I-3 bis evidence preservation)."
+  },
+  "print_queue_under_load": {
+    "scenario": "5 simultaneous prints during rush (1 client receipt + 1 kitchen ticket + 1 reprint + 1 refund REMBOURSEMENT + 1 cash-drawer kick)",
+    "browser_path": "window.print() is synchronous-modal-per-call. 5 prints = 5 OS dialog confirmations serially (assuming default browser behavior; no batched print API). Cashier physically clicks Print 5 times. Time cost: ~3-5s per dialog × 5 = 15-25s of cashier attention. During this window, the POS tab is BLOCKED — no cart edits, no next-order start. CRITICAL OPERATIONAL FRICTION.",
+    "escpos_path_if_wired": "5 calls to sendRaw within ms of each other → 5 sequential fsockopen calls on potentially the same printer host. Without a per-printer mutex, the second fsockopen could race the first if the printer accepts only one TCP connection (most ESC/POS printers do). Mitigation: add Cache::lock('printer:'.$printer->id, 5) wrapper around sendRaw, OR push to a low queue with a per-printer worker.",
+    "verdict": "Browser path: AMBER operational friction (1+OS click per receipt × N). ESC/POS-day MUST add per-printer mutex; otherwise socket race possible.",
+    "v1_local_acceptable": "Yes — Le Cayenne single-box, single cashier station, rush probably <5 simultaneous receipts per minute. Operational friction is tolerable. NOT acceptable for V2 SaaS multi-station rush."
+  },
+  "migration_path_to_escpos": {
+    "blocking_prereqs": [
+      "G5-F-001 heal: OrderDetailsResource MUST expose parent_order_id + parent_order_serial_no for REMBOURSEMENT marker to fire (PHP path or HTML path equally affected).",
+      "G5-F-002 heal: composition_snapshot.addons MUST be rendered on receipt (NF525 §V). Both HTML and ESC/POS paths need a single source of truth — see L1.2-F-03 below.",
+      "G5-F-003 heal: AppLibrary::currencyAmountFormat to emit `12,50 €` canonical (Path A SSOT recommended). All surfaces converge.",
+      "H6-F-002 heal: EscPosCommandBuilder textLine/centerLine/lineKV MUST call encodeForPrinter() before sanitize(). Currently latent because the ESC/POS receipt path is dead; activates the moment printReceipt() lands."
+    ],
+    "checklist_when_owner_branches_printer": [
+      "STEP 1: Verify above 4 prereqs landed and have green sentinels (G5-F-001 ResourceTest, G5-F-002 Vitest mount, G5-F-003 PHPUnit currency assert, H6-F-002 ::textLineForTest assert).",
+      "STEP 2: Add EscPosPrinterService::printReceipt(Order $order, array $options = []): array. Renders header → composition (variations + extras + addons) → totals → payments → DUPLICATA flag → REMBOURSEMENT flag → NF525 footer → feed(3) → cut. Returns {success, error?, bytes_sent}.",
+      "STEP 3: Add EscPosPrinterService::printKitchenTicket(Order $order, ?string $station = null) for kitchen-station-specific tickets (mirror current HTML kitchen template).",
+      "STEP 4: Replace ReceiptComponent.handlePrintClientClick chain: instead of POST→DB-increment→window.print(), invert to POST→backend-calls-printReceipt→IF success THEN increment+audit. Fixes G5-F-004 P2 semantic over-count.",
+      "STEP 5: Per-printer width: read $printer->width_chars in printReceipt (32 for 58mm, 48 for 80mm). DOM ReceiptComponent paperWidthMm computed from same width_chars (32→58mm, 48→80mm). Single source of truth.",
+      "STEP 6: Per-printer code_page from $printer->options['code_page'] (already in model; default 19 / CP858).",
+      "STEP 7: Wrap EscPosPrinterService::sendRaw in Cache::lock('printer:'.$printer->id, 5)->block(3) to serialize concurrent prints on same socket.",
+      "STEP 8: Extend TcpPrinterTransport with queryStatus(Printer) → DLE EOT n=4 (paper status) parse response → surface to admin diagnostic ('Paper LOW' / 'Cover OPEN' / 'OK'). Optional V1.0.1; nice-to-have V1.",
+      "STEP 9: Wire CASH payment success → automatic drawer kick (EscPosPrinterService::openDrawer already wired and callable from PaymentService::confirmCounterPayment).",
+      "STEP 10: Mock simulator for tests = NullPrinterTransport (ALREADY EXISTS — capture bytes for assertions, see PrinterServiceTest.test_test_print_returns_true_and_captures_escpos_payload). No new infra needed.",
+      "STEP 11: Idempotency middleware on /print-receipt route is ALREADY wired (routes/api.php:881). Preserve.",
+      "STEP 12: Decision: deprecate resources/js/helpers/kioskPrinter.js JS ESC/POS builder OR keep for Electron-bridge kiosk path. Recommend KEEP for kiosk (Electron-native printer direct via window.borne.printEscPos is faster than backend-roundtrip), but ENFORCE feature-parity tests between PHP and JS builders to prevent silent divergence (NEW Vitest+PHPUnit twin sentinel)."
+    ],
+    "rollback_plan": "If printReceipt fails in production, the existing browser-print path remains intact. Add a feature flag config('printing.use_escpos_direct', false). When false, fall through to current vue3-print-nb + window.print. Toggle-able without code redeploy. Safe staged rollout: Le Cayenne dev printer → 1 day soak → Le Cayenne live."
+  },
+  "findings": [
+    {
+      "id": "L1.2-ATTEST-G5-F-001",
+      "type": "ATTEST_PRIOR",
+      "severity": "P0",
+      "prior_id": "G5-F-001",
+      "title": "ReceiptRemboursementMarker dead UI — parent_order_id not exposed by OrderDetailsResource",
+      "status_2026_05_24": "UNCHANGED — verified via re-read of app/Http/Resources/OrderDetailsResource.php (no parent_order_id key) + ReceiptRemboursementMarker.vue L44-49 conditional. Refund-counter-entry receipts still print identically to normal sale receipts.",
+      "phase_l_impact": "Blocks ESC/POS migration — printReceipt() cannot render REMBOURSEMENT marker because the source field is not in the payload. Fix this first."
+    },
+    {
+      "id": "L1.2-ATTEST-G5-F-002",
+      "type": "ATTEST_PRIOR",
+      "severity": "P1",
+      "prior_id": "G5-F-002",
+      "title": "composition_snapshot.addons silently dropped from receipt template",
+      "status_2026_05_24": "UNCHANGED — ReceiptComponent.vue L122-148 now DOES render addons via receiptAddonsFor + a v-for loop (G2-HEAL-03 / G5-F-002 P1 2026-05-23 comment at L138 + L501-519). VERIFY against prior phase report: HEAL appears to have LANDED in commit chain post-G5 (look at L140-148 addon rendering block). Re-attest at L1.2 round-2 — current state may be GREEN.",
+      "verification_needed": "Run a Vitest mount of ReceiptComponent with item.item_addons populated and assert addon names visible in DOM. If GREEN, downgrade this attestation.",
+      "phase_l_impact": "If HTML path is healed, ESC/POS migration just needs to mirror the same composition-snapshot resolution server-side (see CompositionSnapshotBuilder::buildAddons)."
+    },
+    {
+      "id": "L1.2-ATTEST-G5-F-003",
+      "type": "ATTEST_PRIOR",
+      "severity": "P1",
+      "prior_id": "G5-F-003",
+      "title": "FR canonical currency `12,50 €` violated on printed receipt — prints `12.50€`",
+      "status_2026_05_24": "UNCHANGED at the AppLibrary::currencyAmountFormat layer (uses period + no nbsp). PaymentComponent (D3 LOCK_PAY) uses canonical helper. Divergence persists.",
+      "phase_l_impact": "ESC/POS migration MUST converge by going Path A (SSOT in AppLibrary). Otherwise PHP printReceipt re-implements third currency formatter, multiplying drift surface."
+    },
+    {
+      "id": "L1.2-ATTEST-G5-F-004",
+      "type": "ATTEST_PRIOR",
+      "severity": "P2",
+      "prior_id": "G5-F-004",
+      "title": "DUPLICATA semantic over-counts when first browser-print silently fails",
+      "status_2026_05_24": "UNCHANGED — PosReceiptPrintController::increment writes count + audit BEFORE the print attempt. ESC/POS migration FIXES this by inverting order (print → THEN increment+audit on success).",
+      "phase_l_impact": "Step 4 of migration checklist resolves this. V1.0.2 backlog only — V1 LOCAL acceptable per advisor 'document the contract' option."
+    },
+    {
+      "id": "L1.2-ATTEST-H6-F-002",
+      "type": "ATTEST_PRIOR",
+      "severity": "P2",
+      "prior_id": "H6-F-002",
+      "title": "EscPosCommandBuilder::encodeForPrinter is dead code — latent mojibake on accents",
+      "status_2026_05_24": "UNCHANGED — verified: grep `encodeForPrinter` returns ONLY (a) the method definition at L87 and (b) the unit test PrinterServiceTest::test_encode_for_printer_returns_single_byte_string at L112-123. Zero callers in textLine/centerLine/lineKV/sanitize. Currently DORMANT because receipt printing is browser-driven (G5-F-001 architecture confirmed). Latency activates instantly when ESC/POS path lands.",
+      "phase_l_impact": "Prereq #4 of migration checklist. testPrint partially-healed (calls selectCodePage 19 but not encodeForPrinter) — same activation curve: ASCII-only test strings mask it today, but a non-ASCII printer.name in admin UI would already print mojibake on physical hardware via the existing testPrint route.",
+      "v102_sentinel_recommended": "PrinterServiceTest::test_test_print_payload_transcodes_accents → factory Printer with name='Cafétéria' + assert iconv-encoded bytes appear in transport->sent[0]"
+    },
+    {
+      "id": "L1.2-F-01",
+      "type": "NEW_DELTA",
+      "severity": "P2",
+      "title": "ReceiptComponent paperWidthMm HARDCODED 58 — diverges from Printer.width_chars model field",
+      "evidence": "ReceiptComponent.vue:432 `paperWidthMm: function () { return 58; }` returns a literal constant, not derived from any printer config. CSS @media print at L628-632 hardcodes 58mm/80mm classes. Printer model fillable.width_chars (default 48 per PrinterServiceTest.printerData = 80mm). EscPosCommandBuilder respects width_chars param. The HTML print path and a future ESC/POS path WOULD render at different widths for the same logical receipt unless this is unified.",
+      "current_blast_radius": "Le Cayenne LOCAL dev DB has ZERO printer rows verified 2026-05-24 (DB::table('printers')->get() = []). Le Cayenne LIVE may have a printer seeded — verify before ESC/POS migration. If LIVE printer is 80mm but HTML path clamps to 58mm via CSS, current physical receipts already render in left-58mm strip of 80mm paper.",
+      "heal_recommendation": "Make ReceiptComponent.paperWidthMm a computed reading from the operator's branch default-printer width_chars (32→58, 48→80). Falls back to 58 if no printer row. Same source feeds both DOM @media print rule and future printReceipt(). ~20 LOC, no frozen-zone touch.",
+      "phase_l_impact": "Not a V1 blocker (HTML clamp visually masks the issue; physical receipts still emit). Resolve as part of ESC/POS migration STEP 5."
+    },
+    {
+      "id": "L1.2-F-02",
+      "type": "NEW_DELTA",
+      "severity": "INFO",
+      "title": "Two divergent ESC/POS builders (PHP EscPosCommandBuilder + JS kioskPrinter.js) — silent drift risk",
+      "evidence": "PHP EscPosCommandBuilder.php (backend, used by testPrint + openDrawer): default width 48, sanitize strips control chars only, doubleSize emits GS!\\x11, CUT = GS V\\x00. JS kioskPrinter.js (kiosk Electron bridge): RECEIPT_WIDTH=32, no sanitization, DOUBLE_SIZE = ESC!\\x30, CUT = GS V\\x00. Both targeting same family of ESC/POS thermal printers but no parity tests, no shared contract.",
+      "current_blast_radius": "ZERO — kiosk uses Electron-direct path (window.borne.printEscPos) which only runs on real kiosk hardware; POS uses browser HTML path. No customer sees both surfaces today.",
+      "activation_trigger": "If owner unifies receipt path through PHP backend (recommended in migration checklist STEP 12), JS builder becomes dead code OR remains for Electron-kiosk-only with documented divergence. If both stay live, every receipt format tweak must land in BOTH places (drift surface).",
+      "heal_recommendation": "ESC/POS-day decision: (A) Keep JS for kiosk Electron path (faster IPC), add a twin-sentinel test that snapshots PHP-emitted bytes vs JS-emitted bytes for the same logical receipt fixture and asserts byte-equivalence. (B) Send kiosk receipts through backend printReceipt API (slower but converges to ONE builder). Recommend (A) for V1 (preserves kiosk speed) + (B) as V2 SaaS direction. V1.0.2 backlog.",
+      "phase_l_impact": "Strategic flag for owner; not a code change needed today."
+    },
+    {
+      "id": "L1.2-F-03",
+      "type": "NEW_DELTA",
+      "severity": "INFO",
+      "title": "Receipt rendering currently lives in Vue templates — ESC/POS-day needs server-side equivalent extraction",
+      "evidence": "All receipt content (header, composition with addons rendering G2-HEAL-03 logic, payment breakdown, NF525 footer, REMBOURSEMENT, DUPLICATA) lives in ReceiptComponent.vue + ReceiptDuplicataMarker.vue + ReceiptRemboursementMarker.vue + posReceiptBuilder.js. Backend ReceiptDataService.php exists and is read by tests (per G5 files_examined) but is NOT the source of truth for rendering — Vue templates are.",
+      "activation_trigger": "ESC/POS-day printReceipt() needs to assemble the SAME content server-side from an Order. Without extracting the layout logic into a shared service, we'd re-implement (drift) OR pre-render the Vue template to a string and parse (brittle).",
+      "heal_recommendation": "Pre-migration refactor: extract ALL rendering logic from posReceiptBuilder.js + ReceiptComponent.vue computeds into app/Services/Receipt/ReceiptRenderer.php with two render methods: renderHtml(Order): array (returns structured DTO consumed by Vue) and renderEscPos(Order, int $widthChars, ?int $codePage): string (returns ESC/POS bytes). Single SSOT for receipt layout. Drift between HTML and ESC/POS becomes impossible (one source). ~150-200 LOC migration, frozen-zone-adjacent assessment needed (ReceiptDataService is not in FROZEN_FILES per CLAUDE.md §7).",
+      "phase_l_impact": "Recommended pre-ESC/POS refactor. Without it, every receipt content tweak requires touching TWO codebases."
+    },
+    {
+      "id": "L1.2-F-04",
+      "type": "NEW_DELTA",
+      "severity": "INFO",
+      "title": "TcpPrinterTransport is one-way (fwrite + close) — cannot query device status, cannot detect paper-out / cover-open even with ESC/POS",
+      "evidence": "TcpPrinterTransport.php L24-43: @fsockopen 2.0s timeout → stream_set_timeout 2s → @fwrite → @fclose. Returns true if all bytes written. ZERO response read. ESC/POS DLE EOT (real-time status query, n=1/2/3/4 for printer/offline/error/paper status) is NOT implemented.",
+      "current_blast_radius": "ZERO — receipt path is browser-driven, transport unused for receipts. Only testPrint + openDrawer use it. Both are one-way commands.",
+      "activation_trigger": "Once printReceipt() lands and ops want admin observability ('Le Cayenne KDS station printer paper LOW'), the transport must be extended with bi-directional query support: open socket → fwrite DLE EOT n=4 → fread 1 byte → parse bit-mask → return ['paper'=>'low|out|ok', 'cover'=>'open|closed', 'offline'=>bool].",
+      "heal_recommendation": "V1.0.2 backlog: extend PrinterTransportInterface with `query(string $command, array $config, int $timeoutMs = 1000): ?string`. TcpPrinterTransport implements via fsockopen + fwrite + fread. NullPrinterTransport returns canned values for tests. EscPosPrinterService::queryStatus(Printer) wraps with DLE EOT semantics. Wire into SyncOverviewController dashboard (alongside ws:heartbeat from K1-F-02) for live printer-health.",
+      "phase_l_impact": "Defer to V1.0.2. V1 LOCAL acceptable to rely on cashier visual confirmation."
+    }
+  ],
+  "top_3_printer_concerns": [
+    "1. P0 BLOCKING ESC/POS MIGRATION: G5-F-001 — OrderDetailsResource does NOT expose parent_order_id, so REMBOURSEMENT marker (HTML and future ESC/POS) cannot render on refund-counter-entry receipts. F2-HEAL-03 NF525 visual distinction is non-functional. Must heal before either (a) live operation under refunds OR (b) ESC/POS-day migration.",
+    "2. P1 SEMANTIC: G5-F-003 — receipt prints `12.50€` while PaymentComponent shows `12,50 €` canonical FR format. Same caisse, two formats. ESC/POS migration is the perfect forcing function to converge via AppLibrary Path A (SSOT). Fiscal auditor flag risk + customer perception risk. V1.0.1.",
+    "3. P2 LATENT MIGRATION-DAY TRAP: H6-F-002 — EscPosCommandBuilder::encodeForPrinter (CP858 iconv TRANSLIT) is defined but ZERO callers. textLine/centerLine/lineKV pass UTF-8 directly. The moment owner branches a real thermal printer AND owner wires printReceipt() through the existing builders, every accented item name (`Suppléments`, `Bol Mariné`, `Algérienne`) will print as `Ã©` mojibake on customer tickets. Pre-empt by wiring encodeForPrinter into the three text methods BEFORE the migration lands."
+  ],
+  "migration_checklist_escpos_day_consolidated": [
+    "PREREQ-1: Heal G5-F-001 (parent_order_id in OrderDetailsResource) — P0 NF525.",
+    "PREREQ-2: Verify G5-F-002 healed (addons rendered in ReceiptComponent) — verify via Vitest mount + Playwright capture.",
+    "PREREQ-3: Heal G5-F-003 (AppLibrary canonical FR currency `12,50 €` SSOT Path A) — P1.",
+    "PREREQ-4: Heal H6-F-002 (wire encodeForPrinter into textLine/centerLine/lineKV + sentinel test) — P2 pre-emptive.",
+    "PREREQ-5 (NEW L1.2): Refactor receipt layout into app/Services/Receipt/ReceiptRenderer.php SSOT (HTML DTO + ESC/POS bytes from same source).",
+    "STEP-1: Add EscPosPrinterService::printReceipt(Order $order, array $options = []): array using ReceiptRenderer::renderEscPos.",
+    "STEP-2: Add EscPosPrinterService::printKitchenTicket(Order $order, ?string $station = null) similarly.",
+    "STEP-3: Invert PosReceiptPrintController flow: call printReceipt FIRST, THEN increment receipt_print_count + emit audit on success — fixes G5-F-004 P2 semantic.",
+    "STEP-4: ReceiptComponent.paperWidthMm = computed from operator branch default-printer width_chars — fixes L1.2-F-01.",
+    "STEP-5: Per-printer code_page from $printer->options['code_page'] (already in model).",
+    "STEP-6: Cache::lock('printer:'.$printer->id, 5)->block(3) around sendRaw — prevents socket race on rush.",
+    "STEP-7: Extend TcpPrinterTransport with query() method — DLE EOT n=4 paper status (V1.0.1 nice-to-have).",
+    "STEP-8: Wire CASH payment success → automatic drawer kick (already callable from PaymentService).",
+    "STEP-9: Add config('printing.use_escpos_direct', false) feature flag for staged rollout / rollback.",
+    "STEP-10: NullPrinterTransport mock simulator ALREADY EXISTS (PrinterServiceTest pattern) — no new infra needed.",
+    "STEP-11: Twin-sentinel test PHP-EscPosBytes vs JS-EscPosBytes for same logical receipt — L1.2-F-02 anti-drift.",
+    "STEP-12: Operational runbook entry: if owner runs an 80mm printer, ensure Printer.width_chars=48 + corresponding @media print CSS override; if 58mm, width_chars=32 + 58mm CSS."
+  ],
+  "nf525_chain_attestation": {
+    "audit_logs_row_count": 1,
+    "last_hash": "b067f76785040cbfe883840a1ba7bb2b5ff773e1912f8a88f13947e377eacba8",
+    "printers_row_count": 0,
+    "captured_at": "2026-05-24",
+    "method": "php artisan tinker --execute DB::table('audit_logs')->count() + ->latest('id')->value('current_hash'); DB::table('printers')->get(); executed by L.1.2 agent immediately before writing this file.",
+    "note": "Le Cayenne LOCAL dev DB is a near-empty fixture (audit_logs=1, printers=0). NF525 chain bit-identical to pre-L.1.2 read (L.1.2 is read-only static cascade audit — zero DB writes, zero file modifications outside this findings JSON). For production Le Cayenne LIVE box, separate attestation needed (printers count should be >=1 for the receipt station + any kitchen stations)."
+  },
+  "frozen_zone_diff": "0 lines (read-only static audit, no patches applied). EscPosPrinterService, EscPosCommandBuilder, PrinterTransports, PrinterController, PosReceiptPrintController, ReceiptComponent.vue, ReceiptDuplicataMarker.vue, ReceiptRemboursementMarker.vue, kioskPrinter.js, kioskHardware.js — none are in FROZEN_FILES per CLAUDE.md §7. POS Vanilla JS wizard (public/js/pos-wizard.js — frozen) was NOT touched (not relevant to receipts).",
+  "verdict": "AMBER",
+  "verdict_reasoning": "AMBER per advisor framing: current browser-print state FUNCTIONS for V1 LOCAL Le Cayenne with known documented semantic gaps (G5-F-001 P0 REMBOURSEMENT dead UI being the most material) — but is NOT a NEW V1 ship-blocker introduced by L.1.2. RED would mean a fresh blocker; we have none. GREEN would mean the printer surface is production-perfect; G5 already attests it isn't. The single P0 (G5-F-001) is the only blocker, and it predates L.1.2. The 4 NEW deltas this phase contributes (L1.2-F-01 hardcoded width, L1.2-F-02 dual builders, L1.2-F-03 SSOT receipt renderer, L1.2-F-04 one-way transport) are all migration-day concerns, not V1 ship blockers. Migration checklist 5 PREREQs + 12 STEPS provided."
+}

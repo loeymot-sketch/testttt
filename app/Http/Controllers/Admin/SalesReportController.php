@@ -34,7 +34,13 @@ class SalesReportController extends AdminController
         $this->orderService = $order;
         $this->companyService = $companyService;
         $this->themeService  = $themeService;
-        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf');
+        // [REP-AUTHZ-01 heal 2026-06-01 · corrigé 2026-07-18 audit intelligence P1-5]
+        // Gate la méthode qui sert GET /admin/sales-report/overview (l'agrégat CA).
+        // ->only() filtre par NOM DE MÉTHODE : le heal du 2026-06-01 avait écrit
+        // 'overview' (le segment d'URI) alors que la vraie méthode est
+        // `salesReportOverview` → le middleware n'était JAMAIS appliqué et l'agrégat
+        // restait lisible par tout staff auth:sanctum sans `sales-report`.
+        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'salesReportOverview');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -58,11 +64,29 @@ class SalesReportController extends AdminController
     public function pdf(PaginateRequest $request): mixed
     {
         try {
+            // [ULTRA-LOOP R1 P1 2026-07-07 — PDF tronqué à 10 lignes] L'UI envoie
+            // paginate=1&per_page=10 ; OrderService::list voit paginate==1 → ->paginate(10),
+            // donc le blade n'itérait QUE la 1re page ET le "Total" (agrégé dans la boucle
+            // @foreach) sous-déclarait massivement le CA (ex. 38 522,62 € réels affichés
+            // 6,70 €). On force un fetch complet — miroir exact de SalesReportExport:30.
+            $request->merge(['paginate' => 0]);
             $company = $this->companyService->list();
             $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
             $copyright   = Settings::group('site')->get('site_copyright');
             $orders = $this->orderService->list($request);
 
+            // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] Régression du fix R1 : paginate=0
+            // sans filtre de date force le rendu de ~2850 commandes → dompdf épuise la mémoire
+            // (PHP Error fatale non attrapée par catch(Exception) → 500 brut). On coupe AVANT
+            // le rendu ; les rapports datés (usage normal) passent, le total reste exact.
+            $maxRows = (int) config('report.pdf_max_rows', 2000);
+            if ($orders->count() > $maxRows) {
+                return response([
+                    'status' => false,
+                    'message' => 'Trop de lignes pour un export PDF ('.$orders->count().' lignes). '
+                        .'Affinez la période avec un filtre de date.',
+                ], 422);
+            }
 
             $pdf = Pdf::loadView('pdf.sales_report', compact('company', 'theme_logo', 'orders', 'copyright'))
                 ->setPaper('a4');

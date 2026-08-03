@@ -1,0 +1,7 @@
+[
+  {
+    "status": 403,
+    "url": "http://127.0.0.1:8000/api/admin/kds-order/sync?since=2026-05-25T10%3A41%3A01.394Z&branch_id=1&include_deleted=true",
+    "method": "GET"
+  }
+]

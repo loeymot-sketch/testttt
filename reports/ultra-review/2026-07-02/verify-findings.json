@@ -1,0 +1,477 @@
+{
+ "survivors": [
+  {
+   "severity": "P2",
+   "title": "Divulgation cross-compte non-authentifiée (téléphone + loyalty_code d'autrui) via /loyalty/register",
+   "file_line": "app/Http/Controllers/Frontend/LoyaltyController.php:131-143",
+   "reproduction": "Route POST /api/frontend/loyalty/register (routes/api.php:1435) est sous le groupe `['installed','apiKey','localization']` (routes/api.php:1267) SANS auth:sanctum — la clé apiKey (ApiKeyMiddleware.php:21, config app.api_key) est embarquée dans le JS client = publique. Le commentaire l.1429 confirme « /register kept public ». Dans register(), branche [AUDIT-P50-BUG8] l.131-143 : si `email` fourni existe déjà sur un AUTRE compte, retour HTTP 409 avec data.existing_loyalty_code + data.existing_phone AVANT tout save(). Repro (lecture seule, pas d'écriture DB car early-return) : `curl -s -H 'X-Api-Key:<clé JS publique>' -H 'Content-Type:application/json' -d '{\"phone\":\"0000000000\",\"email\":\"<email_victime>\"}' http://127.0.0.1:8766/api/frontend/loyalty/register` → 409 exposant le phone et le loyalty_code du titulaire de cet email.",
+   "evidence": "L.128-143 : `$existingByEmail = User::where('email',$email)->first(); if($existingByEmail && (!$user||$existingByEmail->id!==$user->id)) return 409 avec existing_loyalty_code => $existingByEmail->loyalty_code, existing_phone => $existingByEmail->phone`. Throttle:5,1 seulement — inefficace pour une cible unique connue (1 requête suffit). loyalty_code est l'identifiant de compte fidélité utilisé par check/add-points/redeem.",
+   "impact": "Un attaquant connaissant l'email d'un client (courant) récupère sans authentification son numéro de téléphone (donnée personnelle RGPD) et son loyalty_code. Fuite PII inter-compte + énumération d'emails. Atteignable en réseau (borne/web publics).",
+   "recommendation": "Scope-minimal : ne PAS renvoyer les données du compte tiers dans le 409. Remplacer le payload par un message générique (`code=EMAIL_EXISTS`, message d'invitation à se connecter) sans existing_loyalty_code ni existing_phone. Optionnellement gater /register derrière un vrai contexte kiosk (abilities:kiosk:order) comme le reste des routes loyalty.",
+   "confidence": "high",
+   "cluster": "sec-authz-idor",
+   "verdict": "DOWNGRADE",
+   "refuter_reason": "Repro is real and not covered by any guardrail. Confirmed by reading: routes/api.php:1435 registers POST /api/frontend/loyalty/register with only `throttle:5,1` (no auth:sanctum), under the `apiKey` group whose key is `MIX_API_KEY`/`API_KEY` (MIX_-prefixed → compiled into public client JS, so not a real auth barrier). validateRegistration requires only `phone`; `email` is nullable. LoyaltyController.php:131-143 early-returns HTTP 409 exposing `existing_loyalty_code` + `existing_phone` when the email belongs to a different account, before any save. Therefore an unauthenticated attacker who knows a victim's email obtains that victim's phone number + loyalty_code, plus an email-existence oracle — a genuine cross-account PII over-disclosure bug worth fixing (strip those two fields from the 409 body). However P1 is over-classed: it requires prior knowledge of the victim's exact email (targeted, not bulk harvest), is rate-limited to 5/min, and the leaked loyalty_code is not independently exploitable since check/add-points/redeem now require auth:sanctum. Leaked data is a phone number + loyalty code — PII, but no credentials, tokens, financial data, or account takeover. That impact = P2."
+  },
+  {
+   "severity": "P3",
+   "title": "Endpoints de lecture settings non gated par permission:settings (exposition config à tout staff authentifié)",
+   "file_line": "app/Http/Controllers/Admin/CompanyController.php:19 (+ SiteController:19, OrderSetupController:19, ThemeController:19, NotificationController:18)",
+   "reproduction": "Grep constructeurs : ces contrôleurs appliquent `middleware(['permission:settings'])->only('update')` uniquement — `index` reste couvert seulement par auth:sanctum du groupe admin (routes/api.php:281/302). Donc GET /api/admin/setting/company (etc.) est lisible par tout compte staff (POS Operator, Chef) sans permission settings.",
+   "evidence": "CompanyController.php:19 `->only('update')`. Comparaison : Mail/Sms/License/Kiosk/PaymentGateway/Transaction gèrent bien index (secrets/creds). Le clivage est délibéré (secrets protégés) mais company/site/order-setup/theme/notification exposent la config en lecture.",
+   "impact": "Fuite de configuration métier (non-secrète : coordonnées entreprise, réglages commande, thème) à des rôles staff non-admin. Pas de PII client ni secret. Mono-poste V1 = risque faible.",
+   "recommendation": "Ajouter `permission:settings` sur `index` de ces contrôleurs pour cohérence défense-en-profondeur, à l'image de Mail/Sms/License.",
+   "confidence": "high",
+   "cluster": "sec-authz-idor",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Real and reproducible. CompanyController.php:19, SiteController:19, OrderSetupController:19, ThemeController:18, NotificationController:18 all apply `middleware(['permission:settings'])->only('update')` — the `index()` read methods are NOT gated. The admin route group (routes/api.php:302) only carries `installed, apiKey, auth:sanctum, block_kiosk_token_admin, localization, throttle` — no `permission:settings` at group or route level for GET /api/admin/setting/company|site|order-setup|theme|notification (lines 335,340,345,444,459). So any authenticated non-kiosk staff token (POS Operator, Chef) can read these settings. Severity P3 is appropriate for the V1 LOCAL mono-poste envelope (single trusted operator, no real role separation on one box, no cloud). Caveat: NotificationController.index leaks FCM secrets (notification_fcm_api_key + service-account JSON via NotificationResource), which is worse than the finding's \"non-secret\" framing, but those cloud/push fields are unused in the no-cloud V1 model, so it stays a defense-in-depth read-authz gap rather than an escalatable leak."
+  },
+  {
+   "severity": "P3",
+   "title": "OrderHistoryController s'appuie sur abort_unless inline (pas de middleware constructeur) — non-gated par défaut pour toute nouvelle méthode",
+   "file_line": "app/Http/Controllers/Admin/OrderHistoryController.php:34-38,49-53,71-75",
+   "reproduction": "Le constructeur (l.34-38) appelle seulement parent::__construct() sans middleware permission. index() et show() portent chacun un abort_unless(can('pos-orders')||can('pos')) inline (l.49-53, l.71-75). Actuellement les 2 méthodes sont gardées.",
+   "evidence": "Aucun `$this->middleware(['permission:...'])` au constructeur. La sécurité repose entièrement sur des gardes inline dupliquées par méthode.",
+   "impact": "Aucune faille live (les 2 méthodes existantes sont gardées + cross-branch 403 unifié l.80-89). Mais toute méthode future ajoutée sans copier le garde serait non-autorisée par défaut = régression latente.",
+   "recommendation": "Déplacer le contrôle vers un `middleware(['permission:pos-orders|pos'])` au constructeur (fail-closed par défaut), en gardant la logique cross-branch inline sur show().",
+   "confidence": "high",
+   "cluster": "sec-authz-idor",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro tient exactement. OrderHistoryController::__construct (l.34-38) n'appelle que parent::__construct(), et AdminController::__construct (l.10-13) est vide — aucun middleware permission enregistré au niveau contrôleur. Les deux méthodes existantes portent bien un abort_unless(can('pos-orders')||can('pos')) inline (l.49-53 et l.71-75), donc elles SONT gardées ; show() ajoute la garde cross-branch 403 unifiée (l.80-89). Le finding lui-même reconnaît « aucune faille live » : c'est une observation d'hygiène/défense-en-profondeur (une méthode future ajoutée sans recopier la garde serait non-autorisée par défaut). C'est précisément le périmètre d'un P3, déjà à la sévérité plancher. Pas un faux-positif, pas sur-classé."
+  },
+  {
+   "severity": "P3",
+   "title": "Sidebar fail-open : userHasPermissionUrl() renvoie true si permission inconnue ou liste vide",
+   "file_line": "resources/js/components/layouts/backend/BackendMenuComponent.vue:235-248",
+   "reproduction": "Lecture directe : `userHasPermissionUrl(url)` retourne `true` si `!permissionUrl` (l.236-238), si `!permissions.length` (l.240-242), ou si aucune entrée ne matche l'URL (l.244-246).",
+   "evidence": "Trois branches renvoient true par défaut au lieu de masquer. Un module dont la clé permission n'est pas présente dans la liste normalisée apparaît dans la sidebar.",
+   "impact": "Purement cosmétique : le backend gate réellement chaque route (permission:settings/customers/etc. vérifié côté serveur — confirmé sur ~15 contrôleurs). Un lien visible mène à un 403 backend. Aucune donnée exposée.",
+   "recommendation": "Inverser le défaut (fail-closed : masquer si permission absente/inconnue) pour éviter des liens trompeurs, sans impact sécurité réel.",
+   "confidence": "medium",
+   "cluster": "sec-authz-idor",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Read BackendMenuComponent.vue:235-248 directly. userHasPermissionUrl() is fail-open exactly as described: returns true when !permissionUrl (l.236-238), when permissions list is empty (l.240-242), and when no entry matches the URL (l.244-246). Only returns access flag when an entry is found. This governs sidebar link visibility only (menuPathAllowed → filterMenuChildrenByPermission), not actual route access — backend controllers gate routes server-side via permission: middleware. So a stray visible link leads to a 403, no data exposure. P3 (cosmetic) is the correct severity; not a downgrade candidate since it's already the lowest actionable tier."
+  },
+  {
+   "severity": "P3",
+   "title": "Pattern catch→réponse renvoyant $exception->getMessage() brut (404 occurrences) — fuite possible de message interne/SQL",
+   "file_line": "app/Http/Controllers/Admin/OrderHistoryController.php:58,95 (pattern global 404 occurrences)",
+   "reproduction": "grep `exception->getMessage()], 422|...500` app/Http/Controllers = 404 occurrences. Ex. OrderHistoryController.php:58 `return response(['status'=>false,'message'=>$exception->getMessage()],422)`.",
+   "evidence": "Un QueryException non typé remonterait son message (SQL + valeurs liées) dans la réponse JSON, indépendamment d'APP_DEBUG.",
+   "impact": "Nécessite de provoquer une erreur DB en tant qu'admin authentifié → fuite d'un fragment SQL/message interne. Pas d'exposition non-authentifiée. Robustesse.",
+   "recommendation": "Logger l'exception détaillée et renvoyer un message générique en production (garde APP_DEBUG). Backlog qualité, non bloquant V1.",
+   "confidence": "medium",
+   "cluster": "sec-authz-idor",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro tient exactement: OrderHistoryController.php:58 et :95 renvoient `response(['status'=>false,'message'=>$exception->getMessage()],422)` bruts. Le pattern est global (grep = 101 lignes / 418 occurrences dans app/Http/Controllers ; finder disait 404, même ordre de grandeur). Sévérité P3 juste et honnêtement scopée: les deux méthodes sont gardées par abort_unless can('pos-orders')||can('pos') → il faut un admin AUTHENTIFIÉ pour atteindre le catch ; la fuite se limite au message d'exception (un QueryException peut contenir un fragment SQL), pas la stack ; aucune exposition non-authentifiée ; APP_DEBUG=false forcé par le boot guard NF525 en prod. Robustesse/defense-in-depth réelle mais mineure sur box V1 LOCAL mono-poste. Ne tombe dans aucun garde-fou (≠ PosOrderRequest ===, ≠ env(DEMO), ≠ data-hygiene, ≠ scale cloud)."
+  },
+  {
+   "severity": "P3",
+   "title": "Webhook Uber : échec terminal de traitement acquitté 200 sans alerte → commande payée perdue (une fois le canal live)",
+   "file_line": "app/Http/Controllers/Webhook/UberWebhookController.php:85-91",
+   "reproduction": "Read UberWebhookController.php:85-91. En cas d'exception dans createFromUber (ex. mapping item Uber non résolu, fetchOrder null), le catch écrit status='failed' + attempts+1 dans webhook_events, log Log::error, PUIS `return response()->json(['status'=>'error_logged'],200)`. Aucun canal d'alerte opérateur (KDS/caisse) n'est déclenché.",
+   "evidence": "Ligne 90 commente explicitement « 200 quand même : Uber rejouera ». Le replay re-tente (event.status='failed' ≠ 'processed' → ligne 55 laisse passer, ligne 58 !event=false → pas de ré-insert → retente createFromUber). Mais si Uber épuise ses retries, la commande PAYÉE reste status='failed' sans que personne en cuisine ne la voie. Aucun cron de reprise/alerte sur webhook_events.status='failed' n'a été trouvé.",
+   "impact": "Une commande Uber prépayée qui échoue au mapping ne parvient jamais au KDS → repas non préparé, client facturé par Uber, litige. Impact business réel dès l'activation (Production Access).",
+   "recommendation": "Ajouter une visibilité opérateur sur webhook_events.status='failed' (badge caisse/KDS ou cron d'alerte quotidien), et documenter le SLA de reprise. Scope-minimal : requête de supervision, pas de changement du flux 200.",
+   "confidence": "medium",
+   "cluster": "sec-webhook-secrets",
+   "verdict": "DOWNGRADE",
+   "refuter_reason": "Le comportement du code est réel et reproductible: le catch (UberWebhookController.php:85-91) marque webhook_events.status='failed' + attempts++, log Log::error, PUIS return 200 'error_logged'. Un 200 = ACK → Uber ne rejoue PAS (le commentaire ligne 89 « Uber rejouera » est faux). J'ai aussi vérifié le lane de récupération: foodking:webhook:retry-failed (Kernel.php:76, horaire) balaie tous les status=failed et dispatch ProcessWebhookEventJob, MAIS ce job (ProcessWebhookEventJob.php:77-81) n'a de handler que pour stripe/senangpay — 'uber_eats' tombe sur default=>null → markFailed('No DLQ handler') → l'ordre reste perdu et aucun canal KDS/caisse n'est alerté. Donc le fond du finding TIENT (pas REFUTED). MAIS P2 sur-classe: (1) le canal Uber n'est PAS live — Production Access en attente + signatureValid est fail-closed (return false si secret vide, l.159-161) → impact actuel NUL, aucun webhook n'est traitable; (2) c'est du code fondation explicitement marqué « À VALIDER EN LIVE une fois le Production Access accordé » (docblock l.25); (3) l'échec EST persisté dans un ledger interrogeable (webhook_events, error_message, attempts) + Log::error/canal fiscal pour triage. C'est un item de durcissement/observabilité go-live (backlog), pas un bug P2 qui affecte l'exploitation V1 LOCAL courante."
+  },
+  {
+   "severity": "P3",
+   "title": "CORS : supports_credentials=true + pattern loopback any-port actif aussi en prod",
+   "file_line": "config/cors.php:22-31",
+   "reproduction": "Read cors.php : allowed_origins_patterns ligne 26 `#^http://(localhost|127\\.0\\.0\\.1):\\d{2,5}$#`, supports_credentials=true ligne 31. Aucune garde d'environnement.",
+   "evidence": "NON exploitable à distance : le navigateur fixe l'Origin à la vraie page ; un site distant (evil.com) ne matche pas le pattern loopback → ACAO absent → réponse bloquée. Le pattern n'autorise que des pages réellement servies depuis 127.0.0.1/localhost = même box. Sur V1 LOCAL mono-poste = surfaces de l'opérateur. Auth API = Bearer Sanctum, pas cookie.",
+   "impact": "Nul en single-box. Deviendrait à resserrer en cutover cloud multi-instances.",
+   "recommendation": "Backlog cloud-prep : restreindre le pattern loopback à APP_ENV!=production. Aucune action V1.",
+   "confidence": "high",
+   "cluster": "sec-webhook-secrets",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro tient exactement : config/cors.php ligne 26 contient bien le pattern loopback any-port `#^http://(localhost|127\\.0\\.0\\.1):\\d{2,5}$#` dans allowed_origins_patterns, et ligne 31 `supports_credentials => true`, sans aucune garde d'environnement (app()->environment()). La sévérité P3 est juste : le finding reconnaît lui-même un impact NUL en single-box, et le pattern ne matche que loopback (localhost/127.0.0.1) — une origine loopback ne peut pas être exploitée cross-origin par un attaquant distant (elle résout vers la machine de la victime), donc le CORS credentialed est à risque quasi-nul même en cutover cloud. C'est exactement une note backlog cloud-prep, cohérente avec la classification P3 et les garde-fous (cloud/multi-tenant = au plus backlog, jamais P0/P1 V1)."
+  },
+  {
+   "severity": "P3",
+   "title": "ApiKeyMiddleware : comparaison === sur une clé publiée au bundle JS + code 400 au lieu de 401",
+   "file_line": "app/Http/Middleware/ApiKeyMiddleware.php:24-28",
+   "reproduction": "Read ApiKeyMiddleware.php:24 `$request->header('x-api-key') === $validApiKey`. config/app.php:63 api_key = MIX_API_KEY. .env.example:435 : « window.foodkingConfig.apiKey doit égaler MIX_API_KEY (injecté par master.blade.php) ».",
+   "evidence": "REQUALIFICATION : X-API-Key est un IDENTIFIANT d'application, pas un secret — sa valeur est compilée dans le bundle JS et exposée dans la page (foodkingConfig.apiKey). Une timing-attack est donc sans objet (rien à exfiltrer). L'auth réelle reste le Bearer Sanctum. Ligne 28 renvoie 400 (devrait être 401/403) = cosmétique.",
+   "impact": "Aucun impact sécurité réel. Confusion possible (traiter cette clé comme un secret).",
+   "recommendation": "Documenter que X-API-Key = identifiant d'app non-secret ; optionnellement passer le rejet en 401. Pas de hash_equals nécessaire.",
+   "confidence": "high",
+   "cluster": "sec-webhook-secrets",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro holds exactly as stated. ApiKeyMiddleware.php:24 uses strict `===` on `$request->header('x-api-key')` vs `config('app.api_key')`; line 28 returns HTTP 400 (not 401) on failure. config/app.php:63 sets api_key = MIX_API_KEY, and master.blade.php:146 injects `apiKey: @json((string) config('app.api_key'))` into `window.foodkingConfig`, so the key is deliberately shipped to the SPA bundle (confirmed by .env.example:435). Because the key is public by design, the `===`/400-vs-401 details carry no real security impact — this is a documentation/hygiene observation. P3 is the correct floor; the finder already classified it P3 and scoped the impact honestly, so severity is just."
+  },
+  {
+   "severity": "P3",
+   "title": "soketi.json committe des secrets placeholder (app-id/app-key/app-secret) réutilisés tels quels dans le .env dev",
+   "file_line": "soketi.json:6-15",
+   "reproduction": "git ls-files --error-unmatch soketi.json → tracké. Contenu : id='app-id', key='app-key', secret='app-secret'. .env local : PUSHER_APP_SECRET=app-secret, PUSHER_HOST=127.0.0.1, PUSHER_PORT=6001.",
+   "evidence": "soketi écoute sur 127.0.0.1:6001 (soketi.json:3) = loopback uniquement → exploiter le secret exige déjà un accès local à la box. .env N'EST PAS commité (gitignore:8, git ls-files → not tracked) donc aucun vrai secret n'est dans le repo ; seuls les placeholders de soketi.json le sont. .env.example:203 rappelle de définir un vrai secret.",
+   "impact": "Nul en single-box loopback. À vérifier au cutover : que le .env prod n'utilise pas littéralement 'app-secret'.",
+   "recommendation": "Backlog : checklist prod « PUSHER_APP_SECRET != app-secret » ; garder soketi.json en placeholders documentés.",
+   "confidence": "high",
+   "cluster": "sec-webhook-secrets",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro tient telle qu'énoncée : `git ls-files --error-unmatch soketi.json` → tracké ; contenu = id/key/secret = 'app-id'/'app-key'/'app-secret' (placeholders soketi standards, pas de vrais secrets) ; .env local (l.44-46) réutilise ces chaînes littérales + PUSHER_HOST=127.0.0.1 / PORT=6001. Le .env lui-même est gitignoré (l.8) donc seul soketi.json est committé. Impact réellement nul en V1 LOCAL mono-poste loopback (webhooks vides, appManager array). Sévérité P3 justifiée : ce sont des placeholders publics documentés, pas des credentials fuités ; le finding est correctement auto-scopé comme note de vérif au cutover cloud (« vérifier que le .env prod n'utilise pas littéralement app-secret »), pas un bug V1."
+  },
+  {
+   "severity": "P3",
+   "title": "verify() : si site_phone_verification=DISABLE, register() sans vérifier l'OTP (dépend d'un setting runtime)",
+   "file_line": "app/Http/Controllers/Auth/GuestSignupController.php:63-73",
+   "reproduction": "Read verify() l.63-70 : if Settings::group('site')->get('site_phone_verification')==DISABLE → supprime l'OTP et appelle register() sans otpManagerService->verify().",
+   "evidence": "Comportement piloté par un réglage owner (mode sans-friction). register() reste gardé par site_guest_login (l.52-54) et refuse les comptes non-invités (l.63-66 de register). Le token émis est scopé kiosk:order. Ce n'est pas un défaut de code mais une bascule métier.",
+   "impact": "Si DISABLE activé, n'importe quel numéro obtient un token invité (commande nourriture) sans OTP. Acceptable si choisi ; risqué si activé par erreur.",
+   "recommendation": "Documenter la sémantique du réglage ; vérifier la valeur par défaut prod (souhaitée ENABLE). Pas de changement de code V1.",
+   "confidence": "medium",
+   "cluster": "sec-webhook-secrets",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro holds at GuestSignupController.php:63-70. When Settings site_phone_verification == Activity::DISABLE, verify() deletes the OTP row (DB::table('otps')->where phone ->delete()) and calls register() directly, never invoking otpManagerService->verify(). OTP is only validated in the elseif ENABLE branch (l.71-73). So with DISABLE any phone yields a kiosk:order guest token without proving OTP possession. However this is a deliberate admin feature flag (phone verification opt-out), not a code bug — the risk is purely configuration-driven and the finding itself concedes \"acceptable si choisi\". P3 (config-awareness / documentation) is the correct and claimed ceiling; nothing warrants escalation."
+  },
+  {
+   "severity": "P3",
+   "title": "Le breakdown Z-report by_terminal / net_after_fees OMET tout le CA mono-mode + encaissement borne/comptoir (aucun OrderPayment écrit)",
+   "file_line": "app/Services/Fiscal/ZReportCashEnrichmentService.php:155-175 (+ docstring 139-141)",
+   "reproduction": "grep 'OrderPayment::create|new OrderPayment|orderPayments()->create' app/ → seuls SplitPaymentService.php et RefundWithCounterEntryService.php créent une ligne OrderPayment. PaymentService::confirmCounterPayment (l.390-401) ne crée QU'UNE Transaction, jamais d'OrderPayment. aggregateByTerminal (l.157-175) et enrich() (l.110-125, gross/net_after_fees) agrègent EXCLUSIVEMENT la table OrderPayment.",
+   "evidence": "confirmCounterPayment (flux Plan B borne + walk-in caisse, le flux V1 dominant) pose pos_payment_method/pos_received_amount + Transaction, mais AUCUN OrderPayment. Le POS mono-mode normal n'en crée pas non plus. Donc by_terminal.card_total/cash_total, fees_total et net_after_fees ne reflètent que les paiements SPLIT et les remboursements. La docstring l.139-141 affirme faussement que « les paiements COUNTER_DEFERRED apparaissent sous la row Sans TPE » — impossible sans ligne OrderPayment.",
+   "impact": "Le manager qui lit le Z enrichi voit un breakdown carte/espèces par TPE et un net-après-frais qui excluent la quasi-totalité des ventes V1 (borne + comptoir). Réconciliation compta trompeuse. NON bloquant fiscalement : la ventilation SCELLÉE (byMethod, ZReportService::applyOrderToTotals l.666 via pos_payment_method) ET la réconciliation caisse (aggregateForWindow l.53-91 via CashDrawerSession) sont, elles, correctes et indépendantes de ce trou — donc pas de corruption de chaîne HMAC ni de perte d'argent, seulement une vue secondaire runtime fausse.",
+   "recommendation": "Scope-minimal : soit (a) corriger la docstring l.139-141 pour refléter que by_terminal ne couvre que split/refund, soit (b) faire dériver by_terminal de pos_payment_method/total (comme byMethod) plutôt que d'OrderPayment pour inclure le mono-mode. Ne PAS toucher ZReportService (frozen) ni la chaîne scellée.",
+   "confidence": "high",
+   "cluster": "money-fiscal",
+   "verdict": "DOWNGRADE",
+   "refuter_reason": "Le MÉCANISME décrit est réel et reproductible : `aggregateByTerminal` (ZReportCashEnrichmentService.php:157-175) et `enrich` (l.110-125, gross/net_after_fees) agrègent EXCLUSIVEMENT la table `order_payments`. Or `grep 'OrderPayment::create'` sur app/ ne renvoie QUE SplitPaymentService.php:247 (multi-tender, et seulement si SPLIT_PAYMENT_ENABLED=true ET un `payment_breakdown` est fourni) et RefundWithCounterEntryService.php:204. `PaymentService::confirmCounterPayment` (l.390-401) — le chemin d'encaissement borne + comptoir différé, cœur du volume V1 — n'écrit QU'une `Transaction::firstOrCreate` + un `CashMovement`, JAMAIS d'OrderPayment ; de même le POS mono-tender legacy (OrderService.php:1260-1267) n'écrit pas d'OrderPayment quand split inactif. Donc le breakdown by_terminal omettrait effectivement ces ventes. MAIS la sévérité P2 repose sur un impact NON ATTEIGNABLE dans le working-tree courant : `enrich()`/`by_terminal`/`net_after_fees`/`aggregateByTerminal`/`persistForClosedReport` n'ont AUCUN consommateur de production — 0 route, 0 controller (ZReportController/DashboardController/CashSessionReportController ne l'appellent pas, seuls des COMMENTAIRES le citent), 0 blade, 0 Vue, 0 console command. Les seuls appels de `enrich()` sont dans tests/ (ZReportTerminalBreakdownTest, ZReportCashEnrichmentTest). Aucun manager ne peut donc « lire un Z enrichi trompeur » aujourd'hui : la vue n'est pas surfacée. Le finding concède déjà que la ventilation SCELLÉE (byMethod via pos_payment_method) et la réconciliation caisse (aggregateForWindow via CashDrawerSession) sont correctes et indépendantes de ce trou. Défaut LATENT réel dans du code non-câblé → P3 backlog (à corriger quand l'UI breakdown TPE sera branchée), pas P2 runtime."
+  },
+  {
+   "severity": "P3",
+   "title": "Montant CARTE saisi (commit 594eb92f5) non persisté dans une colonne structurée — écart message/commit vs code",
+   "file_line": "app/Services/PaymentService.php:341-343",
+   "reproduction": "Read PaymentService.php:341-343 → pos_received_amount = mode===CASH ? (received ?? total) : null. Pour mode=CARD, pos_received_amount=null. Le montant carte tapé n'atterrit QUE dans audit_logs.payload.received (l.412). La Transaction (l.397) enregistre amount=$locked->total, pas le montant tapé.",
+   "evidence": "Le message de commit 594eb92f5 affirme « pos_payment_method=CARD ; pos_received_amount=total » — faux : le code met null pour non-CASH. Si le caissier tape un montant carte ≠ total, il est silencieusement ignoré par la Transaction (=total) et par pos_received_amount (=null).",
+   "impact": "Aucune perte d'argent : la ventilation carte/espèces du Z scellé passe par pos_payment_method+total (correct, cf finding P2). Le montant carte tapé est purement décoratif (préremplit=total, confirmation). Seul le cas d'un montant carte partiel/erroné n'est pas capturé de façon requêtable (audit seulement).",
+   "recommendation": "Corriger le message de doc/commit OU, si le montant carte tapé doit servir la compta, le persister dans pos_received_amount aussi pour CARD (comme le laisse entendre le message). Décision owner requise ; scope-minimal, non frozen.",
+   "confidence": "high",
+   "cluster": "money-fiscal",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro holds exactly and severity P3 is correct (already the lowest actionable tier; no money impact, no fiscal risk). PaymentService.php:341-343 stores pos_received_amount=null for CARD (only received?? total for CASH). The typed card amount reaches only audit_logs.payload.received (l.412); Transaction.amount=total (l.397). Verified the sealed Z ventilation (ZReportService.php:666-667) keys off pos_payment_method + total TTC, NOT pos_received_amount — so the carte/espèces split is correct and there is zero accounting error. The commit 594eb92f5 message asserts \"pos_received_amount=total\" for card but only touched the Vue modal; the backend was untouched and persists null, so the message/code discrepancy is genuine. Consequence is purely traceability: the manually-typed card amount is not in a structured queryable column (audit-log only), and in this counter-collect flow the card amount always equals total anyway (no partial-card concept). Legitimate trivial P3 note, accurately scoped, not over-classified."
+  },
+  {
+   "severity": "P3",
+   "title": "Docblock OutboxBroadcastSwallowedEvent dit 'intentionally unwired' alors que l'event EST câblé à un listener",
+   "file_line": "app/Events/OutboxBroadcastSwallowedEvent.php:24-32",
+   "reproduction": "Read OutboxBroadcastSwallowedEvent.php:25-29 → « Intentionally **unwired** (no listener registered in EventServiceProvider) ». Puis `grep -n OutboxBroadcastSwallowedEvent app/Providers/EventServiceProvider.php` → l.327-329 : `OutboxBroadcastSwallowedEvent::class => [ EscalateOutboxBroadcastSwallowed::class ]` (commentaire l.322-326 : listener émet `Log::channel('fiscal')->critical`).",
+   "evidence": "L'event a bien un listener enregistré (EscalateOutboxBroadcastSwallowed) contrairement au StockDecrementFailedEvent dont il prétend copier la politique. Le docblock est stale (probablement antérieur au HEAL B.2 2026-05-19 qui a ajouté le wiring).",
+   "impact": "Trompeur en incident : un ops/agent lisant la classe croit qu'aucune alarme ne se déclenche sur un swallow de broadcast, alors qu'une alerte fiscal-critical existe. Aucun impact runtime (comment mort).",
+   "recommendation": "Corriger le docblock l.24-32 : remplacer « Intentionally unwired (no listener registered) » par la réalité (listener EscalateOutboxBroadcastSwallowed enregistré depuis HEAL B.2). Aucun changement de code.",
+   "confidence": "high",
+   "cluster": "sync-bus",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Docblock contradiction is real and reproduces exactly. OutboxBroadcastSwallowedEvent.php:25-26 states \"Intentionally **unwired** (no listener registered in EventServiceProvider)\", yet EventServiceProvider.php lines 327-328 register OutboxBroadcastSwallowedEvent::class => [EscalateOutboxBroadcastSwallowed::class]. Line 33 of the provider even documents the wiring as \"[HEAL B.2 2026-05-19] OutboxBroadcastSwallowedEvent listener registration\", confirming the event was wired after the docblock was written and the docblock was never updated. Pure documentation drift: no runtime impact (dead comment), but genuinely misleading to an ops/agent reading the class during an incident who would wrongly conclude no alarm fires on a broadcast swallow when in fact EscalateOutboxBroadcastSwallowed emits Log::channel('fiscal')->critical. P3 (documentation) is the correct severity — not a bug, no code path affected."
+  },
+  {
+   "severity": "P3",
+   "title": "SYNC_CONTRACT.md : cadence OSS mur public périmée (dit 60s, réel 5s override)",
+   "file_line": "SYNC_CONTRACT.md:38,46",
+   "reproduction": "SYNC_CONTRACT.md:38 « OSS public wall … OssSyncService.js:9 intervalMsWhenConnected: 60_000 » et :46 « OSS public wall: up to ~60 s stale ». Read PreparingAndReadyComponent.vue:266-270 : `const isPublicWall = this.authBranchId() <= 0; ossSyncService.start({ … ...(isPublicWall ? { options:{ intervalMsWhenConnected: 5_000 } } : {}) })`. Le commentaire TRAP-4 (l.255-265) explique l'override ajouté pour tuer le lag 60s.",
+   "evidence": "Le mur public poll réellement à 5_000ms (override le défaut 60_000ms d'OssSyncService), pas 60s. SYNC_CONTRACT décrit encore l'ancien comportement + le classe comme point faible client.",
+   "impact": "Un agent KDS/CAISSE dérivant le contrat depuis le doc (objectif §Acceptance l.56) conclut à tort ~60s de latence OSS ; peut re-'corriger' un lag déjà résolu ou mal dimensionner un budget SYNC-2.",
+   "recommendation": "Mettre à jour SYNC_CONTRACT.md l.38/46 : mur public OSS = poll 5_000ms (override PreparingAndReadyComponent.vue:266-270), staff authed reste 60_000ms. Doc-only.",
+   "confidence": "high",
+   "cluster": "sync-bus",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "SYNC_CONTRACT.md:38 states the OSS public wall polls at `OssSyncService.js:9 intervalMsWhenConnected: 60_000` and :46 states \"OSS public wall: up to ~60 s stale ... flagged as a customer-experience weak point\". The actual working-tree code contradicts this: PreparingAndReadyComponent.vue:266-270 sets `isPublicWall = authBranchId()<=0` and passes `options: { intervalMsWhenConnected: 5_000 }` specifically for the public wall (the 60_000 default is kept only for authed staff, branchId>0, per the comment at l.265). The TRAP-4 comment (l.255-265, dated 2026-06-04) explicitly documents that the 5s override was added to kill exactly the ~60s lag the doc still describes as an open weak point — i.e. the doc predates the fix and is stale. The finding's cited file:lines and behavior all reproduce. Not caught by any guard-rail (it is a doc-drift finding on committed files, not test-DB residue, not frozen-zone, not the OrderRequest/DeliveryFee working-tree carve-outs). P3 is the right severity: doc-only staleness, no runtime bug, but a real cross-agent misinformation risk per the doc's own Acceptance clause (l.56 — agents must agree on degradation cadence \"without opening the code\")."
+  },
+  {
+   "severity": "P3",
+   "title": "SYNC_CONTRACT.md : cadence de fallback KDS (~30s) et suppression du bandeau périmées",
+   "file_line": "SYNC_CONTRACT.md:49,51",
+   "reproduction": "SYNC_CONTRACT.md:49 « screens fall back to poll (KDS ~30s, admin ~60s) ». Read KitchenDisplaySystemComponent.vue:1892-1899 : `_pollingInterval(){ … return this.wsConnected ? 60000 : 5000 }` → fallback WS-down = 5s, pas 30s. SYNC_CONTRACT:51 « KDS polling banner suppressed when APP_ENV=local (1314-1321) » ; Read même composant l.1284-1314 kdsSuppressFallbackBanner : `return env === 'local' && window.FK_KDS_SHOW_FALLBACK_BANNER === false` — le commentaire l.1305-1308 précise que le wiring du flag est DIFFÉRÉ (flag undefined → bandeau VISIBLE par défaut).",
+   "evidence": "Deux dérives : (1) fallback KDS réel = 5s (pas 30s) ; (2) le bandeau 'mode polling' n'est plus supprimé en local par défaut (suppression exige en plus FK_KDS_SHOW_FALLBACK_BANNER===false, non câblé) — donc la cuisine locale VOIT désormais le repli, contrairement à ce que dit le doc.",
+   "impact": "Doc de dégradation divergente du code : mauvaise estimation de latence de repli et fausse hypothèse 'pas de cue visuel en local' (déjà corrigée dans le code).",
+   "recommendation": "MAJ SYNC_CONTRACT.md l.49/51 : fallback KDS = 5s WS-down / 60s WS-up (_pollingInterval 1899) ; bandeau repli VISIBLE par défaut même en local (suppression conditionnée à un flag encore non câblé). Doc-only.",
+   "confidence": "high",
+   "cluster": "sync-bus",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Both doc-vs-code divergences reproduce. (1) SYNC_CONTRACT.md:49 states KDS fallback poll ~30s, but KitchenDisplaySystemComponent.vue l.1899 `_pollingInterval()` returns `this.wsConnected ? 60000 : 5000` → WS-down cadence is 5s, not 30s (the ~30s figure only lingers in the stale code comment l.1285). (2) SYNC_CONTRACT.md:51 claims the KDS polling banner is suppressed when APP_ENV=local, but l.1313-1319 `kdsSuppressFallbackBanner()` returns `env === 'local' && window.FK_KDS_SHOW_FALLBACK_BANNER === false`, and comment l.1303-1308 documents the flag wiring as deferred → flag undefined → banner VISIBLE by default (fail-safe-to-visible, per PR-02 2026-06-04 \"silencieux = grave\" mandate). The doc describes pre-PR-02 behavior. Documentation-only drift, no runtime bug, no fiscal/frozen/security impact → P3 is correct. Note: finding's cited path (frontend/kds/) is wrong; real file is admin/kitchenDisplaySystem/, but line numbers/content match exactly."
+  },
+  {
+   "severity": "P3",
+   "title": "Docs de déploiement incohérentes : deux runbooks lancent queue:work sans --queue=high → broadcasts outbox jamais dépilés",
+   "file_line": "docs/DEPLOIEMENT.md:613",
+   "reproduction": "`grep -n onQueue app/Jobs/DispatchDomainEventsJob.php` → l.46 `$this->onQueue('high')` (tous les broadcasts vont sur la lane 'high'). Puis : docs/DEPLOIEMENT.md:613 `queue:work --daemon --sleep=3 --tries=3` et docs/DEPLOYMENT_GUIDE_V1.md:80 `queue:work --sleep=3 --tries=3 --max-time=3600` — aucun `--queue` → écoute 'default' seulement, ignore 'high'. Le gabarit canonique scripts/deploy/supervisor.conf.template:42 est correct (`--queue=high,default`), tout comme docs/REALTIME_SETUP.md:139 et docs/PRODUCTION_SETUP.md:60.",
+   "evidence": "Si l'owner suit DEPLOIEMENT.md ou DEPLOYMENT_GUIDE_V1.md au lieu du template supervisor, le worker n'écoute pas 'high' : DispatchDomainEventsJob s'empile (dispatched_at NULL), aucune push WS n'arrive → KDS/OSS/tracker basculent en poll. Pas de perte de données (poll fallback + MonitorOutboxStaleness paginerait via exit non-zéro), mais couche temps-réel silencieusement morte.",
+   "impact": "Dégradation du flux principal (temps-réel cuisine/écran client) si l'un des deux runbooks est suivi ; incohérence entre 5 docs de déploiement pour un mono-poste V1.",
+   "recommendation": "Aligner docs/DEPLOIEMENT.md:613 et docs/DEPLOYMENT_GUIDE_V1.md:80 sur `queue:work --queue=high,default …` (comme supervisor.conf.template:42). Doc/ops-only, aucun code touché.",
+   "confidence": "medium",
+   "cluster": "sync-bus",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro holds exactly. DispatchDomainEventsJob.php:46 pins all broadcasts to onQueue('high'). docs/DEPLOIEMENT.md:613 (queue:work --daemon --sleep=3 --tries=3) and docs/DEPLOYMENT_GUIDE_V1.md:80 (queue:work --sleep=3 --tries=3 --max-time=3600) both omit --queue, so a worker started from either runbook listens on 'default' only and never drains the 'high' lane -> real-time sync (KDS/écran client) degraded if that runbook is followed. Canonical templates are correct (supervisor.conf.template:42, REALTIME_SETUP.md:139, PRODUCTION_SETUP.md:60 all use --queue=high,default). This is a doc-inconsistency across deploy runbooks, not a runtime code bug; P3 is the right class for a mono-poste V1 where correct templates already exist. (Note: REALTIME_SETUP.md:180 also shows a bare `queue:work --daemon`, so the inconsistency is slightly broader, still P3.)"
+  },
+  {
+   "severity": "P3",
+   "title": "Uber: map titre→item_id VIDE → fallback LIKE '%titre%' peut résoudre le mauvais item_id (ou null) quand Uber passera live",
+   "file_line": "config/uber_menu_map.php:16-27 + app/Services/Uber/UberOrderMapper.php:93-101",
+   "reproduction": "cat config/uber_menu_map.php → by_title/by_uber_id 100% commentés (vides). Read UberOrderMapper.php:80-101 : resolveItemId() sans entrée de map → exact-match name, puis whereRaw('LOWER(name) LIKE %titre%')->first(). Un titre Uber court/générique (ex. 'Tacos') renvoie le PREMIER item catalogue matché (order by PK), pas la bonne variante ; aucun titre → item_id=null (mapLine:62 met 'item_id'=>null dans le snapshot).",
+   "evidence": "resolveItemId retombe sur LIKE non ancré et first() sans tri déterministe ; le mapping construit un order avec item_id potentiellement faux/null. Le flux Uber n'est PAS encore en production (Production Access en attente, cf. mémoire), donc pas de perte d'argent V1 aujourd'hui.",
+   "impact": "Le jour de l'activation Uber : mauvais produit facturé/préparé (item_id erroné) ou item_id null cassant pricing/snapshot. Backlog pré-activation, pas un bug V1 actif.",
+   "recommendation": "Avant activation Uber: rendre le fallback fail-closed (si map absente → rejeter/logger l'order au lieu de deviner par LIKE), ancrer le match, et exiger by_uber_id (stable) plutôt que by_title. Documenter que la carte Uber réelle doit remplir uber_menu_map.php.",
+   "confidence": "high",
+   "cluster": "data-integrity",
+   "verdict": "DOWNGRADE",
+   "refuter_reason": "The mechanical claim is accurate: config/uber_menu_map.php has by_title and by_uber_id 100% commented out (empty), and UberOrderMapper::resolveItemId() (lines 80-101) falls through to exact LOWER(name)= match then LOWER(name) LIKE '%title%' ->first() with no ordering, so a short/generic Uber title could match the first PK-ordered catalogue item, and a no-match returns null (item_id=>null in mapLine:62). BUT the severity is over-classified for three reasons that push it to backlog-only. (1) The integration is NOT active: config/uber.php:9-10 states \"Production Access REQUESTED (en attente Uber)\" and the webhook controller header says \"À VALIDER EN LIVE une fois le Production Access accordé\" — Uber cannot deliver a single order until Uber grants access, so there is zero live blast radius. (2) The empty map is a DOCUMENTED pre-activation requirement, not a latent defect: the config file's own docblock says \"À remplir avec la vraie carte Uber de l'owner\" and labels the name-match path an explicit \"fallback (best-effort)\". This is a config-to-be-filled TODO by design, exactly the pre-activation checklist item the finder itself concedes (\"Backlog pré-activation, pas un bug V1 actif\"). (3) Per the V1 LOCAL guardrail, Uber Eats is a future integration outside active V1 scope. A documented, gated, not-yet-live config placeholder is at most a P3 pre-activation/documentation note, not a P2 defect."
+  },
+  {
+   "severity": "P3",
+   "title": "Migration orders: order_datetime default('y-m-d h:m:s') est une chaîne littérale figée à la création de migration + format buggy (mois à la place des minutes)",
+   "file_line": "database/migrations/2022_11_17_110810_*.php:31",
+   "reproduction": "Read l.31 : $table->timestamp('order_datetime')->default(date('y-m-d h:m:s')). date() est évalué UNE fois au run de la migration → valeur constante stockée en DEFAULT. De plus le format 'h:m:s' utilise 'm' (mois) pour les minutes et 'h' (12h) → partie horaire absurde.",
+   "evidence": "Legacy inoffensif : tous les chemins de création d'order fournissent explicitement order_datetime (borne/caisse/web), donc le DEFAULT n'est jamais utilisé. Purement un défaut d'hygiène de schéma historique.",
+   "impact": "Nul en pratique aujourd'hui (colonne toujours renseignée). Risque théorique: un INSERT omettant order_datetime recevrait un timestamp figé/erroné.",
+   "recommendation": "Backlog: aucune migration corrective urgente (frozen-adjacent, applied). Noter en dette. Si un jour retouché: useCurrent().",
+   "confidence": "high",
+   "cluster": "data-integrity",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Line 31 confirmed verbatim: $table->timestamp('order_datetime')->default(date('y-m-d h:m:s')). date() is a PHP call resolved once at migration run, so a fixed literal string is baked into the column DEFAULT (not CURRENT_TIMESTAMP). The format is also wrong: PHP date() 'm' = month (minutes is 'i') and 'h' = 12-hour, so the default's time portion is hour:month:second — absurd. Both sub-claims hold. Impact is correctly stated as nul in practice (order_datetime is always set by the app layer); only an INSERT omitting the column would get the frozen/wrong value. Latent, no live impact — P3 is the correct tier."
+  },
+  {
+   "severity": "P3",
+   "title": "ItemController::store: double branche if(env('DEMO')){...}else{...} IDENTIQUE (code mort) + env() hors config (null si config:cache)",
+   "file_line": "app/Http/Controllers/Admin/ItemController.php:137",
+   "reproduction": "Read l.137-142 : les deux branches retournent new ItemResource($this->itemService->store($request)) — strictement identiques. env('DEMO') renvoie null quand la config est cachée (config:cache) → toujours la branche else, mais sans effet puisque identique.",
+   "evidence": "Aucun comportement différencié : le if est totalement inerte. 1 seul finding (par consigne). Anti-pattern env() hors config confirmé mais sans impact fonctionnel ici.",
+   "impact": "Aucun impact runtime ; bruit/dette de code qui suggère à tort un mode démo.",
+   "recommendation": "Supprimer le if/else et garder l'unique return. Ne pas introduire env() en dehors de config/*.",
+   "confidence": "high",
+   "cluster": "data-integrity",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Read of ItemController.php:137-141 confirms the two branches of if(env('DEMO')){...}else{...} both execute the identical statement `return new ItemResource($this->itemService->store($request));` (only indentation differs). The env('DEMO') branch is therefore dead/no-op code, and env() called outside config returns null under config:cache — but with no runtime consequence since both paths are identical. Severity P3 is correct: pure code smell / dette, zero correctness, security, or fiscal impact."
+  },
+  {
+   "severity": "P3",
+   "title": "File d'encaissement counter-collect: ~140 lignes de closures inline dans routes/api.php (pending/confirm/cancel) au lieu d'un controller",
+   "file_line": "routes/api.php:807-915",
+   "reproduction": "Read 807-915 : GET pending (query Order complexe, ~46 lignes), POST confirm (validation+PaymentService+catch typé 409), POST cancel — toute la logique en closures dans le fichier de routes.",
+   "evidence": "Logique métier fiscale (PENDING_COUNTER, exclusion CANCELED, rattrapage source_surface) enfouie dans des closures non testables unitairement ni cachables (route:cache impossible avec closures). Fonctionnellement correct (idempotency + 409 PaymentAlreadyCollected + abort_unless can('pos') + BranchScope via route-model-binding).",
+   "impact": "Testabilité/maintenabilité réduites ; route:cache indisponible. Pas de bug de correction.",
+   "recommendation": "Backlog archi: extraire vers un CounterCollectController (méthodes pending/confirm/cancel) pour permettre tests unitaires et route:cache. Comportement inchangé.",
+   "confidence": "high",
+   "cluster": "data-integrity",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro holds exactly: routes/api.php:807-915 contains three inline route closures for the counter-collect encashment queue — GET /pending (807-853, ~46 lines wrapping a complex Order query with PENDING_COUNTER + CANCELED-exclusion + source_surface NULL rescue + branch scope + FIFO limit 200), POST /confirm (854-895, validation + PaymentService::confirmCounterPayment + typed 409 catch for PaymentAlreadyCollectedException), and POST /cancel (896-915). The two secondary claims are also accurate: closure routes genuinely break `php artisan route:cache` (Laravel throws LogicException on serialization), and the logic is not in a unit-testable controller method. This is a legitimate maintainability/testability observation, correctly self-classified as a non-correctness code-organization concern at the lowest severity. No garde-fou applies. Nothing to downgrade below P3 and nothing false to refute."
+  },
+  {
+   "severity": "P3",
+   "title": "Numéro de commande POS séquentiel stocké en localStorage par poste (reset minuit) — collision si multi-postes",
+   "file_line": "resources/js/components/admin/pos/PosComponent.vue:4012-4018",
+   "reproduction": "Read 4011-4017 : seqKey='pos_order_seq_'+today, seq=parseInt(localStorage.getItem)+1, stocké localStorage. Le compteur est LOCAL au navigateur/poste.",
+   "evidence": "En V1 LOCAL mono-poste (branch_id=1, une seule caisse), aucune collision possible = correct par design. Le token n'est qu'un libellé d'appel client, pas l'identifiant fiscal (fiscal_sequence_no reste backend gap-free).",
+   "impact": "Nul en mono-poste V1. En multi-postes futur, deux caisses génèreraient le même N° d'appel (cosmétique, pas fiscal).",
+   "recommendation": "Documenter comme limite mono-poste assumée. Backlog cloud/multi-poste: dériver le N° d'appel côté backend.",
+   "confidence": "high",
+   "cluster": "data-integrity",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Le code existe exactement comme décrit (PosComponent.vue:4011-4016) : le numéro d'appel POS est un compteur séquentiel journalier stocké dans localStorage du poste, remis à zéro à minuit via une clé datée. Il est bien LOCAL au navigateur/poste. En multi-postes, deux caisses partiraient chacune de leur propre compteur et produiraient le même N° d'appel. MAIS : (1) c'est purement cosmétique — ce token est le numéro d'appel client (form.token), PAS le fiscal_sequence_no ni aucun identifiant NF525 (l'unicité fiscale reste garantie backend par branche, gap-free) ; (2) le finder lui-même classe P3 avec « Nul en mono-poste V1 » ; (3) V1 LOCAL = mono-poste branch_id=1 assumé (CONSTITUTION), donc le multi-poste relève du backlog cloud-prep selon les garde-fous. P3 est la sévérité juste — repro réelle, impact nul en V1, note backlog légitime."
+  },
+  {
+   "severity": "P3",
+   "title": "Cache-busting ?v=time() sur pos-wizard.js/.css à CHAQUE requête → 0 cache navigateur pour ces assets",
+   "file_line": "resources/views/admin-pos-v4.blade.php:35 et 136",
+   "reproduction": "Read l.35 (css ...?v=2-{{ time() }}) et l.136 (js ...?v=9-{{ time() }}). time() change à chaque chargement de page → URL toujours neuve → re-download du wizard (~296 KB JS) à chaque ouverture POS.",
+   "evidence": "Confirmé littéral. Le bundle wizard est FROZEN mais la Blade porte le query-string. Impact = bande passante/latence locale, pas de correction.",
+   "impact": "Perf: re-téléchargement du gros wizard à chaque navigation POS. Sur poste local acceptable, mais gaspillage réseau/CPU.",
+   "recommendation": "Remplacer time() par un hash de version stable (filemtime() ou constante de build) pour re-cacher entre déploiements tout en cassant le cache aux vraies mises à jour.",
+   "confidence": "high",
+   "cluster": "data-integrity",
+   "verdict": "CONFIRMED",
+   "refuter_reason": "Repro tient exactement. admin-pos-v4.blade.php:35 charge pos-wizard.css avec `?v=2-{{ time() }}` et :136 charge pos-wizard.js (~296 KB) avec `?v=9-{{ time() }}`. time() = timestamp Unix en secondes, réévalué à chaque rendu de page → query-string toujours neuve → le navigateur ne peut jamais servir ces 2 assets depuis son cache et les re-télécharge à chaque ouverture/navigation POS. Le défaut est réel et bien classé P3 : simple gaspillage perf/bande-passante, pas de risque correctness/sécurité/NF525. En contexte V1 LOCAL mono-poste (assets servis en localhost), l'impact est minime — ce que le finder concède lui-même. P3 est la bonne sévérité, aucune inflation."
+  }
+ ],
+ "refuted": [
+  {
+   "finding": {
+    "severity": "P3",
+    "title": "Order Uber créée via forceFill en contournant PricingService + OrderStateMachine (total pris chez Uber)",
+    "file_line": "app/Http/Controllers/Webhook/UberWebhookController.php:110-126",
+    "reproduction": "Read lignes 110-126 : (new Order)->forceFill([... 'total'=>$mapped['total'],'subtotal'=>$mapped['total'],'status'=>ACCEPT,'payment_status'=>PAID ...]). Aucun appel PricingService::calculateOrder ni OrderStateMachine.",
+    "evidence": "ATTÉNUÉ : $mapped['total'] dérive de $this->client->fetchOrder() = appel serveur authentifié Http::withToken()->get() vers l'API Uber (UberClient.php:60,99), PAS du body webhook → non contrôlable par un attaquant. fiscalize=false par défaut (config/uber.php:39) → pas de fiscal_sequence_no alloué → hors chaîne NF525. Exception canal agrégateur assumée et documentée.",
+    "impact": "Faible en V1 : canal séparé non-fiscal. Risque théorique si UBER_FISCALIZE=true : un total non recalculé par le SSOT entrerait dans la chaîne fiscale à l'encaissement.",
+    "recommendation": "Backlog : si un jour UBER_FISCALIZE=true, faire recalculer/valider le total par PricingService avant allocation fiscale. Aucune action V1.",
+    "confidence": "medium"
+   },
+   "reason": "Le code correspond exactement à la description (forceFill avec total pris chez Uber, sans PricingService ni OrderStateMachine), mais ce n'est pas un défaut : c'est le pattern correct pour un canal agrégateur. Uber est merchant-of-record — le total DOIT refléter ce que le client a réellement payé sur la plateforme Uber (UberOrderMapper.php:36 = payment.charges.total.amount). Recalculer via le PricingService local serait au contraire ERRONÉ (divergence possible avec le montant facturé par Uber). Canal explicitement non-fiscal par défaut (config/uber.php:39 fiscalize=false, source_surface='uber_eats', fiscal null). L'impact cité est lui-même « théorique » et derrière un flag default-false. Décision architecturale documentée en-code, pas un bug."
+  },
+  {
+   "finding": {
+    "severity": "P3",
+    "title": "Token invité kiosk:order TTL 30 jours (vs 8h token borne) — sprawl",
+    "file_line": "app/Http/Controllers/Auth/GuestSignupController.php:107",
+    "reproduction": "Read ligne 107 : createToken('auth_token', ['kiosk:order'], now()->addDays(30)).",
+    "evidence": "Décision documentée (GAP-20-5 + Sprint H1 Z6-02, commentaire l.98-106) : ability strictement scopée kiosk:order (pas de wildcard), register() refuse les comptes privilégiés (l.63-66). Un token fuité ne peut que commander de la nourriture. CLAUDE.md §9 roadmap V1.0.1 vise déjà 8h→1h sur ops sensibles.",
+    "impact": "Surface d'attaque faible (scope minimal). Sprawl de tokens invités longue-durée.",
+    "recommendation": "Backlog roadmap : réduire à ~24-48h. Aucune action bloquante.",
+    "confidence": "medium"
+   },
+   "reason": "Two problems. (1) Wrong file:line — line 107 is a comment (\"// Restore soft-deleted guest account…\"), NOT the token creation. The actual call is line 146: `$user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))`. So the cited repro does not hold at the cited line. (2) Substance is real but is a documented, intentional, RED-team-reviewed design decision, not a defect. Lines 137-145 explicitly justify it: [GAP-20-5] chose 30 days deliberately (\"30 days matches typical session expectations\" for the WEB guest-OTP ordering flow — a distinct flow from the kiosk borne token, so the finding's \"vs 8h token borne\" comparison conflates two different token types), and [Sprint H1 Z6-02] deliberately narrowed the ability to `kiosk:order` ONLY (no wildcard) precisely so a leaked guest token cannot be replayed against admin endpoints (CLAUDE.md §9). The scope is strictly minimal and the finding's own impact says \"faible (scope minimal)\". Token-TTL tightening is already a tracked V1.0.1 backlog item (MEMORY: \"TTL 8h → 1h sensitive ops\"), i.e. a known planned refinement, not a new bug. Per the V1 LOCAL mono-poste guard-rail, \"sprawl\"/scale concerns are at most cloud-prep backlog, never an actionable finding."
+  },
+  {
+   "finding": {
+    "severity": "P3",
+    "title": "Flag env PRICING_USE_SSOT (pricing.use_ssot_service) désactivable sans boot guard — chemin pricing legacy sans validation des contraintes min/max de variation",
+    "file_line": "config/pricing.php:9 + app/Services/FrontendOrderService.php:301/321-484 + app/Services/OrderService.php:391,818,1372",
+    "reproduction": "grep -n 'use_ssot_service' app/ config/ ; grep 'use_ssot_service' app/Providers/AppServiceProvider.php → 0 résultat (aucun boot guard). config/pricing.php:9 => filter_var(env('PRICING_USE_SSOT', true)). Le branch else (l.321-484) recalcule les prix depuis la DB mais n'invoque PAS PricingService::calculateOrder → pas d'assertVariationConstraints (min_select/max_select).",
+    "evidence": "CLAUDE.md §8 impose « Aucun env flag pour bypass — toujours actif » pour le pricing SSOT. Ce flag existe et n'est verrouillé par aucune RuntimeException de boot (contrairement à POS_SIMULATION_HARDWARE/APP_DEBUG dans AppServiceProvider). Défaut = true (sûr). Si mis à false, un client pourrait omettre une variation requise (ex. Viande obligatoire) sans rejet côté service pricing.",
+    "impact": "Latent : par défaut inoffensif (true, V1 ne le met pas à false). Contredit néanmoins la doctrine §8 et la validation de contraintes est déléguée à OrderRequest::validateOrderItemVariationsAfter uniquement quand le flag est false. Risque = commande incomplète/prix erroné si le flag est basculé par erreur en prod.",
+    "recommendation": "Ajouter un boot guard dans AppServiceProvider (prod : refuser de booter si config('pricing.use_ssot_service') !== true), à l'image des autres invariants NF525. Backlog, non urgent.",
+    "confidence": "high"
+   },
+   "reason": "The finding's premise is factually wrong. It claims variation min/max constraint validation is \"déléguée à OrderRequest::validateOrderItemVariationsAfter uniquement quand le flag est false.\" Reality: OrderRequest calls validateOrderItemVariationsAfter() UNCONDITIONALLY — line 246 (kiosk/takeaway) and line 271 (general path), with zero reference to use_ssot_service (grep empty). That trait runs MultiVariationConstraint which enforces min_select/max_select (MultiVariationConstraint.php:222-239) at the FormRequest layer BEFORE the service, independent of the pricing flag. Same unconditional call in PosOrderRequest:248, TableOrderRequest:65, PricingPreviewRequest:73. Also the predicted \"prix erroné\" cannot occur: the legacy else-branch (FrontendOrderService.php:321-484) reads prices exclusively from DB ($dbItem->price l.379, $dbVar->price l.404, $dbExt->price l.430), rejects unknown IDs (422) and blocks cross-item injection (l.397/423) — client prices never trusted. So even if the flag were flipped false, orders are neither incomplete (validated upstream) nor mispriced (DB-authoritative). The only literal-true residual (\"no boot guard for this flag\") is a doctrine nicety, not a defect, and is defanged because both predicted harms are impossible."
+  },
+  {
+   "finding": {
+    "severity": "P2",
+    "title": "DeliveryConfigSeeder non-trackée ET non enregistrée dans DatabaseSeeder → un re-seed/déploiement neuf perd la tarification livraison owner (retombe en barème legacy 5€/5km, pas de gratuité ≥30€)",
+    "file_line": "database/seeders/DeliveryConfigSeeder.php (untracked) ; database/seeders/DatabaseSeeder.php:36-108 (aucun appel) ; app/Services/Delivery/DeliveryFeeService.php:54-55",
+    "reproduction": "1) `git status --short database/seeders/DeliveryConfigSeeder.php` → `?? ` (untracked, absent de git). 2) `grep -n Delivery database/seeders/DatabaseSeeder.php` → 0 résultat (jamais appelée par `$this->call(...)`). 3) Live DB actuelle OK car owner l'a lancée à la main le 2026-06-27 : `php artisan tinker` → branche#1 {base:4.00, per_km:1.00, min:4.00, free_km:5.00}, Settings delivery.free_delivery_above=30. Mais sur machine neuve `php artisan migrate:fresh --seed` : les colonnes delivery_fee_* restent NULL → DeliveryFeeService.php:38 (les 3 colonnes non-NULL requises) échoue → fallback ligne 55 `max(5, ceil(d/5)*5)` = 5€ base par paliers de 5km, et la gratuité ≥30€ (Settings) n'est pas posée.",
+    "evidence": "DeliveryFeeService:26-56 n'utilise la règle owner (4€ ≤5km +1€/km entamé) QUE si delivery_fee_base+per_km+minimum sont tous non-NULL sur la branche ; sinon legacy 5€/5km. Ces colonnes ne sont peuplées QUE par DeliveryConfigSeeder (docblock confirme : colonnes par-branche + Settings free_delivery_above). Aucune migration/autre seeder ne les pose.",
+    "impact": "Sur tout déploiement propre ou reset DB (dev, sinistre/restore partiel, nouvelle box) la livraison facture le mauvais prix (5€ mini au lieu de 4€, paliers 5km au lieu de +1€/km entamé) et n'applique jamais la gratuité ≥30€ → écart d'argent client + incohérence avec le web standalone qui miroite 4€/gratuit-30€. Fichier untracked = perdu au premier `git clean -fd`. V1 LOCAL : impact réel uniquement au re-seed, pas sur la prod live actuelle → P2.",
+    "recommendation": "1) `git add database/seeders/DeliveryConfigSeeder.php` (le committer). 2) L'enregistrer dans DatabaseSeeder::run() via `$this->call(DeliveryConfigSeeder::class);` après BranchTableSeeder (elle est déjà idempotente + guard branch#1 null). Scope minimal, 0 frozen.",
+    "confidence": "high"
+   },
+   "reason": "Le finding suppose qu'un `migrate:fresh --seed` neuf laisse les colonnes delivery_fee_* à NULL (→ fallback 5€) et n'applique jamais la gratuité ≥30€. Les deux prémisses sont fausses. (1) `BranchTableSeeder` — tracké (git ls-files OK) ET enregistré (`DatabaseSeeder.php:47 $this->call(BranchTableSeeder::class)`) — crée la branche #1 avec les 4 colonnes déjà remplies : delivery_fee_base=4, per_km=1, minimum=4, free_km=5 (lignes 42-45). Les 3 colonnes exigées par `DeliveryFeeService.php:38` sont donc non-NULL au seed → le fallback legacy ligne 55 (`max(5, ceil(d/5)*5)`) n'est JAMAIS atteint. (2) La gratuité ≥30€ ne dépend pas d'un Settings seedé : `FrontendOrderService.php:538` lit `Settings::group('delivery')->get('free_delivery_above', 30)` avec un DÉFAUT codé à 30 → le seuil s'applique même sans la ligne Settings. Le `DeliveryConfigSeeder` untracked/non-enregistré est bien réel mais REDONDANT : ses valeurs colonnes sont déjà produites par le BranchTableSeeder tracké, et le seuil est couvert par le défaut code. Un déploiement neuf produit donc la bonne tarification (4€ base, +1€/km, offert ≥30€). Pas d'écart d'argent, pas de retour au barème legacy."
+  },
+  {
+   "finding": {
+    "severity": "P3",
+    "title": "Dernier dump storage/backups/db-daily = 2026-06-24 (8 jours de trou au 2026-07-02) — schedule correct, mais preuve d'exécution du scheduler absente à vérifier côté VPS",
+    "file_line": "app/Console/Kernel.php:144-158 (foodking:backup-daily 03:00 + backup:verify-restore 05:00) ; storage/backups/db-daily/",
+    "reproduction": "`ls -la storage/backups/db-daily/` → derniers dumps : 2026-05-28, 05-29, 06-04, 06-24 ; rien depuis. `date` → 2026-07-02. Le schedule est pourtant bien câblé (dailyAt('03:00') + withoutOverlapping(60) + onOneServer, verify-restore dailyAt('05:00')).",
+    "evidence": "La config de schedule est correcte et complète (Kernel.php:144-158, commande RunDailyBackup.php présente). Le trou n'est donc PAS un bug de code : sur cette box de dev il n'y a probablement aucun daemon lançant `php artisan schedule:run` en continu (cadence irrégulière des dumps 05-28→06-24 confirme des runs manuels/sporadiques, pas un cron vivant).",
+    "impact": "Si le même symptôme existe sur le VPS prod, la sauvegarde NF525 6 ans + le filet backup:verify-restore ne tournent pas → perte de données en cas de sinistre. Sur la box locale de dev = sans conséquence.",
+    "recommendation": "Vérifier côté VPS : (a) crontab contient `* * * * * php artisan schedule:run` ; (b) `storage/logs/heartbeat.log` (healthz 5-min) et les logs de backup progressent ; (c) `php artisan schedule:list` affiche foodking-backup-daily. Ne rien changer dans le code — c'est une vérif opérationnelle de déploiement.",
+    "confidence": "medium"
+   },
+   "reason": "Not a code defect. The schedule is correctly wired in Kernel.php:144-158 (foodking:backup-daily dailyAt 03:00 + backup:verify-restore dailyAt 05:00, withoutOverlapping + onOneServer) and the command class RunDailyBackup.php exists. The stale dumps (last 2026-06-24, 8-day gap) are caused entirely by the local dev box having NO `schedule:run` cron entry (crontab -l returns nothing) — the Laravel scheduler is simply never invoked on this dev machine, which is expected. The finding itself concedes zero consequence locally, and its only stated impact is a conditional, unverified, unverifiable speculation about the VPS ('si le même symptôme existe sur le VPS'). An adversarial refute-by-default review requires a reproducible defect in the repo; there is none — the code is correct and the observed staleness is an environmental artifact, not a bug."
+  },
+  {
+   "finding": {
+    "severity": "P3",
+    "title": "buildCartItem: fallback varId=(idx===0 ? v.id : null) droppe encore silencieusement une viande N>1 si aucune variation ne matche par nom sous l'attribut",
+    "file_line": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1807 (FROZEN)",
+    "reproduction": "Read l.1794-1812 : après aplatissement objet→tableau (fix multi-viandes, l.1794-1798), match par (item_attribute_id==attr.id && name==v.name). Si pas de match ET idx>0 → varId=null → la viande n'est PAS ajoutée à allVariations. Reproductible seulement en cas de DÉSYNCHRO de données (nom de viande absent des variations sous l'attribut Viande N).",
+    "evidence": "Le fix objet/tableau (Object.values().flat()) couvre le cas signalé dans la mémoire ; le drop résiduel ne se déclenche que sur incohérence de données catalogue, et le backend renvoie alors 422 (« Viande N actuel: 0 ») = filet de sécurité, pas de commande erronée acceptée ni de perte d'argent.",
+    "impact": "Aucune perte d'argent : au pire commande rejetée au paiement (422) sur données incohérentes. Robustesse résiduelle dans une zone FROZEN.",
+    "recommendation": "Aucune modif frozen recommandée sans gate. Optionnel: journaliser un warning frontend quand un slot viande idx>0 finit sans varId, pour diagnostiquer les désynchros catalogue.",
+    "confidence": "medium"
+   },
+   "reason": "Le code à l.1807 existe tel que décrit, mais le branch `null` (idx>0, pas de match) est un fail-safe INTENTIONNEL, pas un drop-bug : la seule alternative de fallback (`v.id`) assignerait l'id de variation canonique (Viande 1) au slot de l'attribut Viande N → id ERRONÉ sous le mauvais attribut, potentiellement accepté au quote avec une viande fausse (produit incorrect silencieux). Choisir `null` fait échouer FORT (422 contrôlé) plutôt que d'expédier un mauvais produit — c'est le bon choix défensif, et il n'existe pas de meilleur fix sans le vrai id per-attribut (précisément absent dans le scénario de desync). De plus le trigger n'est pas atteignable sur les données V1 canoniques : le fix l.1794-1798 aplatit `item.variations` pour que `allVars` contienne toutes les variations, et chaque viande existe en variation sous CHAQUE attribut Viande (l.1775-1777) → `match` réussit toujours en données réelles. La branche null ne se déclenche que sur corruption/desync de données menu qui n'arrive pas en V1 LOCAL mono-source. Le finding lui-même concède 0 perte d'argent et « robustesse résiduelle » = note de doc, pas un défaut de code."
+  }
+ ],
+ "per_cluster": [
+  {
+   "cluster": "sec-authz-idor",
+   "rejected": [
+    "Legacy web /payment/{order}/pay + {gateway}/{order}/success|fail IDOR/forge : RÉFUTÉ — PaymentController.php:131-136 guardWebPaymentV1() abort(404) sur TOUTES les méthodes (index/payment/success/fail/cancel/successful) car config/payment.php:15 `web_payment_v1.enabled=false` et aucun override .env. Routes physiquement injoignables → pas d'IDOR possible.",
+    "PosController::quote bypass permission pos si api/frontend/* : RÉFUTÉ — PosController.php:172 `if(!$request->is('api/frontend/*')) abort_unless(can('pos'),403)`. Le test porte sur le CHEMIN RÉEL de la requête ; /api/admin/pos/quote ne matche pas api/frontend/* → la permission pos EST exigée. Impossible d'usurper le chemin sur l'URL admin.",
+    "Exports (18) fuite PII non-gated : RÉFUTÉ sur les surfaces PII — CustomerController.php:29-35 gate export par permission:customers ; TransactionController.php:21 gate export par permission:transactions. Les exports PII sont permission-gated dans les constructeurs.",
+    "Routes settings mutations non gated (24 modules) : RÉFUTÉ — toutes les mutations (store/update/destroy/updateZone) portent permission:settings dans les constructeurs (Company/Site/OrderSetup/Kiosk/Mail/Theme/Sms/Notification/License/PaymentGateway/Branch tous vérifiés). Seuls certains index de lecture non-secrète manquent (voir finding P3 séparé).",
+    "OSS publicIndex ?branch_id=N sans vérif existence : RÉFUTÉ comme risque PII — CDSOrderDetailsResource.php n'expose que id/order_serial_no/token/queue_number/order_type/status (0 PII : ni nom/téléphone/adresse/total) ; route throttle:oss-public (60/min/IP, routes/api.php:1312). branch_id inexistant → liste vide. V1 mono-branche : énumération sans effet. Au plus P3 backlog cloud."
+   ],
+   "safe": [
+    "Mutations settings (POST/PUT/DELETE) : permission:settings enforced backend sur Company/Site/OrderSetup/Kiosk/Mail/Theme/Sms/Notification/License/PaymentGateway/Branch (constructeurs vérifiés un par un).",
+    "Exports PII (Customer, Transaction) : permission:customers / permission:transactions enforced en constructeur (only index+export).",
+    "Legacy web payment (PaymentController Frontend) : entièrement 404-gardé par guardWebPaymentV1 (feature flag OFF), aucune surface IDOR active.",
+    "PosController::quote : chemin /api/admin/pos/quote exige permission:pos ; le bypass api/frontend/* est path-based et non usurpable.",
+    "OrderHistoryController::show : cross-branch unifié en 403 (withoutGlobalScope + comparaison branch_id, l.80-89) — pas d'énumération d'existence, isolation branche tenue.",
+    "OSS publicIndex/publicMostPopularItems : payload sans PII (CDSOrderDetailsResource) + throttle:oss-public."
+   ]
+  },
+  {
+   "cluster": "sec-webhook-secrets",
+   "rejected": [
+    "RÉFUTÉ — « webhook_signing_secret → fallback UBER_CLIENT_SECRET = fuite → signatures forgeables » (config/uber.php:26) : le client_secret vient de .env UNIQUEMENT (git ls-files .env → not tracked, gitignore:8) et n'est jamais poussé au bundle. Le fallback est le comportement Uber documenté (la clé de signature EST souvent le client_secret). Aucune fuite → aucune forge possible. De plus signatureValid est fail-closed si secret vide.",
+    "RÉFUTÉ — « ApiKeyMiddleware === non timing-safe → timing-attack exploitable » : la clé (MIX_API_KEY) est compilée dans le bundle JS et exposée dans la page (foodkingConfig.apiKey, .env.example:435). Il n'y a aucun secret à exfiltrer par timing ; c'est un identifiant d'app public. Reclassé P3-documentation.",
+    "RÉFUTÉ — « secrets-in-repo (.env avec MIX_API_KEY réel + PUSHER secrets) » : .env N'EST PAS suivi par git (git ls-files --error-unmatch .env → pathspec did not match ; .gitignore:8-17). Seuls les placeholders de soketi.json sont commités.",
+    "RÉFUTÉ (comme P0/P1) — « webhook Uber répond 200 sur échec → commande perdue en silence irréversiblement » : le replay Uber RE-TENTE (event.status='failed'≠'processed' passe l.55, !event=false n'insère pas, createFromUber retenté). La perte n'est possible qu'après épuisement des retries Uber. Reclassé P2 (manque d'alerte terminale), pas une perte immédiate."
+   ],
+   "safe": [
+    "Uber HMAC fail-closed CORRECT (UberWebhookController.php:156-169) : secret vide → return false → 401 ; header X-Uber-Signature absent → false ; hash_hmac('sha256') comparé via hash_equals (timing-safe) ; signature invalide → 401 avant tout traitement. Invariant tenu.",
+    "Total Uber non contrôlable par l'attaquant : $mapped['total'] provient de client->fetchOrder() = appel serveur authentifié Http::withToken()->get() vers l'API Uber (UberClient.php:60,94-99), pas du body webhook. Le body ne fournit que l'order_id.",
+    "Idempotence webhook robuste (UberWebhookController.php:53-70) : table webhook_events (provider,webhook_id) ; status='processed' → 200 already_processed ; sinon insert 'pending' puis traitement — pas de double-création.",
+    "CORS credentialed non contournable à distance (config/cors.php:22-31) : un origin distant ne matche pas le pattern loopback → pas d'ACAO reflété → le navigateur bloque la lecture de la réponse. Seules des pages servies depuis la box passent. Sûr en V1 mono-poste.",
+    "soketi bound loopback 127.0.0.1:6001 (soketi.json:3) : broadcasting non exposé au réseau ; exploiter le secret placeholder exige déjà un accès local."
+   ]
+  },
+  {
+   "cluster": "money-fiscal",
+   "rejected": [
+    "Card amount 'perdu pour la ventilation' : RÉFUTÉ — la ventilation carte/espèces autoritaire (byMethod) dérive de pos_payment_method + order.total dans ZReportService::applyOrderToTotals:666, correcte pour les commandes counter-collect carte (pos_payment_method=CARD posé l.340). Pas de perte.",
+    "Sous-paiement accepté par confirmCounterPayment : RÉFUTÉ — l.329 lève une ValidationException si mode===CASH && received<total ; le modal (PosCounterCollectModal.vue:369) exige received>0 pour CASH/CARD ; received=null défaut sur total. Aucun chemin d'encaissement inférieur au total.",
+    "Commande WEB TAKEAWAY PENDING_COUNTER source_surface NULL entrant à tort en file caisse (routes/api.php:830-836) : RÉFUTÉ — les commandes web sont UNPAID (carte/TPE), jamais PENDING_COUNTER ; et si l'une l'était, sa présence en file d'encaissement serait de toute façon correcte (elle doit être encaissée). Pas de bug d'argent.",
+    "Minoration fee livraison via delivery_distance_km client (OrderRequest.php:117-129) : RÉFUTÉ comme atteignable — address_id est 'required' pour DELIVERY (rules l.165-168) et le chemin authentifié recalcule la distance serveur via DeliveryQuoteService::quoteForSavedAddress (géocodage). Le fallback legacy (sans address_id) est de fait mort pour une vraie livraison. Fee serveur-autoritaire.",
+    "validateDeliveryMinimumOrder lit subtotal CLIENT (OrderRequest.php:300-302) : latent seulement — court-circuité par Branch.delivery_minimum_order===null (null en V1 → return anticipé l.295), et n'agit que sur le plancher. Non atteignable en V1. Au plus P3.",
+    "Branche self-service client de changePaymentStatus (OrderService.php:2296-2317) flippant UNPAID→PAID sans fiscal : RÉFUTÉ — CODE MORT : aucun contrôleur n'appelle changePaymentStatus avec $auth=true (les 3 callers Pos/Online/Table passent seulement $request) ; PaymentStatusRequest::authorize exige rôle Admin/Branch Manager/POS Operator. Non atteignable par un client.",
+    "finalizePaidKioskOrder recordTransition post-tx PENDING→ACCEPT alors que PREPARING poussé in-tx (FrontendOrderService:1405-1437) : hors périmètre money/fiscal — c'est une nuance de trail/sync (la jambe ACCEPT→PREPARING est diffusée mais non enregistrée via recordTransition). Pas de corruption fiscale ; à traiter en W3 sync.",
+    "PosOrderRequest.php:117 comparaisons === string/int : CONNU, laissé exprès (décision owner) — au plus P3-doc, non re-signalé comme neuf.",
+    "fiscal:verify-chain CHAIN OK 4 branches : confirmé contexte, les 3 'gaps' apparents ne sont pas des P0."
+   ],
+   "safe": [
+    "Ventilation carte/espèces SCELLÉE (ZReportService::applyOrderToTotals:661-668) : utilise pos_payment_method → split carte/espèces correct dans le payload signé.",
+    "Réconciliation caisse (ZReportCashEnrichmentService::aggregateForWindow:53-91) : dérive de CashDrawerSession + CashMovement, indépendante du trou OrderPayment — comptage physique du tiroir correct.",
+    "confirmCounterPayment scelle bien le fiscal : alloue fiscal_sequence_no gap-free (l.335-337), garde sous-paiement CASH (l.329), garde statut terminal CANCELED/REJECTED/RETURNED (l.323-327), garde already-collected → 409 (l.278-310).",
+    "destroy() garde NF525 (OrderService.php:2651-2664) : seal check demi-ouvert opened_at<created_at<=closed_at bloque la suppression d'une commande scellée par un Z clos ; PAID exige la permission pos-destroy-paid (l.2639-2642).",
+    "Chemin pricing SSOT (FrontendOrderService:301-320) : délègue à PricingService::calculateOrder = SSOT prix + contraintes ; le chemin legacy recalcule aussi les prix depuis la DB (jamais depuis le client) avec gardes cross-item injection (l.397,423)."
+   ]
+  },
+  {
+   "cluster": "sync-bus",
+   "rejected": [
+    "Risque 'MonitorOutboxStaleness ne fait que Log::error (gap alerting)' — NUANCÉ/partiellement réfuté : Read MonitorOutboxStaleness.php:79-132 → outre Log::error, la commande retourne self::FAILURE (exit non-zéro) qui propage au cron/supervisor (docstring l.20-23), lequel déclenche le pager wiré par l'opérateur. Le seul gap résiduel est l'absence d'un backend de pager câblé sur l'échec cron (dépend de l'ops), pas un défaut de la commande. Non filé.",
+    "Risque 'double-broadcast OutboxRescueCommand lane-A/lane-B' — RÉFUTÉ : Read OutboxRescueCommand.php:47 (`attempts < 5`, disjoint de RetryFailed `attempts>=5`) + release du claim l.59-61 puis DispatchDomainEventsJob Phase-1 lockForUpdate + garde `dispatched_at !== null` (Job:65-86) = at-most-once ; pire cas documenté = un re-render redondant, broadcasts advisory, zéro corruption fiscale."
+   ],
+   "safe": [
+    "DispatchDomainEventsJob->onQueue('high') CONFIRMÉ (Job:46) et le gabarit de déploiement canonique scripts/deploy/supervisor.conf.template:42 écoute bien `--queue=high,default` — la lane est correctement couverte par l'artefact de déploiement réel (seuls 2 runbooks secondaires divergent, cf. finding).",
+    "Recall TTL ancrée sur updated_at (KitchenDisplaySystemOrderService.php:315-322) : un write concurrent non lié PEUT rouvrir la fenêtre 60s, MAIS le cap N=1 (l.326-336, fix #13) ancre la dédup sur une fenêtre glissante stable (now - windowSeconds) et NON sur updated_at → un 2e recall ne peut pas passer ; de plus l'ordre doit rester status=PREPARED (non encaissé). Résidu = au pire un recall tardif unique d'un ticket cuisine PREPARED non collecté = inoffensif (pas d'argent/fiscal). Invariant tenu.",
+    "Invariant TZ Paris-local (KitchenDisplaySystemOrderService.php:110-133,226) : config/database.php ne définit AUCUNE clé connections.mysql.timezone (session_tz hérite l'OS = Europe/Paris) et config/app.php:140 timezone='Europe/Paris' → fenêtres jour correctes AS-IS. Sentinelles présentes (tests/Feature/Sentinels/KdsTodayWindowTzSentinelTest.php, TzAwareRowVsBoundInclusionSentinelTest.php, DashboardSalesReportParisBoundsSentinelTest.php) captureraient une régression si '+00:00' était ajouté.",
+    "SyncOverviewController /client-metrics + /sync-overview : authz gardée par `permission:kitchen-display-system` sur index+clientMetrics (SyncOverviewController.php:55) et /outbox par role:Admin|Tenant Admin (routes/api.php commentaire + __construct) ; heartbeat ws écrit par DispatchDomainEventsJob:129 et lu par le controller — boucle observabilité cohérente, best-effort (n'affecte jamais le dispatch)."
+   ]
+  },
+  {
+   "cluster": "ops-cron-legacy",
+   "rejected": [
+    "« Cron backup cassé/arrêté » comme bug de code : REFUTÉ. Le schedule Kernel.php:144-158 est correct (cadence, mutex, onOneServer, verify-restore) et la commande RunDailyBackup existe. Le trou de 8j = absence de daemon schedule:run sur la box locale, pas un défaut logiciel. Reclassé en P3 vérif-ops (VPS).",
+    "« Z-close double-close / clôture pendant caisse ouverte » : REFUTÉ. FiscalCloseAllActiveBranchesCommand:100-113 fait un pré-check `ZReport where status=STATUS_OPEN exists()` par branche AVANT close() ; branche sans Z ouvert = skip info-log (pas d'erreur, pas de double-close). Isolation par-branche (try/catch:134-146). Idempotent + double-close-safe confirmé.",
+    "« Fenêtre orpheline close 23:59 / open 00:01 » : REFUTÉ comme P0/P1. ~2 min résiduel documenté (Kernel.php:443-445) ; une commande caisse dans cette fenêtre tombe sur le chemin dégradé fiscal_alloc_error_at + retry cron `foodking:fiscal:retry-alloc` everyMinute (Kernel.php:266-270). Gap-free by design, pas de crash ni gap silencieux.",
+    "« CleanupStalePendingKioskOrders purge une commande borne légitime » : REFUTÉ. Job bien gardé : whereNull(fiscal_sequence_no) + whereNull(deleted_at) + source_surface='kiosk' + re-check sous lockForUpdate (lignes 85-90) mirrorant la requête externe, TTL config 180min (3h). Une commande encaissée/fiscalisée (PAID + séquence) est exclue par payment_status ET par le whereNull explicite → chaîne NF525 jamais touchée. Course avec confirmCounterPayment perdue gracieusement.",
+    "« stripe:drain-stranded-cpn / PaymentReconcile chemin legacy actif » comme risque V1 : REFUTÉ. Dormant en V1 LOCAL (provider = SumUp, pas Stripe) → 0 ligne CPN Stripe à drainer. La commande short-circuite sur ensemble vide. Backlog cloud-prep, pas un bug atteignable.",
+    "posWizardComposerAware traité comme bug : REFUTÉ. config catalog_v15.php:99-105 default=false (env FK_POS_WIZARD_COMPOSER_AWARE_ENABLED) → le wizard actif est bien le Vanilla hardcodé (pos-wizard.js VIANDES), conforme au frozen §7 et au rollout env-flip voulu. Comportement attendu, pas un défaut."
+   ],
+   "safe": [
+    "Kernel.php:40-53 outbox:rescue + monitor : everyMinute + withoutOverlapping + onOneServer, alerte staleness séparée (exit non-zéro pageable). Correct.",
+    "Kernel.php:64-81 outbox:retry-failed + webhook:retry-failed : hourly, fenêtre --since=24h bornée, mutex 10s + onOneServer. Correct.",
+    "Kernel.php:176-198 outbox:prune 90d + webhook:prune 180d : croissance domain_events/webhook_events bornée, rétention distincte de la rétention NF525 6 ans (audit_logs/z_reports non touchés). Correct.",
+    "Kernel.php:211-217 sanctum:prune-expired --hours=24 : purge tokens expirés (grâce 24h), onOneServer + log dédié. Correct.",
+    "Kernel.php:128-131 pos:purge-parked-orders --older-than-hours=24 : TTL snapshots parked, ne touche pas les commandes actives. Correct.",
+    "Kernel.php:253-258 stock:scan-rupture : gated par config auto_86_preventive_cron.enabled default=false → dormant sûr, pas de flip 86 intempestif.",
+    "Kernel.php:297-331 fiscal-chain-monitor + 339-369 fiscal-archive-daily : itèrent activeBranchIds() (whereIn status [ACTIVE,1] pré/post-migration), try/catch par-branche, log channel fiscal. Robustes.",
+    "FiscalCloseAllActiveBranchesCommand : double-close-safe (pré-check STATUS_OPEN), option --dry-run, exit non-zéro si échec → pager. Filet Z-close/open symétrique 23:59/00:01 correct."
+   ]
+  },
+  {
+   "cluster": "data-integrity",
+   "rejected": [
+    "'PosOrderRequest.php:117 === string/int' : non ré-audité comme P0 (connu, décision owner, hors périmètre-neuf).",
+    "'buildCartItem multi-viandes cassé (objet vs tableau)' : RÉFUTÉ comme bug actif — le fix Object.values().flat() (l.1794-1798) couvre le cas objet PROD ; seul un drop résiduel sur désynchro de données subsiste (reclassé P3, garde-fou 422 backend).",
+    "'counter-collect confirm/cancel non protégé / double-encaissement possible' : RÉFUTÉ — idempotency middleware + PaymentAlreadyCollectedException→409 typé au-dessus du fallback 422 + abort_unless can('pos') + BranchScope via route-model-binding. Robuste.",
+    "'env('DEMO') casse config:cache de façon dangereuse' : RÉFUTÉ comme impactant — les deux branches sont identiques donc null-en-cache est sans effet (reclassé P3 code-mort).",
+    "Résidus test-DB (b7/b8/b9, 127 source_surface NULL, 151 PENDING_COUNTER, 390 domain_events) : hors périmètre, data-hygiene test-DB, jamais P0/P1 (garde-fou consigne)."
+   ],
+   "safe": [
+    "routes/api.php:854-915 counter-collect confirm/cancel : idempotency + catch typé PaymentAlreadyCollected→409 avant fallback 422 + abort_unless can('pos') + scoping branche par route-model-binding (BranchScope). At-most-once respecté.",
+    "routes/api.php:807-853 counter-collect/pending : exclut explicitement OrderStatus::CANCELED et rattrape source_surface (kiosk + pos COUNTER_DEFERRED) → pas de commande fantôme dans la file d'encaissement.",
+    "PosComponent.vue:4012-4018 séquence localStorage : sûr en V1 mono-poste (aucune collision), n'affecte pas la séquence fiscale backend gap-free.",
+    "admin-pos-v4.blade.php:130-134 : prix wizard (viandeSuppl 2.50 / fritesGrande 1.00 / sauceExtra 0.50) lus depuis Settings avec défauts cohérents SSOT — pas de valeur codée en dur divergente."
+   ]
+  }
+ ]
+}

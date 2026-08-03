@@ -1,0 +1,10 @@
+ADMIN user id=1 branch_id=0 can(pos)=Y
+KDS list count=26
+KDS contains 5622 = YES
+KDS contains 5621 = NO(expected absent)
+KDS tail ids = 4927,4928,4929,4993,4995,5399,5618,5619,5620,5622
+CAISSE pending count=24
+CAISSE contains 5622 = YES
+CAISSE tail ids = 5529,5530,5531,5532,5553,5573,5618,5619,5620,5622
+ORDER5622 total=8.300000 pay_status=15 status=4 released=YES
+ORDER5621 pay_method=5 pay_status=10 status=1 source=kiosk type=10 released=NO

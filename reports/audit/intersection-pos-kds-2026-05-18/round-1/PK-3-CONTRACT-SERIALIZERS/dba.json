@@ -1,0 +1,82 @@
+{
+  "role": "DBA",
+  "zone": "PK-3 — Contract Integrity",
+  "scope": "N+1 risks on KDS list + items-board, index coverage on (branch_id, status, order_datetime) hot KDS query",
+  "method": "read-only analysis of Eloquent queries + migrations + cast contracts",
+  "files_reviewed": [
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Services/KdsSyncService.php",
+    "app/Models/Order.php (relations)",
+    "app/Models/OrderItem.php",
+    "database/migrations/2026_03_12_130000_add_performance_indexes.php",
+    "app/Http/Resources/KDSOrderDetailsResource.php",
+    "app/Http/Resources/KDSOrderItemsResource.php"
+  ],
+  "findings": [
+    {
+      "id": "PK-3-DBA-01",
+      "severity": "P2",
+      "title": "Items-board orderItems() eager-loads ALL relations on all orders but does NOT pre-load orderItem (the Item model) — N+1 risk on every chef pluck",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:264 + KDSOrderItemsResource:20",
+        "query": "Order::with('orderItems')->...",
+        "resource_access": "$this->orderItem?->name — triggers per-row Item::find() unless preloaded"
+      },
+      "consequence": "For 50 active orders × N items each (avg 3), that is potentially 150 Item::find() queries on every items-board poll. The today-orders path (KDSOrderDetailsResource :46) DOES loadMissing('orderItem') inside the resource collection. The items-board path does NOT — the OrderItem rows are pluck'd via $orders->pluck('orderItems')->flatten() then groupBy'd, with no Item::eager-load. Hot KDS poll = N+1.",
+      "fix_proposal": "Add ->with(['orderItems.orderItem']) on the orderItems() query OR loadMissing inside KDSOrderItemsResource similar to KDSOrderDetailsResource:46. The latter is cleaner because it mirrors the today-orders path.",
+      "blocks": false,
+      "estimated_impact": "Per-poll: ~150 extra queries × poll-frequency ~5s = ~30 qps superfluous, single branch.",
+      "owner_call_v1_0_x": "Quick win; sentinel test = $this->assertSameNumber(N expected) using DB::enableQueryLog()"
+    },
+    {
+      "id": "PK-3-DBA-02",
+      "severity": "INFO",
+      "title": "Index coverage on hot KDS query is correct — idx_orders_branch_status + idx_orders_datetime cover the active window",
+      "evidence": {
+        "indexes": [
+          "idx_orders_branch_status (branch_id, status)",
+          "idx_orders_datetime (order_datetime)",
+          "idx_orders_status (status)"
+        ],
+        "hot_query_shape": "WHERE status IN (...) AND branch_id = ? AND order_datetime BETWEEN ? AND ?",
+        "migration": "database/migrations/2026_03_12_130000_add_performance_indexes.php:22-32"
+      },
+      "consequence": "MySQL planner can pick idx_orders_branch_status for the (status, branch_id) leading prefix, then range-scan order_datetime. Wave 3b commit 148dbebce specifically swapped whereDate (non-sargable) → whereBetween (sargable). Indexes covered.",
+      "blocks": false
+    },
+    {
+      "id": "PK-3-DBA-03",
+      "severity": "P2",
+      "title": "Missing composite (branch_id, status, order_datetime) — covering index would short-circuit the active window query but is V1.0.X optimization",
+      "evidence": {
+        "current_indexes": "idx_orders_branch_status (branch_id, status) leading prefix",
+        "ideal": "(branch_id, status, order_datetime) covering all three filter columns"
+      },
+      "consequence": "Today MySQL picks idx_orders_branch_status, intersects with idx_orders_datetime via index_merge if available. Acceptable at V1 scale (1 restaurant). At V2 (multi-tenant SaaS) this becomes a tier-3 optimization candidate.",
+      "blocks": false
+    },
+    {
+      "id": "PK-3-DBA-04",
+      "severity": "P1",
+      "title": "groupBy in items-board service runs in PHP (Collection), not in DB — DB returns N rows, PHP allocates a temp hash table of all order_items per poll",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:297-326",
+        "shape": "$orders->pluck('orderItems')->flatten()->groupBy(... in-PHP closure ...)"
+      },
+      "consequence": "Memory pressure: O(items × order_items.json_payload_size). At 50 orders × 3 items = 150 rows = trivial. At 500 orders (worst-case advance backlog) × 5 items = 2500 rows = still cheap. Not a leak, but architecturally fragile if the active-window grows (the limit(51) + advance carry-over could yield more). The TZ heal commit 148dbebce keeps the window bounded daily, so OK at V1.",
+      "blocks": false
+    },
+    {
+      "id": "PK-3-DBA-05",
+      "severity": "INFO",
+      "title": "Cast contract verified — composition_snapshot + allergens_snapshot both cast to 'array'",
+      "evidence": "app/Models/OrderItem.php:71,76",
+      "consequence": "Resource code can safely access $this->allergens_snapshot expecting array. The safeJsonDecodeArray helper in KDSOrderItemsResource:55 is defensive belt-and-suspenders (handles already-array AND string-JSON cases). Good defensive style."
+    }
+  ],
+  "verdict": {
+    "summary": "Indexes cover the hot path. One latent N+1 on items-board (PK-3-DBA-01) is the most impactful finding. Memory + scan are bounded at V1 scale. No DB-level blocker for V1.",
+    "blocking_v1": false,
+    "v1_0_x_quick_wins": ["Eager-load orderItem on items-board path (PK-3-DBA-01)", "Composite (branch_id, status, order_datetime) index"]
+  }
+}

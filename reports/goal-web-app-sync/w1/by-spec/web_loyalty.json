@@ -1,0 +1,93 @@
+{
+ "spec": "web:loyalty",
+ "scope": "Cartographie fidélité WEB standalone (/Users/1millnonstop/Downloads/web : loyalty-v2.jsx, data/loyalty.js, screens.jsx WebLoyalty, screens-v3.jsx, components.jsx, funnel.jsx, api.js) vs backend réel (LoyaltyController.php 967 lignes, config/loyalty.php, routes/api.php:1443-1523, listener earn, settings DB live) — read-only, aucun fichier modifié.",
+ "summary": "Le dashboard fidélité web (WebLoyalty, screens.jsx:506-762) est à ~90% DÉMO : seul le SOLDE est réel (GET /api/profile → loyalty_points, screens.jsx:522). Le QR est un mock 13x13 déterministe (components.jsx:21), l'historique/leaderboard/streak/défi/parrainage/profil « Ikyes Benzaid » sont hardcodés, et le bouton « Utiliser » simule le redeem LOCALEMENT (demoRedeem) sans jamais appeler le backend. Le backend expose déjà TOUT le nécessaire : /loyalty/config (public), /balance, /history, /redeem (idempotency + multiple de 100), /qr (token signé lqr.<payload>.<hmac>, TTL 300s). Les taux sont en parité exacte : DB live earn 1pt/€, 100pts=1€, min 100 = data/loyalty.js CONFIG. Risques : redeem gated par pos.manual_discount_enabled (défaut true mais kill-switch env), earn web arrondit (round) là où le backend tronque (floor), et le rendu QR image doit être vendoré localement (pas de CDN).",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Redeem web = simulation locale pure, n'appelle jamais POST /api/frontend/loyalty/redeem",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 707,
+   "evidence": "onClick={() => { if (canUse) setDemoRedeem(L.redeem(points)); }} — commentaire ligne 685-686 : « DÉMO V1 : le bouton simule l'utilisation localement (points non synchronisés caisse) ». Le backend réel existe : routes/api.php:1465 POST /redeem middleware('idempotency'), LoyaltyController.php:296.",
+   "recommendation": "W3 : remplacer setDemoRedeem par appel POST /api/frontend/loyalty/redeem {code: profile.loyalty_code, points: multiple de 100} avec header Idempotency-Key, puis re-fetch profile(). Attention au gate 422 si POS_MANUAL_DISCOUNT_ENABLED=false (LoyaltyController.php:305)."
+  },
+  {
+   "severity": "P1",
+   "title": "QR wallet = mock décoratif 13x13, ne encode RIEN — le token signé lqr.* n'est jamais minté côté web",
+   "file": "/Users/1millnonstop/Downloads/web/components.jsx",
+   "line": 21,
+   "evidence": "function WebQR() { ... on = ((x*7 + y*11 + 3) % 5) < 2; } — grille pseudo-aléatoire déterministe, aucune donnée encodée. Badge « DÉMO V1 — ce QR code n'est pas connecté à la caisse » screens.jsx:594. Backend prêt : POST /api/frontend/loyalty/qr (routes/api.php:1475, generateQr LoyaltyController.php:850) renvoie {token:'lqr.<payload>.<hmac>', expires_at, ttl_seconds:300, loyalty_code}.",
+   "recommendation": "W3 : appeler POST /loyalty/qr, encoder data.token en vrai QR via une lib vendorée LOCALEMENT (ex. qrcode-generator minifié copié dans /Users/1millnonstop/Downloads/web/tools/ ou assets/ — AUCUN CDN), rafraîchir toutes les ttl_seconds (300s, throttle 30/min OK). La caisse/borne le scanne via POST /loyalty/scan (legacy plaintext désactivé par défaut, config/loyalty.php:68-72 → le token signé est le SEUL chemin fiable)."
+  },
+  {
+   "severity": "P1",
+   "title": "Onglet Historique 100% hardcodé (4 lignes fictives mai) alors que GET /loyalty/history existe",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 724,
+   "evidence": "[{ d: '14 mai · 19h47', t: 'Commande #C-1234', p: '+33' }, { d: '12 mai · 12h22', t: '500 pts utilisés → −5,00 € en caisse', p: '−500' }, ...] — tableau littéral. Backend : GET /api/frontend/loyalty/history (routes/api.php:1467, LoyaltyController.php:523) paginé, lit loyalty_transactions (type/points/balance_after/source_surface/description/date) avec fallback orders.",
+   "recommendation": "W3 : fetch GET /api/frontend/loyalty/history (auth) et mapper type earn/redeem/manual_add → +/− ; garder le même rendu lc-reward-row."
+  },
+  {
+   "severity": "P2",
+   "title": "Profil « Ikyes Benzaid » entièrement fake (nom, email, tel, date naissance, Visa 4242) + navbar hardcodée",
+   "file": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+   "line": 10,
+   "evidence": "<div className=\"lc-profile-name\">Ikyes Benzaid</div> ... 'ikyes@lecayenne.fr', '+33 6 12 34 56 78', '14 mai 1998' (lignes 10-21) ; SavedCards Visa ····4242 (l.70) ; onLogout no-op screens.jsx:758 onLogout={()=>{}} ; navbar components.jsx:72 <span className=\"lc-hide-mobile\">Ikyes</span> + avatar 'IB'.",
+   "recommendation": "W3 : alimenter ProfileEditor + navbar depuis api.profile() (UserResource : name/loyalty_points/loyalty_code — api.js:456-460). Cartes/allergènes/préférences : aucun endpoint backend → masquer ou badge DÉMO."
+  },
+  {
+   "severity": "P2",
+   "title": "Leaderboard, Défi hebdo, Streak 4/8, parrainage CAYENNE-IKYES, « +33 pts / 7 jours » : fake SANS endpoint backend correspondant",
+   "file": "/Users/1millnonstop/Downloads/web/screens-v3.jsx",
+   "line": 126,
+   "evidence": "Leaderboard rows hardcodés dont { rank: 12, name: 'Ikyes B.', pts: 347, tag: 'PEPPER', me: true } (screens-v3.jsx:131) ; Challenge '2 / 3 commandes' (screens-v3.jsx:165) ; streak screens.jsx:626-632 ; referral 'CAYENNE-IKYES' screens.jsx:640 ; '+33 pts gagnés ces 7 derniers jours' screens.jsx:582 ; identifiant 'LECAY-347-A9F2C' screens.jsx:592. Aucune route backend leaderboard/challenge/referral n'existe (grep routes/api.php).",
+   "recommendation": "W3 : retirer ou marquer « bientôt » ces blocs (pas de backend V1). Remplacer LECAY-347-A9F2C par profile.loyalty_code réel (format 8 hex, LoyaltyController.php:187)."
+  },
+  {
+   "severity": "P2",
+   "title": "funnel envoie ctx.loyaltyCode mais RIEN ne le set jamais — fil mort ; le récapitulatif earn utilise round au lieu du floor backend",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 341,
+   "evidence": "loyaltyCode: ctx.loyaltyCode || null — seul hit 'loyalt' du funnel avec l.100-104 « Tu gagnes +{Math.round(total)} pts » ; aucun setCtx(...loyaltyCode...) dans tout le repo web (grep). Backend earn : AwardLoyaltyPointsOnDelivery.php:104 (int) floor($orderTotal * $rate).",
+   "recommendation": "W3 : (a) auto-remplir loyaltyCode depuis profile() quand authed pour que l'earn se rattache au compte ; (b) afficher Math.floor(total) pour coller au listener backend (12,90 € → 12 pts, pas 13)."
+  },
+  {
+   "severity": "P3",
+   "title": "data/loyalty.js earnPoints utilise Math.round (0,90 € → 1 pt) alors que le backend tronque (floor)",
+   "file": "/Users/1millnonstop/Downloads/web/data/loyalty.js",
+   "line": 32,
+   "evidence": "return Math.round(euros * CONFIG.earn_ratio); // parité mobile (round, ex. 0,90 € → 1 pt) — vs backend AwardLoyaltyPointsOnDelivery.php:104 $pointsToAward = (int) floor($orderTotal * $rate);",
+   "recommendation": "Aligner earnPoints sur floor (ou n'utiliser earnPoints que comme estimation étiquetée « ~ ») pour éviter les écarts d'affichage de 1 pt."
+  },
+  {
+   "severity": "P3",
+   "title": "Config web figée (Object.freeze) au lieu de lire GET /loyalty/config déjà exposé par api.js",
+   "file": "/Users/1millnonstop/Downloads/web/data/loyalty.js",
+   "line": 23,
+   "evidence": "const CONFIG = Object.freeze({ earn_ratio: 1, redeem_ratio: 100, min_redeem_points: 100 }); — api.js:451 loyaltyConfig() → GET /api/frontend/loyalty/config existe (public, LoyaltyController.php:480 renvoie points_per_euro/points_for_1_euro_discount/min_redeem_points). Parité ACTUELLE exacte avec la DB live (1/100/100), mais toute modif admin des Settings désynchroniserait le web silencieusement.",
+   "recommendation": "W3 : au boot, fetch loyaltyConfig() et écraser LC.loyalty.config (ou assert parité + warn console)."
+  },
+  {
+   "severity": "INFO",
+   "title": "Redeem backend soumis au kill-switch pos.manual_discount_enabled + contrainte multiple de 100",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 305,
+   "evidence": "if (config('pos.manual_discount_enabled') !== true) { return ... 422 } — défaut true (config/pos.php:172-176, env POS_MANUAL_DISCOUNT_ENABLED). Puis L.364 : if ($pointsToRedeem % $rate !== 0) → 400 « multiple de 100 ». Owner-check L.350 : non-kiosk/non-staff ne peut redeem QUE son propre code.",
+   "recommendation": "L'UI web doit envoyer des points multiples de 100 (Math.floor(points/100)*100) et gérer le 422 kill-switch avec un message propre."
+  }
+ ],
+ "facts": [
+  "UI EXISTANTES web : dashboard complet WebLoyalty (screens.jsx:506-762) avec wallet+solde+tier bar+QR (mock)+achievements+4 onglets (Mes réductions / Historique / Comment ça marche / Mon compte) ; leaderboard+challenge screens-v3.jsx:125-171 ; profil/settings loyalty-v2.jsx (LoyaltyProfileTab, exporté window ligne 142) ; gate non-auth screens.jsx:541-555.",
+  "SEUL élément RÉEL aujourd'hui : le solde — screens.jsx:517-524 fetch api.profile() (GET /api/profile, api.js:457-460) → setBasePoints(u.loyalty_points). Tout le reste (QR, historique, identifiant, leaderboard, streak, referral, profil Ikyes Benzaid) = DÉMO hardcodée, marquée par 2 badges « DÉMO V1 » screens.jsx:572 et :594.",
+  "EARN/REDEEM côté web calculés dans /Users/1millnonstop/Downloads/web/data/loyalty.js (helper unique window.LC.loyalty) : CONFIG {earn_ratio:1, redeem_ratio:100, min_redeem_points:100} (l.23-27), earnPoints=round(euros*1) (l.32), redeemableEuros=points/100 linéaire (l.38), redeem() linéaire (l.47-59). Miroir mobile déclaré ; SSOT tiers = data/menu.js PEPPER_CLUB (l.465-473 : novice 0 / pepper 500 / master 1500 / légende 5000, welcome_bonus 25).",
+  "PARITÉ TAUX CONFIRMÉE avec la DB live du backend : settings group loyalty_setup = loyalty_points_per_euro=1, loyalty_points_for_1_euro_discount=100, loyalty_min_redeem_points=100 (table settings, ids 73-75, vérifié via tinker 2026-07-08). Les défauts config() du contrôleur (10/100/50, LoyaltyController.php:483-485) NE s'appliquent PAS — la DB les écrase.",
+  "BACKEND — routes (routes/api.php) : POST /api/frontend/loyalty/check (l.1445, auth:sanctum+throttle:10,1), POST /register (l.1446, PUBLIC throttle:5,1), GET /config (l.1448, public), puis groupe auth:sanctum l.1451 : POST /add-points (l.1457, idempotency, staff-only dans le contrôleur), POST /redeem (l.1465, idempotency), GET /balance (l.1466, alias de check L.411), GET /history (l.1467), POST /qr (l.1475, throttle:30,1). POST /loyalty/opt-in (l.1514, RGPD), POST /loyalty/scan (l.1521, kiosk).",
+  "QR SIGNÉ : POST /api/frontend/loyalty/qr → LoyaltyController::generateQr (LoyaltyController.php:850-892) renvoie {token, expires_at, ttl_seconds, loyalty_code} ; format token 'lqr.<payload>.<hmac>' (LoyaltyQrSigner TOKEN_PREFIX='lqr.', app/Services/Loyalty/LoyaltyQrSigner.php:39, sign() l.50) ; TTL 300s + leeway 30s (config/loyalty.php:39,45) ; anti-replay nonce via verifyAndConsume (l.94). Le scan caisse/borne (LoyaltyController::scan l.645) vérifie le token en priorité (l.694-721) ; le plaintext legacy FK:<code> est REFUSÉ par défaut (config/loyalty.php:68-72 accept_legacy_plaintext=false) → le web DOIT afficher le token signé, pas le loyalty_code brut.",
+  "OÙ AFFICHER LE QR : remplacer WebQR (components.jsx:21-36, mock) DANS le bloc lc-wallet-code (screens.jsx:588-597). Contrainte no-CDN : vendorer une lib QR minifiée en fichier LOCAL du repo web (le site est des fichiers statiques JSX/JS locaux ; index.html ne doit référencer aucun host externe) et rafraîchir le token toutes les 300s (throttle 30/min largement suffisant). Afficher loyalty_code (réponse du même appel) comme identifiant lisible à la place de 'LECAY-347-A9F2C' (screens.jsx:592).",
+  "PLAN CÂBLAGE écran par écran (W3) : (1) Wallet screens.jsx:576-597 → solde déjà réel ; + QR réel POST /qr + loyalty_code réel ; retirer '+33 pts/7j' (l.582) ou dériver de /history. (2) Onglet 'Mes réductions' l.687-721 → POST /redeem (multiple de 100, Idempotency-Key, gérer 422 kill-switch et 400 multiple) puis re-fetch profile(). (3) Onglet 'Historique' l.722-740 → GET /history (paginé, champs type/points/balance_after/description/date). (4) Onglet 'Mon compte' loyalty-v2.jsx → nom/email depuis profile() ; cartes/préférences sans backend → masquer/démo. (5) Navbar components.jsx:72 → prénom réel. (6) Funnel : afficher floor(total) pts (funnel.jsx:102) et setter ctx.loyaltyCode depuis profile() (funnel.jsx:341 l'envoie déjà à placeOrder → api.js:434 body.loyalty_code). (7) Leaderboard/challenge/streak/referral : PAS de backend — retirer ou badge démo. (8) Retirer les badges 'DÉMO V1' seulement après câblage effectif.",
+  "api.js expose déjà les briques : loyaltyConfig() (l.451-454), profile() (l.457-460), placeOrder passe loyalty_code (l.434) ; MANQUENT dans LC.api : loyaltyHistory(), loyaltyRedeem(), loyaltyGenerateQr() — à ajouter en W3 (mêmes patterns req('GET'/'POST', ..., {auth:true})).",
+  "EARN backend automatique : app/Listeners/AwardLoyaltyPointsOnDelivery.php:84 rate=Settings loyalty_points_per_euro, l.104 points=floor(total*rate), colonne orders.loyalty_points_awarded comme verrou anti-double (sentinelle -1). Le web n'a RIEN à créditer lui-même — il suffit d'envoyer loyalty_code (ou user_id authed) à la commande.",
+  "SÉCURITÉ à respecter au câblage : /check-/balance ne renvoie les données QUE au propriétaire du code, au staff ou à une vraie borne (guard IDOR LoyaltyController.php:88-97) → le web authed ne peut consulter que SON compte (c'est le cas d'usage) ; /redeem owner-only pour un client (l.350) ; /register public ne renvoie les données que si wasRecentlyCreated (l.200-206, réponse neutre PHONE_EXISTS sinon).",
+  "Aucun produit ni récompense-catalogue à inventer : le modèle redeem est CONTINU (100 pts = 1 €, décision D6=A 2026-06-10, screens.jsx:479-482) — l'ex-catalogue à paliers r1-r5 a été supprimé ; ne pas le réintroduire."
+ ]
+}

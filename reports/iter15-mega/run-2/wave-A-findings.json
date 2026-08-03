@@ -1,0 +1,52 @@
+{
+  "wave": "A",
+  "run_n": 2,
+  "findings": [
+    {
+      "id": "A-009",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown still renders 'Bonjour Admin Le Cayenn..' with literal '..' suffix. DOM 01-dashboard-default.dom.html contains the exact string 'Cayenn..' (1 occurrence) inside the AppHeader user-display <b> tag, while the full name 'Admin Le Cayenne' is the canonical value. Hard-coded JS slice still chops the trailing 'e' and appends '..'. No title attribute. Still present after run-1 fix (run-1 P2 not addressed — non-blocking but should land before merge).",
+      "fix_hint": "Same as run-1 — remove the substring slice in the shared AppHeader user-display computed prop (likely shortName(name)) or replace with CSS text-overflow: ellipsis + title attribute."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Catalog control-plane metric tile labelled 'INDISPONIBLES' (DOM 02-items-list-default.dom.html, <small>indisponibles</small>, text-transform: uppercase) is still visually clipped to 'INDISPONIB(' in the PNG — the right edge of the tile cuts the closing letters. The same clipping appears identically in 03-items-toggle-row-visible.png. No title attribute on the <small>. Still present after run-1 fix.",
+      "fix_hint": "Same as run-1 — increase the metric tile min-width (catalog-control-plane__metric class) or shorten the label, plus add a title attribute fallback."
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "'Prêt' column on the customer-facing order-status-screen is still empty: DOM contains <ul data-v-63263638 class=\"...\"></ul><p class=\"text-center text-[#A0A3BD] text-base mt-8\">—</p> at offset ~259700. No illustration <img>, no copy ≥20 chars, no primary CTA. (The 'En préparation' column is now correctly populated with N°A0004 / N°A0015, so the WS-banner / empty-data run-1 P0 is gone — but the residual em-dash placeholder for the Prêt column is the same UX miss as run-1 A-011.) Still present after run-1 fix.",
+      "fix_hint": "Replace '—' placeholder with a small illustration + copy 'Aucune commande prête pour le moment.' so customers immediately understand the screen is alive and waiting, rather than broken."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown on the customer-facing order-status-screen still renders 'Admin Le Cayenn..' with the same hard-coded chop as A-009. DOM 04-order-status-screen-default.dom.html confirms 'Cayenn..' (1 occurrence). Truncation propagates to all 6 captured states (every admin shell + customer screen sharing AppHeader). Still present after run-1 fix.",
+      "fix_hint": "Same fix as A-009 — fix the shared AppHeader once."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 0, "P2": 4, "P3": 0 },
+  "states_reviewed": 6,
+  "run_1_p0_p1_verification": [
+    { "id": "A-001", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "Observability now renders the real outbox-overview-dashboard (events table, queue:work and websockets:serve health cards). 404.gif / 'Page non trouvée' strings are absent from 05-observability-default.dom.html (0 occurrences)." },
+    { "id": "A-002", "category": "i18n_leak", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of '/admin/undefined' or 'menu.undefined' in any of the 6 DOMs (vs 6+ in run-1)." },
+    { "id": "A-003", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of class='ws-reconnect-banner' in any DOM. The string 'Connexion temps réel perdue' appears only inside an inline JS comment that explains the suppression mechanism (appEnv='local' gate), not as rendered text. Customer screen shows real orders (N°A0004, N°A0015) in 'En préparation'." },
+    { "id": "A-004", "category": "i18n_leak", "severity": "P1", "verdict": "PASS", "note": "Same root-cause as A-002 — fixed." },
+    { "id": "A-005", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "0 'intlify' / 'button.menu' / 'menu.undefined' warnings in any console.json. Only entries are the 2 allowlisted Pusher WS errors (vendor.js)." },
+    { "id": "A-006", "category": "unexpected_4xx", "severity": "P1", "verdict": "PASS", "note": "All 6 network.json files are empty arrays []. CSP-report endpoint moved out of apiKey middleware → no longer 400/429 (now 204, filtered out as expected per protocol)." },
+    { "id": "A-007", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "items-list console.json has only the 2 allowlisted Pusher WS entries; no csp-report 400/429 noise." },
+    { "id": "A-008", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "order-status-screen console.json has only the 2 allowlisted Pusher WS entries; no csp-report 429 noise." }
+  ],
+  "convergence_verdict": "Wave A run-2 P0/P1 == 0. All 8 run-1 P0/P1 findings PASS. 4 P2 residuals (A-009, A-010, A-011, A-012) carry over unchanged — non-blocking per protocol but should be addressed before final merge.",
+  "new_issues_introduced": []
+}

@@ -1,0 +1,9 @@
+tests/Playwright/product-composer-admin-create-kiosk-sees.spec.js
+tests/Playwright/product-composer-pos-kiosk-parity.spec.js
+tests/Playwright/product-composer-stock-rupture.spec.js
+tests/Playwright/product-composer-kds-queue-payment.spec.js
+reports/audit/PRODUCT_COMPOSER_SYNC_FINAL_E2E_REPORT_2026-04-27.md
+reports/audit/CLAUDE_HANDOFF_PRODUCT_COMPOSER_SYNC_2026-04-27.md
+missions/PRODUCT-COMPOSER-SYNC-05-E2E-CLAUDE-HANDOFF/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-05-E2E-CLAUDE-HANDOFF/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-05-E2E-CLAUDE-HANDOFF/input.json

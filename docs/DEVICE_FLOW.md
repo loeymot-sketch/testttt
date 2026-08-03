@@ -13,7 +13,7 @@ L'écosystème FoodKing s'articule autour de multiples appareils physiques ou vi
 - **Acteur** : Caissier (Humain, Authentifié `Manager`).
 - **Source of Truth** : Backend direct.
 - **Écriture** : Force les statuts, crée des commandes manuellement, applique des remises (`TableOrder`, `PosOrder`).
-- **Lecture** : Écoute les WebSockets Firebase pour les entrées Kiosk.
+- **Lecture** : Écoute les mises à jour **Laravel Echo / Pusher (WebSockets)** pour les commandes / entrées kiosk côté caisse (y compris file d’attente encaissement) — *pas* Firebase sur ce chemin. *(Firebase/FCM peuvent exister ailleurs pour d’autres canaux, mais le flux caisse temps réel documenté ici est Echo.)*
 - **Limites** : Limité à sa propre succursale (`branch_id`) sauf si compte `Admin`.
 
 ## 3. KDS (Kitchen Display System)

@@ -1,0 +1,128 @@
+{
+  "wave": "E",
+  "round": 2,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "ROUND 2 VERIFICATION CLOSED. Sidecar `04-e-cart-totals-ssot.delta.json` records `cart_displayed_total: 23.7`, `backend_quote_total_ttc: 23.7`, `backend_quote_subtotal: 23.7`, `backend_quote_total_tax: 3.95`, `absolute_delta: 0`, `verdict: GREEN`. Sidecar `04-e-cart-totals-ssot.quote.json` returns `data.subtotal: 23.7`, `data.total_ttc: 23.7`, `data.total_tax: 3.95`. Sidecar `10-e-confirmation-success.totals.json` records `cart_total_state_01: 23.7`, `cart_total_before_checkout: 23.7`, `backend_quote_total_ttc: 23.7`, `confirmation_total: 23.7`, `confirmation_number: #A0077` — all four surfaces equal. Sidecar `12-e-cash-instruction-amount-display.totals.json` records `cart_total_cash: 23.7`, `cash_amount_displayed: 23.7` — equal. Visual cross-check: state 01 cart Total €23,70 (lines 12,50 + 8,70 + 1,00 + 1,50 = 23,70 ✓ with Salade Royale Formule line = 8,70€ = 7,50€ base + 1,20€ ratio menu-boisson addon priced server-side). State 10 confirmation card 'TOTAL PAYÉ €23,70'. State 11/12 cash card 'Montant à régler 23,70€'. Backend now applies the same drinkRatio menu-formula model the frontend uses; PricingService NF525 fiscal under-charge defect closed.",
+      "fix_hint": "Closed via commit 18dc7a29c (PricingService role-aware menu-formula pricing + composition_snapshot correctness). No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "ROUND 2 VERIFICATION CLOSED. State 11 PNG (`11-e-cash-alt-branch-instruction.png`) shows ONLY ONE total on the viewport: `Numéro de commande #A0078 — Montant à régler 23,70 €`. The previously-overlapping floating cart bar (`Mon panier €23,70 ›`) is GONE. State 12 PNG identical (#A0078, 23,70€, no cart bar). DOM grep on `11-e-cash-alt-branch-instruction.dom.html` and `12-e-cash-instruction-amount-display.dom.html`: `class=\"kiosk-cart-bar\"` exact match count = 0 in both. The 9 occurrences of the substring `kiosk-cart-bar` in each DOM are confined to the inline scoped <style> block (CSS class definitions `.kiosk-cart-bar[data-v-6ffab5ed] { ... }` lines 3601-3667) — not a rendered element. Sidecar `12-e-cash-instruction-amount-display.totals.json` confirms backend cash amount equals cart total (both 23.70). Numeric-integrity defect resolved: only one monetary value visible per surface, and that value matches backend.",
+      "fix_hint": "Closed via commit 2084c0448 (`hiddenRoutes` array in `KioskAppComponent.vue` line 261-271 now includes `kiosk.cash-instruction`) + commit 18dc7a29c (backend pricing alignment). Verified at `resources/js/components/frontend/kiosk/KioskAppComponent.vue:269-270` showing both `'kiosk.loyalty'` and `'kiosk.cash-instruction'` present.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-borne-E/06-e-loyalty-step-input.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "ROUND 2 VERIFICATION CLOSED. DOM grep on states 06/11/12: `class=\"kiosk-cart-bar\"` exact match count = 0. `06-e-loyalty-step-input.dom.html` shows zero rendered cart-bar element matches (only CSS rule definitions inside scoped <style>). Visually state 06 PNG shows the loyalty number-pad fully accessible — no floating bottom cart-bar overlapping the `Pas encore membre ? S'inscrire` register CTA. Source verified at `resources/js/components/frontend/kiosk/KioskAppComponent.vue:255-273`: `showCartBar` computed property excludes `'kiosk.loyalty'` and `'kiosk.cash-instruction'` from rendering the floating cart-bar.",
+      "fix_hint": "Closed via commit 2084c0448. NOTE (spec hygiene, NOT a finding): `tests/e2e/test-e2e-borne-2026-05-10-wave-E.spec.js:798-805` retains a stale comment + `page.evaluate(() => el.click())` bypass for the cash-cta — the bypass is no longer required functionally (DOM count = 0, visual confirmation no overlap). Recommend the GStack team replace the JS-dispatch click with a real `await page.locator('[data-testid=\"kiosk-cash-cta-understood\"]').click()` in a follow-up to prove the regression is closed end-to-end.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-borne-E/09-e-payment-tpe-result-ok.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "ROUND 2 VERIFICATION CLOSED. All 14 `*.network.json` sidecars are empty arrays `[]` (verified with `jq '. | length'` returning 0 for every file; reviewed file size 2 bytes each). Per the GStack capture contract, `network.json` records ONLY responses with `status>=400` OR `duration>2000ms` — empty array therefore means no 4xx/5xx response was emitted on any of the 14 captured states. The console.json sinks at states 01, 09, 10, 11 contain only `vendor.js` Pusher WebSocket ERR_CONNECTION_REFUSED noise (all from `js/vendor.js?id=81384d02e45361bd595b2088801fcd13` line 11189) — per protocol allowlist these are dev-only websockets noise, NOT application errors. There is no `Failed to load resource: the server responded with a status of 401` trace anywhere in the 14 console sinks. State 09 PNG shows TPE result success and state 10 PNG shows `Commande confirmée! #A0077 TOTAL PAYÉ €23,70` — the CB happy path completes with a confirmation card and no hanging unconfirmed-state. Sanctum kiosk:order token now flows correctly to `/api/frontend/order/{id}/payment-confirm`.",
+      "fix_hint": "Closed via Sanctum token plumbing fix (cluster-3). No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-borne-E/01-e-cart-multi-line.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "ROUND 2 VERIFICATION CLOSED. `01-e-cart-multi-line.network.json` length=0 — no `/api/frontend/pricing/preview` 401 captured. Backend SSOT delta is 0 (E-001 closed) which independently proves `/pricing/preview` is now succeeding (otherwise the cart total could not equal the backend quote subtotal). The `01-e-cart-multi-line.console.json` log contains only 3 vendor.js Pusher WebSocket noise entries (allowlisted), no `Failed to load resource: 401` traces. The `kioskPricingPreview` axios path is now authenticated with the `kiosk:order` Sanctum bearer token.",
+      "fix_hint": "Closed via commit 18dc7a29c (PricingService role-aware) + the same Sanctum bearer plumbing fix that closed E-004. No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "ROUND 2 PARTIAL — defect persists but downgraded scope. State 04 PNG renders almost entirely white with only a small mid-screen orange spinner (no skeleton, no localized progress copy 'Vérification du paiement...', no [aria-busy]). The previously-contradicting cart-bar showing the wrong frontend-only total is GONE (round-2 fix from cluster-3) — so the user no longer reads two competing totals during the redirect. The remaining defect is purely a UX-quality blank-screen-during-transition issue. Sidecar `04-e-cart-totals-ssot.console.json` is empty (no errors during the transition). Severity stays P2 (UX-quality, not loop-blocking per protocol).",
+      "fix_hint": "On the cart→checkout transition (within ~300ms of route change to `/kiosk/payment` or `/kiosk/upsell`), render a localized loading state with `kiosk.cart.checking_out` copy + skeleton + `[aria-busy=\"true\"]` instead of dropping the whole cart body to a single spinner. Affected window appears to span <500ms in the captured artifact, so this is a low-priority polish item.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "E-007",
+      "state_artifact": "test-e2e-borne-E/06-e-loyalty-step-input.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND 2 RE-VERIFIED. Sidecar `06-e-loyalty-step-input.register-btn.json` records `found: true`, `visible: true`, `backgroundImage: 'linear-gradient(135deg, rgb(245, 197, 24) 0%, rgb(224, 178, 20) 100%)'` (yellow #F5C518→#E0B214 gradient confirmed), `color: rgb(15, 15, 15)`, `fontWeight: 800`, `width: 534px`, `height: 51.1875px`, text `Pas encore membre ? S'inscrire`. PNG visually confirms a yellow gradient button with dark legible text, contrast strong (foreground rgb(15,15,15) on yellow-bright gradient → estimated ratio ≥ 7:1). No regression. Logged for closure tracking.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-008",
+      "state_artifact": "test-e2e-borne-E/08-e-payment-tpe-waiting-overlay.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND 2 RE-VERIFIED. Sidecar `08-e-payment-tpe-waiting-overlay.probe.json` records `found: true`, `backgroundColor: rgb(255, 255, 255)`, `color: rgb(15, 15, 15)`, `r: 255, g: 255, b: 255` — pure-white TPE overlay, light mode. PNG shows white background, Cayenne accent ring around the terminal icon, dark legible heading 'Simulation du paiement (mode navigateur)…' + supporting copy + 'Annuler le paiement' CTA. No dark-navy regression.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-009",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND 2 NEW (closure log). Sidecar `11-e-cash-alt-branch-instruction.probe.json` records `found: true`, `display: 'grid'`, `gridTemplateRows: '1689px 175px'`. PNG shows the cash-instruction screen with the order-card vertically centered above the bottom J'AI COMPRIS CTA (grid-template-rows pattern of content + CTA). Vertical centering verified. No regression. Logged for tracking only.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 3,
+    "P2": 1,
+    "P3": 3,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "PASS",
+    "E-002": "PASS",
+    "E-003": "PASS",
+    "E-004": "PASS",
+    "E-005": "PASS",
+    "E-006": "PARTIAL_PASS",
+    "E-007": "PASS",
+    "E-008": "PASS"
+  },
+  "verdict": "AMBER",
+  "notes": "Wave-E round-2 closes ALL P0 + ALL P1 defects from round 1. Numeric integrity verified on FOUR surfaces with identical 23.70€: cart line sum (12.50+8.70+1.00+1.50=23.70), `04-e-cart-totals-ssot.delta.json` (cart=23.7, backend=23.7, delta=0, GREEN), `10-e-confirmation-success.totals.json` (cart=23.7, backend=23.7, confirm=23.7, #A0077), `12-e-cash-instruction-amount-display.totals.json` (cart=23.7, cash=23.7). Salade Royale Formule line correctly priced server-side at 8.70€ = 7.50€ base + 1.20€ ratio menu-boisson addon, matching the frontend drinkRatio (0.4 × 3.00 = 1.20) — backend NF525 SSOT alignment confirmed. Cart-bar overlap eradicated on cash + loyalty routes: `class=\"kiosk-cart-bar\"` rendered count = 0 on states 06, 11, 12 (the 9 substring matches per state are confined to scoped <style> CSS rule definitions, NOT rendered elements). Source verified at `KioskAppComponent.vue:261-271` with `'kiosk.loyalty'` and `'kiosk.cash-instruction'` in `hiddenRoutes`. All 14 network.json arrays are empty (length=0), confirming no 4xx/5xx captured — `/payment-confirm` 401 closed, `/pricing/preview` 401 closed. Console errors are exclusively allowlisted vendor.js Pusher noise. Pink palette regression scan: 0 `#E8001C` matches and 0 `rgb(232,0,28)` matches across all 14 DOM artifacts. Visual anti-regression spot-check: loyalty register button gradient F5C518→E0B214 verified (sidecar register-btn.json), TPE overlay pure white rgb(255,255,255) verified (sidecar probe.json), cash-instruction grid 1689px+175px verified (sidecar probe.json). One P2 defect persists from round 1 (E-006 loading_state_missing on state 04 redirect window — downgraded to PARTIAL because the contradicting-totals component of the original defect is now resolved; only the bare-spinner UX gap remains). One spec-hygiene observation (NOT a finding): `tests/e2e/test-e2e-borne-2026-05-10-wave-E.spec.js:798-805` still uses a `page.evaluate(() => el.click())` bypass + stale comment claiming the cart-bar overlaps the cash-cta; the bypass is no longer functionally required (DOM evidence proves count=0) and replacing it with a real `locator.click()` would prove the regression is closed at the playwright-driver level too. Verdict AMBER (P0=0, P1=0, P2=1) — convergence is the orchestrator's call, not mine."
+}

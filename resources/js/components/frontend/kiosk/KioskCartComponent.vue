@@ -2,13 +2,11 @@
   <div class="kiosk-cart" data-testid="kiosk-cart-root">
     <!-- Header -->
     <div class="kiosk-cart-header">
-      <button
+      <button type="button"
         class="kiosk-cart-back"
-        type="button"
         @click="goBackFromCart"
         :aria-label="$t('kiosk.back')"
-        data-testid="kiosk-cart-back"
-      >
+        data-testid="kiosk-cart-back">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -19,7 +17,7 @@
           {{ cartCount }} {{ cartCount > 1 ? $t('kiosk.article_plural') : $t('kiosk.article_singular') }}
         </p>
       </div>
-      <button
+      <button type="button"
         class="kiosk-cart-clear"
         @click="showClearConfirm = true"
         v-if="cartCount > 0"
@@ -33,10 +31,12 @@
     <transition name="fade">
       <div
         v-if="showClearConfirm"
+        ref="clearPanel"
         class="kiosk-clear-overlay"
         role="dialog"
         aria-modal="true"
         aria-labelledby="kiosk-cart-clear-title"
+        tabindex="-1"
         data-testid="kiosk-cart-clear-modal"
         @click.self="showClearConfirm = false"
         @keydown.esc="showClearConfirm = false"
@@ -45,12 +45,13 @@
           <p id="kiosk-cart-clear-title" class="kiosk-clear-title">{{ $t('kiosk.clear_cart') }}</p>
           <p class="kiosk-clear-sub">{{ $t('kiosk.clear_cart_confirm') }}</p>
           <div class="kiosk-clear-actions">
-            <button
+            <button type="button"
               class="kiosk-clear-yes"
               @click="confirmClear"
               data-testid="kiosk-cart-clear-yes"
             >{{ $t('kiosk.yes_clear') }}</button>
-            <button
+            <button type="button"
+              ref="clearCancelBtn"
               class="kiosk-clear-no"
               @click="showClearConfirm = false"
               data-testid="kiosk-cart-clear-no"
@@ -71,7 +72,7 @@
       <div class="kiosk-cart-empty-icon" aria-hidden="true">🛒</div>
       <h2>{{ $t('kiosk.empty_cart') }}</h2>
       <p>{{ $t('kiosk.empty_cart_hint') }}</p>
-      <button
+      <button type="button"
         class="kiosk-btn-primary"
         @click="$router.push({ name: 'kiosk.categories' })"
         data-testid="kiosk-cart-empty-cta"
@@ -88,7 +89,15 @@
       :aria-label="$t('kiosk.order_type_label')"
       data-testid="kiosk-cart-order-type"
     >
-      <button
+      <!--
+        [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in gate.
+        Mirrors KioskIdleScreenComponent + PosComponent v-if="dineInEnabled"
+        per feedback_v1_dine_in_disabled_2026-05-06. The "Sur place" tile must
+        stay hidden until V2 floorplan ships — backend OrderRequest:213
+        rejects KIOSK order_type when pos_dine_in_enabled=false, so leaving
+        this button clickable creates a guaranteed 422 UX dead-end on V1.
+      -->
+      <button v-if="dineInEnabled" type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_KIOSK }"
         role="radio"
@@ -99,7 +108,7 @@
         <span class="kiosk-order-type-icon" aria-hidden="true">🍽️</span>
         <span class="kiosk-order-type-label">{{ $t('kiosk.dine_in') }}</span>
       </button>
-      <button
+      <button type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_TAKEAWAY }"
         role="radio"
@@ -125,7 +134,7 @@
         >
           <!-- Image -->
           <div class="kiosk-cart-item-img" aria-hidden="true">
-            <img v-if="item.image" :src="item.image" :alt="''" />
+            <img loading="lazy" decoding="async" v-if="item.image" :src="item.image" :alt="''" />
             <span v-else class="kiosk-cart-item-emoji">🍽️</span>
           </div>
 
@@ -134,7 +143,7 @@
             <div class="kiosk-cart-item-name-row">
               <h3 class="kiosk-cart-item-name" :data-testid="`kiosk-cart-item-name-${idx}`">{{ displayCartItemName(item) }}</h3>
               <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
-              <button
+              <button type="button"
                 v-if="item.item_id"
                 class="kiosk-cart-edit-btn"
                 @click="editItem(idx)"
@@ -154,6 +163,15 @@
             >
               {{ getItemSelectionSummary(item) }}
             </div>
+            <KsAllergenBadge
+              v-if="cartLineCatalogItem(item)"
+              class="kiosk-cart-item-allergens"
+              :item="cartLineCatalogItem(item)"
+              :selections="cartLineAllergenSelections(item)"
+              :allergens="[]"
+              :customer-allergens="customerAllergenCodes"
+              :data-testid="`kiosk-cart-item-allergens-${idx}`"
+            />
             <p
               v-if="item.instruction"
               class="kiosk-cart-item-note"
@@ -172,7 +190,7 @@
               role="group"
               :aria-label="$t('kiosk.quantity_of', { name: displayCartItemName(item) })"
             >
-              <button
+              <button type="button"
                 class="kiosk-qty-btn minus"
                 @click="changeQty(idx, item.quantity - 1)"
                 :aria-label="$t('kiosk.decrease_qty')"
@@ -187,7 +205,7 @@
                 aria-live="polite"
                 :data-testid="`kiosk-cart-item-qty-${idx}`"
               >{{ item.quantity }}</span>
-              <button
+              <button type="button"
                 class="kiosk-qty-btn plus"
                 :disabled="item.quantity >= maxItemQty"
                 @click="changeQty(idx, item.quantity + 1)"
@@ -199,6 +217,21 @@
                 </svg>
               </button>
             </div>
+            <!-- FoodKing brand V2 (2026-05-10) — bouton delete explicite (owner
+                 demande "really see + add/delete correctement"). Decrement à
+                 qty=1 supprime aussi via changeQty, ce bouton donne une voie
+                 directe sans nécessiter de tap répété. -->
+            <button type="button"
+              class="kiosk-cart-item-trash"
+              @click="removeItemDirectly(idx)"
+              :aria-label="$t('kiosk.remove_item') || 'Supprimer cet article'"
+              :data-testid="`kiosk-cart-item-remove-${idx}`"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M3 6h14M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2m1 0v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h10Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 10v4M11 10v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
             <!-- [KIOSK-17] item.total is always present (computed by ADD_ITEM / UPDATE_QUANTITY) -->
             <span
               class="kiosk-cart-item-total"
@@ -215,33 +248,37 @@
         class="kiosk-cart-summary"
         role="region"
         :aria-label="$t('kiosk.subtotal')"
+        aria-live="polite"
         data-testid="kiosk-cart-summary"
       >
         <div class="kiosk-cart-summary-row">
           <span>{{ $t('kiosk.subtotal') }}</span>
           <span data-testid="kiosk-cart-subtotal">{{ formatPrice(cartSubtotal) }}</span>
         </div>
-        <div class="kiosk-cart-summary-row loyalty" v-if="loyaltyDiscount > 0">
+        <!-- [C39 heal 2026-07-06] Gaté par effectiveLoyaltyDiscount (kioskPromoEnabled) :
+             ne jamais afficher une remise fidélité que le payload borne n'enverra pas. -->
+        <div class="kiosk-cart-summary-row loyalty" v-if="effectiveLoyaltyDiscount > 0">
           <span><span aria-hidden="true">🎁</span> {{ $t('kiosk.discount_loyalty') }}</span>
-          <span class="green" data-testid="kiosk-cart-loyalty-discount">-{{ formatPrice(loyaltyDiscount) }}</span>
+          <span class="green" data-testid="kiosk-cart-loyalty-discount">-{{ formatPrice(effectiveLoyaltyDiscount) }}</span>
         </div>
-        <!-- Kiosk Phase 9.1.6 — Ligne discount promo, ne s'affiche que si appliquée. -->
-        <div class="kiosk-cart-summary-row promo" v-if="promoDiscount > 0">
+        <!-- Kiosk Phase 9.1.6 — Ligne discount promo, ne s'affiche que si appliquée.
+             [C39 heal 2026-07-06] Gaté par effectivePromoDiscount pour la même raison. -->
+        <div class="kiosk-cart-summary-row promo" v-if="effectivePromoDiscount > 0">
           <span><span aria-hidden="true">🏷️</span> {{ $t('kiosk.discount_promo', { code: promoCode }) }}</span>
-          <span class="green" data-testid="kiosk-cart-promo-discount">-{{ formatPrice(promoDiscount) }}</span>
+          <span class="green" data-testid="kiosk-cart-promo-discount">-{{ formatPrice(effectivePromoDiscount) }}</span>
         </div>
         <div class="kiosk-cart-summary-row total">
           <span>{{ $t('kiosk.total') }}</span>
           <span
             class="kiosk-cart-grand-total"
             data-testid="kiosk-cart-total"
-          >{{ formatPrice(cartTotal) }}</span>
+          >{{ formatPrice(displayTotal) }}</span>
         </div>
       </div>
 
       <!-- Kiosk Phase 9.1.6 — Champ code promo (SSOT lecture-seule, revalidé
            serveur à /order). Affiche success / error inline. -->
-      <div class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
+      <div v-if="discountsEnabled && kioskPromoEnabled" class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
         <div v-if="!promoCode" class="kiosk-cart-promo-form">
           <label for="kiosk-cart-promo-input" class="kiosk-cart-promo-label">
             {{ $t('kiosk.promo.label') }}
@@ -261,13 +298,11 @@
               data-testid="kiosk-cart-promo-input"
               @keydown.enter.prevent="applyPromo"
             />
-            <button
-              type="button"
+            <button type="button"
               class="kiosk-cart-promo-apply"
               :disabled="promoLoading || !promoInput.trim()"
               data-testid="kiosk-cart-promo-apply"
-              @click="applyPromo"
-            >
+              @click="applyPromo">
               {{ promoLoading ? $t('kiosk.promo.loading') : $t('kiosk.promo.apply') }}
             </button>
           </div>
@@ -286,19 +321,19 @@
           <span class="kiosk-cart-promo-applied-text">
             {{ $t('kiosk.promo.applied', { code: promoCode, amount: formatPrice(promoDiscount) }) }}
           </span>
-          <button
-            type="button"
+          <button type="button"
             class="kiosk-cart-promo-remove"
             data-testid="kiosk-cart-promo-remove"
-            @click="removePromo"
-          >
+            @click="removePromo">
             {{ $t('kiosk.promo.remove') }}
           </button>
         </div>
       </div>
 
-      <!-- Bouton fidélité -->
-      <button
+      <!-- Bouton fidélité — masqué quand les remises sont désactivées (V1 F1-dormancy)
+           ET derrière le gate dédié borne kioskPromoEnabled (W2 audit 2026-06-26 :
+           redeem fidélité = même promesse de remise non-appliquée que le code promo). -->
+      <button v-if="discountsEnabled && kioskPromoEnabled" type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -311,15 +346,25 @@
 
       <!-- Bouton valider → upsell -->
       <div class="kiosk-cart-actions">
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           @click="proceedToUpsell"
+          :disabled="quoteLoading"
+          :aria-busy="quoteLoading ? 'true' : 'false'"
           data-testid="kiosk-cart-checkout"
         >
           <span>{{ $t('kiosk.validate_order') }}</span>
-          <span class="kiosk-btn-price">{{ formatPrice(cartTotal) }}</span>
+          <span class="kiosk-btn-price">{{ formatPrice(displayTotal) }}</span>
         </button>
-        <button
+        <p
+          v-if="quoteError"
+          class="kiosk-cart-quote-error"
+          role="alert"
+          data-testid="kiosk-cart-quote-error"
+        >
+          {{ quoteError }}
+        </p>
+        <button type="button"
           class="kiosk-btn-secondary"
           @click="$router.push({ name: 'kiosk.categories' })"
           data-testid="kiosk-cart-add-more"
@@ -334,8 +379,11 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import focusTrap from '../../../mixins/focusTrap';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import { findVariationObjectById, findExtraObjectById } from '../../../helpers/kioskFilters';
+import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
 const ORDER_TYPE_KIOSK    = 25;
@@ -343,7 +391,8 @@ const ORDER_TYPE_TAKEAWAY = 10;
 
 export default {
   name: 'KioskCartComponent',
-  mixins: [kioskPriceMixin],
+  mixins: [kioskPriceMixin, focusTrap],
+  components: { KsAllergenBadge },
 
   inject: {
     showToast: { default: () => () => {} },
@@ -355,6 +404,8 @@ export default {
       ORDER_TYPE_KIOSK,
       ORDER_TYPE_TAKEAWAY,
       maxItemQty: window.foodkingConfig?.maxItemQty ?? 20,
+      quoteLoading: false,
+      quoteError: null,
       // Kiosk Phase 9.1.6 — Champ local (pas directement dans le store) pour
       // laisser l'utilisateur taper/effacer sans triggerer de validate sur
       // chaque frappe. L'appel réseau n'est déclenché qu'au clic Appliquer.
@@ -376,17 +427,148 @@ export default {
       promoError: 'promoError',
       promoLoading: 'promoLoading',
     }),
-    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId']),
+    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId', 'allItems']),
+    ...mapGetters('frontendSetting', { frontendSettingsList: 'lists' }),
+    /**
+     * [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in flag.
+     * Mirror of KioskIdleScreenComponent.dineInEnabled (verbatim guard
+     * pattern — typeof check rejects arrays/objects before string coerce so
+     * `String([1]) === '1'` cannot accidentally activate the flag).
+     * Defaults to FALSE so a regressed/empty backend stays safe (V1 mandate).
+     */
+    dineInEnabled() {
+      const s = this.frontendSettingsList || {};
+      const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+      const t = typeof raw;
+      if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
+      return String(raw) === '1' || raw === true;
+    },
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Hide the coupon/promo form and
+     * the loyalty-redeem entry while discretionary discounts are disabled in V1, so a
+     * customer can't trigger the backend 422 dead-end. Exposed via
+     * window.foodkingConfig.discountsEnabled (master.blade.php). Defaults to FALSE so
+     * a missing/empty config stays safe (entries hidden = no dead-end).
+     */
+    discountsEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.discountsEnabled === true
+        : false;
+    },
+    /**
+     * [W2 audit heal 2026-06-26] DEDICATED kiosk promo/loyalty gate. The shared
+     * discountsEnabled flag stays ON for the legitimate POS manual discount + web
+     * checkout, but on the BORNE the promo-code + loyalty-redeem block promised a
+     * "-X €" the backend never applies (kiosk sends only kiosk_promo_code metadata,
+     * never a coupon_id → cart lied, customer charged full price). This flag
+     * (window.foodkingConfig.kioskPromoEnabled, exposed by master.blade.php /
+     * config/kiosk.php) hides those entries on the kiosk ONLY. Defaults to FALSE so a
+     * missing/empty config stays safe (hidden = no lie). Combined with
+     * discountsEnabled at the v-if so neither flag alone re-exposes the dead-end.
+     */
+    kioskPromoEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.kioskPromoEnabled === true
+        : false;
+    },
+    customerAllergenCodes() {
+      const profile = this.$store?.getters?.['kioskSettings/customerProfile'];
+      if (!profile || !Array.isArray(profile.declared_allergens)) return [];
+      return profile.declared_allergens.map(String).filter(Boolean);
+    },
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
     },
+    /**
+     * [C39 heal 2026-07-06] Remise fidélité EFFECTIVE (affichable). Le store peut
+     * détenir un `loyaltyDiscount > 0` (redeem d'une session flag-ON, valeur
+     * persistée via vuex-persistedstate `kioskCart.loyaltyDiscount`), mais si le
+     * gate borne `kioskPromoEnabled` est OFF le payload borne n'enverra JAMAIS ce
+     * discount (buildKioskQuotePayload → loyalty_code seul). Afficher « -X € » dans
+     * ce cas = mensonge (client débité plein tarif). On neutralise donc l'affichage
+     * quand le flag est OFF, en miroir du bloc promo (déjà gaté au W2). Le redeem
+     * lui-même est aussi gaté dans KioskLoyaltyComponent → en flux normal ce
+     * computed = loyaltyDiscount ; la neutralisation ne joue que sur l'edge-case
+     * d'un discount persisté avant flip du flag.
+     */
+    effectiveLoyaltyDiscount() {
+      return this.kioskPromoEnabled ? (parseFloat(this.loyaltyDiscount) || 0) : 0;
+    },
+    /**
+     * [C39 heal 2026-07-06] Remise promo EFFECTIVE (affichable) — même logique.
+     * Quand le flag est OFF le champ promo est masqué donc promoDiscount reste 0 ;
+     * la neutralisation ne fait que verrouiller la cohérence total affiché/facturé.
+     */
+    effectivePromoDiscount() {
+      return this.kioskPromoEnabled ? (parseFloat(this.promoDiscount) || 0) : 0;
+    },
+    /**
+     * [C39 heal 2026-07-06] Total AFFICHÉ = sous-total moins les seules remises
+     * réellement transmises/appliquées côté serveur. Reproduit la formule du getter
+     * store `total` quand le flag est ON (subtotal - loyalty - promo), et retombe
+     * sur le sous-total plein quand le flag est OFF → « total affiché == total
+     * facturé » dans tous les cas (fin de la divergence C39). Le SSOT prix reste le
+     * backend ; ce total est purement d'affichage.
+     */
+    displayTotal() {
+      return Math.max(
+        0,
+        (parseFloat(this.cartSubtotal) || 0) - this.effectiveLoyaltyDiscount - this.effectivePromoDiscount,
+      );
+    },
+  },
+  watch: {
+    // [A11y round4 P2] "Vider le panier" confirm dialog focus trap. On open,
+    // move focus into the dialog (cancel button) so Esc/Tab work and the
+    // aria-modal="true" contract holds (the dialog previously never received
+    // focus → Esc inert + Tab escaped behind the overlay). On close, restore
+    // focus to the trigger. Reuses the shared focusTrap mixin (canonical
+    // ds/KsModal pattern) — no structural rewrite of the inline dialog.
+    showClearConfirm(v) {
+      if (v) {
+        this.$nextTick(() => {
+          this.activateFocusTrap(this.$refs.clearPanel, {
+            initialFocus: this.$refs.clearCancelBtn,
+          });
+        });
+      } else {
+        this.deactivateFocusTrap();
+      }
+    },
+  },
+  /**
+   * [wave-p-kiosk-2026-05-20 BORNE-001 heal] Ensure frontendSetting/lists is
+   * populated so dineInEnabled computed can read pos_dine_in_enabled.
+   * KioskAppComponent loads via raw axios into globalState, NOT into the
+   * Vuex frontendSetting module — so the cart must dispatch independently.
+   * Best-effort: swallow errors and let the default (false) hold.
+   */
+  mounted() {
+    try {
+      const current = this.$store?.getters?.['frontendSetting/lists'];
+      if (!current || (Array.isArray(current) && current.length === 0)) {
+        this.$store?.dispatch?.('frontendSetting/lists').catch(() => {});
+      }
+    } catch (_e) { /* defaults to dineInEnabled=false — safe */ }
   },
   methods: {
     ...mapActions('kioskCart', [
       'updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType',
+      'quoteOrder',
       // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
       'validatePromo', 'clearPromo',
+      // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
+      'startEditingCartItem',
+      // [bug-kiosk-valider-2026-05-21] Drop cart lines that became unavailable
+      // (manual 86, branch-specific flag) BEFORE the Valider click so the
+      // backend's PricingService availability guard cannot surface a 422.
+      // Persisted Vuex carts can outlive an admin availability flip when the
+      // kiosk missed the Echo broadcast (offline blip, app reload), so the
+      // pre-flight prune is the correct defense-in-depth — owner reported
+      // "ça marche parfois" after retries because subsequent clicks finally
+      // refreshed the menu cache and pruning silently dropped the stale line.
+      'pruneUnavailableLines',
     ]),
 
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
@@ -428,6 +610,23 @@ export default {
     displayCartInstruction(item) {
       if (!item?.instruction) return '';
       return sanitizeKioskCustomerFacingText(item.instruction);
+    },
+
+    cartLineCatalogItem(line) {
+      if (!line?.item_id || !Array.isArray(this.allItems)) return null;
+      return this.allItems.find((i) => String(i.id) === String(line.item_id)) || null;
+    },
+
+    cartLineAllergenSelections(line) {
+      const cat = this.cartLineCatalogItem(line);
+      if (!cat) return { variations: [], extras: [] };
+      const vars = (line.item_variations || [])
+        .map((v) => findVariationObjectById(cat, v.id))
+        .filter(Boolean);
+      const ext = (line.item_extras || [])
+        .map((e) => findExtraObjectById(cat, e.id))
+        .filter(Boolean);
+      return { variations: vars, extras: ext };
     },
 
     // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names
@@ -473,17 +672,51 @@ export default {
     },
 
     /**
+     * FoodKing brand V2 (2026-05-10) — direct remove from explicit trash button
+     * (owner demand : voir + ajouter + supprimer "correctement"). Le toast info
+     * confirme l'action puisqu'elle est explicite (vs add-to-cart où owner ne
+     * veut pas de toast).
+     */
+    removeItemDirectly(index) {
+      const item = this.cartItems?.[index];
+      this.removeItem(index);
+      this.showToast(
+        this.$t('kiosk.item_removed') || `${item?.name || 'Article'} supprimé`,
+        'info',
+        1500
+      );
+    },
+
+    /**
      * Remove the item from the cart and re-open the wizard so the customer
      * can change customizations. The wizard is opened in normal mode — the
      * quantity from the old line is NOT pre-set (wizard default = 1 to keep
      * things simple and avoid complexity with selections state).
      */
+    /**
+     * [P-MEGA-05] Édition d'une ligne du panier — version "safe" :
+     * 1. Le store mémorise la cart line via startEditingCartItem (no pop).
+     * 2. Le wizard, à son montage, restaure les sélections depuis le
+     *    snapshot (`_wizardSelections`) et bascule en mode "edit".
+     * 3. À la validation, le wizard fait `replaceEditingCartItem` :
+     *    la ligne est remplacée en place (préserve l'ordre, l'index, les
+     *    coupons attachés à un slot précis).
+     * 4. Si l'utilisateur abandonne (close/abandon), `cancelEditingCartItem`
+     *    laisse la ligne intacte. AUCUN risque de perte.
+     *
+     * Compat ascendante : si pour une raison X le wizard ne bascule pas
+     * en mode edit (item supprimé du catalogue, etc.), la ligne originale
+     * reste dans le panier (pas de double dépense, pas de panier cassé).
+     */
     async editItem(index) {
-      const item = await this.popItem(index);
+      const item = this.cartItems[index];
       if (!item?.item_id) return;
+      const ok = await this.startEditingCartItem(index);
+      if (!ok) return;
       this.$router.push({
         name: 'kiosk.wizard',
         params: { itemId: String(item.item_id) },
+        query: { edit: '1' },
       });
     },
 
@@ -493,17 +726,64 @@ export default {
       this.$router.push({ name: 'kiosk.categories' });
     },
 
-    proceedToUpsell() {
-      if (this.upsellShown) {
-        this.$router.push({ name: 'kiosk.payment' });
+    async proceedToUpsell() {
+      if (this.quoteLoading || this.cartCount === 0) return;
+
+      this.quoteLoading = true;
+      this.quoteError = null;
+
+      // [bug-kiosk-valider-2026-05-21] Pre-flight prune of cart lines whose
+      // catalog row is currently unavailable (manual 86 / branch flip the
+      // kiosk missed). Without this, the backend AvailabilityService rejects
+      // the whole quote with "Article N indisponible pour cette branche
+      // (manual)." → 422 surfaced as an error toast on the cart screen, owner
+      // reported a confusing UX ("erreur au panier, parfois ça disparait").
+      // The toast vanishes after 6s by design which matches the "parfois ça
+      // disparait" wording. Pruning here turns the 422 into a clean cart
+      // state plus an inline notice if anything was dropped.
+      const beforeCount = this.cartCount;
+      try { this.pruneUnavailableLines(); } catch (_) { /* defensive */ }
+      const afterCount = this.cartCount;
+      if (afterCount === 0) {
+        const msg = this.$t('kiosk.unavailable_items_pruned')
+          || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+        this.quoteError = msg;
+        this.showToast(msg, 'warning', 6000);
+        this.quoteLoading = false;
         return;
       }
-      this.markUpsellShown();
-      if (this.shouldSkipKioskUpsell) {
-        this.$router.push({ name: 'kiosk.payment' });
+      if (afterCount < beforeCount) {
+        // Surface a brief notice and let the user re-tap Valider — gives
+        // them the chance to review the updated total before paying.
+        const msg = this.$t('kiosk.unavailable_items_pruned')
+          || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+        this.showToast(msg, 'warning', 4500);
+        this.quoteLoading = false;
         return;
       }
-      this.$router.push({ name: 'kiosk.upsell' });
+
+      try {
+        await this.quoteOrder({ orderType: this.orderType });
+
+        if (this.upsellShown) {
+          this.$router.push({ name: 'kiosk.payment' });
+          return;
+        }
+        this.markUpsellShown();
+        if (this.shouldSkipKioskUpsell) {
+          this.$router.push({ name: 'kiosk.payment' });
+          return;
+        }
+        this.$router.push({ name: 'kiosk.upsell' });
+      } catch (err) {
+        const message = err?.response?.data?.message
+          || err?.message
+          || this.$t('kiosk.pay_screen.invalid_order_response');
+        this.quoteError = message;
+        this.showToast(message, 'error', 6000);
+      } finally {
+        this.quoteLoading = false;
+      }
     },
 
     // formatPrice() is provided by kioskPriceMixin — reads currency from globalState.lists
@@ -515,7 +795,7 @@ export default {
 .kiosk-cart {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -523,18 +803,19 @@ export default {
 
 .kiosk-order-type-bar {
   display: flex;
-  gap: 12px;
-  padding: 16px 28px 0;
+  gap: 16px;
+  padding: 20px 30px 0;
   flex-shrink: 0;
 }
 
 .kiosk-order-type-btn {
   flex: 1;
-  height: 64px;
-  border-radius: 14px;
+  min-height: 82px;
+  height: auto;
+  border-radius: 24px;
   border: 2px solid var(--kiosk-border);
   background: var(--kiosk-surface);
-  color: var(--kiosk-text-mute);
+  color: var(--kiosk-text-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -546,17 +827,31 @@ export default {
 
 .kiosk-order-type-btn.active {
   border-color: var(--kiosk-primary);
-  background: var(--kiosk-primary-soft);
-  color: var(--kiosk-text);
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
+  box-shadow: var(--kiosk-shadow-cta);
 }
 
 .kiosk-order-type-btn:active { transform: scale(0.97); }
+.kiosk-btn-primary[disabled] {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.kiosk-cart-quote-error {
+  width: 100%;
+  margin: 8px 0 0;
+  color: var(--kiosk-error, #b91c1c);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
 
 .kiosk-order-type-icon { font-size: 22px; line-height: 1; }
 
 .kiosk-order-type-label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 900;
 }
 
 .kiosk-cart-item-selections {
@@ -573,16 +868,17 @@ export default {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 28px 16px;
+  padding: 24px 32px 20px;
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   flex-shrink: 0;
 }
 
 .kiosk-cart-back {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
   border: 1.5px solid var(--kiosk-border);
   background: var(--kiosk-surface);
   color: var(--kiosk-text);
@@ -599,22 +895,24 @@ export default {
 .kiosk-cart-header-info { flex: 1; }
 
 .kiosk-cart-title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0 0 2px;
+  text-transform: uppercase;
 }
 
 .kiosk-cart-item-count {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--kiosk-text-mute);
   margin: 0;
 }
 
 .kiosk-cart-clear {
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: 1.5px solid var(--kiosk-border);
+  min-height: 52px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 2px solid var(--kiosk-border);
   background: var(--kiosk-surface);
   color: var(--kiosk-primary);
   font-size: 14px;
@@ -663,33 +961,44 @@ export default {
 
 .kiosk-cart-items {
   flex: 1;
-  padding: 16px 24px;
+  padding: 22px 30px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
+/* FoodKing brand V2 (2026-05-10) — modernisation cart recap (owner :
+   "année 2000, c'est weird, trop basique"). Card plus aérée, image carrée
+   arrondie style modern app, accents Cayenne, hierarchy typo plus marquée. */
 .kiosk-cart-item {
-  background: var(--kiosk-surface);
-  border-radius: 14px;
-  border: 1.5px solid var(--kiosk-border);
-  padding: 14px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1.5px solid #E5E5E5;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  box-shadow: var(--kiosk-shadow-card);
+  gap: 18px;
+  box-shadow: 0 4px 14px rgba(15, 15, 15, 0.04);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.kiosk-cart-item:hover {
+  border-color: #F4501E;
+  box-shadow: 0 6px 18px rgba(244, 80, 30, 0.12);
 }
 
 .kiosk-cart-item-img {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+  width: 104px;
+  height: 104px;
+  border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--kiosk-surface-alt);
+  background: #FAFAFA;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  border: 1px solid #EFEFEF;
 }
 
 .kiosk-cart-item-img img {
@@ -698,7 +1007,7 @@ export default {
   object-fit: cover;
 }
 
-.kiosk-cart-item-emoji { font-size: 32px; }
+.kiosk-cart-item-emoji { font-size: 56px; line-height: 1; }
 
 .kiosk-cart-item-info { flex: 1; min-width: 0; }
 
@@ -712,9 +1021,9 @@ export default {
   flex-shrink: 0;
   background: var(--kiosk-surface-alt);
   border: 1px solid var(--kiosk-border);
-  border-radius: 6px;
+  border-radius: 50%;
   color: var(--kiosk-text-mute);
-  width: 26px; height: 26px;
+  width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -723,14 +1032,15 @@ export default {
 .kiosk-cart-edit-btn:hover {
   background: var(--kiosk-primary-soft);
   color: var(--kiosk-primary);
-  border-color: rgba(232,0,28,0.2);
+  border-color: rgba(244, 80, 30, 0.24);
 }
 
 .kiosk-cart-item-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--kiosk-text);
-  margin: 0 0 2px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #0F0F0F;
+  margin: 0 0 4px;
+  letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -746,16 +1056,51 @@ export default {
 }
 
 .kiosk-cart-item-unit {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--kiosk-text-mute);
 }
 
 .kiosk-cart-item-controls {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: end;
   gap: 8px;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */
+.kiosk-cart-item-trash {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--kiosk-border, #E5E5E5);
+  border-radius: 50%;
+  background: var(--kiosk-surface, #FFFFFF);
+  color: var(--kiosk-text-muted, #5A5A5A);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 6px rgba(15, 15, 15, 0.06);
+}
+
+.kiosk-cart-item-trash:hover {
+  background: var(--kiosk-bold-primary-soft, #FFE8DD);
+  color: var(--kiosk-bold-primary, #F4501E);
+}
+
+.kiosk-cart-item-trash:active {
+  transform: scale(0.92);
+}
+
+.kiosk-cart-item-trash:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563EB);
+  outline-offset: 2px;
 }
 
 .kiosk-qty-ctrl {
@@ -763,14 +1108,18 @@ export default {
   align-items: center;
   gap: 0;
   background: var(--kiosk-surface-alt);
-  border-radius: 10px;
+  border-radius: 999px;
   border: 1.5px solid var(--kiosk-border);
   overflow: hidden;
 }
 
+[dir="rtl"] .kiosk-qty-ctrl {
+  direction: ltr;
+}
+
 .kiosk-qty-btn {
-  width: 38px;
-  height: 38px;
+  width: 50px;
+  height: 50px;
   border: none;
   background: transparent;
   color: var(--kiosk-text);
@@ -787,25 +1136,26 @@ export default {
 .kiosk-qty-btn.minus:active { color: var(--kiosk-primary); }
 
 .kiosk-qty-num {
-  min-width: 32px;
+  min-width: 38px;
   text-align: center;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 900;
   color: var(--kiosk-text);
 }
 
 .kiosk-cart-item-total {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--kiosk-text);
+  font-size: 24px;
+  font-weight: 900;
+  color: #F4501E;
+  letter-spacing: -0.4px;
 }
 
 .kiosk-cart-summary {
-  margin: 0 24px;
+  margin: 0 30px;
   background: var(--kiosk-surface);
-  border-radius: 14px;
+  border-radius: 26px;
   border: 1.5px solid var(--kiosk-border);
-  padding: 16px 20px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -815,13 +1165,13 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--kiosk-text-muted);
 }
 
 .kiosk-cart-summary-row.total {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 900;
   color: var(--kiosk-text);
   padding-top: 10px;
   border-top: 1px solid var(--kiosk-border);
@@ -833,13 +1183,13 @@ export default {
 .green { color: var(--kiosk-success); font-weight: 700; }
 
 .kiosk-cart-grand-total {
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 900;
   color: var(--kiosk-primary);
 }
 
 .kiosk-cart-actions {
-  padding: 16px 24px 28px;
+  padding: 18px 30px 32px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -847,7 +1197,7 @@ export default {
 
 /* Kiosk Phase 9.1.6 — Section code promo panier. */
 .kiosk-cart-promo {
-  padding: 12px 24px 0;
+  padding: 14px 30px 0;
 }
 .kiosk-cart-promo-label {
   display: block;
@@ -865,15 +1215,16 @@ export default {
   height: 48px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1.5px solid #E5E5E5;
-  background: #fff;
+  border: 1.5px solid var(--kiosk-border);
+  background: var(--kiosk-surface);
+  color: var(--kiosk-text);
   font-size: 15px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   min-height: 44px;
 }
 .kiosk-cart-promo-input:focus {
-  border-color: var(--kiosk-primary, #E8001C);
+  border-color: var(--kiosk-primary, #F4501E);
   outline: none;
 }
 .kiosk-cart-promo-input[aria-invalid="true"] {
@@ -884,7 +1235,7 @@ export default {
   padding: 0 18px;
   border-radius: 10px;
   border: none;
-  background: var(--kiosk-primary, #E8001C);
+  background: var(--kiosk-primary, #F4501E);
   color: #fff;
   font-weight: 700;
   font-size: 14px;
@@ -906,7 +1257,7 @@ export default {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: #E8F5EC;
+  background: rgba(27, 138, 58, 0.12);
   border: 1.5px solid var(--kiosk-success, #1B8A3A);
   border-radius: 10px;
   color: var(--kiosk-success, #1B8A3A);
@@ -934,12 +1285,13 @@ export default {
 
 .kiosk-btn-loyalty {
   width: 100%;
-  height: 52px;
+  min-height: 60px;
+  height: auto;
   background: rgba(255,215,0,0.08);
   border: 1.5px solid rgba(255,215,0,0.3);
-  border-radius: 12px;
+  border-radius: 18px;
   color: var(--kiosk-warning);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -947,7 +1299,8 @@ export default {
   justify-content: space-between;
   padding: 0 16px;
   transition: background 0.2s;
-  margin-bottom: 4px;
+  margin: 0 30px 4px;
+  width: calc(100% - 60px);
 }
 .kiosk-btn-loyalty:active { background: rgba(255,215,0,0.15); }
 .kiosk-btn-loyalty-star { font-size: 18px; }
@@ -955,13 +1308,14 @@ export default {
 
 .kiosk-btn-primary {
   width: 100%;
-  height: 60px;
+  min-height: 76px;
+  height: auto;
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
   border: none;
-  border-radius: 14px;
-  font-size: 18px;
-  font-weight: 700;
+  border-radius: 24px;
+  font-size: 22px;
+  font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -983,13 +1337,14 @@ export default {
 
 .kiosk-btn-secondary {
   width: 100%;
-  height: 52px;
+  min-height: 60px;
+  height: auto;
   background: var(--kiosk-surface);
   color: var(--kiosk-text-muted);
   border: 1.5px solid var(--kiosk-border);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
 }

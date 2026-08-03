@@ -1,0 +1,119 @@
+- generic [ref=e1]:
+  - generic [ref=e40]:
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - img [ref=e44]
+        - generic [ref=e45]:
+          - generic [ref=e46]: Nos
+          - generic [ref=e47]: Boissons
+      - button "Mon compte" [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 👤
+        - text: Mon compte
+    - generic [ref=e51]:
+      - navigation "Navigation catégories" [ref=e52]:
+        - button "Sandwichs" [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: Sandwichs
+        - button "Galette" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: Galette
+        - button "Burgers" [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]: Burgers
+        - button "Tacos" [ref=e62] [cursor=pointer]:
+          - generic [ref=e63]: Tacos
+        - button "Bols" [ref=e65] [cursor=pointer]:
+          - generic [ref=e66]: Bols
+        - button "Menu enfant" [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]: Menu enfant
+        - button "Frites" [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: Frites
+        - button "Desserts" [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: Desserts
+        - button "Boissons" [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: Boissons
+      - main [ref=e80]:
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - heading "Boissons" [level=1] [ref=e83]
+            - paragraph [ref=e84]: 8 produits
+          - list [ref=e85]:
+            - listitem [ref=e86] [cursor=pointer]:
+              - generic [ref=e87]:
+                - img [ref=e88]
+                - button "Ajouter Eau Plate 50cl" [ref=e89]
+              - generic [ref=e91]:
+                - heading "Eau Plate 50cl" [level=2] [ref=e92]
+                - generic [ref=e93]
+                - paragraph [ref=e98]: Eau minérale
+                - generic [ref=e99]: €1,00
+            - listitem [ref=e100] [cursor=pointer]:
+              - generic [ref=e101]:
+                - img [ref=e102]
+                - button "Ajouter Capri-Sun" [ref=e103]
+              - generic [ref=e105]:
+                - heading "Capri-Sun" [level=2] [ref=e106]
+                - generic [ref=e107]
+                - paragraph [ref=e112]: Capri-Sun 20cl
+                - generic [ref=e113]: €1,50
+            - listitem [ref=e114] [cursor=pointer]:
+              - generic [ref=e115]:
+                - img [ref=e116]
+                - button "Ajouter Coca-Cola 33cl" [ref=e117]
+              - generic [ref=e119]:
+                - heading "Coca-Cola 33cl" [level=2] [ref=e120]
+                - generic [ref=e121]
+                - paragraph [ref=e126]: Coca-Cola original
+                - generic [ref=e127]: €1,90
+            - listitem [ref=e128] [cursor=pointer]:
+              - generic [ref=e129]:
+                - img [ref=e130]
+                - button "Ajouter Coca-Cola Zero 33cl" [ref=e131]
+              - generic [ref=e133]:
+                - heading "Coca-Cola Zero 33cl" [level=2] [ref=e134]
+                - generic [ref=e135]
+                - paragraph [ref=e140]: Coca-Cola sans sucre
+                - generic [ref=e141]: €1,90
+            - listitem [ref=e142] [cursor=pointer]:
+              - generic [ref=e143]:
+                - img [ref=e144]
+                - button "Ajouter Fanta Orange 33cl" [ref=e145]
+              - generic [ref=e147]:
+                - heading "Fanta Orange 33cl" [level=2] [ref=e148]
+                - generic [ref=e149]
+                - paragraph [ref=e154]: Fanta Orange
+                - generic [ref=e155]: €1,90
+            - listitem [ref=e156] [cursor=pointer]:
+              - generic [ref=e157]:
+                - img [ref=e158]
+                - button "Ajouter Oasis Tropical 33cl" [ref=e159]
+              - generic [ref=e161]:
+                - heading "Oasis Tropical 33cl" [level=2] [ref=e162]
+                - generic [ref=e163]
+                - paragraph [ref=e168]: Oasis Tropical
+                - generic [ref=e169]: €1,90
+            - listitem [ref=e170] [cursor=pointer]:
+              - generic [ref=e171]:
+                - img [ref=e172]
+                - button "Ajouter Orangina 33cl" [ref=e173]
+              - generic [ref=e175]:
+                - heading "Orangina 33cl" [level=2] [ref=e176]
+                - generic [ref=e177]
+                - paragraph [ref=e182]: Orangina
+                - generic [ref=e183]: €1,90
+            - listitem [ref=e184] [cursor=pointer]:
+              - generic [ref=e185]:
+                - img [ref=e186]
+                - button "Ajouter Sprite 33cl" [ref=e187]
+              - generic [ref=e189]:
+                - heading "Sprite 33cl" [level=2] [ref=e190]
+                - generic [ref=e191]
+                - paragraph [ref=e196]: Sprite
+                - generic [ref=e197]: €1,90
+    - region "Panier et paiement" [ref=e198]:
+      - generic [ref=e199]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e200]:
+          - img [ref=e202]
+          - generic [ref=e206]: 0 article
+        - generic [ref=e207]: €0,00
+      - generic [ref=e208]:
+        - button "Abandonner ma commande" [ref=e209] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e210]
+  - status

@@ -35,6 +35,39 @@ class SimpleDeliveryBoyOrderResource extends JsonResource
             'status_name'      => trans('orderStatus.' . $this->status),
             'reason'           => $this->reason,
             'order_address'    => new AddressResource($this->address),
+            // [GOAL-2026-05-18 P1-LIV-01] Items list so the livreur sees what
+            // they are carrying from the `index` payload (was MISSING — driver
+            // had to round-trip `/show/{id}` per order, defeating the purpose
+            // of the list view). Lean shape — names, qty, price, snapshot.
+            'items'            => $this->resolveItemsForDriver(),
         ];
+    }
+
+    /**
+     * Lean item list — built from the eager-loaded orderItems collection so
+     * the resource never executes its own SELECTs (N+1 protection). When the
+     * caller has not loaded orderItems, we fall back to an empty array rather
+     * than triggering a lazy load.
+     */
+    private function resolveItemsForDriver(): array
+    {
+        $relation = $this->resource->relationLoaded('orderItems')
+            ? $this->resource->getRelation('orderItems')
+            : null;
+
+        if ($relation === null) {
+            return [];
+        }
+
+        return $relation->map(function ($line) {
+            return [
+                'item_id'      => (int) $line->item_id,
+                'item_name'    => $line->orderItem?->name,
+                'quantity'     => (int) $line->quantity,
+                'price'        => AppLibrary::currencyAmountFormat($line->price),
+                'total_price'  => AppLibrary::currencyAmountFormat($line->total_price),
+                'instruction'  => $line->instruction,
+            ];
+        })->values()->all();
     }
 }

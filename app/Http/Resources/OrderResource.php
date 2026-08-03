@@ -20,6 +20,7 @@ class OrderResource extends JsonResource
             'id' => $this->id,
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
+            '_origin' => $this->source_surface,
             'user_id' => $this->user_id,
             'branch_id' => $this->branch_id,
             'branch_name' => optional($this->branch)->name,
@@ -37,8 +38,11 @@ class OrderResource extends JsonResource
             'status' => $this->status,
             'is_advance_order' => $this->is_advance_order,
             'status_name' => trans('orderStatus.' . $this->status),
-            'customer' => new OrderUserResource($this->user->load('roles', 'media')),
-            'transaction' => new TransactionResource($this->transaction?->load('order')),
+            // [TERRAIN-HEAL 2026-07-16 · ORDER-RES-N1] loadMissing (au lieu de load) : no-op quand
+            // list()/deliveredOrder() ont déjà eager-loadé (fin du N+1) ; reste sûr pour les autres
+            // appelants (charge une fois si absent) au lieu de forcer un re-query par ligne.
+            'customer' => new OrderUserResource($this->user->loadMissing('roles', 'media')),
+            'transaction' => new TransactionResource($this->transaction?->loadMissing('order')),
         ];
     }
 }

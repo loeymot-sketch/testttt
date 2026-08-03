@@ -1,0 +1,59 @@
+# SYNC_CONTRACT — Realtime sync SSOT (cold-start, grounded file:line)
+
+The bus is a **SHARED ZONE** (SYSTEM_MAP §6): no single system lane edits it alone. This doc lets a KDS-agent and a CAISSE-agent derive the SAME contract without re-reading code. HEAD `d6487f716`. Unconfirmed exact lines tagged `(à vérifier)`.
+
+## 1. Transport
+- **soketi** (Pusher-protocol WS) on `:6001` (`soketi.json`). Laravel Echo client via `resources/js/services/WebSocketService.js`.
+- **queue:work redis** dispatches broadcast jobs (outbox pattern). Redis is the cache/queue store.
+- Daemons on the one box: `php artisan serve :8000` · `queue:work redis` · `soketi :6001` · redis. (Operability gaps → see PROJECT_BRAIN §2 / deep-review.)
+
+## 2. Channel
+- **`branch.{branchId}`** — PRIVATE channel, authorized in `routes/channels.php:41`. A kiosk-machine token is **restricted to its own branch** (channels.php:22-42 comment + check). V1 = `branch_id=1` only.
+- User channel `App.Models.User.{id}` (`channels.php:16`) — per-user (notifications).
+- ⚠️ The **public OSS wall does NOT subscribe** (it has `branchId<=0`, `subscribeEcho()` early-returns — `PreparingAndReadyComponent.vue:262-263`); it **polls** instead (see §5).
+
+## 3. Events (broadcast)
+| Event | File | Broadcast | Meaning |
+|---|---|---|---|
+| `OrderCreated` | `app/Events/OrderCreated.php` (**plain `DispatchableAfterCommit` — NOT ShouldBroadcast**) | outbox → `private-branch.{id}` | new order placed (borne/caisse/web) → appears on KDS |
+| `OrderStatusChanged` | `app/Events/OrderStatusChanged.php:15` (**plain event**, dispatched from OrderService/PaymentService/FrontendOrderService/KDS) | outbox → `private-branch.{id}` | status transition (ACCEPT→PREPARING→PREPARED→…) → KDS/OSS/customer tracker update |
+| `KdsOrderRecalled` | `app/Events/KdsOrderRecalled.php` | outbox → `private-branch.{id}` (`PersistKdsOrderRecalledToOutbox.php:58`) | chef recalls a bumped order |
+| `OutboxBroadcastSwallowedEvent` | `app/Events/OutboxBroadcastSwallowedEvent.php` | internal (not client) | broadcast-failure alarm (outbox monitor) |
+
+**⚠️ Broadcast mechanism (corrected, verified code-side 2026-06-03):** the 3 order events do **NOT** use Laravel `ShouldBroadcast`. They are **plain events** → a `Persist{Event}ToOutbox` listener writes a `domain_events` row (`channel=['private-branch.'.$branch_id]`, `broadcast_as='<Event>'`) → `DispatchDomainEventsJob->broadcast()` pushes to soketi. **Outbox pattern** (gate C9/KI-001 — `OrderCreated.php:12` comment: "replacing direct ShouldBroadcastNow"). Listeners: `app/Listeners/Persist{OrderCreated,OrderStatusChanged,KdsOrderRecalled}ToOutbox.php`. This is WHY worker-death degrades gracefully (rows persist, replay on recovery). **Channel naming:** `branch.{branchId}` (auth name, `channels.php:41`) == `private-branch.{branchId}` (wire name, Pusher `private-` convention) — same channel.
+
+## 4. Payload contract — canonical KdsOrder (consume-side SSOT)
+From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDSOrderItemsResource.php` (line items):
+- Header: `id`, `order_serial_no`, `token`, `order_type`, `source_surface`, `created_at_iso`, `updated_at` (ISO8601), `order_datetime`/`order_date`/`order_time`, status fields.
+- Line items via `KDSOrderItemsResource` + customization rendered client-side by `resources/js/helpers/kdsCustomization.js` (sandwich/taco/burger/assiette/menu_formule shapes).
+- **Immutability:** `composition_snapshot` is frozen at order creation; the read path renders FROM the snapshot, never recomputed from live menu (verified HIST-10: live price→999 ignored on read).
+
+## 5. Publishers / Subscribers (who emits, who listens)
+| Producer | Emits | Consumer | How |
+|---|---|---|---|
+| BORNE (kiosk) | `OrderCreated` on place (card/TR defer dispatch until TPE confirm; Plan-B cash auto-accepts → KDS preps) | KDS | WS push on `branch.{id}` |
+| CAISSE (POS) | `OrderCreated` / `OrderStatusChanged` (collect, status) | KDS, OSS, customer tracker | WS push |
+| KDS | `OrderStatusChanged` (bump/recall) | OSS, customer tracker | WS push |
+| **KDS screen** | — | subscribes `branch.{id}` (chef `branch_id=1`) | Echo private |
+| **OSS public wall** | — | **POLLS, no push** | **5 s** — public-wall override `intervalMsWhenConnected: 5_000` (`PreparingAndReadyComponent.vue:266-270`, `isPublicWall = authBranchId()<=0`). Authed staff OSS (branchId>0) reste à 60 s (`OssSyncService.js:9`). *[corrigé 2026-07-02 : doc disait 60s pour le mur public]* |
+| Customer web/app tracker | — | subscribes `branch.{id}` | Echo private |
+| CENTRAL dashboard | — | passive poll (~60s by design) | REST |
+
+## 6. Latency (measured, prior cycles — not re-measured here)
+- WS push: **~6 ms** (chef channel, living-sync 2026-05-29).
+- End-to-end status change (PREPARING→PREPARED → chef screen): **~512 ms**.
+- Cold first-paint after fix: **2292 → 269 ms** (sync heal F-LAT-01, `block_for=5`).
+- OSS public wall: **~5 s** (poll-only, override public-wall `intervalMsWhenConnected: 5_000`, `PreparingAndReadyComponent.vue:266-270` ; tient le budget SYNC-2 POS→OSS ≤8s). *[corrigé 2026-07-02 : n'est plus « ~60s stale »]*
+
+## 7. Degradation behavior (no data loss is the invariant)
+- **queue:work dies** → broadcasts stop; screens fall back to **poll** — **KDS 5 s quand WS down** (`KitchenDisplaySystemComponent.vue:1899` `wsConnected ? 60000 : 5000`), OSS public 5 s, admin ~60 s — lisant `orders` directement → **no data loss**, only latency. `domain_events` pile `dispatched_at=NULL`; `MonitorOutboxStaleness` détecte (mais seulement `Log::error` — alerting gap). ⚠️ **Ops (2026-07-02)** : `DispatchDomainEventsJob->onQueue('high')` — le worker prod DOIT écouter la file `high` (`queue:work --queue=high,default`), sinon les broadcasts ne partent jamais même avec un worker vivant. *[corrigé 2026-07-02 : doc disait KDS ~30s]*
+- **soketi dies** → `WebSocketService` flips to UNAVAILABLE (reconnect circuit-breaker) → poll fallback. *[corrigé 2026-07-11 : le blind-spot est FERMÉ]* — `kdsSuppressFallbackBanner()` (`KitchenDisplaySystemComponent.vue:1313`) exige désormais `env==='local' && window.FK_KDS_SHOW_FALLBACK_BANNER===false` (opt-out **explicite**, flag non câblé → toujours `undefined`) → **la bannière "polling mode" est VISIBLE même en local**. Le cuisinier a bien un signal visuel.
+- **Outbox** durably persists broadcast intents; crash-claimed orphans detected (`MonitorOutboxStaleness.php:49-102`).
+- **Readiness probe** `/api/health/ready` → 503 si >10 `domain_events` non-dispatchés **créés dans les dernières 24h** (`HealthController::checkQueueWorker`). *[durci 2026-07-11]* exclut (a) les `contract_violation%` (poison terminal, jamais retryé) ET (b) les orphelins > 24h (fenêtre `retry-failed --since=24h`) — sinon un incident worker-down passé épinglait le gate à un faux 503 pour toujours (20 orphelins de juin observés). Un vrai outage courant empile >10 lignes < 24h et déclenche quand même.
+- ⚠️ **Ops alerting gap (RÉEL, 2026-07-11)** : `MonitorOutboxStaleness` = `Log::error` + exit non-zéro **seulement** — aucun canal externe (mail/SMS) → staleness détectée mais **non escaladée à un humain**. Backlog owner (choisir un canal d'alerte).
+- ⚠️ **Ops daemon (RÉEL)** : le worker prod DOIT lancer `queue:work redis --queue=high,default` (broadcasts = file `high`). ✅ **Garanti** par `scripts/deploy/supervisor.conf.template:42` (2 instances, autostart+autorestart). ⚠️ **soketi exige Node 14/16/18** (uWS.js) : sur une box par défaut Node ≥20, `.bin/soketi` **crash au boot** (reproduit 2026-07-11) → le template doit invoquer soketi sous Node 18.
+
+## 8. Rules for any lane touching sync
+- The bus is SHARED → edits require a LOCK doc + gate (PARALLEL_PROTOCOL). A system lane normally only **produces/consumes** via the existing events; it does not change channel/event/payload shape without coordination.
+- If you change the KdsOrder payload shape, you break KDS + OSS + tracker simultaneously → cross-lane change, never parallel.
+- Acceptance: a KDS-agent and a CAISSE-agent reading this doc agree on channel name, event names, payload fields, and degradation cadence without opening the code.

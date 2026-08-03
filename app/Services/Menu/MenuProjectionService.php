@@ -6,6 +6,9 @@ use App\Enums\Status;
 use App\Models\Item;
 use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
+use App\Models\ItemWizardProfile;
+use App\Services\Composer\ComposerProfileProjection;
+use App\Services\Stock\ChoiceAvailabilityResolver;
 use Illuminate\Support\Collection;
 
 /**
@@ -24,9 +27,9 @@ use Illuminate\Support\Collection;
  *   - Consumers can poll {@see MenuSnapshot::current()} to decide if the
  *     cached projection needs refresh (cheaper than diffing the full JSON).
  *
- * Consumers today (POS / Kiosk controllers) are NOT yet plugged into this
- * service; they remain on their legacy per-surface queries. V1.5 migrates
- * each surface one at a time to this single code path.
+ * Runtime contract today: POS/Kiosk/KDS sync tests and menu-projection APIs use
+ * this service as the canonical catalog projection. Legacy per-surface callers
+ * may still exist, but they must preserve parity with this SSOT projection.
  *
  * @see docs/MENU_PROJECTIONS.md
  */
@@ -44,6 +47,8 @@ final class MenuProjectionService
 
     public function __construct(
         private readonly MenuSnapshot $snapshot,
+        private readonly ?ComposerProfileProjection $composerProjection = null,
+        private readonly ?ChoiceAvailabilityResolver $choiceAvailabilityResolver = null,
     ) {
     }
 
@@ -76,6 +81,16 @@ final class MenuProjectionService
 
         $categoryIds = $visibleCategories->pluck('id')->all();
         $items = Item::query()
+            ->with([
+                'variations:id,item_id,item_attribute_id,name,price,visible_on,status',
+                'extras:id,item_id,name,price,visible_on,group_label,status',
+                'addons:id,item_id,addon_item_id,addon_item_variation,role',
+                'addons.addonItem:id,name,status,is_available,channels',
+                // [TERRAIN-HEAL 2026-07-16 · DBPERF-MENUPROJ-N1] eager-load media (item + addonItem) —
+                // jumeau non-healé de DBPERF-P1-01 : sinon 1 requête média/ligne à la projection (route non-cachée).
+                'media',
+                'addons.addonItem.media',
+            ])
             ->where('status', Status::ACTIVE)
             ->whereIn('item_category_id', $categoryIds)
             ->get();
@@ -90,7 +105,7 @@ final class MenuProjectionService
             ->filter(fn (Item $it): bool => $it->isVisibleOn($channel))
             ->groupBy('item_category_id');
 
-        $out = $visibleCategories->map(function (ItemCategory $cat) use ($channel, $itemsByCategory, $availability): array {
+        $out = $visibleCategories->map(function (ItemCategory $cat) use ($channel, $itemsByCategory, $availability, $branchId): array {
             $catItems = ($itemsByCategory->get($cat->id) ?? collect())
                 ->sortBy(fn (Item $it): int => (int) ($it->order ?? 0))
                 ->values();
@@ -101,7 +116,7 @@ final class MenuProjectionService
                 'name'            => $cat->displayNameFor($channel),
                 'sort'            => $cat->sortFor($channel),
                 'wizard_template' => $cat->wizard_template,
-                'items'           => $this->projectItems($catItems, $channel, $availability),
+                'items'           => $this->projectItems($catItems, $channel, $availability, $branchId),
             ];
         })->values()->all();
 
@@ -113,24 +128,49 @@ final class MenuProjectionService
      * @param  Collection<int, ItemBranchAvailability>  $availability  keyed by item_id
      * @return array<int, array<string, mixed>>
      */
-    private function projectItems(Collection $items, string $channel, Collection $availability): array
+    private function projectItems(Collection $items, string $channel, Collection $availability, int $branchId): array
     {
-        return $items->map(function (Item $item) use ($channel, $availability): array {
-            $row = $availability->get($item->id);
-            $available = $row ? (bool) $row->is_available : true;
+        $composerProfiles = $this->publishedComposerProfiles($items, $branchId);
+        $choiceAvailability = $this->choiceAvailabilityResolver()->snapshotForItems($items, $branchId, $channel);
 
-            $projected = [
-                'id'         => (int) $item->id,
-                'name'       => (string) $item->name,
-                'slug'       => (string) $item->slug,
-                'price'      => (float) $item->price,
-                'available'  => $available,
-                'is_upsell'  => (bool) $item->is_upsell,
-                'is_featured'=> (bool) $item->is_featured,
-                'allergens'  => $item->allergen_flags ?? [],
+        return $items->map(function (Item $item) use ($channel, $availability, $composerProfiles, $choiceAvailability, $branchId): array {
+            $row = $availability->get($item->id);
+            $branchAvailable = $row ? (bool) $row->is_available : true;
+            $globalAvailable = $item->is_available === null ? true : (bool) $item->is_available;
+            $available = $branchAvailable && $globalAvailable;
+            $itemChoiceAvailability = $choiceAvailability[(int) $item->id] ?? [
+                'variations' => [],
+                'extras' => [],
+                'addons' => [],
             ];
 
-            if ($row && !$available) {
+            $projected = [
+                'id'               => (int) $item->id,
+                'category_id'      => (int) $item->item_category_id,
+                'item_category_id' => (int) $item->item_category_id,
+                'name'             => (string) $item->name,
+                'slug'             => (string) $item->slug,
+                'price'            => (float) $item->price,
+                'tax_id'           => $item->tax_id !== null ? (int) $item->tax_id : null,
+                'item_type'        => (int) $item->item_type,
+                'status'           => (int) $item->status,
+                'available'        => $available,
+                'is_available'     => $available,
+                'is_upsell'        => (bool) $item->is_upsell,
+                'is_featured'      => (bool) $item->is_featured,
+                'allergens'        => $item->allergen_flags ?? [],
+                'thumb'            => $item->thumb,
+                'cover'            => $item->cover,
+                'image'            => $item->thumb ?: $item->cover,
+                'preview'          => $item->preview,
+                'variations'       => $this->projectVariations($item, $channel, $itemChoiceAvailability['variations']),
+                'itemAttributes'   => $this->projectItemAttributes($item, $channel),
+                'extras'           => $this->projectExtras($item, $channel, $itemChoiceAvailability['extras']),
+                'addons'           => $this->projectAddons($item, $channel, $itemChoiceAvailability['addons']),
+                'composer_profile' => $this->composerProfileProjection()->project($composerProfiles->get($item->id), $item, $channel, $branchId),
+            ];
+
+            if ($row && !$branchAvailable) {
                 $projected['unavailable_reason'] = $row->unavailable_reason;
             }
 
@@ -140,6 +180,142 @@ final class MenuProjectionService
 
             return $projected;
         })->values()->all();
+    }
+
+    /**
+     * @param  array<int, array{is_available: bool, unavailable_reason: ?string}>  $choiceAvailability
+     */
+    private function projectVariations(Item $item, string $channel, array $choiceAvailability): array
+    {
+        return $item->variations
+            ->filter(fn ($variation): bool => $variation->isVisibleOn($channel))
+            ->map(function ($variation) use ($choiceAvailability): array {
+                $availability = $choiceAvailability[(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+
+                return [
+                    'id' => (int) $variation->id,
+                    'item_attribute_id' => $variation->item_attribute_id !== null
+                        ? (int) $variation->item_attribute_id
+                        : null,
+                    'name' => (string) $variation->name,
+                    'price' => (float) $variation->price,
+                    'status' => (int) $variation->status,
+                    'visible_on' => $variation->visible_on,
+                    'is_available' => $availability['is_available'],
+                    'unavailable_reason' => $availability['unavailable_reason'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function projectItemAttributes(Item $item, string $channel): array
+    {
+        return $item->variations
+            ->filter(fn ($variation): bool => $variation->isVisibleOn($channel) && $variation->itemAttribute !== null)
+            ->map(fn ($variation) => $variation->itemAttribute)
+            ->unique('id')
+            ->sortBy('id')
+            ->values()
+            ->map(fn ($attribute): array => [
+                'id' => (int) $attribute->id,
+                'name' => (string) $attribute->name,
+                'status' => (int) $attribute->status,
+                'min_select' => (int) ($attribute->min_select ?? 0),
+                'max_select' => (int) ($attribute->max_select ?? 1),
+                'allow_repeat' => (bool) ($attribute->allow_repeat ?? false),
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array{is_available: bool, unavailable_reason: ?string}>  $choiceAvailability
+     */
+    private function projectExtras(Item $item, string $channel, array $choiceAvailability): array
+    {
+        return $item->extras
+            ->filter(fn ($extra): bool => $extra->isVisibleOn($channel))
+            ->map(function ($extra) use ($choiceAvailability): array {
+                $availability = $choiceAvailability[(int) $extra->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+
+                return [
+                    'id' => (int) $extra->id,
+                    'name' => (string) $extra->name,
+                    'price' => (float) $extra->price,
+                    'status' => (int) $extra->status,
+                    'group_label' => $extra->group_label,
+                    'visible_on' => $extra->visible_on,
+                    'is_available' => $availability['is_available'],
+                    'unavailable_reason' => $availability['unavailable_reason'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array{is_available: bool, unavailable_reason: ?string}>  $choiceAvailability
+     */
+    private function projectAddons(Item $item, string $channel, array $choiceAvailability): array
+    {
+        return $item->addons
+            ->filter(function ($addon) use ($channel): bool {
+                $addonItem = $addon->addonItem;
+
+                return $addonItem !== null
+                    && (int) $addonItem->status === Status::ACTIVE
+                    && (bool) ($addonItem->is_available ?? true)
+                    && $addonItem->isVisibleOn($channel);
+            })
+            ->map(function ($addon) use ($choiceAvailability): array {
+                $availability = $choiceAvailability[(int) $addon->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+
+                return [
+                    'id' => (int) $addon->id,
+                    'addon_item_id' => (int) $addon->addon_item_id,
+                    'addon_item_variation' => $addon->addon_item_variation,
+                    'role' => $addon->role,
+                    'addon_item_name' => $addon->addonItem?->name,
+                    'is_available' => $availability['is_available'],
+                    'unavailable_reason' => $availability['unavailable_reason'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, Item>  $items
+     * @return Collection<int, ItemWizardProfile>
+     */
+    private function publishedComposerProfiles(Collection $items, int $branchId): Collection
+    {
+        $itemIds = $items->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        if (empty($itemIds)) {
+            return collect();
+        }
+
+        return ItemWizardProfile::query()
+            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
+            ->whereIn('item_id', $itemIds)
+            ->where('is_published', true)
+            ->where(function ($query) use ($branchId): void {
+                $query->whereNull('branch_id_scope')
+                    ->orWhere('branch_id_scope', $branchId);
+            })
+            ->get()
+            ->groupBy('item_id')
+            ->map(fn (Collection $profiles): ItemWizardProfile => $profiles
+                ->sort(fn (ItemWizardProfile $a, ItemWizardProfile $b): int => $this->compareComposerProfiles($a, $b))
+                ->first());
+    }
+
+    private function compareComposerProfiles(ItemWizardProfile $a, ItemWizardProfile $b): int
+    {
+        $aScope = $a->branch_id_scope === null ? 0 : 1;
+        $bScope = $b->branch_id_scope === null ? 0 : 1;
+
+        return [$bScope, (int) $b->version, (int) $b->id] <=> [$aScope, (int) $a->version, (int) $a->id];
     }
 
     /**
@@ -166,5 +342,15 @@ final class MenuProjectionService
         }
 
         return $channel;
+    }
+
+    private function composerProfileProjection(): ComposerProfileProjection
+    {
+        return $this->composerProjection ?? app(ComposerProfileProjection::class);
+    }
+
+    private function choiceAvailabilityResolver(): ChoiceAvailabilityResolver
+    {
+        return $this->choiceAvailabilityResolver ?? app(ChoiceAvailabilityResolver::class);
     }
 }

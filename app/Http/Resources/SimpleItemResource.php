@@ -19,6 +19,11 @@ class SimpleItemResource extends JsonResource
     public function toArray($request)
     {
         $price = $this->price;
+        $effectiveAvailability = $this->effective_is_available;
+        $isAvailable = $effectiveAvailability === null
+            ? ($this->is_available === null ? true : (bool) $this->is_available)
+            : (bool) $effectiveAvailability;
+
         return [
             "id"             => $this->id,
             "name"           => $this->name,
@@ -33,6 +38,8 @@ class SimpleItemResource extends JsonResource
             "price"          => $this->price,
             "item_type"      => $this->item_type,
             "status"         => $this->status,
+            "is_available"   => $isAvailable,
+            "availability_reason" => $this->availability_reason,
             "description"    => $this->description === null ? '' : $this->description,
             "caution"        => $this->caution === null ? '' : $this->caution,
             "thumb"          => $this->thumb,

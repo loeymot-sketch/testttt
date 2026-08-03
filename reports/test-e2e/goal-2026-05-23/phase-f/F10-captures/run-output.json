@@ -1,0 +1,155 @@
+{
+    "timestamp": "2026-05-23T22:11:00+02:00",
+    "branch_id": 1,
+    "pre_state": {
+        "audit_logs_count": 66,
+        "z_reports_count": 4,
+        "audit_last_id": 66,
+        "audit_last_hash": "167a6e4583be7257",
+        "max_fiscal_seq_b1": 53,
+        "orders_count": 113,
+        "chain_verify": "CHAIN OK (audit_logs + z_reports) (branch=1)"
+    },
+    "flows": [
+        {
+            "name": "F.10.1 \u2014 Refund counter-entry",
+            "steps": [
+                "STEP-1: seed a new cash POS order with fiscal_sequence_no allocated",
+                "STEP-1-OK: parent order id=476 seq=54 total=11.00 cash_payment_id=6",
+                "STEP-2: open + close Z to seal the parent order",
+                "STEP-2a-OK: Z opened id=5 seq=5",
+                "STEP-2b-OK: Z closed id=5 status=closed sig=f46660875175",
+                "STEP-2c-OK: parent sealed by Z id=5 seq=5",
+                "STEP-3: trigger refund-with-counter-entry",
+                "STEP-3-OK: mirror created id=477 seq=55 total=-11.000000 status=22 parent_link=476 serial=RTN-F10-1779567060",
+                "STEP-5-OK: duplicate refund blocked: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '476' for "
+            ],
+            "verdict": "PASS",
+            "issues": [],
+            "assertions": {
+                "parent_status_unchanged": true,
+                "parent_total_unchanged": true,
+                "parent_payment_status_unchanged": true,
+                "mirror_total_negative": true,
+                "mirror_status_returned": true,
+                "mirror_payment_status_refunded": true,
+                "mirror_parent_link": true,
+                "mirror_serial_RTN_prefix": true,
+                "mirror_has_fresh_fiscal_seq": true,
+                "mirror_items_negated_qty": true,
+                "mirror_payments_negated_amount": true,
+                "parent_composition_snapshot_unchanged": true,
+                "audit_refund_event_written": true,
+                "chain_ok_after_refund": true,
+                "duplicate_refund_blocked": true
+            },
+            "mirror_order_id": 477,
+            "parent_order_id": 476,
+            "chain_after": "CHAIN OK (audit_logs + z_reports) (branch=1)"
+        },
+        {
+            "name": "F.10.2 \u2014 Z-close end-of-day",
+            "steps": [
+                "STEP-1: open new Z window",
+                "STEP-1-OK: Z opened id=6 seq=6 prev_hash=null",
+                "STEP-2: seed 3 cash POS orders inside window",
+                "STEP-2-OK: seeded 484,485,486",
+                "STEP-3: close Z window (Cl\u00f4ture journ\u00e9e)",
+                "STEP-3-OK: Z closed id=6 status=closed sig=709ab5f86d29 order_count=5 total_ttc=29",
+                "STEP-5-OK: double close blocked: ZReportService: no open Z report to close for branch 1."
+            ],
+            "verdict": "PASS",
+            "issues": [],
+            "assertions": {
+                "z_status_closed": true,
+                "z_has_signature": true,
+                "z_signature_64hex": true,
+                "z_prev_hash_chained": true,
+                "z_closed_at_set": true,
+                "z_opened_at_set": true,
+                "z_sequence_increment": true,
+                "z_order_count_correct": true,
+                "z_total_ttc_positive": true,
+                "fiscal_seq_no_reset": true,
+                "chain_ok_after_zclose": true,
+                "validator_assertChainIntegrity_pass": true,
+                "double_close_blocked": true
+            },
+            "z_id": 6,
+            "z_seq": 6,
+            "z_total_ttc": 29,
+            "z_total_by_method": {
+                "1": 29
+            },
+            "chain_after": "CHAIN OK (audit_logs + z_reports) (branch=1)"
+        },
+        {
+            "name": "F.10.3 \u2014 Loyalty redeem",
+            "steps": [
+                "STEP-0: UI inventory done \u2014 kiosk loyalty UI=YES / POS loyalty modal=YES / POS show wires modal=YES",
+                "STEP-0b: route inventory \u2014 frontend redeem=api/frontend/loyalty/redeem [POST] / pos redeem=api/admin/pos-order/{order}/redeem-loyalty [POST]",
+                "STEP-1-OK: loyalty user id=2 code=F10L26B206 points=300",
+                "STEP-2: POS redeem via PosRedemptionService::applyToOrder order=487 total=22 code=F10L26B206 points_to_redeem=100",
+                "STEP-2-OK: PosRedemptionService::applyToOrder returned discount_eur=1",
+                "STEP-3-OK: duplicate redeem blocked with code=ALREADY_REDEEMED"
+            ],
+            "verdict": "PASS",
+            "issues": [],
+            "ui_inventory": {
+                "kiosk_loyalty_component": "EXISTS",
+                "pos_loyalty_redeem_modal": "EXISTS",
+                "pos_show_component_wires_modal": "YES"
+            },
+            "routes_inventory": {
+                "frontend.loyalty.redeem": "api/frontend/loyalty/redeem [POST]",
+                "pos.redeem-loyalty": "api/admin/pos-order/{order}/redeem-loyalty [POST]"
+            },
+            "loyalty_setup": {
+                "loyalty_enable": false,
+                "loyalty_points_for_1_euro_discount": 100,
+                "storage": "Smartisan\\Settings (group=loyalty_setup)"
+            },
+            "redeem_result": {
+                "discount_eur": 1,
+                "balance_after": 200,
+                "transaction_id": 1,
+                "order_total": 21,
+                "order_discount": 1
+            },
+            "assertions": {
+                "order_total_reduced": true,
+                "customer_points_debited": true,
+                "order_total_still_positive": true,
+                "loyalty_transaction_logged": true,
+                "order_loyalty_code_linked": true,
+                "duplicate_redeem_blocked": true
+            },
+            "totals": {
+                "before": 22,
+                "after": 21,
+                "points_used": 100
+            },
+            "chain_after": "CHAIN OK (audit_logs + z_reports) (branch=1)"
+        }
+    ],
+    "post_state": {
+        "audit_logs_count": 67,
+        "z_reports_count": 6,
+        "audit_last_id": 67,
+        "audit_last_hash": "4d92d827cfc05f3d",
+        "max_fiscal_seq_b1": 62,
+        "orders_count": 124,
+        "chain_verify": "CHAIN OK (audit_logs + z_reports) (branch=1)"
+    },
+    "invariants": {
+        "audit_logs_append_only": true,
+        "z_reports_append_only": true,
+        "fiscal_sequence_monotonic": true,
+        "chain_ok_pre": true,
+        "chain_ok_post": true,
+        "no_orders_lost": true,
+        "audit_logs_delta": 1,
+        "z_reports_delta": 2,
+        "fiscal_seq_delta": 9
+    }
+}

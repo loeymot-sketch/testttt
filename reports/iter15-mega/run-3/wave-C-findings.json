@@ -1,0 +1,120 @@
+{
+  "wave": "C",
+  "run_n": 3,
+  "findings": [
+    {
+      "id": "C-008",
+      "state_artifact": "iter15-mega-kiosk/01-kds-baseline.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Run-2 fix gated POS pos-tracker-rt-warn banner successfully (verified: 01-pos-supervisor-baseline.png + 08-pos-suivi-shows-kiosk-order.png show NO yellow banner — pos-tracker-rt-warn appears only inside <style> CSS rules, and 'Connexion temps réel perdue' string is only in source-code comments embedded in DOM). HOWEVER the KDS surface STILL displays the banner 'Mode secours actif — actualisation automatique toutes les 5s' at the top of states 01-kds-baseline, 07-kds-receives-kiosk-order, and 09-kds-prete. The blue banner persists during the entire Wave C journey — kitchen staff would read this as 'system broken'. Partially-resolved finding from run-1/run-2: POS half done, KDS half left.",
+      "fix_hint": "Apply the same APP_ENV gate (run-2 fix C-003/A-003 pattern) to the KDS realtime banner. Either hide entirely when ENABLE_REALTIME=false in dev/local OR downgrade to a discrete tooltip; never show a permanent top-banner. Confirm laravel-websockets/soketi service is part of the CI runner setup if the banner is supposed to be transient."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "iter15-mega-kiosk/06-kiosk-payment-blocked.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Two Vue warnings persist at state 06 confirmation: 'Extraneous non-emits event listeners (addToCart, goToCart, startOrder, resetKiosk) were passed to component but could not be automatically inherited because component renders fragment or text root nodes. at <KioskConfirmationComponent orderNumber=\"A0024\" orderTotal=2>'. Identical to run-1 (and run-2 did not flag it). The resetKiosk listener is the auto-return-to-idle hook — if it's not bound, the kiosk could stay stuck on the confirmation screen between customers. Visual screenshot 06 confirms confirmation renders correctly but the underlying emit binding is broken.",
+      "fix_hint": "In KioskConfirmationComponent.vue: declare emits: ['addToCart','goToCart','startOrder','resetKiosk'] OR wrap the template in a single root element. Verify the auto-reset timer still fires after declaring the emits."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "iter15-mega-kiosk/07-kds-receives-kiosk-order.png",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Kiosk order #100526263 / N°A0024 lands in 'À emporter' lane while the dedicated 'Borne' lane displays 'Aucune commande borne en cours'. Same mis-routing as run-1 and run-2 (order 256 then 263). Card text 'N° Commande: En Ligne' for a borne-source order — three labels in conflict: source=kiosk/borne, lane=À emporter, displayed-order_type=En Ligne. Run-2 fix-hint not applied.",
+      "fix_hint": "Decide whether the Borne column is filtered on source=kiosk OR order_type=borne. Currently the four lanes are order_type-driven but 'Borne' is not an order_type. Either route source=kiosk into Borne lane regardless of order_type, or remove the lane and surface source as a badge. Also fix the 'N° Commande' label so it does not say 'En Ligne' for a kiosk-initiated order."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Kiosk idle still defaults to DARK MODE (deep brown background, white text, dim Cayenne accent on the 'À emporter' tile). State 06 confirmation also shows the dark/light toggle (moon icon top-left) — and although the confirmation page itself is light, the toggle widget proves the dark-mode default theme persists. Owner directive 'kiosk-design-refresh-2026-05-10' requires LIGHT MODE + Cayenne palette uniformly. Catalog state 02 onward is light, so first-tap still produces a dark→light flash inconsistent with brand identity. Identical to run-1 + run-2 — no fix attempted.",
+      "fix_hint": "Set kiosk store init theme=light (or remove the dark/light toggle for V1). Ensure --kiosk-bg defaults match the catalog/payment surfaces."
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Primary CTA 'Confirmer — €2,00' still rendered in pale-pink/peach fill with white text. Contrast ratio fails WCAG AA 4.5:1; the button visually reads as DISABLED while it is the proceed action. Identical to run-1 + run-2 — no fix applied.",
+      "fix_hint": "Use full Cayenne #F4501E (--kiosk-primary) for the primary 'Confirmer' button on the payment screen. Reserve --kiosk-primary-soft for disabled state only and add aria-disabled when no payment method is selected."
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "iter15-mega-kiosk/04-kiosk-cart-bottom-sheet.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "State 04 still labelled 'cart-bottom-sheet' but PNG shows the catalog with cart counter '0 article — €0,00' and the bottom-sheet not visible. DOM contains data-testid='kiosk-cart-bottom-sheet' selector references inside <style> CSS scoped rules but no actual rendered cart-sheet element. Reviewer cannot verify the bottom-sheet UX from this artifact. Identical to run-1 + run-2 — spec timing/flow not fixed.",
+      "fix_hint": "Spec author: assert page.locator('[data-testid=kiosk-cart-bottom-sheet]:visible').first.waitFor() AND a non-empty .cart-bottom-sheet-item-0 BEFORE snapping state 04. Add a product to the cart first; await the slide-up transition end."
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "iter15-mega-kiosk/03-kiosk-wizard.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "State 03 still labelled 'kiosk-wizard' but renders the Frites & Accompagnements catalog (no wizard step) — Frites Seules is a simple item so no wizard is exercised. Identical to run-1 + run-2 findings. Misleading state name.",
+      "fix_hint": "Spec author: rename to '03-kiosk-catalog-frites' or pick a composite item (Tacos M with viande wizard) so the wizard step is actually exercised in iter15 Wave C."
+    },
+    {
+      "id": "C-018",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "Sidebar category icons (TACOS, SANDWICHS, BURGERS, ASSIETTES, SALADES, POULET CROUSTILLANT) still all render the same generic burger thumbnail. DOM grep on state 02 confirms 6+ <img> elements all loading 'http://127.0.0.1:8000/images/category/cover.png'. Run-1 fix C-004 (storage URL host alignment to 127.0.0.1) IS applied — product images now render correctly (Eau Plate, Capri-Sun, Coca etc. all show distinct images, 9 unique URLs). But the per-category sidebar icon mapping still falls back to a single placeholder. Identical to run-2 — no fix applied to sidebar.",
+      "fix_hint": "Add a per-category icon field to the Category model (or upload distinct thumbnails) and update the kiosk sidebar template to map category->icon instead of falling back to /images/category/cover.png."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.console.json",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "intlify still reports missing keys on kiosk idle: kiosk.order_type.choose_label (5x), kiosk.order_type.takeaway (5x), kiosk.order_type.takeaway_hint (5x), kiosk.order_type.required_hint (5x). Run-2 noted the dine_in subset disappeared (correct — those keys are no longer queried because the tile is gated by C-019 fix), but the takeaway/choose_label keys are still missing from fr locale. Visible UI happens to render French strings via fallback ('À emporter' / 'Je récupère ma commande' / 'CHOISISSEZ UNE OPTION POUR COMMENCER') but the fallback is brittle: any locale switch or hot reload would surface raw keys. Pre-existing run-1 finding only partially closed.",
+      "fix_hint": "Add the 4 keys (kiosk.order_type.choose_label, kiosk.order_type.takeaway, kiosk.order_type.takeaway_hint, kiosk.order_type.required_hint) to lang/fr.json + lang/en.json + lang/ar.json. Cross-branch coordination per memory: clever-hypatia-1e4f84 has parallel kiosk.confirmation.* migration."
+    },
+    {
+      "id": "C-020",
+      "state_artifact": "iter15-mega-kiosk/07-kds-receives-kiosk-order.console.json",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "NEW finding (was present in run-1/2 but not flagged). Console at state 07 KDS receives 35 intlify warnings, of which 'label.kds_toggle_items' fires 60x cumulatively across run-3 (every KDS card render attempts the lookup). DOM grep shows the toggle button is rendered as plain icon — would surface raw 'label.kds_toggle_items' on locale change. Also 'button.menu' missing 4x on KDS+POS. Quality of audit work: a high-frequency missing key (60 hits) was overlooked by run-1 + run-2 reviewers despite being in console.json the entire time.",
+      "fix_hint": "Add label.kds_toggle_items + button.menu to lang/fr.json + lang/en.json + lang/ar.json. Audit all kdsCardComponent usages of $t('label.kds_toggle_items') and ensure aria-label fallback exists when key missing."
+    },
+    {
+      "id": "C-021",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.console.json",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "NEW finding. intlify reports 'kiosk.remove_item' missing 3x on the payment screen. The remove-cart-item icon button uses $t('kiosk.remove_item') for aria-label/tooltip; without the key the button has no accessible name (screen-reader users cannot identify it). Pre-existing in run-1/2 but not flagged.",
+      "fix_hint": "Add kiosk.remove_item to lang/fr.json + lang/en.json + lang/ar.json. Verify aria-label binding in KioskPaymentSummary.vue."
+    },
+    {
+      "id": "C-022",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "NEW finding. After the ACCEPT→PREPARING→PREPARED transitions, order N°A0024 / #100526263 is COMPLETELY ABSENT from the KDS screen. State 07 showed it in À emporter/Confirmées; state 09 (Toutes Les Commandes tab active per screenshot, purple highlight) shows only orders 240+241 — the freshly-prepared order has vanished from the view. The Préparations sidebar counter incremented Frites Seules 7→8 confirming the status DID transition (so this is NOT the run-2 C-017 'stuck in Confirmées' issue), but the kitchen staff has NO visibility on the prepared order anywhere on screen — no 'Prêts à servir' / 'Terminées' lane is rendered in the default 'Toutes Les Commandes' view. Meanwhile state 10 customer screen displays N°A0024 in the 'Prêt' column → customer is told the order is ready, but kitchen cannot reconcile / serve it from the default KDS dashboard. Different bug than run-2 (which was no-refresh) but equally bad UX.",
+      "fix_hint": "(1) Render a 'Prêts à servir' / 'Terminées' column in the 'Toutes Les Commandes' KDS view so PREPARED orders remain visible until DELIVERED. OR (2) auto-switch the operator to the 'Terminées' tab momentarily after a bump. OR (3) keep the order card in À emporter lane with a visual 'Prêt' badge until the cashier marks delivery. Verify with manager-grade UX review."
+    },
+    {
+      "id": "C-023",
+      "state_artifact": "iter15-mega-kiosk/01-pos-supervisor-baseline.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "NEW finding. Vue warn at state 01-pos-supervisor-baseline: 'Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< undefined > >'. The PosComponent reads a non-existent reactive ref during render — likely a leftover from a recent refactor. Visible page renders OK but the warning indicates a latent template-vs-store binding mismatch that could throw on cold-paint of a different POS state (cart restore, draft order resume).",
+      "fix_hint": "Open resources/js/components/PosComponent.vue, search template for v-if/v-for/v-bind referencing itemsRaw. Either (a) declare const itemsRaw = computed(...) in <script setup>, (b) rename to existing prop, or (c) remove the binding. Add a smoke-test that fails on Vue warnings."
+    },
+    {
+      "id": "C-024",
+      "state_artifact": "iter15-mega-kiosk/08-pos-suivi-shows-kiosk-order.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "NEW finding (data-flow correctness, not pricing). State 08 POS Suivi commandes shows N°A0024 (kiosk order 263) in the 'À ENVOYER' column at 2,00€. State 07 KDS shows the SAME order already in 'À emporter / Confirmées' (= accepted by kitchen). The two surfaces disagree on the order's lifecycle position: KDS says 'Confirmée / awaiting preparation start', POS suivi says 'À envoyer = needs to be sent to kitchen'. Either the POS column semantics map 'À envoyer = not yet KDS-acked' (in which case state 07 should show no card) or the lane logic is wrong. Run-1 C-002 (totals were 0) IS fixed — totals now read 2,00€ correctly. New issue is the cross-surface lane mismatch. NOTE: state 08 was captured BEFORE the prête transition (state 09), so this is NOT a stale-snapshot issue.",
+      "fix_hint": "Document the canonical mapping {kiosk_order.status_id} -> {KDS lane} -> {POS suivi column}. Likely fix: when KDS acknowledges (state CONFIRMED), POS suivi should move the row from À ENVOYER to EN PRÉPARATION simultaneously. Or relabel À ENVOYER to 'NOUVEAU' to clarify it's the freshly-arrived state regardless of KDS ack."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 4, "P2": 9, "P3": 1 },
+  "states_reviewed": 12
+}

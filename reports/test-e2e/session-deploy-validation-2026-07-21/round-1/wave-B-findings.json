@@ -1,0 +1,61 @@
+{
+  "wave": "B — home + legal (LIVE Vercel)",
+  "site": "https://site-lecayenne.vercel.app",
+  "run_at": "2026-07-21",
+  "spec": "tests/e2e/_audit-B-home-legal-2026-07-21.spec.js",
+  "screenshots_dir": "tests/e2e/__screenshots__/audit-B-home-legal/",
+  "diagnostics": "reports/test-e2e/session-deploy-validation-2026-07-21/round-1/wave-B-diagnostics.json",
+  "counts": { "P0": 0, "P1": 3, "P2": 0, "P3": 2 },
+  "home_verdict": "CLEAN — hero product image loads (Cayenne sandwich on branded dark background, naturalWidth 800), Facebook button + 5 loaded product tiles, 0 console errors, 0 network 4xx/5xx, no horizontal scroll.",
+  "legal_verdict": "4/5 clean (cgv, privacy, cookies, allergens). mentions.html has 5 visible [À COMPLÉTER] placeholders: 3 P1 (should be real facts) + 2 P3-info (intentionally-pending fields).",
+  "findings": [
+    {
+      "severity": "P1",
+      "category": "content/legal-placeholder",
+      "surface": "https://site-lecayenne.vercel.app/legal/mentions.html — §1 Éditeur du site",
+      "title": "Forme juridique renders visible placeholder '[À COMPLÉTER — SARL / SAS / EURL / EI / autre]' — should read SAS",
+      "evidence": "Rendered document.body.innerText contains the literal '[À COMPLÉTER — SARL / SAS / EURL / EI / autre]' (visible on-screen, not a comment). Task expects Forme juridique = SAS. Screenshot: legal-mentions-full.png (row 'Forme juridique :'). filledStatus['Forme juridique = SAS']=false.",
+      "reproduction": "Open https://site-lecayenne.vercel.app/legal/mentions.html, section '1. ÉDITEUR DU SITE', row 'Forme juridique :' shows the bracketed placeholder instead of 'SAS'."
+    },
+    {
+      "severity": "P1",
+      "category": "content/legal-placeholder",
+      "surface": "https://site-lecayenne.vercel.app/legal/mentions.html — §1 Éditeur du site",
+      "title": "RCS renders visible placeholder '[À COMPLÉTER PAR PROPRIÉTAIRE — ville d'immatriculation]' — should read Béthune",
+      "evidence": "Rendered innerText contains '[À COMPLÉTER PAR PROPRIÉTAIRE — ville d'immatriculation]' (visible). Task expects RCS = Béthune. Screenshot: legal-mentions-full.png (row 'RCS :'). filledStatus['RCS = Béthune']=false.",
+      "reproduction": "Open mentions.html, row 'RCS :' shows the bracketed placeholder instead of 'Béthune'."
+    },
+    {
+      "severity": "P1",
+      "category": "content/legal-placeholder",
+      "surface": "https://site-lecayenne.vercel.app/legal/mentions.html — §1 Éditeur du site",
+      "title": "Code APE / NAF renders visible placeholder '[À COMPLÉTER PAR PROPRIÉTAIRE — ex. 5610A ...]' — should read 5610C",
+      "evidence": "Rendered innerText contains '[À COMPLÉTER PAR PROPRIÉTAIRE — ex. 5610A pour restauration traditionnelle]' (visible). Task expects APE = 5610C. Screenshot: legal-mentions-full.png (row 'Code APE / NAF :'). filledStatus['APE = 5610C']=false.",
+      "reproduction": "Open mentions.html, row 'Code APE / NAF :' shows the bracketed placeholder instead of '5610C'."
+    },
+    {
+      "severity": "P3",
+      "category": "content/legal-pending-owner-fact",
+      "surface": "https://site-lecayenne.vercel.app/legal/mentions.html — §1 Éditeur du site",
+      "title": "Capital social — intentionally-pending owner fact, but displays raw '[À COMPLÉTER si société commerciale — montant en euros]' bracket",
+      "evidence": "Task designates Capital social as an intentionally-pending field (P3-info, not P1). NOTE: the live page shows the raw bracketed placeholder rather than the intended graceful text 'à confirmer par le gérant' — evidence the Éditeur block predates the graceful-pending version. Screenshot: legal-mentions-full.png.",
+      "reproduction": "Open mentions.html, row 'Capital social :' shows a bracketed [À COMPLÉTER] placeholder."
+    },
+    {
+      "severity": "P3",
+      "category": "content/legal-pending-owner-fact",
+      "surface": "https://site-lecayenne.vercel.app/legal/mentions.html — §1 Éditeur du site",
+      "title": "Directeur de la publication — intentionally-pending owner fact, but displays raw '[À COMPLÉTER PAR PROPRIÉTAIRE — nom + prénom du représentant légal]' bracket",
+      "evidence": "Task designates Directeur as an intentionally-pending field (P3-info, not P1). NOTE: the live page shows the raw bracketed placeholder rather than the intended graceful text 'le représentant légal de E.DELICE SAS'. Screenshot: legal-mentions-full.png.",
+      "reproduction": "Open mentions.html, row 'Directeur de la publication :' shows a bracketed [À COMPLÉTER] placeholder."
+    }
+  ],
+  "root_cause_note": "All 5 mentions placeholders share one root cause: the LCEN fill tooling (commit 2267427 in /Users/1millnonstop/Downloads/web) injected only 3 of 8 Éditeur facts (E.DELICE SAS raison sociale, SIRET 10417050100019, TVA FR19104170501). Forme juridique / Capital social / RCS / APE / Directeur were never filled and still render bracketed placeholders. Confirmed NOT a CDN-cache artifact (cache-busted fetch = 5 occurrences; last-modified today). Local web-standalone source matches the live output.",
+  "clean_surfaces": {
+    "home": "hero image loaded (assets/menu/sandwich-cayenne.png, 800x533, real Cayenne sandwich + branded background); Facebook button -> https://www.facebook.com/LeCayenne text 'Le Cayenne sur Facebook'; 5 gallery tiles all loaded (naturalWidth>0) + linked to facebook.com/LeCayenne (not emoji); 0 console errors; 0 network 4xx/5xx; no body horizontal scroll; 0 broken imgs.",
+    "cgv": "CM2C + cm2c.net + 'médiateur' present; 0 placeholders; 200.",
+    "privacy": "Vercel Inc. (hébergeur), OTP interne (aucun prestataire SMS externe), no Mailgun/Twilio, EEE + CCT (Clauses Contractuelles Types) transfers present; 0 placeholders; 200.",
+    "cookies": "'Aucun cookie de mesure d'audience' present; no analytics vendor row; honest CDN disclosure (Google Fonts + unpkg); 0 placeholders; 200.",
+    "allergens": "Halal mention present (§5 Régimes spéciaux); 14-allergen grid intact; 0 placeholders; 200."
+  }
+}

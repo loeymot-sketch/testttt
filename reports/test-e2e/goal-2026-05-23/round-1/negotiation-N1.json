@@ -1,0 +1,292 @@
+{
+  "negotiation_meta": "N1 Visual↔UX↔Persona",
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 Phase B.7",
+  "round": 1,
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_under_audit": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
+  "scope_lane": "Visual ↔ UX ↔ Persona lenses only — sync/NF525/anomaly/architecture/security/DBA conflicts belong to sibling N-agents N2-N5",
+  "owner_mandate_filter": [
+    "no useless complexity V1",
+    "V1 single-resto Le Cayenne LOCAL — no cloud/SaaS scope creep",
+    "frozen zones never modified without explicit countersign",
+    "chef sous stress ne doit pas sortir une commande incomplète (owner verbatim S3 mandate)",
+    "production-correctness > token savings, evidence > confidence"
+  ],
+  "inputs_read": [
+    "S1-mega-findings.json",
+    "S2-mega-findings.json",
+    "S3-mega-findings.json",
+    "S4-mega-findings.json",
+    "S5-mega-findings.json",
+    "S6-mega-findings.json",
+    "S7-mega-findings.json",
+    "persona-P1-chef-rush.json",
+    "persona-P2-client-impatient.json",
+    "persona-P3-cashier-multitask.json",
+    "persona-P4-owner-night.json",
+    "persona-P5-auditeur-fiscal.json",
+    "persona-P6-multi-tenant-future.json",
+    "scenario-R6-payment-failed.json",
+    "scenario-R7-cashier-fatigue.json",
+    "scenario-R8-owner-night-anomaly.json",
+    "scenario-R9-nf525-chain-stress.json",
+    "scenario-R10-8-sauces.json"
+  ],
+  "conflicts_resolved": [
+    {
+      "id": "N1-C1-kds-layout-5plus",
+      "title": "KDS V2 grid 4×2 layout overflows 56px when ≥6 active orders; ≥9 silently dropped by slice(0,8)",
+      "lenses": ["S3-V (visual)", "S3-U (ux)", "P1-chef-rush", "P4-owner-night-secondary"],
+      "findings_referenced": ["S3-CHEF-001", "S3-CHEF-002"],
+      "score_impact_per_persona": {
+        "chef_rush": "P0 BLOCKER-IF-RUSH — chef cannot tap bottom-row Prêt CTAs without page-scroll; ≥9 orders invisible (no overflow chip). Owner verbatim mandate violated.",
+        "client_impatient": "INDIRECT — bottom-row order goes cold while chef scrolls, client waits at counter",
+        "cashier_multitask": "INDIRECT — slower kitchen throughput tightens cashier counter pressure",
+        "owner_night": "P3 — would notice if reviewing reports + a 'queue >8' silent drop weakens trust",
+        "auditeur_fiscal": "OUT-OF-SCOPE — no NF525 implication",
+        "multi_tenant_future": "INFO V2 only — multi-resto V2 will compound the problem"
+      },
+      "owner_mandate_check": {
+        "no_useless_complexity": "FAIL of current state — chef glance budget 5-10s incompatible with scroll; this is core operational simplicity gap",
+        "frozen_zone": "KdsV2Grid.vue NOT in CLAUDE.md §7 frozen list — but layout choice is architectural",
+        "verbatim_mandate_violated": true,
+        "verbatim_mandate_text": "il doit y avoir maximum 5 commandes affichées en une ligne, sinon faire 2 lignes. Chaque commande doit être lisible sans scroll. Sinon le chef sous stress va sortir une commande incomplète."
+      },
+      "verdict": "OWNER-GATE",
+      "rationale": "S3 mega-agent wrote PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md with 3 architectural options (A=adaptive 1-row at ≤5 + 2-row at ≥6 / B=dynamic compaction with min-height clamp / C=strict 5-col + '+N hidden' overflow chip) AND explicitly instructed 'do NOT auto-modify — owner gate required'. P1-chef-rush CONFIRMED with code+visual evidence (grid math 1136 > 1080 overflow=56px). Owner-mandate filter does not choose between A/B/C — only owner does, because the trade-off is product-shape (5-cap-strict vs adaptive vs compaction) not technical.",
+      "fix_options_recap": [
+        "A. Adaptive ≤5 single row + ≥6 dual row 5-col (matches owner verbatim mandate most directly)",
+        "B. Dynamic compaction with min-height clamp 380px + cap at 10 with overflow indicator",
+        "C. Strict 5-col + '+N hidden' overflow chip lower-right"
+      ],
+      "production_blocking_v1": true,
+      "estimated_dev_hours_if_owner_picks_A": "4-6h (KdsV2Grid.vue CSS+computed adaptive grid + sentinel test + visual capture × 5/6/7/8/9-order states)",
+      "frozen_zone_impact": "Zero (KdsV2Grid.vue is V2 layout component, not in §7)"
+    },
+    {
+      "id": "N1-C2-paymentcomponent-currency-frozen",
+      "title": "PaymentComponent.vue hero MONTANT TOTAL renders '4.90€' (point + no nbsp) vs FR-canonical '4,90 €' that PosCounterCollectModal now respects post-D2",
+      "lenses": ["S2-V (visual)", "P2-client-impatient (micro-friction)", "P3-cashier-multitask (200 saccades/day cognitive fatigue)"],
+      "findings_referenced": ["S2-002 P3", "P3-FRICTION-003"],
+      "score_impact_per_persona": {
+        "chef_rush": "OUT-OF-SCOPE — chef does not see PaymentComponent",
+        "client_impatient": "P3 — micro-friction at point of payment; client tunnel-visions on amount, format inconsistency = sub-second hesitation",
+        "cashier_multitask": "P2 effective by cumulative-load — 200 transactions × 5h shift × micro-saccade for format mismatch = measurable cognitive tax (Karim persona witness)",
+        "owner_night": "INFO — owner sees format inconsistency only if reviewing receipts, not critical",
+        "auditeur_fiscal": "OUT-OF-SCOPE — fiscal amounts are correct, only DISPLAY format differs (Intl.NumberFormat at hero only, no payload impact)",
+        "multi_tenant_future": "V2 — format consistency a baseline expectation"
+      },
+      "owner_mandate_check": {
+        "no_useless_complexity": "FIX PASSES — Intl.NumberFormat('fr-FR') is std lib, no new dependency, mirror existing PosCounterCollectModal.vue:336-342 formula",
+        "frozen_zone": "PaymentComponent.vue IS in CLAUDE.md §7 frozen list (V1 untouched protected file)",
+        "verbatim_mandate_violated": false
+      },
+      "verdict": "OWNER-GATE",
+      "rationale": "LOCK_PAY_PaymentComponent_currency_2026-05-23.md is explicitly DRAFTED in Phase A.3 (commit 03e9bddde) AWAITING countersign. S2 verified PaymentComponent.vue git diff HEAD~3..HEAD = 0 lines. Scope-minimal patch is pre-specified (new local method currencyFormatFR + Intl.NumberFormat, sentinel paymentComponentHeroFrFormatSentinel.spec.js). The fix is sitting on owner desk — countersign unblocks ~30 min of patch+test+rebuild. No engineering decision remains, only owner approval to touch a §7 frozen file.",
+      "fix_options_recap": [
+        "Owner countersigns LOCK_PAY plan → scope-minimal hero formatter patch (~10 LOC change in PaymentComponent.vue) + new sentinel — total <1h work",
+        "Owner declines LOCK → S2-002 remains open P3 V1.0.2 backlog"
+      ],
+      "production_blocking_v1": false,
+      "estimated_dev_hours_if_owner_signs": "<1h (template binding swap + sentinel + bundle rebuild + visual recapture)",
+      "frozen_zone_impact": "LOCK_PAY plan exists; gate cleared = override-allowed, scope-minimal patch only"
+    },
+    {
+      "id": "N1-C3-kds-historique-scroll-long-order",
+      "title": "KdsOrderCard body overflow-y:auto requires chef scroll on long orders (15+ items) — incompatible with 5-10s chef glance budget",
+      "lenses": ["S3-V (visual)", "S3-U (ux)", "P1-chef-rush"],
+      "findings_referenced": ["S3-CHEF-003"],
+      "score_impact_per_persona": {
+        "chef_rush": "P0 BLOCKER — owner verbatim 'doivent scroller pour voir ou bien on affichera toute la commande affichée en une seule fois sans scroller'. Single-item ship-incomplete risk: chef glances first 3-5 items, scrolls late or not at all, misses item 12 of 15 → wrong-order out of kitchen.",
+        "client_impatient": "INDIRECT — receives incomplete order",
+        "cashier_multitask": "INDIRECT — handles customer complaint at counter",
+        "owner_night": "P3 — see in customer-complaint review",
+        "auditeur_fiscal": "OUT-OF-SCOPE",
+        "multi_tenant_future": "V2 — compounded by multi-resto throughput pressure"
+      },
+      "owner_mandate_check": {
+        "no_useless_complexity": "FAIL of current state — Wave U scrollbar-visible heal addressed visibility but did NOT eliminate scroll requirement",
+        "frozen_zone": "KdsOrderCard.vue NOT in §7 frozen list — but architectural body-layout decision",
+        "verbatim_mandate_violated": true,
+        "verbatim_mandate_text": "j'ai même les commandes qui sont sortis déjà est-ce qu'il peut les commen cours est-ce que ils doivent scroller pour voir ou bien on affichera toute la commande affiché en une seule fois sans scroller pour voir les détails"
+      },
+      "verdict": "OWNER-GATE",
+      "rationale": "BUNDLE WITH N1-C1 — same KdsOrderCard/KdsV2Grid architectural decision space, same owner-mandate, same S3 PROPOSAL lineage. Three options pre-articulated (A=card-expansion-on-click modal, B=auto-shrink-to-fit dynamic font, C=hybrid first-N-items+show-all chip). Owner picks among the three; choice is product-UX not technical. Implementation effort bundled with N1-C1 fix.",
+      "fix_options_recap": [
+        "A. Tap-to-expand modal showing full item list (matches Wave Q-2 pattern)",
+        "B. Auto-shrink font when items > 8 (preserves glance integrity but smaller text)",
+        "C. Hybrid: first 5-6 items default + '+N more' chip → tap reveals overlay"
+      ],
+      "production_blocking_v1": true,
+      "estimated_dev_hours_if_owner_picks_A": "3-4h (modal overlay + close handlers + sentinel + capture)",
+      "frozen_zone_impact": "Zero (KdsOrderCard.vue not in §7)",
+      "bundling_recommendation": "Owner should decide N1-C1 + N1-C3 together — both KDS layout architectural"
+    },
+    {
+      "id": "N1-C4-telemetry-toast-d1-healed",
+      "title": "Phase A.1 telemetry 429 allowlist fix (d973a4b1e) — fix-induced false-green caught + healed inline (commit f28688675)",
+      "lenses": ["S1-T (technical)", "P2-client-impatient"],
+      "findings_referenced": ["S1-T-001 CRITICAL", "F-P2-09"],
+      "score_impact_per_persona": {
+        "chef_rush": "OUT-OF-SCOPE",
+        "client_impatient": "POST-HEAL GOOD — 70-call burst replay shows 0 toasts (verified empirically)",
+        "cashier_multitask": "POST-HEAL GOOD — same toast eliminated on /admin surfaces",
+        "owner_night": "OUT-OF-SCOPE",
+        "auditeur_fiscal": "OUT-OF-SCOPE",
+        "multi_tenant_future": "OUT-OF-SCOPE"
+      },
+      "owner_mandate_check": {
+        "no_useless_complexity": "PASS — healed inline with scope-minimal patch + new sentinel",
+        "frozen_zone": "bootstrap.js + telemetryAllowlistSentinel.spec.js not in §7",
+        "verbatim_mandate_violated": false
+      },
+      "verdict": "DISCARD",
+      "verdict_clarification": "DISCARD here means 'removed from active negotiation queue because already resolved by commit f28688675'. NOT pejorative — this is a CLOSED-GREEN. S1 mega-agent caught the fix-induced regression (allowlist used absolute /api paths while axios config.url is relative) AND healed it AND added a runtime-shape sentinel in the same audit session. Empirical verification: same 70-call burst produced 40 server 429s + ZERO user-visible toasts. F-P2-09 GOOD confirms client-side impact gone.",
+      "rationale": "Brief itself states verdict=CLOSED-GREEN. No conflict remains to arbitrate; surfaced here for completeness of N1 lane coverage.",
+      "production_blocking_v1": false,
+      "estimated_dev_hours_remaining": "0 (closed)",
+      "frozen_zone_impact": "Zero"
+    },
+    {
+      "id": "N1-C5-backup-status-invisible-ui",
+      "title": "Backup last-successful + freshness not surfaced on admin dashboard — owner cannot verify 'Sauvegarde J-1 OK' without ls -la storage/backups/",
+      "lenses": ["S7-A11y-secondary (dashboard ergonomy)", "P4-owner-night BLOCKER-PEACE", "B3.4-SRE (referenced)"],
+      "findings_referenced": ["P4-BPEACE-02", "S7-MEGA-F1 (kindred chain widget gap)"],
+      "score_impact_per_persona": {
+        "chef_rush": "OUT-OF-SCOPE",
+        "client_impatient": "OUT-OF-SCOPE",
+        "cashier_multitask": "OUT-OF-SCOPE",
+        "owner_night": "BLOCKER-PEACE — owner anxious at 23h cannot self-verify backup state; NF525 6y retention silently at risk if cron drops",
+        "auditeur_fiscal": "INDIRECT — NF525 6y retention mandate makes silent backup failure a compliance risk",
+        "multi_tenant_future": "V2 — per-tenant backup observability needed"
+      },
+      "owner_mandate_check": {
+        "no_useless_complexity": "TENSION — additive widget is small (~2h) but adds dashboard surface area; owner must judge value vs simplicity",
+        "frozen_zone": "Zero impact — pure additive (new endpoint + new Vue widget, no existing-widget mutation)",
+        "verbatim_mandate_violated": false
+      },
+      "internal_contradiction_in_P4_resolved": {
+        "P4_self_vote": "P4-BPEACE-02 marks owner_decision_needed=false + deferral_acceptable=false + blocker_for_v1_ship=NO + recommended_for_v1_ship=YES",
+        "interpretation_voting_apply": "P4 leans APPLY-FIX",
+        "but_N1_reframing": "Owner-mandate filter 'no useless complexity V1' makes additive widgets opt-in by owner. The technical work is ready (~2h dev). The DECISION is ship-timing: ship V1 now without widget (move to V1.0.1) OR delay V1 ship 5-6h to add backup + chain widgets together. That's a SHIP-TIMING decision, not engineering — therefore OWNER-GATE not APPLY-FIX.",
+        "outcome": "Reclassify P4 vote APPLY-FIX → OWNER-GATE for honest ship-timing arbitration"
+      },
+      "verdict": "OWNER-GATE",
+      "rationale": "System is correct (B3.4 SRE GREEN — cron + retention math + supervisor template all sound). Gap is OBSERVABILITY UI: owner-night persona cannot visually confirm backup health. Live evidence at audit shows storage/backups/db-daily/ has last file 2026-05-21 (today=2026-05-23) — backups stale 2 days without UI signal. Bundle decision with S7-MEGA-F1 (chain status widget) since both are 'fiscal/operational observability' family. Owner decides: (a) ship V1 NOW with documented CLI-only check, defer widgets to V1.0.1 hardening cycle, OR (b) delay V1 ship 5-6h to ship widget pair together. Either is defensible; owner picks based on V1-launch urgency vs anxiety-management value.",
+      "fix_options_recap": [
+        "A. Defer to V1.0.1 — ship V1 without dashboard widgets; document CLI verify-chain + ls backup in runbook owner reads at 23h",
+        "B. Apply now — ~5-6h dev (BackupStatusWidget + FiscalChainStatusWidget + 2 read-only endpoints + i18n) before V1 ship",
+        "C. Hybrid — ship BackupStatusWidget only (cheapest, biggest peace-of-mind win) ~2h, defer chain widget to V1.0.1"
+      ],
+      "production_blocking_v1": false,
+      "estimated_dev_hours_option_A": "0",
+      "estimated_dev_hours_option_B": "5-6h",
+      "estimated_dev_hours_option_C": "2-3h",
+      "frozen_zone_impact": "Zero (pure additive widgets + read-only endpoints, no mutation of any existing file in §7)"
+    }
+  ],
+  "applied_filter_owner_mandate": {
+    "filter_text": "no useless complexity V1 + V1 single-resto FR + frozen zones never modified without explicit countersign + chef sous stress ne doit pas sortir une commande incomplète",
+    "application_per_conflict": {
+      "N1-C1": "Filter selects 'chef sous stress' verbatim mandate → fix needed; technical choice A/B/C is product-UX decision owner-only",
+      "N1-C2": "Filter compatible with fix (Intl.NumberFormat is std lib, no complexity); §7 frozen zone requires LOCK countersign first",
+      "N1-C3": "Filter selects 'chef sous stress' verbatim mandate (same as C1) → fix needed; technical choice A/B/C is product-UX decision owner-only",
+      "N1-C4": "Already healed in scope-minimal fashion — filter passes, no further action",
+      "N1-C5": "Filter ambiguous — 'no useless complexity' tensions with 'fiscal peace-of-mind'; owner picks ship-timing"
+    }
+  },
+  "scope_lane_discipline": {
+    "stayed_in_lane_visual_ux_persona": true,
+    "out_of_scope_conflicts_intentionally_NOT_arbitrated": [
+      "C2-T-001 KDS→POS sync ΔT regression — belongs to N-sync-meta-agent (lens Y)",
+      "R10 8-sauce composition_snapshot drift — belongs to N-fiscal-meta-agent (NF525)",
+      "R8 anomaly detection gaps — belongs to N-anomaly-meta-agent",
+      "P6 V2 multi-tenant cache/queue keys — belongs to N-architecture-meta-agent",
+      "P5 auditeur-fiscal NF525 deep dispute — belongs to N-fiscal-meta-agent",
+      "S5 cash-overview reconciliation diff cell — V1.0.2 backlog already, no V↔U↔P conflict",
+      "R7 cashier-fatigue memory leaks — already P3_INFO triage, no V↔U↔P conflict"
+    ],
+    "rationale": "N1 brief explicitly scoped to Visual↔UX↔Persona conflicts. Sync/NF525/anomaly/architecture are sibling N-agent lanes (N2-N5 presumably). Cross-lane arbitration would double-count and violate single-responsibility."
+  },
+  "verdict_summary": {
+    "apply_fix_now": 0,
+    "defer_v1_0_2": 0,
+    "discard": 1,
+    "owner_gate": 4,
+    "closed_green_subset_of_discard": 1,
+    "total_conflicts_negotiated": 5
+  },
+  "top_3_owner_gate_priorities": [
+    {
+      "rank": 1,
+      "id": "N1-C1+N1-C3 BUNDLED",
+      "title": "KDS layout architectural — chef-rush production-blocker bundle",
+      "why_top": "Owner verbatim mandate violated. P1-chef-rush persona BLOCKER-IF-RUSH on 3 of 3 confirmed bugs. Visual + numeric + persona-cross-validated evidence. Production-blocking V1 ship.",
+      "urgency": "BEFORE V1 SHIP",
+      "owner_decision_needed": [
+        "Pick KdsV2Grid layout option (A=adaptive 1-row≤5+2-row≥6 / B=dynamic compaction / C=strict 5-col + overflow chip)",
+        "Pick KdsOrderCard long-order display option (A=tap-to-expand modal / B=auto-shrink-to-fit / C=hybrid first-N + chip)",
+        "Confirm overflow-chip pattern for ≥9 silent-drop fix (S3-CHEF-002)"
+      ],
+      "estimated_dev_hours_if_owner_picks_A_for_both": "7-10h (KdsV2Grid + KdsOrderCard + sentinels + multi-viewport captures)",
+      "frozen_zone_impact": "Zero",
+      "proposal_doc_already_written": "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md"
+    },
+    {
+      "rank": 2,
+      "id": "N1-C2",
+      "title": "PaymentComponent currency format FR-canonical — LOCK countersign awaiting",
+      "why_top": "Smallest delta to ship — fix fully specified in LOCK_PAY plan, scope-minimal, sentinel pre-designed. Owner countersign unblocks <1h of patch+test. P3 cashier 5h-fatigue cognitive tax cumulative 200 transactions/day.",
+      "urgency": "BEFORE V1 SHIP IF OWNER PRIORITIZES CASHIER-FATIGUE — OTHERWISE V1.0.2",
+      "owner_decision_needed": [
+        "Countersign plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md — single signature unblocks scope-minimal hero formatter patch"
+      ],
+      "estimated_dev_hours_post_signature": "<1h",
+      "frozen_zone_impact": "PaymentComponent.vue §7 frozen — LOCK doc countersign required (drafted, ready)"
+    },
+    {
+      "rank": 3,
+      "id": "N1-C5",
+      "title": "Backup + fiscal chain status widgets — owner-night peace-of-mind ship-timing",
+      "why_top": "P4-BPEACE-01 + P4-BPEACE-02 = 2 owner-night BLOCKER-PEACE concerns share the same widget-family solution. Bundle with S7-MEGA-F1 (chain widget gap). System is correct (chain OK live-verified) but observability UI absent. Owner picks ship-timing: V1 now+V1.0.1 widget OR delay 5-6h for widget pair.",
+      "urgency": "SHIP-TIMING DECISION — not engineering",
+      "owner_decision_needed": [
+        "Option A: Ship V1 NOW with documented CLI verify-chain + ls backup in owner runbook (0h delay)",
+        "Option B: Delay V1 ship 5-6h to add BackupStatusWidget + FiscalChainStatusWidget pair",
+        "Option C: Hybrid — ship BackupStatusWidget only (2-3h, biggest psychological-trust win), defer chain widget V1.0.1"
+      ],
+      "estimated_dev_hours_options": {"A": 0, "B": "5-6h", "C": "2-3h"},
+      "frozen_zone_impact": "Zero (pure additive)"
+    }
+  ],
+  "discard_subset_closed_green": [
+    {
+      "id": "N1-C4-telemetry-toast",
+      "status": "CLOSED-GREEN by commit f28688675",
+      "evidence": "70-call burst replay post-heal produces 0 user-visible toasts. Sentinel telemetryAllowlistSentinel.spec.js 8/8 GREEN.",
+      "no_further_action_needed": true
+    }
+  ],
+  "honest_caveats": [
+    "Conflicts beyond V↔U↔P lane (sync ΔT, NF525 chain stress, anomaly detection, V2 multi-tenant, security) intentionally NOT arbitrated here — sibling N-agents own them.",
+    "Owner-gate count of 4 is the ARBITRATION verdict; only 2-3 of them are V1-ship-blockers (N1-C1+C3 bundled = blocker; N1-C2 = optional-fast-fix; N1-C5 = ship-timing).",
+    "P4-BPEACE-02 internal vote leaned APPLY-FIX; reclassified to OWNER-GATE based on owner-mandate filter (no useless complexity → owner picks complexity threshold)."
+  ],
+  "next_actions_for_orchestrator": [
+    "Surface 3 owner-gate decisions in order: (1) KDS layout bundle N1-C1+N1-C3, (2) LOCK_PAY countersign N1-C2, (3) Backup/chain widgets ship-timing N1-C5.",
+    "Cross-reference N2..N5 meta-agent outputs for sync/NF525/anomaly/architecture conflicts before final Phase B.7 convergence.",
+    "If owner picks 'apply now' on any owner-gate, dispatch implementation agent with scope-minimal plan (proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md or LOCK_PAY plan).",
+    "Phase B.8 Round 2 convergence — re-audit same surfaces post-owner-decision to lock GREEN."
+  ],
+  "advisor_consulted_at": "pre-write",
+  "advisor_directives_honored": [
+    "All 4 active conflicts collapse to OWNER-GATE with distinct rationale per conflict",
+    "C1+C3 bundled in rationale (same KDS architectural decision space)",
+    "C2 framed as awaiting LOCK countersign (literal signature unblock)",
+    "C4 mapped to discard with CLOSED-GREEN clarification subset",
+    "C5 internal P4 contradiction surfaced + resolved via owner-mandate filter to OWNER-GATE (ship-timing)",
+    "Top 3 priority list ordered C1+C3 / C2 / C5",
+    "Stayed in lane — sync/NF525/anomaly conflicts NOT widened into N1 scope",
+    "Did not auto-fix — all verdicts are 'owner decides'"
+  ]
+}

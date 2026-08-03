@@ -1,0 +1,68 @@
+{
+  "specialist": "architect",
+  "scope": "LIVREUR fullsys 6 sub-systems (14.1 driver app, 14.2 admin assignment, 14.3 delivery fee, 14.4 zones, 14.5 notifications cascade, 14.6 cash session NEW Sub6.3 Build 1)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "4ad1adba8",
+  "method": "read-only audit, 6 controllers + 4 services + 2 models + 6 migrations + 3 FormRequests + routes + state machine + 3 notification builders",
+  "findings": [
+    {
+      "id": "LIV-ARCH-01",
+      "severity": "INFO",
+      "title": "Driver vs admin controller separation is clean",
+      "evidence": "app/Http/Controllers/Admin/DeliveryBoyController.php (admin CRUD, 5 permission gates split by verb at L29-33) + app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php (admin-only cash lifecycle L42-43) + app/Http/Controllers/Frontend/DeliveryBoyOrderController.php (driver self-service: index, show, count, change-status). No admin/driver collision, no mutating endpoints accessible cross-role. Frontend driver controller is auth:sanctum gated at routes/api.php L1256.",
+      "recommendation": "Maintained as-is — pattern is correct."
+    },
+    {
+      "id": "LIV-ARCH-02",
+      "severity": "P3",
+      "title": "Sub-6.3 BUILD-1 deliberately ships admin-only cash mutations; driver self-service deferred to Wave 6b-1.3b",
+      "evidence": "DeliveryBoyCashSessionController.php L20-21 docblock: 'The livreur self-service surface (`/api/frontend/delivery-boy-shift/*`) is a separate controller (Wave 6b-1.3b) — not part of this BUILD-1 scope.' Routes 634-647 only register admin paths; no /api/frontend/delivery-boy-shift/* yet. The customer-cash-on-delivery flow at OrderService.php L1572-1583 (cash escrow audit) does NOT write a DeliveryBoyCashMovement row — it only emits an audit_log entry. The session→movement link from doorstep collection is NOT wired in BUILD-1.",
+      "recommendation": "Document as planned-incomplete V1.0.2 backlog gap: 'doorstep DELIVERED hook should call DeliveryBoyCashSessionService::recordMovement(type=order_collect, direction=in, amount=total) when the livreur's session is OPEN — strict=false to allow no-session paths to degrade gracefully.' This is the actual reconcile data path; without it, expected_closing_amount = opening only and variance always equals (closing - opening) regardless of collected orders."
+    },
+    {
+      "id": "LIV-ARCH-03",
+      "severity": "INFO",
+      "title": "Path B duplication of POS CashDrawerService is intentional documented debt",
+      "evidence": "DeliveryBoyCashSessionService.php L21-23 docblock: 'CashDrawerService est frozen-adjacent (NF525 wrappers + variance gate) — une extraction de base commune nécessiterait un LOCK plan. Wave 6b duplique le pattern pour rester scope-minimal.' Service mirrors POS pattern verbatim (Cache::lock + DB::transaction + lockForUpdate + UNIQUE partial index). Movement types semantically distinct (order_collect/change_given vs POS order_payment/cashback) to avoid Z-report pollution per migration 120100 L23 comment.",
+      "recommendation": "Track as V1.0.3+ refactor — extract `AbstractCashSessionService` after Sub-6.3 is hardened. Do not extract pre-emptively (LOCK plan required to touch frozen POS service)."
+    },
+    {
+      "id": "LIV-ARCH-04",
+      "severity": "P2",
+      "title": "Status whitelist defense-in-depth is correct; FORWARD-only invariant holds",
+      "evidence": "Frontend/DeliveryBoyOrderController.php L66-77 — Laravel validation `in:` rule constrains driver-permitted statuses to PREPARED, OUT_FOR_DELIVERY, DELIVERED, RETURNED (just healed Z-4 commit ab04839ec). Downstream OrderStateMachine::allows L54-58 (PREPARED→OUT_FOR_DELIVERY|DELIVERED), L57 (OUT_FOR_DELIVERY→DELIVERED), L60 (DELIVERED→RETURNED). Driver can NOT inject ACCEPT, PREPARING, CANCELED, REJECTED — both the HTTP layer (422 enum violation) AND the state machine (IllegalTransition) reject. ValidStatusTransition::passes is also called from OrderService.php L1509.",
+      "recommendation": "Strong. Test sentinel exists: tests/Feature/Delivery/DeliveryStatusTransitionWhitelistTest.php (passing). No action."
+    },
+    {
+      "id": "LIV-ARCH-05",
+      "severity": "P2",
+      "title": "Magic status==101 in 3 notification builders is fragile — not OrderStatus enum",
+      "evidence": "OrderDeliveryBoyPushNotificationBuilder.php L51, OrderDeliveryBoyMailNotificationBuilder.php L44, OrderDeliveryBoySmsNotificationBuilder.php L48 each gate `if ($status == 101)`. The dispatch sites at OrderService.php L2173-2175 (selectDeliveryBoy) emit `['order_id' => $order->id, 'status' => 101]`. OrderStatus enum (per app/Enums/OrderStatus.php — values 4 for ACCEPT, 7 for PREPARING) does NOT define 101. The 101 is a synthetic 'assignment event' code shared between dispatcher and builder, undocumented. Refactoring OrderStatus enum could collide silently.",
+      "recommendation": "P2 V1.0.2: replace magic 101 with a typed DeliveryBoyNotificationEvent enum (DRIVER_ASSIGNED=101, …). Add a code comment near the dispatch + builder gates linking them. NF525-non-critical, but a hidden-coupling smell that will bite during enum cleanup."
+    },
+    {
+      "id": "LIV-ARCH-06",
+      "severity": "INFO",
+      "title": "DeliveryFee branch-aware wire-up is complete (Z-4 heal)",
+      "evidence": "DeliveryFeeService.php L26-46 accepts ?Branch $branch arg; falls back to legacy `max(5, ceil(d/5)*5)` if any of 3 branch columns NULL (zero-risk for unmigrated branches). DeliveryQuoteService.php L63-71 explicitly passes the loaded $branch into fromDistanceKm. Test sentinel tests/Feature/Delivery/DeliveryFeeBranchWireupSentinelTest.php (passing) pins the contract. 2 NEW migrations 2026_05_18_100000 (3 fee columns nullable) + 110000 (delivery_minimum_order nullable) make this an additive change.",
+      "recommendation": "Wire-up correct. Admin UI to populate the 3 branch columns is still V1.0.2 (operators use tinker/SQL for V1.0.1 — migration L21 documents this)."
+    },
+    {
+      "id": "LIV-ARCH-07",
+      "severity": "P2",
+      "title": "Notification cascade fans out to mail+sms+push via 3 separate events, no idempotency at builder layer",
+      "evidence": "OrderService.php L2173-2175 dispatches 3 distinct events (SendOrderDeliveryBoyMail/Sms/Push) for the same 'driver assigned' event. EventServiceProvider L109-117 wires each to its own listener. Builders fetch FrontendOrder + User + NotificationAlert per call. No deduplication: a double selectDeliveryBoy call (e.g. accidental admin click) would fire 6 notifications. Idempotency middleware exists on POST /select-delivery-boy at routes 897 + 920 (POS + online), so the HTTP-replay path is covered. But internal callers + queue retries are not. Outbox replay is NOT wired through this path (selectDeliveryBoy does not write to outbox_events).",
+      "recommendation": "P2 V1.0.2: add a per-(order_id, event_code, channel) idempotency claim in OrderDeliveryBoy*NotificationBuilder.send() — e.g. NotificationAlert::firstOrCreate or DB key. RED-team angle (see LIV-5)."
+    },
+    {
+      "id": "LIV-ARCH-08",
+      "severity": "P3",
+      "title": "Delivery zones (14.4) are NOT implemented as a discrete sub-system",
+      "evidence": "Zone constraint is implicit in DeliveryQuoteService — branch lat/lng + Haversine distance + branch fee config. There is no `delivery_zones` table, no polygon enforcement, no driver-served-area UI. Branch column `zone` (after which fee columns sit per migration 100000 L21) exists but is a free-text label, not a geofence. Sentinel tests/Feature/Delivery/BranchZoneFallbackTest.php validates the fallback path only.",
+      "recommendation": "P3 V1.0.x: track 14.4 as 'distance-based proxy for zones, no polygon enforcement' in production-readiness docs. Owner-gate for V1 single-restaurant Le Cayenne is acceptable. SaaS V1.x will need real zone polygons (PostGIS or a JSON ring) when multi-branch radius overlap matters."
+    }
+  ],
+  "summary": "6 sub-systems are coherent; recent heals (Z-4 RBAC split, fee wire-up, status whitelist) closed real gaps. Architecture risks are not critical: (a) doorstep-cash-collection→DeliveryBoyCashMovement wire-up is the only missing reconcile data path and is V1.0.2 by design (LIV-ARCH-02). (b) magic status==101 + non-idempotent notification cascade are V1.0.2 hardening items. (c) delivery zones at 14.4 are distance-only — acceptable for single-restaurant V1.",
+  "verdict": "GO V1 with V1.0.2 backlog: LIV-ARCH-02 (cash recordMovement wire-up), LIV-ARCH-05 (typed enum for 101), LIV-ARCH-07 (notification idempotency), LIV-ARCH-08 (real zones for SaaS V1.x).",
+  "word_count_approx": 1100
+}

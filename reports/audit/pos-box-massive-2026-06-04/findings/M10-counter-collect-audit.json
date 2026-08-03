@@ -1,0 +1,137 @@
+{
+  "micro_system": "M10-counter-collect — Counter collect (kiosk->counter encashment, Plan B). PosCounterCollectModal.vue (SSOT sibling of PaymentComponent) opened from PosComponent.vue kiosk-cash shortcut + slide-in panel. confirm -> POST admin/pos/counter-collect/{order}/confirm -> PaymentService::confirmCounterPayment; cancel -> /cancel -> cancelCounterPayment; list -> GET /counter-collect/pending. Cash-trail proof analysed end to end.",
+  "files_examined": [
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "routes/api.php (lines 800-905 counter-collect.pending/confirm/cancel + collect-kiosk-cash)",
+    "app/Services/PaymentService.php (confirmCounterPayment 193-448, recordCashOrderMovement 472-548, flagCashMovementSkipped 573-576, cancelCounterPayment 621-690, assertCounterDeferredOrder 700-719)",
+    "app/Services/OrderService.php (collectKioskCash 2511-2519)",
+    "app/Http/Resources/OrderDetailsResource.php (total/queue_number/cash_movement_skipped fields)",
+    "app/Services/KitchenDisplaySystemOrderService.php (KDS list filter 74-78)",
+    "app/Domain/Kds/KitchenReleaseRule.php (visibleStatuses 16-26)",
+    "app/Domain/Order/OrderStateMachine.php (allows 30-76, isReleasedToKitchen 127-143)",
+    "app/Providers/EventServiceProvider.php (OrderPaidAtCounter listeners 176-178)",
+    "app/Listeners/PersistOrderPaidAtCounterToOutbox.php",
+    "resources/js/languages/fr.json (button.confirm_and_print 1337)"
+  ],
+  "findings": [
+    {
+      "id": "M10-01",
+      "severity": "P1",
+      "category": "nf525",
+      "title": "CASH collected with no open drawer session: order goes PAID but NO queryable cash-trail row — skip surfaced only as a transient, vanishing toast",
+      "file_line": "app/Services/PaymentService.php:442-444,484-521,573-576 ; resources/js/components/admin/pos/PosCounterCollectModal.vue:465-483",
+      "evidence": "On the now-PRIMARY counter-collect CASH path, confirmCounterPayment flips payment_status=PAID, allocates fiscal_sequence_no (321-323), writes a Transaction row (376-387) and an audit_log 'order.counter_payment_confirmed' (389-401), THEN calls recordCashOrderMovement (442-444). That helper is non-strict: with no open CashDrawerSession it calls flagCashMovementSkipped (519) which only sets a TRANSIENT, never-persisted in-memory attribute (573-576: $order->cash_movement_skipped = true; no DB column). The modal reads resp.data.data.cash_movement_skipped and shows ONE warning toast (471-472) that disappears. NOTHING queryable records that this PAID cash order has no drawer linkage.",
+      "why_it_matters": "POS_SIMULATION_HARDWARE=true is the V1 dev/sim default and there is no enforced 'open your session before selling' gate on this path, so the no-session branch is the realistic everyday case. The cash sale completes and counts in the fiscal Z, but end-of-day reconciliation cannot ENUMERATE which PAID cash orders were collected without a cash_movement — the till physically holds money the system has no movement row for. A real cashier shift will silently drift: money in the drawer that reconciliation under-counts, and a one-time toast is the only signal, gone the moment the next order is collected.",
+      "reproduction": "Collect a kiosk-cash order via Encaisser -> CASH -> Confirmer with no open CashDrawerSession (or POS_SIMULATION_HARDWARE=true). Response carries cash_movement_skipped=true; a warning toast flashes; query cash_movements -> zero rows for that order_id, yet orders.payment_status=PAID + fiscal_sequence_no allocated. No persisted flag distinguishes this order from a properly-reconciled one.",
+      "recommended_correction": "Persist the skip so reconciliation can find it: either write an audit_log action 'order.cash_movement_skipped' (resource=order, payload {order_id,total}) inside flagCashMovementSkipped, or record a marked cash_movement (type ORDER_PAYMENT, flagged unreconciled) against a 'no-session' bucket. PaymentService is payment/NF525-adjacent (CLAUDE.md §7) — the behaviour change (new persisted write) needs an owner gate, but the finding stands: today the broken cash-trail is knowable only at confirm-time and is thrown away.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M10-02",
+      "severity": "P2",
+      "category": "functional",
+      "title": "Confirm button promises 'Confirmer & Imprimer ticket' but onConfirm never prints — no receipt is produced on this branch",
+      "file_line": "resources/js/components/admin/pos/PosCounterCollectModal.vue:177,421-534 ; resources/js/languages/fr.json:1337 ; app/Providers/EventServiceProvider.php:176-178",
+      "evidence": "The confirm button label is $t('button.confirm_and_print') = 'Confirmer & Imprimer ticket' (fr.json:1337). But onConfirm (421-534) only POSTs to /confirm, raises a success/warning toast, and emits 'confirmed' — it never mounts a ReceiptComponent nor triggers any print, unlike the frozen PaymentComponent.vue:318 which uses the same label AND renders a ReceiptComponent. Backend: OrderPaidAtCounter has exactly ONE listener, PersistOrderPaidAtCounterToOutbox (EventServiceProvider 176-178), which only writes to the Outbox / broadcasts — no ESC/POS print (the printer-saga auto-print lives on an unmerged branch per project memory).",
+      "why_it_matters": "NF525 expects a customer receipt for a cash sale at the counter. The cashier taps a button that explicitly says it prints a ticket, sees a success toast, hands over the food — and no ticket comes out. Either the customer leaves without the legally-expected receipt, or the cashier hunts for a reprint, slowing the line. The over-promising label trains staff to distrust the UI.",
+      "reproduction": "Open counter-collect modal, pick any mode, click 'Confirmer & Imprimer ticket'. Observe: success toast fires, list refreshes, NO receipt renders and no print job is dispatched (no ReceiptComponent in PosCounterCollectModal; OrderPaidAtCounter listener list has no print listener).",
+      "recommended_correction": "Either (a) make the label honest on this branch — use a 'Confirmer l'encaissement' key without the print promise until the printer-saga branch merges, or (b) wire the post-confirm receipt (mount ReceiptComponent / dispatch the print) so the label is true. Pure-frontend label swap is scope-minimal and non-frozen; wiring the print is the better fix but should land with the printer-saga merge.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M10-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Two divergent counter-collect-cash backends coexist: the modal's rich /confirm path AND an orphan /collect-kiosk-cash wrapper that bypasses received-validation and idempotency parity",
+      "file_line": "routes/api.php:838-879 vs routes/api.php:900-905 ; app/Services/OrderService.php:2511-2519",
+      "evidence": "routes/api.php:900 still exposes POST admin/pos/collect-kiosk-cash/{order} -> OrderService::collectKioskCash (2511-2519), a thin wrapper that calls confirmCounterPayment hardcoded to CASH with received=order->total and a fixed English note 'Kiosk cash collected at POS.' grep shows it is referenced ONLY by app/Console/Commands/E2ESoakCommand.php — the live modal uses the newer /counter-collect/{order}/confirm route (PosCounterCollectModal:441). The orphan route also lacks the 'idempotency' middleware that the /confirm route carries (api.php:879 vs 900-905 region).",
+      "why_it_matters": "A second, divergent cash-collection entry point is exactly the kind of 'blur / unnecessary thing' the owner flagged. It can be hit (it is a live authenticated route), it forces CASH-only at full total with no short-payment check and no idempotency middleware, and it duplicates business logic that must be kept in lock-step with the modal path. Future edits to the collect rules can silently miss this path, producing two behaviours for the same operation.",
+      "reproduction": "grep -rn 'collect-kiosk-cash|collectKioskCash' resources/ app/ -> only E2ESoakCommand + the route closure; no Vue/frontend caller. Compare middleware on api.php:879 (['throttle','idempotency']) vs the collect-kiosk-cash route which omits idempotency.",
+      "recommended_correction": "If the soak command can be repointed to /counter-collect/{order}/confirm, delete the collect-kiosk-cash route + OrderService::collectKioskCash. If it must stay for the soak harness, mark it test-only / move it behind a non-public guard and add the idempotency middleware so it cannot diverge. Route + thin-wrapper removal is low-risk (not in a frozen file) but touches a payment entry point — confirm no other caller before deleting.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M10-04",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Ready-orders 'Livrer' shortcut can mark a still-unpaid (PENDING_COUNTER) kiosk order DELIVERED — food handed out before cash collected",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3220-3271 ; app/Domain/Order/OrderStateMachine.php:65-71",
+      "evidence": "markDelivered (3247-3271) dispatches posOrder/changeStatus to DELIVERED for any row in readyOrders. readyOrders is filtered purely on status===PREPARED + order_type in {KIOSK,TAKEAWAY,POS} (3227-3231) with NO payment_status guard. Since W-D1 the chef may bump a counter-deferred kiosk order ACCEPT->PREPARING->PREPARED BEFORE the cashier collects cash (the cancel comment at PaymentService:642-650 documents exactly this prep-before-pay window). OrderStateMachine::allows(PREPARED -> DELIVERED) (65-71) checks only the status transition — there is NO payment_status===PAID precondition on the DELIVERED edge.",
+      "why_it_matters": "A kiosk cash order that the kitchen finished early appears on the 'Prêt à livrer' board. A cashier can tap Livrer and hand the food to the customer while payment_status is still PENDING_COUNTER — the cash is never collected for that order. The order does re-surface in the /counter-collect/pending list (that query keys on payment_status, not status), but nothing stops the food leaving first, and a busy cashier clearing the ready board can give away an uncollected order. Direct money leak.",
+      "reproduction": "Create a kiosk cash (PENDING_COUNTER) order, have KDS bump it to PREPARED without collecting at the counter. It shows in readyOrders. Tap Livrer -> changeStatus to DELIVERED succeeds (allows(PREPARED,DELIVERED)=true, no PAID check). payment_status stays PENDING_COUNTER. Needs a live click to confirm the changeStatus controller has no additional PAID guard.",
+      "recommended_correction": "Guard the ready board against unpaid counter-deferred orders: in loadReadyOrders, exclude rows where payment_status===PENDING_COUNTER (or order is counter-deferred) so they cannot be delivered before collection; and/or add a payment_status===PAID precondition on the PREPARED->DELIVERED transition for counter-deferred orders. Frontend filter is scope-minimal; the state-machine guard touches OrderStateMachine (business-critical) and needs an owner gate.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    },
+    {
+      "id": "M10-05",
+      "severity": "P2",
+      "category": "nf525",
+      "title": "Cancel of a never-paid counter order writes payment_status=REFUNDED — inflates refund reporting for orders where no money was ever collected",
+      "file_line": "app/Services/PaymentService.php:621-690 (esp. 652) ; app/Enums/PaymentStatus.php:7-10",
+      "evidence": "cancelCounterPayment sets $locked->payment_status = PaymentStatus::REFUNDED (652) and status=CANCELED for a counter-deferred order that was PENDING_COUNTER — i.e. money was NEVER collected (the comment at 648-650 even states 'no fiscal-seq was allocated (never collected)'). PaymentStatus enum (7-10) has only PAID=5, UNPAID=10, PENDING_COUNTER=15, REFUNDED=20 — there is no CANCELED/VOID terminal, so REFUNDED is reused as the negative terminal.",
+      "why_it_matters": "REFUNDED semantically means 'money was given back'. Using it for an abandoned, never-paid order means any report or filter counting 'refunds' (refund rate, refunded amount, fraud signals) will include these phantom refunds, overstating refund volume and muddying the books. For a fast-food single-restaurant owner reading daily numbers, that is a misleading KPI born from a missing enum value.",
+      "reproduction": "Open a PENDING_COUNTER kiosk-cash order, Annuler with a reason. cancelCounterPayment sets payment_status=REFUNDED though pos_received_amount/fiscal_sequence_no were never set. Query orders.payment_status -> REFUNDED on an order that was never paid.",
+      "recommended_correction": "Introduce a distinct negative terminal (e.g. CANCELED/VOID) in PaymentStatus and assert it on the cancel-of-unpaid path, OR keep payment_status=PENDING_COUNTER/UNPAID and rely on status=CANCELED for the terminal, reserving REFUNDED strictly for orders that were PAID then reversed. Enum + state-machine change is payment-critical — owner gate required; documenting the modeling gap is the immediate deliverable.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M10-06",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Frontend reads order.order_amount as price fallback but the API never returns that field — dead fallback that can mask a real zero",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:360,1200,3360-ish ; app/Http/Resources/OrderDetailsResource.php:50",
+      "evidence": "Multiple price renders use formatKioskPrice(order.total ?? order.order_amount) (e.g. PosComponent:360, 1200) and the modal uses order.total ?? order.order_amount (PosCounterCollectModal:253). OrderDetailsResource returns only 'total' (rounded float, line 50) and never an 'order_amount' key (grep confirms no order_amount field). So the ?? order_amount branch is unreachable dead defence.",
+      "why_it_matters": "Minor, but it is exactly the 'unnecessary thing' the owner flagged: a fallback that cannot fire gives a false sense of safety. If 'total' ever legitimately resolves to 0 the UI shows 0,00 € with no real fallback, and the dead ?? order_amount hides the intent. Cheap to remove for clarity.",
+      "reproduction": "grep order_amount app/Http/Resources/OrderDetailsResource.php -> no match; the API payload for /counter-collect/pending has 'total' only. The ?? order_amount branch never evaluates.",
+      "recommended_correction": "Drop the ?? order_amount fallbacks (use order.total directly), or if a defensive default is wanted make it ?? 0. Pure frontend cleanup, non-frozen, zero behaviour change.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M10-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Zero-total counter order can never be confirmed (canConfirm requires orderTotal > 0) — comped/100%-discount kiosk order strands in the pending queue",
+      "file_line": "resources/js/components/admin/pos/PosCounterCollectModal.vue:274-286",
+      "evidence": "canConfirm returns false unless orderTotal > 0 for BOTH the CASH branch (281: received>=total AND total>0) and the non-CASH branch (285: return orderTotal > 0). A counter-deferred order whose total is 0 (full comp / 100% coupon routed to counter) therefore can never be confirmed from this modal; the confirm button stays disabled.",
+      "why_it_matters": "Rare but real: a fully-comped order that was routed to counter-collect would sit forever in /counter-collect/pending with a permanently-disabled Confirmer button — the cashier cannot clear it from the UI and must cancel it (recording a phantom REFUNDED, see M10-05) or leave it cluttering the queue. A small logic blur that produces a stuck row.",
+      "reproduction": "Construct/observe a counter-deferred order with total=0. Open the modal: hero shows 0,00 €, Confirmer is disabled (canConfirm false because orderTotal>0 fails). No path to mark it collected.",
+      "recommended_correction": "Allow confirm when orderTotal===0 (treat as a zero-tender collection: canConfirm true, received defaults to 0). Scope-minimal frontend change; confirm backend confirmCounterPayment accepts received=0 for a 0-total order before shipping.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Same-cashier-vs-foreign-cashier race discrimination on double-collect",
+      "file_line": "app/Services/PaymentService.php:278-310 ; resources/js/components/admin/pos/PosCounterCollectModal.vue:506-529",
+      "note": "lockForUpdate + post-acquire reread: if already PAID, it looks up the original collector via the audit row and distinguishes a same-cashier idempotent replay (200 no-op) from a different cashier (typed PaymentAlreadyCollectedException -> 409 with stable error_code). The modal branches on error_code (not the translated string) and emits cancel so the loser's row refreshes without a phantom drawer-open. Genuinely well-reasoned concurrency handling for a single-box 2-till scenario."
+    },
+    {
+      "title": "Cash-trail gap is at least surfaced, not silently swallowed",
+      "file_line": "resources/js/components/admin/pos/PosCounterCollectModal.vue:460-483 ; app/Http/Resources/OrderDetailsResource.php:80-81",
+      "note": "Even though the skip is only transient (see M10-01), the design deliberately replaces the plain success toast with an explicit FR warning ('Aucune session caisse ouverte — mouvement non enregistré ... à régulariser') instead of pretending the cash-trail is intact. The honest non-blocking degradation (never block the sale, but warn) is the right instinct; it just needs to be persisted."
+    },
+    {
+      "title": "FR-locale-tolerant cash input + pristine-prefill numpad fix",
+      "file_line": "resources/js/components/admin/pos/PosCounterCollectModal.vue:255-263,356-372",
+      "note": "Received amount parses both ',' and '.', pre-fills the exact total in FR format ('8,50') for one-tap exact-change, and the cashFieldPristine flag makes the FIRST numpad tap start a fresh entry instead of appending onto the prefill ('8,50' + 1 would have been '8,501'). The single-separator guard (367-369) also blocks the NaN-producing '8,50,'. Real owner-reported 'chiffres bizarres' bug handled cleanly."
+    },
+    {
+      "title": "Cancel is gated behind a confirm dialog with a typed reason (>=3 chars) on the audit trail",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3275-3345 ; app/Services/PaymentService.php:666-677",
+      "note": "The destructive Annuler never fires a one-click backend cancel: it opens a role=dialog with a required reason textarea, sends the operator-typed reason on the POST, and the backend writes it to the audit_log 'order.counter_payment_canceled'. Good NF525-friendly trace of WHY an order was voided, and a sensible guard against accidental cancels mid-shift."
+    },
+    {
+      "title": "Pending-collection queue is correct FIFO + branch-scoped, cap raised to avoid hidden backlog",
+      "file_line": "routes/api.php:811-836",
+      "note": "The /counter-collect/pending query keys on payment_status=PENDING_COUNTER (the source of truth), orders created_at ASC (oldest-waiting customer first), scopes by the staff branch_id, and the cap was raised 50->200 after the team caught that a >50 backlog silently hid waiting-to-pay customers. The list correctly survives even if a row is delivered early (it re-keys on payment_status, not status). Solid queue semantics."
+    }
+  ]
+}

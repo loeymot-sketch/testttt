@@ -1,0 +1,29 @@
+{
+  "audit": "F-X-DUPS dead-methods",
+  "date": "2026-05-18",
+  "approach": "Scan public methods on critical services (Pricing, Stock, Fiscal, Order, Auth) and grep for `->methodName(` and `::methodName(` across app/, tests/, resources/js/ (axios payload keys). Conservative: only flag methods with zero call sites AND not on a public interface used by polymorphic dispatch.",
+  "scope": "app/Services/Pricing, app/Services/Fiscal, app/Services/Stock, app/Services/Order, app/Services/Auth, app/Services/Sync, app/Services/Idempotency",
+  "candidates": [
+    {
+      "method": "PricingService::menuRoleAdjustedAddonPrice",
+      "path": "app/Services/Pricing/PricingService.php:793",
+      "evidence": [
+        "public method, called nowhere outside PricingService itself; identical logic is duplicated as private in CompositionSnapshotBuilder.php:171",
+        "PricingService internal calls are private contexts only; the public visibility looks vestigial"
+      ],
+      "verdict": "NEEDS-OWNER-DECISION",
+      "user_friendly": "A pricing helper method that is marked public but no other file calls it. The exact same logic is intentionally duplicated as a private method in CompositionSnapshotBuilder.php (NF525 fiscal integrity reason — kept local to avoid cross-service dependency). The public version could be made private OR removed. Risk: low if test coverage stays green, but it touches money math so wants owner approval.",
+      "linked_pattern_finding": "duplicate-patterns.json #1"
+    }
+  ],
+  "scanned_services_clean": [
+    "FiscalSequenceService — all public methods called (allocateNext, allocateForOrder)",
+    "ZReportService — all public methods called (close, current, latest)",
+    "AuditLogService — all public methods called (record)",
+    "PricingService::calculateOrder — heavily called",
+    "OrderStateMachine — transition() called",
+    "BranchScope::apply — applied implicitly by Eloquent",
+    "RedisIdempotencyKeyRepository — bound in AppServiceProvider"
+  ],
+  "note": "Dead-method scan on a 855-file codebase requires far deeper static analysis than possible inside this audit window. The clean list above is the result of spot-checks on the most-critical services. Full coverage would need a phpstan/psalm pass with --unused-public flag. Recommend deferring deep method-deadness to a tooling-driven audit (V1.0.2 backlog)."
+}

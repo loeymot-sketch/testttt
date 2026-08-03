@@ -1,0 +1,151 @@
+{
+  "agent": "S6",
+  "surface": "Stock Rupture (Produits & Stock — Mission 1 unified catalog)",
+  "url": "http://127.0.0.1:8000/admin/stock/rupture",
+  "date": "2026-05-25",
+  "round": 1,
+  "verdict": "GREEN_WITH_TEST_HARNESS_CAVEAT",
+  "executive_summary": "Stock surface is healthy post-restore. API GET /api/admin/stock/catalog-overview returns 200 in ~117 ms with 11 categories (45 items total) + 4 extra groups + 6 variation groups = 21 rail buckets. DOM dump confirmed all 21 buckets render with correct counts, search input present, switches (role='switch') rendered as binary EN STOCK toggles. Visual screenshot capture was contaminated by a parallel test-e2e agent (S4 OSS) running concurrently in the SAME shared Playwright Chrome profile (PIDs 45807/16425/95320 visible in ps aux), which kept navigating the SPA away from /admin/stock/rupture every ~3.5 s. This is NOT an app defect — it is parallel-agent-on-shared-browser contention. Mission objectives (11 categories visible, layout integrity, search box, toggle UX shape) were verified via direct API + DOM eval. Q9-S1 sync ΔT toggle measurement BLOCKED by the same contention (session auth got wiped mid-test). Two observations worth tracking.",
+  "states_captured": {
+    "S6-01-default-mount": {
+      "screenshot": "tests/e2e/__screenshots__/deep-S6-stock/S6-01-default-mount.png",
+      "status": "contaminated_by_parallel_agent",
+      "note": "Screenshot captured the OSS surface (/admin/order-status-screen) because parallel S4 OSS agent navigated to it ~3.5s after we pushed to /admin/stock/rupture. DOM evidence (separate eval call) showed correct page mounted before contamination.",
+      "dom_evidence": {
+        "url_at_eval": "http://127.0.0.1:8000/admin/stock/rupture",
+        "bucket_count": 21,
+        "active_bucket": "Sandwich Cayenne (5 items)",
+        "switches_visible": 5,
+        "search_input": "present"
+      }
+    },
+    "S6-02-rail-categories": {
+      "status": "verified_via_dom",
+      "note": "Rail buckets dumped via document.querySelectorAll('[data-testid^=stock-mgmt-bucket-]'). All 21 expected buckets present.",
+      "bucket_list": [
+        {"key": "cat-1", "label": "Sandwich Cayenne", "count": "5"},
+        {"key": "cat-2", "label": "Galette", "count": "2"},
+        {"key": "cat-3", "label": "Sandwich Classique", "count": "2"},
+        {"key": "cat-4", "label": "Burgers", "count": "2"},
+        {"key": "cat-5", "label": "Tacos", "count": "2"},
+        {"key": "cat-6", "label": "Bols Gourmands", "count": "8"},
+        {"key": "cat-7", "label": "Frites", "count": "2"},
+        {"key": "cat-8", "label": "Suppléments", "count": "10"},
+        {"key": "cat-9", "label": "Desserts", "count": "3"},
+        {"key": "cat-10", "label": "Boissons", "count": "8"},
+        {"key": "cat-11", "label": "Menu enfant", "count": "1"},
+        {"key": "extra-other", "label": "Autres ingrédients", "count": "6"},
+        {"key": "extra-crudite", "label": "Crudite", "count": "4"},
+        {"key": "extra-supplement", "label": "Suppléments (à composer)", "count": "10"},
+        {"key": "extra-supplement_bol", "label": "Suppléments bol", "count": "6"},
+        {"key": "var-7", "label": "Base bol", "count": "2"},
+        {"key": "var-5", "label": "Sauce (1ère Gratuite)", "count": "13"},
+        {"key": "var-8", "label": "Sauce bol", "count": "13"},
+        {"key": "var-9", "label": "Style frites", "count": "3"},
+        {"key": "var-1", "label": "Viande 1", "count": "4"},
+        {"key": "var-2", "label": "Viande 2", "count": "4"}
+      ]
+    },
+    "S6-03-click-burgers": {"status": "skipped_due_to_contention"},
+    "S6-04-toggle-off": {"status": "skipped_due_to_contention"},
+    "S6-05-refresh-confirm": {"status": "skipped_due_to_contention"},
+    "S6-06-toggle-on": {"status": "skipped_due_to_contention"},
+    "S6-07-sauce-q9s1": {
+      "status": "data_layer_verified_ui_layer_blocked",
+      "note": "Algérienne sauce variation_ids = [11, 32, 154, 169, 184, 281, 291, 301, 311, 321] (10 cross-product attachments). Toggle endpoint /api/admin/menu/availability/variation/toggle exists and is wired. Empirical ΔT measurement attempted but failed because parallel S4 agent triggered 401 mid-call (axios interceptor wiped session). Cache-invalidation code path was verified manually in prior cycles (Q9-S1 measured ΔT ~1s in V1 Polish Final cycle 2026-05-21, referenced in MEMORY)."
+    },
+    "S6-08-empty-state": {"status": "skipped_due_to_contention"}
+  },
+  "api_evidence": {
+    "endpoint": "GET /api/admin/stock/catalog-overview?branch_id=1",
+    "status": 200,
+    "elapsed_ms": 117,
+    "payload_top_keys": ["branch_id", "categories", "extra_groups", "variation_groups", "fetched_at"],
+    "category_count": 11,
+    "total_items_across_categories": 45,
+    "extra_group_count": 4,
+    "variation_group_count": 6,
+    "fetched_at": "2026-05-25T12:26:11+02:00",
+    "schema_quality": "bulk_query_no_n1_dedup_by_name_cross_product_ids_aggregated",
+    "sample_dedup_proof": "Algérienne sauce dedup OK: 10 variation_ids aggregated under single name (cross 10 parent items). Boursin extra dedup OK: 8 extra_ids aggregated."
+  },
+  "ui_evidence": {
+    "data_testid_structure": "stock-management-v2 / stock-mgmt-rail / stock-mgmt-bucket-{key} / stock-mgmt-error / stock-mgmt-branch-filter",
+    "layout": "rail (260px) + main pane (1fr) — 2-pane, not 3-pane as mission spec stated. Component header confirms 'V2 Unified Catalogue Browser' / Mission 1.",
+    "active_bucket_indicator": "aria-current=true + bg-slate-900 text-white",
+    "switch_role": "role='switch' aria-checked binary (EN STOCK / RUPTURE)",
+    "search_input": "role='searchbox' Rechercher un produit…",
+    "branch_filter": "visible only for admin (branch_id=0) — not shown for branch staff",
+    "page_header_h2": "Gestion Produits & Stock",
+    "page_header_p": "Activez ou désactivez chaque produit pour cette branche. Le changement est synchronisé en temps réel sur la caisse, la borne et le wizard.",
+    "console_warnings": 1,
+    "console_errors_pre_contention": 0
+  },
+  "sync_evidence_q9s1": {
+    "status": "indirect_only",
+    "measured_dt_ms": null,
+    "reason_for_no_direct_measure": "Parallel S4 OSS agent kept hijacking the same Chrome user-data-dir, triggering 401 during toggle POST. The toggle endpoint /api/admin/menu/availability/variation/toggle is correctly wired and dispatches Echo events on private-branch.{branchId}. Code path was last empirically validated 2026-05-21 (Wave Polish Final) — measured 0-60s → ~1s.",
+    "code_path_observed": "POST admin/menu/availability/(toggle|extra/toggle|variation/toggle) → AvailabilityController → Echo broadcast on private-branch.{branchId} for item.availability.toggled / extra.availability.toggled / variation.availability.toggled. Wizard reload path in kiosk listens to these events (see KioskWizardComponent.vue Echo handlers, frozen file)."
+  },
+  "findings": [
+    {
+      "id": "S6-F1",
+      "severity": "P3",
+      "title": "Mission spec says '3-pane' but actual UI is 2-pane (rail + main)",
+      "evidence": "Component comment block lines 1-26 in StockRuptureDashboardComponent.vue confirms 'ONE page. Left rail = all browsable buckets... Right pane = product cards'. The phrasing 'extras-by-name + variations-by-attribute' in spec is achieved by GROUPING (all 21 rail buckets), not by 3 horizontal panes.",
+      "action": "Documentation fix in test spec or owner deck — not an app defect.",
+      "files": ["resources/js/components/admin/stock/StockRuptureDashboardComponent.vue"]
+    },
+    {
+      "id": "S6-F2",
+      "severity": "P2",
+      "title": "Shared Playwright Chrome profile causes cross-agent contamination during parallel test-e2e runs",
+      "evidence": "ps aux shows 3 separate playwright-mcp processes (PIDs 45807, 16425, 95320) all sharing user-data-dir /Users/1millnonstop/Library/Caches/ms-playwright/mcp-chrome-9b44929. Result: S4 OSS agent navigations clobbered S6 stock page every ~3.5 s. Empirically captured in __navLog: /admin/stock/rupture → /admin/pos after 3504 ms.",
+      "action": "Each parallel deep-test agent should spawn an isolated Playwright context with --user-data-dir set per agent (e.g. /tmp/playwright-S6, /tmp/playwright-S4). The 14-agent orchestration plan should explicitly mandate browser-context isolation.",
+      "files": ["orchestration meta-config — no source file change"]
+    },
+    {
+      "id": "S6-F3",
+      "severity": "INFO",
+      "title": "11 categories + 4 extras + 6 variations rail buckets restored cleanly post-restore",
+      "evidence": "/api/admin/stock/catalog-overview returns expected canonical Le Cayenne taxonomy: cat-1..cat-11 named exactly as menu V2 (Sandwich Cayenne 5, Galette 2, Sandwich Classique 2, Burgers 2, Tacos 2, Bols Gourmands 8, Frites 2, Suppléments 10, Desserts 3, Boissons 8, Menu enfant 1 = 45 items). Mission claim ('59 items on branch=1') overcounts — actual = 45 catalog items. Possibly 59 was counted including sub-attribute aggregations (45 catalog + 13 sauces + 6 supps non-double-counted etc.) or post-restore IBA backfill metric. Dashboard h4 (Total articles menu) also reads 45.",
+      "action": "Reconcile owner-facing item count to 45 (catalog SKUs) vs richer attribute count if needed.",
+      "files": []
+    }
+  ],
+  "visual_reasoning": {
+    "layout_balance": "2-pane via CSS grid-cols-[260px,1fr] — balanced.",
+    "color_status_badges": "Active bucket: bg-slate-900 white text. Inactive: bg-slate-100 slate-600 text. Switch checked: emerald-500 (EN STOCK). Switch unchecked: red rose-500 (RUPTURE) — verified per component template.",
+    "long_name_truncate": "Confirmed line-clamp via UI: 'Suppléments (à composer)' fits without overflow.",
+    "cross_axis_dedup": "Mission asked: cat 'Suppléments' (10 items) vs extra group 'Suppléments (à composer)' (10 deduped names). Confirmed separate rail entries with disjoint semantics — the cat-8 is item-level (10 SKUs in Suppléments category); extra-supplement is the ATTACHMENT-level (10 distinct extra names cross-product). No double-count user confusion in UI."
+  },
+  "technical_reasoning": {
+    "api_bounded_select": "Single round-trip 117 ms for 21 buckets + 45 items + ~80 extra attachments + ~140 variation attachments — bulk query optimization correctly applied (Mission 1 acceptance criterion).",
+    "toggle_endpoints_wired": "POST admin/menu/availability/toggle, admin/menu/availability/extra/toggle, admin/menu/availability/variation/toggle all referenced in component (lines 548, 559, 579).",
+    "echo_events_documented": "Component template comment: 'Real-time sync via Echo on private-branch.{branchId} for the 3 availability events; 60s polling fallback for admin (branch_id=0).'"
+  },
+  "sync_reasoning_q9s1": {
+    "code_path_confidence": "HIGH — endpoints + event names verified",
+    "empirical_dt_in_this_round": "BLOCKED by cross-agent contention",
+    "historical_dt": "~1 s (Wave Polish Final 2026-05-21, MEMORY.md START-HERE)",
+    "regression_risk_post_restore": "LOW — Echo wiring + endpoints + payload schema unchanged; only DB state was restored which is exactly the data Mission 1 backend reads from"
+  },
+  "post_restore_health": {
+    "verdict": "HEALTHY",
+    "evidence": [
+      "GET catalog-overview 200 OK 117 ms",
+      "11 expected categories restored",
+      "45 items total (matches dashboard Total articles menu = 45)",
+      "Rail buckets all rendered with correct counts",
+      "No JS errors from stock component (1 unrelated WebSocket warning re ws://127.0.0.1:6001 — Pusher dev server not running, polling fallback active)",
+      "Sauce taxonomy intact: 13 named sauces × 10 cross-product attachments each",
+      "Extras taxonomy intact: e.g. 8 cross-product attachments per 'Boursin' name"
+    ]
+  },
+  "recommendation_for_round2": [
+    "Run S6 with isolated Playwright context (--user-data-dir=/tmp/pw-s6-stock) — eliminate cross-agent contamination.",
+    "Run toggle ΔT measurement with kiosk tab pre-opened and admin tab as separate browser context.",
+    "Capture screenshots S6-03..S6-08 after S4 stops.",
+    "Validate the 14-agent orchestration plan mandates per-agent browser isolation in its dispatcher."
+  ]
+}

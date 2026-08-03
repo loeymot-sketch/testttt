@@ -39,14 +39,25 @@ class DatabaseSeeder extends Seeder
         $this->call(PermissionTableSeeder::class);
         $this->call(RoleTableSeeder::class);
         $this->call(CompanyTableSeeder::class);
+        $this->call(LanguageTableSeeder::class);
         $this->call(SiteTableSeeder::class);
         $this->call(PaymentGatewayTableSeederVersionOne::class);
         $this->call(SmsGatewayTableSeederVersionOne::class);
-        $this->call(LanguageTableSeeder::class);
         $this->call(CurrencyTableSeeder::class);
         $this->call(BranchTableSeeder::class);
         $this->call(UserTableSeeder::class);
         $this->call(RolePermissionTableSeeder::class);
+        $this->call(ComposerPermissionsMinimalSeeder::class);
+        $this->call(IngredientPermissionSeeder::class);
+        // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Permission rupture (86)
+        // caisse+cuisine — sans cet enregistrement le seeder était orphelin
+        // (jamais exécuté sur un fresh install).
+        $this->call(AvailabilityTogglePermissionSeeder::class);
+        // [HEAL 2026-05-27] Sync sanctum→web perms — fixes admin SPA 403/401 cluster
+        // discovered owner-side via /admin/ingredients "Impossible de charger" bug.
+        // Vue admin pages use browser session cookie = web guard, but most seeders
+        // grant sanctum only. This seeder mirrors all 82 sanctum perms to Admin web.
+        $this->call(AdminWebGuardPermissionsSyncSeeder::class);
         $this->call(LeCayenneRoleLandingUrlSeeder::class);
         $this->call(MailTableSeeder::class);
         $this->call(OrderSetupTableSeeder::class);

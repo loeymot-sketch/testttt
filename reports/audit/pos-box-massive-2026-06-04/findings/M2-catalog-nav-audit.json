@@ -1,0 +1,124 @@
+{
+  "micro_system": "M2-catalog-nav: Catalog + category navigation + search (POS /admin/pos). Strip pills + Toutes toggle + featured/first-page filter + product grid + search + availability overlay + image fallback.",
+  "files_examined": [
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/pos/ItemComponent.vue",
+    "app/Http/Controllers/Admin/PosCategoryController.php",
+    "app/Http/Controllers/Admin/PosController.php",
+    "app/Http/Controllers/Admin/ItemController.php",
+    "app/Services/ItemService.php",
+    "app/Http/Resources/SimpleItemResource.php",
+    "config/menu.php",
+    "config/pos.php",
+    "resources/js/store/modules/item.js",
+    "resources/js/helpers/posBarcode.js",
+    "public/js/pos-wizard.js"
+  ],
+  "findings": [
+    {
+      "id": "M2-01",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Search is silently scoped to the active category — cashier typing a product name while a category pill is active gets 0 results for products that exist",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3536-3539 (onSearchInput) + 3622-3626 (setCategory) + resources/js/store/modules/item.js:84-87",
+      "evidence": "setCategory(id) sets props.search.item_category_id=id and clears name. onSearchInput(event) sets props.search.name but NEVER clears props.search.item_category_id. The store action item/lists serializes the WHOLE props.search object into the query string (item.js:84-87 `url + requestHandler(requestPayload)`), and ItemService::simpleList applies item_category_id as a hard equality filter (ItemService.php:106-107 `$query->where('item_category_id', $request)`). Net: select 'Tacos' then type 'coca' → backend query = name LIKE %coca% AND item_category_id=<tacos> → empty, even though Coca-Cola exists in Boissons. The cashier sees the 'no items found' empty state and assumes the product is missing.",
+      "why_it_matters": "Cashier lookup during a rush is the single hottest path on this screen. A waitered customer asks for a Coca while the operator still has 'Tacos' selected from the previous order; search returns nothing, the cashier hesitates, hunts manually, or tells the customer it is unavailable. Real seconds-per-order and a false out-of-stock impression on a product that is in fact sellable.",
+      "reproduction": "POS /admin/pos → click a category pill (e.g. Tacos) → type a product from another category (e.g. 'coca') in the search box → grid shows empty 'no items found' though Coca exists. Code-provable from the request payload; confirm live by watching the /admin/item request carry item_category_id alongside name.",
+      "recommended_correction": "In onSearchInput, when a non-empty query is entered, clear props.search.item_category_id (set to '') so search queries the full catalogue as the inline comment at PosComponent.vue:1958 intends; restore the previously-active category on resetName/clear. Alternatively keep scoped search but make it obvious (badge 'recherche dans Tacos') so the operator understands the scope. Scope-minimal: one line in onSearchInput.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M2-02",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "First-page 'featured' filter machinery (Toutes toggle, featured-first sort, client displayedItems filter) is inert in the V1 default config — carrying cost only, NOT an accidental defect",
+      "file_line": "config/pos.php:65-114 + app/Http/Controllers/Admin/PosCategoryController.php:145-224 + resources/js/components/admin/pos/PosComponent.vue:1940-1979 + 454-468",
+      "evidence": "config/pos.php:104-114 default featured_category_slugs and featured_category_ids to EMPTY (env POS_FEATURED_CATEGORY_SLUGS/IDS unset). PosCategoryController.php:145-193 then resolves $resolvedIds=[] → $featuredSet=null → every category emitted with featured=true (line 204-206). Therefore displayedCategories returns all (PosComponent.vue:1942-1946), hasNonFeaturedCategories=false so the 'Toutes/Réduire' toggle pill never renders (template v-if line 455), and displayedItems short-circuits to allItems (1967/1974). config/pos.php:65-99 documents this as an explicit 2026-06-04 P-OWNER-ALL-CATEGORIES decision ('show ALL categories, retain the knob').",
+      "why_it_matters": "This is the kind of inert complexity the owner flagged as 'flou', but it is a DOCUMENTED, re-enablable decision, not a bug — reporting it as a removable defect would be the documented-decision trap. The honest cost is ~120 lines of controller heuristics (slug→id resolution, degraded-fallback counting, featured-first usort) plus two Vue computeds plus a toggle button that all execute on every catalog/category render for zero V1 effect, raising maintenance and review surface and carrying the two latent bugs below.",
+      "reproduction": "grep POS_FEATURED_CATEGORY .env* (unset) → /admin/pos-category response: every category featured=true, no toggle pill in the strip. Confirm: hasNonFeaturedCategories returns false.",
+      "recommended_correction": "Owner gate: either keep as-is (documented knob — acceptable) OR if the curated-subset feature is abandoned for good, delete the controller featured/usort block, the displayedItems/displayedCategories/hasNonFeaturedCategories computeds, and the toggle pill to shrink the surface. Do NOT remove without owner confirmation since pos.php:88-93 keeps it as a supported re-enable path.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M2-03",
+      "severity": "P3",
+      "category": "logic",
+      "title": "DORMANT: empty-grid desync — grid renders displayedItems but the empty-state checks the raw items list (only reachable if the featured filter is re-enabled)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:476 (grid binds displayedItems) vs 478-489 (empty state checks items.length===0) + 1963-1979 (displayedItems filter)",
+      "evidence": "ItemComponent receives :items=\"displayedItems\" (line 476). The two empty-state blocks gate on `items.length === 0` (lines 478, 484) where `items` is the RAW store list (computed line 1952-1954), not displayedItems. When the featured filter is active (POS_FEATURED_CATEGORY_SLUGS set) and the landing page filters allItems down to featured-category items only, it is possible for displayedItems to be empty while items.length>0 → the grid renders zero tiles AND no empty-state copy appears (silent blank area). Currently unreachable because the filter is inert (see M2-02: featuredIds.size===0 → displayedItems returns allItems).",
+      "why_it_matters": "If the owner ever re-enables a curated subset (the documented supported path), a misconfigured/under-seeded allowlist yields a blank product region with no explanatory message — the cashier cannot tell 'nothing matches' from 'page is broken'. Latent landmine in retained code.",
+      "reproduction": "Set POS_FEATURED_CATEGORY_SLUGS to slugs whose categories have items, but ensure no items map to those category ids in the store (e.g. mid-reseed) → land on /admin/pos with no search/category → blank grid, no empty-state. Dormant in default config.",
+      "recommended_correction": "If/when the filter is re-enabled, change the empty-state guards to test `displayedItems.length === 0` (the actually-rendered list) instead of `items.length`. One-line change in each of the two v-if conditions.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M2-04",
+      "severity": "P3",
+      "category": "logic",
+      "title": "F-key category shortcuts index against the FULL category list, not the visible strip — Fn lands on a different category than the n-th visible pill when the strip is filtered",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3551-3561 (onFKeyShortcut uses this.categories[idx-1]) vs 429-449 (strip renders displayedCategories) + resources/js/helpers/posBarcode.js:74-77",
+      "evidence": "createFKeyShortcuts maps F1..F12 → onShortcut(idx) with idx 1..12 (posBarcode.js:74-77). onFKeyShortcut(idx) selects `this.categories?.[idx - 1]` — categories is the FULL store list (computed 1931-1933). The rendered strip iterates displayedCategories (template 429), a filtered/featured-first subset. When non-featured categories are hidden, categories[idx-1] !== the idx-th visible pill, so F2 highlights/loads a category the operator does not see at position 2. Dormant by the same mechanism as M2-02 (default config: displayedCategories === categories), but the divergence is real whenever the filter is active.",
+      "why_it_matters": "Muscle-memory keyboard shortcuts that silently jump to the wrong category erode operator trust and slow the line — the cashier presses F3 expecting the 3rd visible tab and gets a different menu. Power-operator feature that misfires precisely when the curated strip is in use.",
+      "reproduction": "Enable featured filter (M2-02), hide some categories, press F2 → observe the loaded/highlighted category differs from the 2nd visible pill. Dormant in default all-categories config.",
+      "recommended_correction": "Index F-keys against this.displayedCategories (the visible list) so Fn always maps to the n-th visible pill, matching what the operator sees. One-line change in onFKeyShortcut.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M2-05",
+      "severity": "P3",
+      "category": "logic",
+      "title": "drinksCatalog is gutted by category navigation — selecting any non-drink category refetches a category-scoped item list, so the wizard's catalogue-priority drink detection silently falls back to legacy name-regex",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:2025-2062 (drinksCatalog computed from item/lists) + 3622-3626 (setCategory refetches scoped items) + public/js/pos-wizard.js:936-974 (P1 catalogue → P4 regex fallback)",
+      "evidence": "drinksCatalog is computed off this.$store.getters['item/lists'] filtered to drink categories (2025-2062). But setCategory(id) calls itemList(1) which dispatches item/lists with item_category_id set, so the store list is REPLACED with only that category's items (ItemService.php:106-107). After selecting e.g. Tacos, item/lists contains no Boissons rows → drinksCatalog = []. The wizard reads data-pos-drinks-catalog (ItemComponent.vue:70, drinksCatalogJson 425-431); with an empty catalog it skips P1 (id match) and P2 (name match) and relies on P4 DRINK_LIKE_REGEX (pos-wizard.js:954,972). The regex covers the current 8 Le Cayenne drinks (coca/fanta/sprite/orangina/oasis/eau/capri via 'jus|boisson|...'), so degradation is currently graceful — but the documented 'priorité 1 catalogue' is silently inert whenever a category is active.",
+      "why_it_matters": "It is a real coupling blur the owner asked about: category navigation should not nullify a cross-surface drink-recognition mechanism. Today the regex saves it, but the moment a drink is added whose brand name is not in DRINK_LIKE_REGEX (e.g. a new soda brand) it will be mis-detected as a non-drink in any wizard opened while a non-drink category is selected — a latent, hard-to-reproduce correctness gap on menu items + addons.",
+      "reproduction": "POS /admin/pos → select Tacos (or any non-drink category) → open a menu/formule wizard for a sandwich → the drinks step is fed an empty data-pos-drinks-catalog (inspect the modal attribute) and falls through to regex. Add a drink named outside the regex to prove the miss. Code-provable; needs a live click to observe the wizard step.",
+      "recommended_correction": "Decouple drinksCatalog from the category-scoped list: compute it from a separate, always-full drinks fetch (or cache the drinks subset on first full load) so it survives category navigation. Keeps the documented P1/P2 catalogue priority authoritative regardless of the active category. No frozen-zone touch (PosComponent computed + a small fetch); pos-wizard.js stays untouched.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    },
+    {
+      "id": "M2-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Product tile image has no @error fallback — a 404/broken thumb shows a broken-image glyph, not the 🍴 fallback (which only covers a null thumb)",
+      "file_line": "resources/js/components/admin/pos/ItemComponent.vue:25-30",
+      "evidence": "The tile renders `<img v-if=\"item.thumb\" :src=\"item.thumb\" loading=\"lazy\">` with the 🍴 fallback span behind `v-else` (line 30). The v-else only triggers when item.thumb is falsy. If item.thumb is a non-empty but dead URL (missing file after a menu reset / wrong cat-<slug>.png mapping — exactly the failure mode noted in config/menu_images.php), the <img> stays mounted and the browser renders its native broken-image icon. There is no @error handler to swap to the emoji fallback.",
+      "why_it_matters": "A wall of broken-image glyphs on the catalog grid looks broken/unprofessional on a customer-visible counter screen and is exactly the kind of visual rot that follows a menu reseed. Cosmetic but high-visibility on the busiest screen.",
+      "reproduction": "Point an item.thumb at a 404 path (or rename the underlying public/images file) → reload /admin/pos → tile shows the browser broken-image icon instead of 🍴.",
+      "recommended_correction": "Add @error=\"$event.target.style.display='none'\" (or a data flag that flips to the 🍴 fallback) on the tile <img>, mirroring a standard image-fallback pattern. Same applies to the cart-line image (PosComponent.vue:776). Scope-minimal, no logic change.",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Availability → tile clickability is correct end-to-end (no OOS-clickable money leak)",
+      "file_line": "app/Services/ItemService.php:221-252 + app/Http/Resources/SimpleItemResource.php:22-25 + resources/js/components/admin/pos/ItemComponent.vue:712-736",
+      "note": "applyBranchAvailabilityOverlay computes effective_is_available = branchAvailable && globalAvailable; SimpleItemResource maps it into the JSON `is_available` (falling back to the global flag only when the overlay is absent); the tile's isCatalogTileUnavailable reads that field and disables the button + shows the 86 overlay + blocks both keyboard and the delegated native click (handleNativeTileClick:490-497). The per-branch availability projection is honored on the grid — a ruptured item is genuinely unclickable, preventing a 422-at-checkout revenue path."
+    },
+    {
+      "title": "POS catalog refuses to serve a branch-less list (no global-availability false positives)",
+      "file_line": "app/Http/Controllers/Admin/ItemController.php:53-64 + resources/js/store/modules/item.js:65-82",
+      "note": "surface=pos with no usable branch_id returns 422 server-side, and the store short-circuits client-side (resolves an empty/skipped payload instead of committing global is_available over the list). This closes the documented CV1-POS-AVAILABILITY-LIVE-001 hole where a branch-less fetch would have rendered OOS items as clickable. Defensive and well-commented."
+    },
+    {
+      "title": "Native-click delegation handles disabled state and double-fire guard cleanly",
+      "file_line": "resources/js/components/admin/pos/ItemComponent.vue:481-502 + 1477-1503",
+      "note": "Tile activation uses one document-level capture-phase listener keyed off data-pos-item-id, with an event de-dupe flag (__fkPosTileHandled), an explicit disabled/aria-disabled bail, and a re-check of isCatalogTileUnavailable on the resolved item before opening the wizard. Listener is registered in mounted and removed in beforeUnmount — no leak across route transitions. Robust pattern for a high-frequency grid."
+    },
+    {
+      "title": "Search input is debounced (150ms) with clean cancel-on-clear and cancel-on-unmount",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:2212-2214 + 3529-3539 + 2157-2159",
+      "note": "onSearchInput feeds a lodash debounce(150ms) so rapid typing fires a single backend fetch; resetName cancels any pending debounce before clearing, and beforeUnmount cancels it too. itemList uses {overlay:false} for search/category changes so the previous grid stays visible until the new list arrives (no jarring full-screen spinner). Good perceived-latency hygiene for fast cashier typing."
+    },
+    {
+      "title": "POS grid is a single full fetch (no pagination) — appropriate for the 45-item V1 menu",
+      "file_line": "app/Services/ItemService.php:90-91 + resources/js/components/admin/pos/PosComponent.vue:1690-1700 (props.search.paginate:0)",
+      "note": "props.search.paginate defaults to 0 → simpleList uses get('*') returning the whole branch/surface-scoped catalog in one request. For Le Cayenne's ~45 items this avoids paging friction on the counter screen entirely; the operator scrolls one grid. A correct scope-aware simplification rather than a missing feature."
+    }
+  ]
+}

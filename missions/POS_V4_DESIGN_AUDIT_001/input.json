@@ -1,0 +1,22 @@
+{
+  "task_id": "POS_V4_DESIGN_AUDIT_001",
+  "title": "Second avis design — export POS (4) v4 vs FoodKing invariants",
+  "constraints": {
+    "implementation": "FORBIDDEN — text output only: recommendations, risks, merge checklist, P0/P1",
+    "paths_readonly": [
+      "/Users/1millnonstop/Downloads/POS (4)/EXPORT_v4_README.md",
+      "/Users/1millnonstop/Downloads/POS (4)/preview.html",
+      "/Users/1millnonstop/Downloads/POS (4)/main.jsx",
+      "/Users/1millnonstop/Downloads/POS (4)/design-canvas.jsx",
+      "/Users/1millnonstop/Downloads/POS (4)/previews/pos_v4.jsx"
+    ]
+  },
+  "context": "Brief 24/04/2026: 5 SFC POS refontes v4, script frozen, template+style only. Brand tension: #FF006B (FoodKing) vs #0084FF (brief). Api design URL returns 403 without session — infer from zip only.",
+  "questions": [
+    "Does the v4 preview JSX align with FoodKing operational reality (fast cashier, KDS, floorplan, parked)?",
+    "List top 5 merge risks (bindings, a11y, brand, performance, test gaps).",
+    "What would you change in EXPORT README before the team implements?",
+    "SYMMETRY: note if any Payment/Order flows need backend review when only UI changes (usually no, but call out if design implies new API calls)."
+  ],
+  "output_format": "Markdown: ## Verdict ## P0 ## P1 ## Merge checklist ## Notes"
+}

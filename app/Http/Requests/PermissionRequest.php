@@ -10,11 +10,16 @@ class PermissionRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — PermissionController middleware enforces
+     * `permission:settings` on update (the only verb that injects PermissionRequest).
+     * FormRequest doubles down so any future route bypass still authz-checks. Permission
+     * mutation is a Spatie RBAC root operation — never allow without explicit settings gate.
+     *
      * @return bool
      */
     public function authorize() : bool
     {
-        return true;
+        return $this->user()?->can('settings') ?? false;
     }
 
     /**

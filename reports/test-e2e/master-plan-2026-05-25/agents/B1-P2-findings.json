@@ -1,0 +1,192 @@
+{
+  "agent": "B1-P2",
+  "persona": "Borne x Client impatient",
+  "date": "2026-05-25",
+  "server": "http://127.0.0.1:8000",
+  "discipline": "DM6 NF525 RO + DM3 captures + DM5 adversarial + DM8 honest",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Kiosk Vue SPA (resources/js/components/frontend/kiosk/*) + KioskMenuService backend signal",
+  "evidence_method": {
+    "http": "curl /kiosk/idle - SPA shell 200 OK 10408 bytes (loads via Vue Router with kiosk:order Sanctum token; raw curl cannot drive cart/payment without a kiosk machine login + token)",
+    "code_audit": "Direct READ of KioskWaitingComponent.vue + KioskCartComponent.vue + KioskPaymentComponent.vue + KioskWizardComponent.vue + KioskLoyaltyComponent.vue + KioskMenuService.php + kioskMenu Vuex store",
+    "captures_html": "reports/test-e2e/master-plan-2026-05-25/captures/B1-P2/01-idle.html, 02-kiosk-root.html"
+  },
+  "states": {
+    "S1_idle": {
+      "verdict": "GREEN",
+      "evidence": "/kiosk/idle returns 200 OK + CSP-Report-Only + Sanctum cookie. window.__FOODKING_RUNTIME__ + window.POS_WIZARD_CONFIG + window.FK_KIOSK_FRITES_CATS + window.FK_KIOSK_WIZARD_TEMPLATE_ALIASES bootstrap globals present. SPA shell - all UI loaded client-side."
+    },
+    "S2_categories": {
+      "verdict": "BLOCKED_BY_AUTH_TOKEN",
+      "evidence": "GET /api/frontend/menu returns 401 Unauthenticated (route requires auth:sanctum + kiosk.locale). Cannot exercise without a kiosk machine login flow.",
+      "code_proof": "routes/api.php:1402 - Route::get('/menu', MenuController::kiosk) middleware auth:sanctum,throttle:kiosk-menu,kiosk.locale"
+    },
+    "S3_waiting_component": {
+      "verdict": "GREEN",
+      "rush_banner_present": true,
+      "data_testid": "kiosk-rush-banner",
+      "i18n_keys": ["kiosk.rush.active_title", "kiosk.rush.subtitle"],
+      "source_files": [
+        "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:25-38 (HEAL/GAP-FIX-03)",
+        "resources/js/store/modules/kioskMenu.js:45,128,175 (branchFlags.is_rush vuex)",
+        "app/Services/Kiosk/KioskMenuService.php (computeIsRush + config kiosk.rush_windows)"
+      ],
+      "plumbing_complete": "Backend KioskMenuService::computeIsRush -> /api/frontend/menu payload branch.is_rush -> Vuex SET_BRANCH_FLAGS -> computed isRush() -> banner v-if (this.isRush && !this.isReady)",
+      "polling": {
+        "interval_ms": 15000,
+        "echo_realtime": "Echo OrderCreated + OrderStatusChanged listeners (line 272-292)",
+        "overlap_guard": "_pollInFlight (P2-G)",
+        "timeout_ms": 900000,
+        "auto_reset_on_ready_seconds": 20,
+        "preparing_auto_redirect_seconds": 10
+      }
+    },
+    "S4_grep_implicit_gaps": {
+      "modifier_panier": {
+        "present": true,
+        "evidence": "KioskPaymentComponent.vue:5-13 kiosk-pay-back button @click router.replace(kiosk.cart) - customer can return to cart BEFORE pay. KioskCartComponent.vue:74,361 also exposes router.push(kiosk.categories) to keep shopping. Vuex kioskCart state persists during back nav."
+      },
+      "annuler_mid_flow": {
+        "present_partial": true,
+        "evidence": "Cancel button in waiting screen (KioskWaitingComponent.vue:114-120) - confirmCancel modal lines 146-165 - cancelOrder() axios POST frontend/order/change-status/{id} status=CANCELED reason=customer_request",
+        "constraint_1": "showCancelButton revealed only AFTER 30s elapsed (line 475-477) - impatient client at t<30s CANNOT see cancel button",
+        "constraint_2": "showCancelButton hidden once status >= PREPARING (kitchen started, line 344-346)",
+        "backend_check": "OrderStatusRequest 422s if reason not whitelisted (AUDIT-F-004)",
+        "limitation": "No in-cart 'annuler' (customer must traverse Categories -> Cart -> Payment -> back to Cart -> empty manually)"
+      },
+      "save_for_later": {
+        "present": false,
+        "evidence": "PosParkedOrder model + PosParkedOrderService exists for ADMIN/POS caisse only (app/Models/PosParkedOrder.php, app/Services/PosParkedOrderService.php, app/Http/Controllers/Admin/Pos/ParkedOrderController.php). ZERO trace in resources/js/components/frontend/kiosk/. No 'park kiosk cart' UX for borne customer.",
+        "owner_implicit_gap_confirmed": true
+      },
+      "allergens_before_add": {
+        "present": true,
+        "evidence": "Kiosk Phase 9.1.2 - KsAllergenBadge in KioskWizardComponent.vue header (lines 26-36 + imports/computed lines 246-447) - persistent header badge data-testid=kiosk-wizard-header-allergens shows allergens BEFORE customer clicks add. Comment: 'les allergenes avant d'ajouter au panier, sans avoir a cliquer'.",
+        "owner_implicit_gap_confirmed_resolved": true
+      },
+      "sms_notification_when_ready": {
+        "present": false,
+        "evidence": "Twilio SmsGateway provider exists at platform level (app/Http/SmsGateways/Requests/Twilio.php) + NotificationAlert model has sms_message column. BUT zero wiring from OrderPrepared/OrderReady to any SMS dispatch in app/Listeners/. KioskLoyaltyComponent captures phone for loyalty REGISTRATION only (not for order-ready SMS). Customer must visually watch KDS/OSS screens.",
+        "c8_t1_p0_gap_confirmed": true,
+        "owner_implicit_gap_confirmed": true
+      },
+      "scheduled_order": {
+        "present": false,
+        "evidence": "ZERO matches in app/Models/ + app/Http/ + resources/js/ for pickup_at / pickup_time / scheduled_for / pre_order / asap. ASAP-only model. No future-time pickup capability.",
+        "owner_implicit_gap_confirmed": true
+      }
+    },
+    "S5_owner_implicit_gaps_summary": {
+      "modify_cart_before_pay": "PRESENT - kiosk-pay-back button on KioskPaymentComponent line 5-13 routes to kiosk.cart with Vuex state preserved",
+      "cancel_mid_flow": "PARTIAL - cancel only after 30s elapsed AND only pre-PREPARING. No cancel in cart/payment screens (only the back nav)",
+      "save_for_later": "ABSENT - PosParkedOrder is POS-only; kiosk borne has no parking UX",
+      "allergens_before_add": "PRESENT - Phase 9.1.2 KsAllergenBadge in wizard header (kiosk-wizard-header-allergens)",
+      "sms_when_ready": "ABSENT - no SMS dispatch on OrderPrepared event; customer must watch KDS/OSS visually; 10s preparing-auto-redirect kicks them to idle"
+    },
+    "S6_adversarial_findings": {
+      "ADV-1_impatient_cancel_30s_lockout": {
+        "severity": "P2",
+        "type": "UX impatient client",
+        "description": "Customer who clicks 'paye' then immediately wants to cancel (t<30s) has NO cancel button visible on KioskWaitingComponent. They must wait 30s before showCancelButton becomes true (line 475-477). If they walk away or close the kiosk overlay nothing happens - the order is already created backend-side.",
+        "code_ref": "KioskWaitingComponent.vue:475-477 (this.elapsedSeconds === 30 && !this.isReady -> showCancelButton=true)",
+        "impact": "Impatient client paid by CB, immediately realizes they wanted to add fries, has no quick-cancel. Must wait full 30s. Realistic risk for V1.",
+        "mitigation_v1": "Documented behavior - cancel via staff (POS supervisor refund). Backend will accept change-status until PREPARING.",
+        "v1_blocker": false
+      },
+      "ADV-2_preparing_auto_redirect_destroys_queue_visibility": {
+        "severity": "P2",
+        "type": "UX gap implicit",
+        "description": "After 10 seconds in PREPARING state kiosk auto-redirects to /kiosk/idle (PREPARING_AUTO_REDIRECT_SECONDS=10, line 189 + startPreparingAutoRedirect 412-421). Customer leaves with NO ticket, NO SMS, NO email confirmation - only their visual memory of queue_number. Owner comment 'normalement ca redirige apres 10 secondes' is intentional but creates exposure for impatient client who is not watching the screen at the right second.",
+        "code_ref": "KioskWaitingComponent.vue:189,412-421",
+        "impact": "Customer must memorize queue number in <10s. No second-chance display. KDS/OSS public screens are the only fallback - assumes line-of-sight from waiting area.",
+        "owner_decision_2026-05-21": "10s instructed by owner",
+        "v1_blocker": false
+      },
+      "ADV-3_no_sms_no_email_no_ticket_no_walk_away": {
+        "severity": "P1_owner_gap",
+        "type": "Feature gap implicit",
+        "description": "Impatient client wants to step outside / walk to car / cross street while order prepares. Currently: no SMS dispatched on OrderPrepared/OrderReady. KDS/OSS displays only. Customer must stay in line-of-sight of the OSS screen or risk missing the READY signal. Phone captured by KioskLoyaltyComponent is for loyalty membership, NOT for transactional notify-when-ready.",
+        "code_ref": "Zero OrderPrepared sms listener. SmsGatewayManager + Twilio config exist but no kiosk-customer-facing wire-up.",
+        "impact": "Impatient client cannot walk away. Reduces throughput when wait > 5 min in rush mode.",
+        "v1_decision_recommendation": "Document V1.0.X backlog item. Combine with PrintableTicket fallback (POS prints receipt with queue number) so customer at least has paper.",
+        "v1_blocker_assessment": "Depends on owner - if 'walk-away while wait' is a V1 promise, then P0. If V1 = 'customer stays near OSS', then P2 backlog."
+      },
+      "ADV-4_cart_modify_after_valider_works_but_no_explicit_label": {
+        "severity": "INFO",
+        "type": "UX clarity",
+        "description": "Payment screen back arrow (kiosk-pay-back, KioskPaymentComponent.vue:5-13) routes to cart - YES customer can modify. BUT button has only an arrow SVG + aria-label 'kiosk.back' - no visible text 'Modifier le panier'. Impatient client may not realize they can go back.",
+        "mitigation": "aria-label exists for screen reader. Visual icon is left-arrow. Acceptable for V1, could add micro-copy in V1.0.X."
+      },
+      "ADV-5_scheduled_order_not_v1": {
+        "severity": "INFO",
+        "type": "Out of V1 scope",
+        "description": "Scheduled order (pre-order for later pickup) is not in V1. ASAP-only. Per-V1 mandate this is acceptable but owner-implicit gap to acknowledge."
+      }
+    }
+  },
+  "scores": {
+    "implementation_quality": 8.5,
+    "architecture_quality": 9.0,
+    "ux_quality_impatient_persona": 6.5,
+    "business_completeness": 7.5,
+    "security_validation_quality": 9.0,
+    "evidence_quality": 9.0,
+    "overall_b1_p2_persona": 7.5
+  },
+  "decision": "CONTINUE_WITH_OWNER_GATE",
+  "owner_gates": [
+    "Gate-O1: Decide whether SMS-when-ready is V1 must-have (currently absent) or V1.0.X backlog. Required input for impatient client persona acceptance.",
+    "Gate-O2: Decide whether 30s cancel-button gating is acceptable (currently the case) or should reveal cancel immediately. Pro-30s: prevents misclick / order churn. Con-30s: impatient client friction.",
+    "Gate-O3: Acknowledge save-for-later (PosParkedOrder) is intentionally POS-only for V1, not extended to kiosk borne."
+  ],
+  "critical_findings": [
+    {
+      "rank": 1,
+      "id": "B1-P2-CRIT-1",
+      "title": "SMS notification on order ready ABSENT — impatient client cannot walk away",
+      "severity": "owner-implicit P1 (V1.0.X backlog item)",
+      "evidence": "Twilio infra + NotificationAlert.sms_message exist platform-side but NO OrderPrepared event listener dispatches SMS to kiosk customer. Phone collected only in loyalty registration flow."
+    },
+    {
+      "rank": 2,
+      "id": "B1-P2-CRIT-2",
+      "title": "Cancel mid-flow has 30s pre-roll AND auto-redirect 10s post-confirmation creates blind spots",
+      "severity": "P2 UX",
+      "evidence": "KioskWaitingComponent.vue:475-477 (30s gate) + line 189 + 412-421 (10s redirect). Impatient client cannot self-cancel in first 30s, and if they look away for 10s during PREPARING they lose visibility of their own queue number."
+    },
+    {
+      "rank": 3,
+      "id": "B1-P2-CRIT-3",
+      "title": "Save-for-later absent on kiosk borne — PosParkedOrder is POS-only",
+      "severity": "owner-implicit P2 (V1 scope acknowledged)",
+      "evidence": "PosParkedOrder model + service + controller exist only under app/.../Admin/Pos/. Zero kiosk-side wire-up. Customer-borne cannot pause a cart and resume."
+    }
+  ],
+  "frozen_zone_diff": "RO audit only - 0 files touched - 0 lines diff",
+  "nf525_impact": "NONE - audit RO, no fiscal sequence interaction, no audit_logs append",
+  "files_audited_ro": [
+    "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue",
+    "resources/js/store/modules/kioskMenu.js",
+    "app/Services/Kiosk/KioskMenuService.php",
+    "app/Models/PosParkedOrder.php",
+    "app/Http/SmsGateways/Requests/Twilio.php",
+    "app/Models/NotificationAlert.php",
+    "routes/api.php"
+  ],
+  "captures": [
+    "reports/test-e2e/master-plan-2026-05-25/captures/B1-P2/01-idle.html",
+    "reports/test-e2e/master-plan-2026-05-25/captures/B1-P2/02-kiosk-root.html"
+  ],
+  "honest_caveats": [
+    "Curl alone cannot drive a full kiosk SPA wizard flow (requires sanctum kiosk:order token from kiosk machine login). All UX claims are based on code-audit (RO) of Vue templates + Vuex store + backend service, not live DOM playthrough. Recommend follow-up Playwright run with kiosk machine token for visual confirmation of HEAL-03 banner rendering and rush styling.",
+    "The 'scheduled order' gap is a long-known V1-scope exclusion (ASAP-only fast-food model) - flagged here only because the persona is 'impatient client' who might expect time-slot reservation.",
+    "Cancel button 30s gate is intentional anti-misclick guard, not a defect. Surfaced for owner visibility, not as a P0/P1 blocker."
+  ]
+}

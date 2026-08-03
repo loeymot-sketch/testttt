@@ -1,0 +1,131 @@
+{
+  "micro_system": "M4-cart-ticket",
+  "files_examined": [
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/store/modules/posCart.js",
+    "resources/js/helpers/posCartLineMath.js",
+    "resources/js/services/appService.js",
+    "resources/js/components/admin/pos/v5/PosV5QtyStepper.vue",
+    "resources/js/components/admin/pos/ItemComponent.vue",
+    "app/Services/Pricing/PricingService.php",
+    "app/Services/Pricing/DiscountCalculator.php",
+    "app/Services/OrderService.php",
+    "config/pricing.php",
+    "config/pos.php"
+  ],
+  "findings": [
+    {
+      "id": "M4-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Changer une quantite REMET A ZERO silencieusement une remise deja appliquee (l'input reste rempli, le total perd la remise sans avertir)",
+      "file_line": "resources/js/store/modules/posCart.js:296-300 (action quantity commits discount=0) + :489-503 (mutation quantity) ; resources/js/components/admin/pos/PosComponent.vue:3635-3639 (cartQuantityIncrement/Decrement) + :956 (v-if=posDiscount) + :4409-4437 (carts watcher ne nettoie l'input QUE si panier vide)",
+      "evidence": "L'action Vuex `quantity` fait `context.commit('discount',0)` (posCart.js:299) a CHAQUE increment/decrement de quantite. Idem `deleteCartItem` (:304) et `pruneUnavailable` (mutation :516). La ligne de remise du footer est `v-if=\"posDiscount\"` (PosComponent.vue:956) lie au getter store `posCart/discount` (:2079-2081) -> elle disparait. MAIS le champ input `v-model=\"discount\"` (:895), `discountType` et `discountReason` ne sont PAS effaces : le watcher `carts` (:4425-4429) ne les remet a null QUE si `newCarts.length === 0`. Donc apres avoir applique 10%, un simple +1 quantite efface la remise du total alors que l'input affiche toujours \"10\" et le motif reste rempli.",
+      "why_it_matters": "Pendant un service, le caissier applique une remise (ex 10% sur un fond de commande), puis ajuste une quantite (action ultra-courante) -> la remise saute du total SANS aucune alerte, mais l'UI lui ment en montrant encore \"10\" + le motif dans les champs. Il croit la remise toujours active et encaisse le plein tarif (ou doit deviner qu'il faut re-cliquer Appliquer apres chaque tap quantite). Concretement une remise ne peut jamais coexister avec un ajustement de quantite sans re-application manuelle invisible. C'est exactement le genre de 'flou logique' que l'owner cible.",
+      "reproduction": "POS /admin/pos : ajouter 2 articles, taper 10 + motif >=3 chars, cliquer Appliquer -> ligne 'Remise -X,XX' apparait, Total baisse. Cliquer le '+' de quantite sur une ligne -> la ligne Remise DISPARAIT et le Total remonte au plein tarif, tandis que le champ remise affiche encore '10' et le motif reste rempli. Aucun toast.",
+      "recommended_correction": "Coherence du cycle de vie de la remise : soit (a) re-appliquer automatiquement la remise apres une modif panier en re-resolvant le % contre le nouveau subtotal (preferable pour un %), soit (b) si on garde le reset a 0, vider AUSSI l'input `this.discount`, `discountType` et `discountReason` dans le meme tour et afficher un toast 'Remise annulee suite a modification du panier' pour que l'UI ne mente plus. Le total affiche reste = total envoye au backend (orderSubmit:3823 lit posDiscount) donc PAS de fuite fiscale ; le defaut est purement UX/logique cote caisse.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M4-02",
+      "severity": "P1",
+      "category": "functional",
+      "title": "Apres rechargement (panier restaure du localStorage), la remise est restauree mais PAS son motif -> l'encaissement est rejete 422 par le backend sans cause visible",
+      "file_line": "resources/js/store/modules/posCart.js:38-45 (saveCartToStorage persiste lists/subtotal/discount, JAMAIS discount_reason) + :538-549 (hydrateFromScope restaure state.discount) ; resources/js/components/admin/pos/PosComponent.vue:3687-3698 (discount_reason fixe UNIQUEMENT dans applyDiscount) + :3800-3849 (orderSubmit ne repopule jamais form.discount_reason) ; app/Services/OrderService.php:2894-2898 (backend re-exige reason>=3) + :836-840 / :1027-1031 (assertPosManualDiscountAllowed appele a la creation)",
+      "evidence": "`saveCartToStorage` ecrit `{lists, subtotal, discount, ...}` sans `discount_reason` (posCart.js:38-45). `hydrateFromScope` (:538-549) restaure `state.discount` => au reload (TTL 2h) la ligne 'Remise -X,XX' (v-if=posDiscount) reapparait. Mais `checkoutProps.form.discount_reason` n'est ecrit QUE dans `applyDiscount` (PosComponent.vue:3695/3697) — jamais a l'hydratation, et `orderSubmit` (:3823) renvoie `form.discount = Number(posDiscount)` mais ne touche jamais `form.discount_reason`. Cote backend `assertPosManualDiscountAllowed` (OrderService.php:2894) leve une ValidationException 422 `discount_reason` si `strlen(trim(reason)) < 3` pour tout discount>0, et est bien appele aux chokepoints POS (:836, :1027). manual_discount_enabled defaut=true (config/pos.php:172-176) donc le chemin remise est BIEN actif en V1.",
+      "why_it_matters": "Scenario reel d'un poste partage : le caissier applique une remise+motif, la borne/poste est rechargee ou il revient apres une pause (<2h). Le panier + la remise reapparaissent visuellement 'comme avant'. Il clique Encaisser -> 422 backend, paiement bloque, message d'erreur cryptique sur un champ (discount_reason) qui n'est meme pas visible comme manquant (le champ motif est vide mais rien ne signale qu'il faut re-saisir). Perte de temps en plein rush + perte de confiance dans la caisse. C'est un flux core casse, pas du polish.",
+      "reproduction": "POS : appliquer une remise 10% avec motif 'fidelite', verifier le total reduit. Recharger la page (F5) dans les 2h. Le panier + la ligne Remise -X,XX reapparaissent mais le champ Motif est VIDE. Cliquer Encaisser -> requete order rejetee 422 (discount_reason required) [needs-live-verify pour la trace HTTP exacte ; la rejection backend est prouvee par code OrderService.php:2894].",
+      "recommended_correction": "Persister `discount_reason` dans saveCartToStorage et le re-hydrater dans hydrateFromScope -> orderSubmit (ou un mounted hook) doit alors recharger `checkoutProps.form.discount_reason` depuis le store restaure. Alternative minimale : a l'hydratation, si `state.discount > 0` et aucun motif disponible, forcer `posDiscount=0` + vider l'input pour que l'UI n'affiche jamais une remise non-encaissable. Backend reste SSOT — ne pas relaxer l'exigence de motif.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M4-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Invalidation de remise incoherente entre mutations panier : quantity/delete/prune remettent a 0, mais replaceCartLine/setItemVariations laissent une remise EUR perimee",
+      "file_line": "resources/js/store/modules/posCart.js:296-305 (quantity+deleteCartItem -> discount 0) + :510-519 (pruneUnavailable -> discount 0) VS :318-325 (replaceCartLine + setItemVariations ne touchent jamais discount) ; resources/js/components/admin/pos/PosComponent.vue:3764-3768 (editCartLine) + ItemComponent.vue:1434-1438 (replaceCartLine dispatch)",
+      "evidence": "Les actions `quantity` (:299), `deleteCartItem` (:304) et la mutation `pruneUnavailable` (:516) remettent explicitement `discount=0`. En revanche `replaceCartLine` (:318-321) et `setItemVariations` (:322-325) ne committent QUE `subtotal` — la remise EUR stockee est conservee telle quelle. Or editer une ligne (editCartLine -> openEditFromCart -> replaceCartLine, ItemComponent.vue:1434) change le subtotal sans recalculer le montant remise. Si la remise etait un POURCENTAGE, le montant EUR stocke (resolu une seule fois dans applyDiscount:3713 contre l'ancien subtotal) devient faux.",
+      "why_it_matters": "Exemple : remise 10% sur subtotal 20EUR -> stockee = 2,00EUR. Le caissier edite la ligne et ajoute un supplement 5EUR -> subtotal=25EUR mais la ligne Remise affiche toujours -2,00EUR (au lieu de 10% = 2,50EUR). Le client est sous-remise et l'affichage est incoherent avec le % saisi. Et c'est asymetrique : modifier la quantite efface la remise, mais editer le contenu la laisse perimee. Deux comportements opposes pour deux modifs panier similaires = 'flou' logique exact que l'owner denonce. Magnitude faible (centimes) et total affiche == total envoye, d'ou P2.",
+      "reproduction": "POS : article a 20EUR, appliquer 10% (motif) -> Remise -2,00EUR. Cliquer crayon Modifier sur la ligne, ajouter un extra a 5EUR, valider -> Sous-total passe a 25EUR mais Remise reste -2,00EUR (devrait etre -2,50EUR pour rester a 10%).",
+      "recommended_correction": "Unifier l'invalidation de remise : faire que replaceCartLine et setItemVariations declenchent la meme logique que quantity (soit reset a 0, soit re-resolution du % contre le nouveau subtotal). Idealement stocker le TYPE+valeur saisie (% ou EUR) et recalculer le montant EUR a chaque mutation subtotal, plutot que figer un EUR resolu.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M4-04",
+      "severity": "P2",
+      "category": "visual",
+      "title": "Deux formats de monnaie FR incoherents sur le MEME ecran POS : '12.50EUR' (point, sans espace) pour le panier vs '12,50 EUR' (virgule + espace) pour les chips raccourcis/commandes",
+      "file_line": "resources/js/services/appService.js:71-77 (currencyFormat = parseFloat(amount).toFixed(decimal) + currency) ; resources/js/components/admin/pos/PosComponent.vue:3346-3348 (formatKioskPrice = Intl.NumberFormat('fr-FR',{currency:'EUR'})) ; usages panier :835, :954-974, :989 (currencyFormat) vs chips :296, :360, :1200 (formatKioskPrice)",
+      "evidence": "`appService.currencyFormat` (appService.js:73/75) fait `parseFloat(amount).toFixed(decimal) + currency` -> toFixed produit TOUJOURS un point decimal et le symbole est colle sans espace => '12.50EUR' / '0.00EUR'. Le panier l'utilise pour la ligne (PosComponent.vue:835), sous-total/remise/total (:954-974) et le CTA Encaisser (:989). En parallele `formatKioskPrice` (:3346-3348) utilise `Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'})` => '12,50 EUR' (virgule + espace insecable), utilise pour les chips raccourcis (:296,:360) et le panneau cash kiosk (:1200). Les deux formats sont rendus simultanement sur la meme page.",
+      "why_it_matters": "Sur une caisse FR, afficher '0.00EUR' (point) est non conforme aux conventions francaises et au reste de l'app qui utilise '0,00 EUR'. Pire, voir les DEUX formats cote a cote sur le meme ecran (totaux panier en point, chips raccourcis en virgule) fait amateur et seme le doute sur l'exactitude des montants pour le caissier comme pour un controleur. C'est le 'point vs virgule' observe lors du walk live.",
+      "reproduction": "POS /admin/pos avec >=1 commande parquee/raccourci visible : comparer le Total panier (CTA 'Encaisser 12.50EUR', point) avec le prix d'une chip raccourci en haut ('12,50 EUR', virgule+espace). Format incoherent sur le meme ecran.",
+      "recommended_correction": "Aligner currencyFormat sur le format FR (virgule decimale + espace insecable avant le symbole), idealement en deleguant a Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}) comme formatKioskPrice, pour une source unique de formatage monetaire dans tout le POS. Verifier que la borne/kiosk et le recu restent coherents.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M4-05",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Bouton Appliquer actif avec input remise vide -> stocke la chaine '0.00' que v-if=posDiscount traite comme truthy -> ligne fantome 'Remise -0,00 EUR'",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:1889-1892 (isDiscountApplyable retourne true si amount<=0) + :3687-3717 (applyDiscount stocke toFixed sans garde >0) + :956-961 (v-if=posDiscount) ; store posCart.js:520-523 (discount mutation stocke la valeur brute)",
+      "evidence": "`isDiscountApplyable` (PosComponent.vue:1890) retourne `true` des que `discountAmountValue <= 0` (pour permettre d'effacer une remise sans re-saisir le motif). Donc avec l'input vide/0, Appliquer est cliquable. `applyDiscount` (:3687) : `hasDiscount` est false, donc pas de garde, et le chemin PERCENTAGE (:3713) calcule `(subtotal * this.discount)/100`. Avec this.discount = '' -> `(subtotal*'')/100` -> `(subtotal*0)/100` = 0 -> `parseFloat(0).toFixed(2)` = la CHAINE '0.00', dispatchee dans le store (posCart.js:521 stocke la valeur telle quelle). La ligne footer `v-if=\"posDiscount\"` (:956) considere la chaine non-vide '0.00' comme truthy -> une ligne 'Remise -0,00 EUR' s'affiche.",
+      "why_it_matters": "Affichage parasite : une ligne remise a 0,00 apparait alors qu'aucune remise n'est voulue, ajoutant du bruit visuel et de la confusion (le caissier se demande s'il a applique quelque chose). Mineur car le total n'est pas affecte, mais c'est le genre de 'truc inutile/pas propre' que l'owner pointe.",
+      "reproduction": "POS : panier non vide, laisser l'input remise vide (ou '0'), cliquer Appliquer (actif) -> une ligne 'Remise -0,00 EUR' apparait dans le bloc totaux.",
+      "recommended_correction": "Dans applyDiscount, court-circuiter si `discountAmountValue <= 0` en dispatchant explicitement discount=0 (Number, pas la chaine '0.00'), et/ou changer le v-if en `v-if=\"Number(posDiscount) > 0\"` pour ne jamais afficher une ligne remise nulle.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M4-06",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Methodes panier mortes : cartQuantityUp(id,e) et deleteCartItem(id) ne sont referencees nulle part dans le template (le design V5 utilise cartQuantityIncrement/Decrement + cancelLastCartLine)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3627-3633 (cartQuantityUp) + :3641-3643 (deleteCartItem)",
+      "evidence": "grep dans PosComponent.vue : `cartQuantityUp` n'apparait qu'a sa definition (:3627), aucun `@`/usage template. `deleteCartItem` n'apparait qu'a sa definition (:3641-3642) et dans un commentaire (:3645) ; le template ne le branche sur aucun handler — le stepper V5 emet @increment/@decrement -> cartQuantityIncrement/Decrement (:848-850) et la suppression passe par cancelLastCartLine (:593) ou @remove->cartQuantityDecrement (:850).",
+      "why_it_matters": "Code mort sur une surface critique : entretient l'illusion de plusieurs chemins de modification de quantite/suppression alors qu'un seul est cable. Augmente la charge cognitive lors d'un futur fix discount-reset (on pourrait patcher la mauvaise methode). Faible risque mais c'est exactement le 'unnecessary things' demande.",
+      "reproduction": "grep -n 'cartQuantityUp\\|@.*deleteCartItem' resources/js/components/admin/pos/PosComponent.vue -> seules les definitions remontent, zero usage template.",
+      "recommended_correction": "Supprimer cartQuantityUp et deleteCartItem du composant (ou confirmer via test qu'aucun ref externe ne les appelle puis retirer). Scope-minimal, hors frozen-zone.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M4-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Le bloc totaux du panier n'affiche aucune ventilation TVA (Sous-total / Remise / Livraison / Total seulement) alors que les prix sont TTC par defaut",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:952-976 (bloc totaux: sub_total, discount, delivery_charge, total — aucune ligne TVA) ; config/pricing.php:31 (tax_inclusive_prices defaut true) ; app/Services/Pricing/PricingService.php:250-264 (TVA extraite par ligne cote backend)",
+      "evidence": "Le footer panier (PosComponent.vue:952-976) ne rend que Sous-total (:954), Remise (:955-961), Livraison (:962-968) et Total (:969-975). Aucune occurrence de tva/tax/HT/TTC dans tout PosComponent.vue (grep -> 0 hit hors commentaire sans rapport :1902). Or les prix sont TTC par defaut (config/pricing.php:31) et le backend calcule bien une TVA extraite par ligne (PricingService.php:250-264). La ventilation TVA n'existe donc qu'au moment du recu/clture, pas dans l'apercu caisse.",
+      "why_it_matters": "Acceptable pour un APERCU panier (le document fiscal NF525 est le recu imprime, qui porte la TVA). Mais sur une caisse FR le caissier n'a aucune visibilite TVA avant impression ; pour un controle rapide ou un client qui demande le detail TVA, l'info est absente de l'ecran. Information-completeness, pas un bug fiscal — d'ou P3.",
+      "reproduction": "POS /admin/pos : remplir le panier -> le bloc totaux montre Sous-total/Remise/Livraison/Total sans aucune ligne 'dont TVA'. Verifier le recu imprime pour confirmer que la TVA y figure (hors scope cart).",
+      "recommended_correction": "Optionnel selon preference owner : ajouter une ligne 'dont TVA X,XX EUR' (et eventuellement HT) dans le bloc totaux, alimentee par un endpoint de preview backend (le backend reste SSOT, ne pas recalculer la TVA cote JS). A trancher avec l'owner — peut etre volontairement laisse au recu.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Panier localStorage scope par branch_id + user_id avec TTL 2h et garde anti-collision",
+      "file_line": "resources/js/store/modules/posCart.js:29-32 (getScopedKey) + :55-80 (loadCartFromStorage cross-check scope + expiry) + :95-101 (_applyPosCartScope)",
+      "note": "La cle panier est scopee par caissier+branche (pos_cart_v3:b<id>:u<id>), refuse de persister sans scope, purge la cle legacy non-scopee, expire a 2h et re-verifie le scope a la lecture. Empeche proprement la fuite d'un panier d'un caissier vers un autre sur la meme machine (POS-GA-F-41). Bonne defense en profondeur."
+    },
+    {
+      "title": "Resolution % -> EUR cote client coherente avec le backend manualDiscount(euros, subtotal)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3700-3717 (applyDiscount resout % en EUR) + :3823 (orderSubmit envoie l'EUR) ; app/Services/Pricing/DiscountCalculator.php:22-29 (manualDiscount traite la valeur comme EUR)",
+      "note": "Le front resout le pourcentage en montant EUR (subtotal*pct/100) AVANT envoi, et le backend interprete bien le champ discount comme un montant EUR (requested <= subtotal ? requested : 0). Pas de drift %/EUR entre front et SSOT, et le subtotal de reference est le meme (somme TTC des lignes)."
+    },
+    {
+      "title": "Exigence de motif de remise >=3 chars mirroree client ET serveur (no surprise alert)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:1882-1892 (discountReasonRequired/Invalid + isDiscountApplyable) + :906-915 (bouton disabled) ; app/Services/OrderService.php:2894-2898 (re-check serveur)",
+      "note": "Le bouton Appliquer se grise instantanement si une remise>0 n'a pas de motif >=3 chars, avec bordure rouge + hint inline, et le backend re-impose la meme regle a la creation (defense en profondeur NF525). Le caissier n'a pas de mauvaise surprise post-clic, et la regle fiscale n'est pas contournable cote client."
+    },
+    {
+      "title": "Ajout au panier optimiste avec confirmation/rollback et de-duplication par signature",
+      "file_line": "resources/js/store/modules/posCart.js:355-364 (addOptimistic) + :367-409 (__optimisticAdd/Confirm/Rollback) + :127-151 (samePosLineMergeSignature incluant variations/extras/instruction/addons+menu_extras)",
+      "note": "L'ajout pousse une ligne immediatement (UI reactive) puis confirme ou rollback selon le serveur, et fusionne correctement les lignes identiques via une signature qui inclut variations, extras, instruction et addons bundles (avec menu_extras) — evite les doublons fantomes tout en gardant une UX instantanee."
+    }
+  ]
+}

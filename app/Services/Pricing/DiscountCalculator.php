@@ -47,7 +47,14 @@ final class DiscountCalculator
             $rate = 100;
         }
         $maxDiscount = min($requestedDiscount, $realSubtotal);
-        $pointsRequired = (int) ceil($maxDiscount * $rate);
+        // [LOY-SEM-02 heal 2026-06-01] Snap the redeemed discount to WHOLE points.
+        // floor() so we never charge more points than the euro value granted, and
+        // the granted discount is exactly the points' value (cent-clean). Mirrors
+        // the POS "never fractional" guard (PosRedemptionService) — previously the
+        // kiosk/web path used ceil() and returned the raw fractional $maxDiscount,
+        // charging up to 1 extra point and persisting a sub-cent order.discount.
+        $pointsRequired = (int) floor($maxDiscount * $rate);
+        $maxDiscount = round($pointsRequired / $rate, 2);
         $minRedeemPoints = (int) Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
         if ($minRedeemPoints < 0) {
             $minRedeemPoints = 0;

@@ -17,7 +17,11 @@ class LanguageResource extends JsonResource
     {
         return [
             "id"            => $this->id,
-            "name"          => $this->name,
+            "name"          => match ($this->code) {
+                'fr' => 'Français',
+                'en' => 'Anglais',
+                default => $this->name,
+            },
             "code"          => $this->code,
             "display_mode"  => $this->display_mode,
             "status"        => $this->status,

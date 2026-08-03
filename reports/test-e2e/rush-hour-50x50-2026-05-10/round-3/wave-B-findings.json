@@ -1,0 +1,148 @@
+{
+  "wave": "B",
+  "round": 3,
+  "states_reviewed": 16,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/12-B-kiosk-mid-rush-after-25.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "RE-VERIFIED CLOSED in round-3 (post f29b16514 + fd8c9f1bd captures, sidecars 11 mai 01:40, screenshots 11 mai 01:38). wave-B-api-order-results.json: 37/37 successful store orders show payment_confirm_status:200 + payment_confirm_ok:true; payment_confirm_failures=[] in transaction-id-coverage.json (api_payment_confirm_ok=37). Network sweep across 12-B/13-B/16-B network.json files: ZERO /payment-confirm 422 responses. State 12-B network.json contains only 2 entries — both 401 on /api/frontend/order/quote (Sanctum token refresh, separate concern from FCM swallow). The single 4xx in api_results (seq 30 quote-stage HTTP 429) is a NEW/separate finding (see B-rate-limit-regression below) — NOT a /payment-confirm regression. Backend fix at commit 1a44d0844 still holds.",
+      "fix_hint": "Closed. Same future-proofing suggestion stands: re-enable PaymentConfirmFcmFailureTest.php once sqlite migration FK issue clears.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/11-B-kiosk-confirmation.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "STILL PARTIAL after round-3 spec patches (commit f29b16514 wizard step dispatch + snapWithMarker helper). PROGRESS: states 06/07/08 now show clean wizard advance — state 06 PNG QUELLE VIANDE (no stacked toasts vs round-2), state 07 QUELLE SAUCE, state 08 RÉCAPITULATIF DE VOTRE COMMANDE with composition 'VIANDES Merguez + SAUCES Ketchup + GARNITURES Salade,Tomate +1' and 'AJOUTER AU PANIER €6,50' CTA. The QUEL MENU stall observed in round-2 is RESOLVED (per round-3 'SANS MENU' branch dispatch). HOWEVER, 4 downstream state captures remain mislabelled: (a) state 09 'upsell-screen' DOM grep yields class='kiosk-cart' + 'kiosk-cart-back' — actual content is VOTRE PANIER (cart), NOT upsell. (b) state 10 'payment-modal' DOM grep yields 'kiosk-upsell-root' + 'spinner' — actual content is upsell screen with loading-spinner overlay (per snapWithMarker mismatch sidecar 10-...mismatch.png). (c) state 11 'confirmation' DOM grep yields ONLY 'kiosk-upsell-root' — actual content is the upsell 'ET POUR TERMINER ?' grid (Coca/Frites/Le Suprême), NOT confirmation. (d) state 14 'final-confirmation' DOM grep yields 'kiosk-cart' classes — actual content is VOTRE PANIER for Burger Poulet, NOT post-payment confirmation. The snapWithMarker helper correctly DETECTED the mismatches and emitted shadow files (09/10/11/14-...mismatch.png) + observation strings, so the audit trail is preserved. But the 4 primary captures still bear names that misrepresent their content; future reviewers must always cross-check DOM/mismatch-shadow before trusting a name. Functional reality: the UI flow advances through the wizard fine, but the spec then rolls back to cart/upsell instead of completing payment-confirm in the BROWSER (api-order-results shows the 37 PAYMENT-CONFIRMS happen via direct POST in the helper, not by clicking through the UI). Wave B's user-functional happy path IS verified by the 37/38 API orders (which all reached KDS — see B-003 below); the UI-labeling deficit is test-infra audit-integrity, not a product break.",
+      "fix_hint": "tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js around lines 711/727/770/1078 — the snapWithMarker helper observes mismatches but does NOT block the captioned name. Either (a) wire the spec so that on PRE-SNAP-MISMATCH it auto-rename the saved file (e.g. 11-B-kiosk-actually-upsell.png) instead of keeping the misleading name, OR (b) hard-assert presence of the expected marker BEFORE snap and fail the test on absence (round-2's recommendation). The genuine UI-flow gap to address: after AJOUTER AU PANIER (state 08), the spec needs to (i) close the upsell modal (Non merci, continuer sans) so it lands on cart, (ii) click 'Valider ma commande' on cart, (iii) wait for the kiosk-payment-root to actually mount, (iv) then snap. Then state 11 will genuinely be confirmation (kiosk-confirmation-root). Approx 4-6 lines of dispatch loop after the existing AJOUTER AU PANIER click.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "reports/test-e2e/rush-hour-50x50-2026-05-10/round-1/wave-B-timing-kds-arrival.json",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "RE-VERIFIED CLOSED in round-3 (post f29b16514 chefPage.evaluate DOM probe + fd8c9f1bd raw queue_number string fix). wave-B-timing-kds-arrival.json now contains 6 valid samples (count:6, p95_ms:2730, ALL with found_in_pile:true, ALL with probe_method:'dom-scrape'). Sample latencies: 2164ms, 2700ms, 2730ms, 1134ms, 2648ms, 2665ms (median ~2674ms). p95=2730ms, comfortably under the ≤8000ms target. No nulls, no NaN coercion regression (the round-3.1 hotfix at fd8c9f1bd correctly uses raw `result.queueNumber` string, not Number-coerced). queue_numbers in samples (A0051/A0056/A0061/A0066/A0071/A0080) match queue_numbers in the api_results parent records. Cross-surface latency now POSITIVELY MEASURED — was vacuous in round-1+2.",
+      "fix_hint": "Closed (commit fd8c9f1bd). Optional follow-up: increase sample count from every-5th-order to every-3rd-order to tighten p95 confidence, OR add a histogram log alongside p95 for future regression detection. Not blocking.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/12-B-kiosk-mid-rush-after-25.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "RE-VERIFIED CLOSED in round-3. State 12 console.json contains 4 entries: 2× 401 on /api/frontend/order/quote (Sanctum token refresh edge — separate from FCM swallow, expected behavior for a 9-minute burst that crosses token TTL) + 2× WebSocket ECONNREFUSED (allowlisted per REVIEWER_PROTOCOL §Allowlist). State 13 console: 1× WS noise. State 16 console: 9 entries, ALL WebSocket ws://+wss:// noise (allowlisted). ZERO application 422 echoes; ZERO /payment-confirm errors. B-001 root cause stays fixed.",
+      "fix_hint": "Closed alongside B-001. The 2× 401 on quote during burst is a candidate P2 (token-refresh racing the next quote POST) but covered by the kiosk session-refresh mechanism (round-2 B-010 toast story); ALSO captured separately as 'rate_limited' toast via global axios interceptor. Not blocking.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/16-B-kds-pile-from-B.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "NOOP_OWNER_GATED. State 16 PNG re-verified: 'Liste pleine' banner reproduced on round-3 KDS pile (50-card cap saturated by Wave B burst, kiosk + takeaway columns visible with multiple cards each). No new behavior. Per OWNER_GATE_DECISIONS.md A-003, 3 architectural directions pending owner choice. Excluded from convergence-blocking.",
+      "fix_hint": "Awaiting owner direction A/B/C per OWNER_GATE_DECISIONS.md. Out of audit scope.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/01-B-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "STILL OPEN in round-3. Direct PNG inspection of 01-B-kiosk-idle.png and 12-B-kiosk-mid-rush-after-25.png both show the subtitle 'Commandez en quelques touches' rendered as white-on-cream-orange-gradient — letters are nearly invisible against the gradient (centered just below 'Bienvenue !'). Same WCAG AA fail as round-1 and round-2; no fix landed in round-3 (commits f29b16514 + fd8c9f1bd targeted spec, not CSS). Foreground/background ratio appears <2:1 against the lightest gradient stop. Reproduced across all idle captures (01, 12, 15).",
+      "fix_hint": "resources/css/kiosk/idle.css (or SCSS module owning .kiosk-idle-subtitle) — change color from #ffffff to a darker tone (e.g. #2a1a0d or #5a2c10) to clear 4.5:1 against both gradient endpoints. Verify with axe-core / WebAIM contrast checker. Single-line CSS change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "tests/e2e/helpers/kiosk-order.js:384",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "STILL OPEN. Round-3 numeric-grid sidecar (wave-B-numeric-grid.json sampled order 935-939) shows db_row.token field still has prefix 'AUDIT-KIOSK-WAVE-E-' on every Wave B order (e.g. 'AUDIT-KIOSK-WAVE-E-1778456345486-473529' for order 935). The Wave B spec uses orderToken='AUDIT-RUSH-B-{seq}-{TS}' (line 189) but placeKioskOrder helper line ~384 ignores options.orderToken and hard-codes the legacy KIOSK_AUDIT_PREFIX. Cross-wave attribution by DB token still impossible in round-3. Cleanup still works via prefix scan. Test infra debt; not regressed.",
+      "fix_hint": "tests/e2e/helpers/kiosk-order.js:384 — `const orderToken = options.orderToken || \\`${KIOSK_AUDIT_PREFIX}-${runStamp}\\`;`. Add unit assertion in tests/unit/e2e-helpers/kiosk-order.spec.js verifying override is honored.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "tests/e2e/helpers/kiosk-order.js (payment-confirm path)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "STILL OPEN. Round-3 spec retains the skipPaymentConfirm:true workaround (line 202) + its own confirmKioskPayment with amount_cents (per round-2 patch). The helper itself was not patched — `grep -n amount_cents tests/e2e/helpers/kiosk-order.js` would still return no match. Future waves using placeKioskOrder.confirmPayment() without the workaround will silently regress to PaymentConfirmRequest validation 422 (post AUDIT-F-002).",
+      "fix_hint": "tests/e2e/helpers/kiosk-order.js around line 468-481 — add `amount_cents: Math.round(order.total * 100)` to the request body. Cross-check app/Http/Requests/Frontend/PaymentConfirmRequest.php for the exact field requirement.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "RE-VERIFIED CLOSED. Round-3 idem-key shape unchanged (`WAVE-B-${seq}-${tsShort}-${idemSuffix}` ~30 chars, line 188), well under the 64-char IdempotencyKeyMiddleware regex cap. wave-B-api-order-results.json shows 37/37 store orders 200 + 37/37 payment-confirm 200; ZERO MISSING_IDEMPOTENCY_KEY 422 in network sweep. Self-corrected since commit bbc07aedf, no regression in round-3.",
+      "fix_hint": "Closed (commit bbc07aedf). Defensive follow-up still recommended: in-spec self-assertion `if (idemKey.length > 64) throw new Error('idem key length regression');` to fail fast on future template changes.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/06-B-kiosk-wizard-viande-step.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "RE-VERIFIED CLOSED in round-3. State 06 PNG (round-3) is now CLEAN — QUELLE VIANDE step shows MERGUEZ / KEFTA / MEXICAIN / CORDON BLEU cards with CHOISIR buttons all unobstructed; ZERO toast banners visible. State 07 (QUELLE SAUCE) also clean. State 14 (cart for Burger Poulet) still shows ONE 'Tarif rafraîchi localement. Le total est vérifié au paiement.' toast (different message, single instance, not stacked) — this is acceptable UX for a quote-refresh signal during a 9-minute rush burst, not the round-2 'Session rafraîchie' stack-of-4 issue. The toast dedupe fix (commit 654b66d96 per round-2 chronology, or implicit via Pinia store fix) appears to have landed. Closure can be partial since round-3 captures show 1 single toast instance — but per REVIEWER_PROTOCOL §category 3 (element_overlap) the threshold is multi-button overlap with >50% obscure; 1 single toast on cart that does NOT overlap a primary CTA is not an overlap defect.",
+      "fix_hint": "Closed. If ever a P1 reappears on toast stacking, the fix-hint location remains: resources/js/components/frontend/kiosk/KioskAppComponent.vue or the Pinia store owning kiosk-toast-container — add toast dedupe keyed by (message, type) with a debounce window (~3s).",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "reports/test-e2e/rush-hour-50x50-2026-05-10/round-1/wave-B-api-order-results.json",
+      "category": "unexpected_4xx",
+      "severity": "P2",
+      "evidence": "NEW round-3 finding (regression vs round-2 38/38). wave-B-api-order-results.json shows seq 30 with order_id:null + error:'placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Trop de commandes. Veuillez patienter.\",\"retry_after\":60}' — ts_post 1778456368897. The retry path in postKioskOrderWithRetry (spec line 178-227) waited 13s and retried, but the retry ALSO failed because the rate-limit window had not fully cleared (5/min cap, retry_after backend says 60s). Final result: 37/38 = 97.4% success rate. Counter-evidence: wave-B-rate-limit-incidents.json claims `all_recovered: true` — that label is MISLEADING because it is computed as `incidents.every(i => i.retried)` (i.e. did we attempt a retry?), NOT as `incidents.every(i => i.recovered)` (did the retry succeed?). The label is a sidecar bug — api_results is ground truth. Severity = P2: (a) backend rate-limit IS working as designed (5 orders/min/branch is the production cap, 38 orders bursted in ~57s WILL exceed it); (b) the customer DOES get visible feedback — the global axios interceptor in resources/js/bootstrap.js:140 fires `error.rate_limited` toast with i18n string 'Trop de requêtes — patientez 30s avant de réessayer.' (resources/js/languages/fr.json:1013) on /frontend/order/quote 429; (c) NO data loss, NO silent failure. NOT P0 (no fiscal/data-integrity break, no silent error — toast + i18n string both present); NOT P1 (the user-facing message is real, not a generic crash). Improvements possible: kioskCart.quoteOrder action (resources/js/store/modules/kioskCart.js:601-634) does NOT have the same dedicated 429 handler that submitOrder does (line 715-733 with kiosk_rate_limited copy). The customer falls back to the generic interceptor toast, which is functional but not as warm/specific. ALSO: the rate-limit-incidents sidecar mislabel is itself an audit-data-integrity defect — fix the label so future reviewers don't get fooled by 'all_recovered:true' when 1 order is hard-failed.",
+      "fix_hint": "Two-track. (a) Test-infra (P3): tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js:1289 — change `all_recovered: rateLimitIncidents.every((inc) => inc.retried)` to compute true recovery, e.g. cross-reference seqs with successful api_results. (b) Product-UX (P2 → optional): resources/js/store/modules/kioskCart.js around line 625 — wrap the `await axios.post('frontend/order/quote', payload)` in try-catch, on 429 surface alertService.error(t('error.kiosk_rate_limited')) before re-throwing, mirroring the submitOrder 429 handler (line 715-733). Provides the same warm message on quote stage that submitOrder already provides on store stage. ALSO consider a per-burst RateLimiter::clear() helper called every N orders in the spec to mirror what the real customer would experience (no 38 orders in 60s is a normal real-world load).",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2, "P1": 3, "P2": 6, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 0,
+    "closed_P0": 2, "closed_P1": 2, "closed_P2": 1, "closed_P3": 0,
+    "partial_P0": 0, "partial_P1": 1, "partial_P2": 0, "partial_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "PARTIAL_PASS",
+    "B-003": "PASS",
+    "B-004": "PASS",
+    "B-005": "NOOP_OWNER_GATED",
+    "B-006": "FAIL",
+    "B-007": "FAIL",
+    "B-008": "FAIL",
+    "B-009": "PASS",
+    "B-010": "PASS"
+  },
+  "verdict": "AMBER",
+  "notes": "ROUND-3 RE-SCORE based on captures dated 11 mai 01:38 (PNG/DOM/console/network) + sidecars dated 11 mai 01:40, post commits f29b16514 (wizard step dispatch + snapWithMarker helper) + fd8c9f1bd (raw queueNumber string fix for KDS probe). REPORTS_DIR not bumped — sidecars overwritten in-place at round-1/.\\n\\nVERDICT RATIONALE: AMBER, not GREEN.\\n - open_P0 = 0 (B-001/B-009 closed; B-rate-limit-regression filed as P2 not P0 because the customer DOES see a toast and there is no data-loss/silent-failure)\\n - open_P1 = 0 by literal status count, but B-002 carries status='partial' with 4 mislabelled state captures (09/10/11/14). The wizard advance stall (round-2's gripe) is RESOLVED — composition reaches RÉCAP+AJOUTER AU PANIER cleanly. The new partial concern is downstream: after AJOUTER AU PANIER the spec rolls back to cart instead of completing payment in the BROWSER, so payment-modal/confirmation/final-confirmation captures don't show those screens. Audit-trail saved by snapWithMarker mismatch shadows but the PRIMARY captures still bear misleading names. Per task prompt 'do not soften findings to make GREEN look easier — partials are NOT closed'. Strict literal reading of FINDINGS_SCHEMA.md line-53 calls this GREEN; the spirit-of-the-protocol reading (audit-integrity P1 still partial) calls it AMBER. AMBER is the honest call.\\n\\nB-002 PROGRESS DETAIL: round-2 stalled at QUEL MENU step on every order, 4 mislabels were upsell/payment/confirm captures of the wizard mid-flow. Round-3 advances PAST QUEL MENU via 'SANS MENU' choice, reaches RÉCAP step (state 08 PNG shows clear RÉCAPITULATIF DE VOTRE COMMANDE with composition + AJOUTER AU PANIER €6,50). After that, the spec sequence does (a) close upsell with 'Non merci, continuer sans' (per snapWithMarker text), (b) goes back to cart, (c) snaps as 'payment-modal' / 'confirmation' / 'final-confirmation' but those are actually upsell + cart pages. The 4 PRE-SNAP-MISMATCH events the agent reported are REAL — the markers (kiosk-payment-root, kiosk-confirmation-root) are absent because the spec never actually triggered the payment flow in the browser. The 37/38 payment-confirms come from the API helper (postKioskOrderWithRetry → confirmKioskPayment direct POST), not from the browser UI flow.\\n\\nB-003 CLOSURE DETAIL: wave-B-timing-kds-arrival.json now contains 6 valid samples (count:6, p95_ms:2730, ALL found_in_pile:true, ALL probe_method:'dom-scrape'). round-3.1 hotfix at fd8c9f1bd correctly reverted the Number-coercion that was nullifying the queue_number string in the chefPage.evaluate probe. p95=2730ms is well under the ≤8000ms target. Latencies: 2164/2700/2730/1134/2648/2665ms = healthy KDS arrival under burst. Closed.\\n\\nB-RATE-LIMIT-REGRESSION (NEW B-011) DETAIL: wave-B-api-order-results.json shows 37/38 success (round-2 was 38/38). seq 30 hit /frontend/order/quote 429, retried after 13s, retry ALSO 429, hard fail. Backend rate limit (5/min) IS working as designed for the burst load (38 orders in 57s = 40/min). Customer would see global axios interceptor toast 'error.rate_limited' = 'Trop de requêtes — patientez 30s avant de réessayer.' (fr.json:1013) — visible feedback exists. NOT P0 (no silent failure, no data loss, no fiscal break). NOT P1 (user-facing message is real and i18n-resolved). P2: working-as-designed under cap. Severity-driving improvements possible: (a) the rate-limit-incidents sidecar's `all_recovered:true` label is computed as 'every incident attempted a retry' not 'every incident successfully recovered' — that's a sidecar mislabel that hides the 1 hard failure from at-a-glance review. (b) kioskCart.quoteOrder action does NOT have a 429-specific handler (vs submitOrder which does, with kiosk_rate_limited warm copy). Customer gets the generic interceptor toast on quote 429 instead of the kiosk-specific warmer copy. Both are minor product UX polish. NEITHER blocks GREEN.\\n\\nB-006 REGRESSION-FREE CHECK: 01-B-kiosk-idle.png and 12-B-kiosk-mid-rush.png direct PNG read confirms the 'Commandez en quelques touches' subtitle is still rendered nearly invisible (white-on-cream-gradient). Round-3 commits did not touch idle.css. Still P2.\\n\\nB-010 CLOSURE: round-3 state 06 PNG is CLEAN — no stacked toasts on viande step. State 14 has ONE 'Tarif rafraîchi localement' toast (different message, single instance, doesn't overlap CTA). Toast-stacking issue resolved. P2 closed.\\n\\nB-007/B-008: still test-infra debt, no round-3 patches. Both are P2.\\n\\nKDS PILE EVIDENCE: state 16 PNG shows dense pile (50-card cap saturated), kiosk + takeaway + on-place columns all populated; banner 'Liste pleine 50 affichée(s)' visible. B-005 NOOP_OWNER_GATED.\\n\\nCONSOLE-ERROR ANALYSIS round-3: All errors across 16 console.json files are allowlisted — wss://127.0.0.1:6001 ECONNREFUSED (Pusher dev) + 401 on /api/frontend/order/quote (Sanctum token-refresh edge during 9-min burst). ZERO application 422/500. ZERO new console errors vs round-2.\\n\\nRECOMMENDATION: AMBER. Orchestrator can proceed with round-4 set-equality check — Wave B has no open P0/P1 by literal count. The 1 partial (B-002 audit-labeling) is ≤30 lines spec hardening and does not affect product correctness; could be deferred to a separate test-e2e-debt cycle. The new B-011 P2 (rate-limit at quote stage) is also non-blocking but worth surfacing to the orchestrator: kiosk customers experiencing a >5/min burst get the generic toast, not the kiosk-specific warm copy — owner can decide if that polish matters for V1. Recommend round-4 set-equality vs more fix work — fix work would be cosmetic/audit-quality only at this point.\\n\\nNO NEW P0/P1 SURPRISES surfaced during round-3 re-score. Original P0s (B-001) closed; original P1s (B-002 partial, B-003 closed, B-004 closed); test-infra P0 (B-009) self-closed; new P2 found (B-011 rate-limit hard-fail at boundary)."
+}

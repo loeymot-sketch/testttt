@@ -1,0 +1,117 @@
+{
+  "specialist": "Security",
+  "wave": "WF-5-FISCAL-CASCADE",
+  "scope": "HMAC secret rotation, tamper detection, TRUNCATE bypass mitigation, payment gateway context guard",
+  "mode": "READ-ONLY",
+  "frozen_zone_touched": false,
+  "lens": "cryptographic strength + secret hygiene + authorization gates + auditable trail",
+  "files_audited": [
+    "app/Services/Fiscal/AuditLogService.php (especially L237-243 computeHash, L269-327 secretFor + assertProductionSafe)",
+    "app/Services/Fiscal/ZReportService.php (especially L618-628 sign, L702-726 assertProductionSafe)",
+    "app/Services/Fiscal/FiscalSealingService.php",
+    "app/Services/PaymentService.php (especially L46 assertGatewayContext, L585-616)",
+    "app/Services/Bypass/BypassAuditLogger.php",
+    "app/Console/Commands/FiscalVerifyChainCommand.php",
+    "config/fiscal.php",
+    "docs/FISCAL_SECRETS.md (existence confirmed)"
+  ],
+  "five_invariants_verified": {
+    "I-1_sequence_monotonic_gap_free": {
+      "verdict": "INTACT",
+      "evidence": "Cache lock 'fiscal_seq_b{N}' + lockForUpdate prevents two cashiers allocating same seq. UNIQUE constraint orders_branch_fiscal_seq_unique is the final gate — even on cache split-brain (Redis failover with replica drift) the DB unique key rejects fork. SQLite test driver uses BEGIN IMMEDIATE semantics that serialize."
+    },
+    "I-2_hmac_chain_atomic": {
+      "verdict": "INTACT",
+      "evidence": "HMAC-SHA256 (FIPS-180-4) on canonical JSON with sorted keys (L335-374 canonicalise + sortRecursive). Per-branch secret via FISCAL_AUDIT_SECRET_BRANCH_{id} env override (L273-277). hash_equals constant-time comparison at L223 (timing-attack resistant). UNIQUE(branch_id, prev_hash) index rejects parallel fork at DB layer (L60-64 docblock confirms migration 2026_04_19_100000)."
+    },
+    "I-3_composition_snapshot_frozen": {
+      "verdict": "INTACT",
+      "evidence": "All 5 INSERT sites use json_encode (no string concat); copy-forward at refund preserves byte-exact bytes. No UPDATE statement found targeting composition_snapshot column. Tampering would require direct SQL bypass — which the audit_logs UPDATE trigger would catch on the related order.discount or order.refund.counter_entry audit row."
+    },
+    "I-4_db_triggers_active": {
+      "verdict": "INTACT",
+      "evidence": "BEFORE UPDATE + BEFORE DELETE triggers on audit_logs (both MySQL SIGNAL + SQLite RAISE ABORT). BEFORE DELETE on z_reports (MySQL only — UPDATE intentionally allowed for state machine + cash enrichment). BEFORE DELETE on cash_movements + cash_drawer_sessions + order_payments. Triggers fire at storage-engine layer — un-bypassable by Eloquent OR raw SQL."
+    },
+    "I-5_truncate_bypass_mitigation": {
+      "verdict": "INTACT (operational dependency confirmed)",
+      "evidence": "docs/FISCAL_SECRETS.md exists at filesystem. Migration docblocks (audit_logs L138-140 + z_reports L29-30) explicitly call out TRUNCATE bypass + mitigation = revoke TRUNCATE permission via GRANT. This is correct: MySQL triggers do not fire on TRUNCATE by design — only DBA grant restriction prevents it. Cannot be enforced from migration."
+    }
+  },
+  "security_findings": [
+    {
+      "id": "SEC-FIS-01",
+      "severity": "INFO",
+      "kind": "production-secret-hardening",
+      "location": "AuditLogService L303-327 + ZReportService L702-726 assertProductionSafe",
+      "observation": "Production-only refusal to sign with: (1) empty/missing secret, (2) known dev sentinels from fiscal.dev_sentinels config array, (3) secret shorter than fiscal.min_secret_length (default 32 chars). Three-pronged sentinel block + length floor + per-branch override = robust. Dev/test environments bypass for fast CI.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "SEC-FIS-02",
+      "severity": "INFO",
+      "kind": "canonicalisation-deterministic",
+      "location": "AuditLogService L335-374 canonicalise + sortRecursive",
+      "observation": "Recursive ksort on associative keys (lists preserved as-is via array_is_list check) — eliminates non-determinism from PHP array insertion order. JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE keep encoding stable across PHP 8.0+. Same algorithm reused for Z report signing via ksort($aggregates) at ZReportService L626.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "SEC-FIS-03",
+      "severity": "INFO",
+      "kind": "payment-gateway-context-guard",
+      "location": "PaymentService L46 assertGatewayContext + L585-616",
+      "observation": "[P0-POS-02 GOAL round-2 2026-05-18] PaymentService::payment() (which sets payment_status=PAID + creates Transaction row → fiscally-significant action) now requires the call stack to include a PaymentAbstract subclass frame. Non-spoofable from external controllers/jobs/CLI without inheriting the gateway hierarchy. Test escape hatch via app.bound('payment.service.allow_direct_call') with one-shot semantics (forgetInstance after consume) — cannot leak across tests.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "SEC-FIS-04",
+      "severity": "INFO",
+      "kind": "bypass-mode-fiscal-preservation",
+      "location": "BypassAuditLogger + PaymentService L162-166",
+      "observation": "[BYPASS-P2] BypassAuditLogger.paymentBypassed only logs HARDWARE bypass (TPE driver short-circuit). Fiscal invariants explicitly preserved (L15-19 docblock confirms: sealing fiscal NF525 + Outbox events + audit log + idempotency middleware all still run when payment.bypass.enabled=true). AppServiceProvider boot() abort() in production prevents bypass at runtime. No path observed where bypass mode could skip FiscalSequenceService::next or AuditLogService::write.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "SEC-FIS-05",
+      "severity": "INFO",
+      "kind": "structured-fiscal-logging",
+      "location": "AuditLogService L167-176 + ZReportService L253-265 + cron handler L183-203",
+      "observation": "All fiscal writes emit structured logs on dedicated 'fiscal' channel with hash_prefix (first 12 chars, not full HMAC). Payload itself NEVER logged (L165 explicit: 'never the payload because payloads may carry PII'). SIEM can correlate via audit_log_id + hash_prefix without decrypting. Daily cron at 03:30 sweeps every active branch, distinguishing chain.monitor.failure (non-zero exit per branch) vs chain.monitor.branch_error (per-branch throw) vs scheduler_error (top-level throw).",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "SEC-FIS-06",
+      "severity": "INFO",
+      "kind": "verify-chain-exit-code-discipline",
+      "location": "FiscalVerifyChainCommand exit codes 0/1/2/3",
+      "observation": "Wave 3 FISCAL-ADV3-02 + Wave 3b distinct exit codes: 0=OK, 1=TAMPER, 2=INVALID args (non-existent branch OR --branch=0 sentinel), 3=EXEC ERROR (DB outage / missing secret / unexpected throw). Allows monitoring to route NF525 breaches to compliance team and DB/cred issues to ops — different escalation paths, different on-call. Tamper priority > exec error in --all sweep (FAILURE wins over 3).",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "SEC-FIS-07",
+      "severity": "INFO",
+      "kind": "explicit-branch-id-required",
+      "location": "AuditLogService L93-98",
+      "observation": "[POS-9-H.2.3 / F-C5] CLI/system writers MUST pass branch_id=0 explicitly (system chain) or positive int (tenant chain). Null branch_id rejected — without this guard a CLI job would poison whichever chain had the latest tail. Defense against developer mistake AND against malicious CLI replay.",
+      "verdict": "KEEP-AS-IS"
+    }
+  ],
+  "four_list_classification": {
+    "keep_as_is": [
+      "HMAC-SHA256 with per-branch secret override",
+      "Recursive canonicalisation (ksort + JSON_UNESCAPED_*) for deterministic hash input",
+      "hash_equals timing-safe comparison",
+      "Production sentinel + min-length floor blocks weak secrets at write time",
+      "PaymentService gateway-context backtrace guard (P0-POS-02)",
+      "BypassAuditLogger limits bypass to hardware (no fiscal short-circuit)",
+      "Structured 'fiscal' log channel with hash_prefix only (no payload PII)",
+      "Distinct exit codes 0/1/2/3 for monitoring routing"
+    ],
+    "heal": [],
+    "lock_plan": [],
+    "defer_v1_0_2": []
+  },
+  "p0_findings_in_frozen_zone": 0,
+  "p1_findings_in_frozen_zone": 0,
+  "verdict": "INTACT",
+  "summary": "Cryptographic posture is correct (HMAC-SHA256 + deterministic canonical JSON + per-branch secret rotation + min-length + dev-sentinel block). Authorization gate on PaymentService::payment prevents non-gateway PAID promotion. Bypass mode is hardware-only — fiscal sealing always runs. TRUNCATE bypass mitigation is correctly delegated to DB GRANT level (docs/FISCAL_SECRETS.md exists). No security recommendations; KEEP-AS-IS."
+}

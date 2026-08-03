@@ -1,0 +1,65 @@
+[
+  {
+    "step": "C3-01",
+    "slug": "wizard-confirm",
+    "state": "clicked",
+    "severity": "OK",
+    "note": "Confirm result=clicked, wizardClosed=true, cart=\"Articles\n0\" → \"Articles\n1\" (changed=true)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/01-wizard-closed-after-confirm.png",
+    "ts": "2026-05-06T15:19:43.767Z"
+  },
+  {
+    "step": "C3-01",
+    "slug": "api-calls",
+    "state": "count",
+    "severity": "INFO",
+    "note": "7 POS API calls capturés",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/01-wizard-closed-after-confirm.png",
+    "ts": "2026-05-06T15:19:43.768Z"
+  },
+  {
+    "step": "C3-02",
+    "slug": "payment-modal",
+    "state": "sections",
+    "severity": "OK",
+    "note": "Total label=true, cash=true, card=true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/02-payment-modal-opened.png",
+    "ts": "2026-05-06T15:19:57.482Z"
+  },
+  {
+    "step": "C3-03",
+    "slug": "cash-method",
+    "state": "selected",
+    "severity": "OK",
+    "note": "Méthode cash sélectionnée",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/03-payment-cash-selected.png",
+    "ts": "2026-05-06T15:20:11.084Z"
+  },
+  {
+    "step": "C3-03",
+    "slug": "cash-amount",
+    "state": "filled",
+    "severity": "OK",
+    "note": "Montant 20.00€ saisi",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/03-payment-cash-amount-20.png",
+    "ts": "2026-05-06T15:20:11.869Z"
+  },
+  {
+    "step": "C3-03",
+    "slug": "cash-change",
+    "state": "visible",
+    "severity": "OK",
+    "note": "Change displayed=true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/03-payment-cash-amount-20.png",
+    "ts": "2026-05-06T15:20:11.871Z"
+  },
+  {
+    "step": "C3-04",
+    "slug": "api-flow",
+    "state": "capture",
+    "severity": "INFO",
+    "note": "Total: 9. POS create POST: status=429. Quote: absent",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle3/04-submit-after-submit.png",
+    "ts": "2026-05-06T15:20:30.074Z"
+  }
+]

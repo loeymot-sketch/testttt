@@ -86,7 +86,14 @@ class OfferService
             $orderType   = $request->get('order_type') ?? 'desc';
             $limit       = $request->get('limit') ? $request->get('limit') : '';
 
-            return Offer::with('items')->where('end_date', '>=', now()->toDateTimeString())->where(function ($query) use ($requests) {
+            // [TERRAIN-HEAL 2026-07-16 · OFFER-PUBLIC-STATUS] Filtrait uniquement end_date >= now → une offre
+            // DÉSACTIVÉE (status=INACTIVE) ou PROGRAMMÉE (start_date future) fuyait sur l'endpoint public
+            // (le toggle statut de la gestion était inopérant sur la vitrine ; offre planifiée visible en
+            // avance). On ajoute status=ACTIVE + start_date <= now (start_date NOT NULL sur offers).
+            return Offer::with('items')
+                ->where('status', \App\Enums\Status::ACTIVE)
+                ->where('start_date', '<=', now()->toDateTimeString())
+                ->where('end_date', '>=', now()->toDateTimeString())->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->offerFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');

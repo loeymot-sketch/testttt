@@ -31,11 +31,11 @@ return [
         'string' => 'The :attribute must be between :min and :max characters.',
     ],
     'boolean' => 'The :attribute field must be true or false.',
-    'confirmed' => 'The :attribute confirmation does not match.',
+    'confirmed' => 'La confirmation de :attribute ne correspond pas.',
     'current_password' => 'The password is incorrect.',
     'date' => 'The :attribute is not a valid date.',
     'date_equals' => 'The :attribute must be a date equal to :date.',
-    'date_format' => 'The :attribute does not match the format :format.',
+    'date_format' => ':attribute ne correspond pas au format :format.',
     'declined' => 'The :attribute must be declined.',
     'declined_if' => 'The :attribute must be declined when :other is :value.',
     'different' => 'The :attribute and :other must be different.',
@@ -154,6 +154,12 @@ return [
     |
     */
 
+    'multi_variation' => [
+        'min' => 'Sélectionnez au moins :min :attribute (actuel : :actual).',
+        'max' => 'Sélectionnez au maximum :max :attribute (actuel : :actual).',
+        'no_repeat' => 'L\'attribut :attribute n\'autorise pas la répétition d\'une même variation.',
+    ],
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',
@@ -172,5 +178,7 @@ return [
     */
 
     'attributes' => [],
+
+    'items_cap_exceeded' => 'Maximum 50 articles par commande',
 
 ];

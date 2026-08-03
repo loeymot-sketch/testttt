@@ -1,0 +1,72 @@
+---
+description: Synchronisation multi-agents (Cursor convs, codex-extension, claude-terminal). Évite que deux agents touchent les mêmes fichiers en même temps. Append-only, lecture par tail (~500 tokens).
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# FoodKing — Synchronisation multi-agents (cross-conv, cross-terminal)
+
+## Pourquoi
+Plusieurs agents peuvent travailler en parallèle (deux conversations Cursor, `codex-extension`, `claude-terminal`, humain). Sans signal partagé, deux agents peuvent éditer le même fichier en même temps et se contredire. Cette règle est l'**unique** mécanisme de coordination procédurale entre conversations.
+
+C'est une **extension du store D** de [docs/orchestration/MEMORY_MATRIX.md](mdc:docs/orchestration/MEMORY_MATRIX.md) (rapports/cycle), **pas** un nouveau store : aucun gate à ouvrir.
+
+## SSOT
+- Log : `reports/AGENT_ACTIVITY_LOG.md` (append-only, lisible)
+- Outil : `scripts/agent-activity-log.sh` (sous-commandes : `tail`, `start`, `done`, `collisions`, `active`)
+
+## Obligations (alwaysApply)
+
+### 1. Au démarrage de toute session/conversation (avant PLAN)
+```bash
+bash scripts/agent-activity-log.sh tail 50
+```
+- Coût ≈ <2 KB / ~500 tokens. À faire **une seule fois** par session.
+- Si une réservation active touche un domaine dont la session va parler → adapter le plan ou attendre.
+
+### 2. Avant **toute édition produit** (Step 2 EXECUTE de `run-cycle.md`)
+
+L'agent (ou l'orchestrateur) **réclame** son périmètre :
+```bash
+bash scripts/agent-activity-log.sh start <AGENT> <TASK_ID> execute "<FICHIERS_OU_DOSSIERS_CSV>" "<note>"
+```
+- `<AGENT>` ∈ `cursor-claude | cursor-composer | codex-extension | claude-terminal | human`
+- `<FICHIERS_OU_DOSSIERS_CSV>` : lister précisément les fichiers ou un dossier racine (ex `resources/js/components/admin/pos/`)
+- **Si exit code 2 (REFUS / collision)** : *halt*. Soit re-planifier sur un sous-périmètre disjoint, soit attendre que l'autre agent libère, soit ouvrir une coordination humaine. **Ne pas forcer.**
+
+### 3. À la fin du cycle (CLOSE) ou en cas d'abandon
+```bash
+bash scripts/agent-activity-log.sh done <AGENT> <TASK_ID> done "résumé une ligne"
+# ou: blocked | abandoned (au lieu de done)
+```
+La libération est **obligatoire** sinon les futurs agents seront refusés à tort.
+
+### 4. Pendant la phase AUDIT / VALIDATE — facultatif
+Pas besoin de réclamer si l'agent ne **modifie** pas les fichiers du projet (lecture seule + écriture dans `reports/` ou `docs/gates/`). Réclamer uniquement quand on touche `app/`, `resources/`, `routes/`, `database/`, `tests/`, `bootstrap/`, `config/`, `composer.json`, `package.json`.
+
+## Convention de nommage AGENT
+Stable et auto-décrivante. Exemples valides :
+- `cursor-claude` — conv Cursor avec Claude comme PRIMARY
+- `cursor-composer` — validation/report only; no product implementation in finishing cycles
+- `codex-extension` — `npm run codex:complex` (CLI `codex`, compte ChatGPT Pro)
+- `claude-terminal` — `bash scripts/foodking-claude-orchestrate.sh audit`
+- `human` — édition manuelle dans IDE
+
+Le `CONV` (variable d'env `CURSOR_CONV_ID`, sinon PID) est purement informatif. Le pairing **start/done** se fait sur **AGENT+TASK** (un agent qui replante peut quand même libérer sa réservation depuis un nouveau shell).
+
+## Token budget
+- `tail 50` au démarrage = ~500 tokens
+- 1 ligne `start` + 1 ligne `done` par cycle = négligeable
+- `collisions` ou `active` ne sont **pas** appelés par défaut — uniquement quand l'agent veut vérifier avant un EXECUTE risqué (ex : édition de PaymentComponent.vue, OrderService, PricingService).
+- Aucun fichier n'est jamais ré-lu : seul le log est lu, en queue.
+
+## Anti-patterns
+- ❌ Réclamer un dossier large (`app/`) "au cas où" → bloque tout le monde. Réclamer la liste **exacte** des fichiers prévus par le plan.
+- ❌ Oublier le `done` à la fin → réservations fantômes. Si une session crashe, ré-exécuter `done` au démarrage suivant.
+- ❌ Forcer un `start` malgré refus → décision humaine requise (commenter le refus dans le rapport, joindre un humain).
+- ❌ Modifier le log à la main hors `agent-activity-log.sh` → casse le format pipe et les compteurs.
+
+## Interaction avec les autres règles
+- Ne change pas [run-cycle.md](mdc:.cursor/commands/run-cycle.md) → ajoute juste **2 commandes** (start au début EXECUTE, done au CLOSE) — voir Step 2 et Step 5 de `run-cycle.md`.
+- Ne change pas [auto-remediation.mdc](mdc:.cursor/rules/auto-remediation.mdc) — la boucle REMEDIATION conserve la réservation initiale jusqu'au CLOSE final (pas de `done` entre rounds).
+- Ne change pas [human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) — un refus de réservation **n'est pas** un gate, c'est une coordination procédurale.

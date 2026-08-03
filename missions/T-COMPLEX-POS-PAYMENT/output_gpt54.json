@@ -1,0 +1,397 @@
+<template>
+  <div v-if="isOpen" class="pos-payment-split-dialog" @click.self="onCancel">
+    <div
+      class="pos-payment-split-dialog__modal"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+    >
+      <div class="pos-payment-split-dialog__header">
+        <h2 :id="titleId" class="pos-payment-split-dialog__title">
+          Paiement fractionné
+        </h2>
+        <button
+          type="button"
+          class="pos-payment-split-dialog__close"
+          aria-label="Fermer"
+          @click="onCancel"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="pos-payment-split-dialog__body">
+        <div class="pos-payment-split-dialog__summary">
+          <div class="pos-payment-split-dialog__row">
+            <span class="label">Commande</span>
+            <span class="value">#{{ orderId }}</span>
+          </div>
+          <div class="pos-payment-split-dialog__row">
+            <span class="label">Total</span>
+            <span class="value">{{ formattedTotal }}</span>
+          </div>
+        </div>
+
+        <div class="pos-payment-split-dialog__fields">
+          <label class="pos-payment-split-dialog__field">
+            <span class="pos-payment-split-dialog__field-label">Espèces</span>
+            <div class="pos-payment-split-dialog__input-wrap">
+              <input
+                v-model="cashInput"
+                type="number"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                class="pos-payment-split-dialog__input"
+                placeholder="0.00"
+              />
+              <span class="pos-payment-split-dialog__currency">{{ currency }}</span>
+            </div>
+          </label>
+
+          <label class="pos-payment-split-dialog__field">
+            <span class="pos-payment-split-dialog__field-label">Carte</span>
+            <div class="pos-payment-split-dialog__input-wrap">
+              <input
+                v-model="cardInput"
+                type="number"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                class="pos-payment-split-dialog__input"
+                placeholder="0.00"
+              />
+              <span class="pos-payment-split-dialog__currency">{{ currency }}</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="pos-payment-split-dialog__totals">
+          <div class="pos-payment-split-dialog__row">
+            <span class="label">Saisi</span>
+            <span class="value">{{ formattedEnteredTotal }}</span>
+          </div>
+          <div class="pos-payment-split-dialog__row">
+            <span class="label">Écart</span>
+            <span
+              class="value"
+              :class="{ 'is-valid': isValid, 'is-invalid': !isValid && hasAnyInput }"
+            >
+              {{ formattedDifference }}
+            </span>
+          </div>
+        </div>
+
+        <p
+          v-if="!isValid && hasAnyInput"
+          class="pos-payment-split-dialog__message pos-payment-split-dialog__message--error"
+        >
+          Le montant espèces + carte doit être égal au total.
+        </p>
+      </div>
+
+      <div class="pos-payment-split-dialog__footer">
+        <button
+          type="button"
+          class="pos-payment-split-dialog__button pos-payment-split-dialog__button--secondary"
+          @click="onCancel"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="pos-payment-split-dialog__button pos-payment-split-dialog__button--primary"
+          :disabled="!isValid"
+          @click="onConfirm"
+        >
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+
+const props = defineProps({
+  total: {
+    type: Number,
+    required: true,
+    validator: (value) => Number.isInteger(value) && value >= 0,
+  },
+  currency: {
+    type: String,
+    required: true,
+  },
+  orderId: {
+    type: Number,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['confirm', 'cancel'])
+
+const isOpen = ref(true)
+const cashInput = ref('')
+const cardInput = ref('')
+
+const titleId = `pos-payment-split-dialog-title-${props.orderId}`
+
+function parseToCents(value) {
+  if (value === null || value === undefined || value === '') {
+    return 0
+  }
+
+  const normalized = String(value).replace(',', '.').trim()
+  if (normalized === '') {
+    return 0
+  }
+
+  const amount = Number(normalized)
+  if (!Number.isFinite(amount) || amount < 0) {
+    return NaN
+  }
+
+  return Math.round(amount * 100)
+}
+
+function formatCents(cents) {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: props.currency,
+  }).format(cents / 100)
+}
+
+function generateTxnUuid() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return `txn-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+const cashCents = computed(() => parseToCents(cashInput.value))
+const cardCents = computed(() => parseToCents(cardInput.value))
+
+const enteredTotalCents = computed(() => {
+  if (Number.isNaN(cashCents.value) || Number.isNaN(cardCents.value)) {
+    return NaN
+  }
+
+  return cashCents.value + cardCents.value
+})
+
+const differenceCents = computed(() => {
+  if (Number.isNaN(enteredTotalCents.value)) {
+    return NaN
+  }
+
+  return props.total - enteredTotalCents.value
+})
+
+const isValid = computed(() => {
+  return (
+    Number.isInteger(cashCents.value) &&
+    Number.isInteger(cardCents.value) &&
+    cashCents.value >= 0 &&
+    cardCents.value >= 0 &&
+    enteredTotalCents.value === props.total
+  )
+})
+
+const hasAnyInput = computed(() => {
+  return cashInput.value !== '' || cardInput.value !== ''
+})
+
+const formattedTotal = computed(() => formatCents(props.total))
+const formattedEnteredTotal = computed(() => {
+  if (Number.isNaN(enteredTotalCents.value)) {
+    return '—'
+  }
+
+  return formatCents(enteredTotalCents.value)
+})
+
+const formattedDifference = computed(() => {
+  if (Number.isNaN(differenceCents.value)) {
+    return '—'
+  }
+
+  return formatCents(differenceCents.value)
+})
+
+function onCancel() {
+  isOpen.value = false
+  emit('cancel')
+}
+
+function onConfirm() {
+  if (!isValid.value) {
+    return
+  }
+
+  isOpen.value = false
+  emit('confirm', {
+    cash: cashCents.value,
+    card: cardCents.value,
+    txn_uuid: generateTxnUuid(),
+  })
+}
+</script>
+
+<style scoped>
+.pos-payment-split-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.pos-payment-split-dialog__modal {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.pos-payment-split-dialog__header,
+.pos-payment-split-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.pos-payment-split-dialog__header {
+  border-bottom: 1px solid #ececec;
+}
+
+.pos-payment-split-dialog__footer {
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid #ececec;
+}
+
+.pos-payment-split-dialog__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.pos-payment-split-dialog__close {
+  border: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pos-payment-split-dialog__body {
+  padding: 20px;
+}
+
+.pos-payment-split-dialog__summary,
+.pos-payment-split-dialog__totals {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.pos-payment-split-dialog__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pos-payment-split-dialog__row .label {
+  color: #666;
+}
+
+.pos-payment-split-dialog__row .value {
+  font-weight: 600;
+}
+
+.pos-payment-split-dialog__fields {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.pos-payment-split-dialog__field {
+  display: grid;
+  gap: 8px;
+}
+
+.pos-payment-split-dialog__field-label {
+  font-weight: 500;
+}
+
+.pos-payment-split-dialog__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pos-payment-split-dialog__input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d7d7d7;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.pos-payment-split-dialog__currency {
+  min-width: 48px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.pos-payment-split-dialog__message {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.pos-payment-split-dialog__message--error {
+  color: #c62828;
+}
+
+.is-valid {
+  color: #2e7d32;
+}
+
+.is-invalid {
+  color: #c62828;
+}
+
+.pos-payment-split-dialog__button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pos-payment-split-dialog__button--secondary {
+  background: #f1f3f5;
+  color: #222;
+}
+
+.pos-payment-split-dialog__button--primary {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.pos-payment-split-dialog__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

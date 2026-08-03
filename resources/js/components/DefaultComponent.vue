@@ -10,7 +10,11 @@
       <FrontendFooterComponent v-if="!staffOnlyMode" />
     </div>
 
-    <div v-if="theme === 'backend'">
+    <div v-if="isKioskRoute || theme === 'kiosk'" class="kiosk-locked-shell">
+      <router-view></router-view>
+    </div>
+
+    <div v-if="theme === 'backend' && !isKioskRoute">
       <main class="db-main" v-if="logged">
         <BackendNavbarComponent />
         <BackendMenuComponent />
@@ -45,6 +49,8 @@ import TableFooterComponent from "./layouts/table/TableFooterComponent.vue";
 import TableCartComponent from "./layouts/table/TableCartComponent.vue";
 import displayModeEnum from "../enums/modules/displayModeEnum";
 import env from "../config/env";
+import appService from "../services/appService";
+import { routes } from "../router";
 
 export default {
   name: "DefaultComponent",
@@ -77,6 +83,13 @@ export default {
     staffOnlyMode: function () {
       return !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
     },
+    isKioskRoute: function () {
+      const routePath = String(this.$route?.path || "");
+      return this.$route?.meta?.isKiosk === true || routePath.startsWith("/kiosk");
+    },
+  },
+  created() {
+    this.applyThemeFromRoute(this.$route);
   },
   beforeMount() {
     this.$store
@@ -95,6 +108,9 @@ export default {
         if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
           // [STAFF-ONLY-V1] Session expirée : retour au login staff si staffOnlyMode, sinon home vitrine.
           this.$router.push({ name: this.staffOnlyMode ? "auth.login" : "frontend.home" });
+        } else if (res.data.status !== false && res.data.permission) {
+          // F5 / onglet : réaligner les routes sur les permissions renvoyées par authcheck.
+          appService.recursiveRouter(routes, res.data.permission);
         }
       }).catch();
     }
@@ -102,9 +118,17 @@ export default {
   },
   watch: {
     $route(e) {
-      if (e.meta.isFrontend === true) {
+      this.applyThemeFromRoute(e);
+    },
+  },
+  methods: {
+    applyThemeFromRoute(route) {
+      const routePath = String(route?.path || "");
+      if (route?.meta?.isKiosk === true || routePath.startsWith("/kiosk")) {
+        this.theme = "kiosk";
+      } else if (route?.meta?.isFrontend === true) {
         this.theme = "frontend";
-      } else if (e.meta.isTable === true) {
+      } else if (route?.meta?.isTable === true) {
         this.theme = "table";
       } else {
         this.theme = "backend";

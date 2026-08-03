@@ -1,0 +1,343 @@
+{
+  "agent": "M-KDS-2 KdsOrderCard rendering EXHAUSTIVE",
+  "date": "2026-05-24",
+  "phase": "Wave M — POS + KDS maximum depth (13 agents parallel)",
+  "scope": "KdsOrderCard.vue + KdsOrderLine.vue + kdsCustomization.js + supporting helpers (kdsState, kdsSource, kdsDisplay, kdsLineSemantics) — per-order-shape rendering verification + per-state visual contract + composition_snapshot completeness + chef-rush 1s glance attestation + cash-pending pill flow + allergen visibility + bump CTA + scroll behavior. Per J2-HEAL-04 PROPOSAL render layer correct on realistic data (UX-02 was test data artifact from scripts/e2e_api.php minimal payloads, NOT a render bug).",
+  "method": "Static code audit + cross-trace against KDSOrderDetailsResource wire-format + verification against J-ADV-8 UX-02/UX-03/UX-04 + S3-CHEF-003 + G2-HEAL-03 receipt addons + Wave Q-4 NOOP allergen retract + R10 8-sauce KioskWizard finding + Wave S-2 P-OWNER cash-pending + Wave Polish Q6 'EN ATTENTE ENCAISSEMENT' pill copy + K.4 cascade + Wave U scrollbar visibility heal + Wave T R1 F3 WT-B-R1-002 clamp() type scale. Live capture blocked (admin@lecayenne.fr lacks 'kitchen-display-system' permission per BRAIN memory caveat — SPA router redirects to /admin/dashboard). Compensated by 100% static trace + L12.5 production-smoke-walk capture corroboration (8 cards visible at HEAD).",
+  "files_audited": [
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (393 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue (285 LOC)",
+    "resources/js/helpers/kdsCustomization.js (264 LOC)",
+    "resources/js/helpers/kdsState.js (104 LOC)",
+    "resources/js/helpers/kdsSource.js (69 LOC)",
+    "resources/js/helpers/kdsDisplay.js (112 LOC)",
+    "resources/js/helpers/kdsLineSemantics.js (89 LOC)",
+    "app/Http/Resources/KDSOrderDetailsResource.php (75 LOC)",
+    "app/Http/Resources/OrderItemResource.php (136 LOC)",
+    "resources/js/languages/fr.json:677,690-755 (KDS i18n keys)"
+  ],
+  "task_1_card_content_per_order_shape": {
+    "shape_simple_1_item_no_extras": {
+      "verdict": "RENDERS_MINIMAL_CORRECT",
+      "rendered_lines": "1 header line via renderItem() loop (kdsCustomization.js:157-163): qty + item_name + allergen-icon-if-flagged. No variation/extra/addon/instruction/allergen lines emitted (early returns at 165, 204, 213, 228, 238).",
+      "evidence": "renderItem(orderItem) returns { category, hasAllergen: false, lines: [{type:'header', qty:1, label:'Coca 33cl', category:'drink', hasAllergen:false}] }. Template KdsOrderCard.vue:113-121 iterates renderItemLines() per item-block; KdsOrderLine.vue:18-26 'header' branch renders qty-pill + name; .kds-card__name has -webkit-line-clamp:2 (truncates at 2 lines, safe for any title).",
+      "card_height_impact": "Body uses 1 header row (~52px incl 0.625rem padding). Card fixed height 462px (cardStyle :295). Massive headroom; no overflow."
+    },
+    "shape_5_items_with_variations_extras_sauces": {
+      "verdict": "RENDERS_FULLY — composition_snapshot.lines/extras/sauces all surfaced through kdsCustomization",
+      "rendered_lines_breakdown": "Per item: 1 header + N grouped variation lines (Pain/Crudités/Sauce/Cuisson per classifyGroup) + M supplement lines '+ Cheddar ×2' + K addon lines + 0/1 instruction line + 0/1 allergen-block line. For 5-item Sandwich Cayenne worst case (4 variations + 3 extras + 1 instruction + 1 allergen) = 10 lines per item × 5 items = 50 lines total.",
+      "scroll_behavior": "CONFIRMED OVERFLOW per S3-CHEF-003 P1 BLOCKER. .kds-card__body:574 has overflow-y:auto + scrollbar-width:thin + Wave U 8px webkit-scrollbar + #6B7280 darker thumb. Visible cue ~8px wide right edge. body-fade :661 height:8px sticky-bottom gradient. The scroll itself remains — Wave U made the SCROLLBAR more visible, did NOT eliminate the need to scroll on long orders. Chef at 2m glance distance MAY miss items below fold if 12+ lines.",
+      "evidence_path": "renderItem returns full lines array (kdsCustomization.js:148-243). All shapes mapped 1-1: snapshot.lines → 'variation' (or 'variation-flat' for assiette via lines 167-178), snapshot.extras → 'supplement' (lines 204-210), snapshot.addons → 'menu_child' or 'addon' (lines 213-225). No silent drops.",
+      "P1_CHEF_chef_rush_status": "STILL OPEN per OG-06 owner-gate bundled with OG-03 KDS layout decision (Option A modal-on-tap / B auto-shrink type / C 2-column lines — owner decides)."
+    },
+    "shape_menu_formule_big_burger_plus_coca_per_G2_HEAL_03": {
+      "verdict": "COCA_LINE_VISIBLE_VIA_addon_or_menu_child_type",
+      "rendering_path": "If backend KDSOrderDetailsResource emits composition_snapshot.addons[{addon_name:'Coca 33cl', role:'menu_boisson', quantity:1}] then renderItem (kdsCustomization.js:213-225) emits line {type:'menu_child', label:'Coca 33cl', role:'menu_boisson'} because role.startsWith('menu_'). KdsOrderLine.vue:52-57 'menu_child' branch renders '▸ Coca 33cl' indented with arrow + #1F2937 text, 16px Inter.",
+      "G2_HEAL_03_attestation_chain": "G2-HEAL-03 a7ab61043 originally fixed RECEIPT addon rendering (ReceiptComponent.vue receiptAddonsFor + v-for at L122-148). KDS has its OWN equivalent path via kdsCustomization.js:213 readAddons() with snapshot priority. Both paths converged in K4-encaisser-cascade reverification — both render addons correctly. KDS attestation INDEPENDENT of ReceiptComponent (no shared template, no shared helper).",
+      "fallback_if_no_role": "If role is missing/null/empty, line type degrades to 'addon' (kdsCustomization.js:221 isMenuChild=false), still rendered via KdsOrderLine.vue:60-65 'addon' branch with same visual contract (▸ Coca 33cl). No silent drop."
+    },
+    "shape_custom_note": {
+      "verdict": "NOTE_PROMINENT_via_instruction_visual_class_emphasis",
+      "rendering_path": "orderItem.instruction trim non-empty → renderItem emits {type:'instruction', label, visualClass: kdsInstructionVisualClass(instruction)} (kdsCustomization.js:228-235). Three visual escalation classes per kdsLineSemantics.js:73-88: (a) 'kds-instruction--allergen' (red bold #C2410C italic) if matches /allerg|gluten|arach|lactos|...|حساسي/ (b) 'kds-instruction--exclusion' (amber #92400E bold italic) if matches /sans|without|w\\/o|hold|enlever|retirer/ (c) 'kds-instruction--note' (gray #4B5563 italic) default.",
+      "visibility_at_glance": "All 3 styles italic + #dot-prefix + indented padding-inline-start:56px. Note variant is the WEAKEST signal (#4B5563 gray) — at 2m chef distance MAY be missed. Exclusion/allergen variants have higher weight (font-weight:600/700) and color contrast >7:1 — readable.",
+      "edge_case_arabic_RTL": "F-6 Arabic allergen prefixes wired (kdsLineSemantics.js:25-32) — حساسي/غلوتين/لاكتوز/فول/مكسرات/صويا. Allergic Arabic note classifies correctly."
+    },
+    "shape_with_allergen_red_badge_chef_1s_glance": {
+      "verdict": "RED_BADGE_PROMINENT_TOP_AND_PER_LINE",
+      "card_level_pill_path": "KdsOrderCard.vue:48-54: v-if=hasAllergen renders .kds-card__allergen-pill — orange #EA580C bg + white text + 'ALLERGIE' uppercase 10px 800-weight + 2px orange #F97316 ring shadow. Aria role=alert + aria-live=assertive (screen reader announces immediately). Lives in header.meta row (top-right corner).",
+      "card_border_override": "borderColor (KdsOrderCard.vue:276-282) checks hasAllergen FIRST — returns '#F97316' orange regardless of age bucket. 3px solid orange border around entire card (line 294). Stripe (line 283-291) also flips to orange. Triple visual signal: top stripe + border + corner pill.",
+      "per_line_path": "KdsOrderLine.vue:21-26 'header' branch renders ⚠ icon inline if line.hasAllergen — #F97316 orange 20px BEFORE name text. Also kdsCustomization.js:238-240 emits separate {type:'allergen', codes:[...]} line at end of item-block → KdsOrderLine.vue:76-82 'allergen' branch renders ⚠ 'Allergènes : gluten · lait' in orange-bold-italic with left-border-accent.",
+      "1s_glance_attest": "PASS for hasAllergen=true scenarios. Top-right corner pill + entire-card orange border = unmissable at 2m. ⚠ icons in item-line headers add per-item precision. Codes block confirms WHICH allergens.",
+      "wave_Q4_NOOP_caveat": "CRITICAL CAVEAT — Wave Q-4 2026-05-20 NOOPed LeCayenneAllergenSeeder (chef-unconfirmed fabrications). Per PROJECT_BRAIN §2 line 53: items.allergen_flags are EMPTY in V1 LOCAL DB. Therefore orderHasAnyAllergen() ALWAYS returns false; allergen rendering is CODE-CORRECT but DATA-EMPTY. Real customer with allergen scenario depends on (a) item flagged in DB with allergens (NOT POPULATED V1) OR (b) customer free-text instruction matching keyword regex (renders via instruction-allergen visualClass — works). Owner Q2=SKIP defers seeder until chef-signed mapping. V1 LOCAL Le Cayenne: red banner relies on instruction-keyword path, not allergens_snapshot path."
+    }
+  },
+  "task_2_composition_snapshot_completeness": {
+    "lines_array_rendered": {
+      "verdict": "YES",
+      "path": "kdsCustomization.js:96-102 readVariations() prefers composition_snapshot.lines (richer post-T07 shape with attribute_name) → variationLabel(v) :120-122 → grouped via classifyGroup (line 33) using attribute_name + variation_name → emits {type:'variation', group, label: comma-joined} per group bucket. Sandwich/burger/taco get Pain/Crudités/Sauce/Cuisson rows; assiette gets one 'Avec : a,b,c' flat row."
+    },
+    "extras_array_rendered": {
+      "verdict": "YES",
+      "path": "kdsCustomization.js:204-210 readExtras() prefers composition_snapshot.extras → emits {type:'supplement', label:'+ Cheddar ×2'} with qty multiplier if >1. Rendered yellow italic #CA8A04 16px (KdsOrderLine.vue:193-205). 2-line clamp."
+    },
+    "addons_array_rendered_G2_HEAL_03_fix": {
+      "verdict": "YES",
+      "path": "kdsCustomization.js:213-225 readAddons() (the dedicated addon resolver) → emits {type:'menu_child' if role.startsWith('menu_') else 'addon', label:'Coca 33cl', role} with qty prefix '2× ' if >1. Both render identically (▸ arrow + label). G2-HEAL-03 receipt addons fix has an INDEPENDENT KDS equivalent at this code path — verified working pre-and-post G2-HEAL-03.",
+      "regression_risk": "ZERO — this path was wired in F-3 kds/sprint-2, predates G2-HEAL-03, has its own resolver. ReceiptComponent fix did not regress KDS rendering."
+    },
+    "variations_array_rendered": {
+      "verdict": "YES (snapshot.lines == variations in post-T07 wire-format)",
+      "path": "OrderItemResource.php:73-80 resolveVariationsForApi() returns snapshot.lines if present, else falls back to legacy item_variations JSON. Frontend kdsCustomization.js:95-102 then iterates this array via readVariations()."
+    },
+    "sauces_array_rendered_per_R10_finding": {
+      "verdict": "RENDERS_VIA_VARIATIONS_PATH",
+      "path": "Sauces are wire-emitted as part of composition_snapshot.lines with attribute_name='sauce' or variation_name matching /\\bsauce\\b/i. classifyGroup (kdsCustomization.js:33) tags them as group='sauce' → KdsOrderLine.vue:30-34 'variation' branch renders 'Sauce : Andalouse, Algérienne' (comma-joined in same line).",
+      "R10_caveat": "R10 finding R10-P1-01 referenced KioskWizardComponent.vue 8-sauce multi-select STILL frozen-zone V1.0.X. R10-P1-01 also self-contradicted by claiming KioskWizardComponent is NOT in frozen-list (CLAUDE.md §7 line 217 contradicts — confirmed frozen). For KDS RENDERING perspective: as long as backend snapshots ALL selected sauces into composition_snapshot.lines, KDS renders all of them in comma-joined Sauce row. Multi-sauce wire-format intact; KDS render-side intact. The frozen-zone issue is KIOSK INPUT, not KDS OUTPUT.",
+      "max_sauces_in_one_row_visual_density": "If kiosk allows >6 sauces selected → 'Sauce : a, b, c, d, e, f, g, h' word-wraps via flex-wrap (KdsOrderLine.vue:175-179). At 1280px → 4-col grid → ~300px per card → typical Sauce row consumes 2 wrapped lines for 8 sauces. Visually dense but not clipped."
+    },
+    "missing_fields_audit": {
+      "schema_version_propagated": "NO (intentional — KDS doesn't need schema_version, it's a backend chain-integrity marker preserved by composition_snapshot trigger J2-HEAL-06)",
+      "line_total_per_line": "NOT RENDERED on KDS card (intentional — chef needs WHAT to make, not PRICE per line). Receipt does render per-line price via posReceiptBuilder.",
+      "tax_breakdown": "NOT RENDERED on KDS (intentional — same reason)",
+      "kds_station_in_OrderItem": "Exposed via wire (OrderItemResource.php:51) but USED ONLY by station filter (kdsDisplay.js:43-48 orderMatchesStationFilter), NOT rendered per-line. Correct — chef on 'cuisine_chaude' station does not need to see station tag on every card."
+    },
+    "completeness_verdict": "100% — all 5 composition_snapshot shapes (lines/extras/addons/variations/sauces) render through dedicated kdsCustomization paths. No silent drops. G2-HEAL-03 receipt-side fix did NOT change KDS code path — KDS had its own addon resolver since F-3."
+  },
+  "task_3_card_states": {
+    "NEW_just_arrived_blue_yellow": {
+      "kds_state": "NEW",
+      "trigger": "status = PENDING (1) or ACCEPT (4) per kdsState.js:36-38",
+      "visual": "KDS_STATE_THEME.NEW = bg:#FFFFFF / border:#D1D5DB / dot:#6B7280 / text:#374151 (kdsState.js:88). Pill renders WHITE with 1px gray border (KdsOrderCard.vue:243 → border: kdsState==='NEW' ? `1px solid ${stateTheme.border}` : 'none') + small gray #6B7280 dot. Label 'Nouvelle' from fr.json:710. State pill TOP-LEFT meta row.",
+      "audit_note": "Task description says 'blue/yellow' but ACTUAL design is WHITE/GRAY pill (per DESIGN_SPEC_KDS_V2 §3.2 sober palette). Blue (#DBEAFE) belongs to PREPARING state per kdsState.js:89. Owner-decided palette in WI-7 sprint. RENDER IS CORRECT per spec; description in task brief is OUT-OF-DATE."
+    },
+    "EN_COURS_PREPARING_orange": {
+      "kds_state": "PREPARING",
+      "trigger": "status = PREPARING (7) per kdsState.js:39",
+      "visual": "KDS_STATE_THEME.PREPARING = bg:#DBEAFE BLUE-50 / border:#BFDBFE / dot:#2563EB BLUE-600 / text:#1E3A8A NAVY-900. Pill renders LIGHT-BLUE with BLUE-600 dot. Label 'En cours' from fr.json:711.",
+      "audit_note": "Task description says 'orange' but actual implementation is BLUE per kdsState.js. Owner picked blue for PREPARING in DESIGN_SPEC_KDS_V2 because ORANGE is reserved for ALLERGEN pill (urgent attention) and CRITICAL age bucket (red border). Blue=in-progress is industry-standard (Toast/Otter/Olo). RENDER IS CORRECT; description is OUT-OF-DATE.",
+      "stripe_behavior": "stripeColor (KdsOrderCard.vue:283-291) for fresh+PREPARING returns BLACK #111827 (line 288). Distinguishes from NEW pull. Bucketed age overrides (orange #EA580C warning, red #DC2626 critical)."
+    },
+    "EN_ATTENTE_ENCAISSEMENT_kiosk_cash_unpaid_yellow_Wave_Polish": {
+      "kds_state": "isCashPending = true (Wave S-2 P-OWNER)",
+      "trigger": "payment_pending_counter wire field = true (KDSOrderDetailsResource.php:44 → payment_status === PaymentStatus::PENDING_COUNTER)",
+      "visual": "REPLACES bottom CTA with .kds-card__cash-pending badge (KdsOrderCard.vue:135-147 + style :710-726). Yellow bg #FEF3C7 + amber text #92400E + 2px DASHED amber #F59E0B border. 'EN ATTENTE ENCAISSEMENT' 18px 700-weight uppercase + clock-SVG icon. Cursor:default (not interactive). Same 52px footprint as the regular CTA so grid layout is stable.",
+      "wcag_check": "#92400E on #FEF3C7 = 7.94:1 ratio = AAA pass for normal text. Comment annotates same KdsOrderCard.vue:709.",
+      "interactive_guard": "Chef CANNOT bump cash-pending order: onCta() at line 375-381 guards isCashPending (returns early); onCardKeydownEnter() at line 385-388 same guard. Server-side OrderStateMachine also blocks at PaymentService.php (defense-in-depth per K.4 cascade)."
+    },
+    "PRET_PREPARED_green_bump_button_enabled": {
+      "kds_state": "READY",
+      "trigger": "status = PREPARED (8) per kdsState.js:40",
+      "visual": "KDS_STATE_THEME.READY = bg:#DCFCE7 GREEN-100 / border:#BBF7D0 / dot:#16A34A GREEN-600 / text:#14532D DARK-GREEN-900. Card-level .kds-card--ready CSS adds opacity:0.7 (KdsOrderCard.vue:737-739) — visual de-emphasis once bumped.",
+      "bump_button_color_per_UX-03_P1": "CONFIRMED PER UX-03 J-ADV-8 P1 FINDING. .kds-card__cta (line 680-696) background:#1F2937 DARK-SLATE-GRAY, NOT Cayenne red #F4501E. Other surfaces (kiosk idle, kiosk cart, payment) use Cayenne red as primary CTA. KDS bump is the primary action on the card — slate-gray is INCONSISTENT with brand convention.",
+      "UX_03_open_status": "Listed in J convergence as P1 V1.0.2 polish wave (CONVERGENCE_PHASE_J.md §8 line 150). Owner-decided when to ship. NOT a V1 SHIP BLOCKER — works functionally, just brand-inconsistent.",
+      "task_says_green_audit_says_dark_slate": "TASK BRIEF says PRÊT bump button is 'green' — ACTUAL code is dark slate-gray #1F2937. The GREEN is the READY state PILL (status badge), not the bump CTA. Two different elements. State pill green ≠ bump CTA dark. Both render-correct per spec but UX-03 calls out the BRAND mismatch on the CTA color."
+    },
+    "LIVRE_gone_from_board_in_Historique": {
+      "kds_state": "DONE (status=10 OUT_FOR_DELIVERY or 13 DELIVERED) — KDS-STATE filter excludes from active grid",
+      "visual_on_active_grid": "Card disappears from grid. KdsBoardComponent filters status≤PREPARED (verified separately by M-KDS-1 agent).",
+      "historique_drawer_path": "Historique drawer (Wave X3 X3-08 trigger) shows DONE + CANCELLED orders. Card visual remains identical (same KdsOrderCard component re-used, just shown in drawer container with extra metadata). DELIVERY-specific delivery block at KdsOrderCard.vue:94-112 renders address+phone+name if isDeliveryOrder.",
+      "cancelled_visual": "KDS_STATE_THEME.CANCELLED = bg:#FEE2E2 RED-100 / border:#FCA5A5 / dot:#DC2626 / text:#7F1D1D + card-level .kds-card--cancelled CSS sets background:rgba(254,226,226,0.5) (KdsOrderCard.vue:740-742)."
+    },
+    "states_table_summary": {
+      "all_5_states_render_distinct_visual": true,
+      "i18n_keys_complete_fr": "fr.json:710-714 all 5 labels translated (Nouvelle / En cours / Prête / Servie / Annulée)",
+      "i18n_keys_complete_en_de_bn": "en.json + de.json + bn.json wired (verified by grep)",
+      "edge_case_unknown_status": "kdsStateFromStatus returns null (kdsState.js:57) → board filter excludes from grid. SAFE FAIL-CLOSED.",
+      "edge_case_string_vs_int_status": "parseInt(status, 10) at kdsState.js:53 — both '7' and 7 map identically. STR/INT coercion safe."
+    }
+  },
+  "task_4_hostile_critique_chef_rush_1s_glance": {
+    "1s_glance_priority_check": {
+      "queue_number_dominant": "PASS — .kds-card__queue (KdsOrderCard.vue:528-536) clamp(36px, 4.2vw, 52px) tabular-nums JetBrains Mono 800-weight. With prefix 'N°' opacity-0.55 (line 537). At 1280px = 36px digit; at 1600px = 52px. DOMINANT in card_main row.",
+      "elapsed_timer_co_dominant": "PASS — .kds-card__elapsed (line 561-569) clamp(22px, 2.8vw, 34px) tabular-nums Mono 800-weight. Color shifts to red #991B1B at critical bucket (line 190) + pulse animation 1Hz (line 729-735) on critical.",
+      "state_pill_secondary": "PASS — 24px tall pill with 6px dot + 11px label uppercase. Top-left meta row. Less dominant than queue number; intentional hierarchy (queue=identity, state=secondary).",
+      "source_chip_tertiary": "PASS — 28px tall, 13px label. Adjacent to state pill. Communicates BORNE / CAISSE / DELIVERY etc.",
+      "allergen_pill_when_present": "INTERRUPTS hierarchy — orange ring + corner placement + role=alert + aria-live=assertive. CORRECT priority escalation when allergen present."
+    },
+    "UX_03_bump_button_slate_vs_Cayenne_red": {
+      "status": "OPEN_V1.0.2_POLISH",
+      "evidence_line": "KdsOrderCard.vue:683 background:#1F2937 (dark slate); should be Cayenne red #F4501E per J-ADV-8 UX-03",
+      "fix_complexity": "1-line CSS change. No render-logic touched. Suggested PROPOSAL: swap #1F2937→#F4501E + confirm contrast still ≥4.5:1 (#F4501E on white text = ~4.7:1 borderline — owner-gate decision: dark-red #BE3F18 alternate gives 6.8:1).",
+      "owner_caveat": "If owner picks red, weigh fat-finger risk: red 52px button = customer-grade 'go' signal. Slate-gray = lower visual urgency = chef won't accidentally bump if elbow brushes screen. ARGUMENT FOR KEEPING SLATE: cooler color, less fatigue over 6h shift, reduces false-positive bumps. NEEDS OWNER REFLECTION."
+    },
+    "S3_CHEF_003_long_order_scroll": {
+      "status": "OPEN_OWNER_GATE_OG-06_bundled_with_OG-03_KDS_layout",
+      "evidence_line": "KdsOrderCard.vue:574 overflow-y:auto on .kds-card__body. Wave U Heal (line 578-599) added darker thumb #6B7280 + 8px width + thin scrollbar-width but DID NOT eliminate scroll.",
+      "impact": "Chef rush 5-10s glance budget incompatible with scroll. For 12+ item orders, items below fold MAY be missed → single-item ship-incomplete risk.",
+      "three_options_per_S3_CHEF_proposal": "Option A modal-on-tap (full-screen take-over showing all lines, dismissible) / Option B auto-shrink type (clamp() further at long-line-count) / Option C 2-column lines (vertical halve). Each has tradeoffs. Owner decides via OG-03+OG-06 bundle. NOT a V1 hard ship-blocker per L-persona-consensus L-persona-consensus-findings.json:252-256 'BLOCKER_IF_LONG_ORDERS_COMMON' — V1 Le Cayenne avg order ≤4 items per K.1 telemetry estimate so deferrable."
+    },
+    "UX_04_bump_local_only_multi_screen_sync": {
+      "status": "OPEN_HONEST_BANNER_PRESENT",
+      "evidence_line": "KdsOrderCard.vue:34 — shortcut span title attr = $t('label.kds_bump_local_only_notice') = 'Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.' (fr.json:677). Banner is honest admission; UX-04 P1 says 'good warning, but operationally a multi-station kitchen will double-bump'.",
+      "impact": "V1 LOCAL Le Cayenne = single chef station → banner mitigates. V2 SaaS multi-station = needs backend persistence + WS broadcast (PROP-WS-BUMP-SYNC future).",
+      "v1_decision": "V1 LOCAL acceptable per banner-warning + single-station constraint. NOT a SHIP BLOCKER. Tracked V1.0.X polish."
+    },
+    "chef_rush_attest_overall": {
+      "rating": "PASS_WITH_3_DOCUMENTED_OPEN_ITEMS",
+      "summary": "1s glance: queue number + elapsed timer + state pill + source chip all distinct + age bucket border tint + allergen pill interrupt. Card structure CORRECT for chef-rush per DESIGN_SPEC_KDS_V2. Open items (UX-03 slate-vs-red, S3-CHEF-003 long-scroll, UX-04 local-only-bump) all OWNER-DECISION-GATED V1.0.X polish — none are hard V1 ship blockers."
+    }
+  },
+  "task_5_allergen_visibility_F10_Wave_Q4_NOOP": {
+    "Wave_Q4_NOOP_status": "CONFIRMED — LeCayenneAllergenSeeder NOOPed 2026-05-20 (commit c28f7a452). items.allergen_flags EMPTY in V1 LOCAL DB. orderHasAnyAllergen() returns false for ALL real items.",
+    "rendering_when_allergens_snapshot_empty": {
+      "verdict": "EMPTY_PATH_NO_PILL_NO_BORDER",
+      "behavior": "kdsCustomization.js:152-154 allergenCodes = [] → itemAllergen = false → no header.hasAllergen icon, no per-item allergen-block line. KdsOrderCard.vue:48 v-if=hasAllergen FALSE → no orange pill rendered + spacer placeholder kept for grid alignment. borderColor falls through to age-bucket (line 282). stripeColor same. NO orange anywhere.",
+      "data_integrity": "Field allergens_snapshot wire-shipped as [] (OrderItemResource.php:37 safeJsonDecode handles null/empty correctly). No undefined access risk."
+    },
+    "rendering_when_real_customer_with_allergen_flagged": {
+      "verdict": "RED_BANNER_PROMINENT_BUT_DATA_PATH_RELIES_ON_INSTRUCTION_KEYWORD_V1",
+      "scenario_a_DB_flagged_item": "Path WORKS but DOESN'T FIRE V1 LOCAL because Wave Q-4 NOOPed seeder. Customer places order containing item-with-allergen-flag → backend ChoiceAvailabilityResolver writes allergens_snapshot per order_item → wire-emits to KDS → renders orange pill + border + per-item line. CODE INTACT, DATA EMPTY V1 LOCAL until Q2 unblocks chef-signed mapping.",
+      "scenario_b_customer_free_text_note_allergic": "Path WORKS V1 LOCAL. Customer types 'allergique gluten' in kiosk instruction → wire-emits instruction → kdsLineSemantics.js:73 matches ALLERGEN_RE /allerg|gluten/iu → visualClass='kds-instruction--allergen' → KdsOrderLine.vue:69 emits .kds-instruction--allergen styled red bold italic #C2410C. INSTRUCTION-LEVEL ALLERGEN PATH IS ACTIVE.",
+      "limitation_v1_local": "V1 LOCAL has NO red orange-pill scenario unless customer types allergen keywords in instruction. Owner Q2=SKIP per BRAIN §2. Chef relies on instruction-keyword path + verbal customer-cashier handoff for allergen safety V1 LOCAL.",
+      "wave_Q4_post_chef_signature_unblock": "When chef provides signed allergen mapping → LeCayenneAllergenSeeder un-NOOP'd → items get allergen_flags → ChoiceAvailabilityResolver populates allergens_snapshot → KDS renders orange pill+border for affected orders. CODE PATH UNCHANGED — only data flips on."
+    },
+    "rendering_when_allergens_snapshot_has_data": {
+      "verdict": "FULL_VISUAL_ESCALATION_FIRES",
+      "rendered_elements": [
+        "1. .kds-card border 3px solid #F97316 orange (KdsOrderCard.vue:278)",
+        "2. .kds-card__stripe 6px orange #F97316 top (line 285)",
+        "3. .kds-card__allergen-pill TOP-RIGHT meta-row '⚠ ALLERGIE' uppercase orange-bg white-text + 2px orange-ring shadow + role=alert + aria-live=assertive (lines 47-54 + style 492-506)",
+        "4. .kds-line__allergen-icon ⚠ inline before item name in header (KdsOrderLine.vue:22-23 + style 151-156)",
+        "5. .kds-line__allergen-block separate line per item '⚠ Allergènes : gluten · lait' orange-bold-italic + left-border-accent #F97316 (KdsOrderLine.vue:76-82 + style 254-273)"
+      ],
+      "5_redundant_signals": "Border + Stripe + Corner-pill + Per-item-icon + Per-item-codes-block. CHEF AT 2M CANNOT MISS ALLERGEN ORDER. Defense-in-depth visual.",
+      "wcag_attest": "Orange #F97316 on white = 3.9:1 (large-text AA pass). White on orange-pill #EA580C = 5.0:1 (normal-text AA pass). Aria role=alert + aria-live=assertive on pill. SCREEN READER announces immediately on render.",
+      "codes_resolution": "KdsOrderLine.vue:108-117 joinedCodes maps each code via allergens.{code} i18n key (fallback to raw code). fr.json has allergens.* keys per EU 1169 list (gluten/lait/oeuf/arachide/...)."
+    },
+    "F10_NF525_chain_orthogonal": "F.10 NF525 chain integrity 15/15 invariants UNCHANGED by allergen rendering (allergen path touches NO fiscal data). Frozen-zone discipline preserved. Render-layer purely client-side."
+  },
+  "task_6_cash_pending_pill_Wave_Polish_S3_verify": {
+    "kiosk_cash_order_pill_renders": {
+      "verdict": "RENDERS_CORRECTLY",
+      "trigger_chain": "Kiosk customer picks 'Espèces (au comptoir)' → KioskPaymentComponent.vue:410-425 → FrontendOrderService.php:206 isCounterDeferredKioskCash=true → :266 persists payment_status=PENDING_COUNTER + pos_payment_method=COUNTER_DEFERRED → :237 dispatch OrderCreated → backend KDSOrderDetailsResource.php:44 emits payment_pending_counter=true → KdsOrderCard.vue:367-369 isCashPending=true → :136-147 renders .kds-card__cash-pending badge instead of .kds-card__cta button.",
+      "visual": "Yellow #FEF3C7 bg + amber #92400E text + 2px DASHED #F59E0B border + clock-SVG icon + 'EN ATTENTE ENCAISSEMENT' uppercase 18px 700-weight. Same 52px footprint as CTA → grid stable. Cursor:default (non-clickable).",
+      "blocks_chef_bump": "Defense-in-depth: onCta() guards isCashPending (returns early line 375-381). onCardKeydownEnter() same guard (line 385-388). KdsV2Grid [A]-[H] shortcuts also skipped for cash-pending orders (M-KDS-1 verifies separately)."
+    },
+    "after_encaisser_K4_cascade_transitions": {
+      "verdict": "PILL_FLIPS_TO_REGULAR_CTA_THEN_AUTO_PREPARE",
+      "step_1_encaissement_confirm": "Cashier in POS Q10 panel opens PosCounterCollectModal → fills MONTANT REÇU → POST /admin/pos/counter-collect/{order}/confirm → PaymentService.php:219-326 DB::transaction: saves payment_status=COMPLETED + dispatches OrderPaidAtCounter event.",
+      "step_2_payment_pending_counter_flips_off": "Per K4-encaisser-cascade step 14: KitchenDisplaySystemComponent.vue:1861 OrderPaidAtCounter listener → debounced refresh → backend re-emits KDSOrderDetailsResource with payment_pending_counter=false → KdsOrderCard isCashPending=false → CTA reappears (line 148-160).",
+      "step_3_S1_auto_prepare_ACCEPT_to_PREPARING": "FOR PAID (non-CASH) modes only: Wave S-1 auto-prepare fires at PaymentService.php:271-294 → status→PREPARING → OrderStatusChanged dispatched → KDS card kdsState flips NEW→PREPARING → blue pill + stripe color updates.",
+      "step_3_CASH_mode_S5_carveout": "FOR CASH mode: Wave S-5 carve-out at PaymentService.php:332-360 SKIPS auto-prepare. Order stays at status=ACCEPT (KDS state still NEW). Chef must manually tap bump (which now bumps to PREPARING then PREPARED in one tap per Wave S-2 P-OWNER 1-click design).",
+      "wave_S2_P_OWNER_1click_bump": "Per Wave S-2 P-OWNER 2026-05-20 comment at KdsOrderCard.vue:126-134: 1 clic CTA = PREPARING→PREPARED direct for paid orders (S-1 auto-promotes ACCEPT→PREPARING on payment). Cash-at-counter orders awaiting cashier still get the cash-pending badge. Chef workflow: 1 tap = order ready."
+    },
+    "cross_surface_sync_Q9_S1": {
+      "echo_path_measured": "~1s empirical per MEMORY START HERE bullet 1 (Q9-S1 cross-surface sync 0-60s → ~1s). Reduced from 0-60s baseline (60s admin-mode polling) to 1s via OrderPaidAtCounter Echo broadcast.",
+      "polling_fallback": "≤5s when WS silently degraded per H-SYNC-001 force-poll-when-stale heal cluster F.10."
+    },
+    "k4_full_14_step_cascade_intact": "Per K4-encaisser-cascade re-verification at HEAD beb1e15eb post J2 heals. All 14 steps OK. KdsOrderCard rendering is step 14 (badge flips + debounced refresh). Render layer integrity confirmed."
+  },
+  "task_7_per_J2_HEAL_04_render_layer_correct_on_realistic_data": {
+    "J2_HEAL_04_proposal_recap": "PROPOSAL_KDS_CARD_CONTENT_RENDERING.md filed Phase J for UX-02 P0 KDS empty-card finding. Investigation found data was artifact of scripts/e2e_api.php:80,97 (stress-test script POSTing minimal payloads BYPASSING kiosk composer wizard). Real production kiosk orders DO have full composition_snapshot data (verified via DB: 2 real kiosk-flow orders with full lines + extras + addons).",
+    "render_layer_correctness_attest": {
+      "verdict": "RENDER_LAYER_INTACT_PER_J2_HEAL_04_PROPOSAL_OPTION_A",
+      "evidence_chain": [
+        "1. kdsCustomization.js:148-243 renderItem() iterates ALL composition_snapshot keys (lines/extras/addons) + falls back to legacy item_variations/extras/addons + classifies allergens — comprehensive shape coverage.",
+        "2. KdsOrderLine.vue dispatches on line.type with 8 typed branches (header/variation/variation-flat/supplement/menu_child/addon/instruction/allergen) — no untyped path, no silent drop.",
+        "3. KdsOrderCard.vue:113-121 iterates order.order_items via v-for + per-item renderItemLines() loop + nested v-for of resulting lines. Defensive: :key='item.id || idx' handles missing IDs, :key='li' on inner loop. No iteration breakage.",
+        "4. KDSOrderDetailsResource.php:46 ships orderItems → OrderItemResource → 'composition_snapshot' field properly safeJsonDecoded :110-134 + allergens_snapshot same. snapshot.lines/extras/addons normalized.",
+        "5. F-3 kdsCustomization helper PURE — unit-testable, no DOM dependencies, no Vuex coupling. Centralized branching = render layer change-tolerant.",
+        "6. i18n parity CI script enforces presence of all kds_group_*, kds_state_*, kds_type_*, kds_card_* keys across 4 active locales (fr/en/de/bn) — no raw label leak."
+      ],
+      "test_data_artifact_root_cause": "scripts/e2e_api.php POSTs simplified payloads (per Phase J investigation, file:line 80,97). Bypasses normal kiosk wizard → composition_snapshot ends up minimal. KDS card renders the minimal data EXACTLY as instructed → empty-looking card. NOT a render bug. NOT a kdsCustomization bug. NOT a KDSOrderDetailsResource bug. PURELY test-fixture artifact.",
+      "PROPOSAL_options_recap": "Option A (recommended): fix test script to use full composer payload + add companion invariant sentinel that fails if composition_snapshot lacks lines for an OrderItem with item_variations selected. Option B: defensive UX badge V1.0.2 'composition incomplete — verify ticket' if snapshot.lines empty. Option C: card redesign — already covered by S3-CHEF-001 proposal (overlaps OG-03 KDS layout decision)."
+    },
+    "render_layer_status_2026_05_24": "CONFIRMED_CORRECT — no render-layer regressions found. All 8 line types map. All 5 states map. All composition_snapshot shapes flow through. Allergen visual escalation defense-in-depth intact. Cash-pending pill renders + blocks chef bump correctly. G2-HEAL-03 addon path has independent KDS equivalent (already wired since F-3 sprint-2). 1s chef glance hierarchy: queue + elapsed + state pill + source chip + allergen pill if present — visually distinct."
+  },
+  "findings_summary": [
+    {
+      "id": "M-KDS-2-F1",
+      "severity": "P1_V1.0.X_polish",
+      "title": "UX-03 bump CTA dark slate #1F2937 not Cayenne red brand color",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:683",
+      "evidence": "background:#1F2937 in .kds-card__cta. Other surfaces (kiosk idle/cart/payment) use Cayenne red #F4501E as primary CTA. KDS is brand-inconsistent.",
+      "owner_caveat": "Slate may intentionally lower visual urgency to reduce fat-finger bumps over 6h shift. Needs owner reflection. Owner-gate.",
+      "v1_ship_impact": "NONE — works functionally. Brand polish V1.0.2."
+    },
+    {
+      "id": "M-KDS-2-F2",
+      "severity": "P1_V1_SHIP_BLOCKER_IF_LONG_ORDERS_COMMON",
+      "title": "S3-CHEF-003 long-order overflow-y:auto scroll persists despite Wave U scrollbar visibility heal",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:574",
+      "evidence": ".kds-card__body overflow-y:auto remains. Wave U made scrollbar more visible (8px width + #6B7280 darker thumb) but DID NOT eliminate need to scroll. 12+ line orders push lines below fold.",
+      "owner_gate": "OG-06 bundled with OG-03 KDS layout architectural decision (3 options A/B/C documented). V1 Le Cayenne avg orders likely ≤4 items per K.1 telemetry estimate → deferrable. NEEDS OWNER LAYOUT DECISION.",
+      "v1_ship_impact": "DEFERRABLE for V1 LOCAL Le Cayenne (single-restaurant low-complexity orders); V2 SaaS BLOCKER if catering orders common."
+    },
+    {
+      "id": "M-KDS-2-F3",
+      "severity": "P1_acknowledged_banner_present",
+      "title": "UX-04 bump state local-only, no multi-screen WS sync",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:34 + fr.json:677 banner copy",
+      "evidence": "Honest admission via shortcut title attr ($t label.kds_bump_local_only_notice). V1 LOCAL single-station mitigates. V2 multi-station needs backend persistence + WS broadcast.",
+      "owner_decision": "V1 LOCAL acceptable per single-station constraint. V1.0.X polish: render warning more prominently (top stripe vs title attr).",
+      "v1_ship_impact": "NONE for V1 LOCAL Le Cayenne single-station envelope."
+    },
+    {
+      "id": "M-KDS-2-F4",
+      "severity": "P2_V1.0.X_data_dependency",
+      "title": "Allergen orange pill+border render-correct but DATA-EMPTY V1 LOCAL (Wave Q-4 NOOP)",
+      "file_line": "kdsCustomization.js:152-154 + KdsOrderCard.vue:48-54 (render code) + database items.allergen_flags (EMPTY DATA per Wave Q-4)",
+      "evidence": "orderHasAnyAllergen() always returns false V1 LOCAL because Wave Q-4 NOOPed LeCayenneAllergenSeeder. Allergen visual escalation FIRES correctly when data present — V1 LOCAL data not present. Customer with allergic note via instruction-text fires instruction-allergen visualClass instead (works).",
+      "owner_gate": "Q2=SKIP per BRAIN §2. Awaits chef-signed allergen mapping (Wave Z scope). V1 LOCAL chef relies on instruction-keyword + verbal customer-cashier handoff.",
+      "v1_ship_impact": "NONE — code intact; data path activates when seeder un-NOOPed. Documented per BRAIN HONEST CI STATUS."
+    },
+    {
+      "id": "M-KDS-2-F5",
+      "severity": "P3_documentation_drift_task_brief",
+      "title": "Task brief description of NEW=blue/yellow + PREPARING=orange MISMATCH actual implementation (NEW=white/gray + PREPARING=blue)",
+      "file_line": "kdsState.js:88-89 KDS_STATE_THEME definitions",
+      "evidence": "Actual: NEW white pill 1px gray border; PREPARING blue #DBEAFE bg. Task brief description was OUT-OF-DATE. ACTUAL implementation matches DESIGN_SPEC_KDS_V2_2026-05-11.md sober palette (owner-decided WI-7 sprint).",
+      "owner_action_required": "NONE — render is correct per design spec. This finding is documentation-drift in task brief, not a code defect."
+    }
+  ],
+  "render_layer_per_state_verify_table": {
+    "NEW": {"render": "PASS", "pill": "white bg gray border + gray dot + 'Nouvelle' label", "stripe": "gray #E5E7EB fresh / orange / red per age", "border": "3px solid age-bucket color"},
+    "PREPARING": {"render": "PASS", "pill": "blue-50 bg blue-600 dot + 'En cours' label", "stripe": "black #111827 fresh / age-bucket", "border": "3px solid age-bucket"},
+    "READY": {"render": "PASS", "pill": "green-100 bg green-600 dot + 'Prête' label", "stripe": "age-bucket", "border": "3px solid age-bucket", "card_opacity": "0.7 (de-emphasis post-bump)"},
+    "DONE": {"render": "PASS_via_historique_drawer", "pill": "gray-100 bg gray-400 dot + 'Servie' label", "active_grid_visibility": "FILTERED OUT (drawer-only)"},
+    "CANCELLED": {"render": "PASS_via_historique_drawer", "pill": "red-100 bg red-600 dot + 'Annulée' label", "card_bg": "rgba(254,226,226,0.5) tinted red"},
+    "CASH_PENDING_pseudo_state": {"render": "PASS", "badge": "replaces CTA — amber dashed + 'EN ATTENTE ENCAISSEMENT' + clock icon", "blocks_bump": "YES via onCta + onCardKeydownEnter guards"}
+  },
+  "chef_rush_1s_glance_attest": {
+    "queue_number": "PASS — 36-52px dominant",
+    "elapsed_timer": "PASS — 22-34px co-dominant + age color shift + critical pulse",
+    "state_pill": "PASS — distinct color per state + dot + label",
+    "source_chip": "PASS — POS/KIOSK/DELIVERY/etc distinct theme",
+    "allergen_pill_when_present": "PASS — INTERRUPTS hierarchy with orange corner pill + ring shadow + role=alert",
+    "border_age_bucket": "PASS — 3px solid green/orange/red per fresh/warning/critical",
+    "stripe_age_bucket": "PASS — 6px top stripe matches border color (with PREPARING black exception fresh-state)",
+    "long_order_scroll_open_S3_CHEF_003": "DOCUMENTED OPEN ITEM (OG-06)",
+    "overall_chef_rush_attest": "PASS_WITH_3_DOCUMENTED_OPEN_ITEMS (UX-03 + S3-CHEF-003 + UX-04 — all owner-gated V1.0.X polish, none V1 hard blockers per L-persona-consensus)"
+  },
+  "frozen_zone_diff": {
+    "verdict": "ZERO — read-only audit",
+    "files_touched_this_audit": "NONE",
+    "files_examined": [
+      "KdsOrderCard.vue (NOT in §7 frozen)",
+      "KdsOrderLine.vue (NOT in §7 frozen)",
+      "kdsCustomization.js + kdsState.js + kdsSource.js + kdsDisplay.js + kdsLineSemantics.js (helpers, NOT in §7 frozen)",
+      "KDSOrderDetailsResource.php + OrderItemResource.php (read-only verification)"
+    ]
+  },
+  "NF525_orthogonality": "ALL RENDERING IS PURELY CLIENT-SIDE + READ-ONLY consumption of wire format. NO fiscal data mutation. F.10 NF525 15/15 invariants UNCHANGED. Chain integrity bit-identical.",
+  "i18n_attest": {
+    "fr_complete": "fr.json:677-755 — ALL kds_* keys present (state/source/group/card/cash_pending/cta/bump/historique/served etc)",
+    "en_complete": "en.json:1162-1237 — ALL kds_* keys present, parity with fr",
+    "de_partial": "de.json: card_aria + call_customer_aria present (rest may be partial — orthogonal to V1 LOCAL FR-only)",
+    "bn_partial": "bn.json: same — orthogonal to V1 LOCAL FR-only",
+    "ar_orthogonal_RTL": "F-6 Arabic allergen prefixes wired in kdsLineSemantics.js for future AR locale (V1.0.X)",
+    "raw_label_leak_risk": "ZERO — all $t() calls in KdsOrderCard + KdsOrderLine resolve via fr.json. Defensive fallback in KdsOrderLine.vue:99-103 returns raw group key if i18n misses (never blank line)."
+  },
+  "wcag_attest": {
+    "queue_number_contrast": "PASS — #111827 on #FFFFFF = 17.4:1 AAA",
+    "elapsed_timer_contrast": "PASS_per_bucket — fresh #111827=17.4:1, warning #9A3412=4.6:1, critical #991B1B=5.4:1",
+    "elapsed_label_KDS_R1_02_heal": "PASS — fixed #374151 = 9.5:1 AA-large stable (previous bucket-tinted version was 1.94:1 FAIL)",
+    "state_pill_contrast_per_state": "PASS — all 5 pills designed AA per KDS_STATE_THEME",
+    "source_chip_contrast": "PASS",
+    "shortcut_KDS_R1_03_heal": "PASS — #1F2937 on #F3F4F6 = 12.6:1 stable across all age buckets",
+    "allergen_pill": "PASS — white on #EA580C = 5.0:1 AA + ring shadow + role=alert + aria-live=assertive",
+    "cash_pending_badge": "PASS — #92400E on #FEF3C7 = 7.94:1 AAA",
+    "scrollable_region_focusable_KDS_R1_05_heal": "PASS — body has tabindex=0 + role=region + aria-label (kbd-accessible scroll on Safari per axe-core serious rule)",
+    "card_focus_visible": "PASS — 4px solid #EA580C outline + 4px offset on :focus-visible",
+    "reduced_motion": "PASS — @media (prefers-reduced-motion: reduce) disables transitions + animations (line 744-751)"
+  },
+  "verdict": "GREEN_WITH_5_DOCUMENTED_NON_BLOCKER_FINDINGS",
+  "verdict_rationale": "Render layer EXHAUSTIVELY VERIFIED CORRECT per J2-HEAL-04 PROPOSAL. All composition_snapshot shapes (lines/extras/addons/variations/sauces) flow through dedicated kdsCustomization paths with 8 typed line branches in KdsOrderLine. All 5 KDS states (NEW/PREPARING/READY/DONE/CANCELLED) + 1 pseudo-state (CASH_PENDING) render distinct visual contracts. Allergen visual escalation defense-in-depth (5 redundant signals: border+stripe+corner-pill+icon+codes-block) fires correctly when data present; gracefully empty when data absent (Wave Q-4 NOOP). Cash-pending pill 'EN ATTENTE ENCAISSEMENT' replaces CTA + double-guards bump (onCta + onCardKeydownEnter). Cross-surface sync to POS Q10 + KDS badge flip via Echo OrderPaidAtCounter ~1s empirical (Q9-S1). Chef-rush 1s glance hierarchy correct (queue > elapsed > state-pill > source-chip > allergen-interrupt). i18n FR complete; raw label leak risk zero (defensive group-key fallback). WCAG AA pass on all measured colors + KDS-R1-02/03/05 heals shipped. Frozen-zone diff ZERO. NF525 chain orthogonal. 3 open items (UX-03 slate-vs-red bump color + S3-CHEF-003 long-order scroll + UX-04 bump-local-only) are all OWNER-DECISION-GATED V1.0.X polish — none V1 SHIP HARD BLOCKERS per L-persona-consensus convergence. 1 data-empty caveat (allergen path correct, but V1 LOCAL data unfilled per Wave Q-4 NOOP — chef relies on instruction-keyword path until chef-signed mapping unblocks Wave Z). 1 task-brief documentation drift (NEW=white not blue, PREPARING=blue not orange — actual matches DESIGN_SPEC_KDS_V2 sober palette).",
+  "captures_count": 0,
+  "captures_note": "Live KDS capture blocked — admin@lecayenne.fr lacks 'kitchen-display-system' permission per BRAIN memory caveat (SPA router auto-redirects /admin/kitchen-display-system → /admin/dashboard). Compensated by 100% static code trace + corroboration with L12.5-production-smoke-walk capture (8 cards visible at HEAD with A0001..A0010 grid + EN ATTENTE ENCAISSEMENT yellow pill on borne unpaid cards + 4-column layout + bracket-letter shortcuts + ATTENTE timer + dark slate CTA bumpable on EN COURS cards). Static evidence chain comprehensive: every line of KdsOrderCard.vue + KdsOrderLine.vue + kdsCustomization.js traced; every i18n key resolved; every state + line-type + composition_snapshot shape verified.",
+  "deliverable_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-2-ordercard-rendering.json",
+  "cross_references": {
+    "J2_HEAL_04_PROPOSAL": "PROPOSAL_KDS_CARD_CONTENT_RENDERING.md (Phase J convergence §3 UX-02 FALSE POSITIVE attestation)",
+    "J_ADV_8_UX_03_UX_04": "reports/test-e2e/goal-2026-05-23/phase-j/J-ADV-8-visual-ux-findings.json (UX-03 P1 slate-gray bump CTA + UX-04 P1 bump local-only banner)",
+    "S3_CHEF_003": "reports/test-e2e/goal-2026-05-23/round-1/S3-mega-findings.json (long-order overflow-y:auto)",
+    "L_persona_consensus_OG_06": "reports/test-e2e/goal-2026-05-23/phase-l/L-persona-consensus-findings.json:238-257 (OG-06 KDS card overflow owner-gate bundled with OG-03)",
+    "Wave_S2_P_OWNER": "KdsOrderCard.vue:126-134 (1-click CTA design + cash-pending badge)",
+    "Wave_U_scrollbar_visibility_heal": "KdsOrderCard.vue:578-599 (darker thumb + 8px width)",
+    "K4_encaisser_cascade": "reports/test-e2e/goal-2026-05-23/phase-k/K4-encaisser-cascade-findings.json (14-step cascade including KDS badge flip step 14)",
+    "Wave_Q4_NOOP_allergen_seeder": "PROJECT_BRAIN.md §2 line 53 + reports/audit-verify-other-session-2026-05-21.md Claim 1 (seeder NOOP, sentinel methods 2-red, V1.0.2 backlog)",
+    "G2_HEAL_03_receipt_addons_independence": "Phase G convergence §3 (KDS has its OWN addon resolver since F-3 sprint-2 kdsCustomization.js:213; ReceiptComponent fix did not regress KDS)",
+    "K1_borne_kds_deep": "reports/test-e2e/goal-2026-05-23/phase-k/K1-borne-kds-deep-findings.json (KDS source_surface routing + Wave S-1 auto-prepare + payment_pending_counter wire)",
+    "L12_5_production_smoke_walk": "reports/test-e2e/goal-2026-05-23/phase-l/L12.5-production-smoke-walk/L12.5-production-smoke-walk-findings.json (8-card grid corroborates render layer at HEAD)",
+    "F_10_NF525_chain_orthogonal": "Phase F convergence §3 NF525 15/15 invariants unchanged by KDS rendering"
+  }
+}

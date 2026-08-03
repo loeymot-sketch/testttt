@@ -1,0 +1,760 @@
+{
+  "summary": "Triage adversaire de l'audit synchro externe contre le code réel + contexte V1 (single-box, standalone non-câblé, hardening existant)",
+  "agentCount": 15,
+  "logs": [
+    "Triage: 55 findings, 7 REAL_OPEN_V1 → réfutation"
+  ],
+  "result": {
+    "total": 55,
+    "by_verdict": {
+      "REAL_OPEN_V1": 7,
+      "ALREADY_FIXED": 12,
+      "FALSE_REASONING": 13,
+      "BY_DESIGN_V1": 13,
+      "V2_SAAS_SCOPE": 10,
+      "STANDALONE_NA": 0
+    },
+    "confirmed": [
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "Page de suivi client web = fetch unique, ni Echo ni polling (OrderDetailsComponent:304)",
+        "severity": "P3",
+        "fix_recommended": false,
+        "live_repro": "Repro statique (pas de session navigateur) : Read OrderDetailsComponent.vue l.300-310 = mounted() -> un seul dispatch frontendOrder/show, aucune boucle. grep -nE \"Echo|setInterval|websocket|pusher|subscribe\" sur le fichier = 0 résultat. grep frontendRoutes.js confirme path /my-orders/:id monté sur ce composant (l.54-55). Aucun beforeUnmount présent dans le composant.",
+        "fix_sketch": "Ajouter un setInterval de re-fetch (10-15s) dans mounted(), clearInterval au beforeUnmount ; idéalement s'abonner via Echo au canal statut si on active un canal client. Préjudice V1 = purement cosmétique (statut périmé sur une page d'historique 'mes commandes' jusqu'au refresh) ; backend reste source de vérité, zéro impact fiscal/stock/argent. La surface client PRIMAIRE (borne) a déjà son temps-réel, ce qui limite fortement l'impact réel."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🟠 Echo.leave partagé coupe les autres abonnés du même canal branche (eventContract.js:112)",
+        "severity": "P3",
+        "fix_recommended": true,
+        "live_repro": "Statique/code-level uniquement : trace de la source laravel-echo dist (privateChannel cache partagé + leave→leaveChannel→unsubscribe+delete) + des deux cycles de vie Vue (KioskAppComponent.vue:526/404 s'abonne une fois au mount ; KioskWaitingComponent.vue:253/258 s'abonne au mount et Echo.leave('branch.1') au beforeUnmount). Pas de session navigateur live exécutée.",
+        "fix_sketch": "Comptage de références par canal (ne leave que quand plus aucun abonné) OU ne faire que stopListening de ses propres bindings sans Echo.leave global."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Clé d'idempotence POS régénérée à chaque ouverture du modal de paiement (PosComponent.vue:1496)",
+        "severity": "P3",
+        "fix_recommended": false,
+        "live_repro": "Non exécuté en live (nécessiterait de simuler un ACK réseau perdu APRÈS commit serveur, non reproductible fiablement en dev). Vérification statique : PosComponent.vue:4178 (régen clé), PosComponent.vue:4206 (modalShow), OrderService.php:696/1383 (recovery keyée sur clé), PaymentComponent.vue:1005-1016 (modal reste ouvert sur échec = retry in-modal protégé), PaymentComponent.vue:950 (handler 409 existant). Aucune dédup par contenu de panier trouvée côté serveur.",
+        "fix_sketch": "Lier la clé au contenu du panier (hash items+branch+total) générée à la 1re tentative et NON régénérée tant que le panier n'a pas changé ; purger seulement au succès confirmé (encaissement). Miroir de la recommandation redesign §3."
+      }
+    ],
+    "all": [
+      {
+        "axis": "STAFF-SYNC-OUTBOX",
+        "title": "Outbox non-atomique : INSERT domain_events hors tx (OrderService:948) + try/catch avale l'échec en 200 (:949) → perte permanente de commande cuisine",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "Au HEAD, `OrderCreated::dispatch($this->order)` est appelé À L'INTÉRIEUR de la closure `DB::transaction` (OrderService.php:634 pour web, :1342 pour POS cash, :1689 pour la 3e voie). Le trait `DispatchableAfterCommit` (app/Events/Concerns/DispatchableAfterCommit.php:31-39) voit `transactionLevel()>0` et enregistre `DB::afterCommit(fn => event(new OrderCreated))` → l'événement (donc le listener synchrone PersistOrderCreatedToOutbox qui fait `DomainEvent::firstOrCreate`) ne fire qu'APRÈS commit et est DROPPÉ sur rollback. Le `try/catch` cité (OrderService.php:649-651) enveloppe `SendOrderMail/Sms/Push` (log « Notifications post-commande Web/App échouées »), PAS l'outbox — misattribution de l'audit. La seule fenêtre résiduelle est un crash microseconde entre commit et le callback afterCommit (même requête PHP, synchrone)."
+      },
+      {
+        "axis": "STAFF-SYNC-OUTBOX",
+        "title": "Skip Pusher : dispatched_at posé sans diffuser → perte silencieuse (DispatchDomainEventsJob:95)",
+        "verdict": "FALSE_REASONING",
+        "sev": "P3",
+        "behavior": "Au HEAD, DispatchDomainEventsJob n'a AUCUNE branche « skipping broadcast » avec log :84-89 (code cité inexistant). Le job utilise `app(BroadcastManager::class)->connection()` respectant `config('broadcasting.default')` (DispatchDomainEventsJob.php:~118). `dispatched_at=now()` est posé en Phase 1 (claim atomique sous lockForUpdate, :81) AVANT le broadcast ; si le broadcast throw, Phase 3b RESET `dispatched_at=null` + `last_error` (:170-175) → retry via `$backoff=[1,5,15,60,300]`, `$tries=6`. Le seul résidu est une prod mal configurée en `BROADCAST_DRIVER=log` (broadcast no-op silencieux, dispatched_at conservé) — concern de config, pas de code."
+      },
+      {
+        "axis": "STAFF-SYNC-OUTBOX",
+        "title": "Broadcast-avant-marquage + rescue concurrent = double livraison (DispatchDomainEventsJob:91)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "Au HEAD c'est EXACTEMENT L'INVERSE du claim : le job pose `dispatched_at=now()` en Phase 1 (claim atomique sous `lockForUpdate` dans une `DB::transaction`, DispatchDomainEventsJob.php:62-84) AVANT de broadcaster en Phase 2 (:95-120). Un second worker/rescue qui acquiert le lock voit `dispatched_at !== null` et return silencieusement (:74-77, :88-92). C'est un claim-then-broadcast at-most-once, conçu pour EMPÊCHER le doublon, pas le produire."
+      },
+      {
+        "axis": "STAFF-SYNC-OUTBOX",
+        "title": "Polling 60000ms quand WS connecté → frame perdu fige la cuisine ≤60s (KDS.vue:553)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "`_pollingInterval()` retourne 60000ms quand `wsConnected` et 5000ms quand WS down (KitchenDisplaySystemComponent.vue:1912-1919). L'audit citait « 10000ms sinon » — au HEAD c'est 5000ms (meilleur). Le 60s-WS-up est un sanity-check passif car Echo pousse en sub-seconde ; le budget staleness (commande cuisine ≤5s) est protégé par le 5s en mode dégradé WS-down."
+      },
+      {
+        "axis": "STAFF-SYNC-OUTBOX",
+        "title": "Admin (branch_id=0) : aucun temps-réel, coupe l'Echo (KDS.vue:572)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "`subscribeEcho()` fait `if (branchId <= 0) return; // Admin: polling fallback is sufficient` (KitchenDisplaySystemComponent.vue:1937). En V1 LOCAL Le Cayenne, l'écran cuisine est opéré par un compte STAFF (branch_id=1 > 0), pas par l'admin owner (branch_id=0) — cf. mémoire « écran cuisine = /kds login staff ». L'opérateur réel reçoit donc l'Echo sub-seconde ; seul un admin qui regarde ponctuellement le KDS tombe sur le polling 60s."
+      },
+      {
+        "axis": "STAFF-SYNC-OUTBOX",
+        "title": "Transition de statut sans verrou : double transition / double livraison / double crédit fidélité (KitchenDisplaySystemOrderService:129)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "Au HEAD, la ligne 129 est du query-building de list() (pas une transition). La vraie `changeStatus()` (KitchenDisplaySystemOrderService.php:405-480) est un compare-and-swap sous verrou : `DB::transaction` → `Order::whereKey()->lockForUpdate()->firstOrFail()` (:411-415), relit `$fromLocked = $locked->status` SOUS le lock, garde optimiste `if ($fromLocked !== $expectedFrom) abort(409)` (:423-436), valide OrderStateMachine/KitchenReleaseRule, puis save. Deux postes cliquant « Livrer » en concurrence : un gagne, l'autre voit un statut changé → 409. Le crédit fidélité est en plus atomiquement idempotent (AwardLoyaltyPointsOnDelivery.php:51-58 : `whereNull('loyalty_points_awarded')->where(status != CANCELED)->update(-1)` = CAS single-winner, loser `$updated===0` return)."
+      },
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "Borne : le client anonyme ne reçoit JAMAIS son statut (OrderPushNotificationBuilder:30, user_id=machine)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "L'audit conflate 'pas de push FCM' avec 'pas de temps-réel'. La VRAIE surface d'attente borne, KioskWaitingComponent.vue:253-296, s'abonne au canal Echo de branche (onEvents(branchId, [OrderCreated, OrderStatusChanged])) filtré par order_id (l.278, l.287) ET poll toutes les 15s (POLL_INTERVAL_MS=15000 l.183, setInterval l.320). Le client borne suit donc son statut en quasi-temps-réel via l'écran d'attente dédié. La suppression du push FCM pour le kiosk (OrderPushNotificationBuilder.php:30 'if source==10 return') est INTENTIONNELLE ('No push notifications for anonymous kiosk orders to prevent spamming the tablets') et sans conséquence puisque la borne n'utilise pas le push mais l'écran live."
+      },
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "Canal App.Models.User.{id} autorisé (channels.php:16) mais jamais publié ni souscrit — fausse impression de temps-réel",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "NONE",
+        "behavior": "Fait de code CONFIRMÉ : channels.php:16 autorise le canal privé, mais aucun listener outbox n'y diffuse (PersistOrderStatusChangedToOutbox.php:53 écrit uniquement channel=['private-branch.'+branch_id]) et aucun JS ne s'y abonne (grep 'App.Models.User' dans resources/js = 0 hit, seule occurrence = un commentaire non lié dans phoneDisplay.js:14). MAIS c'est un canal résiduel du template de base, inutilisé et INOFFENSIF : aucun code ne prétend qu'il fournit du temps-réel, donc il n'y a aucune 'fausse impression' réelle pour un utilisateur. Autoriser un canal privé jamais utilisé n'est pas un défaut exploitable."
+      },
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "Page de suivi client web = fetch unique, ni Echo ni polling (OrderDetailsComponent:304)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "CONFIRMÉ : OrderDetailsComponent.vue mounted() (l.300-309) dispatch 'frontendOrder/show' UNE seule fois au montage ; grep 'Echo|setInterval|poll' sur le fichier = 0 hit. Le statut PENDING→PREPARED→DELIVERED n'est reflété qu'au rechargement manuel de la page. Routé à /my-orders/:id (frontendRoutes.js:54-56), page compte-client web servie par CE backend."
+      },
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "Stack FCM branchée sur l'endpoint legacy décommissionné (FcmNotificationService:76)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "CONFIRMÉ code : sendToToken poste sur FCM_LEGACY_URL avec 'Authorization: key='+serverKey (l.70-73), API legacy arrêtée par Google 2024. MAIS : (1) garde en tête — config('services.fcm.server_key') vaut '' par défaut (config/services.php:55, env FCM_SERVER_KEY vide dans .env.example:234) → sendToToken retourne false immédiatement l.51 sans jamais appeler l'endpoint ; (2) le push cible les apps clientes mobile/web, or le mobile RN est STANDALONE non-câblé (mandat owner §3bis) et aucun web_token n'est émis en V1 mono-poste. Chemin dormant/mort en V1."
+      },
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "Notif FCM client envoyée à un topic customer_order_{id} que personne ne souscrit (SendFcmOnOrderStatusChange:97)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "CONFIRMÉ code : le listener construit des notifications topic (kitchen_branch_{id}, customer_order_{id}) et le chemin client customer_order_{id} n'a aucun abonné. MAIS l'émission FCM elle-même est un no-op en V1 (FCM_SERVER_KEY vide) et le destinataire (app cliente) est une surface non-câblée. Dead-path dormant hors périmètre V1 LOCAL."
+      },
+      {
+        "axis": "CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+        "title": "QUEUE=sync : push FCM inline bloque la réponse / deux systèmes FCM parallèles divergents (queue.php:73, EventServiceProvider:96)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "Concerne exclusivement le chemin FCM, qui est un no-op en V1 (server_key vide → aucun appel HTTP, aucun blocage réel). La 'divergence' entre les deux systèmes FCM (topics vs tokens) est de la dette architecturale sur du code dormant. Aucun préjudice V1 mono-poste car aucune notification push n'est réellement émise."
+      },
+      {
+        "axis": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+        "title": "Lost update / double crédit-débit sur users.loyalty_points sans verrou (LoyaltyController:214)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "L'ancre :214 est un simple champ de réponse JSON ('points' => $user->loyalty_points), PAS une mutation. Toutes les écritures réelles sont atomiques ou verrouillées : redeem web LoyaltyController.php:343-393 = DB::transaction + User::...->lockForUpdate() (:344) puis decrement() SQL ; redeem kiosk FrontendOrderService.php:883-885 lockForUpdate sur le user AVANT écriture, dans la transaction de commande ; redeem POS PosRedemptionService.php:112-117 DB::transaction + lockForUpdate ; earn AwardLoyaltyPointsOnDelivery.php:117 increment() SQL atomique + sentinel exactly-once ; refund LoyaltyService.php:84 increment() atomique ; clawback :160-177 DB::transaction + lockForUpdate. Aucun read-modify-write non protégé."
+      },
+      {
+        "axis": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+        "title": "Solde effacé au (re)register (LoyaltyController:163→188)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "loyalty_points = 0 (:188) est gardé par if (!$user->loyalty_code) (:186) → ne s'exécute QUE pour un compte sans code (nouveau compte, ou legacy jamais adhéré). Un client fidélité existant a déjà un loyalty_code → la branche est sautée, solde inchangé. L'ancre :163 pointe désormais sur le return 409 EMAIL_EXISTS (durci PII 2026-07-02), plus sur une mutation. De plus un compte préexistant retourne tôt (:200 wasRecentlyCreated) sans réinitialiser."
+      },
+      {
+        "axis": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+        "title": "Points débités via redeem non remboursables car order_id=null (LoyaltyService:27)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "Les trois chemins de redeem RÉELS V1 écrivent la ligne ledger avec le vrai order_id : kiosk FrontendOrderService.php:971 (order_id => frontendOrder->id), POS PosRedemptionService.php:184 (order_id => order->id). refundPoints (LoyaltyService.php:27 where order_id) LES retrouve donc. Le seul writer order_id=null est l'endpoint web pré-commande LoyaltyController.php:382 — mais (a) il est un design deux-phases : la ligne pending est rattachée à la commande à la création (FrontendOrderService.php:930 $pendingRedeem->order_id = frontendOrder->id), et (b) l'endpoint web est gaté OFF en V1 (LoyaltyController.php:305 manual_discount_enabled!==true → 422). Une commande abandonnée est remboursée par le cron C36 (CleanupStalePendingKioskOrders.php:106 refundPoints sous verrou)."
+      },
+      {
+        "axis": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+        "title": "Vol de points — ownership du loyalty_code absente (FrontendOrderService:463)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "L'ancre :463 est fausse (c'est le tableau OrderItem 'branch_id', aucune fidélité). L'IDOR redeem via l'endpoint est déjà durci : LoyaltyController.php:313-328 exige une vraie KioskMachine row OU l'owner du code (le token kiosk:order seul ne suffit plus, correctif SEC-P1 LOYALTY-IDOR 2026-05-29) ; :349-352 refuse non-kiosk/non-staff ≠ owner (403). Utiliser le code d'autrui pour EARN ne fait que créditer la victime (pas un vol). Le redeem inline kiosk (code + présence physique à la borne, sans PIN) est le modèle code-only assumé de la fidélité borne (owner), et le redeem/discount est lui-même gaté OFF en V1 (manual_discount_enabled)."
+      },
+      {
+        "axis": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+        "title": "Gain async vs débit sync — fenêtre d'incohérence, gain perdu jamais rejoué (AwardLoyaltyPointsOnDelivery:1)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "Le listener n'implémente PAS ShouldQueue (class AwardLoyaltyPointsOnDelivery, ligne 25, sans implements) → il s'exécute SYNCHRONE, in-process, au moment du OrderStatusChanged : pas d'outbox, pas de perte de queue en V1. Idempotence exactly-once via sentinel atomique loyalty_points_awarded (whereNull->update(-1), :53-59), revert propre sur échec (:150-158), garde CANCELED (:33, :56). Le 'délai' earn-à-la-livraison est le comportement métier voulu (points crédités quand la commande est PREPARED/DELIVERED), pas une divergence de synchro."
+      },
+      {
+        "axis": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+        "title": "Pas de grand-livre → non auditable/réconciliable (migration users:17)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "Un grand-livre append-only EXISTE : table loyalty_transactions (migration 2026_03_26_075918) avec user_id, loyalty_code, order_id, type ENUM(earn/redeem/manual_add/manual_deduct/expire), points (signé), balance_after (snapshot), source_surface, description, timestamps. Contrainte d'unicité idempotente UNIQUE(user_id, order_id, type) (migration 2026_03_26_075919). Modèle App\\Models\\LoyaltyTransaction. Chaque mouvement (earn listener:127, redeem :379/:968/PosRedemptionService:184, refund LoyaltyService:90, clawback :179) écrit une ligne. Réconciliation possible via balance_after + somme des deltas."
+      },
+      {
+        "axis": "AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)",
+        "title": "Le chemin commande ne lit jamais la dispo → oversell garanti (FrontendOrderService:835)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "FAUX au HEAD. FrontendOrderService::myOrderStore ouvre DB::transaction (FrontendOrderService.php:190) et appelle DEDANS app(AvailabilityService::class)->assertItemsOrderableForBranch(branchId, itemIds, useRowLock=true) (FrontendOrderService.php:363). Ce garde (AvailabilityService.php:216-275) : (1) vérifie Item.status===ACTIVE et Item.is_available global (rejette 422), (2) charge ItemBranchAvailability scopé branche avec lockForUpdate (AvailabilityService.php:257-259) et rejette en 422 si is_available=false avec la raison. OrderService (POS/web) fait le MÊME garde dans ses 3 transactions (OrderService.php:448, 918, 1488 dans DB::transaction :372/:706/:1417). PricingService (preview checkout) le refait aussi (PricingService.php:50, 102). Un article 86 (manuel ou auto-quota) est REJETÉ à la création, avec verrou de ligne — pas d'oversell."
+      },
+      {
+        "axis": "AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)",
+        "title": "La borne n'affiche jamais le 86 par branche (kioskMenu:253, flag global seul)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "P3",
+        "behavior": "Le chemin de chargement PRIMAIRE de la borne est GET frontend/menu (kioskMenu.js:271), pas frontend/item. frontend/menu → MenuController::kiosk → KioskMenuService::build qui charge ItemBranchAvailability scopé branche (KioskMenuService.php:100-105) et expose 'is_available' => $branchAvail->is_available AND item.is_available global (KioskMenuService.php:359) + 'unavailable_reason' depuis la ligne branche (KioskMenuService.php:360). La borne grise donc l'item 86 par branche dès le chargement. frontend/item (NormalItemResource, flag global seul) n'est qu'un FALLBACK legacy atteint uniquement si frontend/menu jette (kioskMenu.js:288-300, commentaire explicite lignes 290-293). Le broadcast temps-réel ItemAvailabilityChanged patche aussi l'item en mémoire (kioskMenu.js UPDATE_ITEM:206-249). L'ancre :253 de l'audit ne correspond plus au HEAD."
+      },
+      {
+        "axis": "AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)",
+        "title": "Décrément stock non atomique et hors transaction → race oversell (AvailabilityService:140)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "L'ancre :140 pointe en réalité updateDailyCap() — méthode admin de changement de cap, enveloppée dans DB::transaction + lockForUpdate (AvailabilityService.php:101-105). Le VRAI décrément par commande, decrementForOrder() (AvailabilityService.php:286-373), n'est PAS un read-modify-write : il fait un UPDATE SQL ATOMIQUE 'daily_consumed_qty + {qty}' avec clamp CASE (AvailabilityService.php:349-351) puis un flip CAS-style is_available=false WHERE daily_consumed_qty>=max_daily_qty (AvailabilityService.php:360-368) — pas de first()+save(). Il est de plus idempotent par commande via Cache::add SETNX (AvailabilityService.php:320-324). L'anti-oversell n'est de toute façon PAS ce compteur mais le garde assertItemsOrderableForBranch verrouillé en transaction (voir finding 1). Le décrément est un compteur UX auto-86, pas un compteur fiscal."
+      },
+      {
+        "axis": "AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)",
+        "title": "Auto-86 rupture jamais réactivé (86 collant après minuit) / aucune commande planifiée (app/Console vide)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "FAUX au HEAD. La commande foodking:availability:reset-stale-quota existe (ResetStaleDailyQuotaCommand.php) et est planifiée dailyAt('00:05') withoutOverlapping onOneServer (Console/Kernel.php:285-289). Elle réactive EXPLICITEMENT les auto-86 quota : UPDATE is_available=true, unavailable_reason=null WHERE is_available=false AND unavailable_reason='out_of_stock' sur le set périmé (ResetStaleDailyQuotaCommand.php), en préservant les 86 manuels/supplier — corrigé le 2026-07-05 (commentaire inline [SELF-AUDIT R5 P2 2026-07-05 — article 86'd à VIE]). Le reset lazy dans decrementForOrder (whereDate daily_reset_at < today, AvailabilityService.php:338-342) couvre le cas trafic ; le cron couvre le cas zéro-trafic."
+      },
+      {
+        "axis": "AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)",
+        "title": "Double source de vérité : global Item.is_available vs branche ItemBranchAvailability (NormalItemResource:54)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "Les deux drapeaux sont combinés, pas concurrents. Au rendu borne : KioskMenuService.php:359 calcule is_available = branchAvail.is_available AND item.is_available (kill-switch catalogue global ET rupture par branche). Au chemin commande : assertItemsOrderableForBranch vérifie SÉQUENTIELLEMENT le global (AvailabilityService.php:245-249) PUIS la branche (AvailabilityService.php:264-273). Les deux surfaces appliquent donc les deux drapeaux. En V1 mono-branche (branch_id=1) ils divergent rarement, et le garde commande ferme toute divergence d'affichage. NormalItemResource (global seul) n'est servi que sur le fallback legacy frontend/item."
+      },
+      {
+        "axis": "AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)",
+        "title": "Event 86 / invalidation cache émis DANS la transaction avant commit → repeuplement stale ≤60s (AvailabilityService:70)",
+        "verdict": "FALSE_REASONING",
+        "sev": "P3",
+        "behavior": "Tous les émetteurs d'ItemAvailabilityChanged passent par AvailabilityService::dispatchEvent (toggle:68/82, updateDailyCap:144/155, decrementForOrder:373), qui enveloppe l'event dans DB::afterCommit (AvailabilityService.php:385). L'event — et donc le listener d'invalidation cache + l'outbox (PersistItemAvailabilityChangedToOutbox) — ne se déclenche qu'APRÈS commit, pas avant. Pas de fenêtre de repeuplement stale via cette voie. L'ancre :70 (event dans la tx) ne reflète plus le HEAD."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🔴 Bypass autz broadcast : tout client branch_id=0 reçoit toutes les branches (channels.php:33)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "routes/channels.php:41-62 — le callback branch.{branchId} n'utilise PLUS de sentinelle nue `(int)$branch_id===0`. Il branche : (1) token-name==='kiosk-token' → restreint à la branche de la KioskMachine (l.44-50) ; (2) `$user->hasRole('Admin')||$user->hasRole('Tenant Admin')` → cross-branche (l.56) ; (3) sinon staff régulier `(int)$user->branch_id===(int)$branchId` (l.61). Commentaire l.37-40 documente explicitement la fermeture du 'Guest-Echo-Bypass'."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🔴 Fuite cross-client de token + queue_number sur canal branche-large (PersistOrderStatusChangedToOutbox:28)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "Le payload outbox contient bien `token` (PersistOrderStatusChangedToOutbox.php:51) et `queue_number` (l.44 ; PersistOrderCreatedToOutbox.php:34) diffusés sur `private-branch.{id}` (l.53 / :44). Mais l'autorisation du canal (channels.php:41-62) n'admet QUE des surfaces de confiance : bornes (kiosk-token→sa branche), staff (branch_id===branchId), Admin."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🟠 Echo.leave partagé coupe les autres abonnés du même canal branche (eventContract.js:112)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "eventContract.js onEvents() fait `window.Echo.private('branch.'+id)` (l.354) — laravel-echo met en cache l'objet canal PAR NOM et le partage entre appelants. unsubscribe() fait d'abord `channel.stopListening()` sur ses listeners (l.396) puis `window.Echo.leave(channelName)` (l.401) qui détruit le canal ENTIER partagé."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🟠 Canal client App.Models.User.{id} autorisé mais jamais diffusé ni souscrit (channels.php:16)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "NONE",
+        "behavior": "channels.php:16 autorise le canal privé user, mais aucun listener outbox n'y écrit (Persist* ne ciblent que `private-branch.{id}`, l.53/:44) et aucun JS ne s'y abonne (grep App.Models.User dans resources/js = 0 abonnement réel, seule référence en commentaire phoneDisplay.js:14)."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🟡 Plafond soketi maxConnections=100 partagé toutes surfaces/branches (soketi.json:1)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "soketi.json:11 fixe `maxConnections: 500` (l'audit cite 100 — déjà périmé au HEAD) sur l'unique app, appManager driver 'array' (l.5)."
+      },
+      {
+        "axis": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+        "title": "🟡 Autz kiosk non-déterministe (->first) + re-auth token incomplet (channels.php:28)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "channels.php:46-49 : `KioskMachine::withoutGlobalScope(BranchScope)->where('user_id',$user->id)->first()` puis compare `$machine->branch_id===$branchId`. Si un user mappait plusieurs machines, seule la branche de la première serait vérifiée."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Détection de commande offline cassée par FIX-54-3 (KioskWaiting startsWith('offline_') toujours faux)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "kioskOfflineQueue.js:395-420 saveOrder() RETOURNE offlineKey (ligne 420), PAS localKey. offlineKey = _offlineKey(null, localKey=UUID, savedAt) (ligne 399) qui, comme l'UUID d'idempotence ne commence pas par 'offline_', tombe sur _generatedOfflineKey (ligne 113) → 'offline_<savedAt>_<rand>'. submitOrder (kioskCart.js:789) capture ce retour dans la variable `localKey` puis commit SET_ORDER_REF orderId=ce 'offline_...' (ligne 805). KioskWaitingComponent.vue:246 String(orderId).startsWith('offline_') = TRUE → isOfflineOrder=true, écran 'en cours d'envoi', polling sauté (ligne 248)."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Aucune resynchronisation menu/dispo/statut à la reconnexion WS (KioskAppComponent:262)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "KioskAppComponent.vue:384-395 : le handler WS 'connected' (_onWsReconnect) fait DEUX choses : (1) relance startAutoSync si getPendingCount()>0, ET (2) [V1.5C R2] ligne 388-393 force un fetch menu frais pour la branche active (kioskMenu/fetchMenu {force:true, branchId}). Le statut de commande active est couvert par le polling 15s indépendant de KioskWaitingComponent (POLL_INTERVAL_MS=15000, ligne 183 + startPolling ligne 250)."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Race saveOrder/syncQueue + quota localStorage silencieux (kioskOfflineQueue:127)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "syncQueue (kioskOfflineQueue.js:529-602) capture un snapshot _syncSnapshot + _syncSnapshotKeys AVANT la boucle réseau, puis à la fin re-merge les entrées ajoutées pendant le sync (_enqueuedDuringSync ligne 601) via _mergeQueue(remaining, _enqueuedDuringSync) ligne 602 — commentaire [F4 heal 2026-06-09] explicite. Le quota est capturé : _persistQueue (259-280) attrape _isQuotaExceeded (266), track l'événement + émet window event QUOTA_EVENT (267-268) au lieu de l'avaler. Le stockage est désormais IndexedDB (kioskOfflineQueueDb) avec fallback, pas un simple _save localStorage."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Fausse confirmation offline sans preuve serveur (kioskCart:374)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "kioskCart.js:796-806 : sur erreur réseau/5xx pour paiement NON électronique, submitOrder résout une réponse synthétique {id: 'offline_...', queue_number:'—', _offline:true} et commit SET_ORDER_REF. MAIS l'UI en aval N'affiche PAS une fausse confirmation : KioskWaitingComponent.vue:11-19 rend un écran dédié 'offline_queue' ('Commande enregistrée / sera envoyée', queue '—') via isOfflineOrder. Les paiements électroniques sont REFUSÉS hors-ligne (kioskCart.js:770-775, KIOSK_OFFLINE_ELECTRONIC_PAYMENT_REFUSED). En V1 Le Cayenne (Plan B kiosk.payment_route_all_to_counter=true) la commande borne est CASH au comptoir, non payée à la borne → aucune preuve de paiement fabriquée, aucun encaissement fantôme."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Commande abandonnée silencieusement après 10 essais (kioskOfflineQueue:115)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "kioskOfflineQueue.js:572-586 : à attempts>=MAX_ATTEMPTS(10), l'entrée n'est PAS supprimée — elle est poussée dans remaining avec abandoned:true + abandonedAt + abandonedReason (code d'erreur réel). Elle reste comptée (getAbandonedCount ligne 427), rapportée best-effort au backend (_reportAbandoned → 'frontend/kiosk-event' order_abandoned, lignes 340-348, appelée par startAutoSync ligne 627), et ré-injectable manuellement (forceRetryEntry ligne 484 remet attempts=1 abandoned=false). L'autosync cesse de rejouer les abandonnées (ligne 537) mais la donnée n'est jamais perdue."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "5xx serveur classé comme 'offline' (kioskCart:366)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "kioskCart.js:768 isNetworkError = !err.response || err.response?.status >= 500. Un vrai 500 est mis en file offline et rejoué. Atténuations au HEAD : (1) les erreurs métier renvoient 422 (err.response présent, status<500) → NON classées offline → reject(err) affiché à l'utilisateur ; (2) le replay régénère un devis frais (_payloadWithFreshQuote kioskOfflineQueue.js:561/370-393) donc pas de rejeu aveugle d'un devis périmé ; (3) après 10 échecs → abandoned+conservé, pas de boucle infinie."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Aucune réconciliation de orderRef après sync réussie (kioskOfflineQueue:108)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "kioskOfflineQueue.js:562 await postFn('frontend/order', payload, config) — la réponse (id serveur réel + queue_number) est jetée, jamais ré-injectée dans le store kioskCart. orderRef reste le 'offline_...' avec queue '—' même après un sync réussi."
+      },
+      {
+        "axis": "offline-kiosk",
+        "title": "Heartbeat factice : connexion morte non détectée (WebSocketService:131)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "WebSocketService.js:377-386 _startHeartbeat : toutes les HEARTBEAT_INTERVAL_MS, si conn.state !== 'connected' → _stopHeartbeat + return, sinon _lastPongAt = Date.now(). Effectivement aucun ping applicatif ni comparaison de seuil de staleness — il fait confiance à l'état 'connected' de Pusher. MAIS la vraie détection de coupure vient de la machine d'état Pusher elle-même (state_change → _setState, lignes 84-112, avec reconnexion 327-350 et pruning connexion) + le pong/activity_timeout de la lib pusher-js, ET le filet de sécurité réel = polling (KioskWaiting 15s ligne 183, KioskApp)."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Double persistance panier POS : couche vuex-persistedstate NON scopée (index.js:224)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "resources/js/store/index.js : posCart n'est PLUS dans les `paths` de createPersistedState (retiré, commentaire [W5-PERF B1 2026-07-06] l.298), un `filter` ignore toute mutation `posCart/` (l.291), et `getState` purge activement tout snapshot legacy `parsed.posCart` au boot (l.275-276). Le module posCart persiste seul sous SA clé scopée `pos_cart_v3:b<branch>:u<user>` (posCart.js:34-45) et réhydrate via setScope, avec cross-check branch/user (posCart.js:66-72)."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Commandes WEB sans idempotence -> double commande sur double-clic (frontendCart.js:32)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "La route POST `api/frontend/order` porte le middleware `idempotency` (routes/api.php:1347) ET figure dans `required_routes` (config/idempotency.php, entrée 'api/frontend/order'). En prod le boot-guard force IDEMPOTENCY_MIDDLEWARE_ENABLED=true (AppServiceProvider), donc IdempotencyKeyMiddleware:52-57 lève MissingIdempotencyKeyException => HTTP 422 quand le header X-Idempotency-Key est absent sur une route required. Le mécanisme 'double commande' décrit ne se produit PAS en prod : un POST sans header est REJETÉ (422), pas dédupliqué-en-doublon."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Clé d'idempotence POS régénérée à chaque ouverture du modal de paiement (PosComponent.vue:1496)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "PosComponent.vue:4178 génère `checkoutProps.form.idempotency_key = Date.now()_rand_branch` dans le handler de 'Valider' juste avant `appService.modalShow('#orderpayment')` (l.4207). La clé est stampée par TENTATIVE-de-checkout, pas liée au contenu du panier. Un retry À L'INTÉRIEUR du modal réutilise la même clé (PaymentComponent lit `form.idempotency_key`) = protégé. Mais si le caissier FERME puis ré-ouvre le modal (ré-appuie Valider) après un envoi dont l'ACK a été perdu alors que le serveur a bien créé l'ordre, une NOUVELLE clé est générée => l'ordre est recréé (findExistingOrderForIdempotencyRecovery est keyé sur la clé, une clé différente ne récupère rien) => doublon fiscal."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Lecture d'idempotence GLOBALE alors que la contrainte DB est composite (branch_id, key) (FrontendOrderService.php:136)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "La lecture pré-check n'est PLUS globale au HEAD. `findExistingFrontendOrderForIdempotencyRecovery` (FrontendOrderService.php:720-738) filtre `->where('idempotency_key')->where('branch_id',$branchId)->when($userId, ...->where('user_id',$userId))`. Elle est appelée en passant `$lockBranchId` ET `auth()->id()` aux deux sites (l.176 création, l.684 recovery). Le lock est aussi branch-scopé (l.170-173 `sha1($lockBranchId.'|'.$idempotencyKey)`). La collision inter-branche décrite (A,K)+(B,K) est fermée."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "RESET kiosk annule la clé d'idempotence entre tentatives -> doublon possible (kioskCart.js:209)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "RESET (kioskCart.js:416-427) met `idempotencyKey=null` (l.423) MAIS aussi `items=[]` (l.417), `loyaltyCustomer=null`, `orderRef=null`, etc. — c'est une remise à zéro ATOMIQUE. Un submitOrder relancé APRÈS RESET construirait un payload à panier VIDE (buildKioskOrderPayload sur state.items=[]), donc pas un doublon-avec-contenu de la 1re commande. Tant que RESET n'a pas eu lieu, submitOrder réutilise la clé stockée (kioskCart.js:710-714 `if(!idempotencyKey)` sinon garde l'existante) => les retries/double-tap sont dédupliqués."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Panier restauré (2h POS / refresh kiosk) sans réconciliation disponibilité/prix (posCart.js:64)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "loadCartFromStorage (posCart.js:56-80) valide TTL 2h (l.73) + scope branch/user (l.66-72) mais ne revalide pas dispo/prix des lignes restaurées. C'est sans conséquence de correction : le prix est SSOT backend — PricingService recalcule à la création (CLAUDE.md §8), et un item indisponible est rejeté au quote/à la commande. Le panier restauré n'est qu'un AFFICHAGE potentiellement périmé, corrigé/rejeté au checkout ; aucun risque fiscal ni de sur/sous-facturation."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Identité fidélité du client précédent persistée côté borne entre clients (index.js:232)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "`kioskCart.loyaltyCustomer` est bien dans les paths persistés (index.js:313) — il survit à un reload Electron et n'est effacé que par RESET (kioskCart.js:421). Le RESET idle tourne 3min sur les écrans de commande mais PAS sur payment/waiting/confirmation (KioskAppComponent noTimerRoutes l.881). Fenêtre : client A saisit son code fidélité puis abandonne avant l'idle, OU un reload Electron survient => l'identité fidélité de A (loyaltyCustomer + loyaltyDiscount) persiste pour le client B suivant => B pourrait accumuler/redeem sur le compte de A ou bénéficier de sa remise."
+      },
+      {
+        "axis": "CART-IDEMPOTENCY",
+        "title": "Aucune synchro cross-device : panier web non lié au compte serveur (index.js:221)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "frontendCart est persisté par-navigateur en localStorage (index.js path 'frontendCart', l.295) sans état serveur ni temps-réel. Aucune table `carts` serveur, aucune diffusion `App.Models.User.{id}`. Un client changeant de navigateur/appareil ne retrouve pas son panier."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "Invalidation cache kiosk émise AVANT commit → re-peuplement stale ≤60s (AvailabilityService.php:70)",
+        "verdict": "ALREADY_FIXED",
+        "sev": "NONE",
+        "behavior": "AvailabilityService::toggle/setMaxDailyQty/decrementForOrder n'émettent JAMAIS l'event dans la transaction. dispatchEvent() (AvailabilityService.php:383-393) enveloppe event(ItemAvailabilityChanged::forBranch(...)) dans DB::afterCommit (ligne 385). Le listener InvalidateKioskMenuCacheOnItemAvailabilityChanged::handle (ligne 45) → Cache::forget('kiosk.menu.branch.{id}') s'exécute donc APRÈS COMMIT. Idem releaseForOrderItems (ligne 774 afterCommit) et decrementForOrder (dispatchEvent afterCommit). La ligne 70 citée par l'audit est un simple `return $row` post-dispatch, pas un forget pré-commit."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "snapshot_version non bumpé sur create/delete/rename/catégorie (EventServiceProvider:116)",
+        "verdict": "FALSE_REASONING",
+        "sev": "NONE",
+        "behavior": "Tous les events catalogue (ItemCreated, ItemUpdated, ItemDeleted, CategoryCreated/Updated/Deleted + variation/extra) sont câblés à InvalidateKioskMenuCacheOnCatalogChange (EventServiceProvider.php:266-299). Ce listener forget la clé cache ET bumpe le snapshot : InvalidateKioskMenuCacheOnCatalogChange::forgetBranch (ligne 52 Cache::forget, ligne 53 $this->snapshot->bump($branchId)). Le bump n'est donc PAS réservé à ItemAvailabilityChanged."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "snapshot_version non consommé côté client + TTL 7j reset à 1 (régression version) (MenuSnapshot.php:41)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "MenuSnapshot::current (MenuSnapshot.php:36-46) réinitialise à 1 après expiration de la clé (TTL 7j, ligne 41/58/70). AUCUN client borne/POS ne lit snapshot_version : grep 'snapshot_version|snapshotVersion' sur resources/js et public/js = 0 résultat. Seul MenuProjectionService (route admin /api/admin/menu-projection) le renvoie, et son unique consommateur est ItemPreviewComponent.vue:306 (aperçu admin), qui ne fait AUCUNE comparaison de version pour refetch conditionnel."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "MenuSnapshot::bump() non atomique sur driver cache file (MenuSnapshot.php:62)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "bump() (MenuSnapshot.php:52-73) appelle $this->cache->increment() qui, sur FileStore, est un read-modify-write non verrouillé. Deux toggles simultanés peuvent perdre un incrément. MAIS : (1) aucun client ne consomme snapshot_version (grep=0), donc un incrément perdu = zéro effet observable ; (2) V1 = mono-poste single-box, les mutations catalogue/86 concurrentes sont quasi-inexistantes ; (3) le résultat d'une collision est une version simplement plus basse de 1, sans consommateur pour la comparer."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "Pas de Cache-Control: no-store sur réponse menu à état-branche (JsonMiddleware.php:24)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "JsonMiddleware ne pose aucun header Cache-Control sur /api/frontend/menu (spécifique branche). Le risque décrit (un proxy/CDN cache la branche A et la sert à la branche B) suppose plusieurs branches ET un proxy/CDN intermédiaire. V1 LOCAL Le Cayenne = single-box, 1 seule branche (branch_id=1), 0 cloud, 0 CDN, 0 reverse-proxy multi-tenant. Contamination cross-branche impossible avec une seule branche."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "MenuProjectionController::show lecture cross-branche sans contrôle d'appartenance (MenuProjectionController.php:38)",
+        "verdict": "V2_SAAS_SCOPE",
+        "sev": "NONE",
+        "behavior": "branch_id validé comme entier simple et passé à forChannel() sans vérifier l'appartenance de l'admin. En V1 mono-branche (branch_id=1) il n'existe aucune autre branche à lire de travers ; l'admin (branch_id=0) est légitimement cross-branche par design. Route admin, pas surface client."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "Trois représentations menu parallèles = SSOT éclatée (MenuProjectionService mort)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "MenuProjectionService (branch-aware, snapshot_version) n'est consommé QUE par l'aperçu admin (ItemPreviewComponent.vue:306) ; docblock 'NOT yet plugged'. La borne consomme /frontend/item de manière CONSTANTE (grille items) + /frontend/menu pour promos/flags. La divergence est une dette d'architecture (deux services de projection), pas un affichage client faux : la borne lit toujours la même source pour ses items, et la facturation est recalculée backend (PricingService SSOT) au /pricing/preview et à la création de commande."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "Prix affiché diverge du prix DB jusqu'à 5 min sans Echo (kioskMenu.js:19)",
+        "verdict": "BY_DESIGN_V1",
+        "sev": "P3",
+        "behavior": "kioskMenu.js:19 CACHE_TTL_MS = 5 min côté client. Un changement de prix émet ItemAvailabilityChanged type='full' (ItemService.php:411-420, dispatch post-commit) → broadcast → KioskAppComponent UPDATE_ITEM invalide le cache client → refetch à la navigation suivante (kioskMenu.js:167). Sans Echo actif, l'affichage reste stale ≤5 min. MAIS l'affichage n'est qu'un hint : le prix FACTURÉ est recalculé backend (PricingService SSOT) au /pricing/preview et à la création. Aucune facturation fausse — au pire un prix d'affichage périmé, corrigé au checkout. En V1 single-box avec soketi local, la propagation est <1s."
+      },
+      {
+        "axis": "menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+        "title": "Create/Delete/Catégorie ne poussent aucun refetch à une borne DÉJÀ OUVERTE (InvalidateKioskMenuCacheOnCatalogChange.php:14)",
+        "verdict": "REAL_OPEN_V1",
+        "sev": "P3",
+        "behavior": "Les events catalogue forget le cache SERVEUR (kiosk.menu.branch.{id}) et bumpent le snapshot (InvalidateKioskMenuCacheOnCatalogChange.php:52-53), mais n'émettent PAS de push (UPDATE_ITEM) vers la borne cliente déjà chargée — seul ItemAvailabilityChanged déclenche UPDATE_ITEM+invalidation cache client (kioskMenu.js). Une borne ouverte ne voit donc un item nouvellement créé / supprimé / renommé qu'après expiration du TTL client 5 min (kioskMenu.js:19) ou une navigation qui force un refetch. Un item supprimé/inactif encore affiché est toutefois REJETÉ au checkout (assertItemsOrderableForBranch → 422, AvailabilityService.php:238-250), donc aucune commande erronée ne passe : gap purement UX (fenêtre ≤5 min), pas de facturation/fiscal faux. L'audit lui-même réfute sa formulation initiale en §5 (le cache serveur EST purgé)."
+      }
+    ]
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Triage"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Refute"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "triage:STAFF-SYNC-OUTBOX",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "ab3df1bef03f0aa6f",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380465026,
+      "queuedAt": 1783380462695,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "STAFF-SYNC-OUTBOX",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE STAFF-SYNC-OUTBOX.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est ga…",
+      "lastProgressAt": 1783380683117,
+      "tokens": 85313,
+      "toolCalls": 14,
+      "durationMs": 218091,
+      "resultPreview": "{\"axis\":\"STAFF-SYNC-OUTBOX\",\"findings\":[{\"title\":\"Outbox non-atomique : INSERT domain_events hors tx (OrderService:948) + try/catch avale l'échec en 200 (:949) → perte permanente de commande cuisine\",\"verdict\":\"BY_DESIGN_V1\",\"current_code_behavior\":\"Au HEAD, `OrderCreated::dispatch($this->order)` est appelé À L'INTÉRIEUR de la closure `DB::transaction` (OrderService.php:634 pour web, :1342 pour PO…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "triage:CLIENT-REALTIME",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "a2cf85fe93a91aaa2",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380464572,
+      "queuedAt": 1783380462695,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "CLIENT-REALTIME (propagation du statut de commande vers le …",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE CLIENT-REALTIME.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gard…",
+      "lastProgressAt": 1783380659756,
+      "tokens": 68895,
+      "toolCalls": 13,
+      "durationMs": 195184,
+      "resultPreview": "{\"axis\":\"CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)\",\"findings\":[{\"title\":\"Borne : le client anonyme ne reçoit JAMAIS son statut (OrderPushNotificationBuilder:30, user_id=machine)\",\"verdict\":\"FALSE_REASONING\",\"current_code_behavior\":\"L'audit conflate 'pas de push FCM' avec 'pas de temps-réel'. La VRAIE surface d'attente borne, KioskWaitingComp…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "triage:LOYALTY",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "aa6cb4b8eeff90b3a",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380464498,
+      "queuedAt": 1783380462695,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "§F FIDÉLITÉ — synchronisation des points (loyalty)",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE LOYALTY.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gardé par 'i…",
+      "lastProgressAt": 1783380668688,
+      "tokens": 80003,
+      "toolCalls": 16,
+      "durationMs": 204189,
+      "resultPreview": "{\"axis\":\"§F FIDÉLITÉ — synchronisation des points (loyalty)\",\"findings\":[{\"title\":\"Lost update / double crédit-débit sur users.loyalty_points sans verrou (LoyaltyController:214)\",\"verdict\":\"FALSE_REASONING\",\"current_code_behavior\":\"L'ancre :214 est un simple champ de réponse JSON ('points' => $user->loyalty_points), PAS une mutation. Toutes les écritures réelles sont atomiques ou verrouillées : re…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "triage:AVAILABILITY-86",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "a3d84472b9c45a852",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380465017,
+      "queuedAt": 1783380462695,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "AVAILABILITY-86 (disponibilité / rupture / oversell / synch…",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE AVAILABILITY-86.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gard…",
+      "lastProgressAt": 1783380676093,
+      "tokens": 80269,
+      "toolCalls": 24,
+      "durationMs": 211076,
+      "resultPreview": "{\"axis\":\"AVAILABILITY-86 (disponibilité / rupture / oversell / synchro temps-réel du 86 par branche)\",\"findings\":[{\"title\":\"Le chemin commande ne lit jamais la dispo → oversell garanti (FrontendOrderService:835)\",\"verdict\":\"FALSE_REASONING\",\"current_code_behavior\":\"FAUX au HEAD. FrontendOrderService::myOrderStore ouvre DB::transaction (FrontendOrderService.php:190) et appelle DEDANS app(Availabili…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "triage:BROADCAST-AUTHZ",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "a43d22086daeb94cc",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380465253,
+      "queuedAt": 1783380462696,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "BROADCAST-AUTHZ (synchronisation temps-réel — autorisation …",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE BROADCAST-AUTHZ.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gard…",
+      "lastProgressAt": 1783380682493,
+      "tokens": 72719,
+      "toolCalls": 9,
+      "durationMs": 217240,
+      "resultPreview": "{\"axis\":\"BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)\",\"findings\":[{\"title\":\"🔴 Bypass autz broadcast : tout client branch_id=0 reçoit toutes les branches (channels.php:33)\",\"verdict\":\"ALREADY_FIXED\",\"current_code_behavior\":\"routes/channels.php:41-62 — le callback branch.{branchId} n'utilise PLUS de sentinelle nue `(int)$branch_id===0`. Il branche : (1) token-…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "triage:OFFLINE-KIOSK",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "a054ef2512a7c1934",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380464291,
+      "queuedAt": 1783380462696,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "offline-kiosk",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE OFFLINE-KIOSK.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gardé …",
+      "lastProgressAt": 1783380681557,
+      "tokens": 83288,
+      "toolCalls": 14,
+      "durationMs": 217266,
+      "resultPreview": "{\"axis\":\"offline-kiosk\",\"findings\":[{\"title\":\"Détection de commande offline cassée par FIX-54-3 (KioskWaiting startsWith('offline_') toujours faux)\",\"verdict\":\"FALSE_REASONING\",\"current_code_behavior\":\"kioskOfflineQueue.js:395-420 saveOrder() RETOURNE offlineKey (ligne 420), PAS localKey. offlineKey = _offlineKey(null, localKey=UUID, savedAt) (ligne 399) qui, comme l'UUID d'idempotence ne commence…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 7,
+      "label": "triage:CART-IDEMPOTENCY",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "a1d9e9a9e1016db22",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380464491,
+      "queuedAt": 1783380462696,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "CART-IDEMPOTENCY",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE CART-IDEMPOTENCY.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gar…",
+      "lastProgressAt": 1783380872974,
+      "tokens": 102335,
+      "toolCalls": 34,
+      "durationMs": 408482,
+      "resultPreview": "{\"axis\":\"CART-IDEMPOTENCY\",\"findings\":[{\"title\":\"Double persistance panier POS : couche vuex-persistedstate NON scopée (index.js:224)\",\"verdict\":\"ALREADY_FIXED\",\"current_code_behavior\":\"resources/js/store/index.js : posCart n'est PLUS dans les `paths` de createPersistedState (retiré, commentaire [W5-PERF B1 2026-07-06] l.298), un `filter` ignore toute mutation `posCart/` (l.291), et `getState` pur…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 8,
+      "label": "triage:MENU-CACHE",
+      "phaseIndex": 1,
+      "phaseTitle": "Triage",
+      "agentId": "aa804f6f28ca47aa5",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380464620,
+      "queuedAt": 1783380462696,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "menu-cache (Propagation menu/prix/catalogue vers les surfac…",
+      "promptPreview": "Ingénieur SENIOR synchronisation/temps-réel — triage adversaire de l'audit synchro. AXE MENU-CACHE.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-register » FAUX — le reset loyalty_points=0 (LoyaltyController.php:186-188) est gardé par…",
+      "lastProgressAt": 1783380685245,
+      "tokens": 86540,
+      "toolCalls": 12,
+      "durationMs": 220625,
+      "resultPreview": "{\"axis\":\"menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)\",\"findings\":[{\"title\":\"Invalidation cache kiosk émise AVANT commit → re-peuplement stale ≤60s (AvailabilityService.php:70)\",\"verdict\":\"ALREADY_FIXED\",\"current_code_behavior\":\"AvailabilityService::toggle/setMaxDailyQty/decrementForOrder n'émettent JAMAIS l'event dans la transaction. dispa…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 9,
+      "label": "refute:CLIENT-REALTIME (propagation du statut de commande vers le client — web in-repo, borne, push FCM)",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "a3740d5ed52cb1833",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380876201,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Page suivi client web /my-orders/:id = fetch unique, ni Ech…",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783380940954,
+      "tokens": 48042,
+      "toolCalls": 6,
+      "durationMs": 64753,
+      "resultPreview": "{\"title\":\"Page suivi client web /my-orders/:id = fetch unique, ni Echo ni polling (statut périmé jusqu'au refresh manuel)\",\"refuted\":false,\"reason\":\"Reproduit exactement au HEAD 70dbc36f1. OrderDetailsComponent.vue (compte client web in-repo, routé /my-orders/:id via frontendRoutes.js:54-55) fait UN seul dispatch frontendOrder/show dans mounted() (l.304), aucun beforeUnmount, et grep Echo|setInter…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 10,
+      "label": "refute:BROADCAST-AUTHZ (synchronisation temps-réel — autorisation des canaux Echo/soketi)",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "a69a9e05f0bbceab8",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380876073,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Echo.leave partagé coupe la souscription temps-réel du comp…",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783381045917,
+      "tokens": 70712,
+      "toolCalls": 9,
+      "durationMs": 169844,
+      "resultPreview": "{\"title\":\"Echo.leave partagé coupe la souscription temps-réel du composant co-monté (eventContract.js:401)\",\"refuted\":false,\"reason\":\"Mécanisme confirmé au HEAD 70dbc36f1. laravel-echo 2.3.1 : Echo.private(name) renvoie un canal MIS EN CACHE et PARTAGÉ (connector.channels[\\\"private-\\\"+name]); Echo.leave(name) fait channel.unsubscribe() côté pusher PUIS delete du canal → détruit le canal pour tous …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 11,
+      "label": "refute:offline-kiosk",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "afc75868eb5b59d63",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380876763,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "5xx serveur classé 'offline' (kioskCart:768) — heuristique …",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783380957308,
+      "tokens": 53798,
+      "toolCalls": 7,
+      "durationMs": 80545,
+      "resultPreview": "{\"title\":\"5xx serveur classé 'offline' (kioskCart:768) — heuristique de resilience défendable, pas un bug V1\",\"refuted\":true,\"reason\":\"Le code décrit est exact au HEAD (kioskCart.js:768, `!err.response || status>=500` → mise en file offline). Mais le trou n'est pas préjudiciable en V1 : (1) les erreurs métier (sold-out/prix/promo) sont des 422, err.response présent, status<500 → NON classées offli…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 12,
+      "label": "refute:offline-kiosk",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "a2cb267b31d733812",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380880087,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Réconciliation orderRef post-sync offline (kioskOfflineQueu…",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783381000907,
+      "tokens": 64056,
+      "toolCalls": 8,
+      "durationMs": 120820,
+      "resultPreview": "{\"title\":\"Réconciliation orderRef post-sync offline (kioskOfflineQueue:562) — réfuté (inoffensif + chemin UI quasi mort en V1)\",\"refuted\":true,\"reason\":\"Fait de code exact au HEAD : ligne 562 jette la réponse serveur (outbox fire-and-forget délibéré, heal F4 2026-06-09) et KioskWaitingComponent.vue:246-249 ne réconcilie pas les orders offline_. MAIS l'audit est réfuté sur 3 points : (1) prémisse U…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 13,
+      "label": "refute:CART-IDEMPOTENCY",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "a7d1ff1a52d669652",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380876121,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Clé d'idempotence POS régénérée à chaque ouverture du modal…",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783381011160,
+      "tokens": 59658,
+      "toolCalls": 9,
+      "durationMs": 135039,
+      "resultPreview": "{\"title\":\"Clé d'idempotence POS régénérée à chaque ouverture du modal (PosComponent.vue:4178) — trou réel mais étroit\",\"refuted\":false,\"reason\":\"Mécanisme confirmé au HEAD : PosComponent.vue:4178 régénère inconditionnellement idempotency_key à chaque submitCheckout ; la récupération serveur (OrderService.php:696 findExistingOrderForIdempotencyRecovery + UNIQUE (branch_id,idempotency_key)) est keyé…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 14,
+      "label": "refute:CART-IDEMPOTENCY",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "a2032fe793b442df6",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380879316,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Identité fidélité borne persistée entre clients (store/inde…",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783381035091,
+      "tokens": 65531,
+      "toolCalls": 15,
+      "durationMs": 155775,
+      "resultPreview": "{\"title\":\"Identité fidélité borne persistée entre clients (store/index.js:313)\",\"refuted\":true,\"reason\":\"Prémisse fausse au HEAD 70dbc36f1. Le fichier réel est resources/js/store/index.js:312-313 (pas ds/index.js). loyaltyCustomer/loyaltyDiscount SONT persistés, mais l'affirmation « nettoyé uniquement par RESET qui ne tourne pas hors idle » est fausse : RESET (kioskCart.js:416-421) est déclenché à…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 15,
+      "label": "refute:menu-cache (Propagation menu/prix/catalogue vers les surfaces + invalidation cache + snapshot_version)",
+      "phaseIndex": 2,
+      "phaseTitle": "Refute",
+      "agentId": "ac26deb4da445bbf6",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1783380876083,
+      "queuedAt": 1783380874492,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Catalogue create/delete/rename ne pousse aucun refetch à un…",
+      "promptPreview": "RÉFUTATEUR INDÉPENDANT (défaut refuted=true au moindre doute). Confirme (refuted=false) UNIQUEMENT si le trou se reproduit au HEAD ET est atteignable+préjudiciable en V1 mono-poste.\n\n⚠️ CALIBRATION (prouvée à l'instant) : cet audit synchro est de la MÊME famille que l'audit (1) qui s'est révélé ~85% périmé/faux. Ses 2 claims FIDÉLITÉ phares sont DÉJÀ FAUX au HEAD : (1) « solde effacé au re-registe…",
+      "lastProgressAt": 1783380970613,
+      "tokens": 66949,
+      "toolCalls": 12,
+      "durationMs": 94530,
+      "resultPreview": "{\"title\":\"Catalogue create/delete/rename ne pousse aucun refetch à une borne ouverte\",\"refuted\":true,\"reason\":\"Premise faux au HEAD. Les events catalogue (ItemCreated/ItemDeleted/ItemUpdated=rename/reprice, CategoryCreated/Updated/Deleted) sont wirés dans EventServiceProvider.php:266-296 à la FOIS vers InvalidateKioskMenuCacheOnCatalogChange (cache serveur + snapshot bump) ET vers PersistCatalogCh…"
+    }
+  ],
+  "totalTokens": 1088108,
+  "totalToolCalls": 202
+}

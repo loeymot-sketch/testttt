@@ -1,0 +1,61 @@
+{
+  "ts": 1778461518409,
+  "wallclock_s": 133,
+  "rupture_targets": {
+    "item": {
+      "id": 362,
+      "name": "Boisson Seule",
+      "price": 2,
+      "cat": 315
+    },
+    "extra": {
+      "id": 175,
+      "name": "Jambon de dinde",
+      "price": 1,
+      "item_id": 363
+    }
+  },
+  "findings_count": 1,
+  "cascade_p95_ms": 12,
+  "observations": [
+    "auth: admin=http://127.0.0.1:8000/admin/dashboard pos=http://127.0.0.1:8000/admin/pos kiosk=http://127.0.0.1:8000/kiosk/login chef=http://127.0.0.1:8000/admin/kitchen-display-system",
+    "state01: admin stock-rupture dashboard captured (baseline)",
+    "state02: pos baseline tile 362 = {\"found\":true,\"classes\":\"pos-v5-tile pos-item-tile\",\"hasUnavailable\":false,\"ariaDisabled\":\"false\",\"disabledAttr\":false,\"pointerEvents\":\"auto\",\"hasOverlay\":false,\"overlayText\":null,\"tileText\":\"Boisson Seule\\n2.00€\"}",
+    "state03: kiosk baseline card 362 = {\"found\":true,\"classes\":\"kiosk-product-card\",\"hasOutOfStock\":false,\"ariaDisabled\":\"false\",\"pointerEvents\":\"auto\",\"cardText\":\"Nouveau\\n+\\nBOISSON SEULE\\n\\nUpsell item\\n\\n€2,00\",\"hasRuptureText\":false}",
+    "state04: admin row 362 toggle_visible=true",
+    "state04: admin toggle item 362 status=500 elapsed=116ms",
+    "state05: api toggle extra 175 = {\"ok\":true,\"status\":200,\"data\":{\"ok\":true,\"extra_id\":175,\"branch_id\":1,\"is_available\":false,\"reason\":\"out_of_stock_manual\",\"manual_unavailable_since\":\"2026-05-11T03:05:56+02:00\"}} elapsed=56ms",
+    "state05: extra 175 rupture_persisted_in_db=true",
+    "state06: RUPTURE-E1 cascade pos item 362 elapsed=4ms ok=true state={\"found\":true,\"classes\":\"pos-v5-tile pos-item-tile is-unavailable\",\"hasUnavailable\":true,\"ariaDisabled\":\"true\",\"disabledAttr\":true,\"pointerEvents\":\"none\",\"hasOverlay\":true,\"overlayText\":\"ÉPUISÉ\",\"tileText\":\"ÉPUISÉ\\nBoisson Seule\\n2.00€\"}",
+    "state07-pre: tacos_tile_ready=true",
+    "state07: RUPTURE-E3 pos wizard supplement 175 = {\"found\":true,\"wizard_mounted\":true,\"text\":\"🥓Jambon de dinde+1.00€🧀Boursin+1.00€🧀Fromage a raclette+1.00€🥚Œuf+1.00€🧀Fromage+1.00€🥔Galette pommes de terre+1.00€\",\"classes\":\"wizard-options supplement-grid\",\"disabled\":false,\"ariaDisabled\":null,\"pointerEvents\":\"auto\",\"opacity\":\"1\",\"hasUnavailableClass\":false,\"hasUnavailableText\":false}",
+    "state07: RUPTURE-E3 pass=false mounted=true found=true disabled_signal=false",
+    "state08: RUPTURE-E2 cascade kiosk item 362 elapsed=2ms ok=true state={\"found\":true,\"classes\":\"kiosk-product-card kiosk-product-card--filtered-out\",\"hasOutOfStock\":false,\"ariaDisabled\":\"true\",\"pointerEvents\":\"auto\",\"cardText\":\"Épuisé\\n+\\nBOISSON SEULE\\n\\nUpsell item\\n\\n€2,00\",\"hasRuptureText\":true}",
+    "state09: RUPTURE-E4 kiosk wizard supplement 175 = {\"found\":true,\"text\":\"Options payantes\\nJAMBON DE DINDE\\nSupplément\\nÉPUISÉ\\n€1,00\\nCHOISIR\\nBOURSIN\\nSupplément\\n€1,00\\nCHOISIR\\nFROMAGE A RACLETTE\\nSupplément\\n€1,00\\nCHOISIR\\nŒUF\\nSupplément\\n€1,00\\nCHOISIR\\nFROMAGE\\nSupplément\\n€1,00\\nCHOI\",\"classes\":\"kiosk-step-supplements step-slide-enter-active step-slide-enter-to\",\"disabled\":false,\"ariaDisabled\":null,\"pointerEvents\":\"auto\",\"opacity\":\"0.907202\",\"hasUnavailableClass\":false,\"hasUnavailableText\":true}",
+    "state11: pos UI tacos+jambon attempt = {\"jambonClicked\":false,\"jambonDisabled\":null}",
+    "state12: BYPASS-E5a pos api with ruptured item 362 status=422 ok=false body={\"stage\":\"quote\",\"message\":\"Article 362 indisponible pour cette branche (unavailable).\",\"data\":{\"status\":false,\"message\":\"Article 362 indisponible pour cette branche (unavailable).\"}}",
+    "state12: BYPASS-E5a CORRECTLY blocked with 422",
+    "state13: BYPASS-E5b pos api with ruptured extra 175 status=422 ok=false body={\"stage\":\"quote\",\"message\":\"Supplément ID 175 indisponible pour cette branche (out_of_stock_manual).\",\"data\":{\"status\":false,\"message\":\"Supplément ID 175 indisponible pour cette branche (out_of_stock_",
+    "state13: BYPASS-E5b CORRECTLY blocked with 422",
+    "state15: kiosk UI tacos+jambon = {\"jambonState\":{\"found\":false}}",
+    "state16: BYPASS-E5c kiosk api CORRECTLY blocked status=422 stage=quote body={\"status\":false,\"message\":\"Article 362 indisponible pour cette branche (unavailable).\"}",
+    "burst: starting 10 POS + 10 Kiosk mixed orders @ 2026-05-11T01:06:41.319Z",
+    "burst: complete pos_ok=10/10 kiosk_ok=10/10",
+    "state17: kds = {\"card_count_total\":20,\"pos_token_matches\":10,\"kiosk_instruction_matches\":0,\"rupture_leak_count\":0}",
+    "state18: restore item 362 admin elapsed=1089ms",
+    "state19: api restore extra 175 = {\"ok\":true,\"status\":200,\"data\":{\"ok\":true,\"extra_id\":175,\"branch_id\":1,\"is_available\":true,\"reason\":null,\"manual_unavailable_since\":null}} elapsed=145ms",
+    "state20-pos: REVERSIBILITY-E7 pos restore elapsed=3ms ok=true state={\"found\":true,\"classes\":\"pos-v5-tile pos-item-tile\",\"hasUnavailable\":false,\"ariaDisabled\":\"false\",\"disabledAttr\":false,\"pointerEvents\":\"auto\",\"hasOverlay\":false,\"overlayText\":null,\"tileText\":\"Boisson Seule\\n2.00€\"}",
+    "state20-kiosk: REVERSIBILITY-E7 kiosk restore elapsed=12ms ok=true state={\"found\":true,\"classes\":\"kiosk-product-card\",\"hasOutOfStock\":false,\"ariaDisabled\":\"false\",\"pointerEvents\":\"auto\",\"cardText\":\"Nouveau\\n+\\nBOISSON SEULE\\n\\nUpsell item\\n\\n€2,00\",\"hasRuptureText\":false}",
+    "CASCADE-LAG-E6: p95=12ms n=4 samples=[{\"label\":\"pos-item-362\",\"ms\":4,\"ok\":true},{\"label\":\"kiosk-item-362\",\"ms\":2,\"ok\":true},{\"label\":\"restore-pos-item-362\",\"ms\":3,\"ok\":true},{\"label\":\"restore-kiosk-item-362\",\"ms\":12,\"ok\":true}]",
+    "NUMERIC-E8: sample_size=5 integrity_ok=5",
+    "BRANCH-isolation: off_branch_count=0/5"
+  ],
+  "rupture_assertions": {
+    "E1_pos_item_362_cascade": true,
+    "E2_kiosk_item_362_cascade": true,
+    "E3_pos_wizard_extra_175_disabled": false,
+    "E4_kiosk_wizard_extra_175_disabled": true,
+    "E7_reversibility": true,
+    "E8_numeric_integrity_ok": 5
+  }
+}

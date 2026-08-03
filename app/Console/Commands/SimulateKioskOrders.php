@@ -31,11 +31,29 @@ class SimulateKioskOrders extends Command
         $this->info("Début de la simulation de $count commandes simultanées Kiosk...");
 
         $user = \App\Models\User::where('branch_id', 1)->first() ?? \App\Models\User::first();
+
+        // [GOAL-2026-05-30] queue_number must be UNIQUE per branch like the real
+        // allocator (OrderService::allocateQueueNumber / FrontendOrderService): 4-digit
+        // zero-padded "A####" continuing from the current DB max. The previous
+        // `'A' . str_pad($i + 1, 3, ...)` used the loop index, so EVERY single-order
+        // invocation produced "A001" -> 3 separate orders sharing one display number,
+        // surfacing as the SAME order rendered 3x on the OSS customer wall (real bug
+        // report 2026-05-30). Dev/E2E load command only; mirror the real 4-digit format
+        // so simulated orders never collide with each other or with real orders.
+        $maxQueue = (int) \DB::table('orders')
+            ->where('branch_id', 1)
+            ->whereNotNull('queue_number')
+            ->where('queue_number', 'like', 'A%')
+            ->get()
+            ->map(static fn ($r): int => preg_match('/^A\d+$/', (string) $r->queue_number) === 1
+                ? (int) substr((string) $r->queue_number, 1) : 0)
+            ->max();
+
         // On simule une création massive
         for ($i = 0; $i < $count; $i++) {
             $order = \App\Models\Order::create([
                 'order_serial_no' => date('dmy') . rand(1000, 9999),
-                'queue_number' => 'A' . str_pad($i + 1, 3, '0', STR_PAD_LEFT),
+                'queue_number' => 'A' . str_pad($maxQueue + $i + 1, 4, '0', STR_PAD_LEFT),
                 'user_id' => $user->id, // Client valide
                 'branch_id' => 1,
                 'subtotal' => 15.00,

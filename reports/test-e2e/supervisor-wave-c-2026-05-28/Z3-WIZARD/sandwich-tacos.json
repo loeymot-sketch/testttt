@@ -1,0 +1,349 @@
+{
+  "wave": "C",
+  "zone": "Z3-WIZARD",
+  "topic": "sandwich-tacos",
+  "ranAt": "2026-05-28T21:12:47.409Z",
+  "base": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "item_id": 22,
+      "item_name": "Sandwich Cayenne",
+      "surface": "kiosk",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-idle",
+        "01-catalogue",
+        "02-wizard-step1",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 25,
+      "item_name": "Sandwich Classique",
+      "surface": "kiosk",
+      "sauce_count_actual": 11,
+      "sauce_names": [
+        "Mayonnaise",
+        "Ketchup",
+        "Algérienne",
+        "Samouraï",
+        "Curry",
+        "Andalouse",
+        "Harissa",
+        "Hannibal",
+        "Blanche",
+        "Sauce fromagère maison",
+        "Spicy"
+      ],
+      "fromageres_pre_included": false,
+      "cayenne_in_list": true,
+      "steps_captured": [
+        "00-idle",
+        "01-catalogue",
+        "02-wizard-step1",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 24,
+      "item_name": "Galette Cayenne",
+      "surface": "kiosk",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-idle",
+        "01-catalogue",
+        "02-wizard-step1",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 26,
+      "item_name": "Tacos",
+      "surface": "kiosk",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-idle",
+        "01-catalogue",
+        "02-wizard-step1",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 27,
+      "item_name": "Big Tacos",
+      "surface": "kiosk",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-idle",
+        "01-catalogue",
+        "02-wizard-step1",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 36,
+      "item_name": "Big Cayenne",
+      "surface": "kiosk",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-idle",
+        "01-catalogue",
+        "02-wizard-step1",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 22,
+      "item_name": "Sandwich Cayenne",
+      "surface": "pos",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-catalog",
+        "01-cat-filtered",
+        "02-wizard-open",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 25,
+      "item_name": "Sandwich Classique",
+      "surface": "pos",
+      "sauce_count_actual": 11,
+      "sauce_names": [
+        "Mayonnaise",
+        "Ketchup",
+        "Algérienne",
+        "Samouraï",
+        "Curry",
+        "Andalouse",
+        "Harissa",
+        "Hannibal",
+        "Blanche",
+        "Sauce fromagère maison",
+        "Spicy"
+      ],
+      "fromageres_pre_included": false,
+      "cayenne_in_list": true,
+      "steps_captured": [
+        "00-catalog",
+        "01-cat-filtered",
+        "02-wizard-open",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 24,
+      "item_name": "Galette Cayenne",
+      "surface": "pos",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-catalog",
+        "01-cat-filtered",
+        "02-wizard-open",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 26,
+      "item_name": "Tacos",
+      "surface": "pos",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-catalog",
+        "01-cat-filtered",
+        "02-wizard-open",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 27,
+      "item_name": "Big Tacos",
+      "surface": "pos",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-catalog",
+        "01-cat-filtered",
+        "02-wizard-open",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    },
+    {
+      "item_id": 36,
+      "item_name": "Big Cayenne",
+      "surface": "pos",
+      "sauce_count_actual": 10,
+      "sauce_names": [
+        "Algérienne",
+        "Andalouse",
+        "Blanche",
+        "Curry",
+        "Hannibal",
+        "Harissa",
+        "Ketchup",
+        "Mayonnaise",
+        "Samouraï",
+        "Spicy"
+      ],
+      "fromageres_pre_included": true,
+      "cayenne_in_list": false,
+      "steps_captured": [
+        "00-catalog",
+        "01-cat-filtered",
+        "02-wizard-open",
+        "03-sauce-step"
+      ],
+      "pass": true,
+      "failures": []
+    }
+  ],
+  "verdict": "ALL_VERIFIED",
+  "drift": []
+}

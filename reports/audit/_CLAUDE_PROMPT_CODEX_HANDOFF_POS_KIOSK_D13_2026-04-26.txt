@@ -1,0 +1,58 @@
+Tu es Claude orchestrateur/auditeur FoodKing.
+
+Contexte: Codex a applique les corrections POS + Kiosk non-D13 apres override humain Phase A le 2026-04-26. Je veux ton audit critique et ton orchestration pour finir proprement V1, surtout D-M13.
+
+Lis d'abord:
+
+1. reports/audit/CODEX_TO_CLAUDE_HANDOFF_POS_KIOSK_D13_2026-04-26.md
+2. reports/audit/MASSIVE_AUDIT_POS_KIOSK_GLOBAL_POST_ORCHESTRATION_2026-04-26.md
+3. reports/audit/POS_KIOSK_PLAN_COMPLETION_STATUS_2026-04-26.md
+4. reports/audit/ORCHESTRATOR_PLAN_V1_EXECUTION_RESULT_2026-04-26.md
+5. reports/audit/ORCHESTRATOR_NO_D13_FOLLOWUP_EXECUTION_2026-04-26.md
+6. reports/audit/ORCHESTRATOR_RESPONSIBLE_DECISION_POS_KIOSK_2026-04-26.md
+7. reports/post_execute_latest.log
+8. missions/CV1-FIX-R4-KIOSK-OFFLINE-QUEUE-IDEMPOTENCY/report.md
+9. missions/CV1-FIX-R6-KIOSK-MACHINE-FORCED-BRANCH/report.md
+10. missions/CV1-FIX-IDEMPOTENCY-RECOVERY-BRANCH-SCOPE/report.md
+11. missions/CV1-FIX-KIOSK-LOYALTY-DOUBLE-REDEEM/report.md
+12. missions/CV1-FIX-KIOSK-LOYALTY-LEDGER-ATOMIC/report.md
+13. missions/CV1-FIX-ORDERQUOTE-BRANCH-FORGED-IGNORE/report.md
+14. missions/CV1-FIX-KIOSK-QUOTE-TOKEN-REQUIRED/report.md
+15. missions/CV1-FIX-R1-POS-QUOTE-BINDING-TESTS/report.md
+16. missions/CV1-FIX-R2-OUTBOX-FIXTURES-K09B/report.md
+
+Audit attendu:
+
+- Verifie si Codex a correctement implemente les deux mega-plans POS + Kiosk hors D-M13.
+- Ne te fie pas seulement aux rapports: verifie les fichiers critiques et les tests si necessaire.
+- Confirme ou contredis la position Codex: "techniquement stabilise hors D-M13, release hold par D-M13 + gouvernance Phase A".
+- Cherche les regressions dans: pricing SSOT, branch_id isolation, quote HMAC, idempotency recovery, loyalty ledger, outbox K-09B, payment transaction references, POS reorder, KDS own-branch visibility.
+- Ne propose pas de weaken/skip du test Tests\\Feature\\Sentinels\\QueueNumberUniquenessSentinelTest.
+
+D-M13:
+
+Le backend full suite echoue encore uniquement sur QueueNumberUniquenessSentinelTest. Il manque une garantie DB unique pour (branch_id, queue_number). Codex recommande:
+
+1. preflight duplicates grouped by (branch_id, queue_number);
+2. backfill/dedup historical conflicts;
+3. unique DB constraint:
+   - partial unique where queue_number IS NOT NULL if DB supports it;
+   - otherwise MySQL-compatible generated/functional unique guard or full unique index after backfill;
+4. remove unsafe random/microtime fallback after DB constraint exists;
+5. bounded deterministic retry or explicit 409 on collision exhaustion;
+6. rerun QueueNumberUniquenessSentinelTest then php artisan test.
+
+Ce que je veux de toi:
+
+1. AUDIT_VERDICT: PASS_TO_D13 | REWORK_BEFORE_D13 | GOVERNANCE_FIRST.
+2. Si PASS_TO_D13: donne le plan D-M13 exact, avec DB strategy, migration/backfill/rollback, code files allowlist, tests, et prompt Codex pret a executer.
+3. Si REWORK_BEFORE_D13: donne findings file:line, correction minimale, tests obligatoires.
+4. Si GOVERNANCE_FIRST: donne l'ordre exact de persistence/bucket triage avant D-M13, sans melanger les commits.
+5. Donne une matrice finale: fait / teste / bloque gate / risque restant / preuve.
+
+Contraintes:
+
+- Respecte AGENTS.md et les invariants FoodKing.
+- Ne self-approve pas un gate humain si tu estimes que signature humaine explicite est encore necessaire.
+- Ne melange pas D-M13 avec le nettoyage Phase A dans un meme lot.
+- Ne declare pas RELEASE_READY tant que D-M13 et la gouvernance ne sont pas resolus.

@@ -1,0 +1,93 @@
+{
+  "round": 2,
+  "surface": "admin-gerance",
+  "auditor": "visual-adversarial-round2",
+  "date": "2026-07-07",
+  "viewport": "1440x900",
+  "login": "admin@lecayenne.fr (session persisted -> /admin/dashboard)",
+  "server": "app :8000, API :8766 (split-host dev; axios base http://127.0.0.1:8766/api)",
+  "scope": "re-capture of R1 label/UI fixes + PDF total + control screens",
+  "fixes_visual": [
+    {
+      "screen": "transactions (/admin/transactions)",
+      "r1_finding": "MODE DE PAIEMENT showed raw enums COUNTER_CASH/COUNTER_CARD; MONTANT '+ 6.90' (dot, no euro)",
+      "verdict": "HOLDS",
+      "evidence": "DOM: modes=['Especes (Caisse)','Carte (Caisse)']; amounts=['+ 6,90 EUR','+ 2,00 EUR','+ 1,90 EUR']; rawEnumsFound=[] ; dotAmounts=[] . Capture 01-transactions.png. All 10 rows FR-labelled, comma+euro."
+    },
+    {
+      "screen": "sales-report (/admin/sales-report)",
+      "r1_finding": "unpaid rows rendered a bare red pill (empty badge)",
+      "verdict": "HOLDS",
+      "evidence": "DOM: emptyBadgeCount=0; uniqueBadgeTexts=['A Encaisser','Paye']. Unpaid rows now show red 'A Encaisser' with text, paid rows green 'Paye'. Capture 02-sales-report.png."
+    },
+    {
+      "screen": "delivery-boy-cash (/admin/delivery-boy-cash-sessions)",
+      "r1_finding": "LIVREUR column showed raw user id '10'",
+      "verdict": "HOLDS",
+      "evidence": "DOM: LIVREUR column = 'Livreur E2E' for all 8 rows; bareNumericIds=[]. ID column correctly shows session id (#10,#9,...). Capture 03-delivery-boy-cash.png."
+    },
+    {
+      "screen": "historique (/admin/historique)",
+      "r1_finding": "STATUT badge used infinitive 'Accepter'",
+      "verdict": "HOLDS",
+      "evidence": "DOM: STATUT column uniqueStatuts=['Acceptee','En preparation']; bareInfinitiveAccepter=[]. Capture 04-historique.png."
+    },
+    {
+      "screen": "PDF rapport ventes (/api/admin/sales-report/pdf)",
+      "r1_finding": "PDF total truncated to first 10 rows (CA under-declared ~99.98%, 38522 EUR -> 6.70 EUR)",
+      "verdict": "HOLDS",
+      "evidence": "Filtered PDF from_date=2026-07-01&to_date=2026-07-07 => 200 application/pdf 24566 bytes; zlib-decompressed text shows 83 ORDER ROWS (not capped at 10) + summary line 'Total 0.00 4.00 356.00' computed over all rows. Today-only PDF=5224 bytes, week PDF=24566 bytes (size scales with row count -> pagination cap removed). On-screen 'Total Des Revenus' = 38 467,62 EUR (complete). PDF saved: 05-sales-report-filtered.pdf. Fix objective (non-truncated total) confirmed for filtered/date-scoped exports (the intended use)."
+    },
+    {
+      "screen": "dashboard (/admin/dashboard)",
+      "r1_finding": "control screen — no fix, regression check",
+      "verdict": "HOLDS",
+      "evidence": "Vue d'ensemble 38 467,62 EUR / 2844 cmd / 66 articles; Suivi direct 6,70/8/1,68 (by-design avg, refuted R1); Audit Trail NF525 localized ('Connexion utilisateur','Commande creee (caisse)','Ticket imprime'); Repartition par Canal. Layout intact, 0 raw label. Capture 06-dashboard.png."
+    },
+    {
+      "screen": "catalogue (/admin/items)",
+      "r1_finding": "control screen — regression check",
+      "verdict": "HOLDS",
+      "evidence": "55 produits / 13 categories / 55 actifs / 0 indispo; 10/10 thumbnails load (brokenImgs=0); prices in EUR, STATUT=Actif green; hasRawLabelToken=false. Capture 07-catalogue.png."
+    },
+    {
+      "screen": "KDS board (/kds -> /admin/kitchen-display-system)",
+      "r1_finding": "control screen — board non-empty check + R1 P2 sync 401",
+      "verdict": "HOLDS (board render) / PARTIAL (sync)",
+      "evidence": "Board NON-EMPTY: 3 full-screen symbolic cards A0015/A0016/A0001 (G|TAC|M|P|ALG, MENU:ALG, BOISSON Hawai 33cl / CHE|STO|ALG / Eau Plate 50cl), badges NOUVELLE+BORNE, '+7 en attente', buttons 'EN ATTENTE ENCAISSEMENT'+'Pret'. 0 raw label, layout intact. Capture 08-kds.png. Sync note in new_issues."
+    }
+  ],
+  "new_issues": [
+    {
+      "id": "N1",
+      "screen": "PDF rapport ventes — unfiltered/default export",
+      "severity": "P2",
+      "summary": "Side-effect of the R1 paginate=0 fix: requesting the sales-report PDF with NO date filter (the default sales-report view state) forces a full fetch of all ~2850 orders and dompdf renders every row -> HTTP 500 (fatal memory/time exhaustion, NOT the controller's caught 422 -> it is an uncaught PHP Error, not Exception). Reproduced: GET /api/admin/sales-report/pdf (no params) => 500 'Server Error'. Filtered ranges work (today=5224B, week=24566B, both 200 PDF). Realistic trigger: owner opens Rapport des Ventes (no dates set) and clicks Exporter -> PDF. Before the fix this never 500'd (always 10-row cap). Recommend: cap/stream or require a date range for PDF, or raise memory + set_time_limit.",
+      "evidence": "GET :8766/api/admin/sales-report/pdf => 500 (console error reproduced); filtered variants => 200. Controller app/Http/Controllers/Admin/SalesReportController.php:69 merges paginate=0; catch(Exception) does not catch fatal Error so 500 bypasses the 422 handler."
+    },
+    {
+      "id": "N2",
+      "screen": "PDF rapport ventes — Payment Type column",
+      "severity": "P3",
+      "summary": "The PDF blade (pdf.sales_report) leaks RAW enum values for some (older) orders: rows 0107265369/368/367 print 'COUNTER_CASH'/'COUNTER_CARD' while newer rows print localized 'Especes'/'Carte'/'Comptoir differe'. Same raw-enum class the R1 fix cleaned on the Transactions SCREEN, but the PDF is a separate render path and still leaks. PDF also uses English column headers (Order Serial No / Payment Type / Payment Status / Discount / Delivery Charge / Total) on an otherwise-FR product.",
+      "evidence": "zlib-decompressed text of 05-sales-report-filtered.pdf: '...0107265369 ... COUNTER_CASH Paye ... 0107265368 ... COUNTER_CARD Paye ...' amid localized rows. Not the same code path as fix #8 (Transactions screen)."
+    },
+    {
+      "id": "N3",
+      "screen": "KDS delta-sync (persisting from R1 P2)",
+      "severity": "P2",
+      "summary": "R1 fix #7 (baseURL) changed the sync origin from :8000 to :8766 as intended, but the request STILL returns 401 in this split-host dev env because the KDS sync call is not carrying the Sanctum auth header (other :8766 axios calls that DO carry the Bearer token succeed 200). Board INITIAL load renders fine (3 cards); the advertised 'rafraichissement automatique toutes les 60 s' is still non-functional as-audited. Fix #7 was documented 'no-op prod' (same-origin cookie auth) — that claim needs same-origin prod verification; the 401 is not resolved in dev.",
+      "evidence": "GET :8766/api/admin/kds-order/sync?since=...&branch_id=0&include_deleted=true => 401 (console error). Contrast: dashboard/items/sales-report calls to :8766 => 200. Host moved :8000->:8766 vs R1, but 401 persists."
+    },
+    {
+      "id": "N4",
+      "screen": "global admin header (all pages, pre-existing R1 P3)",
+      "severity": "P3",
+      "summary": "Broken admin avatar image top-right renders a stray 'eatz'-like glyph left of 'Bonjour Admin Le Cayenne'. Unchanged from R1 (GET :8766/storage/18/clean.jpg blocked). Cosmetic, not a regression, out of scope of the R1 label fixes.",
+      "evidence": "Visible on captures 01/02/03/04/06/07. Same as R1 finding."
+    }
+  ],
+  "regression_check": "0 visual regression on dashboard, catalogue, KDS board. All 4 label/UI fixes and the PDF total fix hold. Layout intact on all 8 screens; no raw labels, no empty badges, no bare ids in the fixed screens.",
+  "verdict": "ISSUES",
+  "verdict_detail": "All 5 targeted fixes HOLD visually (transactions FR labels + euro, sales-report 'A Encaisser' badge, delivery-boy 'Livreur E2E' name, historique 'Acceptee', PDF total non-truncated on filtered exports). 0 fix BROKEN. However 2 NEW issues surfaced from the PDF path (N1 P2: unfiltered PDF export 500s due to paginate=0 over 2850 orders; N2 P3: raw-enum leak in PDF Payment Type) plus N3 (R1 KDS sync 401 persists after host change) and N4 (pre-existing header avatar). No P0/P1."
+}

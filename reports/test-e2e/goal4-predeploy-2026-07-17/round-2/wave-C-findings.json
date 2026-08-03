@@ -1,0 +1,139 @@
+{
+  "wave": "C",
+  "round": 2,
+  "states_reviewed": 6,
+  "artifacts_dir": "tests/e2e/__screenshots__/test-e2e-C/ (frais 2026-07-17 23:07, post-commit fix 6c14c6822 23:03)",
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "FAIL",
+    "C-004": "FAIL (reclassé P1→P2 disclosed/gated)",
+    "C-005": "FAIL",
+    "C-006": "FAIL",
+    "C-007": "FAIL",
+    "C-008": "FAIL",
+    "C-009": "FAIL",
+    "C-010": "FAIL",
+    "C-011": "FAIL"
+  },
+  "closure_evidence": {
+    "C-001": "CONTRE-VÉRIFIÉ EN LIVE hostile, PASS : (a) assets manquants → 404 franc sur LES DEUX ports — /js/chunk-inexistant-xyz.js, /storage/18/clean.jpg, /images/item/inexistant.png, /css/nope.css, /fonts/nope.woff2, /favicon-nope.ico = 404 sur :8000 ET :8766 ; (b) routes SPA intactes — /admin/pos, /kds, /admin/order-status-screen, /login = 200 text/html, /une-route-spa-inconnue non-404 (test SpaFallbackAssetNotFoundTest 2/2) ; (c) AUCUN asset légitime cassé — les 43 URLs uniques js/css/img/font référencées par les 6 DOM frais HEAD-vérifiées une à une = 43×200, 0 BAD (au-delà du harnais : network.json frais = 0 status≥400 sur les 6 états) ; (d) aucune route GET légitime ne finit par une extension exclue (route:list balayé ; /dl/{bridge}.js déclaré AVANT le catch-all routes/web.php:109 donc non affecté). Fix = routes/web.php catch-all where négatif lookahead extensions. Résidu mineur → C2-101 (P3).",
+    "C-002": "PASS : row media orpheline supprimée — DB foodking_e2e media where model_type=App\\Models\\User = 0 row ; les 5 DOM authentifiés (C02–C06) référencent tous src=http://127.0.0.1:8766/images/default/profile.png (2 img/page), qui répond 200 image/png 19471B sur :8766 ET :8000 (fallback lui-même vérifié existant — critique sous le nouveau régime 404) ; /storage/18/clean.jpg → 404 propre et plus référencé nulle part. VISION C04 + C05 + C06 : avatar fallback teal PROPRE dans le header et le dropdown, plus aucune icône image-cassée alt « avatar »."
+  },
+  "findings": [
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-C/C02-pos.network.json",
+      "category": "console_error",
+      "severity": "P2",
+      "status": "OPEN (aucun fix revendiqué au R1→R2)",
+      "evidence": "Persiste à l'identique sur le frais : pages servies par localhost:8000, TOUT le trafic fonctionnel sur 127.0.0.1:8766 (auth/login 201 C02/C03/C04, broadcasting/auth, pos/customer-display, authcheck C05/C06) — MIX_HOST baké depuis APP_URL=http://127.0.0.1:8766 (.env vérifié ce round). Spam CSP report-only inchangé : ~140 POST /api/frontend/csp-report 204 sur les 6 network.json (C01=8, C02≈40, C03≈30, C04≈50, C05≈22, C06≈12), consoles 100% level=info (11/68/38/60/25/14). Caveat d'évidence maintenu : la vague valide l'app buildée pour :8766 ; garde-fou deploy (rebuild serveur, tools/deploy-lecayenne.sh:101-104) reste le gate.",
+      "fix_hint": "Aligner APP_URL du harnais e2e sur l'origin réellement navigué (un seul origin) ; dériver connect-src CSP de APP_URL."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "status": "OPEN — reclassé P1→P2 DISCLOSED/GATED (contexte d'agrégation : DB de DEV avec restes de tests ; janitor de purge = gate owner NF525 couplé CASH-01/REFUND-01)",
+      "evidence": "Observation RE-CONFIRMÉE identique sur le frais : carte « À ENCAISSER BORNE (5) » = orders 5528/5529/5530/5531 (testids pos-shortcut-cash-55xx du DOM frais, queue A0007–A0010, montants 7,40/7,40/9,90/11,10 € = DB exacts) + 5532 caché (Voir plus (1)) — business_date 2026-07-06, 11 jours, boutons Encaisser actifs ; « COMMANDES WEB · 3 » = 5674 A0042 (2026-07-12, PAID depuis 5 j, jamais traitée), 5720 A9002 (07-15, PAID), 5739 A0034 (07-16, UNPAID), boutons Traiter actifs. AUCUNE row ne porte date/âge. Requête exacte de la route counter-collect/pending reproduite via Eloquent → exactement ces 5 rows (la carte est COHÉRENTE avec sa propre requête — voir false_suspicions_dropped pour 4824). Aucun argument nouveau aggravant trouvé ce round → classement P2 disclosed/gated appliqué.",
+      "fix_hint": "Volet NON gated livrable sans toucher au cash-trail : badge date/âge sur les rows hors business_date du jour (PosComponent.vue) + fenêtre stale alignée OSS côté lecture. Volet gated owner NF525 : janitor/purge des PENDING_COUNTER et web PAID d'un jour précédent (couplé CASH-01/REFUND-01)."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "status": "OPEN (aucun fix revendiqué)",
+      "evidence": "Persiste sur le frais : carte « À ENCAISSER BORNE (5) » + tooltip title=\"Commandes borne passées en paiement espèces au comptoir…\" (DOM frais) alors que les 5 orders affichés sont source=15(POS) ∧ source_surface='pos' ∧ pos_payment_method=COUNTER_DEFERRED(6) — re-vérifié en DB ce round (5528–5532). Provenance mensongère pour l'opérateur.",
+      "fix_hint": "Renommer « À encaisser comptoir » ou séparer les files kiosk/pos/phone ; badge provenance par row."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "overlap",
+      "severity": "P2",
+      "status": "OPEN (aucun fix revendiqué — le commit e2e-r1 a corrigé B-001 APPLIQUER, pas ce chevauchement)",
+      "evidence": "Persiste sur le PNG frais : la pill « À encaisser [5] » recouvre le h1 « Commande rapide » → rendu « Con[pill]rapide », masthead POS illisible au viewport 1440px. Éléments confirmés dans le DOM frais (pos-v5-operator-bar__title présent, pos-v5-btn__badge présent). Un seul des deux cliquable → reste P2 (pas cat.3 P1).",
+      "fix_hint": "operator-bar : flex-wrap / min-width du h1 pour empêcher la rangée de boutons de chevaucher le titre à ≤1440px."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-C/C04-oss.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "status": "OPEN (aucun fix revendiqué)",
+      "evidence": "Persiste sur le frais : OSS colonnes « En préparation » et « Prêt » vides = glyphe « — » seul (PNG + markup text-[28px] mt-12 dans le DOM frais). 0 illustration, 0 copy ≥20 chars, 0 CTA — alors que le KDS frais (C03) affiche le standard maison (cloche + « Aucune commande en cours / Les nouvelles commandes apparaîtront ici »).",
+      "fix_hint": "Répliquer l'empty-state KDS côté OSS (illustration + phrase client)."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-C/C05-items.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "status": "OPEN (aucun fix revendiqué)",
+      "evidence": "Persiste sur le frais : (a) bouton édition <button data-drawer=\"#sidebar\" class=\"db-table-action edit\"> sans aria-label NI title — 10 occurrences dans C05 frais, incohérent avec ses voisins (Voir/Dupliquer/Supprimer nommés) ; (b) <button class=\"fa-solid fa-xmark xmark-btn close-db-menu\"> sans nom accessible, présent dans C02/C03/C04/C05 frais (1×each).",
+      "fix_hint": "aria-label=\"Modifier\" sur le bouton edit ; aria-label=\"Fermer le menu\" sur le xmark."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "test-e2e-C/C05-items.png",
+      "category": "truncation",
+      "severity": "P3",
+      "status": "OPEN",
+      "evidence": "Persiste (zoom PNG frais) : « INDISPONIBLES » clippé dans la tuile KPI. Mitigation intacte dans le DOM frais : title=\"0 indisponibles\" + aria-label=\"Filtrer 0 indisponibles\" → reste P3.",
+      "fix_hint": "min-width de la tuile ou libellé « INDISPO. »."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "truncation",
+      "severity": "P3",
+      "status": "OPEN",
+      "evidence": "Persiste sur le PNG frais : placeholder « Téléphone (optionne » clippé net dans le panneau ticket.",
+      "fix_hint": "Raccourcir le placeholder (« Téléphone »)."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "test-e2e-C/C06-stock-rupture.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "status": "OPEN",
+      "evidence": "Persiste : « Crudite » sans accent dans le DOM frais C06 (1 hit) + visible dans la sidebar du PNG frais (« Crudite 5 »). Donnée DB, pas raw label.",
+      "fix_hint": "UPDATE item_categories SET name='Crudité' + vérifier mirrors menu.js."
+    },
+    {
+      "id": "C2-101",
+      "state_artifact": "live curl :8766 (résidu du fix C-001)",
+      "category": "silent_error",
+      "severity": "P3",
+      "status": "NEW (résidu du fix C-001, prouvé live)",
+      "evidence": "La regex d'exclusion du catch-all (routes/web.php) est SENSIBLE À LA CASSE : /storage/18/CLEAN.JPG, /images/item/NOPE.PNG, /js/CHUNK.JS manquants → encore 200 text/html (masque SPA), vérifié live ce round. Le vecteur principal (chunks Mix, toujours minuscules) est couvert, mais un upload media à extension majuscule (.JPG d'appareil photo — chemin /storage/ Spatie) disparu retomberait dans l'angle mort harnais (200 = invisible du network.json).",
+      "fix_hint": "Préfixer la regex du where() par (?i) — un caractère : '^(?i:(?!.*\\.(?:js|mjs|…|txt)$)).*$' — ou dupliquer l'alternance en majuscules ; étendre SpaFallbackAssetNotFoundTest avec un cas .JPG."
+    },
+    {
+      "id": "C2-102",
+      "state_artifact": "test-e2e-C/C05-items.png",
+      "category": "icon_missing",
+      "severity": "P2",
+      "status": "NEW",
+      "evidence": "Bouton « Dupliquer » = pastille rose VIDE sur chacune des 10 rows du tableau articles (zoom PNG frais : œil ✓, edit ✓, [vide], corbeille ✓). Cause prouvée : <i class=\"lab lab-copy\"> (resources/js/components/admin/items/ItemListComponent.vue:268) mais le glyphe lab-copy N'EXISTE PAS dans la police d'icônes Lab — public/themes/default/fonts/lab/lab.css balayé : 174 classes, aucune copy/duplicate/clone. L'utilisateur voit un bouton blanc anonyme (title/aria « Dupliquer » présents au hover → P2, pas P1). Présent mais non relevé au R1 (le R1 avait audité l'aria de ce bouton, pas son glyphe).",
+      "fix_hint": "Remplacer par un glyphe existant de lab.css (ex. lab-file-copy s'il existe, sinon lab-addon/lab-element-) ou un SVG inline ; vérifier les autres usages (grep lab-copy → 1 seul site)."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 7, "P3": 4,
+    "open_P0": 0, "open_P1": 0, "open_P2": 7, "open_P3": 4
+  },
+  "clean_checks": {
+    "console": "0 error / 0 warning / 0 pageerror sur les 6 états frais (uniquement level=info : 11/68/38/60/25/14 — dont spam CSP → C-003)",
+    "i18n_raw_labels": "0 hit regex sur les 6 DOM frais",
+    "template_leaks": "0 undefined/NaN/[object /null visible sur les 6 DOM frais",
+    "network_4xx_5xx": "0 sur les 6 network.json frais — et cette fois l'absence de 4xx est PROBANTE (le masque 200 est levé, cf. C-001 PASS) ; complété par le HEAD-check exhaustif 43/43 assets → 200",
+    "counters_C02": "pill « À encaisser 5 » = carte (5) = requête Eloquent exacte 5 rows ✓ ; montants rows = totaux DB ✓ (7,40/7,40/9,90/11,10) ; web 3 = 3 rows = 3 orders ✓ ; PRÊT À LIVRER (0) avec copy propre ✓",
+    "C01_C03": "login propre (Bon Retour, 0 défaut) ; KDS propre — empty-state standard + bannière LOCAL pastilles bump (limitation disclosée)",
+    "false_suspicions_dropped": "ÉCART carte(5) vs DB brute(6) instruit à fond : le 6e candidat order 4824 (06-13, A9002, PENDING_COUNTER+COUNTER_DEFERRED) est SOFT-DELETED (deleted_at 2026-07-01 23:28) → exclu par le scope Eloquent, la carte est CORRECTE ; ma requête DB::table ignorait SoftDeletes (175 PENDING_COUNTER soft-deleted en base dev). PAS un finding. Idem : 404 content-type application/json (pas text/html) = comportement Laravel normal pour un fetch sans Accept, sans impact navigateur."
+  },
+  "verdict": "GREEN",
+  "verdict_note": "Wave C au seuil protocole : open_P0=0, open_P1=0 → non-bloquant. Les 2 P1 du R1 sont clos (C-001 fixé+testé+contre-vérifié live des deux côtés ; C-004 reclassé P2 disclosed/gated sur instruction d'agrégation, observation intacte). Restent 7 P2 + 4 P3 listés non-bloquants, dont 2 NEUFS (C2-102 icône Dupliquer absente — P2 le plus visible pour un admin ; C2-101 résidu casse du fix C-001 — 1 caractère de regex)."
+}

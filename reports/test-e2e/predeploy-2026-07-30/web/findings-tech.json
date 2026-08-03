@@ -1,0 +1,170 @@
+{
+  "mission": "WAVE-WEB capture QUARTET site client local (predeploy 2026-07-30)",
+  "base": "http://127.0.0.1:8899",
+  "generated_at": "2026-07-30T03:57:53.390Z",
+  "surfaces": [
+    {
+      "id": "01-home-desktop",
+      "url": "http://127.0.0.1:8899/",
+      "screenshot": "01-home-desktop.png",
+      "text_excerpt": "Aller au contenu\nLC\nLE CAYENNE\nAccueil\nMenu\nCommandes\nFidélité\nPanier\nSe connecter\nTOUS LES SOIRS · 18H – MINUIT\nFAIT MAISON,\nCHAQUE SOIR.\nSandwichs, tacos, bols, galettes — viande fraîche et frites maison, préparés à la commande à Hénin-Beaumont.\nCommander maintenant\n🥩\nVIANDE FRAÎCHE\nLivrée le matin, jamais surgelée.\n🍟\nFRITES MAISON\nFraîches, co"
+    },
+    {
+      "id": "02-home-mobile",
+      "url": "http://127.0.0.1:8899/",
+      "screenshot": "02-home-mobile.png",
+      "text_excerpt": "Aller au contenu\nLC\nLE CAYENNE\nPanier\nSe connecter\nTOUS LES SOIRS · 18H – MINUIT\nFAIT MAISON,\nCHAQUE SOIR.\nSandwichs, tacos, bols, galettes — viande fraîche et frites maison, préparés à la commande à Hénin-Beaumont.\nCommander maintenant\n🥩\nVIANDE FRAÎCHE\nLivrée le matin, jamais surgelée.\n🍟\nFRITES M"
+    },
+    {
+      "id": "09-footer",
+      "url": "http://127.0.0.1:8899/ (scrolled bottom)",
+      "screenshot": "09-footer.png",
+      "footer_text": "LE CAYENNE\nSandwich Cayenne signature, tacos M & L, bols Frites/Riz, galettes — fait maison à Hénin-Beaumont. Du peuple, pour le peuple. À emporter sur place — et en livraison via Uber Eats.\nNAVIGATION\nAccueil\nMenu complet\nProgramme fidélité\nCONTACT\n03 65 67 82 91\ncontact@lecayenne.fr\n437 Rue Élie Gruyelle\n62110 Hénin-Beaumont\nOuvert 18h — 00h\nLÉGAL\nMentions légales\nCGV\nPolitique de confidentialité\nPolitique de cookies\nAllergènes\n© 2026 LE CAYENNE · CGV · CONFIDENTIALITÉ · MENTIONS LÉGALES"
+    },
+    {
+      "id": "03-menu",
+      "url": "http://127.0.0.1:8899/#menu",
+      "screenshot": "03-menu.png",
+      "text_excerpt": "Aller au contenu\nLC\nLE CAYENNE\nPanier\nSe connecter\nMENU COMPLET\nTOUT CE QU'ON CUISINE.\n9 catégories · 38 références. Nos plats sont faits maison, prêts en ~10-15 min.\n✦\nTout\n38\n🥖\nSandwichs\n4\n🌯\nGalette\n2\n🍔\nBurgers\n6\n🌮\nTacos\n2\n🥣\nBols\n2\n🍟\nFrites\n2\n🍰\nDesserts\n3\n🥤\nBoissons\n15\n🧒\nMenu enfant\n2\n⭐ T"
+    },
+    {
+      "id": "04-fiche",
+      "url": "http://127.0.0.1:8899/#menu (fiche 1er produit)",
+      "screenshot": "04-fiche.png",
+      "wizard": {
+        "found": true,
+        "cls": "lc-modal-backdrop",
+        "text": "SIGNATURE\nSANDWICHS\nCAYENNE\nPoulet mariné · Cheddar · Jambon · Oignons rouges · Tomates · Salade · Sauce fromagère maison\n⏱ Prêt en 10 min\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n7,40 €\nPersonnaliser"
+      }
+    },
+    {
+      "id": "05-panier",
+      "url": "http://127.0.0.1:8899/#menu (panier ouvert)",
+      "screenshot": "05-panier.png",
+      "cart_badge_before_open": "Panier 1",
+      "cart_text": "PANIER\nCoca-Cola 33cl\n−\n1\n+\n1,90 €\n// QUAND RÉCUPÉRER ?\nDès que possible\n~12 min\n// CODE PROMO\n// NOTE POUR LA CUISINE\n0 / 190\nSous-total\n1,90 €\n+ Fidélité\n+19 pts\nTotal\n1,90 €\nPasser commande\nRetrait sur place · Hénin-Beaumont 62110"
+    },
+    {
+      "id": "06-account",
+      "url": "http://127.0.0.1:8899/#account",
+      "screenshot": "06-account.png",
+      "hash": "",
+      "text_excerpt": "ecran compte email-OTP capture via UI — voir account_panel",
+      "note_cold_load": "Acces direct /#account a froid = hash vide + rendu HOME (redirect guard) — ecran compte non restaure par URL directe",
+      "captured_via": "clic bouton \"Se connecter\" (.lc-nav-btn-account) depuis la home, contexte vierge",
+      "account_panel": {
+        "found": true,
+        "text": "Connexion / Inscription — SALUT, CHEF. — EMAIL (code de verification par e-mail) + TELEPHONE +33 (telephone = carte de fidelite) — Se connecter — CGU · Confidentialite"
+      }
+    },
+    {
+      "id": "07-track-vide",
+      "url": "http://127.0.0.1:8899/#track",
+      "screenshot": "07-track-vide.png",
+      "hash": "",
+      "ghost_indicators": {
+        "visible_canvases": 0,
+        "qr_elements": [],
+        "order_number_text": null,
+        "qr_wording": true
+      },
+      "text_excerpt": "Aller au contenu\nLC\nLE CAYENNE\nPanier\nSe connecter\nTOUS LES SOIRS · 18H – MINUIT\nFAIT MAISON,\nCHAQUE SOIR.\nSandwichs, tacos, bols, galettes — viande fraîche et frites maison, préparés à la commande à Hénin-Beaumont.\nCommander maintenant\n🥩\nVIANDE FRAÎCHE\nLivrée le matin, jamais surgelée.\n🍟\nFRITES MAISON\nFraîches, coupées et cuites ici.\n👨‍🍳\nFAIT MAISON\nSauces et préparations, sur place.\n⭐\nSAVOUREUX\nCuit à la commande, sur la plancha.\n🌶 Sauce C",
+      "note_cold_load": "Acces direct /#track a froid = hash vide + rendu HOME (redirect guard S4) — AUCUN ticket fantome/QR (scan DOM cold: 0 canvas, 0 element qr, 0 numero commande)",
+      "captured_via": "nav in-app burger > Commandes depuis la home, contexte vierge (aucune commande active)",
+      "in_app": {
+        "hash": "#orders",
+        "text": "Aller au contenu\nLC\nLE CAYENNE\nPanier\nSe connecter\n// MES COMMANDES\nCONNECTE-TOI\nPOUR RETROUVER\nTon historique de commandes et tes points cumulés sur chaque achat.\nMe connecter\nLE CAYENNE\nSandwich Cayenne signature, tacos M & L, bols Frites/Riz, galettes — fait maison à Hénin-Beaumont. Du peuple, pour le peuple. À emporter sur place — et en livraison via Uber Eats.\nNAVIGATION\nAccueil\nMenu complet\nProgramme fidélité\nCONTACT\n03 65 67 82 91\ncontact@lecayenne.fr\n437 Rue Élie Gruyelle\n62110 Hénin-Beaumont\nOuvert 18h — 00h\nLÉGAL\nMentions légales\nCGV\nPolitique de confidentialité\nPolitique de cookies\nAllergènes\n© 2026 LE CAYENNE · CGV · CONFIDENTIALITÉ · MENTIONS LÉGALES\nPANIER\n🛒\nTon panier est vid"
+      },
+      "ghost_indicators_in_app": {
+        "visible_canvases": 0,
+        "qr_elements": [],
+        "order_number_text": null
+      }
+    },
+    {
+      "id": "08-confirm-direct",
+      "url": "http://127.0.0.1:8899/#confirm",
+      "screenshot": "08-confirm-direct.png",
+      "hash": "",
+      "ghost_indicators": {
+        "visible_canvases": 0,
+        "qr_elements": [],
+        "order_number_text": null,
+        "qr_wording": true
+      },
+      "text_excerpt": "Aller au contenu\nLC\nLE CAYENNE\nPanier\nSe connecter\nTOUS LES SOIRS · 18H – MINUIT\nFAIT MAISON,\nCHAQUE SOIR.\nSandwichs, tacos, bols, galettes — viande fraîche et frites maison, préparés à la commande à Hénin-Beaumont.\nCommander maintenant\n🥩\nVIANDE FRAÎCHE\nLivrée le matin, jamais surgelée.\n🍟\nFRITES MAISON\nFraîches, coupées et cuites ici.\n👨‍🍳\nFAIT MAISON\nSauces et préparations, sur place.\n⭐\nSAVOUREUX\nCuit à la commande, sur la plancha.\n🌶 Sauce C"
+    }
+  ],
+  "console_errors": [],
+  "http_errors": [],
+  "critical": [],
+  "backend_8000_incident_check": {
+    "verified_at": "2026-07-30T04:00:46.113Z",
+    "reason": "Incident backend local :8000 casse (200+page erreur PHP) pendant la fenetre de capture — verification que le site :8899 n en depend pas",
+    "api_base_url_served": "https://vps-418872ac.vps.ovh.net (meta api-base-url, verifie par curl — PAS le backend local :8000)",
+    "requests_to_127_0_0_1_8000": 0,
+    "php_error_pages_detected": 0,
+    "non_static_requests": [
+      {
+        "surface": "home",
+        "url": "https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "status": 200,
+        "content_type": "text/javascript; charset=utf-8"
+      },
+      {
+        "surface": "home",
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
+        "status": 200,
+        "content_type": "text/javascript; charset=utf-8"
+      },
+      {
+        "surface": "home",
+        "url": "https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap",
+        "status": 200,
+        "content_type": "text/css; charset=utf-8"
+      },
+      {
+        "surface": "home",
+        "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+        "status": 200,
+        "content_type": "font/woff2"
+      },
+      {
+        "surface": "home",
+        "url": "https://fonts.gstatic.com/s/anton/v27/1Ptgg87LROyAm3Kz-C8CSKlv.woff2",
+        "status": 200,
+        "content_type": "font/woff2"
+      },
+      {
+        "surface": "home",
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "status": 200,
+        "content_type": "text/javascript; charset=utf-8"
+      },
+      {
+        "surface": "home",
+        "url": "https://vps-418872ac.vps.ovh.net/api/frontend/loyalty/config",
+        "status": 200,
+        "content_type": "application/json",
+        "body_head": "{\"status\":true,\"data\":{\"points_per_euro\":10,\"points_for_1_euro_discount\":100,\"min_redeem_points\":50,\"tiers\":[100,250,500,1000,2000],\"label\":\"D\\u00e9pensez 100 points = 1\\u20ac de remise\"}}",
+        "php_error_page": false
+      },
+      {
+        "surface": "home",
+        "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+        "status": 200,
+        "content_type": "font/woff2"
+      },
+      {
+        "surface": "home",
+        "url": "https://vps-418872ac.vps.ovh.net/api/frontend/item?branch_id=1",
+        "status": 200,
+        "content_type": "application/json",
+        "body_head": "{\"data\":[{\"id\":117,\"name\":\"Perrier 33cl\",\"slug\":\"perrier\",\"item_category_id\":10,\"tax_id\":3,\"is_featured\":0,\"is_upsell\":5,\"flat_price\":\"1.90\",\"convert_price\":1.9,\"currency_price\":\"1,90\\u00a0\\u20ac\",\"price\":\"1.900000\",\"item_type\":5,\"status\":5,\"is_available\":true,\"availability_reason\":null,\"description",
+        "php_error_page": false
+      }
+    ],
+    "conclusion": "CAPTURES VALIDES : zero requete vers :8000, zero page erreur PHP deguisee en 200. Menu/fiche/panier = data/menu.js statique embarque; API = VPS prod uniquement.",
+    "cart_eta_seen": null
+  }
+}

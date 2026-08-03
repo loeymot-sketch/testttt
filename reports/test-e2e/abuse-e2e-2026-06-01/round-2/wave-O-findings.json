@@ -1,0 +1,82 @@
+{
+  "wave": "O",
+  "round": 2,
+  "states_reviewed": 7,
+  "states": [
+    "O1-01-kiosk-catalogue-load-error",
+    "O1-02-kiosk-catalogue-recovered",
+    "O2-01-kiosk-error-network-screen",
+    "O3-01-pos-grid-warm-no-skeleton",
+    "O3-02-pos-grid-streamed",
+    "O4-01-pos-authenticated",
+    "O4-02-pos-401-redirected-to-login"
+  ],
+  "findings": [
+    {
+      "id": "O-001",
+      "state_artifact": "test-e2e-O/O1-02-kiosk-catalogue-recovered.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "title": "Kiosk catalogue 'recovered' state is UNPROVEN — artifact shows a perpetual loading spinner, not a recovered product grid; assertion passed on an always-present shell element",
+      "evidence": "The screenshot labelled 'recovered' visually shows the loading spinner block 'Chargement du menu…' (kiosk-catalogue-loading, role=status). DOM confirms: the ACTIVE rendered block is class=\"kiosk-catalogue-loading\" data-testid=\"kiosk-categories-loading\" (1 live node); kiosk-catalogue-error exists ONLY as commented <!--v-if--> placeholders (loadError correctly reset to false at KioskCategoriesComponent.vue:484); there are 0 data-testid=\"kiosk-product\" nodes and kiosk-categories-products is NOT in the visible content. O1-02.network.json records only GET /api/login -> 401 (no successful menu refetch is recorded, though note network.json only logs status>=400 / slow, so a 200 would be invisible). The spec asserted `expect(recovered || stillRoot ...).toBeTruthy()` (spec line 165) where stillRoot = kiosk-categories-root.isVisible() — the root is ALWAYS mounted, so the recovery assertion is satisfied by a shell element regardless of whether products ever render. The proof-of-recovery image therefore proves nothing.",
+      "verified": "Read O1-02 PNG (spinner visible); grep O1-02.dom.html confirmed 1 live kiosk-catalogue-loading node + 0 kiosk-product nodes; read KioskCategoriesComponent.vue:65-86,483-496 (loading=Vuex kioskMenu/loading getter, loadError reset at 484, retry @click=loadCatalogue).",
+      "product_defect": false,
+      "fix_hint": "Product code path is correct (the spinner IS legitimate non-blank degradation, role=status). The TEST is weak: O-1 snaps O1-02 immediately after errorBlock.toBeHidden() while the unrouted refetch is still in flight. Tighten by awaiting a real product/category node (e.g. await page.locator('[data-testid=\"kiosk-categories-products\"] :first-child, .kiosk-product-card').first().waitFor()) OR await the loading spinner hidden BEFORE snapping; and replace the `recovered || stillRoot` OR with a positive content assertion. Until then 'recovery recovers' is asserted but not evidenced."
+    },
+    {
+      "id": "O-002",
+      "state_artifact": "test-e2e-O/O2-01-kiosk-error-network-screen.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "title": "Kiosk network-error screen artifact is MISLEADING — the captured PNG shows the boot overlay ('Démarrage en cours…') fully covering the error screen; toBeVisible() passed on the CTA layout box behind an opaque overlay",
+      "evidence": "Spec O-2 asserts kiosk-error-network-cta-retry / -cta-staff are toBeVisible() and the title carries real copy. DOM confirms all three testids ARE present and title = 'Connexion perdue' (real copy, no Label.X). BUT the PNG visually shows the kiosk-init-overlay spinner 'Démarrage en cours…' — the DOM still contains 'Démarrage en cours' + 2 kiosk-init-overlay/kiosk-boot markers. Playwright toBeVisible() only checks non-zero box + not display:none, so it saw the error CTAs in the layout UNDERNEATH the opaque boot overlay and passed, while the rendered pixels show a boot spinner — the exact 'blank/shell passed, screen shows something else' trap Wave O exists to catch.",
+      "verified": "Read O2-01 PNG (boot overlay spinner); grep O2-01.dom.html: kiosk-error-network-cta-retry=1, -cta-staff=1, -title=1, title text 'Connexion perdue', 'Démarrage en cours'=1, kiosk-init-overlay/kiosk-boot=2. Read KioskAppComponent.vue:35,221,326,511-536 — overlay v-if=branchLoading; branchLoading defaults true on (re)mount; loadBranch() (called in mounted) sets branchLoading=false in EVERY branch (lines 521/529/536), with NO gating on any fetch the /kiosk/error/network route skips. O-2 reaches the route via full page.goto (reload) which re-inits the SPA and re-raises branchLoading; the snapshot was taken before loadBranchList resolved.",
+      "product_defect": false,
+      "fix_hint": "NOT a hang (overlay always clears once loadBranchList resolves — kiosk-login was 201 in O2-01.network). It is timing: O-2 does page.goto('/kiosk/error/network') then snaps without waiting for the overlay to clear. O-1 already guards this (spec line 136: waitFor('.kiosk-init-overlay', hidden)); O-2 is MISSING the same guard. Add `await page.locator('.kiosk-init-overlay').waitFor({state:'hidden'})` (and/or assert kiosk-error-network-title visible/inViewport) before snap so the artifact actually depicts the error screen the test validates."
+    },
+    {
+      "id": "O-003",
+      "state_artifact": "test-e2e-O/O4-02-pos-401-redirected-to-login.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "title": "POS forced-401 re-auth lands on the CUSTOMER storefront login ('Connexion Invité' / 'Inscription'), not an admin/POS re-auth surface",
+      "evidence": "O4-02 PNG shows the public storefront login card ('Bon Retour', 'Connexion Invité', 'Inscription', nav Accueil/Menu/Offres, <title>Le Cayenne</title>). DOM markers: guest-login=1, 'Connexion invit'=1, 'Bon retour'=1, Accueil. The plan's KEY ASSERTION ('session timeout forces VISIBLE re-auth, no silent 401') IS satisfied — the redirect happened, #formEmail renders. But a POS operator whose session expires mid-shift is dumped onto the consumer-facing storefront with a 'Connexion Invité' (guest) CTA rather than a staff/POS login, which does not route back to /admin/pos after re-auth.",
+      "verified": "Read O4-02 PNG; grep O4-02.dom.html: id=formEmail=1, guest-login=1, Bon retour / Connexion invit present, <title>Le Cayenne</title>; pos-app.js redirect target is /login (per spec header O-4, pos-app.js:54-63).",
+      "product_defect": true,
+      "fix_hint": "UX-only (not blocking). pos-app.js 401 interceptor redirects to '/login' (the public storefront) instead of an admin/POS login. Consider redirecting POS 401s to the admin login route so the operator re-auths into the register, not the customer storefront. Disclose; do not loop."
+    },
+    {
+      "id": "O-004",
+      "state_artifact": "test-e2e-O/O4-02-pos-401-redirected-to-login.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "title": "POS 401 logout teardown emits 4 uncaught pageerror AxiosError 401 + a collateral burst of 401s (users/address/2 x3, country-code, frontend/order, cash-drawer)",
+      "evidence": "After the injected 401 on /api/admin/item, the interceptor fired POST /api/auth/logout -> 200, then a burst of in-flight POS requests 401'd: /api/frontend/order, /api/admin/pos/cash-drawer/sessions/current, /api/admin/country-code/show/FRA, and /api/admin/users/address/2 THREE times (retry-loop smell). Four of these surfaced as level='pageerror' 'Request failed with status code 401' (uncaught promise rejections). Per Reviewer Protocol category 9 these are app-level uncaught errors; the stack's deepest frame is vendor.js (axios settle) but the rejection is NOT handled by the app. Transient logout-teardown noise, but worth honest classification (not silently allowlisted as 'vendor noise').",
+      "verified": "Read O4-02.console.json (4 pageerror entries) + O4-02.network.json (logout 200 then 7x 401 incl. users/address/2 x3). Stacks: AxiosError at settle (vendor.js).",
+      "product_defect": true,
+      "fix_hint": "Non-blocking. During the 401->logout->redirect window, in-flight POS XHRs reject uncaught. Add a catch/abort on the pending request set when the 401 handler initiates the redirect (or cancel the axios queue on logout) so no uncaught pageerror surfaces. The triple users/address/2 401 suggests an unguarded retry — verify it isn't a tight loop."
+    },
+    {
+      "id": "O-005",
+      "state_artifact": "tests/e2e/test-e2e-abuse-O-network-errors.spec.js",
+      "category": "empty_state_quality",
+      "severity": "P3",
+      "title": "Honest-scope disclosure: GATED states (ConnectionStatusBanner offline/transient, KDS .kds-banner--error, OSS 'connection lost') are documented-not-asserted; AUDIT_PLAN Wave O lists 9 states, spec exercises 4 surfaces",
+      "evidence": "Spec header (lines 30-42) honestly documents that ConnectionStatusBanner is WS-state/poll-driven (not page.route-triggerable) AND mounted suppress-transient on every surface AND isDevEnv-hidden, so it CANNOT render under route interception; KDS/OSS connection-lost banners are likewise WS/poll-driven. These plan-listed states (kiosk offline banner, OSS no-update->'connection lost', KDS connection-lost banner, admin idle>session, POS payment-device timeout) are therefore NOT captured. This is disclosed, not faked — but it means Wave O's coverage of the plan's 9 enumerated states is partial (4 surfaces: kiosk catalogue fail+recover, kiosk error route, POS skeleton, POS 401). Flagged P3 for honest coverage tracking, not as a defect.",
+      "verified": "Read spec lines 30-46 (GATED disclosure) + AUDIT_PLAN.md:173-176 (9 enumerated states). The author's note that ConnectionStatusBanner is dev-suppressed/gated is corroborated by the suppress-transient mounts cited and is OK.",
+      "product_defect": false,
+      "fix_hint": "Info only. To close the gated states later, drive them through their real trigger: kill/restart soketi to flip wsService WS_STATE (ConnectionStatusBanner), or freeze the KDS/OSS poll source, rather than page.route (which cannot reach WS-state). Not required for V1 convergence."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 4, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 4, "open_P3": 1
+  },
+  "audit_integrity": {
+    "i18n_leak_sweep": "regex ^[a-z]+(\\.[a-z_]+){1,4}$ run across ALL 7 DOM files -> CLEAN on all 7 (no raw Label.X / kiosk.* visible text).",
+    "real_assertions": "O-1 error path (O1-01) is a REAL forced-failure assertion: role=alert error block + actionable retry rendered under aborted /api/frontend/menu+item-category+item (console shows 3x net::ERR_FAILED). O-3 (O3-02) and O-4 (O4-02) recovery/redirect are real. WEAKNESS: O-1 recovery assertion (O1-02) and O-2 visibility assertion (O2-01) are satisfied by always-present shell elements (kiosk-categories-root / CTA box behind boot overlay) and the captured images do NOT depict the validated state — see O-001, O-002.",
+    "connection_status_banner": "Author's claim that ConnectionStatusBanner is dev-suppressed + suppress-transient gated is VERIFIED-PLAUSIBLE (spec lines 36-40 cite the suppress-transient mounts + isDevEnv). Accepted as OK / out of route-interception reach (see O-005).",
+    "silent_401_check": "PASS — O-4 forced 401 produces a VISIBLE redirect to /login (no silent swallow). Plan KEY ASSERTION satisfied. Caveat: wrong-flavor login surface (O-003) + uncaught teardown pageerrors (O-004), both P2."
+  },
+  "verdict": "GREEN"
+}

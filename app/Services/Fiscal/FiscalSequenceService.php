@@ -85,7 +85,17 @@ class FiscalSequenceService
                 //
                 // SQLite ignores FOR UPDATE (it uses BEGIN IMMEDIATE
                 // semantics instead) so this stays a no-op in tests.
-                $max = (int) Order::withoutGlobalScopes()
+                // [Z6-P1-WGS 2026-05-19] NF525 invariant — fiscal sequence is
+                // strictly monotonic + gap-free per branch. We MUST consider
+                // soft-deleted orders when computing MAX(fiscal_sequence_no)
+                // because an Order that allocated a number stays in the
+                // table (Order::restoring throws — soft delete is one-way
+                // audit) and dropping it would cause sequence_no re-use →
+                // chain violation. Singular bypass + ->withTrashed() makes
+                // both intents explicit (mirrors ZReportService:337-338
+                // canonical pattern, RED-Z6 Q#17).
+                $max = (int) Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->withTrashed()
                     ->where('branch_id', $branchId)
                     ->lockForUpdate()
                     ->max('fiscal_sequence_no');

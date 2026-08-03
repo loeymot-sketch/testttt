@@ -1,0 +1,131 @@
+{
+  "specialist": "Architect",
+  "zone": "F-8 Notifications (Push + SMS + Mail + In-app)",
+  "lens": "Cascade integrity, listener idempotency, structural duplication, dead/orphan detection",
+  "scope_read_only": true,
+  "approx_words": 1400,
+  "summary": "The notification subsystem is structurally inconsistent and contains massive duplication across three parallel triads (Order/OrderGot/OrderDeliveryBoy) x three channels (Mail/Push/Sms). On top of those nine builder services lives a second, partially overlapping FCM track (SendFcmOn* listeners + SendFcmNotificationJob + FcmNotificationService) introduced by PHASE-36-P1 but never reconciled with the legacy FirebaseService path. Two PHP classes today both purport to be the FCM client. Listener handle() methods are uniformly defensive (single try/catch + Log::info) but none implement ShouldQueue, so under QUEUE_CONNECTION=sync every order side-effect blocks the HTTP thread on Twilio + SMTP + FCM I/O. Idempotency is not enforced anywhere in the notification layer: there is no per-(order_id, status, channel) guard, so any duplicate event dispatch (CleanupStalePendingKioskOrders re-issue, status oscillation, OrderService::store cascade) silently re-sends Mail + SMS + Push.",
+  "findings": [
+    {
+      "id": "F-8-ARCH-001",
+      "severity": "P0",
+      "title": "Duplicate FCM service classes (FirebaseService HTTP v1 OAuth2 + FcmNotificationService legacy server-key) coexist",
+      "files": [
+        "app/Services/FirebaseService.php:13-99",
+        "app/Services/FcmNotificationService.php:21-269",
+        "app/Jobs/SendFcmNotificationJob.php:5,73-94"
+      ],
+      "evidence": "FirebaseService::sendNotification() (FirebaseService.php:17-67) loads a ServiceAccountCredentials file from NotificationSetting + Settings::group('notification')->all() then POSTs to https://fcm.googleapis.com/v1/projects/{id}/messages:send with Bearer OAuth token. FcmNotificationService::sendToToken() (FcmNotificationService.php:39-97) POSTs to https://fcm.googleapis.com/fcm/send with Authorization: key=<server_key> from config('services.fcm.server_key') (legacy API). SendFcmNotificationJob::handle() (Jobs/SendFcmNotificationJob.php:73-94) routes through FcmNotificationService. Order*PushNotificationBuilder services (OrderPushNotificationBuilder.php:107-108, OrderGotPushNotificationBuilder.php:67-68, OrderDeliveryBoyPushNotificationBuilder.php:64-65) route through FirebaseService. Same order, same status change, two FCM stacks fire.",
+      "impact": "Maintenance hazard: a fix on one path leaves the other broken. PHASE-36-P1 comment claims FCM HTTP v1 but the implementation uses legacy server key (deprecated/turned down by Google 2024-06-20 for new senders; existing senders may still work but no SLA). FirebaseService path requires NotificationSetting('notification_fcm_json_file') to resolve to an existing file on disk (FirebaseService.php:71-89), otherwise throws and is caught silently. Net effect: in fresh installs, FCM is silently broken on both tracks.",
+      "remediation": "Pick ONE FCM client. HTTP v1 (OAuth2 + service account) is the only Google-supported path going forward. Consolidate to FcmNotificationService rewritten to use HTTP v1, delete FirebaseService, point all builders + jobs at the single client. Owner gate required: the migration touches every Order*PushNotificationBuilder."
+    },
+    {
+      "id": "F-8-ARCH-002",
+      "severity": "P0",
+      "title": "No notification listener implements ShouldQueue under QUEUE_CONNECTION=sync default",
+      "files": [
+        "app/Listeners/SendOrderMailNotification.php:9-20",
+        "app/Listeners/SendOrderSmsNotification.php:9-20",
+        "app/Listeners/SendOrderPushNotification.php:10-21",
+        "app/Listeners/SendOrderGotMailNotification.php:10-21",
+        "app/Listeners/SendOrderGotSmsNotification.php:10-21",
+        "app/Listeners/SendOrderGotPushNotification.php:10-21",
+        "app/Listeners/SendOrderDeliveryBoyMailNotification.php:9-23",
+        "app/Listeners/SendOrderDeliveryBoySmsNotification.php:9-20",
+        "app/Listeners/SendOrderDeliveryBoyPushNotification.php:10-23",
+        "app/Listeners/SendResetPasswordNotification.php:8,13-38",
+        "app/Listeners/SendSmsCodeNotification.php:12-45",
+        "config/queue.php:16"
+      ],
+      "evidence": "config/queue.php:16 sets default to env('QUEUE_CONNECTION', 'sync'). Only SendResetPasswordNotification.php imports ShouldQueue (line 8) but does NOT add it to the class implements clause and does NOT implement the interface. All 11 other Send*Notification listeners run synchronously in the dispatcher thread. OrderService::store (OrderService.php:552-559) dispatches 6 sequential notification events (SendOrderMail/Sms/Push + SendOrderGotMail/Sms/Push) inside the same request thread. Each listener internally calls SmsManagerService->send (Twilio HTTP), Mail::send (SMTP), FirebaseService->sendNotification (HTTPS + service-account OAuth round-trip).",
+      "impact": "An order creation HTTP request blocks the worker for 6 x N x I/O latency. With QUEUE_CONNECTION=sync the kiosk payment-confirm path measured in PaymentConfirmFcmFailureTest.php is one example where the side-effect chain caused 35/35 kiosk orders to return 422 in Wave B audit. The fix landed for the FCM job path; the legacy Send*Notification listeners were never converted. Production with sync queue + 5+ recipients = >5s HTTP latency on every order side-effect.",
+      "remediation": "Make every notification listener implement ShouldQueue + onQueue('notifications') (mirror SendFcmNotificationJob.php:67 pattern). For QUEUE_CONNECTION=sync envs this is a no-op; for redis/database it offloads. Verify after-commit ordering — the F-002 round-3 comment in EventServiceProvider.php:128-143 acknowledges the outbox-first contract must be preserved."
+    },
+    {
+      "id": "F-8-ARCH-003",
+      "severity": "P0",
+      "title": "Zero idempotency in notification layer — duplicate events re-send Mail+SMS+Push",
+      "files": [
+        "app/Services/OrderMailNotificationBuilder.php:46-67",
+        "app/Services/OrderPushNotificationBuilder.php:75-96",
+        "app/Services/OrderSmsNotificationBuilder.php:50-71",
+        "app/Services/OrderService.php:552-559,1058-1060,1368-1370,1637-1639,1714-1716,1858-1860",
+        "app/Jobs/CleanupStalePendingKioskOrders.php:76-78"
+      ],
+      "evidence": "Every notification builder (Mail/Push/Sms x Order/OrderGot/OrderDeliveryBoy) constructs identical state-machine method() with no de-duplication key. OrderService dispatches SendOrderMail/Sms/Push at 6 distinct call sites (lines 552-554, 1058-1060, 1368-1370, 1637-1639, 1714-1716, 1858-1860). CleanupStalePendingKioskOrders.php:76-78 ALSO dispatches the same triplet when a stale kiosk order is auto-rejected. No notification record (PushNotification model has no order_id/status fingerprint), no Cache::has() guard, no DB unique constraint.",
+      "impact": "If OrderStatusChanged fires twice (concurrent retry from outbox replay, customer mobile self-cancel race, manual admin status flip + cron auto-reject), Mail + SMS + FCM all fire twice. Customer receives duplicate 'Your order is ready' messages. Drivers get duplicate assignment SMS. Twilio cost amplification.",
+      "remediation": "Add per-(order_id, status, channel) Cache::add() guard (TTL 5min) at the top of each Send*Notification listener handle(). Reject duplicate. Mirror IdempotencyKeyMiddleware pattern."
+    },
+    {
+      "id": "F-8-ARCH-004",
+      "severity": "P1",
+      "title": "Massive code duplication — 9 near-identical NotificationBuilder services with ~81 status-method copies",
+      "files": [
+        "app/Services/OrderMailNotificationBuilder.php (150 LOC)",
+        "app/Services/OrderPushNotificationBuilder.php (186 LOC)",
+        "app/Services/OrderSmsNotificationBuilder.php (158 LOC)",
+        "app/Services/OrderGotMailNotificationBuilder.php (59 LOC)",
+        "app/Services/OrderGotPushNotificationBuilder.php (78 LOC)",
+        "app/Services/OrderGotSmsNotificationBuilder.php (74 LOC)",
+        "app/Services/OrderDeliveryBoyMailNotificationBuilder.php (66 LOC)",
+        "app/Services/OrderDeliveryBoyPushNotificationBuilder.php (78 LOC)",
+        "app/Services/OrderDeliveryBoySmsNotificationBuilder.php (74 LOC)"
+      ],
+      "evidence": "OrderMailNotificationBuilder.php:46-67 message() dispatcher + 9 status method copies (pending/confirmation/preparing/prepared/outForDelivery/delivered/canceled/rejected/returned) each fetching the same NotificationAlert + identical SwitchBox::ON check + identical Mail::to(...)->send(new OrderMail(...)). OrderSmsNotificationBuilder.php:50-71 + 86-156 identical structure with $code/$phone wrapper. OrderPushNotificationBuilder.php:75-96 + 114-184 identical with $fcmTokenArray. Same 9-method shape repeated. The OrderGot* triad shares no inheritance with the Order* triad. OrderDeliveryBoy* triad only implements the `101` (deliveryBoyAssign) status — fragile magic number, never enum'd.",
+      "impact": "~700 LOC of cross-class duplication. Any change to status mapping (e.g. add OrderStatus::REFUNDED) must be applied 9 times. Bug surface area scales linearly; tests scale linearly.",
+      "remediation": "Extract a single NotificationDispatcher service with channel-strategy injection: (channel: 'mail'|'sms'|'push', audience: 'customer'|'admin'|'delivery_boy', status: OrderStatus). One method, one NotificationAlert lookup, one fan-out. Owner gate (large refactor) — defer V1.0.2."
+    },
+    {
+      "id": "F-8-ARCH-005",
+      "severity": "P1",
+      "title": "Dead listener + event pair: app/Listeners/SendEmailVerificationNotification + app/Events/SendEmailVerification",
+      "files": [
+        "app/Listeners/SendEmailVerificationNotification.php:11-36",
+        "app/Events/SendEmailVerification.php:9-23",
+        "app/Providers/EventServiceProvider.php:80,91-93"
+      ],
+      "evidence": "EventServiceProvider.php:80 imports `Illuminate\\Auth\\Listeners\\SendEmailVerificationNotification` (last use wins on collision). EventServiceProvider.php:91-93 maps `Illuminate\\Auth\\Events\\Registered => SendEmailVerificationNotification` — that name resolves to the framework class, NOT app/Listeners/SendEmailVerificationNotification. The app-level App\\Events\\SendEmailVerification event has NO mapping in $listen[]. grep across /app/ for 'App\\Listeners\\SendEmailVerification' returned empty. Both files are unreferenced.",
+      "impact": "Dead code — 60+ LOC across two files. Risk: a future developer adds `App\\Events\\SendEmailVerification::dispatch(...)` expecting it to send mail, nothing fires.",
+      "remediation": "Delete app/Listeners/SendEmailVerificationNotification.php AND app/Events/SendEmailVerification.php OR add explicit mapping in EventServiceProvider $listen[App\\Events\\SendEmailVerification::class] = [App\\Listeners\\SendEmailVerificationNotification::class] AND fully-qualify the import. Recommendation: delete (the Illuminate Registered path is sufficient)."
+    },
+    {
+      "id": "F-8-ARCH-006",
+      "severity": "P1",
+      "title": "Dual FCM firing on every order status change",
+      "files": [
+        "app/Providers/EventServiceProvider.php:138-143",
+        "app/Services/OrderService.php:1637-1643,1714-1716,1858-1860"
+      ],
+      "evidence": "OrderService.php:1637 dispatches SendOrderPush (legacy FirebaseService path, user-tokens, single device targeting). Line 1643 dispatches OrderStatusChanged, which fans out to SendFcmOnOrderStatusChange (FcmNotificationService topic path, kitchen_branch_{id} + customer_order_{orderId} + oss_branch_{id}). For PREPARED state, both customer_order_{N} FCM (topic) and the user's device_token FCM (legacy v1) fire — duplicate notification to customer.",
+      "impact": "Customer receives 2 push notifications for one status change. UX confusing; Twilio-style 'invisible cost' for FCM (still costs CPU + bandwidth + Google quota).",
+      "remediation": "Choose one fan-out strategy (topic OR device-token). Recommendation: topic-only via the SendFcm* track, deprecate the Order*PushNotificationBuilder legacy path."
+    },
+    {
+      "id": "F-8-ARCH-007",
+      "severity": "P2",
+      "title": "5 Mailable classes map 1:1 to 5 mail templates — no orphan templates",
+      "files": [
+        "app/Mail/OrderMail.php (uses emails.order)",
+        "app/Mail/OrderGotMail.php (uses emails.orderGot)",
+        "app/Mail/ResetPassword.php (uses emails.password)",
+        "app/Mail/SubscriberMail.php (uses emails.subscriber)",
+        "app/Mail/VerifyEmail.php (uses emails.verify)",
+        "resources/views/emails/{order.blade.php, orderGot.blade.php, password.blade.php, subscriber.blade.php, verify.blade.php}"
+      ],
+      "evidence": "5 Mailable classes, 5 templates, 1:1 mapping verified. No orphan templates in resources/views/emails/.",
+      "impact": "Clean state — mandate explicitly addresses this and is satisfied."
+    }
+  ],
+  "kpis": {
+    "listeners_total_notification_track": 12,
+    "listeners_with_should_queue": 0,
+    "listeners_with_idempotency_guard": 0,
+    "fcm_client_implementations": 2,
+    "duplicate_loc_estimate": 700,
+    "dead_event_listener_pairs": 1,
+    "orphan_mail_templates": 0,
+    "mailables": 5,
+    "mail_blade_templates": 5
+  },
+  "v1_0_1_backlog_disambiguation": "The BRAIN V1.0.1 mention of '6 listeners idempotency restants (Catalog/Coupon/Availability×3/Table)' refers to Persist*ToOutbox listeners under sister F-1 / F-2 outbox scope, NOT the Send*Notification listeners audited here. F-8 notification listeners have a SEPARATE idempotency gap that is not tracked in any current BRAIN backlog entry — surface this gap so the orchestrator does not double-count."
+}

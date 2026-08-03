@@ -1,0 +1,1 @@
+{"data":[{"id":2,"branch_id":1,"user_id":17,"label":"Mon Ticket Deep-MC","payload_json":{"lists":[{"item_id":1,"qty":2,"name":"deep-mc T2 Item"}],"total":15},"preview_total":"15.00","items_count":1,"idempotency_token":"deep-mc-T2-A-token","created_at":"2026-05-27T13:57:11.000000Z","updated_at":"2026-05-27T13:57:11.000000Z"}]}

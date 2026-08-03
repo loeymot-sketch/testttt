@@ -1,0 +1,68 @@
+{
+  "micro_system": "M7-parked",
+  "verdicts": [
+    {
+      "id": "M7-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Code confirmed: recall() (PosParkedOrderService.php:99) hard-deletes the row inside the GET transaction and returns a replicate() snapshot; route is GET admin/pos/parked-orders/{id} (api.php:915). REAL narrow defect: ticket is destroyed server-side at GET time before client confirms a successful cart rebuild, with no soft-delete/undo (purge service:204 is the only other deleter). BUT the finding's drama is wrong: posParked.js order is await axios.get(:81) THEN resetCart(:85) THEN populate(:90) — a lost/rejected response rejects the await so resetCart NEVER runs; the cart is NOT emptied. Restore is also blocked unless the cart is already empty (ParkedOrdersComponent.vue:187), and the call is an XHR not a navigable URL so browser-prefetch/double-tap-delete vectors don't apply (busyId:79/87 disables double-tap). Downgraded P1->P2: real data-loss-on-failed-restore in single-box V1, but no cart-wipe and no REST-prefetch exposure as claimed."
+    },
+    {
+      "id": "M7-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "Verified clean keeper. Backend builds warnings.unavailable_variations (PosParkedOrderService.php:95-97,173-177) and client builds restoredPayload._recall_purged_item_ids (posParked.js:111-127). grep across resources/js shows ZERO consumers of unavailable_variations or _recall_purged_item_ids beyond their write sites (the warnings/ComposerProfileWarningBadge hits are an unrelated item-show feature). @restored=\"applyParkedSnapshot\" (PosComponent.vue:1090) passes the payload, and applyParkedSnapshot (3474-3528) never inspects warnings — restoreOrder shows only a flat alertService.success('pos.park_restore_success') = 'Commande restaurée avec succès.' (fr.json:184, ParkedOrdersComponent.vue:197). Operator is never told the restored cart silently differs. The safety diff is computed then thrown away. P1 stands."
+    },
+    {
+      "id": "M7-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Code confirmed: promptParkOrder uses window.prompt(this.$t('pos.park_label_prompt'),'') at PosComponent.vue:3450 and treats label===null as abort (:3452). The native blocking modal on a touchscreen is a real UX wart. BUT necessity premises are unverified assumptions: 'keyboardless touchscreen' and 'WebView suppresses prompt' were not demonstrated — CLAUDE.md S6 drives /admin/pos via Playwright in a real browser where window.prompt works and the label is optional (empty string trims to null and park proceeds, :3460). It functions today. Downgraded P2->P3 polish; the WebView-null-abort vector is hypothetical for this V1 environment."
+    },
+    {
+      "id": "M7-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Verified: 'Supprimer' button (ParkedOrdersComponent.vue:84-91) calls discardOrder(order.id) which dispatches posParked/discard with NO confirm()/dialog (method :204-215, only an alertService.success on resolve). It sits in a 2-column grid (CSS grid-template-columns repeat(2) :469) immediately beside the green Restaurer button. Backend discard() is a hard DELETE (service:195-201). A single mis-tap permanently destroys a held order with no undo, same gesture distance from the intended restore. Destructive-no-confirm-no-undo on a touchscreen POS. P2 reasonable."
+    },
+    {
+      "id": "M7-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "Code confirmed: listForOperator filters user_id AND branch_id (service:65-66), recall (:77) and discard (:199) also require user_id; resolveOperatorContext returns authId as owner (controller:100). So only the parking operator sees/restores a ticket. BUT this is WORKS-AS-INTENDED / owner-decision, not a defect — the finding itself says 'not a coding bug', and there is DOCUMENTED deliberate scoping right there (controller:80-98, P0-POS-04 branch-isolation guard). For single-box V1 Le Cayenne per-operator scoping is defensible. is_necessary=false (one owner question, not a correction); downgraded P2->P3."
+    },
+    {
+      "id": "M7-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "Verified: restoreOrder returns early with alertService.info('pos.park_restore_requires_empty_cart') = 'Videz ou parquez le panier courant avant de restaurer une commande.' (fr.json:186, ParkedOrdersComponent.vue:187-190) when posCart/lists is non-empty. The finding ITSELF admits 'the guard is correct'. This is a feature request (one-tap park-and-restore), not a defect — works-as-intended. is_necessary=false; P3 enhancement at most."
+    },
+    {
+      "id": "M7-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "Code confirmed: unique key is (user_id, idempotency_token) without branch_id (migration:25); dedupe lookups query user_id+token only (service:26-29, 55-58). BUT the finding self-admits 'Low risk in V1 / harmless in V1 / defer to V2 multi-branch prep'. The PosParkedOrder model HAS the BranchScope global scope (PosParkedOrder.php boot()), so in V1 the dedupe reads ARE branch-filtered in practice — finding even concedes this. CLAUDE.md + owner mandate explicitly forbid surfacing V2 multi-tenant items as V1 blockers (MEMORY: 'Ne PAS surfacer items cloud SaaS comme blockers actifs V1'). is_necessary=false for this V1 audit. DROP."
+    }
+  ],
+  "coverage_gaps": [
+    "Dual snapshot-builder divergence: park() uses PosComponent.vue currentParkSnapshot() (:3371-3398), NOT the store's buildParkedOrderSnapshot() (posParked.js:11-27). Both exist and can drift. Verified currentParkSnapshot DOES include full checkout_form (branch_id/customer_id/order_type/dining_table_id/address_id/delivery/loyalty/pos_payment_method) consumed by applyParkedSnapshot (:3501-3510), so restore context is preserved today — benign now, but the auditor examined the wrong (store) builder and the two-builder split is an unaudited maintenance hazard.",
+    "filteredParkedOrders client-side search (ParkedOrdersComponent.vue:133-156) and the @click=\"searchQuery=''\" clear button (:37) were not audited — input v-model search over the parked list, defensive null-filtering of id-less entries, never examined for behavior on large lists or special chars.",
+    "Empty/loading/no-match states (ParkedOrdersComponent.vue:44-54: loading spinner, empty_parked_orders, parked_search_no_match) and the busyId disabled-button gating (:79/:87) were not assessed for race conditions during in-flight restore/discard.",
+    "Purge job lifecycle not audited: pos:purge-parked-orders --older-than-hours=24 runs dailyAt 03:15 (Kernel.php:128-129, PosPurgeParkedOrders.php) calling purgeOlderThanHours (service:204-209) — a 24h TTL silently destroys held tickets; no operator-facing aging/expiry indicator in the drawer.",
+    "applyParkedSnapshot delivery/loyalty rehydration path (PosComponent.vue:3492-3527: deliveryOrder/dineInOrder/takeAwayOrder branch + gettingUserAddress + _loadCustomerLoyalty) was not validated against a parked DELIVERY order restore — order_type/address/loyalty side-effects on restore unverified."
+  ]
+}

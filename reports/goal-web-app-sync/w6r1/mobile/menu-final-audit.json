@@ -1,0 +1,13 @@
+{
+  "cats": [],
+  "drinks": {
+    "present": [],
+    "prices": [
+      "21,50 €",
+      "7,90 €",
+      "1,90 €",
+      "6,90 €"
+    ],
+    "sample": "COMMANDES | EN COURS | 4 | HISTORIQUE | 0 | EN ATTENTE | #0807265569 | ~12 MIN | 4 articles | 18:10, 08-07-2026 | 21,50 € | EN ATTENTE | #0807265567 | ~12 MIN | 1 article | 18:09, 08-07-2026 | 7,90 € | EN ATTENTE | #0807265566 | ~12 MIN | 1 article | 18:09, 08-07-2026 | 1,90 € | EN ATTENTE | #0807265565 | ~12 MIN | 1 article | 18:09, 08-07-2026 | 6,90 € | ACCUEIL | MENU | COMMANDES | PROFIL"
+  }
+}

@@ -22,14 +22,16 @@ describe('kioskPricingPreview — payload normalization (SSOT)', () => {
         expect(c.quantity).toBe(3);
     });
 
-    it('projette variations/extras en { id: int } uniquement (strip prix)', () => {
+    it('projette variations/extras/addons en id/quantity uniquement (strip prix)', () => {
         const n = normalizeKioskPricingPreviewItem({
             item_id: 42,
-            item_variations: [{ id: 10, price: 99 }, { id: 11 }, { id: 'bad' }, null],
-            item_extras: [{ id: 20, convert_price: 0.5 }, { id: 'x' }],
+            item_variations: [{ id: 10, price: 99, quantity: 2 }, { id: 11 }, { id: 'bad' }, null],
+            item_extras: [{ id: 20, convert_price: 0.5, quantity: 3 }, { id: 'x' }],
+            item_addons: [{ id: 30, price: 2.5, role: 'drink', quantity: 2 }, { id: 'bad' }],
         });
-        expect(n.item_variations).toEqual([{ id: 10 }, { id: 11 }]);
-        expect(n.item_extras).toEqual([{ id: 20 }]);
+        expect(n.item_variations).toEqual([{ id: 10, quantity: 2 }, { id: 11 }]);
+        expect(n.item_extras).toEqual([{ id: 20, quantity: 3 }]);
+        expect(n.item_addons).toEqual([{ id: 30, quantity: 2 }]);
     });
 
     it('instruction cappée à 255 chars', () => {
@@ -85,7 +87,8 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
         });
         const preview = createKioskPricingPreview({ axios: axiosMock });
 
-        preview.request({ items: [{ item_id: 1, quantity: 1 }] });
+        // heal rush-100 WA-R1-05/06: preview skipped when no modifiers — include one to trigger the call.
+        preview.request({ items: [{ item_id: 1, quantity: 1, item_variations: [{ id: 9, quantity: 1 }] }] });
         expect(axiosMock.post).not.toHaveBeenCalled();
         vi.advanceTimersByTime(399);
         expect(axiosMock.post).not.toHaveBeenCalled();
@@ -110,9 +113,10 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
         });
         const preview = createKioskPricingPreview({ axios: axiosMock });
 
-        preview.request({ items: [{ item_id: 1 }] });
+        // heal rush-100: include modifier to bypass no-modifier skip path.
+        preview.request({ items: [{ item_id: 1, item_extras: [{ id: 7, quantity: 1 }] }] });
         vi.advanceTimersByTime(200);
-        preview.request({ items: [{ item_id: 2 }] });
+        preview.request({ items: [{ item_id: 2, item_extras: [{ id: 7, quantity: 1 }] }] });
         vi.advanceTimersByTime(200);
         expect(axiosMock.post).not.toHaveBeenCalled();
         vi.advanceTimersByTime(500);
@@ -135,7 +139,8 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
             },
         });
         const preview = createKioskPricingPreview({ axios: axiosMock });
-        const p = preview.request({ items: [{ item_id: 7, quantity: 1 }] });
+        // heal rush-100: include modifier to bypass no-modifier skip path.
+        const p = preview.request({ items: [{ item_id: 7, quantity: 1, item_addons: [{ id: 3, quantity: 1 }] }] });
         vi.advanceTimersByTime(500);
         const res = await p;
         expect(res.total).toBe(12.3);
@@ -159,5 +164,44 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
         preview.destroy();
         vi.advanceTimersByTime(500);
         expect(axiosMock.post).not.toHaveBeenCalled();
+    });
+
+    // [FIX SIGNAL-JAUNE 2026-06-30] Un 422 = composition incomplète pendant la compo
+    // (viande/sauce requise pas encore choisie) → NE doit PAS déclencher onError (pas de
+    // toast jaune « Tarif rafraîchi »). Seules les vraies erreurs (réseau/401/5xx) le font.
+    function errWithStatus(status) {
+        const e = new Error('http ' + status);
+        e.response = { status, data: { errors: { 'items.0.item_variations': ['Sélectionnez au moins 1 Viande 2 (actuel : 0).'] } } };
+        return e;
+    }
+
+    it('422 (compo incomplète) NE déclenche PAS onError → pas de signal jaune', async () => {
+        const onError = vi.fn();
+        const axiosMock = makeAxiosMock(errWithStatus(422));
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError });
+        const p = preview.request({ items: [{ item_id: 97, quantity: 1, item_variations: [{ id: 361, quantity: 1 }] }] });
+        vi.advanceTimersByTime(500);
+        await p;
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('une vraie erreur (500) déclenche bien onError → toast légitime', async () => {
+        const onError = vi.fn();
+        const axiosMock = makeAxiosMock(errWithStatus(500));
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError });
+        const p = preview.request({ items: [{ item_id: 97, quantity: 1, item_variations: [{ id: 361, quantity: 1 }] }] });
+        vi.advanceTimersByTime(500);
+        await p;
+        expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it('401 (auth) déclenche bien onError → toast légitime', async () => {
+        const onError = vi.fn();
+        const axiosMock = makeAxiosMock(errWithStatus(401));
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError });
+        const p = preview.request({ items: [{ item_id: 97, quantity: 1, item_variations: [{ id: 361, quantity: 1 }] }] });
+        vi.advanceTimersByTime(500);
+        await p;
+        expect(onError).toHaveBeenCalledTimes(1);
     });
 });

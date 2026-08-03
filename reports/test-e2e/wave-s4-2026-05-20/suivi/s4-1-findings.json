@@ -1,0 +1,32 @@
+{
+  "errors": [],
+  "assertions": [
+    {
+      "key": "column_labels",
+      "value": [
+        "🔔 À encaisser",
+        "🍳 En préparation",
+        "🛎️ Prêts à servir",
+        "✅ Livrés"
+      ]
+    }
+  ],
+  "columnLabels": [
+    "🔔 À encaisser",
+    "🍳 En préparation",
+    "🛎️ Prêts à servir",
+    "✅ Livrés"
+  ],
+  "subtitles": [
+    "Borne — paiement comptoir"
+  ],
+  "seeded": {
+    "kioskCashId": 57,
+    "posPaidId": 55,
+    "kioskTpeId": 56
+  },
+  "dispatched": {
+    "orderId": 57,
+    "amount": "12.50"
+  }
+}

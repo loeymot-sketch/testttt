@@ -39,6 +39,20 @@ Field descriptions:
 | `menu.item_availability_changed` | A menu item status or price changed. |
 | `stock.low` | Reserved V1 type for future stock alerts. |
 
+## Order Realtime Channels
+
+Order lifecycle realtime events are branch-scoped through the durable outbox.
+The authoritative map lives at
+`docs/orchestration/ORDER_EVENT_OUTBOX_CHANNEL_MAP_2026-04-26.md`.
+
+| Event type | Broadcast name | Channel |
+|---|---|---|
+| `order.created` | `OrderCreated` | `private-branch.{branch_id}` |
+| `order.status_changed` | `OrderStatusChanged` | `private-branch.{branch_id}` |
+
+The channel `branch_id` must come from the persisted order aggregate, never from
+a client request payload.
+
 ## JSON Examples
 
 `order.created`

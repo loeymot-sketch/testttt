@@ -1,0 +1,76 @@
+{
+  "micro_system": "M8-refund (Refund / remboursement)",
+  "verdicts": [
+    {
+      "id": "M8-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. PosOrderController.php:105-130 branches on SealedOrderGuard::isSealed; pre-Z calls refundPreZ -> OrderService::changeStatus(RETURNED). In OrderService.php:2189-2197 the RETURNED branch calls cashBack (if transaction) + LoyaltyService::refundPoints, but NEVER dispatches RefundCreated. grep 'RefundCreated::dispatch' = exactly 3 sites (Stripe.php:442, PaymentService.php:187, RefundWithCounterEntryService.php:415); OrderService is NOT one. OrderService.php:2261-2267 fires OrderCanceled (the only other stock-release trigger) ONLY for CANCELED/REJECTED, NOT RETURNED. Confirmed: releaseForOrder is called solely from ReleaseStockOnRefundCreated (RefundCreated) and ReleaseStockOnOrderCanceled (OrderCanceled). Therefore pre-Z refund releases NO stock, NO availability, and runs NO earned-points clawback, whereas post-Z (RefundWithCounterEntryService.php:397 refundPoints + :415 RefundCreated::dispatch) runs the full cascade. Same button, asymmetric side-effects = real, matches owner 'flou' complaint. P1 retained: genuine behavioral divergence on the common path; fix (dispatch RefundCreated on pre-Z branch) is idempotent-safe."
+    },
+    {
+      "id": "M8-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED but OVERLAPS M8-01. ClawbackLoyaltyPointsOnRefund.php docblock confirms the cash+points double-dip rationale; it is registered ONLY under RefundCreated (EventServiceProvider.php:197-204, listener appended LAST). LoyaltyService::refundPoints (LoyaltyService.php:21-29) reverses only type='redeem' rows; clawbackEarnedPoints (LoyaltyService.php:141-183) writes type='manual_deduct' and is idempotent on that key, fired exclusively via the listener. Pre-Z path dispatches no RefundCreated so manual_deduct never runs -> earned points survive a same-day refund. REAL. Downgraded P1->P2: it is one of the three side-effects already covered by M8-01's single root cause and single fix, AND the trigger is narrower (requires a loyalty-enrolled customer + DELIVERED + same-day). Not an independent defect."
+    },
+    {
+      "id": "M8-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. fr.json:319 pos.refund.warning = 'Cette action genere une commande miroir NF525 et un ticket de remboursement. L operation est irreversible.' rendered unconditionally in PosRefundModal.vue:100-108. On the pre-Z path PosOrderController::refundPreZ flips the PARENT to RETURNED (no child mirror created) and never sets parent_order_id, while ReceiptRemboursementMarker.vue:47-48 (isRefund := parentId>0) never triggers on the parent. So for every same-day refund the cashier reads a consequence description that does not occur. Real NF525-adjacent UX truthfulness issue. P2 retained."
+    },
+    {
+      "id": "M8-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. ReceiptRemboursementMarker.vue:43-49: parentId = Number(order.parent_order_id ?? 0); isRefund = parentId > 0. Pre-Z refund (changeStatus->RETURNED) creates no child and sets no parent_order_id on any order, so a reprinted same-day refunded ticket shows NO REMBOURSEMENT badge; post-Z mirror (parent_order_id set, RefundWithCounterEntryService.php:112) does. Inconsistent fiscal presentation for the same business event. P2 retained."
+    },
+    {
+      "id": "M8-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED dead plumbing. RefundCreated.php:26 carries refundedItems with default []. All 3 dispatch sites pass order only (Stripe.php:442 $order, PaymentService.php:187 $order, RefundWithCounterEntryService.php:415 $parent) — none pass a second arg. ReleaseStockOnRefundCreated.php:15 forwards $event->refundedItems; ReleaseAvailabilityOnRefundCreated.php:45-80 has full-vs-partial branches; both unreachable because refundedItems is always []. PosRefundModal.vue posts only {reason} (line 328) with no item picker. ClawbackLoyaltyPointsOnRefund docblock documents partial clawback as V1.0.2 backlog and always claws FULL. Real unreachable surface — owner's 'unnecessary things' category. P2 retained (decision call: delete or finish)."
+    },
+    {
+      "id": "M8-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. PosRefundModal.vue:287 mints idempotencyKey = `pos-refund-${newOrder.id}-${Date.now()}` inside the order watcher (fires per modal open, not a true mount-freeze despite the docblock). Docblock :221-223 claims 'different timestamps = backend UNIQUE catches the second with 409' — but that UNIQUE(parent_order_id) only exists for the post-Z mirror (PosOrderController.php:177-179 catch). On pre-Z there is NO mirror and NO UNIQUE; the real backstop is OrderService.php:2135-2143 status-equality early-return (RETURNED->RETURNED short-circuits under lockForUpdate) plus PaymentService.php:97-101 existing-cash_back early-return. CONFIRMED the CTA stays visible after a pre-Z refund: canShowRefund (PosOrderShowComponent.vue:522-534) gates on payment_status===PAID (which deliberately does NOT flip on pre-Z, controller :94-103) and parent_order_id (never set on parent) — so a second click is possible but harmlessly no-ops via the status guard. Safe today, but documented protection is wrong = maintainer trap. P2 retained (doc fix + hide-CTA-on-RETURNED + drop Date.now())."
+    },
+    {
+      "id": "M8-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. PosOrderController.php:94-103 comment confirms it deliberately does NOT flip parent.payment_status (PaymentStateMachine PAID => []). Pre-Z parent ends status=RETURNED, payment_status=PAID, and emits no RefundCreated so PersistOrderPaymentStatusChangedOnRefundCreated.php (the synthetic PAID->REFUNDED broadcast at :104-125) never runs. Post-Z leaves the sealed parent PAID too but the mirror carries REFUNDED and the synthetic broadcast fires. Net: a same-day refunded order renders 'Retourne' + 'Paye' with no realtime refund signal — genuine reconciliation/clarity blur, not data loss (cashBack did return money). P2 retained; fix (b) dispatch RefundCreated on pre-Z resolves M8-01/02/07 together."
+    },
+    {
+      "id": "M8-08",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED cross-layer min-length drift. PosRefundModal.vue:264 canConfirm requires trimmed >=5; PosOrderController.php:65 validates reason min:3 max:700; RefundWithCounterEntryService trim-non-empty; OrderStatusRequest.php:rules() = reason 'sometimes|nullable|string|max:700' (NO min) and the inline OrderService.php:2151 validate = reason 'required|max:700' (NO min). So a direct API client can write a 3-char audit reason below the UI's stated 5-char floor. Minor but real 'blur'. P3 retained; trivial fix = controller min:5 so both branches inherit it."
+    }
+  ],
+  "coverage_gaps": [
+    "Direct changeStatus->RETURNED bypass: the generic POST /api/admin/pos-order status-change route still accepts status=RETURNED via OrderService::changeStatus WITHOUT going through PosRefundModal/refund-with-counter-entry. The UI removed RETURNED from the dropdown selector (PosOrderShowComponent.vue:553-565 'REMOVED: returned') but a raw API client with pos-orders permission can still trigger a RETURNED refund directly, inheriting ALL the pre-Z asymmetries (no RefundCreated cascade) AND skipping the pos-refund permission gate that only PosOrderController::refundWithCounterEntry enforces. Auditor examined the modal CTA but not this alternative status-change endpoint as a refund vector.",
+    "changePaymentStatus(paymentStatus.value) handler (PosOrderShowComponent.vue:143) and PaymentStatusRequest path were NOT audited as a potential refund/reconciliation side-channel — whether a manager can set payment_status independently and how that interacts with a RETURNED order's PAID flag (M8-07).",
+    "Idempotency middleware behavior on refund-with-counter-entry pre-Z branch: the route carries ['throttle:pos-order-update','idempotency'] (routes/api.php:994) but the auditor only reasoned about the modal-minted key, not what the IdempotencyKeyMiddleware actually caches for a 200 pre-Z response (mode='pre_z') vs a 201 post-Z response — replay semantics of a 2xx pre-Z refund under a re-minted key are unverified.",
+    "Partial-refund cash side: even if M8-05 plumbing were wired, no audit of whether cashBack/CashMovement amounts would be prorated for a partial refund — RefundWithCounterEntryService negates ALL order_items and ALL payments by construction (lines 146-205), so a partial refund would over-refund cash; this latent mismatch was not examined.",
+    "Stripe-gateway refund path (Stripe.php:442 RefundCreated::dispatch) and PaymentService.php:187 refund path were listed as dispatch sites but not audited for the POS flow — whether a card refund routed through these reaches the same NF525 mirror/marker discipline as the counter-entry service is unverified."
+  ]
+}

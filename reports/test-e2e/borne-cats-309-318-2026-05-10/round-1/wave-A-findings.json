@@ -1,0 +1,152 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 13,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Sidebar at state 04 contains data-testid=\"kiosk-categories-sidebar-item-306\" (Tacos), data-testid=\"kiosk-categories-sidebar-item-307\" (Sandwichs), data-testid=\"kiosk-categories-sidebar-item-308\" (Burgers) — exact DOM grep on 04-categories-welcome.dom.html confirms all three. The owner gate (AUDIT_PLAN.md line 7 + line 26 + line 235) explicitly states 'Cats 306 / 307 / 308 (sandwich / burger / tacos) — owner gate' OUT OF SCOPE / hidden. Source resources/js/store/modules/kioskMenu.js:78 only filters cat 315: `KIOSK_HIDDEN_CATEGORY_IDS = new Set([315])`. Customer can navigate to and ADD products from these categories that the owner has explicitly excluded — the kiosk will accept the cart, send to KDS, and charge for products outside the owner's intended catalog. This is a silent revenue leak / unauthorized sale risk. Verified across all 9 cat-browse states (05–13): every screenshot shows TACOS / SANDWICHS / BURGERS persistently in the sidebar.",
+      "fix_hint": "resources/js/store/modules/kioskMenu.js:78 — extend `KIOSK_HIDDEN_CATEGORY_IDS = new Set([315])` to `new Set([306, 307, 308, 315])`. Alternatively introduce a server-side branch-config flag (kiosk_hidden_categories) seeded from settings table so owners can manage the exclusion without code change. Add Vitest regression: tests/js/kioskMenu.spec.js asserting categories 306/307/308 absent from `selectableCategories` getter.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "DOM grep `data-testid=\"kiosk-categories-sidebar-item-307\"` returns 2 occurrences in 04-categories-welcome.dom.html with two distinct `kiosk-sidebar-name` labels: 'Sandwichs' and 'Sandwich froid'. Two DOM nodes share the same data-testid (HTML duplicate-id violation; Playwright .getByTestId with strict mode would fail). The split is performed by resources/js/helpers/kioskSandwichSplit.js (referenced in spec L184 comment). Total sidebar entries = 13 (12 unique cats + 1 duplicate row for cat 307 cold-sandwich split).",
+      "fix_hint": "resources/js/helpers/kioskSandwichSplit.js — assign distinct data-testid to the cold-sandwich virtual row (e.g. `kiosk-categories-sidebar-item-307-cold` or `kiosk-categories-sidebar-item-307-virtual`). Update KioskSidebar component template to apply a stable suffix when the row is the synthetic cold split. Even if the owner-gate fix (A-001) lands, this duplicate-testid issue remains a latent HTML/A11y violation and must be resolved.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "DOM grep on 04-categories-welcome.dom.html finds the rejected pink hex `#E8001C` 11 times in inline styles, plus its rgb form `232, 0, 28` 18 times and `232,0,28` 4 times — a total of 33 instances of the legacy pink palette in the rendered page. The Cayenne primary `#F4501E` (244,80,30) is also present (22 hex + 13 rgb), so the page mixes both palettes simultaneously. The audit-plan acceptance criterion (Wave A line 46) explicitly requires `Cayenne primary #F4501E not pink #E8001C`. The spec's pink_present check (L211) returns false because it inspects only `[data-testid=\"kiosk-categories-pay\"]` background-image, but pink is leaking elsewhere on the page (likely via FoodKing logo SVG/text and other inline-styled elements). The PNG of state 01–03 visually confirms the pink FoodKing wordmark on the idle screen — the brand logo itself is rendered in pink #E8001C, not Cayenne #F4501E, in violation of the owner palette gate.",
+      "fix_hint": "Locate inline style/CSS-var sources of #E8001C across kiosk components: grep -r '#E8001C\\|232, 0, 28' resources/js resources/css public/css. Likely candidates: KioskHeader logo, kiosk-theme tokens. Replace all with Cayenne `#F4501E` per docs/branding. Audit-plan claim that pink is absent from the pay button is technically true but misses the larger surface — the spec's color check is too narrow and misses the brand logo + secondary surfaces.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-borne-A/13-cat-318-supplements.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cat 318 'Suppléments' grid: DOM has 8 product cards but 8 of them use `src=\"/storage/<n>/item-default.svg\"` placeholder (grep `item-default.svg` returned 8 matches in 13-cat-318-supplements.dom.html). Visually all 8 supplement tiles render an empty `+` placeholder card with NO product photography. Other categories have similar issues — cat 314 Menus Enfants: 2/2 placeholders; cat 316 Desserts: 2/3 placeholders; cat 309 Assiettes: 1/4 (Mixte). Total: 13 missing product photos across Wave A. The empty-state quality fails because cards have NO illustration even though they have copy + CTA — a customer browsing supplements has no visual anchor to choose between Œuf, Salade verte, Galette pommes de terre, etc.",
+      "fix_hint": "Two-pronged: (1) data — upload product photos for the 13 items missing imagery (item ids visible in storage paths /storage/55/, /storage/56/, etc.). Coordinate with content team. (2) UX — when no image exists, the placeholder should at minimum show a category-icon glyph or a descriptive skeleton, not the same generic '+'. resources/js/components/frontend/kiosk/KioskProductCardComponent.vue (or equivalent) — fall back to a category emoji + label background when item.image_url is item-default.svg.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Idle screen (states 01, 02, 03) visually shows the FoodKing brand wordmark in PINK (#E8001C). The owner gate explicitly requires Cayenne `#F4501E`. The first impression of the kiosk for every customer = pink brand. Cross-referenced with finding A-003 the DOM contains 11+18+4 = 33 hex/rgb instances of the rejected pink. This is the very first thing a customer sees — palette drift on the brand logo at the entrypoint.",
+      "fix_hint": "Locate the FoodKing logo asset/component: likely resources/js/components/frontend/kiosk/KioskHeader* or an SVG asset. If the logo is an SVG with hardcoded #E8001C fill, replace with Cayenne. If it's a CSS-var driven text logo, fix the var. Fix CANNOT be deferred — the kiosk-idle is the most visible surface in the product.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-borne-A/02-idle-language-fr.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "States 02 (FR) and 03 (EN) PNGs are pixel-identical to state 01: NO language selector buttons render. DOM grep on 01-idle-screen.dom.html finds zero matches for `kiosk-idle-lang-fr` / `kiosk-idle-lang-en` / `kiosk-idle-lang-selector`. The spec captured 02 and 03 as separate quartet states but they are the SAME state — wasted artifact budget (3 PNGs for what is effectively one state) and the audit-plan claim 'EN toggle, verify i18n catches over' is unverifiable in this run. The spec author acknowledged the no-op (L116-122) per ADR-007, but produced visually-redundant captures regardless. The aria-pressed assertion is `null` (recorded in observations log) — neither pressed nor not-pressed because no DOM element exists.",
+      "fix_hint": "Two paths: (1) If kiosk_languages_enabled config is intentionally single-lang, DROP states 02 and 03 from the audit plan — they capture nothing distinct. (2) If multi-lang is in scope, fix the env config to enable a 2-language picker on the idle screen and re-run. Probably resources/views/kiosk/idle.blade.php / KioskIdleComponent.vue conditional `v-if=\"enabledLanguages.length > 1\"` resolves false because backend setting kiosk_languages_enabled is missing/empty.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "01-idle-screen.console.json has 2 entries with level=error: `WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED`. State 04 has 1 similar entry on `wss://`. These are Pusher / Echo websocket errors — allowlisted per REVIEWER_PROTOCOL.md (P3 informational, vendor.js source confirmed in stack). No application-code console errors detected. Filing as P3 informational, NOT a P1 violation.",
+      "fix_hint": "No fix required — allowlisted. If Pusher noise is undesirable in dev, gate Echo init via APP_DEBUG / Echo.connector === 'null' fallback in resources/js/bootstrap.js. Production has Pusher available so this is dev-only noise.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "On state 04 (welcome / first paint after takeaway tap), the right-side product grid auto-displays cat 317 BOISSONS (8 boisson cards rendered immediately — verified by grep `kiosk-product-card-` count = 8 in 04-categories-welcome.dom.html and the PNG showing the BOISSONS title). The audit-plan acceptance for state 04 says 'first paint after idle tap; verify cat 315 NOT in sidebar, count 9 visible categories' — it does NOT say a category should be auto-selected. UX issue: customer arriving at the menu sees BOISSONS pre-selected (likely because boissons is alphabetically/order-wise first or cat-id sort puts it before others), which is NOT the natural default for a meal-ordering kiosk. The expected default is 'no category selected' / a hero/welcome panel showcasing the establishment.",
+      "fix_hint": "resources/js/store/modules/kioskCategories.js (or KioskCategoriesView.vue) — initial selectedCategoryId should be null on welcome paint, with a hero panel rendered until customer chooses. If a default category MUST be selected, pick the highest-revenue category (likely 309 Assiettes per FoodKing positioning) not boissons.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-borne-A/05-cat-309-assiettes.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Cat 309 'Nos Assiettes' product photos show what visually appear to be SANDWICHES (bread + meat filling), not plates. DOM image sources: /storage/37/assiette_kefta.png, /storage/38/assiette_merguez.png, /storage/36/assiette_poulet.png. The image filenames are correctly named 'assiette_*' but the photos themselves do not visually match the category label 'ASSIETTES'. Customer expectation = a plate; visual = a sandwich. Either the photo content is wrong (data team uploaded wrong files) or the category label is misleading. Either way, a customer expecting a 'plate' will receive an unexpected presentation.",
+      "fix_hint": "Verify with content team: (a) are these the canonical product photos or stale dev-fixture data? (b) if these ARE correct photos but the visual is misleading, consider renaming category to 'Plats Assiettes' or similar more descriptive label. Recommend a content audit pass before production launch — out of scope for code-side fix.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "AUDIT_PLAN.md state 04 acceptance says 'count 9 visible categories (309/310/311/312/313/314/316/317/318) — no 306/307/308/315'. Actual sidebar = 13 entries (306, 307×2, 308, 309, 310, 311, 312, 313, 314, 316, 317, 318). The plan's count claim (9) is incorrect at every level: code only filters 315 and the sandwich-split adds 1 duplicate. The audit plan is internally inconsistent with the implementation.",
+      "fix_hint": "Update AUDIT_PLAN.md line 26 to either (a) reflect current implementation: '12 unique categories + 1 cat-307 cold split = 13 sidebar items' (and require A-001 fix), OR (b) be a forcing function that demands A-001 + A-002 fixes before the plan can be trusted. The plan should drive the impl, not document the bug.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "test-e2e-borne-A/05-cat-309-assiettes.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Across all cat-browse states (05–13) the right-rail green '+' add-to-cart button appears in every product card. DOM grep on a product card shows the button uses an icon-only render (the visible '+' glyph). Each card has data-testid `kiosk-product-card-<id>` but the inner add button needs aria-label='Ajouter <product name> au panier' for screen-reader users; without it the user hears 'button' or 'plus' with no product context. Need to verify on the actual button element (could not exhaustively inspect every product card markup in this round; flagging for round 2 to verify).",
+      "fix_hint": "Check resources/js/components/frontend/kiosk/KioskProductCardComponent.vue or equivalent — the '+' icon button should have aria-label binding to product name. Pattern: `<button :aria-label=\"$t('kiosk.add_product_to_cart', { name: product.name })\">`. Verify the i18n key resolves to a usable string in fr.json kiosk namespace.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "GStack agent claim 'Cayenne palette sentinel: getComputedStyle on pay-button bg-image returned a non-matching string for 244,80,30' — assertion was made specifically on `[data-testid=\"kiosk-categories-pay\"]`. Inspecting that element via DOM grep on 04-categories-welcome.dom.html: the pay button container has class `kiosk-pay-cta` but the inner styles reference background gradients with both #F4501E (Cayenne) AND #E8001C (pink) in the same DOM. Reviewer cannot conclude whether the rendered pay button is Cayenne or pink without a live page paint, so the spec's narrow check is insufficient evidence. Coupled with finding A-003/A-005, the page-wide palette is mixed. The GStack claim that the palette is OK is at best unverified and at worst false. The spec test passed because pinkPresent regex did not match within the 400-char serialized palette substring (L210), but the 400-char clip is not exhaustive — many palette references live in CSS classes outside that slice.",
+      "fix_hint": "Spec line 198–211 — replace the 400-char string-clip + regex check with: (a) a full computedStyle.backgroundImage extraction (no slice), (b) a dedicated DOM-wide audit grepping all rendered elements' computed background colors, (c) a deterministic CSS-var inspection: `getComputedStyle(:root).getPropertyValue('--kiosk-primary')` should equal `#F4501E`. Round 2 must add a pixel-level visual diff against a known-good Cayenne baseline as well.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 3,
+    "P2": 5,
+    "P3": 2,
+    "open_P0": 2,
+    "open_P1": 3,
+    "open_P2": 5,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Wave A round 1 — 13 states reviewed with quartet (PNG/DOM/console/network) per state. Two P0 findings dominate: A-001 (cats 306/307/308 visible despite owner gate — silent revenue leak) and A-012 (palette assertion narrow scope leaves Cayenne sentinel unproven). Three P1 findings on palette drift (A-003 33 instances of pink #E8001C in the welcome DOM, A-005 brand logo pink, A-002 duplicate testid for cat 307). The kioskMenu.js source code at line 78 confirms the filter is `new Set([315])` ONLY — the owner gate for 306/307/308 is NOT enforced. Round 2 must (a) extend KIOSK_HIDDEN_CATEGORY_IDS to include 306/307/308, (b) eliminate ALL #E8001C from kiosk surfaces, (c) fix duplicate-testid cat-307-split, (d) tighten the palette spec assertion to be DOM-wide rather than 400-char slice, (e) decide on language-selector scope (drop states 02/03 OR fix the env). DO NOT declare green until open_P0 == 0 AND open_P1 == 0. Allowlisted: WebSocket Pusher dev-mode errors (A-007 P3 info only)."
+}

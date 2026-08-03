@@ -1,0 +1,285 @@
+{
+  "agent": "J-CASCADE kiosk-cash → POS encaisser deep",
+  "phase": "J — Adversarial maximum + step-by-step (J-CASCADE leg)",
+  "mission": "Trace the kiosk-cash → POS Q10 → encaisser → confirmed cascade end-to-end. Verify prior phase fixes (H-SYNC-001, D2, F.10, H2-HEAL-01, C5, G2-HEAL-01/03, G.6) still hold inside the live cascade. Surface NEW findings where prior phases didn't focus (multi-cashier race, abandoned-order TTL, cash-drawer movement atomicity, receipt-print contract drift).",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Static cascade trace, code-only. No live boot. 13 hunts H1-H13.",
+  "method": "Walk-the-cascade left-to-right exactly once: routes/api.php closure → FrontendOrderService kiosk-cash persistence → OrderCreated DispatchableAfterCommit → Echo subscribers in PosComponent/KDS → PosCounterCollectModal → /admin/pos/counter-collect/{order}/confirm closure → PaymentService::confirmCounterPayment DB::transaction → recordCashOrderMovement post-commit hook → OrderPaidAtCounter event → outbox listener → Q10 row removal cascade. Per-hunt verdict: VERIFIED CITED (cite prior heal commit/report) OR GAP (cite file:line where contract breaks).",
+  "files_examined": [
+    "routes/api.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/PaymentService.php",
+    "app/Services/OrderService.php",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "app/Http/Resources/OrderDetailsResource.php",
+    "app/Http/Resources/SimpleOrderResource.php",
+    "app/Http/Resources/KDSOrderDetailsResource.php",
+    "app/Events/OrderPaidAtCounter.php",
+    "app/Events/OrderCreated.php",
+    "app/Events/OrderStatusChanged.php",
+    "app/Events/Concerns/DispatchableAfterCommit.php",
+    "app/Listeners/PersistOrderPaidAtCounterToOutbox.php",
+    "app/Console/Kernel.php",
+    "app/Console/Commands/Iter15CleanupTestOrdersCommand.php",
+    "app/Console/Commands/PosPurgeParkedOrders.php",
+    "app/Domain/Order/PaymentStateMachine.php",
+    "app/Enums/PaymentStatus.php",
+    "config/pos.php",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue"
+  ],
+  "scenario_sequence_verified": [
+    {
+      "step": 1,
+      "event": "Customer composes order at kiosk borne and selects CASH",
+      "code_path": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:410-425 — method === 'cash' branch builds navTarget {name:'kiosk.cash-instruction', query:{number, total, timeout:45}}",
+      "status": "OK"
+    },
+    {
+      "step": 2,
+      "event": "Order persisted server-side with payment_status=PENDING_COUNTER + pos_payment_method=COUNTER_DEFERRED",
+      "code_path": "app/Services/FrontendOrderService.php:206-208 (isCounterDeferredKioskCash flag) and :266-267 (FrontendOrder::create with PENDING_COUNTER + COUNTER_DEFERRED). Auto-accept follows the F-002 round-3 truth table (:215-237).",
+      "status": "OK"
+    },
+    {
+      "step": 3,
+      "event": "Kiosk redirects to /kiosk/cash-instruction screen showing N° + amount, 45s timeout",
+      "code_path": "resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue — full screen with KsCard board, KsButton CTA understood, observability events cash_instruction_shown/cash_instruction_ack",
+      "status": "OK"
+    },
+    {
+      "step": 4,
+      "event": "OrderCreated fires INSIDE DB::transaction via DispatchableAfterCommit → registers afterCommit() so broadcast lands once outermost commit succeeds",
+      "code_path": "app/Services/FrontendOrderService.php:594-596 inside the transaction closure. DispatchableAfterCommit trait at app/Events/Concerns/DispatchableAfterCommit.php:30-39 inspects transactionLevel() > 0 and defers. Sentinel OrderCreatedDispatchPlacementSentinelTest locked since Wave M.",
+      "status": "OK"
+    },
+    {
+      "step": 5,
+      "event": "POS subscribes to private-branch.{id} and refreshes Q10 panel on OrderCreated",
+      "code_path": "resources/js/components/admin/pos/PosComponent.vue:2642-2660 (_subscribeEcho registers OrderCreated handler that calls loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders).",
+      "status": "OK"
+    },
+    {
+      "step": 6,
+      "event": "Polling fallback ≤5s when readyOrders empty or last refresh stale; 60s when fresh (per H-SYNC-001/C2)",
+      "code_path": "resources/js/components/admin/pos/PosComponent.vue:2602-2616 (_kioskPollingInterval). Comment [GOAL-HEAL-SYNC-001 2026-05-23] documents the ≤5s force when Echo silently fails on /api/broadcasting/auth CSP.",
+      "status": "OK"
+    },
+    {
+      "step": 7,
+      "event": "Cashier clicks Encaisser → PosCounterCollectModal opens with order prop",
+      "code_path": "resources/js/components/admin/pos/PosComponent.vue:3039-3045 openCounterCollect() sets counterCollectOrder + per-row _collecting=true guard; PosCounterCollectModal.vue:241-244 reactive visible computed.",
+      "status": "OK"
+    },
+    {
+      "step": 8,
+      "event": "MONTANT REÇU pre-filled in FR comma format (e.g. '8,50') per D2 fix",
+      "code_path": "resources/js/components/admin/pos/PosCounterCollectModal.vue:293-305 watcher with .replace('.', ',') ; parser at :252-256 accepts both . and , via .replace(',', '.').",
+      "status": "OK"
+    },
+    {
+      "step": 9,
+      "event": "Cash change rendu visible when received > total",
+      "code_path": "PosCounterCollectModal.vue:257-261 cashChange computed; template :126-138 renders cc-change-row when cashChange > 0.",
+      "status": "OK"
+    },
+    {
+      "step": 10,
+      "event": "Confirm → POST /api/admin/pos/counter-collect/{order}/confirm with X-Idempotency-Key header",
+      "code_path": "PosCounterCollectModal.vue:343-389 axios.post with header. Key formula: 'pos-counter-collect-{orderId}-{modeInt}-{minuteBucket}' mirrors Wave W (commit ab0caa985).",
+      "status": "OK"
+    },
+    {
+      "step": 11,
+      "event": "Backend persists payment + extends NF525 fiscal_sequence + audit_logs INSIDE single DB::transaction with lockForUpdate",
+      "code_path": "app/Services/PaymentService.php:193-326 confirmCounterPayment. Tx wraps: lockForUpdate (:220-223) → assertCounterDeferredOrder + PaymentStateMachine guard → fiscal_sequence_no allocation (:241-243) → save → Transaction::firstOrCreate (:296-307) → AuditLogService::write (:309-321). All on COMMIT or all rolled back.",
+      "status": "OK"
+    },
+    {
+      "step": 12,
+      "event": "OrderPaidAtCounter event fires post-commit (transactionLevel()==0 at that point → synchronous event())",
+      "code_path": "PaymentService.php:328-329 outside closure; DispatchableAfterCommit at OrderPaidAtCounter.php:10 falls through to event() inline. PersistOrderPaidAtCounterToOutbox writes domain_events row + DB::afterCommit dispatches DispatchDomainEventsJob.",
+      "status": "OK"
+    },
+    {
+      "step": 13,
+      "event": "POS Q10 panel removes the encaisée row on next refresh",
+      "code_path": "PosComponent.vue:2676-2685 (Echo OrderPaidAtCounter handler) + :3046-3057 (onCounterCollectConfirmed local refresh). Backend filter at routes/api.php:787 'where payment_status PENDING_COUNTER' so PAID rows automatically drop out of the list.",
+      "status": "OK"
+    },
+    {
+      "step": 14,
+      "event": "KDS sees badge payment_pending_counter flip off; OrderPaidAtCounter handler debounces refresh",
+      "code_path": "KitchenDisplaySystemComponent.vue:1861 Echo handler. KDSOrderDetailsResource.php:44 exposes payment_pending_counter boolean. Badge renders at template :679 + :856.",
+      "status": "OK"
+    }
+  ],
+  "cascade_hunts": [
+    {
+      "id": "H1",
+      "title": "Echo broadcast cascade on kiosk-cash order create",
+      "verdict": "VERIFIED CITED",
+      "evidence": "FrontendOrderService.php:594-596 dispatches OrderCreated INSIDE the transaction; DispatchableAfterCommit defers; PosComponent.vue:2644-2660 subscribes; KDS at :1860 subscribes. Per phase-i I.1 trace 'Kiosk order create' action node (already audited).",
+      "severity": "INFO"
+    },
+    {
+      "id": "H2",
+      "title": "Q10 panel update on Echo received (or polling fallback)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Dual-path coverage confirmed. Echo handlers at PosComponent.vue:2644 (OrderCreated), :2663 (OrderStatusChanged), :2676 (OrderPaidAtCounter) all call loadKioskCashOrders. Polling fallback _kioskPollingInterval at :2602-2616 forces ≤5s cadence when stale/empty. H-SYNC-001 sentinel covers both paths.",
+      "severity": "INFO"
+    },
+    {
+      "id": "H3",
+      "title": "Encaisser modal data integrity",
+      "verdict": "VERIFIED CITED",
+      "evidence": "PosCounterCollectModal.vue receives order prop, computes orderTotal (:244-247), pre-fills cashReceivedRaw with FR comma format (:293-305 watcher), template renders queue_number/order_serial_no/id fallback chain (:60-62). D2-BIS pre-fill + F-4 modal buttons verified.",
+      "severity": "INFO"
+    },
+    {
+      "id": "H4",
+      "title": "Payment persistence atomicity",
+      "verdict": "AMBER — atomicity boundary narrower than brief assumes",
+      "evidence": "PaymentService.php:219-326 DB::transaction wraps: lockForUpdate + status flip + fiscal_sequence_no allocation + auto_prepare promotion + Transaction::firstOrCreate + AuditLogService::write. ALL roll back together if any step fails. HOWEVER three side-effects sit OUTSIDE the closure: (a) OrderPaidAtCounter::dispatch at :329, (b) OrderStatusChanged::dispatch at :343-347 conditional on auto-prepare, (c) recordCashOrderMovement at :363 conditional on CASH mode. If the Outbox/cash-movement step fails AFTER the order is PAID, the order stays PAID + audit chain extended but the secondary durable artifact is missing. Best-effort try/catch around (b) and (c) means failure is logged-and-swallowed, no rollback. Not data-corrupt for the core NF525 chain (F.10 invariants intact) but downstream sync is degraded.",
+      "severity": "P2"
+    },
+    {
+      "id": "H5",
+      "title": "Idempotency cascade (single-cashier double-click)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "IdempotencyKeyMiddleware.php:77-82 scoped key = idempotency:v1:{branchId}:{userId}:sha256(key). H2-HEAL-01 commit 2c5b07c5e added user_id to the scope. Modal key formula at PosCounterCollectModal.vue:350-353 includes minute_bucket so same-minute double-click collapses on Phase-1 replay (line 86-96 of middleware).",
+      "severity": "INFO"
+    },
+    {
+      "id": "H6",
+      "title": "Q10 panel removal cascade after PAID",
+      "verdict": "VERIFIED CITED — dual path",
+      "evidence": "Backend list endpoint routes/api.php:787 hard-filters where payment_status PENDING_COUNTER, so PAID row stops appearing on next refresh. Refresh triggers: (1) immediate after confirm at PosComponent.vue:3053-3056 sequential awaits loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders, (2) OrderPaidAtCounter Echo handler at :2676-2685, (3) ≤5s polling fallback when readyOrders empty. No stale-row risk under normal conditions.",
+      "severity": "INFO"
+    },
+    {
+      "id": "H7",
+      "title": "KDS reception cascade post-encaissement",
+      "verdict": "VERIFIED CITED",
+      "evidence": "KDS subscribes to all 3 lifecycle events at KitchenDisplaySystemComponent.vue:1855-1861. Wave S-1 auto-promote ACCEPT→PREPARING inside PaymentService transaction (:271-282) triggers second OrderStatusChanged dispatch at :343-347 so KDS sees the column movement without polling. G.6 + Wave Polish attestation upheld.",
+      "severity": "INFO"
+    },
+    {
+      "id": "H8",
+      "title": "Receipt print cascade",
+      "verdict": "RED — UX CONTRACT DRIFT",
+      "evidence": "Button label at PosCounterCollectModal.vue:175 reads $t('button.confirm_and_print') (FR 'Confirmer et imprimer') yet NEITHER the modal's onConfirm method (:358-420) NOR PosComponent's onCounterCollectConfirmed handler (:3046-3057) triggers any window.print(), PrintReceipt component, or hardware print API call. The cashier reads the button promising print + confirm, taps it, sees a success toast, but no ticket is printed automatically. To print, the cashier must navigate to the orders tracker and click DUPLICATA manually. This breaks the implicit contract advertised on the primary confirm CTA. Either change the label to 'Confirmer' OR wire an automatic print in onCounterCollectConfirmed (e.g. open the OrderDetails ticket panel and trigger window.print()).",
+      "severity": "P1",
+      "remediation_suggestion": "Two-line fix options: (a) relabel button — change $t('button.confirm_and_print') → $t('button.confirm') in PosCounterCollectModal.vue:175 (also adjust the i18n key); OR (b) wire print — in PosComponent.vue:3046 onCounterCollectConfirmed, after the refresh awaits, dispatch a print action on the freshly-PAID order via the existing OrderDetails component path used by DUPLICATA. Owner-decision required."
+    },
+    {
+      "id": "H9",
+      "title": "Multi-cashier race on the SAME kiosk-cash order",
+      "verdict": "RED — SILENT SUCCESS-TOAST ON LOSER",
+      "evidence": "_collecting guard at PosComponent.vue:3040 is a CLIENT-LOCAL per-row flag — does NOT serialize across cashier sessions. Two cashiers on the same Q10 panel can both open the modal on the same order. The backend ordering: (1) Cashier A clicks Confirm → IdempotencyKeyMiddleware acquires scoped key idempotency:v1:{branch}:{userA}:sha(key) → PaymentService DB::transaction begins → lockForUpdate; (2) Cashier B clicks Confirm → DIFFERENT scoped key (different userB → different sha bucket per H2-HEAL-01) → middleware passes through → PaymentService DB::transaction blocks on lockForUpdate; (3) Cashier A commits PAID → releases lock; (4) Cashier B acquires lock, sees payment_status === PAID at PaymentService.php:227-230, short-circuits via `$order->setRawAttributes($locked->getAttributes(), true); return;` WITHOUT raising any exception or 409 status. The modal's onConfirm catches no error and emits 'confirmed' → cashier B sees the same success toast Cashier A saw, opens the cash drawer for an order they never actually charged. Cashier B's recordCashOrderMovement call (line 363) however bails because $paid is set inside the closure-local variable; the outer if($paid) check at :328 IS satisfied for cashier B because PAID was the final state observed and the local short-circuit early-return at :228-230 does NOT set $paid to false. Re-read: line 217 declares `$paid = false;` outside the closure. The early-return at :228-230 does NOT set $paid=true; only the full happy path at :325 sets `$paid = true`. So for cashier B the outer guard `if ($paid)` is FALSE → OrderPaidAtCounter not re-dispatched, recordCashOrderMovement not re-called. GOOD — no double cash_movements, no second audit row. But cashier B's CLIENT still sees success toast at PosCounterCollectModal.vue:394-406 (driven by HTTP 2xx response — the backend returned 200 with OrderDetailsResource of the now-PAID order). Net: data integrity intact (NF525 + cash_movements + audit), but UX defect — cashier B believes they collected money, may open drawer needlessly, may double-count the till.",
+      "severity": "P1",
+      "remediation_suggestion": "Surface the no-op path: in PaymentService.php:227-230 short-circuit, do not silently return PAID — throw a typed exception (e.g. PaymentAlreadyCollectedException) caught by the route closure (api.php:813-819) and converted to a 409 with body `{'status':false,'message':'Commande déjà encaissée par un autre caissier.'}` so the modal's catch (PosCounterCollectModal.vue:415-419) toasts the conflict instead of success. Alternative: keep return-PAID but emit a flag on the response (e.g. `already_collected_by_other: true`) and let the modal pick a different toast."
+    },
+    {
+      "id": "H10",
+      "title": "Network drop during kiosk → POS cascade",
+      "verdict": "AMBER — offline queue exists, no kiosk-cash specific retry handler",
+      "evidence": "Kiosk has KioskOfflineConflictModalComponent + offline_queue i18n keys (resources/js/languages/{fr,en,de,bn,ar}.json). C7 + offline queue context is present. If network drops between FrontendOrder::create commit and Echo broadcast, the order is durable in DB (next POS poll sees it within ≤5s per H-SYNC-001 ≤5s force when readyOrders empty). If network drops BEFORE FrontendOrder::create commit, kiosk shows error and customer retries. Risk: if network drops AFTER Echo dispatch but BEFORE outbox listener writes domain_events, the Echo broadcast is lost — POS recovers via polling within 5s. Worst-case observed lag ≤5s. Not data-corrupt, performance-degraded only.",
+      "severity": "INFO"
+    },
+    {
+      "id": "H11",
+      "title": "Customer abandons before cashier sees — TTL on PENDING_COUNTER kiosk-cash orders?",
+      "verdict": "RED — NO CRON CLEANUP",
+      "evidence": "Grep on app/Console/ for PENDING_COUNTER returns ZERO matches. `pos:purge-parked-orders` (Console/Kernel.php:89) targets the pos_parked_orders TABLE (cashier-saved POS drafts via PosParkedOrderService), NOT orders.payment_status. `iter15:cleanup-test-orders` (Iter15CleanupTestOrdersCommand.php:29-37) is TEST-FIXTURE only — refuses in production at :64-67 and matches by token prefix (AUDIT-/RED-TEAM-/ZZ-TEST-/TEST-/E2E-), not by payment_status. No scheduled lane purges abandoned PENDING_COUNTER orders. Implications: (a) Q10 panel grows unbounded across days/weeks of low-attendance customer walk-aways; cashier sees pile of un-collectable phantom orders. (b) NF525 fiscal_sequence_no is NOT yet allocated for these (only allocated at confirmCounterPayment :241-243), so no chain bloat — good. (c) KDS sees PENDING_COUNTER ghost tickets with chef-prep allowed per F-002 design table — chef may prep food no one will collect. Risk amplifies with usage.",
+      "severity": "P2",
+      "remediation_suggestion": "New scheduled command e.g. `foodking:purge-abandoned-kiosk-cash --older-than-minutes=30` running every 15 min. Query: orders.where(source_surface='kiosk').where(payment_status=PENDING_COUNTER).where(created_at < now-30min). Action: transition to CANCELED via OrderStateMachine (audit-trail), DO NOT delete (NF525 retention). Add corresponding KDS purge so chef station no longer shows the ghost ticket. Owner-decision on the TTL threshold — 30 min default per typical kiosk-to-counter latency."
+    },
+    {
+      "id": "H12",
+      "title": "POS_SIMULATION_HARDWARE flag parity",
+      "verdict": "VERIFIED CITED",
+      "evidence": "config/pos.php:37 'simulation_hardware' => env(...) with FILTER_VALIDATE_BOOLEAN; PaymentService.php:399-403 downgrades strict→soft when simulation_hardware===true. The flag affects ONLY hardware-strict behavior (drawer/TPE), composition_snapshot and PricingService SSOT are unchanged. AppServiceProvider boot guard refuses production with simulation_hardware!=false (CLAUDE.md §8). Verified parity.",
+      "severity": "INFO"
+    },
+    {
+      "id": "H13",
+      "title": "Cash drawer movement recorded — atomicity + strict mode",
+      "verdict": "AMBER — kiosk counter-collect uses strict=false, silent-fail on no open session",
+      "evidence": "PaymentService.php:362-364 calls recordCashOrderMovement WITHOUT passing $strict → defaults to false at :395. recordCashOrderMovement method at :392-465: when no open CashDrawerSession exists for the cashier, line 432-437 logs an Info message and silently returns. Result: order PAID + transactions row + audit row, but NO cash_movements row. End-of-day reconciliation via Z-report sees fiscal_sequence_no advance but no cash IN tracked for this order. F.10 NF525 chain remains intact (audit_logs HMAC unchanged), but the F-003 reconciliation lane shows a gap. Brief flagged this as silent-fail risk — confirmed.",
+      "severity": "P2",
+      "remediation_suggestion": "Owner-decision: either (a) keep silent-fail for V1 LOCAL Le Cayenne (single cashier rarely closes session mid-shift) and document the gap in OWNER_PHYSICAL_WALK_CHECKLIST; or (b) flip the path to strict=true so kiosk counter-collect ALSO requires an open session — would block encaissement when cashier forgot to open session, with same UX as POS direct sale post Sprint 1B. Reverting requires a UI affordance at cashier login flow."
+    }
+  ],
+  "data_integrity_attestation": {
+    "nf525_chain": "INTACT — audit_logs and z_reports HMAC chain extension happens inside the same DB::transaction as the PAID flip. Frozen FiscalSequenceService.php + AuditLogService.php + IdempotencyKeyMiddleware.php were NOT modified (read-only audit). On rollback, the chain entry is dropped; no gap, no double-extension.",
+    "double_charge_prevention": "INTACT — IdempotencyKeyMiddleware Phase 1 replay + DB::transaction lockForUpdate + payment_status===PAID short-circuit in PaymentService form a triple defense. Same cashier double-tap → Phase 1 cache replay. Different cashier same order → backend lockForUpdate then PAID short-circuit (H9 UX defect notwithstanding — no second money movement).",
+    "outbox_durability": "DEGRADED — OrderPaidAtCounter outbox row creation sits OUTSIDE the PaymentService DB::transaction. Failure mode: order PAID + audit committed + cash_movement recorded, but Outbox row missing → POS Q10 + KDS recover via polling fallback within 5s. Not data-corrupt; latency-degraded only.",
+    "cash_movement_atomicity": "DEGRADED — recordCashOrderMovement is also OUTSIDE the DB::transaction with strict=false default for the kiosk-cash path. Failure mode: order PAID + audit + Transaction row committed, but cash_movements row missing if (a) no open cash drawer session OR (b) cash service throws. End-of-day reconciliation gap. Documented as H13 finding."
+  },
+  "race_conditions_identified": [
+    {
+      "scenario": "Two cashiers click Encaisser on the same Q10 row within seconds of each other",
+      "outcome": "Cashier A wins (lockForUpdate serialization). Cashier B's backend transaction sees PAID, silently short-circuits, returns 200 with OrderDetailsResource of the now-PAID order. Cashier B's modal interprets HTTP 2xx as success and toasts $t('label.cash_drawer_opened_simulation') as if money was just collected. NO duplicate cash_movements (good), but UX-misleading toast (bad).",
+      "data_corruption": false,
+      "ux_misleading": true,
+      "finding_id": "H9"
+    }
+  ],
+  "ux_friction_points": [
+    {
+      "id": "UX-1",
+      "where": "PosCounterCollectModal.vue:175 button label",
+      "issue": "Label promises 'Confirmer et imprimer' but no print is wired — only confirms. Cashier expects ticket; gets toast only.",
+      "severity": "P1",
+      "fix_size": "≤10 lines",
+      "finding_link": "H8"
+    },
+    {
+      "id": "UX-2",
+      "where": "Multi-cashier race confirm path",
+      "issue": "Cashier B sees identical success toast for an encaissement Cashier A actually performed — risk of opening drawer + double-count till.",
+      "severity": "P1",
+      "fix_size": "≤30 lines (PaymentService + route closure + modal toast branch)",
+      "finding_link": "H9"
+    },
+    {
+      "id": "UX-3",
+      "where": "Q10 panel — abandoned kiosk-cash orders accumulate",
+      "issue": "No cron purges PENDING_COUNTER orders > N minutes old. Pile of ghost orders for customers who walked away.",
+      "severity": "P2",
+      "fix_size": "~40 lines (new console command + Kernel schedule + Vitest)",
+      "finding_link": "H11"
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "Cascade is functionally correct for the happy path (steps 1-14 all verified). NF525 fiscal chain integrity and double-charge prevention are intact. Three discrete UX-grade defects surface: H8 button-label drift (P1), H9 multi-cashier silent-success toast (P1, NOT a data-corruption bug), H11 abandoned-order TTL gap (P2). Two atomicity boundaries (H4 outbox, H13 cash_movement) are documented degradations rather than corruption risks. No P0 findings; ship-ready for V1 Le Cayenne single-cashier use case, with owner-decision needed on H8/H9/H11 for V1.0.1 hardening.",
+  "top_5_cascade_concerns": [
+    "H9 (P1) — Multi-cashier race: loser sees success toast for an encaissement they never performed; drawer-open + till-count risk.",
+    "H8 (P1) — Button labeled 'Confirmer et imprimer' but no print fires; UX contract drift requires either relabel or wire.",
+    "H11 (P2) — No scheduled cleanup for abandoned PENDING_COUNTER orders; Q10 + KDS pile grows unbounded.",
+    "H13 (P2) — recordCashOrderMovement strict=false on kiosk path: PAID without cash_movements row when no open cash session → reconciliation gap.",
+    "H4 (P2) — Outbox listener writes OUTSIDE the PaymentService DB::transaction; failure leaves order PAID with no Echo broadcast (5s polling fallback masks the symptom)."
+  ],
+  "delta_t_chain_measured": "STATIC AUDIT — empirical timing not measured this run. Static reasoning yields: (kiosk POST commit → OrderCreated synchronous afterCommit broadcast) typically <100ms; (Pusher/Soketi delivery to PosComponent Echo subscriber) typically 100-500ms on LAN; (POS Echo handler → loadKioskCashOrders HTTP GET → render) typically 100-300ms; (polling fallback when Echo silently fails) ≤5s per H-SYNC-001 force. Expected end-to-end ΔT(kiosk-commit → POS Q10 row visible) ≤1s normal, ≤5s degraded. Matches Wave Polish empirical claim (0-60s → ~1s).",
+  "frozen_zone_diff": "ZERO — no files modified. Read-only static audit. PaymentService.php, FiscalSequenceService.php, AuditLogService.php, IdempotencyKeyMiddleware.php, PaymentComponent.vue, BranchScope.php, OrderStateMachine.php all untouched.",
+  "nf525_integrity_attestation": "audit_logs HMAC chain extension and fiscal_sequence_no allocation both happen INSIDE the PaymentService DB::transaction (FiscalSequenceService::next at line 242 + AuditLogService::write at line 309-321). FrozenZone files unchanged. CLAUDE.md §8 invariants all upheld in static cascade trace. No new findings against the NF525 invariants this run.",
+  "prior_phase_anchors_validated": {
+    "H-SYNC-001 (C2 polling cadence)": "VERIFIED at PosComponent.vue:2602-2616",
+    "D2 FR comma pre-fill": "VERIFIED at PosCounterCollectModal.vue:293-305",
+    "F.10 NF525 15/15 invariants": "Frozen-zone diff=0; cascade trace shows triple-defense intact",
+    "H2-HEAL-01 user_id scope": "VERIFIED at IdempotencyKeyMiddleware.php:77-82",
+    "C5 atomicity": "Mostly intact (H4 highlights two OUTSIDE-tx side-effects already known)",
+    "G2-HEAL-01 parent_order_id exposure": "Confirmed at OrderDetailsResource.php:36",
+    "G2-HEAL-03 receipt addons": "Out of scope this hunt (refund path, not counter-collect path)",
+    "G.6 Z-close + KDS reception": "VERIFIED at KitchenDisplaySystemComponent.vue:1861",
+    "F-002 round-3 dispatch gate truth table": "VERIFIED at FrontendOrderService.php:206-237",
+    "Wave S-1 auto-prepare ACCEPT→PREPARING": "VERIFIED at PaymentService.php:271-294"
+  }
+}

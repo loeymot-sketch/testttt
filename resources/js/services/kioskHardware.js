@@ -256,10 +256,37 @@ export async function cancelPayment() {
 
 // --- Tiroir caisse -------------------------------------------------------
 
+// [owner 2026-07-08 #4] Impulsion tiroir ESC/POS : ESC p m=0 t1=25 t2=250
+// (pin 2, 25 ms/250 ms — aligné app/Services/Hardware/EscPosCommandBuilder.php).
+const DRAWER_KICK_BYTES = [0x1B, 0x70, 0x00, 0x19, 0xFA];
+function drawerKickB64() {
+    let s = '';
+    for (let i = 0; i < DRAWER_KICK_BYTES.length; i++) s += String.fromCharCode(DRAWER_KICK_BYTES[i]);
+    return (typeof btoa === 'function') ? btoa(s) : (typeof Buffer !== 'undefined' ? Buffer.from(s, 'binary').toString('base64') : s);
+}
+
 export async function openDrawer() {
     const b = getBridge();
-    if (typeof b.openDrawer !== 'function') return fail('drawer_unavailable');
-    return runSafe('openDrawer', b.openDrawer, []);
+    // Vrai bridge Electron (window.borne réel avec tiroir) → chemin natif inchangé.
+    // ⚠️ Le STUB expose aussi un openDrawer no-op → il ne faut PAS l'emprunter, sinon
+    // le tiroir ne s'ouvre jamais sur la caisse Chrome (bug owner). On ne prend le
+    // chemin natif QUE si ce n'est PAS le stub.
+    if (!b[STUB_MARKER] && typeof b.openDrawer === 'function') {
+        return runSafe('openDrawer', b.openDrawer, []);
+    }
+    // [owner 2026-07-08 #4] Caisse en Chrome (PAS d'Electron window.borne) : le
+    // tiroir ne s'ouvrait pas au paiement espèces (b.openDrawer absent → fail).
+    // Repli : envoyer l'impulsion tiroir au PONT d'impression caisse (:9100/raw),
+    // même canal que les tickets → l'imprimante SAGA déclenche le tiroir. Best-effort,
+    // ne throw jamais (invariant du service).
+    try {
+        const mod = await import('../helpers/posLocalPrinter');
+        if (!mod || typeof mod.printEscPosViaCaisseBridge !== 'function') return fail('drawer_unavailable');
+        const r = await mod.printEscPosViaCaisseBridge(drawerKickB64(), { orderRef: 'drawer-kick' });
+        return (r && r.ok === false) ? fail('drawer_bridge_unavailable') : ok({ via: 'caisse-bridge' });
+    } catch (_e) {
+        return fail('drawer_unavailable');
+    }
 }
 
 // --- Impression ----------------------------------------------------------

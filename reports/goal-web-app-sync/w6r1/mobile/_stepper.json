@@ -1,0 +1,474 @@
+{
+ "Tacos M": {
+  "steps": [
+   {
+    "idx": "1",
+    "total": "6",
+    "head": "Viandes",
+    "file": "tacosM-s1-Viandes.png"
+   },
+   {
+    "idx": "2",
+    "total": "6",
+    "head": "Sauce",
+    "file": "tacosM-s2-Sauce.png"
+   },
+   {
+    "idx": "3",
+    "total": "6",
+    "head": "Crudités",
+    "file": "tacosM-s3-Crudits.png"
+   },
+   {
+    "idx": "4",
+    "total": "6",
+    "head": "Suppléments",
+    "file": "tacosM-s4-Supplments.png"
+   },
+   {
+    "idx": "5",
+    "total": "6",
+    "head": "Faire un menu",
+    "file": "tacosM-s5-Faireunmenu.png"
+   },
+   {
+    "idx": "6",
+    "total": "9",
+    "head": "Boisson",
+    "file": "tacosM-s6-Boisson.png"
+   },
+   {
+    "idx": "7",
+    "total": "9",
+    "head": "Style de frites",
+    "file": "tacosM-s7-Styledefrites.png"
+   },
+   {
+    "idx": "8",
+    "total": "9",
+    "head": "Sauce frites",
+    "file": "tacosM-s8-Saucefrites.png"
+   }
+  ],
+  "detail": [
+   {
+    "idx": "1",
+    "total": "6",
+    "head": "Viandes",
+    "file": "tacosM-s1-Viandes.png",
+    "txt": "1 / 6\nViandes\nChoisis 1 viande\n0/1\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\nEncore 1 viande à choisir\nSuivant\n6,90 €"
+   },
+   {
+    "idx": "2",
+    "total": "6",
+    "head": "Sauce",
+    "file": "tacosM-s2-Sauce.png",
+    "txt": "2 / 6\nSauce\n1 sauce incluse · choisis ta sauce\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nChoisis ta sauce\nSuivant\n6,90 €"
+   },
+   {
+    "idx": "3",
+    "total": "6",
+    "head": "Crudités",
+    "file": "tacosM-s3-Crudits.png",
+    "txt": "3 / 6\nCrudités\nTu peux retirer ce que tu ne veux pas\n✓ Salade\n✓ Tomate\n✓ Oignon\n✕ Oignons cuits\nSuivant\n6,90 €"
+   },
+   {
+    "idx": "4",
+    "total": "6",
+    "head": "Suppléments",
+    "file": "tacosM-s4-Supplments.png",
+    "txt": "4 / 6\nSuppléments\nOptionnel · ajoute ce que tu veux\nOignons frits\n+ 0,90 €\nChampignons\n+ 0,90 €\nJambon\n+ 0,90 €\nCheddar\n+ 0,90 €\nRaclette\n+ 0,90 €\nEmmental\n+ 0,90 €\nBoursin\n+ 0,90 €\nŒuf\n+ 0,90 €\nLégumes sautés\n+ 0,90 €\nViande supplémentaire +2,50 € · max 2\nMexicanos\n+ 2,50 €\nCordon Bleu\n+ 2,50 €\nViande Hachée\n+ 2,50 €\nNuggets\n+ 2,50 €\nTenders\n+ 2,50 €\nFricadelle\n+ 2,50 €\nPoulet mariné\n+ 2,50 €\nSuivant\n6,90 €"
+   },
+   {
+    "idx": "5",
+    "total": "6",
+    "head": "Faire un menu",
+    "file": "tacosM-s5-Faireunmenu.png",
+    "txt": "5 / 6\nFaire un menu\nAjoute frites et/ou boisson à ton plat\n🍟🥤\nMenu complet\nFrites + Boisson\n+2,50€\n🍟\nAjouter Frites\nFrites uniquement\n+2,00€\n🥤\nAjouter Boisson\nBoisson uniquement\n+2,00€\n🚫\nSans formule\nPlat seul\nChoisis ta formule pour continuer\nSuivant\n7,80 €"
+   },
+   {
+    "idx": "6",
+    "total": "9",
+    "head": "Boisson",
+    "file": "tacosM-s6-Boisson.png",
+    "txt": "6 / 9\nBoisson\n1 boisson au choix incluse dans ta formule\nCoca-Cola 33cl\nCoca-Cola Zero 33cl\nFanta Orange 33cl\nSprite 33cl\nOasis Tropical 33cl\nOrangina 33cl\nEau Plate 50cl\nCapri-Sun\nCoca Cherry 33cl\nTropico 33cl\nIce Tea Pêche 33cl\nFanta Citron 33cl\nFuze Tea 33cl\nHawaï 33cl\nPerrier 33cl\nChoisis ta boisson\nSuivant\n10,30 €"
+   },
+   {
+    "idx": "7",
+    "total": "9",
+    "head": "Style de frites",
+    "file": "tacosM-s7-Styledefrites.png",
+    "txt": "7 / 9\nStyle de frites\nStyle de frites (Nature gratuit, upgrades payants)\nNature\nCheddar fondu\n+1,00€\nCheddar + Oignons frits\n+2,00€\nChoisis ton style de frites\nSuivant\n10,30 €"
+   },
+   {
+    "idx": "8",
+    "total": "9",
+    "head": "Sauce frites",
+    "file": "tacosM-s8-Saucefrites.png",
+    "txt": "8 / 9\nSauce frites\nSauces pour les frites · incluses\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nChoisis au moins une sauce pour les frites\nSuivant\n10,30 €"
+   }
+  ]
+ },
+ "Cayenne": {
+  "steps": [
+   {
+    "idx": "1",
+    "total": "6",
+    "head": "Pain ou galette",
+    "file": "cayenne-s1-Painougalette.png"
+   },
+   {
+    "idx": "2",
+    "total": "6",
+    "head": "Sauce",
+    "file": "cayenne-s2-Sauce.png"
+   },
+   {
+    "idx": "3",
+    "total": "6",
+    "head": "Crudités",
+    "file": "cayenne-s3-Crudits.png"
+   },
+   {
+    "idx": "4",
+    "total": "6",
+    "head": "Suppléments",
+    "file": "cayenne-s4-Supplments.png"
+   },
+   {
+    "idx": "5",
+    "total": "6",
+    "head": "Faire un menu",
+    "file": "cayenne-s5-Faireunmenu.png"
+   },
+   {
+    "idx": "6",
+    "total": "9",
+    "head": "Boisson",
+    "file": "cayenne-s6-Boisson.png"
+   },
+   {
+    "idx": "7",
+    "total": "9",
+    "head": "Style de frites",
+    "file": "cayenne-s7-Styledefrites.png"
+   },
+   {
+    "idx": "8",
+    "total": "9",
+    "head": "Sauce frites",
+    "file": "cayenne-s8-Saucefrites.png"
+   }
+  ],
+  "detail": [
+   {
+    "idx": "1",
+    "total": "6",
+    "head": "Pain ou galette",
+    "file": "cayenne-s1-Painougalette.png",
+    "txt": "1 / 6\nPain ou galette\nGratuit · choisis ta base\nPain\nGalette\nSuivant\n7,40 €"
+   },
+   {
+    "idx": "2",
+    "total": "6",
+    "head": "Sauce",
+    "file": "cayenne-s2-Sauce.png",
+    "txt": "2 / 6\nSauce\n1 sauce incluse · choisis ta sauce\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nSuivant\n7,40 €"
+   },
+   {
+    "idx": "3",
+    "total": "6",
+    "head": "Crudités",
+    "file": "cayenne-s3-Crudits.png",
+    "txt": "3 / 6\nCrudités\nTu peux retirer ce que tu ne veux pas\n✓ Salade\n✓ Tomate\n✓ Oignon\n✕ Oignons cuits\nSuivant\n7,40 €"
+   },
+   {
+    "idx": "4",
+    "total": "6",
+    "head": "Suppléments",
+    "file": "cayenne-s4-Supplments.png",
+    "txt": "4 / 6\nSuppléments\nOptionnel · ajoute ce que tu veux\nOignons frits\n+ 0,90 €\nChampignons\n+ 0,90 €\nJambon\n+ 0,90 €\nCheddar\n+ 0,90 €\nRaclette\n+ 0,90 €\nEmmental\n+ 0,90 €\nBoursin\n+ 0,90 €\nŒuf\n+ 0,90 €\nLégumes sautés\n+ 0,90 €\nViande supplémentaire +2,50 € · max 2\nMexicanos\n+ 2,50 €\nCordon Bleu\n+ 2,50 €\nViande Hachée\n+ 2,50 €\nNuggets\n+ 2,50 €\nTenders\n+ 2,50 €\nFricadelle\n+ 2,50 €\nPoulet mariné\n+ 2,50 €\nSuivant\n7,40 €"
+   },
+   {
+    "idx": "5",
+    "total": "6",
+    "head": "Faire un menu",
+    "file": "cayenne-s5-Faireunmenu.png",
+    "txt": "5 / 6\nFaire un menu\nAjoute frites et/ou boisson à ton plat\n🍟🥤\nMenu complet\nFrites + Boisson\n+2,50€\n🍟\nAjouter Frites\nFrites uniquement\n+2,00€\n🥤\nAjouter Boisson\nBoisson uniquement\n+2,00€\n🚫\nSans formule\nPlat seul\nChoisis ta formule pour continuer\nSuivant\n8,30 €"
+   },
+   {
+    "idx": "6",
+    "total": "9",
+    "head": "Boisson",
+    "file": "cayenne-s6-Boisson.png",
+    "txt": "6 / 9\nBoisson\n1 boisson au choix incluse dans ta formule\nCoca-Cola 33cl\nCoca-Cola Zero 33cl\nFanta Orange 33cl\nSprite 33cl\nOasis Tropical 33cl\nOrangina 33cl\nEau Plate 50cl\nCapri-Sun\nCoca Cherry 33cl\nTropico 33cl\nIce Tea Pêche 33cl\nFanta Citron 33cl\nFuze Tea 33cl\nHawaï 33cl\nPerrier 33cl\nChoisis ta boisson\nSuivant\n10,80 €"
+   },
+   {
+    "idx": "7",
+    "total": "9",
+    "head": "Style de frites",
+    "file": "cayenne-s7-Styledefrites.png",
+    "txt": "7 / 9\nStyle de frites\nStyle de frites (Nature gratuit, upgrades payants)\nNature\nCheddar fondu\n+1,00€\nCheddar + Oignons frits\n+2,00€\nChoisis ton style de frites\nSuivant\n10,80 €"
+   },
+   {
+    "idx": "8",
+    "total": "9",
+    "head": "Sauce frites",
+    "file": "cayenne-s8-Saucefrites.png",
+    "txt": "8 / 9\nSauce frites\nSauces pour les frites · incluses\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nChoisis au moins une sauce pour les frites\nSuivant\n10,80 €"
+   }
+  ]
+ },
+ "Chicken Burger": {
+  "steps": [
+   {
+    "idx": "1",
+    "total": "5",
+    "head": "Sauce",
+    "file": "burger-s1-Sauce.png"
+   },
+   {
+    "idx": "2",
+    "total": "5",
+    "head": "Crudités",
+    "file": "burger-s2-Crudits.png"
+   },
+   {
+    "idx": "3",
+    "total": "5",
+    "head": "Suppléments",
+    "file": "burger-s3-Supplments.png"
+   },
+   {
+    "idx": "4",
+    "total": "5",
+    "head": "Faire un menu",
+    "file": "burger-s4-Faireunmenu.png"
+   },
+   {
+    "idx": "5",
+    "total": "8",
+    "head": "Boisson",
+    "file": "burger-s5-Boisson.png"
+   },
+   {
+    "idx": "6",
+    "total": "8",
+    "head": "Style de frites",
+    "file": "burger-s6-Styledefrites.png"
+   },
+   {
+    "idx": "7",
+    "total": "8",
+    "head": "Sauce frites",
+    "file": "burger-s7-Saucefrites.png"
+   },
+   {
+    "idx": "8",
+    "total": "8",
+    "head": "Récapitulatif",
+    "file": "burger-s8-Rcapitulatif.png"
+   }
+  ],
+  "detail": [
+   {
+    "idx": "1",
+    "total": "5",
+    "head": "Sauce",
+    "file": "burger-s1-Sauce.png",
+    "txt": "1 / 5\nSauce\n1 sauce incluse · choisis ta sauce\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nChoisis ta sauce\nSuivant\n4,90 €"
+   },
+   {
+    "idx": "2",
+    "total": "5",
+    "head": "Crudités",
+    "file": "burger-s2-Crudits.png",
+    "txt": "2 / 5\nCrudités\nTu peux retirer ce que tu ne veux pas\n✓ Salade\n✓ Tomate\n✓ Oignon\n✕ Oignons cuits\nSuivant\n4,90 €"
+   },
+   {
+    "idx": "3",
+    "total": "5",
+    "head": "Suppléments",
+    "file": "burger-s3-Supplments.png",
+    "txt": "3 / 5\nSuppléments\nOptionnel · ajoute ce que tu veux\nOignons frits\n+ 0,90 €\nChampignons\n+ 0,90 €\nJambon\n+ 0,90 €\nCheddar\n+ 0,90 €\nRaclette\n+ 0,90 €\nEmmental\n+ 0,90 €\nBoursin\n+ 0,90 €\nŒuf\n+ 0,90 €\nLégumes sautés\n+ 0,90 €\nViande supplémentaire +2,50 € · max 2\nMexicanos\n+ 2,50 €\nCordon Bleu\n+ 2,50 €\nViande Hachée\n+ 2,50 €\nNuggets\n+ 2,50 €\nTenders\n+ 2,50 €\nFricadelle\n+ 2,50 €\nPoulet mariné\n+ 2,50 €\nSuivant\n4,90 €"
+   },
+   {
+    "idx": "4",
+    "total": "5",
+    "head": "Faire un menu",
+    "file": "burger-s4-Faireunmenu.png",
+    "txt": "4 / 5\nFaire un menu\nAjoute frites et/ou boisson à ton plat\n🍟🥤\nMenu complet\nFrites + Boisson\n+2,50€\n🍟\nAjouter Frites\nFrites uniquement\n+2,00€\n🥤\nAjouter Boisson\nBoisson uniquement\n+2,00€\n🚫\nSans formule\nPlat seul\nChoisis ta formule pour continuer\nSuivant\n5,80 €"
+   },
+   {
+    "idx": "5",
+    "total": "8",
+    "head": "Boisson",
+    "file": "burger-s5-Boisson.png",
+    "txt": "5 / 8\nBoisson\n1 boisson au choix incluse dans ta formule\nCoca-Cola 33cl\nCoca-Cola Zero 33cl\nFanta Orange 33cl\nSprite 33cl\nOasis Tropical 33cl\nOrangina 33cl\nEau Plate 50cl\nCapri-Sun\nCoca Cherry 33cl\nTropico 33cl\nIce Tea Pêche 33cl\nFanta Citron 33cl\nFuze Tea 33cl\nHawaï 33cl\nPerrier 33cl\nChoisis ta boisson\nSuivant\n8,30 €"
+   },
+   {
+    "idx": "6",
+    "total": "8",
+    "head": "Style de frites",
+    "file": "burger-s6-Styledefrites.png",
+    "txt": "6 / 8\nStyle de frites\nStyle de frites (Nature gratuit, upgrades payants)\nNature\nCheddar fondu\n+1,00€\nCheddar + Oignons frits\n+2,00€\nChoisis ton style de frites\nSuivant\n8,30 €"
+   },
+   {
+    "idx": "7",
+    "total": "8",
+    "head": "Sauce frites",
+    "file": "burger-s7-Saucefrites.png",
+    "txt": "7 / 8\nSauce frites\nSauces pour les frites · incluses\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nChoisis au moins une sauce pour les frites\nSuivant\n8,30 €"
+   },
+   {
+    "idx": "8",
+    "total": "8",
+    "head": "Récapitulatif",
+    "file": "burger-s8-Rcapitulatif.png",
+    "txt": "8 / 8\nRécapitulatif\n🍔\nCHICKEN BURGER\nRécapitulatif de ta commande\n⚠️\n🌾\nSAUCE\nMayonnaise\nCRUDITÉS RETIRÉES\nSalade / Oignons cuits\nSUPPLÉMENTS\nOignons frits\nFORMULE\nMenu (Frites + Boisson) +2,50€\nBOISSON\nCoca-Cola 33cl\nSTYLE FRITES\nNature\nSAUCE FRITES\nMayonnaise\nINSTRUCTIONS SPÉCIALES (optionnel)\n0 / 190\nQUANTITÉ\n1\nAjouter au panier · 1\n8,30 €"
+   }
+  ]
+ },
+ "Bol Riz": {
+  "steps": [
+   {
+    "idx": "1",
+    "total": "5",
+    "head": "Viandes",
+    "file": "bolRiz-s1-Viandes.png"
+   },
+   {
+    "idx": "2",
+    "total": "5",
+    "head": "Sauce",
+    "file": "bolRiz-s2-Sauce.png"
+   },
+   {
+    "idx": "3",
+    "total": "5",
+    "head": "Suppléments du bol",
+    "file": "bolRiz-s3-Supplmentsdubol.png"
+   },
+   {
+    "idx": "4",
+    "total": "5",
+    "head": "Ajouter une boisson",
+    "file": "bolRiz-s4-Ajouteruneboisso.png"
+   },
+   {
+    "idx": "5",
+    "total": "5",
+    "head": "Récapitulatif",
+    "file": "bolRiz-s5-Rcapitulatif.png"
+   }
+  ],
+  "detail": [
+   {
+    "idx": "1",
+    "total": "5",
+    "head": "Viandes",
+    "file": "bolRiz-s1-Viandes.png",
+    "txt": "1 / 5\nViandes\nChoisis 1 viande\n0/1\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\nEncore 1 viande à choisir\nSuivant\n7,90 €"
+   },
+   {
+    "idx": "2",
+    "total": "5",
+    "head": "Sauce",
+    "file": "bolRiz-s2-Sauce.png",
+    "txt": "2 / 5\nSauce\n1 sauce incluse · choisis ta sauce\nSauce fromagère maison\nSauce spicy 🌶️\nChoisis ta sauce\nSuivant\n7,90 €"
+   },
+   {
+    "idx": "3",
+    "total": "5",
+    "head": "Suppléments du bol",
+    "file": "bolRiz-s3-Supplmentsdubol.png",
+    "txt": "3 / 5\nSuppléments du bol\nOptionnel · personnalise ton bol · max 5\nOignons frits\n+ 0,90 €\nChampignons\n+ 0,90 €\nJambon\n+ 0,90 €\nCheddar\n+ 0,90 €\nRaclette\n+ 0,90 €\nEmmental\n+ 0,90 €\nBoursin\n+ 0,90 €\nŒuf\n+ 0,90 €\nLégumes sautés\n+ 0,90 €\nOption GratinéPOPULAIRE\n+ 2,00 €\nViande supplémentaire +2,50 € · max 2\nMexicanos\n+ 2,50 €\nCordon Bleu\n+ 2,50 €\nViande Hachée\n+ 2,50 €\nNuggets\n+ 2,50 €\nTenders\n+ 2,50 €\nFricadelle\n+ 2,50 €\nPoulet mariné\n+ 2,50 €\nSuivant\n7,90 €"
+   },
+   {
+    "idx": "4",
+    "total": "5",
+    "head": "Ajouter une boisson",
+    "file": "bolRiz-s4-Ajouteruneboisso.png",
+    "txt": "4 / 5\nAjouter une boisson\nOptionnel · ajoute une boisson à ton bol (prix catalogue)\n🚫\nAucune boisson\nCoca-Cola 33cl\n+1,90€\nCoca-Cola Zero 33cl\n+1,90€\nFanta Orange 33cl\n+1,90€\nSprite 33cl\n+1,90€\nOasis Tropical 33cl\n+1,90€\nOrangina 33cl\n+1,90€\nEau Plate 50cl\n+1,00€\nCapri-Sun\n+1,50€\nCoca Cherry 33cl\n+1,90€\nTropico 33cl\n+1,90€\nIce Tea Pêche 33cl\n+1,90€\nFanta Citron 33cl\n+1,90€\nFuze Tea 33cl\n+1,90€\nHawaï 33cl\n+1,90€\nPerrier 33cl\n+1,90€\nSuivant\n8,80 €"
+   },
+   {
+    "idx": "5",
+    "total": "5",
+    "head": "Récapitulatif",
+    "file": "bolRiz-s5-Rcapitulatif.png",
+    "txt": "5 / 5\nRécapitulatif\n🥣\nBOL RIZ\nRécapitulatif de ta commande\nVIANDES\nMexicanos\nSAUCE\nSauce fromagère maison\nSUPPLÉMENTS BOL\nOignons frits\nBOISSON BOL\nAucune\nINSTRUCTIONS SPÉCIALES (optionnel)\n0 / 190\nQUANTITÉ\n1\nAjouter au panier · 1\n8,80 €"
+   }
+  ]
+ },
+ "Bol Frites": {
+  "steps": [
+   {
+    "idx": "1",
+    "total": "5",
+    "head": "Viandes",
+    "file": "bolFrites-s1-Viandes.png"
+   },
+   {
+    "idx": "2",
+    "total": "5",
+    "head": "Sauce",
+    "file": "bolFrites-s2-Sauce.png"
+   },
+   {
+    "idx": "3",
+    "total": "5",
+    "head": "Suppléments du bol",
+    "file": "bolFrites-s3-Supplmentsdubol.png"
+   },
+   {
+    "idx": "4",
+    "total": "5",
+    "head": "Ajouter une boisson",
+    "file": "bolFrites-s4-Ajouteruneboisso.png"
+   },
+   {
+    "idx": "5",
+    "total": "5",
+    "head": "Récapitulatif",
+    "file": "bolFrites-s5-Rcapitulatif.png"
+   }
+  ],
+  "detail": [
+   {
+    "idx": "1",
+    "total": "5",
+    "head": "Viandes",
+    "file": "bolFrites-s1-Viandes.png",
+    "txt": "1 / 5\nViandes\nChoisis 1 viande\n0/1\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\nEncore 1 viande à choisir\nSuivant\n7,90 €"
+   },
+   {
+    "idx": "2",
+    "total": "5",
+    "head": "Sauce",
+    "file": "bolFrites-s2-Sauce.png",
+    "txt": "2 / 5\nSauce\n1 sauce incluse · choisis ta sauce\nSauce fromagère maison\nSauce spicy 🌶️\nChoisis ta sauce\nSuivant\n7,90 €"
+   },
+   {
+    "idx": "3",
+    "total": "5",
+    "head": "Suppléments du bol",
+    "file": "bolFrites-s3-Supplmentsdubol.png",
+    "txt": "3 / 5\nSuppléments du bol\nOptionnel · personnalise ton bol · max 5\nOignons frits\n+ 0,90 €\nChampignons\n+ 0,90 €\nJambon\n+ 0,90 €\nCheddar\n+ 0,90 €\nRaclette\n+ 0,90 €\nEmmental\n+ 0,90 €\nBoursin\n+ 0,90 €\nŒuf\n+ 0,90 €\nLégumes sautés\n+ 0,90 €\nViande supplémentaire +2,50 € · max 2\nMexicanos\n+ 2,50 €\nCordon Bleu\n+ 2,50 €\nViande Hachée\n+ 2,50 €\nNuggets\n+ 2,50 €\nTenders\n+ 2,50 €\nFricadelle\n+ 2,50 €\nPoulet mariné\n+ 2,50 €\nSuivant\n7,90 €"
+   },
+   {
+    "idx": "4",
+    "total": "5",
+    "head": "Ajouter une boisson",
+    "file": "bolFrites-s4-Ajouteruneboisso.png",
+    "txt": "4 / 5\nAjouter une boisson\nOptionnel · ajoute une boisson à ton bol (prix catalogue)\n🚫\nAucune boisson\nCoca-Cola 33cl\n+1,90€\nCoca-Cola Zero 33cl\n+1,90€\nFanta Orange 33cl\n+1,90€\nSprite 33cl\n+1,90€\nOasis Tropical 33cl\n+1,90€\nOrangina 33cl\n+1,90€\nEau Plate 50cl\n+1,00€\nCapri-Sun\n+1,50€\nCoca Cherry 33cl\n+1,90€\nTropico 33cl\n+1,90€\nIce Tea Pêche 33cl\n+1,90€\nFanta Citron 33cl\n+1,90€\nFuze Tea 33cl\n+1,90€\nHawaï 33cl\n+1,90€\nPerrier 33cl\n+1,90€\nSuivant\n8,80 €"
+   },
+   {
+    "idx": "5",
+    "total": "5",
+    "head": "Récapitulatif",
+    "file": "bolFrites-s5-Rcapitulatif.png",
+    "txt": "5 / 5\nRécapitulatif\n🥣\nBOL FRITES\nRécapitulatif de ta commande\nVIANDES\nMexicanos\nSAUCE\nSauce fromagère maison\nSUPPLÉMENTS BOL\nOignons frits\nBOISSON BOL\nAucune\nINSTRUCTIONS SPÉCIALES (optionnel)\n0 / 190\nQUANTITÉ\n1\nAjouter au panier · 1\n8,80 €"
+   }
+  ]
+ }
+}

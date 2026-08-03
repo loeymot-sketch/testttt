@@ -1,0 +1,81 @@
+{
+  "task_id": "CV1-M04B-PAYMENT-PILOT-RESTRICT",
+  "mission_id": "M-04B",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Implementer le pilote restreint Payment Ledger Option B: refus serveur explicite hors pilote, UI/desactivation par configuration lorsque applicable, audit des tentatives, sans branchement silencieux par .env et sans migration ledger full.",
+  "instruction": "Applique uniquement M-04B. Gate Payment Ledger approuve Option B: Restricted pilot. Ne lance pas M-04A et ne cree pas de migration ledger full. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "app/Services/PaymentService.php",
+    "app/Http/Controllers/Frontend/PaymentController.php",
+    "app/Http/Requests/PaymentMethodRequest.php",
+    "app/Http/Requests/PaymentRequest.php",
+    "routes/api.php",
+    "routes/web.php",
+    "config/payment.php",
+    "tests/Feature/Payment/PaymentMethodRestrictedTest.php",
+    "tests/Feature/Payment/PaymentMethodAttemptAuditTest.php"
+  ],
+  "off_limits": [
+    "database/**",
+    "resources/**",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "docs/gates/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "human_gate_decisions": [
+    {
+      "gate": "GATE_PAYMENT_LEDGER_V1_2026-04-25",
+      "status": "Approved",
+      "decision": "Option B — Restricted pilot",
+      "approved_by": "Codex (instruction humaine explicite)",
+      "date": "2026-04-25"
+    },
+    {
+      "gate": "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25",
+      "status": "Approved",
+      "decision": "Option C — Partial allowlist by method/surface",
+      "approved_by": "Codex (instruction humaine explicite)",
+      "date": "2026-04-25"
+    }
+  ],
+  "invariants_at_risk": [
+    "pricing backend SSOT",
+    "branch_id isolation stricte",
+    "frozen zones require gate clearance",
+    "dispatch after DB commit"
+  ],
+  "gate_conditions": [
+    "GATE_PAYMENT_LEDGER_V1_2026-04-25 Approved Option B",
+    "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25 Approved Option C for PaymentService surface only"
+  ],
+  "mandatory_tests": [
+    "php artisan test --filter=PaymentMethodRestrictedTest",
+    "php artisan test --filter=PaymentMethodAttemptAuditTest"
+  ],
+  "self_audit_checklist": [
+    "Unsupported payment methods outside the restricted pilot are rejected server-side with explicit 4xx behavior",
+    "No silent .env-only enablement path can bypass the pilot restriction",
+    "Attempt audit captures blocked method, actor or device context when available, branch context when available, and reason",
+    "No M-04A full payment ledger migration or schema work was added",
+    "Pricing remains backend-only and no frontend pricing logic is introduced",
+    "branch_id isolation is preserved in all payment attempt handling"
+  ],
+  "rollback": {
+    "feature_flag": "payment_ledger_pilot_restrict",
+    "max_window_days": 7,
+    "predicates": [
+      "payment restricted tests fail",
+      "pilot restriction blocks configured pilot methods",
+      "attempt audit writes unsafe or missing branch context"
+    ]
+  },
+  "graphiti_query": "Caisse V1 payment ledger Option B restricted pilot PaymentService audit attempts",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_payment_pilot_restrict_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

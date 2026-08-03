@@ -1,0 +1,45 @@
+{
+  "task_id": "CV1-M03-GATES-DRAFT",
+  "mission_id": "M-03",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Rédiger les 7 briefs de gates Caisse V1 manquants (TO_DRAFT) selon format docs/gates/GATE_LOG.md : GATE_FROZEN_ZONES_CAISSE_V1, GATE_FISCAL_KIOSK_SCOPE_V1, GATE_PAYMENT_LEDGER_V1 (option A vs B), GATE_KDS_BUMP_AUTHORITY_V1, GATE_SCHEMA_MIGRATIONS_CAISSE_V1, GATE_OFFLINE_SCOPE_V1, GATE_WEB_PAYMENT_SCOPE_V1, GATE_STRIPE_CENTS_ACTIVE. Briefs prêts à signer humain. Aucun gate auto-approuvé.",
+  "instruction": "Crée les 8 briefs de gate sous docs/gates/. Chaque brief décrit trigger, options, recommandation technique (sans cocher Approval). JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "docs/gates/GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25.md",
+    "docs/gates/GATE_FISCAL_KIOSK_SCOPE_V1_2026-04-25.md",
+    "docs/gates/GATE_PAYMENT_LEDGER_V1_2026-04-25.md",
+    "docs/gates/GATE_KDS_BUMP_AUTHORITY_V1_2026-04-25.md",
+    "docs/gates/GATE_SCHEMA_MIGRATIONS_CAISSE_V1_2026-04-25.md",
+    "docs/gates/GATE_OFFLINE_SCOPE_V1_2026-04-25.md",
+    "docs/gates/GATE_WEB_PAYMENT_SCOPE_V1_2026-04-25.md",
+    "docs/gates/GATE_STRIPE_CENTS_ACTIVE_2026-04-25.md",
+    "docs/gates/GATE_LOG.md"
+  ],
+  "off_limits": [
+    "app/**", "resources/**", "routes/**", "database/**", "tests/**", "scripts/**", "config/**", ".cursor/**", "AGENTS.md",
+    "docs/gates/GATE_VERIFY_P0_FROZEN_CONSOLIDATED_2026-04-20.md",
+    "docs/gates/GATE_PAYMENT_PROP_MUTATION_2026-04-26.md",
+    "docs/gates/GATE_W2_KPI_REVISION_2026-04-26.md",
+    "docs/gates/GATE_W2_CUTOVER_2026-04-26.md"
+  ],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [
+    "test -f docs/gates/GATE_LOG.md && grep -c 'GATE_' docs/gates/GATE_LOG.md"
+  ],
+  "self_audit_checklist": [
+    "8 briefs créés selon format human-gates.mdc (Trigger, Affected Subsystems, Invariants at Risk, Decision Required, Options 1/2/3, Approval block VIDE, Date)",
+    "Aucune ligne `[x] Approved` cochée",
+    "GATE_LOG.md mis à jour avec les 8 nouveaux gates en statut PENDING_HUMAN_GATE",
+    "Chaque brief a au moins 2 options techniques avec conséquences chiffrées",
+    "Recommandation technique présente mais non-décisive (humain décide)",
+    "Aucun fichier produit modifié, aucun gate existant modifié"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 gates draft frozen fiscal payment ledger kds schema offline web stripe",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_gates_draft_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-gates"
+}

@@ -1,0 +1,12 @@
+{
+  "system": "S3-KDS",
+  "wave": "wave-final-2026-05-23",
+  "round": 1,
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "canonical_url": "/admin/kitchen-display-system",
+  "v2_layout": true,
+  "v2_auto_transition": false,
+  "order_state_machine_frozen": true,
+  "findings": [],
+  "generated_at": "2026-05-23T11:09:56.767Z"
+}

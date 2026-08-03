@@ -1,0 +1,117 @@
+{
+  "wave": "B",
+  "round": 4,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "ROUND-4 RE-VERIFICATION at HEAD b59ce40d8. DOM grep 'Taille : 1 viande' returns 0/0 across 15-cart-after-add-309-310-311-314.dom.html and 16-cart-thumbnails-quartet.dom.html. Cart numeric integrity intact: kiosk-cart-subtotal=€40,50 and kiosk-cart-total=€40,50 (line totals 12,50 + 13,50 + 8,50 + 6,00). The buildInstruction() taille-step guard from commit 714d271b6 is still in place and not regressed by the round-4 retry-success toast wiring (commit b59ce40d8 only touched KioskPaymentComponent.vue + i18n + KioskAppComponent listener, not buildInstruction).",
+      "fix_hint": "Already closed in round 1 by buildInstruction() taille-step guard (commit 714d271b6, KioskWizardComponent.vue). No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-borne-B/16-cart-thumbnails-quartet.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "ROUND-4 RE-VERIFICATION: states 15 and 16 remain BYTE-IDENTICAL at HEAD b59ce40d8. md5(15-cart-after-add-309-310-311-314.png)=e50b133e7320382b160c5ce7e27d497e, md5(16-cart-thumbnails-quartet.png)=e50b133e7320382b160c5ce7e27d497e (verified). The Wave B spec was not modified between Round-3 and Round-4 — commit b59ce40d8 touches public/js/kiosk-shell.js + pos-app.js + KioskPaymentComponent.vue + KioskAppComponent.vue + i18n files only, not tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js or AUDIT_PLAN.md. State 16's planned distinct purpose (thumbnail close-up per AUDIT_PLAN.md L82-L83) remains unexercised; only 13 of 14 budgeted states yield unique evidence. P2 — coverage gap, not loop-blocking.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js L364 — replace the redundant `await snap('16-cart-thumbnails-quartet')` with a meaningful interaction (scroll to first cart line, click line edit/expand, or capture page.locator('[data-testid=\"kiosk-cart-item-options-0\"]').screenshot() as a per-line composition close-up). Update AUDIT_PLAN.md to clarify state 16 = thumbnail close-up vs state 15 = cart overview.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "ROUND-4 RE-VERIFICATION: cat 309 (Assiette Poulet) wizard pipeline still collapses to sauce + supplements + recap only. DOM grep 'kiosk-step-(sauce|viande|garnitures|supplements|recap)' across 309-01/02/03 yields {sauce}, {sauce, supplements}, {sauce, supplements} respectively — no 'kiosk-step-viande' or 'kiosk-step-garnitures' anywhere. AUDIT_PLAN.md remains untouched at HEAD b59ce40d8. Wave B does NOT independently prove the assiette wizard's viande step renders correctly; it only proves the forbidden steps stay absent. P2 — plan-vs-catalog reconciliation, not loop-blocking.",
+      "fix_hint": "Two-fork resolution still pending. Fork A (recommended for current catalog): edit AUDIT_PLAN.md L62-L65 to declare cat 309 expected pipeline = sauce + supplements + recap (meat encoded in SKU name). Fork B: seeder + admin migration to add a Viande parent attribute (Poulet/Kefta/Merguez/Mixte) + price=0 garnitures on a single Assiette SKU. Owner must pick before any code change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "ROUND-4 RE-VERIFICATION at HEAD b59ce40d8: cart line 3 (Menu Cheese Burger Enfant, item 400, €6,00) still resolves its thumbnail to /storage/55/item-default.svg in 15-cart-after-add-309-310-311-314.dom.html. Cat 309/310/311 cart lines bind correctly (/storage/36/assiette_poulet.png, /storage/40/ojja.png, /storage/45/omelette_fromage.png). No commit between Round-3 and Round-4 uploads photos for items 400/401. P2 — empty state cosmetic, not loop-blocking.",
+      "fix_hint": "Catalog data: upload real photos for items 400 (Menu Cheese Burger Enfant) and 401 (Menu Nuggets Enfant) via admin → items → cat 314. No code change. Optionally KioskCartComponent / kiosk-product-card fallback could render an emoji ('🍔' / '🍗') until photos uploaded. Confirm cats 316/317/318 photos are present to avoid same pattern downstream.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-borne-B/310-02-step-supplements.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-4 RE-VERIFICATION: supplements step for cats 310/311/314 still exposes 'Fromage supplémentaire' and 'Salade verte' cards bound to kiosk-supplement-img src=http://127.0.0.1:8000/images/menu/item-default.svg. No commit between Round-3 and Round-4 uploads thumbnails for item_extras id=826 / id=832. P3 — names + prices remain readable, cosmetic only.",
+      "fix_hint": "Catalog data: upload thumbnails for item_extras id=826 (Fromage supplémentaire) + id=832 (Salade verte) shared across items 385-391. Alternatively KioskStepSupplementsComponent could fall back to an emoji palette (pickEmojiForSupplement mirroring pickEmojiForViande).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-borne-B/310-03-step-recap.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-4 RE-VERIFICATION: step-indicator middle circle (kiosk-step-visual-icon) still falls back to item-default.svg for cats 310/311/314 (e.g. 314-03-step-recap.dom.html: <img src=\"/storage/55/item-default.svg\" alt=\"RÉCAP\" class=\"kiosk-step-visual-img\">). Correlated with B-005. P3 — cosmetic.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue — getStepIconSrc/equivalent should adopt a deterministic supplement-default asset (e.g. /images/menu/supplement_default.png) instead of bubbling up item-default.svg whenever the first supplement_clone-group extra has no thumbnail. Likely closes alongside B-005 once thumbnails uploaded.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "unexpected_4xx",
+      "severity": "P3",
+      "evidence": "ROUND-4 RE-VERIFICATION: 309-01 boot-time 401s remain CLOSED at HEAD b59ce40d8. 309-01-step-sauce.network.json contains 0 entries (was 3 × 401 at Round-2: kiosk-event, menu, pricing/preview). 309-01-step-sauce.console.json shows zero application errors after pusher/ws allowlist filtering. Commit efd9896a0 (round-3 Option C: kill mount-time refreshServerPreviewTotal $nextTick) plus the round-4 hardening (b59ce40d8) keep this surface clean.",
+      "fix_hint": "Closed by commit efd9896a0. No further action on B-007 scope.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-borne-B/311-01-step-sauce.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "ROUND-4 CLOSURE at HEAD b59ce40d8 via PATH (a) — race no longer fires. Per-state 4xx counts (excluding pusher + csp-report) across all 14 Wave-B states: 15-cart-after-add-309-310-311-314=0, 16-cart-thumbnails-quartet=0, 309-01-step-sauce=0, 309-02-step-supplements=0, 309-03-step-recap=0, 310-01-step-sauce=0, 310-02-step-supplements=0, 310-03-step-recap=0, 311-01-step-sauce=0, 311-02-step-supplements=0, 311-03-step-recap=0, 314-01-step-sauce=0, 314-02-step-supplements=0, 314-03-step-recap=0. The three previously-failing network.json files (311-01, 311-02, 314-02) now contain '[]' (empty arrays) — direct verification: cat 311-01-step-sauce.network.json → [], cat 311-02-step-supplements.network.json → [], cat 314-02-step-supplements.network.json → []. Console error scan (excluding pusher/ws/csp-report) returns 0 errors across all 14 states. Cart totals integrity preserved: kiosk-cart-subtotal=€40,50, kiosk-cart-total=€40,50.\n\nClosure-rule application (per task spec): 'For each state with 4xx > 0 → role=alert must be > 0'. NO state has 4xx > 0, so the role=alert requirement is vacuously satisfied for every state. role=alert=0 across all 14 DOMs is EXPECTED under path (a) (no retry-success event fires when no 401 occurs).\n\nFix wiring also verified shipped (belt + suspenders for any future race): KioskAppComponent.vue L372/382/425/427 mounts a window listener for 'kiosk-auth-retried' that emits a 2500ms warning toast with role=alert; pos-app.js mirror at L62224/62235/62296/62298. The auth retry interceptor's dispatch path is in place even though it did not fire this round.\n\nB-008 round-3 P0 silent_error is CLOSED.",
+      "fix_hint": "Closed by commit b59ce40d8 (retry-success toast wiring) on top of the round-3 race elimination. The kiosk-auth-retried listener in KioskAppComponent.vue + pos-app.js provides defence-in-depth so any future cold-start race surfaces as role=alert.",
+      "status": "closed",
+      "first_seen_round": 3,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 3,
+    "P3": 3,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "FAIL",
+    "B-003": "FAIL",
+    "B-004": "FAIL",
+    "B-005": "FAIL",
+    "B-006": "FAIL",
+    "B-007": "PASS",
+    "B-008": "PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "Wave B transitions from RED (round-3) to GREEN (round-4). B-008 P0 silent_error closes via PATH (a) of the closure rule: race no longer fires anywhere. All 14 Wave-B states report 4xx=0 (excluding pusher + csp-report); the three previously-failing network captures (311-01, 311-02, 314-02) are now empty arrays '[]'. Console-error scan after pusher/ws/csp-report allowlist filtering returns 0 errors across all 14 states. Closure rule explicitly states '4xx > 0 AND role=alert > 0 → PASS' and '4xx > 0 AND role=alert == 0 → FAIL' — since no state has 4xx > 0, the role=alert requirement is vacuously satisfied. The defence-in-depth retry-success toast wiring (kiosk-auth-retried listener at KioskAppComponent.vue:382 + pos-app.js:62235) shipped correctly even though it did not fire this round.\n\nAnti-regression: B-001 stays closed (zero 'Taille' across cart DOMs, totals 40,50€ intact). Pink palette sentinel (#E8001C / rgba(232,0,28)) returns 0 hits across all 14 Wave-B DOMs. Forbidden-step sentinel (kiosk-step-menu, kiosk-step-frites-style) returns 0 hits across all 14 DOMs. B-007 stays closed (309-01 boot-time network.json still '[]').\n\nB-002/B-003/B-004/B-005/B-006 remain open exactly as round-3 (no commits between efd9896a0 and b59ce40d8 touch the Wave B spec, AUDIT_PLAN.md, or catalog photo data for items 400/401/826/832; states 15 and 16 still md5-identical at e50b133e7320382b160c5ce7e27d497e). All five are P2/P3 by category and non-loop-blocking by REVIEWER_PROTOCOL severity table.\n\nNo new findings introduced by the round-4 fix commit. Verdict GREEN: open_P0=0 AND open_P1=0."
+}

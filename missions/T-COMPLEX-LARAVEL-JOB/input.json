@@ -1,0 +1,14 @@
+{
+  "task_id": "T-COMPLEX-LARAVEL-JOB",
+  "context": "FoodKing Laravel 9, multi-tenant par branch_id, dispatch jobs Redis, OrderStatus enum dans App\\Enums.",
+  "objective": "Generer une classe Job Laravel App\\Jobs\\NotifyKitchenOnOrderConfirmed qui : 1) recoit Order id en constructeur, 2) dans handle() recharge l Order avec where branch_id pour isolation, 3) verifie statut == OrderStatus::CONFIRMED via enum (jamais string), 4) push event 'order.kitchen.notify' sur le canal private branch.{branch_id}.kitchen via Pusher/Echo, 5) gere ModelNotFoundException sans crash, 6) retry max 3, backoff 30s. Strict invariant : aucune logique de prix, aucun dispatch avant DB commit (ce job est consume, pas dispatcher).",
+  "constraints": [
+    "Use enum App\\Enums\\OrderStatus (pas de string)",
+    "where branch_id explicite au reload",
+    "Eloquent with kitchenItems relation",
+    "Tries=3, backoff=30, ShouldQueue, SerializesModels",
+    "Pas d edit BD, lecture + broadcast seulement",
+    "Aucune dependance hors Laravel core + project namespaces standards"
+  ],
+  "expected_output_format": "Renvoie UNIQUEMENT le code PHP complet de app/Jobs/NotifyKitchenOnOrderConfirmed.php, namespace + use + class. Aucun texte avant/apres."
+}

@@ -172,8 +172,8 @@ class BranchIsolationTest extends TestCase
 
     public function test_chef_kds_does_not_leak_other_branch_orders(): void
     {
-        $orderA = $this->makeOrder($this->branchA->id, OrderStatus::ACCEPT);
-        $orderB = $this->makeOrder($this->branchB->id, OrderStatus::ACCEPT);
+        $orderA = $this->makeOrder($this->branchA->id, OrderStatus::ACCEPT, PaymentStatus::PAID);
+        $orderB = $this->makeOrder($this->branchB->id, OrderStatus::ACCEPT, PaymentStatus::PAID);
 
         $this->actingAs($this->chefA, 'sanctum');
 

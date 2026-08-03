@@ -1,0 +1,65 @@
+{
+ "spec": "web:infra+tests",
+ "scope": "Cartographie READ-ONLY du site web standalone /Users/1millnonstop/Downloads/web : lancement (serveur statique), config Playwright existante, conventions de captures, emplacement des nouvelles specs e2e.",
+ "summary": "Le site est une SPA React 18 + Babel-standalone SANS build (index.html charge data/menu.js puis api.js puis les .jsx en type=\"text/babel\") ; il se sert par simple serveur statique — convention établie : `python3 -m http.server -d /Users/1millnonstop/Downloads/web 8096 --bind 127.0.0.1`. Le repo web n'a PAS de node_modules ni de package.json : les tests Playwright s'exécutent depuis le backend testttt (qui possède @playwright/test 1.58.2 + @axe-core/playwright) avec `--config=/Users/1millnonstop/Downloads/web/pw.validation.config.js`. La config existante limite testMatch à l'unique spec `web-validation-profonde-2026-06-10.spec.js` (Chrome channel, headless, workers:1, baseURL env PLAYWRIGHT_BASE_URL défaut :8096) — une nouvelle spec nécessite soit une nouvelle config, soit un élargissement du testMatch. Captures : JPEG q70, nommage `<viewport>__<screen>__<sub>.jpg`, viewports mobile 390x844 + desktop 1280x800, sorties dans reports/validation-profonde-2026-06-10/<cycle>/ + findings-all.json incrémental. L'API réelle est configurée via metas index.html (api-base-url http://127.0.0.1:8766, api-branch-id 1, menu-image-base) — risque : specs e2e « offline » verront des erreurs réseau vers :8766 si la caisse n'est pas up (le harness existant logge tout HTTP>=400).",
+ "findings": [
+  {
+   "severity": "INFO",
+   "title": "Lancement du site = serveur statique pur, port convention 8096",
+   "evidence": "web-validation-profonde-2026-06-10.spec.js:10 « Boot serveur AVANT : python3 -m http.server -d /Users/1millnonstop/Downloads/web 8096 --bind 127.0.0.1 » ; README.md Quick start : « npx serve . » ou « python3 -m http.server 8000 »",
+   "file": "/Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js",
+   "line": 10,
+   "recommendation": "Réutiliser le port 8096 pour rester compatible avec pw.validation.config.js (baseURL défaut http://127.0.0.1:8096)."
+  },
+  {
+   "severity": "P2",
+   "title": "pw.validation.config.js ne matche QUE la spec de 2026-06-10 — une nouvelle spec ne tournera pas avec ce config sans modification",
+   "evidence": "pw.validation.config.js:6-7 : testDir '/Users/1millnonstop/Downloads/web', testMatch: ['web-validation-profonde-2026-06-10.spec.js']",
+   "file": "/Users/1millnonstop/Downloads/web/pw.validation.config.js",
+   "line": 7,
+   "recommendation": "Pour de nouvelles specs e2e : créer un nouveau fichier config (ex. pw.sync.config.js) copiant use{channel:'chrome',headless:true} avec testMatch adapté, plutôt que d'éditer le config existant (règle read-only + non-régression du run historique)."
+  },
+  {
+   "severity": "P2",
+   "title": "Aucun node_modules/package.json dans /Users/1millnonstop/Downloads/web — Playwright vit dans testttt",
+   "evidence": "ls node_modules → vide ; spec:12-14 « Run (depuis testttt, NODE_PATH=testttt/node_modules) : PLAYWRIGHT_BASE_URL=http://127.0.0.1:8096 node_modules/.bin/playwright test <spec> --config=<config> » ; binaire vérifié : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright existe ; testttt/package.json:48-54 @axe-core/playwright ^4.10.0, @playwright/test ^1.58.2, axe-core ^4.11.3",
+   "file": "/Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js",
+   "line": 12,
+   "recommendation": "Toujours lancer playwright depuis le cwd testttt (résolution require('@playwright/test') via son node_modules) en pointant --config vers le fichier dans Downloads/web."
+  },
+  {
+   "severity": "P3",
+   "title": "Le site câble l'API caisse réelle sur 127.0.0.1:8766 via metas — les tests capteront des HTTP>=400/erreurs réseau si le backend n'est pas servi sur ce port",
+   "evidence": "index.html:12-13 <meta name=\"api-base-url\" content=\"http://127.0.0.1:8766\"> + <meta name=\"api-branch-id\" content=\"1\"> ; api.js:20-22 CFG.base fallback 'http://127.0.0.1:8766', apiKey fallback 'b6d68vy2-m7g5-20r0-5275-h103w73453q120' (pas de meta api-key dans index.html, seulement le fallback api.js:21) ; le harness spec:60-66 logge tout response status>=400 dans findings-all.json",
+   "file": "/Users/1millnonstop/Downloads/web/index.html",
+   "line": 12,
+   "recommendation": "Pour les e2e « avec API », démarrer le backend testttt sur :8766 (convention des sessions borne, autologin kiosk123) avant les tests ; sinon prévoir que les findings http>=400 vers :8766 sont attendus/filtrables."
+  },
+  {
+   "severity": "INFO",
+   "title": "Conventions de capture établies : JPEG q70, viewport__screen__sub.jpg, 2 viewports, sortie reports/validation-profonde-.../<cycle>",
+   "evidence": "spec:22-24 OUT = path.resolve('/Users/1millnonstop/Downloads/web/reports/validation-profonde-2026-06-10', CYCLE) avec CYCLE=process.env.VALID_CYCLE||'cycle1' ; spec:26-29 VIEWPORTS mobile 390x844 + desktop 1280x800 ; spec:68-71 shot(): name `${viewport}__${screen}${sub?'__'+sub:''}.jpg`, screenshot jpeg quality:70 fullPage:false ; exemples réels : cycle1/desktop__cart-drawer__promo-applied.jpg, sous-dossiers cycle1, cycle2, adversarial, heals, fix-verify-2026-07-07",
+   "file": "/Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js",
+   "line": 68,
+   "recommendation": "Réutiliser le même nommage et un dossier de cycle dédié (ex. reports/<mission>/<cycle>/) + findings-all.json append-by-rewrite (valable seulement sous workers:1)."
+  },
+  {
+   "severity": "INFO",
+   "title": "Ordre de chargement scripts index.html (dépendances strictes)",
+   "evidence": "index.html : React 18.3.1 UMD + ReactDOM + @babel/standalone 7.29.0 (unpkg, SRI integrity) → data/menu.js (window.LC.menu, W_CATS/W_ITEMS) → data/loyalty.js → api.js (window.LC.api, « Doit être chargé APRÈS data/menu.js » api.js:10) → flag window.LC.isDev (?dev ou localStorage lecayenne.dev) → jsx text/babel : components, screens, screens-v3, loyalty-v2, orders, flows, wizard-v2, account-v2, funnel, upsell → ReactDOM.createRoot inline en fin de body",
+   "file": "/Users/1millnonstop/Downloads/web/index.html",
+   "line": 52,
+   "recommendation": "Les tests doivent attendre l'hydratation Babel (transpilation client) avant d'interagir — la page affiche « Chargement… » dans #root jusque-là ; NB : dépendance réseau unpkg + fonts.googleapis (le site n'est pas 100% offline)."
+  }
+ ],
+ "facts": [
+  "SERVIR LE SITE (commande exacte) : `python3 -m http.server -d /Users/1millnonstop/Downloads/web 8096 --bind 127.0.0.1` (convention documentée dans web-validation-profonde-2026-06-10.spec.js:10 ; README propose aussi npx serve / http.server 8000, mais 8096 est le port attendu par pw.validation.config.js:14).",
+  "LANCER UN TEST PLAYWRIGHT (commande exacte, cwd = /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt) : `PLAYWRIGHT_BASE_URL=http://127.0.0.1:8096 node_modules/.bin/playwright test /Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js --config=/Users/1millnonstop/Downloads/web/pw.validation.config.js --reporter=list` (spec:12-14 ; binaire vérifié présent à testttt/node_modules/.bin/playwright ; deps testttt/package.json:48-54 @playwright/test ^1.58.2 + @axe-core/playwright ^4.10.0).",
+  "OÙ METTRE LES NOUVELLES SPECS E2E : à la racine /Users/1millnonstop/Downloads/web/ (testDir du config = ce dossier, pw.validation.config.js:6), MAIS testMatch (ligne 7) ne liste que 'web-validation-profonde-2026-06-10.spec.js' → une nouvelle spec exige un nouveau fichier config dédié (même dossier, ex. pw.<mission>.config.js copiant use:{channel:'chrome',headless:true,screenshot:'off',trace:'off'}, workers:1, timeout 300_000) référencé via --config.",
+  "CAPTURES : dossier par cycle /Users/1millnonstop/Downloads/web/reports/validation-profonde-2026-06-10/<VALID_CYCLE|cycle1>/ ; nommage `<mobile|desktop>__<screen>[__<sub>].jpg`, JPEG quality 70, fullPage:false (spec:68-71) ; viewports mobile 390x844 et desktop 1280x800 (spec:26-29) ; findings JSON incrémental findings-all.json (spec:37-45, safe uniquement avec workers:1).",
+  "API RÉELLE : index.html:12-14 metas api-base-url=http://127.0.0.1:8766, api-branch-id=1, menu-image-base=http://127.0.0.1:8766/images/menu/ ; api.js:19-23 lit ces metas avec fallbacks identiques + api-key fallback hardcodé b6d68vy2-… (api.js:21) envoyé en X-API-Key (api.js:116) ; le backend testttt doit tourner sur :8766 pour les flux commande réels.",
+  "SPA sans build : index.html charge React/Babel via unpkg (CDN externe requis) puis .jsx en type=text/babel transpilés au runtime ; root affiche un écran 'Chargement…' avant hydratation — les tests doivent wait un sélecteur applicatif, pas juste load.",
+  "Autres tests existants (hors Playwright) : /Users/1millnonstop/Downloads/web/tests/node/{loyalty-redeem,menu-pricing}.test.mjs (tests node .mjs) et tools/legal/{check-legal,fill-legal}.mjs ; reports/ contient aussi PLAN_WEB_API_WIREUP_2026-06-26.md et DELIVERY_PRICING_2026-06-27.md.",
+  "Mode dev du site : ?dev en query OU localStorage lecayenne.dev='true' active window.LC.isDev (index.html, bloc inline après api.js) — gate les affordances démo (hint OTP), utile pour specs e2e de login."
+ ]
+}

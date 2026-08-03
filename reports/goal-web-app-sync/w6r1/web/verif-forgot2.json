@@ -1,0 +1,13 @@
+{
+  "report": {
+    "opened": true,
+    "modalCount": 2,
+    "forgotClicked": true,
+    "dom": {
+      "honestNoPassword": true,
+      "fakeLinkSent": false,
+      "recevoirUnCode": true
+    }
+  },
+  "errors": []
+}

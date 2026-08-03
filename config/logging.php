@@ -51,9 +51,15 @@ return [
     */
 
     'channels' => [
+        // [OPS-2 2026-06-04] Default stack now writes to the DATE-ROTATED
+        // `daily` channel (14-day retention) instead of the unbounded
+        // `single` laravel.log. The box hit 100% disk twice because the
+        // single-file channel grew without a rotation ceiling. `daily`
+        // is self-pruning (Monolog deletes files older than `days`), so
+        // even a server pinned to `LOG_CHANNEL=stack` is now bounded.
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['daily'],
             'ignore_exceptions' => false,
         ],
 
@@ -61,6 +67,7 @@ return [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         'daily' => [
@@ -68,6 +75,7 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => 14,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         'slack' => [
@@ -123,6 +131,28 @@ return [
             'path' => storage_path('logs/hardware.log'),
             'level' => 'info',
             'days' => 30,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
+        ],
+
+        // [C6 / K-6] Dedicated security channel — rotated daily, retained
+        // 90 days for forensic analysis of `branch_mismatch_claimed`,
+        // `forbidden_ability`, `lockdown_violation`. Separate from
+        // `hardware` so ops can wire alerts (Sentry/Slack) without
+        // hardware noise, and separate from `observability` so SLO
+        // evaluators do not drown out security signal. Mirrors the
+        // testttt-kiosk-p93 reference worktree.
+        //
+        // INFRASTRUCTURE PORT ONLY — the actual K-6 enforcement
+        // (branch_id mismatch detection in KioskEventController) is a
+        // critical-zone change that requires its own audited cycle.
+        // Channel is shipped now so any future enforcement / ad-hoc
+        // diagnostic can call `Log::channel('security')` immediately.
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'days' => 90,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         'production_json' => [
@@ -133,6 +163,20 @@ return [
             ],
             'formatter' => \App\Logging\JsonFormatter::class,
             'level' => 'info',
+        ],
+
+        // [K-9 ADR-4] Dedicated observability channel — rotated daily, retained
+        // 90 days. Used by `SloMetricCollector`, `SloEvaluatorJob`, CSP report
+        // endpoint, correlation trace debug, heatmap spill-over. JSON formatter
+        // for downstream Loki/Logtail ingestion. Separate from `security` to
+        // avoid alert fatigue on ops channel routing.
+        'observability' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/observability.log'),
+            'level' => 'info',
+            'days' => 90,
+            'formatter' => \App\Logging\JsonFormatter::class,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         // [POS-9-H.3.2 / F-C7]
@@ -151,6 +195,13 @@ return [
             'path'   => storage_path('logs/fiscal.log'),
             'level'  => 'info',
             'days'   => 400,
+            // [PERMS-FIX 2026-06-25] 0664 = fichier inscriptible par le GROUPE.
+            // Sans ça, le log fiscal du jour se crée en 0644 (groupe lecture seule) :
+            // si php-fpm (www-data) le crée, le cron (ubuntu) ne peut plus l'écrire
+            // (et inversement) → l'ouverture/clôture Z et l'allocation fiscale d'une
+            // commande échouent (rollback) → 500 / Z manquant. 0664 + groupe partagé
+            // www-data = les deux peuvent écrire.
+            'permission' => 0664,
         ],
     ],
 

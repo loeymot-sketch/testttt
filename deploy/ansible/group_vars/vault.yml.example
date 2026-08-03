@@ -1,0 +1,53 @@
+---
+# Ansible vault — production secrets scaffold (V1 Cloud-Prep)
+#
+# THIS FILE IS A TEMPLATE. To activate:
+#   1. cp vault.yml.example vault.yml
+#   2. Replace each PLACEHOLDER value with the real secret
+#   3. ansible-vault encrypt vault.yml
+#      (Prompts for a strong vault password — store in your secret manager)
+#   4. Run playbook with: ansible-playbook site.yml --ask-vault-pass
+#
+# DO NOT commit the encrypted `vault.yml` to a public repo. Even encrypted,
+# it is a target for offline brute-force attacks. Keep the vault password
+# OUT of the repo (1Password / Bitwarden / SOPS / cloud KMS).
+#
+# Regenerate each secret with `openssl rand -hex 32` unless noted otherwise.
+# Fiscal HMAC secrets are NF525-critical: re-keying mid-chain BREAKS the
+# audit_logs HMAC. Rotate only on fresh chain or via the re-anchor procedure
+# documented in docs/runbooks/BACKUP_RESTORE_NF525.md.
+
+# --- Required (consumed by group_vars/all.yml + site.yml) --------------------
+
+# Database (MySQL) — min 24 chars, mixed case + digits + symbols
+vault_db_password: PLACEHOLDER_db_password_openssl_rand_hex_32
+
+# Redis (queue + cache + sessions) — min 24 chars
+vault_redis_password: PLACEHOLDER_redis_password_openssl_rand_hex_32
+
+# Soketi WebSocket auth (broadcasting) — 3 distinct values, min 32 chars each
+vault_soketi_app_id: PLACEHOLDER_soketi_app_id_openssl_rand_hex_16
+vault_soketi_app_key: PLACEHOLDER_soketi_app_key_openssl_rand_hex_32
+vault_soketi_app_secret: PLACEHOLDER_soketi_app_secret_openssl_rand_hex_32
+
+# NF525 fiscal HMAC chain secrets — DO NOT ROTATE without re-anchor
+vault_fiscal_audit_secret: PLACEHOLDER_fiscal_audit_secret_openssl_rand_hex_32
+vault_fiscal_z_report_secret: PLACEHOLDER_fiscal_z_report_secret_openssl_rand_hex_32
+
+# Backup alerting webhook (Slack / Discord / PagerDuty) — fail-loud on DR error
+vault_backup_alert_webhook: https://hooks.example/PLACEHOLDER_webhook_path
+
+# --- Optional / forward-looking (uncomment when activated) -------------------
+# These are NOT referenced by all.yml yet but are documented here so the
+# vault scaffold is complete when activating Stripe / OVH Object Storage.
+#
+# Object storage (OVH S3-compatible) — currently set in /etc/foodking-backup.env
+# directly (see docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt §Filesystem). Move
+# into vault.yml + extend all.yml refs when migrating to Ansible-managed.
+# vault_s3_access_key: PLACEHOLDER_s3_access_key_id
+# vault_s3_secret_key: PLACEHOLDER_s3_secret_access_key
+#
+# Stripe live keys (post-V1 activation). Use TEST keys (sk_test_*, whsec_*)
+# during staging DR drill — never put live keys in non-prod inventory.
+# vault_stripe_secret_key: PLACEHOLDER_sk_live_xxx
+# vault_stripe_webhook_secret: PLACEHOLDER_whsec_xxx

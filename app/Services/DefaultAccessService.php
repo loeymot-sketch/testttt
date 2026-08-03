@@ -7,6 +7,7 @@ use App\Models\DefaultAccess;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Libraries\QueryExceptionLibrary;
+use Smartisan\Settings\Facades\Settings;
 
 class DefaultAccessService
 {
@@ -23,6 +24,11 @@ class DefaultAccessService
                     $array[$default->name] = $default->default_id;
                 }
             }
+
+            if (!array_key_exists('branch_id', $array)) {
+                $array['branch_id'] = $this->fallbackBranchId();
+            }
+
             return $array;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -53,5 +59,27 @@ class DefaultAccessService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function fallbackBranchId(): ?int
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return null;
+        }
+
+        $branchId = (int) $user->branch_id;
+        if ($branchId > 0) {
+            return $branchId;
+        }
+
+        $defaultBranch = Settings::group('site')->get('site_default_branch');
+        if ($defaultBranch === null || $defaultBranch === '') {
+            return null;
+        }
+
+        $defaultBranchId = (int) $defaultBranch;
+
+        return $defaultBranchId > 0 ? $defaultBranchId : null;
     }
 }

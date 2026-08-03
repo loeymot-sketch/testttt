@@ -13,7 +13,7 @@ description: >-
 
 - Première ouverture du dépôt sur un **nouveau compte** ou machine.
 - L’utilisateur veut **reprendre le développement** sans redonner tout le contexte à la main.
-- Travail **multi-agents** (planning / Kimi-test / Anti-Gravity) selon `AGENTS.md`.
+- Travail **multi-agents** selon **`AGENTS.md`** : cycle borné (TASK_ID, `run-cycle`), **`.cursor/routing.md`**, sub-agents Task **`foodking-planner-orchestrator`**, **`foodking-complex-implementer`**, **`foodking-routine-implementer`**.
 
 ## Ordre de lecture obligatoire (avant code ou plan important)
 
@@ -26,7 +26,7 @@ description: >-
 
 ## Règles déjà dans le repo (ne pas ignorer)
 
-- `.cursor/rules/project-continuity.mdc` (alwaysApply).
+- `.cursor/rules/project-continuity.mdc` (chargement à la demande).
 - Petits diffs ; pas de contournement **recalcul prix serveur** ni **authz** cassée.
 
 ## Réponse attendue de l’agent
@@ -42,3 +42,19 @@ Après lecture, résumer en **≤15 lignes** : stack, surfaces (POS, KDS, OSS, k
 ## Installation globale (optionnel, tous projets sur ce compte)
 
 Copier ce dossier `foodking-handoff` vers `~/.cursor/skills/foodking-handoff/` pour invoquer le même skill hors workspace.
+
+## Hygiène des rapports d'audit
+
+Avant tout commit qui ajoute / modifie un rapport sous `reports/review/AUDIT_*.md`,
+`reports/review/VERIFY_*.md` ou `reports/audit-orchestration/*.md`, exécuter :
+
+```bash
+bash scripts/check-audit-report-integrity.sh -v
+```
+
+Le script échoue si un rapport est < 200 octets (cas observé : un rapport
+restauré depuis un swap vide). Référence : `F-VERIFY-10-02` (cf.
+`reports/review/VERIFY_10_BRANCH_ISOLATION_2026-04-20.md`).
+
+Optionnel : intégrer dans le pre-commit hook local de l'utilisateur. Pas
+d'auto-installation versionnée pour ne pas écraser les hooks personnels.

@@ -1,0 +1,19 @@
+{
+  "system": "S9-settings-system",
+  "verifier": "HOSTILE-RED",
+  "verified_at": "2026-06-04",
+  "verdicts": [
+    {"id":"S9-01","file_line_exists":true,"is_real":true,"is_necessary":false,"severity_adjusted":"DROP","reason":"NotificationController.php:18 gates only update; index ungated; but NotificationResource.php:29-36 = public Firebase WEB config injected client-side (FrontendNavBarComponent.vue:365, BackendNavbarComponent.vue:344, pos-app.js), and notification_fcm_json_file (line 37) is the inert sentinel 'firebase://service-account-file.json' (NotificationSetting.php:40-49, GOAL-HEAL-SEC-001) — zero real secret leaks. Overclaimed."},
+    {"id":"S9-02","file_line_exists":true,"is_real":true,"is_necessary":false,"severity_adjusted":"DROP","reason":"LicenseController.php:18 gates only update; index leaks license_key (LicenseResource.php:28) but that value is MIX_API_KEY (LicenseService.php:45) compiled into the public client bundle (env.js:44 process.env.MIX_API_KEY). Already public; gating index is a confidentiality no-op."},
+    {"id":"S9-03","file_line_exists":true,"is_real":true,"is_necessary":true,"severity_adjusted":"P3","reason":"LanguageController.php:89-90 + LanguageService.php:252-253: explode('.',name) > 0 is always-true (PHP-verified array>int); name without dot => undefined [1] + wrong include routing. Admin-gated. Fix BOTH sites."},
+    {"id":"S9-04","file_line_exists":true,"is_real":true,"is_necessary":true,"severity_adjusted":"P3","reason":"LanguageService.php:283/285 writes $value in double-quotes unescaped into includable .php lang file (file_put_contents:290; include at :255/257). PHP-verified str_replace breakout yields valid injected PHP. Admin-only (permission:settings) so P3 defense-in-depth, no privilege crossing."},
+    {"id":"S9-05","file_line_exists":true,"is_real":true,"is_necessary":false,"severity_adjusted":"DROP","reason":"RoleShowComponent.vue:139-145/159-165 forward splice without j-- and append without dedup; only bites on duplicate id (contrived sequence) and is self-correcting (PermissionService syncs array; admin sees checkbox state). Author confidence low. Dormant code smell, not a defect worth a finding."}
+  ],
+  "coverage_gaps": [
+    "Pattern 'index ungated, gates only update' enumerated across all settings controllers; the THREE real-secret endpoints (Mail/SmsGateway/PaymentGateway) ALREADY healed to ->only('index','update'). Remaining ungated indexes expose only public config (SiteResource site_google_map_key = referrer-restricted browser key; Company/Theme/SocialMedia/Otp/OrderSetup/Cookies resources carry no secret fields).",
+    "S9-01/S9-02 gating the index is a cosmetic consistency nit only (no secret leaks) — do NOT surface as a security finding.",
+    "S9-03 must be fixed in BOTH LanguageController.php:90 AND LanguageService.php:253.",
+    "S9-04 relies on validateLangFilePath() containment (verified by reference only); its traversal-resistance was not independently re-audited.",
+    "PermissionController.php:33 gates the whole controller (index+mutations) — Role/permission read path is correctly gated; no ungated permission-matrix read remains."
+  ]
+}

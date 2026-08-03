@@ -1,6 +1,6 @@
 <template>
   <button type="button" @click="add" data-modal="#modal"
-    class="flex items-center gap-1.5 time-slot-gap h-7 px-3 rounded-2xl bg-[#FFEDF4] text-primary">
+    class="flex items-center gap-1.5 time-slot-gap h-7 px-3 rounded-2xl bg-[#FFE8DD] text-primary">
     <i class="lab lab-plus"></i>
     <span class="text-xs font-semibold capitalize text-primary">{{ $t("button.add") }}</span>
   </button>

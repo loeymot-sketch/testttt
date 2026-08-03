@@ -22,7 +22,7 @@ class ItemCategory extends Model implements HasMedia
         'parent_id',
         'name', 'slug', 'description', 'status', 'sort',
         // [PLAN_11 ARCH-01] Config wizard
-        'wizard_template', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
+        'wizard_template', 'wizard_profile_id', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
         'kiosk_upsell_include', 'kiosk_upsell_skip_after_cart',
         // [V1 SECTION 5] Dual-channel projections
         'channels', 'kiosk_sort', 'pos_sort', 'kiosk_label',
@@ -35,6 +35,7 @@ class ItemCategory extends Model implements HasMedia
         'description'         => 'string',
         'status'              => 'integer',
         // [PLAN_11 ARCH-01] Config wizard
+        'wizard_profile_id'   => 'integer',
         'has_menu'            => 'boolean',
         'default_menu_kiosk'  => 'boolean',
         'sauce_included_menu' => 'boolean',
@@ -96,7 +97,15 @@ class ItemCategory extends Model implements HasMedia
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
-            return asset("{$basePath}/{$filename}");
+            // [W5-PERF #1 2026-07-06] Vignette WebP ≤320px pré-générée servie en
+            // priorité (les 11 tuiles cat-*.png plein format = ~2,9 Mo au hub POS).
+            // Fallback plein format inchangé si la vignette manque.
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
+            // Cache-bust: filemtime suffix forces browsers to refetch when the file changes.
+            $hash = @filemtime($fullPath) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         return asset('images/category/thumb.png');
     }
@@ -106,6 +115,30 @@ class ItemCategory extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('item-category'))) {
             $category = $this->getMedia('item-category')->last();
             return $category->getUrl('cover');
+        }
+        // Fallback: image PAR CATÉGORIE depuis config/menu_images.php (même
+        // résolution slug-keyée que getThumbAttribute). Sans ce fallback, `cover`
+        // renvoyait UNE image générique unique (images/category/cover.png) pour
+        // TOUTES les catégories ; or les payloads (ItemCategoryResource,
+        // KioskMenuService) exposent `image_full_path = cover ?: thumb`, donc ce
+        // cover générique masquait le `thumb` correct → borne + POS affichaient
+        // la même photo pour chaque catégorie. (Owner report 2026-06-04.)
+        $images = Config::get('menu_images.categories', []);
+        $basePath = Config::get('menu_images.base_path', 'images/menu');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
+        $filename = $images[$this->slug] ?? $defaultFile;
+        $fullPath = public_path("{$basePath}/{$filename}");
+        if (file_exists($fullPath)) {
+            // [PERF 2026-07-17] Même pipeline vignette que getThumbAttribute :
+            // `image_full_path = cover ?: thumb` (KioskMenuService) prenait TOUJOURS
+            // ce cover → les tuiles catégorie borne repartaient sur les PNG pleins
+            // (~1 Mo pièce, ~2 Mo le premier écran) alors que les WebP ≤320px existent.
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
+            // Cache-bust: filemtime suffix forces browsers to refetch on change.
+            $hash = @filemtime($fullPath) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         return asset('images/category/cover.png');
     }
@@ -119,6 +152,16 @@ class ItemCategory extends Model implements HasMedia
     public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Item::class)->where(['status' => Status::ACTIVE]);
+    }
+
+    public function wizardProfile(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ItemWizardProfile::class, 'wizard_profile_id');
+    }
+
+    public function getEffectiveWizardProfile(): ?ItemWizardProfile
+    {
+        return $this->wizardProfile;
     }
 
     /**

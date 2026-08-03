@@ -6,6 +6,7 @@ import KioskStepMenuComponent from '../../resources/js/components/frontend/kiosk
 import KioskStepSauceComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue';
 import KioskStepPainComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepPainComponent.vue';
 import KioskStepViandeComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepViandeComponent.vue';
+import KioskStepSupplementsComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepSupplementsComponent.vue';
 import frMessages from '../../resources/js/languages/fr.json';
 
 /** i18n pour composants wizard réels (clés kiosk.wizard.*) */
@@ -225,10 +226,16 @@ const createKioskWizardMock = () => ({
       });
 
       Object.keys(this.selections.supplements).forEach(id => {
-        if (this.selections.supplements[id]) {
+        const rawCount = this.selections.supplements[id];
+        const count = rawCount === true ? 1 : (parseInt(rawCount, 10) || 0);
+        if (count > 0) {
           const extra = item.extras?.find(e => e.id === parseInt(id));
-          normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
-          if (extra) itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0);
+          if (extra) {
+            for (let i = 0; i < count; i++) {
+              normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
+            }
+            itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0) * count;
+          }
         }
       });
 
@@ -745,6 +752,21 @@ describe('KioskWizardComponent - buildCartItem server format (C1)', () => {
     expect(cartItem.item_extras.length).toBe(2);
   });
 
+  it('paid supplements support multiple units in cart payload and totals', () => {
+    const Component = createKioskWizardMock();
+    const wrapper = mount(Component, {
+      props: { item: makeItem(), onAddToCart: vi.fn(), onClose: vi.fn() },
+    });
+    wrapper.vm.selections.supplements = { 302: 2 };
+    wrapper.vm.resolvedItem = makeItem();
+
+    const cartItem = wrapper.vm.buildCartItem();
+
+    expect(cartItem.item_extra_total).toBeCloseTo(2.0);
+    expect(cartItem.item_extras.filter((e) => e.id === 302)).toHaveLength(2);
+    expect(cartItem.total).toBeCloseTo(10.0);
+  });
+
   it('no variations selected → item_variations is empty array', () => {
     const Component = createKioskWizardMock();
     const wrapper = mount(Component, {
@@ -865,7 +887,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
     expect(wrapper.vm.showFritesSauce).toBe(false);
   });
 
-  it('menuPrice applies 0.6 / 0.4 ratios like runningTotal', async () => {
+  it('menuPrice applies 0.76 / 0.76 ratios (G-PRIX 1,90) like runningTotal', async () => {
     const wrapper = mount(KioskStepMenuComponent, {
       global: { plugins: [kioskWizardTestI18n] },
       props: {
@@ -877,9 +899,9 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
     await wrapper.vm.selectChoice('full');
     expect(wrapper.vm.menuPrice).toBeCloseTo(10);
     await wrapper.vm.selectChoice('frites');
-    expect(wrapper.vm.menuPrice).toBeCloseTo(6);
+    expect(wrapper.vm.menuPrice).toBeCloseTo(7.6);
     await wrapper.vm.selectChoice('boisson');
-    expect(wrapper.vm.menuPrice).toBeCloseTo(4);
+    expect(wrapper.vm.menuPrice).toBeCloseTo(7.6);
     await wrapper.vm.selectChoice('none');
     expect(wrapper.vm.menuPrice).toBe(0);
   });
@@ -928,6 +950,394 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
     expect(names).toContain('Jus d\'orange');
     expect(names.some((n) => n.toLowerCase().includes('frite'))).toBe(false);
     expect(names.some((n) => n.toLowerCase().includes('menu'))).toBe(false);
+  });
+
+  it('boissonList excludes generic formula labels and keeps real drinks only', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          ...menuItem(),
+          addons: [
+            { addon_item_name: 'Boisson seule', group_label: 'boisson', addon_item_id: 10 },
+            { addon_item_name: '+ Boisson', group_label: 'boisson', addon_item_id: 11 },
+            { addon_item_name: 'Coca-Cola', group_label: 'boisson', addon_item_id: 12 },
+          ],
+        },
+        selections: { ...baseSelections(), menuChoice: 'boisson' },
+      },
+    });
+
+    expect(wrapper.vm.boissonList.map((b) => b.name)).toEqual(['Coca-Cola']);
+  });
+
+  it('boissonList falls back to the central kiosk drink catalog when item addons have no real drinks', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      global: {
+        plugins: [kioskWizardTestI18n],
+        mocks: {
+          $store: {
+            getters: {
+              'kioskMenu/categories': [
+                { id: 9, name: 'Boissons', slug: 'boissons' },
+                { id: 10, name: 'Tacos', slug: 'tacos' },
+              ],
+              'kioskMenu/allItems': [
+                { id: 901, item_category_id: 9, name: 'Coca-Cola 33cl', status: 5 },
+                { id: 902, item_category_id: 9, name: 'Fanta Orange', status: 5 },
+                { id: 903, item_category_id: 9, name: 'Boisson seule', status: 5 },
+                { id: 904, item_category_id: 9, name: 'Sprite', is_available: false, status: 5 },
+                { id: 905, item_category_id: 10, name: 'Tacos M', status: 5 },
+              ],
+            },
+            state: { kioskMenu: {} },
+          },
+        },
+      },
+      props: {
+        step: {},
+        item: {
+          ...menuItem(),
+          addons: [{ addon_item_name: 'Menu', addon_item_convert_price: 3 }],
+        },
+        selections: { ...baseSelections(), menuChoice: 'boisson' },
+      },
+    });
+
+    expect(wrapper.vm.boissonList.map((b) => b.name)).toEqual(['Coca-Cola 33cl', 'Fanta Orange']);
+  });
+});
+
+describe('KioskWizardComponent — active wizard UX fixes', () => {
+  const wizardComponentStubs = Object.fromEntries([
+    'KioskStepPain',
+    'KioskStepTaille',
+    'KioskStepViande',
+    'KioskStepSauce',
+    'KioskStepGarnitures',
+    'KioskStepSupplements',
+    'KioskStepMenu',
+    'KioskOrderSummary',
+    'KsAllergenBadge',
+  ].map((n) => [n, true]));
+
+  const mountRealWizard = (item, storeOverrides = {}) => shallowMount(KioskWizardComponent, {
+    props: {
+      item,
+      onAddToCart: vi.fn(),
+      onClose: vi.fn(),
+    },
+    global: {
+      plugins: [kioskWizardTestI18n],
+      stubs: wizardComponentStubs,
+      mocks: {
+        $store: {
+          getters: {
+            'kioskFilter/activeFilters': [],
+            'kioskSettings/customerProfile': null,
+            ...(storeOverrides.getters || {}),
+          },
+          state: { globalState: { lists: {} }, ...(storeOverrides.state || {}) },
+          dispatch: vi.fn(),
+        },
+        $router: { go: vi.fn() },
+      },
+    },
+  });
+
+  const wizardItem = () => ({
+    id: 1901,
+    name: 'Tacos S 1 viande',
+    category_name: 'Tacos',
+    wizard_template: 'tacos',
+    has_menu: true,
+    convert_price: '8.50',
+    currency_price: '8,50 €',
+    itemAttributes: [
+      { id: 1, name: 'Viande' },
+      { id: 2, name: 'Sauce' },
+    ],
+    variations: {
+      1: [
+        { id: 11, name: 'Poulet', convert_price: '0', price: 0, status: 5 },
+      ],
+      2: [
+        { id: 21, name: 'Algérienne', convert_price: '0', price: 0, status: 5 },
+        { id: 22, name: 'Blanche', convert_price: '0.50', price: 0.5, status: 5 },
+      ],
+    },
+    extras: [
+      { id: 301, name: 'Salade', convert_price: '0', price: 0 },
+      { id: 401, name: 'Double Steak', group_label: 'viande', convert_price: '2.50', price: 2.5 },
+      { id: 501, name: 'Cheddar', convert_price: '1.00', price: 1 },
+      // [COMPOSITION-SAUCE BORNE 2026-07-15] Sauce en plus facturée via cet ItemExtra
+      // (group_label='sauce', @0,50) — même convention que le backend réel (migration
+      // 2026_07_15_180000). getKioskExtraSauceUnitPrice le lit ; 2 sauces → +0,50 scellé & affiché.
+      { id: 431, name: 'Sauce supplémentaire', group_label: 'sauce', convert_price: '0.50', price: 0.5, status: 5 },
+    ],
+    addons: [
+      { addon_item_name: 'Menu', addon_item_convert_price: '3.00', price: 3 },
+      { addon_item_name: 'Boisson seule', group_label: 'boisson', addon_item_id: 777 },
+      { addon_item_name: 'Coca-Cola', group_label: 'boisson', addon_item_id: 778 },
+    ],
+  });
+
+  it('clears stale server preview immediately so sauce/supplement/menu prices update live', async () => {
+    const wrapper = mountRealWizard(wizardItem());
+    await wrapper.vm.$nextTick();
+
+    wrapper.vm.serverPreviewTotal = 8.5;
+    wrapper.vm.updateSelection('sauceOrder', [21, 22]);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.serverPreviewTotal).toBe(null);
+    expect(wrapper.vm.runningTotal).toBe(9);
+
+    wrapper.vm.updateSelection('supplements', { 501: true });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.runningTotal).toBe(10);
+
+    wrapper.vm.updateSelection('supplements', { 501: 2 });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.runningTotal).toBe(11);
+
+    wrapper.vm.updateSelection('menuChoice', 'boisson');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.runningTotal).toBe(13.28); // [G-PRIX] boisson 3.0×0.76=2.28
+  });
+
+  it('does not let a lower pricing-preview response hide explicit wizard option deltas', async () => {
+    const wrapper = mountRealWizard(wizardItem());
+    await wrapper.vm.$nextTick();
+
+    wrapper.vm.updateSelection('sauceOrder', [21, 22]);
+    wrapper.vm.updateSelection('menuChoice', 'boisson');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.runningTotalLocal).toBe(11.28); // [G-PRIX]
+    wrapper.vm.serverPreviewTotal = 6.5;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.runningTotal).toBe(11.28);
+  });
+
+  it('requires included meat quota but still allows paid meat extras after the free choice', async () => {
+    const wrapper = mountRealWizard(wizardItem());
+    await wrapper.vm.$nextTick();
+    const viandeIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'viande');
+    wrapper.vm.currentStepIndex = viandeIdx;
+
+    wrapper.vm.updateSelection('viandes', { 'extra-401': 1 });
+    wrapper.vm.updateSelection('totalViandes', 1);
+    wrapper.vm.updateSelection('_viandeMeta', [
+      { id: 401, key: 'extra-401', name: 'Double Steak', price: 2.5, source: 'extra', count: 1 },
+    ]);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(false);
+
+    wrapper.vm.updateSelection('viandes', { 11: 1, 'extra-401': 1 });
+    wrapper.vm.updateSelection('totalViandes', 2);
+    wrapper.vm.updateSelection('_viandeMeta', [
+      { id: 11, key: '11', name: 'Poulet', price: 0, source: 'variation', count: 1 },
+      { id: 401, key: 'extra-401', name: 'Double Steak', price: 2.5, source: 'extra', count: 1 },
+    ]);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(true);
+    expect(wrapper.vm.runningTotal).toBe(11);
+  });
+
+  it('renders a compact live composition summary as choices are made', async () => {
+    const wrapper = mountRealWizard(wizardItem());
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-testid="kiosk-wizard-live-composition"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-product"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-taille"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-viande"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-empty"]').exists()).toBe(true);
+
+    wrapper.vm.updateSelection('viandes', { 11: 1 });
+    wrapper.vm.updateSelection('totalViandes', 1);
+    wrapper.vm.updateSelection('_viandeMeta', [
+      { id: 11, key: '11', name: 'Poulet', price: 0, source: 'variation', count: 1 },
+    ]);
+    wrapper.vm.updateSelection('sauceOrder', [21]);
+    wrapper.vm.updateSelection('menuChoice', 'boisson');
+    wrapper.vm.updateSelection('boissonChoice', 778, { boissonName: 'Coca-Cola', boissonId: 778, addonId: 778 });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-testid="kiosk-composition-empty"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-viande"]').text()).toContain('Poulet');
+
+    wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'sauce');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-sauce"]').text()).toContain('Algérienne');
+
+    wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-menu"]').text()).toContain('Coca-Cola');
+  });
+
+  it('KioskStepViande keeps the plus button usable for paid meat after included quota is complete', async () => {
+    const wrapper = mount(KioskStepViandeComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: wizardItem(),
+        selections: {
+          viandes: {},
+          _tailleMeta: { viandeCount: 1 },
+        },
+      },
+    });
+
+    wrapper.vm.increment('11');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.includedQuotaComplete).toBe(true);
+    expect(wrapper.vm.canIncrement(wrapper.vm.viandeList.find((v) => v.key === 'extra-401'))).toBe(true);
+
+    wrapper.vm.increment('extra-401');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.localSelections).toMatchObject({ 11: 1, 'extra-401': 1 });
+    expect(wrapper.vm.paidSelected).toBe(1);
+    const viandeMetaEvents = wrapper.emitted('update').filter((e) => e[0] === '_viandeMeta');
+    const lastMeta = viandeMetaEvents[viandeMetaEvents.length - 1][1];
+    expect(lastMeta).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 401, key: 'extra-401', source: 'extra', count: 1, price: 2.5 }),
+    ]));
+  });
+
+  it('KioskStepViande selects the first unit from a card tap, then uses plus for repeats', async () => {
+    const wrapper = mount(KioskStepViandeComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: wizardItem(),
+        selections: {
+          viandes: {},
+          _tailleMeta: { viandeCount: 2 },
+        },
+      },
+    });
+
+    // Heal 2026-05-17: copy was rewritten by commit 7322940a3 (kiosk-i18n
+    // rush-100 VS-A-01) — "Votre tacos comprend" was tacos-specific copy
+    // leaking across templates (sandwich/galette/bols). New neutral copy
+    // is `instruction_many` = "Choisissez {n} portions de viande : ...".
+    // i18n JSON is exempt from the wizard frozen-zone (component untouched).
+    expect(wrapper.text()).toContain('Choisissez 2 portions de viande');
+    expect(wrapper.text()).not.toContain('Inclus');
+    expect(wrapper.text()).toContain('Supplément');
+
+    const card = wrapper.find('.kiosk-viande-card');
+    await card.trigger('click');
+    expect(wrapper.vm.localSelections).toMatchObject({ 11: 1 });
+    expect(wrapper.text()).toContain('Encore 1 portion');
+    expect(wrapper.text()).toContain('Choisi');
+
+    await card.trigger('click');
+    expect(wrapper.vm.localSelections).toMatchObject({ 11: 1 });
+
+    const plus = wrapper.find('.kiosk-viande-card.active .kiosk-viande-qty-btn.plus');
+    expect(plus.exists()).toBe(true);
+    await plus.trigger('click');
+    expect(wrapper.vm.localSelections).toMatchObject({ 11: 2 });
+    expect(wrapper.text()).toContain('Choix validé');
+    expect(wrapper.emitted('update').filter((e) => e[0] === 'totalViandes').at(-1)).toEqual(['totalViandes', 2]);
+  });
+
+  it('shows the boisson-only formula card for menu-capable tacos without turning it into a fake drink', async () => {
+    const wrapper = mountRealWizard(wizardItem());
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.kioskShowBoissonOnlyMenuCard).toBe(true);
+    wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    await wrapper.vm.$nextTick();
+    // [W-SPLIT 2026-07-22] Le step menu (template, non-composer) reçoit désormais
+    // sectionMode:'formule' pour n'afficher que les cartes formule (boisson/sauce-frites
+    // = étapes dédiées). showBoissonOnlyMenuCard reste inchangé.
+    expect(wrapper.vm.kioskMenuStepExtraProps).toEqual({ showBoissonOnlyMenuCard: true, sectionMode: 'formule' });
+  });
+
+  it('requires a drink selection when only the central kiosk drink catalog supplies the drink list', async () => {
+    const wrapper = mountRealWizard({
+      ...wizardItem(),
+      addons: [{ addon_item_name: 'Menu', addon_item_convert_price: '3.00', price: 3 }],
+    }, {
+      getters: {
+        'kioskMenu/categories': [{ id: 9, name: 'Boissons', slug: 'boissons' }],
+        'kioskMenu/allItems': [{ id: 901, item_category_id: 9, name: 'Coca-Cola 33cl', status: 5 }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    // [W-SPLIT 2026-07-22] La formule (menuChoice) se choisit sur l'étape 'menu' ; la
+    // boisson se valide désormais sur l'étape DÉDIÉE 'boisson' (min 1). On pose la
+    // formule puis on navigue vers l'étape boisson pour tester son gating.
+    wrapper.vm.updateSelection('menuChoice', 'boisson');
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
+    wrapper.vm.updateSelection('boissonChoice', null);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.kioskMenuDrinkChoiceAvailable()).toBe(true);
+    expect(wrapper.vm.canAdvance).toBe(false);
+
+    wrapper.vm.updateSelection('boissonChoice', 901, { boissonName: 'Coca-Cola 33cl', boissonId: 901 });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(true);
+  });
+
+  it('KioskStepSupplements exposes plus/minus quantities for repeated extras', async () => {
+    const wrapper = mount(KioskStepSupplementsComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: wizardItem(),
+        selections: { supplements: {} },
+      },
+    });
+
+    wrapper.vm.incrementSupplement(501);
+    wrapper.vm.incrementSupplement(501);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.supplementCount(501)).toBe(2);
+    expect(wrapper.vm.totalPrice).toBe(2);
+    const events = wrapper.emitted('update');
+    expect(events[events.length - 1]).toEqual(['supplements', { 501: 2 }]);
+
+    wrapper.vm.decrementSupplement(501);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.supplementCount(501)).toBe(1);
+  });
+
+  it('KioskStepSupplements selects the first unit from a card tap, then uses plus for repeats', async () => {
+    const wrapper = mount(KioskStepSupplementsComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: wizardItem(),
+        selections: { supplements: {} },
+      },
+    });
+
+    const row = wrapper.find('.kiosk-supplement-row');
+    await row.trigger('click');
+    expect(wrapper.vm.supplementCount(501)).toBe(1);
+
+    await row.trigger('click');
+    expect(wrapper.vm.supplementCount(501)).toBe(1);
+
+    const plus = wrapper.find('.kiosk-supplement-row.selected .kiosk-supplement-qty-btn.active');
+    expect(plus.exists()).toBe(true);
+    await plus.trigger('click');
+    expect(wrapper.vm.supplementCount(501)).toBe(2);
+    expect(wrapper.vm.totalPrice).toBe(2);
+    expect(wrapper.emitted('update').at(-1)).toEqual(['supplements', { 501: 2 }]);
   });
 });
 
@@ -1166,9 +1576,13 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] La formule 'full' se pose sur l'étape menu ; la boisson se
+    // valide sur l'étape DÉDIÉE 'boisson'. boissonChoice vide → canAdvance false LÀ.
     wrapper.vm.selections.menuChoice = 'full';
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     wrapper.vm.selections.boissonChoice = null;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(false);
@@ -1191,11 +1605,14 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] Formule 'full' sur l'étape menu ; la boisson (44) se valide
+    // sur l'étape dédiée 'boisson' → canAdvance true quand renseignée.
     wrapper.vm.selections.menuChoice = 'full';
     wrapper.vm.selections.boissonChoice = 44;
-    wrapper.vm.selections.fritesSauceOrder = ['sans'];
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(true);
   });
@@ -1217,9 +1634,13 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] Formule 'boisson' (boisson seule) posée sur l'étape menu ;
+    // la boisson se valide sur l'étape DÉDIÉE 'boisson'.
     wrapper.vm.selections.menuChoice = 'boisson';
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     wrapper.vm.selections.boissonChoice = null;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(false);
@@ -1242,10 +1663,14 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] Formule 'boisson' sur l'étape menu ; la boisson (44) se valide
+    // sur l'étape dédiée 'boisson' → canAdvance true quand choisie.
     wrapper.vm.selections.menuChoice = 'boisson';
     wrapper.vm.selections.boissonChoice = 44;
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(true);
   });
@@ -1447,6 +1872,149 @@ describe('KioskWizardComponent — P3 i18n wizard (réel)', () => {
   });
 });
 
+// [P-MEGA-01] Tests SUR LE VRAI COMPOSANT (pas sur le mock local).
+// Reproduit puis verrouille le bug rapporté : "Tacos 2/3/4 viandes →
+// on ne peut sélectionner qu'une viande". Cause racine : 3 fonctions
+// (detectViandeCount / shouldAskTacosTaille / inferTacosPresetMeta)
+// utilisaient des regex incohérentes. Refactor : helper SSOT
+// kioskTacosSize.
+describe('KioskWizardComponent (réel) — P-MEGA-01 viandeCount cohérent', () => {
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+
+  const mountWithItem = (item) =>
+    shallowMount(KioskWizardComponent, {
+      props: { item, onAddToCart: vi.fn(), onClose: vi.fn() },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+
+  // Cas qui DEVRAIENT marcher d'après le libellé admin.
+  const sizeCases = [
+    { name: 'Tacos M', expected: 1 },
+    { name: 'Tacos L', expected: 2 },
+    { name: 'Tacos XL', expected: 3 },
+    { name: 'Tacos XXL', expected: 4 },
+    { name: 'Tacos Méga', expected: 4 },
+    { name: 'Tacos Famille', expected: 4 },
+    { name: 'Tacos 2 viandes', expected: 2 },
+    { name: 'Tacos 3 viandes', expected: 3 },
+    { name: 'Tacos 4 viandes', expected: 4 },
+    { name: 'Tacos L 3 viandes', expected: 3 }, // digit gagne sur lettre
+  ];
+
+  sizeCases.forEach(({ name, expected }) => {
+    it(`detectViandeCount("${name}") = ${expected} (sans step Taille préalable)`, async () => {
+      const item = {
+        id: 1000 + expected,
+        name,
+        category_name: 'Tacos',
+        wizard_template: 'tacos',
+        convert_price: 7.5,
+        currency_price: '7,50 €',
+        itemAttributes: [{ id: 1, name: 'Viande' }],
+        variations: { 1: [{ id: 11, name: 'Boeuf' }, { id: 12, name: 'Poulet' }] },
+        extras: [],
+      };
+      const wrapper = mountWithItem(item);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.detectViandeCount()).toBe(expected);
+    });
+  });
+
+  it('shouldAskTacosTaille = false quand le nom contient une taille reconnue', async () => {
+    const wrapper = mountWithItem({
+      id: 2001,
+      name: 'Tacos Méga',
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 12,
+      currency_price: '12,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+
+  it('shouldAskTacosTaille = true sur un libellé bordelin (Tacos Spécial), pour éviter le fallback à 1', async () => {
+    const wrapper = mountWithItem({
+      id: 2002,
+      name: 'Tacos Spécial Maison',
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 9,
+      currency_price: '9,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(true);
+  });
+
+  it('item.viande_count serveur prime sur tout (P-MEGA-23 future SSOT)', async () => {
+    const wrapper = mountWithItem({
+      id: 2003,
+      name: 'Tacos Spécial Maison', // libellé non reconnu
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      viande_count: 3, // serveur dit "3 viandes"
+      convert_price: 11,
+      currency_price: '11,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.detectViandeCount()).toBe(3);
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+
+  it('selections._tailleMeta.viandeCount prime sur tout le reste', async () => {
+    const wrapper = mountWithItem({
+      id: 2004,
+      name: 'Tacos M', // donnerait 1 par heuristique
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 7,
+      currency_price: '7,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.selections._tailleMeta = { viandeCount: 4, label: 'XXL' };
+    expect(wrapper.vm.detectViandeCount()).toBe(4);
+  });
+
+  it('inferTacosPresetMeta retourne label cohérent pour Tacos Méga', async () => {
+    const wrapper = mountWithItem({
+      id: 2005,
+      name: 'Tacos Méga',
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 12,
+      currency_price: '12,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    const meta = wrapper.vm.inferTacosPresetMeta();
+    expect(meta).not.toBeNull();
+    expect(meta.viandeCount).toBe(4);
+    expect(meta.label).toBe('Méga');
+    expect(meta.size).toBe('MEGA');
+  });
+});
+
 describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_template)', () => {
   const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
   const minimalForTemplate = (overrides) => ({
@@ -1530,7 +2098,24 @@ describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_
     expect(types).toContain('recap');
   });
 
-  it('wizard_template « simple » (défaut API) n’empêche pas l’heuristique burger → étape sauce', async () => {
+  it('wizard_template « simple » + composer_profile null verrouille le produit sans wizard heuristique', async () => {
+    const item = minimalForTemplate({
+      name: 'Classic Burger',
+      category_name: 'Burgers',
+      wizard_template: 'simple',
+      composer_profile: null,
+      itemAttributes: [{ id: 33, name: 'Sauce' }],
+      variations: { 33: [{ id: 1, name: 'Ketchup' }] },
+    });
+    const w = mountWizardTemplateProbe(item);
+    await w.vm.$nextTick();
+    expect(w.vm.effectiveWizardTemplate()).toBe('simple');
+    const types = w.vm.activeSteps.map((s) => s.type);
+    expect(types).not.toContain('sauce');
+    expect(types).toEqual(['recap']);
+  });
+
+  it('legacy simple payload without composer_profile key keeps heuristic fallback', async () => {
     const item = minimalForTemplate({
       name: 'Classic Burger',
       category_name: 'Burgers',
@@ -1541,8 +2126,7 @@ describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_
     const w = mountWizardTemplateProbe(item);
     await w.vm.$nextTick();
     expect(w.vm.effectiveWizardTemplate()).toBe('burger');
-    const types = w.vm.activeSteps.map((s) => s.type);
-    expect(types).toContain('sauce');
+    expect(w.vm.activeSteps.map((s) => s.type)).toContain('sauce');
   });
 });
 

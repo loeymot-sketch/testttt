@@ -1,0 +1,667 @@
+[
+ {
+  "scope": "Fix défensif P1 Stripe : constructeur lazy (pas d'instanciation StripeClient si stripe_secret DB vide) + garde 503 JSON FR sur handleWebhook()/payment() + test Feature de régression",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/PaymentGateways/Gateways/Stripe.php",
+    "summary": "(1) __construct : n'instancie StripeClient QUE si stripe_secret non-vide (lecture null-safe `?? ''`) — $this->gateway reste non-initialisée sinon, car PaymentAbstract::$gateway est typée `object` non-nullable donc null impossible ; le « client null » est implémenté via propriété non-initialisée + isset(). (2) Helpers privés isStripeConfigured() et unconfiguredResponse() → 503 JSON {status:false, message:'Stripe non configuré.'}. (3) handleWebhook() : garde 503 en tout premier (avant le check webhook_secret) — signature/idempotence/DLQ strictement inchangés en aval. (4) payment() : même garde 503 en tête + return type élargi à RedirectResponse|JsonResponse (l'abstract ne déclare pas de return type → covariance OK). Commentaires FR datés [GOAL-SYNC 2026-07-08]."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stripe/StripeWebhookUnconfiguredTest.php",
+    "summary": "NOUVEAU test Feature (3 cas) : stripe_secret DB vide → POST /payment/stripe-webhook/ répond 503 assertExactJson {status:false, message:'Stripe non configuré.'} et 0 row webhook_events ; option stripe_secret totalement absente → même 503 propre ; secret non-vide → le garde ne s'active PAS et la requête atteint la vérification de signature existante (400 invalid_signature). Pattern calqué sur StripeWebhookIdempotencyTest (RefreshDatabase, installed flag, CSRF off, call() brut)."
+   }
+  ],
+  "verifications": [
+   "php -l sur les 2 fichiers : No syntax errors detected",
+   "php artisan test --filter=StripeWebhookUnconfiguredTest : PASS 3/3 (0.69s) — dont le cas exact du finding : stripe_secret vide → 503 JSON, pas de 500",
+   "php artisan test --filter=Stripe : PASS 34/34 (3.70s) — suite existante intégralement verte : StripeWebhookIdempotencyTest 6/6 (dont missing webhook secret → 500 misconfigured INCHANGÉ), StripeChargeRefundedCascadeSentinelTest 4/4, StripeWebhookReplayToleranceSentinelTest, StripeActivationGuardTest, Zone5PricingSsotConvergenceSentinelTest, WebhookCsrfBareRouteExceptionTest 2/2, WebhookRouteHardeningTest (throttle 60/min)",
+   "git diff --stat : SEUL app/Http/PaymentGateways/Gateways/Stripe.php modifié (+64/-2) + nouveau fichier test — aucune frozen zone touchée, aucune écriture hors OWNED",
+   "Logique webhook aval vérifiée inchangée par lecture : constructEvent tolerance 300s, firstOrCreate idempotence, bridge charge.succeeded/charge.refunded, DLQ handleFromStoredEvent — zéro ligne modifiée dans ces blocs"
+  ],
+  "issues": [
+   "PRÉ-EXISTANT hors scope (non touché) : si la row payment_gateways slug=stripe est totalement ABSENTE de la DB, le constructeur assigne null à $this->paymentGateway (typée `object` non-nullable dans PaymentAbstract) → TypeError → toujours 500. Non couvert par le finding (la row id=4 existe en DB V1) ; le fix propre nécessiterait de toucher app/Services/PaymentAbstract.php (nullable types) — fichier NON owned.",
+   "payment() : return type élargi de `: RedirectResponse` à `: RedirectResponse|JsonResponse` pour retourner le 503 JSON sans exception comme demandé par la mission — changement de signature minime, compatible avec l'abstract (aucun return type déclaré) et avec l'unique appelant PaymentManagerService (aucun type-hint sur le retour). À savoir : le flux payment() est un form POST navigateur ; un JSON 503 y est correct pour un garde défensif mais pas une UX de redirection (flux dormant de toute façon — triple gate config OFF)."
+  ],
+  "notes": "Le « client null » demandé est implémenté via propriété non-initialisée + isset() car PaymentAbstract::$gateway est `public object` (non-nullable, fichier non owned). Le garde handleWebhook() passe AVANT le check webhook_secret : gateway non configurée → 503 'Stripe non configuré.' ; gateway configurée mais STRIPE_WEBHOOK_SECRET absent → 500 'misconfigured' inchangé (comportement existant verrouillé par StripeWebhookIdempotencyTest::test_missing_webhook_secret_returns_500, toujours vert). Logs fiscal channel ajoutés sur les 2 gardes (event stripe_gateway_secret_missing). Aucun commit effectué (règle contrat §8)."
+ },
+ {
+  "scope": "Contrat §6 — LC.api web (fidélité réelle + flag Stripe + 7 saveurs) : /Users/1millnonstop/Downloads/web/api.js + apiContract.js (doc)",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/web/api.js",
+    "summary": "[GOAL-SYNC 2026-07-08] (1) CFG.onlineCardEnabled = metaContent('feature-online-card','0')==='1' (exposé via LC.api.config, OFF par défaut). (2) 4 fonctions fidélité pattern req() : loyaltyRegister(phone,name) POST /api/frontend/loyalty/register public sans Bearer (doc PHONE_EXISTS sans data) ; loyaltyHistory(page,perPage) GET /history auth avec ?page=&per_page= (retourne data+meta) ; loyaltyRedeem(code,points) POST /redeem auth + X-Idempotency-Key auto 'web-lr'+uuid, remap erreurs → throw {kind:'http', status, message FR backend, fallback FR : 400 'multiple de 100…', 422 'remise désactivée…'} ; loyaltyQr() POST /qr auth → data{token, expires_at, ttl_seconds, loyalty_code} déballé. (3) DRINK_ID_TO_SLUG +7 : d-coca-cherry, d-tropico, d-ice-tea-peche, d-fanta-citron, d-fuze-tea, d-hawai, d-perrier → slugs éponymes. (4) 4 fonctions exportées dans window.LC.api (lignes 541-542)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/apiContract.js",
+    "summary": "[GOAL-SYNC 2026-07-08] Section doc pure LOYALTY_ROUTES (register/history/redeem/qr : méthode, auth, body, pièges PHONE_EXISTS / X-Idempotency-Key / 400-422 / lqr TTL 300s / legacy FK: interdit) + note modèle continu 100 pts = 1 € et earn automatique backend. ACTIVATED:false inchangé, zéro appel réseau (grep fetch/axios/XHR = 2 hits, tous deux le commentaire d'en-tête pré-existant)."
+   }
+  ],
+  "verifications": [
+   "node -e avec stubs window/localStorage/document : require('/Users/1millnonstop/Downloads/web/api.js') charge sans exception ; typeof des 4 fonctions === 'function' dans window.LC.api ; config.onlineCardEnabled === false par défaut ; les 7 clés d-* présentes dans le source → « api.js OK »",
+   "Flag ON : stub querySelector meta feature-online-card content='1' → LC.api.config.onlineCardEnabled === true",
+   "Tests comportementaux fetch stubbé : loyaltyRedeem 422 relaie le message FR backend exact (« La fidélité (remise) est désactivée en V1… ») ; 400 sans message backend → fallback FR « Points invalides : utilisez un multiple de 100… » ; header X-Idempotency-Key matche /^web-lr[0-9a-f-]+$/ + Authorization Bearer + URL /api/frontend/loyalty/redeem ; loyaltyQr déballe data{token,expires_at,ttl_seconds,loyalty_code} ; loyaltyRegister laisse r.code==='PHONE_EXISTS' accessible ; loyaltyHistory construit ?page=2&per_page=50 et retourne meta",
+   "apiContract.js chargé en node : ACTIVATED===false, LOYALTY_ROUTES présent ; grep -nE 'fetch\\(|axios|XMLHttpRequest' → seuls les 2 hits du commentaire d'en-tête pré-existant (lignes 8-9), aucun code réseau",
+   "grep exports : api.js:541-542 loyaltyRegister/loyaltyHistory/loyaltyRedeem/loyaltyQr dans window.LC.api"
+  ],
+  "issues": [
+   "Hors de mes OWNED : index.html web doit contenir <meta name=\"feature-online-card\" content=\"0\"> (contrat §4) — sans ce meta le fallback '0' de metaContent garde le flag OFF (comportement sûr), mais le meta explicite reste requis par le contrat.",
+   "Hors de mes OWNED : /Users/1millnonstop/Downloads/web/data/menu.js doit ajouter les 7 items DRINKS ids 1009-1015 avec slugs EXACTS coca-cherry/tropico/ice-tea-peche/fanta-citron/fuze-tea/hawai/perrier (mes mappings DRINK_ID_TO_SLUG pointent dessus) + FORMULE_DRINKS avec les ids d-* correspondants ('d-coca-cherry'…'d-perrier') — sinon resolveOrderItems ne trouvera pas ces boissons.",
+   "Rappel backend (vérifié spec) : /redeem est kill-switché 422 tant que pos.manual_discount_enabled !== true — l'UI web ne doit pas câbler un bouton redeem actif sans afficher ce message (mon remap fournit le message FR affichable).",
+   "Doc mineure pré-existante : GET /loyalty/config a min_redeem_points déf 50 et points_per_euro déf 10 côté Settings (spec backend) vs contrat §2 qui affiche 1/100 — les clients lisent la valeur runtime via loyaltyConfig(), pas de hardcode chez moi."
+  ],
+  "notes": "Scope-minimal respecté : uniquement les 2 fichiers OWNED, style IIFE vanilla conservé, commentaires FR datés [GOAL-SYNC 2026-07-08], aucun produit inventé (7 saveurs = fixture canonique §5 du contrat, ids 1009-1015), pas de CDN, pas de secret ajouté, aucun commit. loyaltyRegister/loyaltyHistory retournent la réponse complète (l'appelant a besoin de r.code PHONE_EXISTS et de meta pagination) ; loyaltyRedeem/loyaltyQr déballent r.data comme les fonctions existantes placeOrder/profile."
+ },
+ {
+  "scope": "Parity fixes contrat §5 côté WEB — fichier OWNED unique /Users/1millnonstop/Downloads/web/data/menu.js (mirror standalone), alignement sur la fixture canonique borne catalog-canonical.json.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "+7 DRINKS mkItem 1009-1015 (Coca Cherry/Tropico/Ice Tea Pêche/Fanta Citron/Fuze Tea/Hawaï/Perrier 33cl @1,90, descriptions canoniques exactes, images = thumbs borne vérifiées existantes : coca-cherry.png, tropico.png, lipton-peche.png, fanta-citron.png, lipton-framboise.png, fanta-fraise.png, eau.png) + 7 entrées ITEM_IMG"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "FORMULE_DRINKS 8→15 saveurs (d-coca-cherry…d-perrier) ; priceForDrinkAddon : d-capri 1,90→1,50 (FIX P0) + 7 nouvelles @1,90"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "CRUDITES 3→4 : +{id:'c-oignons-cuits', name:'Oignons cuits', price:0} (opt-in, sans default:true — non pré-sélectionné ; image item-default.svg = placeholder identique borne)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "SUPPLEMENTS : +{id:'sup-boule-gratinee', name:'Boule gratinée', price:1.00, galette_only:true, image bol-frites-gratine.png = thumb canonique} ; sup-boursin galette_excluded:true"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "Tacos M/L has_crudites:true — commentaire 'SANS crudités' retiré, note revert backend 05e5cacd0 (2026-07-07) ajoutée"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "Cayenne (101) : has_sauce:true + sauce_default:'Sauce fromagère maison' (nouveau champ mkItem, pré-sélectionnée modifiable), sauce_locked retiré de l'item (champ conservé dans mkItem pour compat screens.jsx), is_spicy:false"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "priceFor : tarification multi-sauces +0,50€/sauce SUPPRIMÉE (ligne sauceIds) — cascade fritesSauceIds et logique bols/frites conservées telles quelles"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "'Menu Enfant Burger' → 'Menu Enfant Chicken Burger' (nom canonique exact, slug/id inchangés) ; mkItem is_halal défaut false (opts.is_halal === true) ; desserts Glace/Tarte Daim/Tiramisu is_vegetarian:true"
+   }
+  ],
+  "verifications": [
+   "node -e stub window + eval du fichier : ALL ASSERTS OK — 38 items (31+7), W_ITEMS 38, formuleDrinks 15",
+   "assert priceForDrinkAddon('d-capri')===1.50 et ('d-perrier')===1.90 : OK",
+   "assert CRUDITES.length===4 avec 'Oignons cuits' présent : OK",
+   "assert item 'Menu Enfant Chicken Burger' présent + 7 nouveaux items @1.90 cat 10 avec noms canoniques exacts : OK",
+   "assert sup-boule-gratinee {1.00, galette_only:true} + sup-boursin.galette_excluded===true : OK",
+   "assert Tacos M/L has_crudites===true ; Cayenne {has_sauce:true, sauce_default:'Sauce fromagère maison', sauce_locked:null, is_spicy:false} : OK",
+   "assert priceFor(Suprême, 3 sauces)===7.00 (surcharge multi-sauces bien supprimée) ET priceFor(Petite Frites, 2 fritesSauceIds)===3.00 (cascade frites conservée) : OK",
+   "assert is_halal===false par défaut (cheese-burger) + is_vegetarian===true sur les 3 desserts : OK",
+   "assert fs.existsSync pour chaque image des 7 nouvelles boissons dans <BACKEND>/public/images/menu/ : OK (7/7)",
+   "node tests/node/menu-pricing.test.mjs : 6 pass / 2 fail — les 2 échecs sont les assertions PÉRIMÉES multi-sauces +0,50 (tests 7 et 8), voir issues[]"
+  ],
+  "issues": [
+   "/Users/1millnonstop/Downloads/web/tests/node/menu-pricing.test.mjs (PAS OWNED, non modifié) : tests 7 ('Sauces : 1ère gratuite, +0,50 chaque suivante') et 8 ('Combiné réaliste… total 14,40') échouent car ils encodent l'ancienne tarification multi-sauces supprimée par le contrat §5. Nouveaux attendus pour l'intégrateur : test 7 → Méga 2 sauces = 8,00 (pas 8,50) ; test 8 → total combiné = 13,90 (pas 14,40).",
+   "tools/parity/check-parity.mjs n'existe pas encore (gate B3) — vérification faite via le one-liner node stub-window prévu au §8 du contrat en fallback ; relancer le gate officiel quand l'infra le livre.",
+   "Le wizard web (screens.jsx / wizard v2, OWNED par un autre implémenteur) doit maintenant : (a) appliquer max 1 sauce sur sandwich/tacos/burger, (b) pré-sélectionner item.sauce_default (nouveau champ exposé), (c) filtrer SUPPLEMENTS par galette_only/galette_excluded selon la catégorie, (d) afficher l'étape crudités sur Tacos M/L (has_crudites désormais true).",
+   "DRINK_ID_TO_SLUG dans WEB/api.js (contrat §6, pas OWNED ici) doit recevoir les 7 nouveaux mappings d-coca-cherry→coca-cherry, d-tropico→tropico, d-ice-tea-peche→ice-tea-peche, d-fanta-citron→fanta-citron, d-fuze-tea→fuze-tea, d-hawai→hawai, d-perrier→perrier.",
+   "'Oignons cuits' ajouté SANS default:true (non pré-sélectionné) — conforme à la lettre du contrat §5 ({id,name,price:0}) et au thumb placeholder de la borne ; si le gate parity attend une pré-sélection par défaut, ajuster côté intégrateur."
+  ],
+  "notes": "Scope strictement respecté : 1 seul fichier écrit. Structure frites wizard, PEPPER_CLUB et exports intacts. Champ sauce_locked conservé dans mkItem (null partout désormais) pour ne pas casser les consommateurs existants. Commentaires FR datés [GOAL-SYNC 2026-07-08] sur chaque bloc modifié. Galette Cayenne (202) laissée is_spicy:true — le contrat ne vise que l'item Cayenne (101)."
+ },
+ {
+  "scope": "W4 MOBILE — rattrapage complet du mirror mobile/data/menu.js sur le canon borne (CONTRACTS.md §5 intégral) : le mobile n'avait jamais reçu les fixes web 2026-06-26/27 ni les ajouts 2026-07-08. Fichier OWNED unique : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+    "summary": "Contrat §5 complet appliqué (commentaires FR datés [GOAL-SYNC 2026-07-08]) : (1) +7 DRINKS ids 1009-1015 @1,90€ (Coca Cherry/Tropico/Ice Tea Pêche/Fanta Citron/Fuze Tea/Hawaï/Perrier 33cl, noms+descriptions canoniques EXACTS, images = assets existants vérifiés ls : coca.png, tropico.png, boisson.png, fanta.png, eau_gazeuse.png) → 38 items ; (2) FORMULE_DRINKS 8→15 saveurs ; (3) priceForDrinkAddon : d-capri 1,90→1,50 (FIX P0) + 7 nouvelles @1,90 ; (4) CRUDITES 3→4 (+c-oignons-cuits, non-défaut, gratuit) ; (5) PAINS pool (Pain/Galette) + has_pain_choice:true sur les 4 sandwichs ; (6) EXTRA_MEAT_PRICE=2,50 + has_extra_meat sur 16 items (4 sandwichs, 2 galettes, 6 burgers, 2 tacos, 2 bols) + priceFor extraMeatIds ; (7) SUPPLEMENTS : +sup-boule-gratinee 1,00€ galette_only:true, sup-boursin galette_excluded:true ; (8) SUPPLEMENTS_BOLS 5→10 (9×0,90 + sb-gratine 2,00 riz_only:true) ; (9) BOL_SAUCES nouveau pool (bs-fromagere 'Sauce fromagère maison' / bs-spicy 'Sauce spicy', noms EXACTS backend attr 8) ; (10) cat 6 wizard_template 'tacos'→'bol' ; (11) Tacos M/L has_crudites:true (revert 05e5cacd0) ; (12) Cayenne has_sauce:true + sauce_default:'Sauce fromagère maison' + sauce_locked retiré + is_spicy:false ; (13) multi-sauces +0,50€ retirée de priceFor (sauceIds ET cascade fritesSauceIds → gratuites, canon 1 sauce max) ; (14) 'Menu Enfant Burger'→'Menu Enfant Chicken Burger' (slug conservé) ; (15) mkItem is_halal défaut true→false + nouveaux champs has_pain_choice/has_extra_meat/sauce_default ; (16) desserts is_vegetarian:true ×3 ; (17) images viandes distinctes par viande limitées aux assets PRÉSENTS (viande_mexicain/cordon/hachee/nuggets/tenders/fricandelle/poulet.png — les fichiers web viande-mexicanos.png etc. n'existent pas côté mobile) ; (18) exports window.LC.menu +bolSauces/+pains/+extraMeatPrice (mêmes noms que le web), signatures window.ITEMS/window.CATS/priceFor/findItem/priceForDrinkAddon/buildFritesComposerProfile inchangées."
+   }
+  ],
+  "verifications": [
+   "node -e stub window + eval IIFE : 47 assertions VERTES — items.length===38, window.ITEMS===38, CRUDITES===4 (c-oignons-cuits présent), SUPPLEMENTS===10 (boule-gratinee 1.00 galette_only, boursin galette_excluded), SUPPLEMENTS_BOLS===10 (9×0.90 + sb-gratine 2.00 riz_only), BOL_SAUCES===2 (noms exacts 'Sauce fromagère maison'/'Sauce spicy'), PAINS===2, extraMeatPrice===2.50, FORMULE_DRINKS===15, priceForDrinkAddon('d-capri')===1.50 et 7 nouvelles===1.90 et d-eau===1.00, has_pain_choice exactement sur [cayenne,mega,supreme,terminator], has_extra_meat sur 16 items répartis {cat1:4,cat2:2,cat4:6,cat5:2,cat6:2}, tacos-m/l has_crudites===true, Cayenne {has_sauce:true, sauce_default:'Sauce fromagère maison', sauce_locked:null, is_spicy:false}, priceFor 3 sauces = prix de base (surtaxe supprimée), priceFor extraMeat +2.50 (et ×qty), is_halal===false sur 38/38, desserts is_vegetarian, cat6 wizard_template==='bol' (window.CATS aussi), composer_profile frites intact",
+   "Mini-gate parity vs catalog-canonical.json (résolution par nom normalisé) : mobile-only=[], price-diffs=[], canon-only=les 4 SKU 'Frites Cheddar' attendus (divergence structurelle ACCEPTÉE contrat §5 — les 6 prix canoniques [2.5,3.5,4.5,4,5,6] tous atteignables au centime via wizard frites_style, vérifié priceFor)",
+   "node --check mobile/data/menu.js → SYNTAX OK",
+   "Scan exhaustif des 72 chemins assets/ référencés par le fichier (items, meats, sauces, crudites, supplements, supplementsBols, pains, bolSauces, fritesStyles, formuleDrinks, bolBases, categories) → 0 manquant sur disque (fs.existsSync)",
+   "node mobile/tests/menu.spec.js exécuté : 8 FAILURES, TOUTES = verrous de l'ANCIEN canon (3 crudités/9 suppléments/tous-0,90€/'Menu Enfant Burger', ×2 car le spec vérifie mobile + mirror web) — attendu, spec NON modifié conformément au mandat",
+   "git status/diff : seul mobile/data/menu.js modifié par moi (164 insertions, 61 suppressions) ; aucun fichier hors OWNED touché, aucune frozen zone"
+  ],
+  "issues": [
+   "mobile/tests/menu.spec.js verrouille l'ANCIEN canon 31 items → 8 failures attendues (assert 3 crudités, 9 suppléments, tous à 0,90€, 'Menu Enfant Burger') — à mettre à jour par l'intégrateur (NON modifié, hors OWNED). Note : son compteur affiche déjà '-> 38 produits, 9 catégories' sans échec, seuls ces 4 verrous ×2 mirrors cassent.",
+   "Consommateurs hors OWNED à câbler (mobile/screens-item-steps.jsx, owned par l'implémenteur mobile:item-steps) : support wizard_template 'bol' (sauce servie par LC.menu.bolSauces au lieu des 12 SAUCES), étape pain (has_pain_choice→LC.menu.pains), étape viande supplémentaire (has_extra_meat→extraMeatIds dans priceFor), filtres galette_only/galette_excluded/riz_only sur suppléments, pré-sélection sauce_default (Cayenne), et étape crudités désormais active sur Tacos M/L.",
+   "Divergence d'ids BOL_SAUCES entre mirrors : le web existant (/Users/1millnonstop/Downloads/web/data/menu.js:203) utilise 'bsauce-fromagere'/'bsauce-spicy' alors que le contrat §5 (normatif) impose 'bs-fromagere'/'bs-spicy' — mobile suit le contrat ; l'intégrateur devrait harmoniser le web (les NOMS, eux, matchent exactement, donc la résolution par nom au wireup est saine).",
+   "is_halal passe à false sur TOUS les items (défaut mkItem changé) : si un écran mobile affiche un badge halal, il disparaîtra — comportement voulu par le canon (allégation réglementaire), à confirmer visuellement en W6.",
+   "Le mirror web n'a pas encore reçu les ajouts 2026-07-08 (drinks 1009-1015, crudités 4, boule gratinée, d-capri 1.50…) — vérifié par grep au moment de ma lecture ; c'est le scope W3 (implémenteur web), pas le mien."
+  ],
+  "notes": "Choix d'implémentation dans le cadre du contrat : (a) images des 7 nouvelles boissons = assets locaux existants uniquement (boisson.png générique pour Ice Tea/Fuze Tea/Hawaï faute de visuel dédié — jamais d'asset inventé) ; (b) images viandes distinctes = équivalents locaux underscore (viande_mexicain.png…) car les noms de fichiers du mapping web (viande-mexicanos.png…) n'existent pas dans mobile/assets/menu ; (c) c-oignons-cuits ajouté SANS default:true (le canon l'expose comme extra crudité optionnel, les 3 par-défaut restent Salade/Tomate/Oignon) ; (d) slug 'menu-enfant-burger' conservé lors du renommage (mapping ITEM_IMG + résolution par NOM au wireup) ; (e) Boule gratinée : image supplement_galette.png (existante) + allergène lactose. Les 4 SKU 'Frites Cheddar' canoniques restent volontairement servis par le wizard frites_style (divergence structurelle acceptée contrat §5, prix vérifiés au centime)."
+ },
+ {
+  "scope": "Stripe flag OFF + honnêteté paiement web standalone (index.html, funnel.jsx) + earn points backend-config + vérif upsell boissons dynamique (fichiers OWNED : /Users/1millnonstop/Downloads/web/{index.html,funnel.jsx,upsell.jsx})",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/web/index.html",
+    "summary": "Ajout <meta name=\"feature-online-card\" content=\"0\"> près des metas api-* (double verrou, serveur reste le verrou final) + <script src=\"vendor/qrcode.js\"></script> chargé après api.js et AVANT tous les .jsx (lib QR locale, window.qrcode, aucun CDN). Commentaires FR datés [GOAL-SYNC 2026-07-08]."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+    "summary": "Flag OFF ⇒ tableau methods = UNIQUEMENT counter ('Payer sur place' / 'Espèces ou carte au comptoir — ton plat t'attend') — card/apple/google retirés du DOM (SVG wallets supprimés). Flag ON ⇒ 'Carte bancaire (en ligne)' meta honnête sans Stripe/3D-Secure, formulaire carte mock conservé derrière le flag mais VIDÉ (plus de 4242/nom réel), sentinelle 4000…0002 gated onlineCard&&. Mapping pm = (onlineCard && card) ? 4 : 1 (plus de pm=4 pour commandes UNPAID). Copy mensongère supprimée : 'Paiement 100% sécurisé · Stripe · 3D-Secure' → 'Commande envoyée en direct à la caisse · RGPD' + badge comptoir conservé ; bloc 'Débit à la préparation · réservé sur ta carte' supprimé ; 'Paiement reçu, merci !' → 'Tu paies sur place.'. Fidélité : hook usePointsPerEuro() (LC.api.loyaltyConfig(), cache module + state, fallback 1) → earn strip OrderSummary, banner PaymentPage et ctx.earnedPoints passent à Math.floor(total × points_per_euro)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/upsell.jsx",
+    "summary": "AUCUNE modification nécessaire (vérifié) : la page boissons utilise M.itemsForCategory(10) — liste 100% dynamique, aucun filtre hardcodé de 8 slugs. Les 15 boissons canoniques (dont les 7 nouvelles ids 1009-1015 livrées par l'implémenteur data/menu.js) apparaissent automatiquement ; direct-add prouvé fonctionnel."
+   }
+  ],
+  "verifications": [
+   "Syntaxe : @babel/parser (plugin jsx, repo testttt) PARSE OK sur funnel.jsx + upsell.jsx ; curl 200 sur http://127.0.0.1:8096/vendor/qrcode.js",
+   "Backend : GET /api/frontend/loyalty/config (X-API-Key) → points_per_euro=1, points_for_1_euro_discount=100 (contrat §2 confirmé)",
+   "Playwright :8096 parcours réel flag OFF (panier 1 Coca-Cola 1,90 €) → menu → ajout → Passer commande → upsell skip → checkout 'Dès que prêt' → page paiement : 15/15 asserts PASS — 1 SEULE méthode .lcf-paymethod dans le DOM, 'Payer sur place' + meta comptoir présents, ABSENCE de 'Apple Pay'/'Google Pay'/'Carte bancaire'/'Stripe'/'3D'/'Débit à la préparation', badge 'Paiement au comptoir' présent, LC.api.config.onlineCardEnabled=false, window.qrcode=function",
+   "Fidélité affichée : earn strip 'Tu gagnes +1 pts' et banner 'Cumule +1 pts' = Math.floor(1,90×1)=1 (l'ancien Math.round donnait 2 — preuve que le calcul vient bien du nouveau chemin ppe backend)",
+   "Console : 0 erreur, 0 pageerror ; seule la warning pré-existante Babel in-browser (architecture assumée du site standalone)",
+   "Screenshot page paiement analysé visuellement (Read) : layout intact, une seule carte méthode, copy FR honnête, badge PAIEMENT AU COMPTOIR, récap 1,90 € — /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/payment-flag-off.png",
+   "Playwright upsell (panier 1 Tiramisu) : étape 'Une boisson ?' affiche les 15 items cat 10 (15/15 noms présents dont Coca Cherry/Tropico/Ice Tea Pêche/Fanta Citron/Fuze Tea/Hawaï/Perrier), direct-add → '✓ Ajouté' + badge panier 2 ; 0 pageerror",
+   "Frozen zones : aucun fichier CLAUDE.md §7 touché ; écritures limitées aux 2 fichiers OWNED (upsell.jsx inchangé) ; aucun commit"
+  ],
+  "issues": [
+   "screens-v3.jsx:113 (NON-OWNED) : la FAQ paiement promet encore « CB sécurisée Stripe ou Apple/Google Pay » en ligne — copy mensongère résiduelle hors de mes fichiers, à corriger par l'owner de screens-v3.jsx (finding web_funnel_screens P2 déjà connu).",
+   "funnel.jsx TrackingPage (~l.762) : le FALLBACK '+X pts crédités' utilise encore Math.round(total) quand ctx.earnedPoints est null (rendu direct legacy uniquement — le chemin réel passe par earnedPoints désormais floor×ppe). Résidu mineur volontairement hors scope-minimal ; une passe W6 peut l'aligner.",
+   "MCP Playwright indisponible (browser verrouillé par une session parallèle) — vérification faite via script Playwright standalone du repo testttt (même moteur 1.58.2), preuves équivalentes.",
+   "Flag ON non testé en navigateur (contrat ne l'exige pas) : la branche est codée (methods.push card, meta honnête, sentinelle gated) et le serveur config/payment.php reste le verrou final — à couvrir par la vague e2e W6 si souhaité."
+  ],
+  "notes": "api.js (implémenteur parallèle) exposait déjà config.onlineCardEnabled + loyaltyConfig() + DRINK_ID_TO_SLUG étendu, et data/menu.js avait déjà les 15 boissons au moment de la vérif — intégration croisée constatée verte en conditions réelles. Le libellé CTA reste « Confirmer la commande » (seule méthode counter flag OFF) ; « Payer » n'apparaît que flag ON. Screenshot de preuve : /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/payment-flag-off.png"
+ },
+ {
+  "scope": "Gate de parité B3 rerunnable (tools/parity/) : check-parity.mjs (node ≥18, zéro dépendance, état cible CONTRACTS.md §5) + extract-canonical.sh (ré-extraction fixture via token kiosk éphémère) + README.md",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tools/parity/check-parity.mjs",
+    "summary": "Gate de parité : évalue chaque mirror IIFE dans un vm (stub window/document), compare PAR NOM normalisé (norm() copie exacte de web/api.js:158) à la fixture canonique — 42 items/prix flat/is_available/pas de produit inventé, EXCEPTION frites = atteignabilité des 6 prix canoniques via base×FRITES_STYLES (+ détection combinaisons hors canon), pools 7 viandes/12 sauces/4 crudités (dont Oignons cuits) dérivés de la fixture, SUPPLEMENTS 9×0,90+Boule gratinée 1,00 galette_only+Boursin galette_excluded, EXTRA_MEAT_PRICE 2,50+has_extra_meat (16 items), SUPPLEMENTS_BOLS 9×0,90+Gratiné 2,00 riz_only, BOL_SAUCES 2 noms exacts, PAINS+has_pain_choice sandwichs, tacos has_crudites, Cayenne sauce_default/sauce_locked, f-menu 2,50, FORMULE_DRINKS 15 saveurs+priceForDrinkAddon aligné catalogue (d-capri 1,50), 'Menu Enfant Chicken Burger' nom EXACT, exports legacy W_ITEMS/ITEMS. Rapport JSON reports/goal-web-app-sync/parity-report-<surface>.json + résumé console FR ; exit 0 seulement si 0 divergence. CLI --surface=web|mobile|all [--fixture= --mirror= --report-dir=]"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tools/parity/extract-canonical.sh",
+    "summary": "Ré-extraction fixture : tinker crée token Sanctum 'parity-extract' (ability kiosk:order) sur le user de la 1ère KioskMachine, curl GET :8766/api/frontend/menu avec Bearer + X-API-Key (MIX_API_KEY du .env, jamais committée), validation JSON (9 catégories/42 items), écriture atomique, révocation du token via trap EXIT. Sortie param $1 (défaut = fixture canonique)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tools/parity/README.md",
+    "summary": "Doc FR : usage, exit codes, 14 familles de vérifications encodées (état cible contrat §5), procédure d'auto-test sur copie mutée (jamais les vrais mirrors), procédure de ré-extraction, limite documentée (tarification multi-sauces = comportemental wizard, hors gate data)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/parity-report-web.json",
+    "summary": "Rapport gate surface web (sortie normale du gate) : 1 divergence résiduelle (item_spicy Galette Cayenne)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/parity-report-mobile.json",
+    "summary": "Rapport gate surface mobile : 1 divergence résiduelle (item_spicy Galette Cayenne)"
+   }
+  ],
+  "verifications": [
+   "node tools/parity/check-parity.mjs --surface=all s'exécute sans crash → exit 1 avec 2 divergences réelles (web 1 + mobile 1 : Galette Cayenne is_spicy=true vs canon false), rapports JSON écrits aux chemins contractuels",
+   "Auto-test mutation (copie du mirror web mutée dans le scratchpad, JAMAIS les vrais mirrors) : prix Cayenne 7,40→7,90, 'Tacos M'→'Tacos XL', d-capri 1,50→1,90, crudité c-oignons-cuits supprimée → les 4 mutations détectées (item_prix, item_manquant+item_invente, price_drink_addon, pool_crudites), exit 1",
+   "Auto-test frites : style Cheddar fondu 1,00→1,20 → frites_atteignabilite (3,50/5,00 inatteignables) + frites_prix_hors_canon (3,70/5,20) détectés — la logique atteignabilité base×styles est prouvée dans les 2 sens",
+   "extract-canonical.sh exécuté vers le scratchpad (sans écraser la fixture réelle) : token créé, GET /api/frontend/menu 200, payload validé 9 catégories/42 items, fixture écrite ; gate relancé avec la fixture ré-extraite → résultats IDENTIQUES (2 divergences) ; tokens 'parity-extract' restants = 0 après trap cleanup",
+   "bash -n extract-canonical.sh OK ; check-parity.mjs exécuté >6 fois sans erreur de syntaxe ; norm() vérifiée = copie exacte de /Users/1millnonstop/Downloads/web/api.js:158 (les noms 'Sauce fromagère maison' ~ 'Fromagère maison' matchent via strip du préfixe)",
+   "git status : seuls tools/parity/ + les 2 parity-report-*.json (sortie contractuelle du gate) sont nouveaux ; aucun mirror ni fichier frozen touché ; aucun commit"
+  ],
+  "issues": [
+   "Divergence résiduelle RÉELLE sur les 2 surfaces (hors de mes fichiers OWNED) : 'Galette Cayenne' est is_spicy:true dans les mirrors web (/Users/1millnonstop/Downloads/web/data/menu.js, mkItem 202) et mobile (mobile/data/menu.js) alors que la fixture canonique dit is_spicy:false — à corriger par les implémenteurs W3/W4 (ou décision orchestrateur de figer le canon ; le gate suit la fixture, qui fait loi)",
+   "Les mirrors ont été modifiés PENDANT mes runs (divergences 5→1 en cours de session : export mobile pains/extraMeatPrice/bolSauces ajouté entre deux exécutions) — W6 doit relancer le gate APRÈS l'atterrissage complet de W3/W4 pour l'attestation finale",
+   "Le gate encode aussi des exigences du contrat §5 au-delà de la liste littérale de la mission (Boursin galette_excluded, Cayenne sauce_default/sauce_locked, is_halal jamais true si canon false, has_extra_meat 16 items, couverture FORMULE_DRINKS 15 saveurs, cardinalité exports legacy) — documenté dans le README ; si l'orchestrateur veut un gate strictement minimal, ces checks sont isolés par type et faciles à retirer",
+   "Non couvert par le gate (comportemental, hors data) : suppression de la tarification multi-sauces +0,50 € des templates sandwich/tacos/burger — à couvrir par les e2e wizard de W6"
+  ],
+  "notes": "Le gate est volontairement ROUGE tant que les mirrors ne sont pas à l'état cible (exit 1 actuel = 2 divergences précises). Rerun : `node tools/parity/check-parity.mjs --surface=all` depuis la racine backend. Les pools canoniques (7 viandes, 12 sauces, 4 crudités, 9 suppléments 0,90, 2 sauces bol, prix boissons) sont DÉRIVÉS de la fixture à chaque run — pas de duplication codée en dur —, donc une ré-extraction de fixture recalibre le gate automatiquement. SUPPLEMENTS_BOLS n'est pas dérivable de la fixture (extras bols vides côté API) : les 9×0,90+Gratiné viennent du set des suppléments 0,90 dérivé + contrat §5."
+ },
+ {
+  "scope": "Contrat §7 — création de la couche réseau mobile window.LC.mobileApi (mobile/api/client.js, portage du pattern WEB api.js adapté au shape buildLineItem mobile) + extension légère de mobile/api/storage.js (helper getToken)",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/api/client.js",
+    "summary": "NOUVEAU — IIFE classique (zéro import, chargeable avant React, aucun fetch au load). Config depuis window.LC.config avec fallbacks contrat §4 (apiBase http://127.0.0.1:8766, branchId 1, apiKey identique au fallback web api.js:21, onlineCardEnabled false). Expose window.LC.mobileApi : guestOtp/guestVerify (→ storage.setAuth({token,phone,user_id})), isAuthed/logout (→ storage.clearAuth), profile, loyaltyConfig, loyaltyHistory(page), loyaltyQr, loyaltyRedeem (X-Idempotency-Key 'mob-lr'+uuid, remap FR 400/422), buildItemIndex (GET /api/frontend/item, norm() copiée du web), itemDetails (cache), resolveLine adapté au shape mobile (meatIds→attrs 1/2 par nom MEATS ; painId→attr 6 ; sauceIds bs-*/s-*→attrs 5/8 ; crudités sémantique NÉGATIVE = pool moins cruditeRemoved, gardées envoyées en extras group crudite, gaté sur has_crudites ; supplementIds/bolSupplementIds→extras supplement/supplement_bol ; extraMeatIds→extra 'Viande supplémentaire' ×n ; menuChoice full/frites/boisson→addon roles menu_component/side/drink envoyés menu_full/menu_frites/menu_boisson ; frites style standalone→swap SKU par nom, en formule→note instruction ; top-up min_select anti-422), resolveOrderItems (bolDrinkId→ligne boisson séparée prix catalogue via DRINK_ID_TO_SLUG 15 saveurs), placeOrder (branch_id, order_type 10, source 5, payment_method 1, items JSON.stringify, X-Idempotency-Key 'mob'+uuid, loyalty_code optionnel), getOrder, orderHistory. Erreurs typées {kind:'network'|'http'|'auth'|'resolve', message FR}. Pools pains/bolSauces avec fallbacks normatifs contrat §5 si le mirror ne les exporte pas (il les exporte désormais — M-A)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/api/storage.js",
+    "summary": "Extension minimale [GOAL-SYNC 2026-07-08] : ajout helper getToken() (lit auth.token, null sinon) + export dans window.LC.storage. Rien d'autre touché — clearAuth existant purge déjà cart/loyauté/idempotency."
+   }
+  ],
+  "verifications": [
+   "node --check sur mobile/api/client.js et mobile/api/storage.js → SYNTAX OK",
+   "Test stub (node, window/localStorage/fetch stubés) : chargement storage.js+client.js SANS exception, 0 appel fetch au load, window.LC.mobileApi expose les 16 fonctions (les 14 du contrat §7 + itemDetails + resolveLine) — assert vert ; LC.storage.getToken null→'tok-123'→null après logout ; isAuthed true/false cohérent ; config fallbacks (base 8766, branchId 1, onlineCardEnabled false) ; _norm('Sauce Fromagère Maison')==='fromagere maison' (identique web)",
+   "Test réseau RÉEL contre http://127.0.0.1:8766 (node fetch natif) : guestOtp('0699678531') → 200 {status:true, message FR} ; guestVerify(même,'0000') → TOKEN REÇU '6583|bGChzFl2hZmgR…' user_id=169, persisté via storage.setAuth (getToken()===token) ; profile → id=169 loyalty_points=0 ; loyaltyConfig → points_per_euro=1, points_for_1_euro_discount=100 ; buildItemIndex → 70 items indexés par nom ; resolveLine(Tacos L 2 viandes+sauce+cheddar) → item_id 97, variations [361,372,380] (Viande1+Viande2+sauce), extras [256,257,258 crudités gardées + 262 cheddar] ; resolveOrderItems(bol-frites + bolDrinkId d-coca) → 2 lignes (bol item 41 + boisson item 52 séparée)",
+   "Test resolveLine OFFLINE (fetch mocké, détails sandwich canonique) : pain-galette → variation attr 6 (id 921) ; crudités négatives (cruditeRemoved ['Oignon'] → Salade+Tomate+Oignons cuits envoyées, Oignon ABSENT) ; extraMeatIds → extra 'Viande supplémentaire' qty 1 ; menuChoice 'full' → addon menu_component envoyé role 'menu_full' ; instruction FR concaténée 'bien cuit · Frites: Cheddar fondu · Boisson menu: Coca-Cola 33cl · Sauce frites: Mayonnaise' — tous asserts verts",
+   "Sanity backend : GET /api/frontend/item/details/26 (Tacos M) confirme le mapping attrs '1'/'5', extras groups crudite/supplement, addon roles menu_component/side/drink"
+  ],
+  "issues": [
+   "index.html (PAS owned par moi) doit : (1) définir window.LC.config = {apiBase, apiKey, branchId:1, onlineCardEnabled:false} AVANT tout script (contrat §4) — pas encore présent ; (2) ajouter <script src=\"api/client.js\"></script> APRÈS data/menu.js et avant React. Sans ça client.js utilise ses fallbacks (fonctionnels en local) mais le flag Stripe n'est pas pilotable.",
+   "Divergence délibérée vs libellé mission : drinkId (boisson de la FORMULE, cascade menuChoice full/boisson) est relayé en NOTE d'instruction ('Boisson menu: X'), PAS en ligne séparée facturée — l'addon menu (2,50€) couvre déjà la boisson côté backend et computeTotal mobile n'ajoute aucun prix pour drinkId ; une ligne séparée double-facturerait (+1,90€) et casserait la parité prix mobile↔caisse. C'est le comportement EXACT du web api.js (cascade_drink → note). bolDrinkId, lui, EST une ligne séparée prix catalogue comme spécifié (priceFor mobile la compte).",
+   "POST /api/auth/guest-signup/verify est throttlé (429 observé 2× sous tests parallèles multi-implémenteurs) — les écrans mobiles consommateurs devraient afficher un message FR de patience sur e.kind==='http' && e.status===429.",
+   "Fidélité : profile() d'un guest neuf renvoie loyalty_code=null — les écrans QR doivent minter via loyaltyQr() (qui mint le code si absent, contrat §2) plutôt que lire profile().loyalty_code directement."
+  ],
+  "notes": "Aucune écriture hors fichiers OWNED (client.js créé, storage.js +6 lignes). Aucun produit inventé — résolution 100% par NOM canonique via l'API réelle ; pools pains/bolSauces ont des fallbacks strictement égaux au contrat §5. Pendant ma fenêtre, M-A a livré le mirror menu.js (tacos has_crudites:true, exports pains/bolSauces, 'Menu Enfant Chicken Burger', DRINK 15 saveurs) — mes tests réels le confirment compatible. Scripts de preuve conservés dans le scratchpad session : test-load-stub.js, test-network-real.js, test-resolve-mock.js."
+ },
+ {
+  "scope": "Purge des démos user-facing du compte web standalone (/Users/1millnonstop/Downloads/web) : profil réel, carte fictive → état vide honnête, logout câblé, forgot-password honnête, earn fidélité floor×config runtime — fichiers OWNED uniquement (loyalty-v2.jsx, account-v2.jsx, data/loyalty.js, flows.jsx) + adaptation du test node de mes helpers.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+    "summary": "ProfileEditor → données RÉELLES : téléphone via window.LC.api.getPhone() (affiché immédiatement), nom/email complétés depuis api.profile() si présents, sinon placeholder FR « Non renseigné » italique ; « Ikyes Benzaid »/ikyes@lecayenne.fr/date de naissance fake SUPPRIMÉS ; boutons « Modifier » inertes retirés + note honnête FR. SavedCards « Visa ····4242 » → état vide honnête (« Aucune carte enregistrée » + « Le paiement en ligne arrive bientôt »). PreferencesCard (allergènes « Gluten, Lactose », cuisson, sauce fictifs) RETIRÉE. NotificationSettings persistées en localStorage (clé lecayenne.notifPrefs) au lieu d'un state démo perdu. AccountDangerZone : « Se déconnecter » câblé robuste (window.LC.api.logout() + callback parent + location.reload() = retour accueil — fonctionne même avec le onLogout no-op de screens.jsx) ; bouton « Supprimer mon compte » inerte retiré (RGPD), remplacé par info FR honnête."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/account-v2.jsx",
+    "summary": "Flow « Mot de passe oublié » : plus de faux « Lien envoyé » (aucun endpoint email/password n'existe) — message honnête FR « il n'y a pas de mot de passe : la connexion se fait par téléphone + code — utilise « Recevoir un code » » + CTA renvoyant vers le vrai flow OTP (setMode signup + authNotice) ; state `sent` mort supprimé. Placeholders persona démo neutralisés (« Ikyes » → « Ton prénom », « ikyes@example.com » → « prenom@exemple.fr »). Social login mock conservé tel quel : il porte déjà le badge « Démo V1 » clair (option « garder badge démo clair » du mandat)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/loyalty.js",
+    "summary": "earnPoints → Math.floor (aligné backend CONTRACTS §2, avant Math.round) ; CONFIG devient mutable et se resynchronise au runtime depuis GET /api/frontend/loyalty/config via window.LC.api.loyaltyConfig (appel différé DOMContentLoaded car loyalty.js charge avant api.js), mapping points_per_euro/points_for_1_euro_discount/min_redeem_points, fallback silencieux 1/100/100 ; nouvel export refreshConfigFromApi ; helpers restent purs et testables node (module.exports inchangé)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/flows.jsx",
+    "summary": "Ligne panier « + Fidélité » : +{Math.round(total)} pts → LC.loyalty.earnPoints(total) (= Math.floor(total × config.earn_ratio), fallback Math.floor(total) si helper absent) — plus de taux hardcodé."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/tests/node/loyalty-redeem.test.mjs",
+    "summary": "Adaptation autorisée par la mission (assertions périmées par le passage à floor) : earnPoints(12.5) attendu 12 (au lieu de 13 round) + nouveau cas earnPoints(0.9)=0, commentaire daté [GOAL-SYNC 2026-07-08]."
+   }
+  ],
+  "verifications": [
+   "node --test /Users/1millnonstop/Downloads/web/tests/node/loyalty-redeem.test.mjs → 8/8 pass 0 fail (floor + config + redeem continu + formatEuros)",
+   "node --check /Users/1millnonstop/Downloads/web/data/loyalty.js → OK",
+   "@babel/parser (repo testttt) parse JSX OK sur loyalty-v2.jsx, account-v2.jsx, flows.jsx (plugin jsx, 0 erreur de syntaxe)",
+   "Playwright :8096 smoke complet GREEN 17/17 (scratchpad/smoke-account.mjs) : auth OTP réelle guest-signup, isAuthed après reload=true, onglet « Mon compte » → assert DOM : « Ikyes Benzaid » absent, aucun « Ikyes » dans les .lc-profile-card, « 4242 » absent de TOUT le DOM, Visa fictive absente, « Aucune carte enregistrée » présent, allergènes « Gluten, Lactose » absents, « 14 mai 1998 » absent, téléphone réel du run affiché (+33 6 64 23 22 31), clic « Se déconnecter » → token purgé + retour accueil (isAuthed=false), flow « Oublié ? » → message honnête « pas de mot de passe » + CTA « Recevoir un code » + plus aucun « Lien envoyé », console 100% propre (0 erreur hors 429 throttle OTP déclenché par les retries du harnais lui-même)",
+   "Preuve sync runtime : GET /api/frontend/loyalty/config fire au boot de la page → HTTP 200, LC.loyalty.config appliquée {earn_ratio:1, redeem_ratio:100, min_redeem_points:100} ; earnPoints(12.5)=12 évalué DANS le navigateur (FLOOR OK)",
+   "Screenshots analysés visuellement (account-profile.png, forgot.png) : layout intact, copy 100% FR, profil « GUEST USER + téléphone réel + Email Non renseigné », écran forgot brandé « PAS DE MOT DE PASSE » propre",
+   "Frozen zones CLAUDE.md §7 : 0 fichier touché (écritures limitées aux 4 OWNED + test node de mes helpers + scratchpad) ; aucun git commit"
+  ],
+  "issues": [
+   "HORS PÉRIMÈTRE (non touché) — /Users/1millnonstop/Downloads/web/components.jsx:138 : le bouton nav authentifié affiche « Ikyes » hardcodé (<span className=\"lc-hide-mobile\">Ikyes</span>) → tout client connecté voit « Ikyes » dans le header. À remplacer par le prénom réel (api.profile().name) ou un libellé générique « Mon compte ». C'est la SEULE occurrence « Ikyes » restante visible sur la page compte (mon assert l'exclut explicitement).",
+   "HORS PÉRIMÈTRE (non touché) — /Users/1millnonstop/Downloads/web/screens-v3.jsx:131 : leaderboard démo avec { rank:12, name:'Ikyes B.', pts:347, me:true } — persona fictive présentée comme « moi » au client.",
+   "INTÉGRATION screens.jsx:871 (fichier d'un autre agent) — passe toujours onLogout={()=>{}} à LoyaltyProfileTab. Mon AccountDangerZone est désormais autonome (logout + reload fonctionnent sans le parent, prouvé Playwright), mais un vrai handler ({ api.logout(); setIsAuth(false); route home }) éviterait le full reload et garderait l'état SPA propre.",
+   "Backend : les comptes guest-signup ont name='Guest User' (EN) renvoyé par /api/profile et affiché tel quel dans le profil (capture). Donnée réelle, pas une démo client — mais un défaut FR (« Client invité ») côté backend serait plus propre.",
+   "Résiduel P2 non traité (scope-minimal, non demandé par la mission) — account-v2.jsx onglet Connexion collecte encore email+mot de passe jamais transmis avant de basculer vers le flow SMS (finding P2 #6 de w1/by-spec/web_account_orders.json) ; le flow forgot ne ment plus mais le champ password du login reste une collecte sans usage.",
+   "Test harnais : throttle OTP backend (429 Too Many Attempts) touche les runs Playwright rapprochés — le smoke inclut 4 retries espacés de 20 s (à savoir pour la vague W6 e2e)."
+  ],
+  "notes": "Smoke réutilisable : /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/smoke-account.mjs (+ captures account-profile.png, forgot.png au même endroit). data/loyalty.js expose désormais LC.loyalty.refreshConfigFromApi() (idempotent, jamais bloquant) si un autre agent veut forcer une resync après login. Le check-parity.mjs (§8) ne s'applique pas ici : aucun mirror menu.js touché."
+ },
+ {
+  "scope": "Câblage RÉEL du dashboard fidélité web standalone (owned : /Users/1millnonstop/Downloads/web/screens.jsx + /Users/1millnonstop/Downloads/web/components.jsx) : QR signé lqr.* mint-on-display, loyalty_code réel, historique GET réel, redeem POST réel, taux depuis /loyalty/config, suppression des blocs DÉMO/fictifs.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/web/components.jsx",
+    "summary": "WebQR : mock 13x13 remplacé par composant autonome mint-on-display — POST /loyalty/qr via LC.api.loyaltyQr() (garde si absent/non-authé → fallback FR « QR indisponible »), rendu SVG local window.qrcode(0,'M')→createSvgTag({cellSize:3,margin:0,scalable:true}) (garde lib absente), compte à rebours ttl_seconds « Expire dans m:ss », re-mint AUTO à expiration (jamais en boucle d'erreur), bouton « Actualiser », prop onCode pour remonter loyalty_code."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+    "summary": "WebLoyalty : (a) wallet → QR réel <WebQR onCode>, loyalty_code réel (profile() ou minté /qr) à la place de « LECAY-347-A9F2C », 2 badges « DÉMO V1 » + « +33 pts/7j » + bouton « Partager » mort RETIRÉS, mention « Présentez ce QR ou dictez votre numéro en caisse » ajoutée ; (b) taux depuis GET /loyalty/config cachés en state cfg (gate, entête, wallet, réductions, « Comment ça marche » — plus aucun taux hardcodé, « +25 pts inscription » inventé retiré) ; (c) onglet Historique → GET /loyalty/history réel paginé (Précédent/Suivant + Page x/y), mapping type→FR (earn « Points gagnés », redeem « Points utilisés », manual_add/manual_deduct/expire), date FR, solde après, états loading/vide/erreur FR ; (d) onglet Mes réductions → POST /loyalty/redeem réel (points multiples de 100, floor), re-fetch profile() après succès, erreurs 400/422 affichées proprement (role=alert, pas de crash), demoRedeem supprimé ; (e) Challenge/streak/referral/Leaderboard fictifs SUPPRIMÉS + trophées a6 « Parrain »/a7 « Régulier » retirés (aucun backend)."
+   }
+  ],
+  "verifications": [
+   "Smoke Playwright headless :8096 (chromium du repo testttt) PASS — non-authé : gate « CONNECTE-TOI POUR CUMULER » propre, 0 erreur console/pageerror (capture 1-loyalty-unauth.png analysée)",
+   "Authé (token guest réel 6581|… minté via /api/auth/guest-signup, injecté localStorage lecayenne.authToken + vendor/qrcode.js injecté pour simuler index.html) : QR SVG réel rendu, « Expire dans 4:59 », bouton ACTUALISER, identifiant réel 37BFB9B5, mention caisse, AUCUN « DÉMO V1 »/« LECAY-347 »/« CAYENNE-IKYES »/streak/leaderboard/défi/« +33 pts », 0 erreur console (capture 2-loyalty-authed-wallet.png analysée)",
+   "Onglet Historique : état vide FR propre à 0 transaction, puis après un redeem réel → ligne RÉELLE backend « Réduction fidélité appliquée · Points utilisés · 8 juil. 2026 · 16h42 · solde après : 50 pts · −200 » (captures 3-loyalty-history.png shots+shots2 analysées)",
+   "Onglet Mes réductions : verrouillé 🔒 à 0 pt avec meta FR correcte ; à 250 pts seedés → bouton « Utiliser 2,00 € » (multiple de 100 : 200 pts, pas 2,50 € linéaire) ; clic → 422 middleware GÉRÉ proprement (row « Utilisation impossible » + message, wallet inchangé, pas de crash) — captures 4/5/6 analysées",
+   "Redeem backend prouvé fonctionnel par curl AVEC branch_id:1 dans le body : {status:true, message:'200 points utilisés', data:{points:50}} + tinker user 167 pts=50 (le gap est dans api.js, voir issues)",
+   "GET /api/frontend/loyalty/config vérifié curl : {points_per_euro:1, points_for_1_euro_discount:100, min_redeem_points:100} — valeurs consommées par le state cfg",
+   "grep : plus AUCUNE référence active à demoRedeem/LECAY-347/CAYENNE-IKYES/+33 pts/<Challenge>/<Leaderboard> dans screens.jsx (seulement des commentaires datés) ; aucun autre consommateur JSX de Challenge/Leaderboard cassé",
+   "Aucune écriture hors des 2 fichiers OWNED ; frozen zones intouchées (IdempotencyKeyMiddleware lu en read-only uniquement) ; pas de commit ; pas de CDN (lib QR = vendor/qrcode.js local)"
+  ],
+  "issues": [
+   "P1 (api.js, owned ailleurs) : le redeem web échoue en 422 MISSING_IDEMPOTENCY_KEY — le middleware FROZEN IdempotencyKeyMiddleware.resolveBranchId() retourne -1 pour un guest web (branch_id=0, pas Admin, pas de pivot KioskMachine → fallback $request->input('branch_id', -1)). FIX SANS toucher le frozen : api.js loyaltyRedeem doit ajouter branch_id: CFG.branchId au body — vérifié curl : avec {code,points,branch_id:1} → 200 « 200 points utilisés ». Mon UI gère déjà ce 422 proprement en attendant.",
+   "index.html (owned ailleurs) doit charger <script src=\"vendor/qrcode.js\"></script> AVANT les bundles JSX (contrat §3) — pas encore présent ; sans lui WebQR retombe gracieusement sur « QR indisponible » (vérifié : le chemin complet marche une fois la lib injectée).",
+   "funnel.jsx:102 (non owned) : earn strip encore « Tu gagnes +Math.round(total) pts » → devrait être Math.floor(total × points_per_euro) depuis loyaltyConfig() ; et ctx.loyaltyCode jamais setté (fil mort vers placeOrder).",
+   "data/loyalty.js:32 (non owned, P3) : earnPoints utilise Math.round là où le backend tronque (floor) — écart d'affichage possible de 1 pt.",
+   "components.jsx WebNav lignes 71-72 : navbar encore hardcodée « Ikyes »/« IB » — DANS mon fichier owned mais HORS de ma mission énumérée (scope-minimal respecté) ; à câbler sur profile().name.",
+   "loyalty-v2.jsx (non owned) : onglet « Mon compte » (LoyaltyProfileTab) toujours 100% fake (« Ikyes Benzaid », Visa 4242, onLogout no-op).",
+   "Donnée de test : user guest 167 (0699000777, code 37BFB9B5) laissé à 50 pts avec 1 transaction redeem réelle en DB dev — réutilisable par W6."
+  ],
+  "notes": "Modèle points→€ CONTINU 100 pts = 1 € respecté (D6=A), aucun catalogue de récompenses réintroduit, aucun produit inventé. L'utilisable affiché applique désormais la règle backend « multiple de 100 » (250 pts → 2,00 €, plus le linéaire 2,50 €). Captures : /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/shots{,2}/ ; scripts smoke rejouables : loyalty-smoke.js + redeem-smoke.js (même dossier, LC_TOKEN en env). @babel/preset-react absent du repo → gate syntaxe = smoke navigateur (contrat §8 fallback), 0 erreur console sur toutes les passes."
+ },
+ {
+  "scope": "MOBILE index.html — config runtime LC.config, chargement api/client.js + vendor/qrcode.js, auth OTP réelle (suppression mock), commande réelle comptoir avec dégradation hors-ligne, verrou Stripe flag OFF, logout réel",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/index.html",
+    "summary": "(1) <script> inline AVANT tout script : window.LC.config={apiBase:'http://127.0.0.1:8766', apiKey:<clé fallback copiée de /Users/1millnonstop/Downloads/web/api.js:21>, branchId:1, onlineCardEnabled:false} (contrat §4). (2) <script src=\"api/client.js\"> juste après api/storage.js + <script src=\"vendor/qrcode.js\"> avant hooks/components ; ordre de chargement et NO_TAB_SCREENS préservés. (3) AUTH RÉELLE : onLogin mock SUPPRIMÉ (token 'mock-v0-token' + '+33642799884' éliminés) ; const [authPhone,setAuthPhone] hoisté dans App ; case 'login' → await LC.mobileApi.guestOtp(p) puis go('otp'), erreur réseau ⇒ toast FR + on reste ; repli défensif si ScreenLogin appelle encore onNext(event) (lecture input tel du DOM) ; case 'otp' → <ScreenOTP phone={authPhone}> + await guestVerify(authPhone, otp) (setAuth fait par client.js), markOnboardingSeen, boot home ; erreur ⇒ toast FR + reste sur l'écran. (4) COMMANDE RÉELLE : helper placeCounterOrder() — profile() pour loyalty_code (optionnel, échec non bloquant), resolveOrderItems(cart) (validation fail-fast, cache partagé avec placeOrder), placeOrder({cart, items, paymentMethod:1, loyaltyCode}) → setLastOrder({id:queue_number, orderDbId, queue_number, total réel, eta, items}) pour ScreenConfirm ; e.kind==='network' ⇒ fallback local V0 (snapshot 'C-XXXX' déjà posé) + toast « Hors ligne — commande de démonstration » ; erreur métier ⇒ toast FR, panier intact. (5) ModalPayChoice flag={LC.config.onlineCardEnabled} ; onPickCard no-op si flag OFF ; go('stripe') redirigé vers modal 'pay' si flag OFF ; case 'stripe' rend ScreenCart si flag OFF (défense en profondeur). (6) 'logout' → LC.mobileApi.logout() + storage.clearAuth() + reset authPhone + boot login. Bonus contrat §2 : ModalPointsGain gain passe de Math.round à Math.floor(total) (estimation earn 1 pt/€ floor). Commentaires FR datés [GOAL-SYNC 2026-07-08] partout."
+   }
+  ],
+  "verifications": [
+   "git status/diff : SEUL mobile/index.html modifié (118 insertions, 14 suppressions) — aucune écriture hors OWNED, frozen zones intactes",
+   "grep : plus aucune occurrence de 'mock-v0-token' / '+33642799884' / onLogin actif (seul un commentaire de traçabilité subsiste)",
+   "Interface croisée avec mobile/api/client.js (landé par l'agent M-D à 16:37) : guestOtp(phone), guestVerify(phone,otp)→setAuth, placeOrder({cart,loyaltyCode})→(r.data), isAuthed, logout, profile — mes appels correspondent ; cache _itemIndex/_detailsCache confirmé (le pré-resolveOrderItems ne double pas le réseau)",
+   "Playwright headless 390x844 (php -S 127.0.0.1:8087 -t mobile RELANCÉ, API :8766 UP) : splash → onboarding → Passer → login ; saisie '06 99 11 22 33' → clic 'Recevoir le code' → POST /api/auth/guest-signup/otp RÉEL 200 (la navigation n'a lieu que sur succès) → écran OTP affiche EXACTEMENT le numéro saisi 'Code envoyé au 06 99 11 22 33' (prop phone={authPhone} + ScreenOTP mis à jour par l'agent onboarding)",
+   "Console navigateur : ZÉRO erreur JS/syntaxe (Babel standalone compile l'App root inline) — seule une erreur RESEAU 429 sur /verify (throttle backend 3/5min, quota consommé par les agents parallèles) ; le comportement d'erreur est CONFORME au contrat : toast FR, on reste sur l'écran OTP, pas de token écrit",
+   "Screenshots capturés et ANALYSÉS (Read) : 01-login.png + 02-otp.png — layout intact, 100% FR, palette NOIR/ORANGE/JAUNE/BLANC respectée, zéro raw label — scratchpad/shots/",
+   "Babel-check §8 : @babel/preset-react absent du repo → alternative contractuelle appliquée = smoke navigateur obligatoire (boot complet sans erreur de syntaxe, cf. ci-dessus)"
+  ],
+  "issues": [
+   "ASSERTION FINALE NON OBSERVÉE (throttle, pas un bug) : le leg /verify 200 → token réel '…|…' dans localStorage 'lecayenne.auth' → home n'a pas pu être capturé — POST /api/auth/guest-signup/verify a rendu 429 (throttle:3,5 partagé par les agents parallèles sur la même IP). Un rerun automatique post-fenêtre (script scratchpad/verify-mobile-auth.mjs, tâche bg blsr2nb9h) était encore en cours au moment du retour. Le chemin de code est celui de client.js:85-92 (setAuth({token:r.token,…}) sur 200) déjà vérifié par lecture ; à confirmer en W6 (1 run = 1 OTP + 1 verify).",
+   "DÉPENDANCE INTERFACE placeOrder : client.js ignore o.items et re-résout depuis o.cart (cache warm par mon pré-resolveOrderItems → pas de double réseau). Si l'agent M-D change la signature, adapter placeCounterOrder dans index.html.",
+   "HORS DE MON OWNED (constaté, PAS touché) : (a) screens-modals.jsx ModalPayChoice ne consomme pas encore la prop flag que je passe (bouton 'Payer maintenant' toujours dans le DOM quand flag OFF — mes 3 verrous index.html [onPickCard no-op, go('stripe')→pay, case stripe→cart] empêchent déjà d'atteindre ScreenStripe) ; (b) screens-onboarding.jsx bouton 'Renvoyer (29s)' toujours décoratif (P3 du finding) ; (c) React/Babel restent chargés depuis unpkg CDN dans index.html — préexistant, le contrat interdit d'AJOUTER des CDN mais la bascule vers vendor/ locaux n'était pas dans ma mission (fichiers vendor React absents) — à trancher par l'orchestrateur.",
+   "Total affiché dans ModalPayChoice (cart.reduce price*qty ligne préexistante) ignore lineTotal des items composés — préexistant, non demandé, non touché (le total de la commande RÉELLE vient du backend, lui correct).",
+   "Serveur php -S 127.0.0.1:8087 relancé par moi (nohup, log scratchpad/php8087.log) — laissé UP pour W6."
+  ],
+  "notes": "Fichier OWNED unique respecté. Les handlers d'index.html sont tolérants aux DEUX signatures d'écrans (anciennes onNext()/onNext(event) et nouvelles onNext(phone)/onNext(otp)) — pendant la vérif, l'agent onboarding a landé ScreenLogin onNext(normalized) et ScreenOTP({phone,onNext}) : compatibilité confirmée en live (le numéro saisi s'affiche sur l'écran OTP). Dégradation douce contrat §7 implémentée : API absente/non connecté/réseau ⇒ commande de démonstration locale + bandeau « Hors ligne — commande de démonstration » ; erreur métier ⇒ toast FR sans perte de panier. Aucun produit inventé, aucun secret nouveau (clé API = fallback public déjà présent dans web/api.js:21), aucun commit."
+ },
+ {
+  "scope": "Wizard mobile (mobile/screens-item-steps.jsx UNIQUEMENT) — consommation des nouveaux flags data du contrat §5 : étape PAIN, viande supplémentaire +2,50 €, template BOL, crudités tacos, sauce max 1 radio-like, sauce_default, filtres suppléments galette, fix prix formule.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-item-steps.jsx",
+    "summary": "(+276/-33, commentaires FR [GOAL-SYNC 2026-07-08]) : (1) STEP.PAIN + ScreenStepPain (radio pool lcMenu.pains, défaut pain-classique pré-sélectionné à l'init, position avant viandes, cases sandwich/tacos/burger de computeActiveSteps, hint + label + recap Row 'Pain'). (2) ExtraMeatSection partagée (has_extra_meat → section 'Viande supplémentaire +2,50 € · max 2' dans ScreenStepSupplements ET ScreenStepBolSupplements ; prix lu lcMenu.extraMeatPrice ; cap 2 avec aria-disabled) ; selections.extraMeatIds passé à priceFor via computeTotal ; buildLineItem encode painId/painLabel/extraMeatIds/extraMeatLabels (+résumé cuisine 'Viande suppl. X') — champs additifs, compat conservée. (3) computeActiveSteps case 'bol' : viandes(1/1)→sauce(1/1 pool BOL_SAUCES)→bolSupplements(0/5, sb-gratine/riz_only visible UNIQUEMENT slug 'bol-riz')→bolDrink(0/1)→recap ; helper wizardTemplateFor extrait et exporté. (4) crudités tacos = code existant réactivé par has_crudites:true data (vérifié e2e). (5) ScreenStepSauce : radio-like max 1 pour templates tacos/sandwich/burger/bol, pool bolSauces pour bols, plus AUCUN +0,50 € ni chip multi-sauce (cascade fritesSauce reste multi, copy sans promesse tarifaire) ; sauce_default pré-sélectionnée à l'init (match exact puis inclusion insensible casse, pool scopé au template — évite la collision bs-fromagere/s-fromagere) ; lookup sauces multi-pools (sauceNameFor) dans recap + buildLineItem. (6) ScreenStepSupplements filtre galette_only (visible seulement cat 2) / galette_excluded (masqué cat 2). (7) ScreenStepMenu + recap menuLabel : prix formule lus depuis FORMULES (f-menu 2,50 / f-frites / f-boisson) — fini le +3,00 hardcodé, une seule source. Fix bonus : isGratine 'sb-gratine' (l'ancien id 'sb-boule-gratinee' n'existait pas)."
+   }
+  ],
+  "verifications": [
+   "Syntaxe : @babel/parser plugin jsx → PARSE OK (1451 lignes) — @babel/preset-react absent du repo, fallback contrat §8 = smoke navigateur ci-dessous",
+   "Playwright headless (chromium 1.58.2, viewport 390×844) sur la VRAIE page http://127.0.0.1:8087/index.html (php -S relancé), montage de window.ScreenItemWizard piloté par l'UI réelle : 40/41 asserts PASS (le seul FAIL = erreur console venant de screens-main.jsx, fichier d'un autre implémenteur, cf. issues)",
+   "Tacos M : activeSteps=[viandes,sauce,crudites,supplements,menu,recap] (crudités PRÉSENTE) ; sauce = radiogroup, 2 clics ⇒ 1 seule aria-checked, zéro texte '+0,50' ; 4 crudités dont Oignons cuits ; section viande suppl. présente, 3e viande aria-disabled, max 2, total CTA 11,90 € (6,90+2×2,50) ; étape menu affiche 'Menu complet +2,50€' (plus de 3,00) ; 'Boule gratinée' absente hors cat 2",
+   "Sandwich Cayenne : étape 1 = 'Pain ou galette' avec 'Pain' pré-sélectionné (2 options pool PAINS) ; étape 2 = Sauce avec 'Fromagère maison' pré-sélectionnée (sauce_default)",
+   "Bol Riz : sauce = exactement 2 options ['Sauce fromagère maison','Sauce spicy'] ; 'Option Gratiné' VISIBLE (10 suppléments) — Bol Frites : gratiné ABSENT (9 suppléments), flow complet jusqu'au Récapitulatif",
+   "Galette Normale (cat 2) : 'Boule gratinée' (galette_only) VISIBLE, 'Boursin' (galette_excluded) MASQUÉ",
+   "buildLineItem unitaires (page réelle) : extraMeatIds=['m-tenders'] encodé, prix 7,90+0,90+2,50=11,30 exact, sauce bol 'bs-fromagere' résolue par nom, painId='pain-galette'/painLabel='Galette'",
+   "Screenshots capturés ET lus/analysés (scratchpad : cayenne-pain.png, bolriz-sauces.png, tacos-supplements-extrameat.png, bolfrites-supplements.png, + tacos-sauce/crudites/menu, galette-supplements, bolfrites-recap) : layout 390×844 intact, 100% FR, aucun raw label",
+   "Scope : git diff --stat → seul mobile/screens-item-steps.jsx modifié par moi ; aucune frozen zone touchée ; aucun commit ; fixture respectée (aucun produit inventé — pools lus depuis lcMenu)"
+  ],
+  "issues": [
+   "mobile/screens-main.jsx (fichier OWNED par un autre implémenteur) a une erreur de syntaxe JSX ACTIVE (Babel: Unexpected token ~1025-1027:9, position qui bouge entre deux runs = édition en cours) — c'est la SEULE erreur console de mon smoke e2e ; le wizard fonctionne malgré elle car chaque script text/babel est compilé indépendamment. À re-vérifier au gate W6 quand cet implémenteur aura fini.",
+   "mobile/data/menu.js : tous les flags consommés (pains, extraMeatPrice, bolSauces, riz_only, galette_only/excluded, has_pain_choice, has_extra_meat, sauce_default, has_crudites tacos, cat 6 'bol', priceFor extraMeatIds, multi-sauce +0,50 supprimée) étaient LANDÉS au moment de ma vérification — si le data-implémenteur rebase, re-runner mon script scratchpad/verify-wizard.mjs.",
+   "Mineur (préexistant, hors scope) : la map allergènes boissons du recap (drinkSlugMap, aggregatedAllergens) ne couvre pas les 7 nouvelles saveurs d-* (d-coca-cherry…) — sans impact aujourd'hui (les boissons n'ont pas d'allergènes déclarés), à étendre si des allergènes boissons sont ajoutés.",
+   "Mineur : la tarification menu.js (fritesSauceIds-1)×0,50 de la cascade sauce-frites a été retirée côté data ; ma copy du step frites-sauce dit désormais 'incluses' — cohérent, mais si le canon réintroduit un tarif multi-sauce frites il faudra resynchroniser copy + data ensemble."
+  ],
+  "notes": "Preuve la plus forte : 40/41 asserts Playwright sur la page réelle (le 41e échec est attribuable à screens-main.jsx, hors de mon ownership). Script de vérification rejouable : /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/verify-wizard.mjs (node <script>, serveur php :8087 laissé UP). Les templates morts (omelette/salade/snacking/assiette) gardent volontairement le multi-sauce legacy — aucun item du catalogue actuel ne les utilise ; le canon ne les prévoit pas."
+ },
+ {
+  "scope": "Mobile OWNED files : screens-onboarding.jsx (ScreenLogin onNext(phone) + validation + loading ; ScreenOTP {phone,onNext} + numéro réel + loading/erreur FR) et screens-modals.jsx (ModalPayChoice flag onlineCardEnabled OFF⇒CB absent du DOM + micro-copy ; garde ScreenStripe ; ModalPointsGain prop points ; ScreenOrderDetail earn ratio via config). Contrat reports/goal-web-app-sync/CONTRACTS.md §1/§2/§4/§8.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-onboarding.jsx",
+    "summary": "ScreenLogin : onNext(normalized) remonte LE STRING téléphone (normalisation FR '6…'→'06…', digits 9-10), CTA désactivé si invalide (regex /^\\d{9,10}$/ sur digits), état loading ('Envoi du code…' + aria-busy + disabled) pendant l'appel, erreur FR role=alert en défense en profondeur. ScreenOTP : props {phone, onNext} — affiche le VRAI numéro saisi formaté par paires (data-testid=otp-phone, plus de '+33 6 12 34 56 78' hardcodé), 'Modifier' actif (onBack), onNext(otp) remonte le code saisi (plus de setTimeout(onNext) sans argument), état loading ('Vérification du code…', inputs disabled) + erreur FR role=alert avec reset du code si verify échoue ; hint 'Code de démo : 1234' reste gaté window.LC.isDev (inchangé)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-modals.jsx",
+    "summary": "ModalPayChoice : prop onlineCardEnabled (nom normatif) + alias 'flag' (interface réelle index.html) + fallback window.LC.config — OFF ⇒ seul 'Payer sur place' rendu, bouton CB 'Payer maintenant' ABSENT du DOM (data-testid pay-card-online) + micro-copy 'Le paiement en ligne arrive bientôt.' ; copy 'CB sécurisée Stripe' mensongère → 'CB en ligne' (branche ON test-only). ScreenStripe : garde en tête — flag OFF ⇒ état FR 'Paiement en ligne indisponible' + bouton '← Retour au panier', jamais le formulaire 4242. ModalPointsGain : prop points (fallback alias gain, dernier recours 25) — plus de +25 fixe, Math.floor appliqué. ScreenOrderDetail : earnRatio = config.points_per_euro (nom API backend) prioritaire sinon earn_ratio local sinon 1 (défaut backend, plus de 10 hardcodé) + Math.round→Math.floor (contrat §2 FLOOR)."
+   }
+  ],
+  "verifications": [
+   "Smoke navigateur Playwright complet :8087 (script scratchpad/smoke-mobile-onboarding-modals.js, chromium headless 390×844) — run 16:53 : 13/14 PASS dont FLUX PANIER LIVE (menu → 'Voir le panier' → 'Valider ma commande' → ModalPayChoice) ; l'unique FAIL était la classification console, corrigée ensuite (bruit 100% étranger : warning <image-slot> de shared.jsx + 404 asset — aucun fetch/asset dans mes 2 fichiers) ; run final : 'Console propre (0 erreur imputable aux fichiers owned)' PASS.",
+   "Login → OTP réel : CTA désactivé avec '06 ' (invalide) PASS ; activé avec '06 42 79 98 84' PASS ; POST /api/auth/guest-signup/otp réel puis écran OTP affiche 'Code envoyé au 06 42 79 98 84' (data-testid otp-phone) PASS ; plus aucun numéro hardcodé visible PASS.",
+   "Verify réel : saisie 1234 → POST /verify → localStorage lecayenne.auth = {token:'6588|3Nexulh…' (Sanctum réel, non mock-v0-token), phone:'0642799884', user_id:171} PASS + arrivée home PASS.",
+   "ModalPayChoice flag OFF (window.LC.config.onlineCardEnabled=false) : 'Payer sur place' présent, 'Payer maintenant' ABSENT du DOM (innerHTML + count(pay-card-online)==0), micro-copy 'Le paiement en ligne arrive bientôt' présent — PASS ×3 (flux live ET rendu direct). Contre-épreuve flag ON (rendu direct onlineCardEnabled:true) : les 2 options rendues PASS.",
+   "Garde ScreenStripe rendu direct flag OFF : texte 'Paiement en ligne indisponible' + '← Retour au panier', AUCUN '4242' — PASS. ModalPointsGain rendu direct points=13 : affiche '+13', pas '+25' — PASS.",
+   "Screenshots capturés ET lus (mandat visuel) : 01-login-filled / 02-otp-real-phone (numéro réel, hint dev masqué, layout intact) / 03-home-after-verify / 04-paychoice-flag-off (une seule option + micro-copy, palette brand, FR) dans scratchpad/shots/.",
+   "git diff --stat limité STRICTEMENT aux 2 fichiers OWNED (+109/-27) ; zéro écriture hors scope, zéro frozen-zone, zéro produit inventé (item de test = Coca-Cola 33cl 1,90 € de la fixture canonique), UI 100% FR, aucun CDN ajouté, aucun commit.",
+   "grep tests/ + mobile/ : aucun consommateur des chaînes modifiées ('Payer à la caisse', 'CB sécurisée Stripe', '+33 6 12 34 56 78') — pas de régression de dépendance."
+  ],
+  "issues": [
+   "FOREIGN P1 (résolu en cours de session, à gater par l'orchestrateur) : mobile/screens-main.jsx:1114 — commentaire JSX {/* */} DANS un littéral de tableau JS = SyntaxError Babel qui cassait TOUTE l'app (ScreenHome is not defined) pendant ma vérification ; le propriétaire parallèle l'a corrigé en '//' pendant mes runs. Re-vérifier la compile au gate W6.",
+   "INTERFACE (index.html, non owned) : index.html passe la prop 'flag=' à ModalPayChoice alors que le nom normatif contrat est 'onlineCardEnabled' — mon composant accepte les DEUX + fallback window.LC.config ; harmoniser index.html vers onlineCardEnabled serait plus propre.",
+   "DATA (mobile/data/loyalty.js:49, non owned) : config.earn_ratio=10 pt/€ local diverge du canonique backend points_per_euro=1 (contrat §2) — mon ScreenOrderDetail priorise points_per_euro quand présent, mais tant que la couche loyalty locale n'expose pas points_per_euro, le mode standalone affiche 10 pt/€ ; à aligner par le propriétaire de data/loyalty.js.",
+   "INDEX (non owned) : ModalPointsGain reçoit gain={Math.floor(lastOrder.total)} avec fallback ': 25' quand lastOrder absent et n'utilise pas le taux loyaltyConfig ; acceptable (1 pt/€ = floor du total) mais le nom de prop normatif 'points' est dispo côté composant.",
+   "ENV e2e : throttle /api/auth/guest-signup/verify (3/5min) → 429 sur runs répétés (mes 4 runs l'ont épuisé une fois) ; le harness W6 devra espacer ou nettoyer le rate-limiter avant les vagues OTP. Un rerun de confirmation post-throttle tournait encore en fin de session (tâche bg boc355l5v) — preuves déjà complètes via les runs précédents.",
+   "NOTE scope-minimal : la branche ON de ScreenStripe (test-only, double verrou serveur) conserve le placeholder '4242…' et la ligne 'Paiement chiffré · Stripe · 3D-Secure' — inaccessible flag OFF ; à purger si un implémenteur reçoit le mandat Stripe réel."
+  ],
+  "notes": "Interface parent (index.html, déjà câblée GOAL-SYNC par un autre implémenteur) respectée : ScreenLogin onNext=async(phone:string), ScreenOTP phone={authPhone} onNext=async(otp), ModalPayChoice flag=…, ModalPointsGain gain=… — mes composants sont compatibles avec l'existant ET les noms normatifs du contrat. Les erreurs de vérif sont gérées aux DEUX niveaux (parent toast + composant loading/erreur locale en défense en profondeur). Vérif babel repo impossible (@babel/preset-react absent) → smoke navigateur complet exécuté à la place, conformément au contrat §8. Screenshots : scratchpad/shots/01-login-filled.png, 02-otp-real-phone.png, 03-home-after-verify.png, 04-paychoice-flag-off.png."
+ },
+ {
+  "scope": "mobile:screens-main — écrans principaux app mobile (upsell panier, earn config réelle, fidélité points→€ continu, profil réel, queue_number, historique commandes API) — fichier OWNED unique : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-main.jsx",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-main.jsx",
+    "summary": "(1) FIX P1 upsell panier : slugs inexistants 'sides'/'drinks' remplacés par mix garanti frites(2)+boissons(3)+desserts(2) sur les slugs réels de data/menu.js. (2) Earn partout via config RÉELLE : helpers lcLoyaltyCfg/lcEarnRatio/lcRedeemRatio (supportent config objet OU fonction, fallback backend 1 pt/€ · 100 pts = 1 €) + formule Math.floor dans ScreenCart et ScreenOrders — plus aucun 10 pt/€ hardcodé. (3) ScreenLoyalty : onglet 'Récompenses' (catalogue mock 8 rewards) → 'Réductions' avec nouveau composant LoyaltyRedeemPanel (règle '100 pts = 1 €', −/+ et slider multiples de 100 de min_redeem_points à min(solde, plafond=solde arrondi), confirmation, redeem RÉEL POST /loyalty/redeem via LC.mobileApi.loyaltyRedeem avec erreurs 400/422 FR, états done/locked/non-connecté) ; solde réel via GET /api/profile (loyalty_points) si authed ; historique réel via LC.mobileApi.loyaltyHistory avec loading/vide FR + bandeau hors-ligne fallback local ; progression continue vers le prochain € (plus de progressToNext/rewards mock) ; onglet 'Mes points' dérive les paliers de config.tiers en '−X € en caisse' et bascule vers le panneau Réductions avec preset ; empty-state et bloc Infos dérivés de la config réelle ; hero LoyaltyQR laissé branché tel quel. (4) ScreenProfile : nom/téléphone réels via LC.mobileApi.profile() avec fallback storage.getAuth().phone, 'Ikyes B. / +33 6 42 79 98 84' et 'Visa ····4242' supprimés ('En caisse (CB ou espèces)'), carte fidélité alignée modèle continu (solde profil réel prioritaire). ScreenHome : avatar/aria-label 'Ikyes B.'/'IB' dérivés du prop name, fallback 'bienvenue'. (5) ScreenConfirm : affiche order.queue_number réel en grand ('N° d'appel en caisse') si présent, sinon comportement local V0 inchangé. (6) ScreenOrders : si authed → LC.mobileApi.orderHistory(50) avec mapRemoteOrderRow portant la sémantique regex FR du web orders.jsx:14-28 (annul→annulée, terminé/livré/récupéré/prêt/servi→livrée, sinon en cours), split actives/historique, états loading/hors-ligne/erreur FR, fallback data locale, cartes API non cliquables (pas de détail local), statut annulé en rouge, date par carte. Export LoyaltyRedeemPanel ajouté. Commentaires FR datés [GOAL-SYNC 2026-07-08] partout."
+   }
+  ],
+  "verifications": [
+   "Syntaxe : @babel/parser (plugin jsx) parse OK — mobile/screens-main.jsx 1709 lignes, 0 erreur (après fix d'un commentaire JSX invalide dans un array JS détecté par le parse).",
+   "Playwright standalone (node + playwright 1.58.2 du repo, MCP verrouillé par session parallèle) sur http://127.0.0.1:8087 : RESULT PASS — home→menu→panier(1 item Glace 3,50 €) : upsell 'Pour accompagner ?' 7 cartes DONT boissons (Coca-Cola 33cl, Coca Zero, Fanta Orange) ; bannière earn '+3 pts gagnés' = Math.floor(3,50 × ratio config 1) + '100 pts = 1 € de réduction en caisse'.",
+   "Écran fidélité : onglet renommé 'Réductions', panneau '100 PTS = 1 €' affiché, AUCUN nom du catalogue mock (Petite Frites offerte/Burger gratuit/Tacos M offert/Repas complet à 1 €/Cayenne −50) dans le DOM ; carte points '62 PTS · 62/100 pts · Plus que 38 pts pour 1 € de réduction supplémentaire' (modèle continu).",
+   "Profil : 'Ikyes B.'/'+33 6 42 79 98 84'/'····4242' absents du DOM rendu ; fallback 'Client Le Cayenne' + téléphone storage affichés ; 'Moyens de paiement — En caisse (CB ou espèces)'.",
+   "Console propre : 0 erreur JS ; seuls des 401 attendus (token factice injecté par le script de test → GET /api/profile et /loyalty/history réels refusent ; écrans dégradent proprement vers le mode local sans crash).",
+   "Screenshots capturés ET lus/analysés (01-home, 02-menu, 03-cart-upsell, 04-profile, 05-loyalty, 06-loyalty-reductions dans le scratchpad shots/) : layout intact, 100% FR, palette NOIR/ORANGE/JAUNE respectée, pas de raw label.",
+   "Scope : git diff --stat → seul mobile/screens-main.jsx modifié par moi (autres M du status = agents parallèles) ; frozen zones CLAUDE.md §7 intouchées ; 0 produit inventé (upsell = items du mirror canonique) ; pas de CDN ajouté ; pas de commit."
+  ],
+  "issues": [
+   "HORS SCOPE mobile/index.html:317 — ModalPointsGain gain={Math.round(lastOrder.total)} : devrait être Math.floor(total × lcEarnRatio()) pour cohérence contrat §2 (floor) ; à corriger par l'owner d'index.html.",
+   "HORS SCOPE mobile/screens-modals.jsx (~ligne 249, ScreenOrderDetail) — utilise encore LC.loyalty.config.earn_ratio || 10 avec Math.round : à aligner sur la config réelle + Math.floor par son owner.",
+   "HORS SCOPE mobile/data/loyalty.js — expose toujours REWARDS mock + progressToNext + earn_ratio ; ScreenLoyalty/ScreenProfile/ScreenCart n'en consomment plus les rewards, mais la purge/alignement (earn_ratio=1) appartient à l'agent data layer (au runtime le ratio observé était déjà 1).",
+   "HORS SCOPE components/WizardRedeem.jsx + route modale 'redeem' d'index.html — plus aucun point d'entrée depuis ScreenLoyalty (les 2 CTA passent par le panneau Réductions au redeem direct) ; le wizard catalogue-based devient du code mort à aligner ou retirer par son owner.",
+   "Backlog wireup : les commandes API dans ScreenOrders n'ont pas de fiche détail (cartes non cliquables by design — le détail local ne connaît pas les ids backend) ; un futur écran détail via GET /api/frontend/order/show/:id serait le complément naturel.",
+   "Note comportement : un token invalide/expiré (401, kind:'http') fait retomber silencieusement sur les données locales SANS bandeau hors-ligne (le bandeau est réservé à kind:'network' conformément au contrat §7) — assumé, mais un futur heal pourrait forcer un logout sur 401."
+  ],
+  "notes": "Le ratio earn observé au runtime est déjà 1 pt/€ (bannière '+3 pts' sur 3,50 €), signe que la data layer parallèle est alignée ou que mon fallback backend (1) s'applique — les deux chemins convergent sur la vérité contrat §2. LoyaltyRedeemPanel utilise loyalty_code du profil API en priorité (fallback account.loyalty_code local) et laisse api/client.js porter l'idempotence et le remap FR des 400/422. Screenshots de preuve : /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/shots/*.png."
+ },
+ {
+  "scope": "Mobile fidélité RÉELLE (data loyalty/user/orders fetch-first, QR signé serveur via useLoyaltyQR + LoyaltyQR SVG réel, tokens CSS manquants) — 6 fichiers OWNED uniquement, contrat CONTRACTS.md §2/§3/§7/§8 respecté.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+    "summary": "earn_ratio 10 hardcodé → CONFIG mutable défauts LIVE backend (earn 1 / redeem 100 / min 100 + alias points_per_euro), resync async via LC.mobileApi.loyaltyConfig() + event 'lc:loyalty-changed' ; balance/history fetch-first (profile + loyaltyHistory) avec fallback mock OFFLINE seulement (LC.loyalty.offline/source exposés) ; catalogue REWARDS 8 entrées SUPPRIMÉ (stubs vides compat) remplacé par helpers pointsToEuros/eurosToPoints/minRedeem/redeemablePoints/estimateEarn (FLOOR) + progressToNext re-basé sur CONFIG.tiers ; mint QR mock 'FK:'+code et fausse signature SHA-256 SUPPRIMÉS (generateSignedQR/generateMockQR retirés) ; historique mock re-dérivé à 1 pt/€ floor (balance 62), welcome bonus +25 et redeem fictif retirés."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/hooks/useLoyaltyQR.js",
+    "summary": "Mint-on-display RÉEL : POST /api/frontend/loyalty/qr via LC.mobileApi.loyaltyQr() ; état {token, expiresAt, secondsLeft, loading, error, loyaltyCode, refresh} ; re-mint auto à expiration (ticker setTimeout chaîné 1 s) + refresh() manuel + visibilitychange ; non-authed → error 'auth_required' sans appel réseau ; réseau down → error 'network' (pas de retry-storm)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/components/LoyaltyQR.jsx",
+    "summary": "Rendu RÉEL du token via window.qrcode vendorisé (createSvgTag cellSize 3, margin 0, scalable — contrat §3) dans un conteneur 208px, QRMock décoratif retiré ; compte à rebours FR « Expire dans X min Y s » + bouton « Actualiser » ; loyalty_code en clair + « Présentez ce QR ou dictez votre numéro en caisse » ; états FR propres hors-ligne (📡 Hors ligne + Réessayer) et connexion requise (🔒) ; testids conservés (loyalty-qr data-payload=token, loyalty-qr-countdown) + nouveaux (loyalty-qr-svg/refresh/error, loyalty-code-text, data-qr-state)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/user.js",
+    "summary": "Profil réel fetch-first via LC.mobileApi.profile() (Bearer) fallback storage/invité ; faux compte 'Ikyes B.' + carte Visa •4242 SUPPRIMÉS (payment_methods=[] tant que flag carte OFF) ; event 'lc:user-changed' ; API conservée (LC.user.current getter + greeting) + refresh()."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/orders.js",
+    "summary": "active/history réels fetch-first via LC.mobileApi.orderHistory() avec mapping OrderResource (statuts numériques 1/4/7/8/10/13/16/19/22 → in_progress/ready/delivered/cancelled + labels FR, PaymentStatus 5=paid), fallback mock OFFLINE seulement ; points mock re-dérivés à 1 pt/€ FLOOR (24→C-1234, 13/12/16/9/12 historiques) ; helpers/groupByDate/findById inchangés sur le live state ; event 'lc:orders-changed'."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/redesigns-styles.css",
+    "summary": "Bloc [GOAL-SYNC 2026-07-08] dans :root — redéfinition des 7 tokens consommés mais jamais définis (--shadow-1, --shadow-selected, --fs-micro/caption/body/base/h3) avec valeurs cohérentes --shadow-card/--shadow-cta et l'échelle typo de styles.css ; corrige le bug latent ombres perdues + font-size héritées sur toute la lib rdw-/rdl-."
+   }
+  ],
+  "verifications": [
+   "node --check OK sur data/loyalty.js + data/user.js + data/orders.js + hooks/useLoyaltyQR.js (SYNTAX-OK)",
+   "Sandbox Node vm (même harnais que ordersParity) : config {1,100,100,tiers}, pointsToEuros(347)=3.47, eurosToPoints(2)=200, redeemablePoints(347)=300, estimateEarn(12.50)=12, rewards=[], generateSignedQR/generateMockQR absents, balance mock 62 = Σ history, user 'Invité' 0 payment_methods — aucun crash en sandbox nue",
+   "curl GET /api/frontend/loyalty/config → {points_per_euro:1, points_for_1_euro_discount:100, min_redeem_points:100} : défauts client identiques (drift zéro)",
+   "Playwright réel :8087 (script scratchpad/verify-loyalty-qr.mjs) : 21/21 PASS — login RÉEL guest-signup (OTP 1234) → token Sanctum stocké ; écran fidélité → QR SVG réel présent (1 svg vendor qrcode), data-payload token 'lqr.eyJ2IjoxLCJjdXN0IjoxNzIs…', loyalty_code '1F533245' minté serveur affiché sous le QR, solde source='server', compte à rebours FR « Expire dans 4 min 56 s » qui décrémente, « Actualiser » re-mint un token réel",
+   "Hors-ligne simulé (page.route abort **/api/**) → data-qr-state='offline', message FR « Le QR fidélité nécessite une connexion. Tu peux dicter ton numéro en caisse. » + bouton « Réessayer » ; retour en ligne → re-mint 'ready' ; 0 erreur console applicative",
+   "Screenshots wallet analysés visuellement (Read) : 04-wallet-qr-real.png (QR dense scannable, copy FR, membre #FK-172, chip countdown) et 05-wallet-offline.png (état hors-ligne propre) — layout intact, zéro raw label ; fichiers dans /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/",
+   "Frozen zones CLAUDE.md §7 : aucun fichier touché hors des 6 OWNED (git diff --stat confirmé) ; aucun produit inventé ; UI 100% FR ; pas de CDN ; pas de commit"
+  ],
+  "issues": [
+   "P1 HORS-SCOPE (mobile/api/client.js ou backend) — login UI casse au verify : ScreenLogin normalise en AJOUTANT le 0 ('0699887766', screens-onboarding.jsx:210) mais POST /api/auth/guest-signup/verify n'accepte QUE sans 0 initial (curl prouvé : '699887766'+'1234' → token ; '0699887766' → « Identifiants invalides ou compte bloqué »). Fix recommandé dans client.js guestOtp/guestVerify : strip du 0 initial quand code '+33'. Le web (WEB/api.js:149) a le même risque. Mon e2e a dû faire le login réel via LC.mobileApi.guestVerify('699887766','1234') programmatique.",
+   "mobile/tests/ordersParity.spec.js (non-owned) : 4 FAILURES attendues — ligne 57 asserte earn_ratio===10 (désormais 1) et lignes 90-92 utilisent Math.round au lieu de Math.floor (16,80→17≠16 ; 24,70→25≠24 ; 12,50→13≠12). À mettre à jour : ratio===1 + Math.floor.",
+   "mobile/tests/menu.spec.js : 8 FAILURES pré-existantes vs nouveau canon (4 crudités, 10 suppléments, Menu Enfant Chicken Burger) — scope de l'implémenteur menu.js, PAS causées par mes fichiers.",
+   "screens-main.jsx:1311 (non-owned) : copy empty-state « reçois {config.welcome_bonus} pts offerts » affiche désormais « 0 pts offerts » (welcome_bonus=0 honnête, aucun trigger backend) — retirer la phrase. Idem ScreenLogin benefit « +25 pts dès la 1ʳᵉ commande » (screens-onboarding.jsx).",
+   "screens-main.jsx ScreenLoyalty (non-owned) : le div décoratif du hero (position:absolute inset:0) intercepte les clics pointeur sur le chip countdown — « Actualiser » n'est cliquable que via JS. Ajouter pointerEvents:'none' au div décoratif.",
+   "screens-main.jsx:940-942 et :985 (non-owned) : profil hardcodé 'Ikyes B.' / '+33 6 42 79 98 84' / 'Visa ····4242' en JSX — à brancher sur LC.user.current (mon user.js expose désormais le profil réel).",
+   "Specs Playwright legacy loyalty (tests/mobile-e2e, ~20 specs, non-owned) : reposaient sur le QR mock FK:/generateSignedQR et le catalogue REWARDS — à migrer vers le QR réel 'lqr.' + modèle points→€.",
+   "LC.dev.redeemReward / earnPoints('welcome_bonus') (dev-helpers.js, non-owned) deviennent no-op propres (rewardById→null, méthode welcome retirée — guards existants vérifiés) ; les flows de démo redeem devront passer par LC.mobileApi.loyaltyRedeem réel."
+  ],
+  "notes": "Toutes les valeurs fidélité viennent maintenant du backend (défauts alignés LIVE 1/100/100 + resync runtime GET /loyalty/config) ; le QR mobile est le token HMAC serveur 'lqr.…' TTL 300 s rendu par la lib qrcode vendorisée locale (zéro CDN), le format legacy 'FK:' a disparu du code. Les données mock ne servent plus que de fallback hors-ligne, re-dérivées à 1 pt/€ floor. Preuves e2e : scratchpad/verify-loyalty-qr.mjs (21/21) + screenshots 01→06 dans /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/e15b22af-f301-4c24-a1a6-c9fd4a2b10bf/scratchpad/. Compat consommateurs non-owned préservée (WizardRedeem/dev-helpers null-guardent les stubs rewards ; getters account/history/_replaceAccount/_rehydrate inchangés)."
+ },
+ {
+  "scope": "Vérificateur backend (étape 2) — tests Stripe/Loyalty, frozen diff, non-régression payload borne, NF525 append-only, gate parity. Fichiers éditables : tools/parity/** + StripeWebhookUnconfiguredTest.php uniquement (aucune édition nécessaire).",
+  "status": "done",
+  "changes": [],
+  "verifications": [
+   "(1a) php artisan test --filter=StripeWebhookUnconfiguredTest → 3/3 PASS (503 JSON sur secret vide, 503 sur option manquante, guard non déclenché avec secret) en 0.75s — aucun fix nécessaire.",
+   "(1b) php artisan test --filter=Stripe → 34/34 PASS en 4.03s (StripeChargeRefundedCascadeSentinelTest, StripeWebhookIdempotencyTest, WebhookCsrfBareRouteExceptionTest, WebhookRouteHardeningTest, etc.).",
+   "(2) php artisan test --filter=Loyalty → 83/83 PASS en 14.37s — suite fidélité existante 100% verte, aucun test modifié (RedeemTest, RefundLoyaltyTryCatchHardenedSentinelTest, LoyaltyCheckIdorTest, LoyaltyRegisterNoLeakTest, LoyaltyQrSigningSentinelTest 9/9 incl. boot guard prod, etc.).",
+   "(3a) Frozen diff git diff --stat 58e852697..HEAD (HEAD=0dac1597349) sur les 11 chemins frozen → 0 ligne, sortie vide, exit 0.",
+   "(3b) git status --porcelain sur les mêmes chemins → 1 fichier non-committé détecté : resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue (+6 lignes, garde $te anti-warnings i18n, daté [i18n-clean 2026-07-08]) — PAS dans la liste frozen stricte CLAUDE.md §7 (Wizard/App/Upsell seulement) mais dans le path kiosk exigé propre par la mission. NON touché par moi, reporté en issues[].",
+   "(4) Non-régression payload borne : tools/parity/extract-canonical.sh /tmp/menu-recheck.json → 9 catégories / 42 items ; diff structurel Node vs catalog-canonical.json (server_time/is_rush exclus) → core-fields (id,name,flat_price,category_id,is_available) IDENTIQUES, catégories identiques, 0 item manquant/extra/prix divergent → NONE.",
+   "(5) NF525 tinker : audit_logs count=4930 (≥4930 ✓), max_id=4941 (≥4941 ✓), min_id=1 ; z_reports count=25 (≥25 ✓), max_id=27. Comptes exactement aux baselines → aucune suppression depuis la baseline (l'écart count/max_id de 11 est pré-existant à la baseline, ids auto-increment sautés).",
+   "(6) node tools/parity/check-parity.mjs --surface=all → WEB VERT 0 divergence + MOBILE VERT 0 divergence → GATE VERT exit 0. Rapports écrits : reports/goal-web-app-sync/parity-report-web.json et parity-report-mobile.json."
+  ],
+  "issues": [
+   "Working tree non propre sur le path kiosk exigé : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue a +6 lignes non-committées (garde this.$te dans text() pour supprimer ~194 warnings vue-i18n sur l'idle, commentaire FR daté 2026-07-08). Fichier hors liste frozen stricte §7 mais dans le périmètre 'git status vide' de la mission — probablement l'œuvre d'un autre implémenteur de la vague ; à faire committer/valider par l'orchestrateur, je n'y ai pas touché."
+  ],
+  "notes": "Aucune modification de code nécessaire : tous les gates sont verts en l'état. HEAD vérifié = 0dac1597349d46f82f3bfdaaf1eb0ef4fa4566dd. Le token Sanctum 'parity-extract' créé par extract-canonical.sh a été révoqué automatiquement (trap EXIT du script). /tmp/menu-recheck.json laissé en place comme preuve."
+ },
+ {
+  "scope": "Intégrateur-vérificateur WEB (étape 2 goal-web-app-sync) : gate parity web, tests node, smoke Playwright complet :8096, cohérence inter-fichiers /Users/1millnonstop/Downloads/web",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "summary": "Galette Cayenne is_spicy:true → false (alignement fixture canonique, seule divergence restante du gate parity)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/tests/node/menu-pricing.test.mjs",
+    "summary": "2 assertions périmées adaptées au NOUVEAU canon sans affaiblissement : test sauces réécrit (jamais facturées, payload legacy 2 sauces = 0 surcoût, pool 12 sauces à 0 €) ; combiné Méga recalculé 13,90 € (1 sauce incluse + 0,90 + 2,50 + 2,50)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/wizard-v2.jsx",
+    "summary": "Fix intégration contrat §5 : sauce_default (Cayenne « Sauce fromagère maison ») désormais PRÉ-sélectionnée dans le step Sauce — comparaison normalisée préfixe « Sauce  » (pool = « Fromagère maison »), même norm() que api.js"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+    "summary": "WebLoyalty accepte onLogout et le passe à LoyaltyProfileTab (remplace le no-op ()=>{} — issue connue W:account-profile)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/index.html",
+    "summary": "App passe onLogout réel à WebLoyalty : setIsAuth(false) + retour accueil (le token est déjà purgé par AccountDangerZone via LC.api.logout)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/pw.goal-sync.config.js",
+    "summary": "Nouvelle config Playwright dédiée (testMatch goal-sync-smoke-2026-07-08.spec.js, baseURL :8096, channel chrome, workers 1)"
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/web/goal-sync-smoke-2026-07-08.spec.js",
+    "summary": "Smoke complet : accueil → fidélité gate non-authed → login OTP réel (0699xxxxxx + code) → solde/QR lqr./identifiant/historique → menu 38 items + 7 nouvelles boissons → wizard Tacos M (crudités ×4 dont Oignons cuits, 1 sauce max refus 2e) → wizard Cayenne (Pain pré-sélectionné + Fromagère maison pré-sélectionnée) → panier → checkout → paiement flag OFF (counter uniquement, 0 Stripe/wallet dans le DOM, LC.api.config.onlineCardEnabled===false) + console 0 erreur non-gérée + 14 captures"
+   }
+  ],
+  "verifications": [
+   "Gate parity : node testttt/tools/parity/check-parity.mjs --surface=web → VERT 0 divergence (était ROUGE 1 : Galette Cayenne is_spicy)",
+   "node /Users/1millnonstop/Downloads/web/tests/node/menu-pricing.test.mjs → 8/8 pass (était 6/8, 2 assertions multi-sauces périmées adaptées au canon 1-sauce-max)",
+   "node /Users/1millnonstop/Downloads/web/tests/node/loyalty-redeem.test.mjs → 8/8 pass (aucune modif nécessaire : floor + capri 1.50 déjà conformes)",
+   "Smoke Playwright (config pw.goal-sync.config.js, NODE_PATH=testttt/node_modules, :8096) → 1 passed : POST guest-signup/otp 200, verify 201, POST /loyalty/qr token ^lqr\\. vérifié en réseau, GET /loyalty/history 200, SVG QR lib vendorisée rendu, 38 résultats menu, 7 boissons canoniques visibles, « Maximum 1 sélections » affiché au 2e clic sauce, 4 crudités (Salade/Tomate/Oignon/Oignons cuits), Pain + Fromagère maison pré-sélectionnés (wizard Cayenne), paiement = « Payer sur place » SEUL (0 « Carte bancaire (en ligne) », 0 Apple/Google Pay, 0 Stripe/3D-Secure), console 0 erreur non-gérée",
+   "14 captures analysées visuellement (Read tool) dans /Users/1millnonstop/Downloads/web/reports/goal-sync-2026-07-08/ — wallet QR avec compte à rebours 5:00 + identifiant réel + bouton Actualiser ; total panier 14,30 € exact (7,40 + 6,90) ; earn +14 pts = floor ; UI 100% FR",
+   "Cohérence inter-fichiers : tous les api.* appelés par les .jsx existent dans les exports api.js (loyaltyConfig/History/Redeem/Qr/Register, profile, guestOtp/Verify…) ; DRINK_ID_TO_SLUG contient les 7 nouvelles saveurs ; index.html ordre scripts menu.js→loyalty.js→api.js→vendor/qrcode.js→JSX correct ; meta feature-online-card=0 présent ; WebQR({onCode}) conforme contrat §3 (mint-on-display, TTL, re-mint, aucun CDN, pas de format FK:)",
+   "Frozen zones : AUCUN fichier backend/borne/caisse touché — toutes les écritures dans /Users/1millnonstop/Downloads/web ; aucun commit effectué"
+  ],
+  "issues": [
+   "BACKEND (pas mon périmètre) : les throttles numériques guest-signup (routes/api.php:196-205, throttle:5,1 et throttle:3,5) partagent UN SEUL bucket par IP (signature sha1(domain|ip) identique pour toutes les routes à throttle numérique) → /verify 429 après quelques requêtes OTP/config du même client. Contourné dans le run via RateLimiter->clear(sha1('|127.0.0.1')) ; recommander des limiteurs NOMMÉS distincts.",
+   "DEAD CODE data/menu.js:512 : branche fritesSauceIds +0,50 €/sauce au-delà de 1 encore présente dans priceFor alors que wizard-v2.jsx passe toujours [] (cascade frites = instruction gratuite, contrat §5) — inoffensif aujourd'hui, à purger dans une passe future (probablement idem miroir mobile).",
+   "PRÉ-EXISTANT : index.html charge React/ReactDOM/Babel depuis unpkg.com + Google Fonts (architecture historique du standalone) — le contrat interdit les CDN pour les AJOUTS (respecté : qrcode.js vendorisé) mais l'app entière reste dépendante du réseau externe.",
+   "PRÉ-EXISTANT (W1 P3 connu) : api.js:21 clé API en dur en fallback dans un JS public.",
+   "@babel/preset-react absent de testttt/node_modules → vérification JSX statique impossible ; le smoke navigateur (contrat §8, alternative autorisée) a servi de gate de syntaxe pour screens.jsx/wizard-v2.jsx modifiés."
+  ],
+  "notes": "Divergence structurelle frites (2 items + styles vs 6 SKU canoniques) confirmée ACCEPTÉE par le gate (atteignabilité des 6 prix). Les runs du smoke nécessitent un clear préalable du bucket throttle IP (commande tinker dans les issues) sinon 429 sur guest-signup/verify. Recette d'exécution : cd testttt && NODE_PATH=$PWD/node_modules PLAYWRIGHT_BASE_URL=http://127.0.0.1:8096 node_modules/.bin/playwright test --config=/Users/1millnonstop/Downloads/web/pw.goal-sync.config.js"
+ },
+ {
+  "scope": "Étape 2 — intégrateur-vérificateur MOBILE (goal-web-app-sync WF-2) : gate parity mobile, specs data (menu + ordersParity, double vérif miroir web), smoke Playwright complet 390x844 sur :8087 avec backend réel :8766, réconciliation interfaces (ScreenLogin/OTP, LC.mobileApi, LC.config, tokens CSS), suite tests/mobile-e2e 25 specs adaptée au nouveau modèle réel.",
+  "status": "done",
+  "changes": [
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+    "summary": "Galette Cayenne : is_spicy:true retiré (canon is_spicy=false) — seule divergence du gate parity mobile, désormais VERT 0 divergence."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/tests/menu.spec.js",
+    "summary": "Verrous nouveau canon ajoutés (mobile ET miroir web /Users/1millnonstop/Downloads/web/data/menu.js) : 38 items/9 cats, 15 boissons (7 nouvelles ids 1009-1015 @1,90), PAINS 2, EXTRA_MEAT_PRICE 2.50 + 16 items has_extra_meat, BOL_SAUCES 2, SUPPLEMENTS_BOLS 10 avec sb-gratine 2,00 riz_only, Boursin galette_excluded/Boule gratinée galette_only, Tacos M/L has_crudites, Cayenne sauce_default non verrouillée, Galette Cayenne is_spicy=false, is_halal=false partout, cat 6 wizard bol, priceForDrinkAddon capri 1,50 (FIX P0) + coca-cherry 1,90. PASSE sur les 2 miroirs."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/tests/ordersParity.spec.js",
+    "summary": "Verrou earn migré round(total×10) → floor(total×1) (canon backend 1 pt/€ FLOOR, contrat §2) + check points_per_euro=1. PASSE."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/api/client.js",
+    "summary": "UI 100% FR : mapping 429 → « Trop de tentatives… » et 401/419 → « Session expirée… » dans req() (le backend renvoie Too Many Attempts./Unauthenticated. en EN, affichés bruts avant)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-main.jsx",
+    "summary": "Carte fidélité : le n° membre mock FK-12345 s'affichait même connecté en ligne — profil API prioritaire (CLIENT-<id> réel + loyalty_code serveur), mock uniquement en fallback hors-ligne. Vérifié visuellement (capture 16 : #CLIENT-180)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/styles.css",
+    "summary": "Token --green-light défini (#ECFDF5) — utilisé par le bandeau promo panier avec seulement un fallback inline avant. Seul token manquant restant : --dc-inv-zoom, posé au runtime via setProperty (design-canvas, non manquant)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/Le Cayenne - Prototype.html",
+    "summary": "Prototype réparé : ne chargeait plus AUCUNE couche data depuis la refonte (LC.menu jamais peuplé → page morte, 3 specs red-d rouges). Ajout bloc aligné index.html : LC.config, api/storage+client, data/*, vendor/qrcode, hooks, components, screens-item-steps."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
+    "summary": "testIgnore .claude/worktrees + node_modules + vendor : la découverte descendait dans des clones worktree avec leur propre node_modules (« Requiring @playwright/test second time » = suite entière inrunnable)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/utils/realAuth.js",
+    "summary": "NOUVEAU helper auth réelle : guest-signup OTP+verify sur :8766, token Sanctum réel mis en cache par worker (1 verify/run — évite le throttle 429), storage.setAuth réel + reload."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
+    "summary": "Verrou DEC-02 earn_ratio 10 → 1 (+ points_per_euro=1) — pointe désormais la valeur RÉELLE backend."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
+    "summary": "Réécrit : welcome_bonus retiré des EARN_METHODS par design (aucun trigger backend) — verrouille le refus propre de welcome_bonus + earn local kiosk wired (purchase_kiosk_phone) avec entrée historique surface kiosk."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
+    "summary": "Réécrit au QR RÉEL : auth réelle → payload lqr. (legacy FK: interdit), Actualiser re-mint → payload change, countdown FR re-anchoré ~5 min."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
+    "summary": "Réécrit au modèle CONTINU (LoyaltyRedeemPanel) : règle 100 pts = 1 €, pas de 100 clampé au solde, confirm → exactement 1 POST /loyalty/redeem réel, erreur FR propre sur non-2xx, ZÉRO débit client (backend SSOT)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
+    "summary": "Réécrit aux paliers config réelle : 100/250 déverrouillés à 347 pts avec UTILISER, 500 verrouillé « 153 pts manquants » SANS bouton, force-click sans effet, UTILISER présélectionne le montant dans le panel."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
+    "summary": "Fix normalisation innerText du label avec <br/> (« Lier carteplastique ») : regex \\s* + assertion aria-label."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
+    "summary": "Réécrit : la course est arbitrée serveur (idempotency + kill-switch) — verrouille 2 appels concurrents api.loyaltyRedeem ⇒ 2 rejets typés {kind:'http'} sans crash, solde local intact, aucune entrée redeem fabriquée."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
+    "summary": "Adapté : le token signé lqr. ne doit JAMAIS être du texte sélectionnable (attribut data uniquement) ; le loyalty_code humain est volontairement affiché (contrat §3)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
+    "summary": "Adapté : countdown FR « Expire dans X min » = mitigation TTL serveur 300 s (format ancien m:ss obsolète)."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
+    "summary": "Réécrit : double-tap sur Confirmer ⇒ exactement 1 POST redeem (garde busy/disabled), zéro débit client."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
+    "summary": "Réécrit : Annuler en phase confirmation ⇒ retour sélection, ZÉRO requête réseau, zéro débit."
+   },
+   {
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+    "summary": "Port 8081 → 8087 (port dédié Cayenne) + null-guard LC.loyalty.rewards (stub [] du catalogue supprimé)."
+   }
+  ],
+  "verifications": [
+   "Gate parity : node tools/parity/check-parity.mjs --surface=mobile → VERT 0 divergence (était ROUGE 1 : Galette Cayenne is_spicy)",
+   "node mobile/tests/menu.spec.js → ALL CHECKS PASSED sur MOBILE ET miroir WEB /Users/1millnonstop/Downloads/web/data/menu.js (double vérification conservée + ~40 nouveaux verrous canon)",
+   "node mobile/tests/ordersParity.spec.js → ALL PARITY CHECKS PASSED (earn floor 1 pt/€, ratio 1, points_per_euro 1)",
+   "Smoke Playwright complet (390x844, php -S :8087 réutilisé, backend réel :8766) VERT 0 failure ×2 runs : splash→onboarding→login 0699xxxxxx→OTP (numéro affiché = saisi, code 1234 accepté)→home→menu 38 produits + Boissons 15 créations→wizard Tacos M (radio 1 sauce prouvé par 2 taps, 4 crudités dont Oignons cuits, 3 ON défaut)→Cayenne (Pain/Galette, Pain défaut, fromagère pré-sélectionnée)→Bol Riz (pool 2 sauces bol exactes, Gratiné sélectionnable)→Bol Frites (Gratiné ABSENT riz_only)→panier upsell 7 suggestions→ModalPayChoice SANS option CB ni copy Stripe + mention « paiement en ligne bientôt »→payer sur place→POST commande 201→ScreenConfirm n° d'appel réel A0035 (regex ^A\\d{4}$)→fidélité QR réel lqr. (POST /qr 200, SVG lib locale, countdown FR, loyalty_code en clair, GET /history 200, pas de bandeau hors-ligne)→profil téléphone réel, pas de Ikyes ; console 0 pageerror + 0 console.error",
+   "18 captures dans /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/captures-mobile/ (01-splash → 18-profile) ; 14-pay-choice et 16-loyalty-qr inspectées visuellement (Read) : modale sans CB, QR réel + #CLIENT-180 + countdown",
+   "Interfaces : ScreenLogin({onNext(phone),onBack}) / ScreenOTP({phone,onNext(otp),onBack}) alignés index.html ; les 12 accès consommateurs LC.mobileApi (guestOtp/guestVerify/isAuthed/logout/profile/loyaltyConfig/loyaltyHistory/loyaltyQr/loyaltyRedeem/resolveOrderItems/placeOrder/orderHistory) tous couverts par les exports client.js ; LC.config posé avant tout script et lu par client.js (apiBase/apiKey/branchId, même clé que web api.js) + 8 lectures onlineCardEnabled ; diff tokens CSS utilisés/définis : plus aucun manquant (--green-light défini, --dc-inv-zoom runtime)",
+   "Suite tests/mobile-e2e : 25/25 PASSED (était inrunnable puis 15 failed/10 passed) — inclut QR réel via auth réelle guest-signup (utils/realAuth.js, cache token anti-throttle)",
+   "Syntaxe : node --check OK sur client.js/storage.js/data/*.js + realAuth.js + les 13 specs modifiés ; JSX vérifiés par smoke navigateur (preset-react absent du repo — alternative §8 du contrat) ; probe chargement page : 0 pageerror/console.error",
+   "/api/profile vérifié curl : renvoie id/loyalty_code/loyalty_points (base du fix CLIENT-<id>)"
+  ],
+  "issues": [
+   "HORS SCOPE (constat, rien touché) : mobile/index.html et Prototype.html chargent React/Babel/fonts depuis unpkg/googleapis (CDN) — architecture loader PRÉ-EXISTANTE du prototype, contraire à l'esprit no-CDN du contrat §3 (la lib QR, elle, est bien vendorisée locale). À trancher par l'orchestrateur (vendoriser React+Babel ou builder).",
+   "Backend (fichier non touché — hors périmètre) : le guest-signup crée les comptes avec name='Guest User' (EN) — l'UI mobile masque via fallback « Client Le Cayenne », mais le nom EN partirait sur les tickets/commandes backend.",
+   "Throttle Laravel sur /api/auth/guest-signup/verify : ~quelques essais/min/IP — des runs e2e rapprochés peuvent prendre 429 ; utils/realAuth.js retry 10×10 s et met le token en cache par worker, mais des relances en boucle très serrées du smoke standalone peuvent encore tomber dessus (attendre ~1 min).",
+   "WizardRedeem.jsx (mobile/components) reste un stub legacy du catalogue mock — plus AUCUN appelant (go('redeem') introuvable) depuis LoyaltyRedeemPanel ; suppression possible dans une passe de nettoyage, non faite ici (scope-minimal).",
+   "Miroirs web+mobile cohérents entre eux : la crudité « Oignons cuits » est opt-in (pas default:true) alors que Salade/Tomate/Oignon sont ON par défaut — la fixture ne porte pas de flag default, choix conservé à l'identique des 2 miroirs (le smoke le verrouille explicitement 3/4 ON)."
+  ],
+  "notes": "Ordre de preuve final (tout re-exécuté après la dernière édition) : parity VERT → menu.spec VERT (2 miroirs) → ordersParity VERT → smoke VERT (0 erreur console, commande réelle #A0035, QR lqr., captures 01-18) → mobile-e2e 25/25. Les specs réécrits verrouillent le NOUVEL état sans affaiblir : le fallback local mock reste couvert (specs 01/02/04/05/09/A4/A5 tournent avec token invalide ⇒ chemin dégradé local), et les invariants renforcés sont « le client ne débite JAMAIS les points » + « 1 seul POST redeem par confirmation » + « jamais de QR legacy FK: ». Deux réparations d'infra étaient nécessaires pour rendre la suite exécutable : testIgnore des worktrees (double-require @playwright/test) et résurrection du Prototype.html (couche data absente depuis la refonte)."
+ }
+]

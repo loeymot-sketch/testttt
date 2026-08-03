@@ -42,12 +42,12 @@
                                     v-if="parseInt(order.status) !== parseInt(enums.orderStatusEnum.REJECTED) && parseInt(order.status) !== parseInt(enums.orderStatusEnum.CANCELED)">
                                     <OrderDetailsMapComponent :order="order" :branch="orderBranch" />
                                     <router-link
-                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]"
+                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]"
                                         :to="{ name: 'frontend.chat', query: { id: orderBranch.id } }">
                                         <i class="lab lab-messages-2 font-fill-primary lab-font-size-16"></i>
                                     </router-link>
                                     <a :href="'tel:' + orderBranch.phone"
-                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]">
+                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]">
                                         <i class="lab lab-call-calling font-fill-primary lab-font-size-16"></i>
                                     </a>
                                 </div>
@@ -89,7 +89,7 @@
                             <li class="flex items-center gap-2" v-else>
                                 <span class="capitalize text-sm leading-6">{{ $t('label.method') }}:</span>
                                 <span v-if="order.transaction" class="capitalize text-sm leading-6 text-heading">
-                                    {{ order.transaction.payment_method }} ({{ order.transaction.transaction_no }})
+                                    {{ paymentMethodLabel(order.transaction.payment_method) }} ({{ order.transaction.transaction_no }})
                                 </span>
                                 <span v-else class="capitalize text-sm leading-6 text-heading">
                                     {{ enums.paymentTypeEnumArray[order.payment_method] }}
@@ -226,9 +226,11 @@ import FrontendOrderReceiptComponent from "./FrontendOrderReceiptComponent";
 import activityEnum from "../../../../enums/modules/activityEnum";
 import sourceEnum from "../../../../enums/modules/sourceEnum";
 import posPaymentMethodEnum from "../../../../enums/modules/posPaymentMethodEnum";
+import { paymentMethodLabelMixin } from "../../../../helpers/paymentMethodLabel";
 
 export default {
     name: "OrderDetailsComponent",
+    mixins: [paymentMethodLabelMixin],
     components: { OrderDetailsMapComponent, LoadingComponent, OrderStatusComponent, FrontendOrderReceiptComponent },
     data() {
         return {
@@ -275,6 +277,10 @@ export default {
                 },
             },
             activeOrder: {},
+            // Synchro affichage client (fraîcheur seulement — backend = source de vérité).
+            // Polling léger pour refléter PENDING→PREPARED→DELIVERED sans rechargement manuel.
+            pollIntervalId: null,
+            pollIntervalMs: 15000,
         };
     },
     computed: {
@@ -298,19 +304,60 @@ export default {
         },
     },
     mounted() {
-        this.loading.isActive = true;
         if (this.$route.params.id) {
             this.loading.isActive = true;
             this.$store.dispatch("frontendOrder/show", this.$route.params.id).then(res => {
                 this.loading.isActive = false;
+                // Démarre le rafraîchissement de statut après le premier affichage.
+                this.startStatusPolling();
             }).catch((error) => {
                 this.loading.isActive = false;
             });
         }
     },
+    beforeUnmount() {
+        // Pas de fuite d'interval : on arrête le polling au démontage.
+        this.stopStatusPolling();
+    },
     methods: {
         orderStatusClass: function (status) {
             return appService.orderStatusClass(status);
+        },
+        isTerminalStatus: function (status) {
+            const terminal = [
+                this.enums.orderStatusEnum.DELIVERED,
+                this.enums.orderStatusEnum.CANCELED,
+                this.enums.orderStatusEnum.REJECTED,
+                this.enums.orderStatusEnum.RETURNED,
+            ];
+            return terminal.includes(parseInt(status));
+        },
+        startStatusPolling: function () {
+            // Défensif : pas d'ID ou interval déjà actif => on ne (re)démarre pas.
+            if (!this.$route.params.id || this.pollIntervalId !== null) {
+                return;
+            }
+            // Commande déjà dans un état terminal (livrée/annulée/rejetée/retournée)
+            // => inutile de rafraîchir, le statut ne changera plus.
+            if (this.isTerminalStatus(this.order.status)) {
+                return;
+            }
+            this.pollIntervalId = setInterval(() => {
+                this.$store.dispatch("frontendOrder/show", this.$route.params.id).then(() => {
+                    if (this.isTerminalStatus(this.order.status)) {
+                        this.stopStatusPolling();
+                    }
+                }).catch(() => {
+                    // Fraîcheur d'affichage uniquement : on ignore une erreur transitoire,
+                    // le prochain tick réessaiera. Aucun impact fiscal/stock/argent.
+                });
+            }, this.pollIntervalMs);
+        },
+        stopStatusPolling: function () {
+            if (this.pollIntervalId !== null) {
+                clearInterval(this.pollIntervalId);
+                this.pollIntervalId = null;
+            }
         },
         changeStatus: function (status) {
             appService.cancelOrder().then((res) => {

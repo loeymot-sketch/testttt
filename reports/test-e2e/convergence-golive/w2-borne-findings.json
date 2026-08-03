@@ -1,0 +1,74 @@
+{
+  "surface": "borne",
+  "cycle": 1,
+  "head": "16ee95d11 (wip golive-w1 baseline, references consolidated fd6193215)",
+  "server": "http://127.0.0.1:8766",
+  "viewport": "1080x1920 headless chrome (Playwright MCP, dedicated tab)",
+  "gates": {
+    "vitest": {
+      "cmd": "npx vitest run tests/js/eventContractChannelRefcount.spec.js tests/js/kioskWizardOnionCuit.spec.js",
+      "eventContractChannelRefcount": "8 passed",
+      "kioskWizardOnionCuit": "8 passed",
+      "total": "16 passed / 0 failed (re-run x2, stable)"
+    }
+  },
+  "validations": [
+    {
+      "id": "S2.1",
+      "title": "Flux complet borne -> commande Plan B",
+      "verdict": "PASS",
+      "evidence": "UI render clean (idle attract carousel 01-idle.png, Boissons cat 02-categories.png, Tacos M wizard multi-step 03-wizard-step1.png; 0 raw label, branding intact). Order placement via borne real contract (kiosk:order Sanctum token 6530|... on machine ULTRA-E2E-BORNE, branch 1): POST /api/frontend/order/quote -> 200 (Tacos M 6,90 + Hawai 1,90 = 8,80 SSOT), POST /api/frontend/order/ -> HTTP 201 order #5547 queue A0003, order_type=10 takeaway, status=4 Acceptee (auto-accept), payment_status=15 PENDING_COUNTER + payment_pending_counter=true (Plan B counter), source_surface=kiosk, 0 crash. composition_snapshot: Viande1=Poulet marine (v43), Sauce=Algerienne (v311), prices frozen 0.",
+      "notes": "order_type=25 (KIOSK dine-in) rejected 422 'service sur place desactive en V1' = correct V1 takeaway-only invariant; retried order_type=10 -> 201."
+    },
+    {
+      "id": "S2.2",
+      "title": "Oignon cuit borne: defaut OFF, exclusivite cru<->cuit 2 sens, snapshot 0 EUR",
+      "verdict": "PASS",
+      "evidence": "Behaviour proven by kioskWizardOnionCuit.spec.js (8/8 green): initGarnitures -> Oignons cuits (60) starts false while cru/salade true; updateSelection cuit->decoche cru AND cru->decoche cuit (both directions); KioskStepGarnitures local exclusivity emits exclusive map; payant extras untouched. Snapshot 0 EUR proven on SELF-created order #5550 (Cayenne, A0006): composition_snapshot.extras = Salade(0), Tomate(0), 'Oignons cuits' unit_price=0 line_total=0; raw Oignon(51) ABSENT (exclusivity applied). Corroborated by real order #5534 extra_id 408 'Oignons cuits' 0 EUR."
+    },
+    {
+      "id": "S2.3",
+      "title": "Boisson borne -> cuisine: BOISSON: Hawai 33cl + KDS card",
+      "verdict": "PASS",
+      "evidence": "Kitchen ESC/POS decoded from GET /api/frontend/order/show/{id}/escpos?ticket=kitchen (HTTP 200). Formule order #5537 renders exactly '** BOISSON: Hawai 33cl' (extractFormuleDrinkLines, KitchenTicketSymbolicFormatter:321). Standalone order #5547 renders '1 x Hawai 33cl' full name (OrderReceiptEscPosRenderer:303) - fix confirmed: no cryptic 'HAW', no 'Fanta Hawai'. Root fix isDrinkItem (KitchenTicketSymbolicFormatter:277-307) matches hawa[iï] + volumetric 33cl. KDS card = JS twin kdsCustomization.js:50 DRINK_NAME_RE includes hawa[iï] + :51 DRINK_VOLUME_RE 33cl (same regex), order #5547/#5550 status=4 board-released -> appears on KDS with drink categorized.",
+      "kitchen_ticket_maxwidth": 32
+    },
+    {
+      "id": "S2.4",
+      "title": "Ticket serveur/caisse: A REGLER EN CAISSE gras, 0 ligne paiement, 32 col",
+      "verdict": "PASS",
+      "evidence": "GET /api/frontend/order/show/5547/escpos?ticket=client HTTP 200 (endpoint fires, orderId in URL). Decoded bytes: '** A REGLER EN CAISSE **' present and BOLD (preceding bytes 1B 61 01 1B 45 01 = ESC center + ESC E bold ON). ZERO payment/settlement lines (no PAIEMENT / Especes / Carte / Rendu / Recu); totals block ends A REGLER TTC 8,80 then A REGLER EN CAISSE. MAXW=32 (all lines <= 32 columns, 58mm width-safe)."
+    },
+    {
+      "id": "S2.5",
+      "title": "Synchro dispo refcount (fd6193215) + Hawai naming",
+      "verdict": "PASS",
+      "evidence": "Refcount fix proven by eventContractChannelRefcount.spec.js (8/8 green): two subscribers on branch.1 share ONE Echo channel; first (waiting screen) unsubscribe does NOT leave and keeps shell listeners; last unsubscribe leaves once; double-unsubscribe idempotent; re-subscribe rebuilds. Wiring confirmed in real components: KioskAppComponent.vue (onEvents:546 / _eventSub.unsubscribe:815) and KioskWaitingComponent.vue (onEvents:272 / _eventSub.unsubscribe:303) both use the refcounted eventContract - NO raw Echo.leave anywhere -> unmounting the waiting screen cannot kill the shell's branch.1 availability subscription. Naming: DOM drinks category shows 'Hawai 33cl' (item 124), hawaiRaw=['Hawai'], 0 'Fanta Hawai' in DOM; 0 DB items 'Fanta Hawa'; only a seeder comment documents the rename."
+    }
+  ],
+  "environmental_observations": [
+    {
+      "severity": "INFO",
+      "note": "STAFF_ONLY_MODE=true + a persistent authenticated staff POS session in the shared browser bounces the kiosk to /admin/pos on order composition (staff-landing). Real borne runs on a machine token (never staff-authed), so this is expected product behaviour, but it blocked pure UI-driven order completion; transactional attestation done via the borne's real backend contract (kiosk:order token API + DB + escpos endpoint = SSOT). Not a borne code defect."
+    },
+    {
+      "severity": "INFO",
+      "note": "1 console error on /kiosk/idle: 403 @ /api/broadcasting/auth (kiosk private-channel websocket auth not wired in this local env). Independent of the refcount fix (client-side channel bookkeeping, proven by unit tests + component wiring). Verify Reverb/Pusher broadcasting auth before prod for live availability push."
+    },
+    {
+      "severity": "INFO",
+      "note": "Shared Playwright browser is co-driven by parallel Wave-2 surface agents (KDS/caisse on tab 0); worked around by using a dedicated kiosk tab."
+    }
+  ],
+  "artifacts": {
+    "captures": [
+      "reports/test-e2e/convergence-golive/w2-borne/01-idle.png",
+      "reports/test-e2e/convergence-golive/w2-borne/02-categories.png",
+      "reports/test-e2e/convergence-golive/w2-borne/03-wizard-step1.png"
+    ],
+    "orders_created": ["#5547 A0003 (Tacos M + Hawai standalone, 8,80)", "#5550 A0006 (Cayenne + Oignons cuits, 7,40)"],
+    "reference_orders_verified": ["#5537 (Tacos M formule Hawai kitchen ticket)", "#5534 (Cayenne oignons cuits snapshot)"]
+  },
+  "code_modifications": "NONE (0 modif code)",
+  "verdict": "GREEN"
+}

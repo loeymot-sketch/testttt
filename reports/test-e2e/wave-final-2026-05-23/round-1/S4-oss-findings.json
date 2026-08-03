@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "system": "S4-OSS",
+    "cycle": "wave-final-2026-05-23",
+    "round": 1,
+    "url": "/admin/order-status-screen",
+    "public_api": "/api/frontend/oss-order",
+    "public_api_middleware": [
+      "installed",
+      "apiKey",
+      "localization",
+      "throttle:oss-public"
+    ],
+    "ssot_allowlist": "app/Services/OrderStatusScreenOrderService.php::listForBranch (whereIn order_type [KIOSK,TAKEAWAY], whereIn status [PREPARING,PREPARED])",
+    "date": "2026-05-23T10:41:24.239Z",
+    "branch_id": 1,
+    "commit": "6f226ef673b7c30e0551407a3959898172a0c271"
+  },
+  "findings": [
+    {
+      "id": "S4-01.empty-copy",
+      "level": "INFO",
+      "title": "Empty-state placeholder \"—\" rendered in both columns",
+      "evidence": {
+        "dash_count": 2,
+        "api_data_count": 0
+      },
+      "ts": "2026-05-23T10:40:57.585Z"
+    },
+    {
+      "id": "S4-01.console",
+      "level": "INFO",
+      "title": "No relevant console errors",
+      "evidence": {
+        "errors": [],
+        "total": 0
+      },
+      "ts": "2026-05-23T10:40:57.586Z"
+    },
+    {
+      "id": "S4-02.allowlist-status",
+      "level": "INFO",
+      "title": "ACCEPTED status correctly excluded (allowlist PREPARING/PREPARED enforced)",
+      "evidence": {
+        "idAccepted": 307
+      },
+      "ts": "2026-05-23T10:41:00.234Z"
+    },
+    {
+      "id": "S4-03.dom-preparing",
+      "level": "INFO",
+      "title": "PREPARING DOM column renders queue number",
+      "evidence": {
+        "col_text_excerpt": "En préparation\nN°A0042",
+        "api_row": {
+          "id": 307,
+          "order_serial_no": "WAVE-FINAL-S4-ACC-001",
+          "token": "WAVE-FINAL-S4-ACC-001",
+          "queue_number": "A0042",
+          "order_type": 25,
+          "status": 7
+        }
+      },
+      "ts": "2026-05-23T10:41:02.643Z"
+    },
+    {
+      "id": "S4-04.dom-ready",
+      "level": "INFO",
+      "title": "PREPARED DOM column renders queue number",
+      "evidence": {
+        "col_text_excerpt": "Prêt\nN°A0042",
+        "api_row": {
+          "id": 307,
+          "order_serial_no": "WAVE-FINAL-S4-ACC-001",
+          "token": "WAVE-FINAL-S4-ACC-001",
+          "queue_number": "A0042",
+          "order_type": 25,
+          "status": 8
+        }
+      },
+      "ts": "2026-05-23T10:41:05.163Z"
+    },
+    {
+      "id": "S4-05.distribution",
+      "level": "INFO",
+      "title": "Mixed load distribution",
+      "evidence": {
+        "seeded": 8,
+        "api_visible": 8,
+        "preparing": [
+          "K101",
+          "K102",
+          "K103",
+          "K104",
+          "K105"
+        ],
+        "prepared": [
+          "T201",
+          "T202",
+          "T203"
+        ]
+      },
+      "ts": "2026-05-23T10:41:11.181Z"
+    },
+    {
+      "id": "S4-05.fifo",
+      "level": "INFO",
+      "title": "PREPARING FIFO order respected",
+      "evidence": {
+        "observed": [
+          "K101",
+          "K102",
+          "K103",
+          "K104",
+          "K105"
+        ]
+      },
+      "ts": "2026-05-23T10:41:11.181Z"
+    },
+    {
+      "id": "S4-06.live-update",
+      "level": "INFO",
+      "title": "realtime-order-update event refreshed OSS without reload",
+      "evidence": {
+        "idPoll": 318,
+        "dom_visible": 1,
+        "api_count_before": 8,
+        "api_count_after": 9
+      },
+      "ts": "2026-05-23T10:41:15.957Z"
+    },
+    {
+      "id": "S4-07.deliver",
+      "level": "INFO",
+      "title": "DELIVERED order correctly removed from OSS wall",
+      "evidence": {
+        "id": 314
+      },
+      "ts": "2026-05-23T10:41:20.342Z"
+    },
+    {
+      "id": "S4-08.allowlist-type",
+      "level": "INFO",
+      "title": "Allowlist fail-closed: DELIVERY/POS/DINING_TABLE all excluded",
+      "evidence": {
+        "seeded_delivery": 319,
+        "seeded_dintable": 320,
+        "seeded_pos": 322,
+        "api_visible_total": 9,
+        "api_visible_kiosk": 7,
+        "api_visible_takeaway": 2
+      },
+      "ts": "2026-05-23T10:41:24.155Z"
+    },
+    {
+      "id": "S4-08.kiosk-parity",
+      "level": "INFO",
+      "title": "KIOSK parity order visible — query body intact",
+      "evidence": {
+        "idKiosk": 323
+      },
+      "ts": "2026-05-23T10:41:24.156Z"
+    },
+    {
+      "id": "S4-08.branch-isolation",
+      "level": "INFO",
+      "title": "?branch_id=999999 returns empty (multi-tenant isolation)",
+      "evidence": {
+        "count": 0,
+        "status": 200
+      },
+      "ts": "2026-05-23T10:41:24.175Z"
+    }
+  ],
+  "summary": {
+    "critical": 0,
+    "improvements": 0,
+    "info": 12
+  }
+}

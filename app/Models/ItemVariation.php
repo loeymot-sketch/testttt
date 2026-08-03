@@ -84,10 +84,18 @@ class ItemVariation extends Model
         }
 
         if ($filename && file_exists(public_path("{$basePath}/{$filename}"))) {
-            return asset("{$basePath}/{$filename}");
+            // [W5-PERF #1 2026-07-06] Vignette WebP ≤320px pré-générée servie en
+            // priorité (viandes/sauces plein format dans le wizard caisse+borne).
+            // Fallback plein format inchangé si la vignette manque.
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
+            $hash = @filemtime(public_path("{$basePath}/{$filename}")) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         if (file_exists(public_path("{$basePath}/{$defaultFile}"))) {
-            return asset("{$basePath}/{$defaultFile}");
+            $hash = @filemtime(public_path("{$basePath}/{$defaultFile}")) ?: 0;
+            return asset("{$basePath}/{$defaultFile}") . "?v={$hash}";
         }
         return null;
     }

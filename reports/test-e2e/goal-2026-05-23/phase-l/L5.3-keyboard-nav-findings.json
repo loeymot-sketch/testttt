@@ -1,0 +1,391 @@
+{
+  "agent": "L5.3-KEYBOARD-NAV-DEEP",
+  "phase": "L",
+  "title": "Keyboard-only navigation deep audit (WCAG 2.1.1 / 2.1.2 / 2.4.3 / 2.4.7)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "date": "2026-05-24",
+  "scope": "Audit Vue components for keyboard support across POS / Kiosk / KDS / Admin surfaces. Verify J-STEP-POS findings (P3-FRICTION-1, P7-FRICTION-3, PosCounterCollect no-Enter, KdsHistoryDrawer Escape). Source-grep WCAG 2.1.1/2.1.2/2.4.3/2.4.7 compliance per surface, write Vitest source-grep sentinel, identify deferred power-user gaps.",
+
+  "verdict": "GREEN-WITH-FRICTION",
+  "verdict_rationale": "WCAG 2.1.1 (Keyboard) PASS: every interactive element on the audited surfaces has a click handler that is reachable via Enter or Space when the focus arrives there, OR sits behind a native button/anchor that is keyboard-focusable by default. WCAG 2.1.2 (No Keyboard Trap) PASS: Kiosk wizard uses a documented Tab-cycling trap with focus restore on close; no other surface holds focus. WCAG 2.4.3 (Focus Order) PASS for the audited screens — DOM order matches visual order on PaymentComponent, PosCounterCollectModal, KdsHistoryDrawer, KioskWizardComponent (vertical-flow forms + segmented controls). WCAG 2.4.7 (Focus Visible) PASS: app.css ships a global :focus-visible ring (3px solid #1d4ed8) on buttons + [role=button], and per-surface rings on .kiosk-touch-btn, .cv1-step-tab, .pos-v5-payment-confirm, .pos-v5-payment-input. NO V1 ship blocker. 5 power-user FRICTION gaps remain — all deferred to V1.0.2 per J-STEP-POS owner verdict + the absence of a global POS keyboard-shortcuts composable. Sentinel 18/18 GREEN locks the current good baseline so regression is detectable in CI.",
+
+  "scope_audited": {
+    "frozen_read_only": [
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue (FROZEN per CLAUDE.md §7 — read-only audit, zero diff)"
+    ],
+    "auditable": [
+      "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+      "resources/js/components/admin/pos/PosComponent.vue (delivery autocomplete only)",
+      "resources/js/components/admin/pos/ItemComponent.vue (POS grid tile)",
+      "resources/js/components/admin/pos/v5/PosV5Numpad.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+      "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+      "resources/js/components/admin/items/ItemComponent.vue (admin catalog edit)",
+      "resources/js/components/admin/items/ItemCreateComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskWizardStepComponent.vue (located via grep on @keydown families)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskCartComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskInactivityOverlayComponent.vue",
+      "resources/js/components/frontend/kiosk/ds/KsA11ySettings.vue",
+      "resources/js/components/frontend/kiosk/ds/KsConsentModal.vue",
+      "resources/js/components/frontend/kiosk/ds/KsChip.vue",
+      "public/css/app.css (focus-visible contract)"
+    ],
+    "playwright_live_runs": "Live axe-core sweep is L5.1's lane; this agent's verdict is source-grep + cross-reference with prior Phase J / G2 captures. No new screenshots taken."
+  },
+
+  "wcag_per_criterion": {
+    "2_1_1_keyboard": {
+      "verdict": "PASS",
+      "rationale": "Every interactive element on POS PaymentComponent, PosCounterCollectModal, KdsHistoryDrawer, KdsOrderCard, KioskWizardComponent, KioskPaymentComponent, KioskCartComponent, KioskUpsellComponent, KsChip, and the kiosk idle screen is either a native <button>/<input>/<select> (keyboard-focusable by default) OR carries explicit @keydown.enter/@keydown.space bindings (e.g. KdsOrderCard tabindex=0 + @keydown.enter, KioskIdleScreenComponent tabindex=0 + @keydown.enter/space → openSettings).",
+      "exemplary_patterns": [
+        "KioskPaymentComponent.vue:59-122 — every payment method tile carries BOTH @keydown.enter.prevent and @keydown.space.prevent (selectMethod). 9 total bindings (3 modes × 3 keys = 9 lines verified).",
+        "KdsOrderCard.vue:21-25 — card root has tabindex=0 + role=region + aria-label + @keydown.enter=onCardKeydownEnter.",
+        "KioskCartComponent.vue:293 — @keydown.enter.prevent on the promo input lets the customer submit without reaching the Apply button."
+      ]
+    },
+    "2_1_2_no_keyboard_trap": {
+      "verdict": "PASS",
+      "rationale": "Kiosk wizard installs a Tab-cycling trap (KioskWizardComponent.vue:2219-2238) that wraps Tab and Shift+Tab around the focusables INSIDE the wizard root. The trap is paired with a return-focus restorer on unmount (lines 2212, 2276-2280) so the caller surface regains focus. The abandon-confirm dialog has its own Escape-handler (line 2292) that calls onAbandonCancel — focus can always escape. No other surface installs a focus trap. KdsHistoryDrawer is a SLIDE-IN PANEL (not a true blocking dialog) — backdrop click + Escape both close it (line 195).",
+      "exemplary_patterns": [
+        "KioskWizardComponent.vue:2225 — focusables query uses standard selector 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])'.",
+        "KioskWizardComponent.vue:2278 — returnFocusEl.focus() restores Tab-context post-close."
+      ]
+    },
+    "2_4_3_focus_order": {
+      "verdict": "PASS",
+      "rationale": "PaymentComponent.vue DOM flow: close button → method tabs (cash/card/multi) → cash input → terminal select → card input → numpad → multi-block (split-count → equal-button → tranche rows → add-tranche) → confirm. Matches visual top-to-bottom + left-to-right. PosCounterCollectModal flow: close → mode picker (CASH/CARD/MOBILE/TICKET) → cash input → numpad → change-row → cancel → confirm. Linear and matches visual. KdsHistoryDrawer flow: title + close → retry-on-error → list. No CSS order-reversing tricks used (no `order:` property, no flex-direction:row-reverse on focusable groups, no float).",
+      "negative_check": "grep 'flex-direction:.*reverse\\|order:.*[0-9]' on the audited Vue components = 0 hits in focusable scope."
+    },
+    "2_4_7_focus_visible": {
+      "verdict": "PASS",
+      "rationale": "Global focus-visible contract is enforced in public/css/app.css lines 26-29: button:focus-visible + [role=\"button\"]:focus-visible → outline: 3px solid #1d4ed8 + outline-offset: 2px + border-radius. Per-surface rings: .cv1-step-tab:focus-visible (line 186), .pos-v5-shell *:focus-visible (line 437), .kiosk-touch-btn / .kiosk-touch-option / .kiosk-counter-btn :focus-visible (lines 2249-2252, 3px solid var(--kiosk-primary)). PaymentComponent inputs use border-color + box-shadow 0 0 0 3px var(--pos-v5-brand-red-soft) on :focus (line 1218-1222). PosCounterCollectModal .cc-input:focus = box-shadow 0 0 0 3px brand-red-soft (line 631-635).",
+      "caveat": "Two Tailwind-generated `.focus-visible\\:outline-none` classes exist (app.css:9898) but only apply when the developer adds the Tailwind class explicitly — not a global suppression. No `outline: 0 !important` on focusable selectors detected (only on the kiosk wizard root tabindex=-1 wrapper, which is correct because it is a programmatic focus target, not a Tab-stop)."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "L5.3-F-01",
+      "severity": "P2",
+      "category": "POWER_USER_FRICTION",
+      "wcag_impact": "NONE (efficiency, not a11y conformance)",
+      "summary": "PaymentComponent (FROZEN §7) has ZERO Enter-to-confirm on cashInput / cardInput. Cashier types '50' → must mouse-click ✓ Confirmer. No global Ctrl+Enter / F-key submit. No @keyup.enter binding on the confirm button or the inputs.",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PaymentComponent.vue",
+        "verified_lines": "86-93 (cashInput, only v-on:keypress=floatNumber for digit filtering), 143-149 (cardInput, type=number, no keyup binding), 308-319 (confirm button, only @click=confirmOrder, no @keydown)",
+        "grep_command": "grep -n '@keyup.enter\\|@keydown.enter' PaymentComponent.vue → 0 matches",
+        "supersedes_J-STEP-POS_P7-FRICTION-3": true
+      },
+      "owner_path": "FROZEN per CLAUDE.md §7 — any heal requires LOCK_PAY plan + owner countersign + sentinel.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Option A (V1.0.2): Add `@keyup.enter=\"confirmOrder\"` to the cashInput AND cardInput inputs. Guarded by the existing :disabled gates on confirmOrder (loading + canConfirmCard + canConfirmMulti) so a stray Enter on the input never bypasses validation. LOC ~4. Requires LOCK_PAY because of §7. Add Vitest case `confirmOrder is invoked when Enter pressed on cashInput while canConfirmCard=true`.",
+        "Option B (V1.0.2): Auto-focus cashInput on modal mount via this.$refs.cashInput.focus() in mounted() (after this.fetchPaymentTerminals). Combined with Option A, cashier can type → Enter without ever touching the mouse. Mirror the kiosk wizard's setTimeout(150) pattern to wait for modal CSS transition.",
+        "Option C (DEFER V2): Introduce a global POS keyboard-shortcuts composable usePosKeyboard() — F1=cash, F2=card, F3=multi, ESC=cancel, Ctrl+Enter=confirm. Larger surface, would touch PosComponent + PaymentComponent (frozen) + PosCounterCollectModal. Backlog per J-STEP-POS P3-FRICTION-1."
+      ]
+    },
+    {
+      "id": "L5.3-F-02",
+      "severity": "P2",
+      "category": "POWER_USER_FRICTION",
+      "wcag_impact": "NONE",
+      "summary": "PosCounterCollectModal (NOT frozen) lacks Enter-to-confirm on the received-amount input AND lacks Escape-to-cancel on the modal AND does NOT auto-focus receivedInput on open. Cashier flow on a cash-pending kiosk order is: click row → modal opens → mouse-pickup → click receivedInput → type → mouse-pickup → click ✓ Confirmer. Two mouse hops where one keyboard would do.",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+        "verified": [
+          "Line 40: @click.self=onCancel on overlay (backdrop dismiss works)",
+          "Line 106-116: receivedInput input with v-on:keypress=onlyFloat (digit filter only) — NO @keyup.enter, NO @keydown.enter",
+          "Lines 164-176: confirm button only @click=onConfirm, no @keydown binding",
+          "Lines 308-353: methods setMode/numpadInput/etc — NO focus() call anywhere",
+          "Line 295: order watcher triggers on order change but does NOT focus the input"
+        ],
+        "grep_command": "grep -n '@keyup\\|@keydown\\|focus(' PosCounterCollectModal.vue → 0 keyboard, 0 focus() calls"
+      },
+      "owner_path": "Modal is NOT frozen — surgical patch viable per inline-edit exception (≤30 lignes + tests immédiats + hors frozen-zone).",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Bind `@keyup.enter=\"onConfirm\"` on receivedInput AND on the modal root. Add a document.addEventListener('keydown', this._onEsc) in mounted() (mirror KdsHistoryDrawer.vue:189-204 pattern, including the open-guard + removeEventListener in beforeUnmount). Auto-focus receivedInput on watch(order, immediate:true) via this.$nextTick(() => this.$refs.receivedInput?.focus()).",
+        "LOC ~12. No §7 conflict. Add Vitest case: source-grep that the file declares @keyup.enter on the receivedInput AND a document keydown listener for Escape."
+      ]
+    },
+    {
+      "id": "L5.3-F-03",
+      "severity": "P2",
+      "category": "POWER_USER_FRICTION",
+      "wcag_impact": "NONE",
+      "summary": "Cash Overview (CashOverviewComponent.vue) has ZERO keyboard handlers (@keydown/@keyup/@keypress = 0 matches). Filters (date range, branch, mode) are reachable via Tab but no Enter-to-apply on the date input AND no global shortcut to switch tabs (Recettes / Encaisseurs / Réconciliation). Each filter change relies on native <select> change events, which is keyboard-fine. The friction is only the absence of power-user shortcuts.",
+      "evidence": {
+        "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+        "verified": "grep -n '@keydown\\|@keyup\\|@keypress' → 0 matches"
+      },
+      "owner_path": "V1.0.2 backlog — Admin daily not a hot-rush surface. No POS-style shortcut bar.",
+      "recommendation_TEXT_ONLY_NO_PATCH": "No change recommended for V1. If owner ships a tabbed power-user surface in V1.0.X, add Alt+1..Alt+3 to switch tabs via a small mixin."
+    },
+    {
+      "id": "L5.3-F-04",
+      "severity": "P2",
+      "category": "POWER_USER_FRICTION",
+      "wcag_impact": "NONE",
+      "summary": "Admin item edit form (resources/js/components/admin/items/ItemComponent.vue + ItemCreateComponent.vue) has ZERO @keydown/@keyup/@keypress/tabindex bindings (raw grep returns nothing). Form is keyboard-usable because every field is a native <input>/<select>/<textarea>, but Enter on a non-final input in the multi-field form will submit the wrapping <form> if one exists (no @submit.prevent guard verified inside the inspected components — that risk lives in the parent template).",
+      "evidence": {
+        "files": [
+          "resources/js/components/admin/items/ItemComponent.vue",
+          "resources/js/components/admin/items/ItemCreateComponent.vue"
+        ],
+        "verified": "grep -n '@keydown\\|@keyup\\|@keypress\\|tabindex\\|aria-modal' → 0 matches in both"
+      },
+      "owner_path": "V1.0.2 polish. Not on the kitchen rush hot-path.",
+      "recommendation_TEXT_ONLY_NO_PATCH": "Confirm <form @submit.prevent='save'> is present on the wrapper Blade view; if not, an Enter on the SKU field could submit the form mid-edit. Add a sentinel that source-greps for @submit.prevent in admin items Blade views (out of L5.3 scope — flag for L5.x consolidation)."
+    },
+    {
+      "id": "L5.3-F-05",
+      "severity": "P3",
+      "category": "POWER_USER_FRICTION",
+      "wcag_impact": "NONE",
+      "summary": "PaymentComponent #orderpayment modal lacks an explicit Escape-to-close binding. The pos-v5-payment-close button (X) handles mouse-close but Escape is silently swallowed — there is no document.addEventListener('keydown'). The cashier must Tab to the X button and press Enter, OR click outside (no @click.self on overlay either — modal sits in a Bootstrap-managed dialog).",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PaymentComponent.vue",
+        "verified": "grep -n '@keydown\\|escape\\|@keyup' PaymentComponent.vue → 0 keyboard listeners; grep -n '@click.self' → 0 backdrop bindings",
+        "note": "Bootstrap modal (data-bs-* / appService.modalHide('#orderpayment')) MAY provide Escape — appService is application-controlled. Verified empirically would require Playwright."
+      },
+      "owner_path": "FROZEN §7. Same LOCK_PAY route as L5.3-F-01.",
+      "recommendation_TEXT_ONLY_NO_PATCH": "If Bootstrap modal already wires Escape (likely — verify with Playwright keypress on the modal), then NO patch is needed and this finding is downgraded to INFO. If not, add document keydown listener bound to mounted()/beforeUnmount() that calls this.reset() on Escape. ~8 LOC, LOCK_PAY required."
+    },
+    {
+      "id": "L5.3-F-06",
+      "severity": "P3",
+      "category": "WCAG_NICE_TO_HAVE",
+      "wcag_impact": "2.4.6 Headings and Labels (Level AA, NOT audited as part of this brief)",
+      "summary": "POS pos-shortcuts surface (PosComponent.vue lines 268-360+) is a VISUAL panel of READY + cash-pending orders shown as cards — NOT keyboard shortcuts despite the class name. They are buttons reachable via Tab. The risk is naming-confusion at code-review time, not a user-facing keyboard gap.",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PosComponent.vue",
+        "verified": "grep -n 'pos-shortcuts' → 30+ matches in template + style, all visual class names. No @keydown handlers tied to this surface."
+      },
+      "owner_path": "Cosmetic clarification.",
+      "recommendation_TEXT_ONLY_NO_PATCH": "When V1.0.2 introduces real F1..F12 shortcuts, rename CSS classes to .pos-ready-panel + .pos-cash-panel (or .pos-quick-access) to free `.pos-shortcuts` for the new keyboard surface. Pure renaming, no behavior change."
+    }
+  ],
+
+  "j_step_pos_findings_verified": [
+    {
+      "id": "J-STEP-POS P3-FRICTION-1",
+      "verification_verdict": "CONFIRMED",
+      "evidence": "grep -rn '@keydown\\|@keyup\\|@keypress' PosComponent.vue → only the delivery autocomplete navigation (lines 693-696: down/up/enter/esc) + 2 v-on:keypress digit filters (lines 894 + 1044). NO global F1..F12, NO Ctrl+Shift+Z, NO ESC=cancel-cart. ItemComponent.vue:21-22 are the ONLY grid keyboard handlers (@keyup.enter / @keyup.space → addItem).",
+      "moves_to": "L5.3-F-01 + L5.3-F-06 (rename) + V1.0.2 backlog (usePosKeyboard composable)"
+    },
+    {
+      "id": "J-STEP-POS P7-FRICTION-3",
+      "verification_verdict": "CONFIRMED",
+      "evidence": "PaymentComponent.vue line 86-93 (cashInput): only v-on:keypress=floatNumber (digit-filter, NOT submit). Line 143-149 (cardInput): only required + type=number, NO keyup binding. Line 308-319 (confirm button): only @click. grep -n '@keyup.enter\\|@keydown.enter' on this file = 0.",
+      "moves_to": "L5.3-F-01 (FROZEN-LOCK path)"
+    },
+    {
+      "id": "PosCounterCollectModal Enter on amount → submits",
+      "verification_verdict": "NOT IMPLEMENTED",
+      "evidence": "grep -n '@keyup\\|@keydown\\|focus(' PosCounterCollectModal.vue → 0 hits. receivedInput line 106-116 has only v-on:keypress=onlyFloat. No Enter-to-confirm; no auto-focus on mount.",
+      "moves_to": "L5.3-F-02 (non-frozen, inline-edit-eligible)"
+    },
+    {
+      "id": "KdsHistoryDrawer Escape close (verified G2+J)",
+      "verification_verdict": "CONFIRMED OK",
+      "evidence": "KdsHistoryDrawer.vue:189-204 — _onEsc handler installed in mounted(), removed in beforeUnmount(). Open-guard checks this.open before invoking $emit('close'). aria-modal=true + role=dialog declared on the root template. Backdrop @click=$emit('close') also works.",
+      "moves_to": "Locked in sentinel test 'KdsHistoryDrawer installs Escape-to-close on document keydown'"
+    }
+  ],
+
+  "per_surface_audit": {
+    "pos_payment_component_FROZEN": {
+      "tab_order_logical": true,
+      "all_buttons_keyboard_focusable": true,
+      "modal_focus_trap": false,
+      "modal_escape_close": "UNKNOWN (likely Bootstrap-handled — verify via Playwright)",
+      "forms_enter_to_submit": false,
+      "wizard_keyboard_accessible": "n/a (single page)",
+      "verdict": "GREEN-WITH-FRICTION (L5.3-F-01 + L5.3-F-05)"
+    },
+    "pos_counter_collect_modal": {
+      "tab_order_logical": true,
+      "all_buttons_keyboard_focusable": true,
+      "modal_focus_trap": false,
+      "modal_escape_close": false,
+      "forms_enter_to_submit": false,
+      "auto_focus_on_open": false,
+      "verdict": "GREEN-WITH-FRICTION (L5.3-F-02 inline-editable)"
+    },
+    "kiosk_wizard": {
+      "tab_order_logical": true,
+      "all_buttons_keyboard_focusable": true,
+      "modal_focus_trap": true,
+      "modal_escape_close": "Yes for abandon-confirm dialog. The wizard itself uses a touch UX — no native Escape (would conflict with idle timer).",
+      "forms_enter_to_submit": "Per-step — KioskCart has @keydown.enter on promo, KioskLoyalty has @keyup.enter on code lookup, KioskPayment has @keydown.enter/space on each method tile.",
+      "wizard_suivant_retour_keyboard_accessible": true,
+      "focus_return_on_close": true,
+      "verdict": "GREEN — exemplary pattern, mirrored as the gold standard sentinel"
+    },
+    "kds_bump_board": {
+      "card_focusable": "Yes (KdsOrderCard tabindex=0 + role=region + aria-label)",
+      "enter_or_space_to_bump": "Enter ONLY (line 25 @keydown.enter=onCardKeydownEnter). Space is NOT bound.",
+      "global_shortcuts": "Yes — [A]–[H] via KdsV2Grid window.addEventListener('keydown') (lines 229-262)",
+      "cash_pending_gate": "Triple-guarded: keyboard Enter (KdsOrderCard onCardKeydownEnter line 385-390 returns early if isCashPending), [A]–[H] shortcut (KdsV2Grid:255-257), and the click handler (onCta line 375-382).",
+      "modal_escape_close_history_drawer": true,
+      "verdict": "GREEN — best-in-class for power-user keyboard chefs"
+    },
+    "cash_overview": {
+      "tab_order_logical": true,
+      "all_buttons_keyboard_focusable": true,
+      "modal_focus_trap": "n/a (no modal)",
+      "forms_enter_to_submit": "Native form behavior (Enter on input submits parent form if present)",
+      "verdict": "GREEN-WITH-MINOR-FRICTION (L5.3-F-03 power-user shortcuts deferred V1.0.X)"
+    },
+    "admin_item_edit_form": {
+      "tab_order_logical": true,
+      "all_buttons_keyboard_focusable": true,
+      "forms_enter_to_submit": "UNKNOWN — depends on the wrapping Blade @submit.prevent. NOT verified in this audit (out of scope for the Vue component).",
+      "verdict": "GREEN — pending verification of parent Blade form guard (L5.3-F-04)"
+    }
+  },
+
+  "sentinel": {
+    "path_actual": "tests/js/sentinels/KeyboardNavigationSentinel.spec.js",
+    "path_requested_in_brief": "tests/Feature/A11y/KeyboardNavigationSentinel.spec.js",
+    "path_normalization_note": "The brief asked for tests/Feature/A11y/... but `tests/Feature/A11y/` does not exist and `tests/Feature/` is PHPUnit territory while `.spec.js` is Vitest. Project convention places Vitest sentinels under `tests/js/sentinels/`. The sentinel was written there, mirroring 39 sibling specs (kdsA11yRichStructure.spec.js etc.). Creating a `tests/Feature/A11y/` directory would conflict with PHPUnit autoload + would not be picked up by the Vitest config.",
+    "test_count": 18,
+    "all_green": true,
+    "duration_ms": 593,
+    "groups": [
+      "Keyboard navigation — KDS bump (5 tests)",
+      "Keyboard navigation — KDS history drawer (2 tests)",
+      "Keyboard navigation — Kiosk wizard focus trap (4 tests)",
+      "Keyboard navigation — Kiosk payment + cart (3 tests)",
+      "Keyboard navigation — POS grid + delivery autocomplete (2 tests)",
+      "Keyboard navigation — focus-visible CSS contract (2 tests)"
+    ],
+    "what_is_NOT_locked_by_sentinel": [
+      "Real focus order across modal mounts (jsdom unreliable per advisor)",
+      ":focus-visible ring RENDERING (CSS visual, not source-grep)",
+      "Bootstrap-managed Escape on #orderpayment (would need Playwright)",
+      "Wrapping Blade form @submit.prevent guards (Blade not parsed)"
+    ],
+    "coverage_strategy": "Source-grep AST-lite — locks Vue template strings + Vue method bodies. Mirrors `tests/js/sentinels/kdsA11yRichStructure.spec.js` pattern. Designed for fail-on-removal (if a heal accidentally deletes a @keydown binding, the sentinel turns red on next CI run)."
+  },
+
+  "top_5_keyboard_nav_gaps": [
+    {
+      "rank": 1,
+      "id": "L5.3-F-01",
+      "surface": "POS PaymentComponent (FROZEN §7)",
+      "gap": "No Enter-to-confirm on cashInput / cardInput",
+      "severity": "P2 FRICTION (not WCAG)",
+      "owner_path": "LOCK_PAY",
+      "v1_blocker": false
+    },
+    {
+      "rank": 2,
+      "id": "L5.3-F-02",
+      "surface": "PosCounterCollectModal (NOT frozen)",
+      "gap": "No Enter-to-confirm + No Escape-close + No auto-focus on open",
+      "severity": "P2 FRICTION (not WCAG)",
+      "owner_path": "Inline-edit eligible (~12 LOC)",
+      "v1_blocker": false
+    },
+    {
+      "rank": 3,
+      "id": "L5.3-F-05",
+      "surface": "POS PaymentComponent modal Escape",
+      "gap": "No explicit Escape handler (likely Bootstrap-handled; needs Playwright verify)",
+      "severity": "P3 FRICTION (likely INFO after live verify)",
+      "owner_path": "LOCK_PAY if needed",
+      "v1_blocker": false
+    },
+    {
+      "rank": 4,
+      "id": "L5.3-F-03 + L5.3-F-04",
+      "surface": "Cash Overview + Admin item edit",
+      "gap": "Zero power-user shortcuts; Admin form Enter behavior unverified",
+      "severity": "P2/P3",
+      "owner_path": "V1.0.2 polish",
+      "v1_blocker": false
+    },
+    {
+      "rank": 5,
+      "id": "(architectural)",
+      "surface": "POS surface globally",
+      "gap": "No global keyboard-shortcuts composable (usePosKeyboard / mixin) for F1=cash F2=card F3=multi ESC=cancel Ctrl+Enter=confirm",
+      "severity": "P2 ARCHITECTURE (rush hour 19-21h cashier value)",
+      "owner_path": "V1.0.2 backlog per J-STEP-POS P3-FRICTION-1",
+      "v1_blocker": false
+    }
+  ],
+
+  "recommended_vue_patches_TEXT_ONLY": {
+    "patch_1_PosCounterCollectModal_eligible_now": {
+      "scope_loc": "~12 LOC, single file, NOT frozen",
+      "files": [
+        "resources/js/components/admin/pos/PosCounterCollectModal.vue"
+      ],
+      "intent": [
+        "1. Add `@keyup.enter=\"onConfirm\"` on receivedInput (template line ~115)",
+        "2. Add a document Escape listener in mounted() that calls this.onCancel — mirror KdsHistoryDrawer.vue:189-204 pattern (with this.visible guard + beforeUnmount removeEventListener)",
+        "3. In the `order` watcher (immediate:true), after pre-fill cashReceivedRaw, call this.$nextTick(() => this.$refs.receivedInput?.focus()) so the cashier opens → types → Enter → done"
+      ],
+      "sentinel_to_add_after_patch": "Append a new it('PosCounterCollectModal binds @keyup.enter on receivedInput + installs document Escape listener') case to the keyboard sentinel.",
+      "risk": "LOW — non-frozen, no NF525 surface touched, ESC just emits cancel (already exists for click). Submission gate remains canConfirm computed (line 267). Test debt: 1 Vitest case.",
+      "owner_gate": "Inline-edit exception authorized per feedback_orchestrator_inline_edit_exception.md (≤30 LOC + tests immédiats + hors frozen-zone)."
+    },
+    "patch_2_PaymentComponent_LOCK_required": {
+      "scope_loc": "~6 LOC, single frozen-zone file",
+      "files": [
+        "resources/js/components/admin/pos/PaymentComponent.vue (CLAUDE.md §7 FROZEN)"
+      ],
+      "intent": [
+        "1. Add `@keyup.enter=\"confirmOrder\"` on cashInput AND cardInput",
+        "2. The existing confirmOrder() guards (loading.isActive, canConfirmCard, canConfirmMulti) provide all needed safety — Enter cannot bypass validation",
+        "3. Optional: auto-focus cashInput in mounted() after fetchPaymentTerminals settles, behind a setTimeout(150) mirror of the kiosk wizard pattern"
+      ],
+      "owner_gate": "REQUIRED. Write `plans/LOCK_PAY_KEYBOARD_2026-05-24.md` per skill `lock-plan`. Owner countersign before any diff to PaymentComponent.vue.",
+      "sentinel_to_add_after_patch": "Append `it('PaymentComponent binds @keyup.enter on cashInput AND cardInput')` case."
+    },
+    "patch_3_usePosKeyboard_composable_V1_0_2": {
+      "scope_loc": "~80 LOC new composable + ~10 LOC wireup per surface",
+      "files": [
+        "resources/js/composables/usePosKeyboard.js (NEW)",
+        "resources/js/components/admin/pos/PosComponent.vue (LOCK-free wireup)",
+        "resources/js/components/admin/pos/PaymentComponent.vue (FROZEN — LOCK_PAY)",
+        "resources/js/components/admin/pos/PosCounterCollectModal.vue"
+      ],
+      "intent": [
+        "Single setup() composable registers a window keydown listener that maps:",
+        "  F1 → setPaymentMode('cash'); F2 → setPaymentMode('card'); F3 → setPaymentMode('multi'); ESC → reset(); Ctrl+Enter → confirmOrder()",
+        "  Ctrl+Shift+Z → Z-close (with confirmation modal)",
+        "Mirrors KDS [A]-[H] pattern but at the POS root level. Guarded against text-field active-element (only fire when document.activeElement is not an input/textarea, OR allow F-keys regardless)."
+      ],
+      "owner_gate": "V1.0.2 — owner D-L decision item. Out of scope for V1 ship."
+    }
+  },
+
+  "constraints_respected": {
+    "frozen_zone_diff": "0 LOC across §7 files. PaymentComponent + PosV5TrancheRow read-only audit only.",
+    "nf525_chain": "Not touched — keyboard audit is presentation-layer only.",
+    "tests_run": "Vitest 18/18 GREEN in 593ms.",
+    "playwright_live": "Not run by this agent — scope limited to source-grep + cross-reference with prior Phase J + G2 captures. Bootstrap-managed PaymentComponent Escape would require Playwright keypress to confirm/refute L5.3-F-05.",
+    "owner_brief_path_normalization": "Sentinel placed at tests/js/sentinels/ (Vitest convention) not tests/Feature/A11y/ (PHPUnit). Documented in sentinel.path_normalization_note."
+  },
+
+  "scoring": {
+    "wcag_2_1_1_keyboard": "PASS",
+    "wcag_2_1_2_no_keyboard_trap": "PASS",
+    "wcag_2_4_3_focus_order": "PASS",
+    "wcag_2_4_7_focus_visible": "PASS",
+    "power_user_efficiency": "PARTIAL — KDS is exemplary, Kiosk is exemplary, POS is functional-but-mouse-heavy",
+    "v1_ship_blocker_count": 0,
+    "v1_0_2_backlog_count": 5,
+    "frozen_zone_LOCK_required_count": 2
+  }
+}

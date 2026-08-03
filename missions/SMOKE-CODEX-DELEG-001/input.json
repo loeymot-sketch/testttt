@@ -1,0 +1,4 @@
+{
+  "instruction": "Test d’intégration routage. Réponds en JSON valide (une seule clé racine) : output doit être l’objet avec une propriété 'status' = 'ok' et 'delegation' = 'codex-terminal' pour prouver que le prompt a été appliqué, sans proposer de modification de code réelle.",
+  "test_only": true
+}

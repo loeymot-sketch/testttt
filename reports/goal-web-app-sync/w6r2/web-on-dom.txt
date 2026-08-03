@@ -1,0 +1,34 @@
+Retrait
+→
+2
+Paiement
+→
+3
+Confirmé
+// ÉTAPE 2 SUR 2
+COMMENT
+TU PAIES ?
+// MODE DE PAIEMENT
+★ CONSEILLÉ
+💵
+Payer sur place
+Espèces ou carte au comptoir — ton plat t'attend
+VISA
+Carte bancaire (en ligne)
+Parcours de test — aucun débit réel pour l'instant
+Commande envoyée en direct à la caisse · Données protégées (RGPD)
+PAIEMENT AU COMPTOIR
+Retour
+Confirmer la commande
+10,00 €
+RÉCAP
+1 ARTICLE
+Test
+× 1
+10,00 €
+Sous-total
+10,00 €
+Total
+10,00 €
+🎁
+Tu gagnes +10 pts sur cette commande

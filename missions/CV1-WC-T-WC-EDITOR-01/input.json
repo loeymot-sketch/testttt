@@ -1,0 +1,62 @@
+{
+  "task_id": "CV1-WC-T-WC-EDITOR-01",
+  "parent_cycle": "CV1-WIZARD-COMPOSABLE-001",
+  "execution_tier": "complex",
+  "primary_execution_model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "plan_file": "plans/PLAN_CV1-WIZARD-COMPOSABLE-ADMIN-V1-2026-05-02.md",
+  "plan_section": "Phase C.3 — Implémentation Admin UI éditeur composable (T-WC-EDITOR-01)",
+  "audit_source": "reports/audit/CV1_WIZARD_MASTER_SYNTHESIS_2026-05-02.md §3 Lot C.3 + audit A.1 frictions F1-F8",
+  "delegated_by": "Claude in-session orchestrator (Phase C.3 XL refonte composer admin user-friendly)",
+  "delegation_reason": "Refonte complète Vue 3 component XL avec drag&drop + pickers dynamiques + preview live + intégration multiples endpoints. Multi-fichier, complexité élevée, nécessite GPT-5.5-pro xhigh.",
+
+  "instruction": "Refonte complète du composer admin wizard user-friendly per-product. Le user (FoodKing owner) demande une UI 'plug-and-play sans code' pour configurer le wizard de chaque produit (POS = monolithique 1 page accordéon, Kiosk = multi-pages personnalisables).\n\n**SCOPE & FILES (allowlist stricte) :**\n\n1. **REWRITE** `resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue` — refonte complète. Conserver : route name `admin.items.composer`, props/route param `id`, endpoints API existants. Nouvelle structure :\n   - **Header** : nom produit + catégorie + photo + bouton retour fiche produit. Charge via `axios.get('/admin/item/' + itemId)` (endpoint existant).\n   - **Sidebar gauche (steps)** : liste de pages avec drag & drop via `vue-draggable-next` (déjà installé `package.json:76`). Chaque step affiche : icône, label, source type, min/max, badge visibilité POS/Kiosk, bouton supprimer (icône poubelle).\n   - **Bouton 'Choisir un template'** au-dessus de la sidebar steps : ouvre modal listant 7 templates (`simple/sandwich/tacos/assiette/snacking/menu/custom`), POST `/admin/composer/items/{id}/apply-template` avec `{template}`. Endpoint créé par T-WC-TEMPLATES-01.\n   - **Bouton '+ Ajouter une page'** : ouvre formulaire ajout step (label, source_type, source_ref via picker).\n   - **Centre (édition step sélectionné)** : formulaire avec :\n     - Label éditable\n     - Dropdown source_type (item_attribute / extra_group / addon)\n     - Picker source_ref (NEW — utilise `<select>` peuplé par `axios.get('/admin/composer/items/{id}/available-sources')`, endpoint créé par T-WC-SOURCE-PICKER-01). Affiche le NOM (ex: 'Viande', 'Sauces extras', 'Boisson') au lieu du `source_ref` brut.\n     - Sliders min_select / max_select (type=range, affichage valeur)\n     - Checkboxes visible_on : POS / Kiosk (cocher = visible)\n     - Toggle is_active\n   - **Sidebar droite (preview live)** : iframe ou composant intégré qui montre 2 cartes côte-à-côte : 'Aperçu Caisse' (POS) et 'Aperçu Borne' (Kiosk). Réutilise `ItemPreviewComponent` (M2 1.2 — lecture seule). Refresh au moindre changement (debounced 500ms).\n   - **Bottom bar** : 2 boutons CLAIRS — 'Sauvegarder le brouillon' (gris, secondaire) et 'Publier' (vert, primaire avec icône check). Confirmation modale avant publish ('Cette modification sera visible immédiatement sur POS et Kiosk pour la branche scope.').\n\n2. **MODIFY** `resources/js/components/admin/items/composer/StepEditorComponent.vue` — vérifier que les changements de T-WC-SOURCE-PICKER-01 sont intégrés (picker source_ref). Si déjà fait par T-WC-SOURCE-PICKER-01, juste vérifier la signature des props compatible avec le nouveau parent.\n\n3. **NEW** `resources/js/components/admin/items/composer/ComposerTemplatePickerModal.vue` — modal qui liste les 7 templates avec description courte (ex: 'Tacos : taille + viande + sauce + garnitures + suppléments + menu'). Émet `select(template_name)`.\n\n4. **NEW** `resources/js/components/admin/items/composer/ComposerStepListSidebar.vue` — sidebar gauche avec drag&drop via `<draggable v-model='steps'>` (vue-draggable-next).\n\n5. **NEW** `resources/js/components/admin/items/composer/ComposerStepFormPanel.vue` — formulaire central (label, source_type dropdown, source_ref picker, sliders min/max, checkboxes visible_on).\n\n6. **NEW** `tests/js/composerEditorV2.spec.js` — sentinels Vitest avec minimum 8 cas :\n   - Rend header avec nom produit\n   - Affiche liste steps depuis API GET profile\n   - Drag & drop réordonne les steps + appelle PATCH update\n   - Bouton 'Ajouter page' ouvre form nouveau step\n   - Bouton 'Supprimer page' supprime step (DELETE step endpoint existant) + modal confirmation\n   - Picker template ouvre modal puis applique template via POST apply-template\n   - Picker source_ref affiche les options disponibles depuis available-sources endpoint\n   - Bouton 'Publier' demande confirmation puis appelle POST publish\n\n7. **MODIFY** `lang/{fr,en,de,ar,bn}/all.php` + `resources/js/languages/{fr,en,de,ar,bn}.json` — ajouter nouvelles clés i18n (au minimum 15 clés sous `label.composer.*` et `message.composer.*`).\n\n**STRICT INVARIANTS :**\n- Pricing SSOT (#1) : aucun calcul prix client.\n- branch_id (#3) : tous les appels axios passent `branch_id` si applicable (chercher pattern existant).\n- Frozen zones (#6) : aucune modif backend (seul frontend Vue + i18n + tests).\n\n**Validation locale (mandatory before commit) :**\n```\nnode -e \"require('fs').readFileSync('resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue', 'utf8')\" # parser sanity\nnpx vitest run tests/js/composerEditorV2.spec.js\nnpx vitest run tests/js/ 2>&1 | tail -8\n```\nSentinels 8/8 PASS, **0 régression** vitest globale.\n\n**Trace** (append to `reports/post_execute_latest.log`) :\n```\n=== EXECUTE — CV1-WIZARD-COMPOSABLE-001 / T-WC-EDITOR-01 ===\nDATE: <ISO>\nEXECUTION_TIER: complex\nEXECUTE_DELEGATION: codex-extension\nFILES_TOUCHED: <liste>\nNEW_COMPONENTS: ProductComposerEditorComponent (rewrite), ComposerTemplatePickerModal, ComposerStepListSidebar, ComposerStepFormPanel\nNEW_SENTINELS: composerEditorV2 8/8\nLOCAL_VALIDATE: <verdict>\nGAP_FERMÉ: A.1 F1+F2+F3+F4+F6+F7 — composer UI plug-and-play user-friendly\nNOTES: <plan-drift discoveries>\n```\n\n**Commit ONCE** with message :\n`[CV1-WIZARD-COMPOSABLE-001 T-WC-EDITOR-01] Refonte composer admin user-friendly (drag&drop + pickers + preview live + templates)`\n\nNo amend, no force-push.",
+
+  "subsystems": [
+    "resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue (rewrite)",
+    "resources/js/components/admin/items/composer/StepEditorComponent.vue (verify integration)",
+    "resources/js/components/admin/items/composer/ComposerTemplatePickerModal.vue (NEW)",
+    "resources/js/components/admin/items/composer/ComposerStepListSidebar.vue (NEW)",
+    "resources/js/components/admin/items/composer/ComposerStepFormPanel.vue (NEW)",
+    "tests/js/composerEditorV2.spec.js (NEW)",
+    "lang/{fr,en,de,ar,bn}/all.php (i18n keys)",
+    "resources/js/languages/{fr,en,de,ar,bn}.json (i18n keys)"
+  ],
+
+  "subsystems_off_limits": [
+    "any backend file (controllers, services, models)",
+    "any frozen file from reports/handoff/HANDOFF_CODEX_CV1_FOUNDATIONS_2026-05-02.md §2",
+    "ItemPreviewComponent (M2 1.2 — read-only consumption)",
+    "router/index.js + adminRoutes.js (route déjà OK)"
+  ],
+
+  "invariants_at_risk": [
+    "Pricing SSOT (#1): aucun prix calculé côté client",
+    "branch_id (#3): scope si applicable",
+    "Frozen zones (#6): no backend touch"
+  ],
+
+  "acceptance": [
+    "ProductComposerEditorComponent rendu avec header produit (nom + catégorie + photo).",
+    "Sidebar steps drag & drop fonctionnel via vue-draggable-next.",
+    "Bouton 'Choisir template' ouvre modal et applique via POST apply-template.",
+    "Picker source_ref affiche options labeled depuis available-sources endpoint.",
+    "Preview live POS+Kiosk se rafraîchit aux changements (debounced).",
+    "Bouton 'Publier' avec confirmation modale.",
+    "8 sentinels Vitest PASS, 0 régression vitest globale.",
+    "i18n keys ajoutées dans 5 langues (PHP + JSON).",
+    "Trace appended to reports/post_execute_latest.log.",
+    "Single commit with conventional message."
+  ],
+
+  "halt_conditions": [
+    "Si vue-draggable-next API a changé (ou import incompatible Vue 3 / v2.2.1) → adapter ou halt avec dump.",
+    "Si endpoints T-WC-TEMPLATES-01 ou T-WC-SOURCE-PICKER-01 ne sont pas encore landed (vérifier git log + routes/api.php) → halt avec NEEDS_CLAUDE_T_WC_EDITOR_01.md.",
+    "Si refonte casse tests existants `tests/js/` notamment composerEditor* ou productComposerSummary → adapter sentinels existants ou halt.",
+    "Si frozen zone modification appears necessary → write reports/handoff/blocks/NEEDS_CLAUDE_T_WC_EDITOR_01.md and stop."
+  ],
+
+  "trace_template": "=== CV1-WIZARD-COMPOSABLE-001 / T-WC-EDITOR-01 ===\nEXECUTE_DELEGATION: codex-extension\nEXECUTION_TIER: complex\nDATE: 2026-05-02\nFILES_TOUCHED:\n  - ProductComposerEditorComponent.vue (rewrite)\n  - ComposerTemplatePickerModal.vue (NEW)\n  - ComposerStepListSidebar.vue (NEW)\n  - ComposerStepFormPanel.vue (NEW)\n  - StepEditorComponent.vue (verify)\n  - composerEditorV2.spec.js (NEW)\n  - lang/{fr,en,de,ar,bn}/all.php\n  - resources/js/languages/{fr,en,de,ar,bn}.json\nNEW_SENTINELS: composerEditorV2 (8 cas)\nLOCAL_VALIDATE: vitest composerEditorV2 -> 8/8 ; --filter tests/js/ -> X/Y no regression\nGAP_FERMÉ: A.1 F1-F8 — composer admin user-friendly plug-and-play\nHALT: <none | reason>\n",
+
+  "commit_message_template": "[CV1-WIZARD-COMPOSABLE-001 T-WC-EDITOR-01] Refonte composer admin user-friendly (drag&drop + pickers + preview live + templates)\n\n- ProductComposerEditorComponent: header produit (nom+catégorie+photo), sidebar steps drag&drop (vue-draggable-next), centre form édition step, sidebar droite preview live POS+Kiosk, bottom bar boutons clairs.\n- ComposerTemplatePickerModal (NEW): 7 templates avec descriptions.\n- ComposerStepListSidebar (NEW): liste pages drag&drop + actions.\n- ComposerStepFormPanel (NEW): form édition complet (label, source picker, sliders, visibilité, active).\n- composerEditorV2 sentinel: 8 cas couvrant header, drag&drop, templates, source picker, publish.\n- i18n: 15+ clés dans 5 langues (PHP + JSON).\n- GAP fermé: A.1 F1-F8 — composer admin orienté dev → plug-and-play user-friendly.\n- Audit: reports/audit/CV1_WIZARD_MASTER_SYNTHESIS_2026-05-02.md Phase C.3\n"
+}

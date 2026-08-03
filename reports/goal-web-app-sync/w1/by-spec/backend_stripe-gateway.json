@@ -1,0 +1,95 @@
+{
+ "spec": "backend:stripe-gateway",
+ "scope": "Cartographie READ-ONLY du sous-système paiement Stripe du backend Laravel testttt : app/Http/PaymentGateways/{Gateways,Requests,PaymentRequests,Routes}, PaymentGatewayService, PaymentManagerService, PaymentService, PaymentController (frontend), modèles PaymentGateway/GatewayOption/WebhookEvent, config/payment.php + config/services.php, DB payment_gateways/gateway_options, vues blade + asset stripe.js — pour préparer « Stripe prêt mais OFF » sur le chemin FrontendOrderService.",
+ "summary": "L'infrastructure Stripe est étonnamment complète et durcie côté webhook (signature vérifiée, tolérance replay 300s, idempotence WebhookEvent UNIQUE(provider,webhook_id), bridge charge.refunded→RefundCreated, DLQ replay), mais le flux de paiement lui-même est LEGACY (Charges API + stripeToken v3, pas de PaymentIntent/SCA — incompatible cartes françaises 3DS) et actuellement TRIPLE-verrouillé OFF par des gates code-owned dans config/payment.php (web_payment_v1.enabled=false → 404 sur tout PaymentController ; pilot_restrict allowed_methods=['credit'] ; stripe.activation_guard.activation_gate_cleared=false). En DB : row id=4 slug=stripe status=10(DISABLE), stripe_key/stripe_secret vides, STRIPE_WEBHOOK_SECRET absent du .env. Pièges concrets : le constructeur du gateway crashe (StripeClient refuse une api_key vide) donc l'endpoint webhook 500 dès l'instanciation du contrôleur aujourd'hui ; devise fallback 'USD' ; pas d'idempotency_key Stripe sur charges.create ; aucun lien UI vers payment.index depuis la suppression du storefront (web.php:43 / → /login). « Stripe prêt mais OFF » = garder les 3 gates config à false + remplir les options DB + STRIPE_WEBHOOK_SECRET, et idéalement migrer vers PaymentIntents avant toute activation réelle.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Flux Stripe = legacy Charges API + stripeToken, pas de PaymentIntent/SCA — inutilisable pour cartes françaises (3DS obligatoire UE)",
+   "file": "app/Http/PaymentGateways/Gateways/Stripe.php",
+   "line": 72,
+   "evidence": "$response = $this->gateway->charges->create(['amount' => (int) round((float) $order->total * 100), 'currency' => $currencyCode, 'source' => $request->stripeToken, ...]) ; côté client resources/views/paymentGateways/stripe/stripeJs.blade.php:10 charge https://js.stripe.com/v3/ + public/paymentGateways/stripe/stripe.js (tokenization legacy). Aucun PaymentIntent, aucune redirection Checkout Session, aucun support 3DS.",
+   "recommendation": "Pour « Stripe prêt » réel : construire un chemin PaymentIntents (ou Checkout Session hébergée) — le SDK stripe/stripe-php ^10.11 (composer.json:36) le supporte. Le webhook handler écoute déjà charge.succeeded/charge.refunded, ajouter payment_intent.succeeded au bridge."
+  },
+  {
+   "severity": "P1",
+   "title": "Constructeur du gateway Stripe crashe avec stripe_secret vide → endpoint webhook /payment/stripe-webhook/ répond 500 dès l'instanciation, avant toute vérification de signature",
+   "file": "app/Http/PaymentGateways/Gateways/Stripe.php",
+   "line": 39,
+   "evidence": "__construct : $this->gateway = new StripeClient\\StripeClient($this->paymentGatewayOption['stripe_secret']); — la valeur DB est '' (vérifié tinker : option stripe_secret = empty) et vendor/stripe/stripe-php/lib/BaseStripeClient.php:255 : $msg = 'api_key cannot be the empty string' (exception au construct). La route Routes/stripe.php mappe [Stripe::class,'handleWebhook'] → Laravel instancie la classe → throw avant handleWebhook.",
+   "recommendation": "Dans le plan « prêt mais OFF » : soit garder secret vide et accepter que le webhook 500 (Stripe n'est pas configuré côté dashboard donc aucun trafic), soit rendre le constructeur lazy/null-safe (n'instancier StripeClient que si secret non-blank) — modif hors frozen-zones."
+  },
+  {
+   "severity": "P1",
+   "title": "STRIPE_WEBHOOK_SECRET absent du .env → handleWebhook retournerait 500 'misconfigured' même si le constructeur était réparé",
+   "file": "config/services.php",
+   "line": 68,
+   "evidence": "'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', '') ; grep -c \"STRIPE\" .env → 0 ; .env.example:297 STRIPE_WEBHOOK_SECRET= (vide). Gateways/Stripe.php:204-213 : if ($secret === '') → json 500 'Stripe webhook secret not configured.'",
+   "recommendation": "Provisionner STRIPE_WEBHOOK_SECRET (whsec_...) depuis Stripe Dashboard→Webhooks au moment du câblage ; JAMAIS le committer (règle CLAUDE.md §3quater). C'est un secret distinct de stripe_secret DB."
+  },
+  {
+   "severity": "P2",
+   "title": "Fallback devise 'USD' si site_default_currency absent/invalide — risque de charger le client en dollars pour Le Cayenne (EUR)",
+   "file": "app/Http/PaymentGateways/Gateways/Stripe.php",
+   "line": 46,
+   "evidence": "$currencyCode = 'USD'; puis remplacé seulement si Currency::find(Settings::group('site')->get('site_default_currency')) retourne une row.",
+   "recommendation": "Avant activation : test sentinel affirmant que la devise résolue est EUR ; envisager fail-hard plutôt que fallback USD."
+  },
+  {
+   "severity": "P2",
+   "title": "Pas d'idempotency_key Stripe sur charges.create — un retry réseau du POST /payment/{order}/pay peut créer une double charge côté Stripe",
+   "file": "app/Http/PaymentGateways/Gateways/Stripe.php",
+   "line": 72,
+   "evidence": "charges->create([...]) sans second argument ['idempotency_key' => ...]. L'IdempotencyKeyMiddleware maison protège les POST API avec header X-Idempotency-Key, mais la route web payment.store (routes/web.php:49) est un form POST navigateur sans ce header.",
+   "recommendation": "Lors de la migration PaymentIntents, passer un idempotency_key dérivé de (order_id, tentative) dans les request options Stripe."
+  },
+  {
+   "severity": "P2",
+   "title": "Activation admin (stripe_status=5) flippe payment_gateways.status mais N'expose PAS Stripe au public — les gates config priment ; inversement l'update ne valide pas le format des clés",
+   "file": "app/Services/PaymentGatewayService.php",
+   "line": 87,
+   "evidence": "update() : if (str_contains($key,'status')) { $this->gateway->status = $value; save(); }. Mais PaymentController::isGatewayActivationAllowed (Frontend/PaymentController.php:151-164) exige config('payment.stripe.activation_guard.activation_gate_cleared')=true (config/payment.php:53 = false, code-owned), ET guardWebPaymentV1 exige payment.web_payment_v1.enabled=true (ligne 15 = false), ET PaymentService::isPilotPaymentMethodAllowed (PaymentService.php:814) exige 'stripe' dans allowed_methods (ligne 33 = ['credit'] seul). Requests/Stripe.php:29-31 valide juste 'string' — un pk_/sk_ inversé ou tronqué passe.",
+   "recommendation": "C'est le design voulu (défense en profondeur) : « Stripe prêt mais OFF » = remplir les options via l'UI admin (permission:settings, PaymentGatewayController.php:26) SANS toucher config/payment.php. L'activation réelle future = 3 changements config code-owned + review gate. Optionnel : renforcer Requests/Stripe.php avec regex pk_/sk_."
+  },
+  {
+   "severity": "P2",
+   "title": "Aucun chemin UI n'atteint payment.index depuis la suppression du storefront — le flux checkout online est orphelin",
+   "file": "routes/web.php",
+   "line": 43,
+   "evidence": "Route::redirect('/', '/login') [STOREFRONT-REMOVAL 2026-06-25] ; grep 'payment.index' dans app/Http/Controllers/Frontend/ et resources/js/ → seul PaymentController lui-même. Le flux vivant FrontendOrderService::store (lignes 200-291) gère payment_method en INT (App\\Enums\\PaymentGateway : 1=COD, 4=CARD TPE, 5=TR) pour borne/caisse, jamais de slug 'stripe' ni PaymentManagerService.",
+   "recommendation": "Pour des commandes web/mobile futures payées Stripe : le pont existe (FrontendOrder partage la table orders — app/Models/FrontendOrder.php:19 protected $table='orders' — donc le binding Order de PaymentController peut résoudre une commande frontend), mais il faudra un point d'entrée qui redirige vers route('payment.index',$order) ou une API JSON équivalente, + mapper un payment_method int pour 'stripe' ou réutiliser E_WALLET=2."
+  },
+  {
+   "severity": "P3",
+   "title": "DLQ replay Stripe ne rejoue PAS la logique métier — markProcessed direct (V1.0.2 TODO connu)",
+   "file": "app/Http/PaymentGateways/Gateways/Stripe.php",
+   "line": 559,
+   "evidence": "handleFromStoredEvent() : « V1.0.1 scope-minimal: mark the row processed... V1.0.2 will replay the inner business logic end-to-end » → $event->markProcessed($event->order_id);",
+   "recommendation": "Backlog documenté — si Stripe devient actif, prioriser le refactor processStripeEvent() partagé live/replay avant montée en charge."
+  },
+  {
+   "severity": "INFO",
+   "title": "Le webhook charge.refunded sur commande scellée post-Z ne crée pas d'écriture miroir NF525 automatique (log fiscal seulement)",
+   "file": "app/Http/PaymentGateways/Gateways/Stripe.php",
+   "line": 396,
+   "evidence": "catch OrderSealedException → sealed_note='parent_sealed_mirror_deferred_v1_0_2' + Log fiscal warning ; miroir manuel via RefundWithCounterEntryService (commentaire lignes 349-356).",
+   "recommendation": "Conserver tel quel pour « OFF » ; documenter la procédure ops si activation."
+  }
+ ],
+ "facts": [
+  "EXISTE — Gateway complet : app/Http/PaymentGateways/Gateways/Stripe.php (562 lignes) : payment() Charges API avec metadata.order_id + arrondi cents correct (ligne 73), status(), success() (bridge CapturePaymentNotification→PaymentService::payment ligne 130), fail(), cancel(), handleWebhook() (lignes 202-470), resolveOrderFromCharge() (490), handleFromStoredEvent() DLQ (532).",
+  "EXISTE — Webhook durci : signature \\Stripe\\Webhook::constructEvent(payload, sig, secret, 300) à Stripe.php:227 ; secret depuis config('services.stripe.webhook_secret') (config/services.php:67-69 ← env STRIPE_WEBHOOK_SECRET, actuellement ABSENT du .env, présent vide dans .env.example:297) ; secret vide → 500 misconfigured (Stripe.php:204-213) ; signature invalide → 400 (228-237).",
+  "EXISTE — Idempotence webhook : WebhookEvent::firstOrCreate(provider='stripe', webhook_id=event.id) à Stripe.php:260-272, doublon → 200 'duplicate_ignored' (274-281) ; modèle app/Models/WebhookEvent.php (PROVIDER_STRIPE:51, STATUS_PENDING:54, markProcessed:98, markFailed:108) ; migrations database/migrations/2026_05_09_120000_create_webhook_events_table.php + 2026_05_18_120000_add_webhook_events_order_id_fk.php (UNIQUE provider+webhook_id).",
+  "EXISTE — Route webhook : app/Http/PaymentGateways/Routes/stripe.php → POST /payment/stripe-webhook/ name payment.stripe.webhook, middleware ['installed'] + throttle:60,1 ; chargée dynamiquement par app/Providers/RouteServiceProvider.php:274-279 (scandir du dossier Routes, seulement si storage/installed existe) ; CSRF exclu via app/Http/Middleware/VerifyCsrfToken.php:32-33.",
+  "EXISTE — Événements gérés : charge.succeeded → CapturePaymentNotification (Stripe.php:289-317) ; charge.refunded → AuditLogService->write('order.refunded.stripe_dashboard') + RefundCreated::dispatch (Stripe.php:318-446, cascade payment_status=REFUNDED + stock + fidélité) ; autres types → markProcessed forensic-only (447-451).",
+  "EXISTE — Activation admin : PUT via app/Http/Controllers/Admin/PaymentGatewayController.php::update (ligne 39, middleware permission:settings ligne 26) → valide via app/Http/PaymentGateways/Requests/Stripe.php (stripe_key/stripe_secret/stripe_mode required si stripe_status==Activity::ENABLE=5) → app/Services/PaymentGatewayService.php::update (76-101) écrit chaque GatewayOption et si la clé contient 'status' flippe PaymentGateway.status (87-93). Activity : ENABLE=5, DISABLE=10 (app/Enums/Activity.php:7-8).",
+  "ÉTAT DB VÉRIFIÉ (tinker) : payment_gateways → id=1 cash-on-delivery status=5, id=2 credit status=5, id=3 paypal status=10, id=4 Stripe slug='stripe' status=10 (DISABLE=OFF) ; gateway_options model_id=4 : stripe_key='', stripe_secret='' (vide), stripe_mode='', stripe_status='10'. Seeder canonique : database/seeders/PaymentGatewayTableSeederVersionOne.php:76-110 (status Activity::DISABLE par défaut).",
+  "TRIPLE GATE OFF code-owned (config/payment.php, PAS d'env override volontairement) : (1) web_payment_v1.enabled=false ligne 15 → guardWebPaymentV1 abort(404) sur TOUTES les méthodes PaymentController (Frontend/PaymentController.php:131-136) ; (2) pilot_restrict.allowed_methods=['credit'] ligne 33 → PaymentService::assertPilotPaymentMethodAllowed jette ValidationException + audit NF525 'payment.method_restricted' (PaymentService.php:814-844) ; (3) stripe.activation_guard.activation_gate_cleared=false ligne 53 → isGatewayActivationAllowed false pour slug 'stripe' (Frontend/PaymentController.php:151-164, gate GATE_STRIPE_CENTS_ACTIVE_2026-04-25).",
+  "FLUX CHECKOUT (dormant) : routes/web.php:47-54 → GET /payment/{order}/pay (payment.index, liste gateways ENABLE filtrés par pilot+activation guard, vue payment.blade.php), POST /payment/{order}/pay (payment.store → PaymentManagerService->gateway('stripe')->payment()), success/fail/cancel par slug, GET /payment/successful/{order}. PaymentManagerService (app/Services/PaymentManagerService.php:11-25) instancie dynamiquement 'App\\\\Http\\\\PaymentGateways\\\\Gateways\\\\'.ucfirst(slug). Vues : resources/views/paymentGateways/stripe/stripeInput.blade.php + stripeJs.blade.php (js.stripe.com/v3 + public/paymentGateways/stripe/stripe.js).",
+  "PaymentService::payment (app/Services/PaymentService.php:29-69) : assertGatewayContext (backtrace doit contenir une sous-classe PaymentAbstract — non spoofable), assertPilotPaymentMethodAllowed, anti-réutilisation transaction_no cross-order (assertTransactionReferenceAvailable:71-90), crée Transaction puis payment_status=PAID.",
+  "FrontendOrderService (chemin borne/caisse vivant) : payment_method = INT de l'interface App\\Enums\\PaymentGateway (CASH_ON_DELIVERY=1, E_WALLET=2, PAYPAL=3, CARD=4 TPE, TICKET_RESTAURANT=5) — FrontendOrderService.php:200,220,259 ; ne touche JAMAIS PaymentManagerService ni le slug 'stripe'. FrontendOrder partage la table 'orders' avec Order (app/Models/FrontendOrder.php:19) donc le route-binding Order de PaymentController peut résoudre une commande frontend par id.",
+  "SDK : composer.json:36 'stripe/stripe-php': '^10.11' installé (vendor présent). Modèles : app/Models/PaymentGateway.php (morphMany gatewayOptions, fillable name/slug/misc/status), app/Models/GatewayOption.php (morphTo, option/value/type/activities).",
+  "À CONSTRUIRE pour « Stripe prêt mais OFF » : (a) remplir stripe_key/stripe_secret/stripe_mode via UI admin settings (aucun code) + STRIPE_WEBHOOK_SECRET en .env — les 3 gates config restent false = OFF garanti à 3 niveaux ; (b) si commandes frontend web/mobile doivent payer Stripe plus tard : point d'entrée vers route('payment.index',$order) (rien n'y pointe depuis STOREFRONT-REMOVAL, routes/web.php:43) + migration Charges→PaymentIntents pour SCA/3DS France + idempotency_key Stripe + fix constructeur lazy (crash api_key vide, vendor/stripe/stripe-php/lib/BaseStripeClient.php:255) + devise EUR garantie (fallback USD Stripe.php:46).",
+  "PIÈGE .env : aucune variable STRIPE_* dans le .env actuel (grep -c = 0) ; les clés API Stripe vivent en DB (gateway_options), SEUL le webhook signing secret vit en env — ne pas confondre les deux ; interdiction absolue de committer sk_live_/whsec_ (CLAUDE.md §3quater)."
+ ]
+}

@@ -1,0 +1,31 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-02-DASHBOARD-COMPOSER",
+  "execution_delegation": "codex-extension",
+  "mode": "execute-after-schema",
+  "objective": "Implement dashboard Product Composer UI and API on top of the approved schema.",
+  "preconditions": [
+    "PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR PASS",
+    "HG-COMPOSER-SCHEMA-ADR recorded",
+    "Dashboard permission policy known"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-02-DASHBOARD-COMPOSER/allowlist.txt",
+  "forbidden": [
+    "Do not edit OrderService",
+    "Do not edit FrontendOrderService",
+    "Do not calculate business price in Vue",
+    "Do not replace POS/kiosk wizard runtime"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation",
+    "catalog-control-plane-only",
+    "no-frozen-zone-edit"
+  ],
+  "expected_outputs": [
+    "ProductComposerService",
+    "Admin API",
+    "Composition tab UI",
+    "Preview tests",
+    "GPT self-audit"
+  ]
+}

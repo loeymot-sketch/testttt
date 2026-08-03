@@ -15,7 +15,11 @@ class LicenseController extends AdminController
     {
         parent::__construct();
         $this->licenseService = $licenseService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [SET-03 2026-06-26] Gate index too: license_key == MIX_API_KEY (the x-api-key
+        // validated on the whole admin group). Read must be settings-only — mirrors
+        // PaymentGateway/Sms/MailController ->only('index','update'). Twin of SET-01/SET-02
+        // that the GAP-19-2 pass missed (LicenseController stayed ->only('update')).
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index(): \Illuminate\Http\Response | LicenseResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

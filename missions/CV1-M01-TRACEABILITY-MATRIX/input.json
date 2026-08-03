@@ -1,0 +1,47 @@
+{
+  "task_id": "CV1-M01-TRACEABILITY-MATRIX",
+  "mission_id": "M-01",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Transformer reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md (statut INITIAL_NOT_FINAL) en table machine-checkable COMPLETE. Toute finding P0/P1 doit avoir Plan-ID, TASK_ID proposé, Sentinel, Test command, Gate, Owner, Status, Evidence. Produire aussi un CSV exportable et un script de vérification.",
+  "instruction": "Lis l'execute_brief.md de cette mission ET tous les rapports source listés. Renvoie strictement un JSON unique selon agents/codex.prompt.txt (files_to_modify, implementation_steps, code_blocks, risks, notes, execution_trace). NE TOUCHE AUCUN fichier hors allowlist. NE SIGNE aucun gate.",
+  "allowlist": [
+    "reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md",
+    "reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.csv",
+    "scripts/check-traceability.sh"
+  ],
+  "off_limits": [
+    "app/**", "resources/**", "routes/**", "database/**", "tests/**", "config/**", ".cursor/**", "AGENTS.md", "plans/PLAN_CAISSE_V1_SUPER_MASTER_2026-04-25.md"
+  ],
+  "source_reports": [
+    "reports/audit/MEGA_RAPPORT_FINAL_DISPUTE_CAISSE_POS_KIOSK_KDS_2026-04-25.md",
+    "reports/audit/AUDIT_TOTAL_SYSTEME_FOCUS_CAISSE_POS_2026-04-25.md",
+    "reports/audit/AUDIT_COMPLET_BORNE_KIOSK_CONNECTEE_DEEP_2026-04-25.md",
+    "reports/audit/MASTER_REQUEST_CAISSE_V1_ULTRA_DEEP_SINGLE_FILE_2026-04-25.md",
+    "reports/audit/CLAUDE_SUPER_MASTER_PLAN_REVIEW_CAISSE_V1_2026-04-25.md",
+    "reports/audit/MASTER_REVIEW_POS_KDS_FINITIONS_CLAUDE_2026-04-26.md",
+    "reports/audit/MEGA_PLAN_READINESS_GAP_ANALYSIS_CAISSE_POS_KIOSK_KDS_2026-04-25.md"
+  ],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [
+    "bash scripts/check-traceability.sh"
+  ],
+  "self_audit_checklist": [
+    "0 P0 finding sans Plan-ID dans la matrice .md",
+    "0 P0 finding sans Sentinel ou test ou PREUVE_MANQUANTE explicite",
+    "Le CSV est syntaxiquement valide (header + lignes, échappement correct)",
+    "scripts/check-traceability.sh exit 0 sur la matrice produite",
+    "Aucun fichier hors allowlist modifié"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 0,
+    "predicates": []
+  },
+  "graphiti_query": "Caisse V1 traceability matrix",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_traceability_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-trace"
+}

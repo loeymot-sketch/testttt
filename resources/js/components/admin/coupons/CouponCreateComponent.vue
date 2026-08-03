@@ -125,13 +125,78 @@
                             id="description" class="db-field-control"></textarea>
                         <small class="db-field-alert" v-if="errors.description">{{ errors.description[0] }}</small>
                     </div>
+
+                    <!-- [PROMO-DASH-2026-05-06] Section paramètres avancés -->
+                    <div class="form-col-12 mt-4">
+                        <h4 class="text-base font-semibold mb-2" data-section="advanced-promo-fields">{{ $t('label.advanced_promo_fields') }}</h4>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
+                        <label for="status" class="db-field-title">{{ $t('label.status') }}</label>
+                        <select v-model.number="props.form.status" id="status" class="db-field-control" aria-label="status">
+                            <option :value="5">{{ $t('label.active') }}</option>
+                            <option :value="10">{{ $t('label.inactive') }}</option>
+                        </select>
+                        <small class="db-field-alert" v-if="errors.status">{{ errors.status[0] }}</small>
+                    </div>
+                    <div class="form-col-12 sm:form-col-6">
+                        <label for="max_uses_global" class="db-field-title">{{ $t('label.max_uses_global') }}</label>
+                        <input v-model="props.form.max_uses_global" type="number" min="1" id="max_uses_global"
+                            class="db-field-control" :class="errors.max_uses_global ? 'invalid' : ''" />
+                        <small class="db-field-alert" v-if="errors.max_uses_global">{{ errors.max_uses_global[0] }}</small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
+                        <label for="valid_hours_start" class="db-field-title">{{ $t('label.valid_hours_start') }}</label>
+                        <input v-model="props.form.valid_hours_start" type="time" id="valid_hours_start"
+                            class="db-field-control" :class="errors.valid_hours_start ? 'invalid' : ''" />
+                        <small class="db-field-alert" v-if="errors.valid_hours_start">{{ errors.valid_hours_start[0] }}</small>
+                    </div>
+                    <div class="form-col-12 sm:form-col-6">
+                        <label for="valid_hours_end" class="db-field-title">{{ $t('label.valid_hours_end') }}</label>
+                        <input v-model="props.form.valid_hours_end" type="time" id="valid_hours_end"
+                            class="db-field-control" :class="errors.valid_hours_end ? 'invalid' : ''" />
+                        <small class="db-field-alert" v-if="errors.valid_hours_end">{{ errors.valid_hours_end[0] }}</small>
+                    </div>
+
+                    <div class="form-col-12">
+                        <label class="db-field-title">{{ $t('label.valid_days_of_week') }}</label>
+                        <div class="flex flex-wrap gap-3" role="group" aria-label="valid_days_of_week">
+                            <label v-for="d in dayOptions" :key="d.id" class="inline-flex items-center gap-1">
+                                <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
+                                    :id="'day_' + d.id" class="custom-checkbox-field" />
+                                <span class="custom-checkbox-span"></span>
+                                <span>{{ d.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-col-12">
+                        <label class="db-field-title">{{ $t('label.surfaces') }}</label>
+                        <div class="flex flex-wrap gap-3" role="group" aria-label="surfaces">
+                            <label v-for="s in surfaceOptions" :key="s.id" class="inline-flex items-center gap-1">
+                                <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
+                                    :id="'surface_' + s.id" class="custom-checkbox-field" />
+                                <span class="custom-checkbox-span"></span>
+                                <span>{{ s.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-col-12">
+                        <label for="branch_scope_csv" class="db-field-title">{{ $t('label.branch_scope') }}</label>
+                        <input v-model="branchScopeCsv" type="text" id="branch_scope_csv"
+                            class="db-field-control" placeholder="1,3" aria-describedby="branch_scope_help" />
+                        <small id="branch_scope_help" class="db-field-help text-gray-500">{{ $t('label.branch_scope_help') }}</small>
+                        <small class="db-field-alert" v-if="errors.branch_scope">{{ errors.branch_scope[0] }}</small>
+                    </div>
                     <div class="form-col-12">
                         <div class="flex flex-wrap gap-3 mt-4">
                             <button type="submit" class="db-btn py-2 text-white bg-primary">
                                 <i class="lab lab-save"></i>
                                 <span>{{ $t("label.save") }}</span>
                             </button>
-                            <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                            <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
                                 <i class="lab lab-close"></i>
                                 <span>{{ $t("button.close") }}</span>
                             </button>
@@ -169,6 +234,22 @@ export default {
             },
             image: "",
             errors: {},
+            // [PROMO-DASH-2026-05-06] Options scoping avancé
+            dayOptions: [
+                { id: 'mon', name: this.$t('label.monday_short') || 'Mon' },
+                { id: 'tue', name: this.$t('label.tuesday_short') || 'Tue' },
+                { id: 'wed', name: this.$t('label.wednesday_short') || 'Wed' },
+                { id: 'thu', name: this.$t('label.thursday_short') || 'Thu' },
+                { id: 'fri', name: this.$t('label.friday_short') || 'Fri' },
+                { id: 'sat', name: this.$t('label.saturday_short') || 'Sat' },
+                { id: 'sun', name: this.$t('label.sunday_short') || 'Sun' },
+            ],
+            surfaceOptions: [
+                { id: 'pos', name: 'POS' },
+                { id: 'kiosk', name: 'Kiosk' },
+                { id: 'web', name: 'Web' },
+            ],
+            branchScopeCsv: '',
         };
     },
     computed: {
@@ -198,7 +279,15 @@ export default {
                 minimum_order: "",
                 maximum_discount: "",
                 limit_per_user: "",
+                // [PROMO-DASH-2026-05-06] defaults pour scoping avancé
+                status: 5,
+                max_uses_global: "",
+                valid_hours_start: "",
+                valid_hours_end: "",
+                valid_days_of_week: [],
+                surfaces: [],
             };
+            this.branchScopeCsv = '';
             if (this.image) {
                 this.image = "";
                 this.$refs.imageProperty.value = null;
@@ -218,7 +307,15 @@ export default {
                 minimum_order: "",
                 maximum_discount: "",
                 limit_per_user: "",
+                // [PROMO-DASH-2026-05-06] defaults pour scoping avancé
+                status: 5,
+                max_uses_global: "",
+                valid_hours_start: "",
+                valid_hours_end: "",
+                valid_days_of_week: [],
+                surfaces: [],
             };
+            this.branchScopeCsv = '';
             if (this.image) {
                 this.image = "";
                 this.$refs.imageProperty.value = null;
@@ -240,6 +337,37 @@ export default {
                 fd.append("limit_per_user", this.props.form.limit_per_user);
                 if (this.image) {
                     fd.append("image", this.image);
+                }
+                // [PROMO-DASH-2026-05-06] Champs scoping avancés
+                if (typeof this.props.form.status !== 'undefined' && this.props.form.status !== null && this.props.form.status !== '') {
+                    fd.append('status', String(this.props.form.status));
+                }
+                if (this.props.form.max_uses_global) {
+                    fd.append('max_uses_global', String(this.props.form.max_uses_global));
+                }
+                if (this.props.form.valid_hours_start) {
+                    fd.append('valid_hours_start', this.props.form.valid_hours_start);
+                }
+                if (this.props.form.valid_hours_end) {
+                    fd.append('valid_hours_end', this.props.form.valid_hours_end);
+                }
+                if (Array.isArray(this.props.form.valid_days_of_week)) {
+                    this.props.form.valid_days_of_week.forEach((d, i) => {
+                        fd.append(`valid_days_of_week[${i}]`, d);
+                    });
+                }
+                if (Array.isArray(this.props.form.surfaces)) {
+                    this.props.form.surfaces.forEach((s, i) => {
+                        fd.append(`surfaces[${i}]`, s);
+                    });
+                }
+                // branch_scope: parse CSV "1,3" -> array of integers
+                const csv = (this.branchScopeCsv || '').trim();
+                if (csv !== '') {
+                    csv.split(',')
+                        .map((v) => v.trim())
+                        .filter((v) => v !== '' && !isNaN(parseInt(v, 10)))
+                        .forEach((v, i) => fd.append(`branch_scope[${i}]`, String(parseInt(v, 10))));
                 }
                 const tempId = this.$store.getters["coupon/temp"].temp_id;
                 this.loading.isActive = true;
@@ -266,10 +394,20 @@ export default {
                             minimum_order: "",
                             maximum_discount: "",
                             limit_per_user: "",
+                            // [PROMO-DASH-2026-05-06] reset extended fields
+                            status: 5,
+                            max_uses_global: "",
+                            valid_hours_start: "",
+                            valid_hours_end: "",
+                            valid_days_of_week: [],
+                            surfaces: [],
                         };
+                        this.branchScopeCsv = '';
                         this.image = "";
                         this.errors = {};
-                        this.$refs.imageProperty.value = null;
+                        if (this.$refs.imageProperty) {
+                            this.$refs.imageProperty.value = null;
+                        }
                     })
                     .catch((err) => {
                         this.loading.isActive = false;

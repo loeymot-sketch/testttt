@@ -1,0 +1,137 @@
+{
+  "micro_system": "S6-settings-catalog",
+  "files_examined": [
+    "resources/js/components/admin/settings/Tax/TaxCreateComponent.vue",
+    "resources/js/components/admin/settings/Tax/TaxListComponent.vue",
+    "resources/js/components/admin/settings/Currency/CurrencyCreateComponent.vue",
+    "resources/js/components/admin/settings/LoyaltySetup/LoyaltySetupComponent.vue",
+    "resources/js/components/admin/settings/ItemCategory/ItemCategoryCreateComponent.vue",
+    "resources/js/components/admin/settings/ItemCategory/ItemCateogryListComponent.vue",
+    "resources/js/components/admin/settings/ItemAttribute/ItemAttributeCreateComponent.vue",
+    "app/Http/Controllers/Admin/TaxController.php",
+    "app/Http/Controllers/Admin/CurrencyController.php",
+    "app/Http/Controllers/Admin/LoyaltySetupController.php",
+    "app/Http/Controllers/Admin/ItemCategoryController.php",
+    "app/Http/Requests/TaxRequest.php",
+    "app/Http/Requests/CurrencyRequest.php",
+    "app/Http/Requests/LoyaltySetupRequest.php",
+    "app/Http/Requests/ItemCategoryImportRequest.php",
+    "app/Services/TaxService.php",
+    "app/Services/LoyaltySetupService.php",
+    "app/Services/ItemCategoryService.php",
+    "app/Models/Tax.php",
+    "app/Imports/ItemCategoryImport.php",
+    "routes/api.php",
+    ".env"
+  ],
+  "findings": [
+    {
+      "id": "S6-01",
+      "severity": "P1",
+      "category": "functional",
+      "title": "Tax & Currency UPDATE always fails the unique rule (self-collision) — wrong route param key in ignore()",
+      "file_line": "app/Http/Requests/TaxRequest.php:40 ; app/Http/Requests/CurrencyRequest.php:35",
+      "evidence": "TaxRequest:40 `Rule::unique(\"taxes\",\"code\")->ignore($this->route('tax.id'))` and CurrencyRequest:35 `Rule::unique(\"currencies\",\"name\")->ignore($this->route('currency.id'))`. But the routes bind the param as `{tax}`/`{currency}` (routes/api.php:369 `PUT /tax/{tax}`, :361 `PUT /currency/{currency}`), so `$this->route('tax.id')` / `$this->route('currency.id')` resolve to NULL. `ignore(null)` injects `<> NULL` which the DB never excludes, so on update the row collides with ITSELF on the unique column (Tax.code / Currency.name). Edit flow exists in UI: TaxListComponent.vue:174 `edit()` re-sends `code`; CurrencyCreate save() PUTs `name`.",
+      "why_it_matters": "Editing a tax (e.g. fixing a label/rate while keeping the same code) or a currency (keeping the same name) returns 422 'code/name already taken' and the save silently fails. Admin cannot correct an existing tax/currency without also changing its unique field — directly impacts NF525 tax config maintenance.",
+      "reproduction": "PUT /api/admin/currency/{id} with the row's existing `name` unchanged -> 422 validation error on `name`. Same for PUT /api/admin/tax/{id} with unchanged `code`. To self-verify the param: `php artisan route:list | grep 'tax\\|currency'` shows `{tax}`/`{currency}`, not `{tax.id}`.",
+      "recommended_correction": "Use the model-bound param: `->ignore($this->route('tax'))` (and `$this->route('currency')`) — Laravel resolves the bound Model and ignores by its key. (Other requests in repo that use `route('xxx.id')` likely share this bug where the route param is `{xxx}`.)",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S6-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Tax/ItemCategory destroy() has inverted FK-bypass branch — orphans rows when only inactive items reference it",
+      "file_line": "app/Services/TaxService.php:83-90 ; app/Services/ItemCategoryService.php:170-183",
+      "evidence": "TaxService:83 `$checkItem = $tax->items->whereNull('deleted_at');` — but Tax::items() (app/Models/Tax.php:21) filters `where('status' => ACTIVE)`. Logic: `if (!blank($checkItem)) { $tax->delete(); } else { FK_CHECKS=0; $tax->delete(); FK_CHECKS=1; }`. So when ACTIVE items exist -> plain delete -> blocked by FK (items.tax_id constrained to taxes, migration create_items_table.php:22). When NO active items but INACTIVE items still reference the tax -> `else` branch disables FK checks and HARD-deletes, leaving `items.tax_id` pointing at a non-existent tax (Tax has no SoftDeletes). Identical inverted pattern in ItemCategoryService:170 (items.item_category_id FK, create_items_table.php:21).",
+      "why_it_matters": "Orphaned tax_id/item_category_id FKs corrupt referential integrity; a later read of an inactive item then references a deleted tax, and pricing (PricingService:244 `$taxObj->tax_rate`) silently falls back to 0% VAT for that item — NF525-relevant under-taxation. The FK-bypass is applied in exactly the wrong branch.",
+      "reproduction": "Create a tax, attach it to an item, set the item status=INACTIVE (so Tax::items() returns empty), then DELETE the tax -> `else` branch fires, FK checks disabled, tax hard-deleted, item.tax_id now dangling. Verify orphan: `SELECT i.id,i.tax_id FROM items i LEFT JOIN taxes t ON t.id=i.tax_id WHERE i.tax_id IS NOT NULL AND t.id IS NULL`.",
+      "recommended_correction": "Invert the branches (only bypass FK when there are NO references) AND/OR null the dependent FK before delete. Better: block deletion (422) when any item — active or inactive — references the tax/category, instead of disabling FK_CHECKS. Use Item::withTrashed()->where('tax_id',...)->exists() for the real reference check.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S6-03",
+      "severity": "P2",
+      "category": "nf525",
+      "title": "tax_rate accepts up to 9 999 999 999 999 with no sane upper bound (no max:100) — a typo corrupts VAT/pricing/Z-report",
+      "file_line": "app/Http/Requests/TaxRequest.php:42",
+      "evidence": "`'tax_rate' => ['required','numeric','min:0','max:9999999999999']`. No `max:100` (or reasonable VAT ceiling). The value flows straight into pricing: PricingService.php:244 `$taxRate = (float)$taxObj->tax_rate`, then OrderService:520 / FrontendOrderService:436 snapshot it on order_items.tax_rate, and ZReportService aggregates `total_by_tax_rate` (ZReportService:455).",
+      "why_it_matters": "An admin fat-fingering '200' instead of '20' (or '2000') is accepted and immediately recomputes VAT on every new order at an absurd rate, polluting the NF525 Z-report tax buckets. VAT rate is a NF525-sensitive field; the validation provides no guardrail. (Note: status rule on the same form, TaxRequest:43, is `['required','numeric','max:24']` with no `min`/`in:[active,inactive]` — secondary laxity.)",
+      "reproduction": "POST /api/admin/tax with tax_rate=200 -> accepted (passes `max:9999999999999`). Create a new order with an item on that tax -> order_items.tax_rate=200, tax_amount = 2x the HT.",
+      "recommended_correction": "Tighten to `['required','numeric','min:0','max:100']` for a percentage VAT; constrain status to `Rule::in([Status::ACTIVE, Status::INACTIVE])`. Optionally warn the admin when editing a rate that already has historical orders (history is protected by snapshot, but UX clarity helps).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S6-04",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Category drag-sort assigns sort=index+1 from the visible page only — collides across paginated pages",
+      "file_line": "resources/js/components/admin/settings/ItemCategory/ItemCateogryListComponent.vue:238-248 ; app/Services/ItemCategoryService.php:211-235",
+      "evidence": "List is paginated (`paginate:1, per_page:50`, :158-164). sortCategory() (:239) posts `this.categories.map(c => c.id)` = only the current page's rows. Backend sortCategory (ItemCategoryService:221) does `update(['sort' => $index + 1])` starting at 1 for the first posted id. Sorting on page 2 therefore reassigns sort=1.. to page-2 categories, colliding with page-1 categories' sort values.",
+      "why_it_matters": "Reordering categories beyond the first page produces duplicate/incorrect sort ranks, so the catalog order (POS/kiosk category bar driven by `order_column:'sort'`) becomes inconsistent. V1-LATENT: Le Cayenne has ~10 categories under a 50/page limit, so it never reaches page 2 today — but the algorithm is incorrect if the catalog grows.",
+      "reproduction": "Seed 60 categories, go to page 2, drag a row -> backend sets its sort to 1, duplicating page-1's first category sort. Verify: `SELECT sort, COUNT(*) FROM item_categories GROUP BY sort HAVING COUNT(*) > 1`.",
+      "recommended_correction": "Compute the global base offset (e.g. (page-1)*per_page) on the client, or send the full ordered id list, or have the backend reorder using a contiguous renumber across all rows rather than 1-based per submitted batch.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S6-05",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Category Excel import bypasses the CategoryCreated event fan-out — imported categories may not sync to POS/kiosk",
+      "file_line": "app/Imports/ItemCategoryImport.php:23-29 ; app/Services/ItemCategoryService.php:118-120",
+      "evidence": "Manual create goes through ItemCategoryService::store() which fires `event(new CategoryCreated($id))` after commit (ItemCategoryService:118-120), feeding the settings/catalog sync outbox. The bulk import path (ItemCategoryImport::model(), :23) builds `new ItemCategory([...])` directly via Maatwebsite ToModel — no CategoryCreated event, no slug/hierarchy validation through the service, and none of the catalog config columns (wizard_template, has_menu, kiosk_upsell_*) are set (DB defaults only).",
+      "why_it_matters": "Imported categories won't trigger the same real-time cache/outbox fan-out that single-create does, so POS/kiosk surfaces can show stale category lists until another event or manual refresh. Low impact in V1 (import is rarely used on a single-restaurant catalog) but it's an inconsistency between the two creation paths.",
+      "reproduction": "Import an .xlsx with a new category row; observe no CategoryCreated domain event emitted (grep DomainEvent/outbox table after import) versus a manual create which emits one.",
+      "recommended_correction": "Route the import through ItemCategoryService::store() per row (or dispatch CategoryCreated in a WithEvents/afterImport hook) so both creation paths share the same event fan-out and column defaults.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S6-06",
+      "severity": "P3",
+      "category": "security",
+      "title": "LoyaltySetupRequest & ItemCategoryImportRequest authorize() return true (defense-in-depth gap)",
+      "file_line": "app/Http/Requests/LoyaltySetupRequest.php:11 ; app/Http/Requests/ItemCategoryImportRequest.php:14",
+      "evidence": "Both FormRequests `authorize() { return true; }`. Controller middleware still protects the routes: LoyaltySetupController:19 applies `permission:settings` on index+update; ItemCategory import route is inside the admin settings group. So not currently exploitable. Contrast with TaxRequest:20 / CurrencyRequest:20 which were R7-healed to `$this->user()?->can('settings')`.",
+      "why_it_matters": "Inconsistent with the FormRequest authz hardening doctrine (CLAUDE.md §9 FormRequestAuthzDriftSentinel). Any future route refactor that drops the controller middleware would leave loyalty-rate edits (which feed POS redemption value via Settings::group('loyalty_setup')) and bulk category import unguarded at the request layer.",
+      "reproduction": "Static: grep `return true;` in these two requests; confirm protection comes only from controller middleware, not the request.",
+      "recommended_correction": "Mirror the Tax/Currency pattern: `return $this->user()?->can('settings') ?? false;` in both requests (and lower the FormRequestAuthz sentinel baseline accordingly per CLAUDE.md §9).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S6-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "No warning when editing a live tax rate mid-service (history protected, operator not informed)",
+      "file_line": "resources/js/components/admin/settings/Tax/TaxCreateComponent.vue:40-42 ; app/Services/TaxService.php:67-75",
+      "evidence": "Tax edit form lets an operator change tax_rate at any time; TaxService::update() does a plain `tap($tax)->update(...)` with no confirmation/guard. Past orders are safe because order_items snapshot tax_rate at creation (OrderService:520, PricingService:285), and SettingsUpdated/Tax fan-out fires (TaxController:51) — so this is a UX-clarity gap, not a data-corruption gap.",
+      "why_it_matters": "Changing a VAT rate during an open service silently changes the rate applied to all subsequently-created orders with no operator confirmation. NF525 history is intact, but the operator gets no signal that they just altered live fiscal config mid-day.",
+      "reproduction": "Edit a tax rate while orders are being taken; new orders use the new rate immediately, no confirmation dialog shown.",
+      "recommended_correction": "Add a confirmation modal on tax_rate change (e.g. 'Modifier un taux de TVA affecte toutes les futures commandes — confirmer ?'), optionally surfacing the count of items on that tax.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Tax rate snapshotted onto order_items at creation — mid-day rate edits never corrupt past orders or the Z-report",
+      "file_line": "app/Services/OrderService.php:520 ; app/Services/Pricing/PricingService.php:285 ; app/Services/FrontendOrderService.php:436",
+      "note": "tax_rate is copied into order_items.tax_rate when the order is built, and ZReportService aggregates from those frozen per-line rates (total_by_tax_rate), so changing a Tax row's rate later only affects future orders. Correct NF525 immutability of fiscal history."
+    },
+    {
+      "title": "Settings fan-out on Tax/Currency mutations -> outbox -> POS/kiosk reflect",
+      "file_line": "app/Http/Controllers/Admin/TaxController.php:39,51,63 ; app/Http/Controllers/Admin/CurrencyController.php:38,49,61",
+      "note": "store/update/destroy each dispatch SettingsUpdated(['tax']) / (['currency']) (Wave 5G R9 heal), wiring catalog-config changes into the real-time settings sync contract so dependent surfaces refresh."
+    },
+    {
+      "title": "Loyalty config read live with sane defaults across every consumer",
+      "file_line": "app/Http/Controllers/Frontend/LoyaltyController.php:445-447 ; app/Services/Loyalty/PosRedemptionService.php:96 ; app/Services/Pricing/DiscountCalculator.php:45",
+      "note": "loyalty_points_per_euro / _for_1_euro_discount / _min_redeem_points are all read via Settings::group('loyalty_setup')->get(key, default), so a save in LoyaltySetup reflects immediately in POS redemption + award + discount math with no stale-cache risk, and defaults (10/100/50) match the form defaults."
+    }
+  ]
+}

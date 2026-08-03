@@ -1,0 +1,136 @@
+{
+  "micro_system": "M9-loyalty — Loyalty redeem at POS",
+  "files_examined": [
+    "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/posOrders/PosOrderShowComponent.vue",
+    "resources/js/helpers/posLoyaltyMainCta.js",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/settings/LoyaltySetup/LoyaltySetupComponent.vue",
+    "app/Http/Controllers/Admin/PosLoyaltyController.php",
+    "app/Services/Loyalty/PosRedemptionService.php",
+    "app/Services/Loyalty/PosRedemptionException.php",
+    "app/Services/Loyalty/LoyaltyQrSigner.php",
+    "app/Services/LoyaltyService.php",
+    "app/Http/Requests/PosLoyaltyRedeemRequest.php",
+    "app/Http/Requests/LoyaltySetupRequest.php",
+    "app/Models/LoyaltyTransaction.php",
+    "config/pos.php",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "id": "M9-01",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Modal hardcodes rate=100; never receives the admin-configured loyalty rate -> wrong preview, wrong step, false POINTS_NOT_MULTIPLE",
+      "file_line": "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:187-189,206-214,90; PosComponent.vue:1117-1122; PosOrderShowComponent.vue:354-359",
+      "evidence": "Both mount points omit the :rate prop, so the modal falls back to props.rate default:100 (modal:187-189). previewDiscountEur = round(pts/rateHint*100)/100 and step=rateHint||100 are computed off that 100 (modal:90,206-214). The backend instead reads the real rate from Settings: $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100) (PosRedemptionService.php:96) and rejects non-multiples with POINTS_NOT_MULTIPLE (PosRedemptionService.php:100-106). The rate is a first-class admin-editable setting (LoyaltySetupComponent.vue:36-44, LoyaltySetupRequest.php:18 'min:1','max:10000').",
+      "why_it_matters": "If the owner ever sets the rate to anything other than 100 (e.g. 200 pts = 1 EUR), the cashier sees a wrong euro preview (offers the wrong discount to the customer's face), the +/- step nudges by the wrong amount, and a value the UI presents as valid (e.g. 100 pts) is rejected server-side as POINTS_NOT_MULTIPLE. The cashier gets a cryptic refusal during a live shift with a queue building. This is exactly the 'flou' the owner flagged: the UI and the source-of-truth math silently disagree.",
+      "reproduction": "Admin > Settings > Loyalty set 'Points pour 1 euro' = 200. Open POS loyalty redeem on a non-paid order, type 100 points. UI preview shows -1.00 EUR and lets you Apply; server returns POINTS_NOT_MULTIPLE (200) -> red band, redeem fails.",
+      "recommended_correction": "Pass the real rate into both mounts: bind :rate to the loyaltySetup store value (the loyaltySetup module already exists, resources/js/store/modules/loyaltySetup.js) at PosComponent.vue:1117 and PosOrderShowComponent.vue:354. Cheap, no frozen-zone touch, no backend change.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M9-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "DISCOUNT_EXCEEDS_SUBTOTAL only checks the incremental discount, not the cumulative one -> points burned with no benefit when a coupon discount already exists",
+      "file_line": "app/Services/Loyalty/PosRedemptionService.php:144-151,168-174,203-227",
+      "evidence": "The guard compares only the new increment to subtotal: if ($discountEur > $subtotal) throw DISCOUNT_EXCEEDS_SUBTOTAL (PosRedemptionService.php:144-151). It does NOT consider $order->discount already present. Then balance is decremented by the FULL points (PosRedemptionService.php:168-174), $newDiscount = currentDiscount + discountEur (:206), and $newTotal = round(max(0, subtotal - newDiscount + delivery), 2) (:224). POS orders can carry a pre-existing coupon discount at creation: OrderService.php:543-595 recomputes $calculatedDiscount server-side and writes $this->order->discount = $calculatedDiscount.",
+      "why_it_matters": "Money/points loss for the customer. Example: subtotal=10 EUR, existing coupon discount=8 EUR (total=2 EUR). Cashier redeems 500 pts (=5 EUR). 5 > 10 is false so it proceeds; balance is drained by 500 pts; newDiscount=13; newTotal=max(0,10-13)=0. The customer paid 0 instead of needing 5 EUR of points -> 3 EUR worth of points (300 pts) silently destroyed by the max(0,..) clamp for zero extra benefit. The ledger records -500 pts but only 2 EUR of real discount was deliverable. A loyalty program that quietly eats points erodes exactly the goodwill it exists to build, and the cashier has no warning.",
+      "reproduction": "Create a POS order with a coupon that brings discount near subtotal (leaving e.g. 2 EUR due, non-paid). Open loyalty redeem, redeem points worth more than the 2 EUR remaining. Server accepts, decrements full points, total floors at 0; the excess points are gone.",
+      "recommended_correction": "Check remaining redeemable headroom: compute $remaining = max(0, $subtotal - (float)$order->discount) and reject (or clamp points to) when $discountEur > $remaining, before decrementing the balance. Mirror the cumulative semantics the kiosk path gets for free via PricingService. Surface a DISCOUNT_EXCEEDS_SUBTOTAL/headroom error so the cashier can reduce the points.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M9-03",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Main-page POS loyalty CTA only lights up for the minority non-PAID flows; for the default CASH-via-wizard flow it is permanently hidden",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:2465-2483,2491-2493; resources/js/helpers/posLoyaltyMainCta.js:70-92; PaymentComponent.vue:990-994",
+      "evidence": "currentLoyaltyOrder is only set from the order:confirmed event (PosComponent.vue:2483), which PaymentComponent emits AFTER confirmOrderWithAuthRetry() resolves (PaymentComponent.vue:990-994) i.e. post-creation. canShowLoyaltyMainCta hides the CTA whenever paymentStatus == PAID (posLoyaltyMainCta.js:84). The code comment itself admits: 'For CASH-via-wizard flows the order arrives PAID and canShowLoyaltyMainCta will hide the CTA' (PosComponent.vue:2477-2480). So loyalty redeem on the main page is reachable only for CARD/TPE/PARK orders that are created non-PAID.",
+      "why_it_matters": "Owner mandate routes most payments through the counter/wizard (Plan B), and CASH is the dominant in-person tender. A cashier who wants to apply a regular customer's loyalty points on a cash sale will find the main-page button greyed out with no explanation, then has to navigate to the order detail screen (PosOrderShowComponent) to do it. A two-surface CTA where the convenient surface silently doesn't work for the common path is the kind of 'unnecessary / not good' blur the owner called out: it promises an action it usually can't perform.",
+      "reproduction": "On the POS main page, ring a cash order and pay via the wizard. Order confirms PAID; the operator-bar 'Add Loyalty' CTA stays disabled. There is no path on the main page to redeem loyalty for that customer.",
+      "recommended_correction": "Decide the intended model with the owner: either (a) allow capturing the loyalty code BEFORE payment so the discount lands pre-collection (requires wiring into the wizard, frozen - owner gate), or (b) drop the main-page CTA entirely and keep only the PosOrderShowComponent canonical surface to remove the misleading dead entry point. At minimum, the disabled tooltip should explain why (already PAID).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M9-04",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Success band is dead code: parent closes the modal on 'applied' before the success message can render",
+      "file_line": "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:42-49,312-316; PosOrderShowComponent.vue:626-627; PosComponent.vue:2506-2507",
+      "evidence": "submitApply sets this.successMessage then immediately this.$emit('applied', data) (modal:312-316). Both parents respond to 'applied' by closing the modal synchronously: onLoyaltyRedeemApplied sets loyaltyRedeemOpen=false (PosOrderShowComponent.vue:626-627); onLoyaltyMainApplied sets loyaltyRedeemMainOpen=false (PosComponent.vue:2506-2507). v-if='open' wraps the whole dialog, so the success band (modal:42-49) is unmounted in the same tick it is populated.",
+      "why_it_matters": "The cashier never sees the in-modal '-X.XX EUR appliques' confirmation; the only feedback is whatever the parent renders after refresh. Not money-impacting, but it is wasted/confusing code (a success path that can never display) and weakens trust that the redeem actually applied. Owner explicitly asked to flag unnecessary things.",
+      "reproduction": "Apply a valid redeem; observe the green success band defined at modal:42-49 never appears because the modal closes immediately.",
+      "recommended_correction": "Either keep the modal open briefly to show successMessage (delay the emit/close by ~1s), or delete the success band + successMessage state as dead code and rely on the parent's post-refresh feedback. Decide one; do not keep both.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M9-05",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Modal reset on open is incomplete: loyaltyCode / pointsToRedeem / customerBalance persist across opens for a different order",
+      "file_line": "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:224-243,193-203",
+      "evidence": "watch.open(newVal) resets errorMessage, successMessage, loading, lastResponse on each fresh open (modal:226-231) but does NOT reset loyaltyCode, pointsToRedeem, or customerBalance (data defaults at modal:195-200). The same component instance is reused across both mounts for successive orders.",
+      "why_it_matters": "A cashier who opens the redeem modal, types customer A's code and 500 points, cancels, then opens it again for the next order/customer will see customer A's code and 500 points pre-filled. With a fast queue this risks redeeming against the wrong customer code or wrong point amount -> a real cross-customer mistake, caught only by the server CUSTOMER_NOT_FOUND/INSUFFICIENT_BALANCE if lucky, or silently applied if the stale code happens to be valid.",
+      "reproduction": "Open redeem, enter a code + points, press Cancel. Re-open the modal: the previous code and points are still there.",
+      "recommended_correction": "In the watch.open(true) block also reset loyaltyCode='', pointsToRedeem=0, customerBalance=null so every open starts clean.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M9-06",
+      "severity": "P3",
+      "category": "logic",
+      "title": "POS redeem path never uses LoyaltyQrSigner: trusts a plaintext loyalty_code, no signature/nonce/replay protection (asymmetry vs kiosk)",
+      "file_line": "app/Services/Loyalty/PosRedemptionService.php:89-132; app/Services/Loyalty/LoyaltyQrSigner.php:94-160; app/Http/Requests/PosLoyaltyRedeemRequest.php:31",
+      "evidence": "PosRedemptionService looks the customer up directly by the typed plaintext code: User::where('loyalty_code', $loyaltyCode) (PosRedemptionService.php:114, fallback :123). The FormRequest only validates shape (regex/min:4/max:25, PosLoyaltyRedeemRequest.php:31). LoyaltyQrSigner.verifyAndConsume (HMAC-SHA256 + single-use nonce + replay defense, LoyaltyQrSigner.php:94-160) is wired only into the kiosk LoyaltyController path, never POS. So a POS redeem accepts any plaintext code with no signature or anti-replay.",
+      "why_it_matters": "This is defensible by design - a cashier-operated terminal is a trusted boundary, the cashier physically reads/keys the code, and the permission gate + UNIQUE(user_id,order_id,type) + balance check bound abuse. But the owner asked about QR tamper-resistance specifically, so the asymmetry should be stated explicitly rather than assumed: the strong signed-QR guarantees the kiosk enjoys do NOT apply at POS. If a future flow lets a customer-presented QR be scanned straight into this POS field, it would bypass the signer entirely.",
+      "reproduction": "Trace: PosLoyaltyController.redeem -> PosRedemptionService.applyToOrder -> User::where('loyalty_code', plaintext). grep confirms LoyaltyQrSigner is not referenced anywhere under the POS redeem chain.",
+      "recommended_correction": "No change required for V1 cashier-keyed flow (trusted operator). Document the boundary. IF a scan-the-customer-QR-at-POS path is added later, route the scanned token through LoyaltyQrSigner.verifyAndConsume first (source_surface='pos') exactly like the kiosk, so the nonce is consumed and replay is blocked.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M9-07",
+      "severity": "P3",
+      "category": "nf525",
+      "title": "Loyalty redeem adjusts order.discount/total but not total_tax (stale-comment fiscal flag) — needs live Z verification, not a blind P0",
+      "file_line": "app/Services/Loyalty/PosRedemptionService.php:66-78,203-242; config/pos.php:165-176",
+      "evidence": "The service comment (PosRedemptionService.php:66-78, dated 2026-05-30) states loyalty redeem updates order.discount + order.total but NOT order.total_tax / order_items.tax_amount, calling it a 'fiscally-incorrect Z', and gates the whole feature behind config('pos.manual_discount_enabled'). BUT config/pos.php:165-176 documents the owner REACTIVATED that flag (default true) AFTER verifying a real discounted Z passes (total_tva == sum total_by_tax_rate, verifyChain ✓). That is strong counter-evidence the comment is stale.",
+      "why_it_matters": "If genuinely unfixed, a discounted Z would mis-split VAT (Loi de Finance). But the owner's documented reactivation note directly contradicts the stale comment, and this project has been burned by code-proven fiscal P0s that were actually already addressed. So this must be live-verified (does the Z recompute tax from line items, or trust stored order.total_tax?) before any severity is asserted.",
+      "reproduction": "Live: apply a POS loyalty redeem at a non-zero VAT rate, close the Z, run php artisan fiscal:verify-chain --all and check total_tva == sum(total_by_tax_rate). If they diverge -> real P1/P0 fiscal; if equal -> stale comment, downgrade to doc cleanup.",
+      "recommended_correction": "Do NOT change fiscal behavior without an owner gate (frozen NF525 zone). First run the live Z verification above. If the comment is stale, update it to reflect the verified-correct state. If a real split defect exists, escalate under a lock-plan.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "low"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Double-redeem defense is genuinely layered and sound",
+      "file_line": "app/Services/Loyalty/PosRedemptionService.php:179-200; PosLoyaltyRedeemModal.vue:266-271; routes/api.php:1000-1002",
+      "note": "Client builds a minute-bucketed idempotency key (modal:266-271) sent as X-Idempotency-Key; route carries 'idempotency' middleware; and the authoritative backstop is UNIQUE(user_id, order_id, type) caught as SQLSTATE 23000 -> ALREADY_REDEEMED 409 (PosRedemptionService.php:191-200). A flaky-tablet double click cannot double-spend points. Well-reasoned defense in depth."
+    },
+    {
+      "title": "Zero / negative / insufficient balance edge cases are handled cleanly",
+      "file_line": "app/Services/Loyalty/PosRedemptionService.php:85-87,134-141; app/Http/Requests/PosLoyaltyRedeemRequest.php:30",
+      "note": "FormRequest enforces points integer min:1 (PosLoyaltyRedeemRequest.php:30); service re-checks points<=0 -> INVALID_POINTS (:85-87) and available<points -> INSUFFICIENT_BALANCE with the exact available/requested in the message (:134-141). No path lets points go negative or overdraw the balance."
+    },
+    {
+      "title": "Cross-branch guard + SoftDelete-preserving scope bypass is correct and well-documented",
+      "file_line": "app/Http/Controllers/Admin/PosLoyaltyController.php:45-56; app/Services/Loyalty/PosRedemptionService.php:235-246",
+      "note": "Controller bypasses only BranchScope (singular) to find the order, then does an explicit post-fetch branch-ownership check with admin (branch_id=0) bypass (PosLoyaltyController.php:45-56). The service keeps SoftDeletingScope active so a soft-deleted order can't be silently mutated (:235). This closes the Z6/Z8 cross-branch redeem hole without leaking deleted orders — strong, intentional reasoning."
+    },
+    {
+      "title": "Balance mutation is atomic under a row lock with a real customer-active filter",
+      "file_line": "app/Services/Loyalty/PosRedemptionService.php:112-119,167-174",
+      "note": "The whole decrement+ledger+order-recompute runs inside DB::transaction with User lockForUpdate (non-sqlite) and a status=ACTIVE filter plus a legacy status=1 fallback (:112-128). Concurrent redeems on the same customer serialize correctly; balance can't be torn by a race."
+    }
+  ]
+}

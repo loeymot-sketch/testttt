@@ -1,0 +1,61 @@
+[
+  {
+    "name": "mock-borne-foodking",
+    "url": "file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/borne (Remix)/Borne FoodKing.html",
+    "screenshot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/mock-borne-foodking.png",
+    "text": {
+      "length": 0,
+      "matches": [],
+      "sample": ""
+    }
+  },
+  {
+    "name": "mock-borne-grillhouse",
+    "url": "file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/borne (Remix)/Borne Grill House.html",
+    "screenshot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/mock-borne-grillhouse.png",
+    "text": {
+      "length": 0,
+      "matches": [],
+      "sample": ""
+    }
+  },
+  {
+    "name": "mock-borne-v1-design-system",
+    "url": "file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/borne (Remix)/Kiosk V1 - Design System.html",
+    "screenshot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/mock-borne-v1-design-system.png",
+    "text": {
+      "length": 2829,
+      "matches": [
+        "Payment"
+      ],
+      "sample": "🍔 FoodKing Kiosk V1 — Design System\nLivrable design · Vague 1 (a11y + fondations) · 10 artefacts · 1080×1920 portrait, 82 DPI\n① Vue d'ensemble\n② A11y variants\n③ RTL — FR ↔ AR\n④ Consent RGPD\n⑤ V2 / V1.5 différés\nVague 1 — Livraison\nSuite au brief d'intégration du 18/04, voici les 10 artefacts livrés pour passer en intégration Cursor (Laravel + Vue). L'accessibilité est en priorité absolue (EAA 28 juin 2025, loi 2005-102, WCAG 2.2 AAA sur mode renforcé).\n📄 SPÉCIFICATIONS TECHNIQUES (DOCS/DESIGN/)\nHardware spec\n✓ V1\ndocs/design/KIOSK_HARDWARE_SPEC.md\nRésolution 1080×1920, 82 DPI, mount 85 cm, zone PMR 160-1760 px. Cibles perf Intel N5030.\nBridge hardware\n✓ V1\ndocs/design/KIOSK_HARDWARE_CALLS.md\nAPI window.borne.* complète (sons, print, TPE, QR/NFC, TTS, haptique). Appels par écran. Stub dev.\nAnalytics events\n✓ V1\ndocs/design/KIOSK_ANALYTICS_EVENTS.md\n29 événements V1, payload structuré, opt-in gate. Granularité décisions (pas tap-level).\nContrat data\n✓ V1\ndocs/design/DATA_CONTRACT.md\nEndpoints + TypeScript types pour chaque composant. Migrations SQL fournies. 7 invariants testables.\nDesign tokens\n✓ V1\ndocs/design/tokens.json\nFormat W3C DTCG (Style Dictionary compatible). Couleurs, t"
+    }
+  },
+  {
+    "name": "live-kiosk-login",
+    "url": "http://127.0.0.1:8000/kiosk/idle",
+    "screenshot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/live-kiosk-login.png",
+    "errors": [],
+    "text": {
+      "length": 139,
+      "matches": [],
+      "sample": "Bienvenue !\n\nCommandez en quelques touches\n\nSur place\nJe mange ici\nÀ emporter\nJe récupère ma commande\n\nChoisissez une option pour commencer"
+    }
+  },
+  {
+    "name": "live-pos-v4",
+    "url": "http://127.0.0.1:8000/admin/pos-v4",
+    "screenshot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/live-pos-v4.png",
+    "errors": [],
+    "text": {
+      "length": 604,
+      "matches": [
+        "Dashboard",
+        "Order",
+        "Total",
+        "Discount"
+      ],
+      "sample": "English\nEnglish\nFrench\nHello\nCaissier Le Cay..\nCaissier Le Cayenne\n\npos@lecayenne.fr\n\n+330600000002\n\n0.00€\nLogout\nDashboard\nPOS & ORDERS\nPOS\nPOS Orders\nK.D.S\nO.S.S\nSkip to cart\nNos Tacos\nNos Sandwichs\nNos Burgers\nNos Assiettes\nOjja\nOmelettes\nNos Salades\nChicken & Tenders\nNos Menus Enfants\nFrites & Accompagnements\nNos Desserts\nNos Boissons\nSuppléments\n⭐ Best Sellers\nTacos M (1 Viande)\n6.50€\nTacos L (2 Viandes)\n8.50€\nLe Terminator\n9.00€\nLe Cayenne\n7.00€\nDouble Cheese\n7.00€\nPark\nParked orders (0)\nSelect Order Type\nTakeaway\nDelivery\nItem\tQty\tPrice\nSub Total\n0.00€\nDiscount\n0.00€\nTotal (HT)\n0.00€\n🖥️\n11"
+    }
+  }
+]

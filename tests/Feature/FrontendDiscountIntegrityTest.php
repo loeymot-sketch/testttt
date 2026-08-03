@@ -12,6 +12,7 @@ use App\Models\Coupon;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\OrderCoupon;
+use App\Enums\Status;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Smartisan\Settings\Facades\Settings;
@@ -74,7 +75,10 @@ class FrontendDiscountIntegrityTest extends TestCase
             'phone' => '0600000010',
             'password' => bcrypt('password123'),
             'branch_id' => $this->branch->id,
-            'status' => 1,
+            // [Sprint H1 Z6-06 2026-05-17] Was `1`; canonical user-status
+            // ACTIVE = 5 (App\Enums\Status). EnsureUserStatusActive rejects
+            // any non-ACTIVE user — pre-existing test-fixture data bug.
+            'status' => Status::ACTIVE,
         ]);
 
         $this->loyaltyCustomer = User::forceCreate([
@@ -84,7 +88,8 @@ class FrontendDiscountIntegrityTest extends TestCase
             'phone' => '0600000011',
             'password' => bcrypt('password123'),
             'branch_id' => $this->branch->id,
-            'status' => 1,
+            // [Sprint H1 Z6-06 2026-05-17] Was `1`; see comment above.
+            'status' => Status::ACTIVE,
             'loyalty_code' => 'LOYAL100',
             'loyalty_points' => 500,
         ]);
@@ -127,6 +132,12 @@ class FrontendDiscountIntegrityTest extends TestCase
 
     public function test_valid_coupon_is_applied_through_centralized_validation(): void
     {
+        // [GOAL-GOLIVE-VAT10] Subject = discount CALC/anti-forgery correctness, not
+        // the V1 on/off policy → enable the discretionary-discount master flag so the
+        // gated path runs (mirrors PosDiscountTest:46). Production default stays OFF;
+        // the OFF behaviour is locked by test_discretionary_discount_disabled_..._v1().
+        config(['pos.manual_discount_enabled' => true]);
+
         $coupon = Coupon::forceCreate([
             'name' => 'FRONT10',
             'description' => '10 percent',
@@ -162,8 +173,58 @@ class FrontendDiscountIntegrityTest extends TestCase
         ]);
     }
 
+    public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
+    {
+        // [GOAL-GOLIVE-VAT10] Subject = anti-forgery (server ignores client totals),
+        // not the V1 on/off policy → enable the master flag so the discount path runs.
+        config(['pos.manual_discount_enabled' => true]);
+
+        $coupon = Coupon::forceCreate([
+            'name' => 'FRONT10_FORGED',
+            'description' => '10 percent',
+            'code' => 'FRONT10-FORGED',
+            'discount' => 10,
+            'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDay(),
+            'minimum_order' => 10,
+            'maximum_discount' => 100,
+            'limit_per_user' => 2,
+        ]);
+
+        $response = $this
+            ->actingAs($this->orderUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'coupon_id' => $coupon->id,
+                'subtotal' => 999.00,
+                'total' => 999.00,
+                'discount' => 900.00,
+            ]));
+
+        $response->assertStatus(201);
+        $orderId = $response->json('data.id');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'subtotal' => 20.00,
+            'discount' => 2.00,
+            'total' => 18.00,
+        ]);
+
+        $this->assertDatabaseHas('order_coupons', [
+            'order_id' => $orderId,
+            'coupon_id' => $coupon->id,
+            'discount' => 2.00,
+        ]);
+    }
+
     public function test_coupon_takes_priority_over_loyalty_discount_on_frontend_order(): void
     {
+        // [GOAL-GOLIVE-VAT10] Subject = coupon-over-loyalty priority, not the V1
+        // on/off policy → enable the master flag so both discount paths are live.
+        config(['pos.manual_discount_enabled' => true]);
+
         $coupon = Coupon::forceCreate([
             'name' => 'FIXED5',
             'description' => '5 euros',
@@ -217,5 +278,87 @@ class FrontendDiscountIntegrityTest extends TestCase
         ]);
         $this->assertSame(500, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
         $this->assertFalse((bool) $response->json('loyalty_applied'));
+    }
+
+    /**
+     * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Sentinel — les kill-switches côté
+     * FrontendOrderService::assertDiscretionaryDiscountAllowed refusent chacun leur
+     * famille de remise, avec rollback intégral de la transaction :
+     *   - coupon (discrétionnaire) → manual_discount_enabled=false → 422 + rollback.
+     *   - redeem fidélité → loyalty_enabled=false → 422 + rollback (aucun point brûlé).
+     * Coupon et redeem sont mutuellement exclusifs sur ce chemin, donc les deux
+     * flags gouvernent des sous-chemins disjoints. Le découplage (redeem AUTORISÉ
+     * quand manual_discount_enabled=false mais loyalty_enabled=true) est prouvé par
+     * LoyaltyDecoupledFromManualDiscountTest.
+     */
+    public function test_discretionary_discount_killswitch_engages_on_frontend_v1(): void
+    {
+        // Chaque famille est coupée par SON kill-switch dédié ; on vérifie le
+        // rollback intégral (canal de sécurité si une famille doit être re-coupée).
+        config(['pos.manual_discount_enabled' => false]);
+
+        // --- Sub-path A: coupon (kill-switch remises manuelles) ---
+        $coupon = Coupon::forceCreate([
+            'name' => 'GATE10',
+            'description' => '10 percent',
+            'code' => 'GATE10',
+            'discount' => 10,
+            'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDay(),
+            'minimum_order' => 10,
+            'maximum_discount' => 5,
+            'limit_per_user' => 2,
+        ]);
+
+        $couponResponse = $this
+            ->actingAs($this->orderUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'coupon_id' => $coupon->id,
+            ]));
+
+        // The gate throws a ValidationException, but myOrderStore's catch(Exception)
+        // re-wraps it as a generic 422 (the field-error structure is flattened) — so
+        // we assert the status + the transaction-rollback effects, matching the
+        // canonical ManualDiscountDisabledV1SentinelTest convention (status-only).
+        $couponResponse->assertStatus(422);
+        $this->assertSame(0, OrderCoupon::count(), 'Refused coupon order must not persist a coupon link.');
+        $this->assertSame(0, \App\Models\FrontendOrder::count(), 'Refused coupon order must roll back entirely.');
+
+        // --- Sub-path B: kiosk/web loyalty redeem (kill-switch DÉDIÉ fidélité) ---
+        // [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Le redeem fidélité est gouverné par
+        // loyalty_enabled (pas manual_discount_enabled) : on active donc SON
+        // kill-switch pour prouver le refus + rollback (aucun point brûlé). The
+        // FrontendOrderService kiosk-loyalty lookup matches status=1 (legacy active),
+        // so use a status=1 redeemer holding enough points. 5.00 EUR == 500 pts
+        // (rate 100) >= min 100, balance 500 → the redeem WOULD apply a 5.00 €
+        // discount, which the loyalty kill-switch must refuse (422) + roll tx back.
+        config(['pos.loyalty_enabled' => false]);
+        $redeemer = User::forceCreate([
+            'name' => 'Loyalty Redeemer',
+            'email' => 'loyalty-redeemer@test.local',
+            'username' => 'loyalty_redeemer',
+            'phone' => '0600000012',
+            'password' => bcrypt('password123'),
+            'branch_id' => $this->branch->id,
+            'status' => 1,
+            'loyalty_code' => 'LEGACY500',
+            'loyalty_points' => 500,
+        ]);
+
+        $loyaltyResponse = $this
+            ->actingAs($this->orderUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'loyalty_code' => $redeemer->loyalty_code,
+                'discount' => 5.00,
+            ]));
+
+        $loyaltyResponse->assertStatus(422);
+        // Transaction rollback proof: no points burned, no ledger, no order.
+        $this->assertSame(500, (int) $redeemer->fresh()->loyalty_points, 'Refused loyalty redeem must not burn points.');
+        $this->assertSame(0, \App\Models\LoyaltyTransaction::where('type', 'redeem')->count(), 'Refused loyalty redeem must not write a ledger entry.');
+        $this->assertSame(0, \App\Models\FrontendOrder::count(), 'Refused loyalty order must roll back entirely.');
     }
 }

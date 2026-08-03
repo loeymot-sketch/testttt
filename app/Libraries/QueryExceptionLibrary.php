@@ -19,7 +19,7 @@ class QueryExceptionLibrary
             if ($e->errorInfo[1] === 1451) {
                 return trans('all.message.resource_already_used');
             } else {
-                return env('APP_DEBUG') ? $e->getMessage() : trans('all.message.database_error_message');
+                return config('app.debug') ? $e->getMessage() : trans('all.message.database_error_message');
             }
         } else {
             return $e->getMessage();

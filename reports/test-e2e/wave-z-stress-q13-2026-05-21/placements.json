@@ -1,0 +1,414 @@
+{
+  "wall_ms": 16272,
+  "placements": [],
+  "failures": [
+    {
+      "ctx": 1,
+      "idx": 0,
+      "idempotencyKey": "STRESS-Q13-c1-1779344149196-0",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 1,
+      "idx": 1,
+      "idempotencyKey": "STRESS-Q13-c1-1779344151730-1",
+      "stage": "store",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 1,
+      "idx": 2,
+      "idempotencyKey": "STRESS-Q13-c1-1779344156620-2",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 1,
+      "idx": 3,
+      "idempotencyKey": "STRESS-Q13-c1-1779344159122-3",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 4,
+      "idempotencyKey": "STRESS-Q13-c1-1779344161099-4",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 5,
+      "idempotencyKey": "STRESS-Q13-c1-1779344161422-5",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 6,
+      "idempotencyKey": "STRESS-Q13-c1-1779344161593-6",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 7,
+      "idempotencyKey": "STRESS-Q13-c1-1779344161780-7",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 8,
+      "idempotencyKey": "STRESS-Q13-c1-1779344161940-8",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 9,
+      "idempotencyKey": "STRESS-Q13-c1-1779344162113-9",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 10,
+      "idempotencyKey": "STRESS-Q13-c1-1779344162284-10",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 11,
+      "idempotencyKey": "STRESS-Q13-c1-1779344162444-11",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 12,
+      "idempotencyKey": "STRESS-Q13-c1-1779344162590-12",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 13,
+      "idempotencyKey": "STRESS-Q13-c1-1779344162744-13",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 14,
+      "idempotencyKey": "STRESS-Q13-c1-1779344162893-14",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 15,
+      "idempotencyKey": "STRESS-Q13-c1-1779344163201-15",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 1,
+      "idx": 16,
+      "idempotencyKey": "STRESS-Q13-c1-1779344163374-16",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 0,
+      "idempotencyKey": "STRESS-Q13-c2-1779344150707-0",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 2,
+      "idx": 1,
+      "idempotencyKey": "STRESS-Q13-c2-1779344152752-1",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 2,
+      "idx": 2,
+      "idempotencyKey": "STRESS-Q13-c2-1779344155249-2",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 2,
+      "idx": 3,
+      "idempotencyKey": "STRESS-Q13-c2-1779344157747-3",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 2,
+      "idx": 4,
+      "idempotencyKey": "STRESS-Q13-c2-1779344160417-4",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 5,
+      "idempotencyKey": "STRESS-Q13-c2-1779344161303-5",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 6,
+      "idempotencyKey": "STRESS-Q13-c2-1779344161527-6",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 7,
+      "idempotencyKey": "STRESS-Q13-c2-1779344161717-7",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 8,
+      "idempotencyKey": "STRESS-Q13-c2-1779344161874-8",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 9,
+      "idempotencyKey": "STRESS-Q13-c2-1779344162029-9",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 10,
+      "idempotencyKey": "STRESS-Q13-c2-1779344162227-10",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 11,
+      "idempotencyKey": "STRESS-Q13-c2-1779344162381-11",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 12,
+      "idempotencyKey": "STRESS-Q13-c2-1779344162541-12",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 13,
+      "idempotencyKey": "STRESS-Q13-c2-1779344162693-13",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 14,
+      "idempotencyKey": "STRESS-Q13-c2-1779344162835-14",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 15,
+      "idempotencyKey": "STRESS-Q13-c2-1779344163093-15",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 2,
+      "idx": 16,
+      "idempotencyKey": "STRESS-Q13-c2-1779344163313-16",
+      "stage": "quote",
+      "status": 429,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 429: {\"message\":\"Too many kiosk login attempts. Please try again shortly.\",\"retry_after\":60}"
+    },
+    {
+      "ctx": 3,
+      "idx": 0,
+      "idempotencyKey": "STRESS-Q13-c3-1779344149902-0",
+      "stage": "store",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 3,
+      "idx": 1,
+      "idempotencyKey": "STRESS-Q13-c3-1779344154230-1",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 3,
+      "idx": 2,
+      "idempotencyKey": "STRESS-Q13-c3-1779344156597-2",
+      "stage": "quote",
+      "status": 401,
+      "message": "placeKioskOrder failed at stage=\"quote\" HTTP 401: {\"message\":\"Unauthenticated.\"}"
+    },
+    {
+      "ctx": 3,
+      "idx": 3,
+      "idempotencyKey": "STRESS-Q13-c3-1779344158988-3",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 4,
+      "idempotencyKey": "STRESS-Q13-c3-1779344161363-4",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 5,
+      "idempotencyKey": "STRESS-Q13-c3-1779344161567-5",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 6,
+      "idempotencyKey": "STRESS-Q13-c3-1779344161761-6",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 7,
+      "idempotencyKey": "STRESS-Q13-c3-1779344161924-7",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 8,
+      "idempotencyKey": "STRESS-Q13-c3-1779344162072-8",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 9,
+      "idempotencyKey": "STRESS-Q13-c3-1779344162268-9",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 10,
+      "idempotencyKey": "STRESS-Q13-c3-1779344162432-10",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 11,
+      "idempotencyKey": "STRESS-Q13-c3-1779344162578-11",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 12,
+      "idempotencyKey": "STRESS-Q13-c3-1779344162730-12",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 13,
+      "idempotencyKey": "STRESS-Q13-c3-1779344162880-13",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 14,
+      "idempotencyKey": "STRESS-Q13-c3-1779344163183-14",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 15,
+      "idempotencyKey": "STRESS-Q13-c3-1779344163357-15",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    },
+    {
+      "ctx": 3,
+      "idx": 16,
+      "idempotencyKey": "STRESS-Q13-c3-1779344163579-16",
+      "stage": "store",
+      "status": 422,
+      "message": "placeKioskOrder failed at stage=\"store\" HTTP 422: {\"message\":\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\",\"errors\":{\"order_type\":[\"Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.\"]}}"
+    }
+  ]
+}

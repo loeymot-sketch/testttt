@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "role": "adversarial supervisor (attack-only, no code changes)",
+    "head": "de39f172838338ce331d5bb4f59734244c01f96a",
+    "range": "24e8a09c3..HEAD",
+    "date": "2026-07-07",
+    "commits_audited": ["61ece6440", "48eacd970", "b05ba62c5", "0fcad5985"],
+    "method": "verify-before-report — every finding grep/DB/repro-confirmed"
+  },
+  "fixes_hold": [
+    {
+      "id": 1,
+      "title": "Secrets gitignore (61ece6440) — catch-all .env.*",
+      "verdict": "HOLDS",
+      "proof": "git check-ignore confirms .env, .env.bak-debug, .env.dashe2e, .env.e2e, .env.bak-<any>, .env.backup.goal-go-*, .env.testing ALL ignored. `git add -A --dry-run` stages 0 .env files. On-disk .env.bak-debug/.env.e2e/.env.dashe2e match secret patterns (AWS/HMAC). Tracked templates .env.example + .env.anthropic/codex/cursor/orcai.example remain trackable (already tracked, gitignore inert)."
+    },
+    {
+      "id": 2,
+      "title": "P1 differee x Z — COALESCE(fiscal_dated_at, created_at) window + P3 predecessor tie-break (48eacd970 frozen LOCK + b05ba62c5)",
+      "verdict": "HOLDS",
+      "scope_caveat": "HOLDS for the 3 stamped paths (confirmCounterPayment, delivery COD@doorstep, marquer-paye). See new_finding NF-01: a 4th allocation path (kiosk finalizePaidKioskOrder) is NOT stamped and reopens the same gap.",
+      "proof": "ZReportService::aggregate keys positive window + post-Z negative adjustment + warnOnOrphanedPaidOrders on fiscalDateExpr()=COALESCE(fiscal_dated_at,created_at) symmetrically. Deferred order created Z_n / encaissee Z_{n+1} -> fiscal NULL at Z_n close (excluded) + fiscal_dated_at (13:00) in (from,to] at Z_{n+1} (sealed once) + not <= from so not reversed = proven by ZReportDeferredMembershipTest 'deferred order created in z1 but collected in z2 lands in z2 only'. Non-deferred (fiscal_dated_at NULL) -> COALESCE=created_at byte-identical ('non deferred order keyed by created at unchanged'). Refund-of-deferred: mirror is fresh Order::create with created_at=now=alloc instant (RefundWithCounterEntryService:105-137) so COALESCE=created_at correct, no double-count. Tie-break: predecessor query filters status=STATUS_CLOSED while $open is still STATUS_OPEN (loaded ZReportService:213-218, flipped later) -> self never selected; closed_at<=$closedAt + id desc picks Z_{n-1} unambiguously; still excludes strictly-future closes = no double-count ('two z closed same instant no double count' green)."
+    },
+    {
+      "id": 3,
+      "title": "Detecteur honnete pre/post-C33 (b05ba62c5 VerifyZMembershipCommand)",
+      "verdict": "HOLDS",
+      "proof": "fiscal:verify-z-membership now reports 2444 real orphans (2443 fenetre-morte pre-C33 branch 1 + 2 'aucun Z' branches 7/9 + 1 post-last-Z) — matches the expected ~2444; it no longer masks historical dead-window orphans. Post-C33 window (prevClose, closed] on COALESCE mirrors aggregate() exactly (fallsInAnySignedWindow uses fiscalDate for 'fiscal' windows, created_at for pre-C33 'created' windows); pending-in-open-window orders are not flagged (no false positive on legit post-C33 coverage). These 2444 are pre-existing history, NOT introduced by the 5 fixes."
+    },
+    {
+      "id": 4,
+      "title": "Annulation telephone rembourse fidelite (0fcad5985 cancelCounterPayment)",
+      "verdict": "HOLDS",
+      "proof": "cancelCounterPayment calls LoyaltyService::refundPoints inside the same DB::transaction as the REFUNDED save, before terminal mutation. Idempotent double-defence: (a) top guard `if payment_status===REFUNDED return` under lockForUpdate -> a second cancel never re-enters refund; (b) refundPoints itself early-returns if !loyalty_customer_code (no-op sans fidelite), if no redeem txn, or if a type=manual_add reversal row already exists (backed by UNIQUE(user_id,order_id,type)). Double-cancel = exactly 1 credit."
+    },
+    {
+      "id": 5,
+      "title": "Purge commandes telephone + tel sur ticket (0fcad5985)",
+      "verdict": "HOLDS",
+      "proof": "Unified cleanupStaleDeferredOrder shared by kiosk+phone (no asymmetric guard). Phone block: source_surface='phone', status ACCEPT/PREPARING, PENDING_COUNTER, COUNTER_DEFERRED, fiscal_sequence_no NULL (fiscalised order immune). Staleness keyed on order_datetime < now-TTL (fallback created_at only when order_datetime NULL) so a future-slot phone order is NEVER purged before its hour. Terminal transitions all legal per OrderStateMachine.allows (PENDING->REJECTED, ACCEPT->CANCELED, PREPARING->CANCELED) so apply() never throws/rolls back; kiosk rule byte-identical (PENDING?REJECTED:CANCELED). Ticket: OrderReceiptEscPosRenderer prints 'Tel : <phone>' via textWrap(...,$w) on CLIENT + CUISINE, guarded !=='' (0 regression when absent); TicketWidthSafeTest green."
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "NF-01",
+      "severity": "P2",
+      "verdict": "CONFIRMED",
+      "title": "fiscal_dated_at NOT stamped on the kiosk-paid fiscal-allocation path (finalizePaidKioskOrder) — deferred kiosk allocation across a Z reopens the exact P1 gap AND evades the honest detector",
+      "proof": "Enumerated ALL 6 fiscal_sequence_no allocation sites. 3 stamp fiscal_dated_at (PaymentService:338/346 confirmCounterPayment; OrderService:1997/2005 delivery COD; OrderService:2603/2609 marquer-paye). 1 refund mirror is fresh-created (created_at=alloc, safe). 1 synchronous POS create (OrderService:1181, non-deferred, created_at=alloc). The 6th — FrontendOrderService::finalizePaidKioskOrder:1238 (`$locked->fiscal_sequence_no = $newSeq;`) — does NOT stamp fiscal_dated_at (b05ba62c5/0fcad5985 did not touch this file; git log 24e8a09c3..HEAD on FrontendOrderService.php shows no fiscal_dated_at change). This path is reached DEFERRED via (a) RetryFiscalAllocCommand (schedule everyMinute, picks PAID+fiscal NULL+fiscal_alloc_error_at oldest-first, re-invokes finalize) and (b) PaymentReconcileController:265 (late webhook/poll). Repro (logic): kiosk order created T0 in Z_n, alloc FAILS -> fiscal_alloc_error_at set; Z_n closes (order excluded, fiscal NULL); retry cron in Z_{n+1} allocates fiscal_sequence_no with fiscal_dated_at NULL -> COALESCE=created_at=T0 <= from(Z_n.closed_at) -> EXCLUDED from Z_{n+1} positive window -> numbered receipt in ZERO signed Z = NF525 gap-free violation. Worse, it is INVISIBLE to fiscal:verify-z-membership: fiscalDate=created_at=T0 falls inside Z_n's (already-closed) post-C33 window -> detector says 'sealed in Z_n -> OK' (false negative), though Z_n's signed aggregate excluded it. The LOCK plan (plans/LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT_2026-07-07.md) contains NO mention of finalizePaidKioskOrder / retry-alloc / kiosk auto-alloc — path was outside considered scope. Reachability bounded by (alloc-failure OR delayed-reconcile) AND (allocation spanning a Z close); low but non-zero (the retry mechanism exists precisely because alloc DOES fail — iter13/iter14 orphan history). Answers the task's targeted question: fiscal_dated_at is NOT on ALL allocation paths — one is forgotten. NOTE: fix is attack-only-reported; NOT modified per supervisor mandate."
+    },
+    {
+      "id": "NF-02",
+      "severity": "P3",
+      "verdict": "CONFIRMED",
+      "title": "c33_cutover_at default (2026-07-07 00:00:00) precedes the actual C33 code-live instant",
+      "proof": "Continuous-partition (prev-close lower bound) went live at 1d25cb67f 2026-07-07 13:07:44; COALESCE keying at 48eacd970 15:36:55. config('fiscal.c33_cutover_at') default = '2026-07-07 00:00:00'. Any Z CLOSED on 2026-07-07 between 00:00 and 13:07 was actually signed with legacy (opened_at, closed] on created_at, but the honest detector models it as post-C33 (fiscal continuous window) since closed_at>=cutover -> could mask a legitimate pre-C33 dead-window orphan of that specific close. Env-overridable (FISCAL_C33_CUTOVER_AT), same-day, dev-only, V1 LOCAL not yet prod-deployed; the config comment already instructs setting the real prod deploy instant. For strict honesty the default should be >= 13:07:44."
+    },
+    {
+      "id": "NF-03",
+      "severity": "P3",
+      "verdict": "CONFIRMED",
+      "title": "gitignore: .env.production.example / .env.staging.example are re-ignored by later .env.production.* / .env.staging.* patterns",
+      "proof": "git check-ignore reports .env.production.example and .env.staging.example as IGNORED: the negation `!.env.*.example` (line 20) is overridden by the later `.env.production.*` (line 26) and `.env.staging.*` (line 28). Zero current impact — neither file exists on disk nor is tracked; the primary template .env.example and .env.anthropic/codex/cursor/orcai.example are trackable. Latent trap only if someone later adds a prod/staging .example template."
+    }
+  ],
+  "gates": {
+    "vitest": {"result": "2301 passed | 3 skipped (2304)", "files": "327 passed", "expected": "2301/0", "status": "PASS"},
+    "phpunit": {"result": "3252 passed | 2 incomplete | 34 skipped", "exit": 0, "expected": "3252/0", "status": "PASS"},
+    "frozen_diff_24e8a09c3_HEAD": {"files": ["app/Services/Fiscal/ZReportService.php (LOCK 48eacd970/1d25cb67f)", "public/js/pos-wizard.js (LOCK a3376397c)", "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (LOCK a3376397c)"], "expected": "only these 3 LOCK files", "status": "PASS"},
+    "fiscal_verify_chain_all": {"result": "CHAIN OK branches 1,7,8,9", "expected": "CHAIN OK x4", "status": "PASS"},
+    "fiscal_verify_immutability_triggers": {"result": "8/8 present", "expected": "8/8", "status": "PASS"},
+    "fiscal_verify_z_membership": {"result": "2444 orphans honestly flagged (2443 pre-C33 dead-window + 2 no-Z branches + 1 post-last-Z)", "expected": "~2444 honest count (no masking)", "status": "PASS (honest, pre-existing history not a regression)"}
+  },
+  "regression_from_5_fixes": "NONE — all 6 gates green; the 5 fixes do what they claim for their scope; no new red test.",
+  "verdict": "ISSUES",
+  "verdict_rationale": "All 5 fixes individually HOLD and all gates are green, but the balayage frais final surfaces a real P2 (NF-01): the mega-audit's core P1 objective (every deferred fiscal allocation lands in exactly one signed Z) is NOT fully realized — the kiosk-paid allocation path (finalizePaidKioskOrder, reached via retry-alloc cron + payment reconcile) is the one fiscal-allocation edge that never stamps fiscal_dated_at, recreating the P1 Z-membership gap when kiosk allocation defers across a Z, and doing so invisibly to the honest detector. Recommend a scoped follow-up (stamp fiscal_dated_at at FrontendOrderService:1238 like the other 3 edges + a ZReportDeferredMembership test for the kiosk-retry channel). NF-02/NF-03 are P3 hygiene."
+}

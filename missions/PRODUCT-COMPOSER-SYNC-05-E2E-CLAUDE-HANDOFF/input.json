@@ -1,0 +1,30 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-05-E2E-CLAUDE-HANDOFF",
+  "execution_delegation": "codex-extension",
+  "mode": "validate-and-audit",
+  "objective": "Validate the full product composer, stock, POS/kiosk, KDS, queue, and payment flow and write a Claude-ready audit handoff.",
+  "preconditions": [
+    "PRODUCT-COMPOSER-SYNC-02-DASHBOARD-COMPOSER PASS",
+    "PRODUCT-COMPOSER-SYNC-03-PROJECTION-RUNTIME PASS",
+    "PRODUCT-COMPOSER-SYNC-04-STOCK-ORDER-SYNC PASS"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-05-E2E-CLAUDE-HANDOFF/allowlist.txt",
+  "forbidden": [
+    "Do not patch product code in final validation mission",
+    "Do not hide known failures",
+    "Do not claim PASS without E2E evidence"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "order-status-enum",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "audit-before-close"
+  ],
+  "expected_outputs": [
+    "Playwright scenarios",
+    "Final E2E report",
+    "Claude handoff prompt",
+    "Explicit final verdict"
+  ]
+}

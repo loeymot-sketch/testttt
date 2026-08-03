@@ -1,0 +1,101 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import {
+    isDuplicateCorrelation,
+    __resetCorrelationDedupe,
+    parseEvent,
+    validateEnvelope,
+    BROADCAST_MAP,
+} from '../../resources/js/services/eventContract.js';
+
+describe('eventContract — correlation dedupe (SYNC-002)', () => {
+    beforeEach(() => {
+        __resetCorrelationDedupe();
+    });
+
+    it('returns false for the first occurrence of a correlation id', () => {
+        expect(isDuplicateCorrelation('corr-1')).toBe(false);
+    });
+
+    it('returns true for the second occurrence of the same correlation id', () => {
+        isDuplicateCorrelation('corr-1');
+        expect(isDuplicateCorrelation('corr-1')).toBe(true);
+    });
+
+    it('dedupes by correlation id plus event type so sibling broadcasts both run', () => {
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed')).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'menu.item_availability_changed')).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed')).toBe(true);
+        expect(isDuplicateCorrelation('corr-1', 'menu.item_availability_changed')).toBe(true);
+    });
+
+    it('dedupes by branch too so central multi-branch catalog events both run', () => {
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 7)).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 8)).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 7)).toBe(true);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 8)).toBe(true);
+    });
+
+    it('[F4] dedupes by aggregate id so multi-item auto-86 of one request all run', () => {
+        // One request/correlation toggles availability for items 101, 102, 103:
+        // each emits ItemAvailabilityChanged with the SAME correlationId+type+branch
+        // but a DIFFERENT aggregate id. They must NOT collapse (else items 102/103
+        // stay sellable). A re-delivery of item 101 (same aggregate) still dedups.
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 101)).toBe(false);
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 102)).toBe(false);
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 103)).toBe(false);
+        // Re-delivery (WS + poll) of the SAME aggregate IS a duplicate:
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 101)).toBe(true);
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 102)).toBe(true);
+    });
+
+    it('treats null/undefined correlation ids as never-duplicate (defensive)', () => {
+        expect(isDuplicateCorrelation(null)).toBe(false);
+        expect(isDuplicateCorrelation(undefined)).toBe(false);
+        expect(isDuplicateCorrelation('')).toBe(false);
+    });
+
+    it('evicts the oldest entry once the LRU cap is exceeded (allows replay after rotation)', () => {
+        // NEW-01 raised the cap from 512 → 2048; keep this test in sync with
+        // SEEN_CORRELATION_CAP in eventContract.js.
+        const cap = 2048;
+        for (let i = 0; i < cap; i++) {
+            isDuplicateCorrelation(`corr-${i}`);
+        }
+        expect(isDuplicateCorrelation('corr-0')).toBe(true);
+        isDuplicateCorrelation('corr-new');
+        expect(isDuplicateCorrelation('corr-0')).toBe(false);
+    });
+});
+
+describe('eventContract — envelope validation', () => {
+    it('parseEvent extracts correlationId for downstream dedupe', () => {
+        const raw = {
+            version: 1,
+            type: 'order.created',
+            aggregate_id: 42,
+            branch_id: 7,
+            correlation_id: 'uuid-v4-here',
+            occurred_at: '2026-04-20T12:00:00Z',
+            payload: { order_id: 42 },
+        };
+        const parsed = parseEvent(raw);
+        expect(parsed.correlationId).toBe('uuid-v4-here');
+        expect(parsed.aggregateId).toBe(42);
+        expect(parsed.branchId).toBe(7);
+    });
+
+    it('validateEnvelope rejects v0 / missing payload / wrong type', () => {
+        expect(validateEnvelope(null)).toBe(false);
+        expect(validateEnvelope({ version: 0, type: 'x', payload: {} })).toBe(false);
+        expect(validateEnvelope({ version: 1, type: '', payload: {} })).toBe(false);
+        expect(validateEnvelope({ version: 1, type: 'x' })).toBe(false);
+    });
+
+    it('BROADCAST_MAP covers the V1 events POS/Kiosk/KDS rely on', () => {
+        expect(BROADCAST_MAP.OrderCreated).toBeDefined();
+        expect(BROADCAST_MAP.OrderStatusChanged).toBeDefined();
+        expect(BROADCAST_MAP.OrderPaidAtCounter).toBeDefined();
+        expect(BROADCAST_MAP.ItemAvailabilityChanged).toBeDefined();
+        expect(BROADCAST_MAP.CatalogChanged).toBeDefined();
+    });
+});

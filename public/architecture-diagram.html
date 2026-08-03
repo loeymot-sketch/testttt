@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FoodKing — Architecture V1 Le Cayenne</title>
+<style>
+  :root {
+    --bg-base: #09090b;
+    --bg-surface: #18181b;
+    --bg-elevated: #27272a;
+    --border: #3f3f46;
+    --border-hover: #52525b;
+    --text-primary: #fafafa;
+    --text-secondary: #d4d4d8;
+    --text-muted: #a1a1aa;
+    --text-dim: #71717a;
+
+    /* Accent palette (clean, intentional) */
+    --accent-central: #60a5fa;     /* Sky — backbone */
+    --accent-sync: #a78bfa;        /* Violet — sync flows */
+    --accent-surface: #34d399;     /* Emerald — operational surfaces */
+    --accent-fiscal: #fbbf24;      /* Amber — NF525 legal */
+    --accent-standalone: #f472b6;  /* Pink — standalones */
+    --accent-frozen: #6b7280;      /* Gray — frozen zones */
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-critical: #ef4444;
+
+    /* Subtle backgrounds for cards */
+    --bg-central: linear-gradient(135deg, #1e3a8a15, #1e3a8a05);
+    --bg-sync: linear-gradient(135deg, #5b21b615, #5b21b605);
+    --bg-surface-card: linear-gradient(135deg, #047857 15, #04785705);
+    --bg-fiscal: linear-gradient(135deg, #92400e15, #92400e05);
+    --bg-standalone: linear-gradient(135deg, #be185d15, #be185d05);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Inter", "Segoe UI", sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 24px 60px;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top, #1e3a8a08 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, #5b21b608 0%, transparent 50%);
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== Hero ===== */
+  .hero { margin-bottom: 48px; }
+  .hero-title {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    background: linear-gradient(120deg, #fafafa 0%, #a78bfa 60%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero-meta { color: var(--text-muted); font-size: 14px; line-height: 1.8; }
+  .hero-meta code {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 4px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--accent-fiscal);
+  }
+  .hero-cta {
+    color: var(--text-secondary);
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  /* ===== Legend ===== */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    padding: 16px 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 32px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .legend-line { width: 24px; height: 2px; border-radius: 1px; }
+
+  /* ===== Sync Hub Visualization (CENTRAL SVG) ===== */
+  .sync-section {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+  .section-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* Hub SVG container */
+  .sync-svg-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 620px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sync-svg-wrap svg { width: 100%; max-width: 1280px; height: auto; }
+
+  /* Animated flow lines */
+  @keyframes flow-pulse {
+    0% { stroke-dashoffset: 30; opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0.4; }
+  }
+  .flow-line {
+    stroke-dasharray: 6 4;
+    animation: flow-pulse 2.5s linear infinite;
+    cursor: pointer;
+    transition: stroke-width 0.2s;
+  }
+  .flow-line:hover { stroke-width: 4; }
+  .flow-line.cmd { stroke: var(--accent-sync); }
+  .flow-line.status { stroke: var(--accent-success); }
+  .flow-line.fiscal { stroke: var(--accent-fiscal); }
+  .flow-line.stock { stroke: var(--accent-warning); }
+  .flow-line.loyalty { stroke: var(--accent-standalone); }
+
+  .hub-node, .surface-node {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .hub-node:hover, .surface-node:hover { filter: brightness(1.2); }
+  .hub-node text, .surface-node text { font-family: ui-sans-serif, system-ui, sans-serif; pointer-events: none; }
+
+  /* Layer cards ===== */
+  .layer { margin-bottom: 32px; }
+  .layer-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .layer-grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .layer-grid.cols-6 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .layer-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    opacity: 0.8;
+  }
+  .card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -8px rgba(0,0,0,0.6);
+  }
+  .card.central::before { background: var(--accent-central); }
+  .card.sync::before { background: var(--accent-sync); }
+  .card.surface::before { background: var(--accent-surface); }
+  .card.fiscal::before { background: var(--accent-fiscal); }
+  .card.standalone::before { background: var(--accent-standalone); }
+  .card.frozen { border-style: dashed; }
+  .card.frozen::before { background: var(--accent-frozen); }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .card-emoji { font-size: 18px; }
+  .card-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .badge {
+    font-size: 9px; font-weight: 600;
+    padding: 3px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-frozen { background: rgba(107,114,128,0.2); color: var(--accent-frozen); border: 1px solid var(--accent-frozen); }
+  .badge-nf525 { background: rgba(251,191,36,0.15); color: var(--accent-fiscal); }
+  .badge-validated { background: rgba(16,185,129,0.15); color: var(--accent-success); }
+  .badge-demo { background: rgba(245,158,11,0.15); color: var(--accent-warning); }
+
+  /* ===== Intersection cards ===== */
+  .intersections {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+  .intersection-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+  .intersection-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-sync);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .intersection-card:hover { border-left-color: var(--accent-success); background: #2d2d31; }
+  .intersection-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--text-primary); }
+  .intersection-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; margin-bottom: 8px; }
+  .kpi-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kpi {
+    font-size: 10px; padding: 2px 8px; border-radius: 4px;
+    background: rgba(96,165,250,0.1); color: var(--accent-central); border: 1px solid rgba(96,165,250,0.3);
+    font-family: "SF Mono", monospace;
+  }
+
+  /* ===== Modal ===== */
+  .modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(9,9,11,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal.active { display: flex; }
+  .modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 760px; width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 24px 48px -12px rgba(0,0,0,0.8);
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 18px;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    color: var(--text-primary); width: 32px; height: 32px;
+    border-radius: 8px; cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--accent-critical); border-color: var(--accent-critical); }
+  .modal-title {
+    font-size: 22px; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 4px;
+    padding-right: 40px;
+  }
+  .modal-tag {
+    display: inline-block;
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    background: var(--bg-elevated); color: var(--text-muted);
+    margin-bottom: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+  }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section h3 {
+    color: var(--accent-surface); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px; font-weight: 600;
+  }
+  .modal-section p, .modal-section ul {
+    font-size: 13.5px; line-height: 1.7; color: var(--text-secondary);
+  }
+  .modal-section ul { padding-left: 18px; }
+  .modal-section ul li { margin-bottom: 5px; }
+  .modal-section code {
+    background: var(--bg-base);
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 12px; color: var(--accent-fiscal);
+    font-family: "SF Mono", ui-monospace, monospace;
+  }
+  .modal-files {
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--accent-central);
+  }
+  .modal-files div {
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-files div:last-child { border-bottom: none; }
+  .modal-status {
+    background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05));
+    border: 1px solid rgba(16,185,129,0.3);
+    padding: 12px 14px;
+    border-radius: 6px;
+    color: var(--accent-success);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 24px;
+  }
+  .footer-row { margin-bottom: 12px; font-size: 13px; }
+  .footer-row strong { color: var(--text-primary); margin-right: 8px; }
+  .footer a {
+    color: var(--accent-central);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent-central);
+    padding-bottom: 1px;
+    margin: 0 3px;
+    font-size: 12px;
+  }
+  .footer a:hover { color: var(--accent-sync); border-color: var(--accent-sync); }
+  .footer-note { color: var(--text-dim); font-size: 11px; margin-top: 10px; font-style: italic; }
+
+  @media (max-width: 768px) {
+    .hero-title { font-size: 28px; }
+    .legend { padding: 12px; gap: 10px; }
+    .sync-section, .intersections { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HERO -->
+  <header class="hero">
+    <h1 class="hero-title">🍔 FoodKing · Architecture V1 Le Cayenne</h1>
+    <div class="hero-meta">
+      Branche <code>heal/cms-pr1-quickwins-2026-05-18</code>
+      · Tag <code style="color:var(--accent-success)">v1.0.X-massive-converged-2026-05-19</code>
+      <br>
+      126 commits cumul · NF525 chain <code style="color:var(--accent-success)">CHAIN OK</code>
+      · Frozen-zone diff = <code style="color:var(--accent-success)">0</code>
+      · 16 audit zones · RED-cleared
+    </div>
+    <div class="hero-cta">💡 <strong>Cliquez n'importe quel élément</strong> (case, ligne de flux, intersection) pour voir l'explication détaillée.</div>
+  </header>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-central)"></div>Central (backend)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-sync)"></div>Sync infrastructure</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-surface)"></div>Surface opérationnelle</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-fiscal)"></div>NF525 fiscal</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-standalone)"></div>Standalone</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-frozen);border:1px dashed var(--text-muted)"></div>Frozen zone §7</div>
+    <div style="width:1px;height:18px;background:var(--border);"></div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--accent-sync)"></div>Création commande</div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--accent-success)"></div>Status sync</div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--accent-fiscal)"></div>Fiscal alloc</div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--accent-warning)"></div>Stock cascade</div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--accent-standalone)"></div>Loyalty</div>
+  </div>
+
+  <!-- SYNCHRONIZATION HUB SCHEMA -->
+  <section class="sync-section">
+    <div class="section-title">
+      <span class="section-icon" style="background:rgba(167,139,250,0.15);color:var(--accent-sync);">🔄</span>
+      Carte de synchronisation centrale
+    </div>
+    <div class="section-subtitle">
+      Le hub Outbox SSOT au centre · 6 surfaces opérationnelles autour · flux animés représentent les cascades temps-réel
+    </div>
+
+    <div class="sync-svg-wrap">
+      <svg viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Gradients for nodes -->
+          <radialGradient id="grad-central" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.1"/>
+          </radialGradient>
+          <radialGradient id="grad-sync" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.15"/>
+          </radialGradient>
+          <radialGradient id="grad-surface" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#34d399" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#34d399" stop-opacity="0.1"/>
+          </radialGradient>
+          <radialGradient id="grad-fiscal" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.1"/>
+          </radialGradient>
+          <!-- Arrow marker -->
+          <marker id="arrow-cmd" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa"/>
+          </marker>
+          <marker id="arrow-status" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+          </marker>
+          <marker id="arrow-fiscal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"/>
+          </marker>
+          <marker id="arrow-stock" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
+          </marker>
+          <marker id="arrow-loyalty" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#f472b6"/>
+          </marker>
+        </defs>
+
+        <!-- ===== Flow lines (drawn FIRST so nodes overlay) ===== -->
+        <!-- POS → Hub (cmd) -->
+        <path class="flow-line cmd" d="M 220 130 Q 400 230 580 270" fill="none" stroke-width="2.5" marker-end="url(#arrow-cmd)" data-flow="flow-pos-create"/>
+        <!-- Kiosk → Hub (cmd + fiscal at-creation) -->
+        <path class="flow-line cmd" d="M 220 270 Q 400 280 580 290" fill="none" stroke-width="2.5" marker-end="url(#arrow-cmd)" data-flow="flow-kiosk-create"/>
+        <path class="flow-line fiscal" d="M 220 280 Q 400 300 580 310" fill="none" stroke-width="2" marker-end="url(#arrow-fiscal)" data-flow="flow-fiscal-alloc"/>
+        <!-- Hub → KDS (broadcast) -->
+        <path class="flow-line status" d="M 720 270 Q 900 230 1060 130" fill="none" stroke-width="2.5" marker-end="url(#arrow-status)" data-flow="flow-hub-kds"/>
+        <!-- Hub → OSS (broadcast) -->
+        <path class="flow-line status" d="M 720 290 Q 900 280 1060 270" fill="none" stroke-width="2.5" marker-end="url(#arrow-status)" data-flow="flow-hub-oss"/>
+        <!-- KDS → Hub (status change bump) -->
+        <path class="flow-line status" d="M 1060 150 Q 900 270 720 310" fill="none" stroke-width="2" stroke-opacity="0.6" data-flow="flow-kds-bump"/>
+        <!-- Hub → Admin -->
+        <path class="flow-line status" d="M 650 380 Q 650 480 650 540" fill="none" stroke-width="2" marker-end="url(#arrow-status)" data-flow="flow-hub-admin"/>
+        <!-- POS → Hub (refund cascade) -->
+        <path class="flow-line loyalty" d="M 220 170 Q 400 320 580 330" fill="none" stroke-width="2" marker-end="url(#arrow-loyalty)" data-flow="flow-refund"/>
+        <!-- POS → Stock -->
+        <path class="flow-line stock" d="M 180 200 Q 200 350 280 500" fill="none" stroke-width="2" marker-end="url(#arrow-stock)" data-flow="flow-stock"/>
+        <!-- Hub → Livreur -->
+        <path class="flow-line cmd" d="M 720 330 Q 850 450 980 510" fill="none" stroke-width="2" marker-end="url(#arrow-cmd)" data-flow="flow-livreur"/>
+
+        <!-- ===== Hub central (Outbox + DB + Sync) ===== -->
+        <g class="hub-node" data-key="hub" transform="translate(650 300)">
+          <circle cx="0" cy="0" r="90" fill="url(#grad-sync)" stroke="#a78bfa" stroke-width="2" stroke-opacity="0.5"/>
+          <circle cx="0" cy="0" r="60" fill="#1c1c20" stroke="#a78bfa" stroke-width="1.5"/>
+          <text x="0" y="-12" text-anchor="middle" fill="#a78bfa" font-size="14" font-weight="700">SYNC HUB</text>
+          <text x="0" y="6" text-anchor="middle" fill="#d4d4d8" font-size="11">Outbox SSOT</text>
+          <text x="0" y="22" text-anchor="middle" fill="#a1a1aa" font-size="10">Pusher + Polling</text>
+        </g>
+
+        <!-- ===== Central DB satellite ===== -->
+        <g class="hub-node" data-key="db" transform="translate(420 460)">
+          <circle cx="0" cy="0" r="48" fill="url(#grad-central)" stroke="#60a5fa" stroke-width="1.5"/>
+          <text x="0" y="-4" text-anchor="middle" fill="#60a5fa" font-size="13" font-weight="600">📊 DB</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">MySQL · 22 BS</text>
+        </g>
+
+        <!-- NF525 satellite -->
+        <g class="hub-node" data-key="fiscal" transform="translate(880 460)">
+          <circle cx="0" cy="0" r="48" fill="url(#grad-fiscal)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 2"/>
+          <text x="0" y="-4" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="600">⚖️ NF525</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">FROZEN §7</text>
+        </g>
+
+        <!-- ===== Surfaces (around the hub) ===== -->
+        <!-- POS (top left) -->
+        <g class="surface-node" data-key="pos" transform="translate(140 150)">
+          <rect x="-80" y="-30" width="160" height="60" rx="10" fill="url(#grad-surface)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="0" y="-6" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">🪑 POS</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">Caisse · 11 sous-sys</text>
+        </g>
+
+        <!-- Kiosk (middle left) -->
+        <g class="surface-node" data-key="kiosk" transform="translate(140 290)">
+          <rect x="-80" y="-30" width="160" height="60" rx="10" fill="url(#grad-surface)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="0" y="-6" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">🟧 Kiosk</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">Borne client</text>
+        </g>
+
+        <!-- KDS (top right) -->
+        <g class="surface-node" data-key="kds" transform="translate(1140 150)">
+          <rect x="-80" y="-30" width="160" height="60" rx="10" fill="url(#grad-surface)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="0" y="-6" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">👨‍🍳 KDS</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">Kitchen Display</text>
+        </g>
+
+        <!-- OSS (middle right) -->
+        <g class="surface-node" data-key="oss" transform="translate(1140 290)">
+          <rect x="-80" y="-30" width="160" height="60" rx="10" fill="url(#grad-surface)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="0" y="-6" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">📺 OSS</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">Status mur client</text>
+        </g>
+
+        <!-- Admin (bottom center) -->
+        <g class="surface-node" data-key="admin" transform="translate(650 560)">
+          <rect x="-80" y="-30" width="160" height="60" rx="10" fill="url(#grad-surface)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="0" y="-6" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">🛠️ Admin</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">Dashboard owner</text>
+        </g>
+
+        <!-- Livreur (bottom right) -->
+        <g class="surface-node" data-key="livreur" transform="translate(1060 540)">
+          <rect x="-80" y="-30" width="160" height="60" rx="10" fill="url(#grad-surface)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="0" y="-6" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">🛵 Livreur</text>
+          <text x="0" y="12" text-anchor="middle" fill="#a1a1aa" font-size="10">DeliveryBoy app</text>
+        </g>
+
+        <!-- Stock satellite (bottom left) -->
+        <g class="hub-node" data-key="stock" transform="translate(280 540)">
+          <circle cx="0" cy="0" r="42" fill="url(#grad-central)" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="0" y="-2" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="600">📦 Stock</text>
+          <text x="0" y="14" text-anchor="middle" fill="#a1a1aa" font-size="9">+ Availability</text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- COUCHE 0 : Foundation -->
+  <section class="layer">
+    <div class="section-title">
+      <span class="section-icon" style="background:rgba(96,165,250,0.15);color:var(--accent-central);">🏛️</span>
+      Couche 0 — Foundation (le cœur du système)
+    </div>
+    <div class="section-subtitle">9 systèmes qui sous-tendent tout le reste · BranchScope multi-tenant · NF525 légal · Pricing SSOT</div>
+    <div class="layer-grid cols-3">
+      <div class="card central" data-key="db">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">📊</span> Database MySQL</div>
+        </div>
+        <div class="card-sub">169 migrations · 78 models · 21 BranchScope · 33 UNIQUE constraints</div>
+      </div>
+      <div class="card central" data-key="auth">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🔐</span> Auth + RBAC</div>
+        </div>
+        <div class="card-sub">Sanctum tokens · Spatie permissions · BranchScope auto-applied</div>
+      </div>
+      <div class="card sync" data-key="hub">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🔄</span> Sync Backbone</div>
+        </div>
+        <div class="card-sub">Outbox SSOT · Pusher broadcast · polling fallback 60s cap</div>
+      </div>
+      <div class="card fiscal frozen" data-key="fiscal">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">⚖️</span> NF525 Fiscal</div>
+          <span class="badge badge-nf525">LÉGAL</span>
+        </div>
+        <div class="card-sub">HMAC chain · Z reports · 6y rétention · count=97 ✅</div>
+      </div>
+      <div class="card fiscal frozen" data-key="pricing">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">💰</span> Pricing SSOT</div>
+          <span class="badge badge-frozen">§7</span>
+        </div>
+        <div class="card-sub">composition_snapshot frozen · POS↔Kiosk parity</div>
+      </div>
+      <div class="card central" data-key="stock">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">📦</span> Stock + Availability</div>
+        </div>
+        <div class="card-sub">StockService · ChoiceAvailabilityResolver · append-only triggers</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COUCHE 1 : Surfaces -->
+  <section class="layer">
+    <div class="section-title">
+      <span class="section-icon" style="background:rgba(52,211,153,0.15);color:var(--accent-surface);">🖥️</span>
+      Couche 1 — Surfaces opérationnelles V1
+    </div>
+    <div class="section-subtitle">6 surfaces où staff et clients interagissent · toutes synchronisées via le Sync Hub</div>
+    <div class="layer-grid cols-6">
+      <div class="card surface frozen" data-key="pos">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🪑</span> POS Caisse</div>
+          <span class="badge badge-frozen">UI §7</span>
+        </div>
+        <div class="card-sub">Staff register · 11 sous-systèmes · Wizard Vanilla JS S25</div>
+      </div>
+      <div class="card surface frozen" data-key="kiosk">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🟧</span> Kiosk Borne</div>
+          <span class="badge badge-frozen">UI §7</span>
+        </div>
+        <div class="card-sub">Client SPA · 4 templates wizard · FR-lock</div>
+      </div>
+      <div class="card surface" data-key="kds">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">👨‍🍳</span> KDS</div>
+        </div>
+        <div class="card-sub">Kitchen V2 grid · status whitelist · bump+undo</div>
+      </div>
+      <div class="card surface" data-key="oss">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">📺</span> OSS</div>
+        </div>
+        <div class="card-sub">Wall public · chime READY · PII-clean</div>
+      </div>
+      <div class="card surface" data-key="admin">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🛠️</span> Admin</div>
+        </div>
+        <div class="card-sub">Dashboard · Stock · Reports · Settings · RBAC</div>
+      </div>
+      <div class="card surface" data-key="livreur">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🛵</span> Livreur</div>
+        </div>
+        <div class="card-sub">DeliveryBoy app · Cash sessions NF525</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTERSECTIONS DETAILED -->
+  <section class="intersections">
+    <div class="section-title">
+      <span class="section-icon" style="background:rgba(167,139,250,0.15);color:var(--accent-sync);">🔗</span>
+      Intersections critiques · les flux qui synchronisent tout
+    </div>
+    <div class="section-subtitle">6 cascades validated · cliquez chaque case pour cascade détaillée step-by-step + defenses</div>
+    <div class="intersection-grid">
+      <div class="intersection-card" data-key="flow-pos-kds">
+        <div class="intersection-title">POS → KDS · création commande</div>
+        <div class="intersection-desc">
+          Order créé → OrderCreated event → PersistOrderCreatedToOutbox SSOT (listener FIRST) → broadcast Pusher → KDS reçoit
+        </div>
+        <div class="kpi-row">
+          <span class="kpi">WF-1 PASS</span>
+          <span class="kpi">9 cascade hops</span>
+          <span class="kpi">49 tests GREEN</span>
+        </div>
+      </div>
+      <div class="intersection-card" data-key="flow-pos-oss">
+        <div class="intersection-title">POS → OSS · status sync</div>
+        <div class="intersection-desc">
+          Status PREPARED → OrderStatusChanged → outbox → broadcast → OSS filter source_surface allowlist (fail-closed Wave 3c)
+        </div>
+        <div class="kpi-row">
+          <span class="kpi">WF-2 PROD-READY</span>
+          <span class="kpi">37/38 + 28/28</span>
+          <span class="kpi">PII-clean</span>
+        </div>
+      </div>
+      <div class="intersection-card" data-key="flow-kiosk-kds-oss">
+        <div class="intersection-title">Kiosk → KDS + OSS · NF525 at-creation</div>
+        <div class="intersection-desc">
+          Kiosk paid order → fiscal_sequence alloc AT CREATION (vs POS cash AT CLOSE) → broadcast cascade → KDS source=KIOSK · OSS public wall
+        </div>
+        <div class="kpi-row">
+          <span class="kpi">WF-3 GO V1</span>
+          <span class="kpi">chain CHAIN OK</span>
+        </div>
+      </div>
+      <div class="intersection-card" data-key="flow-stock">
+        <div class="intersection-title">Order → Stock cascade</div>
+        <div class="intersection-desc">
+          OrderCreated → DecrementStockOnOrderCreated → StockService → stock_movements (append-only DB triggers) → ChoiceAvailability cascade
+        </div>
+        <div class="kpi-row">
+          <span class="kpi">WF-4 multi-defense</span>
+          <span class="kpi">79/79 + 117/117</span>
+        </div>
+      </div>
+      <div class="intersection-card" data-key="flow-refund">
+        <div class="intersection-title">Refund cascade · 5 sub-cascades</div>
+        <div class="intersection-desc">
+          cashBack → RefundWithCounterEntry → audit chain extend + NEW OrderPaymentStatusChanged broadcast (WJ-1) + loyalty refundPoints (WG-1) + stock release
+        </div>
+        <div class="kpi-row">
+          <span class="kpi">Wave J P1 healed</span>
+          <span class="kpi">5 sentinels NEW</span>
+        </div>
+      </div>
+      <div class="intersection-card" data-key="flow-loyalty">
+        <div class="intersection-title">Loyalty earn + redeem cross-surface</div>
+        <div class="intersection-desc">
+          Earn POS+Kiosk via AwardLoyaltyPointsOnDelivery · Redeem POS new UI 2 CTAs (Wave E-1) + Kiosk via QR signed JWT (Wave H bug011 P0)
+        </div>
+        <div class="kpi-row">
+          <span class="kpi">WH P0 + WJ-3 P1</span>
+          <span class="kpi">9 sentinels QR</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STANDALONES -->
+  <section class="layer">
+    <div class="section-title">
+      <span class="section-icon" style="background:rgba(244,114,182,0.15);color:var(--accent-standalone);">📱</span>
+      Couche 2 — Standalones · NON reliés au backend V1 (intentionnel)
+    </div>
+    <div class="section-subtitle">Mobile + Web pour démo client · données mirror sans wireup API (V1 design)</div>
+    <div class="layer-grid cols-2">
+      <div class="card standalone" data-key="mobile">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">📱</span> Mobile App Le Cayenne</div>
+          <span class="badge badge-validated">PROD-READY V0</span>
+        </div>
+        <div class="card-sub">React Native mobile/screens-*.jsx · 22 specs E2E · Loyalty + Apple/Google Wallet</div>
+      </div>
+      <div class="card standalone" data-key="web">
+        <div class="card-header">
+          <div class="card-title"><span class="card-emoji">🌐</span> Web Site Le Cayenne</div>
+          <span class="badge badge-demo">DÉMO V1</span>
+        </div>
+        <div class="card-sub">/Downloads/web · 9 JSX + 6 legal HTML · 4 viewports · badges DÉMO Path A</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-row">
+      <strong>📚 Sources canoniques :</strong>
+      <a href="/CLAUDE.md">CLAUDE.md</a>
+      <a href="/PROJECT_BRAIN.md">PROJECT_BRAIN.md</a>
+      <a href="/plans/PR_PACKAGE_v1_0_X_massive_converged_2026-05-19.md">PR_PACKAGE</a>
+    </div>
+    <div class="footer-row">
+      <strong>🔗 Endpoints locaux à tester :</strong>
+      <a href="/login">/login</a>
+      <a href="/admin/pos">/admin/pos</a>
+      <a href="/kiosk/idle">/kiosk/idle</a>
+      <a href="/kds">/kds</a>
+      <a href="/order-status-screen">/order-status-screen</a>
+      <a href="/admin/items">/admin/items</a>
+      <a href="/admin/stock-rupture-dashboard">/admin/stock-rupture-dashboard</a>
+      <a href="/admin/delivery-boys">/admin/delivery-boys</a>
+    </div>
+    <div class="footer-note">
+      🤖 Auto-updated by Claude after each significant audit/heal cycle · Last update : 2026-05-19 post Wave I+J · Tag <code>v1.0.X-massive-converged-2026-05-19</code>
+    </div>
+  </footer>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const data = {
+  hub: {
+    title: "🔄 Sync Hub Central",
+    tag: "Outbox SSOT · Pusher · Polling fallback",
+    role: "Cœur de la synchronisation cross-surface. TOUS les changements d'état passent par ici avant d'atteindre KDS, OSS, ou tout autre client subscriber.",
+    invariants: ["Outbox SSOT : OrderCreated/StatusChanged/PaymentStatusChanged → outbox row FIRST avant tout broadcast (defense F-002 round-3)", "Pusher/Soketi broadcast avec channel-auth Sanctum token-name discriminator", "Polling fallback cadence cap 60s + jitter 30s (Wave 3b)", "ws:heartbeat after broadcast pour stale-detection (Wave 3c)", "Idempotency middleware sur 26+ mutation routes", "Webhook events UNIQUE(provider, webhook_id)"],
+    files: ["app/Models/OutboxEvent.php", "app/Jobs/DispatchDomainEventsJob.php", "app/Listeners/Persist*ToOutbox.php (3 listeners principaux)", "app/Events/OutboxBroadcastSwallowedEvent.php (NEW Wave J WJ-4)", "resources/js/services/{KdsSync,OssSync,PosSync}Service.js", "config/idempotency.php required_routes"],
+    sync: "Listener Persist*Outbox écrit row FIRST → DispatchDomainEventsJob (Cache::lock + lockForUpdate atomic claim) → Pusher broadcast OR polling client picks up via lastSyncedAt cursor.",
+    status: "✅ Wave F WF-1+WF-2+WF-3 cascades validated · Wave J WJ-4 swallow-alarm closed P1 · 102+ Outbox tests GREEN"
+  },
+  db: {
+    title: "📊 Database MySQL",
+    tag: "Source of truth · multi-tenant via BranchScope",
+    role: "Source de vérité pour TOUTES les données opérationnelles, fiscales et audit. Storage MySQL (prod) ou SQLite (CI).",
+    invariants: ["169 migrations alignées Wave G/H/J + Loyalty", "78 models · 83 FKs · 33 UNIQUE constraints", "21 models avec BranchScope (Customer exempté pour éviter Sanctum recursion)", "5 NF525-immutable tables avec triggers BEFORE DELETE/UPDATE"],
+    files: ["database/migrations/ (169 fichiers)", "app/Models/ (78 models)", "app/Models/Scopes/BranchScope.php (FROZEN §7)"],
+    status: "✅ Validated Wave I WI-3 (2 P0 healed: FreshOrderSeed env guard WJ-2 + DDL bypass owner-cloud-gate)"
+  },
+  auth: {
+    title: "🔐 Auth + RBAC + Sanctum",
+    tag: "Authentication + autorisation",
+    role: "Gestion identité + permissions pour toutes les surfaces (admin staff, Kiosk machine token, customer, livreur).",
+    invariants: ["Login admin email/password → Sanctum token", "Kiosk machine token avec ability 'kiosk:order' (scoped)", "Spatie permissions : Admin, Branch Manager, POS Operator, Chef, Customer", "BranchScope auto-applied : staff branch_id>0 scoped, super-admin branch_id=0 exempt", "Password reset revoke tokens (Wave J WJ-3 SEC-RST-01)"],
+    files: ["app/Http/Controllers/Auth/* (login + signup + forgot password)", "app/Http/Middleware/EnsureUserStatusActive.php", "app/Http/Middleware/IdempotencyKeyMiddleware.php (FROZEN §7)", "routes/channels.php (token-name discriminator)"],
+    status: "✅ Wave I WI-4 P0 SECURITY healed (3 admin routes Customer-bypass closed WJ-1) + WJ-3 Sanctum revoke"
+  },
+  fiscal: {
+    title: "⚖️ NF525 Fiscal (LÉGAL — prison si violé)",
+    tag: "FROZEN §7 · 6 ans rétention",
+    role: "Compliance NF525 française : séquence monotonic per-branch + HMAC audit chain + 6 ans rétention. Inviolable.",
+    invariants: ["fiscal_sequence_no strictement monotonic gap-free par branch", "audit_logs HMAC SHA-256 chain (prev_hash → current_hash)", "z_reports HMAC chain daily seal", "composition_snapshot JSON IMMUTABLE à création (5 INSERT sites + 1 copy-forward refund)", "Triggers DB BEFORE DELETE/UPDATE sur 5 tables fiscales (MySQL SIGNAL + SQLite RAISE)", "TRUNCATE bypass mitigé via GRANT level prod (owner cloud-gate)"],
+    files: ["app/Services/Fiscal/FiscalSequenceService.php (FROZEN §7)", "app/Services/Fiscal/AuditLogService.php (FROZEN §7)", "app/Services/Fiscal/ZReportService.php (FROZEN §7)", "5 migrations triggers (audit_logs + z_reports + cash_movements + cash_drawer_sessions + order_payments)"],
+    sync: "Allocation différenciée : kiosk paid AT-CREATION vs POS cash AT-CLOSE. Cache::lock 5s + DB FOR UPDATE → fiscal_sequence_no allocated → AuditLog row written → chain extended.",
+    status: "✅ Wave F WF-5 INTACT 5/5 invariants + 16 RED vectors all defeated · count=97 audit_logs + 4 z_reports CHAIN OK"
+  },
+  pricing: {
+    title: "💰 Pricing SSOT",
+    tag: "Single Source of Truth · FROZEN §7",
+    role: "100% des prix calculés backend authoritative. Frontend envoie UNIQUEMENT item_id + qty + option_ids.",
+    invariants: ["PricingService::calculateOrder() unique source de vérité", "composition_snapshot frozen à création (jamais UPDATE)", "POS ↔ Kiosk pricing parity garantie", "Aucun env flag bypass production-stable", "5 INSERT sites builder + 1 copy-forward refund"],
+    files: ["app/Services/Pricing/PricingService.php (FROZEN §7)", "app/Services/Pricing/CompositionSnapshotBuilder.php", "app/Services/Pricing/DiscountCalculator.php + TaxCalculator.php"],
+    status: "✅ Z-5 GOAL Complement PASS + WF-5 PS-3 NF525 attest · 0 P0/P1 frozen file"
+  },
+  stock: {
+    title: "📦 Stock + Availability",
+    tag: "Append-only · concurrent decrement defense",
+    role: "Gestion stock per-item + per-option avec append-only audit + multi-defense concurrent decrement.",
+    invariants: ["StockLevel branch-scoped per-item + per-option granularity", "stock_movements append-only via Eloquent boot + DB triggers BEFORE DELETE/UPDATE (Wave H ccc95e862)", "Concurrent decrement : lockForUpdate + UNIQUE(idempotency_key) defense", "ChoiceAvailabilityResolver cascade item ↔ option auto-rupture", "F-016a-BIS manual rupture priority"],
+    files: ["app/Services/Stock/StockService.php", "app/Services/Stock/ChoiceAvailabilityResolver.php", "app/Listeners/DecrementStockOnOrderCreated.php (Wave H bug001 + Wave G WG-2 unified failure isolation)", "Migration: 2026_05_18_140000_add_stock_movements_immutability_triggers.php"],
+    sync: "OrderCreated → DecrementStockOnOrderCreated → StockService::decrementForOrder → stock_movements INSERT (idempotent) → StockLevelChanged event → ChoiceAvailabilityResolver cascade.",
+    status: "✅ Wave 4 multi-defense + WF-4 PASS_WITH_FINDINGS · 79/79 Stock + 117/117 Availability GREEN"
+  },
+  pos: {
+    title: "🪑 POS Caisse · 11 sous-systèmes",
+    tag: "Staff register · Wizard Vanilla §7 FROZEN",
+    role: "Caisse staff fast-food : commande + paiement + tiroir cash + Z-reports + refunds.",
+    invariants: ["10.1 Wizard composition Vanilla JS S25 ~296 KB FROZEN §7", "10.2 Commandes actives", "10.3 Commandes parquées (park/resume/purge)", "10.4 Commandes prêtes (READY)", "10.5 Historique", "10.6 Paiement (cash + card + split + ticket-resto)", "10.7 Cash drawer + Z-reports NF525", "10.8 Refunds (partial + total + RefundCreated)", "10.9 Modifications post-création", "10.10 Client management (walk-in + registered)", "10.11 Receipts (ticket + duplicata)"],
+    files: ["public/js/pos-wizard.js (FROZEN §7, ~296 KB Vanilla S25)", "public/css/pos-wizard.css (FROZEN §7)", "resources/views/admin-pos-v4.blade.php (FROZEN §7)", "app/Http/Controllers/Admin/PosController.php (DIRTY session-A)"],
+    sync: "POS submit → PosController::storeOrder → DB transaction → OrderCreated event → outbox cascade → KDS + OSS receive · Paiement → PaymentService → fiscal_sequence_no alloc",
+    status: "✅ Wave A POS Couche 1 CONVERGED · PS-2 Idempotency-Key healed · 2 NEW CTAs POS Loyalty Redeem UI Option B"
+  },
+  kiosk: {
+    title: "🟧 Kiosk Borne · 8 sous-systèmes",
+    tag: "Customer SPA · Vue FROZEN §7",
+    role: "Borne self-service client : navigation menu + wizard + paiement card + confirmation. FR-lock.",
+    invariants: ["11.1 Idle/attract screen", "11.2 Navigation catalogue", "11.3 Wizard composition templates (custom/sandwich/simple/tacos config/menu.php) FROZEN §7", "11.4 Cart bottom-sheet recap groupé", "11.5 Paiement card primarily", "11.6 Confirmation + queue number", "11.7 Allergen modal dialog", "11.8 Upsell"],
+    files: ["resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN §7)", "KioskAppComponent.vue (FROZEN §7)", "KioskUpsellComponent.vue (FROZEN §7)", "KioskPaymentComponent.vue + KioskWaitingComponent.vue (PK-2 healed)", "public/js/kiosk-shell.js"],
+    sync: "Kiosk paid → fiscal_sequence_no AT CREATION (diff de POS cash at-close) → OrderCreated cascade → KDS source=KIOSK + OSS public wall",
+    status: "✅ Wave B Kiosk Couche 1 GREEN · 20 KEEP-AS-IS attestations · owner manual test 'impeccable' confirmed"
+  },
+  kds: {
+    title: "👨‍🍳 KDS Kitchen Display System",
+    tag: "V2 grid · allergens · bump+undo",
+    role: "Écran cuisine temps-réel : commandes en cours, transitions de status, gestion allergens.",
+    invariants: ["Order cards V2 grid single-station", "Status whitelist forward-only (PENDING → PREPARING → READY → COMPLETED)", "Bump CTA + shortcuts [A]/[B] hotkeys", "Recall mechanism (5s undo window)", "Allergen pill aggregated (WH Z-1 healed exposure)", "Timer elapsed TZ-aware Paris↔UTC (Wave 3b)", "Pagination overflow"],
+    files: ["app/Http/Controllers/Admin/KitchenDisplaySystemController.php + KdsSyncController.php", "app/Services/KdsSyncService.php (TZ-aware bounds lignes 77-94)", "resources/js/components/admin/kitchenDisplaySystem/ (5 Vue)", "public/js/admin-kds.js", "KDSOrderDetailsResource + KDSOrderItemsResource (allergens post PK-3)"],
+    sync: "OrderCreated event → outbox → broadcast OR KDS polling → KdsSyncController::list → resource → Vue render. Bump → KdsSyncController::changeStatus → OrderStatusChanged → bidirectional sync.",
+    status: "✅ Wave F WF-1 POS→KDS PASS · Z-1 AMBER → R1 healed · WH KDS deeper 3 EN-locale heals"
+  },
+  oss: {
+    title: "📺 OSS Order Status Screen",
+    tag: "Wall public · PII-clean · chime READY",
+    role: "Mur public pour clients en attente. Queue numbers + état READY + audio chime.",
+    invariants: ["Order number large display public wall", "Chime audio gate sur transition → READY (debounced)", "Wake-lock + visibility re-acquire", "Source-surface allowlist fail-closed (KIOSK + TAKEAWAY only, Wave 3c)", "Cadence cap 60s (Wave 3b)", "PII-clean : 6 fields only (queue_number + token + serial + type + status + id)"],
+    files: ["app/Http/Controllers/Admin/OrderStatusScreenController.php", "app/Services/OrderStatusScreenOrderService.php (DIRTY session-A)", "app/Http/Resources/CDSOrderDetailsResource.php (6-field PII-clean)", "resources/js/services/OssSyncService.js", "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue"],
+    sync: "OrderStatusChanged → outbox → broadcast → polling fallback → OssSyncService::list → filter source_surface allowlist → resource → render",
+    status: "✅ Wave F WF-2 PROD-READY · 22 KEEP-AS-IS · Wave C OSS deeper attest"
+  },
+  admin: {
+    title: "🛠️ Admin Dashboard",
+    tag: "Owner/manager · 7 sous-systèmes",
+    role: "Interface owner/manager : catalog mgmt + stock + reports + settings + users + promos + daily ops.",
+    invariants: ["15.1 Catalog (items + categories + options + variations)", "15.2 Stock dashboard rupture + low-stock + thresholds", "15.3 Reports Z daily + fiscal + sales + analytics (WJ-3 source=kiosk drift healed)", "15.4 Settings (branches + terminals + taxes + gateways)", "15.5 Users + Permissions (Spatie RBAC)", "15.6 Promo/Coupons", "15.7 Daily ops"],
+    files: ["app/Http/Controllers/Admin/* (~87 files)", "app/Services/DashboardService.php (WJ-3 kiosk source canonical healed)", "Spatie permission gates: permission:settings sur 71/87 controllers"],
+    status: "✅ Wave B Admin CONVERGED + P0 IDOR MyOrderDetailsController WJ-1 healed"
+  },
+  livreur: {
+    title: "🛵 Livreur (DeliveryBoy)",
+    tag: "Driver + admin + cash sessions NF525",
+    role: "Driver app + admin assignment + delivery fee per-branch + zones + notifications + cash sessions.",
+    invariants: ["14.1 Driver app frontend (claim + status updates mobile-first)", "14.2 Admin assignment manuel ou auto-dispatch V1.0.X", "14.3 Delivery fee branch-aware (Z-4 DEL-5 wire-up 4 entry points)", "14.4 Zones de livraison driver-served", "14.5 Notifications cascade idempotent (push + sms + mail)", "14.6 Cash session driver Sub6.3 Build1 NEW (5 actions + 18 tests)"],
+    files: ["app/Http/Controllers/Admin/DeliveryBoy{,Order,Address}Controller.php", "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php", "app/Services/Delivery/DeliveryFeeService.php + DeliveryQuoteService.php", "2 migrations 2026-05-18 delivery_fee_settings + delivery_minimum_order"],
+    status: "✅ Z-4 LIVREUR VALIDATED 2x + Wave B Livreur full system 119/119 · 1 P1 V1.0.2 cash movement wire-up"
+  },
+  mobile: {
+    title: "📱 Mobile App Le Cayenne (STANDALONE)",
+    tag: "React Native · NON wired V1 backend",
+    role: "App mobile standalone — pas reliée au backend V1. Catalogue + wizard + loyalty + Wallet.",
+    invariants: ["NO axios/fetch wiring to V1 backend (intentional V0)", "data/menu.js mirror SSOT Le Cayenne (post-fictional-purge)", "Wizard template parity avec kiosk (sandwich/tacos/burger/snacking/omelette/salade)", "Loyalty 15 specs + 5 adversarial (clipboard replay + screenshot OCR + localStorage tamper + double-tap + browser back)", "Apple/Google Wallet integration"],
+    files: ["mobile/screens-main.jsx + screens-item-steps.jsx + screens-modals.jsx", "mobile/data/menu.js (SSOT alignment)", "mobile/components/ + api/ + icons.jsx", "22 specs tests/mobile-e2e/loyalty-*"],
+    sync: "Mobile = standalone V0. Future Phase 6 wireup pour native iOS/Android + signed QR client. Pour V1 LeCayenne = customer-facing demo.",
+    status: "✅ Wave D Mobile final PROD-READY V0 · 0 P0/P1/P2 · QR signing backward-compatible"
+  },
+  web: {
+    title: "🌐 Web Site Le Cayenne (STANDALONE DÉMO)",
+    tag: "Static React · Mode DÉMO V1",
+    role: "Site web standalone — funnel guest + account + loyalty + legal. Mode DÉMO V1 (badges visibles).",
+    invariants: ["Tree at /Users/1millnonstop/Downloads/web/ (NOT wired V1)", "9 files JSX + CSS + 6 legal/ HTML + index.html", "Tested 4 viewports (mobile 360 / tablet 768 / desktop 1280 / wide 1920)", "DÉMO V1 badges Path A sur Wallet head + QR area + Success modal post WE-2", "0 axios/fetch/XHR (no backend POST)", "XSS clean (React escape + 0 innerHTML)"],
+    files: ["/Users/1millnonstop/Downloads/web/screens.jsx (43 KB)", "funnel.jsx + flows.jsx + components.jsx", "account-v2.jsx + loyalty-v2.jsx + orders.jsx", "legal/ (CGU + CGV + RGPD + cookies + allergens HTML)", "tests/e2e/test-e2e-website-realignment-* (116 Playwright cases)"],
+    sync: "Web standalone DÉMO mode V1. Cloud production = post owner business data injection (G-WEB-LEGAL-1 9 placeholders).",
+    status: "🟡 Wave D Web final VALIDATED CONDITIONAL · G-WEB-LEGAL-1 9 LCEN placeholders owner-deferred"
+  },
+
+  // FLOW DETAILS
+  "flow-pos-create": {
+    title: "🌀 Flux POS création commande",
+    tag: "Cascade 9 hops · WF-1 PASS",
+    role: "Étapes de création d'une commande POS jusqu'à l'apparition sur KDS+OSS.",
+    cascade: ["1. POS submit via PosController::storeOrder", "2. DB transaction crée order + order_items + composition_snapshot frozen", "3. Après commit : OrderCreated event fires (DispatchableAfterCommit)", "4. PersistOrderCreatedToOutbox FIRST (SSOT defense F-002 round-3)", "5. DecrementStockOnOrderCreated + DecrementItemAvailability cascade", "6. DispatchDomainEventsJob picks outbox row (Cache::lock + lockForUpdate atomic)", "7. Pusher broadcast OR polling fallback (cadence cap 60s)", "8. KDS Vue subscribe Echo OR KdsSyncService polling 5s", "9. KdsSyncController::list serialize via KDSOrderDetailsResource + KDSOrderItemsResource"],
+    defenses: ["Listener-order : Outbox FIRST in EventServiceProvider:146-152 (line 148 listener)", "TZ-aware bounds Paris→UTC (KdsSyncService:77-94 commit c2613cab0)", "Idempotency-Key sur bump (KDS PK-2 11 callsites healed)", "Allergen exposure items-board (PK-3 d6b20eef1)", "Failure isolation unified (WG-2 4 listeners + WJ-1)"],
+    status: "✅ Wave F WF-1 PASS · 49 PHPUnit sync-cascade GREEN · 3 Playwright Zone-3 PASS (54s end-to-end)"
+  },
+  "flow-kiosk-create": {
+    title: "🌀 Flux Kiosk création commande (NF525 at-creation)",
+    tag: "Kiosk paid · fiscal_sequence_no alloc immediate",
+    role: "Kiosk paid order trigger fiscal allocation AT CREATION (différent de POS cash AT CLOSE).",
+    cascade: ["1. Kiosk wizard completion → Frontend/OrderController::store via Sanctum kiosk:order ability", "2. fiscal_sequence_no allocation AT CREATION (Cache::lock 5s + DB FOR UPDATE)", "3. composition_snapshot frozen + audit_logs HMAC chain extended", "4. OrderCreated event → outbox cascade", "5. KDS reçoit kiosk order avec source=KIOSK", "6. OSS reçoit avec order_type=KIOSK → matches public wall allowlist", "7. Status transitions visible sur KDS + OSS simultanément", "8. NF525 fiscal sequence verified gap-free across kiosk + POS (interleaved per branch)"],
+    defenses: ["Triple-lock fiscal alloc (Cache::lock + lockForUpdate + UNIQUE composite)", "Token-name discriminator channel auth", "Source-surface allowlist on OSS (fail-closed)", "Composition snapshot 5 builder INSERT + 1 copy-forward refund (Z-5 reconcilié)"],
+    status: "✅ Wave F WF-3 GO V1 · verify-chain CHAIN OK · 22 active kiosk orders live cascade evidence"
+  },
+  "flow-fiscal-alloc": {
+    title: "🌀 Flux fiscal allocation NF525",
+    tag: "Triple-lock · monotonic · gap-free",
+    role: "Allocation atomique du fiscal_sequence_no per-branch avec defense triple-layer.",
+    cascade: ["1. Order create/pay path needs fiscal_sequence_no", "2. FiscalSequenceService::allocateForBranch acquires Cache::lock TTL 5s", "3. Inside lock : DB::transaction with SELECT ... FOR UPDATE on counter row", "4. Compute next_seq = current_max + 1", "5. INSERT order with fiscal_sequence_no = next_seq + UNIQUE composite (branch_id, fiscal_sequence_no)", "6. AuditLogService::write extends HMAC chain (SHA-256 of payload + prev_hash)", "7. Commit transaction → Cache::lock released", "8. Si allocation fail → flag fiscal_alloc_error_at + RetryFiscalAllocCommand cron"],
+    defenses: ["Triple defense : Cache::lock + DB FOR UPDATE + UNIQUE composite", "Gap-free monotonic per branch enforced at DB level", "Retry-once on transient failure (pas d'infinite loop)", "Bit-identical chain replay via fiscal:verify-chain --all"],
+    status: "✅ Wave F WF-5 INTACT 5/5 invariants · 16 RED vectors all defeated · CHAIN OK every active branch"
+  },
+  "flow-hub-kds": {
+    title: "🌀 Flux Hub → KDS (broadcast)",
+    tag: "Real-time push · polling fallback",
+    role: "Le Sync Hub broadcast les events vers KDS qui les rend en temps-réel.",
+    cascade: ["1. Outbox row picked by DispatchDomainEventsJob", "2. Pusher broadcast emit to channel kds-{branch_id}", "3. KDS frontend Echo subscribe receives", "4. KdsSyncService updates lastSyncedAt cursor", "5. Vue state mutation → re-render", "6. Si Pusher down : polling fallback every 5s with cadence ceiling 60s (Wave 3b)"],
+    defenses: ["Channel auth via routes/channels.php token-name discriminator (post S-R3-P0-G heal)", "ws:heartbeat after broadcast (Wave 3c stale-detect)", "ws:reconnect on visibility change"],
+    status: "✅ Wave F WF-1 cascade verified"
+  },
+  "flow-hub-oss": {
+    title: "🌀 Flux Hub → OSS (public wall)",
+    tag: "Source-surface allowlist · PII-clean",
+    role: "OSS subscribe au broadcast Hub mais filtre source_surface allowlist (fail-closed).",
+    cascade: ["1. OrderStatusChanged outbox row", "2. Broadcast Pusher channel oss-{branch_id}", "3. OssSyncService receives", "4. Filter source_surface allowlist whereIn([KIOSK, TAKEAWAY]) FAIL-CLOSED (Wave 3c heal)", "5. CDSOrderDetailsResource serializes (6 fields PII-clean : queue_number + token + serial + type + status + id)", "6. Chime audio triggers ONLY sur transition → READY (debounced)", "7. Wake-lock acquired + visibilitychange re-acquire"],
+    defenses: ["Fail-closed allowlist : DELIVERY orders NEVER leak to public wall", "PII isolation (no customer name leak, verified Z-2)", "Cadence clamp [250ms, 60s] (Wave 3b)"],
+    status: "✅ Wave F WF-2 PRODUCTION-READY · 18 RED vectors 14 BLOCKED + 2 MITIGATED + 1 BY-DESIGN"
+  },
+  "flow-kds-bump": {
+    title: "🌀 Flux KDS bump (status change)",
+    tag: "Bidirectional · 5s undo window",
+    role: "Chef bump order PREPARED sur KDS → cascade back vers Hub → propagation OSS + POS.",
+    cascade: ["1. Chef clicks bump on KDS card OR keyboard shortcut [A]/[B]", "2. KDS Vue → KdsSyncController::changeStatus + Idempotency-Key header", "3. OrderStateMachine::apply enforce whitelist forward-only", "4. lockForUpdate + expected_status optimistic conflict check (multi-station race defense)", "5. Status committed → OrderStatusChanged event", "6. PersistOrderStatusChangedToOutbox writes outbox row FIRST", "7. Broadcast cascade vers OSS + POS surfaces", "8. KDS undo toast 5s window pour revert avant outbox write"],
+    defenses: ["OrderStateMachine FROZEN §7", "lockForUpdate + expected_status optimistic", "Idempotency-Key (WG-2 unified failure isolation)", "5s recall window client-side"],
+    status: "✅ Concurrent multi-POS bump scenario WI-5 S2 DEFEATED"
+  },
+  "flow-hub-admin": {
+    title: "🌀 Flux Hub → Admin Dashboard",
+    tag: "Settings + reports + observability",
+    role: "Admin reçoit broadcast pour reports daily + observability + settings changes.",
+    cascade: ["1. Settings/Branch/Catalog change → PersistSettingsUpdatedToOutbox", "2. Broadcast cascade admin-{branch_id}", "3. Admin Vue receives → reactive update Dashboard widgets", "4. Z-report close trigger ZReportService::close → audit chain extend + admin notification"],
+    defenses: ["Spatie permission gates sur 71/87 admin controllers", "WJ-1 P0 IDOR MyOrderDetailsController healed per-verb permission:* alternation", "Wave Z Admin BranchScope coverage 21 models"],
+    status: "✅ Wave B Admin Dashboard CONVERGED + WJ-1 P0 IDOR + WJ-3 SEC-RST-01"
+  },
+  "flow-refund": {
+    title: "🌀 Flux Refund cascade (5 sub-cascades)",
+    tag: "Wave J P1 healed · NF525-aligned",
+    role: "Refund POS-initiated cascade 5 sub-paths : audit chain + broadcast + loyalty + stock + notifications.",
+    cascade: ["1. POS cashier-initiated refund → cashBack OR refund-with-counter-entry", "2. RefundWithCounterEntryService::execute crée MIRROR order RETURN_OF avec composition_snapshot COPY-FORWARD (NF525 immutability)", "3. fiscal_sequence_no allocated for mirror + audit chain extended (order.refund.counter_entry HMAC row)", "4. SUB-1 : PersistOrderPaymentStatusChangedOnRefundCreated NEW listener (Wave J WJ-1) → broadcast OrderPaymentStatusChanged", "5. SUB-2 : refundPoints companion called if loyalty_customer_code present (Wave G WG-1 P2 healed)", "6. SUB-3 : ReleaseAvailabilityOnRefundCreated listener → stock_levels increment + stock_movements append", "7. SUB-4 : SendOrderRefund* notifications cascade idempotent", "8. SUB-5 : Sealed-path broadcast post-Z (parent stays PAID, mirror carries REFUNDED)"],
+    defenses: ["NF525 chain APPENDED-ONLY (refund extends, never rewrites)", "composition_snapshot COPY (not mutate) — bit-identical mirror", "Listener order : Outbox FIRST, then release listeners", "Sealed-path broadcast post-Z"],
+    status: "✅ Wave F WF-6 SPLIT fiscal GREEN · 2 P1 holes HEALED Wave G WG-1 (5 sentinels GREEN, 29 refund tests + 9 consumers + 38 Vitest)"
+  },
+  "flow-stock": {
+    title: "🌀 Flux Stock cascade rupture",
+    tag: "Append-only · multi-defense decrement",
+    role: "Cascade stock après order : decrement + triggers + cross-surface KDS+Dashboard.",
+    cascade: ["1. OrderCreated → DecrementStockOnOrderCreated listener (post WG-2 unified failure isolation)", "2. StockService::decrementForOrder → DB::transaction lockForUpdate", "3. stock_levels.on_hand decrement + stock_movements INSERT (idempotent UNIQUE idempotency_key)", "4. Trigger BEFORE DELETE/UPDATE on stock_movements (Wave H ccc95e862 — MySQL SIGNAL + SQLite RAISE)", "5. ChoiceAvailabilityResolver cascade : si option stock 0 → item available=false", "6. StockLevelChanged event → KDS allergen pill update", "7. Dashboard stock-rupture-dashboard widget reactive"],
+    defenses: ["Multi-layer concurrent decrement : lockForUpdate + UNIQUE idempotency_key + recheck + DB::transaction", "Append-only DB triggers (Wave H F-6 P0)", "Manual rupture priority F-016a-BIS", "Soft-deleted Item handled via AvailabilityService::assertItemsOrderableForBranch chokepoint"],
+    status: "✅ Wave 4 + WF-4 PASS_WITH_FINDINGS · 79/79 Stock + 117/117 Availability GREEN"
+  },
+  "flow-livreur": {
+    title: "🌀 Flux Hub → Livreur (assignment + cash session)",
+    tag: "Driver app + cash sessions NF525",
+    role: "Admin assigne order → driver app receives + status updates cascade + cash session NF525.",
+    cascade: ["1. Admin assigns driver → DeliveryBoyOrderController::assign", "2. SendOrderDeliveryBoy{Push,Sms,Mail} events fire", "3. Idempotent listeners cascade (post Wave Z 5A heal)", "4. Driver Frontend/DeliveryBoyOrderController claim + status updates", "5. OrderStatusChanged broadcast cascade vers POS + admin", "6. Cash session driver Sub6.3 Build1 : open/close + reconciliation + audit_logs entry", "7. Delivery fee branch-aware (Z-4 DEL-5 4 entry points)"],
+    defenses: ["Notifications idempotent listeners", "Cash session NF525 immutability (BEFORE DELETE/UPDATE triggers)", "Spatie permission gates"],
+    status: "✅ Z-4 LIVREUR VALIDATED 2x + Wave B Livreur 119/119 · 1 P1 V1.0.2 cash movement wire-up"
+  },
+  "flow-loyalty": {
+    title: "🌀 Flux Loyalty earn + redeem cross-surface",
+    tag: "Wave H P0 QR signing · Wave E-1 POS UI",
+    role: "Earn auto sur DELIVERED + Redeem POS Option B + Kiosk QR signed JWT.",
+    cascade: ["EARN POS+Kiosk : order DELIVERED → AwardLoyaltyPointsOnDelivery listener → users.loyalty_points += amount + loyalty_transactions UNIQUE(order_id, type=earn)", "REDEEM POS Option B (Wave E-1) : 2 CTAs (PosOrderShowComponent + PosComponent main-page where dine-in disabled) → PosLoyaltyRedeemModal.vue → POST /api/admin/pos-order/{id}/redeem-loyalty → PosRedemptionService::applyToOrder → discount + balance decrement + ledger row", "REDEEM Kiosk : customer scans signed QR token (post Wave H bug011 LCS-S-001 healed) → LoyaltyController::scan verifies HMAC + nonce + TTL → balance check → redeem", "ANTI-FRAUD : balance check inside lockForUpdate · single redemption UNIQUE · idempotency middleware · audit log · pre-payment-only guard · cashier permission gate", "CANCEL flow : redemption commit then cancel → loyalty_transactions reversal companion (WG-1 P2 heal)"],
+    defenses: ["Signed QR : lqr.<base64-payload>.<HMAC-SHA256> + nonce UNIQUE + TTL 300s + 30s leeway", "Production boot guard refuse empty LOYALTY_QR_SECRET", "5 adversarial vectors A1-A5 defended", "POS UI Option B Vue overlay (0 frozen-zone touch)", "Anti-fraud LOCK §6 all 7 wired"],
+    status: "✅ Wave H bug011 P0 LCS-S-001 + Wave E-1 main-page CTA + Wave E-2 Web DÉMO badges · 72 PHPUnit + 11 Vitest + 9 sentinel cases GREEN"
+  },
+  "flow-pos-kds": {
+    title: "🌀 Intersection POS × KDS",
+    tag: "Création + bump cascade",
+    role: "Pattern principal commande POS jusqu'à appearance + status updates sur KDS.",
+    cascade: ["Pattern principal : voir flow-pos-create pour cascade détaillée 9 hops", "Bump KDS retour : voir flow-kds-bump pour cascade inverse", "Both directions covered by EventServiceProvider listener-order discipline"],
+    status: "✅ Wave F WF-1 PASS"
+  },
+  "flow-pos-oss": {
+    title: "🌀 Intersection POS × OSS",
+    tag: "Status sync · fail-closed allowlist",
+    role: "Status transitions POS → OSS public wall avec source_surface filter.",
+    cascade: ["Voir flow-hub-oss pour cascade détaillée", "POS marks READY → OrderStatusChanged → outbox → broadcast → OSS receives via Echo or polling → CDSOrderDetailsResource PII-clean → render"],
+    status: "✅ Wave F WF-2 PRODUCTION-READY"
+  },
+  "flow-kiosk-kds-oss": {
+    title: "🌀 Intersection Kiosk × KDS + OSS",
+    tag: "NF525 at-creation alloc",
+    role: "Kiosk paid trigger fiscal allocation immediate + cascade simultanée vers KDS + OSS.",
+    cascade: ["Voir flow-kiosk-create pour cascade détaillée 8 hops"],
+    status: "✅ Wave F WF-3 GO V1"
+  }
+};
+
+function openModal(key) {
+  const d = data[key];
+  if (!d) return;
+  let html = `<div class="modal-title">${d.title}</div>`;
+  if (d.tag) html += `<div class="modal-tag">${d.tag}</div>`;
+  if (d.role) html += `<div class="modal-section"><h3>Rôle</h3><p>${d.role}</p></div>`;
+  if (d.invariants) html += `<div class="modal-section"><h3>Invariants / Sous-systèmes</h3><ul>${d.invariants.map(i=>'<li>'+i+'</li>').join('')}</ul></div>`;
+  if (d.cascade) html += `<div class="modal-section"><h3>Cascade détaillée</h3><ul>${d.cascade.map(c=>'<li>'+c+'</li>').join('')}</ul></div>`;
+  if (d.defenses) html += `<div class="modal-section"><h3>Defenses</h3><ul>${d.defenses.map(c=>'<li>'+c+'</li>').join('')}</ul></div>`;
+  if (d.sync) html += `<div class="modal-section"><h3>Sync flow</h3><p>${d.sync}</p></div>`;
+  if (d.files) html += `<div class="modal-section"><h3>Fichiers clés</h3><div class="modal-files">${d.files.map(f=>'<div>'+f+'</div>').join('')}</div></div>`;
+  if (d.status) html += `<div class="modal-section"><h3>Status validation</h3><div class="modal-status">${d.status}</div></div>`;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+}
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+document.querySelectorAll('[data-key]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openModal(el.dataset.key);
+  });
+});
+document.querySelectorAll('[data-flow]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openModal(el.dataset.flow);
+  });
+});
+
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+</script>
+
+</body>
+</html>

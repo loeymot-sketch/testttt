@@ -12,15 +12,17 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label'];
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason'];
     protected $casts = [
-        'id'          => 'integer',
-        'item_id'     => 'integer',
-        'name'        => 'string',
-        'status'      => 'integer',
-        'price'       => 'decimal:6',
-        'visible_on'  => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
-        'group_label' => 'string',
+        'id'                 => 'integer',
+        'item_id'            => 'integer',
+        'name'               => 'string',
+        'status'             => 'integer',
+        'price'              => 'decimal:6',
+        'visible_on'         => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
+        'group_label'        => 'string',
+        'is_available'       => 'boolean',
+        'unavailable_reason' => 'string',
     ];
 
     /**
@@ -51,15 +53,25 @@ class ItemExtra extends Model
             $sauces = Config::get('menu_images.sauces', []);
             $filename = $sauces[$sauceName] ?? null;
         } else {
+            // Crudités atomiques (MenuSeeder : extras « Salade », « Tomate », « Oignon » — pas le préfixe « Sauce »).
+            $cruditeExtras = Config::get('menu_images.crudite_extras', []);
             $supplements = Config::get('menu_images.supplements', []);
-            $filename = $supplements[$this->name] ?? null;
+            $filename = $cruditeExtras[$this->name] ?? $supplements[$this->name] ?? null;
         }
 
         if ($filename && file_exists(public_path("{$basePath}/{$filename}"))) {
-            return asset("{$basePath}/{$filename}");
+            // [W5-PERF #1 2026-07-06] Vignette WebP ≤320px pré-générée servie en
+            // priorité (suppléments/crudités plein format dans le wizard caisse+borne).
+            // Fallback plein format inchangé si la vignette manque.
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
+            $hash = @filemtime(public_path("{$basePath}/{$filename}")) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         if (file_exists(public_path("{$basePath}/{$defaultFile}"))) {
-            return asset("{$basePath}/{$defaultFile}");
+            $hash = @filemtime(public_path("{$basePath}/{$defaultFile}")) ?: 0;
+            return asset("{$basePath}/{$defaultFile}") . "?v={$hash}";
         }
         return null;
     }

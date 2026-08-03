@@ -1,0 +1,75 @@
+{
+  "micro_system": "M10-counter-collect (Counter collect — kiosk->counter encashment, Plan B)",
+  "verdicts": [
+    {
+      "id": "M10-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. confirmCounterPayment (PaymentService.php:442-443) calls recordCashOrderMovement(order, note) with default strict=false on the CASH counter-collect path. With no open CashDrawerSession, the no-session branch (PaymentService.php:514 Log::info, :519 flagCashMovementSkipped) only does Log::info + sets a transient attribute (PaymentService.php:573-575 `$order->cash_movement_skipped = true;`). Codebase-wide grep confirms NO persisted record: no DB column, no migration, no audit_log for the skip — only OrderDetailsResource.php:80 echoes the transient flag to the response. Reconciliation truly cannot enumerate these PAID-cash-no-movement orders. DOWNGRADED P1->P2: the auditor's 'realistic everyday case' framing is overstated — the fiscal Z chain is INTACT (fiscal_sequence_no allocated :321-322, Transaction row :376-387, audit_log order.counter_payment_confirmed :391-401 all written); only the cash-drawer reconciliation linkage is missing. In normal prod a cashier has a session open, so the skip is the exception, not the rule. Real gap (a one-time toast is the only signal) but drawer-reconciliation scope, not signed-chain, so P2.",
+      "severity_original": "P1"
+    },
+    {
+      "id": "M10-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. Modal confirm button label is $t('button.confirm_and_print') (PosCounterCollectModal.vue:177) = 'Confirmer & Imprimer ticket' (fr.json:1337). grep of the modal shows the ONLY reference to print/Receipt is that label at :177 — no ReceiptComponent import, no print dispatch in onConfirm (421-534). Contrast confirmed: PaymentComponent.vue uses the same label at :318 AND renders <ReceiptComponent> at :329 (import :337). Backend OrderPaidAtCounter has exactly ONE listener PersistOrderPaidAtCounterToOutbox (EventServiceProvider.php:176-178) — outbox/broadcast only, no ESC/POS print (printer-saga auto-print is on an unmerged branch per memory). Label over-promises a ticket that this branch never produces. P2 functional/UX defect stands.",
+      "severity_original": "P2"
+    },
+    {
+      "id": "M10-03",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "DESTROYED — all three pillars fail. (1) The central claim 'lacks the idempotency middleware that the /confirm route carries' is FACTUALLY FALSE: routes/api.php:910 carries `->middleware(['throttle:pos-order-update','idempotency'])` — byte-identical to the confirm route at :879. tests/Feature/Idempotency/CounterCollectAndPrintIdempotencyTest.php:112 explicitly ASSERTS this route has idempotency middleware. (2) 'orphan/dead route' is FALSE: referenced by E2ESoakCommand.php:1005 AND mandated by sentinels (F009KioskCashCounterDeferredInvariantSentinelTest requires the route to stay registered as the NF525 PENDING_COUNTER->PAID bridge; F001KioskFiscalSequenceInvariantSentinelTest, PosCashEndpointSentinelTest also pin it) — deleting it would break multiple passing sentinels. (3) 'duplicates business logic that must be kept in lock-step / bypasses received-validation' is FALSE: OrderService::collectKioskCash (OrderService.php:2511-2519) is a 5-line DELEGATION to the identical confirmCounterPayment with received=order->total, so received==total by construction (no short-payment is even possible) — no divergent copy exists. file_line_exists:true (lines are real) but every claim about them is wrong -> is_real:false, DROP.",
+      "severity_original": "P2"
+    },
+    {
+      "id": "M10-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED both layers. Frontend: loadReadyOrders (PosComponent.vue:3226-3231) filters readyOrders purely on status===PREPARED + order_type in {KIOSK,TAKEAWAY,POS} with NO payment_status guard; markDelivered (:3247-3271) dispatches posOrder/changeStatus to DELIVERED with no PAID check. Backend confirmed: OrderStateMachine.php case PREPARED (line 65-73) returns in_array(to,[OUT_FOR_DELIVERY,DELIVERED]) — NO payment_status===PAID precondition on the DELIVERED edge. OrderService::changeStatus non-auth branch (OrderService.php:2120-2205) validates ONLY ValidStatusTransition (which calls allows()); the PAID guard exists only for RETURNED/sealed-Z, never for DELIVERED. So a PENDING_COUNTER kiosk-cash order bumped to PREPARED by the chef (prep-before-pay window documented at PaymentService.php:644-650) CAN be marked DELIVERED while payment_status stays PENDING_COUNTER — food leaves uncollected. Requires a specific sequence and the order still re-surfaces in /counter-collect/pending (keyed on payment_status), so P2 not P1, but it is a real money-leak path. evidence_type needs-live-verify is honest; the static chain is conclusive.",
+      "severity_original": "P2"
+    },
+    {
+      "id": "M10-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED and necessity PROVEN. cancelCounterPayment sets payment_status=REFUNDED (PaymentService.php:651) for a never-paid counter-deferred order (its own comment :648-650 states 'no fiscal-seq was allocated (never collected)'). PaymentStatus enum (confirmed: PAID=5, UNPAID=10, PENDING_COUNTER=15, REFUNDED=20) has no CANCELED/VOID terminal, so REFUNDED is reused. NECESSITY proof: DashboardService.php:618 filters `payment_status === PaymentStatus::REFUNDED` and reports the count as 'refunded_orders' (:641) regardless of status — so every cancelled-never-paid counter order WILL inflate the daily 'refunded_orders' KPI the owner reads. Real, not cosmetic. P2 nf525/reporting-integrity stands; enum/state-machine change is payment-critical and needs an owner gate, but the modeling gap is genuine.",
+      "severity_original": "P2"
+    },
+    {
+      "id": "M10-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "Core claim VERIFIED, stated rationale WRONG. The ?? order_amount fallbacks are dead: OrderDetailsResource.php:50 emits 'total' (rounded float, ?? 0) and never order_amount; PosShortcutOrderResource (the resource feeding the shortcut rows at PosComponent.vue:296,360) ALSO emits only 'total', not order_amount; no migration column and no Order/FrontendOrder model attribute named order_amount exists (grep clean). So the fallback is unreachable across all known feeding surfaces. BUT the why-it-matters ('can mask a real zero') is FALSE: JS `??` does not fire on 0, only on null/undefined, so `0 ?? order_amount` resolves to 0 — a real zero is shown correctly. Net: real dead-code (trivial), wrong rationale, zero behaviour impact. P3 deadcode retained as accurate-but-low-value cleanup; not a defect worth prioritising.",
+      "severity_original": "P3"
+    },
+    {
+      "id": "M10-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "Code VERIFIED. canConfirm requires orderTotal>0 on BOTH branches: CASH (PosCounterCollectModal.vue:282 `cashReceivedNumber>=orderTotal && orderTotal>0`) and non-CASH (:286 `return orderTotal>0`), so a total=0 order can never be confirmed and the /counter-collect/pending query (routes/api.php:810-820) has no total>0 exclusion, so it would surface as a stuck row. HOWEVER reachability is UNCONFIRMED: a 0-total order normally settles at the kiosk (nothing to collect) and I found no evidence a total=0 PENDING_COUNTER row is actually produced/routed to counter for a 100%-comp/full-coupon kiosk order. is_necessary:false because the corner case is unproven-reachable and trivially worked around (cashier cancels); kept at P3 ux with reachability flagged unconfirmed rather than DROP, since the canConfirm gate is real and the fix (allow orderTotal===0 zero-tender) is a 1-line scope-minimal frontend change should the case ever arise.",
+      "severity_original": "P3"
+    }
+  ],
+  "coverage_gaps": [
+    "Cancel UI trigger UNAUDITED: the auditor examined cancelCounterPayment (M10-05 subject) but NOT its real UI driver. The modal's onCancel (PosCounterCollectModal.vue:405) is a pure dismiss/emit('cancel') and does NOT hit the backend; the /counter-collect/{order}/cancel endpoint (->cancelCounterPayment) is actually invoked from PosComponent.vue:3331 via confirmCancelKioskCashOrder, driven by the cancel-with-reason dialog (button @click PosComponent.vue:1377). That whole confirm-cancel flow (reason validation, busy-state, error surfacing) went unexamined.",
+    "Third price-fallback field MISSED by M10-06: PosComponent.vue:1335 uses `order.total ?? order.total_amount_price ?? order.order_amount` in the cancel dialog — total_amount_price is a fourth fallback field the deadcode finding never enumerated; verify whether ANY resource emits total_amount_price (same dead-fallback risk).",
+    "PaymentAlreadyCollectedException 409 path UNAUDITED: routes/api.php:856-873 returns a 409 with error_code 'payment_already_collected' when a second cashier collects the same order; the modal's frontend handling of this 409 (does it branch on error_code, show a useful message, refresh the list?) was not examined — a concurrency UX gap could strand the loser cashier.",
+    "Walk-in counter-deferral path (pos.walkin_route_to_counter) UNAUDITED for the same M10-01/M10-04/M10-05 defects: the pending query (routes/api.php:815-818) also surfaces source_surface='pos' + COUNTER_DEFERRED orders, but every finding was framed around the kiosk Plan B path only; the pos-origin deferred orders flow through the identical confirm/cancel/deliver code and inherit the same gaps unexamined.",
+    "AutoPrepareOnPaidPolicy carve-out UNAUDITED: confirmCounterPayment auto-transitions ACCEPT->PREPARING for non-CASH modes but SKIPS CASH (PaymentService.php:344-365). The interaction with M10-04 (CASH counter orders NOT auto-promoted, so they sit in ACCEPT not PREPARED) and whether a CASH order can still reach the ready board via the chef's manual KDS bump was not traced end-to-end."
+  ]
+}

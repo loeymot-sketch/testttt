@@ -1,0 +1,77 @@
+{
+  "intersection": "POS x Stock",
+  "specialist": "Architect",
+  "scope": "Event cascade, listener ordering, idempotency contract, error isolation",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "anchors_reviewed": [
+    "app/Providers/EventServiceProvider.php (lines 145-168, 227-231)",
+    "app/Listeners/DecrementStockOnOrderCreated.php",
+    "app/Listeners/DecrementItemAvailabilityOnOrder.php",
+    "app/Listeners/ReleaseStockOnOrderCanceled.php",
+    "app/Listeners/ReleaseAvailabilityOnOrderCanceled.php",
+    "app/Listeners/ReleaseStockOnRefundCreated.php",
+    "app/Listeners/ReleaseAvailabilityOnRefundCreated.php",
+    "app/Services/Stock/StockService.php",
+    "app/Services/Order/OrderService.php (lines 559, 894, 1062, 1372)",
+    "app/Services/FrontendOrderService.php (lines 511, 1226)"
+  ],
+  "findings": [
+    {
+      "id": "PSTK-A-1",
+      "severity": "P2",
+      "title": "Inline StockService::decrementForOrder + OrderCreated event listener run twice -- safe by idempotency, but double-work without observability",
+      "evidence": "OrderService.php line 894 calls app(StockService::class)->decrementForOrder($this->order, $idempotencyKey) INLINE before commit. After commit (line 559) OrderCreated::dispatch fires DecrementStockOnOrderCreated::handle() which AGAIN calls $stockService->decrementForOrder($event->order) with NO seed. Same pattern at FrontendOrderService L511+L1226. Reading StockService::movementKey() lines 327-344: when reason === 'order_created' the seed is NEVER appended to the key (line 337 guards `if reason !== 'order_created'`), so both calls produce identical idempotency_key values. The listener path hits the existence check at StockService.php line 102 and skips. Net: no double decrement. BUT the listener still runs a full transaction, lockForUpdate on every StockLevel row, scans requirements, etc. -- pure waste under normal load and amplifies row-lock contention.",
+      "impact": "Wasted DB work (transaction + lockForUpdate per row) on every order. Under POS spike (cocktail of 5+ orders/sec) the second redundant transaction blocks other reads. No observability that the listener path is no-op.",
+      "recommendation": "Either remove the inline StockService call at OrderService L894 and rely solely on the event-driven listener (single source of truth via afterCommit), OR remove DecrementStockOnOrderCreated from the OrderCreated event chain when invoked from OrderService/FrontendOrderService (and keep it only for upstream entry points). The cleaner path is the listener-only model -- inline call inside the transaction is a vestige of pre-iter12 code. NOT urgent (idempotency saves us) but architectural debt.",
+      "files": ["app/Services/OrderService.php:894", "app/Services/FrontendOrderService.php:511"],
+      "heal_allowed": false,
+      "heal_reason": "OrderService.php = DIRTY, frozen-zone-equivalent for V1. Defer to V1.0.1."
+    },
+    {
+      "id": "PSTK-A-2",
+      "severity": "P1",
+      "title": "Listener ordering on OrderCanceled places StockService BEFORE AvailabilityService — works today but coupling is implicit",
+      "evidence": "EventServiceProvider.php line 161-163: OrderCanceled => [ReleaseStockOnOrderCanceled, ReleaseAvailabilityOnOrderCanceled]. StockService::releaseForOrderInTransaction line 410 builds idempotency_key including 'released:' + (int) $orderItem->released_qty + ':delta:' + $deltaLineQty. On the FIRST call: released_qty=0, deltaLineQty=quantity, key written. Then AvailabilityService::releaseForOrderItems increments released_qty to quantity (line 716). On a DUPLICATE OrderCanceled (re-dispatched): StockService reads released_qty=quantity, remainingQty=0 (line 381), $deltaLineQty=0 (line 382), continue (line 383). Safe. BUT if a future refactor swaps listener order (Availability first), the FIRST call would already have released_qty=quantity in StockService -> the entire stock release branch silently no-ops on the very first attempt. There is NO test that pins the listener ORDER. test_order_canceled_event_releases_decremented_stock_once relies on the current ordering by accident.",
+      "impact": "Latent landmine for future maintainer: reordering listeners (e.g. moving Outbox-first style or alphabetizing) silently breaks cancel-stock-release with zero test failure on the existing suite (the test_order_canceled_event_releases_decremented_stock_once asserts only the FINAL on_hand, which would be wrong only if released_qty mutation order changes). Already-flagged Outbox-first reorganization (F-002 round-3) shows the codebase IS reordering listeners.",
+      "recommendation": "Either (a) make StockService::releaseForOrderInTransaction idempotency_key NOT depend on released_qty -- use a stable line_uid + reason hash like decrementForOrder does for order_created; OR (b) add an integration test asserting the listener registration order on OrderCanceled.class and RefundCreated.class. Approach (a) is more robust because it removes the coupling entirely.",
+      "files": ["app/Services/Stock/StockService.php:406-411"],
+      "heal_allowed": true,
+      "heal_reason": "StockService.php is HEAL-ALLOWED per mandate; but the change requires migration/key-stability discussion -- defer to V1.0.1 explicit fix with a regression test."
+    },
+    {
+      "id": "PSTK-A-3",
+      "severity": "P1",
+      "title": "DecrementStockOnOrderCreated rethrow + StockUnavailableException semantics — partial rollback expectation",
+      "evidence": "DecrementStockOnOrderCreated.php lines 13-37: catches StockUnavailableException and Throwable, both re-thrown. The intent (per iter12 P1 comment lines 22-28) is: 'a hard fail surfaces the orphan rather than letting on_hand drift unchecked.' However, OrderService.php line 559 fires OrderCreated::dispatch AFTER the DB::transaction(...) closure has already committed (commit was at line 548). FrontendOrderService.php L511 calls decrementForOrder INLINE inside the transaction (different pattern -- the throw rolls back commit). So on POS path: order is committed, then OrderCreated dispatches, DecrementStockOnOrderCreated throws -> the throw is caught at OrderService.php L560 (catch \\Exception block) and only logs as warning + returns the order. Net: POS path SILENTLY DROPS StockUnavailableException after commit -- the order is created with no stock decrement and the cashier never sees an error. The PK-1 stale rollback comment (iter12 lines 22-28) refers to the FrontendOrder path where decrement is INSIDE the transaction. POS path has DIFFERENT semantics.",
+      "impact": "On POS, if stock_levels.on_hand < ordered qty (e.g. between cashier pricing and submit, a kiosk consumed the last unit), the order is paid + receipt printed + fiscal-allocated, BUT stock isn't decremented and no error surfaces. Next order assumes stock available -> oversells.",
+      "recommendation": "OrderService.php line 894 inline call ALREADY handles the InsufficientStock path INSIDE the transaction (good). The listener firing post-commit is redundant on the POS path (see PSTK-A-1). Either remove the listener for committed paths, or change the OrderService.php L560 catch block to bubble StockUnavailableException specifically (not swallow it). The current behavior is hidden because the inline call at L894 already throws inside the transaction -- so the listener's call would be a no-op via idempotency. Risk = LOW in practice, HIGH in theory if inline call is ever refactored away.",
+      "files": ["app/Services/OrderService.php:560", "app/Listeners/DecrementStockOnOrderCreated.php:17"],
+      "heal_allowed": false,
+      "heal_reason": "OrderService.php = DIRTY. Defer to V1.0.1."
+    },
+    {
+      "id": "PSTK-A-4",
+      "severity": "P2",
+      "title": "Two parallel listeners on OrderCreated (DecrementStockOnOrderCreated + DecrementItemAvailabilityOnOrder) write to two different ledgers with no transactional unity",
+      "evidence": "EventServiceProvider.php lines 145-151: OrderCreated => [PersistOrderCreatedToOutbox, DecrementItemAvailabilityOnOrder, DecrementStockOnOrderCreated, SendFcmOnOrderCreated]. DecrementItemAvailabilityOnOrder writes to item_branch_availability (daily_consumed_qty + max_daily_qty flip). DecrementStockOnOrderCreated writes to stock_levels.on_hand + stock_movements. These two are SEPARATE tables, SEPARATE transactions (the listener wraps in DB::transaction internally), running in declaration order. If listener-1 (DecrementItemAvailabilityOnOrder) succeeds and listener-2 (DecrementStockOnOrderCreated) throws StockUnavailableException, the daily_consumed_qty is already incremented but stock_levels is NOT decremented. Recovery path (cancel/refund) calls AvailabilityService::releaseForOrderItems which decrements daily_consumed_qty -- but that requires an OrderCanceled event which won't fire for a not-yet-finalized order.",
+      "impact": "Edge case where item is restricted by max_daily_qty (e.g. a daily-limited combo) AND simultaneously by stock_levels (e.g. an ingredient). If stock fails post-availability-decrement, the daily counter is over-consumed without a real order. Effect: spurious 86 of an item until daily reset cron runs (config/console/Kernel.php ResetStaleDailyQuotaCommand).",
+      "recommendation": "Either (a) wrap both listeners in a single coordinator listener that runs both in one transaction (so a stock failure rolls back the daily counter); OR (b) accept the drift and rely on the daily reset cron to self-correct after midnight. Per V1 mantra 'no useless complexity', option (b) is acceptable IF the daily-reset cron is verified to run reliably. Currently ResetStaleDailyQuotaCommand exists and is scheduled (per Kernel.php:151 comment). VERDICT: acceptable risk for V1, document in V1.0.1 backlog.",
+      "files": ["app/Providers/EventServiceProvider.php:145-151"],
+      "heal_allowed": false,
+      "heal_reason": "Architectural change spanning 2 listener boundaries -- defer to V1.0.1 with explicit owner gate."
+    },
+    {
+      "id": "PSTK-A-5",
+      "severity": "INFO",
+      "title": "Outbox-first ordering correctly precedes stock listeners",
+      "evidence": "EventServiceProvider.php line 147: PersistOrderCreatedToOutbox is FIRST in the OrderCreated chain. This satisfies the F-002 round-3 invariant (Outbox SSOT before side effects). Stock listeners can fail without losing the durable event record.",
+      "impact": "Positive -- architecture invariant respected.",
+      "recommendation": "No action.",
+      "files": ["app/Providers/EventServiceProvider.php:145-151"],
+      "heal_allowed": false
+    }
+  ],
+  "verdict": "ARCHITECTURE OK FOR V1, 2 P1 ITEMS FOR V1.0.1 BACKLOG",
+  "summary": "Event cascade is structurally sound: Outbox-first ordering is enforced, idempotency_key on stock_movements prevents double decrement under normal duplicate-event scenarios. Three latent risks worth tracking: (1) PSTK-A-1 inline+listener duplication wastes DB work; (2) PSTK-A-2 implicit dependency on listener ORDER for OrderCanceled is a future-refactor footgun; (3) PSTK-A-3 POS path swallows StockUnavailableException post-commit -- mitigated only by the inline call at OrderService:894 throwing first. All three are HEAL-DEFER (V1.0.1 backlog) because the cleanup touches the dirty OrderService.php or requires a contract-changing migration."
+}

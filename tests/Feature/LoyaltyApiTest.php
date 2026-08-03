@@ -16,6 +16,13 @@ class LoyaltyApiTest extends TestCase
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
         config(['app.api_key' => '123456']);
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q3] These tests exercise loyalty
+        // redeem MECHANICS (success, insufficient-points), not the V1 discount on/off
+        // policy. Enable the discretionary-discount master flag so the pre-redeem gate
+        // (LoyaltyController::redeem) does not short-circuit before the mechanics. The
+        // OFF behaviour is locked by KioskLoyaltyDoubleRedeemRefusedTest::
+        // test_pre_redeem_is_refused_when_discounts_disabled_v1.
+        config(['pos.manual_discount_enabled' => true]);
         $this->withHeaders([
             'x-api-key' => '123456',
             'Accept' => 'application/json',
@@ -49,6 +56,10 @@ class LoyaltyApiTest extends TestCase
             'loyalty_points' => 50,
             'status' => 1
         ]);
+
+        // [ULTRA-AUDIT V3 2026-07-02] /check exige désormais un appelant autorisé (borne/staff/owner) —
+        // fix de l'IDOR (fuite PII de tout code à tout token). Ici Jane consulte SON PROPRE code (owner).
+        \Laravel\Sanctum\Sanctum::actingAs($user, ['kiosk:order']);
 
         $response = $this->postJson('/api/frontend/loyalty/check', [
             'code' => 'XYZ1234'

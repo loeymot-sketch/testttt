@@ -95,8 +95,8 @@ export default {
     width: 100%;
     overflow: hidden;
     background: linear-gradient(90deg, var(--kiosk-primary-soft, #FFF0F2), var(--kiosk-surface-alt, #F7F3EC));
-    border-top: 2px solid var(--kiosk-primary, #E8001C);
-    border-bottom: 2px solid var(--kiosk-primary, #E8001C);
+    border-top: 2px solid var(--kiosk-primary, #F4501E);
+    border-bottom: 2px solid var(--kiosk-primary, #F4501E);
     padding: var(--kiosk-space-3, 12px) 0;
 }
 
@@ -125,7 +125,7 @@ export default {
 
 .kiosk-promo-card {
     background: var(--kiosk-surface, #FFFFFF);
-    border: 2px solid var(--kiosk-primary, #E8001C);
+    border: 2px solid var(--kiosk-primary, #F4501E);
     border-radius: var(--kiosk-radius-3, 14px);
     padding: var(--kiosk-space-3, 12px) var(--kiosk-space-4, 16px);
     min-width: 280px;
@@ -141,7 +141,7 @@ export default {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
 }
 
 .kiosk-promo-card__value {
@@ -149,7 +149,7 @@ export default {
     font-weight: 900;
     font-size: calc(32px * var(--kiosk-text-scale, 1));
     line-height: 1;
-    color: var(--kiosk-primary-dark, #B8000F);
+    color: var(--kiosk-primary-dark, #DC4517);
 }
 
 .kiosk-promo-card__min {

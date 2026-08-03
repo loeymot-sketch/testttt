@@ -1,0 +1,151 @@
+{
+  "persona": "Chef-in-rush",
+  "scenario": "19h-21h dinner rush, 8 orders simultaneous, 60-90cm KDS screen, glance 5-10s per order, multi-tasking (cooking + reading), high stress, mistakes = customer complaint",
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 Phase B.4 — persona-aligned cross-validation of S3 KDS mega-agent",
+  "viewport_canonical": { "w": 1920, "h": 1080 },
+  "method": {
+    "approach": "Code-level re-verification (KdsV2Grid.vue, KdsOrderCard.vue, KdsHistoryDrawer.vue, KdsStatusBanner.vue, KitchenDisplaySystemComponent.vue) + visual reconfirmation of S3 evidence capture (S3-R1-8orders-1920x1080-truncated.png) + persona reasoning + cross-surface hunt (allergen / stock / printer / multi-bump / Historique drawer)",
+    "no_browser_session": "Re-used S3 captures + source-of-truth grep, per MEGA agent caveat that browser sessions are contended across parallel personas",
+    "files_inspected": [
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue",
+      "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (lines 1850-2310)",
+      "resources/js/helpers/kdsCustomization.js (allergen aggregator)",
+      "app/Models/Printer.php",
+      "app/Http/Requests/Admin/PrinterRequest.php",
+      "config/printing.php"
+    ]
+  },
+  "cross_validation_S3": {
+    "S3-CHEF-001": {
+      "verdict": "CONFIRMED",
+      "evidence": {
+        "code_proof": "KdsV2Grid.vue:352-368 — .kds-v2__grid is `display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); gap: 16px; padding: 16px;` with NO max-height nor responsive viewport-fit clamp.",
+        "media_query": "Only @media (min-width: 2560px) bumps to 5 cols × 2 rows — at 1920x1080 the 4×2 grid is hard-coded.",
+        "math_confirmed": "grid_top(164) + 2*row(462) + gap(16) + padding(32) = 1136px on 1080px viewport ⇒ 56px clipped. KdsOrderCard.vue has min-height ~440px on each card; bottom-row CTA (52px high Prêt button per template line 148-160) is below fold.",
+        "visual_proof": "S3-R1-8orders-1920x1080-truncated.png INSPECTED — top row 4 cards full + visible CTA, bottom row 4 cards with item content visible but `Prêt` button row clipped at viewport bottom edge.",
+        "persona_chef_glance": "60-90cm chef cannot tap clipped CTA without page-scroll. Under rush, chef will either MISS that there are 4 more orders (no extra indication other than bottom card cutoff) OR slow down to scroll. Either is a production-real failure mode per owner mandate: 'le chef sous stress va sortir une commande incomplète'."
+      }
+    },
+    "S3-CHEF-002": {
+      "verdict": "CONFIRMED",
+      "evidence": {
+        "code_proof": "KdsV2Grid.vue:55 `v-for=\"(o, idx) in activeOrders.slice(0, 8)\"` — silent slice cap at 8. No overflow chip in template, no `+N hidden` indicator anywhere in the template lines 19-100.",
+        "data_path": "activeOrders computed (line 177-182) filters to ACCEPT+PREPARING. If 9+ active orders exist, only the 8 OLDEST appear (FIFO sort line 162-173). Newer (≥9) silently hidden.",
+        "persona_chef_glance": "Chef has zero visual cue that the queue exceeds 8. In a 19h-21h rush a 9th borne order can arrive in seconds. Customer waits, chef proceeds with visible queue → 9+ order goes cold or invisible until an existing slot frees. Owner mandate verbatim: 'chef devrait scroller parfois, il ferait pas attention il va sortir la commande pas complète'."
+      }
+    },
+    "S3-CHEF-003": {
+      "verdict": "CONFIRMED",
+      "evidence": {
+        "code_proof": "KdsOrderCard.vue:571-585 — .kds-card__body has `overflow-y: auto` with thin scrollbar + 8px webkit + #6B7280 thumb. Wave U fix made scrollbar VISIBLE; it did NOT eliminate the scroll requirement.",
+        "fixed_card_height": "KdsV2Grid sets card height via `grid-template-rows: repeat(2, minmax(0,1fr))` ⇒ ~462px each at 1080px viewport. Header 110-130px + CTA 52px = ~280px usable body. ~5-6 items max visible without scroll.",
+        "persona_chef_glance": "Long order (Sandwich Cayenne with 4 variations + crudités + supplements + sauces + notes = 12+ lines) overflows. Chef in rush relies on whole-card glance — scroll is a stop-the-line action incompatible with 5-10s glance budget. Owner verbatim: 'doivent scroller pour voir ou bien on affichera toute la commande affichée en une seule fois sans scroller'."
+      }
+    }
+  },
+  "additional_blockers_found": [
+    {
+      "id": "P1-CHEF-001",
+      "title": "Stock rupture mid-prep marker (`kdsInflight`) NOT wired into V2 grid/card — chef sees TOAST but no per-card badge identifying which active card holds the 86'd item",
+      "severity": "P1_FRICTION",
+      "scenario": "Chef is preparing 6 orders during rush. Cashier marks 'Fromage Cheddar' as out-of-stock via /admin/stock-rupture-dashboard. Backend broadcasts `ItemAvailabilityChanged`. KitchenDisplaySystemComponent::_onItemAvailabilityChanged (line 2220-2256) fires `alertService.warning('Fromage Cheddar indisponible')` toast + `kdsInflight/markDeavailable` Vuex dispatch + `aria-live` polite announcement. Chef under rush, hands floured, gaze on grill — toast appears top-right for ~3-5s then disappears. Chef glances back at KDS grid: no per-card visual change. Which of the 6 in-flight tickets contained Cheddar? Chef must mentally cross-reference + scroll into cards.",
+      "evidence": {
+        "source_grep": "grep on KdsV2Grid.vue + KdsOrderCard.vue for `kdsInflight` / `kdsHasOosWarning` / `recentlyDeavailable` returns ZERO hits. The helper `kdsHasOosWarning(order)` is defined at KitchenDisplaySystemComponent.vue:2265-2272 but is never imported into the V2 card path.",
+        "legacy_path_had_it": "KitchenDisplaySystemComponent.vue:2728 references a per-card rupture warning in legacy 4-column template — when feature flag `kds.v2_enabled` is OFF (rollback path), card-level oos badge surfaces. V2 path does NOT.",
+        "vuex_module": "store/modules/kdsInflight.js exists + 10-min TTL — backend wiring is complete; the V2 UI wire-up is the missing piece."
+      },
+      "fix_options": [
+        "A. Wire `kdsInflight/orderHasRecentlyDeavailableItem` into KdsOrderCard.vue as a prop or store-read; render a high-contrast red banner above the body 'STOCK 86 — vérifier composition' when true.",
+        "B. Add red border-left accent (4px solid #DC2626) on KdsOrderCard root when oos-flagged — minimal visual change, glance-instant.",
+        "C. Surface a chip in the meta row next to allergen pill: `🚫 STOCK 86`."
+      ],
+      "persona_classification_rationale": "Toast + aria-live + Vuex marker ARE present, so chef IS notified once. Rated FRICTION (not BLOCKER) per advisor reconciliation: chef is informed but the per-card glance regression vs legacy = hands-full chef can miss the transient toast and the active cards offer no visual differentiation."
+    },
+    {
+      "id": "P1-CHEF-002",
+      "title": "Allergen pill is generic 'ALLERGIE' — chef glance does NOT reveal which item / which allergen without scrolling into card body",
+      "severity": "P2_FRICTION",
+      "scenario": "Chef glances at card C in a row of 8. Top-right corner shows `⚠ ALLERGIE` pill (KdsOrderCard.vue:48-54, orange #EA580C bg, role=alert, aria-live=assertive). Chef knows 'this order has an allergen somewhere'. To know WHICH item + WHICH allergen (e.g. gluten on the Cheddar burger but the customer also ordered fries), chef must scroll the body to find allergens_snapshot rendered per-item.",
+      "evidence": {
+        "template_line": "KdsOrderCard.vue:53 `⚠ {{ $t('label.kds_allergie') }}` — i18n key resolves to the generic word 'ALLERGIE'. Per-line allergen codes are inside .kds-card__body via `lines.push({ type: 'allergen', codes: allergenCodes })` (kdsCustomization.js:239) but they live BELOW the fold if items are ≥6 (compounds with S3-CHEF-003).",
+        "persona_chef_glance": "5-second glance is enough to KNOW there is an allergen; it is NOT enough to know which allergen + which item. Chef must either remember the customer warning at order placement (not possible via KDS-only flow) or scroll into the card body."
+      },
+      "fix_options": [
+        "A. Show the allergen codes inline on the pill: `⚠ ALLERGIE: GLUTEN, LACTOSE`. Cap to 3 codes + '+N' if more.",
+        "B. Move per-item allergen-snapshot rendering OUT of the scrolling body INTO a sticky banner zone above the card body (always visible regardless of card scroll position)."
+      ],
+      "persona_classification_rationale": "Pill IS visible at glance — no hidden risk of missing 'there's an allergen'. The friction is on next-step granularity. Rated FRICTION (not BLOCKER) per advisor reconciliation."
+    },
+    {
+      "id": "P1-CHEF-003",
+      "title": "Kitchen printer offline status NOT surfaced on KDS — chef cannot know if their backup paper-trail is dead mid-rush",
+      "severity": "P2_FRICTION",
+      "scenario": "Architecture has kitchen_hot / kitchen_cold / bar / receipt printer stations (PrinterRequest.php:38 enum). KDS is primary, paper is backup. If the kitchen_hot ESC/POS printer dies during rush (TCP drop, paper jam, USB unplugged), backend EscPosPrinterService catches the failure but the KDS UI has no surface for it. KdsStatusBanner banner priority (line 70: error > cap-full > cap-warning > fallback > sync > bump-notice) does NOT include any printer status branch. The chef discovers paper failure only later (no fallback receipt for customer dispute resolution).",
+      "evidence": {
+        "kds_banner_priority_grep": "KdsStatusBanner.vue:68-122 — bannerData computed iterates: offlineSince, listAtCap, nearCap≥200, fallbackMode, adminPollingHint, bumpLocalOnlyNotice. No printer signal.",
+        "kiosk_HAS_it": "Kiosk side has printer-failure surface (KioskConfirmationComponent.vue:44 'kiosk.confirmation.print_failed', kioskPrinter.js:266 reportPrinterFailure → /api/hardware/log). KDS side does NOT have a parallel surface.",
+        "broadcast_grep": "No `KitchenPrinterOffline` event broadcast anywhere in the codebase. Printer.php `status` field exists but no Echo handler in KDS subscribes to printer-status changes."
+      },
+      "fix_options": [
+        "A. Add 4th banner level 'printer-warning' between fallback and sync; pull kitchen_hot printer.status from admin/printers feed or a new Echo channel.",
+        "B. Defer if owner V1 mandate is 'KDS is the only kitchen surface, paper printer is optional' (then INFO not FRICTION)."
+      ],
+      "persona_classification_rationale": "Per advisor: rate FRICTION (not BLOCKER) UNLESS owner has stated paper printing is primary. In V1 Le Cayenne, KDS is primary — paper printers are a backup convenience. Chef won't make a wrong-order mistake from this (KDS still shows the order); the friction is on customer-dispute and physical-routing convenience. PENDING OWNER CLARIFICATION."
+    },
+    {
+      "id": "P1-CHEF-004",
+      "title": "Recently-served strip (Wave U `recentlyServed.slice(0,4)`) silently caps at 4 — chef cannot trace 5th-most-recent bump without opening Historique drawer",
+      "severity": "P2_INFO",
+      "scenario": "Chef bumps order 901 'Prêt' at 18:42. By 19:15 chef has bumped 12 more orders. Customer comes back saying 'where's my N°901?'. KDS shows only the last 4 served pills (KdsV2Grid.vue:198 `prepared.slice(0, 4)`). Chef opens Historique drawer (Wave X3) — works fine, drawer fetches /admin/kds-order/history-today, all good. INFO only because there IS a fallback path (Historique drawer).",
+      "evidence": "KdsV2Grid.vue:188-199 recentlyServed computed caps at 4. KdsHistoryDrawer.vue:194-200 mounts Esc + backdrop dismiss handler — works correctly.",
+      "fix_options": [
+        "Adjust slice(0,4) → slice(0,6) if owner wants more in-grid persistence (V1.0.2 polish)."
+      ],
+      "persona_classification_rationale": "Historique drawer (Wave X3) provides full-day fallback. Rated INFO not FRICTION because the recovery path is one click."
+    },
+    {
+      "id": "P1-CHEF-005",
+      "title": "Multi-bump race-safety (Wave V immediate PATCH) — CONFIRMED safe; chef can chain 5 'Prêt' taps with no UX cost",
+      "severity": "GOOD",
+      "scenario": "Chef has 5 orders ready simultaneously (after a batch fries drop). Chef taps [A]+[B]+[C]+[D]+[E] keyboard shortcuts in ~3 seconds.",
+      "evidence": {
+        "code_proof": "KdsV2Grid.vue:241-261 onKey handler — keyboard shortcut indexes activeOrders, gates cash-pending bypass, fires onCtaTap synchronously. KdsV2Grid.vue:296-318 onCtaTap emits `change-status` immediately, no setTimeout, no shared pendingTimeoutId.",
+        "wave_v_history": "Wave V (2026-05-21) removed the 3s undo window that was causing single-slot serialization race. Per-order PATCH dispatch with independent X-Idempotency-Key (UUID v4) + backend OrderStateMachine lockForUpdate + 409 swallow on duplicate.",
+        "advisor_test_coverage": "tests/wave-final-S3-KDS round-2 covered S3-12 multi-bump race scenarios per git log 5e2676503 + 93fd8e797 — 12 states GREEN."
+      },
+      "persona_classification_rationale": "Architecturally + test-evidence sound. Chef can chain bumps under rush with confidence. No friction."
+    }
+  ],
+  "blocker_if_rush_count": 3,
+  "friction_count": 3,
+  "info_or_good_count": 2,
+  "additional_blockers_breakdown": {
+    "rated_BLOCKER_IF_RUSH": 0,
+    "rated_FRICTION": 3,
+    "rated_INFO": 1,
+    "rated_GOOD": 1,
+    "rationale": "S3 already surfaced the 3 P0 BLOCKERs (S3-CHEF-001/002/003) with strong evidence. My persona-aligned hunt across allergen / stock / printer / Historique / multi-bump did NOT reveal a 4th P0 BLOCKER. The 3 additional FRICTIONs (P1-CHEF-001/002/003) are real chef-rush concerns that worsen the 3 confirmed BLOCKERs but do not independently cause an incomplete-order shipping mistake."
+  },
+  "top_3_chef_rush_concerns": [
+    "S3-CHEF-001 (CONFIRMED): bottom-row Prêt buttons clipped at viewport fold for ≥6 active orders — chef cannot tap without page-scroll, owner mandate violated. Highest production-real risk.",
+    "S3-CHEF-002 (CONFIRMED): 9+ active orders silently dropped by `slice(0,8)` — no visual indicator. Highest invisibility risk: chef does not even KNOW orders are missing.",
+    "S3-CHEF-003 (CONFIRMED): long-item orders (15+ lines) overflow card with scrollable body — 5-10s chef glance budget incompatible with scroll. Single-item ship-incomplete risk."
+  ],
+  "owner_action_required_per_S3_recommendations": [
+    "Decide layout option A/B/C for S3-CHEF-001 — KdsV2Grid.vue grid layout change (5-col adaptive, dynamic compaction, or strict 5+overflow chip)",
+    "Decide overflow-chip pattern for S3-CHEF-002 — `+N` indicator on bottom-right of grid",
+    "Decide long-order display pattern for S3-CHEF-003 — modal expand / auto-shrink / hybrid",
+    "P1-CHEF-001 (NEW): wire `kdsInflight/orderHasRecentlyDeavailableItem` into KdsOrderCard.vue for per-card 86 visibility (regression vs legacy 4-col path)",
+    "P1-CHEF-002 (NEW): allergen pill granularity — codes inline or above-fold per-item allergens block",
+    "P1-CHEF-003 (NEW, PENDING OWNER): clarify if kitchen_hot printer status should surface on KdsStatusBanner — primary vs backup mandate"
+  ],
+  "frozen_zone_diff": {
+    "files_modified": [],
+    "rationale": "Read-only persona audit. All findings are architectural — owner gate required before any KdsV2Grid.vue / KdsOrderCard.vue / KdsStatusBanner.vue layout or wiring change. PROPOSAL doc already written by S3 mega-agent at proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md."
+  },
+  "verdict": "BLOCKER_IF_RUSH",
+  "verdict_rationale": "Three P0 chef-rush BLOCKERs from S3 are CONFIRMED with code + visual evidence. Owner verbatim mandate ('le chef sous stress va sortir une commande incomplète') is violated by current KdsV2Grid layout. Three additional P1/P2 FRICTIONs (stock rupture marker not in V2, generic allergen pill, no kitchen printer banner) compound the chef-rush experience but do not independently flip the verdict. The verdict was already BLOCKER_IF_RUSH from S3 alone — this persona cross-validation reinforces it and adds 3 secondary heal targets."
+}

@@ -1,0 +1,119 @@
+{
+  "agent": "S4-OSS",
+  "mission": "OSS écran client deep test post-restore",
+  "url": "http://127.0.0.1:8000/admin/order-status-screen (SPA shell) + GET /api/frontend/oss-order?branch_id=1 (public payload)",
+  "branch": { "id": 1, "name": "Le Cayenne (principal)" },
+  "timezone": "Europe/Paris",
+  "stale_window_hours": 8,
+  "verdict": "GREEN",
+  "summary": "OSS rendre le bon set (5/5 KIOSK+TAKEAWAY × PREPARING+PREPARED), exclut fail-closed DELIVERY (control N°921 in DB, absent in payload + DOM), zéro PII dans le payload public et dans le DOM scoped au composant OSS, bump PREPARED→DELIVERED retire l'order de l'écran. Architecture sync = Echo + polling fallback (60s connected / 2s disconnected, ceiling 60s, floor 250ms).",
+  "states_captured": {
+    "S4-01-empty-state.png": {
+      "screenshot": "tests/e2e/__screenshots__/deep-S4-oss/S4-01-empty-state.png",
+      "description": "OSS empty — En préparation: — / Prêt: — (DB confirmed zero live OSS rows before seed)"
+    },
+    "S4-02-seeded-5-orders.png": {
+      "screenshot": "tests/e2e/__screenshots__/deep-S4-oss/S4-02-seeded-5-orders.png",
+      "description": "5 visible (3 PREPARING: N°901 902 903 / 2 PREPARED: N°911 912) after seeding 5 OSS-eligible + 1 DELIVERY control"
+    },
+    "S4-03-column-split.png": {
+      "screenshot": "tests/e2e/__screenshots__/deep-S4-oss/S4-03-column-split.png",
+      "description": "Scoped [role=main] capture proving 2-column split En préparation (red wine bg) | Prêt (green bg)"
+    },
+    "S4-04-delivery-control-NOT-visible.png": {
+      "screenshot": "tests/e2e/__screenshots__/deep-S4-oss/S4-04-delivery-control-NOT-visible.png",
+      "description": "Full page snapshot — DELIVERY control N°921 (DEEP-S4-DLV-001, order_type=5) NOT visible despite being in DB",
+      "delivery_control_db": { "id": 69, "token": "DEEP-S4-DLV-001", "order_type": 5, "status": 7 },
+      "delivery_visible_dom": false,
+      "delivery_in_api_payload": false
+    },
+    "S4-05-after-delivered-bump.png": {
+      "screenshot": "tests/e2e/__screenshots__/deep-S4-oss/S4-05-after-delivered-bump.png",
+      "description": "After bumping READY-001 (queue N°911) PREPARED→DELIVERED via tinker, OSS shows only N°912 in Prêt column. Backend listForBranch() immediately drops it. Visual reflects within next poll (≤60s connected, ≤2s disconnected fallback, immediate via Echo broadcast when WS up)."
+    }
+  },
+  "api_audit": {
+    "endpoint": "GET /api/frontend/oss-order?branch_id=1",
+    "auth": "x-api-key header (apiKey from window.foodkingConfig, public)",
+    "http_status": 200,
+    "content_type": "application/json",
+    "row_count": 5,
+    "resource_class": "App\\Http\\Resources\\CDSOrderDetailsResource",
+    "resource_keys": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+    "pii_keys_in_payload": [],
+    "delivery_token_in_payload": false,
+    "sample_row": {"id":64,"order_serial_no":"DEEP-S4-0001","token":"DEEP-S4-PREP-001","queue_number":"901","order_type":25,"status":7}
+  },
+  "pii_audit": {
+    "verdict": "PASS — zero PII",
+    "checked_keys": ["name","email","phone","address","customer","customer_name","first_name","last_name","mobile","total","subtotal","customer_id","total_tax"],
+    "found_in_api_response": [],
+    "found_in_oss_component_dom": [],
+    "scoped_dom_text": "En préparation\\nN°901\\nN°902\\nN°903\\nPrêt\\nN°911\\nN°912",
+    "note": "PII detected in full DOM (admin@lecayenne.fr, 'email', 'mobile') is from the admin shell sidebar (admin SPA layout) NOT from the OSS component. A real customer wall display visits as an unauthenticated visitor → SPA bypasses login (PUBLIC_FRIENDLY_AUTH_ROUTES + axios 401 catcher per app.js:165-169) → renders only the OSS columns, no shell."
+  },
+  "allowlist_audit": {
+    "verdict": "PASS — fail-closed allowlist",
+    "service_code": "App\\Services\\OrderStatusScreenOrderService::list() lines 59-62 and ::listForBranch() lines 220-223",
+    "allowed_order_types": [10, 25],
+    "allowed_order_types_names": ["TAKEAWAY", "KIOSK"],
+    "blocked_order_types_observed": {
+      "DELIVERY_5": "control row N°921 absent from API AND DOM"
+    },
+    "blocked_order_types_implied_by_whereIn": ["POS=15", "DINING_TABLE=20", "DELIVERY=5"],
+    "regression_test_sister": "tests/Feature/OSS/OssCustomerScreenFilterTest.php"
+  },
+  "polling_evidence": {
+    "verdict": "OK — Echo primary + polling fallback within budget",
+    "architecture": "resources/js/services/OssSyncService.js — Echo subscription + setTimeout fallback poll",
+    "cadence_when_ws_connected_ms": 60000,
+    "cadence_when_ws_disconnected_ms": 2000,
+    "cadence_ceiling_ms": 60000,
+    "cadence_floor_ms": 250,
+    "observed_polls_during_capture": "2 polls to /api/admin/oss-order (auth path used because admin session active) during ~18s span",
+    "note": "Production wall (unauthenticated) hits /api/frontend/oss-order. Both endpoints share the same service body so payload semantics are identical."
+  },
+  "visual_audit": {
+    "readability_5m": "PASS — N°XXX rendered ~120-140px tall, bold, high contrast (red #8B0000 on white inside red banner column / green #0E7C3A on white inside green banner column)",
+    "le_cayenne_branding": "PASS — Le Cayenne logo top-left",
+    "column_layout": "PASS — clean 2-col grid, equal widths, banner headers (En préparation | Prêt)",
+    "empty_state": "PASS — em-dash placeholder when column empty, no raw label leak",
+    "i18n_keys_resolved": "PASS — 'En préparation' / 'Prêt' / 'Le Cayenne' rendered in FR, no 'Label.X' or 'kiosk.foo' raw keys"
+  },
+  "wave_polish_r3_regression": {
+    "wave": "Wave Polish R-3 (2026-05-18) — fail-closed DELIVERY allowlist heal",
+    "scope": "whereIn(KIOSK, TAKEAWAY) replaced != DELIVERY blacklist",
+    "status_today": "INTACT — empirically verified by DEEP-S4-DLV-001 control row not leaking"
+  },
+  "cleanup": {
+    "command": "php artisan iter15:cleanup-test-orders --apply --token-prefix=DEEP-S4-",
+    "swept_active_statuses": 5,
+    "forceDeleted_leftover_DELIVERED": 1,
+    "final_DEEP_S4_row_count": 0
+  },
+  "files": {
+    "screenshots_dir": "tests/e2e/__screenshots__/deep-S4-oss/",
+    "api_payload_capture": "tests/e2e/__screenshots__/deep-S4-oss/S4-api-payload.json",
+    "api_payload_curl_raw": "tests/e2e/__screenshots__/deep-S4-oss/S4-api-payload-curl.json",
+    "dom_scan": "tests/e2e/__screenshots__/deep-S4-oss/S4-dom-scan.json",
+    "pii_scoped": "tests/e2e/__screenshots__/deep-S4-oss/S4-pii-scoped.json",
+    "network_snapshots": [
+      "tests/e2e/__screenshots__/deep-S4-oss/S4-network-snapshot.txt",
+      "tests/e2e/__screenshots__/deep-S4-oss/S4-network-poll-trace.txt"
+    ]
+  },
+  "p_findings": {
+    "P0": [],
+    "P1": [],
+    "P2": [],
+    "P3": [
+      {
+        "id": "S4-P3-01",
+        "title": "Admin shell leaks PII when authenticated user navigates to OSS surface",
+        "scope": "When an authenticated admin (e.g., Le Cayenne admin@lecayenne.fr) visits /admin/order-status-screen, the SPA renders the OSS columns INSIDE the admin shell which includes the user dropdown (email visible in sidebar). On a true public wall display (unauthenticated), the SPA bypasses the shell entirely (publicFriendlyAuthRoute) so this is NOT a production exposure — only a developer/admin-preview artifact.",
+        "evidence": "S4-dom-scan.json piiHintsInDOM: ['admin@lecayenne', 'email', 'mobile'] but S4-pii-scoped.json piiInOssDom: [] (component-scoped DOM is clean)",
+        "recommendation": "V1.0.2 nice-to-have: detect public-wall context (no auth cookie / dedicated /order-status URL) and force shell-less render even when admin happens to navigate from inside. Lowest priority because production deployment uses dedicated kiosk tablet at /order-status with no admin cookie."
+      }
+    ]
+  }
+}

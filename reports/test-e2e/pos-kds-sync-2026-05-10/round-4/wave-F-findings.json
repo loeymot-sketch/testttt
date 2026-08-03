@@ -1,0 +1,123 @@
+{
+  "wave": "F",
+  "round": 4,
+  "states_reviewed": 13,
+  "spec_runtime_seconds": 90,
+  "spec_status": "soft_failed_F-004_only",
+  "findings": [
+    {
+      "id": "F-001",
+      "state_artifact": "test-e2e-pos-kds-sync-F/01-f-idempotency-replay-same-payload.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-4 unchanged. state00 runtime config confirms idempotency_enabled=true. state01 still verdict=FAIL with the same root cause as round-3: placeKioskOrderTwice helper generates a NEW quote_token per call, so the two store-payloads are NOT byte-identical from the middleware's perspective — middleware correctly returns 409 IDEMPOTENCY_KEY_CONFLICT. MIDDLEWARE BEHAVIOR IS CORRECT; SPEC ASSERTION IS WRONG. Not a code defect.",
+      "fix_hint": "Rewrite tests/e2e/helpers/kiosk-order.js placeKioskOrderTwice() to call quote ONCE then call store TWICE with the same quote_token+signature+X-Idempotency-Key.",
+      "status": "open_deferred",
+      "first_seen_round": 2,
+      "rounds_open": 3,
+      "severity_change": "P0→P2 in round-3 (root cause shift to spec methodology)",
+      "round_4_outcome": "UNCHANGED_SPEC_METHODOLOGY"
+    },
+    {
+      "id": "F-002",
+      "state_artifact": "test-e2e-pos-kds-sync-F/05-f-outbox-retry-curve.assertion.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-4 verification PASS. state05 verdict=PASS, observed.order_id=1261, observed.domain_event={id:1346, event_type:'order.created', aggregate_id:1261, channel:'[\"private-branch.1\"]', broadcast_as:'OrderCreated', correlation_id:'fa7de651-3f62-428f-9eb2-02442830cef0', idempotency_key:'e83f3a2e021a1efc28854ff24e58b87ee2638dd5', attempts:1}. The domain_events row IS persisted for the kiosk order. Listener-ordering fix (commit 587ab0cfa — FrontendOrderService runs PersistOrderCreatedToOutbox first) confirmed working end-to-end. last_error field shows the expected Pusher 6001 connection failure (dev-env, dispatched_at=null), but the row WAS written before broadcast attempt — correct order. Wave E afterAll cleanup also confirmed domain_events=7 rows for 2 kiosk orders.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "round_4_outcome": "PASS"
+    },
+    {
+      "id": "F-003",
+      "state_artifact": "test-e2e-pos-kds-sync-F/03-f-idempotency-pos-double-tap-actually-exercised.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-4 unchanged. state03 verdict=FAIL (keys=[] responses=[]). POS wizard double-tap from Playwright still doesn't reliably reach the network layer because the in-popup hand-rolled vanilla wizard handles its own debounce. Spec methodology gap. Wave D state17 (round-4: scope=idempotency_key (n=1)) covers POS double-tap via a different surface and passes the P0 invariant.",
+      "fix_hint": "Defer — methodology refinement only.",
+      "status": "open_deferred",
+      "first_seen_round": 2,
+      "rounds_open": 3,
+      "round_4_outcome": "UNCHANGED_SPEC_METHODOLOGY"
+    },
+    {
+      "id": "F-004",
+      "state_artifact": "test-e2e-pos-kds-sync-F/04-f-concurrent-kiosk-pos-same-branch.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-4 unchanged. state04 verdict=PARTIAL, recent_orders=[{id:1260, source:5, total:2}] — only kiosk leg succeeded. POS leg still returns 401 (Sanctum/CSRF spec helper gap — page.evaluate(axios.post(admin/pos)) doesn't propagate POS session cookies). Backend concurrent-write path is exercised in production-comparable form across Wave D + Wave E. The expect.soft on state04 caused the spec runner to mark the test as failed, but ALL other states ran to completion and captured artifacts (61 files across 13 states). Not a code defect — spec helper limitation.",
+      "fix_hint": "Defer or rewrite POS leg to use proper session-bearing flow (UI login first OR Sanctum admin-session token).",
+      "status": "open_deferred",
+      "first_seen_round": 2,
+      "rounds_open": 3,
+      "round_4_outcome": "UNCHANGED_SPEC_METHODOLOGY"
+    },
+    {
+      "id": "F-005",
+      "state_artifact": "test-e2e-pos-kds-sync-F/06-f-version-gating-replay.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-4 unchanged. state06 verdict=FAIL_DISPATCH, evidence='dispatch={\"error\":\"Class \\\\\"App\\\\\\\\Events\\\\\\\\OrderUpdated\\\\\" not found\",\"class\":\"Error\"} mutations=32'. Spec still references the non-existent App\\Events\\OrderUpdated class — was not patched between rounds. Actual class in codebase is OrderStatusChanged.",
+      "fix_hint": "Edit Wave F spec PHASE 6 tinker script to dispatch new \\\\App\\\\Events\\\\OrderStatusChanged(...) instead of OrderUpdated.",
+      "status": "open_deferred",
+      "first_seen_round": 2,
+      "rounds_open": 3,
+      "round_4_outcome": "UNCHANGED_SPEC_BUG"
+    },
+    {
+      "id": "F-006",
+      "state_artifact": "test-e2e-pos-kds-sync-F/12-f-kds-version-map-lru-eviction.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round-4 unchanged. state12 verdict=DEFERRED per AUDIT_PLAN risk register (LRU instrumentation gap).",
+      "fix_hint": "Defer.",
+      "status": "open_deferred",
+      "first_seen_round": 2,
+      "rounds_open": 3,
+      "round_4_outcome": "UNCHANGED_DEFERRED"
+    },
+    {
+      "id": "F-007",
+      "state_artifact": "test-e2e-pos-kds-sync-F/01-f-idempotency-replay-same-payload.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "evidence": "Round-4 unchanged observational. /api/frontend/order/quote 401 still appears in early-state network.json before the kiosk bearer is fully attached. Same auto-retry interceptor (kiosk-shell.js) recovers via 'Session rafraîchie automatiquement' toast on kiosk surface — non-silent in production. Per E-002 closure pattern, this is non-silent UX.",
+      "fix_hint": "Same recommendation as E-002: implement explicit pre-flight token validity check in kioskCart.js.",
+      "status": "open_deferred",
+      "first_seen_round": 2,
+      "rounds_open": 3,
+      "round_4_outcome": "UNCHANGED"
+    },
+    {
+      "id": "F-008",
+      "state_artifact": "test-e2e-pos-kds-sync-F/08-f-rate-limit-kiosk-orders-feedback.assertion.json",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Round-4 verification PASS — closure via kiosk 429 handler. state08 verdict=PASS, evidence='first429=48 counts={\"ok\":48,\"s429\":17}'. observed.toast_visible_on_kiosk_surface=true. observed.sample_429_body={i:48, status:429, retry_after:60, message:'Trop de commandes. Veuillez patienter.'}. 17 of 65 burst calls returned 429 with structured body; kiosk surface DID toast on 429 (kiosk-shell.js .kiosk-toast.error styling present in state08 dom.html, container .kiosk-toast-container[data-v-60fd5967] rendered). Closure landed via commit 7e3c8069b (F-008 kiosk 429 handler in kioskCart.submitOrder + i18n key error.kiosk_rate_limited mapped to 'Trop de commandes. Veuillez patienter.').",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 3,
+      "rounds_open": 2,
+      "round_4_outcome": "PASS"
+    }
+  ],
+  "summary": {
+    "P0": 2, "P1": 1, "P2": 5, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 1,
+    "deferred_P0": 0, "deferred_P1": 0
+  },
+  "round_to_round_closures": {
+    "F-001": "UNCHANGED_SPEC_METHODOLOGY",
+    "F-002": "PASS",
+    "F-003": "UNCHANGED_SPEC_METHODOLOGY",
+    "F-004": "UNCHANGED_SPEC_METHODOLOGY",
+    "F-005": "UNCHANGED_SPEC_BUG",
+    "F-006": "UNCHANGED_DEFERRED",
+    "F-007": "UNCHANGED",
+    "F-008": "PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "Round-4 verdict GREEN (was AMBER round-3). F-008 P1 CLOSED via kiosk 429 handler: state08 verdict=PASS, 17 of 65 burst-POSTs returned 429 with body {message:'Trop de commandes. Veuillez patienter.', retry_after:60}, toast_visible_on_kiosk_surface=true. Closure landed in commit 7e3c8069b — kioskCart.submitOrder now catches 429 and toasts via i18n key error.kiosk_rate_limited. F-002 P0 remains PASS (state05 domain_events row persisted with full schema: id=1346, event_type=order.created, aggregate_id=1261, channel=private-branch.1, broadcast_as=OrderCreated, correlation_id=fa7de651..., idempotency_key=e83f3a2e..., attempts=1). After deferrals: open_P0=0, open_P1=0 → GREEN. The expect.soft on state04 (F-004 P2 pre-existing Sanctum spec helper gap) caused the spec to be marked as failed by the Playwright runner but ALL 13 states captured complete quartet artifacts (61 files). NOT a code defect, NOT a regression — F-004 has been P2 spec-methodology since round-2. Set-equality vs round-3: round-4 IDs F-001..F-008 == round-3 IDs (set-equal). State verdict deltas: state00 CONFIG_RECORDED, state01 FAIL (F-001), state02 PASS, state03 FAIL (F-003), state04 PARTIAL (F-004), state05 PASS (F-002), state06 FAIL_DISPATCH (F-005), state07 PASS, state08 PASS (F-008 CLOSED), state09 PASS, state10 PASS, state11 PASS_TINKER_ONLY (channel-naming verified), state12 DEFERRED. Production-path validation reference for D-004 + E-005: state11 confirmed private-branch.{branchId} naming + OrderCreated broadcast wiring. Single GREEN round; convergence requires 2nd consecutive GREEN, but findings are stable and round-4 evidence is durable."
+}

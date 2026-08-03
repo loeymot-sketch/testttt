@@ -1,0 +1,39 @@
+{
+  "task_id": "GOV-CYCLE-AND-MEMORY-CLEANUP-2026-04-27",
+  "phase": "EXECUTE",
+  "mode": "governance_cleanup_only",
+  "execute_delegation": "codex-extension",
+  "preconditions": [
+    "A.1 GOV-PERSIST-SENTINELS-2026-04-27 CLOSED",
+    "A.2 GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27 CLOSED"
+  ],
+  "human_authorization": {
+    "source": "GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26",
+    "summary": "Caisse V1 is active primary; memory policy is targeted tracking with documentation."
+  },
+  "files_to_modify_allowlist": [
+    ".cursor/ACTIVE_CYCLE.md",
+    "memory/INDEX.md",
+    ".gitignore",
+    "docs/PHASE_A_CLOSED.md",
+    "docs/gates/GATE_LOG.md",
+    "docs/gates/GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26.md"
+  ],
+  "hard_prohibitions": [
+    "No product code edits",
+    "No migrations",
+    "No deletion of memory episodes",
+    "No mass worktree cleanup",
+    "No D-M13 migration approval"
+  ],
+  "validation_commands": [
+    "git status --short .cursor/ACTIVE_CYCLE.md memory/INDEX.md .gitignore docs/PHASE_A_CLOSED.md docs/gates/GATE_LOG.md docs/gates/GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26.md",
+    "bash scripts/agent-activity-log.sh tail 50"
+  ],
+  "expected_result": "Single active primary and explicit memory/Phase A close policy.",
+  "invariants_considered": [
+    "orchestration_ssot",
+    "memory_policy",
+    "no_product_code_edits"
+  ]
+}

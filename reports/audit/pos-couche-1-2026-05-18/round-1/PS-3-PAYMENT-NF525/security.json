@@ -1,0 +1,96 @@
+{
+  "specialist": "Security",
+  "zone": "PS-3-PAYMENT-NF525",
+  "date": "2026-05-18",
+  "scope": "Payment gateway auth + webhook signature verification + fiscal HMAC secret rotation + audit_logs payload injection",
+  "anchors_read": [
+    "app/Http/PaymentGateways/Gateways/Stripe.php — handleWebhook + handleFromStoredEvent",
+    "app/Http/PaymentGateways/Gateways/Senangpay.php — webhook + signature verification",
+    "app/Services/Fiscal/AuditLogService.php — HMAC secret resolution + assertProductionSafe",
+    "app/Services/PaymentService.php — assertGatewayContext backtrace gate",
+    "app/Services/Cash/CashDrawerService.php — variance-override permission gate"
+  ],
+  "summary": "Security posture is hardened. Both gateway webhooks verify signatures BEFORE writing the WebhookEvent row — invalid signatures return 400 (no retry signal for the provider, no DB row created). Stripe uses Stripe SDK's native constructEvent; SenangPay uses hash_hmac SHA-256 on the canonical string (status_id|order_id|transaction_id|msg) with timing-safe hash_equals comparison. The fiscal HMAC secret is resolved with per-branch override capability (FISCAL_AUDIT_SECRET_BRANCH_{id} env or config('fiscal.audit_secret')[branch_id]); production environments REFUSE dev sentinels (assertProductionSafe @ AuditLogService:303) and refuse secrets shorter than fiscal.min_secret_length (default 32 chars). The audit_logs canonicalise step recursively sorts payload keys (sortRecursive @ AuditLogService:358) before JSON encoding — deterministic across PHP versions and DB drivers. Webhook idempotency at DB layer via UNIQUE (provider, webhook_id). PaymentService::payment() is gated by backtrace inspection — only PaymentAbstract subclasses (gateway success callbacks) can invoke it, blocking forged PAID state from controllers/jobs/CLI.",
+  "controls_verified": [
+    {
+      "control": "Webhook signature verification BEFORE DB write",
+      "stripe": "Stripe.php:213-234 — constructEvent throws on bad signature → return 400. No WebhookEvent row created. No retry from Stripe.",
+      "senangpay": "Senangpay.php:106-121 — hash_hmac SHA-256 + hash_equals comparison. Failure returns 400. No row created.",
+      "status": "PASS"
+    },
+    {
+      "control": "Idempotency at DB layer (defense beyond app firstOrCreate)",
+      "evidence": "WebhookEvent::firstOrCreate(provider, webhook_id). Migration 2026_05_xxx_create_webhook_events_table (not read but referenced from Stripe.php:247-259) declares UNIQUE (provider, webhook_id). Duplicate events return 200 'duplicate_ignored' so provider stops retrying.",
+      "status": "PASS"
+    },
+    {
+      "control": "Fiscal HMAC secret production safety",
+      "evidence": "AuditLogService::assertProductionSafe rejects dev sentinels (fiscal.dev_sentinels config list) AND any secret shorter than fiscal.min_secret_length (default 32) when APP_ENV=production. Runtime exception, no silent fallback. Per-branch override via FISCAL_AUDIT_SECRET_BRANCH_{id} env supports rotation drills.",
+      "status": "PASS"
+    },
+    {
+      "control": "Payload canonicalisation (chain stability across PHP versions)",
+      "evidence": "AuditLogService::canonicalise + sortRecursive (recursive ksort) before json_encode with JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE. Deterministic.",
+      "status": "PASS"
+    },
+    {
+      "control": "PaymentService::payment() callee gate",
+      "evidence": "PaymentService:585-616 — debug_backtrace walked up to 25 frames, requires at least one is_subclass_of(PaymentAbstract). Forged calls from controllers/jobs/CLI throw HTTP 403. Test bypass via container binding `payment.service.allow_direct_call` is cleared on first read (single-use token).",
+      "status": "PASS"
+    },
+    {
+      "control": "Cash drawer variance override permission gate",
+      "evidence": "CashDrawerService::actorCanOverrideVariance @ 490-505 — Spatie ->can() bridge with fail-closed try/catch. variance_threshold_eur (default 2.00) + variance_manager_approval_required (default true) + variance_override_permission (default cash.reconcile.variance.override). Manager-gate routine close (Sprint H2 F-11) opt-in via cash.manager_gate_routine_close.",
+      "status": "PASS"
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-PS3-01",
+      "severity": "P2",
+      "title": "Stripe webhook secret read via config('services.stripe.webhook_secret') — env-only, no per-branch override",
+      "evidence": "Stripe.php:199 reads a single global webhook secret. SaaS multi-tenant rotation would require either separate Stripe Connect accounts per tenant (architectural V2) or per-branch secret indirection (V1.1). For Le Cayenne single-tenant V1 the global secret is fine. SenangPay correctly resolves per-gateway via PaymentGateway::with('gatewayOptions') (Senangpay.php:83-103).",
+      "files": ["app/Http/PaymentGateways/Gateways/Stripe.php:199"],
+      "verdict": "V1.1-BACKLOG (multi-tenant)"
+    },
+    {
+      "id": "SEC-PS3-02",
+      "severity": "P3",
+      "title": "AuditLog payload may include sensitive PII in plaintext — log channel separation already mitigates",
+      "evidence": "AuditLogService::performInsert logs ONLY 'hash_prefix' (first 12 chars) on the fiscal log channel, NEVER the payload. DB rows hold the full payload but the table is INSERT-only at trigger + model level. No application-level PII redaction. For NF525 evidence the full payload is REQUIRED — redaction would defeat the audit. Mitigation = DB encryption-at-rest (deploy concern).",
+      "files": ["app/Services/Fiscal/AuditLogService.php:167-176"],
+      "verdict": "KEEP-AS-IS — NF525 mandates full evidence; encryption-at-rest is the right mitigation layer"
+    },
+    {
+      "id": "SEC-PS3-03",
+      "severity": "P3",
+      "title": "SenangPay merchant secret stored in DB (gateway_options table) — not env",
+      "evidence": "Senangpay.php:94-103 reads from $gateway->gatewayOptions->pluck('value', 'option'). If the database is breached, secrets leak. Mitigation: standard practice for Smartisan Settings; combined with DB encryption-at-rest + restricted DB user this is acceptable.",
+      "files": ["app/Http/PaymentGateways/Gateways/Senangpay.php:83-103"],
+      "verdict": "V1.1-BACKLOG (migrate gateway secrets to env-only, mirror Stripe pattern)"
+    },
+    {
+      "id": "SEC-PS3-04",
+      "severity": "P2",
+      "title": "DLQ replay does NOT re-verify Stripe signature — security trade-off documented",
+      "evidence": "Stripe.php:338-345 + Senangpay.php:210-218 inline comments justify why: the row only enters the DLQ if the live handler already verified the signature on first receipt (signature failure returns 400 BEFORE WebhookEvent row creation). On replay we don't have the original Stripe-Signature header anyway. Acceptable for V1.0.1; if a row's payload column is tampered with in storage, the replay would not detect it.",
+      "files": ["app/Http/PaymentGateways/Gateways/Stripe.php:330-381"],
+      "verdict": "KEEP-AS-IS — DB INSERT-only triggers + restricted DB user are the mitigation"
+    }
+  ],
+  "frozen_files_touched": [],
+  "recommendations": {
+    "keep_as_is": [
+      "Stripe webhook signature verification flow (constructEvent → 400)",
+      "SenangPay hash_hmac + hash_equals timing-safe comparison",
+      "AuditLogService::assertProductionSafe (sentinel + length gate)",
+      "PaymentService::payment() backtrace gate",
+      "Webhook DB UNIQUE (provider, webhook_id) constraint as idempotency floor"
+    ],
+    "v1_1_backlog": [
+      "Per-branch Stripe webhook secret indirection for SaaS V2",
+      "Migrate SenangPay merchant secret from DB to env-only resolution"
+    ]
+  },
+  "verdict_zone": "HARDENED — no P0/P1 security findings, 2 P2 SaaS-V2-prep items + 2 P3 polish"
+}

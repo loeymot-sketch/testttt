@@ -2,10 +2,11 @@
     <div id="receiptModal" class="modal">
         <div class="modal-dialog max-w-[340px] rounded-none" id="print" :dir="direction">
             <div class="modal-body">
+                <receipt-remboursement-marker :order="order" />
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
-                    <h4 class="text-sm font-normal">{{ branch.address }}</h4>
-                    <h5 class="text-sm font-normal">Tel: {{ branch.phone }}</h5>
+                    <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
+                    <h5 class="text-sm font-normal">Tel: {{ receiptBranch.phone }}</h5>
                 </div>
 
                 <table class="w-full my-1.5">
@@ -157,9 +158,12 @@
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import OrderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import { receiptBranchHeader } from "../../../helpers/posReceiptBuilder";
+import ReceiptRemboursementMarker from "../pos/ReceiptRemboursementMarker.vue";
 
 export default {
     name: "PosOrderReceiptComponent",
+    components: { ReceiptRemboursementMarker },
     props: {
         order: Object
     },
@@ -185,8 +189,11 @@ export default {
         company: function () {
             return this.$store.getters['company/lists'];
         },
-        branch: function () {
-            return this.$store.getters['backendGlobalState/branchShow'];
+        receiptBranch: function () {
+            return receiptBranchHeader(
+                this.order,
+                this.$store.getters['backendGlobalState/branchShow']
+            );
         },
         orderItems: function () {
             return this.$store.getters['posOrder/orderItems'];
@@ -197,6 +204,34 @@ export default {
     },
     mounted() {
         this.$store.dispatch("company/lists").then().catch();
+        const bid = this.order?.branch_id ?? this.order?.branch?.id;
+        if (bid) {
+            this.$store.dispatch('backendGlobalState/branchShow', bid).catch(() => {});
+        }
     }
 }
 </script>
+
+<style scoped>
+/* =============================================================================
+   PosOrderReceiptComponent — POS V5 chrome touche (refonte 2026-05-02 R2)
+   -----------------------------------------------------------------------------
+   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2
+   Note     : modal de réimpression depuis l'historique. Le bloc papier
+   `#receiptModal .modal-dialog #print` reste INTACT (zone fiscale NF525 :
+   monospace + dashed borders légaux). Seul le chrome modal est retouché V5.
+   ============================================================================= */
+:deep(#receiptModal .modal-dialog) {
+    border-radius: var(--pos-v5-radius-xl) !important;
+    box-shadow: var(--pos-v5-shadow-modal) !important;
+    background: var(--pos-v5-bg-panel) !important;
+    border: 1px solid var(--pos-v5-border) !important;
+    overflow: hidden;
+}
+
+/* Aperçu papier ticket reçoit une matière warm */
+:deep(#print) {
+    background: var(--pos-v5-bg-receipt);
+    padding: var(--pos-v5-space-4);
+}
+</style>

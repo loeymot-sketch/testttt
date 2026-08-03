@@ -1,0 +1,9 @@
+web-desktop/home: CLEAN
+web-desktop/menu: CLEAN
+web-desktop/loyalty: color-contrast[serious]×1
+web-desktop/about: CLEAN
+web-desktop/orders: color-contrast[serious]×1
+web-mobile/home: CLEAN
+web-mobile/menu: CLEAN
+mobile/home: button-name[critical]×4
+mobile/menu: color-contrast[serious]×3, nested-interactive[serious]×41

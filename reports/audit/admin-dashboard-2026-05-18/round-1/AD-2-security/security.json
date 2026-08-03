@@ -1,0 +1,113 @@
+{
+  "specialist": "Security",
+  "zone": "Admin Dashboard (15.1-15.7)",
+  "wave": "B-Admin",
+  "round": 1,
+  "date": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "executive_summary": "Admin route group is protected by 4-layer middleware stack: `['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation']`. The `apiKey` middleware is a SHARED-SECRET HEADER CHECK ONLY (not a role gate) — see app/Http/Middleware/ApiKeyMiddleware.php L23-28. `auth:sanctum` only verifies token validity, not role/ability. THE WHOLE AUTHORIZATION SURFACE depends on per-controller `permission:*` middleware. 71/87 (82%) admin controllers have it. 16 do not — 3 are dangerous, 13 are acceptable (route-level gating or pure self-service).",
+  "middleware_stack_breakdown": {
+    "installed": "App\\Http\\Middleware\\Installed — guards Setup wizard. Pass-through after install.",
+    "apiKey": {
+      "file": "app/Http/Middleware/ApiKeyMiddleware.php",
+      "behavior": "Reads `config('app.api_key')` (env API_KEY). Checks `X-Api-Key` header equality. Returns 400 invalid otherwise.",
+      "verdict": "NOT a permission gate. NOT a tenant gate. Any client knowing the SHARED secret passes. SEC-FIX commit migrated from env() to config() to survive config:cache (L20-21)."
+    },
+    "auth:sanctum": "Verifies Bearer token + revoked status. No role/ability check at this layer.",
+    "localization": "Sets request locale. No security.",
+    "throttle:admin-mutation": "Rate limit on per-IP-per-route. Defense-in-depth, not authz."
+  },
+  "spatie_permission_coverage": {
+    "admin_controllers_with_permission_middleware": 71,
+    "admin_controllers_without_permission_middleware": 16,
+    "of_those_16": {
+      "acceptable_self_service": ["DefaultAccessController (per-user prefs, branch_id server-coerced)", "MenuController (catalog read-only, used by POS runtime)", "PosCategoryController (gated `items_show|pos` via closure)", "CountryCodeController (read-only public-ish)", "TimezoneController (read-only)", "MenuProjectionController (gated at route level)", "AnalyticSectionController (mutations need check — see finding S-1)"],
+      "route_gated_at_route_level": ["IngredientController (route group `permission:ingredients_manage` L713)", "AvailabilityController (route group)", "ComposerProfileController + ComposerStepController (route group `permission:catalog.compose` + `permission:catalog.publish` L727-749)", "MenuSectionController (route group)", "MenuTemplateController (NOT gated — see finding S-2)"],
+      "questionable": ["AdminPosV4Controller (verify gate)", "MyOrderDetailsController (NO gate — see CRITICAL S-3)", "MyOrderDetailsController", "AddressController"]
+    }
+  },
+  "findings": [
+    {
+      "id": "S-1",
+      "severity": "P0",
+      "title": "MyOrderDetailsController::orderDetails — IDOR within same branch",
+      "evidence": "app/Http/Controllers/Admin/MyOrderDetailsController.php has ZERO permission middleware. Route `/api/admin/my-order/show/{user}/{order}` (routes/api.php L574) binds both params freely. Inside OrderService::orderDetails (L1411-1422), the check is `$order->user_id == $user->id` — both come from URL params, NOT from `auth()->id()`. Attacker holding any sanctum token can hit `/admin/my-order/show/<bob_id>/<bob_order_id>` and receive Bob's order (with `transaction`, `orderItems`, `branch`, `user` eager-loaded). BranchScope on Order limits enumeration cross-branch (any staff branch_id>0 only resolves their branch's orders), but Admin (branch_id=0) bypass + any same-branch staff cross-user IDOR is open.",
+      "exploit": "Any authenticated staff member in branch X can enumerate {user_id, order_id} pairs of other customers in branch X. Admin users (branch_id=0) can enumerate cross-branch.",
+      "callsite_inventory": "Endpoint is ADMIN-ONLY (no frontend/account callsite). Consumers: resources/js/components/admin/customers/CustomerOrderDetailsComponent.vue, resources/js/components/admin/waiters/WaiterOrderDetailsComponent.vue, resources/js/components/admin/deliveryBoys/DeliveryBoyOrderDetailsComponent.vue — all via vuex action `myOrderDetails/orderDetails` (resources/js/store/modules/myOrderDetails.js L33). Frontend account/myOrder uses a different endpoint (not this one).",
+      "fix_proposal_initial_REJECTED": "Naive `auth()->id() === $user->id` would BREAK the 3 admin SPA flows that legitimately view OTHER users' orders (Customer/Waiter/DeliveryBoy detail views in admin). DO NOT apply.",
+      "fix_proposal_recommended": "Add `$this->middleware('permission:customers_show|waiters_show|delivery-boys_show')` (Spatie alternation OR) in MyOrderDetailsController constructor. This gates the 3 legitimate admin consumers and locks out non-staff tokens. Cleanest V1.0.2 design = split into 3 dedicated endpoints (/admin/customer/{user}/order/{order} gated by customers_show, /admin/waiter/... gated by waiters_show, /admin/delivery-boy/... gated by delivery-boys_show).",
+      "heal_decision": "DEFERRED to Round 2 / V1.0.2 — multi-consumer endpoint with permission alternation needs sentinel test (verify each role can still hit the legitimate view) before commit. Round 1 mandate says safe-heal only — this needs test infra first.",
+      "frozen_zone": false,
+      "heal_eligible_round1": false,
+      "heal_eligible_round2": true
+    },
+    {
+      "id": "S-2",
+      "severity": "P1",
+      "title": "MenuTemplateController CRUD ungated",
+      "evidence": "app/Http/Controllers/Admin/MenuTemplateController.php has no `permission:*` middleware (grep -n confirms). Routes `/admin/setting/menu-template` GET+POST+PUT+DELETE (routes/api.php L385-389) are inside `permission:settings` setting prefix group? Need to verify.",
+      "verdict": "VERIFIED — routes/api.php L295 opens `setting.` prefix group WITHOUT any group-level `permission:*` middleware. L384-390 declares menu-template inside this group. Group does NOT inherit a permission gate, so MenuTemplateController's lack of controller-level middleware leaves all 5 verbs ungated for any sanctum-auth token. P1 stands.",
+      "fix_proposal": "Add `$this->middleware(['permission:settings'])` in MenuTemplateController constructor (matching SliderController/CurrencyController/TaxController pattern).",
+      "heal_decision": "DEFERRED to Round 2 — requires sentinel test (MenuTemplateAuthzTest) similar to PermissionControllerIndexAuthzTest. Round 1 mandate prefers test-backed heals.",
+      "frozen_zone": false,
+      "heal_eligible_round1": false,
+      "heal_eligible_round2": true
+    },
+    {
+      "id": "S-3",
+      "severity": "P1",
+      "title": "AnalyticController::index and show ungated",
+      "evidence": "app/Http/Controllers/Admin/AnalyticController.php L21: `$this->middleware(['permission:settings'])->only('store', 'update', 'destroy');` — `index` and `show` are NOT gated. Routes /admin/setting/analytic GET (L431) is inside `setting.` prefix group (verified L295 — group has NO permission middleware). Analytic stores tracking pixels / 3rd-party integration keys (GTM, FB Pixel, etc.).",
+      "fix_proposal": "Change `->only('store', 'update', 'destroy')` to no `only()` (gate all 5 methods) OR add `$this->middleware(['permission:settings'])->only('index', 'show')` line.",
+      "heal_decision": "DEFERRED to Round 2 — needs sentinel.",
+      "frozen_zone": false,
+      "heal_eligible_round1": false,
+      "heal_eligible_round2": true
+    },
+    {
+      "id": "S-4",
+      "severity": "P2",
+      "title": "FormRequest authz scattered — F-2 backlog known issue",
+      "evidence": "96 FormRequest files. authorize() returns true by default in most — gating relies on route-level `permission:*` middleware. BRAIN notes F-2 backlog mentions 88 endpoints with scattered FormRequest authz. AdministratorRequest M-R3-P0-E heal is a positive example of correct FormRequest gating.",
+      "verdict": "Known V1.0.1 refactor target. Not a new finding. Not P0.",
+      "frozen_zone": false,
+      "heal_eligible": false
+    },
+    {
+      "id": "S-5",
+      "severity": "info",
+      "title": "ApiKey middleware uses config() (not env) — SEC-FIX confirmed",
+      "evidence": "ApiKeyMiddleware.php L20-21 comment: `// [SEC-FIX] Use config() not env() — env() returns null after php artisan config:cache`. Returns 400 on mismatch, not 401 (caller distinguishes auth-key from auth-user).",
+      "verdict": "Hardened. No action."
+    },
+    {
+      "id": "S-6",
+      "severity": "info",
+      "title": "M-R3-P0-A heal verified — PermissionController gated",
+      "evidence": "PermissionController.php L27-33 carries the heal comment and `$this->middleware(['permission:settings']);` covers all methods including `index`. Sentinel: PermissionControllerIndexAuthzTest.php exists.",
+      "verdict": "Closed."
+    },
+    {
+      "id": "S-7",
+      "severity": "info",
+      "title": "M-R3-P0-E heal verified — AdministratorRequest blocks branch_id=0 minting",
+      "evidence": "AdministratorRequest.php L74-91 withValidator after-rule. Non-superadmin caller submitting branch_id=0 receives 422 with R3 T-2.2.1 Sec S-3 message.",
+      "verdict": "Closed."
+    },
+    {
+      "id": "S-8",
+      "severity": "P2",
+      "title": "CSRF — admin API routes don't use VerifyCsrfToken",
+      "evidence": "Admin routes live in routes/api.php which is `api` middleware group (no CSRF by default in Laravel — stateless via Sanctum tokens). Acceptable for token-based SPA architecture. Cookie-based session POSTs would need CSRF — not the case here.",
+      "verdict": "By design. Sanctum SPA mode auto-handles XSRF on /sanctum/csrf-cookie route. Not a finding."
+    },
+    {
+      "id": "S-9",
+      "severity": "P2",
+      "title": "PaymentGatewayController.update — secrets storage check needed",
+      "evidence": "Not deeply audited in this pass (1500-word cap). PaymentGatewayController is gated `permission:settings`. Whether stored secrets (Stripe key etc.) are encrypted at rest (Laravel `encrypted` cast) requires migration + model review. Logged as deferred.",
+      "verdict": "Defer — known V1.0.1 backlog item."
+    }
+  ],
+  "verdict": "MIDDLEWARE STACK ACCEPTABLE. 1 P0 (S-1 MyOrderDetails IDOR), 2 P1 (S-2 MenuTemplate, S-3 Analytic read), 2 P2 deferred. 2 confirmed heals (M-R3-P0-A, M-R3-P0-E). The `apiKey` shared-secret pattern is conventional for FoodKing's deployment (single tenant key); not a finding."
+}

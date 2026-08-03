@@ -24,13 +24,14 @@ class OrderSetupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_setup_food_preparation_time'        => ['required', 'numeric'],
-            'order_setup_schedule_order_slot_duration' => ['required', 'numeric'],
-            'order_setup_takeaway'                     => ['required', 'numeric'],
-            'order_setup_delivery'                     => ['required', 'numeric'],
-            'order_setup_free_delivery_kilometer'      => ['required', 'numeric'],
-            'order_setup_basic_delivery_charge'        => ['required', 'numeric'],
-            'order_setup_charge_per_kilo'              => ['required', 'numeric'],
+            // [P10] All values are durations, activity codes (≥0), or money/distances — none may be negative.
+            'order_setup_food_preparation_time'        => ['required', 'numeric', 'min:0'],
+            'order_setup_schedule_order_slot_duration' => ['required', 'numeric', 'min:0'],
+            'order_setup_takeaway'                     => ['required', 'numeric', 'min:0'],
+            'order_setup_delivery'                     => ['required', 'numeric', 'min:0'],
+            'order_setup_free_delivery_kilometer'      => ['required', 'numeric', 'min:0'],
+            'order_setup_basic_delivery_charge'        => ['required', 'numeric', 'min:0'],
+            'order_setup_charge_per_kilo'              => ['required', 'numeric', 'min:0'],
         ];
     }
 }

@@ -1,0 +1,31 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE",
+  "execution_delegation": "explicit-prompt-bind",
+  "mode": "execute-safe-slice",
+  "objective": "Expose existing item attribute composer constraints in kiosk and canonical menu projections.",
+  "preconditions": [
+    "PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE PASS",
+    "No migration gate required because no schema change",
+    "No frozen order-service gate required because no order service edit"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE/allowlist.txt",
+  "forbidden": [
+    "Do not add migrations",
+    "Do not edit routes/api.php",
+    "Do not edit OrderService",
+    "Do not edit FrontendOrderService",
+    "Do not calculate prices in projection"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation-kept-through-existing-branch-argument",
+    "dispatch-after-commit-not-touched",
+    "pos-kiosk-projection-parity"
+  ],
+  "expected_outputs": [
+    "KioskMenuService itemAttributes projection",
+    "MenuProjectionService itemAttributes projection",
+    "Parity sentinel coverage",
+    "Self-audit report"
+  ]
+}

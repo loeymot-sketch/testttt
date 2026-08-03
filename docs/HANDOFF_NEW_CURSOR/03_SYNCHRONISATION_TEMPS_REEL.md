@@ -28,6 +28,25 @@
 
 - **`BROADCAST_DRIVER`** : défaut possible `null` → **aucun** message WS ; seul le polling reste.
 - **`QUEUE_CONNECTION=sync`** : les jobs partent dans la même requête (latence).
+- **Fallback polling** : cadence **per-surface** (intentional divergence by UX
+  role — pas de SoT PHP unique). Le store `posOrder` expose `realtimeFallback`
+  / `realtimeFallbackHint` pour afficher un hint operateur quand le broadcast
+  est off et que l'ecran fonctionne en polling.
+
+Valeurs par-surface (heal B.3 2026-05-19 — le bloc PHP `polling_fallback` est
+supprimé car aucun lecteur PHP, contract drift documenté) :
+
+| Surface | Intervalle | Source |
+|---------|------------|--------|
+| POS | `MIX_BROADCAST_POLLING_FALLBACK_MS` (default 30000ms, webpack-baked) | `resources/js/store/modules/posOrder.js:65` |
+| KDS (WS up) | 60000ms (Echo handles push) | `KitchenDisplaySystemComponent.vue:1759` |
+| KDS (WS down) | 5000ms (kitchen-staleness budget) | `KitchenDisplaySystemComponent.vue:1759` |
+| Kiosk | 15000ms (UX freshness vs noise) | `KioskWaitingComponent.vue:154` |
+
+```env
+# POS only — KDS/Kiosk constants hardcoded in source per role
+MIX_BROADCAST_POLLING_FALLBACK_MS=30000   # rebuild via `npm run prod`
+```
 
 ## 5. Incohérence documentaire connue
 

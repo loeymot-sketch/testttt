@@ -1,0 +1,9 @@
+[
+  {
+    "severity": "INFO",
+    "viewport": "mobile",
+    "state": "checkout",
+    "png": "-",
+    "observed": "Passer commande button not visible (cart may be empty)"
+  }
+]

@@ -1,0 +1,6 @@
+
+> codex:complex
+> node agents/codex.runner.mjs POS_V4_FINAL_AUDIT_W0_001
+
+✅ Codex — wire=responses
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/missions/POS_V4_FINAL_AUDIT_W0_001/output_codex.json

@@ -1,0 +1,113 @@
+{
+  "specialist": "RED-team Adversarial",
+  "task": "WI-1 Configuration + Environment coherence — find an env var omission that would silently degrade production without an error",
+  "mode": "read-only adversarial",
+  "scope": "Adversarial framing: assume the operator deploys with PRODUCTION_ENV_TEMPLATE.env.txt copied verbatim, fills in only the OBVIOUS values (APP_KEY, DB_PASSWORD, fiscal secrets), and skips anything that 'looks optional'. What breaks SILENTLY (no boot crash, no 5xx, no operator-visible error) while real customers are being served?",
+  "method_note": "RED-team perspective applied in-session sequentially. Each finding cross-checked against the boot guard list and the lazy-validation patterns documented by Architect + Security perspectives.",
+  "findings": {
+    "summary": "Five silent-degrade vectors identified. None catastrophically destroy V1 Le Cayenne single-domain cash-only deploy, but two would be operator-invisible until customer-impacting symptoms emerge: (1) FCM_SECRET_KEY vs FCM_SERVER_KEY naming drift between PROD template and config — push notifications silently no-op when V1.0.2 mobile activates, (2) BROADCAST_DRIVER=pusher with empty PUSHER_APP_KEY — boot guard passes, broadcasts silently 401, 30s polling fallback masks. Three additional vectors are dormant in V1 but ship-blocking for V2 SaaS B2B.",
+    "silent_degradation_vectors": [
+      {
+        "id": "RED-1-FCM-KEY-DRIFT",
+        "severity": "P1",
+        "trigger": "Operator copies PRODUCTION_ENV_TEMPLATE.env.txt verbatim, sets FCM_SECRET_KEY=<actual_firebase_server_key>. V1.0.2 mobile push activation goes live.",
+        "expected": "FCM push notifications deliver to mobile clients",
+        "actual": "Silent no-op. FcmNotificationService reads config('services.fcm.server_key') → config/services.php:55 → env('FCM_SERVER_KEY', '') → empty string. Operator sees no error. Mobile clients receive zero pushes.",
+        "evidence_quote_prod_template": "FCM_SECRET_KEY=  (docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt:197)",
+        "evidence_quote_config": "'server_key' => env('FCM_SERVER_KEY', ''),  (config/services.php:55)",
+        "evidence_quote_env_example": "FCM_SERVER_KEY=  (.env.example:182 — uses correct name)",
+        "primary_source_diff": "PROD template uses FCM_SECRET_KEY, config/services.php expects FCM_SERVER_KEY. Variable name TYPO in the PROD template.",
+        "current_v1_blast_radius": "Zero — V1 Le Cayenne does NOT activate FCM mobile push (in-restaurant cash-only POS). Becomes customer-impacting the moment V1.0.2 mobile cycle ships.",
+        "fix": "Rename FCM_SECRET_KEY → FCM_SERVER_KEY at docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt:197. Same fix for FCM_TOPIC → FCM_TOPIC_PREFIX at line 198 (config/services.php:57)."
+      },
+      {
+        "id": "RED-2-PUSHER-EMPTY-WITH-GUARD-PASS",
+        "severity": "P1",
+        "trigger": "Operator sets BROADCAST_DRIVER=pusher (satisfies AppServiceProvider:193-198 guard which only checks driver != null) but leaves PUSHER_APP_KEY / PUSHER_APP_SECRET / PUSHER_APP_ID empty (e.g. forgot to migrate from staging values, or copy-paste error)",
+        "expected": "Real-time KDS/OSS broadcasts deliver to subscribed clients",
+        "actual": "Pusher SDK constructor accepts empty credentials. First broadcast triggers HTTP 401 from Pusher.com (or Soketi rejection). The Laravel queue worker retries 6 times (per .env.example:127 `--tries=6 --backoff=1,5,15,60,300`) then drops the broadcast. KDS/OSS surfaces fall back to the 30s polling (config/broadcasting.php:31-35) — operators see KDS update with a delay but no error. Silent real-time death.",
+        "evidence_quote_guard": "if (in_array(config('broadcasting.default'), [null, 'null'], true)) { throw new RuntimeException... }  (AppServiceProvider.php:193-198)",
+        "evidence_quote_pusher_config": "'key' => env('PUSHER_APP_KEY'), 'secret' => env('PUSHER_APP_SECRET'), 'app_id' => env('PUSHER_APP_ID'),  (config/broadcasting.php:52-54)",
+        "primary_source_gap": "Guard checks driver name but NOT driver-specific credential completeness. driver='pusher' with empty keys passes the guard.",
+        "current_v1_blast_radius": "MEDIUM — Le Cayenne V1 ships with Soketi self-hosted (PROD template:53-61); same credential surface (PUSHER_APP_ID/KEY/SECRET point at Soketi). If operator misconfigures, real-time KDS delivery silently degrades to 30s polling. Cashiers see kitchen delay, customers may experience slow status updates.",
+        "fix": "Extend AppServiceProvider:193-198 guard: when driver IS 'pusher', also require non-empty PUSHER_APP_KEY/SECRET/ID. Same enforcement style as the existing 10 guards."
+      },
+      {
+        "id": "RED-3-IDEMPOTENCY-CACHE-STORE-MISCONFIG",
+        "severity": "P2",
+        "trigger": "Operator sets IDEMPOTENCY_MIDDLEWARE_ENABLED=true (satisfies the new Foundation Audit F-3 boot guard) but leaves IDEMPOTENCY_CACHE_STORE unset (config/idempotency.php:73 defaults to env('IDEMPOTENCY_CACHE_STORE')=null which falls back to cache.default at AppServiceProvider.php:52)",
+        "expected": "Idempotency lookups use Redis (cache.default in prod)",
+        "actual": "Falls back to cache.default → Redis IF CACHE_DRIVER=redis (which IS guarded). Safe in V1.0.X.",
+        "evidence_quote": "$this->app->bind(\\App\\Services\\Idempotency\\IdempotencyKeyRepository::class, fn ($app) => new \\App\\Services\\Idempotency\\RedisIdempotencyKeyRepository(cacheStore: config('idempotency.cache_store')))  (AppServiceProvider.php:50-54)",
+        "current_v1_blast_radius": "Zero in V1 — cache.default IS Redis by boot guard. Becomes a vector ONLY if a future deploy uses a non-Redis cache.default (forbidden by CACHE_DRIVER guard anyway).",
+        "fix": "No change needed — defense-in-depth via CACHE_DRIVER guard already covers this."
+      },
+      {
+        "id": "RED-4-CORS-MULTIDOMAIN-OMISSION",
+        "severity": "P2 (dormant V1, P0 V2 SaaS)",
+        "trigger": "Operator deploys multi-domain (admin.lecayenne.fr / kiosk.lecayenne.fr distinct from lecayenne.fr APP_URL) but forgets to set KIOSK_DOMAIN / ADMIN_DOMAIN env vars. APP_URL guard passes (APP_URL is set), but CORS allowed_origins array is missing entries for the other subdomains.",
+        "expected": "Kiosk browser hits admin API → CORS allows cross-origin",
+        "actual": "config/cors.php:6-10 array_filter([env('APP_URL'), env('KIOSK_DOMAIN'), env('ADMIN_DOMAIN')]) returns only [APP_URL]. The kiosk subdomain's preflight OPTIONS request silently 403s. /api/broadcasting/auth rejected — same silent real-time death as RED-2 but via CORS not credentials.",
+        "evidence_quote": "'allowed_origins' => array_values(array_filter([ env('APP_URL'), env('KIOSK_DOMAIN'), env('ADMIN_DOMAIN'), ])),  (config/cors.php:6-10)",
+        "primary_source_documentation_in_guard": "// For kiosk/admin on distinct domains, also set KIOSK_DOMAIN and ADMIN_DOMAIN — config/cors.php allows all three.  (AppServiceProvider.php:188-189 — guard docstring mentions but does NOT enforce)",
+        "current_v1_blast_radius": "Zero — Le Cayenne V1 ships single-domain (lecayenne.fr). PROD template does NOT declare KIOSK_DOMAIN/ADMIN_DOMAIN (correct for single-domain).",
+        "fix_v2": "Future SaaS B2B multi-tenant deploys MUST set these. Recommend adding boot warning (not crash) when a domain ENV is set but doesn't match the kiosk/admin route prefix. Out of V1 scope."
+      },
+      {
+        "id": "RED-5-STAFF-ONLY-MODE-VIA-ENV-IN-BLADE",
+        "severity": "P2",
+        "trigger": "Operator sets STAFF_ONLY_MODE=true in prod .env. After `php artisan config:cache`, resources/views/master.blade.php reads env('STAFF_ONLY_MODE') which returns null (config:cache invalidates .env loading for non-config env() calls).",
+        "expected": "Customer self-service surfaces redirect to staff-only",
+        "actual": "STAFF_ONLY_MODE evaluates as falsy → customer surfaces remain open. Silent regression of the staff-only enforcement gate.",
+        "evidence_quote_config": "env('STAFF_ONLY_MODE') called via resources/views/master.blade.php — verified by `grep -rln STAFF_ONLY_MODE app/ resources/`",
+        "evidence_quote_documented_anti_pattern": ".env.example:23-24 + PROD template:187 STAFF_ONLY_MODE=true — declared but consumed via env() not config()",
+        "current_v1_blast_radius": "P2 — Le Cayenne V1 has STAFF_ONLY_MODE=true in PROD template:187. If config:cache hides the value, customer self-service surfaces (mobile/web) become accessible when owner intent is staff-only. Same Laravel anti-pattern as currency helpers (Architect finding).",
+        "fix": "Move STAFF_ONLY_MODE consumption to a config('app.staff_only_mode') read. V1.0.2 backlog."
+      },
+      {
+        "id": "RED-6-HEALTH-IPS-OMISSION",
+        "severity": "P3",
+        "trigger": "Operator omits HEALTH_IPS_ALLOWED in prod .env",
+        "expected": "Health endpoint full report (DB connection, queue depth, Redis ping) accessible only to LAN/monitoring",
+        "actual": "Full report publicly accessible. Reveals DB connection details, queue worker status, Redis ping. Attacker reconnaissance.",
+        "evidence_quote": ".env.example:216 + PROD template:108 default empty = no filter",
+        "current_v1_blast_radius": "LOW — endpoint behind APP_URL (HTTPS). PROD template:108 declares HEALTH_IPS_ALLOWED=127.0.0.1/32 explicitly. If operator follows template, OK.",
+        "fix": "Already mitigated by PROD template default — no change needed."
+      }
+    ],
+    "highest_asymmetry_finding": {
+      "winner": "RED-1-FCM-KEY-DRIFT",
+      "rationale": "PROD template variable name typo (FCM_SECRET_KEY vs FCM_SERVER_KEY) is the ONLY finding where the operator can copy-paste the template verbatim and end up with a non-functional production feature with ZERO visible feedback. All other findings require the operator to actively make a mistake. This is a 1-line fix in a single doc file that prevents post-V1.0.2 push notification silent failure.",
+      "wave_h_continuity": "Wave H heals (bug_001-bug_011) confirmed the pattern: silent fallback paths (role lookup, BranchScope withoutGlobalScope) are the highest-asymmetry bug class. RED-1 is the env-layer cousin: a name drift that produces a silent fallback to empty value."
+    },
+    "p0_silent_attacks_explored_and_negated": [
+      {
+        "scenario": "Attacker forges /payment/stripe-webhook/ POST when STRIPE_WEBHOOK_SECRET is empty",
+        "verdict": "NEGATED — Stripe is not active in V1 Le Cayenne. Stripe gateway not wired into payment flow. Risk surfaces only if Stripe activated, at which point Security S-R3 applies."
+      },
+      {
+        "scenario": "Operator runs E2E_POS_USER / E2E_POS_PASS env values in production (.env.example:38-40 comments)",
+        "verdict": "NEGATED — Comments are documentation only. No live consumer in app/. E2E_POS_PASS=admin@lecayenne.fr / 123456 hardcoded in reference_admin_e2e_creds memory is dev-only; production gets fresh seeded users."
+      },
+      {
+        "scenario": "FISCAL_AUDIT_SECRET silently null after config:cache (per-branch override anti-pattern)",
+        "verdict": "PARTIALLY NEGATED — global FISCAL_AUDIT_SECRET still loads via config('fiscal.audit_secret'). Only the per-branch FISCAL_AUDIT_SECRET_BRANCH_N override is silently inert. Chain still signs with global secret — graceful fallback per Architect P1 finding."
+      },
+      {
+        "scenario": "BACKUP_S3_BUCKET unset → scripts/backup-foodking-daily.sh silently skips upload",
+        "verdict": "MITIGATED — script is bash, reads ${BACKUP_S3_BUCKET:-}; presumed to fail-loud or log. Out-of-scope (infra, not Laravel). PROD template:85 declares BACKUP_S3_BUCKET=foodking-backups-gra — operator-visible."
+      },
+      {
+        "scenario": "POS_FEATURED_CATEGORY_IDS empty CSV → all categories show on POS first page",
+        "verdict": "INTENTIONAL FALLBACK — config/pos.php:58-61 comments: 'Empty list → fallback no filter (all categories shown — safe default when config not yet provisioned).' This is a deliberate degradation pattern, not a silent failure."
+      }
+    ],
+    "verdict_red_team": "AMBER — five silent-degrade vectors identified, two (FCM key drift + Pusher empty values) are operator-invisible. None are V1-Le-Cayenne ship blockers. RED-1 (FCM rename) is the highest-asymmetry 1-line doc fix worth landing pre-cloud. RED-2 (Pusher boot guard extension) is V1.0.2 hardening. RED-4 (multi-domain CORS) is V2 SaaS prep. Three escalation-quality issues + two informational.",
+    "recommendations": [
+      {"id": "RED-R1", "priority": "P1 PRE-CLOUD", "action": "Fix FCM_SECRET_KEY → FCM_SERVER_KEY in PRODUCTION_ENV_TEMPLATE.env.txt:197 and FCM_TOPIC → FCM_TOPIC_PREFIX at line 198"},
+      {"id": "RED-R2", "priority": "V1.0.2", "action": "Extend AppServiceProvider broadcast guard: when driver IS 'pusher', also require non-empty PUSHER_APP_KEY/SECRET/ID"},
+      {"id": "RED-R3", "priority": "V2 BACKLOG", "action": "Add boot warning when KIOSK_DOMAIN/ADMIN_DOMAIN set but don't match the kiosk/admin route prefix"},
+      {"id": "RED-R4", "priority": "V1.0.2", "action": "Move STAFF_ONLY_MODE consumption to config('app.staff_only_mode') — eliminates env() in Blade anti-pattern + ensures config:cache safe"}
+    ]
+  }
+}

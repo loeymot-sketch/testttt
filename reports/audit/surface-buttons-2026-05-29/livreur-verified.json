@@ -1,0 +1,60 @@
+{
+  "surface": "Livreur (delivery cash sessions) — admin surface: DeliveryBoyCashSessionListComponent, DeliveryBoyCashSessionShowComponent, DeliveryBoyCashSessionFormComponent + DELIVERED order list",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "verified_at": "2026-05-29",
+  "elements_checked": 14,
+  "confirmed_count": 4,
+  "dropped_count": 0,
+  "verification_method": "Read each cited file at HEAD; re-grepped event/component names across resources/js to prove zero listeners; confirmed routes, API endpoints, menu reachability, DeliveryBoyShow tabs, and i18n key presence.",
+  "summary": "All 4 RAW findings CONFIRMED TRUE at HEAD 04603fa87. The Livreur cash-session admin surface is reachable (menu entry delivery-boy-cash-sessions in V1_PRIMARY_SIDEBAR_MENUS at BackendMenuComponent.vue:105, pushed via V1_PRIMARY_SIDEBAR_MENUS.forEach -> pushBlock loop ~line 299-301, permission-gated only, not hidden). Its action layer is non-functional from the UI: components were authored to a parent-child $emit contract yet wired as standalone top-level route components, so every emitted event has zero listeners. Root cause is one architectural mistake (no wrapper route component) producing 3 dead controls + 1 fully orphaned component. Backend endpoints all exist (routes/api.php:674-686: index/open/show/close/reconcile under admin prefix delivery-boy/cash-sessions). List status filter, pagination Prev/Next, empty-state, and the DELIVERED order list route (admin.delivery-boys.delivered-order.details, deliveryBoyRoutes.js:59) are correctly wired. None of these files are in CLAUDE.md §7 frozen zones (those are the Fiscal Services + audit/z_report migrations) — frozen:false on all. NOTE on finding #3 i18n sub-note: the 7 form-mode keys are referenced in the Form under the label.* namespace (e.g. $t('label.delivery_cash_open_form_title')); the RAW cited them as bare keys. The keys are confirmed MISSING in BOTH lang/fr/all.php and lang/en/all.php, so the substance (raw labels the instant the Form mounts) is correct; only the namespace prefix in the RAW citation was imprecise.",
+  "findings": [
+    {
+      "severity": "P1",
+      "type": "dead_button",
+      "file": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue",
+      "line": "75-83",
+      "element": "View / Voir (per-row eye button, data-testid=delivery-cash-session-view-{id})",
+      "title": "List 'View' button emits to nobody — cannot open any session detail",
+      "confirmed": true,
+      "grep_evidence": "Read confirms @click=\"$emit('view', session.id)\" at line 79 and emits:['view'] at line 144. grep '@view|v-on:view' across resources/js (excluding review/overview/preview) = ZERO matches, proving no parent passes the listener. Component is mounted only as top-level route component (deliveryBoyCashSessionRoutes.js:18-27, name admin.delivery-boy-cash-sessions.list, no props/listeners). Menu reachable: BackendMenuComponent.vue:105 in V1_PRIMARY_SIDEBAR_MENUS, pushed via forEach->pushBlock loop ~299-301.",
+      "recommendation": "Replace the emit with direct navigation: @click=\"$router.push({ name: 'admin.delivery-boy-cash-sessions.show', params: { id: session.id } })\" — the show route exists (deliveryBoyCashSessionRoutes.js:29-39). Alternatively introduce a wrapper route component that listens @view and pushes the route.",
+      "frozen": false
+    },
+    {
+      "severity": "P1",
+      "type": "dead_button",
+      "file": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue",
+      "line": "72-91",
+      "element": "Close session / Clôturer (data-testid=delivery-cash-action-close) AND Reconcile / Rapprocher (data-testid=delivery-cash-action-reconcile)",
+      "title": "Detail Close & Reconcile buttons emit to nobody — cashier cannot close or reconcile a livreur cash session",
+      "confirmed": true,
+      "grep_evidence": "Read confirms @click=\"$emit('close-session', session)\" at line 78 and @click=\"$emit('reconcile-session', session)\" at line 87, with emits:['close-session','reconcile-session'] at line 157. grep 'close-session|reconcile-session' across resources/js returns ONLY this file's own emit calls (78, 87), docblock (142), and emits declaration (157) — no parent listener exists. Show is mounted only as top-level route component (deliveryBoyCashSessionRoutes.js:29-39). Both buttons no-op; the close->reconcile lifecycle is unreachable via this UI.",
+      "recommendation": "Wrap the show route in a parent that listens @close-session / @reconcile-session and mounts DeliveryBoyCashSessionFormComponent in the matching mode (sessionId=session.id), OR mount the Form inline within Show keyed by an internal activeMode ref toggled by these buttons. Route the form's `submitted` emit back to re-fetch().",
+      "frozen": false
+    },
+    {
+      "severity": "P1",
+      "type": "broken_function",
+      "file": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue",
+      "line": "1-268",
+      "element": "Open/Close/Reconcile form (submit buttons delivery-cash-form-open-submit / close-submit / reconcile-submit + Cancel)",
+      "title": "Entire open/close/reconcile Form component is orphaned — never imported, never mounted, no UI path to open a session",
+      "confirmed": true,
+      "grep_evidence": "grep 'DeliveryBoyCashSessionFormComponent' across resources/js returns ONLY the component's own name: declaration (line 155) — zero imports. deliveryBoyCashSessionRoutes.js has NO /open route (comment lines 4-7 say opening goes through the delivery boy detail page). DeliveryBoyShowComponent.vue tabs = profile/security/address/orders/deliveredOrders only (lines 42-67); grep for 'cash'/'CashSession' in resources/js/components/admin/deliveryBoys/ = NO CASH REFERENCE. submitOpen/submitClose/submitReconcile correctly POST to existing endpoints (routes/api.php:676/682/686) but are dead code — no cashier path to open a livreur cash session. SUB-NOTE: 7 form-mode i18n keys (referenced under the label.* namespace, e.g. $t('label.delivery_cash_open_form_title')) — delivery_cash_open_form_title, delivery_cash_close_form_title, delivery_cash_reconcile_form_title, delivery_cash_close_intro, delivery_cash_reconcile_intro, delivery_cash_missing_session, delivery_cash_form_generic_error — confirmed MISSING in BOTH lang/fr/all.php and lang/en/all.php (grep -Fc = 0/0 each). They will surface as raw labels the instant the Form is wired. (RAW cited them as bare keys without the label. prefix; substance correct.)",
+      "recommendation": "Either wire the Form (add an 'Open session' button on the List + mount Form mode='open'; mount mode='close'/'reconcile' from the Show buttons) AND add the 7 missing i18n keys to lang/fr/all.php + lang/en/all.php — OR, if the lifecycle is deferred to V1.0.2, remove/hide the menu entry so users don't reach a surface whose actions all dead-end. Do not ship the menu entry visible while the action layer is non-functional.",
+      "frozen": false
+    },
+    {
+      "severity": "P3",
+      "type": "ux_gap",
+      "file": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue",
+      "line": "52-54",
+      "element": "Delivery boy / Branch columns (display)",
+      "title": "List shows raw numeric IDs (delivery_boy_id, branch_id) instead of names — cashier UX friction",
+      "confirmed": true,
+      "grep_evidence": "Read confirms lines 53-54 render {{ session.delivery_boy_id }} and {{ session.branch_id }} as bare integers; Show component renders the same at lines 19-25 ('#{{ session.delivery_boy_id }}', '#{{ session.branch_id }}'). Component reads only the raw id field — no name resolution. For a single-resto V1 with named livreurs, a cashier sees '#3' rather than the courier's name, hampering reconciliation. Not dead (renders correctly) but a real cashier-POV legibility gap.",
+      "recommendation": "Have the backend index/show payload include delivery_boy.name (eager-loadable) and render the name with the id as a secondary; low effort, materially improves cashier reconciliation. Confirm with owner whether worth doing for V1 single-resto.",
+      "frozen": false
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "specialist": "SRE-Sync",
+  "lens": "Outbox claim-and-dispatch race, Cache::lock semantics, retry curve, ws:heartbeat observability, polling fallback cadence cap, queue lane SLO",
+  "scope": "READ-ONLY operational/reliability audit; verifies that the cascade survives realistic failure modes (Pusher down, Soketi restart, queue worker crash, transient DB lock)",
+  "verdict": "PASS — retry curve, polling cadence cap, and observability heartbeat are all properly wired; one SRE concern noted as RECOMMENDATION-2",
+  "executive_summary": "The DispatchDomainEventsJob is a textbook outbox dispatcher: atomic claim via lockForUpdate + dispatched_at guard committed BEFORE broadcast (lines 65-86), broadcast OUTSIDE any DB transaction (lines 96-132), Phase 3a/3b release-on-failure for retry (lines 152-189). The backoff curve [1,5,15,60,300] with tries=6 yields ~6.4 min worst-case retry window per documented intent (lines 24-40) — longer than typical Pusher/Soketi restart (1-3 min) without exceeding the SLO outbox_dispatch_latency_p95 < 2s in steady state. The ws:heartbeat observability key write (lines 127-131) is the recent GOAL-CMS-2026-05-18 S-P0-A heal that closes the silent-Pusher-down blind spot. Polling fallback in KdsSyncService.js implements a triple-tier cadence (high-activity 3s / degraded 5s / disconnected 10s) with clamp floors (250ms / 4 req/s) and ceilings (60s base / 30s jitter) preventing both DoS misconfig and silent-blind misconfig.",
+  "findings": [
+    {
+      "id": "SRE-1",
+      "severity": "INFO",
+      "title": "Outbox claim-and-dispatch is race-safe via lockForUpdate + dispatched_at guard",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php",
+        "lines": "65-94",
+        "snippet": "DB::transaction(function () use (&$claimed, &$skip, &$domainEvent): void {\n    $domainEvent = DomainEvent::query()->lockForUpdate()->find($this->domainEventId);\n    if ($domainEvent->dispatched_at !== null) {\n        $skip = true;\n        return;\n    }\n    $domainEvent->forceFill(['dispatched_at' => now(), 'attempts' => ((int) $domainEvent->attempts) + 1])->save();\n    $claimed = true;\n});"
+      },
+      "analysis": "If two queue workers grab the same domainEventId (e.g. retry overlap), Worker A acquires the row lock, sees dispatched_at=null, sets it, commits. Worker B waits for the lock, then sees dispatched_at != null and returns silently with a structured log. Broadcast happens AFTER this transaction commits — the test OutboxConcurrentWorkerDedupeTest::two_sequential_handle_calls_only_broadcast_once verifies this empirically. PASS."
+    },
+    {
+      "id": "SRE-2",
+      "severity": "INFO",
+      "title": "Backoff curve [1,5,15,60,300] with tries=6 covers Pusher/Soketi restart window",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php",
+        "lines": "24-42",
+        "snippet": "public array $backoff = [1, 5, 15, 60, 300];\npublic int $tries = 6;"
+      },
+      "analysis": "Worst-case retry window 1+5+15+60+300+300 = 681s. Note: tries=6 means up to 5 retries between attempts; Laravel reuses the last entry of $backoff if tries exceeds count(backoff), so attempt 5→6 also waits 300s. Per the inline rationale (lines 28-38), the previous tries=5 was caught by Audit T G2 (2026-04-23) and bumped to make the 300s trailing entry actually reachable. PASS."
+    },
+    {
+      "id": "SRE-3",
+      "severity": "INFO",
+      "title": "ws:heartbeat write closes the silent-Pusher-down blind spot",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php",
+        "lines": "118-131",
+        "consumer": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:531"
+      },
+      "analysis": "GOAL-CMS-2026-05-18 S-P0-A heal R1 SRE-001: SyncOverviewController:531 was READING `ws:heartbeat` but NOBODY was WRITING it — admin observability dashboard would stay green-emerald while Pusher silently died. The fix stamps the cache key with `now()->timestamp` after every successful broadcast, TTL 120s (> 4× the polling fallback window). Wrapped in try/catch so observability failure never breaks the outbox. PASS."
+    },
+    {
+      "id": "SRE-4",
+      "severity": "INFO",
+      "title": "Polling cadence cap [floor 250ms / ceiling 60s base / jitter 30s] resists owner misconfig",
+      "evidence": {
+        "file": "resources/js/services/KdsSyncService.js",
+        "lines": "25-27, 455-490",
+        "snippet": "const CADENCE_FLOOR_MS = 250;\nconst CADENCE_CEILING_MS = 60_000;\nconst JITTER_CEILING_MS = 30_000;"
+      },
+      "analysis": "Wave 3 P1 KDS-RED-09 + Wave 3b P1 KDS-ADV3B-04: a runaway config (e.g. disconnectedBaseMs=10 or =999999999) is clamped to the safe band 250ms..60s, jitter 0..30s. Without these clamps, owner misconfig could either weaponize the poll loop into PHP-FPM saturation (lower bound) or silently stall KDS for 11.5 days (upper bound). Sentinel: tests/js/kdsCadenceFloor.spec.js. PASS."
+    },
+    {
+      "id": "SRE-5",
+      "severity": "INFO",
+      "title": "Network-level errors in polling fallback do NOT halt the poll loop",
+      "evidence": {
+        "file": "resources/js/services/KdsSyncService.js",
+        "lines": "200-225",
+        "snippet": "try {\n    this._schedule();\n} catch (e) { /* defensive: never throw from catch path */ }"
+      },
+      "analysis": "F-03 Lot 1.C Audit G1 fix: network-level errors (DNS, TLS, ERR_NETWORK_CHANGED) MUST not silently halt the poll loop. The catch path schedules a retry with the current cadence so the KDS self-heals once connectivity returns. Without this, a concurrent WS+HTTP outage would leave the kitchen permanently blind. PASS."
+    },
+    {
+      "id": "SRE-6",
+      "severity": "INFO",
+      "title": "Reconnect-storm jitter prevents thundering herd on Soketi restart",
+      "evidence": {
+        "file": "resources/js/services/KdsSyncService.js",
+        "lines": "255-273",
+        "snippet": "const jitterMs = Math.floor(Math.random() * 500);\nsetTimeout(runForceSync, jitterMs);"
+      },
+      "analysis": "NEW-02 audit G10: when the broadcasting server restarts, every KDS station receives `reconnect_storm` simultaneously. Without client-side jitter, 50+ kitchens would hit /api/admin/kds-order/sync at the same instant. A 0–500ms uniform jitter spreads the herd; breaker delay is 5–30s so 500ms is negligible UX. PASS."
+    },
+    {
+      "id": "SRE-7",
+      "severity": "INFO",
+      "title": "PayloadMismatchException fails-once via $this->fail() (F-3 quick-win)",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php",
+        "lines": "167-186"
+      },
+      "analysis": "Contract violations are NOT retry-recoverable. Without short-circuit, 1000 bad payloads = 6000 useless messages on the high lane. The $this->fail($e) lands the job in failed_jobs immediately and the failed() callback fires once. Sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php (referenced in code comment line 182). PASS."
+    },
+    {
+      "id": "SRE-8",
+      "severity": "RECOMMENDATION-V1.x",
+      "title": "KdsSyncService::sync Cache::remember TTL=5s creates a 5-second visibility floor for polling-fallback users",
+      "evidence": {
+        "file": "app/Services/KdsSyncService.php",
+        "lines": "49"
+      },
+      "analysis": "When the WebSocket path is degraded and KDS falls back to polling, every sync call serves the 5s-cached snapshot. Combined with the polling cadence (3-10s), worst case visibility latency in degraded mode is ~15s (10s poll + 5s cache). For V1 single-restaurant kitchen this is acceptable. Two mitigations exist in code: (a) WS-connected mode bypasses polling cadence (interval=Infinity, line 294); (b) reconnect_storm triggers a forceSync that hits the same cache, so stations see the stale 5s view simultaneously — acceptable.",
+      "recommendation": "V1.x: when polling is the *primary* path (Pusher disabled entirely via BROADCAST_DRIVER=null in single-restaurant low-cost deploy), consider TTL=1s to halve the worst-case latency. Not blocking V1 ship."
+    }
+  ],
+  "phpunit_evidence": {
+    "kds_cascade_filter_command": "php artisan test --filter 'KDSFlow|PersistOrderCreatedToOutbox|DispatchDomainEventsJob|KdsSync'",
+    "result": "13 passed",
+    "extended_filter_command": "php artisan test --filter 'OutboxConcurrentWorker|EventContract|DomainEvent'",
+    "extended_result": "36 passed"
+  },
+  "potentially_dead_code": [],
+  "keep_as_is": [
+    "DispatchDomainEventsJob 3-phase pattern (claim / broadcast / finalize) — textbook outbox.",
+    "ws:heartbeat best-effort write (try/catch + 120s TTL).",
+    "Polling cadence clamp [250ms..60s base / 0..30s jitter]."
+  ],
+  "word_count": 1106
+}

@@ -1,0 +1,256 @@
+{
+  "scenario_id": "R10-8-sauces",
+  "scenario": "Customer adds 8 sauces to one Tacos — verify cart shows all 8 + KDS shows all 8 readable + chef-rush 1s glance visibility",
+  "agent": "SCENARIO AGENT R10",
+  "round": 1,
+  "phase": "B.6",
+  "goal": "GOAL ULTRA-DEEP 2026-05-23",
+  "date": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
+  "method": "code-static + grep-driven. Playwright MCP not invoked (parallel agent context, disk-shared). Reasoning chained across kiosk wizard → cart → backend OrderService → CompositionSnapshotBuilder → KDS card/line renderer. Frozen-zone files read-only.",
+  "verifications": {
+    "v1_max_sauce_cap_on_tacos_composition": {
+      "verdict": "FAIL — split declared/runtime",
+      "declared_cap": {
+        "source": "app/Services/Composer/ComposerTemplateService.php",
+        "tacos_block_lines": "71-94",
+        "sauce_step_line": "$base('sauce', 'Choisis ta sauce', 3) — no min_select/max_select override",
+        "base_defaults_lines": "40-53 — min_select=1, max_select=1",
+        "interpretation": "Tacos template DECLARES sauce step with max_select=1 (base default, never overridden). A correctly-implemented wizard would block selection past 1 sauce."
+      },
+      "runtime_enforcement": {
+        "kiosk_wizard_can_advance": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:744 — `if (step.type === 'sauce') return this.selections.sauceOrder.length > 0;` — gates ONLY the lower bound (≥1), never the upper bound.",
+        "kiosk_step_toggle": "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue:243-266 (toggleSauce) — freeform multi-select, no max-check, no warning UI, no disabled state past N. Selecting the 8th sauce works identically to selecting the 2nd.",
+        "composer_choice_gate_bypass": "Lines 868-876 of KioskWizardComponent provide a proper `canAdvanceComposerChoiceStep(step)` that DOES enforce composerStep.max_select for generic_choices step types — but the sauce step uses its own hand-written branch at line 744 and bypasses this gate entirely.",
+        "interpretation": "Runtime ignores the declared max_select=1. User can pick 8/10 sauces with zero UI feedback that they exceed declared cap. Sauce step has no cap-enforcement code path."
+      },
+      "bowl_contrast_evidence": "MenuHealLightV3Command.php:277 + 487 — bowl sauce step (attr 330) explicitly declares min=1 max=2 in step config AND uses `generic_choices` step type that goes through canAdvanceComposerChoiceStep. Tacos has neither structural nor runtime cap.",
+      "evidence_files": [
+        "app/Services/Composer/ComposerTemplateService.php:40-94",
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:738-744 (canAdvance) + 868-876 (composer gate)",
+        "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue:243-266 (toggleSauce)",
+        "app/Console/Commands/MenuHealLightV3Command.php:277 (bowl max=2 contrast)"
+      ]
+    },
+    "v2_wizard_step_shows_clear_max_n_sauces": {
+      "verdict": "FAIL — no max-N hint, no warning, no disabled state past cap",
+      "ui_state": {
+        "title": "kiosk.wizard.step.sauce.title — 'Choisis ta sauce' (FR), no count info",
+        "info_badge": "kiosk-sauce-badge — 'first_free' label only (1ère gratuite)",
+        "extra_line": "kiosk-sauce-extra — `extra_one` / `extra_many` — explains pricing of extras only ('+ N supp à X€'), NEVER mentions a maximum",
+        "validation_hint": "kiosk-validation-hint — only shown when selectedCount===0 (line 65 of KioskStepSauceComponent), shows kiosk.wizard.step.sauce.hint which is the 'pick ≥1' message",
+        "absent_keys": "No i18n key like 'kiosk.wizard.step.sauce.max' / 'sauce_limit' / 'too_many_sauces' exists in resources/js/languages/fr.json (grep confirmed)"
+      },
+      "behavior_at_8_sauces": "All 10 (or 13 if Barbecue/Ail added) sauce cards remain enabled and selectable past N. The 'kiosk-sauce-order' numeric badge (line 60 of KioskStepSauceComponent) silently increments from 1 to 2 to 3 ... to 8. No visual signal warns the customer of any cap.",
+      "evidence": "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue:1-69 template — no max-cap UI element found"
+    },
+    "v3_cart_line_displays_all_selected_sauces": {
+      "verdict": "FAIL_PARTIAL — first sauce visible structurally, sauces 2..8 land in a CSS-truncated instruction line",
+      "structured_visibility": {
+        "kiosk_cart_item_selections": "KioskCartComponent.vue:540-568 getItemSelectionSummary() maps `item.item_variations[]` → comma-joined names. Only the FIRST sauce reaches `item_variations` (proof: KioskWizardComponent.vue:1786-1794 → `if (this.selections.sauceOrder.length > 0) { firstSauceKey = sauceOrder[0]; allVariations[sauceAttr.id] = variation.id; }` — picks index 0 only).",
+        "result": "Cart structured-selections line shows e.g. 'Pain, Viande, 1 viande, Algérienne' — sauces 2..8 are NOT rendered structurally."
+      },
+      "instruction_fallback_visibility": {
+        "build_instruction_extra_sauces": "KioskWizardComponent.vue:2056-2062 — `if (sauceOrder.length > 1) { extraSauces = sauceOrder.slice(1).map(id => findSauceVariation(item, id).name); parts.push(ti('sauces_extra', { list: extraSauces.join(', ') })); }`",
+        "i18n_template": "resources/js/languages/fr.json — `\"sauces_extra\": \"Sauces en plus : {list}\"`",
+        "instruction_writes_to_item": "buildInstruction() returns the joined text → assigned to `cartItem.instruction` in buildCartItem(). Cart renders this via KioskCartComponent.vue:172-176 in `.kiosk-cart-item-note` element."
+      },
+      "css_truncation_finding_P1": {
+        "selector": ".kiosk-cart-item-note",
+        "computed_style_lines": "KioskCartComponent.vue:956-963",
+        "rules": "font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
+        "consequence": "The instruction line containing 'Taille: M. Pain: Tortilla. Viandes: Poulet curry ×1. Sauces en plus : Andalouse, Hannibal, Harissa, Ketchup, Mayo, Samouraï, Spicy' is forced onto a SINGLE line with `nowrap` and ellipsis-truncated. At standard kiosk card width (≈260px content), 7 sauce names CANNOT fit — the customer sees 'Taille: M. Pain: Tortilla. Viand...' or worse, and the 7 extra sauces are entirely OFF-SCREEN behind the ellipsis.",
+        "user_facing_consequence": "Customer cannot verify their 8-sauce selection from the cart. No edit-without-reopen path to confirm. P1 UX defect for max-customization scenarios."
+      },
+      "evidence_files": [
+        "resources/js/components/frontend/kiosk/KioskCartComponent.vue:540-568 (summary) + 172-176 (note render) + 956-963 (CSS truncation)",
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1786-1794 (only first sauce in item_variations) + 2056-2062 (sauces_extra in instruction)",
+        "resources/js/languages/fr.json (sauces_extra label confirmed)"
+      ]
+    },
+    "v4_kds_card_chef_rush_1s_glance": {
+      "verdict": "FAIL_PARTIAL — first sauce in structured group, 7 extras buried in italic instruction line",
+      "kds_render_path": {
+        "structured_sauce_line": {
+          "source": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:113-119 → KdsOrderLine via renderItem() from helpers/kdsCustomization.js:148-243",
+          "behavior": "Reads composition_snapshot.lines[] (or item_variations fallback), classifies each into a group via GROUP_PATTERNS (line 24-31 of kdsCustomization.js). The /\\bsauce\\b/i pattern matches the sauce attribute_name, so the SINGLE sauce line (variation_id of sauce[0]) renders as a `variation` line with group='sauce' → 'Sauce : Algérienne' in KdsOrderLine.vue:29-35.",
+          "visual": "Indented 56px, 16px Inter, color #4B5563 on white header. Single line, no wrap concern at 1 sauce."
+        },
+        "instruction_extra_sauces_line": {
+          "source": "kdsCustomization.js:228-235 — `if (instruction.length > 0) lines.push({ type: 'instruction', label: instruction, visualClass: kdsInstructionVisualClass(instruction) })`. KdsOrderLine.vue:68-73 renders `kds-line__instruction`.",
+          "visual_class": "'kds-instruction--note' — kdsLineSemantics.js:73-88 returns this class since 'Sauces en plus' does NOT match ALLERGEN_RE (no 'allerg/intol/gluten') or EXCLUSION_RE (no 'sans/no/without'). Note tier is the lowest visual emphasis.",
+          "style": "KdsOrderLine.vue:240-243 — color: #4B5563 (gray-600), italic, 16px, padding-inline-start: 56px, line-height: 1.3",
+          "no_clamp": "No -webkit-line-clamp on .kds-line__instruction (verified — KdsOrderLine.vue:227-244). The full text 'Sauces en plus : Andalouse, Hannibal, Harissa, Ketchup, Mayo, Samouraï, Spicy' wraps across multiple lines within the kds-card__body scroll container."
+        }
+      },
+      "chef_rush_1s_glance_assessment": {
+        "structured_signal_at_glance": "Chef scanning at 2m sees the bold/large header (qty + item_name at 22px+26px) and the structured group 'Sauce : Algérienne' (#4B5563, 16px) — registers ONE sauce in <500ms.",
+        "missed_signal": "The italic-gray-16px 'Sauces en plus : ...' line below carries 7 additional sauce names but is VISUALLY DECLASSIFIED (italic, #4B5563 'note' tier) compared to the structured 'Sauce : X' line above. At 2m glance the chef will likely process the structured Sauce line first and may not even register the italic note as carrying additional ingredients.",
+        "scrolling_risk": "kds-card__body height is fixed at 462px (KdsOrderCard.vue:295) and contains: 1 header (~40px) + N variation lines + N supplement lines + 1 instruction (potentially 3-4 wrapped lines for 7 sauces). For a Tacos with taille + viande + first sauce + 7 extras + garnitures + supplements + menu choice — the instruction line may fall BELOW the visible fold and require scrolling. KDS-R1-05 added Safari scroll-region focus, BUT chef-rush 1s glance does not include scroll.",
+        "verdict": "Chef has structurally readable signal for the FIRST sauce only. Sauces 2..8 are textually present but visually demoted; risk of missing them at glance is non-zero. P2 (chef-rush UX) and arguably P1 in single-sauce-station kitchens where the chef preps one sauce at a time and depends on full visibility."
+      },
+      "evidence_files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:113-119 + 295 (body height)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:29-35 (variation render) + 68-73 (instruction render) + 192-204 (supplement style) + 227-244 (instruction style)",
+        "resources/js/helpers/kdsCustomization.js:148-243 (renderItem) + 24-31 (group patterns)",
+        "resources/js/helpers/kdsLineSemantics.js:73-88 (visual class)"
+      ]
+    },
+    "v5_composition_snapshot_contains_all_8_sauce_ids_labels": {
+      "verdict": "FAIL — structural integrity miss for NF525 reprint",
+      "source_of_truth": "app/Services/Pricing/CompositionSnapshotBuilder.php:29-175",
+      "build_logic": "Lines 41-81 iterate `$item->item_variations` (the payload array from the kiosk client) and emit one snapshot line per entry. The output structure is `snapshot.lines[] = { variation_id, attribute_id, attribute_name, variation_name, quantity, unit_price, line_total }`.",
+      "kiosk_payload": "KioskWizardComponent.vue:1786-1794 puts ONLY sauceOrder[0] into item_variations. Sauces 2..N never enter `item_variations`.",
+      "consequence_for_snapshot": {
+        "lines_emitted_for_8_sauces": "EXACTLY ONE entry with `variation_id` of sauce[0] (e.g. Algérienne). 7 sauce variation_ids are LOST at snapshot time.",
+        "extras_array": "snapshot.extras[] is fed by item.item_extras — sauces 2..8 are not item_extras either (sauces are an attr 311 variation pool, not extras). So `snapshot.extras` contains 0 sauce entries.",
+        "addons_array": "snapshot.addons[] is for menu_*/drink/dessert/upsell roles — irrelevant to sauces.",
+        "text_residue_via_instruction": "OrderItem has a separate `instruction` text column (NOT inside composition_snapshot — verified by reading OrderItem model + CompositionSnapshotBuilder return structure lines 168-174). The 'Sauces en plus : Andalouse, Hannibal, ...' text is persisted on OrderItem.instruction but is unstructured text with NO variation_id linkage."
+      },
+      "nf525_reprint_risk": {
+        "reprint_path": "NF525 § V — reprint must be byte-exact-reproducible from immutable composition_snapshot. CLAUDE.md §8 declares 'composition_snapshot JSON frozen at order creation — never overwritten'. CompositionSnapshotBuilder writes this once at insert.",
+        "what_reprint_shows": "Reprint from composition_snapshot.lines[] would emit one sauce row 'Sauce : Algérienne'. The 7 additional sauce identities exist only as unstructured text in OrderItem.instruction. A reconciliation auditor reading composition_snapshot alone cannot determine which 7 sauces were added — they must parse the free-text instruction.",
+        "price_reconciliation_risk": "Each extra sauce carries a surcharge (KioskWizardComponent.vue:1971-1973 — `(sauceOrder.length-1) * extraSaucePrice`). The composition_snapshot has NO line item for these 7 surcharges. The TOTAL price stored in OrderItem.total_price contains the surcharge, but the snapshot's `lines[].line_total` sum will be 7*price LESS than the row total. NF525 audit-chain mismatch potential — the immutable snapshot does not arithmetically reconstruct the order total.",
+        "claude_md_violation": "CLAUDE.md §8 declares 'Pricing SSOT: 100% des prix calculés backend via PricingService::calculateOrder' and 'Frontend envoie item_id, quantity, option_ids UNIQUEMENT'. The current path violates this — the surcharge for sauces 2..N is computed CLIENT-SIDE (KioskWizardComponent.vue:1971-1973) and is invisible to a backend-only reconstruction from snapshot.lines/extras/addons. PricingService::calculateOrder receives item_variations with ONE sauce entry — it cannot independently bill the 7 extras."
+      },
+      "evidence_files": [
+        "app/Services/Pricing/CompositionSnapshotBuilder.php:29-175 (snapshot build)",
+        "app/Models/OrderItem.php (instruction column distinct from composition_snapshot)",
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1786-1794 + 1971-1973 + 2056-2062",
+        "CLAUDE.md §8 (Pricing SSOT + composition_snapshot immutability invariants)"
+      ]
+    }
+  },
+  "tacos_current_state_caveat": {
+    "id": "R10-CAVEAT-CURRENT-STATE",
+    "title": "Current canonical Le Cayenne Tacos has 0 sauce variations — the 8-sauce scenario is unreachable on the current seed",
+    "detail": "MenuResetLeCayenneCommand.php:519-544 (canonical seed for Le Cayenne 2026-05-13) creates `tacos-1-viande` (Tacos 8.50€) and `big-tacos-2-viandes` (Big Tacos 11.50€) and only calls seedViandesForItem + seedMenuAddonsForItem. It does NOT call seedSaucesForItem (compare to seedSaucesForItem at line 480 for Galette Normale, line 513 for Sandwich Classique). The Tacos description literally says 'sauce fromagère maison' as INCLUDED, hardcoded, not customer-chooseable.",
+    "consequence": "KioskStepSauceComponent.computeSauceList() returns [] (no sauce attribute, no variations) → KioskWizardComponent.shouldShowStep('sauce') returns false → the sauce step is skipped entirely from the wizard nav. selections.sauceOrder stays empty. A customer ordering the current canonical Tacos cannot pick ANY sauce, let alone 8.",
+    "scenario_reachability": "The 8-sauce-on-Tacos scenario is reachable only if (a) MenuHealLightV3Command has been run AND added Barbecue+Ail to attr 311 for Tacos items (Tacos M=478, Tacos L=479 from the V3 IMAGE_MAP at line 128-129 — these are NOT the canonical reset IDs), OR (b) the legacy WizardCayenneAndBolsCorrectionsSeeder has been run on items 26/27 (10 sauces). Both paths require a non-canonical/heal command to have been applied. On a fresh `php artisan menu:reset-le-cayenne` the Tacos has 0 selectable sauces.",
+    "verification_recommendation": "DB query at evaluation time: `SELECT COUNT(*) FROM item_variations v JOIN items i ON i.id=v.item_id JOIN item_attributes a ON a.id=v.item_attribute_id WHERE i.slug LIKE 'tacos%' AND a.name LIKE 'Sauce%' AND v.deleted_at IS NULL AND v.status=5;` — if 0, the 8-sauce scenario is structurally impossible on this install. If ≥8, scenario reachable but findings v1-v5 above apply.",
+    "interpretation": "All findings v1-v5 are STRUCTURAL — they describe what happens IF the scenario is reachable. They are reproducible on any Sandwich/Galette/Burger (which DO have ≥10 sauces via seedSaucesForItem) by substituting the test item. The chef-rush 8-sauce defect is a sandwich/burger/galette-equally defect, not a Tacos-specific one. Owner may decide to test on Sandwich Cayenne (slug=sandwich-cayenne) or Galette Normale (slug=galette-normale) for actual 8-sauce reproducibility."
+  },
+  "findings": [
+    {
+      "id": "R10-P1-01",
+      "severity": "P1",
+      "title": "composition_snapshot.lines emits exactly 1 sauce row for an 8-sauce order — 7 sauce variation_ids are not persisted structurally",
+      "detail": "KioskWizardComponent.vue:1786-1794 only includes sauceOrder[0] in item_variations payload. CompositionSnapshotBuilder.php:41-81 then writes exactly one sauce line. NF525 reprint from snapshot cannot reconstitute the other 7 sauces by variation_id — they exist only as free-text in OrderItem.instruction. Audit-chain integrity risk for prix-extra reconciliation: snapshot.lines line_totals sum to 7×extraSaucePrice LESS than OrderItem.total_price.",
+      "blocking_for_v1": false,
+      "blocking_for_nf525_audit": true,
+      "remediation": "Option A (preferred): KioskWizardComponent.vue:1786-1794 — push ALL sauces in sauceOrder as item_variations entries; CompositionSnapshotBuilder will then write 8 sauce lines naturally (existing iteration handles N entries already, lines 59-80 read v.id one per loop iteration). Option B (defensive): inject the extra sauces as item_extras (synthetic ItemExtra rows with extra_group='sauce_extra' and a unit_price matching extraSaucePrice). Option A is the minimal client-side patch.",
+      "scope_for_fix": "1 client file: KioskWizardComponent.vue:1786-1794. ~6 lines changed. No backend change required (CompositionSnapshotBuilder already iterates correctly).",
+      "frozen_zone_impact": "KioskWizardComponent.vue IS NOT in CLAUDE.md §7 frozen list (only KioskAppComponent, KioskUpsellComponent, KioskWizardComponent are listed — verify against current frozen list at LOCK time). LOCK doc may be required if explicitly frozen."
+    },
+    {
+      "id": "R10-P1-02",
+      "severity": "P1",
+      "title": "Cart line .kiosk-cart-item-note is CSS-truncated (white-space:nowrap + text-overflow:ellipsis) — 7 extra sauce names invisible to customer in cart",
+      "detail": "KioskCartComponent.vue:956-963 declares `.kiosk-cart-item-note { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`. The 8-sauce instruction string easily exceeds the ~220px content width of a cart row at 11px and is ellipsis-truncated. Customer cannot verify their 7 extra sauces from cart. No fallback expand-on-click UI exists.",
+      "blocking_for_v1": false,
+      "blocking_for_customer_trust": true,
+      "remediation": "Change .kiosk-cart-item-note to `white-space: normal; overflow: visible; text-overflow: clip;` OR wrap with a multiline-tolerant container that uses `display: -webkit-box; -webkit-line-clamp: 4` for graceful overflow + expand-on-click. The supplement KDS rendering already does -webkit-line-clamp: 2 (KdsOrderLine.vue:201-205) for a kindred problem.",
+      "scope_for_fix": "1 file, ~5 lines CSS. KioskCartComponent.vue:956-963.",
+      "frozen_zone_impact": "KioskCartComponent.vue is NOT in CLAUDE.md §7 frozen list."
+    },
+    {
+      "id": "R10-P1-03",
+      "severity": "P1",
+      "title": "Declared max_select=1 for tacos sauce step is silently ignored by the wizard — runtime cap = ∞",
+      "detail": "ComposerTemplateService.php:71-94 inherits base default max_select=1 for sauce step. KioskWizardComponent.vue:744 canAdvance for sauce step checks `sauceOrder.length > 0` ONLY (never compares to composer_step.max_select). The proper composer-aware gate exists at lines 868-876 (canAdvanceComposerChoiceStep with max enforcement) but only handles step.type==='generic_choices'. The sauce branch bypasses it.",
+      "blocking_for_v1": false,
+      "blocking_for_invariant": "Soft — declared/runtime drift, possible regression amplifier when admin reconfigures composer_profiles via UI.",
+      "remediation": "Either (a) update canAdvance line 744 to additionally enforce max_select from the resolved composer_step (mirror line 868-876 pattern) AND update KioskStepSauceComponent.toggleSauce (line 243-266) to refuse selection past max_select with a polite toast/badge; OR (b) explicitly set max_select to a high cap (10) in ComposerTemplateService.php tacos block so the declared schema matches the de-facto behavior. Option (a) is the correctness fix; option (b) is the doc-the-status-quo fix.",
+      "scope_for_fix": "Option (a): ~15 lines across 2 files. Option (b): 1 line in ComposerTemplateService.php.",
+      "frozen_zone_impact": "ComposerTemplateService.php is NOT in CLAUDE.md §7 frozen list."
+    },
+    {
+      "id": "R10-P2-01",
+      "severity": "P2",
+      "title": "KDS chef-rush 1s glance — 7 extra sauces visually demoted to italic gray-600 note line, risk of being missed",
+      "detail": "Structured 'Sauce : <first>' is visually equivalent (#4B5563 16px) to 'Sauces en plus : ...' (same color, italic). At 2m chef glance, the italic note tier is the lowest signal in the KDS-V2 hierarchy (header > supplement > variation > instruction-note). For a chef preparing one sauce squeeze per pick (typical fast-food workflow), missing the italic addendum yields a delivered Tacos with 1 sauce instead of 8 — customer complaint mode.",
+      "blocking_for_v1": false,
+      "blocking_for_chef_rush_doctrine": "Partial — V1.1 KDS chef-rush spec emphasizes 'all customizations 2m readable'. 8-sauce edge case currently passes spec strictly (it IS rendered) but fails the spirit (visual hierarchy demotes 7/8 to lowest tier).",
+      "remediation": "When sauceOrder.length > 1, KDS-side: emit a special 'sauce-multi' line type from kdsCustomization.js renderItem() that lists ALL sauces as a single styled variation row 'Sauce ×N : a, b, c, d, e, f, g, h' with kds-line__supplement styling (yellow italic, more visible than gray-600 note). Requires backend cooperation OR client-side mining of OrderItem.instruction text for 'Sauces en plus :' prefix. Cleaner solution: fix R10-P1-01 (push all 8 as variations) and the existing variation grouping at kdsCustomization.js:179-200 will naturally produce 'Sauce : a, b, c, d, e, f, g, h' (comma-joined) — single dose of red on the line.",
+      "scope_for_fix": "Bundled with R10-P1-01 fix — solving the structural snapshot issue resolves this too.",
+      "frozen_zone_impact": "None for the bundled fix."
+    },
+    {
+      "id": "R10-P2-02",
+      "severity": "P2",
+      "title": "Wizard sauce step shows no max-count hint nor count-meter — customer has no signal that adding 8 sauces is unusual",
+      "detail": "KioskStepSauceComponent.vue:1-69 — UI shows 'first_free' badge + 'extra_one'/'extra_many' price line only. No 'You have selected N sauces' running total, no soft warning like 'Tu es sûr ? La plupart des clients choisissent 1-2 sauces'. The kiosk-sauce-order numeric badge per-card increments silently. The cart line at .kiosk-cart-item-note then truncates the result (R10-P1-02). Customer journey for 8 sauces is friction-free at wizard but invisible at cart — high regret risk.",
+      "remediation": "Add a small `selectedCount > 4` soft-confirm modal OR a persistent count chip 'X/N sauces' in the kiosk-sauce-info bar. Owner UX decision required — not a code bug, a product-policy gap.",
+      "blocking_for_v1": false
+    },
+    {
+      "id": "R10-INFO-01",
+      "severity": "INFO",
+      "title": "Adjacent pricing channel — client-side surcharge for sauces 2..N is not reproducible from snapshot.lines",
+      "detail": "KioskWizardComponent.vue:1971-1973 computes `sauceVariationSurcharge = (sauceOrder.length - 1) * extraSaucePrice`. This is folded into the cart-displayed total and submitted to the backend in OrderItem.item_variation_total. Backend PricingService::calculateOrder receives item_variations (1 sauce entry, surcharge 0€) — it cannot recompute the 7×price surcharge independently. The order persists OK because PricingService also accepts the client's item_variation_total via the order POST payload at OrderRequest validation, but the SSOT chain is partially broken. CLAUDE.md §8 'Pricing SSOT: 100% backend via PricingService' is violated for this surcharge channel.",
+      "cross_reference": "If R10-P1-01 is fixed (push all 8 sauces as item_variations), the SSOT chain restores: each sauce variation carries its own price (or PricingService applies the extra-sauce rule per variation), snapshot.lines reflects all 8 line totals, audit reconciliation works.",
+      "blocking_for_v1": false,
+      "remediation": "Bundled with R10-P1-01 fix."
+    },
+    {
+      "id": "R10-INFO-02",
+      "severity": "INFO",
+      "title": "Current canonical Tacos has 0 sauce variations — scenario only reproducible on Sandwich/Galette/Burger or after heal-light V3 application",
+      "detail": "MenuResetLeCayenneCommand.php:519-544 — Tacos block does NOT call seedSaucesForItem. Sauce 'fromagère maison' is described as INCLUDED in item description text (hardcoded). To reproduce the 8-sauce scenario on Tacos specifically, the operator must (a) apply MenuHealLightV3Command (adds Barbecue+Ail to attr 311 for items 478/479 which the V3 IMAGE_MAP labels 'Tacos M' / 'Tacos L', distinct from the canonical reset IDs); OR (b) manually seed sauce variations for tacos-1-viande and big-tacos-2-viandes. Owner should confirm whether 'Tacos with customer-chooseable sauce' is intended for V1.",
+      "cross_reference": "See tacos_current_state_caveat above for DB verification query.",
+      "blocking_for_v1": false,
+      "remediation": "Owner gate: confirm whether canonical Tacos should allow customer-chooseable sauce (and how many)."
+    }
+  ],
+  "chef_rush_8_sauce_readability_finding": {
+    "verdict": "PARTIAL — structurally readable for sauce 1, visually demoted for sauces 2..8",
+    "summary": "A chef glancing at the KDS card from 2m sees the structured 'Sauce : Algérienne' line at variation tier (#4B5563 16px, indent 56px, non-italic). The 7 additional sauces ('Andalouse, Hannibal, Harissa, Ketchup, Mayo, Samouraï, Spicy') are present on a separate italic line at the lowest visual tier (instruction-note, same #4B5563 but italic, prefix '·'). This line MAY require body-scroll to view on Tacos with multiple steps. At sub-second glance, the chef may register '1 sauce' from the structured line and miss the italic note. For a single-sauce-station kitchen workflow this is a P2 chef-rush UX defect (acceptable for V1, fixable by R10-P1-01 which would promote all 8 sauces to the structured variation tier).",
+    "comparative_signal_emphasis": {
+      "header_qty_item": "22px-26px bold #111827 — strongest (chef registers in <300ms)",
+      "structured_variation": "16px non-italic #4B5563 — strong (chef registers in <600ms)",
+      "supplement_yellow_italic": "16px italic bold #CA8A04 — strong attention-grab (chef registers in <500ms)",
+      "instruction_note_italic": "16px italic #4B5563 — weakest tier (chef may miss at <1s)",
+      "current_8_sauce_path": "Sauce[0] → variation tier (strong). Sauces[1..7] → instruction-note tier (weakest). Mismatch with the equal-priority customer intent."
+    }
+  },
+  "verdict": "YELLOW",
+  "verdict_reasoning": "5/5 verifications carry findings. v1 (max cap) = split declared/runtime mismatch (P1). v2 (max-N UI hint) = missing (P2). v3 (cart shows all 8) = first-only structural + CSS-truncated text fallback (P1). v4 (KDS chef-rush) = first-only structural + italic-demoted text fallback (P2 chef-rush). v5 (composition_snapshot 8 IDs/labels) = HARD FAIL — only 1 variation_id persisted, 7 lost structurally (P1 NF525 reprint integrity). No P0 (V1 still functional, orders complete, customers can pay), but the chain of P1 findings indicates a systemic 'multi-sauce as N variations' contract is missing across kiosk wizard → cart → snapshot → KDS. A single fix at KioskWizardComponent.vue:1786-1794 (push all sauces as item_variations) cleanly resolves R10-P1-01, R10-P2-01, and R10-INFO-01 in one ~6-line patch with zero frozen-zone impact. R10-P1-02 (cart CSS truncation) is a separate CSS-only fix. R10-P1-03 (declared max enforcement) is a hygiene fix for admin-configurable composer schemas. None of these block V1 LOCAL Le Cayenne shipping today on the current canonical seed (which has 0 Tacos sauces); but they MUST be addressed if owner enables customer-chooseable Tacos sauce variations OR for safe re-application on Sandwich/Galette/Burger which already expose the bug today.",
+  "frozen_zone_touched": false,
+  "files_inspected": [
+    "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue (483 LOC, full read)",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:475-510, 728-876, 1770-1820, 1930-2015, 2017-2103, 986-1051",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue:1-200, 540-628, 950-963",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (752 LOC, full read)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue (285 LOC, full read)",
+    "resources/js/helpers/kdsCustomization.js (264 LOC, full read)",
+    "resources/js/helpers/kdsLineSemantics.js (89 LOC, full read)",
+    "resources/js/languages/fr.json (sauces_extra key confirmed)",
+    "app/Services/Composer/ComposerTemplateService.php (132 LOC, full read)",
+    "app/Services/Pricing/CompositionSnapshotBuilder.php (258 LOC, full read)",
+    "app/Console/Commands/MenuResetLeCayenneCommand.php:39-90, 515-572, 656-678",
+    "app/Console/Commands/MenuHealLightV3Command.php:42-150, 270-285, 480-525",
+    "database/seeders/WizardCayenneAndBolsCorrectionsSeeder.php:40-130",
+    "database/seeders/ItemCategoryWizardSeeder.php (Nos Tacos mapping)",
+    "CLAUDE.md §7 (frozen zones) + §8 (NF525 invariants) + §11 (memory discipline)"
+  ],
+  "corroborating_reports": [
+    "reports/test-e2e/goal-2026-05-23/round-1/C1-borne-kds-sync.json (sync chain GREEN — orthogonal scope, no overlap with sauce-multi defect)",
+    "reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md (Wave Polish Final baseline — no 8-sauce regression test in suite)",
+    "memory/project_kds_ultra_plan_2026-05-11.md (KDS contract canonical KdsOrder + helper kdsCustomization — sauce grouping defined but no multi-sauce variation expansion)",
+    "memory/project_menu_v3_2026-05-14.md (heal-light V3 GO-CONDITIONAL — Barbecue/Ail added on attr 311, bowl sauce min=1 max=2 documented)"
+  ],
+  "remediation_plan_compact": {
+    "primary_fix": "KioskWizardComponent.vue:1786-1794 — convert single-sauce-push to multi-sauce-push: iterate this.selections.sauceOrder, for each id resolve the variation via kioskFindSauceVariation(item, id), push each into allVariations / normalizedVariations as a separate item_variations entry (the existing normalizedVariations builder at line 1799-1812 already handles N entries). Remove the sauceVariationSurcharge client-side computation at line 1971-1973 — let PricingService bill each variation independently via its existing per-variation price logic (or DB sauce variations carrying price=0 for first + price=0.50 for extras). Backend CompositionSnapshotBuilder will then write 8 lines naturally.",
+    "secondary_fix": "KioskCartComponent.vue:956-963 — relax .kiosk-cart-item-note from `white-space: nowrap` + ellipsis to multi-line with -webkit-line-clamp: 4.",
+    "tertiary_fix": "Optional: ComposerTemplateService.php:71-94 — explicit `max_select => 10` on the sauce step for tacos template + KioskWizardComponent.vue:744 — enforce composer_step.max_select via the proper canAdvanceComposerChoiceStep gate.",
+    "total_scope": "~30 LOC across 3 files. Zero backend change required (CompositionSnapshotBuilder unchanged). Zero frozen-zone touch.",
+    "regression_tests_to_add": [
+      "Vitest: KioskWizardComponent — 8-sauce selection produces 8 item_variations entries with distinct ids.",
+      "PHPUnit: CompositionSnapshotBuilderTest — 8-sauce payload yields snapshot.lines.length === 8 with all variation_ids present.",
+      "KDS visual: KdsOrderCard renders single 'Sauce : a, b, c, d, e, f, g, h' line at variation tier (not 1 variation + 1 instruction note).",
+      "Cart visual: 8-sauce cart line shows all 8 sauce names without ellipsis (or with graceful expand)."
+    ]
+  },
+  "dm1_proposal": null
+}

@@ -1,0 +1,74 @@
+{
+  "task_id": "CV1-M04A-PAYMENT-LEDGER-FULL",
+  "mission_id": "M-04A",
+  "execution_blocked": true,
+  "block_reason": "MASTERPLAY_QUEUE + GATE_PAYMENT_LEDGER_V1: Option A (full ledger) non sélectionnée / non signée, ou M-04B (pilote restreint) priorisé. Ne pas exécuter codex:complex tant que execution_blocked est true. Retirer le blocage uniquement après signature humaine Option A + gates schema/frozen requis (voir plan_excerpt.md + docs/gates/).",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "M-04A: ledger complet paiement (états, idempotence, audit, Stripe cents), modèles et services dédiés, tests — uniquement quand les gates humains autorisent Option A et que execution_blocked=false.",
+  "instruction": "Si execution_blocked est true, renvoie un JSON minimal avec implementation_steps: [] et notes expliquant l'arrêt. Si false, implémente strictement l'allowlist, JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "database/migrations/YYYY_MM_DD_create_payment_ledger.php",
+    "database/migrations/YYYY_MM_DD_create_payment_transactions.php",
+    "app/Models/PaymentLedger.php",
+    "app/Models/PaymentTransaction.php",
+    "app/Services/Payment/PaymentLedgerService.php",
+    "app/Services/Payment/PaymentStateMachine.php",
+    "app/Services/PaymentService.php",
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "tests/Feature/Payment/PaymentLedgerStateMachineTest.php",
+    "tests/Feature/Payment/PaymentLedgerIdempotencyTest.php",
+    "tests/Feature/Payment/PaymentLedgerRefundTest.php",
+    "tests/Feature/Payment/PaymentLedgerVoidTest.php",
+    "tests/Feature/Payment/StripeCentsConversionTest.php",
+    "docs/runbooks/PAYMENT_LEDGER_ROLLBACK.md"
+  ],
+  "off_limits": [
+    "resources/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "human_gate_decisions_required": [
+    {
+      "gate": "GATE_PAYMENT_LEDGER_V1_2026-04-25",
+      "required_option": "A — Full payment ledger (M-04A scope)",
+      "status": "PENDING_HUMAN_UNTIL_UNBLOCK"
+    }
+  ],
+  "invariants_at_risk": [
+    "pricing backend SSOT",
+    "branch_id isolation",
+    "dispatch after DB commit",
+    "OrderService / FrontendOrderService symmetry if payment paths touched",
+    "frozen zones: PaymentService, OrderController::paymentConfirm"
+  ],
+  "gate_conditions": [
+    "GATE_PAYMENT_LEDGER_V1_2026-04-25 Approved Option A (human, not model)",
+    "GATE_SCHEMA_MIGRATIONS_CAISSE_V1_2026-04-25 human approval for new migrations",
+    "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25 clearance for listed frozen edits"
+  ],
+  "mandatory_tests": [
+    "php artisan test --filter=PaymentLedgerStateMachineTest",
+    "php artisan test --filter=PaymentLedgerIdempotencyTest",
+    "php artisan test --filter=PaymentLedgerRefundTest",
+    "php artisan test --filter=PaymentLedgerVoidTest",
+    "php artisan test --filter=StripeCentsConversionTest",
+    "php artisan test --filter=PaymentConfirmAbilitySentinelTest"
+  ],
+  "self_audit_checklist": [
+    "Ledger state machine couvre les transitions attendues sans fuite de statut",
+    "Idempotence sur callbacks / replays documentée en test",
+    "Aucune logique de pricing côté front ajoutée",
+    "SYMMETRY_NOTE rempli si OS ou FOS modifié",
+    "dispatch-after-commit vérifié partout une mutation DB + event/job",
+    "execution_blocked a été false avant toute modification (sinon stop)"
+  ],
+  "rollback": {
+    "feature_flag": "payment_ledger_v1=off",
+    "runbook": "docs/runbooks/PAYMENT_LEDGER_ROLLBACK.md"
+  },
+  "graphiti_query": "Caisse V1 M-04A full payment ledger Option A idempotence audit",
+  "claude_audit_prompt_id": "audit-prompt-ledger-full"
+}

@@ -1,0 +1,14 @@
+{
+  "agent": "A.2-BIS-D2",
+  "scope": "PosCounterCollectModal FR decimal pre-fill + dual-decimal parser",
+  "edits_applied": 3,
+  "delta_LOC": "+13 / -4 (net +9)",
+  "diff_clean": true,
+  "existing_sentinel_passed": true,
+  "existing_sentinel_count": "15/15",
+  "new_sentinel_passed": true,
+  "new_sentinel_count": "4/4",
+  "bundle_rebuilt": true,
+  "frozen_zone_touched": false,
+  "verdict": "CLEAN-FIX"
+}

@@ -1,0 +1,200 @@
+{
+  "wave": "a11y",
+  "round": 1,
+  "states_reviewed": 12,
+  "findings": [
+    {
+      "id": "ADV-A11-016",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/04-tabbar-aria-pressed.png",
+      "category": "aria_keyboard",
+      "severity": "P0",
+      "evidence": "NEW from axe.json all 11 a11y captures — 'meta-viewport' impact:critical, nodes:1, help: 'Zooming and scaling must not be disabled'. WCAG SC 1.4.4 Resize Text (AA) + FR RGAA 4 regulatory blocker. Likely meta tag in mobile/index.html with user-scalable=no or maximum-scale=1. Critical for users with low vision.",
+      "fix_hint": "mobile/index.html — find <meta name=\"viewport\" ...> in <head>. Remove user-scalable=no AND maximum-scale=1 if present. Recommended : <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">. Effort S (1 line edit).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-001",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/04-tabbar-aria-pressed.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "CONFIRMED via 04-tabbar-aria-pressed.evidence.json + 04-tabbar-aria-pressed.axe.json. shared.jsx:52 <div onClick> — all 4 tabs tag=DIV, role=null, ariaPressed=null, ariaLabel=null. axe button-name CRITICAL × 1. Cross-validated F-004 + S-004 + round-1 A-007 (still open after 2 rounds).",
+      "fix_hint": "shared.jsx:40-61 — see S-004 fix_hint (same patch). After commit, expect: tabs[].tag === 'BUTTON', tabs[].aria-pressed in ['true','false'], axe button-name violation closed.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-002",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/05-home-icon-buttons-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "CONFIRMED via 05-home-icon-buttons-aria.evidence.json (icon-only Home button [Bell] ariaLabel: null). shared.jsx:96 IconBtn signature drops aria-label silently — no rest spread. Cross-validated S-003.",
+      "fix_hint": "See S-003 fix_hint (same patch). After commit, all IconBtn callsites have ariaLabel prop ; SR users hear meaningful names.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-003",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/05-home-icon-buttons-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:43 `<button onClick={() => go('profile')}>IB</button>` — initials visible but offer no destination hint. SR announces 'IB, button'.",
+      "fix_hint": "screens-main.jsx:43 add aria-label=\"Profil — {user.first_name} {user.last_name_initial}.\".",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-004",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/06-home-cat-cards.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:94 + 15 sites (68/94/111/134/201/361/388/413/461/616/766/818/873/911) — clickable divs without role/tabindex/keyboard support. Cross-validated F-003 (same data, F-003 frames as keyboard nav blocker P1). Adversarial: tracked as F-003 P1 ; A11-004 is the a11y projection P2 to avoid double-counting.",
+      "fix_hint": "Subsumed by F-003 fix (lc-tap helper + className refactor across 15 sites).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-005",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/03-otp-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "CONFIRMED via 03-otp-aria.evidence.json : { input_count: 4, labels: [null,null,null,null], all_labelled: false } + 02-login-phone-aria.evidence.json : { phone_aria_label: null }. screens-onboarding.jsx:254-273 OTP 4 inputs no aria-label, no fieldset+legend group ; phone input l.204 also no aria-label.",
+      "fix_hint": "screens-onboarding.jsx — wrap OTP inputs (l.254-273) in <fieldset style={{border:0,padding:0,margin:0}}><legend className=\"lc-sr-only\">Code de validation à 4 chiffres reçu par SMS</legend>... <input aria-label={`Chiffre ${i+1} sur 4 du code de validation`} ... /></fieldset>. Phone input l.204 add aria-label=\"Numéro de téléphone mobile, format français commençant par 06 ou 07\". Effort S.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-006",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/12-modal-opt-out-dialog.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "screens-modals.jsx:6-15 ModalShell = plain <div>, no role=dialog, no aria-modal, no aria-labelledby. Only ModalWalletV0Notice (l.254) + ModalOptOutConfirm (l.286) wrap with correct attrs. ModalPayChoice (l.19), ModalPointsGain (l.93 custom container), ModalRedeem (l.115), ModalCardLink (l.148) all lack. No ESC handler. No focus trap.",
+      "fix_hint": "Refactor ModalShell at screens-modals.jsx:6-15 to accept labelledBy prop + emit role=\"dialog\" aria-modal=\"true\" aria-labelledby={labelledBy} on inner div. Add useEffect ESC listener. Capture initial focus on heading via useRef+useEffect on mount. Restore caller focus on unmount. Each caller adds id=\"...\" on <h2> + passes labelledBy=\"that-id\". Effort M (2h).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-007",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/15-loyalty-optout-applied.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "screens-modals.jsx:93-112 ModalPointsGain confetti spans (24) — no aria-hidden=true. SR may announce empty spans. Container also missing role=dialog aria-modal.",
+      "fix_hint": "screens-modals.jsx — confetti span add aria-hidden=\"true\" ; wrap inner card in <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"points-gain-title\"> + id on +25 heading.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-008",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/10-cart-stepper-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:588-592 cart stepper <button>−</button>/<button>+</button> with math symbols only ; <span className=\"lc-stepper-val\">{it.qty}</span> no aria-live. Wizard recap stepper at screens-item-steps.jsx:660-666 already pattern-correct.",
+      "fix_hint": "screens-main.jsx:588-592 add aria-label={`Diminuer ${it.name}`} / aria-label={`Augmenter ${it.name}`} on buttons ; counter span add aria-live=\"polite\" aria-atomic=\"true\".",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-009",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/11-cart-trash-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "screens-main.jsx:596 <button onClick={() => remove(idx)}><I.Trash size={16}/></button> — icon-only, no aria-label. SR: 'button'. Destructive action without context.",
+      "fix_hint": "screens-main.jsx:596 add aria-label={`Retirer ${it.name} du panier`}.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-010",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/05-home-icon-buttons-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "screens-main.jsx:176 Search IconBtn no onClick AND no aria-label. Subsumed by S-003/A11-002 IconBtn signature refactor.",
+      "fix_hint": "Closed by A11-002/S-003 patch (IconBtn ariaLabel + adds ariaLabel=\"Rechercher dans le menu\" at l.176).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-011",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/07-menu-filter-aria-pressed.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:183 menu filter chips visual `active` state but no aria-pressed={active}. Same on order tabs l.745, history filter chips l.1194.",
+      "fix_hint": "Add aria-pressed={active} on filter chip buttons l.183. Add aria-current=\"page\" on Orders tab l.745. History filters l.1194 (already have data-active=) → add aria-pressed={active}.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-012",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/10-cart-stepper-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Touch targets below WCAG 2.5.5 AAA 44×44: styles.css:166 .lc-stepper button 32×32 (cart/qty), shared.jsx:96 IconBtn size=40 default, .lc-tab padding 6px 0 (~36 effective).",
+      "fix_hint": "Add --touch-min: 44px in styles.css :root. Apply .lc-stepper button { min-width: 44px; min-height: 44px; }. IconBtn default size=44. Effort M.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-013",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/01-tacos-xxl-step1-viandes-0of4.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "screens-item-steps.jsx:781-783 try { headingRef.current.focus({ preventScroll: true }); } catch (e) { /* iOS Safari */ } — swallows iOS Safari error silently. No fallback, no aria-live announcement.",
+      "fix_hint": "screens-item-steps.jsx:781 — add fallback inside catch: `headingRef.current.focus()` without options. Also wrap step heading+body in <section aria-live=\"polite\"> for SR redundancy.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-014",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/09-prefers-reduced-motion.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "screens-modals.jsx:91-101 ModalPointsGain and WizardRedeem.jsx:119-125 mount 24/18 confetti spans even when prefers-reduced-motion. CSS rule freezes animation but DOM nodes still rendered.",
+      "fix_hint": "Wrap confetti generation in `window.matchMedia('(prefers-reduced-motion: reduce)').matches ? [] : Array.from(...)`. Effort S.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A11-015",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/03-otp-aria.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "screens-onboarding.jsx:277-279 demo code badge visible when LC.isDev (already gated). Badge is plain <div> with no role context.",
+      "fix_hint": "Add role=\"note\" aria-label=\"Affordance développeur\" on demo code div.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "ADV-A11-017",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/04-tabbar-aria-pressed.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "NEW from axe.json 04-tabbar-aria-pressed.axe.json — 'color-contrast' impact:serious, nodes:5. Specific elements not yet identified ; need axe.json detail dive in round-2.",
+      "fix_hint": "Run axe in browser devtools with verbose mode to identify the 5 nodes. Likely candidates: SIGNATURE pill (closed by cluster-4 but verify), --gray-3 12px on cream (cf. S-013), yellow on white (NEVER OK), --orange #FF5A1F text on white (3.46:1 FAIL AA). Effort M.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 6, "P2": 8, "P3": 2,
+    "open_P0": 1, "open_P1": 6, "open_P2": 8, "open_P3": 2
+  },
+  "verdict": "RED",
+  "notes": "ADV-A11-016 meta-viewport CRITICAL P0 = regulatory blocker (WCAG SC 1.4.4 + RGAA 4) NEW from axe captures, not in 4 sub-agent preliminary outputs. axe ALSO surfaced ADV-A11-017 color-contrast SERIOUS × 5 nodes + region landmark × 33 (tracked as ADV-S-016 P2). Top-5 P1 fix order : (1) ADV-A11-016 meta-viewport (S, 1 line) ; (2) A11-001/F-004/S-004 TabBar button (S) ; (3) A11-002/A11-010/S-003 IconBtn aria (M, 1 sig + 8 callsites) ; (4) A11-005 OTP/phone aria (S) ; (5) A11-009 cart trash aria (S, 1 line)."
+}

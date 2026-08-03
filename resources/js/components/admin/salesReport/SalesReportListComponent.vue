@@ -193,9 +193,9 @@
                         <tr class="db-table-body-tr" v-for="salesReport in salesReports" :key="salesReport">
                             <td class="db-table-body-td">{{ salesReport.order_serial_no }}</td>
                             <td class="db-table-body-td">{{ salesReport.order_datetime }}</td>
-                            <td class="db-table-body-td">{{ salesReport.total_amount_price }}</td>
-                            <td class="db-table-body-td">{{ salesReport.discount_amount_price }}</td>
-                            <td class="db-table-body-td">{{ salesReport.delivery_charge_amount_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.total_currency_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.discount_currency_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.delivery_charge_currency_price }}</td>
                             <td class="db-table-body-td">
                                 <span v-if="salesReport.transaction">
                                     {{ salesReport.transaction }}
@@ -323,8 +323,13 @@ export default {
                 orderTypeEnum: orderTypeEnum,
                 sourceEnum: sourceEnum,
                 paymentStatusEnumArray: {
+                    // [visual-round-1 P3 fix 2026-07-07] PENDING_COUNTER (kiosk
+                    // counter-collect) + REFUNDED were missing → the badge rendered
+                    // empty for those rows. Mirror HistoriqueListComponent.paymentLabel.
                     [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                    [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                    [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
                 },
                 paymentTypeEnumArray: {
                     [paymentTypeEnum.CASH_ON_DELIVERY]: this.$t("label.cash_on_delivery"),

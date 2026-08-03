@@ -27,7 +27,10 @@ class CustomerResource extends JsonResource
             "status"       => $this->status,
             "image"        => $this->image,
             "country_code" => $this->country_code,
-            "messages"     => $this->messages->count(),
+            // [TERRAIN-HEAL 2026-07-16 · CUSTRES-MSGCOUNT] idem : ne pas hydrater toute la relation
+            // messages par client juste pour la compter (préférer withCount, sinon COUNT léger).
+            "messages"     => $this->messages_count
+                ?? ($this->relationLoaded('messages') ? $this->messages->count() : $this->messages()->count()),
         ];
     }
 }

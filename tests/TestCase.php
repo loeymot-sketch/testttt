@@ -56,6 +56,12 @@ abstract class TestCase extends BaseTestCase
             ['key' => 'order_setup_food_preparation_time', 'payload' => json_encode(30), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'order_setup_takeaway', 'payload' => json_encode(1), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'order_setup_delivery', 'payload' => json_encode(1), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
+            // [WAVE5-KIOSK-001] POS group — pos_dine_in_enabled defaults to TRUE in test
+            // env so existing kiosk happy-path tests posting OrderType::KIOSK (sur place)
+            // keep passing. Production default remains FALSE (see Settings::group('pos')
+            // ->get('pos_dine_in_enabled', false) fallback). V1-disabled scenarios in
+            // sentinel tests must explicitly write pos_dine_in_enabled=0.
+            ['key' => 'pos_dine_in_enabled', 'payload' => json_encode(1), 'group' => 'pos', 'created_at' => now(), 'updated_at' => now()],
             // Company settings required for notifications (group = 'company')
             ['key' => 'company_name', 'payload' => json_encode('FoodKing Test'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'company_email', 'payload' => json_encode('test@foodking.com'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
@@ -139,6 +145,10 @@ abstract class TestCase extends BaseTestCase
             // [POS-9.4.12] fiscal management (NF525 Z/X reports, drawer audit)
             'pos-manage-fiscal',
             'pos-reopen-z',
+            // [Sprint 1D / F-4 — 2026-05-16] Cash variance override
+            'cash.reconcile.variance.override',
+            // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
+            'cash-sessions-report',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
@@ -160,6 +170,10 @@ abstract class TestCase extends BaseTestCase
                 'order-status-screen',
                 // [POS-9.1.1] cashier = up to 10% discount
                 'pos-discount-up-to-10',
+                // [WEB-ORDER-ACCEPT 2026-07-30] Aligné RolePermissionTableSeeder : le caissier
+                // accepte/gère les commandes web (bouton « Accepter » du tracker). Le refund reste
+                // gardé `pos-refund` (hors de ce set) → frontière de permission préservée.
+                'online-orders',
             ]);
         }
 
@@ -175,6 +189,11 @@ abstract class TestCase extends BaseTestCase
                 // [POS-9.4.12] fiscal management is a manager-level responsibility.
                 'pos-manage-fiscal',
                 'pos-reopen-z',
+                // [Sprint 1D / F-4] approve cash variance beyond threshold.
+                'cash.reconcile.variance.override',
+                // [Wave O — O4 2026-05-20] Branch Manager voit le rapport caisses
+                // quotidien (scoped à sa branche via BranchScope du model).
+                'cash-sessions-report',
             ]);
         }
 

@@ -1,0 +1,32 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE",
+  "execution_delegation": "explicit-prompt-bind",
+  "mode": "execute-safe-slice",
+  "objective": "Add a read-only dashboard composition summary tab using existing catalogue resource fields, without migrations or order runtime changes.",
+  "preconditions": [
+    "safety-check PASS",
+    "No migration gate required because no schema change",
+    "No frozen order-service gate required because no order service edit"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE/allowlist.txt",
+  "forbidden": [
+    "Do not edit app/Services/OrderService.php",
+    "Do not edit app/Services/FrontendOrderService.php",
+    "Do not add migrations",
+    "Do not calculate final price in Vue",
+    "Do not claim PRODUCT-COMPOSER-SYNC-02 full completion"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation-not-touched",
+    "dispatch-after-commit-not-touched",
+    "frozen-zone-gates-not-required-for-this-slice",
+    "dashboard-control-plane-visibility-only"
+  ],
+  "expected_outputs": [
+    "ProductComposerSummaryComponent.vue",
+    "ItemShowComponent Composition tab",
+    "Static Vitest contract",
+    "Self-audit report"
+  ]
+}

@@ -16,5 +16,7 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'old_password_mismatch' => "L'ancien mot de passe est incorrect.",
+    'password_confirmation_mismatch' => "La confirmation du mot de passe ne correspond pas.",
 
 ];

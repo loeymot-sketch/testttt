@@ -1,0 +1,77 @@
+{
+  "surface": "caisse",
+  "cycle": 1,
+  "head": "16ee95d11 (wip golive-w1 baselines, directly on top of goal HEAD fd6193215 — confirmed ancestor)",
+  "server": "http://127.0.0.1:8766",
+  "gates": {
+    "phpunit_filter_PosMenuDrink_Pos": "601 passed, 0 failed, 2 incomplete (S7.2/S7.3 owner-finalize markers), 9 skipped",
+    "hardware_O_underline_unit_tests": "KitchenTicketSymbolicFormatterTest + KitchenSymbolPhpJsParityTest = 15 passed",
+    "pos_menu_drink_choice_test": "3 passed",
+    "fiscal_chain_verify_all": "CHAIN OK on every active branch (4) — before AND after session",
+    "frozen_zones_diff": "0 lines (pos-wizard.js, PaymentComponent.vue, Fiscal/*, Pricing, OrderStateMachine all untouched)",
+    "code_modified_by_agent": "0 (no Edit/Write ran)"
+  },
+  "db_baseline_vs_final": {
+    "max_order_id": "5542 -> 5549 (+7, created by CONCURRENT go-live waves, NOT this agent — this agent submitted 0 orders)",
+    "max_fiscal_no_b1": "2633 -> 2635 (+2, concurrent waves)",
+    "audit_logs": "4912 -> 4914 (chain intact throughout — incidental concurrency-safety proof)"
+  },
+  "findings": [
+    {
+      "severity": "GREEN",
+      "scenario": "S1 - Cayenne Menu Complet + Hawai drink included, total 9,90 frozen",
+      "summary": "Cayenne(7,40) -> Formule 'Menu (Frites + Boisson)' (+2,50) -> drink step lists EXACTLY 15 boissons all 'Incluse' -> 'Hawai 33cl' selectable. Total STRICTLY 9,90 EUR held after selecting Hawai (Incluse=0 EUR). Apercu/instruction carries 'BOISSON: Hawai 33cl'. Backend invariant attested by PosMenuDrinkChoiceTest (quote 9,90 price-inert to drink; POST /api/admin/pos -> 201, order.total=9,90, orderItem.instruction contains 'BOISSON: Hawai 33cl', drink billed 0 EUR / no extra line).",
+      "evidence": "UI live: w2-caisse/03,04,05 PNG + DOM snapshot (Total EUR9.90 unchanged post-Hawai; apercu 'CAYENNE ... + Menu (Frites + Boisson) (+2,50 EUR) BOISSON: Hawai 33cl'). Enumerated 15 Incluse (Coca, Coca Zero, Fanta Orange, Sprite, Oasis, Orangina, Eau Plate 50cl, Capri-Sun, Coca Cherry, Tropico, Ice Tea Peche, Fanta Citron, Fuze Tea, Hawai, Perrier). Backend: PosMenuDrinkChoiceTest 3/3 PASS. NOTE: live 'encaisse especes' click itself was not completed by this agent (see finding ENV-BLOCKER); the create+pay+fiscal path is test-attested + fiscal chain OK."
+    },
+    {
+      "severity": "GREEN",
+      "scenario": "S2 - Oignon cuit exclusivity + O-underline on kitchen ticket bytes",
+      "summary": "Cru<->cuit onion mutual exclusivity implemented (checking 'Oignons cuits' unchecks raw 'Oignon', default=cru). Cooked onion renders as O + U+0332 (combining underline) mapped to HARDWARE underline ESC/POS bytes (ESC - 1, O, ESC - 0) via CP858 translation. 'Sans Oignons cuits' opt-in pill present in live wizard.",
+      "evidence": "Code: pos-wizard.js:3363-3403 (isOignonCuit + applyOignonExclusivity mutual deselect). KitchenTicketSymbolicFormatter.php:55 (/oignon.*cuit/ -> O\\u{0332}) + CRUDITE_ORDER [S,T,O,O-underline]. EscPosCommandBuilder.php:41,125-129 (underline() ESC - n; X+U+0332 -> ESC-1 X ESC-0). Tests: KitchenSymbolPhpJsParityTest asserts ['S','T','O','O-underline'] PHP<->JS parity; formatter+parity 15/15 PASS. Live: 'Sans Oignons cuits' toggle visible in 03/04 PNG. NOTE: live tick+byte-decode of a fresh order not driven live (ENV-BLOCKER); byte logic is unit-attested."
+    },
+    {
+      "severity": "GREEN",
+      "scenario": "S3 - Tacos viande step = real webp meat photos, 0 image 404",
+      "summary": "The 7 real meat photos are genuine webp assets served 200 image/webp, not placeholder pastilles, no 404.",
+      "evidence": "curl 200 image/webp on viande_hachee(9228B), viande_kebab(9228B), viande_kefta(6074B), viande_merguez(7196B), viande_mexicain(5928B), viande_cordon(6792B), viande_tenders(8488B) + escalope_poulet/crispy/fricandelle/curry present. All Ko-sized webp. Drinks step already rendered real webp images live (04/05 PNG). NOTE: live viande-step network capture not driven live (ENV-BLOCKER); assets verified served."
+    },
+    {
+      "severity": "GREEN",
+      "scenario": "S4 - Silent print, no window.print / no gray dialog",
+      "summary": "Encaissement prints via the local ESC/POS RAW bridge (printEscPosViaCaisseBridge, POST /raw). window.print() is NEVER triggered automatically; browser print is a manual button fallback only. No blocking OS dialog / UI freeze by design.",
+      "evidence": "Code: ReceiptComponent.vue:46,395,424 ('window.print() n'est plus JAMAIS declenche automatiquement'; manual button only). EncaissementComponent.vue:76,200-202 (GET .../escpos b64 -> printEscPosViaCaisseBridge). NOTE: live toast/print not captured live (ENV-BLOCKER); path is code-attested."
+    },
+    {
+      "severity": "GREEN",
+      "scenario": "S5 - Perf: webp thumbnail tiles (Ko), no /api/admin/item refetch per cart add",
+      "summary": "Category tiles are webp thumbnails 6-51 KB (Ko, not Mo). After a cart add the POS no longer re-GETs the full /api/admin/item catalog per add; resync throttled to at most 1/60s; stock deltas served via push.",
+      "evidence": "Filesystem+curl: menu/thumbs/*.webp all 6-51 KB, 200 image/webp. Code: PosComponent.vue:3906-3919 (W5-PERF §5.2 2026-07-06) onProductAddedReturnToCategories removed the ex per-add allCategory() /api/admin/item refetch, keeps <=1/60s resync. Live grid renders clean webp tiles (02 PNG)."
+    },
+    {
+      "severity": "GREEN",
+      "scenario": "S6 - Free wizard client note flows into the item instruction",
+      "summary": "Free-text 'Instruction speciale' typed in the wizard is appended to the item instruction / kitchen line.",
+      "evidence": "UI live: typed 'Sans piment SVP - bien chaud' -> apercu became 'CAYENNE ... BOISSON: Hawai 33cl [Sans piment SVP - bien chaud]' (05 PNG + DOM snapshot). PosMenuDrinkChoiceTest also proves instruction reaches orderItem.instruction on POST /api/admin/pos."
+    },
+    {
+      "severity": "P2-ENV",
+      "scenario": "ENV-BLOCKER (environmental, NOT a caisse product defect)",
+      "summary": "The shared Chrome used by Playwright MCP was continuously hijacked by concurrent go-live automation (parallel KDS/kiosk waves): the single tab was full-navigated to /admin/kitchen-display-system and /kiosk/idle within sub-3s windows, and a :8000 tab appeared. During my idle reasoning gaps the tab flipped away from /admin/pos, destroying multi-step cart state. This blocked ME from completing the LIVE click-through of encaissement (S1 pay), a fresh-order O-byte decode (S2), the live viande render (S3) and the live print toast (S4). All four were instead verified via robust contention-immune channels (green tests + code + served assets + DB fiscal chain). +7 orders / +2 fiscal_no were created by the other waves during my session (I created 0).",
+      "evidence": "browser_tabs showed 1 tab flipping pos->kds; browser_evaluate(location.href) returned /admin/kitchen-display-system right after browser_tabs reported pos; no idle-redirect exists in POS code (grep clean). DB max_order 5542->5549 while agent submitted 0."
+    },
+    {
+      "severity": "P3",
+      "scenario": "OBSERVATION - repli drink thumbnails (documented, owner-accepted)",
+      "summary": "Hawai/Fuze Tea/Perrier drinks resolve to fallback 'repli' thumbnails (fanta-fraise.webp / lipton-framboise.webp / eau.webp), not dedicated images. All three are valid 200 image/webp (no broken image). Matches BRAIN note 'images REPLI distinctes a swap'. Not a defect.",
+      "evidence": "Item::thumb(124)=fanta-fraise.webp, (123)=lipton-framboise.webp, (125)=eau.webp; curl 200 image/webp on all three."
+    },
+    {
+      "severity": "P3-OOS",
+      "scenario": "OBSERVATION - KDS console 401 (out of caisse scope)",
+      "summary": "Residual console error from the hijacking KDS tab: 401 Unauthorized on GET /api/admin/kds-order. This is a KDS-surface concern (belongs to the KDS wave), observed only because the shared browser was on KDS; it does not originate from the POS/caisse flow.",
+      "evidence": "browser_console_messages error level: 'Failed to load resource: 401 @ /api/admin/kds-order' while tab was on /admin/kitchen-display-system."
+    }
+  ],
+  "verdict": "GREEN",
+  "verdict_note": "0 caisse product defects. All 6 S1-S6 invariants cross-attested (live UI in stable windows + green PHPUnit gate + code + served webp assets + fiscal chain OK x2 + frozen 0). The full LIVE click-through of encaissement could not be completed by this agent due to a concurrent-automation browser contention (documented ENV-BLOCKER, not a product defect); those specific live confirmations were substituted with robust equivalents. Recommend a quick re-run of the live pay click-through in an uncontended browser to close the ENV caveat before final sign-off."
+}

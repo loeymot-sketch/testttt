@@ -1,0 +1,183 @@
+{
+  "scenario": "R8 Owner night review with anomaly",
+  "method": "code_static",
+  "context": {
+    "simulated_workload": "50 orders + 1 injected anomaly (composition_snapshot mismatch on one OrderItem)",
+    "owner_journey": "Login admin at 23h → /admin (dashboard) → /admin/cash-overview → /admin/transactions (Z reports)",
+    "scan_targets": [
+      "resources/js/components/admin/dashboard/DashboardComponent.vue",
+      "resources/js/components/admin/dashboard/SlaAlertsComponent.vue",
+      "resources/js/components/admin/dashboard/AuditTrailComponent.vue",
+      "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+      "resources/js/components/admin/dashboard/RealtimeReportComponent.vue",
+      "resources/js/components/admin/dashboard/StockLowAlertsWidget.vue",
+      "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+      "app/Http/Controllers/Admin/DashboardController.php",
+      "app/Http/Controllers/Admin/CashOverviewController.php",
+      "app/Services/DashboardService.php (slaAlerts + auditTrail + realtimeReport)",
+      "app/Services/Fiscal/FiscalChainValidator.php",
+      "app/Services/Fiscal/ZReportService.php (verifyChain)",
+      "app/Services/Fiscal/ZReportCashEnrichmentService.php (verifyConsistencyVsAuditLog)",
+      "app/Services/Pricing/CompositionSnapshotBuilder.php",
+      "routes/api.php (/admin/dashboard/* + /admin/cash-overview)"
+    ]
+  },
+  "code_static_findings": {
+    "dashboard_layout_mounted_widgets_in_order": [
+      "OverviewComponent (KPI cards)",
+      "RealtimeReportComponent (daily_sales / daily_orders / average_ticket)",
+      "SlaAlertsComponent (kitchen timing >15min)",
+      "ChannelStatsComponent (Web/Kiosk/POS share)",
+      "AuditTrailComponent (ActionLog last 50)",
+      "OrderStatisticsComponent",
+      "SalesSummaryComponent",
+      "OrderSummaryComponent",
+      "LastZReportWidget",
+      "FeaturedItemsComponent",
+      "MostPopularItemsComponent"
+    ],
+    "widgets_NOT_mounted_in_dashboard": [
+      "StockLowAlertsWidget.vue (exists in dashboard/ folder but NOT imported by DashboardComponent.vue — verified by grep)",
+      "OutboxOverviewComponent (lives under /admin/observability route, NOT on /admin home)",
+      "No CompositionSnapshotAnomalyWidget exists anywhere in the codebase",
+      "No FiscalChainStatusWidget exists anywhere in the codebase",
+      "No SuspiciousTransactionWidget exists anywhere in the codebase"
+    ],
+    "sla_alerts_widget_actual_scope": {
+      "file": "resources/js/components/admin/dashboard/SlaAlertsComponent.vue",
+      "title_FR": "Alertes SLA (Cuisine > 15min)",
+      "data_source": "DashboardService::slaAlerts() — selects Order WHERE status=PREPARING AND updated_at < now()-15min",
+      "verdict_for_R8": "Kitchen-timing only. Does NOT cover fiscal/composition/cash anomalies. A composition_snapshot mismatch on a paid+closed order is INVISIBLE to this widget (the order is no longer in PREPARING).",
+      "S7_reconciliation_note": "S7 mega-finding mentioned '12 alerts present' — that count refers to SLA card timing alerts (orders breaching 15min cuisine SLA), NOT fiscal anomalies. SLA Alerts existence is not anomaly coverage."
+    },
+    "audit_trail_widget_actual_scope": {
+      "file": "resources/js/components/admin/dashboard/AuditTrailComponent.vue",
+      "data_source": "DashboardService::auditTrail() — selects from ActionLog (user actions), NOT from audit_logs (NF525 chain)",
+      "table_columns": ["Utilisateur", "Action", "Ressource", "Temps"],
+      "verdict_for_R8": "Surfaces ActionLog user activity (e.g. ORDER_REFUNDED, KIOSK_PAID). Does NOT surface NF525 chain events: no signature_mismatch row would appear here. No special highlight for anomalous action types. Even if a composition_snapshot mismatch produced a Log::warning entry, it would NOT reach this widget."
+    },
+    "last_z_report_widget_actual_scope": {
+      "file": "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+      "renders": ["sequence_no", "status (open|closed)", "closed_at"],
+      "verdict_for_R8": "Shows the latest Z report row but renders NO chain-integrity field, NO corruption flag, NO 'verifyChain failed' indicator. A composition_snapshot mismatch that would block the NEXT Z-close would NOT show here until/unless a Z is actually attempted.",
+      "view_all_alerts_link": "Routes to admin.transactions.list — generic transactions page, not an anomaly inbox."
+    },
+    "cash_overview_reconciliation_scope": {
+      "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+      "page_route": "/admin/cash-overview",
+      "displayed_values": ["drawer_opened_at", "opening_amount", "cash_collected_today", "expected_in_drawer"],
+      "diff_cell_status": "EXPLICITLY REMOVED — in-source comment lines 110-119 + 322-330 + 192-198: 'Fix C-013 — the previous diff cell was algebraically locked to -opening_amount, so it always displayed -100 € (manquant) even when the drawer was perfectly healthy. A real écart requires a counted_physical_cash input compared to expected_cash. The cashier-count input is V1.0.2 backlog; until then we show 3 HONEST values + an info note. No misleading diff cell.'",
+      "warning_visible_for_math_drift": "NONE. Only a static amber-tone 'reconciliation pending' note: t('label.cash_drawer_count_pending_note'). No conditional red banner if expected != counted (because counted is never captured in V1).",
+      "anomaly_specific_widgets_on_this_page": "NONE. No 'suspicious transactions' panel, no 'orphan transactions' panel, no 'recent refunds' panel.",
+      "verdict_for_R8": "A composition_snapshot mismatch on an order would NOT change any number on this page in a way the owner could detect visually. The page sums Transaction.amount per source/mode — those amounts come from PricingService::calculateOrder, which IS the trusted SSOT, but the mismatch lives in OrderItem.composition_snapshot (NF525 audit-chain artifact), not in Transaction.amount."
+    },
+    "z_report_fin_de_jour_anomaly_path": {
+      "service": "App\\Services\\Fiscal\\FiscalChainValidator::assertChainIntegrity()",
+      "trigger": "Invoked inside ZReportService chain verification — runs at Z-open ceremony (next day) and at audit re-walks. NOT invoked on dashboard mount, NOT invoked on CashOverview mount.",
+      "behavior_on_mismatch": "throws FiscalChainCorruptedException + Log::channel('fiscal')->error. The exception bubbles to caller; not broadcast to admin dashboard, no realtime push.",
+      "z_report_status_field": "rendered by LastZReportWidget as raw lowercase string. No 'corrupted' or 'mismatch' label exists in widget renderer.",
+      "verdict_for_R8": "Z-report dashboard widget WILL eventually surface the issue at the next Z-close, but: (a) cashier/owner triggers Z-close, not the dashboard; (b) widget renders status, not chain-integrity diagnostic; (c) no notification surface (badge, count, red banner) routes the owner to the right place."
+    },
+    "additional_anomaly_detection_paths_NOT_on_admin": {
+      "ZReportCashEnrichmentService.verifyConsistencyVsAuditLog": "Compares cash.delivery.movement.recorded audit_logs against delivery_boy_cash_movements rows. Returns sum_mismatch / count_mismatch discrepancies. ONLY callable from Z-close path; no admin dashboard surface.",
+      "CompositionSnapshotBuilder.menuRoleAdjustedAddonPrice in-source comment line 183": "'Any drift here would be an NF525 audit-chain mismatch (line_total != recomputed addon price).' — acknowledges the failure mode but has no dashboard widget to surface it.",
+      "OutboxOverviewComponent at /admin/observability/outbox": "Surfaces queue/job health (dispatched/failed/pending counts + p50/p95 latency). Will catch a payment-broadcast crash. Will NOT catch a composition_snapshot mismatch."
+    }
+  },
+  "anomaly_surfacing_paths": [
+    {
+      "path": "Dashboard /admin (default landing)",
+      "anomaly_surface": "NONE for composition_snapshot mismatch. SlaAlerts covers kitchen timing only; AuditTrail covers ActionLog user actions only; LastZReport renders status string only.",
+      "time_to_spot_via_this_path_seconds": null,
+      "comment": "Effectively unbounded — owner could review 1-3 minutes of widgets and miss the anomaly entirely."
+    },
+    {
+      "path": "/admin/cash-overview (Wave X4 unified overview)",
+      "anomaly_surface": "NONE for composition_snapshot mismatch. Only sum totals per source/mode (correct on aggregate, blind to per-item composition).",
+      "time_to_spot_via_this_path_seconds": null,
+      "comment": "Reconciliation card is purposefully NOT showing a diff (Wave X-C C-013 fix removed the misleading cell). Owner cannot eyeball drift here."
+    },
+    {
+      "path": "/admin/transactions (linked from LastZReportWidget 'view all alerts')",
+      "anomaly_surface": "Transactions list — admin can inspect individual transactions. No anomaly-highlight rendering; owner must know what to look for.",
+      "time_to_spot_via_this_path_seconds": null,
+      "comment": "Manual scan only. With 50 orders to check, 30+ minutes is realistic; no per-row mismatch indicator."
+    },
+    {
+      "path": "Next Z-close ceremony (cashier or cron triggers Z-open of next day)",
+      "anomaly_surface": "FiscalChainValidator::assertChainIntegrity() throws FiscalChainCorruptedException, blocks the new Z opening. Logged to channel('fiscal').",
+      "time_to_spot_via_this_path_seconds": 86400,
+      "comment": "Detected at the SAME moment cashier attempts the next Z-open (typically next morning 06:00-09:00). Owner at 23h reviewing has NO surface that flags the issue before this. Triggers the cashier's flow, not the owner's dashboard view."
+    },
+    {
+      "path": "/admin/observability/outbox",
+      "anomaly_surface": "NOT relevant for composition_snapshot mismatch. Surfaces queue/job health only.",
+      "time_to_spot_via_this_path_seconds": null,
+      "comment": "False lead — owner could scan this page and see all green while composition_snapshot drift exists silently."
+    }
+  ],
+  "time_to_spot_estimate_seconds": -1,
+  "time_to_spot_breakdown": {
+    "from_admin_dashboard_alone": "effectively never (no widget surfaces fiscal/composition anomalies)",
+    "from_cash_overview_aggregates": "effectively never (purely sum-based; no per-item integrity check)",
+    "from_z_close_next_day": "up to ~86400 seconds (24h) — only when cashier attempts Z-open, which is a different actor and a different surface than 'owner at 23h reviewing'",
+    "owner_path_at_23h_estimate": "unbounded / undetectable through the dashboard journey described in the scenario"
+  },
+  "missing_anomaly_detection_gaps": [
+    {
+      "id": "R8-GAP-1",
+      "severity": "P0",
+      "title": "No composition_snapshot anomaly surfacing on /admin dashboard or /admin/cash-overview",
+      "evidence": "No widget exists for line_total != recomputed addon price. CompositionSnapshotBuilder.php line 183 acknowledges 'Any drift here would be an NF525 audit-chain mismatch' but no UI surface exposes it. FiscalChainValidator runs at Z-close only.",
+      "owner_impact": "Owner reviewing at 23h has zero visual cue that a fiscal-impact anomaly exists. Detection deferred to next Z-open (typically T+8 to T+12h).",
+      "recommendation": "Add a 'Fiscal Integrity' widget on dashboard that runs FiscalChainValidator::assertChainIntegrity() (cached 60s) and renders green/red status with per-branch granularity."
+    },
+    {
+      "id": "R8-GAP-2",
+      "severity": "P0",
+      "title": "Cash Overview reconciliation diff cell removed (V1.0.2 backlog) — no visible warning when math drifts",
+      "evidence": "CashOverviewComponent.vue lines 110-119: 'Fix C-013 — dropped cashDiff... until V1.0.2 ships a cashier count-input feature the page displays 3 honest values without a misleading diff.' Renders only opening + collected + expected — no warning if those numbers themselves are inconsistent with Transaction.amount sums.",
+      "owner_impact": "Owner cannot detect cash drift (cash manquant) from the dashboard. The Wave X4 mandate verbatim included 'détecter écarts (cash manquant)' but the diff cell that would satisfy this is V1.0.2 backlog.",
+      "recommendation": "Ship the cashier physical-count input + diff cell with red-amber-green thresholds (V1.0.2 ALREADY planned per in-source comment). Until then, add a conservative 'Reconciliation pending count' amber banner that links directly to the count-entry flow."
+    },
+    {
+      "id": "R8-GAP-3",
+      "severity": "P1",
+      "title": "LastZReportWidget renders status as raw lowercase string, no chain-integrity column",
+      "evidence": "LastZReportWidget.vue lines 17-19: renders only sequence_no + status + closed_at. No corruption flag. ZReportService::verifyChain() emits 'signature_mismatch' kind errors (line 534) but the widget would render the Z as 'closed' regardless if the validation fails outside the widget's data fetch.",
+      "owner_impact": "Owner glancing at LastZReportWidget sees an apparently healthy Z report even if its chain is compromised. Misleading green-state.",
+      "recommendation": "Add chain_status field to ZReport API response + render red badge if not 'verified'. Auto-run FiscalChainValidator on widget mount (cached) and render its verdict alongside the status."
+    },
+    {
+      "id": "R8-GAP-4",
+      "severity": "P2",
+      "title": "StockLowAlertsWidget exists in /dashboard/ folder but is NOT imported by DashboardComponent.vue",
+      "evidence": "Grep confirms StockLowAlertsWidget.vue is unmounted (DashboardComponent.vue does not import it). Component is dead code on /admin landing.",
+      "owner_impact": "Tangent to R8 (not fiscal) but evidences a pattern — dashboard widgets are added file-by-file but inclusion in DashboardComponent is not enforced. Suggests the same will happen to a future anomaly widget if not wired in deliberately.",
+      "recommendation": "Wire StockLowAlertsWidget into DashboardComponent.vue (one-line ErrorBoundary block) OR delete it. Add a CI check that every Vue file in /dashboard/ is referenced by DashboardComponent.vue."
+    },
+    {
+      "id": "R8-GAP-5",
+      "severity": "P2",
+      "title": "AuditTrailComponent surfaces ActionLog only, not the NF525 audit_logs chain",
+      "evidence": "DashboardService::auditTrail() (line 499-534) queries App\\Models\\ActionLog. Composition mismatches generate fiscal-channel Log::warning entries OR audit_logs rows with 'signature_mismatch' payloads — neither reaches the widget.",
+      "owner_impact": "Audit Trail looks comprehensive ('Historique des Actions') but excludes fiscal events. Owner could review the table and conclude nothing unusual happened, while audit_logs holds a signature_mismatch from 18h that they never see.",
+      "recommendation": "Rename widget to 'User Actions' to set correct expectation, OR augment data source to merge audit_logs rows tagged as critical (signature_mismatch, count_mismatch, sum_mismatch)."
+    },
+    {
+      "id": "R8-GAP-6",
+      "severity": "P2",
+      "title": "No realtime push / notification when a fiscal anomaly is detected outside dashboard refresh window",
+      "evidence": "RealtimeReportComponent polls 30s (daily totals). SlaAlertsComponent polls 15s (kitchen). No WebSocket channel broadcasts fiscal_alert / chain_corrupted events. Even if FiscalChainValidator throws, the admin dashboard learns nothing until the owner navigates somewhere that triggers a new fetch.",
+      "owner_impact": "Anomaly detection is pull-based and requires the owner to be on the right page at the right time. At 23h with the dashboard idle, the owner is blind even if the issue was detected 5 minutes ago by a background process.",
+      "recommendation": "Broadcast a fiscal_alert.created event on the admin private channel when FiscalChainValidator or ZReportCashEnrichmentService detects a discrepancy. Render a persistent red banner at the top of /admin until acknowledged."
+    }
+  ],
+  "verdict": "RED",
+  "verdict_justification": "A simulated 50-order day with 1 composition_snapshot mismatch produces ZERO visual anomaly cues across the owner's 23h review journey (/admin dashboard + /admin/cash-overview + /admin/transactions). The detection path that would catch it (FiscalChainValidator at next Z-close) is (a) on a different actor's flow — cashier — and (b) deferred up to 24h. The Cash Overview page explicitly removed its diff cell (V1.0.2 backlog) and shows only 'honest values' that cannot drift visually. No realtime push surfaces fiscal events. Owner mandate 'détecter écarts (cash manquant)' from Wave X4 is structurally unmet for non-cash anomalies and for cash anomalies until the V1.0.2 count-input ships.",
+  "top_3_gaps": [
+    "R8-GAP-1: No composition_snapshot anomaly surfacing widget on /admin or /admin/cash-overview (P0)",
+    "R8-GAP-2: Cash Overview diff cell removed (V1.0.2 backlog) — no visible cash-écart warning (P0)",
+    "R8-GAP-3: LastZReportWidget renders status only, no chain-integrity column (a chain-corrupted Z still looks green) (P1)"
+  ]
+}

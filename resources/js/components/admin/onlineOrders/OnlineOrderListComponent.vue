@@ -60,9 +60,10 @@
                             <label for="searchStartDate" class="db-field-title after:hidden">
                                 {{ $t('label.date') }}
                             </label>
-                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                            <label for="dp-input-onlineOrderSearchDate" class="sr-only">{{ $t('label.date') }}</label>
+                            <Datepicker uid="onlineOrderSearchDate" name="onlineOrderSearchDate" hideInputIcon autoApply :enableTimePicker="false" utc="false"
                                 @update:modelValue="handleDate" v-model="props.form.date" range
-                                :preset-ranges="presetRanges">
+                                :preset-ranges="presetRanges" :aria-labels="{ input: $t('label.date') }">
                                 <template #yearly="{ label, range, presetDateRange }">
                                     <span @click="presetDateRange(range)">{{ label }}</span>
                                 </template>
@@ -115,7 +116,7 @@
                             <td class="db-table-body-td">
                                 {{ textShortener(order.customer_name, 20) }}
                             </td>
-                            <td class="db-table-body-td">{{ order.total_amount_price }}</td>
+                            <td class="db-table-body-td">{{ order.total_currency_price }}</td>
                             <td class="db-table-body-td">
                                 {{ order.order_datetime }}
                             </td>
@@ -211,15 +212,15 @@ export default {
         const date = ref();
 
         const presetRanges = ref([
-            { label: 'Today', range: [new Date(), new Date()] },
-            { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+            { label: 'Aujourd’hui', range: [new Date(), new Date()] },
+            { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
             {
-                label: 'Last month',
+                label: 'Mois dernier',
                 range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
             },
-            { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
+            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
             {
-                label: 'This year (slot)',
+                label: 'Cette année',
                 range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: 'yearly',
             },

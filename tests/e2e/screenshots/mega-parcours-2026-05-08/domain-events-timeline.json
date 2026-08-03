@@ -1,0 +1,782 @@
+[
+  {
+    "order": "pos-1-before",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:36:11.095Z"
+  },
+  {
+    "order": "pos-1-after-ui",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:36:11.371Z"
+  },
+  {
+    "order": "pos-1-after-api",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:36:13.220Z"
+  },
+  {
+    "order": "pos-2-before",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:36:28.867Z"
+  },
+  {
+    "order": "pos-2-after-ui",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:36:45.475Z"
+  },
+  {
+    "order": "pos-2-after-api",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:36:47.244Z"
+  },
+  {
+    "order": "pos-3-before",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:37:02.753Z"
+  },
+  {
+    "order": "pos-3-after-ui",
+    "label": "snapshot",
+    "payload": {
+      "total": 170,
+      "latest3": [
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 416,
+          "event_type": "order.created",
+          "aggregate_id": 232,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:31:55.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 3
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:37:15.819Z"
+  },
+  {
+    "order": "pos-3-after-api",
+    "label": "snapshot",
+    "payload": {
+      "total": 171,
+      "latest3": [
+        {
+          "id": 419,
+          "event_type": "order.created",
+          "aggregate_id": 234,
+          "aggregate_type": "App\\Models\\Order",
+          "occurred_at": "2026-05-07 18:37:16.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 418,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 417,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:34:44.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 4
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:37:17.691Z"
+  },
+  {
+    "order": "kiosk-1-before",
+    "label": "snapshot",
+    "payload": {
+      "total": 173,
+      "latest3": [
+        {
+          "id": 421,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:37:33.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 420,
+          "event_type": "catalog.changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:37:33.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 419,
+          "event_type": "order.created",
+          "aggregate_id": 234,
+          "aggregate_type": "App\\Models\\Order",
+          "occurred_at": "2026-05-07 18:37:16.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 4
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 3
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 3
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:37:56.269Z"
+  },
+  {
+    "order": "kiosk-1-after-ui",
+    "label": "snapshot",
+    "payload": {
+      "total": 175,
+      "latest3": [
+        {
+          "id": 423,
+          "event_type": "order.status_changed",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 422,
+          "event_type": "order.created",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 421,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:37:33.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 5
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 3
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 3
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 3
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:38:17.285Z"
+  },
+  {
+    "order": "kiosk-2-before",
+    "label": "snapshot",
+    "payload": {
+      "total": 175,
+      "latest3": [
+        {
+          "id": 423,
+          "event_type": "order.status_changed",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 422,
+          "event_type": "order.created",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 421,
+          "event_type": "menu.item_availability_changed",
+          "aggregate_id": 363,
+          "aggregate_type": "item",
+          "occurred_at": "2026-05-07 18:37:33.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 5
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 3
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 3
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 3
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:38:33.014Z"
+  },
+  {
+    "order": "kiosk-2-after-ui",
+    "label": "snapshot",
+    "payload": {
+      "total": 177,
+      "latest3": [
+        {
+          "id": 425,
+          "event_type": "order.created",
+          "aggregate_id": 238,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:45.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 424,
+          "event_type": "order.status_changed",
+          "aggregate_id": 238,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:45.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 423,
+          "event_type": "order.status_changed",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 6
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 3
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 3
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 4
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:38:49.551Z"
+  },
+  {
+    "order": "kiosk-3-before",
+    "label": "snapshot",
+    "payload": {
+      "total": 177,
+      "latest3": [
+        {
+          "id": 425,
+          "event_type": "order.created",
+          "aggregate_id": 238,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:45.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 424,
+          "event_type": "order.status_changed",
+          "aggregate_id": 238,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:45.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 423,
+          "event_type": "order.status_changed",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 6
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 3
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 3
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 4
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:38:50.474Z"
+  },
+  {
+    "order": "kiosk-3-after-ui",
+    "label": "snapshot",
+    "payload": {
+      "total": 177,
+      "latest3": [
+        {
+          "id": 425,
+          "event_type": "order.created",
+          "aggregate_id": 238,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:45.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 424,
+          "event_type": "order.status_changed",
+          "aggregate_id": 238,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:45.000",
+          "dispatched_at": null
+        },
+        {
+          "id": 423,
+          "event_type": "order.status_changed",
+          "aggregate_id": 237,
+          "aggregate_type": "App\\Models\\FrontendOrder",
+          "occurred_at": "2026-05-07 18:38:15.000",
+          "dispatched_at": null
+        }
+      ],
+      "by_type_recent": [
+        {
+          "event_type": "order.created",
+          "c": 5
+        },
+        {
+          "event_type": "order.status_changed",
+          "c": 4
+        },
+        {
+          "event_type": "catalog.changed",
+          "c": 2
+        },
+        {
+          "event_type": "menu.item_availability_changed",
+          "c": 2
+        }
+      ]
+    },
+    "ts": "2026-05-07T16:40:50.323Z"
+  }
+]

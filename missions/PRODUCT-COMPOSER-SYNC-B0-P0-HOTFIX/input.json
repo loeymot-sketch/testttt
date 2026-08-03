@@ -1,0 +1,26 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "status": "executed",
+  "scope": [
+    "OrderRequest delivery fee authority",
+    "deliveryCharge frontend preview helper",
+    "kiosk-admin public bundle/source deletion",
+    "B0 regression tests and forbidden bundle guard"
+  ],
+  "forbidden": [
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "database/migrations",
+    "runtime wizard migration",
+    "product composer schema"
+  ],
+  "invariants_considered": [
+    "pricing_backend_ssot",
+    "branch_id_isolation",
+    "frozen_order_services_not_touched",
+    "no_gate_self_approval"
+  ],
+  "human_gates_required": []
+}

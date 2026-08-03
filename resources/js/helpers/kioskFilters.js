@@ -93,34 +93,195 @@ export function applyKioskFilters(items, activeFilters = []) {
  */
 export function getAllergenCollision(item, customerAllergens = []) {
     const itemCodes = extractAllergenCodes(item);
-    const set = new Set(customerAllergens || []);
+    const set = new Set((customerAllergens || []).map((c) => String(c).toLowerCase()));
     return itemCodes.filter((c) => set.has(c));
 }
 
 /**
  * Extrait la liste des codes allergènes d'un item peu importe la forme :
- *  - allergens: [{ code: 'milk' }, ...] (pivot API)
- *  - allergens: ['milk', 'gluten']     (shortcut)
- *  - allergen_flags: {'milk': true}    (legacy)
+ *  - allergens: [{ code: 'lait' }, ...] (pivot API — codes FR UE)
+ *  - allergens: ['lait', 'gluten']     (shortcut)
+ *  - allergen_flags: {'lait': true}    (legacy)
  *
  * @param {Object} item
  * @returns {Array<string>}
  */
 export function extractAllergenCodes(item) {
     if (!item) return [];
-    if (Array.isArray(item.allergens)) {
-        return item.allergens
+    const allergens = item.allergens;
+    if (typeof allergens === 'string') {
+        return allergens
+            .split(/[,;|]/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+    }
+    if (Array.isArray(allergens)) {
+        return allergens
             .map((a) => {
-                if (typeof a === 'string') return a;
-                if (a && typeof a === 'object' && typeof a.code === 'string') return a.code;
+                if (typeof a === 'string') return a.trim().toLowerCase();
+                if (a && typeof a === 'object') {
+                    if (typeof a.code === 'string') return a.code.trim().toLowerCase();
+                    if (typeof a.name === 'string') return a.name.trim().toLowerCase();
+                }
                 return null;
             })
             .filter((v) => !!v);
     }
     if (item.allergen_flags && typeof item.allergen_flags === 'object') {
-        return Object.keys(item.allergen_flags).filter((k) => item.allergen_flags[k]);
+        return Object.keys(item.allergen_flags)
+            .filter((k) => item.allergen_flags[k])
+            .map((k) => k.toLowerCase());
     }
     return [];
+}
+
+/**
+ * Ordre canonique UE 1169/2011 (codes FR) pour affichage / comparaison stable.
+ * Aligné sur les clés consommées par KsAllergenBadge / API.
+ */
+export const KIOSK_ALLERGEN_CANONICAL_ORDER = Object.freeze([
+    'gluten',
+    'lait',
+    'oeufs',
+    'poissons',
+    'crustaces',
+    'mollusques',
+    'fruits_a_coque',
+    'arachides',
+    'soja',
+    'celeri',
+    'moutarde',
+    'sesame',
+    'sulfites',
+    'lupin',
+    'anhydride_sulfureux',
+]);
+
+function sortAllergenCodesUnique(codes) {
+    const uniq = [...new Set(codes)];
+    const idx = (c) => {
+        const i = KIOSK_ALLERGEN_CANONICAL_ORDER.indexOf(c);
+        return i === -1 ? 1000 : i;
+    };
+    return uniq.sort((a, b) => {
+        const ia = idx(a);
+        const ib = idx(b);
+        if (ia !== ib) return ia - ib;
+        return String(a).localeCompare(String(b));
+    });
+}
+
+/**
+ * Fusionne allergènes de l'item de base + variations + extras sélectionnés.
+ * Objets sans `allergens` → no-op (extractAllergenCodes → []).
+ *
+ * Si `selectedVariations` est `undefined` ou `null` (clé absente / JSON null),
+ * seuls les allergènes de l'item de base sont retournés (rétrocompat).
+ *
+ * @param {Object|null} item
+ * @param {Array|undefined} selectedVariations
+ * @param {Array|undefined} selectedExtras
+ * @returns {Array<string>}
+ */
+export function mergeAllergens(item, selectedVariations, selectedExtras) {
+    if (selectedVariations === undefined || selectedVariations === null) {
+        return sortAllergenCodesUnique(extractAllergenCodes(item));
+    }
+    const vars = Array.isArray(selectedVariations) ? selectedVariations : [];
+    const extras = Array.isArray(selectedExtras) ? selectedExtras : [];
+    const out = [];
+    out.push(...extractAllergenCodes(item));
+    vars.forEach((v) => {
+        out.push(...extractAllergenCodes(v && typeof v === 'object' ? v : {}));
+    });
+    extras.forEach((e) => {
+        out.push(...extractAllergenCodes(e && typeof e === 'object' ? e : {}));
+    });
+    return sortAllergenCodesUnique(out);
+}
+
+/**
+ * Résout un objet variation catalogue par id (recherche dans `item.variations`).
+ */
+export function findVariationObjectById(item, variationId) {
+    if (item == null || variationId == null || !item.variations || typeof item.variations !== 'object') {
+        return null;
+    }
+    const vid = parseInt(String(variationId), 10);
+    if (Number.isNaN(vid)) return null;
+    const keys = Object.keys(item.variations);
+    for (let i = 0; i < keys.length; i++) {
+        const list = item.variations[keys[i]];
+        if (!Array.isArray(list)) continue;
+        const found = list.find((v) => v && v.id === vid);
+        if (found) return found;
+    }
+    return null;
+}
+
+/**
+ * Résout un extra catalogue par id.
+ */
+export function findExtraObjectById(item, extraId) {
+    if (item == null || extraId == null || !Array.isArray(item.extras)) return null;
+    const eid = parseInt(String(extraId), 10);
+    if (Number.isNaN(eid)) return null;
+    return item.extras.find((e) => e && e.id === eid) || null;
+}
+
+const UNDER_10_VAR_EUROS = 10;
+
+function getVariationPriceEuros(variation) {
+    if (variation == null) return null;
+    if (typeof variation.base_price_cents === 'number') {
+        return variation.base_price_cents / 100;
+    }
+    if (typeof variation.convert_price !== 'undefined' && variation.convert_price !== null) {
+        const p = parseFloat(variation.convert_price);
+        if (!Number.isNaN(p)) return p;
+    }
+    if (typeof variation.price !== 'undefined' && variation.price !== null) {
+        const p = parseFloat(variation.price);
+        if (!Number.isNaN(p)) return p;
+    }
+    return null;
+}
+
+/**
+ * Filtres catalogue sur une variation / extra (wizard). Tolérant si les
+ * drapeaux API manquent (undefined) — ne bloque que lorsque le champ contredit
+ * explicitement le filtre actif.
+ *
+ * @param {Object|null|undefined} variation
+ * @param {Array<string>} activeFilters
+ * @returns {boolean}
+ */
+export function isVariationAllowedByFilters(variation, activeFilters = []) {
+    if (!Array.isArray(activeFilters) || activeFilters.length === 0) return true;
+    if (!variation) return true;
+    const filters = activeFilters.filter((f) => KIOSK_FILTERS.includes(f));
+    if (filters.length === 0) return true;
+
+    for (const filterId of filters) {
+        if (filterId === 'vegetarian' && variation.is_vegetarian === false) return false;
+        if (filterId === 'halal' && variation.is_halal === false) return false;
+        if (filterId === 'pork_free' && variation.is_pork_free === false) return false;
+        if (filterId === 'spicy' && variation.is_spicy === false) return false;
+        if (filterId === 'gluten_free') {
+            if (variation.is_gluten_free === false) return false;
+            const allergens = Array.isArray(variation.allergens)
+                ? variation.allergens.map((a) =>
+                    (typeof a === 'string' ? a : a?.code || a?.name || '').toLowerCase(),
+                )
+                : [];
+            if (allergens.some((a) => a.includes('gluten'))) return false;
+        }
+        if (filterId === 'under_10') {
+            const p = getVariationPriceEuros(variation);
+            if (p !== null && p >= UNDER_10_VAR_EUROS) return false;
+        }
+    }
+    return true;
 }
 
 export default {
@@ -128,4 +289,9 @@ export default {
     applyKioskFilters,
     getAllergenCollision,
     extractAllergenCodes,
+    mergeAllergens,
+    KIOSK_ALLERGEN_CANONICAL_ORDER,
+    findVariationObjectById,
+    findExtraObjectById,
+    isVariationAllowedByFilters,
 };

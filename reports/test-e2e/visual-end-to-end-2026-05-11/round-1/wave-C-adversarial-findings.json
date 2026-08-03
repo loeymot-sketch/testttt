@@ -1,0 +1,113 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "C-ADV-001",
+      "state_artifact": "test-e2e-wave-C-edge/07-kiosk-payment-failure.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Tier 1 C-002 UPGRADED in framing. The PNG at state 07 does NOT merely show an absence of error surface — it shows the affirmative message 'Paiement accepté' (verified via grep on 07-kiosk-payment-failure.dom.html: 'Paiement accepté' literal text present) while 07-kiosk-payment-failure.network.json contains POST /api/frontend/order/1278/payment-confirm → 422 (verified). The confirmBackendPayment loop in KioskPaymentComponent.vue:757-779 retries up to 3× with 700ms + 1400ms backoff; the snap captured ONLY 1 retry attempt fired (network.json: 1 payment-confirm entry, ts=1778473208166). So the screenshot is mid-retry-window, not post-final-failure. During this 2-3s window the customer sees TPE-overlay with title 'Paiement accepté' (KioskPaymentComponent.vue:563 sets tpeMessage to kiosk.pay_screen.tpe_accepted) and a spinner — a misleading SUCCESS state while the backend rejected the payment. The catch at KioskPaymentComponent.vue:433-446 would only fire after all 3 retries exhaust (~2.1s post-snap). This is worse than silent_error: the UI affirmatively LIES during the retry window.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:563 + ~755-779. After 'Paiement accepté' is set, the confirmBackendPayment retry loop should surface an INTERMEDIATE warning state on first failed attempt (e.g. tpeMessage = $t('kiosk.pay_screen.confirming_with_server') or a yellow 'Vérification en cours…' substate) rather than leaving 'Paiement accepté' on screen while the server-confirm is mid-retry. Mirror the kiosk auth-retry bridge pattern from round-5 fix E-NEW-001. Critical: a customer who taps Annuler mid-window after seeing 'Paiement accepté' may dispute a charge that did not actually post.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-002",
+      "state_artifact": "test-e2e-wave-C-edge/08-kiosk-i18n-EN-deep.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Tier 1 finding C-015 (i18n_leak P3) claims 'kiosk EN-locale deep scan: lang_en_visible=false url=http://127.0.0.1:8000/kiosk/idle, i18n_scan={leak_count:0}' as positive evidence of i18n hygiene. Inspection of the actual 08-kiosk-i18n-EN-deep.png + .dom.html reveals: (a) the PNG was captured on /kiosk/categories WITH the KEFTA wizard modal open showing 'QUELLE SAUCE ?', 'Annuler l'article', 'Précédent', 'Suivant' — entirely in French; (b) the DOM html lang attribute is 'fr', NOT 'en' (verified via regex on dom.html); (c) state 08 was supposed to validate the EN locale path but the spec never successfully switched to EN — observation 'lang_en_visible=false url=/kiosk/idle' is the spec admitting the EN toggle wasn't found. Therefore C-015's leak_count=0 is VACUOUS — there were no EN labels to scan because the locale was never entered. Tier 1 mislabeled this as positive evidence when it is actually MISSING evidence. This is exactly what REVIEWER_PROTOCOL.md adversarial mindset is meant to catch.",
+      "fix_hint": "Spec-side: tests/e2e/test-e2e-visual-e2e-2026-05-11-wave-C-edge.spec.js state 08 must first verify EN toggle is reachable (cross-link Wave A A-001 — EN selector exists in mobile-app design but appears unwired at /kiosk/idle). If EN is intentionally not exposed at idle in V1, state 08 should be re-scoped to test the locale that IS exposed (FR + AR + DE/BN). Tier 1 should DOWNGRADE C-015 from 'positive evidence P3' to 'open audit_integrity P1' and recapture in round-2.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-003",
+      "state_artifact": "test-e2e-wave-C-edge/06-kiosk-slow-network.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "SECONDARY confirmation of C-001 (kiosk rapid double-click double-add). The PNG at state 06 (kiosk-slow-network, intended to validate spinner during slow /quote) also shows the kiosk cart with 'Glace x3 €11,40' line item and footer '3 articles' AT THE END OF THE TEST RUN. This is the same defect class as C-001 in a DIFFERENT state — the double-add bug from state 05 PERSISTED into state 06 because the test sequence drives Glace tile clicks and the cart was never reset. The defect is reproducible. Additionally: the cart shows 'Sur place / À emporter' selector active with '3 articles' — confirming the cart bottom-sheet rendering is correct even when item count is wrong. Cross-evidence: kiosk-categories-cart-indicator DOM in state 05 confirmed cart_after=3 from a fresh start of cart_before=1 + 2 clicks = +2 (expected +1).",
+      "fix_hint": "Same as C-001 — resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue:560 openProduct(). The current finally{} at line 589-591 clears loadingItemId AFTER addItem() returns, but addItem is a synchronous Vuex dispatch — the 2nd click handler resolves BEFORE the cart UI updates the indicator. Strengthen with: (a) a 250ms debounce timer on top of loadingItemId, OR (b) keep loadingItemId set until next animation frame post-cart-mutation (requestAnimationFrame inside finally{}). REFUND-CLASS DEFECT — a customer who accidentally taps twice on a €3.80 item pays €11.40 instead of €3.80.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-004",
+      "state_artifact": "test-e2e-wave-C-edge/06-kiosk-slow-network.png",
+      "category": "unexpected_4xx",
+      "severity": "P2",
+      "evidence": "Kiosk cart screen unconditionally renders the 'Sur place' (dine-in) option alongside 'À emporter'. KioskCartComponent.vue lines 89-99 render the dine-in radio button with NO feature-flag guard (no v-if checking pos.dine_in_enabled / pos_dine_in_enabled). However app/Http/Requests/OrderRequest.php:187-196 (verified via grep) rejects kiosk orders with order_type=KIOSK (dine-in) when Settings::group('pos')->get('pos_dine_in_enabled', false) is false — returning 422. The POS surface DOES gate the dine-in selector via the same flag (verified at resources/js/components/admin/pos/PosComponent.vue:336+456). UNVERIFIED IN-RUN: this round did NOT drive a Sur place → submit flow to confirm the 422 path; the finding is by code-inspection only. If the flag is off in V1 (default per app/Http/Resources/SettingResource.php:124 default=0 and KioskIdleScreenComponent.vue:220 fallback ?? 0), a customer who taps 'Sur place' will see their order silently rejected at submit-time. Round-2 should drive the Sur place → confirm flow to upgrade or close.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskCartComponent.vue lines 89-99: wrap the dine-in radio button with v-if='dineInEnabled' computed (mirror the KioskIdleScreenComponent.vue:220 pattern that already reads pos_dine_in_enabled from $store.state.frontendSetting). Without this, kiosk + POS expose inconsistent dine-in availability — the kind of cross-surface inconsistency the adversarial layer is designed to catch.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-005",
+      "state_artifact": "test-e2e-wave-C-edge/09-pos-cart-empty.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cross-surface empty-state design INCONSISTENCY. Tier 1 (C-010 + C-011) graded both empty states as 'positive evidence P3' individually. Side-by-side comparison reveals: KIOSK empty cart (state 01) renders a centered cart-emoji illustration, big black 'Votre panier est vide' headline (≈48px bold), helper sub-copy 'Parcourez le menu et ajoutez des articles !', AND a full-width orange CTA 'Ajouter des articles'. POS empty cart (state 09) renders only a small inline text '🍽️ Aucun article. Sélectionnez un produit dans la grille.' (~57 chars) tucked in the right sidebar under 'Commande en cours' — NO illustration, NO large headline, NO CTA. Both pass REVIEWER_PROTOCOL.md cat-5 individually (CTA: kiosk button vs POS contextual grid), but the design coherence is broken: two surfaces of the same product present 'empty cart' in radically different visual languages. Owner has historically preferred consistent flat/minimal design across FoodKing UIs (per project memory feedback_design_flat_organized).",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue (or sibling cart-shell component) — bring POS empty state up to kiosk parity: small inline emoji + bold copy + secondary text. Not blocking V1, but documents design-system gap. Could be assigned to a future design-consistency pass.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-006",
+      "state_artifact": "test-e2e-wave-C-edge/11-pos-payment-cancel.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Visual confirmation of Tier 1 C-013 (focus-return missing on POS payment cancel). PNG shows the POS sidebar after Annuler — 'Boisson Seule 2,00€' line preserved, 'Commande 2,00€' button visible, no modal active. observations: cancel_state={modal_active:false, cart_lines:1, focused_tag:'BODY'} — focus dropped to body instead of returning to data-testid='pos-v5-pay'. P3 a11y nit per WAI-ARIA dialog pattern. CAVEAT — confirmation only, no new severity escalation. The state 11 PNG also incidentally shows a stale 'Article ajouté au panier' toast top-right (from the earlier add-to-cart action) — not a defect, just toast staleness, not flagged.",
+      "fix_hint": "Confirmed — same fix path as Tier 1 C-013. No new action required.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-007",
+      "state_artifact": "test-e2e-wave-C-edge/05-kiosk-rapid-double-click.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "PRIMARY VISUAL VERIFICATION of Tier 1 C-001. Direct read of 05-kiosk-rapid-double-click.png shows: (a) cart bottom-sheet rendering with Glace thumbnail + '€11,40' price + qty=3 stepper visible; (b) footer '3 articles' badge; (c) right-side Payer button with '€11,40'. Tier 1 observation cart_before=1 cart_after=3 confirmed VISUALLY in the screenshot — two clicks added two items (expected +1). No additional spec re-run was needed; the screenshot is unambiguous. CONFIRMED — Tier 1 C-001 stands as documented. Reason for separate ADV finding: makes the visual evidence explicit for round-2 fix verification.",
+      "fix_hint": "Same as C-001. Root cause verified in KioskCategoriesComponent.vue:560-591: loadingItemId guard at line 562, set at line 563, awaited details at line 574, addItem at line 582 is sync but the 2nd click handler may execute AFTER finally{} (line 589-591) clears loadingItemId but BEFORE the cart-indicator DOM updates. Apply debounce or persist guard until next animation frame.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-ADV-008",
+      "state_artifact": "test-e2e-wave-C-edge/10-pos-wizard-escape.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "VISUAL VERIFICATION of Tier 1 C-003. PNG shows the POS Vanilla-JS wizard modal CLEARLY VISIBLE after ESC keystroke: 'Boisson Seule €2.00' header, qty stepper '1', special-instruction textarea, 'APERÇU TICKET / BOISSON SEULE' preview, '× Annuler' button (mouse-only), 'Ajouter au panier' CTA. Observations: post_esc={modal_present:true, modal_has_active_class:true, modal_visible:false, focused_tag:'DIV'} — the 'modal_visible:false' is misleading (the visibility check may have used getBoundingClientRect on a wrapper) but the PNG conclusively shows the modal IS visible to the user. CONFIRMED — keyboard-only users (and a11y compliance) cannot dismiss the wizard. Frozen-zone-deferred (public/js/pos-wizard.js per CLAUDE.md §7).",
+      "fix_hint": "Same as Tier 1 C-003. Needs LOCK_<id>.md per CLAUDE.md §10 to patch public/js/pos-wizard.js OR add Escape listener in non-frozen resources/js/components/admin/pos/ItemComponent.vue mount. Tag frozen_zone_deferred=true in round-2 report.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 3,
+    "P1": 2,
+    "P2": 2,
+    "P3": 1,
+    "open_P0": 3,
+    "open_P1": 2,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001": "FAIL",
+    "C-002": "FAIL",
+    "C-003": "FAIL",
+    "C-015": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Tier 2 adversarial Wave C — 8 NEW/SHARPENED findings on top of Tier 1's 15. VERIFICATIONS: (a) C-001 kiosk double-add CONFIRMED visually in state 05 PNG (Glace x3 €11,40, '3 articles' footer) + secondary evidence in state 06 PNG → C-ADV-007 + C-ADV-003. (b) C-002 kiosk silent_error CONFIRMED + UPGRADED in framing — the UI doesn't merely fail to show an error, it AFFIRMATIVELY DISPLAYS 'Paiement accepté' mid-retry while payment-confirm returned 422 (1 retry captured, 2 more would have fired before catch landed). This is misleading-success, not just silent-error → C-ADV-001. (c) C-003 POS ESC-doesnt-dismiss CONFIRMED visually → C-ADV-008. NEW FINDINGS: (d) Tier 1 C-015 i18n EN deep scan is VACUOUS positive evidence — the EN locale was never entered, dom.html lang=fr, PNG shows FR Kefta wizard → C-ADV-002 (audit_integrity P1, exactly what adversarial layer exists to catch). (e) Kiosk cart unconditionally renders 'Sur place' dine-in option without pos_dine_in_enabled flag check, while POS gates it correctly — cross-surface inconsistency that could produce a 422 at order submit (P2, unverified-in-run, round-2 should drive submit-flow) → C-ADV-004. (f) Cross-surface empty-state design inconsistency — kiosk has illustration+CTA, POS has tiny inline text only → C-ADV-005 (P2 design coherence). (g) C-013 focus-return → C-ADV-006 visual confirmation only. ESCALATION RECOMMENDATION: C-ADV-001 (misleading 'Paiement accepté' during retry) AND C-ADV-003/C-ADV-007 (kiosk double-add) are both refund-class — a customer can either (i) think they paid when they didn't or (ii) pay 3× the intended amount. Combined with the rush-hour audit's B-001 FCM-422 fix, kiosk failure-path UX is a SYSTEMIC pattern that warrants a dedicated 'kiosk failure-mode hardening' sub-plan, NOT just per-finding patches. Verdict RED on open_P0=3."
+}

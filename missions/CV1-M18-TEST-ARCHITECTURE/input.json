@@ -1,0 +1,30 @@
+{
+  "task_id": "CV1-M18-TEST-ARCHITECTURE",
+  "mission_id": "M-18",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Produire la grille de couverture tests Caisse V1 (POS/Kiosk/KDS/Centrale/Fiscal/Ops) — PHPUnit Feature, Vitest, Playwright, charge — avec cibles minimales, mapping vers fichiers tests existants/à créer, et plan de campagne. Aucun code produit ni nouveau test, juste la grille.",
+  "instruction": "Crée la matrice + plan campagne. Aucun code. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "reports/qa/CAISSE_V1_TEST_COVERAGE_MATRIX_2026-04-25.md",
+    "reports/qa/CAISSE_V1_TEST_CAMPAIGN_PLAN_2026-04-25.md",
+    "docs/qa/TEST_TYPES_AND_TARGETS_CAISSE_V1.md"
+  ],
+  "off_limits": ["app/**", "resources/**", "routes/**", "database/**", "tests/**", "scripts/**", "config/**", ".cursor/**", "AGENTS.md"],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [],
+  "self_audit_checklist": [
+    "Matrice couvre 6 surfaces (POS, Kiosk, KDS, OSS, Backend, Ops)",
+    "Pour chaque surface : Feature/Vitest/Playwright/charge — tests existants listés (ls tests/) + à créer",
+    "Cibles couverture : POS ≥ 80%, KDS ≥ 80%, Kiosk ≥ 70% (cf super master plan)",
+    "Plan campagne : ordre, durée, owner, dépendances missions M-XX",
+    "Aucun fichier produit modifié, aucun nouveau test créé"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 test coverage matrix campaign",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_test_arch_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-tests"
+}

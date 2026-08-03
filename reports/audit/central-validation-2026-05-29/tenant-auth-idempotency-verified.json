@@ -1,0 +1,63 @@
+{
+  "system": "Multi-tenant + Auth + Idempotency (foundation)",
+  "head": "525946ec155d6665c8e38ef9b58b20f37f664623",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verified_at": "2026-05-29",
+  "confirmed_count": 3,
+  "dropped_count": 1,
+  "verified_findings": [
+    {
+      "severity": "P1",
+      "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+      "line": "261 (discriminator) + 283 (owner-check bypass); route routes/api.php:1385",
+      "title": "Loyalty redeem IDOR: tokenCan('kiosk:order') as a trusted-kiosk discriminator lets ANY guest-signup customer debit another user's loyalty points (unfixed twin of the channels.php fix)",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. LoyaltyController.php:261 `$isKiosk = $caller && $caller->tokenCan('kiosk:order');`; :283 owner-check `if (!$isKiosk && !$isStaff && $caller && $caller->id !== $user->id) return 403` is gated behind !$isKiosk, so it is SKIPPED when $isKiosk is true; :277 victim row resolved purely from attacker-supplied `code` via User::where('loyalty_code',...)->lockForUpdate(); :305-307 DB::table('users')->where('id',$user->id)->decrement('loyalty_points', N) on the VICTIM. GuestSignupController.php:146 mints `$user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))` to an anonymous CUSTOMER seeded branch_id=0 (:121) — i.e. ordinary public guests carry exactly the ['kiosk:order'] ability that satisfies tokenCan at :261. routes/api.php:1379-1386 places /loyalty/redeem under middleware(['auth:sanctum'])+'idempotency' ONLY — no abilities:/name guard. PRECEDENT CONFIRMED: routes/channels.php:27-50 explicitly ABANDONED tokenCan('kiosk:order') for an un-spoofable token-NAME check (currentAccessToken()->name==='kiosk-token', minted only by KioskMachineLoginController.php:98-99) precisely because guest/wildcard tokens all satisfy that ability; redeem() was never given the same fix. TEST GAP CONFIRMED: tests/Feature/LoyaltyApiTest.php:93-113 (test_loyalty_redeem) uses actingAs($user,'sanctum') (no real PersonalAccessToken; actor IS the code owner RED55) so it exercises only the owner-equality branch; tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php:81-86 + KioskLoyaltyLedgerAtomicTest.php:82 use Sanctum::actingAs($kioskUser,['kiosk:order']) on a FOREIGN $loyaltyCustomer code and assert SUCCESS — codifying the over-trust; tests/Feature/Pos/PosLoyaltyRedeemTest.php covers a DIFFERENT endpoint (POS /api/admin/pos-order/{order}/redeem-loyalty). NO test asserts a guest ['kiosk:order'] token is REFUSED a foreign code on the frontend redeem route.",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "Stop using the kiosk:order ability as a proxy for 'trusted kiosk machine'. Mirror routes/channels.php:44-49: `$isKioskMachine = $caller?->currentAccessToken()?->name === 'kiosk-token' && KioskMachine::withoutGlobalScope(BranchScope::class)->where('user_id',$caller->id)->exists();` and use THAT (not tokenCan) to gate the owner-check bypass at line 283. A plain guest-signup customer (token name 'auth_token') then falls through to the owner-check. Add a Feature test: real guest token createToken('auth_token',['kiosk:order']) on a FOREIGN loyalty_code → assert 403 + zero decrement. NOT a frozen-zone file.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P1",
+      "file": "app/Services/OrderService.php",
+      "line": "2253-2302 (changePaymentStatus staff path — no FiscalSequenceService::next()); cf. PaymentService.php:321-322",
+      "title": "changePaymentStatus PENDING_COUNTER->PAID seals an order WITHOUT allocating fiscal_sequence_no, while the parallel confirmCounterPayment surface does — the sale escapes Z-report aggregation (NF525 gap-between-surfaces)",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. Anchored on PENDING_COUNTER (not hypothetical UNPAID): PaymentService::confirmCounterPayment.php:321-322 allocates `next()` only `if ($locked->fiscal_sequence_no === null)` — that block's existence proves PENDING_COUNTER counter-deferred orders legitimately carry fiscal_sequence_no=null BY DESIGN. PaymentStateMachine.php:13-16 explicitly allows PENDING_COUNTER->PAID (and :10-12 UNPAID->PAID). OrderService::changePaymentStatus staff path (DB::transaction 2253-2302) flips $order->payment_status (2259) + save (2260) with ZERO FiscalSequenceService::next() calls in the whole method (grep of 2153-2307 shows next() only at unrelated store-flow lines 1028-1029) — it merely READS $order->fiscal_sequence_no (still null) into the audit payload at 2290. ZReportService.php:340 aggregates only ->whereNotNull('fiscal_sequence_no'); :592-608 surfaces null-seq orders as a WARNING only ('kiosk-paid orders missing fiscal_sequence_no — retry cron ... may still be in flight'), not a backfill. RetryFiscalAllocCommand.php:67-69 backfills only whereNull(fiscal_sequence_no) AND whereNotNull(fiscal_alloc_error_at) — changePaymentStatus never sets fiscal_alloc_error_at, so the order is never sealed. Reachable on the actual single-box: PaymentStatusRequest.php:19 gates the route to Admin/Branch Manager/POS Operator; routes/api.php:952/983/996 expose change-payment-status/{order} on POS/Online/Table controllers, all calling changePaymentStatus($order,$request) (PosOrderController.php:208, OnlineOrderController.php:106, TableOrderController.php:75). A PENDING_COUNTER order flipped to PAID via this admin route → PAID with fiscal_sequence_no=NULL → silently excluded from Z totals (revenue understatement).",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "In changePaymentStatus, when transitioning to PAID and $order->fiscal_sequence_no === null, allocate via FiscalSequenceService::next() inside the existing DB::transaction (2253-2302) BEFORE save — mirroring PaymentService:321-322 — OR route all PAID transitions through confirmCounterPayment so sequence allocation is centralized (dedup). Add a test asserting any order that reaches PAID has a non-null fiscal_sequence_no. Fix lands in OrderService/PaymentStateMachine (NOT in the frozen FiscalSequenceService), so frozen=false.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "routes/channels.php",
+      "line": "61 (branch.{branchId} staff fallback `return (int)$user->branch_id === (int)$branchId;`)",
+      "title": "Guest (branch_id=0) can authorize the branch.0 broadcast channel via the staff fallback (defense-in-depth gap, V1-inert)",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD (note: raw finding cited lines 56-66 but routes/channels.php is 62 lines; the relevant staff fallback is line 61). channels.php:41-62 — the final clause `return (int) $user->branch_id === (int) $branchId;` has no role/guard for the branchId=0 case, so a guest (branch_id=0 per GuestSignupController.php:121, role CUSTOMER, token name 'auth_token' != 'kiosk-token') authorizes private-branch.0. VERIFIED LOW IMPACT in V1: real operational events fan out on private-branch.{realBranchId} (branch 1 for the single box) — KdsOrderRecalled.php:14 and OrderTableChanged.php:23 both broadcast on private-branch.{branchId}, never branch.0 — so a branch.0 subscriber receives nothing operationally sensitive on the V1 single box.",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "Defense-in-depth for V2 multi-tenant: add `if ((int)$branchId === 0) return false;` (or require a non-guest role) before the staff fallback at line 61 so a guest can never bind branch.0. Cosmetic/backlog for V1 since no events broadcast on branch.0. NOT a frozen-zone file.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/OrderService.php",
+      "line": "2167-2175 (changePaymentStatus $auth=true self-service branch)",
+      "title": "Customer self-service payment branch ($auth=true) mutates payment_status with no state-machine/audit/event — UNREACHABLE dead code (no caller passes $auth=true)",
+      "confirmed": false,
+      "grep_evidence": "VERIFIED at HEAD that the asymmetric branch EXISTS: OrderService.php:2167-2175 — bare `$locked->payment_status = $request->payment_status; $locked->save();` with no PaymentStateMachine::assertCanTransition, no AuditLogService::write, no OrderPaymentStatusChanged dispatch, versus the staff path's assertCanTransition (2245), AuditLog (2279), event (2297). HOWEVER the raw finding's own reproduction ('a customer-facing route invoking this with $auth=true') FAILED verification: an exhaustive grep of app/ and routes/ for changePaymentStatus shows ALL THREE call-sites pass only two args — PosOrderController.php:208, OnlineOrderController.php:106, TableOrderController.php:75 all call changePaymentStatus($order, $request); the $auth parameter (default false in the signature at :2153) is NEVER passed true anywhere. The branch is unreachable dead code with no current security impact.",
+      "is_new": false,
+      "frozen": false,
+      "recommendation": "Either delete the unreachable $auth=true branch (2158-2179) or, if a future customer self-service pay route is added, route it through the same PaymentStateMachine::assertCanTransition + AuditLogService::write + OrderPaymentStatusChanged dispatch (extract a shared private sealer). Not exploitable today. NOT frozen.",
+      "drop_reason": "Recast from P2 to P3 and confirmed=false: the finding's own reproduction route does not exist — no caller in app/ or routes/ passes $auth=true to changePaymentStatus, so the asymmetric branch is unreachable dead code with no security impact (not the exploitable P2 the raw finding posited). Kept as a P3 code-hygiene note rather than surfaced as a live defect."
+    }
+  ],
+  "dedup_notes": [
+    "Architect-lens P1 (LoyaltyController.php:261/283) and security-lens P1 (LoyaltyController.php:258-284) are the SAME bug, same file, same lines — merged into one P1 finding.",
+    "is_new honesty on the Loyalty IDOR: the GENERAL discriminator weakness (tokenCan('kiosk:order') nullified by '*' wildcard staff tokens, incl. LoyaltyController:258) was previously noted in reports/audit/goal-systems-2026-05-17/layers/L4-auth-authz-multitenant.md as a STAFF-PAT-theft concern. The NEW, sharper angle confirmed here: an ORDINARY public guest-signup customer is minted exactly ['kiosk:order'] (not wildcard) and that normal guest token bypasses the redeem owner-check to debit ANOTHER customer's loyalty points (cross-account theft/griefing) — plus the explicit framing of channels.php:27-50 as the applied precedent fix. Marked is_new=true on that basis."
+  ],
+  "regression_check_recent_heals": "The recent heals (Encaisser keypad fresh-entry PosCounterCollectModal, MonitorOutboxStaleness H3, PersistOrderPaidAtCounterToOutbox H4) did NOT regress the central invariants examined here: BranchScope User-recursion guard intact; IdempotencyKeyMiddleware (branch_id,user_id,hash(key)) scoping + file-driver Cache::add() atomicity intact; webhook_events firstOrCreate dedup intact; counter-collect IDOR guard (assertCounterOrderVisible + lockForUpdate + PaymentAlreadyCollectedException race-loser 409) intact; channels.php kiosk-token-name discriminator intact. confirmCounterPayment correctly allocates fiscal_sequence_no when null (PaymentService:321-322) — it is the parallel changePaymentStatus surface that diverges (P1 #2), not the healed path."
+}

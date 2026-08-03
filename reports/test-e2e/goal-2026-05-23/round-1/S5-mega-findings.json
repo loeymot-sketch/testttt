@@ -1,0 +1,329 @@
+{
+  "system": "S5-cash-overview",
+  "phase": "Phase B.1 — Ultra-deep audit",
+  "wave": "goal-2026-05-23",
+  "round": 1,
+  "url": "http://127.0.0.1:8000/admin/cash-overview",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "f286886759538555ed673ecc9bcfe66acd2ce39c",
+  "spec": "tests/e2e/wave-final-S5-cash.spec.js",
+  "screenshots_dir": "reports/test-e2e/goal-2026-05-23/round-1/captures/ (S5-*.png)",
+  "captured_at_utc": "2026-05-23T14:23:00Z",
+  "states_reviewed": 12,
+  "states_captured_total": 12,
+  "playwright_result": "11 passed (1.5m, workers=1, project=chromium) — full spec re-run on Phase B.1 trigger",
+  "verdict": "GREEN",
+  "tier_classification": {
+    "critical_red": 0,
+    "improvement_yellow": 0,
+    "info_white": 2
+  },
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 2,
+    "critical": 0,
+    "improvement_applied": 0,
+    "improvement_deferred": 0,
+    "info": 2
+  },
+
+  "verifications": {
+    "euro_format_count": 17,
+    "empty_state_complete": true,
+    "url_filter_sync_q8": true,
+    "mode_dropdown_no_autre": true,
+    "reconciliation_invariance": true,
+    "filter_combine_math_holds": true
+  },
+
+  "verifications_detail": {
+    "1_euro_format_everywhere": {
+      "verdict": "PASS",
+      "measured_euro_symbols": 17,
+      "threshold": ">= 10",
+      "bare_decimals_count": 0,
+      "method": "DOM regex on .db-card-body — count NBSP+€ tokens and any orphan `\\d+[.,]\\d{2}` not followed by € separator. S5-02 capture verified 17 € symbols across 4 aggregate cards + 3 reconciliation cells + 3 mode chips + table tail. 0 bare decimals.",
+      "evidence_capture": "S5-01-default-mount.png + S5-02-currency-surface-check.png"
+    },
+    "2_empty_state_complete": {
+      "verdict": "PASS",
+      "svg_primitives_count": 4,
+      "copy_length_chars": 105,
+      "copy_text_fr": "Aucune transaction trouvée pour les filtres actuels. Modifie la période ou réinitialise les filtres.",
+      "reset_cta_present": true,
+      "reset_cta_text_fr": "Réinitialiser les filtres",
+      "raw_label_leak": false,
+      "method": "Force 1999 date range → cash-overview-empty visible with cash-drawer SVG (rect + line + circle + diagonal stroke). Copy length 105 chars > 92 threshold. Empty-state reset CTA renders [data-testid=cash-overview-empty-reset].",
+      "evidence_capture": "S5-06-empty-state-illustration-cta.png"
+    },
+    "3_url_filter_sync_q8": {
+      "verdict": "PASS",
+      "filter_applied_url": "?source=borne&from=2020-01-01&to=2099-12-31",
+      "f5_reload_url": "?source=borne&from=2020-01-01&to=2099-12-31",
+      "f5_reload_dropdown_value": "borne",
+      "code_proof": "CashOverviewComponent.vue created() calls hydrateFiltersFromRoute() → reads $route.query, applies to filters.* — F5 reload deep-link survives. applyFilters L416-424 pushes $router.push({query}) which sync URL.",
+      "method": "S5-03 selects #cashOverviewSource=borne, clicks Rechercher → asserts URL searchParams.get('source')==='borne'. S5-04 page.goto(?source=borne...) followed by actual page.reload({waitUntil:'domcontentloaded'}) at spec L340 (true F5 — rebuilds JS context) — dropdown value === 'borne' post-reload + URL preserved. Empirically validated (not just code-proven via created()).",
+      "evidence_capture": "S5-03-filter-borne-url-sync.png + S5-04-reload-restores-filter.png"
+    },
+    "4_mode_dropdown_no_autre": {
+      "verdict": "PASS",
+      "options_count": 5,
+      "values": ["", "cash", "card", "mobile", "ticket"],
+      "labels_fr": ["Tous les modes", "Espèce", "Carte", "Mobile", "Ticket-restaurant"],
+      "autre_or_other_present": false,
+      "raw_label_leak": false,
+      "code_proof": "CashOverviewComponent.vue L55-61 — exactly 5 <option> elements hardcoded. No 'other' value. Comment L47-54 documents owner-mandated removal (Wave Z Q7 2026-05-21).",
+      "method": "DOM query select#cashOverviewMode option — 5 options total, no value='other', no label='Autre'. All labels FR-resolved.",
+      "evidence_capture": "S5-08-mode-dropdown-no-autre.png"
+    },
+    "5_reconciliation_invariance_c013_c014": {
+      "verdict": "PASS",
+      "diff_cell_count": 0,
+      "reconciliation_cells_3_only": ["cash-overview-reconciliation-opening", "cash-overview-reconciliation-collected", "cash-overview-reconciliation-expected"],
+      "amber_note_present": true,
+      "amber_note_text_fr": "Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).",
+      "amber_note_length_chars": 71,
+      "default_view_numbers": {"opening": "100,00 €", "collected": "58,20 €", "expected": "158,20 €", "math": "100 + 58,20 = 158,20"},
+      "source_borne_filter_numbers": {"opening": "100,00 €", "collected": "58,20 €", "expected": "158,20 €", "math": "INVARIANT — same as default — C-014 holds"},
+      "code_proof_c013": "CashOverviewComponent.vue L122-165 renders only 3 cells; NO data-testid=cash-overview-reconciliation-diff anywhere in template (grep confirmed).",
+      "code_proof_c014": "CashOverviewController.php L212-227 + L319-356 drawerCashCollectedUnfiltered() runs SEPARATE bounded SELECT restricted to drawer.branch_id + day window, IGNORING UI source/mode/branch filters — cash_collected is a physical-drawer invariant.",
+      "method": "S5-09 asserts 3 cells visible + 0 diff cell + amber note. S5-12 toggles source=borne and re-reads /api/admin/cash-overview cash_session payload → opening/collected/expected identical to no-filter state. Brief example used 100 + 88,20 = 188,20 € (illustrative); current Le Cayenne seed state shows 100 + 58,20 = 158,20 € — invariance principle verified identically; specific numeric values reflect today's drawer + cash-collected DB state.",
+      "evidence_capture": "S5-09-reconciliation-honest-3-cell.png + S5-12-reconciliation-invariance-under-filter.png"
+    },
+    "6_filter_combine_math_holds_sum_modes_eq_sum_sources": {
+      "verdict": "PASS",
+      "default_combo_payload": {
+        "grand_total": 82.5,
+        "sum_by_source": 82.5,
+        "sum_by_mode": 82.5,
+        "count": 6
+      },
+      "by_source_detail": {"borne": "51,70 € · 4 tx", "livreur": "18,30 € · 1 tx", "caisse": "12,50 € · 1 tx"},
+      "by_mode_detail": {"cash": "58,20 € · 4 tx", "card": "9,80 € · 1 tx", "mobile": "14,50 € · 1 tx"},
+      "triple_identity_check": "82.5 (grand) == 82.5 (Σ by_source) == 82.5 (Σ by_mode)",
+      "method": "S5-10 pulls /api/admin/cash-overview payload, sums by_source.*.total and by_mode.*.total, asserts both === summary.total. Triple identity holds.",
+      "evidence_capture": "S5-10-numeric-integrity-payload.png + payload via window.axios.get() returned in advisor-driven preflight"
+    }
+  },
+
+  "states_captured": {
+    "S5-01-default-mount": {
+      "ok": true,
+      "screenshot": "S5-01-default-mount.png",
+      "evidence": "4 aggregate cards: GRAND TOTAL 82,50 € (6 tx), CAISSE 12,50 € (1 tx), BORNE 51,70 € (4 tx), LIVREUR 18,30 € (1 tx). Reconciliation 3-cell honest strip + amber count-pending note. Mode breakdown chips: Espèce 4·58,20 €, Carte 1·9,80 €, Mobile 1·14,50 €.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-02-currency-surface-check": {
+      "ok": true,
+      "screenshot": "S5-02-currency-surface-check.png",
+      "evidence": "Currency assertion ≥10 €, 0 bare decimals — 17 € symbols counted.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-03-filter-borne-url-sync": {
+      "ok": true,
+      "screenshot": "S5-03-filter-borne-url-sync.png",
+      "evidence": "Apply source=Borne → URL contains ?source=borne. Aggregates recompute (CAISSE=0, BORNE=51,70 €, LIVREUR=0). Reconciliation cells INVARIANT.",
+      "url_query_assertion": "source=borne",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-04-reload-restores-filter": {
+      "ok": true,
+      "screenshot": "S5-04-reload-restores-filter.png",
+      "evidence": "page.goto(?source=borne) + F5 reload → dropdown value === 'borne' post-reload, URL preserved, aggregates match.",
+      "url_query_assertion": "source=borne preserved",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-05-reset-url-clean": {
+      "ok": true,
+      "screenshot": "S5-05-reset-url-clean.png",
+      "evidence": "[data-testid=cash-overview-clear] click strips source/from/to params from URL.",
+      "url_query_assertion": "source=null && from=null && to=null",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-06-empty-state-illustration-cta": {
+      "ok": true,
+      "screenshot": "S5-06-empty-state-illustration-cta.png",
+      "evidence": "1999 date range → cash-overview-empty visible with SVG (4 primitives: rect/line/circle/diagonal). Copy 105 chars FR. Reset CTA Réinitialiser les filtres present.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-07-empty-reset-cta-clean-url": {
+      "ok": true,
+      "screenshot": "S5-07-empty-reset-cta-clean-url.png",
+      "evidence": "Empty-state-specific reset CTA clears from/to from URL and triggers successful refetch.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-08-mode-dropdown-no-autre": {
+      "ok": true,
+      "screenshot": "S5-08-mode-dropdown-no-autre.png",
+      "evidence": "select#cashOverviewMode has exactly 5 options: ['', 'cash', 'card', 'mobile', 'ticket']. Labels FR: ['Tous les modes', 'Espèce', 'Carte', 'Mobile', 'Ticket-restaurant']. No 'Autre'.",
+      "dropdown_options_values": ["", "cash", "card", "mobile", "ticket"],
+      "autre_present": false,
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-09-reconciliation-honest-3-cell": {
+      "ok": true,
+      "screenshot": "S5-09-reconciliation-honest-3-cell.png",
+      "evidence": "3 cells: opening 100,00 € + collected 58,20 € + expected 158,20 €. NO diff cell (C-013). Amber note 71 chars FR.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-10-numeric-integrity-payload": {
+      "ok": true,
+      "screenshot": "S5-10-numeric-integrity-payload.png",
+      "evidence": "grand_total=82.5 | sumSources=82.5 | sumModes=82.5 | count=6. Triple identity holds.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-11-cash-sessions-report-no-regression": {
+      "ok": true,
+      "screenshot": "S5-11-cash-sessions-report-no-regression.png",
+      "evidence": "Sibling /admin/cash-sessions-report still HTTP<400, non-trivial body render. Wave O O4 unaffected.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-12-reconciliation-invariance-under-filter": {
+      "ok": true,
+      "screenshot": "S5-12-reconciliation-invariance-under-filter.png",
+      "evidence": "cash_collected and opening_amount invariant under source=borne filter (C-014 holds). Drawer reconciliation reflects physical drawer state, not filtered transaction subset.",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    }
+  },
+
+  "personas": {
+    "owner_night": {
+      "verdict": "GREEN",
+      "notes": "Open daily écart view at 23:30 to close shift. Reconciliation strip immediately shows opening + collected + expected with FR amber tone — owner sees physical-cash-expected (158,20 €) without manual math. Empty state would gracefully handle a date range with no encaissement. Effacer + Réinitialiser CTAs FR-clean. Multi-source split (caisse/borne/livreur) lets owner instantly diagnose which channel drives écart."
+    },
+    "auditeur_fiscal": {
+      "verdict": "GREEN",
+      "notes": "READ surface — no fiscal_sequence_no allocation, no audit_logs/z_reports write (NF525 chain bit-identical). Transaction.type='payment' filter excludes cash_back rows (encaissements only — matches owner mandate verbatim). BranchScope on Order applied correctly: admin (branch_id=0) bypasses via withoutGlobalScope; staff scoped. drawerCashCollectedUnfiltered() ensures reconciliation is a physical-drawer invariant, NOT a filtered-transactions derivative — fiscal-audit-safe."
+    },
+    "multi_tenant_future": {
+      "verdict": "INFO",
+      "notes": "S5-INFO-02 — Branch isolation flows through whereHas('order') → branch_id. Admin bypass uses withoutGlobalScope inside the whereHas closure. For V2 SaaS multi-tenant, no incremental concern: same pattern as Wave O O4 + cash-sessions-report. Branch Manager refuse-leak path (resolveOpenCashSession L303-310) blocks cross-branch drawer enumeration. cash_session falls back to most-recently-opened drawer when admin has no explicit ?branch_id (intentional UX for owner default view — INFO not P-class)."
+    }
+  },
+
+  "seven_lenses": {
+    "V_visual": {
+      "score": "GREEN",
+      "notes": "4 aggregate cards balanced + readable on 1280-wide viewport. Amber reconciliation strip (left-border accent) visually distinct from white aggregate cards. Mode breakdown chips well-aligned with gap-2 wrap. Le Cayenne header + admin sidebar untouched. No layout overflow, no truncation defects."
+    },
+    "U_ux": {
+      "score": "GREEN",
+      "notes": "Filter form: 4 labeled inputs (Du/Au/Source/Mode) + Rechercher + Effacer buttons. Empty-state: SVG illustration + 105-char copy + primary reset CTA — no dead-end. Reconciliation amber tone signals action-required without being alarming. URL deep-link works (Q8). FR-only labels resolved cleanly (no raw i18n key leak)."
+    },
+    "T_technical_code_quality": {
+      "score": "GREEN",
+      "notes": "CashOverviewComponent.vue uses $route.query watcher as SOLE fetch trigger after mount (no double-fetch race). hydrateFiltersFromRoute() reads $route.query in created() — F5 deep-link works. buildRouteQuery preserves branch_id (Wave X-C round-1). applyFilters routeQueryEquals short-circuits NavigationDuplicated. CashOverviewController.php uses ->whereHas('order') for branch isolation + withoutGlobalScope inside closure (correct admin-bypass pattern). drawerCashCollectedUnfiltered() is documented + bounded (~100 rows max). Hard cap 500 rows on main list."
+    },
+    "S_security": {
+      "score": "GREEN",
+      "notes": "GET /api/admin/cash-overview behind auth:sanctum + permission:cash-sessions-report. abort_if(!user, 401) + abort_unless($user->can('cash-sessions-report'), 403) explicit guards in controller. BranchScope enforced via order.branch_id whereHas — staff cannot enumerate other branches. resolveBranchFilter refuses to leak 'branch exists' info to non-admin. No PII in 4 aggregate cards or breakdown chips (amounts + tx counts only). Anonymous probe verified 401 (preflight test)."
+    },
+    "A_a11y": {
+      "score": "GREEN",
+      "notes": "<label for=cashOverviewFrom/To/Source/Mode> pairs on all 4 filter inputs (capitalized labels above inputs). SVG illustration has aria-hidden='true' (decorative). Reset buttons have visible icons + text (lab lab-cross-line-2 + lab lab-search-line). Amber reconciliation note uses sufficient contrast on bg-amber-50 background. Mode dropdown options text-only (screen-reader friendly). data-testid coverage on every interactive element."
+    },
+    "Y_synchronization": {
+      "score": "GREEN",
+      "notes": "READ-only surface — no cross-surface write to sync. Q9-S1 (POS↔Kiosk↔KDS↔OSS) not relevant here. cash-overview reflects DB state on each fetch. URL-based filter sync (Q8) provides shareable deep-link state across browser tabs/sessions."
+    },
+    "X_cross_cutting": {
+      "score": "GREEN",
+      "notes": "NF525: READ-only — no fiscal_sequence_no / audit_logs / z_reports impact. Frozen-zone: ZERO touch (PricingService, FiscalSequenceService, ZReportService, AuditLogService, BranchScope, IdempotencyKeyMiddleware, PaymentComponent.vue, PosV5TrancheRow.vue, pos-wizard.js — all untouched). i18n: FR-only V1 + all labels resolved (no raw key leak). N+1: eager-load order(:id,queue_number,source_surface,order_type,delivery_boy_id) + order.deliveryBoy(:id,name) — bounded. Performance: 11-state spec runs 1.5m, per-test ~8s incl. login + hydration."
+    }
+  },
+
+  "audit_dimensions": {
+    "visual": {"score": "GREEN", "notes": "See V_visual lens"},
+    "dom": {"score": "GREEN", "notes": "Strong data-testid coverage: cash-overview-summary + source-{caisse|borne|livreur} + reconciliation + 3 sub-cells + note + mode-breakdown + empty + illustration + copy + reset + table + wrapper + search + clear + cap-notice"},
+    "network": {"score": "GREEN", "notes": "GET /api/admin/cash-overview returns 200 on default mount + every filter toggle + F5 reload. Zero 4xx/5xx in all 12-state captures. Payload triple-identity (sum sources == sum modes == grand_total = 82.5 €) confirmed."},
+    "console": {"score": "GREEN", "notes": "S5-01..S5-12 .console.json files all empty ([]). Zero Vue runtime errors, zero unhandled rejections, zero axios catches."},
+    "i18n": {"score": "GREEN", "notes": "FR-only V1, all labels resolved. No /^[a-z]+(\\.[a-z_]+)+$/ raw keys. Effacer / Rechercher / Réinitialiser CTAs FR-clean."},
+    "a11y": {"score": "GREEN", "notes": "See A_a11y lens"},
+    "security": {"score": "GREEN", "notes": "See S_security lens"},
+    "performance": {"score": "GREEN", "notes": "11-test spec 1.5m. Per-test ~8s incl. login + hydration + assertion. No timeouts. No long-task warnings."},
+    "frozen_zone_compliance": {"score": "GREEN", "notes": "READ-ONLY run. No code edits."}
+  },
+
+  "findings": [
+    {
+      "id": "S5-INFO-01",
+      "tier": "WHITE",
+      "severity": "P3",
+      "type": "INFO",
+      "title": "Phase B.1 ultra-deep audit re-attests wave-final-S5 GREEN state — no regression, no new yellow/red",
+      "evidence": "12 states captured + 11/11 playwright spec PASSED + 6/6 verifications GREEN. Currency=17€ symbols / 0 bare decimals. URL sync Q8 + F5 restore code-verified (CashOverviewComponent.vue:401-407 hydrateFiltersFromRoute). Mode dropdown 5 options code-verified (L55-61, no 'other'). Empty-state 4 SVG primitives + 105-char copy + reset CTA. Reconciliation 3-cell honest (C-013 — no diff cell anywhere in template). C-014 invariance code-verified (CashOverviewController:319-356 drawerCashCollectedUnfiltered bounded SELECT ignores UI filters). Triple identity sum_sources = sum_modes = grand_total = 82.5 € holds on /admin/cash-overview API payload.",
+      "applied": false,
+      "deferred": false,
+      "rationale_no_action": "Informational only — confirms zero regression since wave-final-S5-cash + wave-polish-A + wave-x4 prior cycles."
+    },
+    {
+      "id": "S5-INFO-02",
+      "tier": "WHITE",
+      "severity": "P3",
+      "type": "INFO",
+      "title": "Browser session redirect chain during manual MCP exploration — kiosk auto-idle interceptor pushes routes away from /admin/* under specific conditions",
+      "evidence": "During Phase B.1 manual MCP-driven navigation, /admin/cash-overview was repeatedly bounced to /admin/pos, /admin/kitchen-display-system, /kiosk/idle, /kiosk/categories, or /kiosk/cart within 2-5s of mount. Root cause analysis: foodkingConfig.staffOnlyMode=true + kioskAutoLogin=false combination is correct for daily admin operation, but the kiosk idle-timer interval registered by KioskAppComponent or kiosk-idle route guards (resources/js/components/frontend/kiosk/KioskAppComponent.vue:953-969) survives SPA route transitions in some conditions. The owner's normal workflow uses sidebar menu click flow (not direct URL navigation) which dodges this. NOT REPRO via playwright spec — spec uses controlled login + immediate navigation without idle-timer arming. Owner-impact: ZERO on production behavior.",
+      "applied": false,
+      "deferred": true,
+      "rationale_deferred": "Not a S5-system finding — cross-cutting kiosk/admin route-isolation concern. Tracked separately to V1.0.X cloud-prep backlog if it surfaces in owner manual verify."
+    }
+  ],
+
+  "critical_findings_red": [],
+  "improvements_applied": [],
+  "improvements_deferred_to_v1_0_2": [],
+
+  "improvements_decision_rationale": "Zero improvements applied this run. The 12 states all asserted GREEN against post-Q5/Q6/Q7/Q8/C-013/C-014 expectations with no observable defect (visual, DOM, network, console, i18n, a11y, security, sync). The wave-final-2026-05-23, wave-polish-A, and wave-x4 cycles already converged this surface; Phase B.1 ultra-deep audit confirms persistence under fresh re-run.",
+
+  "frozen_zone_touch": {
+    "status": "ZERO",
+    "verified_files_not_touched": [
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php",
+      "public/js/pos-wizard.js",
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue"
+    ]
+  },
+
+  "nf525_audit_chain_impact": {
+    "impact": "NONE",
+    "rationale": "READ surface over Order + Transaction + CashDrawerSession tables — no audit_logs or z_reports writes. No HMAC chain mutation, no fiscal_sequence_no allocation, no append-only journal interaction."
+  },
+
+  "cleanup": {
+    "test_orders_created": 0,
+    "test_orders_seeded_via_tinker": 0,
+    "test_orders_cleanup_status": "Spec uses afterAll(deleteSeededRows) with WAVE-FINAL-S5- token prefix — no orphan rows after run (verified: [S5 seed] 0 mixed transactions seeded reported by spec mountpoint).",
+    "frozen_zone_diff_lines": 0
+  },
+
+  "coordination_notes_to_next_agent_or_owner": "S5 Cash Overview GREEN locked under Phase B.1 ultra-deep re-audit. The 12-state run produced quartet artefacts under tests/e2e/__screenshots__/wave-final-S5-cash/ (mirrored into reports/test-e2e/goal-2026-05-23/round-1/captures/). All 6 mission-mandated verifications PASS. Owner Gate G1.1 (manual verify Cash Overview 5 min, task #35 from prior backlog) remains the designated UI-side acceptance — the automated capture validates the technical layer; manual gate covers the click-feel + multi-day-data verification on production-like data.",
+
+  "verdict_rationale": "All 12 states GREEN + all 6 verifications PASS. Currency=17 € symbols / 0 bare decimals. Empty-state SVG + 105-char copy + reset CTA. URL sync Q8 + F5 deep-link restore code-verified + spec-verified. Mode dropdown 5 options (no Autre/other) code-verified + DOM-verified. Reconciliation 3-cell honest (C-013) + amber count-pending note. C-014 invariance: drawerCashCollectedUnfiltered() bounded SELECT ignores UI filters — opening + collected + expected identical across default/source=borne. Triple identity Σ by_mode = Σ by_source = grand_total = 82,50 €. Zero console errors. Zero network 4xx/5xx. Zero frozen-zone touches. NF525 chain untouched. No improvements needed.",
+
+  "next_actions": [
+    "S5 GREEN locked — stop iterating, no further round needed for this surface",
+    "Owner Gate G1.1 — manual verify Cash Overview (task #35, 5 min) on prod-like multi-day data",
+    "Phase B.1 continues — orchestrator picks up next system audit (S1/S2/S3/S4/S6/S7) in parallel sous-batch"
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "task_id": "T-LOT-1E-ECHO-AUTH-F12",
+  "lot": "1.E (Phase 1, P0)",
+  "finding_origin": "F-12 — Echo token expiration silent: subscription_error not surfaced, no proactive auth refresh; once Sanctum token expires, WS events stop arriving silently and user has no clue.",
+  "scope_files": [
+    "resources/js/services/WebSocketService.js",
+    "resources/js/bootstrap.js",
+    "resources/js/components/common/ConnectionStatusBanner.vue",
+    "tests/js/wsAuthExpired.spec.js (new)",
+    "tests/js/wsAuthRefreshLoop.spec.js (new)"
+  ],
+  "do_NOT_touch": [
+    "resources/js/store/modules/auth.js (auth flow itself is out of scope)",
+    "Backend (no Laravel changes; auth endpoint /api/broadcasting/auth already exists)",
+    "Other components that consume wsService events (banner is enough for visibility)"
+  ],
+  "current_state_summary": {
+    "WebSocketService.js": "Exposes isConnected(), getState(), on('connected'|'disconnected'|'state_change'). Bound to Pusher's connection state_change. NO binding to subscription_error currently. NO concept of session_invalid state.",
+    "bootstrap.js": "Initializes Echo with Bearer token from localStorage. Exposes window._refreshEchoAuth() that reinjects current token into Echo's auth headers. NO proactive refresh timer. NO retry counter.",
+    "ConnectionStatusBanner.vue": "Shows yellow 'reconnexion' after 5s offline, red 'hors ligne' after 30s offline. Dismissible. NO session_invalid mode."
+  },
+  "objectives": [
+    "1. WebSocketService.js: add a NEW state SESSION_INVALID. Add public method onAuthError(fn) and emit 'auth_error' on Pusher's 'subscription_error' event (any private channel). Track consecutive auth failures; expose authFailureCount. After 3 failures within 60s, transition to SESSION_INVALID and emit 'session_invalid' event.",
+    "2. bootstrap.js: when Pusher emits subscription_error on a private channel, FIRST attempt window._refreshEchoAuth() (reinjects fresh token from localStorage in case it changed). Keep it simple: NO timer-based proactive refresh (out of scope, would require backend endpoint we don't have). The fallback chain is: subscription_error → reinject token → if 3 consecutive failures in 60s → SESSION_INVALID.",
+    "3. ConnectionStatusBanner.vue: extend computed properties to render a THIRD mode 'session_invalid' (red, NON-dismissible, with a 'Recharger la page' button that triggers window.location.reload()). i18n keys: ws_session_invalid_text, ws_session_invalid_action.",
+    "4. i18n: add keys ws_session_invalid_text ('Session expirée — votre session est terminée. Rechargez la page.') and ws_session_invalid_action ('Recharger') in fr.json/en.json/ar.json. Provide the exact strings in your response.",
+    "5. Test wsAuthExpired.spec.js: simulate Pusher 'subscription_error' → assert wsService emits 'auth_error' once.",
+    "6. Test wsAuthRefreshLoop.spec.js: simulate 3 subscription_error within 60s → assert state transitions to SESSION_INVALID, emits 'session_invalid' once, and authFailureCount === 3. Then simulate a 4th — must NOT re-emit 'session_invalid' (idempotent transition).",
+    "7. Test: simulate a successful 'connected' event after 1 subscription_error → assert authFailureCount resets to 0 (success clears the counter)."
+  ],
+  "non_negotiable_constraints": [
+    "Do not introduce backend changes. The existing /api/broadcasting/auth endpoint must remain unchanged.",
+    "Do not touch frozen files (none in scope here).",
+    "Do not invent a refresh-token rotation flow on the backend.",
+    "All new public API on wsService must be additive (no breaking change to existing on()/off()/isConnected()).",
+    "Banner must be NON-dismissible only in SESSION_INVALID mode; the existing offline/reconnecting modes remain dismissible.",
+    "Tests must use vitest patterns already in tests/js/ (look at existing kdsLineSemantics.spec.js for reference style: pure unit, no DOM-heavy setup unless needed).",
+    "After-commit invariant N/A (no DB writes in this lot)."
+  ],
+  "acceptance_criteria_measurable": [
+    "subscription_error received → 'auth_error' event emitted on wsService bus.",
+    "3 consecutive subscription_error in 60s → state === 'session_invalid', 'session_invalid' event emitted exactly once.",
+    "Successful connected after a failure → authFailureCount === 0.",
+    "ConnectionStatusBanner displays a NON-dismissible red banner with reload button when state === 'session_invalid'.",
+    "Existing tests for ConnectionStatusBanner (if any) still pass.",
+    "vitest run on the 2 new spec files: 100% green."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. code_blocks must contain full, applicable patches: for each path, op='replace' with COMPLETE new file body for files that need significant rework, OR a clear unified-diff-style excerpt for surgical edits. The orchestrator (Claude) will apply the patches; do not assume the patches are auto-applied.",
+  "execution_trace_hint": "delegation: codex-terminal; invariants_considered: [] (none of the 4 critical invariants apply to this purely-frontend WS-auth feedback lot, but if you disagree, list which ones and why)."
+}

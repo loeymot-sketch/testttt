@@ -1,0 +1,89 @@
+{
+  "zone": "PLOY-3-CROSS-SURFACE",
+  "role": "RED-team adversarial",
+  "scope": "Cross-surface attack chains: kiosk+mobile sandwich, web→POS→mobile drift exploits, identity-theft via leaked credentials",
+  "attack_scenarios": [
+    {
+      "id": "PLOY-3-R-01",
+      "name": "Kiosk-mobile sandwich double-redeem",
+      "severity": "P1",
+      "scenario": "Attacker has stolen victim's phone number (leaked from receipt, social engineering, public Facebook). Attacker (1) opens own mobile-app, signs in to victim's account somehow (separate attack — but credentials often weak) OR (2) attacker uses victim's loyalty_code at kiosk while victim simultaneously opens own mobile-app and clicks 'Redeem'. Two concurrent /api/loyalty/redeem calls with same loyalty_code from two surfaces. PLOY-2-DBA-01 + PLOY-3-DBA-02 = both succeed if balance covers both. Victim loses points to orphan row.",
+      "outcome": "VULNERABLE.",
+      "verdict": "FAIL",
+      "remediation": "PLOY-3-DBA-02 dedup_key + PLOY-2-S-03 pending-exists check."
+    },
+    {
+      "id": "PLOY-3-R-02",
+      "name": "Cashier shoulder-surfs customer phone, harvests loyalty_code, redeems on next shift",
+      "severity": "P1",
+      "scenario": "Cashier types customer's phone into /api/loyalty/check (auth:sanctum allows any logged-in user — kiosk machine OR staff session). Server returns name + balance + loyalty_code. Cashier writes code on note. Next day, cashier alone at POS calls /api/loyalty/redeem with staff session → isStaff branch (line 259) bypasses ownership → points deducted. Customer doesn't notice until next mobile-app refresh.",
+      "outcome": "VULNERABLE — chained PLOY-3-S-01 + PLOY-2-R-07.",
+      "verdict": "FAIL",
+      "remediation": "Multi-layer: (a) /loyalty/check returns loyalty_code ONLY if caller is the customer themselves (caller.id === user.id), OR mask the code (return last 4 chars); (b) audit-log every /loyalty/check + /loyalty/redeem with caller_id; (c) disable isStaff branch on redeem (PLOY-2-S-01)."
+    },
+    {
+      "id": "PLOY-3-R-03",
+      "name": "Mobile-app QR replay across kiosks within scan-window",
+      "severity": "P2",
+      "scenario": "QR encodes loyalty_code (or FK:loyalty_code per LoyaltyController::scan line 611). Code is static. Attacker watches victim at kiosk A, photographs QR, walks to kiosk B in same chain, scans photographed QR → kiosk B server resolves victim's User → attacker can redeem at kiosk B with victim's points.",
+      "outcome": "VULNERABLE if QR is static. PLOY-2-R-04 same family.",
+      "verdict": "FAIL for static QR. Mobile spec loyalty-03-qr-refresh implies QR rotates — need to verify the mobile implementation.",
+      "remediation": "TOTP-style rotating QR (60s validity) or signed-and-time-limited QR payload. Server validates QR signature + timestamp at /api/frontend/loyalty/scan."
+    },
+    {
+      "id": "PLOY-3-R-04",
+      "name": "Web-account-page-discloses-loyalty-code-via-XSS",
+      "severity": "P3",
+      "scenario": "If web surface adds an account page showing loyalty_code (per PLOY-3-A-03 deferred feature), and the page is vulnerable to XSS, attacker steals loyalty_code via DOM injection.",
+      "outcome": "FORWARD-LOOKING. Web has no loyalty integration yet — moot for V1.",
+      "verdict": "DEFERRED. Address at V1.0.2 web-account-page feature.",
+      "remediation": "When web adds loyalty UI: CSP + sanitize all customer-input fields + show loyalty_code only after explicit user click (defense-in-depth)."
+    },
+    {
+      "id": "PLOY-3-R-05",
+      "name": "Cross-surface manual_add fraud via admin-as-staff",
+      "severity": "P2",
+      "scenario": "Compromised admin account (or rogue branch manager) calls POST /api/loyalty/add-points with arbitrary code + points. LoyaltyController::addPoints line 188-191 allows ['Admin', 'Branch Manager', 'POS Operator', 'Stuff']. Admin credits 100k pts to own account → redeems = €1000 free.",
+      "outcome": "VULNERABLE. Mitigated by manager-review audit but not by code.",
+      "verdict": "FAIL",
+      "remediation": "(a) Restrict /add-points to ['Admin', 'Branch Manager'] only (not POS Operator/Stuff), (b) cap points per manual_add (e.g. max 500/day per staff), (c) audit-log every manual_add to chain-signed audit_logs (cross-ref PLOY-3-S-03), (d) require dual-approval for points > threshold."
+    },
+    {
+      "id": "PLOY-3-R-06",
+      "name": "Source-surface forgery for analytics evasion",
+      "severity": "P3",
+      "scenario": "If source_surface becomes user-controllable param (e.g. via PLOY-3-A-01 remediation that accepts 'source' from request), an attacker on mobile can label their redemption as 'kiosk' to confuse downstream analytics.",
+      "outcome": "FORWARD-LOOKING — depends on remediation choice. If 'source' is request-controlled, must be cross-checked against actual auth context (caller's token ability).",
+      "verdict": "ADVISORY",
+      "remediation": "Server derives source_surface from auth context (not user input). Combine token.ability + role + User-Agent."
+    },
+    {
+      "id": "PLOY-3-R-07",
+      "name": "Refund-spoofing via order-cancel-without-original-redeem",
+      "severity": "P3",
+      "scenario": "Cancellation handler calls LoyaltyService::refundPoints which sums all redeem txns for the order_id. What if an attacker INSERTs a redeem txn for an order_id they don't own (e.g. via SQL injection — unlikely in Eloquent) then triggers cancel of that order?",
+      "outcome": "PREVENTED at application layer. No SQL injection vector found. LoyaltyTransaction Eloquent inserts are parameterized.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PLOY-3-R-08",
+      "name": "GDPR-purge race during active redemption",
+      "severity": "P3",
+      "scenario": "Customer opts out → users record deleted → CASCADE deletes loyalty_transactions (FK ON DELETE CASCADE per migration line 32). If a redeem transaction is mid-flight (lockForUpdate held), the DELETE waits. After lock released, DELETE cascade purges. Pending redeem ledger (order_id=NULL) — orphaned.",
+      "outcome": "EDGE CASE. Customer-initiated, low-probability.",
+      "verdict": "ADVISORY. Anonymize-on-opt-out (PLOY-3-S-05) is the cleaner pattern."
+    }
+  ],
+  "summary": {
+    "p1_count": 2,
+    "p2_count": 2,
+    "p3_count": 4,
+    "primary_concerns": [
+      "PLOY-3-R-01 kiosk-mobile sandwich race — chained dedup_key fix",
+      "PLOY-3-R-02 cashier shoulder-surf chain — needs /check restriction + audit-log",
+      "PLOY-3-R-05 admin manual_add abuse — needs cap + dual-approval"
+    ]
+  },
+  "verdict": "FAIL",
+  "blocker_for_v1": "For LeCayenne single-resto under owner-supervision: PASS-WITH-RISK. For chain rollout: BLOCKER. Recommend V1.0.2 hardening cycle on loyalty before chain-restaurant deployment."
+}

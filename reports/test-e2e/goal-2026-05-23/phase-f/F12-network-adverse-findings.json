@@ -1,0 +1,320 @@
+{
+  "agent": "F.12 Network adverse conditions",
+  "phase": "Phase F — GOAL ULTRA-DEEP 2026-05-23",
+  "owner_mandate": "Test INTERMEDIATE adverse conditions (more realistic than C7 full drop): high latency, intermittent flap, packet loss, TCP RST mid-POST",
+  "scope": [
+    "F.12.1 — High latency (500ms+ persistent)",
+    "F.12.2 — Intermittent (50ms / 5000ms / 50ms / 5000ms ping)",
+    "F.12.3 — Packet loss 5%",
+    "F.12.4 — TCP RST mid-POST"
+  ],
+  "executed_at": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "1a277d809",
+  "discipline": "Code-static analysis per mission brief. No Playwright throttling (disk constrained). Focused on EXISTING client-side defenses: axios timeout config, exponential backoff, Pusher reconnect (already validated by C7), Idempotency-Key stability (validated by H-SYNC + C7).",
+  "predecessor_reference": "reports/test-e2e/goal-2026-05-23/round-1/C7-network-drop-30s.json — C7 covered full 30s drop. F.12 covers the intermediate gradient that real LAN flaps actually produce.",
+
+  "verifications": {
+    "f12_1_high_latency_500ms_persistent": {
+      "status": "PASS_WITH_CAVEAT",
+      "demand": "LAN slow → cashier UX OK? Loading spinner appears within 2s? Cashier knows it's slow vs broken?",
+      "evidence": {
+        "spinner_appears_immediately": {
+          "file": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+          "lines": "173-175",
+          "snippet": "<span v-if=\"submitting\" class=\"cc-spinner\" aria-hidden=\"true\"></span><span v-else aria-hidden=\"true\">✓</span> {{ submitting ? $t('label.processing') : $t('button.confirm_and_print') }}",
+          "submitting_flips_on_click": "PosCounterCollectModal.vue:374 — `this.submitting = true;` set synchronously BEFORE axios.post fires. Vue reactivity flushes within the same microtask — spinner is on-screen within ONE animation frame (≤16ms), not 2s. The B1 SRE 2s budget is comfortably met by construction.",
+          "kiosk_payment_parity": {
+            "file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+            "lines": "146-157, 365",
+            "snippet": "v-if=\"submitting && !tpeWaiting\" class=\"kiosk-pay-processing\" role=\"status\" aria-live=\"polite\" data-testid=\"kiosk-payment-processing\" — `this.submitting = true;` at line 365 is synchronous; the processing ring + 'kiosk.pay_screen.processing_title' renders within the same tick."
+          },
+          "aria_busy_attribute": "PosCounterCollectModal:169 `:aria-busy=\"submitting\"` — screen readers announce 'busy' state immediately, satisfying WCAG 4.1.3 status messages."
+        },
+        "axios_has_no_global_timeout_config": {
+          "file": "resources/js/bootstrap.js",
+          "lines": "1-280",
+          "observation": "grep -rn 'axios.defaults.timeout' resources/js/ returns ZERO hits. Only inline timeouts exist on the kiosk-loyalty surface (KioskLoyaltyComponent.vue:431, :492 — 5s ceiling). Critical mutating paths (kioskCart.submitOrder, PosCounterCollectModal.onConfirm, PaymentComponent confirm, parked-orders restore) all execute axios.post WITHOUT a `{ timeout: N }` config object. Browser default applies (Chrome/Edge: no per-request ceiling; only the OS-level 5-minute TCP timeout).",
+          "implication_for_500ms_plus_latency": "Spinner stays visible until the server actually responds — there is no client-driven timeout that converts a slow response into an error. For 500ms latency the cashier sees ~500ms+roundtrip of spinner, which is the correct UX. For 30s latency (RTT spike from a stalled FPM worker) the spinner stays for 30s — the cashier might give up before the server delivers the (eventually committed) response. The order DOES land server-side (transactional Order::create commits before the response ever writes); the UX gap is the wait, not the data integrity.",
+          "what_protects_against_double_submit_during_long_wait": "The `submitting` flag stays true for the FULL axios round-trip; the cashier physically cannot double-tap the confirm button during the in-flight 30s wait. If the cashier ABANDONS the modal (closes it via the cancel button or navigates away), the in-flight axios promise is NOT cancelled (no AbortController is attached). The promise resolves in the background and the orphan response is discarded by Vue's lifecycle — the order may have committed server-side without the cashier knowing."
+        }
+      },
+      "expected_outcome_summary": "Spinner appears within 1 animation frame (well under the 2s B1 SRE budget). For 500ms+ latency the UX is degraded but accurate (spinner stays until server responds; no false 'broken' signal). The CAVEAT is that there is no client-side timeout ceiling: a 30s FPM-stalled response leaves the cashier staring at a spinner with no escape hatch. The data integrity invariants hold (transactional Order::create, idempotency middleware Phase 1 replay on retry).",
+      "verdict_label": "GREEN for UX-feedback timeliness, YELLOW for missing client-timeout ceiling (F12-FIND-01 below)."
+    },
+
+    "f12_2_intermittent_flap_50ms_5000ms_alternating": {
+      "status": "PASS_WITH_CAVEAT",
+      "demand": "Echo subscription survives? Polling fallback kicks in? Idempotency-Key prevents duplicate POSTs on flaky retries?",
+      "evidence": {
+        "echo_reconnect_intrinsic_backoff": {
+          "file": "resources/js/bootstrap.js",
+          "lines": "327-334",
+          "snippet": "activityTimeout: 30000, pongTimeout: 5000",
+          "interpretation": "Pusher client tears down after ≤35s of inactivity. For a 5000ms ping that's slower than activityTimeout/2, Pusher does NOT proactively reconnect — only the OS-level TCP RST or the 35s liveness probe triggers state change. For 5000ms latency with 50ms windows of connectivity, Pusher's WS handshake completes in the 50ms window then sees timeouts during the 5000ms blackout. The first such cycle marks the connection 'unavailable'; reconnect attempts use Pusher's intrinsic exponential backoff 1s→2s→4s→…→30s capped. This is the SAME pattern C7 validated for full drop."
+        },
+        "storm_breaker_threshold": {
+          "file": "resources/js/services/WebSocketService.js",
+          "lines": "33-36, 264-352",
+          "constants": "STORM_DETECTION_WINDOW_MS=30000, STORM_DETECTION_THRESHOLD=4 disconnects",
+          "behaviour": "4+ disconnects within a 30s rolling window → circuit-breaker opens, AWS decorrelated-jitter delay 5-30s, ONE reconnect attempt, then breaker self-clears. An intermittent 50ms/5000ms/50ms/5000ms pattern can plausibly trigger 4 disconnects within 30s (50ms connect → 5s blackout → disconnect emitted → 50ms reconnect → 5s blackout → disconnect …). The breaker is the correct response — it prevents thundering-herd against a flapping broadcasting host. Downside: during the 5-30s cool-down the kitchen's Echo subscription is intentionally severed; the POLLING FALLBACK must cover this window.",
+          "polling_fallback_coverage": {
+            "file": "resources/js/services/KdsSyncService.js",
+            "lines": "228-274, 289-312",
+            "behaviour": "KdsSyncService.on('reconnect_storm') triggers an immediate forceSync() with 0-500ms jitter (NEW-02 audit G10). _baseCadence() returns disconnectedBaseMs=10000+disconnectedJitterMs=3000 when wsService is DISCONNECTED or RECONNECTING. So during the breaker cool-down, KDS polls /api/admin/kds-order/sync every ~10-13s. With max breaker delay 30s, the KDS catches up within at most 1 polling cycle after the breaker clears. POS PosComponent._kioskPollingInterval() forces 5s cadence when WS disconnected or when readyOrders empty/stale > 30s (Wave Final 2026-05-23 commit 1a277d809)."
+          }
+        },
+        "idempotency_key_stability_during_flap": {
+          "file": "resources/js/store/modules/kioskCart.js",
+          "lines": "702-709",
+          "snippet": "let idempotencyKey = state.idempotencyKey; if (!idempotencyKey) { idempotencyKey = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)); commit('SET_IDEMPOTENCY_KEY', idempotencyKey); }",
+          "interpretation": "Idempotency key is generated ONCE per cart session and stored in Vuex state. Successive retries during a 50ms/5000ms flap reuse the SAME key. Verified by H-SYNC (Wave Final S2 round-4) and C7. Backend IdempotencyKeyMiddleware Phase 1 returns cached 2xx on second attempt → ZERO duplicate INSERT.",
+          "pos_offline_queue_per_entry_key": {
+            "file": "resources/js/helpers/posOfflineQueue.js",
+            "lines": "69-78",
+            "snippet": "const entry = { idempotencyKey: uuidv4(), payload: sanitize(rawPayload), savedAt: Date.now(), attempts: 1, lastFailedAt: null }; _cache.push(entry);",
+            "interpretation": "POS offline queue stamps each entry with crypto.randomUUID() at enqueue time. Tries are replayed with the SAME UUID via `headers: { 'X-Idempotency-Key': entry.idempotencyKey }` (usePosOfflineState.js:48). Flap replay → middleware dedupe → no duplicate."
+          },
+          "kiosk_offline_queue_payload_key": {
+            "file": "resources/js/store/modules/kioskCart.js",
+            "lines": "782-784",
+            "snippet": "const localKey = saveOrder(offlinePayload, idempotencyKey, { branchId: state.branchId ?? null });",
+            "interpretation": "Kiosk offline queue preserves the original Vuex idempotency key as the entry's localKey. Replay uses `{ headers: { 'X-Idempotency-Key': entry.localKey } }` (kioskOfflineQueue.js:551-555). FIX-54-3 reapplies fresh quote-token without rotating the idempotency key — so same-key replay is the contract."
+          }
+        },
+        "pos_offline_replay_lacks_backoff_during_flap": {
+          "file": "resources/js/helpers/posOfflineQueue.js",
+          "lines": "65-107",
+          "observation": "POS posOfflineQueue.js has NO backoff schedule between failed retries. markFailed() only bumps `attempts` + sets `lastFailedAt` (line 97-107). There is no equivalent of kioskOfflineQueue's `_computeNextRetryAt` gating (which uses 2^(attempts-1)*1000ms ± 20% jitter, capped at MAX_BACKOFF_MS=30000). Replay is triggered by usePosOfflineState.js:67-77 `window.addEventListener('online', _onOnline)` → tryFlush(_boundPostFn). Each `online` event walks the ENTIRE queue and POSTs every entry sequentially.",
+          "implication_for_intermittent_flap": "navigator.onLine flips on browser-detected link-up. For a 50ms/5000ms ping pattern, the OS may flip onLine multiple times within a few seconds — each flip triggers a full tryFlush() walk. With per-entry POST + no inter-call delay, this can hammer the server with N×K POSTs for N entries × K onLine events. The middleware Phase 1 dedupe absorbs the load (returns cached 2xx after the first success), but the network and PHP-FPM workers do work on each replay-after-success request (Phase 1 lookup costs a Redis SCAN + JSON parse). Asymmetric vs kioskOfflineQueue which is gated by exponential delay.",
+          "absence_of_max_attempts": "There is NO MAX_ATTEMPTS in posOfflineQueue (kioskOfflineQueue has 10). An entry that fails forever keeps incrementing attempts until purgeExpired() drops it after TTL_MS=30min. No abandonment telemetry like kiosk's `offline.abandoned` event."
+        }
+      },
+      "expected_outcome_summary": "Intermittent flap: Pusher tears down + reconnects intrinsically. After 4 disconnects/30s the storm breaker opens (5-30s cool-down); KDS+POS polling fallback covers the gap. Idempotency key stability holds — kiosk cart-level uuid + posOfflineQueue per-entry uuid both survive the flap. NO duplicate INSERT. CAVEAT: POS offline queue lacks backoff between retries — repeated `online` events during a flap can produce replay bursts.",
+      "verdict_label": "GREEN for duplicate-prevention + Echo recovery, YELLOW for POS offline queue backoff parity gap (F12-FIND-02 below)."
+    },
+
+    "f12_3_packet_loss_5_percent": {
+      "status": "PASS",
+      "demand": "Pusher heartbeat detects via pongTimeout? User sees anything degraded?",
+      "evidence": {
+        "pong_timeout_detection": {
+          "file": "resources/js/bootstrap.js",
+          "lines": "332-333",
+          "snippet": "activityTimeout: 30000, pongTimeout: 5000",
+          "interpretation": "At 5% packet loss, ping/pong (Pusher control frames are typically 32-64 bytes; loss probability per round trip ≈ 1-(0.95)^2 ≈ 9.75%) has ~10% probability of failing per heartbeat cycle. Pusher's intrinsic logic: ping fires when no activity for activityTimeout=30s; if pong doesn't arrive in pongTimeout=5s, the client tears down + reconnects. So a 5% packet-loss link will produce intermittent disconnect/reconnect cycles roughly every 5-10 minutes (when a pong happens to be lost AND no other broadcasts arrive in the 5s window — typically rare because admin/POS surfaces have ongoing broadcasts every few seconds during business hours). User impact: occasional brief 'reconnecting' state in the wsService banner, then auto-recovery.",
+          "broadcast_payload_size_vs_loss_probability": "Broadcast frames (KdsOrderCreated/Updated) are larger (~1-3 KB JSON depending on item count). At 5% loss the probability of a frame failing to deliver is ~5% per send. Pusher uses TCP — lost packets retransmit transparently; the only user-visible signal is increased latency on individual broadcasts, NOT lost broadcasts."
+        },
+        "pollign_fallback_already_handles_unreliable_broadcasts": {
+          "comment": "Per V7.4 of C7 (which we don't re-verify here), KdsSyncService + OssSyncService + PosComponent.kioskPolling already treat Echo as a low-latency push channel + REST polling as source-of-truth catch-up. A 5% packet-loss environment is FUNCTIONALLY equivalent to 'Echo channel is slightly lossy' — the polling tick (every 5-10s in degraded state) catches any missed broadcast within at most one polling interval."
+        },
+        "axios_post_packet_loss_handling": {
+          "comment": "axios uses fetch/XHR which uses TCP. Lost packets are transparently retransmitted by the kernel TCP stack. No application-level logic needed. Only catastrophic loss (>50% sustained) would cause TCP RTT amplification beyond practical limits."
+        }
+      },
+      "expected_outcome_summary": "5% packet loss is well within TCP's transparent recovery envelope. Pusher heartbeat tears down + reconnects ONLY when a pong is lost AND no other inbound traffic arrives within pongTimeout=5s (rare on an active POS/KDS surface). Polling fallback already covers any missed broadcast. User-visible degradation: occasional 'reconnecting' badge + slightly slower order-tile updates. No data integrity risk, no duplicate risk, no UX-breaking failure.",
+      "verdict_label": "GREEN — by-construction from existing TCP retransmission + Pusher heartbeat + polling fallback."
+    },
+
+    "f12_4_tcp_rst_mid_post": {
+      "status": "PASS",
+      "demand": "Server got the request but client got RST? Client retries with same Idempotency-Key → middleware sees replay → 200 same payload?",
+      "evidence": {
+        "middleware_caches_inline_not_terminate": {
+          "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+          "lines": "137-156",
+          "snippet": "// Phase 3 — execute and cache\ntry { $response = $next($request); } catch (\\Throwable $t) { $this->repository->release($scopedKey); throw $t; }\nif ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {\n    $this->repository->complete($scopedKey, $response, $payloadHash, (int) config('idempotency.ttl_seconds', 86400));\n} else {\n    $this->repository->release($scopedKey);\n}\nreturn $response;",
+          "interpretation": "The `$this->repository->complete()` call happens BEFORE `return $response;`. Critically: there is NO `terminate()` callback, NO `register_shutdown_function`, NO `fastcgi_finish_request()` in the middleware. The cache write is on the request-processing thread, before the response writer sends bytes to the client. CONSEQUENCE: a TCP RST that interrupts the response transmission to the client CANNOT prevent the cache from being written. The order is: (1) controller commits DB transaction → (2) middleware writes idempotency cache → (3) Laravel response writer streams bytes → (4) TCP RST drops the bytes. The cache is already populated when step 4 happens.",
+          "verified_via_grep": "grep -n 'terminate\\|register_shutdown\\|fastcgi_finish_request' app/Http/Middleware/IdempotencyKeyMiddleware.php returns ZERO hits. Cache writes are inline."
+        },
+        "client_retry_same_key_replay": {
+          "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+          "lines": "84-96",
+          "snippet": "$replay = $this->repository->find($scopedKey); if ($replay !== null) { if ($replay->payloadHash !== $payloadHash) { return new JsonResponse([...409...]); } return $this->rebuildReplayResponse($replay); }",
+          "interpretation": "On retry with SAME idempotency key + SAME payload hash → returns the cached response (rebuildReplayResponse reconstructs the original 2xx body + adds Idempotency-Replayed: true header). Client sees a normal 200 with the original order_id + queue_number — UX is identical to the no-RST path."
+        },
+        "defense_in_depth_for_idempotency_storage_failure": {
+          "file": "app/Services/OrderService.php (per C7 evidence)",
+          "lines": "603-637, 1166-1180, 2701-2711",
+          "behaviour": "Even if Redis evicts the idempotency cache between request and retry (extremely unlikely with default 24h TTL), the orders table has UNIQUE(branch_id, idempotency_key) + OrderService::findExistingOrderForIdempotencyRecovery short-circuits. Triple defense: middleware Phase 1 replay + Cache::lock 5s on PosOrderStore + DB UNIQUE constraint + OrderService recovery lookup. NO duplicate INSERT under any TCP RST scenario."
+        },
+        "transactional_order_create_guarantee": {
+          "comment": "Order::create runs inside DB::transaction(). The entire (order + items + transitions + audit_logs) commit is atomic from the server's perspective. The TCP RST happens on the response path AFTER the commit; the server's database state is already consistent. Audit chain remains intact (CHAIN OK invariant)."
+        },
+        "client_side_retry_path": {
+          "kiosk": {
+            "file": "resources/js/store/modules/kioskCart.js",
+            "lines": "725-803",
+            "behaviour": "On axios catch: isNetworkError = !err.response || status >= 500. TCP RST surfaces as no err.response → isNetworkError true → saveOrder() into IndexedDB queue → startAutoSync() with 30s tick. The replay uses the SAME idempotency key (preserved at line 783)."
+          },
+          "pos": {
+            "file": "resources/js/helpers/posOfflineQueue.js + composables/usePosOfflineState.js",
+            "lines": "39-63",
+            "behaviour": "On axios catch in tryFlush: markFailed() bumps attempts + lastFailedAt. Next online event re-walks the queue with same UUID per entry. Server returns cached 2xx → markSynced() removes the entry."
+          },
+          "pos_counter_collect_modal": {
+            "file": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+            "lines": "350-352, 358-419",
+            "behaviour": "On catch (network error → no err.response): submitting=false → toast 'label.encaisser_failed' → modal stays open. Cashier clicks Confirm again WITHIN THE SAME MINUTE-BUCKET → buildIdempotencyKey returns the same string → middleware Phase 1 replay. ACROSS THE MINUTE BOUNDARY → different keys, but the order-level payment_status PAID short-circuit in PaymentService::confirmCounterPayment is the last-line defense (per C7-FIND-01)."
+          }
+        }
+      },
+      "expected_outcome_summary": "TCP RST mid-POST: server-side write committed before RST (transactional Order::create + inline idempotency cache); client retries with same key; middleware Phase 1 replay returns cached 2xx; client UI sees a normal 200 with original order_id + queue_number. NO duplicate INSERT. NO audit-chain tamper. The architectural invariant holds by CONSTRUCTION, not by empirical regression.",
+      "verdict_label": "GREEN — strongest safety story among the 4 sub-scenarios; the dedupe+cache architecture is purposely TCP-RST-safe."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "F12-FIND-01",
+      "tier": "YELLOW",
+      "severity": "IMPROVEMENT",
+      "title": "No global axios.defaults.timeout — high-latency persistent ≥500ms scenarios stall in-flight POSTs indefinitely",
+      "where": "resources/js/bootstrap.js (axios global config — NO timeout key)",
+      "observation": "grep -rn 'axios.defaults.timeout' across resources/js/ returns ZERO hits. Only inline `{ timeout: N }` configs exist in KioskLoyaltyComponent.vue (lines 431, 492 — 5s ceiling on loyalty-config + loyalty-check). Critical mutating axios.post calls (submitOrder in kioskCart.js, onConfirm in PosCounterCollectModal.vue, confirmPayment in KioskPaymentComponent.vue, all order/payment writes) execute WITHOUT a timeout. Browser default applies: Chrome and Edge have no per-request ceiling for fetch/XHR; only the OS-level TCP stack (~5-minute keepalive on Linux) eventually terminates. For high-latency 500ms+ persistent links the spinner stays visible until the server actually responds — accurate UX, but for pathological latency (FPM worker stalled, e.g. database lock waiting) the cashier can sit on a spinner for minutes with no client-driven escape hatch.",
+      "risk": "LOW for data integrity (transactional Order::create + idempotency middleware prevent duplicate / partial commits). MEDIUM for UX: pathologically long waits damage cashier flow and may trigger user-initiated retries (page reload) that bypass the in-flight POST. The Vue `submitting` flag protects against rapid double-tap of the same button, but does NOT protect against the cashier navigating away mid-flight — the in-flight promise is NOT attached to any AbortController and resolves silently on whatever DOM mounts next (orphan promise discarded by Vue lifecycle).",
+      "recommended_action_v1_0_2": "Add `window.axios.defaults.timeout = 30000` (30s) in bootstrap.js for a baseline cap. Critical writes (frontend/order POST, admin/pos POST, counter-collect/confirm POST) can override with longer ceilings if needed (e.g. 60s for cash-handling). On timeout the axios catch surfaces `err.code === 'ECONNABORTED'` → reuse the existing isNetworkError branch in kioskCart.js → offline queue path. For POS critical writes, attach an AbortController so the cashier closing the modal aborts the in-flight POST cleanly.",
+      "defer_to": "V1.0.2 hardening polish. NOT a V1 blocker — current behaviour is safe by defense-in-depth; the gap is UX timeliness under pathological FPM stalls."
+    },
+    {
+      "id": "F12-FIND-02",
+      "tier": "YELLOW",
+      "severity": "IMPROVEMENT",
+      "title": "POS offline queue (posOfflineQueue.js) lacks exponential-backoff retry schedule — asymmetric vs kioskOfflineQueue.js",
+      "where": "resources/js/helpers/posOfflineQueue.js:65-128 + resources/js/composables/usePosOfflineState.js:39-77",
+      "observation": "posOfflineQueue.markFailed() only bumps `attempts` and sets `lastFailedAt` (lines 97-107). No equivalent of kioskOfflineQueue.js's `_computeNextRetryAt` (line 288-291) which uses `2^(attempts-1) * 1000ms` with ±20% jitter capped at MAX_BACKOFF_MS=30000. No MAX_ATTEMPTS abandonment threshold (kioskOfflineQueue uses 10). Retry trigger is ONLY `window.addEventListener('online')` (usePosOfflineState.js:67-77) which fires on the OS link-up event — for an intermittent 50ms/5000ms/50ms/5000ms ping pattern, the OS may flip onLine repeatedly within a few seconds, each triggering a FULL tryFlush() walk that POSTs every entry sequentially with no inter-call delay.",
+      "risk": "LOW — the middleware Phase 1 dedupe absorbs the load (returns cached 2xx after the first success), so no duplicate INSERT. MEDIUM for server-side efficiency: each replay-after-success POST does a Redis SCAN + JSON parse + bandwidth cost. For a cluster of 5 POS stations in a flap, this could produce a spike of 5 × queue_depth × N_flap_events POSTs/second against the same FPM pool — well within capacity for V1 Le Cayenne single-resto, but the absence of backoff is a latent V2 SaaS multi-tenant landmine.",
+      "recommended_action_v1_0_2": "Port kioskOfflineQueue's `_computeNextRetryAt` formula to posOfflineQueue + add a MAX_ATTEMPTS=10 abandonment threshold + emit `pos.offline.abandoned` telemetry on max-attempts hit. Replace the `online`-event-only trigger with a setInterval(SYNC_INTERVAL_MS=30000) auto-sync (same pattern as kiosk's startAutoSync at kioskOfflineQueue.js:608-628) so flap doesn't cause replay storms.",
+      "defer_to": "V1.0.2 hardening polish. NOT a V1 blocker for Le Cayenne single-resto (POS offline queue ships per Wave 5F commit 55edb83ba but real-world LAN flap frequency is low). REQUIRED for V2 SaaS multi-tenant where N kiosks/POS per branch × M branches multiplies the storm risk."
+    },
+    {
+      "id": "F12-FIND-03",
+      "tier": "YELLOW",
+      "severity": "IMPROVEMENT",
+      "title": "PosComponent._kioskPollingInterval() re-evaluation tied to WS state-change events — silent Echo failure freezes cadence at instantiation value",
+      "where": "resources/js/components/admin/pos/PosComponent.vue:2602-2635",
+      "observation": "_startKioskPolling() at line 2617 reads _kioskPollingInterval() ONCE at setInterval creation. The interval is fixed for that timer's life. _restartKioskPolling() exists (line 2632) but is only invoked from _onWsConnected (line 2585) and _onWsDisconnected (line 2591) — both bound to wsService events. If Echo silently fails (CSP violation on /api/broadcasting/auth without surfacing a state_change event) OR if the wsService never gets the 'connected' event in the first place, the polling timer stays at its initial cadence forever. The Wave Final 2026-05-23 GOAL-HEAL-SYNC-001 commit 1a277d809 addresses PART of this gap: when `readyOrders` is empty OR `lastReadyRefresh` is stale > 30s, the interval call returns 5000ms regardless of WS state (lines 2608-2614). But this only takes effect at the NEXT _restartKioskPolling — there's no continuous re-evaluation tied to a tick-by-tick check.",
+      "risk": "LOW — the Wave Final fix already covers the most common silent-Echo failure path (empty/stale readyOrders forces 5s cadence). MEDIUM-LOW for the case where readyOrders is non-empty and lastReadyRefresh is < 30s but Echo silently drops new broadcasts — the timer continues at 60s cadence, causing up to 60s lag on new ready orders. This is a narrower window than the C2 P1 case but still observable for sustained Echo failures (e.g. broadcasting service down for hours, polling backstop is what keeps the kitchen alive).",
+      "recommended_action_v1_0_2": "Inside the setInterval callback at line 2618-2630, after the `loadKioskCashOrders` call, compare `this._kioskPollingInterval()` to the current `this._kioskPollTimer` cadence. If they diverge, call `this._restartKioskPolling()` to pick up the new cadence. This makes cadence adaptive on every tick, not just on WS state-change events. Alternatively, restart the timer at the END of every tick regardless (set the next tick using setTimeout instead of setInterval, with the cadence re-evaluated each time).",
+      "defer_to": "V1.0.2 hardening polish. Builds on Wave Final 2026-05-23 commit 1a277d809; not a regression introduced by F.12 audit."
+    },
+    {
+      "id": "F12-INFO-01",
+      "tier": "WHITE",
+      "severity": "INFO",
+      "title": "Idempotency middleware caches INLINE (not in terminate hook) — TCP RST mid-response is architecturally safe",
+      "where": "app/Http/Middleware/IdempotencyKeyMiddleware.php:137-156",
+      "observation": "$this->repository->complete() is called BEFORE return $response;. No terminate() callback, no register_shutdown_function, no fastcgi_finish_request. The cache write happens on the request-processing thread, before the response writer streams bytes to the client. CONSEQUENCE: a TCP RST that interrupts the response transmission CANNOT prevent the cache from being written. Server-side state (DB row committed, idempotency cache populated) is already correct when the RST drops. Client retry with the same key hits Phase 1 replay → returns cached 2xx → user sees normal success.",
+      "no_action": "Documented architectural strength. This is the same reason TCP RST mid-POST is invariant-preserving. Confirms the C7 stress-path table: 'Append-only or no-op. No tamper window.'"
+    },
+    {
+      "id": "F12-INFO-02",
+      "tier": "WHITE",
+      "severity": "INFO",
+      "title": "WebSocketService storm breaker decorrelated-jitter delay 5-30s — bridge gap covered by polling fallback",
+      "where": "resources/js/services/WebSocketService.js:33-36, 264-352",
+      "observation": "STORM_MIN_DELAY_MS=5000, STORM_MAX_DELAY_MS=30000. AWS-style decorrelated jitter formula at line 277-286: delay = min(MAX, rand(MIN, max(MIN, last*3))). The breaker forcibly disconnects pusher (line 308), waits the jitter delay, then ONE reconnect attempt. During cool-down the kitchen+POS rely 100% on REST polling. KdsSyncService cadence in WS_DISCONNECTED state: disconnectedBaseMs=10000 + disconnectedJitterMs=3000 → poll every 10-13s. PosComponent kioskPolling forces 5s when readyOrders empty/stale > 30s. NO blind window > 30s of staleness.",
+      "no_action": "Documented architecture. Reinforces F.12.2 PASS verdict — polling fallback is correctly sized for the breaker cool-down window."
+    },
+    {
+      "id": "F12-INFO-03",
+      "tier": "WHITE",
+      "severity": "INFO",
+      "title": "Live Playwright network throttling deferred — code-static + invariant analysis sufficient",
+      "where": "F.12 audit pass (this report)",
+      "observation": "Mission brief: 'Code-static analysis primarily (Playwright network throttling could be used but disk constrained)'. This pass is fully code-static + cross-reference to C7 chain-integrity attestation. Live Playwright runs of high-latency throttle (page.route delay), packet-loss (browser CDP setNetworkConditions latency/throughput), and TCP RST (page.route abort with custom timing) are recommended for V1.0.2 chaos-engineering track.",
+      "no_action": "Document a follow-up live spec in V1.0.2 'chaos-engineering' track (companion to C7-INFO-02). Static analysis already provides strong assurance because the invariants (transactional Order::create, idempotency middleware dual-layer dedupe, append-only AuditLogService, offline-queue auto-replay, WebSocketService storm breaker) are unchanged at HEAD 1a277d809."
+    }
+  ],
+
+  "stress_path_table": {
+    "f12_1_high_latency_500ms_persistent": {
+      "client_side_outcome": "Spinner appears within 1 animation frame; remains visible until server responds. submitting flag prevents double-tap. NO client-side timeout ceiling.",
+      "server_side_outcome": "Slow but eventually-complete request. Transactional Order::create commits; idempotency cache populated inline.",
+      "duplicate_risk": "0 — submitting flag + idempotency middleware Phase 1.",
+      "ux_impact": "Degraded but accurate — cashier knows it's slow because the spinner is on-screen. No false 'broken' signal."
+    },
+    "f12_2_intermittent_50_5000_alternating": {
+      "client_side_outcome": "Pusher tears down + reconnects intrinsically (1s→30s capped exponential). Storm breaker opens at 4 disconnects/30s with 5-30s cool-down. KDS+POS polling escalates to 5-13s during disconnect. Offline queue accumulates failed POSTs with same idempotency key.",
+      "server_side_outcome": "Repeated POST attempts dedupe via middleware Phase 1. NO duplicate INSERT. Server load proportional to queue depth × flap frequency.",
+      "duplicate_risk": "0 — idempotency middleware + Cache::lock + DB UNIQUE.",
+      "ux_impact": "Visible 'reconnecting' badge during cool-down. Polling fallback keeps UI fresh. POS offline queue lacks backoff → potential server-side replay burst on flap (F12-FIND-02)."
+    },
+    "f12_3_packet_loss_5_percent": {
+      "client_side_outcome": "TCP transparently retransmits lost packets. Pusher pongTimeout=5s tears down ONLY when a pong is lost AND no other inbound traffic arrives within 5s (rare on active surfaces).",
+      "server_side_outcome": "No application-level impact — TCP stack handles loss. Increased per-request latency variance.",
+      "duplicate_risk": "0 — same as F.12.2 (idempotency middleware).",
+      "ux_impact": "Occasional brief 'reconnecting' badge. Polling fallback covers any missed broadcast within ≤10s."
+    },
+    "f12_4_tcp_rst_mid_post": {
+      "client_side_outcome": "axios catch → no err.response → isNetworkError true → offline queue path → retry with same key.",
+      "server_side_outcome": "Request committed BEFORE RST (DB transactional commit + idempotency cache write are both INLINE pre-return). Retry hits Phase 1 replay → returns cached 2xx.",
+      "duplicate_risk": "0 — strongest safety story among the 4 sub-scenarios. By-construction TCP-RST-safe.",
+      "ux_impact": "Brief 'reconnecting' state, then synthetic offline response (kiosk) or toast + retry (POS). On replay, real order_id + queue_number surface."
+    }
+  },
+
+  "client_side_defenses_inventory": {
+    "axios_timeout": "NONE globally — only inline 5000ms on KioskLoyaltyComponent (loyalty config + check). All other mutating writes have NO timeout. F12-FIND-01.",
+    "exponential_backoff": {
+      "kiosk_offline_queue": "PRESENT — 2^(attempts-1)*1000ms ± 20% jitter, capped at MAX_BACKOFF_MS=30000, MAX_ATTEMPTS=10 + abandonment telemetry. kioskOfflineQueue.js:282-291.",
+      "pos_offline_queue": "ABSENT — posOfflineQueue.js:97-107 only bumps attempts + lastFailedAt; no backoff schedule, no MAX_ATTEMPTS. F12-FIND-02."
+    },
+    "pusher_reconnect": "Intrinsic exponential 1s→2s→4s→…→30s capped (Pusher client default). activityTimeout=30000, pongTimeout=5000. Storm breaker at 4 disconnects/30s with decorrelated jitter 5-30s cool-down.",
+    "idempotency_key_client_stability": {
+      "kiosk_cart_uuid": "GENERATED ONCE per cart session in Vuex state — kioskCart.js:702-709. Survives retries + offline queue replay.",
+      "pos_offline_entry_uuid": "GENERATED per-entry on enqueue — posOfflineQueue.js:70. Stable across retries of same entry.",
+      "pos_counter_collect_minute_bucket": "DERIVED from (orderId, mode, minute-bucket) — PosCounterCollectModal.vue:350-352. Boundary-sensitive (C7-FIND-01 V1.0.2 deferred)."
+    },
+    "idempotency_middleware_dedupe": "Phase 1 replay + Phase 2 atomic acquire + Phase 3 cache-on-2xx (Redis). Defense-in-depth via DB UNIQUE(branch_id, idempotency_key) + OrderService::findExistingOrderForIdempotencyRecovery.",
+    "polling_fallback": {
+      "kds": "KdsSyncService 5-13s in disconnected/degraded states; immediate forceSync on reconnect_storm event.",
+      "pos_kiosk_shortcuts": "PosComponent._kioskPollingInterval() forces 5s when readyOrders empty/stale > 30s OR WS disconnected. Re-evaluated only on WS state-change (F12-FIND-03)."
+    },
+    "submitting_flag_double_tap_guard": "PRESENT on PosCounterCollectModal (line 374), KioskPaymentComponent (line 365), PaymentComponent (frozen — verified Wave Final S2). Synchronous before axios.post. Prevents same-button double-tap during ANY latency."
+  },
+
+  "audit_self_check": {
+    "files_modified_by_this_audit": [],
+    "writes_to_audit_logs": 0,
+    "writes_to_orders": 0,
+    "writes_to_idempotency_repository": 0,
+    "frozen_zones_touched": [],
+    "live_artisan_commands_run": [],
+    "playwright_runs": 0,
+    "all_commands_read_only": true,
+    "discipline_compliance": "Code-static analysis only per mission brief. No live Playwright throttling (disk constrained). No file modifications. Cross-referenced C7 (round-1) chain-integrity attestation without re-running fiscal:verify-chain."
+  },
+
+  "files_referenced": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/bootstrap.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/WebSocketService.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/KdsSyncService.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/MetricsBatcher.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/helpers/kioskOfflineQueue.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/helpers/posOfflineQueue.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/composables/usePosOfflineState.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/store/modules/kioskCart.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosCounterCollectModal.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/goal-2026-05-23/round-1/C7-network-drop-30s.json"
+  ],
+
+  "follow_ups_recommended": [
+    "F12-FIND-01: Add global axios.defaults.timeout=30000 in bootstrap.js + AbortController on critical writes (V1.0.2).",
+    "F12-FIND-02: Port kioskOfflineQueue's exponential-backoff formula + MAX_ATTEMPTS=10 + setInterval auto-sync to posOfflineQueue (V1.0.2, V2 SaaS REQUIRED).",
+    "F12-FIND-03: Convert PosComponent._kioskPollingInterval() to setTimeout-with-re-evaluation pattern so cadence adapts every tick, not just on WS state-change (V1.0.2 polish).",
+    "Schedule live Playwright network throttling spec (high-latency throttle + packet-loss CDP + TCP RST page.route abort) in V1.0.2 chaos-engineering track — companion to C7-INFO-02 deferred live spec.",
+    "Cross-validate F12-FIND-02 against H-SYNC + C7 attestation that POS offline queue is shipping in V1 (Wave 5F commit 55edb83ba) — confirms the gap is a polish, not a missing feature."
+  ],
+
+  "tier_classification": {
+    "critical_red": 0,
+    "improvement_yellow": 3,
+    "info_white": 3
+  },
+
+  "verdict_summary": "GREEN with 3 YELLOW V1.0.2 polish findings. All 4 sub-scenarios (high-latency persistent, intermittent flap, packet-loss 5%, TCP RST mid-POST) PASS code-static against the existing 4-layer defense stack: kiosk offline queue v2 (IDB + auto-replay + BroadcastChannel cross-tab lock + exponential backoff), IdempotencyKeyMiddleware (Phase 1 replay + Phase 2 atomic acquire + Phase 3 cache-on-2xx INLINE — TCP-RST-safe), app-layer UNIQUE(branch_id, idempotency_key) + OrderService::findExistingOrderForIdempotencyRecovery defense-in-depth, and WebSocketService storm-breaker + KDS/POS polling fallback. NO duplicate INSERT under any of the 4 scenarios. NO audit-chain tamper window. The 3 YELLOW findings are: (1) no global axios timeout ceiling — UX gap for pathological FPM stalls, (2) POS offline queue lacks exponential backoff (asymmetric vs kiosk) — server-side replay-burst risk on flap, (3) PosComponent kiosk-polling cadence only re-evaluates on WS state-change events — narrower gap than the Wave Final 2026-05-23 commit 1a277d809 fix already addresses. All deferrable to V1.0.2 hardening polish; NONE are V1 blockers for Le Cayenne single-resto LOCAL deployment."
+}

@@ -1,0 +1,38 @@
+{
+  "assertions": [
+    {
+      "supplement_picked": "OIGNONS FRITS Supplément €0,90 CHOISIR"
+    }
+  ],
+  "cart_total_affiche": 7.9,
+  "quote": {
+    "url": "http://127.0.0.1:8766/api/frontend/order/quote",
+    "body": {
+      "order_type": 10,
+      "loyalty_code": null,
+      "kiosk_promo_code": null,
+      "is_advance_order": 10,
+      "source": 5,
+      "payment_method": 0,
+      "items": "[{\"item_id\":103,\"instruction\":\"Pain : Pain\",\"quantity\":1,\"item_variations\":[{\"id\":457,\"name\":\"Mayonnaise\",\"variation_name\":\"Sauce (1ère Gratuite)\"},{\"id\":455,\"variation_name\":\"Type de Pain\"}],\"item_extras\":[{\"id\":332,\"name\":\"Tomate\"},{\"id\":333,\"name\":\"Oignon\"},{\"id\":334,\"name\":\"Oignons frits\"}]}]"
+    },
+    "response": {
+      "status": true,
+      "data": {
+        "quote_token": "c672a4c9-adbe-4030-af90-a8fe7dee30d1",
+        "signature": "bf5952fe654aeaa30071b92adaabbe0a93de84e884ad3b25892758607e688fac",
+        "expires_at": "2026-07-21T12:17:04+02:00",
+        "ttl_seconds": 201,
+        "subtotal": 7.9,
+        "discount": 0,
+        "total_tax": 0.72,
+        "delivery_charge": 0,
+        "total_ttc": 7.9,
+        "currency": "EUR",
+        "consumed_at": null
+      }
+    }
+  },
+  "quote_total_scelle": 7.9,
+  "payload_nb_extras": 3
+}

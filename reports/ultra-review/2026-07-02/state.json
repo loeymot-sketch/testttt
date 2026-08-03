@@ -1,0 +1,37 @@
+{
+ "mission": "ULTRA_REVIEW_FULL_STACK_2026-07-02",
+ "goal_doc": "plans/GOAL_ULTRA_REVIEW_FULL_STACK_2026-07-02.md",
+ "head": "594eb92f5",
+ "branch": "pos/category-first-caisse-2026-06-23",
+ "working_tree": "audit-as-is (modifs owner non commitées, zéro commit)",
+ "test_db_setup": "admin+pos passwords reset to 123456 (foodking_e2e test convention only)",
+ "live_proof": {
+  "order_5398_tacos_L_2meats": "created→KDS→OSS→encaissement→PAID+fiscal_seq=2589",
+  "nf525_chain": "CHAIN OK 4 branches avant+après encaissement",
+  "console": "0 err dashboard/POS/OSS/encaissement/catalogue ; 401 attendus KDS-admin + kiosk-non-provisionné"
+ },
+ "waves": {
+  "W0_preflight": "DONE",
+  "W1_comprehension": "DONE",
+  "W2_code_review": "DONE",
+  "W3_sync_review": "DONE",
+  "W4_security_review": "DONE",
+  "W5_e2e_uiux": "DONE",
+  "W6_rapport": "DONE"
+ },
+ "artifacts": [
+  "01-STRUCTURE.md",
+  "05-e2e-live/pos-caisse.md",
+  "05-e2e-live/cross-surface-sync.md",
+  "05-e2e-live/central-uiux.md",
+  "captures/ (8 PNG analysées)",
+  "RAPPORT_ULTRA_REVIEW_COMPLET_2026-07-02.md",
+  "verify-findings.json"
+ ],
+ "result": {
+  "findings": "22 verified (1 P2 + 21 P3), 0 P0, 0 P1",
+  "refuted": 6,
+  "nf525": "CHAIN OK 4 branches",
+  "verdict": "GO V1 LOCAL — bloqueur = déploiement, pas la qualité"
+ }
+}

@@ -1,0 +1,109 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 6,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-C/C04-oss.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "MÉCANISME sévérisé (contre-vérif GStack point 1) : le catch-all SPA avale TOUT asset manquant en 200 text/html. Prouvé par curl : GET /storage/18/clean.jpg (manquant) → 200 text/html 15551B ; GET /js/chunk-inexistant-xyz.js → 200 text/html ; GET /images/item/inexistant.png → 200 text/html — identique sur :8766 ET :8000. Conséquences observées : avatar admin cassé C04/C05/C06 (icône broken + alt 'avatar' visible) avec ZÉRO trace — network.json vide de 4xx (le harnais ne loggue que status>=400 → aveugle par construction), console.json 0 error sur les 6 états. Le même mécanisme transforme un chunk JS manquant/stale en page blanche tout-200 : classe exacte de l'incident prod 'page blanche paiement' du 2026-07-07 (mémoire projet). P1 et non P0 car aucun money-path n'est cassé dans les états capturés — mais c'est un fabricant-de-P0 silencieux, must-fix avant deploy.",
+      "fix_hint": "Exclure les préfixes d'assets (storage/, js/, css/, images/, fonts/, favicon) de la route fallback SPA (catch-all routes/web.php) pour rendre de vrais 404 ; optionnel : handler chunk-load-error côté front (reload une fois sur ChunkLoadError)."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-C/C04-oss.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "Instance avatar (contre-vérif GStack point 1, CONFIRMÉE) : DB foodking_e2e media id=18 (model App\\Models\\User id=1, disk=public) file_name='clean.jpg' ; disque storage/app/public/18/ contient UNIQUEMENT boursin.png (mtime 17 juil. 20:33, ~1h20 avant la capture 21:53) + conversions/. Les DOM C04/C05/C06 référencent http://127.0.0.1:8766/storage/18/clean.jpg (2 img par page : header w-9 h-9 + dropdown w-[90px]). C02/C03 (caissier/chef sans media) utilisent images/default/profile.png → OK. Cause racine probable : DB e2e reseedée alors que storage/ garde le fichier d'un ancien test d'upload d'avatar (boursin.png).",
+      "fix_hint": "Inclure storage/app/public dans le reset e2e (ou snapshot/restore couplé DB+disque) ; pour la row : re-sync media 18 (updateOrCreate file_name='boursin.png' ou re-upload propre)."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-C/C02-pos.network.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Contre-vérif GStack point 2, CONFIRMÉE P2 avec précisions : page servie par localhost:8000 mais TOUT le trafic fonctionnel part sur 127.0.0.1:8766 — auth/login POST 201 (C02/C03/C04), broadcasting/auth, pos/customer-display, auth/authcheck (C05/C06) + toutes les images (theme-logo, thumbs, storage). Source : .env APP_URL=http://127.0.0.1:8766 + MIX_HOST=\"${APP_URL}\" baké au build (resources/js/config/env.js:39 — fallback process.env.MIX_HOST ; l'override runtime.baseUrl n'est PAS présent dans les DOM). CSP report-only connect-src ('self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100) n'autorise pas 8766 → chaque appel API viole → exactement 166 POST /api/frontend/csp-report 204 (8+44+30+50+22+12) + spam console info. Atténuation vérifiée : tools/deploy-lecayenne.sh:101-104 REBUILD npm run production sur le serveur avec le .env serveur + check bundle stale → le chemin deploy officiel ne transporte pas le 8766. Risque résiduel : deploy manuel d'un bundle buildé localement ; et validité d'évidence — cette vague a validé l'app servie par :8766, pas :8000.",
+      "fix_hint": "Pour les runs e2e : aligner APP_URL sur le serveur réellement testé (un seul origin). Ajouter l'origin API à connect-src (ou dériver la CSP de APP_URL). Garder le garde-fou deploy (rebuild serveur) comme gate obligatoire."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "NON NOTÉ PAR GSTACK — files POS actionnables SANS garde-fou temporel : les compteurs sont justes (pill 5 = 4 rows + 'Voir plus (1)' ; web 3 = 3) mais le CONTENU est périmé. Carte 'À ENCAISSER BORNE (5)' = orders 5528/5529/5530/5531 (testids pos-shortcut-cash-55xx du DOM) + 1 cachée : business_date 2026-07-06 — 11 JOURS d'âge — st=PREPARED(8), pay=PENDING_COUNTER(15), boutons 'Encaisser' actifs. Carte 'COMMANDES WEB · 3' = 5674 'A0042' (created 2026-07-12, pay=PAID(5) — payée depuis 5 jours, jamais traitée), 5720 'A9002' (2026-07-15, PAID), 5739 'A0034' (2026-07-16, UNPAID). AUCUNE row n'affiche date/âge : une commande de 11 jours est indiscernable d'une commande de 2 minutes. Asymétrie structurelle prouvée : l'OSS filtre today + stale_window_hours(8) (app/Services/OrderStatusScreenOrderService.php:95-108 : Carbon::today + subHours(config('oss.stale_window_hours',8))) → ces mêmes orders PREPARED sont absents de la colonne 'Prêt' OSS (C04 vide) mais offerts au caissier sur le POS. Aggravant : les queue_numbers recyclent par jour (11 rows historiques 'A0042' en DB) → ambiguïté active ; encaisser aujourd'hui un PENDING_COUNTER du 07-06 produit un encaissement fiscal daté 07-17 pour une vente du 07-06.",
+      "fix_hint": "Appliquer aux endpoints des files POS (composant resources/js/components/admin/pos/PosComponent.vue) la même fenêtre business_date/stale_window que l'OSS + badge date/âge sur les rows hors-jour ; étendre le janitor (lane web) aux web PAID-pending et aux PENDING_COUNTER borne/POS survivants d'un jour précédent (escalade owner : la purge des vieilles commandes payées touche le cash-trail NF525 — couplé CASH-01/REFUND-01 déjà en gate)."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "NON NOTÉ — le libellé de la carte 'À ENCAISSER BORNE (5)' (+ tooltip 'Commandes borne passées en paiement espèces au comptoir') ment sur la provenance : les 5 orders qu'elle contient sont source=POS(15) et source_surface='pos' en DB (5528-5531 vérifiés ; requête empirique source=15 ∧ status=8 ∧ payment_status=15 → count=5 exactement). L'enum app/Enums/Source.php n'a AUCUNE constante KIOSK (WEB=5, APP=10, POS=15). Des tickets créés à la caisse s'affichent donc comme commandes borne pour l'opérateur.",
+      "fix_hint": "Soit filtrer source_surface='kiosk' dans la requête de la carte borne (et créer une file distincte pour le différé caisse), soit renommer la carte 'À encaisser comptoir' ; ajouter un badge de provenance (borne/caisse/web) par row."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "overlap",
+      "severity": "P2",
+      "evidence": "Contre-vérif GStack point 3, CONFIRMÉE : au viewport 1440px, le bouton pill 'À encaisser' + badge 5 (button.pos-v5-btn, span.pos-v5-btn__badge) recouvre le h1 'Commande rapide' (h1.pos-v5-operator-bar__title.pos-v4-title) — rendu visuel 'Con[pill]rapide', titre principal de l'écran caisse illisible. Un seul des deux éléments est cliquable (pas de risque de misclick → P2 et non P1 cat.3), mais c'est le masthead de la surface POS primaire.",
+      "fix_hint": "operator-bar : flex-wrap ou min-width/troncature contrôlée du h1, empêcher la rangée de boutons de chevaucher le bloc titre à ≤1440px."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-C/C04-oss.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "NON NOTÉ — OSS (écran client en salle) : les colonnes 'En préparation' ET 'Prêt' vides rendent chacune un unique glyphe '—' (<p class=\"text-center text-[#A0A3BD] text-[28px] mt-12\">—</p> après un <ul> vide). Protocole cat.5 : 0 illustration, 0 copy ≥20 chars, 0 CTA. Contraste avec le KDS (C03) qui a illustration cloche + 'Aucune commande en cours / Les nouvelles commandes apparaîtront ici' — le standard existe déjà dans le produit.",
+      "fix_hint": "Répliquer le pattern empty-state du KDS côté OSS (illustration + phrase client, ex. 'Vos commandes s'afficheront ici')."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-C/C05-items.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "NON NOTÉ — boutons icône sans nom accessible : (a) C05 table articles, le bouton édition <button class=\"db-table-action edit\" data-drawer=\"#sidebar\"> n'a NI aria-label NI title sur chacune des 10 rows — incohérent avec ses voisins (view aria-label='Voir', delete aria-label='Supprimer', dupliquer aria-label='Dupliquer') ; (b) <button class=\"fa-solid fa-xmark xmark-btn close-db-menu\"> (fermeture menu) sans nom accessible, présent dans les 4 DOMs admin/POS (C02, C03, C04, C05). Points positifs vérifiés : aria-live présent sur OSS (ul role='status' aria-live='polite' aria-label='Prêt') et KDS (div.sr-only aria-live='polite').",
+      "fix_hint": "Ajouter aria-label='Modifier' au bouton edit (même composant table que view/delete) et aria-label='Fermer le menu' au xmark."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "test-e2e-C/C05-items.png",
+      "category": "truncation",
+      "severity": "P3",
+      "evidence": "Contre-vérif GStack point 4, DÉGRADÉE : 'INDISPONIBLES' est bien clippé visuellement dans la tuile KPI (bande PILOTAGE CATALOGUE, C05 PNG), MAIS l'élément est <button class=\"catalog-control-plane__metric catalog-control-plane__metric--alert\" title=\"0 indisponibles\" aria-label=\"Filtrer 0 indisponibles\"> — title + aria-label présents. La règle cat.2 du protocole exige 'no title attr / sibling tooltip' pour P2 → mitigé, P3 cosmétique.",
+      "fix_hint": "Élargir min-width de la tuile ou libellé court 'INDISPO.' ; le tooltip existe déjà."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "test-e2e-C/C02-pos.png",
+      "category": "truncation",
+      "severity": "P3",
+      "evidence": "NON NOTÉ — panneau ticket POS : placeholder 'Téléphone (optionnel)' clippé net en 'Téléphone (optionne' (input droit de la paire Nom/Téléphone), sans ellipsis. Cosmétique (placeholder, pas de donnée perdue).",
+      "fix_hint": "Raccourcir le placeholder ('Téléphone') ou text-overflow:ellipsis sur ::placeholder."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "test-e2e-C/C06-stock-rupture.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "NON NOTÉ — donnée catalogue : catégorie sidebar 'Crudite' sans accent (attendu 'Crudité') sur C06 (et partout où la catégorie s'affiche : POS/borne/wizard). Pas un raw label i18n (sweep regex = 0 hit sur les 6 DOMs) mais une faute dans le nom DB de la catégorie.",
+      "fix_hint": "UPDATE item_categories SET name='Crudité' (vérifier les mirrors menu.js/config si le nom y est répliqué)."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 2, "P2": 6, "P3": 3,
+    "open_P0": 0, "open_P1": 2, "open_P2": 6, "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "clean_checks": {
+    "raw_labels": "0 hit regex i18n sur les 6 DOMs",
+    "console_errors": "0 error/warning/pageerror sur les 6 états (uniquement level=info, dont spam CSP → C-003)",
+    "network_4xx_5xx": "0 (mais voir C-001 : les 404 d'assets sont masqués en 200 par le catch-all — l'absence de 4xx n'est PAS une preuve de santé)",
+    "counters": "C05 : 55 PRODUITS = 55 items vivants status=5 en DB ✓, 28 CATÉGORIES = 28 item_categories vivantes ✓, 55 ACTIFS + 0 INDISPONIBLES cohérents ; C02 : pill 5 = 4 rows + Voir plus (1) ✓, web 3 = 3 rows DOM = 3 orders DB ✓ ; KDS vide cohérent (st=8 PREPARED/st=1 PENDING ne sont pas des états board)",
+    "contrast": "chip EN STOCK C06 = text-emerald-800 sur emerald-100 ≈ 7:1 AA PASS (vérifié avant de flagger)",
+    "false_suspicions_dropped": "vignettes C06 identiques en apparence = 4 fichiers webp distincts (sandwich-cayenne/supreme/mega/terminator) ; 'A9002' = queue légitime du 2026-07-15 (le problème est son ÂGE → C-004, pas sa série)"
+  }
+}

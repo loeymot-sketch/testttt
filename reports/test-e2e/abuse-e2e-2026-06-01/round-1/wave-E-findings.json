@@ -1,0 +1,55 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 16,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-E/01-dashboard.png + 01-dashboard.dom.html + 07-eod-button-observe.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Dashboard audit-trail table renders the raw NF525 action code as a styled visible badge 4 times: DOM contains `<span class=\"bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded\">order.created.pos</span>` (x4, not display:none/hidden ancestor). The string 'order.created.pos' matches the i18n-leak regex ^[a-z]+(\\.[a-z_]+){1,4}$. Sibling rows translate correctly ('Connexion utilisateur', 'Mouvement de caisse enregistré') so this row stands out as untranslated. Console (01-dashboard.console.json + 07-eod-button-observe.console.json) corroborates: 8x + 4x `[intlify] Not found 'label.audit_event_order_created_pos' key in 'fr' locale messages.` (level=warning). Root cause: AuditTrailComponent.vue:77-82 translateAction() builds key 'label.audit_event_' + action.replace(/./g,'_') = 'label.audit_event_order_created_pos'; on miss it returns the RAW action ('order.created.pos'), which leaks. Verified key ABSENT in BOTH locales: grep 'audit_event_order_created' resources/js/languages/fr.json and en.json = 0 hits (siblings audit_event_order_counter_payment_confirmed / audit_event_order_refund_counter_entry exist at fr.json L916-917 / en.json L755-756).",
+      "fix_hint": "Add the missing key (and any sibling order-lifecycle audit codes) in resources/js/languages/fr.json (~L915, after audit_event_z_report_opened) e.g. \"audit_event_order_created_pos\": \"Commande créée (caisse)\", and the EN mirror in resources/js/languages/en.json (~L757). Audit all distinct DB action codes emitted by AuditLogService against the audit_event_* key set so no other lifecycle code (order.created.kiosk, order.status.changed, etc.) leaks. Do NOT alter the canonical DB action string (NF525 HMAC chain) — rendering-layer translation only.",
+      "status": "open"
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-E/02-items-catalog.png + 03-item-availability.png + 02-items-catalog.dom.html",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "The 4th catalog control-plane KPI metric (the alert/indisponible counter) is visually clipped: the screenshot shows the label rendered as 'INDISPONIB' with the right edge of the word cut at the metric-strip boundary (value '1' present). DOM: `<button class=\"catalog-control-plane__metric catalog-control-plane__metric--alert\" title=\"1 indisponibles\" aria-label=\"Filtrer 1 indisponibles\"><span>1</span><small>indisponibles</small></button>`. Tooltip (title) AND aria-label expose the full text, so per category-2 rule (truncation WITHOUT tooltip) this is NON-blocking. Disclosed as UX-quality only.",
+      "fix_hint": "resources/js/components/admin/... catalog-control-plane metric strip: allow the 4th metric --alert to wrap or widen the strip so 'INDISPONIBLE' is not visually cut (the data is already accessible via title/aria-label, so no a11y/data loss).",
+      "status": "open"
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-E/04-stock-rupture.png + 04-stock-rupture.dom.html",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Stock-management v2 product cards truncate the product name with ellipsis: screenshot shows 'Sand wic...', 'Big Ca...', 'Men u...', 'Frites Seu...', 'Boiss on...' even though the right side of each card is mostly empty whitespace. DOM confirms each card carries the full name in a title attr: stock-mgmt-product-* cards have title=\"Sandwich Cayenne\" / \"Big Cayenne\" / \"Menu (Frites + Boisson)\" / \"Frites Seules\" / \"Boisson Seule\". Tooltip present => category-2 NON-blocking. Disclosed as UX-quality (avoidable cut given available card width).",
+      "fix_hint": "StockRuptureDashboardComponent (resources/js/components/admin/... stock-mgmt product card): widen the name container / allow 2-line clamp so common product names are not cut when horizontal space is available. Tooltip already present, so no a11y regression.",
+      "status": "open"
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-E/08-cash-overview.png + 08-cash-overview.dom.html + 07-transactions-zview.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "On /admin/cash-overview (date filter = today 06/02/2026): the summary cards read 'Grand total 0,00\\u00a0\\u20ac 0 tx' (Caisse/Borne/Livreur all 0,00\\u20ac/0tx) and the empty placeholder 'Aucune transaction trouvee pour les filtres actuels' is shown, WHILE the reconciliation block reads 'Especes encaissees aujourd'hui: 52,00\\u00a0\\u20ac' and 'Especes attendues au tiroir: 102,00\\u00a0\\u20ac' (Fond de caisse 50,00\\u20ac, caisse ouverte a 18:27). Independently VERIFIED these are TWO DIFFERENT data sources, neither incorrect: CashOverviewController.php:116 builds the summary from `transactions WHERE type='payment'` inside the requested date window (=0 today), whereas the reconciliation card (CashOverviewController.php:218-245) derives from the live OPEN CashDrawerSession (opening_amount 50,00 + positive cash movements => 52,00 encaisse / 102,00 attendu), and that block is intentionally NOT clamped to the transactions date window. Category-11 P0 requires the SAME fact to differ across surfaces; here the two numbers are different facts (date-filtered transaction encashments vs live open-drawer cash). Hence P2 UX-confusion (admin sees '0 tx / aucune transaction' next to 'encaisse 52,00\\u20ac' on one screen), NOT a P0 numeric-integrity break, NOT a fiscal/GATE-ESCALATION. NOTE: did NOT verify what wrote the 52,00\\u20ac of drawer movements; classification does not depend on it.",
+      "fix_hint": "CashOverviewComponent.vue: add a one-line caption distinguishing the two metrics (e.g. summary = 'Transactions encaissees (periode filtree)' vs reconciliation = 'Tiroir ouvert en cours, hors filtre date') so an admin does not read 0 tx / aucune transaction as contradicting 52,00\\u20ac encaisse. No backend/fiscal change.",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 3,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 3,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER"
+}

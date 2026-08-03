@@ -1,0 +1,453 @@
+{
+  "drinks": [
+    {
+      "text": "Coca-Cola 33cl | Coca-Cola original | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/coca.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca-Cola 33cl | Coca-Cola original | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca-Cola 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca-Cola Zero 33cl | Coca-Cola sans sucre | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/coca-zero.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca-Cola Zero 33cl | Coca-Cola sans sucre | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca-Cola Zero 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fanta Orange 33cl | Fanta Orange | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/fanta-orange.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fanta Orange 33cl | Fanta Orange | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fanta Orange 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Sprite 33cl | Sprite | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/sprite.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Sprite 33cl | Sprite | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Sprite 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Oasis Tropical 33cl | Oasis Tropical | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/oasis.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Oasis Tropical 33cl | Oasis Tropical | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Oasis Tropical 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Orangina 33cl | Orangina | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/tropico.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Orangina 33cl | Orangina | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Orangina 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Eau Plate 50cl | Eau minérale | 1,00 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/eau.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Eau Plate 50cl | Eau minérale | 1,00 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Eau Plate 50cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Eau minérale",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Capri-Sun | Capri-Sun 20cl | 1,50 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/capri-sun.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Capri-Sun | Capri-Sun 20cl | 1,50 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Capri-Sun",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Capri-Sun 20cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca Cherry 33cl | Coca-Cola Cherry | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/coca-cherry.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca Cherry 33cl | Coca-Cola Cherry | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Coca Cherry 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Tropico 33cl | Tropico | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/tropico.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Tropico 33cl | Tropico | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Tropico 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Ice Tea Pêche 33cl | Ice Tea saveur pêche | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/lipton-peche.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Ice Tea Pêche 33cl | Ice Tea saveur pêche | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Ice Tea Pêche 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fanta Citron 33cl | Fanta Citron | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/fanta-citron.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fanta Citron 33cl | Fanta Citron | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fanta Citron 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fuze Tea 33cl | Fuze Tea | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/lipton-framboise.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fuze Tea 33cl | Fuze Tea | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Fuze Tea 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Hawaï 33cl | Hawaï | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/fanta-fraise.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Hawaï 33cl | Hawaï | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Hawaï 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Perrier 33cl | Perrier (eau gazeuse) | 1,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/eau.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Perrier 33cl | Perrier (eau gazeuse) | 1,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Perrier 33cl",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Menu Enfant Nuggets | 6 nuggets · Frites · Capri-Sun | 4,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/nuggets.png",
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Menu Enfant Nuggets | 6 nuggets · Frites · Capri-Sun | 4,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "6 nuggets · Frites · Capri-Sun",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Menu Enfant Chicken Burger | Burger · Frites · Capri-Sun | 4,90 €",
+      "imgSrc": "http://127.0.0.1:8766/images/menu/chicken_burger.png",
+      "imgW": 834,
+      "imgH": 708
+    },
+    {
+      "text": "Menu Enfant Chicken Burger | Burger · Frites · Capri-Sun | 4,90 €",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    },
+    {
+      "text": "Burger · Frites · Capri-Sun",
+      "imgSrc": null,
+      "imgW": 0,
+      "imgH": 0
+    }
+  ],
+  "brokenImgs": [
+    {
+      "src": "tiramisu.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "coca.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "coca-zero.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "fanta-orange.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "sprite.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "oasis.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "tropico.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "eau.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "capri-sun.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "coca-cherry.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "tropico.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "lipton-peche.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "fanta-citron.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "lipton-framboise.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "fanta-fraise.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "eau.png",
+      "w": 0,
+      "h": 0
+    },
+    {
+      "src": "nuggets.png",
+      "w": 0,
+      "h": 0
+    }
+  ],
+  "W_ITEMS_count": 38,
+  "catList": [
+    {
+      "name": "Tout",
+      "count": 0
+    },
+    {
+      "name": "Sandwichs",
+      "count": 4
+    },
+    {
+      "name": "Galette",
+      "count": 2
+    },
+    {
+      "name": "Burgers",
+      "count": 6
+    },
+    {
+      "name": "Tacos",
+      "count": 2
+    },
+    {
+      "name": "Bols",
+      "count": 2
+    },
+    {
+      "name": "Frites",
+      "count": 2
+    },
+    {
+      "name": "Desserts",
+      "count": 3
+    },
+    {
+      "name": "Boissons",
+      "count": 15
+    },
+    {
+      "name": "Menu enfant",
+      "count": 2
+    }
+  ],
+  "imgErr": []
+}

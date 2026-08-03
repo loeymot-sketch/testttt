@@ -1,0 +1,68 @@
+{
+  "micro_system": "S12-delivery",
+  "verdicts": [
+    {
+      "id": "S12-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED dead-code: blockRoles=[ADMIN=1] (DeliveryBoyService.php:28), DELIVERY_BOY=3 (Role.php:9), so !in_array(3,[1]) is a compile-time constant TRUE at lines 103,134,152,202,224 — every else throws permission_denied unreachable. BUT for update/destroy/changePassword/changeImage the REAL guard is assertTargetRole() called pre-try (100,199,221) + inner hasRole (line 155 in destroy). The only method where the no-op is the SOLE 'guard' is show() (131-134) which has no assertTargetRole preflight. Net: cosmetic dead-code, no security hole (no path lets a wrong-role user mutate). P2->P3."
+    },
+    {
+      "id": "S12-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "STRONGEST finding, CONFIRMED. Escrow audit row delivery.cash_collected_escrow written unconditionally on COD DELIVERED (OrderService.php:1878 cashEscrowWritten=true, 1923 write). Session mirror gated on if($openSession) (1961) via findOpenSessionForDeliveryBoy, recordMovement called with strict=false (1968). deliveryBoyOrderChangeStatus (1755) has NO open-session precondition before OFD/DELIVERED. So a driver with no open shift collects real COD cash -> escrow audit row exists but ZERO delivery_boy_cash_movements row -> invisible to ZReportCashEnrichmentService session aggregation (413). recordMovement already supports strict-422 mode for the fix. NF525 cash-trail completeness gap. P2 holds."
+    },
+    {
+      "id": "S12-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "PARTIALLY real, rationale OVERSTATED -> downgrade. destroy() (149-169) confirmed: only deletes addresses + soft-deletes User, NO check for OPEN DeliveryBoyCashSession or active assigned orders. HOWEVER the finding's claim that a deleted driver's session 'can no longer be loaded/closed/reconciled' is FALSE: index() (controller 53-92) queries DeliveryBoyCashSession directly with NO User join/whereHas, and closeSession(133)/reconcileSession(192) operate by sessionId via firstOrFail() with NO User join — so the orphaned session stays fully listable/closeable/reconcilable. The genuinely solid harm is the orphaned in-flight ORDERS (no reassignment), not unmanageable cash. Real but lower impact than claimed. P2->P3."
+    },
+    {
+      "id": "S12-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED dead enum + always-0 bucket, but NO money error and necessity weak. recordMovement whitelist (DeliveryBoyCashSessionService.php:295-301) allows 5 types; grep confirms only caller passing a type for delivery is OrderService.php:1962 = TYPE_ORDER_COLLECT. CHANGE_GIVEN/DRAWER_OPEN/DRAWER_CLOSE/ADJUSTMENT never recorded for delivery -> ZReportCashEnrichmentService delivery_cash_change_given_total (413) permanently 0.0. Comment :364-365 says 'gross collected vs change rendered' though amount recorded is $locked->total (order total). The 4 types deliberately mirror POS CashDrawerService:377-379 for symmetry — this is feature-incomplete scaffolding, not a bug. Auditor admits no money error. At most a one-line comment fix ('gross'->'net order total'). is_necessary:false (cosmetic). Finding's JSON rated P2; correct severity is P3."
+    },
+    {
+      "id": "S12-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. selectDeliveryBoy (OrderService.php:2535-2581) validates positive int (2547), role 'Delivery Boy' (2564-2571), same branch (2573), then sets delivery_boy_id + save (2580) BYPASSING OrderStateMachine entirely (no apply/canTransition call). No $order->status guard: OrderStateMachine.php:77 confirms DELIVERED is terminal (->RETURNED only), so a finished order's driver CAN be silently reassigned, rewriting post-hoc cash accountability (escrow already credited original driver) + notifying a new driver for a done job. No $target->status (active/inactive) check either. Real operational + cash-trail weakness, but edge-case (admin-initiated, no direct money loss). P3 holds."
+    },
+    {
+      "id": "S12-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED dead catch but it is DELIBERATE forward-scaffolding, not an active defect. reconcile() controller catches CashVarianceRequiresApprovalException (DeliveryBoyCashSessionController.php:220) but reconcileSession (service 192-273) throws only HttpException 404/422, never that exception. Controller docblock :206 explicitly states 'future Wave — currently service is lenient', and service docblock :182-185 says the variance gate is reused-from-POS-but-deferred. So both the dead catch AND the missing variance-approval gate are knowingly deferred to a future Wave, documented in-code. Not a hidden/misleading bug — it is labeled scaffolding. Worth a backlog note, not an active fix. is_necessary:false. P3 holds."
+    },
+    {
+      "id": "S12-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED contradiction. deliveryBoyCashSessionRoutes.js list (line ~24) and show (~36) both meta permissionUrl='delivery-boys' (mutation perm), while the file's OWN header comment line 10 says 'delivery-boys_show (read), delivery-boys (mutations)' and backend DeliveryBoyCashSessionController.__construct gates index/show with permission:delivery-boys_show (42, docblock 31) and only open/close/reconcile with permission:delivery-boys (43). So a read-only delivery-boys_show supervisor is hidden from the SPA list/show page despite the backend permitting read. Over-restrictive front gate, contradicts backend contract + the route file's own comment. Low impact (UX/perms, no data exposure or money). P3 holds; auditor's P3 + medium-confidence appropriate."
+    }
+  ],
+  "coverage_gaps": [
+    "deliveryBoyOrderChangeStatus authz NOT examined by auditor (routes/api.php:1397 /change-status/{order}) — I verified it IS guarded (OrderService.php:1760: abort 403 if order->delivery_boy_id != user->id, abort 403 cross-branch), so the obvious 'driver mutates unassigned order' exploit is CLOSED — but auditor never checked it; the open question that remains is whether the status-transition SEQUENCE validity is enforced (state machine OrderStateMachine.php:71-77 restricts ASSIGNED->OFD/DELIVERED, OFD->DELIVERED) on this driver-facing path.",
+    "openSession opening_amount validation + duplicate-open behavior (DeliveryBoyCashSessionService::openSession:63, DeliveryBoyCashSessionOpenRequest) not audited — finding set examines reconcile/close/recordMovement but never the open path's float/negative/409-already-open handling.",
+    "DeliveryBoyAddressController CRUD (routes/api.php:651-660, store/update/destroy) entirely unaudited — driver address mutation endpoints, no authz/ownership finding raised.",
+    "DeliveryBoyCashSessionResource serialization (movements exposure) + the always-0 delivery_cash_change_given_total surfaced to the Z report UI (ShowComponent reads session.movements) — the front-end consumption of the dead change_given bucket (S12-04) is not examined for owner-misleading display.",
+    "closeSession has a closing_amount>=0 guard (DeliveryBoyCashSessionService:135) but NO upper-bound/sanity check vs expected, and NO requirement that all assigned COD orders be DELIVERED before close — a shift can close with in-flight COD cash uncollected; not raised by auditor."
+  ]
+}

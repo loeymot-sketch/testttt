@@ -1,0 +1,61 @@
+```php
+<?php
+
+namespace App\Jobs;
+
+use App\Enums\OrderStatus;
+use App\Models\Order;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Broadcast;
+
+class NotifyKitchenOnOrderConfirmed implements ShouldQueue
+{
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
+
+    public int $tries = 3;
+
+    public int $backoff = 30;
+
+    public function __construct(
+        public int $orderId,
+        public int $branchId
+    ) {
+    }
+
+    public function handle(): void
+    {
+        try {
+            $order = Order::query()
+                ->with('kitchenItems')
+                ->where('branch_id', $this->branchId)
+                ->findOrFail($this->orderId);
+        } catch (ModelNotFoundException $exception) {
+            return;
+        }
+
+        if ($order->status !== OrderStatus::CONFIRMED) {
+            return;
+        }
+
+        Broadcast::event('order.kitchen.notify')
+            ->toOthers()
+            ->via('pusher')
+            ->on(new PrivateChannel("branch.{$order->branch_id}.kitchen"))
+            ->with([
+                'order_id' => $order->id,
+                'branch_id' => $order->branch_id,
+                'status' => $order->status instanceof OrderStatus ? $order->status->value : $order->status,
+                'kitchen_items' => $order->kitchenItems,
+            ]);
+    }
+}
+```

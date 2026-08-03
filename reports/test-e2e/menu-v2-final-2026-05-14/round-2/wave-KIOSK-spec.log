@@ -1,0 +1,25 @@
+[1A[2K  1) [chromium] › tests/e2e/menu-v2-kiosk-final.spec.js:541:3 › menu-v2-final Wave KIOSK — 9 scenarios (V2 heal-light) › 9 kiosk orders (API-hybrid) + DB persist + sidebar verify 
+
+    Error: at least 8/9 scenarios placed OK (got 7)
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThanOrEqual[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: >= [32m8[39m
+    Received:    [31m7[39m
+
+      980 |       // allow 1 soft fail for kiosk auto-login flake / DB lock contention).
+      981 |       const okCount = perScenario.filter((s) => s.placement_ok).length;
+    > 982 |       expect(okCount, `at least 8/9 scenarios placed OK (got ${okCount})`).toBeGreaterThanOrEqual(8);
+          |                                                                            ^
+      983 |     } finally {
+      984 |       try { rec.dispose(); } catch (_e) { /* ignore */ }
+      985 |       try { await ctx.close(); } catch (_e) { /* ignore */ }
+        at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/menu-v2-kiosk-final.spec.js:982:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-menu-v2-kiosk-final-me-21b71-d-DB-persist-sidebar-verify-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › tests/e2e/menu-v2-kiosk-final.spec.js:541:3 › menu-v2-final Wave KIOSK — 9 scenarios (V2 heal-light) › 9 kiosk orders (API-hybrid) + DB persist + sidebar verify 

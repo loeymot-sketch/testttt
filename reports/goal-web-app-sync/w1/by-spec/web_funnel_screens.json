@@ -1,0 +1,81 @@
+{
+ "spec": "web:funnel+screens",
+ "scope": "Cartographie read-only du flux client web standalone (/Users/1millnonstop/Downloads/web) : funnel.jsx + screens.jsx + screens-v3.jsx, plus les fichiers de câblage réellement traversés par le flux (index.html App root, flows.jsx CartDrawer, api.js, data/menu.js) — vérifié par Read/grep/eval, aucun fichier modifié.",
+ "summary": "Le flux client est : App (index.html:85-199, route state) → WebHome/WebMenu (screens.jsx, catalogue lu depuis window.W_ITEMS/W_CATS exposés par data/menu.js) → ItemDetailModal (screens-v3.jsx:195) → WizardFlow ou addToCart → CartDrawer (flows.jsx) → UpsellFlow → CheckoutPage → PaymentPage → ConfirmationPage → TrackingPage (funnel.jsx). La commande part réellement au backend via window.LC.api.placeOrder → POST /api/frontend/order (api.js:410-437) avec OTP guest inline, coupon backend-validé et poll de statut réel. Risques principaux : (1) le catalogue web data/menu.js n'a que 31 items vs 42 canoniques borne (11 produits manquants, surtout boissons + frites cheddar) ; (2) les méthodes card/Apple/Google envoient payment_method=4 sans aucun débit réel (form carte mock 4242) et la confirmation affiche « Paiement reçu » — c'est exactement le point d'insertion Stripe flag-gated ; (3) la page fidélité mélange solde réel (api.profile) et données fabriquées (historique, leaderboard, streak, ID wallet) ; ctx.loyaltyCode est déjà pipé jusqu'au placeOrder mais jamais alimenté — point d'insertion redeem fidélité prêt.",
+ "facts": [
+  "FLUX GLOBAL — App root et router à état : /Users/1millnonstop/Downloads/web/index.html:85-199 ; route = useState('home') avec valeurs home|menu|loyalty|about|checkout|payment|confirm|track (index.html:86) ; ordre des étapes : WebHome/WebMenu → ItemDetailModal (index.html:155-161) → WizardFlow (162-182) ou addToCart (107) → CartDrawer (183-188) → goCheckout ouvre UpsellFlow AVANT le checkout (index.html:114 et 190-196) → CheckoutPage (136) → PaymentPage (137-143) → ConfirmationPage (144) → TrackingPage (145).",
+  "CATALOGUE — lu depuis window.W_CATS / window.W_ITEMS / window.W_DIET exposés par data/menu.js chargé avant les JSX (index.html:51, screens.jsx:28-30) ; data/menu.js exporte aussi window.LC.menu { brand, pepperClub, ... } (menu.js:479-496) et W_ITEMS (menu.js:511). CheckoutPage relit window.LC.menu.brand pour l'adresse de retrait (funnel.jsx:159-163).",
+  "PANIER — cart = useState([]) dans App (index.html:96) ; ligne panier = { ...item, price: UNIT total du wizard, qty, subs, state } où state = composition wizard persistée pour résolution API (index.html:166-180) ; prix calculés CLIENT par subtotal = Σ price*qty (flows.jsx:40, funnel.jsx:70, 129, 414) ; le SSOT prix réel est le backend au placeOrder ; cart vidé au passage confirm (index.html:141) donc ConfirmationPage/TrackingPage utilisent le snapshot ctx.orderTotal (funnel.jsx:586, 660).",
+  "COMMANDE — part via window.LC.api.placeOrder (funnel.jsx:339-364 placeRealOrder) → POST /api/frontend/order, body { branch_id, order_type 10|5, source: 5 (WEB), payment_method, items JSON, coupon_id?, loyalty_code?, delivery* } + X-Idempotency-Key (api.js:410-437) ; mapping paiement : card/apple/google → 4, sinon 1 (funnel.jsx:340) ; auth guest OTP inline phone→code (funnel.jsx:375 gate, 385-407 ; api.js:143-151 guestOtp/guestVerify) ; coupon backend-validé api.checkCoupon → /api/frontend/coupon/coupon-checking surface:'web' (funnel.jsx:136-150, api.js:464-469) ; livraison : saveAddress → address_id, backend recalcule le fee (funnel.jsx:344-352, api.js:425-431) ; tracking = poll réel GET /api/frontend/order/show/{id} toutes les 20s avec mapping statut→étape statusToStep (funnel.jsx:645-653, 662-685 ; api.js:439-442).",
+  "INSERTION FIDÉLITÉ (a) — points d'ancrage vérifiés : OrderSummary a déjà un strip fidélité '+X pts' (funnel.jsx:100-105) et CartDrawer une ligne '+ Fidélité' (flows.jsx:129) — earn ratio 1pt/€ HARDCODÉ Math.round(total) au lieu de api.loyaltyConfig() qui existe (GET /api/frontend/loyalty/config, api.js:451-454) ; PaymentPage a un banner compte/points pour guests (funnel.jsx:491-503) ; le canal REDEEM est déjà pipé bout-en-bout : ctx.loyaltyCode → orderOpts.loyaltyCode (funnel.jsx:341) → body.loyalty_code (api.js:434) mais RIEN ne set ctx.loyaltyCode dans le funnel → il suffit d'ajouter l'UI qui l'alimente ; solde réel déjà câblé : api.profile() → loyalty_points (screens.jsx:516-524, api.js:457-460) ; helper redeem window.LC.loyalty (data/loyalty.js, chargé index.html:53, utilisé screens.jsx:581, 687-708).",
+  "INSERTION STRIPE FLAG-GATED (b) — points d'ancrage vérifiés : tableau methods (counter/card/apple/google) funnel.jsx:408-413 (flag → filtrer 'card'/'apple'/'google') ; submit() funnel.jsx:366-383 (sentinel decline 4000...0002 à 371) ; placeRealOrder mapping pm funnel.jsx:340 ; formulaire carte MOCK pré-rempli '4242 4242 4242 4242' funnel.jsx:321 et 452-480 (à remplacer par Stripe Elements sous flag) ; badge 'Paiement au comptoir' funnel.jsx:487 et texte confirmation 'Paiement reçu, merci !' funnel.jsx:602 à conditionner au même flag.",
+  "ÉCRANS AMONT — WebHome (screens.jsx:74-366) : hero, daily special hardcodé (156-161), featured Méga (199-219), 4 premiers W_ITEMS (230), FAQ_HOME (361) ; WebMenu (screens.jsx:369-476) : filtres cat/recherche/diet sur W_ITEMS, comptages par catégorie (385) ; WebLoyalty (screens.jsx:506-762) : TIERS 0/500/1500/5000 (484-489), solde réel si authed ; ItemDetailModal (screens-v3.jsx:195-264) : allergènes réels mappés gluten/lactose/oeuf (204-205), CTA Personnaliser si item.wizard sinon Ajouter (250-258).",
+  "CHARGEMENT — page 100% Babel-standalone in-browser (index.html:46-48), ordre : data/menu.js → data/loyalty.js → api.js (index.html:51-55) puis components/screens/screens-v3/loyalty-v2/orders/flows/wizard-v2/account-v2/funnel/upsell (index.html:70-80)."
+ ],
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Catalogue web périmé : 31 items vs 42 canoniques borne (11 produits manquants)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 511,
+   "evidence": "Éval réelle de data/menu.js : W_ITEMS.length = 31 / W_CATS = 10 (avec 'all'). Fixture canonique catalog-canonical.json : 42 items / 9 catégories. Manquants côté web : Coca Cherry 33cl, Fanta Citron 33cl, Fuze Tea 33cl, Hawaï 33cl, Ice Tea Pêche 33cl, Perrier 33cl, Tropico OK mais Capri-Sun OK, Grande/Petite Frites Cheddar fondu, Grande/Petite Frites Cheddar + Oignons frits, Menu Enfant Chicken Burger (le web a 'Menu Enfant Burger', nom divergent). Le commentaire screens.jsx:25 dit encore « 11 cats / 41 items » (doublement périmé).",
+   "recommendation": "W3 : régénérer data/menu.js depuis catalog-canonical.json (42 items, noms exacts, prix exacts) ; corriger le commentaire SSOT screens.jsx:23-26."
+  },
+  {
+   "severity": "P2",
+   "title": "Méthodes card/Apple/Google = faux paiement : payment_method=4 envoyé sans débit + « Paiement reçu, merci ! » affiché",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 340,
+   "evidence": "funnel.jsx:340 `const pm = (ctx.method === 'card' || ctx.method === 'apple' || ctx.method === 'google') ? 4 : 1;` — aucun appel Stripe ; formulaire carte pré-rempli mock funnel.jsx:321 `{ num: '4242 4242 4242 4242', ... }` ; pourtant ConfirmationPage funnel.jsx:602 affiche `' Paiement reçu, merci !'` pour toute méthode ≠ counter, alors que funnel.jsx:485-487 avoue « pas de débit en ligne en V1 » (badge Paiement au comptoir).",
+   "recommendation": "C'est le point d'insertion Stripe flag-gated : flag OFF → masquer card/apple/google du tableau methods (funnel.jsx:408-413) et supprimer le texte « Paiement reçu » ; flag ON → Stripe Elements remplace le form mock et pm=4 devient légitime."
+  },
+  {
+   "severity": "P2",
+   "title": "Page fidélité : solde réel mélangé à des données fabriquées (historique, leaderboard, streak, ID wallet, referral)",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 582,
+   "evidence": "Solde réel via api.profile (screens.jsx:517-524) MAIS : « +33 pts gagnés ces 7 derniers jours » hardcodé (screens.jsx:582), historique fictif 14/12/8/5 mai (screens.jsx:724-728), ID wallet 'LECAY-347-A9F2C' (screens.jsx:592), streak '4 semaines / 4/8' (screens.jsx:629-632), referral 'CAYENNE-IKYES' (screens.jsx:640), Leaderboard fictif Mehdi K./Karim B./« Ikyes B. · TOI » (screens-v3.jsx:127-131), Challenge 2/3 66% (screens-v3.jsx:163-166). Le redeem est une simulation locale « DÉMO V1 — non synchronisé avec la caisse » (screens.jsx:715).",
+   "recommendation": "W3 fidélité réelle : remplacer l'ID wallet par u.loyalty_code (api.profile le renvoie, api.js:456-459), brancher l'historique sur une vraie API ou le supprimer, retirer leaderboard/streak/challenge/referral fabriqués, câbler le redeem réel via ctx.loyaltyCode déjà pipé jusqu'à placeOrder."
+  },
+  {
+   "severity": "P2",
+   "title": "Contenu marketing contredit la livraison réelle : FAQ « Vous livrez ? Non » alors que le checkout propose la livraison",
+   "file": "/Users/1millnonstop/Downloads/web/screens-v3.jsx",
+   "line": 110,
+   "evidence": "screens-v3.jsx:110 `{ q: 'Vous livrez ?', a: 'Non, on est 100% à emporter à Hénin-Beaumont...' }` + hero screens.jsx:100 « Pas de livraison qui prend 1h » + WHY card screens.jsx:78 — alors que CheckoutPage offre le mode Livraison avec devis géocodé réel (funnel.jsx:202-206, 210-225) depuis [DELIVERY 2026-06-27]. La FAQ paiement (screens-v3.jsx:113) promet aussi « CB sécurisée Stripe ou Apple/Google Pay » en ligne alors que rien n'est débité en ligne.",
+   "recommendation": "Aligner FAQ_HOME + hero + WHY sur la réalité : livraison dispo (4€/≤5km, offerte ≥30€) ; conditionner la mention Stripe au flag paiement carte."
+  },
+  {
+   "severity": "P3",
+   "title": "Checkout : jours et créneaux hardcodés périmés, jamais envoyés au backend",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 122,
+   "evidence": "funnel.jsx:122-128 jours figés `{ id: 'today', d: 'AUJ', n: '14' }, { id: 'tomorrow', d: 'JEU', n: '15' }...` (dates de mai, pas calculées avec Date()) ; funnel.jsx:114-121 heures figées '19h45'/'20h05'... ; ctx.slot/ctx.day ne sont PAS transmis à placeOrder (orderOpts funnel.jsx:341 ne contient ni slot ni day) — le créneau choisi est purement décoratif.",
+   "recommendation": "Calculer les jours/heures dynamiquement et transmettre le créneau (is_advance_order/delivery_time existent déjà dans api.js:421,430)."
+  },
+  {
+   "severity": "P3",
+   "title": "Points fidélité affichés calculés client (1pt/€ hardcodé) au lieu de la config backend",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 103,
+   "evidence": "OrderSummary funnel.jsx:103 `Tu gagnes <b>+{Math.round(total)} pts</b>`, PaymentPage funnel.jsx:497 `Cumule +{Math.round(total)} pts`, earnedPoints funnel.jsx:361 `Math.round(total || 0)` — ratio 1pt/€ codé en dur alors que api.loyaltyConfig() (GET /api/frontend/loyalty/config, api.js:451-454) expose points_per_euro et n'est appelé nulle part dans le funnel.",
+   "recommendation": "Point d'insertion affichage fidélité : charger loyaltyConfig une fois et dériver les pts affichés + idéalement afficher les pts réellement crédités depuis la réponse placeOrder."
+  },
+  {
+   "severity": "P3",
+   "title": "Daily special et compte à rebours fabriqués sur la home",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 156,
+   "evidence": "screens.jsx:156-161 : « Sandwich Cayenne + Menu à 9,00 € », prix barré 10,00 € et « ⏱ Fin dans 4 h 12 min » — 100% statiques, aucune promo backend correspondante ; le CTA onItem('cayenne') ouvre juste la fiche produit à 7,40 € (prix vérifié dans menu.js), pas une offre à 9 €.",
+   "recommendation": "Supprimer ou brancher sur une vraie promo (kiosk_promos / coupon backend) ; à minima retirer le countdown fictif."
+  },
+  {
+   "severity": "INFO",
+   "title": "Numéros de téléphone placeholder '06 51 30 XX XX' incohérents avec brand.phone",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 269,
+   "evidence": "screens.jsx:269 `href=\"tel:0651300000\"` avec libellé « 06 51 30 XX XX » ; idem funnel.jsx:742 (carte « Une question ? ») et screens-v3.jsx:121 (FAQ événements) — alors que data/menu.js brand.phone = '+33 6 51 30 00 00'. Le XX XX masqué côté UI vs numéro complet dans le tel: est incohérent.",
+   "recommendation": "Lire window.LC.menu.brand.phone partout (comme fait pour l'adresse en [ADDRESS-SSOT 2026-07-07] funnel.jsx:159-163)."
+  }
+ ]
+}

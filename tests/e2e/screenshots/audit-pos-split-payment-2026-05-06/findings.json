@@ -1,0 +1,20 @@
+[
+  {
+    "step": "SP-01",
+    "slug": "three-modes-visible",
+    "state": "observed",
+    "severity": "P1",
+    "note": "cash=false card=false multi=false",
+    "screenshot": "tests/e2e/screenshots/audit-pos-split-payment-2026-05-06/02-modal-open-success.png",
+    "ts": "2026-05-06T19:39:05.240Z"
+  },
+  {
+    "step": "SP-02",
+    "slug": "multi-btn",
+    "state": "missing",
+    "severity": "P1",
+    "note": "Bouton multi non visible",
+    "screenshot": "tests/e2e/screenshots/audit-pos-split-payment-2026-05-06/01-multi-btn-missing-failed.png",
+    "ts": "2026-05-06T19:39:20.133Z"
+  }
+]

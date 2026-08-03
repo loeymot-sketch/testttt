@@ -1,0 +1,310 @@
+{
+  "wave": "C",
+  "run_n": 6,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — run-5 closure stands. Run-6 spec returned at line 238 after `BLOCKED@no-frites`; states 04..10 (cart, payment, payment-blocked, KDS-receives, POS-suivi, KDS-prete, customer-screen) were NOT captured. Artifact `09-kds-prete.network.json` does not exist in run-6 dir (run-6 dir contains 5 states: 01-kds-baseline, 01-kiosk-idle, 01-pos-supervisor-baseline, 02-kiosk-catalog, 03-kiosk-blocked-no-frites). Closure inherited from run-5 cumulative evidence; cannot be independently re-verified in run-6.",
+      "fix_hint": "No action required for the underlying defect; for audit completeness, spec should capture the order-placement loop (states 04..10) before convergence can be reaffirmed independently in a later run."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "iter15-mega-kiosk/08-pos-suivi-shows-kiosk-order.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — run-5 closure stands. State 08 not captured in run-6 (spec returned at no-frites). Numeric integrity of cross-surface kiosk order total (€2,00 on N°A0036) cannot be re-checked.",
+      "fix_hint": "No action — closure stands from run-5."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — run-5 closure stands. State 10 not captured.",
+      "fix_hint": "No action — closure stands from run-5."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.png",
+      "category": "empty_state_quality",
+      "severity": "P1",
+      "evidence": "PASS — run-6 02-kiosk-catalog.dom.html shows 8 product cards (drinks: Eau Plate 50cl, Capri-Sun, Coca-Cola 33cl, Coca-Cola Zero, Fanta Orange, Oasis Tropical, Orangina, Sprite) with relative `/storage/` URLs (no http://127.0.0.1:8000/storage prefix observed in product images). 02-kiosk-catalog.console.json = `[]` and 02-kiosk-catalog.network.json = `[]`; no CSP rejection / 4xx on storage assets. Sidebar still uses cover.png placeholder (tracked under C-018, P2).",
+      "fix_hint": "No action required for storage URLs — closure confirmed."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "PASS — 02-kiosk-catalog.network.json = `[]` in run-6. CSP-report endpoint storm not reproduced. Closure independently confirmed for the catalog state.",
+      "fix_hint": "No action — closure confirmed."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.console.json",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "PASS — 01-kiosk-idle.console.json (run-6) contains 0 `Not found` / intlify warnings (only Vue feature flag warning + WS noise, both allowlisted). DOM grep on 01-kiosk-idle.dom.html visible text returns 0x raw `kiosk.order_type.*` / `kiosk.takeaway_hint` / `kiosk.required_hint` strings. Idle screen renders clean copy `Bienvenue ! Commandez en quelques touches` and `À emporter` / `Je récupère ma commande`.",
+      "fix_hint": "No action — closure confirmed in run-6."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "PASS — 01-kiosk-idle.console.json (run-6) = 1 error (WS connection refused, allowlisted vendor.js noise) + 1 warning (Vue feature flag, allowlisted). 0 `CSP delivered via meta` warnings. DOM grep on 01-kiosk-idle.dom.html for `meta http-equiv=\"Content-Security-Policy` returns 0 hits. Closure confirmed.",
+      "fix_hint": "No action — closure confirmed."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "iter15-mega-kiosk/01-kds-baseline.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS — 01-kds-baseline.dom.html (run-6) after stripping <style>/<script>/<!-- -->: 0x `Mode secours actif` / `kds-sync-mode-banner` / `Reconnexion en cours` rendered. Blue-banner regression remains closed. (07-kds-receives, 09-kds-prete states not captured run-6 due to early return; baseline coverage is sufficient to confirm appEnv gate.)",
+      "fix_hint": "No action — closure confirmed at baseline."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "iter15-mega-kiosk/06-kiosk-payment-blocked.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "STILL_OPEN_NOT_REVERIFIABLE_RUN6 — KioskConfirmationComponent extraneous-emits Vue warning could not be re-verified because state 06 was not captured in run-6 (spec returned at `BLOCKED@no-frites`). Run-5 evidence (1644-byte console.json with 2x [Vue warn] extraneous addToCart/goToCart/startOrder/resetKiosk) remains the latest signal. P2 — does not block convergence.",
+      "fix_hint": "Same fix as run-5 C-009: declare emits or single root in KioskConfirmationComponent.vue. Spec author should restore the order-placement loop so this assertion can be checked again."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "iter15-mega-kiosk/07-kds-receives-kiosk-order.png",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "STILL_OPEN_NOT_REVERIFIABLE_RUN6 — Borne-lane mis-routing (kiosk source landing in À emporter while Borne lane shows `Aucune commande borne en cours`) cannot be re-checked because state 07 is absent in run-6. Run-5 cumulative open status stands.",
+      "fix_hint": "Same fix as run-5 C-010: route source=kiosk into Borne lane regardless of order_type."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "STILL OPEN (6th run unchanged). 01-kiosk-idle.png (run-6) is 510979 bytes — visual identical to run-5 dark-mode kiosk idle. DOM contains `aria-label=\"Passer en mode sombre\" aria-pressed=\"false\"` confirming the dark-mode toggle defaults `pressed=false` but the rendered surface remains dark on first paint per kiosk store init. Owner directive `kiosk-design-refresh-2026-05-10` still not honored on the idle landing.",
+      "fix_hint": "Same fix as run-5 C-011: kiosk store init theme=light, defaults --kiosk-bg to catalog/payment surface."
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "STILL_OPEN_NOT_REVERIFIABLE_RUN6 — payment screen state 05 is not captured in run-6. Run-5 cumulative open status stands.",
+      "fix_hint": "Same fix as run-5 C-012: full Cayenne #F4501E for primary Confirmer button."
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "iter15-mega-kiosk/04-kiosk-cart-bottom-sheet.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "STILL_OPEN_NOT_REVERIFIABLE_RUN6 — state 04 cart bottom-sheet is not captured in run-6. Run-5 cumulative open status stands.",
+      "fix_hint": "Same fix as run-5 C-013: spec author await transition + non-empty cart line before snapping."
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "iter15-mega-kiosk/03-kiosk-wizard.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "STATE_RENAMED — run-6 no longer emits `03-kiosk-wizard.png`. Spec returned at `03-kiosk-blocked-no-frites` before reaching the wizard step. Original misnomer is moot in run-6 but the audit-coverage hole on the kiosk wizard remains (no composite-item / viande-sauce wizard exercised in iter15 Wave C — see C-036).",
+      "fix_hint": "Same as run-5 C-036: add a separate state (Tacos M composite) to genuinely exercise the wizard surface."
+    },
+    {
+      "id": "C-016",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P0",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 10 not captured. Run-5 closure stands.",
+      "fix_hint": "No action — closure stands from run-5."
+    },
+    {
+      "id": "C-017",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 09 not captured. Run-5 closure stands.",
+      "fix_hint": "No action — closure stands from run-5."
+    },
+    {
+      "id": "C-018",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "STILL OPEN (6th run unchanged). 02-kiosk-catalog.dom.html (run-6) shows 14 kiosk-sidebar-item entries (Tacos / Sandwichs / Burgers / Assiettes / Salades / Poulet croustillant / Ojja / Omelettes / Menus Enfants / Frites & Accompagnements / Suppléments / Desserts / Boissons / Sandwich froid). Sidebar continues to fall back on a single placeholder icon rather than per-category thumbnails.",
+      "fix_hint": "Same fix as run-5 C-018: per-category icon field on Category model."
+    },
+    {
+      "id": "C-019",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS — run-6 01-kiosk-idle.dom.html after stripping <style>/<script>/<!-- -->: 0x `Sur place`, 0x `dine-in`, 0x `order-type-dine-in`, 0x `Je mange`, 1x `À emporter` (the only order-type tile rendered). pos.dine_in_enabled=false gate confirmed at idle screen.",
+      "fix_hint": "No action — closure confirmed in run-6."
+    },
+    {
+      "id": "C-020",
+      "state_artifact": "iter15-mega-kiosk/07-kds-receives-kiosk-order.console.json",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 07 not captured. 01-kds-baseline.console.json (run-6) contains 0 `Not found` / `label.kds_toggle_items` / `button.menu` warnings. Baseline KDS surface clean; cumulative closure stands.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-021",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.console.json",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 05 not captured. Run-5 closure stands. 02-kiosk-catalog.dom.html DOM grep for `kiosk.remove_item` returns 0 hits in run-6 — no regression detected on the catalog state.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-022",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 09 not captured. Run-5 closure stands.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-023",
+      "state_artifact": "iter15-mega-kiosk/01-pos-supervisor-baseline.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "STILL OPEN (6th run unchanged). 01-pos-supervisor-baseline.console.json (run-6) contains [Vue warn]: 'Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< undefined >>' (timestamp 1778383691653). Same template-vs-store binding mismatch as run-5; not fixed.",
+      "fix_hint": "Same fix as run-5 C-023: declare itemsRaw or remove the binding in PosComponent.vue. Add smoke test that fails on Vue warnings."
+    },
+    {
+      "id": "C-024",
+      "state_artifact": "iter15-mega-kiosk/08-pos-suivi-shows-kiosk-order.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 08 not captured. Run-5 closure stands.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-025",
+      "state_artifact": "iter15-mega-kiosk/08-pos-suivi-shows-kiosk-order.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 08 not captured. Run-5 closure stands. 01-pos-supervisor-baseline.dom.html (run-6) does not surface a visible `Connexion temps réel perdue` banner on baseline.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-026",
+      "state_artifact": "iter15-mega-kiosk/08-pos-suivi-shows-kiosk-order.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 08 not captured (spec returned at no-frites; no order persisted in run-6). Run-5 cumulative closure on `0,00 €` regression stands.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-027",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS — duplicate of C-019. Run-6 01-kiosk-idle.dom.html confirms 0x dine-in indicators; closure confirmed.",
+      "fix_hint": "No action — closure confirmed."
+    },
+    {
+      "id": "C-028",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 10 not captured. Run-5 closure on customer-screen-login-form regression stands.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-029",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "PASS — 02-kiosk-catalog.dom.html (run-6) uses relative `/storage/` URLs for product images (8 unique drink images on the active Boissons category). 02-kiosk-catalog.console.json = `[]`; no CSP-report violations. Closure independently confirmed.",
+      "fix_hint": "No action — closure confirmed."
+    },
+    {
+      "id": "C-030",
+      "state_artifact": "iter15-mega-kiosk/06-kiosk-payment-blocked.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "STATE_RENAMED — run-6 emits no `06-kiosk-payment-blocked` artifact (spec returned early). The run-5 misnomer (file named `payment-blocked` while displaying confirmation) is moot in run-6.",
+      "fix_hint": "Same as run-5 C-030: rename to `06-kiosk-payment-confirmation` or add a genuinely-blocked state."
+    },
+    {
+      "id": "C-031",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.png",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 09 not captured. Run-5 closure on `Reconnexion en cours` overlay gating stands. 01-kds-baseline.dom.html (run-6) confirms 0x reconnection overlay on baseline KDS surface.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-032",
+      "state_artifact": "iter15-mega-kiosk/01-kds-baseline.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "PASS — 01-kds-baseline.network.json (run-6) = `[]` and 01-pos-supervisor-baseline.network.json (run-6) = `[]`. No 403 captured on stock low-alerts / fiscal z-report widget endpoints. Cumulative closure independently confirmed.",
+      "fix_hint": "No action — closure confirmed."
+    },
+    {
+      "id": "C-033",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "PASS_NOT_REVERIFIABLE_RUN6 — state 05 not captured. Run-5 closure on `/api/frontend/order/quote` 401 stands.",
+      "fix_hint": "No action — closure stands."
+    },
+    {
+      "id": "C-034",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.console.json",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "STILL_OPEN_NOT_REVERIFIABLE_RUN6 — customer-screen state 10 not captured. Run-5 finding (8x AudioContext autoplay-blocked warnings on the public OSS chime) cannot be re-checked.",
+      "fix_hint": "Same fix as run-5 C-034: replace AudioContext with HTMLAudioElement + muted/unmute pattern."
+    },
+    {
+      "id": "C-035",
+      "state_artifact": "iter15-mega-kiosk/04-kiosk-cart-bottom-sheet.console.json",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "STILL_OPEN_NOT_REVERIFIABLE_RUN6 — state 04 not captured. 02-kiosk-catalog.console.json (run-6) is again 2 bytes (`[]`) which mirrors the run-5 suspicion that snapshots are taken before the SPA finishes mounting on this state. The empty-console-on-rendered-page anomaly persists for the catalog state.",
+      "fix_hint": "Same fix as run-5 C-035: spec author add explicit mount sentinels before snapping."
+    },
+    {
+      "id": "C-036",
+      "state_artifact": "iter15-mega-kiosk/03-kiosk-wizard.dom.html",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "STILL_OPEN_AGGRAVATED_RUN6 — kiosk wizard surface (composite item with viande/sauce subforms) is not captured AT ALL in run-6 (spec returned at no-frites BEFORE the wizard step). Audit coverage hole on wizard widened: not even the misnomer screenshot is produced. Methodology issue persists, no wizard data in iter15 Wave C run-6.",
+      "fix_hint": "Same fix as run-5 C-036: add `03b-kiosk-wizard-tacos-m` (composite item) so the wizard UI is genuinely exercised AND the spec doesn't depend on Frites Seules item 361 availability."
+    },
+    {
+      "id": "C-037",
+      "state_artifact": "iter15-mega-kiosk/03-kiosk-blocked-no-frites.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "NEW_RUN6_P0 — 7x 401 Unauthorized captured in 03-kiosk-blocked-no-frites.network.json: 5x GET /api/frontend/menu + 2x POST /api/frontend/kiosk-event between ts 1778383700489..1778383701265 (~780ms storm). 03-kiosk-blocked-no-frites.dom.html toast region `<div class=\"kiosk-toast-container\" role=\"status\" aria-live=\"polite\" aria-relevant=\"additions text\"></div>` is EMPTY (no toast rendered). Both error-overlay branches `<!-- Initialisation : overlay pendant le chargement -->` and `<!-- Erreur critique : branche non disponible -->` are gated `<!--v-if-->` (not rendered). Visible DOM (after stripping style/script/comments): `Le Cayenne ☾ 🌮 🍔 🍟 Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande Choisissez une option pour commencer` — kiosk silently bounced to idle screen. 02-kiosk-catalog.network.json was clean (`[]`) immediately before, so the auth-loss happened at the spec navigation `goto('/kiosk/categories?cat=315')` (line 223). No `[role=alert]` / `.alert-*` rendered (toast container empty). Per protocol category 6 (silent_error: 4xx with no visible alert/toast), this is **P0 production-breaking** — a real customer interacting with the kiosk who lost their session would see the order-type screen with no error explanation, no recovery CTA, and 7+ silent 401s on /api/frontend/menu.",
+      "fix_hint": "(1) Identify why kiosk-session token is lost on intra-app navigation `/kiosk/categories?cat=315` (CSRF/cookie scoping or vuex state purge on goto). (2) Add an axios response interceptor for 401 on /api/frontend/* that surfaces a kiosk-toast `Session expirée — touchez l'écran pour redémarrer` AND triggers a graceful re-auth flow. (3) Add a Playwright assertion: after `goto('/kiosk/categories?cat=315')` the network capture must contain 0 401 on /api/frontend/menu. (4) Investigate Frites Seules item 361 availability in the catalog (kiosk-product-card-361 NOT rendered in 02-kiosk-catalog.dom.html — the active category at snap was Boissons, but neither did the spec successfully re-load Frites & Accompagnements) — confirm whether item 361 is in_rupture/disabled in DB or simply behind the auth-loss."
+    },
+    {
+      "id": "C-038",
+      "state_artifact": "iter15-mega-kiosk/(missing 04..10)",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "NEW_RUN6_P1_AUDIT_INTEGRITY — run-6 captured only 5 states (01-kds-baseline, 01-kiosk-idle, 01-pos-supervisor-baseline, 02-kiosk-catalog, 03-kiosk-blocked-no-frites). The 7 downstream states required by the iter15 Wave C reviewer protocol — `03-kiosk-wizard` (or composite alternative), `04-kiosk-cart-bottom-sheet`, `05-kiosk-payment-screen`, `06-kiosk-payment-confirmation/blocked`, `07-kds-receives-kiosk-order`, `08-pos-suivi-shows-kiosk-order`, `09-kds-prete`, `10-customer-screen-shows-ready-or-blocked` — were NEVER produced because spec line 238 is `return;` after `safeSnap(..., '03-kiosk-blocked-no-frites', ...)`. Convergence verdict P0=0/P1=0 cannot be independently re-verified for cross-surface kiosk→KDS→POS→customer-screen findings (C-001, C-002, C-003, C-009, C-010, C-012, C-013, C-016, C-017, C-020, C-021, C-022, C-024, C-025, C-026, C-028, C-031, C-033, C-034, C-035) from run-6 alone. This is itself a P1 audit-integrity defect: a single missing item in the seed catalog (Frites Seules id 361) collapses the entire downstream coverage of the kiosk→KDS→POS roundtrip.",
+      "fix_hint": "Spec author: (1) add resilience around line 230..238 — when `kiosk-product-card-361` is not visible, fall back to ANY kiosk-product-card and continue the flow rather than `return;`. (2) Drive the spec by API discovery (call /api/frontend/menu first, pick the first available leaf product) instead of hardcoding FRITES_ITEM_ID=361. (3) Restore the Frites Seules item in the seed if the project still wants it as the canonical wizard-template=simple test fixture. Until one of these is done, no run can certify P0=0/P1=0 on kiosk→KDS→POS roundtrip."
+    }
+  ],
+  "summary": { "P0": 6, "P1": 15, "P2": 11, "P3": 6, "open_P0": 1, "open_P1": 1, "open_P2": 6, "open_P3": 5, "states_captured_run6": 5, "states_required": 12, "states_missing_run6": 7 },
+  "states_reviewed": 5,
+  "convergence_verdict": "NOT_GREEN",
+  "convergence_reasons": [
+    "C-037 NEW P0 silent_error: 7x 401 storm on /api/frontend/menu + /api/frontend/kiosk-event at intra-kiosk navigation, with empty toast container and gated error overlays — kiosk silently bounces to idle without recovery UI.",
+    "C-038 NEW P1 audit-integrity: run-6 captured only 5 of the 12 required wave-C states; cumulative run-5 closures on cross-surface findings (cart, payment, KDS receive/bump, POS suivi, customer screen) cannot be independently re-verified in run-6 — convergence claim P0=0/P1=0 is structurally incomplete.",
+    "C-023 P2 itemsRaw Vue warning STILL OPEN in run-6 (does not block convergence; informational regression marker)."
+  ]
+}

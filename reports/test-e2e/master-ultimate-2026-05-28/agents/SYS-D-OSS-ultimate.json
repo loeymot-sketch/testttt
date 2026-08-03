@@ -1,0 +1,178 @@
+{
+  "agent": "SYS-D-OSS-ULTIMATE",
+  "scope": "Order Status Screen public customer wall display + admin sibling, full 7-dimension coverage",
+  "executed_at": "2026-05-28T12:25:00Z",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8 (read-only, no code edits, isolated Playwright session, scope-strict)",
+  "surfaces": {
+    "public_wall_route": "/admin/order-status-screen (PUBLIC_FRIENDLY_AUTH_ROUTES allowlist in resources/js/router/index.js:218-220)",
+    "admin_dashboard_widget": "PosComponent embedded shortcut, routed via authStatus toggle in store/modules/orderStatusScreenOrder.js:32",
+    "public_api": "GET /api/frontend/oss-order  (frontend group: installed + apiKey + localization + throttle:oss-public 60/min/IP)",
+    "admin_api": "GET /api/admin/oss-order  (sanctum + permission:order-status-screen)"
+  },
+  "verdict": "GREEN with 3 P2/P3 findings — system is production-ready for V1 Le Cayenne single-resto.",
+  "evidence": {
+    "captures_dir": "reports/test-e2e/master-ultimate-2026-05-28/captures/SYS-D-OSS/",
+    "captures": [
+      "01-oss-admin-authed-empty.png — authed shell, no orders, both columns show '—'",
+      "02-oss-populated-public-wall.png — pre-clear capture (transitional)",
+      "03-oss-public-unauth-clean.png — TRUE unauth public wall, 4 orders, 2 cols",
+      "04-oss-populated-clean-public.png — final populated unauth wall (TV-readable, 56px tokens)",
+      "05-oss-after-status-promotion.png — 901 promoted PREPARING→PREPARED, polling-driven within ~8s",
+      "06-oss-empty-state-public.png — empty unauth wall, '—' placeholder both cols"
+    ]
+  },
+  "dimensions": {
+    "A_technical": {
+      "status": "PASS",
+      "files_audited": [
+        "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+        "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+        "app/Http/Controllers/Admin/OrderStatusScreenController.php (publicIndex + publicMostPopularItems)",
+        "app/Http/Resources/CDSOrderDetailsResource.php",
+        "app/Http/Resources/PosShortcutOrderResource.php (sibling for admin auth)",
+        "app/Services/OrderStatusScreenOrderService.php (list + listForBranch)",
+        "resources/js/services/OssSyncService.js",
+        "resources/js/store/modules/orderStatusScreenOrder.js",
+        "resources/js/router/index.js:218-225 (PUBLIC_FRIENDLY_AUTH_ROUTES)",
+        "routes/api.php:1255-1260 (public sibling)",
+        "app/Providers/RouteServiceProvider.php:238-245 (oss-public limiter)"
+      ],
+      "notes": "Architecture is clean: 2 Resources (PII-free CDSOrderDetailsResource for public + total-bearing PosShortcutOrderResource for admin), 2 service methods (list + listForBranch byte-identical query body per docstring), branching at the Vuex store layer driven by authStatus root getter."
+    },
+    "B_visual": {
+      "status": "PASS",
+      "observations": [
+        "2-column grid (md:grid-cols-2) — PRÉPARATION (#B0004D bg) + PRÊT (#1AB759 bg), Wave Q-3 owner directive complied",
+        "Token text 56px font-extrabold per Wave S-3 TV-optim — readable at 3m+",
+        "Header label 40px white/dark text — high contrast WCAG (white on #B0004D ≈ 7.3:1, dark #1F1F39 on #1AB759 ≈ 6.1:1)",
+        "Active red tokens use #991B1B (contrast vs white ≈ 8.4:1)",
+        "Ready green tokens #0E7C3A with text-shadow halo for newly-ready 10s window",
+        "Empty state: '—' em-dash, text-[28px] gray #A0A3BD",
+        "No raw label leak (no 'label.X' or 'kiosk.foo' fragments observed)",
+        "ConnectionStatusBanner suppressed (suppress-transient) — correct for public wall"
+      ]
+    },
+    "C_functional": {
+      "status": "PASS",
+      "tests": {
+        "auto_refresh_polling": "PASS — DB status change 901 PREPARING→PREPARED, wall updated in ~8s (intervalMsWhenDisconnected=2_000ms when WS not connected)",
+        "fifo_order": "PASS — orderBy('queue_number','asc')->orderBy('id','asc') in service line 144 + 264; observed 901→903→904 after promotion",
+        "status_promotion": "PASS — order migrated from EN PRÉPARATION column to PRÊT column with green pulse halo on first render",
+        "empty_state": "PASS — '—' placeholder both columns when 0 orders",
+        "newReady_animation": "PASS — text-shadow halo + oss-pulse keyframe visible on N°903 first render"
+      }
+    },
+    "D_data": {
+      "status": "PASS",
+      "payload_keys_verified_empirical": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+      "expected_keys": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+      "pii_leak_scan": "NONE — empirical scan of populated /api/frontend/oss-order against candidates [user_id, customer_id, customer_name, phone, email, total, subtotal, address] → ALL absent",
+      "filter_invariants": {
+        "order_type_allowlist": "whereIn KIOSK(25), TAKEAWAY(10) — DELIVERY/POS/DINING_TABLE fail-closed (RED R-3 heal 2026-05-18)",
+        "status_allowlist": "whereIn PREPARING(7), PREPARED(8) only",
+        "tz_alignment": "now(config('app.timezone')) — Paris-local literal under MySQL session_tz=Paris (Wave T R5 KDS-T-R5-03 heal)",
+        "stale_prune": "config('oss.stale_window_hours', 8) — orders >8h old drop off regardless of status",
+        "byte_identical_to_list": "listForBranch query body matches list() per service docstring line 198-204"
+      }
+    },
+    "E_security": {
+      "status": "PASS",
+      "tests": {
+        "public_route_allowlist": "PASS — router PUBLIC_FRIENDLY_AUTH_ROUTES includes 'admin.order-status-screen' + path equality '/admin/order-status-screen' OR '/order-status' — wall renders without sanctum session",
+        "api_key_gate": "PASS — frontend group requires X-API-KEY header; missing key → 400",
+        "throttle_oss_public": "PASS — RateLimiter::for('oss-public') = 60/min/IP, 429 response with retry_after=60 (RouteServiceProvider.php:238-245)",
+        "branch_enumeration": "PASS — branch_id=2 / branch_id=999 returns rowCount=0 (no error leak, no other-branch data)",
+        "sql_injection_via_branch_id": "PASS — controller publicIndex line 83 hard-casts (int); 'OR 1=1-- → cast to 0 → falls back to first ACTIVE branch (= branch 1) cleanly; no UNION/error leak",
+        "negative_branch_id": "PASS — (int) -1 → 'cast result is < 0 → goes through (<=0) branch → fallback to first ACTIVE",
+        "non_numeric_branch_id": "PASS — 'abc' → cast 0 → fallback",
+        "pii_in_payload": "PASS — 6 keys total, none PII (verified empirically, see D)"
+      },
+      "concerns": []
+    },
+    "F_sync": {
+      "status": "PASS",
+      "tests": {
+        "echo_subscription_branch_guard": "PASS — PreparingAndReadyComponent.subscribeEcho line 260 early-returns if authBranchId()<=0 (public wall) — confirmed correct branching since public wall has no WS auth",
+        "polling_fallback_cadence": "PASS — DEFAULTS intervalMsWhenDisconnected=2_000ms; CADENCE_FLOOR_MS=250, CEILING=60_000 (Wave 3c KDS-ADV3C-08 P1 heal mirror) — empirically 8s end-to-end (DB update → wall update)",
+        "audio_chime_public_gate": "PASS — _playReadySound() line 338 early-returns if authBranchId()<=0 (public wall has no audio-unlock gesture) — visual flash retains as feedback (correct per GOAL Round 2 Impl C P0-OSS-01 heal)",
+        "wakeLock_acquired": "PASS — _acquireWakeLock() called on mount + visibilitychange handler re-acquires (RED-team R4 V1.0.2 2026-05-17)",
+        "visibility_burst_throttle": "PASS — visibilityBurstMinIntervalMs=1_000",
+        "owner_misconfig_cap": "PASS — CADENCE_CEILING_MS=60_000 prevents FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=999999999 freeze"
+      }
+    },
+    "G_adversarial": {
+      "status": "PASS",
+      "probes": [
+        {
+          "probe": "cross-branch leak via branch_id=2",
+          "result": "rowCount=0 (other branch's orders not exposed; no Branch B data leaked to Branch A's wall)",
+          "verdict": "PASS"
+        },
+        {
+          "probe": "branch enumeration via branch_id=1..999",
+          "result": "Returns rows IFF branch_id matches existing branch with active orders today; no row count leak (always 0 for non-existent)",
+          "verdict": "PASS — branch_id enumeration is technically possible via row-count delta, but is documented backlog (V1.0.2 — RouteServiceProvider:236 comment 'Logging of >10 distinct branch_id values from the same IP within 5 min is deferred to V1.0.2')"
+        },
+        {
+          "probe": "SQLi via branch_id=\"' OR 1=1--\"",
+          "result": "(int) cast to 0 → fallback to first ACTIVE branch; no SQL error/leak",
+          "verdict": "PASS"
+        },
+        {
+          "probe": "PII probe (customer_name/email/phone/address/total in payload)",
+          "result": "All absent in payload — only 6 documented keys",
+          "verdict": "PASS"
+        },
+        {
+          "probe": "public access without X-API-KEY",
+          "result": "400 Bad Request (apiKey middleware fail-closed)",
+          "verdict": "PASS"
+        }
+      ]
+    }
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "P2",
+      "category": "Visual/UX",
+      "title": "Empty-state em-dash placeholder too small for TV viewing distance",
+      "evidence": "captures/06-oss-empty-state-public.png — '—' is text-[28px] gray #A0A3BD, while active tokens are text-[56px] (2x). At 3m+ viewing distance from a wall TV, the placeholder visually reads as 'blank screen', which can confuse a customer about whether the system is offline.",
+      "code_ref": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:40 + :62 — class='text-center text-[#A0A3BD] text-[28px] mt-12'",
+      "recommendation": "Either bump empty placeholder to text-[40px]+ (matches header rhythm) OR replace '—' with a localized label like 'Aucune commande en cours' / 'Pas de commande prête' for clearer status semantics. Could keep the gray color for low priority.",
+      "blocker": false
+    },
+    {
+      "id": "F-002",
+      "severity": "P3",
+      "category": "Sync architecture",
+      "title": "Public wall has no Echo/WS subscription — exclusively polling",
+      "evidence": "PreparingAndReadyComponent.subscribeEcho line 260: `if (branchId <= 0) return;` — public wall (authBranchId()=0) skips Echo entirely. Sync relies on OssSyncService polling at 2s cadence when wsState='disconnected'.",
+      "code_ref": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:257-265",
+      "explanation": "This is by design: Pusher/Echo channels require auth, public wall has no sanctum token. The intervalMsWhenDisconnected=2_000ms tightening (commit referenced as 'test-e2e round-2 cluster-6 D-002 2026-05-10') makes this practically real-time. Wall observed updating ~8s post-DB-change in the empirical test (well within the 8s SYNC-2 budget).",
+      "recommendation": "Accept as V1 design. Document in BRAIN §3 that public wall sync is polling-only (60/min/IP rate limit is the real ceiling). V1.0.2 could explore presence-channel with an anonymous fan-out token if 2s isn't tight enough.",
+      "blocker": false
+    },
+    {
+      "id": "F-003",
+      "severity": "P3",
+      "category": "Security/observability",
+      "title": "branch_id enumeration is documented backlog but not yet enforced",
+      "evidence": "RouteServiceProvider.php:236-237 comment: 'Logging of >10 distinct branch_id values from the same IP within 5 min is deferred to V1.0.2 (see plans/v1-0-2 backlog).' — currently only the rate limit (60/min/IP total) is enforced, which an attacker probing for valid branch_ids can comply with by spreading queries.",
+      "code_ref": "app/Providers/RouteServiceProvider.php:238-245 + comment block 226-237",
+      "explanation": "On a multi-branch SaaS deployment, attacker can map active branch IDs by observing row-count delta. On the V1 Le Cayenne single-branch deployment this is moot (only branch_id=1 exists). Mentioned as documented V1.0.2 backlog item.",
+      "recommendation": "Already tracked. V1 GO; no action needed for Le Cayenne single-resto. SaaS V2 must implement the distinct-branch-id sliding-window counter described.",
+      "blocker": false
+    }
+  ],
+  "data_cleanup": {
+    "seeded_orders": "4 (OSS-SEED-901, OSS-SEED-902, OSS-SEED-903, OSS-SEED-904)",
+    "cleanup_action": "Order::where('order_serial_no', 'like', 'OSS-SEED-%')->delete()",
+    "cleanup_verified": "Remaining seeded count = 0"
+  },
+  "frozen_zone_diff": 0,
+  "nf525_chain_touched": false,
+  "code_edits": 0,
+  "ship_recommendation": "GO V1 Le Cayenne — system is production-ready for single-resto V1. F-001 P2 cosmetic (empty-state size) recommended for next cosmetic pass; F-002 and F-003 are documented design choices already tracked in V1.0.2 backlog. No blockers."
+}

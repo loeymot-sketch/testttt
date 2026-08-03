@@ -1,0 +1,117 @@
+{
+  "navInfo": [
+    {
+      "txt": "ACCUEIL",
+      "x": 52,
+      "y": 786,
+      "tag": "BUTTON"
+    },
+    {
+      "txt": "ACCUEIL",
+      "x": 52,
+      "y": 794,
+      "tag": "SPAN"
+    },
+    {
+      "txt": "MENU",
+      "x": 147,
+      "y": 786,
+      "tag": "BUTTON"
+    },
+    {
+      "txt": "MENU",
+      "x": 147,
+      "y": 794,
+      "tag": "SPAN"
+    },
+    {
+      "txt": "COMMANDES",
+      "x": 243,
+      "y": 786,
+      "tag": "BUTTON"
+    },
+    {
+      "txt": "COMMANDES",
+      "x": 243,
+      "y": 794,
+      "tag": "SPAN"
+    },
+    {
+      "txt": "PROFIL",
+      "x": 338,
+      "y": 786,
+      "tag": "BUTTON"
+    },
+    {
+      "txt": "PROFIL",
+      "x": 338,
+      "y": 794,
+      "tag": "SPAN"
+    }
+  ],
+  "cats": [
+    "Galette",
+    "Tacos",
+    "Frites"
+  ],
+  "drinks": {
+    "present": [
+      "Coca-Cola 33cl",
+      "Coca-Cola Zero",
+      "Fanta Orange",
+      "Sprite",
+      "Oasis",
+      "Orangina",
+      "Eau Plate",
+      "Capri-Sun",
+      "Coca Cherry",
+      "Tropico",
+      "Ice Tea",
+      "Fanta Citron",
+      "Fuze Tea",
+      "Hawaï",
+      "Perrier"
+    ],
+    "prices": [
+      "7,40 €",
+      "7,00 €",
+      "8,00 €",
+      "9,00 €",
+      "6,50 €",
+      "7,00 €",
+      "4,90 €",
+      "6,00 €",
+      "7,00 €",
+      "6,00 €",
+      "9,00 €",
+      "8,00 €",
+      "6,90 €",
+      "7,90 €",
+      "7,90 €",
+      "7,90 €",
+      "2,50 €",
+      "4,00 €",
+      "3,50 €",
+      "3,50 €",
+      "3,50 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,00 €",
+      "1,50 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "1,90 €",
+      "4,90 €",
+      "4,90 €"
+    ],
+    "sample": "MENU | 9 catégories · 38 produits | TOUT | 🥖 SANDWICHS | 🌯 GALETTE | 🍔 BURGERS | 🌮 TACOS | 🥣 BOLS | 🍟 FRITES | 🍰 DESSERTS | 🥤 BOISSONS | 🧒 MENU ENFANT | 🥖 SANDWICHS | 4 CRÉATIONS | SIGNATURE | ⚠️ | 🌾 | Cayenne | Poulet mariné · Cheddar · Jambon · Oignons rouges · Tomates · Salade · Sauce fromagère maison | 7,40 € | ⚠️ | 🌾 | Suprême | Steak haché · Cordon bleu · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix | 7,00 € | XL | ⚠️ | 🌾 | Méga | 2 viandes au choix · Cheddar · Œuf · Oignons rouges · Tomates · Salade · Sauce au choix | 8,00 € | XL | ⚠️ | 🌾 | Terminator | 2 viandes au choix · 2 cheddars · Œuf · Jambon de dinde · Oignons rouges · Tomates · Salade · Sauce au choix | 9,00 € | 🌯 GALETTE | 2 CRÉATIONS | ⚠️ | 🌾 | Galette Normale | Galette traditionnelle · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels | 6,50 € | SIGNATURE | ⚠️ | 🌾 | Galette Cayenne | Galette signature · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels | 7,00 € | 🍔 BURGERS | 6 CRÉATIONS | ⚠️ | 🌾 | Chicken Burger | Salade · Tomate · Oignon · Sauce | 4,90 € | ⚠️ | 🌾 | Cheese Burger | Steak · Cheddar · Salade · Tomate · Oignon · Sauce | 6,"
+  }
+}

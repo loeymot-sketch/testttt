@@ -1,0 +1,12 @@
+{
+  "task_id": "T-LOOP-HELPER-001-R2",
+  "context": "Round 2 remediation. Round 1 attempt drifted out of scope by changing addCents/subCents/sumCents signatures. ONLY toCents internals must change. Tests live at tests/js/posCentsArith.spec.js and ARE NOT TO BE MODIFIED.",
+  "objective": "Produce the FULL replacement body of resources/js/helpers/posCentsArith.js such that ALL of the following lines from the current file are preserved BYTE-FOR-BYTE except inside the body of toCents (between the lines `function toCents(amount) {` and the matching `}`):\n\n  - const EPSILON = 1e-6;  (you may rename or remove this constant since only toCents uses it)\n  - function assertFiniteNumber(value, label) { ... }\n  - function assertNonNegativeIntegerCents(value, label) { ... }\n  - function addCents(left, right) { ... }   (UNCHANGED)\n  - function subCents(left, right) { ... }   (UNCHANGED)\n  - function sumCents(...values) { ... }     (UNCHANGED, variadic)\n  - export { addCents, subCents, sumCents, toCents };\n  - export default { addCents, subCents, sumCents, toCents };\n\nNew toCents must satisfy: toCents(0.1)===10, toCents(0.30000004)===30, toCents(12.34)===1234, toCents(0.345) throws /at most 2 decimal places/, toCents(-1) throws, toCents(NaN) throws, toCents(Infinity) throws, toCents('12.34') throws /finite number/.\n\nAlgorithm hint: scale to milli-units (amount*1000), round, check Math.abs(milli - rounded) <= 1e-3, AND check roundedMilli % 10 === 0. Then return roundedMilli/10.",
+  "constraints": [
+    "Single file: resources/js/helpers/posCentsArith.js",
+    "Functions addCents, subCents, sumCents MUST keep their current behaviour (integer cents in, integer cents out, variadic for sumCents, throw on negatives / non-integers / strings / non-finite).",
+    "Tests file tests/js/posCentsArith.spec.js is OUT OF SCOPE.",
+    "Pure ESM, no external deps."
+  ],
+  "expected_output_format": "Strict JSON: { files_to_modify, implementation_steps, code_blocks: [{ path, op:'replace', excerpt:<FULL FILE BODY> }], risks, notes, execution_trace: { delegation:'codex-terminal', invariants_considered:['pricing_ssot'] } }. No markdown, no commentary outside the JSON."
+}

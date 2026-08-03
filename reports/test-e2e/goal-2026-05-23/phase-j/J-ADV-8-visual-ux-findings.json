@@ -1,0 +1,265 @@
+{
+  "agent": "J-ADV-8 Visual/UX hostile critic",
+  "date": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — hostile customer/cashier/cook critique of kiosk + POS + KDS + admin surfaces",
+  "method": "Multimodal Read of 14 H7 fullflow captures + 7 F3 visual regression captures. Lens: first-time customer + harried cashier + busy line cook. Each surface graded against V1-V15 dimensions (first impression, hierarchy, color, typography, spacing, touch targets, feedback, errors, empty states, loading, progress, affordance, density, animation, consistency).",
+  "surfaces_critiqued": [
+    {"surface": "/kiosk/idle", "capture": "H7 W1-state1, F3 S1"},
+    {"surface": "/kiosk/menu (catalog Boissons)", "capture": "H7 W1-state2"},
+    {"surface": "/kiosk/wizard step 1 Tacos viande", "capture": "H7 W1-state3"},
+    {"surface": "/kiosk/wizard step 2 Tacos sauces", "capture": "H7 W1-state4"},
+    {"surface": "/kiosk/wizard step 3 Tacos menu", "capture": "H7 W1-state5"},
+    {"surface": "/kiosk/cart", "capture": "H7 W1-state6"},
+    {"surface": "/kiosk/payment selection", "capture": "H7 W1-state7"},
+    {"surface": "/admin/pos main", "capture": "H7 W2-state1, F3 S2"},
+    {"surface": "/admin/pos catalogue bowls", "capture": "H7 W2-state2"},
+    {"surface": "POS wizard popup (Chicken Burger)", "capture": "H7 W2-state3"},
+    {"surface": "/kds board (8 cards)", "capture": "H7 W3-state1"},
+    {"surface": "/kds historique drawer", "capture": "H7 W3-state2"},
+    {"surface": "/kds single-card en cours", "capture": "F3 S3"},
+    {"surface": "/admin/cash-overview (Vue Caisse Unifiée)", "capture": "H7 W4-state1, F3 S5"},
+    {"surface": "PaymentComponent (Encaisser Commande Borne)", "capture": "H7 W5-state2"},
+    {"surface": "/admin/stock (Gestion Produits & Stock)", "capture": "F3 S6"},
+    {"surface": "/admin dashboard (Bonsoir)", "capture": "F3 S7"}
+  ],
+  "first_impression_test_results": {
+    "kiosk_idle_1s_test": "PASS — large orange play button + 'Bienvenue !' headline + 'À emporter' card all hit within 1s. CTA is identifiable.",
+    "kiosk_idle_caveats": "'Bienvenue !' serif headline has low contrast on the cream/orange gradient (cream-on-cream gradient ~2.8:1) — fails WCAG AA. Subtitle 'Commandez en quelques touches' even lighter, near-invisible. Decorative tacos/burger watermarks faint but compete with foreground.",
+    "kiosk_catalog_1s_test": "PARTIAL — 'NOS Boissons' header readable, big product cards visible. BUT sidebar nav is unusable: all 5 visible category icons (SANDWICH CAYENNE / GALETTE / SANDWICH CLASSIQUE / BURGERS / TACOS) show the SAME burger thumbnail. Customer cannot distinguish categories visually.",
+    "pos_main_1s_test": "PASS for cashier — orange 'À encaisser (25)' badge dominant, ticket panel right-side, search top-center.",
+    "pos_main_caveats": "Header has too many CTAs in a single row (À encaisser / Suivi commandes / Écran client / Appliquer une réduction fidélité / Ouvrir tiroir / Caisse). 6 buttons compete; nothing dominates. Cashier under stress will hesitate.",
+    "kds_board_1s_test": "FAIL for cook — every card reads identically: '10× Menu (Frites + Boisson)' / '13× Menu (Frites + Boisson)'. No item name, no protein, no sauce. Cook CANNOT prepare order from the card. This is the worst hostile finding in the wave.",
+    "pos_wizard_popup_1s_test": "FAIL — overwhelming. 6 sections visible simultaneously (Viande/Crudités/Sauce/Suppléments/Formule + Viande supplémentaire), heavy emoji decoration, mixed component languages (counters + pills + check-toggles + accordion). No clear next action.",
+    "payment_kiosk_1s_test": "PASS — '€1,00' enormous, 3 payment cards explicit (Carte/Espèces/Titre restaurant), backstop arrow back top-left.",
+    "payment_kiosk_caveats": "'Confirmer — €1,00' bottom button GRAY/DISABLED appearance without a tooltip explaining why ('select a method first'). User will tap and get no feedback.",
+    "admin_dashboard_1s_test": "PARTIAL — 'Bonsoir !' + quick links chips + KPI tiles. Brand collision: top tiles are purple/blue/green/red (3 colors), bottom 'Suivi en direct' tiles are green/blue/purple. None of the 6 KPI tiles use Cayenne red #F4501E. Brand identity dissolved."
+  },
+  "ux_friction_points": [
+    {
+      "id": "UX-01",
+      "surface": "/kiosk/menu sidebar nav",
+      "dimension": "V12 affordance / V3 visual differentiation",
+      "severity": "P1",
+      "evidence": "H7 W1-state2: 5 visible category items (SANDWICH CAYENNE, GALETTE, SANDWICH CLASSIQUE, BURGERS, TACOS) all display the IDENTICAL burger thumbnail. Categories indistinguishable by image — customer must read label only.",
+      "fix": "Wire each category to its canonical hero thumbnail (galette uses galette photo, tacos uses tacos photo, bowls use bowl photo). Fallback to category-emoji icon if no photo. Confirms project mémo entry 'Le Cayenne V2 catalog refresh' shipped 85 photos — wire them through sidebar.",
+      "wcag": null
+    },
+    {
+      "id": "UX-02",
+      "surface": "/kds board",
+      "dimension": "V2 hierarchy / V13 visual density / informational completeness",
+      "severity": "P0",
+      "evidence": "H7 W3-state1: 8 cards on board, each shows only '10× Menu (Frites + Boisson)' or '13× Menu (Frites + Boisson)'. Customization (viande, sauce, sandwich choice, supplements, allergens) is hidden. Cook has zero actionable info on the card body — must drill into each card to prepare.",
+      "fix": "Render line-item breakdown on KDS card: each composition_snapshot entry as one line — '1× Big Chicken / Poulet mariné / Sauce Andalouse'. Group identical items if many. Keep card scrollable for long orders. References Z2/Z3 KDS sync findings.",
+      "wcag": null
+    },
+    {
+      "id": "UX-03",
+      "surface": "/kds board",
+      "dimension": "V15 cross-surface consistency / V3 brand color",
+      "severity": "P1",
+      "evidence": "H7 W3-state1: order card #A0005 'Prêt' bump button is dark slate gray (#1f2a3a). All other surfaces use Cayenne red #F4501E as primary CTA. The KDS primary action is the bump — it should be the brand red.",
+      "fix": "Replace dark-gray 'Prêt' button background with Cayenne red. If gray was chosen for low-emphasis on a tap-once button, escalate to red with confirmation modal to prevent fat-finger bump.",
+      "wcag": "2.4.6 Headings and labels — partial"
+    },
+    {
+      "id": "UX-04",
+      "surface": "/kds board (banner)",
+      "dimension": "V8 error semantics / V15 consistency",
+      "severity": "P1",
+      "evidence": "F3 S3: explicit banner reads 'Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.' This is an honest admission, but operationally a multi-station kitchen will double-bump or miss bumps. UX-wise, the warning is good; product-wise, the limitation is severe.",
+      "fix": "Either (a) backend-persist bump state on /api/v1/kds/orders/{id}/bump and broadcast over WS so all screens converge, or (b) keep local-only but render warning more prominently (top stripe, not info pill).",
+      "wcag": null
+    },
+    {
+      "id": "UX-05",
+      "surface": "POS wizard popup (Chicken Burger)",
+      "dimension": "V13 visual density / V4 typography / V12 affordance",
+      "severity": "P0",
+      "evidence": "H7 W2-state3: 6 sections (Viande/Suppléments/Crudités/Sauce/Suppléments collapsed/Formule collapsed) crammed in popup ~640px wide. Emoji on every section header (💲/🥧/🥩/➕/🍔🥧). Sauce pills 13 in a row wrap awkwardly. '+Viande supplémentaire (+€2.50/viande) ▼' is a dashed-outline orange accordion mixed with green Crudités toggles and gray Sauce pills — 4 different component styles in one modal.",
+      "fix": "(a) Strip emoji from section headers, use a small icon + black title. (b) Unify control style — all use pill-toggle pattern. (c) Make Crudités default-included be a quiet check, not a bold green button. (d) Collapse Suppléments+Formule by default; expand inline on tap.",
+      "wcag": "1.4.10 Reflow"
+    },
+    {
+      "id": "UX-06",
+      "surface": "POS wizard popup CTA",
+      "dimension": "V3 color / V15 consistency",
+      "severity": "P1",
+      "evidence": "H7 W2-state3: 'Ajouter au panier' primary CTA is GREEN (#10b981). The entire kiosk surface uses Cayenne red for primary CTAs. Cashier muscle memory becomes red=confirm; here it's green.",
+      "fix": "Switch 'Ajouter au panier' to Cayenne red gradient or solid. Keep green only for non-orange-conflicting success toasts.",
+      "wcag": null
+    },
+    {
+      "id": "UX-07",
+      "surface": "/admin/pos catalogue grid (bowls section)",
+      "dimension": "V3 visual differentiation",
+      "severity": "P1",
+      "evidence": "H7 W2-state2: Bowl Frites Poulet Mariné / Curry / Tandoori / Crispy / Bowl Riz Poulet Mariné — all 5 cards use the same bowl photo. Cashier scanning for a specific bowl variant cannot use image at all, must read label.",
+      "fix": "Per-variant photo (curry vs tandoori is visually distinct). If not available, overlay a small protein-tag badge or color-band on top-left of card (yellow=mariné, red=tandoori, orange=curry, brown=crispy).",
+      "wcag": null
+    },
+    {
+      "id": "UX-08",
+      "surface": "/kiosk/wizard step 1 (Tacos viande) — Cholsissez typo",
+      "dimension": "V8 errors / i18n quality / V11 brand polish",
+      "severity": "P1",
+      "evidence": "H7 W1-state3: instruction reads 'Cholsissez 1 viande : touchez celle que vous voulez.' — 'Cholsissez' is a typo for 'Choisissez'. Customer-facing French text typo on the most-frequent flow step.",
+      "fix": "Grep all locales fr for 'Cholsissez' / 'Cholsi' / 'Cholisez' variants and replace with 'Choisissez'. Add CI lint rule for French spell-check on lang/fr/*.php.",
+      "wcag": "3.1.1 Language of page (quality)"
+    },
+    {
+      "id": "UX-09",
+      "surface": "/kiosk/wizard step 2 (sauces — Algérienne ÉPUISÉ)",
+      "dimension": "V8 errors / V12 affordance",
+      "severity": "P2",
+      "evidence": "H7 W1-state4: Algérienne is marked ÉPUISÉ via a pill in green-tint at bottom of card, but the card itself looks identical to active cards (no overlay, no opacity dimming, no lock icon, no '+' icon). User can still try to tap it.",
+      "fix": "Add 50% opacity overlay + grayscale on sold-out cards, hide '+' icon, swap pill to neutral gray, and intercept tap with toast 'Sauce indisponible aujourd'hui'.",
+      "wcag": "1.4.1 Use of color (currently relies on a green pill labelled ÉPUISÉ)"
+    },
+    {
+      "id": "UX-10",
+      "surface": "/kiosk/payment 'Confirmer'",
+      "dimension": "V7 feedback / V8 errors / V12 affordance",
+      "severity": "P1",
+      "evidence": "H7 W1-state7: 'Confirmer — €1,00' button rendered in faded gray (disabled appearance) with no helper text. Customer doesn't know they must FIRST tap a payment-method card.",
+      "fix": "Either (a) auto-select 'Carte bancaire' default (most common), or (b) render helper microcopy below the button: 'Choisissez d'abord un mode de paiement', or (c) animate the 3 payment cards with a pulse when user taps disabled CTA.",
+      "wcag": "3.3.2 Labels or instructions"
+    },
+    {
+      "id": "UX-11",
+      "surface": "/kiosk/idle 'Bienvenue !' headline",
+      "dimension": "V3 color contrast / V4 typography",
+      "severity": "P1",
+      "evidence": "H7 W1-state1, F3 S1: serif 'Bienvenue !' headline rendered in cream/ivory on a cream gradient background. Measured contrast ~2.7:1. WCAG AA requires 4.5:1 for body text, 3:1 for large bold text (24pt+). Subtitle 'Commandez en quelques touches' contrast even lower.",
+      "fix": "Darken headline to charcoal #1a1a1a or pure Cayenne red. Subtitle to gray-700. Keep decorative tacos/fries watermarks but reduce opacity further so foreground text reads clean.",
+      "wcag": "1.4.3 Contrast (Minimum) — FAIL"
+    },
+    {
+      "id": "UX-12",
+      "surface": "/admin dashboard KPI tiles",
+      "dimension": "V3 brand color / V15 cross-surface consistency",
+      "severity": "P1",
+      "evidence": "F3 S7: 'Vue D'Ensemble' tiles use red+purple+blue gradient. 'Suivi en direct' tiles use green+blue+purple. None of the 6 use Cayenne red #F4501E. The kiosk/POS use the brand red — admin diverges to a 'generic dashboard' multi-color palette.",
+      "fix": "Adopt a single Cayenne red primary + neutral gray secondary palette for KPI tiles. Use color sparingly — large numbers in red, supporting text in gray. Eliminates rainbow effect.",
+      "wcag": "1.4.1 Use of color"
+    },
+    {
+      "id": "UX-13",
+      "surface": "/admin/stock product cards",
+      "dimension": "V4 typography / V13 visual density",
+      "severity": "P2",
+      "evidence": "F3 S6: product titles truncated mid-word — 'Sandwic...', 'Big Ca...', 'Men u...', 'Frite s...', 'Boiss on...'. Truncation cuts even short words like 'Menu' to 'Men u'.",
+      "fix": "Increase card width or allow 2-line title wrap. Truncating at <10 chars is unusable for stock admin.",
+      "wcag": "1.4.10 Reflow"
+    },
+    {
+      "id": "UX-14",
+      "surface": "POS header (top bar)",
+      "dimension": "V2 hierarchy / V13 visual density",
+      "severity": "P2",
+      "evidence": "H7 W2-state1: 6 actions in one row (À encaisser 25 / Suivi commandes / Écran client / Appliquer une réduction fidélité / Ouvrir tiroir / Caisse). Nothing visually dominates; 'À encaisser' is orange but other buttons are equally tall.",
+      "fix": "Promote 'À encaisser (25)' to a larger button (taller, badge bigger). Move 'Écran client / Ouvrir tiroir / Caisse / Réduction fidélité' to a secondary toolbar or kebab menu. Reduce primary toolbar to 2 buttons: 'À encaisser' + 'Suivi commandes'.",
+      "wcag": null
+    },
+    {
+      "id": "UX-15",
+      "surface": "PaymentComponent + KDS + POS wizard — emoji overuse",
+      "dimension": "V3 brand consistency / V4 typography / a11y screen reader",
+      "severity": "P2",
+      "evidence": "H7 W2-state3 wizard headers: 💲Viande, 🥧Crudités, 🥩Sauce, 🍔🥧Formule, ➕Suppléments. H7 W5-state2 PaymentComponent: 💵Espèce / 💳Carte / 📱Mobile / 🎫Ticket restaurant. KDS 'En attente encaissement' includes ⏱ emoji. Inconsistent emoji vocabulary (some functional, some decorative, some redundant with the text).",
+      "fix": "Replace emoji with SVG icon set (Heroicons / Phosphor / Lucide). Same icon for same concept across kiosk+POS+KDS+admin. Reserve emoji for customer-facing kiosk reward/upsell only.",
+      "wcag": "1.1.1 Non-text content (screen reader reads emoji unicode names which is noisy)"
+    },
+    {
+      "id": "UX-16",
+      "surface": "/kds single-order card body",
+      "dimension": "V13 visual density / V4 typography",
+      "severity": "P3",
+      "evidence": "F3 S3: card body shows '1× Boisson Seule' then on the next line '· BOISSON SEULE' — duplicate label, once title-case, once uppercase. Wasted vertical real estate.",
+      "fix": "Drop the second uppercase echo. Use line-item composition_snapshot detail instead (currently absent).",
+      "wcag": null
+    },
+    {
+      "id": "UX-17",
+      "surface": "/kiosk/wizard 'Viande supplémentaire' accordion in POS popup",
+      "dimension": "V12 affordance / V8 error",
+      "severity": "P2",
+      "evidence": "H7 W2-state3: '+Viande supplémentaire (+€2.50/viande) ▼' is an orange-dashed-outline pill that looks neither button nor input. User cannot tell it's collapsible.",
+      "fix": "Use a clean accordion pattern: chevron-down icon right-aligned, full-width solid container, hover state. Or expand-by-default if frequent path.",
+      "wcag": "2.4.7 Focus visible"
+    },
+    {
+      "id": "UX-18",
+      "surface": "POS encaisser modal title 'Encaisser La Commande Borne'",
+      "dimension": "V8 microcopy / V15 vocabulary consistency",
+      "severity": "P3",
+      "evidence": "H7 W5-state2: title-cased 'Encaisser La Commande Borne' — French capitalization rule violated (only first word + proper nouns). 'Borne' also reads as cryptic system term to cashier.",
+      "fix": "Use sentence case: 'Encaisser la commande borne N°A0001' or 'Encaisser la commande (kiosk) N°A0001'.",
+      "wcag": "3.1.1 Language of page"
+    },
+    {
+      "id": "UX-19",
+      "surface": "/kiosk/cart — Mon compte chip prominence",
+      "dimension": "V2 hierarchy",
+      "severity": "P3",
+      "evidence": "H7 W1-state2 catalog: 'Mon compte' chip top-right is bright orange + dark text — visually heavy, competing with product cards. Loyalty is optional for V1 (V1.0.X future), but the chip looks like primary nav.",
+      "fix": "Demote 'Mon compte' to a subtle outline pill or a small avatar icon. Reserve heavy orange for primary actions.",
+      "wcag": null
+    },
+    {
+      "id": "UX-20",
+      "surface": "Cross-surface — payment-method order inconsistency",
+      "dimension": "V15 cross-surface consistency",
+      "severity": "P2",
+      "evidence": "Kiosk payment (W1-state7) order: Carte bancaire / Espèces / Titre restaurant. POS PaymentComponent (W5-state2) order: Espèce / Carte / Mobile / Ticket restaurant. Same restaurant, different payment-method ordering across surfaces. 'Mobile' available on POS but not kiosk (could be intentional, but inconsistent vocabulary 'Carte' vs 'Carte bancaire' and 'Espèce' vs 'Espèces').",
+      "fix": "Standardize: 'Carte bancaire' / 'Espèces' / 'Titre restaurant' / 'Mobile' in the same order everywhere. Use payment-method singleton config.",
+      "wcag": null
+    }
+  ],
+  "wcag_violations": [
+    {"id": "WCAG-01", "rule": "1.4.3 Contrast (Minimum)", "level": "AA", "surface": "/kiosk/idle Bienvenue + subtitle", "measured_ratio": "~2.7:1", "required": "4.5:1 body / 3:1 large bold"},
+    {"id": "WCAG-02", "rule": "3.3.2 Labels or instructions", "level": "A", "surface": "/kiosk/payment disabled Confirmer", "issue": "no helper text explaining why disabled"},
+    {"id": "WCAG-03", "rule": "1.4.1 Use of color", "level": "A", "surface": "/kiosk/wizard sauces ÉPUISÉ", "issue": "out-of-stock state relies on a pill alone, not an additional visual cue"},
+    {"id": "WCAG-04", "rule": "1.4.10 Reflow", "level": "AA", "surface": "/admin/stock product cards, POS wizard popup", "issue": "title truncation < 10 chars; wizard popup overflows at narrow widths"},
+    {"id": "WCAG-05", "rule": "1.1.1 Non-text content", "level": "A", "surface": "All surfaces using emoji as functional icons (wizard sections, payment methods, KDS pills)", "issue": "screen reader announces emoji unicode names — noisy"},
+    {"id": "WCAG-06", "rule": "2.5.5 Target Size (AAA)", "level": "AAA", "surface": "POS wizard popup sauce pills row of 13", "issue": "pills wrap and may fall below 44×44 dp at small breakpoints — needs viewport verification"},
+    {"id": "WCAG-07", "rule": "3.1.1 Language of page (quality)", "level": "A", "surface": "/kiosk/wizard step 1 'Cholsissez' typo", "issue": "customer-facing French typo on main flow"}
+  ],
+  "brand_consistency_score": {
+    "value": "6/10",
+    "summary": "Cayenne red #F4501E is used consistently in kiosk (idle CTA, wizard step progress, cart, payment, total amount). It is DILUTED on POS (some buttons red, but wizard popup primary is green; KDS bump is dark slate; admin dashboard tiles are purple/blue/green). Logo placement and typography (Cayenne serif Bienvenue, sans-serif body) coherent on kiosk surfaces. Admin surfaces feel like a generic admin template, not Cayenne.",
+    "strong_points": [
+      "Kiosk idle + cart + payment maintain brand red consistently",
+      "Cayenne logo placed top-center kiosk + top-left POS/admin (acceptable convention)",
+      "Cream/orange gradient backgrounds give warm restaurant feel on kiosk"
+    ],
+    "weak_points": [
+      "POS wizard popup uses green primary CTA (UX-06)",
+      "KDS bump button slate-gray, not Cayenne red (UX-03)",
+      "Admin dashboard tiles purple/blue/green — brand-orphaned (UX-12)",
+      "Sidebar category thumbnails all-identical (UX-01)",
+      "Emoji decoration inconsistent across surfaces (UX-15)"
+    ]
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "1 P0 (UX-02 KDS cards missing line-item detail — cook cannot prepare order from card body), 9 P1 (sidebar nav indistinguishable images, KDS bump color/sync, POS wizard density+green CTA, kiosk typos, payment disabled state, idle contrast, admin brand dilution, payment vocabulary inconsistency), 6 P2, 4 P3. The P0 is operational-blocking for a busy line; the 9 P1 collectively degrade brand impression but do not break flow. 7 WCAG findings range A to AAA. Brand consistency 6/10 — strong on kiosk, weak on POS/KDS/admin. Recommend AMBER → block production rollout until UX-02 + UX-08 typo + UX-10 payment-disabled microcopy + UX-11 idle contrast are fixed (P0 + 3 P1 = ~1 day of work). Other findings can ship as V1.0.X polish.",
+  "top_15_friction_points_ranked": [
+    "UX-02 — KDS cards show 'Menu (Frites + Boisson)' only — NO line items (P0)",
+    "UX-08 — 'Cholsissez' typo customer-facing on Tacos wizard step 1 (P1)",
+    "UX-10 — Kiosk payment 'Confirmer' button disabled with no microcopy (P1)",
+    "UX-11 — 'Bienvenue !' contrast ~2.7:1 fails WCAG AA (P1)",
+    "UX-12 — Admin KPI tiles purple/blue/green — brand-orphaned (P1)",
+    "UX-01 — Catalog sidebar category thumbnails ALL show same burger (P1)",
+    "UX-03 — KDS bump 'Prêt' button slate-gray instead of Cayenne red (P1)",
+    "UX-04 — KDS bump state local-only across multi-screen kitchens (P1)",
+    "UX-05 — POS wizard popup overwhelming density + 4 control styles (P0/P1)",
+    "UX-06 — POS wizard 'Ajouter au panier' is green instead of brand red (P1)",
+    "UX-07 — Bowl variants (curry/tandoori/crispy/mariné) all same image (P1)",
+    "UX-20 — Payment vocabulary inconsistent kiosk vs POS ('Carte' vs 'Carte bancaire') (P2)",
+    "UX-09 — Sauce ÉPUISÉ uses green pill but card looks active (P2)",
+    "UX-13 — Admin stock product titles truncated mid-word ('Men u...') (P2)",
+    "UX-15 — Emoji vocabulary inconsistent + screen-reader noisy across surfaces (P2)"
+  ],
+  "captures_used_count": 17,
+  "deliverable_path": "reports/test-e2e/goal-2026-05-23/phase-j/J-ADV-8-visual-ux-findings.json"
+}

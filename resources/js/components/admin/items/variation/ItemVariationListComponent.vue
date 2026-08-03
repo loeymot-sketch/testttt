@@ -1,5 +1,7 @@
 <template>
-    <ItemVariationCreateComponent :props="variationProps" />
+    <div data-testid="admin-variation-add">
+        <ItemVariationCreateComponent :props="variationProps" />
+    </div>
     <br><br>
     <div class="db-card mb-5" v-if="variations.length > 0" v-for="variation in variations" :key="variation">
         <div class="db-card-header border-none">
@@ -17,9 +19,9 @@
                     </tr>
                 </thead>
                 <tbody class="db-table-body" v-if="variation.children">
-                    <tr class="db-table-body-tr" v-for="child in variation.children" :key="child">
+                    <tr class="db-table-body-tr" v-for="child in variation.children" :key="child" :data-testid="`admin-variation-row-${child.id}`">
                         <td class="db-table-body-td overflow-hidden text-wrap">{{ child.name }}</td>
-                        <td class="db-table-body-td">{{ child.flat_price }}</td>
+                        <td class="db-table-body-td">{{ child.currency_price }}</td>
                         <td class="db-table-body-td">
                             <span v-if="!child.visible_on" class="text-xs text-green-600 font-medium">Toutes</span>
                             <span v-else class="text-xs text-blue-600 font-medium">{{ child.visible_on.join(', ') }}</span>
@@ -30,8 +32,12 @@
                             </span>
                         </td>
                         <td class="db-table-body-td">
-                            <SmIconModalEditComponent @click="edit(child)" />
-                            <SmIconDeleteComponent @click="destroy(child.id)" />
+                            <span :data-testid="`admin-variation-edit-${child.id}`">
+                                <SmIconModalEditComponent @click="edit(child)" />
+                            </span>
+                            <span :data-testid="`admin-variation-delete-${child.id}`">
+                                <SmIconDeleteComponent @click="destroy(child.id)" />
+                            </span>
                         </td>
                     </tr>
                 </tbody>

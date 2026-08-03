@@ -1,0 +1,72 @@
+{
+  "task_id": "CV1-M14-OPS-PREFLIGHT",
+  "mission_id": "M-14",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Livrer le preflight ops Caisse V1: queue, scheduler, workers, broadcast, cache, outbox, fiscal archive, dashboards/checklists, alerting et on-call.",
+  "instruction": "Applique uniquement M-14. No gate apres M-13, mais le rehearsal staging full-volume de M-13 reste explicitement reporte: ne pas declarer GO prod si transcript staging absent. Produire outillage preflight fail-closed/read-only par defaut, verifier runtime ops, et couvrir avec tests. JSON unique.",
+  "allowlist": [
+    "scripts/ops-preflight-caisse-v1.sh",
+    "app/Console/Commands/PreflightProductionCommand.php",
+    "config/horizon.php",
+    "tests/Feature/OpsPreflightCaisseV1Test.php",
+    "tests/Feature/AfterCommitDispatchTest.php",
+    "tests/Feature/OutboxRescueTest.php"
+  ],
+  "off_limits": [
+    "database/migrations/**",
+    "app/Services/**",
+    "resources/**",
+    "routes/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "human_gate_decisions": [
+    {
+      "gate": "GATE_SCHEMA_MIGRATIONS_CAISSE_V1_2026-04-25",
+      "status": "Approved",
+      "decision": "Option A — All migrations with rehearsal + backup",
+      "date": "2026-04-25"
+    }
+  ],
+  "dependencies_closed": [
+    "CV1-M13-MIGRATIONS-SAFETY"
+  ],
+  "invariants_at_risk": [
+    "dispatch_after_commit",
+    "branch_id",
+    "frozen_zones"
+  ],
+  "gate_conditions": [
+    "M-13 CLOSED",
+    "schema approved Option A"
+  ],
+  "mandatory_tests": [
+    "php artisan test --filter=OpsPreflightCaisseV1Test",
+    "php artisan test --filter=AfterCommitDispatchTest",
+    "php artisan test --filter=OutboxRescueTest",
+    "bash scripts/ops-preflight-caisse-v1.sh --help",
+    "php artisan app:preflight-production --help"
+  ],
+  "self_audit_checklist": [
+    "preflight script is read-only/fail-closed by default",
+    "preflight command avoids env() runtime drift after config:cache",
+    "queue/scheduler/worker/broadcast/cache/outbox/fiscal archive checks are explicit",
+    "M13 staging rehearsal missing remains a blocker for prod GO, not silently accepted",
+    "no product runtime flow or schema migration is modified"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 0,
+    "predicates": [
+      "preflight produces false GO",
+      "missing staging transcript treated as pass",
+      "dispatch after commit invariant weakened"
+    ]
+  },
+  "graphiti_query": "Caisse V1 ops preflight queue scheduler broadcast cache outbox fiscal archive",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_ops_preflight_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

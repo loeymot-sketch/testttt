@@ -1,0 +1,13 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Symmetry\OrderServicesContractTest[39m
+  [32;1m✓[39;22m[39m [2mmethod contract documents intentional payment asymmetry[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch and dispatch contract is source anchored[22m[39m
+  [32;1m✓[39;22m[39m [2mos status and payment noops do not emit side effects[22m[39m
+  [32;1m✓[39;22m[39m [2mfos status noop does not emit cancel side effects[22m[39m
+  [32;1m✓[39;22m[39m [2mfos deferred payment confirm golden response is idempotent[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m5 passed[39;22m
+  [37;1mTime:   [39;22m[39m1.05s[39m
+
+

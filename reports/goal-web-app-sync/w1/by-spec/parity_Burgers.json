@@ -1,0 +1,91 @@
+{
+ "spec": "parity:Burgers",
+ "scope": "Parity catégorie \"Burgers\" (id=4) : fixture canonique borne (reports/goal-web-app-sync/catalog-canonical.json) VS mirror WEB (/Users/1millnonstop/Downloads/web/data/menu.js) VS mirror MOBILE (mobile/data/menu.js). Read-only, aucun fichier modifié.",
+ "summary": "Parité Burgers globalement EXCELLENTE : les 6 items canoniques (Chicken 4,90 / Cheese 6,00 / Double Cheese 7,00 / Fish 6,00 / Big 9,00 / Grill 8,00, tous is_available=true) existent dans les 2 mirrors avec noms, prix, descriptions et structure wizard (0 choix viande, crudités ON, 12 sauces identiques, 9 suppléments +0,90, formule menu +2,50) alignés. Zéro P0 : aucun prix faux, aucun item manquant/inventé. Risques principaux : (P1) le mirror MOBILE n'expose pas du tout la « Viande supplémentaire +2,50 € » (pas de champ has_extra_meat ni de constante EXTRA_MEAT) alors que la borne la vend sur les 6 burgers ; (P1) la crudité gratuite « Oignons cuits » présente sur la borne est absente des pools CRUDITES des 2 mirrors ; (P2) mobile utilise des images génériques réutilisées et les 2 mirrors affichent is_halal=true alors que la borne dit false.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "MOBILE : « Viande supplémentaire » +2,50 € absente du wizard burgers (option vendable non proposée)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 357,
+   "evidence": "Canonique : chaque burger (les 6) a l'extra {'name':'Viande supplémentaire','price':2.5,'group_label':'supplement'} dans extras. Mobile : `grep -n \"has_extra_meat\\|EXTRA_MEAT\\|Viande supplémentaire\"` ne matche AUCUNE donnée (seulement 2 commentaires lignes 12 et 30) ; mkItem mobile (lignes 245-283) n'a pas de champ has_extra_meat, et BURGERS lignes 357-374 ne le passent pas — contrairement au web qui a EXTRA_MEAT_PRICE=2.50 (web/data/menu.js:180) + has_extra_meat:true sur les 6 burgers (web:353-370).",
+   "recommendation": "Ajouter EXTRA_MEAT_PRICE=2.50 + champ has_extra_meat au mkItem mobile et le poser sur les 6 burgers (parité avec web/data/menu.js:180 et :353-370)."
+  },
+  {
+   "severity": "P1",
+   "title": "WEB : crudité gratuite « Oignons cuits » absente du pool CRUDITES (la borne l'offre sur les 6 burgers)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 135,
+   "evidence": "Canonique : extras de chaque burger incluent {'name':'Oignons cuits','price':0,'group_label':'crudite'} (4e crudité, après Salade/Tomate/Oignon). Web : const CRUDITES lignes 135-139 n'a que 3 entrées (c-salade, c-tomate, c-oignon) ; `grep -n \"Oignons cuits\"` sur le fichier = 0 résultat (exit 1). Commentaire ligne 134 dit « 3 crudités ».",
+   "recommendation": "Ajouter { id:'c-oignons-cuits', name:'Oignons cuits', price:0 } au pool CRUDITES web (visible au moins sur cat 4 ; vérifier les autres catégories via leurs fixtures respectives)."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE : crudité gratuite « Oignons cuits » absente du pool CRUDITES",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 150,
+   "evidence": "Canonique : {'name':'Oignons cuits','price':0,'group_label':'crudite'} sur les 6 burgers. Mobile : const CRUDITES lignes 150-154 = 3 entrées seulement (Salade/Tomate/Oignon) ; grep \"Oignons cuits\" = 0 résultat.",
+   "recommendation": "Même fix que web : 4e crudité gratuite « Oignons cuits »."
+  },
+  {
+   "severity": "P2",
+   "title": "MOBILE : images burgers génériques réutilisées (≠ 6 visuels distincts de la borne)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 68,
+   "evidence": "Canonique : 6 thumbs distincts (chicken_burger.webp, cheese-burger.webp, double-cheese.webp, fish-burger.webp, big-burger.webp, grill-burger.webp). Mobile lignes 68-73 : 'chicken-burger': 'burger-cheese.png', 'cheese-burger': 'burger-cheese.png', 'double-cheese': 'burger-big.png', 'fish-burger': 'burger-cheese.png', 'big-burger': 'burger-big.png', 'grill-burger': 'burger-big.png' — 3 burgers partagent burger-cheese.png, 3 partagent burger-big.png. Le web a déjà les 6 fichiers distincts (web/data/menu.js:62-67 : chicken_burger.png, cheese-burger.png, double-cheese visible ligne 64 [id 'double-cheese' non montré dans l'extrait grep mais lignes 62-67 couvrent les 6 slugs], fish-burger.png, big-burger.png, grill-burger.png).",
+   "recommendation": "Aligner mobile sur les 6 assets distincts déjà utilisés côté web (pattern [IMG-SYNC-CAISSE 2026-06-27] du web)."
+  },
+  {
+   "severity": "P2",
+   "title": "WEB+MOBILE : is_halal affiché true alors que la borne renvoie is_halal=false sur les 6 burgers",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 263,
+   "evidence": "Canonique : is_halal=False pour les 6 burgers (et is_vegetarian/is_spicy=False, conformes). Mirrors : mkItem `is_halal: opts.is_halal !== false` (web:263, mobile:261) et les 6 mkItem BURGERS (web:353-370, mobile:357-374) ne passent pas is_halal → défaut true → badge halal potentiellement affiché à tort côté client. Divergence de drapeau produit, pas de prix.",
+   "recommendation": "Décider la valeur canonique avec l'owner (la borne dit false — probablement flag DB jamais renseigné) puis aligner le défaut des mirrors ou renseigner la DB ; ne pas afficher de badge halal tant que non tranché."
+  },
+  {
+   "severity": "P3",
+   "title": "WEB+MOBILE : wizard_template cat 4 = 'burger' VS canonique 'sandwich'",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 227,
+   "evidence": "Canonique catégorie 4 : {'wizard_template':'sandwich','has_menu':True,'sauce_included_menu':False}. Web:227 et mobile:220 : wizard_template:'burger'. Nom de template interne divergent — le rendu burger des mirrors reproduit fonctionnellement le flow sandwich (crudités+sauce+suppléments+menu), donc cosmétique tant que les steps restent équivalents.",
+   "recommendation": "Documenter le mapping 'burger'(mirror)≡'sandwich'(borne) ou renommer pour un futur wireup mécanique."
+  },
+  {
+   "severity": "P3",
+   "title": "WEB+MOBILE : libellés addons formule divergents (« Frites Seules »/« Boisson Seule » VS « Ajouter Frites »/« Ajouter Boisson »)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 185,
+   "evidence": "Canonique addons (les 6 burgers) : role menu_component='Menu (Frites + Boisson)', role side='Frites Seules', role drink='Boisson Seule' (addon_item_id 1/2/3). Web:183-187 et mobile:186-190 : 'Menu (Frites + Boisson)' 2.50 ✔ identique, mais 'Ajouter Frites' 2.00 et 'Ajouter Boisson' 2.00 — noms différents ; les prix 2,00 € des addons side/drink ne sont PAS vérifiables dans la fixture (items addon 1/2/3 absents de data.items — ids présents : 22…125 sans 1/2/3).",
+   "recommendation": "Aligner les libellés ; vérifier les prix side/drink 2,00 € contre la DB items (addon_item_id 2/3) dans une passe backend car la fixture ne les porte pas."
+  },
+  {
+   "severity": "INFO",
+   "title": "Descriptions : séparateur et casse divergents (cosmétique)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 354,
+   "evidence": "Canonique Chicken Burger : 'Salade, tomate, oignon, sauce.' — mirrors : 'Salade · Tomate · Oignon · Sauce' (web:354, mobile:358). Même contenu sémantique sur les 6 items (2 steaks/2 cheddars, poisson pané, 3 steaks+2 jambons de dinde, etc.), seuls séparateur/casse/point final diffèrent.",
+   "recommendation": "Aucun fix requis ; harmoniser seulement si un diff automatique de parité strict est mis en place."
+  },
+  {
+   "severity": "INFO",
+   "title": "Ordre du pool suppléments divergent entre Chicken Burger et les 5 autres dans la fixture elle-même",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json",
+   "line": 1,
+   "evidence": "Canonique Chicken Burger : suppléments ordonnés Cheddar, Raclette, Emmental, Œuf, Boursin, Légumes sautés, Jambon, Champignons, Oignons frits ; les 5 autres burgers : Oignons frits, Champignons, Jambon, Cheddar, Raclette, Emmental, Boursin, Œuf, Légumes sautés. Mirrors (web:143-153, mobile:158-168) suivent le 2e ordre. Mêmes 9 noms, mêmes prix 0,90 partout — pur ordre d'affichage, incohérent dans la source même.",
+   "recommendation": "Rien côté mirrors ; éventuellement normaliser le sort des extras du Chicken Burger côté DB."
+  }
+ ],
+ "facts": [
+  "Fixture canonique : 6 items category_id=4 — Chicken Burger id 38 4.90 / Cheese Burger id 98 6.00 / Double Cheese id 99 7.00 / Fish Burger id 100 6.00 / Big Burger id 101 9.00 / Grill Burger id 102 8.00, tous is_available=true (reports/goal-web-app-sync/catalog-canonical.json)",
+  "Canonique : composer_profile = null pour les 6 burgers ; le wizard vit dans extras (crudités price 0 + 9 suppléments 0.90 + Viande supplémentaire 2.50), variations (12 sauces attribute_id=5, toutes price 0) et addons (roles menu_component/side/drink, addon_item_id 1/2/3) ; viande_count=0 partout (aucun choix de viande — cohérent mirrors viandes:0)",
+  "Canonique catégorie 4 : wizard_template='sandwich', has_menu=true, sauce_included_menu=false, sort=4",
+  "Les 12 sauces canoniques (Mayonnaise, Ketchup, Algérienne, Samouraï, Curry, Andalouse, Harissa, Hannibal, Blanche, Barbecue, Fromagère maison, Spicy maison) = exactement les 12 du pool SAUCES web (/Users/1millnonstop/Downloads/web/data/menu.js:119-132) et mobile (mobile/data/menu.js:134-147) — noms identiques, prix 0",
+  "Les 9 suppléments +0,90 € canoniques = exactement le pool SUPPLEMENTS web:143-153 et mobile:158-168 (Oignons frits, Champignons, Jambon, Cheddar, Raclette, Emmental, Boursin, Œuf, Légumes sautés)",
+  "Formule menu 'Menu (Frites + Boisson)' +2,50 € identique aux 3 surfaces : canonique addon role menu_component ; web FORMULES:183-187 ; mobile FORMULES:186-190 ; has_menu_addon:true sur les 6 burgers dans les 2 mirrors",
+  "Web burgers : /Users/1millnonstop/Downloads/web/data/menu.js:352-371 (ids 401-406) ; Mobile burgers : mobile/data/menu.js:356-374 (ids 401-406) — mêmes 6 noms/prix/descriptions que la borne, aucun item manquant ni en trop, aucun produit inventé",
+  "Les items addon 1/2/3 (Menu/Frites Seules/Boisson Seule) ne figurent PAS dans data.items de la fixture (ids présents : 22-125) — leurs prix side/drink ne sont donc pas vérifiables depuis la fixture seule",
+  "Web a EXTRA_MEAT_PRICE=2.50 (web:180) + has_extra_meat:true sur les 6 burgers ; mobile n'a NI la constante NI le champ (grep négatif hors commentaires lignes 12/30)",
+  "Ordre d'affichage des items identique (Chicken en tête, ordre canonique order=0 puis 1) sur les 3 surfaces"
+ ]
+}

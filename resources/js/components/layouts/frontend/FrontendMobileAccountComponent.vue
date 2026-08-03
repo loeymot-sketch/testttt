@@ -37,8 +37,11 @@
         </div>
 
         <nav class="px-4">
+            <!-- [iter15-mega-fix A-002 2026-05-10] Same guard as FrontendNavBarComponent:
+                 require defaultMenu?.url AND defaultMenu?.language so we never render
+                 href="/admin/undefined" + "menu.undefined" raw i18n key. -->
             <router-link
-                v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0"
+                v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0 && defaultMenu?.url && defaultMenu?.language"
                 :to="{ path: '/admin/' + defaultMenu?.url }" v-on:click="linkClick"
                 class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                 <i class="lab-font-size-17" :class="defaultMenu?.icon"></i>

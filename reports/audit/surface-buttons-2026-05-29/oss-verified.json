@@ -1,0 +1,23 @@
+{
+  "surface": "OSS Écran client (oss)",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "verified_at": "2026-05-29",
+  "elements_checked": 7,
+  "confirmed_count": 1,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "type": "broken_function",
+      "file": "resources/js/components/layouts/backend/BackendNavbarComponent.vue",
+      "line": "603, 614, 565",
+      "element": "\"Plein écran\" fullscreen toggle button — OSS surface's only true interactive control. Rendered in the backend navbar only when $route.path.includes('order-status-screen') (BackendNavbarComponent.vue:12), @click=\"fullScreen\", aria-label=\"Plein écran\".",
+      "title": "OSS fullscreen toggle throws ReferenceError: handleMouseMove is not defined on every click; cursor-reveal UX is dead",
+      "confirmed": true,
+      "grep_evidence": "grep -rn 'handleMouseMove' resources/js/ at HEAD 04603fa87 returns EXACTLY 3 reference sites and ZERO definitions: BackendNavbarComponent.vue:565 (document.removeEventListener('mousemove', handleMouseMove)), :603 (document.addEventListener('mousemove', handleMouseMove)), :614 (document.removeEventListener('mousemove', handleMouseMove)). grep -rnE '(function|const|let|var)[ ]+handleMouseMove' resources/js/ -> empty (exit 1). No methods entry, no data prop, no import for the symbol. Read of lines 555-616 confirms handler chain: button @click fullScreen() (568) -> toggleFullscreen() (589). ENTER branch: elem.requestFullscreen() (595) runs FIRST, then line 603 references undefined handleMouseMove -> uncaught ReferenceError. EXIT branch line 614 same. closeFullScreen() line 565 same. requestFullscreen/exitFullscreen execute before the bad reference so the visual fullscreen toggle still engages, but (a) every click throws an uncaught ReferenceError on the customer-wall console, and (b) the intended idle-cursor/header reveal listener can never attach -> that UX is dead.",
+      "recommendation": "Define handleMouseMove (module-scope const or component method bound via this.handleMouseMove) implementing the apparent intent — reveal cursor/header on mousemove for the TV wall, auto-hide after idle — OR remove the three add/removeEventListener('mousemove', handleMouseMove) lines (565, 603, 614) if the idle-cursor feature is unwanted. Either way the ReferenceError must go. Symbol lives outside the OSS component anchors but is the OSS surface's sole interactive control, so in scope.",
+      "frozen": false
+    }
+  ],
+  "notes": "Surface is near-zero-interaction read-only customer display by owner design (Wave Q-3). 7 interactive/dynamic elements enumerated across anchor components plus controls acting on this surface. Verdict: almost entirely clean — ONE real broken function. Correctly verified-clean (NOT flagged): store action orderStatusScreenOrder/lists branches isAuthed -> admin/oss-order else frontend/oss-order, both API routes exist; i18n labels resolve; '—' empty placeholder; LoadingContentComponent loading state; realtime-order-update window event IS dispatched by KDS + navbar (not dead); chime _playReadySound early-return is owner-attested heal P0-OSS-01 with working visual compensating channel; ConnectionStatusBanner close-x unreachable on OSS by design (suppress-transient)."
+}

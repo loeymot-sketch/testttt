@@ -1,0 +1,93 @@
+{
+  "verdict": "SUBSTANTIALLY SOUND after corrections. 4 hostile reviewers independently re-opened every cited file:line: S1-S8 = 49/49 confirmed REAL (zero false-confirms, one bug even reproduced via php -r); S9-S17+LIVE = 33/39 reverified, the rest severity-recalibrated not refuted. P0=0 is correct. The operator-identity NF525 P1s (S11-02, S16-01), the public-QR dine-in gate (S17-01) and the .env APP_DEBUG toggle (S7-03) all hold. Net self-audit effect: 1 stale headline reframed (S7-01), ~8 severity re-ratings, 2 wrongly-dropped re-instated, ~8 citation/wording fixes.",
+  "drop_ids": [],
+  "severity_overrides": {
+    "S1-DASH-04": "P3",
+    "S4-01": "P2",
+    "S8-02": "P2",
+    "S7-01": "P2",
+    "S11-01": "P3",
+    "S13-06": "P3",
+    "S15-oss-01": "P3",
+    "S13-04": "P3",
+    "S5-06": "P2"
+  },
+  "category_overrides": {},
+  "evidence_overrides": {},
+  "additions": [
+    {
+      "id": "GAP-items-pdf",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Items report PDF export truncates to the current page (10 rows) — no paginate=0 normalization, same bug as the on-screen footer",
+      "file_line": "app/Http/Controllers/Admin/ItemsReportController.php (pdf path calls itemReport(request) without $request->merge(['paginate'=>0]))",
+      "evidence": "Surfaced + verified by the self-audit completeness reviewer: the items PDF export path does not force a full dataset (the merge override lives only in the Excel export), so it inherits the screen's paginate=1 and exports only the visible page — mirroring the confirmed on-screen S5-01 footer truncation.",
+      "why_it_matters": "A 'full items report' PDF that silently contains only 10 of 45 items is a wrong fiscal/management document; the owner would act on incomplete figures.",
+      "reproduction": "Open items report (45 items), export PDF -> only the first page's rows appear",
+      "recommended_correction": "In ItemsReportController::pdf, $request->merge(['paginate'=>0]) before itemReport(), exactly like the Excel export.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-03-reinstated",
+      "severity": "P3",
+      "category": "functional",
+      "title": "Kiosk-machine edit prefills a password from a nonexistent field (re-instated wrongly-dropped)",
+      "file_line": "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue:185 (edit() :176-190)",
+      "evidence": "Re-instated by the self-audit safety-net reviewer with corrected citation: the edit() handler references a machine field that does not exist on the payload, so the edit form prefill is broken.",
+      "why_it_matters": "Editing a registered kiosk/borne is part of the owner's current terminal-association workflow; a broken prefill makes editing error-prone.",
+      "reproduction": "Settings -> Kiosk machines -> edit a machine; inspect the prefilled fields",
+      "recommended_correction": "Bind the edit form to the real machine fields returned by the API; verify against KioskMachineResource.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "annotations": {
+    "S7-01": "Self-audit reframe + downgrade P1->P2: the 'receipt prints SIRET/TVA blank' impact is now STALE — branch 1 fiscal identity is populated (E.DELICE SAS: SIRET 10417050100019 / TVA FR19104170501 / register CAISSE-01 / legal_footer), verified live. The REAL residual is durability/UX: there is no admin Settings UI to set fiscal identity; it was set by the foodking:set-branch-legal CLI, so a reseed/migrate:fresh would blank it again with no in-app way to restore.",
+    "S7-03": "Self-audit: keep P1 but frame as an OPERATIONAL footgun (not an external security breach): the admin 'App Debug -> Enable' toggle writes APP_DEBUG=true to .env; in production the AppServiceProvider boot guard then REFUSES to boot (self-inflicted outage) and in any env it leaks stack/SQL. Especially dangerous during the in-progress cloud cutover.",
+    "S8-01": "Self-audit citation fix: add app/Services/Payments/SplitPaymentService.php to the citation. Defect and links unchanged — TPE created via Settings can take branch_id=0 (resolveBranchId returns validated branch_id for an admin, PaymentTerminalController.php:104) and is then invisible to the branch caisse. DIRECTLY relevant to the owner's terminal-association task: terminals must be assigned to the branch (branch_id=1), not left admin-global.",
+    "S8-02": "Self-audit re-rating P1->P2 + citation fix: scope the token-revocation gap to the logout()/is_login path (controller app/Http/Controllers/Auth/KioskMachineLoginController.php); destroy + changeStatus are already server-enforced, so remove them from the vector. The real residual: logging out / deactivating a borne from Admin does not revoke its active Sanctum kiosk:order token (TTL 480min) until expiry.",
+    "S1-DASH-04": "Self-audit re-rating P1->P3: the Repartition-par-Canal buckets provably do not partition (POS double-counts a kiosk-tagged source=POS row; an order in none of WEB/APP/POS/kiosk counts in none) — REAL, but it is a read-only dashboard percentage with no money/fiscal/blocking impact.",
+    "S4-01": "Self-audit re-rating P1->P2: same root cause as S4-02 (two divergent availability columns — stock_levels.manual_unavailable_reason vs item_extra/item_attribute.is_available). Real divergence, but align severity with its own root-cause finding.",
+    "S11-01": "Self-audit re-rating P1->P3: the AdministratorService::update() missing target/self/super-admin guard asymmetry is REAL (siblings carry it) but is defense-in-depth/code-quality, not a demonstrated privilege-escalation exploit in V1 single-admin. Keep the recommended guard.",
+    "S13-06": "Self-audit re-rating P2->P3: Coupon::isUsableNow() max_uses_global check is a latent trap / dead path (every live caller pre-checks); frame as deadcode, not an active over-redemption hole.",
+    "S15-oss-01": "Self-audit re-rating P2->P3 / design-decision: OSS list restricts to order_type [KIOSK, TAKEAWAY] by design (same allowlist the POS box audit flagged), so POS-counter orders not reaching the PRET wall may be intentional. OWNER to confirm whether counter orders should appear on the customer screen.",
+    "S13-04": "Self-audit re-rating P2->P3: push-notification target lacks Rule::exists + branch-ownership — V2 multi-tenant hardening; low risk on V1 single-branch.",
+    "S14-KDS-02": "Self-audit reasoning fix: this is a raw missing-i18n label (KitchenDisplaySystemComponent.vue:1646 this.$t('label....')), NOT the 409-conflict path. Keep P3.",
+    "S13-02": "Self-audit: keep P1 — with manual_discount_enabled=true (verified at runtime, no .env override) the coupon/discount divergence is LIVE, not residual.",
+    "S5-06": "Self-audit re-rating P1->P2: two reviewers flagged the export-pagination framing as imprecise (over-export vs current-page-only) and non-blocking; the concrete verified instance is the items PDF truncation (GAP-items-pdf). Downgraded pending a direct read of SalesReportExport vs the paginate=0 merge."
+  },
+  "applied_corrections": [
+    "Reframed S7-01 (P1->P2): the 'receipt prints SIRET/TVA blank' headline is now STALE — branch fiscal identity is populated (E.DELICE SAS, verified live); the real residual is 'no admin UI, CLI-only, not reseed-durable'.",
+    "Severity re-ratings: S1-DASH-04 P1->P3, S4-01 P1->P2 (dup root cause of S4-02), S8-02 P1->P2 (scope to logout token-revocation), S11-01 P1->P3 (defense-in-depth), S13-06 P2->P3, S15-oss-01 P2->P3 (design decision), S13-04 P2->P3.",
+    "Re-instated 2 wrongly-dropped/coverage items: GAP-items-pdf (P2, items PDF export truncates to 10 rows) and S8-03 (P3, kiosk-machine edit prefill).",
+    "Citation/framing fixes: S8-01 (+SplitPaymentService path; tied to the owner terminal task), S8-02 (KioskMachineLoginController path), S7-03 (operational footgun, critical during cutover), S14-KDS-02 (raw-label not 409).",
+    "Confirmed the operator-identity NF525 P1s (S11-02 POS receipt operator=customer, S16-01 kiosk-counter order records no cashier) and the public-QR dine-in gate (S17-01) hold end-to-end under independent re-verification."
+  ],
+  "standing_caveats": [
+    "GAP-confirmCashPayment (PENDING_COUNTER->PAID counter cash collection) was NOT directly audited by S2 — recommend a targeted follow-up (idempotency, cash-trail) since it is the highest money/fiscal mutation on that surface.",
+    "GAP-destroy-order and GAP-drainFailed were checked by the self-audit and found correctly guarded (branch+PAID+Z-seal; older-than-1h queue maintenance) — noted for completeness, NOT defects.",
+    "S9-04 (LanguageService::fileTextStore writes arbitrary values into .php lang files via str_replace) was confirmed by the self-audit as a real injection-adjacent risk on an admin-only route — review input sanitisation.",
+    "S5-06 export-pagination framing was flagged imprecise by two reviewers (over-export vs current-page-only) — verify the actual ItemsReportExport vs sales export merge(paginate=0) before acting; the items PDF truncation (GAP-items-pdf) is the confirmed concrete instance.",
+    "All backend confirmations are static (file:line + control-flow), per the project worktree vendor-shadow note; no fiscal-mutating live-fire was performed (no-touch)."
+  ],
+  "reviewers": [
+    {
+      "reviewer": "RED re-verify S1-S8 (file:line)",
+      "overall_verdict": "49/49 CONFIRMED findings independently re-verified REAL — zero false-confirms, zero hallucinations; S1 timezone bug reproduced via php -r."
+    },
+    {
+      "reviewer": "RED re-verify S9-S17 + LIVE",
+      "overall_verdict": "33/39 reverified_ok; operator-identity NF525 (S11-02/S16-01) and QR dine-in gate (S17-01) REAL end-to-end; 5 severity recalibrations, none refuted."
+    },
+    {
+      "reviewer": "RED completeness + wrongly-dropped",
+      "overall_verdict": "CONDITIONAL PASS: all 17 micro-systems present, counts consistent; re-instated S8-03 + GAP-items-pdf; destroy-order/drainFailed gaps found correctly guarded."
+    },
+    {
+      "reviewer": "RED severity + reasoning",
+      "overall_verdict": "Solid P1s hold (S6-01,S10-01,S11-02,S16-01); required fixes = S7-01 stale framing + severity cluster (S1-DASH-04, S4-01, S8-02) — all applied."
+    }
+  ],
+  "escalations_note": "> **Owner-relevant (ties to your terminal task):** a TPE registered via Settings as admin can land at `branch_id=0` and be invisible to the branch caisse (S8-01) — assign terminals to the branch (`branch_id=1`). And `S7-03` (admin App-Debug toggle writes `APP_DEBUG=true` to `.env`) is an operational footgun to avoid during the cloud cutover."
+}

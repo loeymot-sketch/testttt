@@ -54,7 +54,8 @@ trait HasDomainEvents
 
             DB::afterCommit(function () use ($ids): void {
                 foreach ($ids as $id) {
-                    DispatchDomainEventsJob::dispatch($id)->onQueue('high');
+                    // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
+                    DispatchDomainEventsJob::dispatch($id);
                 }
             });
         });

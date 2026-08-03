@@ -1,0 +1,137 @@
+[
+  {
+    "step": "C5-01",
+    "slug": "a11y-pos-main",
+    "state": "analyzed",
+    "severity": "OK",
+    "note": "Violations: 0 (critical+serious=0). Passes: 30",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/01-a11y-pos-main-initial.png",
+    "ts": "2026-05-06T17:42:36.436Z"
+  },
+  {
+    "step": "C5-01",
+    "slug": "monitoring-pos-main",
+    "state": "capture",
+    "severity": "INFO",
+    "note": "JS errors=0, console errors=4, network 4xx/5xx=0",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/01-a11y-pos-main-initial.png",
+    "ts": "2026-05-06T17:42:36.436Z"
+  },
+  {
+    "step": "C5-02",
+    "slug": "floorplan-page",
+    "state": "loaded",
+    "severity": "OK",
+    "note": "Floorplan: page chargée. Bonjour\nCaissier\nCaissier\n\npos@lecayenne.fr\n\n+330600000002\n\n0.00€\nEdit Profile\nChange Password\nLogou",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/02-floorplan-loaded.png",
+    "ts": "2026-05-06T17:42:51.148Z"
+  },
+  {
+    "step": "C5-02",
+    "slug": "a11y-floorplan",
+    "state": "analyzed",
+    "severity": "OK",
+    "note": "Violations a11y floorplan: 0 (crit+seri=0)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/02-floorplan-loaded.png",
+    "ts": "2026-05-06T17:42:51.667Z"
+  },
+  {
+    "step": "C5-03",
+    "slug": "tracker-page",
+    "state": "loaded",
+    "severity": "OK",
+    "note": "Tracker: chargée",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/03-tracker-loaded.png",
+    "ts": "2026-05-06T17:43:06.559Z"
+  },
+  {
+    "step": "C5-04",
+    "slug": "cancel-line",
+    "state": "after-click",
+    "severity": "OK",
+    "note": "Cart chip: \"Articles\n1\" → \"Articles\n0\" (decremented=true)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/04-cancel-last-line-after.png",
+    "ts": "2026-05-06T17:43:21.310Z"
+  },
+  {
+    "step": "C5-05",
+    "slug": "discount-input",
+    "state": "filled",
+    "severity": "OK",
+    "note": "Discount 5% saisi",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/05-discount-amount-filled.png",
+    "ts": "2026-05-06T17:43:34.270Z"
+  },
+  {
+    "step": "C5-05",
+    "slug": "discount-apply",
+    "state": "disabled",
+    "severity": "INFO",
+    "note": "Bouton apply disabled — peut nécessiter reason préalable",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/05-discount-amount-filled.png",
+    "ts": "2026-05-06T17:43:34.275Z"
+  },
+  {
+    "step": "C5-05",
+    "slug": "grand-total",
+    "state": "displayed",
+    "severity": "INFO",
+    "note": "Grand total = Total\n3.00€",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/05-discount-amount-filled.png",
+    "ts": "2026-05-06T17:43:34.277Z"
+  },
+  {
+    "step": "C5-06",
+    "slug": "cash-open-button",
+    "state": "invisible",
+    "severity": "P2",
+    "note": "Bouton kiosk-cash-open invisible",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/06-kiosk-cash-panel-btn-missing.png",
+    "ts": "2026-05-06T17:43:43.578Z"
+  },
+  {
+    "step": "C5-07",
+    "slug": "responsive-1280",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Grid visible at 1280x800: true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/07-responsive-1280x800.png",
+    "ts": "2026-05-06T17:43:52.074Z"
+  },
+  {
+    "step": "C5-07",
+    "slug": "responsive-1920",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Grid visible at 1920x1080: true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/07-responsive-1920x1080.png",
+    "ts": "2026-05-06T17:43:53.738Z"
+  },
+  {
+    "step": "C5-07",
+    "slug": "responsive-768",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Grid visible at 768 tablette: true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/07-responsive-768x1024-tablet.png",
+    "ts": "2026-05-06T17:43:55.303Z"
+  },
+  {
+    "step": "C5-08",
+    "slug": "search-filter",
+    "state": "works",
+    "severity": "OK",
+    "note": "Tuiles avant=64, après recherche \"Tacos\"=4 (filtered=true)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/08-search-after-typing-tacos.png",
+    "ts": "2026-05-06T17:44:05.923Z"
+  },
+  {
+    "step": "C5-09",
+    "slug": "delivery-toggle",
+    "state": "missing",
+    "severity": "P2",
+    "note": "Bouton Livraison non détecté",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle5/09-delivery-button-missing.png",
+    "ts": "2026-05-06T17:44:14.878Z"
+  }
+]

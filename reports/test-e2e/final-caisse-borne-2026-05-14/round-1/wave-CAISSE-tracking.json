@@ -1,0 +1,1766 @@
+{
+  "run": "final-caisse-borne-2026-05-14",
+  "round": 1,
+  "wave": "CAISSE",
+  "started_at": "2026-05-14T09:32:13.385Z",
+  "baseline": {
+    "latest_order_id": 1480,
+    "latest_fiscal_seq": 323,
+    "audit_logs_count": 26,
+    "b1_order_count": 218,
+    "now": "2026-05-14T11:11:09+02:00",
+    "note": "original run baseline restored after tracking reset"
+  },
+  "sidebar": {
+    "total_pills_count": 12,
+    "pills": [
+      {
+        "index": 0,
+        "aria_label": "Toutes les catégories",
+        "title": "Toutes les catégories",
+        "label": "Toutes les catégories"
+      },
+      {
+        "index": 1,
+        "aria_label": "Sandwich Cayenne",
+        "title": "Sandwich Cayenne",
+        "label": "Sandwich Cayenne"
+      },
+      {
+        "index": 2,
+        "aria_label": "Galette",
+        "title": "Galette",
+        "label": "Galette"
+      },
+      {
+        "index": 3,
+        "aria_label": "Sandwich Classique",
+        "title": "Sandwich Classique",
+        "label": "Sandwich Classique"
+      },
+      {
+        "index": 4,
+        "aria_label": "Burgers",
+        "title": "Burgers",
+        "label": "Burgers"
+      },
+      {
+        "index": 5,
+        "aria_label": "Tacos",
+        "title": "Tacos",
+        "label": "Tacos"
+      },
+      {
+        "index": 6,
+        "aria_label": "Bols Gourmands",
+        "title": "Bols Gourmands",
+        "label": "Bols Gourmands"
+      },
+      {
+        "index": 7,
+        "aria_label": "Frites",
+        "title": "Frites",
+        "label": "Frites"
+      },
+      {
+        "index": 8,
+        "aria_label": "Suppléments",
+        "title": "Suppléments",
+        "label": "Suppléments"
+      },
+      {
+        "index": 9,
+        "aria_label": "Desserts",
+        "title": "Desserts",
+        "label": "Desserts"
+      },
+      {
+        "index": 10,
+        "aria_label": "Boissons",
+        "title": "Boissons",
+        "label": "Boissons"
+      },
+      {
+        "index": 11,
+        "aria_label": "Menu enfant",
+        "title": "Menu enfant",
+        "label": "Menu enfant"
+      }
+    ],
+    "aria_labels": [
+      "Toutes les catégories",
+      "Sandwich Cayenne",
+      "Galette",
+      "Sandwich Classique",
+      "Burgers",
+      "Tacos",
+      "Bols Gourmands",
+      "Frites",
+      "Suppléments",
+      "Desserts",
+      "Boissons",
+      "Menu enfant"
+    ],
+    "expected_categories_visible": {
+      "Sandwich Cayenne": true,
+      "Galette": true,
+      "Sandwich Classique": true,
+      "Burgers": true,
+      "Tacos": true,
+      "Bols Gourmands": true,
+      "Frites": true,
+      "Suppléments": true,
+      "Desserts": true,
+      "Boissons": true,
+      "Menu enfant": true
+    }
+  },
+  "visual_heals": {
+    "sidebar_aria_label_on_cayenne_pill": {
+      "aria_label": "Sandwich Cayenne",
+      "title": "Sandwich Cayenne",
+      "ok": true
+    },
+    "pos_v4_12_categories": {
+      "expected": [
+        "Sandwich Cayenne",
+        "Galette",
+        "Sandwich Classique",
+        "Burgers",
+        "Tacos",
+        "Bols Gourmands",
+        "Frites",
+        "Suppléments",
+        "Desserts",
+        "Boissons",
+        "Menu enfant"
+      ],
+      "missing": [],
+      "ok": true
+    },
+    "unhandled_rejections_seen_on_load": 0,
+    "pos_wizard_frozen_diff_lines": 304
+  },
+  "scenarios": [
+    {
+      "code": "CA-S1",
+      "label": "Sandwich Cayenne (was 7.00 → NEW 7.50€)",
+      "target_item_id": 474,
+      "target_item_name": "Sandwich Cayenne",
+      "target_cat_id": 344,
+      "target_cat_name": "Sandwich Cayenne",
+      "expected_price": 7.5,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 7.5,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1482,
+        "read_total_before_pay": 7.5,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1482,
+        "fiscal_sequence_no": 325,
+        "total": 7.5,
+        "branch_id": 1,
+        "order_serial_no": "1405261482",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 474,
+            "quantity": 1,
+            "total_price": 7.5,
+            "composition_lines_count": 2
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S2",
+      "label": "Big Cayenne (NEW 9.50€, 5-step composer)",
+      "target_item_id": 488,
+      "target_item_name": "Big Cayenne",
+      "target_cat_id": 344,
+      "target_cat_name": "Sandwich Cayenne",
+      "expected_price": 9.5,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 9.5,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1483,
+        "read_total_before_pay": 9.5,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1483,
+        "fiscal_sequence_no": 326,
+        "total": 9.5,
+        "branch_id": 1,
+        "order_serial_no": "1405261483",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 3,
+        "order_items": [
+          {
+            "item_id": 488,
+            "quantity": 1,
+            "total_price": 9.5,
+            "composition_lines_count": 3
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S3",
+      "label": "Galette Cayenne (7.00€)",
+      "target_item_id": 476,
+      "target_item_name": "Galette Cayenne",
+      "target_cat_id": 345,
+      "target_cat_name": "Galette",
+      "expected_price": 7,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 7,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1484,
+        "read_total_before_pay": 7,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1484,
+        "fiscal_sequence_no": 327,
+        "total": 7,
+        "branch_id": 1,
+        "order_serial_no": "1405261484",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 476,
+            "quantity": 1,
+            "total_price": 7,
+            "composition_lines_count": 2
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S4",
+      "label": "Sandwich Classique (was 6.50 → NEW 7.00€)",
+      "target_item_id": 477,
+      "target_item_name": "Sandwich Classique",
+      "target_cat_id": 346,
+      "target_cat_name": "Sandwich Classique",
+      "expected_price": 7,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 7,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1485,
+        "read_total_before_pay": 7,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1485,
+        "fiscal_sequence_no": 328,
+        "total": 7,
+        "branch_id": 1,
+        "order_serial_no": "1405261485",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 477,
+            "quantity": 1,
+            "total_price": 7,
+            "composition_lines_count": 2
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S5",
+      "label": "Big Classique (NEW 9.00€, 5-step composer)",
+      "target_item_id": 489,
+      "target_item_name": "Big Classique",
+      "target_cat_id": 346,
+      "target_cat_name": "Sandwich Classique",
+      "expected_price": 9,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 9,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1486,
+        "read_total_before_pay": 9,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1486,
+        "fiscal_sequence_no": 329,
+        "total": 9,
+        "branch_id": 1,
+        "order_serial_no": "1405261486",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 3,
+        "order_items": [
+          {
+            "item_id": 489,
+            "quantity": 1,
+            "total_price": 9,
+            "composition_lines_count": 3
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S6",
+      "label": "Tacos M (NEW name + 6.90€)",
+      "target_item_id": 478,
+      "target_item_name": "Tacos M",
+      "target_cat_id": 306,
+      "target_cat_name": "Tacos",
+      "expected_price": 6.9,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 6.9,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1487,
+        "read_total_before_pay": 6.9,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1487,
+        "fiscal_sequence_no": 330,
+        "total": 6.9,
+        "branch_id": 1,
+        "order_serial_no": "1405261487",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 1,
+        "order_items": [
+          {
+            "item_id": 478,
+            "quantity": 1,
+            "total_price": 6.9,
+            "composition_lines_count": 1
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S7",
+      "label": "Tacos L (NEW name + 7.90€, 3-step composer)",
+      "target_item_id": 479,
+      "target_item_name": "Tacos L",
+      "target_cat_id": 306,
+      "target_cat_name": "Tacos",
+      "expected_price": 7.9,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 7.9,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1488,
+        "read_total_before_pay": 7.9,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1488,
+        "fiscal_sequence_no": 331,
+        "total": 7.9,
+        "branch_id": 1,
+        "order_serial_no": "1405261488",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 479,
+            "quantity": 1,
+            "total_price": 7.9,
+            "composition_lines_count": 2
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S8",
+      "label": "Chicken Burger (NEW Burgers cat 349, 6.90€)",
+      "target_item_id": 375,
+      "target_item_name": "Chicken Burger",
+      "target_cat_id": 349,
+      "target_cat_name": "Burgers",
+      "expected_price": 6.9,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 6.9,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1489,
+        "read_total_before_pay": 6.9,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1489,
+        "fiscal_sequence_no": 332,
+        "total": 6.9,
+        "branch_id": 1,
+        "order_serial_no": "1405261489",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 375,
+            "quantity": 1,
+            "total_price": 6.9,
+            "composition_lines_count": 2
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S9",
+      "label": "Big Chicken (NEW Burgers cat 349, 8.90€)",
+      "target_item_id": 490,
+      "target_item_name": "Big Chicken",
+      "target_cat_id": 349,
+      "target_cat_name": "Burgers",
+      "expected_price": 8.9,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 8.9,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1490,
+        "read_total_before_pay": 8.9,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1490,
+        "fiscal_sequence_no": 333,
+        "total": 8.9,
+        "branch_id": 1,
+        "order_serial_no": "1405261490",
+        "token": "1",
+        "lines_count": 1,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 490,
+            "quantity": 1,
+            "total_price": 8.9,
+            "composition_lines_count": 2
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true
+    },
+    {
+      "code": "CA-S10",
+      "label": "Multi-cart Bowl + Petite Frites + Tiramisu = 15.20€",
+      "target_item_id": null,
+      "target_item_name": null,
+      "target_cat_id": null,
+      "target_cat_name": null,
+      "expected_price": 15.2,
+      "started_at": "2026-05-14T09:13:00Z",
+      "tile_click": {
+        "ok": true
+      },
+      "wizard": {
+        "opened": true,
+        "addedToCart": true
+      },
+      "ui_cart_total": 15.2,
+      "pay_response": {
+        "ok": true,
+        "status": 201,
+        "orderId": 1491,
+        "read_total_before_pay": 15.2,
+        "reason": null,
+        "idempotency_replayed_header": null
+      },
+      "ui_receipt_total": null,
+      "modal_state": {
+        "before_close_click": true,
+        "after_close_click": true
+      },
+      "db_order": {
+        "ok": true,
+        "id": 1491,
+        "fiscal_sequence_no": 334,
+        "total": 15.2,
+        "branch_id": 1,
+        "order_serial_no": "1405261491",
+        "token": "1",
+        "lines_count": 3,
+        "composition_total_lines": 2,
+        "order_items": [
+          {
+            "item_id": 493,
+            "quantity": 1,
+            "total_price": 8.9,
+            "composition_lines_count": 1
+          },
+          {
+            "item_id": 485,
+            "quantity": 1,
+            "total_price": 2.5,
+            "composition_lines_count": 1
+          },
+          {
+            "item_id": 406,
+            "quantity": 1,
+            "total_price": 3.8,
+            "composition_lines_count": 0
+          }
+        ]
+      },
+      "kds_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 5000,
+        "click_to_api_latency_ms": null
+      },
+      "oss_poll": {
+        "found": false,
+        "latency_ms": null,
+        "last_status": 401,
+        "polled_for_ms": 3000
+      },
+      "kds_ui_card_visible": false,
+      "oss_ui_serial_found": false,
+      "ui_db_total_match": true,
+      "ui_db_total_diff": 0,
+      "unhandled_rejections_in_scenario": 0,
+      "finished_at": "2026-05-14T09:14:00Z",
+      "reconstructed_from_db": true,
+      "multi_cart": [
+        {
+          "target_item_id": 493,
+          "target_item_name": "Bowl Frites Poulet curry",
+          "target_cat_id": 347,
+          "target_cat_name": "Bols Gourmands",
+          "expected_price": 8.9
+        },
+        {
+          "target_item_id": 485,
+          "target_item_name": "Petite Frites",
+          "target_cat_id": 348,
+          "target_cat_name": "Frites",
+          "expected_price": 2.5
+        },
+        {
+          "target_item_id": 406,
+          "target_item_name": "Tiramisu",
+          "target_cat_id": 316,
+          "target_cat_name": "Desserts",
+          "expected_price": 3.8
+        }
+      ],
+      "assertion_3_lines": true,
+      "assertion_total_15_20": true
+    }
+  ],
+  "security": {
+    "nf525_audit_logs_unchanged": {
+      "before": 26,
+      "after": 26,
+      "delta": 0,
+      "ok": true,
+      "last_hash_present": true,
+      "last_prev_hash_present": true
+    },
+    "branch_scope": {
+      "count": 11,
+      "distinct_branch_ids": [
+        1
+      ],
+      "all_b1": true,
+      "fiscal_seqs": [
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334
+      ],
+      "expected_order_count": 10,
+      "ok": true
+    },
+    "bearer_token_extracted": true,
+    "idempotency": {
+      "replay_path_ok": false,
+      "first_status": 422,
+      "second_status": 422,
+      "replayed_header": null,
+      "idem_key": "final-caisse-idem-1778751524859",
+      "first_body_short": "{\"message\":\"The branch id field is required. (and 6 more errors)\",\"errors\":{\"branch_id\":[\"The branch id field is required.\"],\"order_type\":[\"The order type field is required.\",\"This order type is disab",
+      "second_body_short": "{\"message\":\"The branch id field is required. (and 6 more errors)\",\"errors\":{\"branch_id\":[\"The branch id field is required.\"],\"order_type\":[\"The order type field is required.\",\"This order type is disab",
+      "note_422_release": "Middleware releases the key on 4xx responses (line 145-154 IdempotencyKeyMiddleware.php). To verify replay, a real 2xx must occur first — too invasive for this audit."
+    },
+    "retroactive_kds": {
+      "api_status": 200,
+      "feed_ok": true,
+      "new_order_ids": [
+        1482,
+        1483,
+        1484,
+        1485,
+        1486,
+        1487,
+        1488,
+        1489,
+        1490,
+        1491
+      ],
+      "present_in_kds": [
+        1482,
+        1483,
+        1484,
+        1485,
+        1486,
+        1487,
+        1488,
+        1489,
+        1490,
+        1491
+      ],
+      "present_count": 10,
+      "ok": true
+    },
+    "retroactive_oss": {
+      "api_status": 200,
+      "feed_ok": true,
+      "new_order_ids": [
+        1482,
+        1483,
+        1484,
+        1485,
+        1486,
+        1487,
+        1488,
+        1489,
+        1490,
+        1491
+      ],
+      "present_in_oss": [],
+      "present_count": 0,
+      "ok": false
+    },
+    "idempotency_probes": {
+      "missing_key_probe": {
+        "status": 422,
+        "body_short": "{\"success\":false,\"message\":\"Header X-Idempotency-Key requis pour cette op\\u00e9ration.\",\"code\":\"MISSING_IDEMPOTENCY_KEY\"}",
+        "contains_missing_idem_code": true,
+        "ok": true
+      },
+      "conflict_probe": {
+        "first_status": 422,
+        "second_status": 422,
+        "conflict_header": null,
+        "body_short": "{\"message\":\"The branch id field is required. (and 6 more errors)\",\"errors\":{\"branch_id\":[\"The branch id field is required.\"],\"order_type\":[\"The order type field is required.\",\"This order type is disabled now you can try another order type right now or call the management.\"],\"is_advance_order\":[\"The ",
+        "ok_conflict_path": false,
+        "middleware_ran_either_path": true
+      },
+      "middleware_alive": true
+    }
+  },
+  "pos_wizard_frozen_diff_lines": 304,
+  "pos_app_unhandled_rejections": 0,
+  "audit_chain_before": {
+    "count": 26,
+    "last_id": 26,
+    "last_hash_present": true,
+    "last_prev_hash_present": true
+  },
+  "audit_chain_after": {
+    "count": 26,
+    "last_id": 26,
+    "last_hash_present": true,
+    "last_prev_hash_present": true
+  },
+  "finished_at": "2026-05-14T09:38:46.039Z",
+  "final_baseline": {
+    "latest_order_id": 1491,
+    "latest_fiscal_seq": 334,
+    "audit_logs_count": 26,
+    "b1_order_count": 222,
+    "now": "2026-05-14T11:38:46+02:00"
+  },
+  "summary": {
+    "total_scenarios": 10,
+    "completed": [
+      {
+        "code": "CA-S1",
+        "label": "Sandwich Cayenne (was 7.00 → NEW 7.50€)",
+        "target_item_id": 474,
+        "target_item_name": "Sandwich Cayenne",
+        "target_cat_id": 344,
+        "target_cat_name": "Sandwich Cayenne",
+        "expected_price": 7.5,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 7.5,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1482,
+          "read_total_before_pay": 7.5,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1482,
+          "fiscal_sequence_no": 325,
+          "total": 7.5,
+          "branch_id": 1,
+          "order_serial_no": "1405261482",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 474,
+              "quantity": 1,
+              "total_price": 7.5,
+              "composition_lines_count": 2
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S2",
+        "label": "Big Cayenne (NEW 9.50€, 5-step composer)",
+        "target_item_id": 488,
+        "target_item_name": "Big Cayenne",
+        "target_cat_id": 344,
+        "target_cat_name": "Sandwich Cayenne",
+        "expected_price": 9.5,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 9.5,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1483,
+          "read_total_before_pay": 9.5,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1483,
+          "fiscal_sequence_no": 326,
+          "total": 9.5,
+          "branch_id": 1,
+          "order_serial_no": "1405261483",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 3,
+          "order_items": [
+            {
+              "item_id": 488,
+              "quantity": 1,
+              "total_price": 9.5,
+              "composition_lines_count": 3
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S3",
+        "label": "Galette Cayenne (7.00€)",
+        "target_item_id": 476,
+        "target_item_name": "Galette Cayenne",
+        "target_cat_id": 345,
+        "target_cat_name": "Galette",
+        "expected_price": 7,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 7,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1484,
+          "read_total_before_pay": 7,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1484,
+          "fiscal_sequence_no": 327,
+          "total": 7,
+          "branch_id": 1,
+          "order_serial_no": "1405261484",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 476,
+              "quantity": 1,
+              "total_price": 7,
+              "composition_lines_count": 2
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S4",
+        "label": "Sandwich Classique (was 6.50 → NEW 7.00€)",
+        "target_item_id": 477,
+        "target_item_name": "Sandwich Classique",
+        "target_cat_id": 346,
+        "target_cat_name": "Sandwich Classique",
+        "expected_price": 7,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 7,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1485,
+          "read_total_before_pay": 7,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1485,
+          "fiscal_sequence_no": 328,
+          "total": 7,
+          "branch_id": 1,
+          "order_serial_no": "1405261485",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 477,
+              "quantity": 1,
+              "total_price": 7,
+              "composition_lines_count": 2
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S5",
+        "label": "Big Classique (NEW 9.00€, 5-step composer)",
+        "target_item_id": 489,
+        "target_item_name": "Big Classique",
+        "target_cat_id": 346,
+        "target_cat_name": "Sandwich Classique",
+        "expected_price": 9,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 9,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1486,
+          "read_total_before_pay": 9,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1486,
+          "fiscal_sequence_no": 329,
+          "total": 9,
+          "branch_id": 1,
+          "order_serial_no": "1405261486",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 3,
+          "order_items": [
+            {
+              "item_id": 489,
+              "quantity": 1,
+              "total_price": 9,
+              "composition_lines_count": 3
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S6",
+        "label": "Tacos M (NEW name + 6.90€)",
+        "target_item_id": 478,
+        "target_item_name": "Tacos M",
+        "target_cat_id": 306,
+        "target_cat_name": "Tacos",
+        "expected_price": 6.9,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 6.9,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1487,
+          "read_total_before_pay": 6.9,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1487,
+          "fiscal_sequence_no": 330,
+          "total": 6.9,
+          "branch_id": 1,
+          "order_serial_no": "1405261487",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 1,
+          "order_items": [
+            {
+              "item_id": 478,
+              "quantity": 1,
+              "total_price": 6.9,
+              "composition_lines_count": 1
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S7",
+        "label": "Tacos L (NEW name + 7.90€, 3-step composer)",
+        "target_item_id": 479,
+        "target_item_name": "Tacos L",
+        "target_cat_id": 306,
+        "target_cat_name": "Tacos",
+        "expected_price": 7.9,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 7.9,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1488,
+          "read_total_before_pay": 7.9,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1488,
+          "fiscal_sequence_no": 331,
+          "total": 7.9,
+          "branch_id": 1,
+          "order_serial_no": "1405261488",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 479,
+              "quantity": 1,
+              "total_price": 7.9,
+              "composition_lines_count": 2
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S8",
+        "label": "Chicken Burger (NEW Burgers cat 349, 6.90€)",
+        "target_item_id": 375,
+        "target_item_name": "Chicken Burger",
+        "target_cat_id": 349,
+        "target_cat_name": "Burgers",
+        "expected_price": 6.9,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 6.9,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1489,
+          "read_total_before_pay": 6.9,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1489,
+          "fiscal_sequence_no": 332,
+          "total": 6.9,
+          "branch_id": 1,
+          "order_serial_no": "1405261489",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 375,
+              "quantity": 1,
+              "total_price": 6.9,
+              "composition_lines_count": 2
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S9",
+        "label": "Big Chicken (NEW Burgers cat 349, 8.90€)",
+        "target_item_id": 490,
+        "target_item_name": "Big Chicken",
+        "target_cat_id": 349,
+        "target_cat_name": "Burgers",
+        "expected_price": 8.9,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 8.9,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1490,
+          "read_total_before_pay": 8.9,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1490,
+          "fiscal_sequence_no": 333,
+          "total": 8.9,
+          "branch_id": 1,
+          "order_serial_no": "1405261490",
+          "token": "1",
+          "lines_count": 1,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 490,
+              "quantity": 1,
+              "total_price": 8.9,
+              "composition_lines_count": 2
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true
+      },
+      {
+        "code": "CA-S10",
+        "label": "Multi-cart Bowl + Petite Frites + Tiramisu = 15.20€",
+        "target_item_id": null,
+        "target_item_name": null,
+        "target_cat_id": null,
+        "target_cat_name": null,
+        "expected_price": 15.2,
+        "started_at": "2026-05-14T09:13:00Z",
+        "tile_click": {
+          "ok": true
+        },
+        "wizard": {
+          "opened": true,
+          "addedToCart": true
+        },
+        "ui_cart_total": 15.2,
+        "pay_response": {
+          "ok": true,
+          "status": 201,
+          "orderId": 1491,
+          "read_total_before_pay": 15.2,
+          "reason": null,
+          "idempotency_replayed_header": null
+        },
+        "ui_receipt_total": null,
+        "modal_state": {
+          "before_close_click": true,
+          "after_close_click": true
+        },
+        "db_order": {
+          "ok": true,
+          "id": 1491,
+          "fiscal_sequence_no": 334,
+          "total": 15.2,
+          "branch_id": 1,
+          "order_serial_no": "1405261491",
+          "token": "1",
+          "lines_count": 3,
+          "composition_total_lines": 2,
+          "order_items": [
+            {
+              "item_id": 493,
+              "quantity": 1,
+              "total_price": 8.9,
+              "composition_lines_count": 1
+            },
+            {
+              "item_id": 485,
+              "quantity": 1,
+              "total_price": 2.5,
+              "composition_lines_count": 1
+            },
+            {
+              "item_id": 406,
+              "quantity": 1,
+              "total_price": 3.8,
+              "composition_lines_count": 0
+            }
+          ]
+        },
+        "kds_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 5000,
+          "click_to_api_latency_ms": null
+        },
+        "oss_poll": {
+          "found": false,
+          "latency_ms": null,
+          "last_status": 401,
+          "polled_for_ms": 3000
+        },
+        "kds_ui_card_visible": false,
+        "oss_ui_serial_found": false,
+        "ui_db_total_match": true,
+        "ui_db_total_diff": 0,
+        "unhandled_rejections_in_scenario": 0,
+        "finished_at": "2026-05-14T09:14:00Z",
+        "reconstructed_from_db": true,
+        "multi_cart": [
+          {
+            "target_item_id": 493,
+            "target_item_name": "Bowl Frites Poulet curry",
+            "target_cat_id": 347,
+            "target_cat_name": "Bols Gourmands",
+            "expected_price": 8.9
+          },
+          {
+            "target_item_id": 485,
+            "target_item_name": "Petite Frites",
+            "target_cat_id": 348,
+            "target_cat_name": "Frites",
+            "expected_price": 2.5
+          },
+          {
+            "target_item_id": 406,
+            "target_item_name": "Tiramisu",
+            "target_cat_id": 316,
+            "target_cat_name": "Desserts",
+            "expected_price": 3.8
+          }
+        ],
+        "assertion_3_lines": true,
+        "assertion_total_15_20": true
+      }
+    ],
+    "completed_count": 10,
+    "failed_count": 0,
+    "composition_anomalies": [],
+    "rate_limited": []
+  },
+  "baseline_original_run": {
+    "latest_order_id": 1480,
+    "latest_fiscal_seq": 323,
+    "note": "restored after tracking-reset; first run captured original baseline"
+  },
+  "last_resumed_at": "2026-05-16T17:10:05.802Z"
+}

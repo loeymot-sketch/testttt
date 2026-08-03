@@ -1,0 +1,21 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B5A-STOCK-V2-CORE",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "preconditions": [
+    "B2 PASS",
+    "B4 PASS",
+    "HG-FROZEN-ORDERSERVICE-UNLOCK approved strict"
+  ],
+  "scope": "StockService V2 core with symmetric POS/frontend order decrement, release on cancel/refund, branch-scoped rupture projection, and sentinel tests.",
+  "gates": [
+    "HG-FROZEN-ORDERSERVICE-UNLOCK"
+  ],
+  "invariants": [
+    "Backend pricing remains SSOT; no frontend pricing logic added.",
+    "branch_id isolation enforced on stock_levels and item_branch_availability.",
+    "OrderService and FrontendOrderService stock hunks stay symmetric.",
+    "Events use after-commit domain event traits.",
+    "No manual admin rupture is overwritten by automatic stock release."
+  ]
+}

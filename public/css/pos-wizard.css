@@ -1985,3 +1985,204 @@
         grid-template-columns: repeat(3, 1fr) !important;
     }
 }
+
+/* ============================================================
+   [VIANDE-UI 2026-07-23 · LOCK_POS_WIZARD_VIANDE_UI] Étape viande =
+   grille de tuiles carrées avec GRANDE image + petit nom, toutes visibles.
+   Remplace les lignes emoji minuscules. Tap tuile = ajouter (.viande-btn),
+   petit − pour retirer. Même gabarit que les crudités, images bien plus grandes.
+   ============================================================ */
+.wizard-viande-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+.wizard-viande-grid.in-col {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+}
+.wizard-viande-tile {
+    position: relative;
+    display: flex;
+}
+.wizard-viande-tile .viande-tile-add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px 8px 14px;
+    background: #FFFFFF;
+    border: 2px solid #ECECF2;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+    min-height: 132px;
+}
+.wizard-viande-tile .viande-tile-add:hover { border-color: #E9B7BC; }
+.wizard-viande-tile .viande-tile-add:active { transform: scale(.97); }
+.wizard-viande-tile.active .viande-tile-add {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF4F4, #FFECEF);
+    box-shadow: 0 4px 14px rgba(233, 60, 60, 0.18);
+}
+.wizard-viande-tile.at-max .viande-tile-add { opacity: .45; }
+
+/* GRANDE image (ou emoji) — le cœur de la demande owner */
+.wizard-viande-tile .viande-tile-img {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wizard-viande-tile .viande-tile-img .option-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+.wizard-viande-tile .viande-tile-img .option-icon,
+.wizard-viande-tile .viande-tile-img .option-icon-micro,
+.wizard-viande-tile .viande-tile-img > span {
+    font-size: 52px;
+    line-height: 1;
+}
+.wizard-viande-grid.in-col .viande-tile-img { width: 64px; height: 64px; }
+.wizard-viande-grid.in-col .viande-tile-img .option-img { width: 64px; height: 64px; }
+.wizard-viande-grid.in-col .viande-tile-img .option-icon,
+.wizard-viande-grid.in-col .viande-tile-img > span { font-size: 42px; }
+
+/* petit texte, sans titre */
+.wizard-viande-tile .viande-tile-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #1B1B3A;
+    text-align: center;
+    line-height: 1.15;
+    font-family: 'Rubik', sans-serif;
+}
+.wizard-viande-grid.in-col .viande-tile-name { font-size: 11px; }
+
+/* badge compteur (quantité de cette viande) */
+.wizard-viande-tile .viande-tile-count {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    z-index: 3;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 7px;
+    background: #E93C3C;
+    color: #FFFFFF;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 7px rgba(233, 60, 60, 0.4);
+}
+/* bouton retirer (visible quand sélectionné) */
+.wizard-viande-tile .viande-tile-minus {
+    position: absolute;
+    top: -7px;
+    left: -7px;
+    z-index: 3;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #FFFFFF;
+    border: 2px solid #E93C3C;
+    color: #E93C3C;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* [VIANDE-UI 2026-07-23] Sortie de _renderViandeVisual (vraie image variation) dans la tuile */
+.wizard-viande-tile .viande-tile-img .viande-emoji {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    line-height: 1;
+    background: transparent;
+    position: relative;
+}
+.wizard-viande-tile .viande-tile-img .viande-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+/* image présente → cacher l'emoji de repli ; onerror (JS) retire .has-img → repli visible */
+.wizard-viande-tile .viande-tile-img .viande-emoji.has-img .viande-fallback { display: none; }
+.wizard-viande-tile .viande-tile-img .viande-emoji:not(.has-img) .viande-img { display: none; }
+.wizard-viande-grid.in-col .viande-tile-img .viande-emoji,
+.wizard-viande-grid.in-col .viande-tile-img .viande-img { width: 64px; height: 64px; font-size: 42px; }
+
+/* ============================================================
+   [VIANDE-SUPPL UNIFIÉ 2026-07-24 · LOCK] État supplément sur les tuiles viande :
+   au-delà des viandes incluses, la même tuile devient un supplément @2,50 nommé.
+   ============================================================ */
+.viande-section .section-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.viande-suppl-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #FFF0E6;
+    border: 1px solid #F4501E;
+    color: #C63E12;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.viande-hint {
+    font-size: 12px;
+    color: #8E8EA9;
+    margin: 2px 0 10px;
+}
+/* tuile avec supplément : liseré orange distinct de l'inclus (rouge) */
+.wizard-viande-tile.has-suppl .viande-tile-add {
+    border-color: #F4501E;
+    box-shadow: 0 0 0 2px #F4501E inset, 0 4px 14px rgba(244, 80, 30, 0.18);
+    background: linear-gradient(135deg, #FFF6F1, #FFEEE4);
+}
+/* badge compteur en mode supplément = orange (vs rouge inclus) */
+.viande-tile-count.suppl {
+    background: #F4501E;
+    box-shadow: 0 2px 7px rgba(244, 80, 30, 0.45);
+}
+/* petit tag « +2,50 » sur la tuile en supplément */
+.viande-tile-suppl-tag {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #F4501E;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+}
+/* indice discret quand le prochain clic sera un supplément (quota inclus atteint) */
+.viande-tile-add.suppl-next { border-style: dashed; }
+.viande-tile-add.suppl-next::after {
+    content: '+2,50 €';
+    position: absolute;
+    bottom: 4px;
+    font-size: 9px;
+    color: #F4501E;
+    font-weight: 800;
+    opacity: 0.85;
+}
+.wizard-viande-tile { position: relative; }

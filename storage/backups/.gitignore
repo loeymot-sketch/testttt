@@ -1,0 +1,9 @@
+# [Q14 2026-05-21] auto-backup output dirs — never commit dumps.
+# Keep the dir structure so the command never has to mkdir on first run.
+db-daily/*.sql.gz
+db-daily/*.sql.gz.partial
+db-monthly/*.sql.gz
+db-quarterly/*.sql.gz
+.last-failure
+
+# Existing pre-migration snapshot subdirs (committed history kept).

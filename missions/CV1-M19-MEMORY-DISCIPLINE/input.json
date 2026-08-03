@@ -1,0 +1,52 @@
+{
+  "task_id": "CV1-M19-MEMORY-DISCIPLINE",
+  "mission_id": "M-19",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Documenter la discipline mémoire Caisse V1 : Graphiti read avant chaque mission (si MCP actif), fallback memory/INDEX.md, ingest CLOSE via after-execute-memory.sh, verify via memory/verify.py. Préparer 22 squelettes JSONL d'épisodes (un par mission M-XX) prêts à remplir.",
+  "instruction": "Crée la procédure + squelettes JSONL. Aucun code produit. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "docs/orchestration/MEMORY_DISCIPLINE_CAISSE_V1_2026-04-25.md",
+    "memory/episodes/caisse_v1_traceability_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_sentinels_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_legacy_guards_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_hardware_lab_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_test_arch_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_memory_discipline_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_runbooks_skeleton_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_quickwins_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_branch_isolation_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_pos_guards_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_order_quote_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_payment_ledger_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_payment_pilot_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_fiscal_z_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_kds_release_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_os_fos_symmetry_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_kiosk_runtime_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_web_stripe_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_migrations_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_ops_preflight_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_rollout_canary_2026-04-25.jsonl",
+    "memory/episodes/caisse_v1_post_launch_2026-04-25.jsonl"
+  ],
+  "off_limits": ["app/**", "resources/**", "routes/**", "database/**", "tests/**", "scripts/**", "config/**", ".cursor/**", "AGENTS.md", "memory/INDEX.md"],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [
+    "test -f memory/INDEX.md && echo OK"
+  ],
+  "self_audit_checklist": [
+    "Procédure documente : Graphiti query avant PLAN, fallback memory/INDEX.md, ingest CLOSE",
+    "22 squelettes JSONL créés (un par mission M-01 à M-22), format Graphiti episode_body valide",
+    "Chaque squelette a placeholders {date}, {verdict}, {symmetry_note}, {gate_status}",
+    "memory/INDEX.md NON modifié (off_limits)",
+    "Aucun fichier produit modifié"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 memory discipline graphiti fallback",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_memory_discipline_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-memory"
+}

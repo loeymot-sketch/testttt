@@ -1,0 +1,107 @@
+{
+  "specialist": "sre",
+  "mission": "WI-2 SRE angle — observability, idempotency, queue-saturation defenses, cron-overlap risk, hour-budget consumption",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "head": "1e7c65ecc",
+  "discipline": "READ-ONLY",
+  "summary": "Observability is solid for 8/15 scheduled entries (structured Log channels + per-run summaries), under-instrumented for 4/15 (rescue, retry-fiscal-alloc, pos-purge, otp-purge inline). The MonitorOutboxStaleness command is the single sentinel that catches a queue-worker-down scenario (Log::error + non-zero exit), which is the right architectural choice. Idempotency primitives are well-applied across all 3 ShouldQueue jobs (lockForUpdate + dispatched_at guard, STATUS_PROCESSED short-circuit, branch_id scoping). Cron-overlap windows are bounded by withoutOverlapping mutexes EXCEPT one corner case (RetryFiscalAllocCommand 5-min mutex vs unbounded backlog) which is structurally OK because the underlying service has row-level locks. Hour-budget consumption is dominated by 2 wide-iteration crons (fiscal-archive-daily + fiscal-chain-monitor) which scale O(branches × audit_logs).",
+  "findings": [
+    {
+      "id": "WI-2-SRE-01",
+      "severity": "P2",
+      "title": "Otp-purge inline closure has zero observability — silent failure mode",
+      "files": ["app/Console/Kernel.php:29-34"],
+      "evidence": "The 'purge-expired-otps' lane is a $schedule->call() inline closure that does $expireMinutes = Settings::group('otp')->get('otp_expire_time') ?: 5; DB::table('otps')->where('created_at', '<', now()->subMinutes($expireMinutes + 1))->delete(); — no Log call, no count return, no Cache::put summary, no error handling. If the otps table is renamed or the Settings call throws, the closure silently dies and OTPs accumulate forever (table bloat — the very issue the lane was opened to solve, GAP-20-4). Compare to ResetStaleDailyQuotaCommand which Log::info-emits row count + timestamp.",
+      "impact": "Low under happy path. Medium during a settings backend outage or a schema migration error: bloat returns silently, the closure exit code is 0 (success) regardless. Pager-grade signal is impossible.",
+      "fix_sketch": "Wrap in try { $deleted = DB::table('otps')->where(...)->delete(); Log::info('otp.purge.run', ['deleted' => $deleted, 'expire_minutes' => $expireMinutes]); } catch (\\Throwable $e) { Log::error('otp.purge.failed', ['error' => $e->getMessage()]); throw; }. Throw rethrow lets the scheduler mark the run as failed and surface a non-zero exit."
+    },
+    {
+      "id": "WI-2-SRE-02",
+      "severity": "P2",
+      "title": "OutboxRescueCommand observability gap — no structured summary, only $this->info to stdout",
+      "files": ["app/Console/Commands/OutboxRescueCommand.php:27"],
+      "evidence": "The command ends with $this->info('Re-queued ' . $events->count() . ' stale domain events.'); — no Log::channel call. Compare to OutboxWebhookRetryFailedCommand:162-166 which emits Log::channel('fiscal')->info('webhook.dlq.retry_failed_run', ['event', 'count', 'cutoff']). A stuck-event surge has no log signal beyond the staleness monitor (which is the alert channel, not the trace channel). Post-mortem reconstruction of 'when did rescue actually re-queue these N events' is impossible from logs.",
+      "impact": "Hampers post-incident timeline reconstruction. Combined with WI-2-ARCH-02 (no audit_log.write for the replay), rescue is the ONE outbox lane without a tamper-evident record of what it re-broadcast.",
+      "fix_sketch": "Add Log::channel('fiscal')->info('outbox.rescue.run', ['count' => $events->count(), 'event_ids' => $events->pluck('id')->toArray()]); after the foreach. event_ids list bounded by the count which itself should be bounded by WI-2-RED-02's BATCH_CAP recommendation."
+    },
+    {
+      "id": "WI-2-SRE-03",
+      "severity": "P2",
+      "title": "RetryFiscalAllocCommand per-tick summary missing — only per-event success/failure logged",
+      "files": ["app/Console/Commands/RetryFiscalAllocCommand.php:88-119"],
+      "evidence": "Per-event Log::channel('fiscal')->info('kiosk.fiscal_alloc_retry.success', ...) and Log::channel('fiscal')->error('kiosk.fiscal_alloc_retry.crashed', ...) are emitted, but at the end of the foreach loop only a $this->info() to stdout summarizes the tick (line 123-129). Unlike OutboxRetryFailedCommand which writes an audit_log.write entry per replay, this command has no structured Log channel summary of the tick's aggregate behavior — operators can grep individual events but cannot answer 'how many retries did the fiscal lane do today' without aggregating per-event logs.",
+      "impact": "Low. Forensic gap only — does not affect correctness. NF525-adjacent because fiscal allocation orphans are reported individually but never as a running total.",
+      "fix_sketch": "Emit Log::channel('fiscal')->info('fiscal.retry_alloc.tick_summary', ['scanned' => $orders->count(), 'ok' => $retriedOk, 'failed' => $retriedFailed, 'skipped' => $skipped, 'branch_id_filter' => $branchId]); after the foreach. One line per cron tick — sparse enough not to spam, structured enough for a Grafana panel."
+    },
+    {
+      "id": "WI-2-SRE-04",
+      "severity": "P2",
+      "title": "PosPurgeParkedOrders has zero Log calls — only stdout output",
+      "files": ["app/Console/Commands/PosPurgeParkedOrders.php:19-23"],
+      "evidence": "The handle method ends with $this->info(sprintf('Purged %d parked POS order(s) older than %d hour(s).', $deleted, $hours)); — no Log::info, no Log::channel. Daily 03:15 cron with no logged trail. Idempotency is fine (service is responsible for the actual DELETE), but operator visibility is nil.",
+      "impact": "Low. POS-parked orders are transient by design (TTL 24h, MEGA 2.G / F-11 spec) so a silent failure leaves no recovery trail — but the surface area is also small (single restaurant cashier flow, not multi-tenant).",
+      "fix_sketch": "Add Log::info('pos.parked.purge.run', ['deleted' => $deleted, 'older_than_hours' => $hours]); on success path. One line, one cron tick per day."
+    },
+    {
+      "id": "WI-2-SRE-05",
+      "severity": "P3",
+      "title": "Cron-overlap risk on RetryFiscalAllocCommand if backlog × per-order latency > 5-min mutex TTL",
+      "files": ["app/Console/Kernel.php:143-147", "app/Console/Commands/RetryFiscalAllocCommand.php:80-121"],
+      "evidence": "Schedule: everyMinute() + withoutOverlapping(5) — the (5) parameter is minutes, not seconds (Laravel API), so the mutex auto-expires after 5 min. The command iterates up to --limit=50 orders, each calling FrontendOrderService::finalizePaidKioskOrder which has its own Cache::lock(30s) + lockForUpdate row-level lock. Worst-case: 50 orders × 6s per finalize call (the inner lock TTL) = 300s = 5 min exactly. If any single finalize call exceeds its 30s inner lock + DB FOR UPDATE wait, the cumulative tick exceeds 5 min and the next tick starts concurrently. However, the inner row-level lockForUpdate on the order row IS the real safety net — a concurrent retry on the SAME order id would block at the DB level. So this is a hypothetical-only finding.",
+      "impact": "Hypothetical. Row-level lockForUpdate in finalizePaidKioskOrder prevents real double-allocation regardless of mutex behavior. NF525 fiscal_sequence_no allocation is itself protected by Cache::lock 5s + DB FOR UPDATE (CLAUDE.md §8 triple defense). No correctness risk.",
+      "fix_sketch": "Optional hardening: bump withoutOverlapping(15) so the mutex covers worst-case wall-clock × 3 safety margin. Alternative: add internal Cache::lock at the command level so the mutex semantics are owned at this layer too. Not blocking V1."
+    },
+    {
+      "id": "WI-2-SRE-06",
+      "severity": "P3",
+      "title": "Hour-budget concentration on fiscal lanes — 2 inline closures iterate activeBranchIds() with synchronous Artisan::call()",
+      "files": ["app/Console/Kernel.php:174-208 (chain-monitor)", "app/Console/Kernel.php:216-246 (archive-daily)"],
+      "evidence": "Both closures use ->each(function ($branchId) { Artisan::call(...); }) — sequential, blocking, single-threaded. fiscal:verify-chain re-walks BOTH chains (audit_logs + z_reports) for one branch per call. foodking:fiscal:archive streams every order + every audit_log row for one branch for one day to disk via JSONL temp files (FiscalArchiveCommand:296-321). On a multi-branch deployment (V2 SaaS), the daily 02:00 window grows linearly: N branches × ~minutes-per-branch. At V1 Le Cayenne (single branch), the cost is ~seconds — invisible.",
+      "impact": "Low for V1 (1 active branch). Visibility risk for V2 multi-tenant — 10 branches with 1y of data per branch could push the 02:00 archive past 04:00 prune boundary, causing prune to delete data the archive hadn't yet captured. The withoutOverlapping mutex on archive prevents re-entry but does not coordinate with prune's mutex.",
+      "fix_sketch": "Defer to V1.0.2 / V2 backlog. For V2, refactor both closures to dispatch a per-branch queueable job instead of synchronous Artisan::call(), giving the Horizon scheduler control over fan-out. Alternative: add a sentinel test that asserts 02:00 + max_archive_runtime < 04:00 - prune_max_runtime."
+    },
+    {
+      "id": "WI-2-SRE-08",
+      "severity": "P2",
+      "title": "Otp-purge inline closure missing onOneServer() — only scheduled lane without horizontal-scaling primitive",
+      "files": ["app/Console/Kernel.php:34"],
+      "evidence": "Line 34 chains `->everyFifteenMinutes()->name('purge-expired-otps')->withoutOverlapping();` — note the absence of `->onOneServer()` before the semicolon. Compared to every other scheduled lane (rescue, monitor, retry-failed, prune, etc.) which chains BOTH `withoutOverlapping` AND `onOneServer`. The W9-AUDIT FIX-6 docstring at Kernel.php:36-39 explicitly documents WHY both are needed: 'withoutOverlapping only prevents re-entry on the SAME host; onOneServer adds cross-host serialization.' Otp-purge is the single lane that contradicts this stated invariant.",
+      "impact": "Low-Medium under horizontal scaling. The DELETE is idempotent (row-lock-serialized at MySQL layer, predicate filters past-dated rows only), so concurrent runs on 2 nodes simultaneously won't produce incorrect data — they will each fire a DELETE racing for the same rows, the second one matches the now-empty set. BUT — double the DB load, double the lock contention, plus inconsistent with project pattern. On a single-node deployment (current V1 LOCAL) this is a non-issue.",
+      "fix_sketch": "Append `->onOneServer()` after `->withoutOverlapping()` at line 34. One-line fix.",
+      "cross_ref": "Paired with WI-2-SRE-01 (silent failure mode) — same closure, two adjacent gaps, one fix touches both."
+    },
+    {
+      "id": "WI-2-SRE-07",
+      "severity": "P3",
+      "title": "Horizon trim configuration aggressive on recent_failed window",
+      "files": ["config/horizon.php:14-21"],
+      "evidence": "'trim' => ['recent' => 60, 'pending' => 60, 'completed' => 60, 'recent_failed' => 10080, 'failed' => 10080, 'monitored' => 10080]. recent_failed trim is 10080 minutes = 7 days, which is reasonable for a payment-adjacent system but tight relative to PCI 180d dispute window. Failed jobs (DispatchDomainEventsJob terminal failures, ProcessWebhookEventJob exhausted retries) are retained for 7 days at the Horizon-dashboard level, but the underlying failed_jobs table persists indefinitely (Laravel default). So Horizon dashboard visibility is the only thing trimmed at 7d; database evidence is preserved.",
+      "impact": "Low. Dashboard-level visibility only — DB evidence persists. Compliance not affected.",
+      "fix_sketch": "Optional V2: bump recent_failed to 43200 minutes (30d) to align with the most common audit cycle. Not blocking."
+    }
+  ],
+  "idempotency_audit": {
+    "DispatchDomainEventsJob": "VERIFIED IDEMPOTENT — Phase 1 atomic claim under lockForUpdate + dispatched_at IS NULL guard ensures only one worker broadcasts. Second worker on same id observes dispatched_at!=null after lock acquisition, returns silently. Phase 3b release-on-throw lets queue retry re-claim cleanly.",
+    "ProcessWebhookEventJob": "VERIFIED IDEMPOTENT — STATUS_PROCESSED short-circuit at line 58 absorbs concurrent live-endpoint replay. Inner handler markFailed/markProcessed keeps ledger consistent.",
+    "RetryFiscalAllocCommand": "VERIFIED IDEMPOTENT — finalizePaidKioskOrder uses lockForUpdate on order row + Cache::lock(30s) inside the service. Concurrent re-runs converge on a single allocation.",
+    "OutboxRescueCommand": "PARTIALLY IDEMPOTENT — DispatchDomainEventsJob is itself idempotent (Phase 1 claim absorbs duplicate dispatches), so re-queueing the same id twice is safe. However, the lack of LOCK_KEY (WI-2-ARCH-02) means cross-node duplicate rescue ticks (despite onOneServer) could push extra jobs onto the queue, increasing queue cost. Convergence is correct; cost is suboptimal.",
+    "OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand": "VERIFIED IDEMPOTENT — Cache::lock LOCK_KEY (Wave 3b SYNC-ADV3B-06) + deterministic orderBy('id') + BATCH_CAP=500 + per-event try/catch+continue. Overflow drains over multiple hourly ticks.",
+    "PruneOutboxCommand + PruneWebhookEventsCommand": "VERIFIED IDEMPOTENT — second invocation matches empty set per docstring; chunked DELETE with safe-set predicate.",
+    "ResetStaleDailyQuotaCommand": "VERIFIED IDEMPOTENT — whereDate('daily_reset_at', '<', $today) only matches past-dated rows; same-day re-run = no-op (WH-3 heal verified).",
+    "CleanupStalePendingKioskOrders": "VERIFIED IDEMPOTENT at the order level — DB::transaction + lockForUpdate + status guard. See WI-2-ARCH-03 for the batch-level isolation issue (not an idempotency issue per se).",
+    "SloEvaluatorJob": "VERIFIED IDEMPOTENT — ActionLog::create produces a new row per evaluation; per-branch try/catch prevents partial-batch failure (FIX-6). But see WI-2-ARCH-01 for the branch-selection bug.",
+    "FiscalArchiveCommand": "VERIFIED IDEMPOTENT — same period zip is overwritten (@unlink + ZipArchive::OVERWRITE); Cache::lock('z_report_b{branch}', 600s) prevents concurrent archive."
+  },
+  "queue_middleware_audit": {
+    "shouldqueue_jobs_with_explicit_middleware": "NONE — none of the 4 ShouldQueue Jobs (DispatchDomainEventsJob, ProcessWebhookEventJob, SendFcmNotificationJob, SloEvaluatorJob) declare a public function middleware() method returning WithoutOverlapping / RateLimited / etc. Implicit concurrency cap comes from the Horizon supervisor's maxProcesses parameter: production high=8, default=4; local high+default+notifications=2.",
+    "design_rationale_verified": "The absence is a deliberate, verified-aware design choice rather than an oversight: (1) DispatchDomainEventsJob does its own atomic claim under lockForUpdate + dispatched_at guard (Phase 1, lines 65-86), making per-job WithoutOverlapping redundant. (2) ProcessWebhookEventJob has a STATUS_PROCESSED idempotent short-circuit (line 58) plus DB UNIQUE(provider, webhook_id). (3) SendFcmNotificationJob is a fire-and-forget topic/token broadcast — concurrent runs are not harmful. (4) SloEvaluatorJob is scheduled every 5 min with withoutOverlapping(5) at the scheduler level, so the in-job middleware would be a second layer of the same protection.",
+    "deferred_v2_consideration": "If V2 SaaS multi-tenant introduces noisy-neighbor concerns (one branch's heavy FCM volume starving another branch's domain events), per-job RateLimited middleware could partition the queue per branch_id. Not blocking V1."
+  },
+  "observability_summary": {
+    "well_instrumented": 8,
+    "under_instrumented": 4,
+    "silent_failure_risk": ["otp-purge inline closure (P2)", "OutboxRescueCommand (P2)", "PosPurgeParkedOrders (P2)", "RetryFiscalAllocCommand per-tick summary (P2)"],
+    "well_designed_alerts": ["MonitorOutboxStaleness (Log::error + non-zero exit) — the canonical pager signal for queue-down scenarios"]
+  },
+  "deliverable_summary": "0 P1, 5 P2 (observability gaps + otp-purge onOneServer missing), 3 P3 (hour-budget + hardening backlog). Critical insight: the system has a strong sentinel (MonitorOutboxStaleness) but its supporting lanes (rescue + fiscal retry + otp purge + pos purge) are under-instrumented, so silent partial failures are possible. None of these block V1 LOCAL; all are V1.0.2 hardening candidates. Queue-middleware absence on the 4 ShouldQueue Jobs is verified as a deliberate design choice (atomic claim + idempotency short-circuits + supervisor maxProcesses cap), not an oversight."
+}

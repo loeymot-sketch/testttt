@@ -1,0 +1,87 @@
+{
+  "role": "RED-team (adversarial)",
+  "zone": "Z-6-MOBILE",
+  "mode": "AUDIT-ONLY",
+  "round": 1,
+  "date": "2026-05-18",
+  "scope": "Clipboard QR replay / screenshot OCR detection / localStorage tamper / double-tap redeem / browser back mid-wizard / race condition",
+
+  "adversarial_findings": [
+    {
+      "id": "RED-Z6-01",
+      "severity": "INFO",
+      "title": "A1 clipboard QR replay attack defended (no user-select copy path)",
+      "file_line": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js:9-24 + mobile/components/LoyaltyQR.jsx:55-66",
+      "evidence": "QR payload stored as data-payload attribute (not selectable text). Member number displayed = 'FK-{member_number}' format, distinct from QR payload 'FK:{loyalty_code}'. Attacker cannot OCR/copy payload via long-press because element is <img/canvas> rendering (QRMock + BarcodeMock components) + payload is on data-* attr. Spec asserts: bodyText.not.toMatch(/FK:A1B2C3D4/).",
+      "status": "PASS"
+    },
+    {
+      "id": "RED-Z6-02",
+      "severity": "INFO",
+      "title": "A2 screenshot detection mitigated by 5min QR rotation",
+      "file_line": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js + mobile/components/LoyaltyQR.jsx (useLoyaltyQR refresh hook)",
+      "evidence": "useLoyaltyQR refreshes payload every 5 min. Screenshot taken at T0 expires at T+5min. SR live region announces 'Code QR expire dans 1 minute' (warn60) + 'Code QR expire dans 10 secondes' (warn10) — prevents user thinking it's static.",
+      "status": "PASS"
+    },
+    {
+      "id": "RED-Z6-03",
+      "severity": "INFO",
+      "title": "A3 localStorage tamper resistance (balance audit + history append-only)",
+      "file_line": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js (38 LOC)",
+      "evidence": "Adversary edits localStorage.lecayenne.loyalty.balance to inflated value. App rehydrates on next read but balance reconstructed from history sum (audit pattern: sum(earn) - sum(redeem) + sum(refund_reversal)). Tamper detected if balance != reconstructed. Phase 6 will move authority to server-side; V0 client-side check is best-effort.",
+      "status": "PASS"
+    },
+    {
+      "id": "RED-Z6-04",
+      "severity": "INFO",
+      "title": "A4 double-tap apply-now → single redemption (inflight guard)",
+      "file_line": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js:8-35 + mobile/components/WizardRedeem.jsx:32-33+62-92",
+      "evidence": "setInflight(true) before LC.dev.redeemReward. Button disabled aria-busy during inflight. Spec asserts: 2 rapid clicks → balance 347→247 (single -100) + history.filter(redeem).length === 1.",
+      "status": "PASS"
+    },
+    {
+      "id": "RED-Z6-05",
+      "severity": "INFO",
+      "title": "A5 browser back during wizard step 2 → no double-debit",
+      "file_line": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js:7-33",
+      "evidence": "Spec navigates: rewards→step1→step2→back→step1. Asserts: balance unchanged (347), history.filter(redeem).length === 0. WizardRedeem state machine: setStep(1) from step2 back btn does NOT call LC.dev.redeemReward.",
+      "status": "PASS"
+    },
+    {
+      "id": "RED-Z6-06",
+      "severity": "INFO",
+      "title": "Race condition (S09): parallel LC.dev.redeemReward → exactly 1 success",
+      "file_line": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js:8-37",
+      "evidence": "Two parallel Promise.allSettled redeems. V0 single-thread JS guarantees serialization. 1st reads balance=150, decrements to 50. 2nd reads 50 AFTER 1st resolved → fails INSUFFICIENT. Asserts: successes=1, failures=1, balance=50, history.filter(redeem).length === 1. Note: Phase 6 will need server Idempotency-Key + lockForUpdate to handle truly parallel HTTP calls — V0 single-thread does not guarantee this for distributed scenarios.",
+      "status": "PASS-V0-LIMITATIONS-NOTED"
+    },
+    {
+      "id": "RED-Z6-07",
+      "severity": "INFO",
+      "title": "Idempotency key per WizardRedeem session (D-009 replay banner)",
+      "file_line": "mobile/components/WizardRedeem.jsx:34-43+72-91 + 222-243",
+      "evidence": "idempotencyKeyRef generated once at step1 mount via LC.loyaltyRewardState.redemptionIdempotencyKey(userId, reward_id). Key = `redeem-{user}-{reward}-{floor(now/10min)}`. Same key on back→retry within 10min window dedupes server-side. On replay: result.replayed=true → step3 renders 'Déjà échangée' + role='status' replay banner + no confetti + no toast about balance change. Boundary-crossing replay (>10min) documented as V0-only gap.",
+      "status": "PASS"
+    }
+  ],
+
+  "new_disputes": [
+    {
+      "id": "RED-Z6-DISPUTE-01",
+      "title": "Cross-tab race (multi-tab redemption)",
+      "context": "If user opens mobile/Le Cayenne - Prototype.html in 2 browser tabs simultaneously and clicks redeem in both, V0 single-thread argument breaks because each tab is its own JS context.",
+      "severity": "P2-known-gap",
+      "evidence": "V0 spec S09 acknowledges this gap ('Phase 6 will test server-side Idempotency-Key + lockForUpdate'). loyalty.js doesn't use localStorage event listener for cross-tab sync. Realistically: prototype mobile is single-tab. Production native app = no cross-tab issue.",
+      "recommendation": "Documented as V0 limitation. Production native iOS/Android app eliminates cross-tab vector. No heal required for prototype.",
+      "status": "ACCEPTED-AS-V0-LIMITATION"
+    }
+  ],
+
+  "summary": {
+    "total_attacks_tested": 5,
+    "attacks_defended": 5,
+    "attacks_succeeded": 0,
+    "v0_known_gaps": 2,
+    "verdict": "GREEN — all 5 adversarial scenarios defended in current code; 2 V0-only gaps documented and acknowledged for Phase 6 server-side wireup"
+  }
+}

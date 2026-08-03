@@ -1,0 +1,131 @@
+{
+  "micro_system": "M5-customer-ordertype — Customer selection + order type (takeaway/delivery/dine-in) switching in POS",
+  "files_examined": [
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/pos/CreateCustomerAddressComponent.vue",
+    "resources/js/components/admin/pos/FloorplanComponent.vue",
+    "resources/js/enums/modules/orderTypeEnum.js",
+    "resources/css/pos-v5.css",
+    "app/Http/Requests/PosOrderRequest.php"
+  ],
+  "findings": [
+    {
+      "id": "M5-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "resetCart() ne réinitialise PAS le type de commande ni le client — la caisse reste collée sur 'Livraison' après une commande livraison",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3719-3730",
+      "evidence": "resetCart() vide le panier (posCart/resetCart), remet token='' , appelle resetDeliveryInline() et currentLoyaltyOrder=null, MAIS ne touche jamais checkoutProps.form.order_type ni customer_id ni n'appelle takeAwayOrder(). Le DOM du segmented control reste sur l'item .is-active piloté par order_type (template L639/L652). Après une commande DELIVERY (order_type=5), order_type reste 5 et le formulaire inline livraison reste affiché (deliveryOrderDiv garde la classe 'block' posée par deliveryOrder() L4042-4044 : aucune méthode ne la retire sur reset). Idem PaymentComponent reset / orderSubmit succès : aucun retour à TAKEAWAY observé dans le flux.",
+      "why_it_matters": "Dans un fast-food Le Cayenne, ~95% des tickets sont 'À emporter'. Si un caissier passe UNE livraison, toutes les commandes suivantes restent en mode Livraison : le bloc adresse reste ouvert, et au paiement orderSubmit (L3865) exige un address_id → ensureDeliveryCustomerAndAddress() bloque ou crée un faux client livraison pour un client comptoir. Le caissier doit penser à re-cliquer 'À emporter' à chaque ticket — friction directe + risque de commandes mal typées (NF525 / stats livraison faussées).",
+      "reproduction": "1) Sélectionner 'Livraison', saisir adresse, encaisser. 2) Après confirmation, ajouter un nouvel article. 3) Observer : segmented control toujours sur Livraison, bloc adresse encore visible, order_type=5. Le panier neuf est en mode livraison sans action explicite du caissier.",
+      "recommended_correction": "Dans resetCart() (et dans le handler de succès de paiement), rappeler this.takeAwayOrder() pour rétablir le type par défaut + retirer la classe 'block' de deliveryOrderDiv, et remettre customer_id sur le walk-in (assignWalkInCustomer / ensureWalkInCustomer). Aligner sur le default data order_type=TAKEAWAY (L1670).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M5-02",
+      "severity": "P2",
+      "category": "deadcode",
+      "title": "Cluster de code livraison-adresse legacy orphelin coexiste avec le nouveau formulaire inline (modale adresse + selecteur jamais déclenchés)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:4099-4158, 2143-2147",
+      "evidence": "updateSelectedAddress() (L4152), openAddressModal() (L4099), editAddressModal() (L4103), computed customerAddresses (L2143) et filteredCustomerAddresses (L2136) sont définis mais AUCUN n'est référencé dans le <template> (grep: 0 occurrence d'appel). Le composant CreateCustomerAddressComponent (#addressModal) est monté (L1133) mais n'a aucun déclencheur dans l'UI POS — son save() dispatch user/saveAddress mais ne renseigne pas checkoutProps.form.address_id côté POS. Le seul chemin adresse réel est deliveryInline + ensureDeliveryCustomerAndAddress(). gettingUserAddress() est encore appelé (L2603, L3982, L4141) mais son résultat (addressLists) n'alimente plus aucun selecteur visible.",
+      "why_it_matters": "Surface morte = confusion de maintenance et risque de réintroduire un double-chemin adresse (legacy vs inline) qui divergerait sur le calcul de delivery_charge / address_id. L'owner a explicitement signalé 'unnecessary things, things that are not good' : c'est exactement ce type de flou. Code mort embarqué dans le bundle POS = poids + faux signal pour l'auditeur suivant.",
+      "reproduction": "grep -n 'updateSelectedAddress\\|openAddressModal\\|editAddressModal\\|filteredCustomerAddresses' sur le template (lignes 1-1000) → aucune liaison. La modale #addressModal n'a pas de bouton d'ouverture dans le panier POS.",
+      "recommended_correction": "Supprimer updateSelectedAddress/openAddressModal/editAddressModal/filteredCustomerAddresses/customerAddresses et le montage de CreateCustomerAddressComponent du POS s'ils sont confirmés inutilisés (vérifier d'abord qu'aucun raccourci clavier / event externe ne les appelle). Conserver uniquement le flux inline. Réduit la surface et le risque de double-source address_id.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M5-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Livraison crée un NOUVEAU client jetable (email delivery_<timestamp>@pos.local) à chaque commande — aucun re-usage du client comptoir/sélectionné",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:4360-4372",
+      "evidence": "Dans ensureDeliveryCustomerAndAddress(), si customer_id est falsy on POST /admin/users avec email=`delivery_${Date.now()}@pos.local` et password='delivery123'. Comme orderSubmit (L3806) NE force PAS le walk-in pour les DELIVERY (condition `order_type !== DELIVERY && !customer_id`), customer_id reste null en livraison sauf si le caissier a choisi un client. Résultat : chaque livraison sans client explicite crée un compte User unique non réutilisable, avec mot de passe en clair 'delivery123' et un email synthétique.",
+      "why_it_matters": "Prolifération de comptes clients fantômes en base (1 par livraison), impossibles à retrouver/fusionner, polluant la liste clients du POS (role_id=2) et les stats. Le mot de passe 'delivery123' identique partout est une faiblesse sécurité sur des comptes réels. Pour Le Cayenne mono-resto, la table users gonfle inutilement à chaque livraison.",
+      "reproduction": "Passer 2 livraisons successives sans sélectionner de client → 2 lignes User distinctes delivery_*@pos.local créées. Vérifiable via /admin/users après coup.",
+      "recommended_correction": "Réutiliser un client 'Livraison comptoir' générique (pattern walk-in) OU matcher sur le téléphone saisi avant de créer. Si création nécessaire, générer un mot de passe aléatoire fort, pas 'delivery123'. Idéalement router la livraison anonyme vers le même walk-in que takeaway et n'attacher que l'adresse.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M5-04",
+      "severity": "P2",
+      "category": "logic",
+      "title": "applyParkedSnapshot: une commande garée 'sur place' restaurée quand dine-in est désactivé garde order_type=DINING_TABLE mais l'UI/dining_table_id sont remis à 'à emporter' → blocage au paiement",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3493-3504",
+      "evidence": "Si savedOrderType===DINING_TABLE mais this.dineInEnabled est false (cas V1), le if/else (L3495) tombe dans takeAwayOrder() qui met dining_table_id=null (L4024). PUIS L3503 réécrit checkoutProps.form.order_type = savedOrderType (=20 DINING_TABLE). On obtient un état incohérent : form.order_type=20, UI sur 'À emporter', dining_table_id=null. À orderSubmit, L3861 exige dining_table_id pour DINING_TABLE → erreur message.table_field_required, blocage sans option (le sélecteur de table est v-if=dineInEnabled, donc absent).",
+      "why_it_matters": "État impossible à débloquer pour le caissier (il ne peut pas choisir de table puisque le widget est masqué). Cas de bord réel si une commande sur-place a été garée avant la désactivation du flag dine-in, ou via un payload parké importé. Génère un ticket coincé = perte de temps en rush.",
+      "reproduction": "Forger/garer un snapshot avec order_type=20, désactiver pos.dine_in_enabled, restaurer via ParkedOrders → tenter d'encaisser → blocage table_field_required sans sélecteur visible.",
+      "recommended_correction": "Quand dineInEnabled est false, normaliser savedOrderType vers TAKEAWAY avant de l'assigner (L3503) au lieu de conserver DINING_TABLE. Aligner form.order_type sur la branche réellement exécutée (takeAwayOrder).",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M5-05",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Les méthodes de switch order-type ajoutent/retirent une classe 'active' inexistante en CSS (le surlignage réel vient de :class is-active)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:4015-4048",
+      "evidence": "dineInOrder/takeAwayOrder/deliveryOrder font classList.add('active')/remove('active') sur les refs dineIn/takeAway/deliveryOrderLabel. Or pos-v5.css ne style QUE .pos-v5-segmented__item.is-active (L801) — il n'existe aucune règle .pos-v5-segmented__item.active. Le surlignage visible est piloté par le binding Vue :class={ 'is-active': order_type===... } (template L627/L639/L652). Les classList.add('active') sont donc des no-op purs (manipulation DOM legacy V4 résiduelle).",
+      "why_it_matters": "Manipulation DOM impérative morte mélangée à du binding réactif Vue = exactement le 'flou' dénoncé par l'owner. Inoffensif visuellement aujourd'hui, mais trompeur : un futur dev croira que 'active' pilote le style et cassera le vrai sélecteur is-active.",
+      "reproduction": "grep '.pos-v5-segmented__item.active' resources/css/pos-v5.css → 0 résultat ; seul .is-active (L801) existe. Le DOM porte 'active' sans effet visuel.",
+      "recommended_correction": "Retirer toutes les lignes classList.add/remove('active') des trois méthodes. Conserver uniquement le toggle block/hidden des div inline (load-bearing) et laisser :class is-active gérer le visuel. Idéalement migrer aussi l'affichage des div inline vers v-show piloté par order_type pour supprimer la manip DOM impérative restante.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M5-06",
+      "severity": "P3",
+      "category": "functional",
+      "title": "dineInOrder() accède aux refs sans optional chaining alors que takeAwayOrder/deliveryOrder le font — fragile si les refs dine-in manquent",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:4015-4021",
+      "evidence": "dineInOrder() fait this.$refs.dineIn.classList.add(...) / this.$refs.dineInDiv.classList... SANS '?.' . takeAwayOrder() (L4031-4037) et deliveryOrder() (L4042-4048) utilisent systématiquement '?.'. Les refs dineIn/dineInDiv ne sont rendus que sous v-if=dineInEnabled (template L623, L742). Aujourd'hui dineInOrder n'est appelé que derrière des gardes dineInEnabled (bouton v-if + applyParkedSnapshot L3495), donc pas de crash en prod V1. Mais l'asymétrie est un piège : tout futur appel non gardé lèvera 'Cannot read properties of undefined (reading classList)'.",
+      "why_it_matters": "Incohérence de défense entre 3 méthodes sœurs. Robustesse inégale = bombe à retardement si quelqu'un appelle dineInOrder() hors garde (ex: raccourci, restore). Un crash JS dans le panier POS en plein service est coûteux.",
+      "reproduction": "Désactiver dine-in (refs absents) puis invoquer dineInOrder() sans garde → TypeError sur this.$refs.dineIn.classList. Comparer à takeAwayOrder qui survit grâce à '?.'.",
+      "recommended_correction": "Ajouter l'optional chaining '?.' sur tous les accès refs de dineInOrder(), à l'identique de takeAwayOrder/deliveryOrder. Coût ~6 caractères, supprime l'asymétrie.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M5-07",
+      "severity": "P3",
+      "category": "perf",
+      "title": "diningTable/lists est toujours chargé au montage même quand dine-in est désactivé (V1)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:2335-2340",
+      "evidence": "mounted() dispatch inconditionnellement diningTable/lists (L2336) pour peupler le sélecteur de tables. Or en V1 dineInEnabled=false : le sélecteur de table (template L742) et le bouton floorplan (L168) sont v-if'd out. La liste des tables n'est jamais affichée ni utilisée (le computed diningtables L2151 n'alimente que ce sélecteur masqué).",
+      "why_it_matters": "Requête réseau + remplissage de store inutile à chaque ouverture du POS sur le chemin V1 par défaut. Marginal en charge mais c'est du gaspillage net que l'owner range dans 'unnecessary things'.",
+      "reproduction": "Ouvrir /admin/pos avec pos.dine_in_enabled=false → onglet réseau montre l'appel diningTable/lists alors qu'aucune table n'est jamais rendue.",
+      "recommended_correction": "Garder l'appel diningTable/lists derrière if (this.dineInEnabled) dans mounted(). Idem diningTable côté store si non utilisé ailleurs en V1.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Default order_type = TAKEAWAY, cohérent V1 fast-food",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:1670 + mounted 2236",
+      "note": "Le formulaire démarre sur orderTypeEnum.TAKEAWAY et mounted() fait this.$refs.takeAway.click() pour synchroniser le DOM au défaut — bon choix produit pour un comptoir où l'emporter domine."
+    },
+    {
+      "title": "Gating dine-in robuste et défensif (frontend + backend alignés)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:1898-1906 + app/Http/Requests/PosOrderRequest.php:74-94",
+      "note": "dineInEnabled rejette arrays/objects (typeof guard) et défaut false. Le backend PosOrderRequest exige dining_table_id seulement si (order_type==DINING_TABLE && pos_dine_in_enabled) et address_id seulement si DELIVERY — le contrat client/serveur est cohérent, pas de bypass."
+    },
+    {
+      "title": "Walk-in customer: résolution idempotente multi-fallback sans fuite d'historique",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:2586-2678",
+      "note": "findWalkInCustomer matche par email puis mots-clés, NE retombe JAMAIS sur data[0] (commentaire W4 FIX) pour éviter d'attacher un vrai client. ensureWalkInCustomer enchaîne assign -> GET route dédiée -> POST création -> liste, avec _walkInCustomerPromise pour dédupliquer les créations concurrentes. Solide."
+    },
+    {
+      "title": "Autocomplete adresse de livraison inline avec navigation clavier et confirmation géocodée",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:4235-4341",
+      "note": "Debounce 300ms, garde <3 chars, biais géographique vers la branche, flèches haut/bas/Enter/Esc, état 'confirmed' uniquement après géocodage place_id réussi, sinon showDeliveryGeocodeError + focus. ensureDeliveryCustomerAndAddress bloque si lat/lng absents. Bon UX et garde-fou contre une livraison sans coordonnées."
+    },
+    {
+      "title": "Garde anti-double-clic par action sur le floorplan (V2)",
+      "file_line": "resources/js/components/admin/pos/FloorplanComponent.vue:108-272",
+      "note": "inFlight.{assign,release,transfer} par tableId empêche le double-envoi (409 conflict) sur clics rapides, avec nettoyage en finally. Bon pattern défensif même si le floorplan est hors V1."
+    }
+  ]
+}

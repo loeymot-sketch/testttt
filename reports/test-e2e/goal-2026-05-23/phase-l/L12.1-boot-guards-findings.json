@@ -1,0 +1,321 @@
+{
+  "agent": "L12.1",
+  "phase": "L",
+  "title": "Production Boot Guards Verification",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "date": "2026-05-24",
+  "scope": "Enumerate + verify every AppServiceProvider::boot() production guard, write completeness sentinel, audit .env.example coverage, identify documented gaps.",
+
+  "verdict": "GREEN",
+  "verdict_rationale": "10 active production boot guards in AppServiceProvider::boot() are all wired correctly. 5 per-guard dedicated sentinels exist already (POS_SIMULATION, BYPASS×2, IDEMPOTENCY, APP_URL, LOYALTY_QR_SECRET). 1 universal completeness sentinel added covering all 10 + future drift. 1 static sentinel exists for the 11th (DB_LOCK_WAIT_TIMEOUT, non-fatal). All 26 prior + 14 new tests green (40/40 total, 0.242s + 1.786s). .env.example documents every required production var with deploy-checklist context. 1 documented V1.0.X backlog gap (STRIPE_WEBHOOK_SECRET — handler returns 500 lazily, acceptable for V1 LOCAL).",
+
+  "boot_guard_inventory": {
+    "active_in_appserviceprovider_boot": 10,
+    "universal_non_fatal": 1,
+    "documented_gaps": 1,
+    "guards": [
+      {
+        "order": 1,
+        "env_var": "POS_SIMULATION_HARDWARE",
+        "config_key": "pos.simulation_hardware",
+        "expected_in_prod": "false",
+        "bad_value_throws": true,
+        "exception_message_slice": "POS_SIMULATION_HARDWARE must be false in production",
+        "source_location": "app/Providers/AppServiceProvider.php:165-171",
+        "rationale": "NF525 cash-trail bypass — drawer/TPE simulation must NEVER reach production",
+        "documented_env_example": true,
+        "env_example_line": 343,
+        "dedicated_sentinel": "tests/Feature/Sentinels/PosSimulationHardwareProductionGuardSentinelTest.php",
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 2,
+        "env_var": "PAYMENT_BYPASS_MODE",
+        "config_key": "payment.bypass.enabled",
+        "expected_in_prod": "false",
+        "bad_value_throws": true,
+        "exception_message_slice": "PAYMENT_BYPASS_MODE=true is forbidden in production",
+        "source_location": "app/Providers/AppServiceProvider.php:177-183",
+        "rationale": "TPE validation short-circuit — would allow charges without bank approval",
+        "documented_env_example": true,
+        "env_example_line": 324,
+        "dedicated_sentinel": "tests/Feature/Sentinels/BypassProductionGuardTest.php",
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 3,
+        "env_var": "PRINTING_BYPASS_MODE",
+        "config_key": "printing.bypass.enabled",
+        "expected_in_prod": "false",
+        "bad_value_throws": true,
+        "exception_message_slice": "PRINTING_BYPASS_MODE=true is forbidden in production",
+        "source_location": "app/Providers/AppServiceProvider.php:184-190",
+        "rationale": "TCP/IP thermal printer short-circuit — kitchen would not receive tickets",
+        "documented_env_example": true,
+        "env_example_line": 325,
+        "dedicated_sentinel": "tests/Feature/Sentinels/BypassProductionGuardTest.php",
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 4,
+        "env_var": "APP_DEBUG",
+        "config_key": "app.debug",
+        "expected_in_prod": "false",
+        "bad_value_throws": true,
+        "exception_message_slice": "APP_DEBUG=true is forbidden in production",
+        "source_location": "app/Providers/AppServiceProvider.php:202-210",
+        "rationale": "Leaks stack traces / SQL / DB creds / HMAC context via Whoops — also blocks the SiteService env-edit attack surface",
+        "documented_env_example": true,
+        "env_example_line": 17,
+        "dedicated_sentinel": null,
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 5,
+        "env_var": "IDEMPOTENCY_MIDDLEWARE_ENABLED",
+        "config_key": "idempotency.enabled",
+        "expected_in_prod": "true",
+        "bad_value_throws": true,
+        "exception_message_slice": "IDEMPOTENCY_MIDDLEWARE_ENABLED must be true in production",
+        "source_location": "app/Providers/AppServiceProvider.php:223-231",
+        "rationale": "23 mutation routes lose anti-doublon protection — double-charge / double-drawer-open / double-status-change risk",
+        "documented_env_example": true,
+        "env_example_line": 370,
+        "dedicated_sentinel": "tests/Feature/Sentinels/IdempotencyMiddlewareProductionGuardSentinelTest.php",
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 6,
+        "env_var": "LOYALTY_QR_SECRET",
+        "config_key": "loyalty.qr.secret",
+        "expected_in_prod": "non-empty (recommended 32+ bytes via openssl rand -hex 32)",
+        "bad_value_throws": true,
+        "exception_message_slice": "LOYALTY_QR_SECRET must be set in production",
+        "source_location": "app/Providers/AppServiceProvider.php:241-251",
+        "rationale": "Without it, loyalty QR signer falls back to legacy plaintext FK:<code> which is the cross-surface fraud vector being healed (LCS-S-001 / I2-HEAL-03)",
+        "documented_env_example": true,
+        "env_example_line": 254,
+        "dedicated_sentinel": "tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest.php::test_production_boot_guard_refuses_empty_loyalty_qr_secret",
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 7,
+        "env_var": "APP_URL",
+        "config_key": "app.url",
+        "expected_in_prod": "non-empty (e.g. https://lecayenne.example.com)",
+        "bad_value_throws": true,
+        "exception_message_slice": "APP_URL must be set in production",
+        "source_location": "app/Providers/AppServiceProvider.php:261-271",
+        "rationale": "config/cors.php derives allowed_origins from APP_URL — empty silently rejects /api/broadcasting/auth for kiosk browsers; polling fallback masks the failure",
+        "documented_env_example": true,
+        "env_example_line": 20,
+        "dedicated_sentinel": "tests/Feature/Sentinels/CorsAppUrlProductionGuardSentinelTest.php",
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 8,
+        "env_var": "BROADCAST_DRIVER",
+        "config_key": "broadcasting.default",
+        "expected_in_prod": "pusher|redis (NOT null)",
+        "bad_value_throws": true,
+        "exception_message_slice": "BROADCAST_DRIVER must be explicitly set in production",
+        "source_location": "app/Providers/AppServiceProvider.php:273-278",
+        "rationale": "Real-time KDS/OSS push channels require a non-null broadcaster; /api/health/ready 503s in production when null",
+        "documented_env_example": true,
+        "env_example_line": 172,
+        "dedicated_sentinel": null,
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 9,
+        "env_var": "QUEUE_CONNECTION",
+        "config_key": "queue.default",
+        "expected_in_prod": "redis|database (NOT sync)",
+        "bad_value_throws": true,
+        "exception_message_slice": "QUEUE_CONNECTION must not be sync in production",
+        "source_location": "app/Providers/AppServiceProvider.php:279-284",
+        "rationale": "sync queue executes jobs inline → blocks HTTP requests on DispatchDomainEventsJob (high lane), defeats async outbox + retry-with-backoff",
+        "documented_env_example": true,
+        "env_example_line": 153,
+        "dedicated_sentinel": null,
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN"
+      },
+      {
+        "order": 10,
+        "env_var": "CACHE_DRIVER",
+        "config_key": "cache.default",
+        "expected_in_prod_strict": "redis|memcached (per comment intent)",
+        "expected_in_prod_actual": "anything NOT in ['array','null']",
+        "bad_value_throws": true,
+        "exception_message_slice": "CACHE_DRIVER='<x>' is forbidden in production",
+        "source_location": "app/Providers/AppServiceProvider.php:294-302",
+        "rationale": "AuditLogService::write uses Cache::lock(audit_chain_b{n}) to serialise NF525 chain inserts across PHP-FPM workers; in-process driver = per-process lock = duplicate-insert race",
+        "documented_env_example": true,
+        "env_example_line": 131,
+        "dedicated_sentinel": null,
+        "covered_by_completeness_sentinel": true,
+        "verdict": "GREEN",
+        "known_widening_backlog": "UNI-03 — comment says 'redis or memcached' but list only blocks ['array','null']. file/database PASS the guard. V1 LOCAL single-box: file driver safe. V2 SaaS ALB multi-instance: widen list. Tracked in PROJECT_BRAIN §8."
+      },
+      {
+        "order": 11,
+        "env_var": "DB_LOCK_WAIT_TIMEOUT",
+        "config_key": "(env-direct, default 5)",
+        "expected_in_prod": "5 (default) or higher per workload",
+        "bad_value_throws": false,
+        "exception_message_slice": null,
+        "source_location": "app/Providers/AppServiceProvider.php:312-323",
+        "rationale": "Per-session innodb_lock_wait_timeout cap prevents FPM pool starvation under hot-row contention. Non-fatal: log warning on failure (perf risk, not correctness risk). MySQL-only (SQLite/Pg noop).",
+        "documented_env_example": true,
+        "env_example_line": 451,
+        "dedicated_sentinel": "tests/Feature/Security/InnodbLockWaitTimeoutSentinel.php (4 cases — static AST-style)",
+        "covered_by_completeness_sentinel": false,
+        "verdict": "GREEN",
+        "note": "Universal (runs in all envs), non-throwing — not part of the production-refusal cluster."
+      }
+    ]
+  },
+
+  "missing_from_guard_list": [
+    {
+      "env_var": "STRIPE_WEBHOOK_SECRET",
+      "config_key": "services.stripe.webhook_secret",
+      "source_K_8_F_07": "Phase K.8 F-07 — V1.0.X cloud-prep gap",
+      "current_behavior": "Stripe::handleWebhook() (app/Http/PaymentGateways/Gateways/Stripe.php:204-213) returns HTTP 500 misconfigured + logs stripe_webhook_secret_missing to fiscal channel when the secret is empty. Lazy fallback — provider does NOT refuse to boot.",
+      "v1_local_assessment": "ACCEPTABLE — Stripe is not the V1 LOCAL Le Cayenne path. SenangPay + cash + TPE-bypass cover the fiscal happy-path. A misconfigured Stripe webhook would surface as 500s on Stripe Dashboard delivery attempts, not as a silent NF525 break.",
+      "v1_0_x_recommendation": "When Stripe becomes a live payment path (V1.0.X+ cloud cutover): promote into AppServiceProvider::boot() guard list with throw new \\RuntimeException('STRIPE_WEBHOOK_SECRET must be set in production'). Update completeness sentinel + add dedicated sentinel.",
+      "pin_test": "tests/Feature/Boot/ProductionBootGuardsCompletenessSentinelTest.php::test_documented_gap_stripe_webhook_secret_not_in_boot_guards — INTENTIONALLY assertStringNotContainsString so a future promotion forces removal of this pin (drift-detection).",
+      "verdict": "V1.0.X BACKLOG (NOT a V1 ship blocker)"
+    }
+  ],
+
+  "env_example_coverage": {
+    "all_10_critical_vars_documented": true,
+    "production_deploy_checklist_present": true,
+    "deploy_checklist_location": ".env.example lines 391-429",
+    "by_var": {
+      "POS_SIMULATION_HARDWARE": {"line": 343, "documented": true, "comment_quality": "GOOD (NF525 + CLAUDE.md §8 reference)"},
+      "PAYMENT_BYPASS_MODE": {"line": 324, "documented": true, "comment_quality": "GOOD (runbook reference)"},
+      "PRINTING_BYPASS_MODE": {"line": 325, "documented": true, "comment_quality": "GOOD (runbook reference)"},
+      "APP_DEBUG": {"line": 17, "documented": true, "comment_quality": "OK (deploy checklist line 396 reinforces)"},
+      "IDEMPOTENCY_MIDDLEWARE_ENABLED": {"line": 370, "documented": true, "comment_quality": "EXCELLENT (full Phase F.6 heal context)"},
+      "LOYALTY_QR_SECRET": {"line": 254, "documented": true, "comment_quality": "EXCELLENT (I2-HEAL-03 reference + openssl generate cmd + rotation guidance)"},
+      "APP_URL": {"line": 20, "documented": true, "comment_quality": "OK"},
+      "BROADCAST_DRIVER": {"line": 172, "documented": true, "comment_quality": "GOOD (/api/health/ready 503 note)"},
+      "QUEUE_CONNECTION": {"line": 153, "documented": true, "comment_quality": "GOOD (sync executes inline note + health-ready note)"},
+      "CACHE_DRIVER": {"line": 131, "documented": true, "comment_quality": "EXCELLENT (atomicity rationale + production uncomment guide)"},
+      "DB_LOCK_WAIT_TIMEOUT": {"line": 451, "documented": true, "comment_quality": "GOOD (F2-HEAL-02 reference + workload tuning guidance)"}
+    },
+    "deploy_checklist_extracts": [
+      ".env.example:396 — [ ] Set APP_ENV=production, APP_DEBUG=false",
+      ".env.example:397 — [ ] [W9-B1 LOW-OPS] Set CACHE_DRIVER=redis (mandatory)",
+      ".env.example:400 — [ ] Set QUEUE_CONNECTION=redis (mandatory for real-time)",
+      ".env.example:403 — [ ] Configure Soketi/Pusher for broadcasting",
+      ".env.example:411-413 — [ ] Confirm TIMEZONE=Europe/Paris (NF525 archive cron)",
+      ".env.example:419 — [ ] FISCAL_AUDIT_SECRET / FISCAL_Z_REPORT_SECRET >= 48 chars"
+    ]
+  },
+
+  "sentinel_inventory": {
+    "added_by_l12_1": [
+      {
+        "path": "tests/Feature/Boot/ProductionBootGuardsCompletenessSentinelTest.php",
+        "purpose": "Universal completeness sentinel — static (source-message presence) + functional (per-guard isolated-throw) + happy-path-clean + local-env-relaxes + STRIPE_WEBHOOK_SECRET drift-detection pin",
+        "cases": 14,
+        "covers_all_10_throwing_guards": true,
+        "run_result": "OK (14 tests, 35 assertions, 0.242s)"
+      }
+    ],
+    "existing_per_guard_sentinels": [
+      "tests/Feature/Sentinels/PosSimulationHardwareProductionGuardSentinelTest.php (4 cases)",
+      "tests/Feature/Sentinels/BypassProductionGuardTest.php (5 cases — payment + printing + null binding)",
+      "tests/Feature/Sentinels/IdempotencyMiddlewareProductionGuardSentinelTest.php (4 cases)",
+      "tests/Feature/Sentinels/CorsAppUrlProductionGuardSentinelTest.php (4 cases)",
+      "tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest.php (1 boot-guard case + 8 signing cases)",
+      "tests/Feature/Security/InnodbLockWaitTimeoutSentinel.php (4 cases — static)"
+    ],
+    "missing_per_guard_sentinels_pre_l12_1": [
+      "APP_DEBUG (now covered by completeness sentinel)",
+      "BROADCAST_DRIVER (now covered by completeness sentinel)",
+      "QUEUE_CONNECTION (now covered by completeness sentinel)",
+      "CACHE_DRIVER (now covered by completeness sentinel)"
+    ],
+    "total_boot_guard_test_count_post_l12_1": 40,
+    "all_passing": true,
+    "test_run_evidence": "vendor/bin/phpunit --filter \"PosSimulationHardwareProductionGuard|BypassProductionGuard|IdempotencyMiddlewareProductionGuard|CorsAppUrlProductionGuard|LoyaltyQrSigning|InnodbLockWaitTimeout\" → OK (26 tests, 83 assertions). Plus new sentinel: OK (14 tests, 35 assertions)."
+  },
+
+  "production_checklist_for_owner": {
+    "before_first_deploy": [
+      "[CRITICAL] APP_ENV=production",
+      "[CRITICAL] APP_DEBUG=false (guard #4 refuses boot if true)",
+      "[CRITICAL] APP_URL=https://<your-domain> (guard #7 refuses boot if empty)",
+      "[CRITICAL] APP_KEY set via php artisan key:generate",
+      "[CRITICAL] POS_SIMULATION_HARDWARE=false (guard #1 refuses boot if true — NF525 compliance)",
+      "[CRITICAL] PAYMENT_BYPASS_MODE=false (guard #2 refuses boot if true)",
+      "[CRITICAL] PRINTING_BYPASS_MODE=false (guard #3 refuses boot if true)",
+      "[CRITICAL] IDEMPOTENCY_MIDDLEWARE_ENABLED=true (guard #5 refuses boot if false)",
+      "[CRITICAL] LOYALTY_QR_SECRET=<openssl rand -hex 32> (guard #6 refuses boot if empty)",
+      "[CRITICAL] BROADCAST_DRIVER=pusher (or redis) (guard #8 refuses boot if null)",
+      "[CRITICAL] QUEUE_CONNECTION=redis (or database) (guard #9 refuses boot if sync)",
+      "[CRITICAL] CACHE_DRIVER=redis (recommended) or memcached (guard #10 refuses boot if array/null)",
+      "[CRITICAL] FISCAL_AUDIT_SECRET >=48 chars random (NF525 — AuditLogService refuses to sign if dev-sentinel)",
+      "[CRITICAL] FISCAL_Z_REPORT_SECRET >=48 chars random (NF525 — ZReportService refuses to sign if dev-sentinel)",
+      "[RECOMMENDED] DB_LOCK_WAIT_TIMEOUT=5 (guard #11 non-fatal; default 5 if unset)",
+      "[RECOMMENDED] MIX_API_KEY=<long-random> (SPA + kiosk require x-api-key header)",
+      "[RECOMMENDED] TIMEZONE=Europe/Paris (NF525 archive cron at 02:00 + now()->subDay() alignment)",
+      "[IF USING STRIPE] STRIPE_WEBHOOK_SECRET (NOT in boot guard — lazy 500 fallback. V1 LOCAL acceptable per K.8 F-07; V1.0.X cloud cutover should promote into boot guards.)"
+    ],
+    "post_deploy_smoke": [
+      "curl -fsS https://<your-domain>/api/health/ready (must return 200 — fails if BROADCAST_DRIVER=null OR QUEUE_CONNECTION=sync)",
+      "php artisan schedule:list (must show foodking-fiscal-archive-daily at 02:00)",
+      "Log spot-check: grep 'production guard' /var/log/php-fpm.log (should be empty — guards only log when bypassed in dev)",
+      "Trigger 1 test order → confirm audit_logs row written + fiscal_sequence incremented (NF525 chain healthy)"
+    ],
+    "boot_failure_diagnosis": "If the app refuses to start in production: tail the PHP-FPM error log — the RuntimeException message tells you EXACTLY which env var to set and the runbook reference. Each guard's exception is self-describing."
+  },
+
+  "rationale_for_completeness_sentinel_over_per_guard_clones": {
+    "drift_detection": "If a developer adds a new guard to AppServiceProvider but forgets a sentinel, the completeness sentinel naturally lags — but it provides a CANONICAL inventory table that's grep-able. Adding the new guard to self::GUARDS is now a single-place change.",
+    "shared_priming": "primeProductionGood() encodes the canonical known-good baseline once instead of duplicating across 10+ test files.",
+    "regression_against_reordering": "If someone reorders the guards in boot() (sibling could short-circuit earlier), the per-guard tests would silently still pass if their stub is loose; the completeness sentinel asserts the exception message verbatim AND boots from a single primed baseline, so reordering is harmless but inversion is loud.",
+    "stripe_gap_pin": "test_documented_gap_stripe_webhook_secret_not_in_boot_guards uses assertStringNotContainsString — promoting the secret to a boot guard FORCES removal of the gap-pin, preventing 'I added it but forgot the V1.0.X tracking' drift."
+  },
+
+  "risk_register": {
+    "low": [
+      "CACHE_DRIVER guard comment says 'redis or memcached' but only blocks ['array','null'] — file/database PASS. V1 LOCAL Le Cayenne single-box safe; V2 SaaS ALB multi-instance requires widening. Already tracked as UNI-03 in PROJECT_BRAIN.",
+      "STRIPE_WEBHOOK_SECRET lazy fallback (HTTP 500 on missing) — V1 LOCAL doesn't use Stripe, so the gap is dormant. V1.0.X cutover should promote."
+    ],
+    "medium": [],
+    "high": [],
+    "rolled_up_verdict": "GREEN — no V1 ship blocker. 2 documented backlog items both bounded by 'V1 LOCAL doesn't trigger' invariant."
+  },
+
+  "frozen_zone_diff": "0 (sentinel-only — tests/Feature/Boot/ProductionBootGuardsCompletenessSentinelTest.php is NEW, no production code modified, AppServiceProvider untouched)",
+
+  "nf525_chain_impact": "NONE (no fiscal code paths exercised by this verification)",
+
+  "files_created": [
+    "tests/Feature/Boot/ProductionBootGuardsCompletenessSentinelTest.php",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L12.1-boot-guards-findings.json"
+  ],
+
+  "files_modified": [],
+
+  "test_evidence": {
+    "new_sentinel_run": "vendor/bin/phpunit tests/Feature/Boot/ProductionBootGuardsCompletenessSentinelTest.php → OK (14 tests, 35 assertions) in 0.242s",
+    "sibling_sentinels_run": "vendor/bin/phpunit --filter \"PosSimulationHardwareProductionGuard|BypassProductionGuard|IdempotencyMiddlewareProductionGuard|CorsAppUrlProductionGuard|LoyaltyQrSigning|InnodbLockWaitTimeout\" → OK (26 tests, 83 assertions) in 1.786s",
+    "combined_total": "40 tests, 118 assertions, 0 failures, 0 errors"
+  }
+}

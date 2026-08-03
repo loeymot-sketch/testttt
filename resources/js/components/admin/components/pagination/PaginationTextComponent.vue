@@ -12,6 +12,9 @@
 </template>
 
 <script>
+// [iter15-mega-fix D-004 2026-05-10] FR translation key `message.pagination_label`
+// was previously a broken EN/FR mix in resources/js/languages/fr.json.
+// Now reads: "Affichage de {from} a {to} sur {total} entrees" (proper French).
 export default {
     name: "PaginationTextComponent",
     props: ['props'],

@@ -31,10 +31,13 @@ class ItemVariationRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("item_variations", "name")->whereNull('deleted_at')->ignore($this->route('itemVariation.id'))->where(
-                    'item_id',
-                    $this->route('item.id')
-                )
+                // [F-VARIATION-ATTR-SCOPE 2026-07-15 / P2] Unicité scopée (item_id, item_attribute_id).
+                // Sans le scope attribut, un même nom de viande légitime sous deux groupes distincts
+                // (« Viande 1 » ET « Viande 2 » d'un tacos) était refusé 422 → 66 variations jumelles
+                // live (6 produits tacos) inéditables via l'endpoint dédié. Miroir du besoin extras.
+                Rule::unique("item_variations", "name")->whereNull('deleted_at')->ignore($this->route('itemVariation.id'))
+                    ->where('item_id', $this->route('item.id'))
+                    ->where('item_attribute_id', (int) $this->input('item_attribute_id'))
             ],
             'item_attribute_id' => ['required', 'numeric'],
             'price'             => ['required', new IniAmount(true)],

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\IniAmount;
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -11,11 +12,20 @@ class OfferRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — OfferController middleware enforces
+     * `permission:offers_create` on store and `permission:offers_edit` on update;
+     * FormRequest accepts either since the same class is injected on both verbs.
+     * Any future route bypass still authz-checks against the offers capability family.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('offers_create') || $user->can('offers_edit');
     }
 
     /**
@@ -36,7 +46,9 @@ class OfferRequest extends FormRequest
             'status'     => ['required', 'numeric', 'max:24'],
             'start_date' => ['required', 'string', 'max:190'],
             'end_date'   => ['required', 'string', 'max:190'],
-            'image'      => $this->route('offer.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image'      => $this->route('offer.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()],
         ];
     }
 

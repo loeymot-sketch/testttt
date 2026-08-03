@@ -1,0 +1,66 @@
+# Z-7 WEB heal diff — reproducible source patch for /Users/1millnonstop/Downloads/web/
+#
+# This patch captures the 2 file changes applied LIVE to the standalone web tree at
+# /Users/1millnonstop/Downloads/web/ during Z-7 healing.
+# The web tree has no separate .git, so the heals are not git-tracked. This patch
+# allows future sessions / CI / backup-restore to re-apply the same source heals
+# that the committed test specs (test-e2e-web-z7-gaps-2026-05-18.spec.js + axe sweep)
+# verify against.
+#
+# Apply with:
+#   cd /Users/1millnonstop/Downloads/web && patch -p1 < ../path/to/heal-diff.patch
+# Or manually re-apply each hunk via Edit/sed.
+
+--- a/components.jsx
++++ b/components.jsx
+@@ -74,11 +74,12 @@ function WebNav({ route, onRoute, cartCount, onCart, isAuth, onAccount, onLogo }
+           ) : (
+             <button onClick={onAccount} className="lc-nav-btn-account">Se connecter</button>
+           )}
+-          <button className="lc-nav-burger" onClick={()=>setOpen(o=>!o)} aria-label="Menu">
++          {/* [Z-7 HEAL 2026-05-18 P2-2] aria-expanded + aria-controls reflect drawer state */}
++          <button className="lc-nav-burger" onClick={()=>setOpen(o=>!o)} aria-label="Menu" aria-expanded={open} aria-controls="lc-mobile-menu">
+             <span/><span/><span/>
+           </button>
+         </div>
+       </div>
+       {open && (
+-        <div className="lc-mobile-menu">
++        <div id="lc-mobile-menu" className="lc-mobile-menu">
+           {links.map(l => (
+             <button key={l.id} onClick={() => { onRoute(l.id); setOpen(false); }} className={'lc-mobile-link' + (route===l.id?' is-on':'')}>
+               {l.label}
+
+--- a/flows.jsx
++++ b/flows.jsx
+@@ -33,7 +33,8 @@ function CartDrawer({ open, onClose, cart, setCart, onCheckout }) {
+       <div className={'lc-cart-drawer' + (open?' is-open':'')}>
+         <div className="lc-cart-head">
+           <div className="lc-cart-title">Panier</div>
+-          <button onClick={onClose} className="lc-acc-form-back" style={{ margin: 0 }}><WC_I.close s={16}/></button>
++          {/* [Z-7 HEAL 2026-05-18 axe-P0] button-name: aria-label for close icon button */}
++          <button onClick={onClose} className="lc-acc-form-back" style={{ margin: 0 }} aria-label="Fermer le panier"><WC_I.close s={16}/></button>
+         </div>
+         <div className="lc-cart-body">
+           {cart.length === 0 ? (
+@@ -49,14 +50,16 @@ function CartDrawer({ open, onClose, cart, setCart, onCheckout }) {
+               <div className="lc-cart-row-body">
+                 <div className="lc-cart-row-name">{it.name}</div>
+                 {it.subs && <div className="lc-cart-row-meta">+ {it.subs}</div>}
+                 <div className="lc-cart-stepper">
+-                  <button onClick={()=>updateQty(idx, -1)}>−</button>
++                  {/* [Z-7 HEAL 2026-05-18 P2-3] aria-label so screen reader announces qty action */}
++                  <button onClick={()=>updateQty(idx, -1)} aria-label={`Diminuer la quantité de ${it.name}`}>−</button>
+                   <b>{it.qty}</b>
+-                  <button onClick={()=>updateQty(idx, +1)}>+</button>
++                  <button onClick={()=>updateQty(idx, +1)} aria-label={`Augmenter la quantité de ${it.name}`}>+</button>
+                 </div>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                 <span className="lc-cart-row-price">{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
+-                <button onClick={()=>remove(idx)} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)' }}><WC_I.trash/></button>
++                {/* [Z-7 HEAL 2026-05-18 axe-P0] button-name: aria-label for trash icon button */}
++                <button onClick={()=>remove(idx)} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)' }} aria-label={`Retirer ${it.name} du panier`}><WC_I.trash/></button>
+               </div>
+             </div>
+           ))}

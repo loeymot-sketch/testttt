@@ -1,0 +1,63 @@
+{
+  "task_id": "CV1-LIFECYCLE-UX-001-task-2.1",
+  "parent_cycle": "CV1-LIFECYCLE-UX-001",
+  "execution_tier": "complex",
+  "primary_execution_model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "plan_file": "plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md",
+  "plan_section": "§ 2.1 Auto-86 préventif cron + dashboard endpoints (lines 246-272 + 401)",
+  "audit_source": "reports/audit/CLAUDE_ULTRA_REVIEW_MISSION_2_STOCK_COMPOSITION_2026-05-02.md §A.1 #7",
+  "delegated_by": "Claude (in-session orchestrator) — terminal Claude in Anthropic Pro quota; user explicitly authorized continuation of Vague 2 with GPT for complex tasks.",
+  "delegation_reason": "Multi-file task: backend command body + scheduler registration + 3 admin REST endpoints + Vue dashboard wiring + 6 sentinel cases. Touches catalog/stock/availability invariants. Tier-routing § global.mdc → complex.",
+
+  "instruction": "Implement task 2.1 of plan CV1-LIFECYCLE-UX-001 strictly. This is the preventive auto-86 cron + admin dashboard wiring. \n\n**SCOPE & FILES:**\n\n1. **WRITE** `app/Console/Commands/StockScanRupture.php` — implement the `handle()` body that today only stops at the disabled flag (line 47) or the `[stock:scan-rupture] NOT YET IMPLEMENTED` warning (line 99). The skeleton already documents the algorithm (lines 60-97). Implement following that pseudo-code:\n   - Determine target branches (option `--branch` or all `Branch::query()->where('status', 'active')`).\n   - For each branch, group `stock_levels` rows where `on_hand <= 0` by stockable item id (joining via `stockable_type` ∈ `[App\\Models\\Item, App\\Models\\ItemVariation, App\\Models\\ItemExtra]`).\n   - For each candidate item, check via `app/Services/Stock/ChoiceAvailabilityResolver::snapshotForItems` whether **all** stockable choices are out (a single available alternative keeps the item orderable; do NOT flip in that case).\n   - When all out, locate or create the `item_branch_availability` row and call `AvailabilityService::toggle($itemId, $branchId, false, 'stock_rupture')`. The toggle is idempotent.\n   - Honor `--dry-run`: log only `[stock.scan-rupture-would-flip]` entries, never call toggle.\n   - At the end of each branch, log a single structured summary line `[stock.scan-rupture-summary]` with counters: branch_id, items_flipped, items_already_unavailable, items_skipped_partial_stock, items_scanned, duration_ms.\n   - Persist the last summary to cache key `stock_scan_rupture:last_summary:branch:{branch_id}` with TTL=24h (so the dashboard endpoint can retrieve it).\n\n2. **WRITE** `app/Console/Kernel.php` — add the schedule registration. Use the same conventions as the existing `foodking:fiscal:archive` block: `withoutOverlapping` + `onOneServer`, gated by `config('catalog_v15.auto_86_preventive_cron.enabled', false)` via `->when(...)` and using `config('catalog_v15.auto_86_preventive_cron.cron_expression', '*/5 * * * *')`. Insert this block AFTER the `SloEvaluatorJob` block (around line 58) and BEFORE the fiscal archive block (line 60). Do NOT touch any other scheduled jobs.\n\n3. **WRITE** new admin endpoints at `app/Http/Controllers/Admin/StockRuptureDashboardController.php`:\n   - `GET /api/admin/stock/scan-rupture/last-summary` → returns the last cached summary per active branch. Auth: `permission:items_view` or equivalent. Returns 200 JSON `{ branches: [{ branch_id, summary, fetched_at }] }`.\n   - `GET /api/admin/stock/low-alerts` → returns rows where `on_hand <= threshold_low` for the requested branch (or all active if not specified). 200 JSON `{ alerts: [{ branch_id, stockable_type, stockable_id, label, on_hand, threshold_low }] }`.\n   - `POST /api/admin/stock/scan-rupture/run` → manually triggers the command synchronously for ONE branch; returns the resulting summary. **Restrict to `app.env !== 'production'`** OR require `permission:items_create`. Body: `{ branch_id: int, dry_run?: bool }`.\n\n4. **WRITE** `routes/api.php` — register the 3 routes under the appropriate admin middleware group (look for the existing `Route::prefix('admin')` block).\n\n5. **WRITE** `resources/js/components/admin/stock/StockRuptureDashboardComponent.vue` — fill the existing skeleton's `<script>` section to call the 3 endpoints, render the data, and wire the manual run button. Keep the existing `<template>` mostly intact (it's already well-structured); only fill the `<script>` `data()`, `methods`, and `mounted()` hooks. Use `axios` (already global) and i18n keys `admin.stock_rupture.*` (already in lang files for some, add missing ones).\n\n6. **WRITE** `tests/Feature/Stock/StockScanRuptureCommandTest.php` — un-skip and implement all 6 cases as documented in the file's docblock (lines 17-44). Cases:\n   a) `test_skipped_when_flag_disabled`\n   b) `test_multi_branch_scan_flips_only_affected`\n   c) `test_dry_run_does_not_mutate`\n   d) `test_idempotent_second_run`\n   e) `test_branch_option_restricts_scope`\n   f) `test_item_with_at_least_one_orderable_choice_not_flipped`\n\n7. (Optional but recommended) **WRITE** `tests/Feature/Admin/StockRuptureDashboardEndpointsTest.php` — happy-path coverage for the 3 endpoints (auth, payload shape, branch filter).\n\n**STRICT INVARIANTS:**\n- branch_id (#3): every query MUST filter `branch_id`. The cron must process branches in isolation.\n- Dispatch-after-commit (#4): `AvailabilityService::toggle` already handles this; do not introduce raw `DB::table()->update()` flips that bypass the service.\n- OrderService symmetry (#5): not touched — read-only confirmation.\n- Frozen zones (#6): no touch to `app/Services/Pricing/PricingService.php`, `app/Services/Payments/*`, or any frozen file from `reports/handoff/HANDOFF_CODEX_CV1_FOUNDATIONS_2026-05-02.md`.\n- OrderStatus (#2): not in scope.\n\n**Validation locale (mandatory before commit):**\n```\nphp artisan test --filter=StockScanRuptureCommand\nphp artisan test --filter='Stock|StockRupture' 2>&1 | tail -8\nphp -l app/Console/Commands/StockScanRupture.php\nphp -l app/Console/Kernel.php\nphp -l app/Http/Controllers/Admin/StockRuptureDashboardController.php\n```\nAll PASS, no regression on existing Stock tests.\n\n**Trace block** (append to `reports/post_execute_latest.log`):\n```\n=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 2.1 ===\nDATE: <ISO>\nEXECUTION_TIER: complex\nEXECUTE_DELEGATION: codex-extension\nFILES_TOUCHED: <list>\nNEW_SENTINELS: StockScanRuptureCommandTest 6/6 [+ optional StockRuptureDashboardEndpointsTest]\nLOCAL_VALIDATE: <verdicts>\nNOTES: <any plan-drift discoveries>\n```\n\n**Commit ONCE** with message:\n`[CV1-LIFECYCLE-UX-001 task 2.1] Auto-86 preventive cron + StockRuptureDashboard endpoints + sentinel`\n\nNo amend, no force-push.",
+
+  "subsystems": [
+    "app/Console/Commands/StockScanRupture.php (write — handle() body)",
+    "app/Console/Kernel.php (write — schedule registration only, do not touch other blocks)",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php (write — new file, 3 actions)",
+    "routes/api.php (write — 3 new routes under admin middleware)",
+    "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue (write — fill <script>, keep <template>)",
+    "tests/Feature/Stock/StockScanRuptureCommandTest.php (write — un-skip + 6 cases)",
+    "tests/Feature/Admin/StockRuptureDashboardEndpointsTest.php (optional)"
+  ],
+
+  "subsystems_off_limits": [
+    "app/Services/Pricing/PricingService.php (frozen)",
+    "app/Services/Payments/* (frozen)",
+    "app/Services/Menu/AvailabilityService.php (read-only — call toggle() but do not modify)",
+    "app/Services/Menu/PosMenuProjection.php",
+    "app/Services/Menu/MenuProjectionService.php",
+    "app/Services/Menu/KioskMenuService.php",
+    "any frozen file listed in reports/handoff/HANDOFF_CODEX_CV1_FOUNDATIONS_2026-05-02.md §2"
+  ],
+
+  "invariants_at_risk": [
+    "branch_id (#3): all stock + availability queries MUST filter by branch_id; the dashboard endpoints MUST scope to authorized branches.",
+    "Dispatch-after-commit (#4): all flips go through AvailabilityService::toggle which already integrates with the existing dispatch-after-commit pattern.",
+    "Frozen zones (#6): no touch to pricing/payment frozen files."
+  ],
+
+  "acceptance": [
+    "StockScanRupture::handle() runs the algorithm described in the file's pseudo-code (lines 60-97) and respects --dry-run + --branch options.",
+    "The command flips ONLY items whose ALL stockable choices are out of stock (verified via ChoiceAvailabilityResolver).",
+    "Idempotent: a second run flips zero rows and emits zero duplicate ItemAvailabilityChanged events.",
+    "Schedule registered in Kernel under config('catalog_v15.auto_86_preventive_cron.enabled') guard with cron_expression flag-driven.",
+    "3 admin endpoints respond correctly with the documented JSON shape; `/run` is restricted to non-production OR permission-gated.",
+    "Vue dashboard renders the data without console errors and the `Run scan now` button triggers the POST endpoint.",
+    "StockScanRuptureCommandTest 6/6 PASS, no regression on Stock filter.",
+    "Trace appended to reports/post_execute_latest.log.",
+    "Single commit with the conventional message."
+  ],
+
+  "halt_conditions": [
+    "Any frozen file modification appears necessary → write reports/handoff/blocks/NEEDS_CLAUDE_M2_2_1.md and stop.",
+    "ChoiceAvailabilityResolver does not expose a usable API for the command → adapt by reusing PosMenuProjection logic OR halt and request orchestrator decision.",
+    "Vue dashboard cannot be wired without backend changes outside scope → halt with diff proposal.",
+    "More than 2 attempts to make sentinel pass without clear hypothesis → halt with state dump."
+  ],
+
+  "trace_template": "=== CV1-LIFECYCLE-UX-001 / task 2.1 ===\nEXECUTE_DELEGATION: codex-extension\nEXECUTION_TIER: complex\nDATE: 2026-05-02\nFILES_TOUCHED:\n  - app/Console/Commands/StockScanRupture.php\n  - app/Console/Kernel.php\n  - app/Http/Controllers/Admin/StockRuptureDashboardController.php\n  - routes/api.php\n  - resources/js/components/admin/stock/StockRuptureDashboardComponent.vue\n  - tests/Feature/Stock/StockScanRuptureCommandTest.php\nNEW_SENTINELS: StockScanRuptureCommandTest (6 cases)\nLOCAL_VALIDATE: php artisan test --filter=StockScanRuptureCommand -> <verdict> ; --filter=Stock -> <count, no-regression>\nLINT: php -l <files> -> all OK\nHALT: <none | reason>\n",
+
+  "commit_message_template": "[CV1-LIFECYCLE-UX-001 task 2.1] Auto-86 preventive cron + StockRuptureDashboard endpoints + sentinel\n\n- StockScanRupture::handle() implements branch-scoped scan + dry-run + idempotent toggle.\n- Kernel schedule registered under catalog_v15.auto_86_preventive_cron flag.\n- 3 admin endpoints (last-summary, low-alerts, run) for StockRuptureDashboardComponent.\n- Sentinel: StockScanRuptureCommandTest (6 cases).\n- Audit: reports/audit/CLAUDE_ULTRA_REVIEW_MISSION_2_STOCK_COMPOSITION_2026-05-02.md §A.1 #7\n"
+}

@@ -1,0 +1,324 @@
+{
+  "agent": "S5-P4 Cash x Owner-night",
+  "persona": "Owner shift-de-nuit reviewing the day's takings + planning tomorrow's prep + reporting to comptable",
+  "audit_date": "2026-05-25",
+  "branch_head": "heal/cms-pr1-quickwins-2026-05-18 / b8ce23851 (post Wave Polish Final)",
+
+  "scope_audited": {
+    "primary_surface": "/admin/cash-overview (Wave X4 2026-05-21)",
+    "primary_files": [
+      "app/Http/Controllers/Admin/CashOverviewController.php (491 LOC) - GET /api/admin/cash-overview",
+      "app/Http/Resources/CashOverviewTransactionResource.php",
+      "resources/js/components/admin/cashOverview/CashOverviewComponent.vue (538 LOC)",
+      "resources/js/router/modules/cashOverviewRoutes.js"
+    ],
+    "sibling_surfaces": [
+      "/admin/cash-sessions-report (Wave O4 2026-05-20) - per-day drawer detail",
+      "/admin/dashboard - Overview + Realtime + SalesSummary + MostPopularItems + LastZReportWidget",
+      "/admin/sales-report - SalesReportController (Excel export EXISTS)",
+      "/admin/transactions - TransactionController (Excel export EXISTS)"
+    ],
+    "models_audited": [
+      "app/Models/CashDrawerSession.php (90 LOC) - fillable: branch_id, opened_by_user_id, opened_at, closed_at, opening_amount, closing_amount, expected_closing_amount, variance, variance_reason, status, closed_by_user_id, reconciled_by_user_id",
+      "app/Models/Transaction.php - polymorphic over Order, no BranchScope (Wave K audit)"
+    ],
+    "services_audited": [
+      "app/Services/Cash/CashDrawerService.php - HAS cash.variance_threshold_eur (default 2.00 EUR) - per-session threshold only, not daily/cross-session anomaly",
+      "app/Services/Fiscal/ZReportService.php / ZReportCashEnrichmentService.php - daily Z close",
+      "app/Services/Fiscal/XReportService.php - intra-day snapshot"
+    ],
+    "libs_installed_but_unused_for_cash_overview": [
+      "composer.json: barryvdh/laravel-dompdf ^3.0 (PDF rendering - used elsewhere? grep negative for any cash-overview PDF call)",
+      "composer.json: maatwebsite/excel ^3.1 (used by ChefController, DeliveryBoyController, SalesReportController, TableOrderController, ItemController, DiningTableController, CreditBalanceReportController, ItemCategoryController, TransactionController; NOT cash-overview)"
+    ]
+  },
+
+  "owner_persona_workflow_simulation": {
+    "moment": "23h45 - owner ferme le rideau, ouvre laptop, /admin/cash-overview",
+    "owner_questions_observed": [
+      "Q1: 'Combien on a fait aujourd'hui vs hier ?' -> wants J vs J-1 ratio",
+      "Q2: 'Combien vs meme jour semaine passee ?' -> wants J vs S-1 ratio (mardi vs mardi)",
+      "Q3: 'Qu'est-ce qui a le mieux marche ce soir ?' -> wants top items du jour (chart or list)",
+      "Q4: 'Combien je commande de pain demain ?' -> wants prediction/forecast based on historical pattern",
+      "Q5: 'Cassoulet brule, file d'attente 30 min, panne TPE 19h-20h' -> wants daily incident log",
+      "Q6: 'Le comptable veut le X du jour en PDF lundi matin' -> wants 1-click PDF export",
+      "Q7: 'Le comptable veut la liste detaillee en Excel' -> wants 1-click XLSX export",
+      "Q8: 'C'etait gros ce soir, surnormal ou ouvert?' -> wants anomaly auto-detect (revenue > mean + N*sigma)",
+      "Q9: 'Mon caissier a-t-il cloture trop tard, ecart bizarre ?' -> wants cross-session anomaly (variance pattern across days)"
+    ]
+  },
+
+  "owner_gaps_verified": {
+
+    "gap_1_compare_J_vs_J_minus_1_vs_S_minus_1": {
+      "owner_verbatim": "Compare J vs J-1, J vs S-1 ?",
+      "status": "ABSENT_CONFIRMED",
+      "severity": "P1",
+      "evidence_chain": [
+        {
+          "claim": "CashOverviewController returns ONLY the requested window (default today). NO previous-period delta in summary payload.",
+          "file": "app/Http/Controllers/Admin/CashOverviewController.php",
+          "lines": "92-103, 364-398",
+          "verbatim_summary_keys": "['total', 'count', 'by_source', 'by_mode']",
+          "interpretation": "summary payload contains NO j_minus_1, week_ago, delta_pct, trend fields. Owner must run TWO sequential requests (today, yesterday) and compute the delta mentally."
+        },
+        {
+          "claim": "Frontend renders summary cards (grand_total + by_source) and mode breakdown chips - NO delta cell, NO arrow up/down, NO % change indicator",
+          "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+          "lines": "82-107, 167-185",
+          "verbatim": "<div class='text-xs uppercase text-gray-500'>{{ $t('label.grand_total') }}</div><div class='text-2xl font-bold text-primary mt-1'>{{ formatMoney(summary.total) }}</div>"
+        },
+        {
+          "claim": "Codebase-wide grep for J-1 / previousDay / week_over_week / previous_period / comparedTo returned ZERO hits in admin/cash domain. Only KDS/OSS services reference 'yesterday' for advance-order overdue logic - unrelated.",
+          "grep_targets": [
+            "app/Http/Controllers/Admin/**",
+            "app/Services/**",
+            "resources/js/components/admin/**"
+          ],
+          "hits_in_cash_domain": 0
+        },
+        {
+          "claim": "Sibling /admin/dashboard SalesSummaryComponent renders absolute totals; OverviewComponent renders absolute totals; RealtimeReportComponent renders 24h sliding window. NONE expose J vs J-1 or J vs S-1.",
+          "files_checked": [
+            "resources/js/components/admin/dashboard/SalesSummaryComponent.vue",
+            "resources/js/components/admin/dashboard/OverviewComponent.vue",
+            "resources/js/components/admin/dashboard/RealtimeReportComponent.vue"
+          ]
+        }
+      ],
+      "consequence": "Owner cannot answer 'is today better or worse than yesterday / same-day-last-week' without manual arithmetic on two separate page loads. Night-shift signal-detection is impossible.",
+      "fix_estimate": "M (4-6h) - backend SHOULD compute summary_previous_day + summary_previous_week in same response (3 SUMs over (today, J-1, S-1) windows, scoped to branch_filter), frontend adds 2 delta cells per source card + a % indicator (green up / red down). Single endpoint call, single render."
+    },
+
+    "gap_2_top_items_du_jour_chart": {
+      "owner_verbatim": "Top items du jour graphique ?",
+      "status": "ABSENT_CONFIRMED",
+      "severity": "P1",
+      "evidence_chain": [
+        {
+          "claim": "CashOverviewController returns Transaction rows (payment-level), NEVER OrderItem rows. Top-items-by-revenue / top-items-by-qty is NOT computable from the current payload.",
+          "file": "app/Http/Controllers/Admin/CashOverviewController.php",
+          "lines": "117-146",
+          "verbatim_eager_load": "with(['order' => function ($q) {...} $q->select(['id', 'branch_id', 'queue_number', 'order_serial_no', 'source_surface', 'order_type', 'delivery_boy_id'])->with(['deliveryBoy:id,name'])])",
+          "interpretation": "Order is eager-loaded WITHOUT orderItems / items. No item-level aggregation possible from this endpoint."
+        },
+        {
+          "claim": "MostPopularItemsComponent EXISTS on /admin/dashboard but is all-time, not day-scoped",
+          "file": "resources/js/components/admin/dashboard/MostPopularItemsComponent.vue",
+          "lines": "30-54",
+          "verbatim_dispatch": "this.$store.dispatch('dashboard/mostPopularItems').then(res => { this.popular_items = res.data.data; ...})",
+          "interpretation": "no date filter passed - it is a static list, not 'top items aujourd'hui'."
+        },
+        {
+          "claim": "No charting library imported in /admin/cash-overview component scope. CashOverviewComponent.vue has zero <canvas>, zero ApexCharts, zero Chart.js, zero d3 imports.",
+          "grep_result_chart_libs_in_component": 0
+        },
+        {
+          "claim": "Codebase-wide grep for chart.js / apexcharts / d3 in resources/js/components/admin/cashOverview returned ZERO hits.",
+          "grep_targets": ["resources/js/components/admin/cashOverview/**"],
+          "hits": 0
+        }
+      ],
+      "consequence": "Owner cannot see 'le Cayenne XXL a fait 18 ventes ce soir, le Salade Cesar zero' without leaving cash-overview and querying sales-report manually (Excel download, then human Pivot). Night-shift menu-engineering decision is blind.",
+      "fix_estimate": "M (5-8h) - new endpoint GET /api/admin/cash-overview/top-items?from=&to=&limit=10 returning [{item_id, name, qty, revenue}] sorted by revenue or qty. Frontend renders simple horizontal-bar visualization (CSS-only or lightweight chart). Reuses Order::orderItems relation, scoped to branch_filter."
+    },
+
+    "gap_3_predict_tomorrow_based_on_history": {
+      "owner_verbatim": "Predict tomorrow base historique ?",
+      "status": "ABSENT_CONFIRMED",
+      "severity": "P2",
+      "evidence_chain": [
+        {
+          "claim": "Codebase-wide grep for predict / forecast / prediction / prevision returned ZERO hits in app/ or resources/js/.",
+          "grep_targets": ["app/**", "resources/js/**"],
+          "hits": 0
+        },
+        {
+          "claim": "No predictive model, no rolling-average widget, no day-of-week pattern surface anywhere in admin.",
+          "evidence": "RealtimeReportComponent shows present-tense 24h-sliding only. LastZReportWidget shows only the most recent Z. No 'previsions demain mardi' widget."
+        }
+      ],
+      "consequence": "Owner cannot pre-order suppliers based on data signal. Decision is 'a la louche' or based on memory of last Tuesday.",
+      "fix_estimate": "L (15-25h) - requires (a) day-of-week clustering over 4-8 weeks history, (b) seasonality adjustment if data exists, (c) per-item or per-category prediction. Likely DEFER to V1.0.2 / V1.0.3 backlog. Cheap MVP: simple 'meme jour semaine derniere = X EUR / Y commandes' header banner on dashboard - covers 80% of the persona need at cost S (2-3h)."
+    },
+
+    "gap_4_note_incident_journalier": {
+      "owner_verbatim": "Note incident journalier ?",
+      "status": "ABSENT_CONFIRMED",
+      "severity": "P1",
+      "evidence_chain": [
+        {
+          "claim": "CashDrawerSession schema has variance_reason VARCHAR but it is per-cashier-close, NOT day-level owner incident log",
+          "file": "app/Models/CashDrawerSession.php",
+          "lines": "33-47",
+          "verbatim_fillable": "['branch_id', 'opened_by_user_id', 'opened_at', 'closed_at', 'opening_amount', 'closing_amount', 'expected_closing_amount', 'variance', 'variance_reason', 'status', 'closed_by_user_id', 'reconciled_by_user_id']",
+          "interpretation": "variance_reason is bound to a single drawer close, used by cashier to justify a +/- ecart. Owner cannot use it for 'panne TPE 19h-20h, cassoulet brule, file d'attente' day-narrative."
+        },
+        {
+          "claim": "No incidents table, no daily_notes table, no shift_notes table found in migrations.",
+          "grep_targets": ["database/migrations/**"],
+          "tables_matching_incident_or_note": 0
+        },
+        {
+          "claim": "No incident-related UI control in CashOverviewComponent.vue (no <textarea>, no save-note button, no incidents list, no date-scoped note section).",
+          "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+          "grep_for_textarea_or_note": 0
+        },
+        {
+          "claim": "ActionLog model exists for system-event audit but is for code-generated events (orders, transitions, security), NOT for free-form owner shift narrative.",
+          "model": "app/Models/ActionLog.php (verified exempted from BranchScope sentinel V1.0.2 backlog)"
+        }
+      ],
+      "consequence": "Owner has nowhere in the app to write 'panne TPE entre 19h-20h, paiement carte HS, on a fait que cash'. This context is essential when comptable + insurance reviews the ecart 3 weeks later.",
+      "fix_estimate": "S-M (4-6h) - new migration + cash_overview_incidents (id, branch_id, business_date DATE, occurred_at_local TIME nullable, severity ENUM info/warning/critical, title VARCHAR(120), body TEXT, author_user_id), Admin/CashOverviewController action + form section in CashOverviewComponent.vue. Reuses cash-sessions-report permission. Branch-scoped. NF525 read-only sibling, no fiscal-chain impact."
+    },
+
+    "gap_5_export_pdf_excel_comptable": {
+      "owner_verbatim": "Export PDF/Excel comptable ?",
+      "status": "ABSENT_CONFIRMED",
+      "severity": "P1",
+      "evidence_chain": [
+        {
+          "claim": "CashOverviewController returns ONLY JsonResponse from a single GET action; no exportPdf / exportExcel methods exist",
+          "file": "app/Http/Controllers/Admin/CashOverviewController.php",
+          "lines": "63, 80",
+          "verbatim_class_extends": "class CashOverviewController extends AdminController",
+          "public_methods_enumerated": ["index"],
+          "verbatim_response_type": "Illuminate\\Http\\JsonResponse"
+        },
+        {
+          "claim": "CashOverviewComponent.vue contains NO 'Export PDF', NO 'Export Excel', NO downloadCsv button. Only filter form + Search + Clear.",
+          "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+          "lines": "63-79",
+          "buttons_enumerated": ["cash-overview-search", "cash-overview-clear", "cash-overview-empty-reset (only on empty state)"]
+        },
+        {
+          "claim": "Libraries ARE installed in composer.json (barryvdh/laravel-dompdf, maatwebsite/excel) and HEAVILY used in 9 other admin controllers (ChefController, DeliveryBoyController, SalesReportController, TableOrderController, ItemController, DiningTableController, CreditBalanceReportController, ItemCategoryController, TransactionController) - so the wiring is trivial; cash-overview is just NOT wired.",
+          "evidence_grep_Excel_facade": "9 hits in app/Http/Controllers/Admin/* - none in CashOverviewController.php"
+        },
+        {
+          "claim": "Sibling /admin/cash-sessions-report (Wave O4) also lacks PDF/Excel export per CashSessionReportListComponent.vue check",
+          "file": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue",
+          "exports_present": "ZERO"
+        }
+      ],
+      "consequence": "Owner ne peut PAS donner un fichier au comptable. Owner doit screenshot la table HTML + envoyer en pdf manuel, OU passer par /admin/transactions ou /admin/sales-report (qui sont des SOURCES DIFFERENTES et n'ont PAS la dimension source caisse/borne/livreur que cash-overview ajoute). C'est le gap LE PLUS COUT/VALUE du persona owner-night.",
+      "fix_estimate": "S (2-4h) - app/Exports/CashOverviewExport.php (FromCollection or FromQuery) reusing the same Transaction::with(...) builder + 1 line in controller: 'if ($request->wantsXlsx()) return Excel::download(new CashOverviewExport($filters), \"cash-overview-YYYYMMDD.xlsx\")'. PDF idem with PDF::loadView('admin.exports.cash-overview', $data)->download(...). Frontend adds 2 buttons calling /api/admin/cash-overview?export=xlsx. ZERO new dependencies."
+    },
+
+    "gap_6_anomaly_auto_detect_caisse_above_average": {
+      "owner_verbatim": "Anomaly auto-detect (caisse > moyenne) ?",
+      "status": "PARTIAL_PRESENT_PER_SESSION_NOT_DAILY",
+      "severity": "P2",
+      "evidence_chain": [
+        {
+          "claim": "Per-session variance threshold EXISTS in CashDrawerService for individual drawer close",
+          "file": "app/Services/Cash/CashDrawerService.php",
+          "lines": "266, 338",
+          "verbatim_L266": "$threshold = (float) Config::get('cash.variance_threshold_eur', 2.00);",
+          "verbatim_L338": "$thresholdForAudit = (float) Config::get('cash.variance_threshold_eur', 2.00);",
+          "interpretation": "Only flags a SINGLE cashier close where |variance| > 2.00 EUR. Used for audit logging, not surfaced to owner-night dashboard."
+        },
+        {
+          "claim": "NO daily-revenue anomaly detection (today vs mean(last_N_days)). NO sigma/outlier detection. NO cross-session pattern alerts.",
+          "grep_targets": ["app/**", "resources/js/**"],
+          "hits_for_outlier_or_stddev_or_sigma": 0
+        },
+        {
+          "claim": "CashOverviewComponent.vue surfaces total + by_source + by_mode but NO 'anormalement eleve' indicator, NO red badge, NO comparison band.",
+          "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+          "evidence": "No threshold/banner code path in <template>."
+        }
+      ],
+      "consequence": "Owner cannot trust 'ca m'a paru gros ce soir' - either it's a real bumper night to celebrate, or it's a data anomaly (double-count, duplicate POST, terminal repaiement, livreur 2x cash). The variance_threshold protects the cashier-close moment, NOT the day-summary moment.",
+      "fix_estimate": "M (6-10h) - extend backend with rolling-mean over last 28 days (same day-of-week), tag today's row with deviation_sigma + status (normal / high / very_high). Frontend renders a coloured strip on the grand_total card. Cheaper variant (S, 2-3h): static config('cash.daily_total_alert_eur', 500) banner if today > X EUR. Defer full sigma model to V1.0.2."
+    }
+  },
+
+  "additional_findings_beyond_owner_prompt": {
+    "f1_cash_diff_cell_dropped_v1_no_count_input": {
+      "context": "Wave X-C round-2 2026-05-21 fix C-013 dropped the diff cell entirely because it was algebraically locked to -opening_amount. The honest reconciliation requires a 'counted_physical_cash' input from cashier - which is V1.0.2 backlog per the in-file comment line 116-119.",
+      "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+      "lines": "110-120, 324-330",
+      "severity": "P2",
+      "relevance_to_owner_night": "Owner cannot verify the ecart caisse without a manual count input. Today the dashboard says 'expected = 1234 EUR' but nowhere does it ask 'how much did you count in the drawer ?'"
+    },
+    "f2_cap_at_500_rows_silent": {
+      "context": "Hard cap 500 rows per call (MAX_ROWS const line 70). Above that, meta.capped=true and a yellow banner shows but the owner has no easy pagination - must narrow date range manually.",
+      "file": "app/Http/Controllers/Admin/CashOverviewController.php",
+      "lines": "70, 146, 251-252",
+      "severity": "P3",
+      "relevance_to_owner_night": "Two-week reviews silently miss tail rows. For PDF/Excel export this matters (auditor sees a truncated table)."
+    },
+    "f3_no_dashboard_widget_for_cash_overview": {
+      "context": "CashOverviewComponent is only accessible via /admin/cash-overview deep-link or the quick-access tile in DashboardComponent (push line 143). It is NOT injected as a widget into the main /admin dashboard - so the owner-night persona must remember to navigate there. No cashflow-of-the-day card on /admin/dashboard.",
+      "file": "resources/js/components/admin/dashboard/DashboardComponent.vue",
+      "lines": "31-47",
+      "severity": "P3",
+      "relevance_to_owner_night": "Time-to-info friction: 1 extra click + tab-switch."
+    },
+    "f4_other_bucket_filter_silently_dropped": {
+      "context": "The 'other' payment_method bucket is non-filterable (paymentMethodPatternsForBucket returns empty array). This was an explicit Wave Z Q7 removal of the dropdown option, but the bucket still exists in summary.by_mode. So an owner who sees a 5 EUR 'autre' line in summary cannot drill down to which transaction it was.",
+      "file": "app/Http/Controllers/Admin/CashOverviewController.php",
+      "lines": "486-488",
+      "severity": "P3",
+      "relevance_to_owner_night": "Forensic drill-down blocked on the rarest bucket - the exact bucket most likely to be a config drift."
+    }
+  },
+
+  "top_3_priorities": [
+    {
+      "rank": 1,
+      "gap": "gap_5_export_pdf_excel_comptable",
+      "rationale": "Highest value-per-effort: 2-4h work, removes a HARD-blocking owner-night chore (sending file to comptable), reuses libs already in vendor. Owner mandate 'meme endroit en base' + comptable PDF/Excel is the canonical accountant deliverable. Quick-win, ZERO architectural risk, ZERO frozen-zone touch.",
+      "fix_effort": "S (2-4h)",
+      "owner_impact": "Direct, daily, blocking"
+    },
+    {
+      "rank": 2,
+      "gap": "gap_4_note_incident_journalier",
+      "rationale": "Comptable + insurance + owner-memory all depend on context that LIVES NOWHERE today. variance_reason on cash-drawer-close is per-cashier not per-day-owner. 1 new table + 1 form panel = 4-6h. High asymmetric value because absence of this data CANNOT be recovered later.",
+      "fix_effort": "S-M (4-6h)",
+      "owner_impact": "Audit-trail, owner cognition, insurance-claim resilience"
+    },
+    {
+      "rank": 3,
+      "gap": "gap_1_compare_J_vs_J_minus_1_vs_S_minus_1",
+      "rationale": "Night-shift signal-detection is the core owner job. Without J vs J-1 the dashboard is a flat number with no judgement context. 4-6h to compute 3 windows in the same controller call + 2 delta cells in the Vue template. Same data domain, ZERO new query patterns.",
+      "fix_effort": "M (4-6h)",
+      "owner_impact": "Night-shift judgement, trend awareness, anomaly priming"
+    }
+  ],
+
+  "verdict": {
+    "owner_night_readiness_score": "3.5 / 10",
+    "summary": "The /admin/cash-overview page is RECONCILIATION-CORRECT (Wave X-C round 2 caught the diff-cell algebra bug, drawer cash_collected unfiltered fix is shipped, branch-isolation/NF525 invariants hold). But it is OWNER-NIGHT-INCOMPLETE: 5/6 owner workflows verbatim listed in the prompt are MISSING or PARTIAL. The page is a CASHIER reconciliation tool that an OWNER uses by hand-rolling deltas, comptable-files, incident-context, and prediction. Highest-leverage P1 fixes are estimated 2-6h each, all NF525-safe, all frozen-zone-safe. P0 fiscal correctness = SOLID. P1 owner-night UX = WEAK. Recommend bundling fixes #5 + #4 + #1 as Wave 'X5 Owner-Night Heal' (~14h total) before declaring cash-overview production-perfect for the owner persona.",
+    "p0_blockers": [],
+    "p1_count": 4,
+    "p2_count": 2,
+    "p3_count": 3,
+    "production_ship_status": "GO for cashier reconciliation; CONDITIONAL for owner-night persona (5 owner mandate gaps verified ABSENT, of which 3 are P1)"
+  },
+
+  "evidence_methodology": {
+    "audit_type": "read-only, primary-source grep + targeted file Reads, no edits",
+    "files_read_fully": [
+      "app/Http/Controllers/Admin/CashOverviewController.php (491 LOC)",
+      "resources/js/components/admin/cashOverview/CashOverviewComponent.vue (538 LOC)",
+      "resources/js/components/admin/dashboard/DashboardComponent.vue (173 LOC)",
+      "app/Models/CashDrawerSession.php (90 LOC, head)"
+    ],
+    "greps_executed": [
+      "incident|exportPdf|exportExcel|export-pdf|export-excel|csv-export|PdfExport|anomaly|moyenne_caisse|outlier",
+      "previous_day|previousDay|day_over_day|j-1|j_1|week_over_week|s-1|s_1|previous_week|previousWeek|day_minus",
+      "topItems|top_items|TopItems|topProducts|top_products|chart\\.js|Chart\\.js|chartjs",
+      "predict|forecast|prediction|prevision|prevision",
+      "yesterday|previousDay|->subDay|->subWeek|previous_period|comparison|compare_to|comparedTo",
+      "PDF::|Excel::|use PDF|use Excel|Maatwebsite|Dompdf|->export\\(|exports\\(\\)",
+      "incident|note_journ|daily_note|daily-note|owner_note|operator_note|cash_session_note|drawer_note",
+      "anomal|outlier|alert.*cash|threshold.*cash|sigma|stddev"
+    ],
+    "negative_results_treated_as_evidence": "Yes - zero hits in cash domain for J-1, predict, anomaly, incident, chart-lib, export-pdf within CashOverview scope is evidence of ABSENCE, not search failure",
+    "primary_source_evidence_ratio": "100% (every claim has file+line citation or zero-hit grep target enumerated)"
+  }
+}

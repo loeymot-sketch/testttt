@@ -1,0 +1,77 @@
+/*
+ * pos-v4.css — POS v4 design namespace stub
+ *
+ * Cycle: POS_V4_IMPL_EXEC_FINAL_2026-04-26 (W0-C livrable)
+ * Auteur: Claude terminal
+ * Statut: STUB — squelette namespace + rollback only.
+ *         Le contenu visuel POS v4 sera ajouté en W1+ par cursor-composer
+ *         (palette, typo, layout) à l'intérieur de .fk-pos-v4 EXCLUSIVEMENT.
+ *
+ * Règles strictes (HYPERREVIEW + plan EXEC_FINAL §G7):
+ *  1. Aucun sélecteur racine (html, body, *) ici.
+ *  2. Aucune règle hors `.fk-pos-v4 ...`.
+ *  3. Aucune importation de typo / icônes globales (réservées à app.css).
+ *  4. Aucune contamination des surfaces KIOSK / KDS / Admin.
+ *  5. Garde CI: rg "fk-pos-v4|fk-dark" resources/css/app.css doit retourner 0.
+ *
+ * Rollback (HYPERREVIEW §9):
+ *  - Poser `data-pos-v4-disabled` sur le conteneur racine POS désactive
+ *    instantanément tous les styles (revert) sans déploiement backend.
+ */
+
+/* === 1. Namespace racine === */
+/* W0+ — concrétise ADR couleur (option C draft, défaut FoodKing #0084FF).
+ * [test-e2e round-2 cluster-2 A-002 2026-05-10] Migré sur palette Cayenne
+ * (#F4501E primary, #FFB800 accent jaune) per owner directive.
+ * Tech Lead sign-off pending sur ADR_POS_V4_COULEUR.md §5 — variables initiales et révisables sans
+ * cascade backend. Ne PAS cabler de logique métier sur ces variables.
+ */
+.fk-pos-v4 {
+    --fk-pos-primary:        #F4501E;
+    --fk-pos-primary-hover:  #DC4517;
+    --fk-pos-primary-active: #B33A12;
+    --fk-pos-accent:         #FFB800;
+    --fk-pos-text:           #1A1F36;
+    --fk-pos-text-muted:     #5A6075;
+    --fk-pos-bg:             #FFFFFF;
+    --fk-pos-bg-soft:        #F7F7FC;
+    --fk-pos-border:         #E5E7EB;
+    --fk-pos-radius-md:      12px;
+    --fk-pos-radius-lg:      16px;
+    --fk-pos-spacing-base:   8px;
+    --fk-pos-shadow-card:    0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+}
+
+/* === 2. Rollback kill-switch === */
+[data-pos-v4-disabled] .fk-pos-v4,
+[data-pos-v4-disabled] .fk-pos-v4 * {
+    all: revert;
+}
+
+/* === 3. Réservation des slots W1 (vide volontairement) ===
+ *
+ * Les blocs ci-dessous sont des ancres pour cursor-composer.
+ * Chaque section sera remplie au fur et à mesure des merges SFC,
+ * dans l'ordre §5 HYPERREVIEW (ReceiptDuplicataMarker → PaymentComponent).
+ */
+
+/* .fk-pos-v4 .receipt__duplicata { ... }            (W1, ordre 1)  */
+/* .fk-pos-v4 .pos-grid--loading  { ... }            (W1, ordre 2)  */
+/* .fk-pos-v4 .receipt__taxes     { ... }            (W2, ordre 3)  */
+/* .fk-pos-v4 .address-modal      { ... }            (W2, ordre 4)  */
+/* .fk-pos-v4 .parked-list        { ... }            (W2, ordre 5)  */
+/* .fk-pos-v4 .floorplan          { ... }            (W3, ordre 6)  */
+/* .fk-pos-v4 .item-modal         { ... }            (W3, ordre 7)  */
+/* .fk-pos-v4 .pos-header,
+   .fk-pos-v4 .pos-cart,
+   .fk-pos-v4 .pos-grid           { ... }            (W3, ordre 8)  */
+/* .fk-pos-v4 .payment-modal      { ... }            (W4, ordre 9)  */
+
+/* === 4. Tests de fumée CSS (lecture humaine) ===
+ *
+ * Vérifications attendues après ce stub:
+ *  - npm run dev / build : aucune erreur de syntaxe
+ *  - Aucun changement visuel sur POS legacy (le namespace est inerte)
+ *  - grep -nE "fk-pos-v4" resources/css/app.css → 0 résultat
+ *  - grep -nE "fk-pos-v4" resources/css/pos-v4.css → ≥ 3 résultats (validation présence)
+ */

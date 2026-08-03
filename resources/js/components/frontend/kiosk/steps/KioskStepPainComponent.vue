@@ -169,7 +169,7 @@ export default {
 .kiosk-option-card:active { transform: scale(0.96); }
 
 .kiosk-option-card:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
@@ -181,9 +181,9 @@ export default {
 }
 
 .kiosk-option-card.selected {
-  border-color: rgba(232,0,28,0.18);
-  background: rgba(232,0,28,0.02);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+  border-color: rgba(244, 80, 30,0.18);
+  background: rgba(244, 80, 30,0.02);
+  box-shadow: 0 0 0 1px rgba(244, 80, 30,0.06);
 }
 
 .kiosk-pain-media {
@@ -223,7 +223,7 @@ export default {
   text-transform: uppercase;
 }
 
-.kiosk-option-card.selected .kiosk-pain-name { color: #E8001C; }
+.kiosk-option-card.selected .kiosk-pain-name { color: #F4501E; }
 
 .kiosk-pain-action {
   position: absolute;
@@ -252,10 +252,10 @@ export default {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  color: #E8001C;
+  color: #F4501E;
   font-weight: 500;
   padding: 10px 20px;
-  background: rgba(232,0,28,0.06);
+  background: rgba(244, 80, 30,0.06);
   border-radius: 10px;
   max-width: 400px;
   margin-left: auto;

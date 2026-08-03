@@ -1,0 +1,128 @@
+{
+  "role": "Architect",
+  "zone": "F-6 Stock + Availability",
+  "specialist": "dependency discipline + cascade soundness + listener idempotency",
+  "audit_window": "2026-05-18 (Round 1 read-only)",
+  "files_examined": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/ChoiceAvailabilityResolver.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockLevel.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/DecrementStockOnOrderCreated.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/ReleaseStockOnOrderCanceled.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/ReleaseStockOnRefundCreated.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/NotifyStockLowOnStockLevelChanged.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/StockScanRupture.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Providers/EventServiceProvider.php (lines 130-220)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderService.php (line 894)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/FrontendOrderService.php (line 511)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Menu/AvailabilityService.php (lines 280-560)"
+  ],
+  "verdict": "OK-with-architecture-debt",
+  "summary": "StockService owns mutation discipline (DB::transaction + lockForUpdate + idempotency_key) cleanly. ChoiceAvailabilityResolver presents a coherent read-only adversarial cascade (manual rupture → ingredient_rupture → on_hand → surface/catalog gates). Listener wiring is intentionally idempotent (inline-then-listener double-call defended via composite movement_key). Two architecture defects discovered: (1) inconsistent stockable_type representation between factory ('item' raw string) and production (Item::class FQCN) — schema-drift bomb; (2) DecrementStockOnOrderCreated imports a non-existent exception FQCN — listener's StockUnavailable distinction is broken at runtime, swallowed into Throwable arm with mislabeled Sentry log signal.",
+  "findings": [
+    {
+      "id": "F6-ARCH-01",
+      "severity": "P0",
+      "title": "DecrementStockOnOrderCreated.php L6 imports App\\Exceptions\\StockUnavailableException (class does not exist)",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/DecrementStockOnOrderCreated.php:6",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Exceptions/Stock/StockUnavailableException.php:3"
+      ],
+      "primary_source": "grep verified: only one StockUnavailableException class exists, at App\\Exceptions\\Stock\\StockUnavailableException. StockService.php L7 imports the correct one; the listener does not.",
+      "impact": "When StockService throws StockUnavailableException, the listener's catch (StockUnavailableException) class-resolves the wrong FQCN → fatal Error 'Class App\\Exceptions\\StockUnavailableException not found' is raised inside the catch matcher. The original domain exception is lost, the 'let it bubble up' comment (L20) becomes a lie, and the Throwable arm logs a misleading 'DecrementStockOnOrderCreated failed' with a wrapped class-not-found error rather than the real stock_unavailable signal. Sentry breadcrumbs will mis-categorize this as infra failure rather than user-facing 409. No test catches this because every Stock concurrent / decrement / release test calls StockService::decrementForOrder directly without going through the event dispatcher.",
+      "user_friendly_question": "Owner — c'est le listener qui dispatch sur OrderCreated. Quand le stock est insuffisant, on veut un 409 propre côté caller. Aujourd'hui le listener importe App\\Exceptions\\StockUnavailableException (sans Stock\\), mais la classe est dans le sous-dossier Stock\\. Au runtime, le catch va chercher une classe inexistante → fatal Error wrappant l'exception réelle → log Sentry mauvais signal. Veux-tu corriger l'import (1 ligne) en heal-light pré-merge, ou laisser et tracker en V1.0.2?",
+      "remediation_proposal": "Single-line: `use App\\Exceptions\\Stock\\StockUnavailableException;` Optional: add a regression test that goes through `event(new OrderCreated($order))` with an under-stocked item and asserts the original 409 exception bubbles up.",
+      "keep_current_working": "Listeners still execute; orders that succeed still decrement. Only the failure path (stock insuffisant) is mis-handled and the wrong log signal emitted. Heal is safe."
+    },
+    {
+      "id": "F6-ARCH-02",
+      "severity": "P1",
+      "title": "Factory↔production stockable_type drift (raw 'item' vs Item::class)",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/factories/StockLevelFactory.php:18",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockBranchIsolationTest.php:23",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockLevelSchemaTest.php:29",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:88,124",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/ChoiceAvailabilityResolver.php:223,231,239"
+      ],
+      "primary_source": "StockLevelFactory L18 writes literal string 'item'. ChoiceAvailabilityResolver L239 + StockService::requirementsForOrderItem L248 + AvailabilityService L489 all write/read Item::class ('App\\Models\\Item'). The UNIQUE constraint on (branch_id, stockable_type, stockable_id) treats 'item' and 'App\\Models\\Item' as distinct values — both can coexist for the same physical item.",
+      "impact": "Today no production seeder / migration uses the factory, so prod stays consistent ('App\\Models\\Item' throughout). Risk surfaces if (a) a future seeder reuses StockLevelFactory and the row escapes from tests, or (b) a migration backfill copies legacy strings — at that moment, ChoiceAvailabilityResolver / StockService would never JOIN to the factory-shaped rows and the corresponding item appears unscoped (no on_hand check). Branch isolation test currently asserts via raw 'item' string ↔ raw 'item' query, masking the drift.",
+      "user_friendly_question": "Owner — l'usine de tests StockLevelFactory écrit `stockable_type => 'item'` alors que tout le code prod attend `Item::class` ('App\\Models\\Item'). Pas cassé aujourd'hui, mais c'est un risque latent si quelqu'un réutilise la factory pour seeder hors tests. Préfères-tu (1) corriger la factory + tests pour utiliser Item::class systématiquement (~10 lignes, 2 fichiers), (2) ajouter un enum/morphMap centralisé, ou (3) reporter en V1.0.2 backlog?",
+      "remediation_proposal": "Option 1 (minimal): change StockLevelFactory L18 to `'stockable_type' => Item::class`, update StockBranchIsolationTest + StockLevelSchemaTest similarly. Option 2 (canonical): register a morphMap in AppServiceProvider so both raw string and FQCN normalize to one canonical key; document at StockLevel model header.",
+      "keep_current_working": "No production breakage today — finding is preventive."
+    },
+    {
+      "id": "F6-ARCH-03",
+      "severity": "P2",
+      "title": "StockLevelChanged event only fires on zero-crossing or non-Item type",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:459-467 isChoiceBoundaryMutation",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:144,446"
+      ],
+      "primary_source": "isChoiceBoundaryMutation L459-467: returns false unless (crossedAvailabilityBoundary && (type≠Item || line_uid contains addon-item)). For a plain Item line going 10→9, no event fires.",
+      "impact": "NotifyStockLowOnStockLevelChanged listener (configured to warn when on_hand <= threshold_low) only sees decrement events when an Item line is an ADDON or when stock crosses zero. A simple Item line dropping from 6 to 1 (threshold=5) would not trigger a low-stock log alert; relies on the cron / dashboard polling. Probably intentional (cron-driven) but unstated.",
+      "user_friendly_question": "Owner — la condition isChoiceBoundaryMutation limite l'événement StockLevelChanged aux passages à 0 ou aux extras/variations/addons. Veux-tu (1) garder ce design (cron-driven low-stock), (2) le documenter explicitement dans le code + StockManager dashboard, ou (3) élargir pour fire à chaque traversée du threshold_low (peut bruyant)?",
+      "remediation_proposal": "Add a PHPDoc on isChoiceBoundaryMutation expliquant pourquoi Item-line decrement is silent. Add reference to StockScanRupture cron schedule + dashboard polling cadence.",
+      "keep_current_working": "Already shipped as-is. Cron + dashboard cover monitoring."
+    },
+    {
+      "id": "F6-ARCH-04",
+      "severity": "info",
+      "title": "Inline StockService::decrementForOrder + listener call is INTENTIONAL idempotent defense (not duplication)",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderService.php:894",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/FrontendOrderService.php:511",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/DecrementStockOnOrderCreated.php:16",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:327-344 movementKey"
+      ],
+      "primary_source": "movementKey L337: `if ($reason !== 'order_created' && $seed !== null)` — seed is NOT appended for order_created reason. Inline + listener both compute the same composite key → second insert returns no-op via L102 existsCheck.",
+      "impact": "No actual duplicate movements. Double-call serves as idempotent defense — if the transaction commits but the listener fires twice (queue retry), the second is a clean noop. Architecture is sound; just non-obvious without reading both call sites.",
+      "user_friendly_question": "Aucun besoin de remédiation, juste pour info: pattern d'appel double inline+listener est volontaire (défense idempotente). À documenter dans un docs/STOCK_INVENTORY.md si on veut clarifier pour onboarding.",
+      "remediation_proposal": "Optionnel: une ligne de PHPDoc sur decrementForOrder expliquant pourquoi il est OK d'être appelé deux fois.",
+      "keep_current_working": "Aucune action nécessaire."
+    }
+  ],
+  "duplication_check": {
+    "raw_stock_table_callers_outside_StockService": [
+      {
+        "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Menu/AvailabilityService.php",
+        "lines": "437,450,487,498,536,558",
+        "verdict": "LEGITIMATE — owns F-016a-BIS manual rupture toggles via toggleExtra/toggleVariation. Stock level is the polymorphic store-of-truth shared between StockService (on_hand) and AvailabilityService (manual_unavailable_reason). Different columns of same row. NOT bypass."
+      },
+      {
+        "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+        "lines": "69",
+        "verdict": "READ-ONLY low_alerts query (whereColumn on_hand <= threshold_low). No write. Acceptable."
+      },
+      {
+        "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/StockScanRupture.php",
+        "lines": "93",
+        "verdict": "READ-ONLY scan during preventive cron. No write. Acceptable."
+      },
+      {
+        "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/CleanupTestFixturesCommand.php",
+        "lines": "182,185,188,261",
+        "verdict": "Dev-only test fixture cleanup using DB::table to read stock_movements ids. Could legitimately DELETE through there if scoped to test prefixes — see DBA P0 about missing trigger."
+      },
+      {
+        "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/NotifyStockLowOnStockLevelChanged.php",
+        "lines": "31",
+        "verdict": "READ-ONLY threshold scan. Acceptable."
+      }
+    ],
+    "dead_listeners_detected": [],
+    "duplicate_decrement_logic_paths": [
+      "Inline+listener double-call confirmed intentional (see F6-ARCH-04). Both paths converge in StockService::mutateForOrderInTransaction → single source of truth."
+    ]
+  },
+  "cascade_soundness": {
+    "ChoiceAvailabilityResolver_priority_chain": "manual_unavailable_reason → ingredient_rupture (extra/variation parent attribute) → on_hand → catalog_inactive / catalog_unavailable / surface_hidden / branch_unavailable",
+    "verdict": "Priority order is consistent and documented (F-016a-BIS header L276-285). One subtle: availabilityForAddonItem L344 checks surface_hidden BEFORE branch_unavailable — a branch could mark an addon item unavailable but a request without surface still surfaces it. Edge-case only; main flow always passes surface."
+  },
+  "dependency_discipline": {
+    "verdict": "Clean. StockService depends only on its own Model layer + Events. ChoiceAvailabilityResolver is final, side-effect-free (read-only ranking). Listeners use Service Locator (app()) — acceptable for cross-context wiring.",
+    "no_layer_violations": true
+  }
+}

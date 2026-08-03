@@ -1,0 +1,110 @@
+[
+  {
+    "step": 2,
+    "slug": "surface-load",
+    "state": "initial",
+    "severity": "OK",
+    "note": "Tokens V5 OK : bgApp=#FFFBF5, brandRed=#E8001C",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/02-surface-load-initial.png",
+    "ts": "2026-05-06T14:14:31.034Z"
+  },
+  {
+    "step": 6,
+    "slug": "categories-strip",
+    "state": "visible",
+    "severity": "OK",
+    "note": "15 catégorie(s) affichée(s)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/06-categories-strip-visible.png",
+    "ts": "2026-05-06T14:14:39.309Z"
+  },
+  {
+    "step": 6,
+    "slug": "categories-strip",
+    "state": "click-2nd",
+    "severity": "OK",
+    "note": "Clic 2e catégorie réussi (filtrage menu)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/06-categories-strip-after-click-2nd.png",
+    "ts": "2026-05-06T14:14:40.176Z"
+  },
+  {
+    "step": 7,
+    "slug": "items-grid",
+    "state": "visible",
+    "severity": "OK",
+    "note": "64 tuile(s) produit affichée(s)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/07-items-grid-visible.png",
+    "ts": "2026-05-06T14:14:48.395Z"
+  },
+  {
+    "step": 8,
+    "slug": "add-simple-item",
+    "state": "wizard-opened",
+    "severity": "INFO",
+    "note": "Premier item testé est composé (wizard ouvert) — capture wizard côté Step 09",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/08-add-simple-item-after-click.png",
+    "ts": "2026-05-06T14:14:58.445Z"
+  },
+  {
+    "step": 9,
+    "slug": "wizard-popup",
+    "state": "opened-PROTECTED",
+    "severity": "OK",
+    "note": "Wizard ouvert (DESIGN PROTÉGÉ — audit capture only). Footer=false, CTA=false",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/09-wizard-popup-opened-PROTECTED.png",
+    "ts": "2026-05-06T14:15:08.874Z"
+  },
+  {
+    "step": 11,
+    "slug": "cart-panel",
+    "state": "visible",
+    "severity": "OK",
+    "note": "Cart panel détecté via selector: #pos-cart",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/11-cart-panel-visible.png",
+    "ts": "2026-05-06T14:15:17.640Z"
+  },
+  {
+    "step": 13,
+    "slug": "parked-buttons",
+    "state": "missing",
+    "severity": "P2",
+    "note": "0 bouton(s) park trouvé(s)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/13-parked-buttons-missing.png",
+    "ts": "2026-05-06T14:15:25.985Z"
+  },
+  {
+    "step": 16,
+    "slug": "payment-trigger",
+    "state": "missing",
+    "severity": "INFO",
+    "note": "Bouton paiement non visible (cart probablement vide — normal si aucun item ajouté)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/16-payment-trigger-missing.png",
+    "ts": "2026-05-06T14:15:34.127Z"
+  },
+  {
+    "step": 22,
+    "slug": "tracker-button",
+    "state": "visible",
+    "severity": "OK",
+    "note": "Bouton tracker visible : true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/22-tracker-button-visible.png",
+    "ts": "2026-05-06T14:15:42.290Z"
+  },
+  {
+    "step": 22,
+    "slug": "no-sale-button",
+    "state": "visible",
+    "severity": "OK",
+    "note": "Bouton no-sale (drawer) visible : true",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/22-tracker-button-visible.png",
+    "ts": "2026-05-06T14:15:42.292Z"
+  },
+  {
+    "step": 26,
+    "slug": "network-audit",
+    "state": "pos-api",
+    "severity": "INFO",
+    "note": "0 appel(s) POS API capturés (dont 0 quote)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/26-network-audit-capture.png",
+    "ts": "2026-05-06T14:15:52.453Z"
+  }
+]

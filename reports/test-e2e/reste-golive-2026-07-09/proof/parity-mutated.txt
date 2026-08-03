@@ -1,0 +1,7 @@
+
+[parity] WEB — ROUGE ❌ — 1 divergence(s)
+[parity]   mirror  : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/reste-golive-2026-07-09/proof/menu-mutated.js
+[parity]   rapport : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/reste-golive-2026-07-09/proof/parity-report-web.json
+  - [supplements] Oignons frits — attendu : 0,90 € | constaté : 9,99 €
+
+[parity] TOTAL : 1 divergence(s) sur 1 surface(s) — GATE ROUGE (exit 1)

@@ -1,6 +1,6 @@
 # POS INVARIANTS & GATES
 
-**Version.** 2026-04-18
+**Version.** 2026-04-18 (rév. 2026-04-20 — V8 #2 alignement avec `scripts/check-invariants.sh` post V5 #2 + V8 #1)
 **Scope.** S'applique à toutes les vagues POS-A, POS-B, POS-9.1 → POS-9.10.
 
 ---
@@ -77,6 +77,8 @@
 - [ ] `CROSS_TRACK_STATUS.md` 100 % items status=closed.
 - [ ] Handoff `tasks/handoff/POS_PHASE_9_HANDOFF.md` pour Track C E2E.
 
+> **2026-04-20 — Migration progressive vers `scripts/check-invariants.sh`** : les invariants 1, 2, 3, 4, 5, 6 ci-dessous (et leur évolution) sont maintenus dans le script unique. Les `grep` listés dans cette §3 restent valides comme cheat-sheet rapide, mais en cas de divergence, **le script fait foi**. Mises à jour majeures : V5 #2 (durcissement 4/6), V7 #1 (analyse Item/Category), V8 #1 (pattern event() helper).
+
 ## 3. Grep de vérification à lancer avant chaque merge
 
 ```bash
@@ -89,8 +91,10 @@ grep -rn "->input('branch_id')\|\$request->branch_id" app/Http/Controllers/Admin
 # écriture directe status ?
 grep -rn "->update(\[\s*'status'" app/ --include="*.php" | grep -v OrderStateMachine
 
-# dispatch avant commit ?
-grep -rn "Event::dispatch\|::dispatch(" app/Services/OrderService.php app/Services/FrontendOrderService.php | grep -v "afterCommit\|shouldDispatchAfterCommit"
+# dispatch avant commit ? (SSOT: scripts/check-invariants.sh invariant 4/6)
+# Couvre 3 patterns (FQN + short-name + event() helper) sur 6+ fichiers.
+# Mis à jour V5 #2 (FQN + short-name), V8 #1 (event() helper).
+bash scripts/check-invariants.sh -v 2>&1 | sed -n '/4\/6 App/,/^==>/p'
 
 # EventContract bypass ?
 grep -rn "broadcast(" app/Events/ | grep -v "buildEnvelope\|assertEnvelopeValid"

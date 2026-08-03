@@ -1,0 +1,18 @@
+{
+  "request": {
+    "token": "MIX-E-POS-BYPASS-EXTRA-1778461518409",
+    "extra_id": 175
+  },
+  "response": {
+    "ok": false,
+    "status": 422,
+    "body": {
+      "stage": "quote",
+      "message": "Supplément ID 175 indisponible pour cette branche (out_of_stock_manual).",
+      "data": {
+        "status": false,
+        "message": "Supplément ID 175 indisponible pour cette branche (out_of_stock_manual)."
+      }
+    }
+  }
+}

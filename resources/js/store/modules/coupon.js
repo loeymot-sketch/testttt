@@ -107,6 +107,24 @@ export const coupon = {
             });
         },
 
+        // [PROMO-DASH-2026-05-06] Toggle status (active <-> inactive)
+        toggleStatus: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post(`admin/coupon/toggle-status/${payload.id}`)
+                    .then((res) => {
+                        context
+                            .dispatch("lists", payload.search)
+                            .then()
+                            .catch();
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
+
         export: function (context, payload) {
             return new Promise((resolve, reject) => {
                 let url = 'admin/coupon/export';

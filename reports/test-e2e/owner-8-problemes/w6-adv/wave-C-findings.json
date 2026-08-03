@@ -1,0 +1,61 @@
+{
+  "wave": "C",
+  "role": "superviseur adversaire fresh-eyes — BORNE + gates globaux",
+  "range": "ae621546e..c65aa6582",
+  "head_attacked": "c65aa65823c1c5c5931555f0d345bebf9478faa7",
+  "date": "2026-07-06",
+  "method": "e2e Playwright ISOLÉ (headless channel:chrome, viewport 1080×1920, contexte neuf — le browser MCP partagé était piloté par une autre wave) + faux pont ESC/POS 127.0.0.1:9100 (GET /health→UP, POST /raw→dump octets) + décodeur ESC/POS CP858 + DB tinker + suites complètes",
+  "order_created": { "number": "A0012", "order_id": 5533, "total": "9,90 €", "item": "Cayenne + Menu complet (Hawaï 33cl) + sauce frites Algérienne + Oignons cuits", "pos_payment_method": 6, "payment_status": 15, "source_surface": "kiosk", "fiscal_sequence_no": null },
+  "findings": [
+    {
+      "id": "C-P1-1",
+      "severity": "P1",
+      "title": "Boisson de menu choisie à la BORNE absente du ticket cuisine ET du KDS (le cuisinier ne sait pas quelle boisson préparer)",
+      "expected_by_wave_spec": "attaque n°3 : « choisis une boisson de menu → elle apparaît sur le ticket cuisine/KDS (nom complet) »",
+      "observed": "Commande borne A0012/5533 avec Hawaï 33cl choisie au step QUEL MENU ? : ticket cuisine ESC/POS décodé = '1 x S | CAY |' / 'STO̲ | ALG' / 'MENU : ALG' — AUCUNE ligne boisson ; KDS réel (login chef) carte A0012 = mêmes 3 lignes sans boisson, alors que la carte A0013 (CAISSE, même produit+boisson, autre wave) affiche bien '· BOISSON: Hawaï 33cl' juste à côté. Le ticket CLIENT n'affiche pas non plus la boisson choisie ('+ Menu (Frites + Boisson)' sans le nom).",
+      "root_cause": "La borne fait voyager la boisson en TEXTE dans order_items.instruction au format kiosque « Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce frites : Algérienne » (une seule ligne). Les jumeaux sanitizers (resources/js/helpers/kdsCustomization.js:235 règle /sauce\\s*frites|menu\\s*\\(\\s*frites|^\\+\\s*menu\\b/ et app/Services/Hardware/KitchenTicketSymbolicFormatter.php ~l.372) DROPPENT la ligne entière (anti double-menu) → « (Hawaï 33cl) » meurt avec. Le sauvetage W3-FIX-C du range (drinkLines()/drinkAddonLabels()) ne couvre que les ADDONS role 'drink'/'menu_boisson'/*boisson* — le snapshot borne n'a qu'un addon role 'menu_full' (composition_snapshot de 5533 vérifié en DB). Le format caisse « BOISSON: <nom> » (pos-wizard LOCK §4.1) est préservé par le sanitizer ; le format borne ne l'est pas.",
+      "in_range_assessment": "Forme pré-existante (format instruction kiosque + strip sanitizer datent de 2026-06-30, avant le range) MAIS le range a précisément posé le contrat « le cuisinier PRÉPARE les boissons, elles doivent sortir sur le ticket ET l'écran » (W3-FIX-C 2026-07-06, commits du range) et l'a câblé pour la caisse seulement. L'acceptance de la wave C sur la borne ÉCHOUE.",
+      "evidence": [
+        "reports/test-e2e/owner-8-problemes/w6-adv/C/19-kds-board.png (A0012 borne sans boisson vs A0013 caisse avec 'BOISSON: Hawaï 33cl' côte à côte)",
+        "reports/test-e2e/owner-8-problemes/w6-adv/C/escpos-kitchen-5533.bin (195 octets, décodé : 0 ligne boisson)",
+        "DB order_items #5533 : instruction='Pain : Pain. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce frites : Algérienne' ; composition_snapshot.addons=[menu_full seul]",
+        "resources/js/helpers/kdsCustomization.js:235 + app/Services/Hardware/KitchenTicketSymbolicFormatter.php:372 (règle de strip)"
+      ],
+      "repro": "borne 1080×1920 → Sandwichs → Cayenne → menu complet → boisson Hawaï 33cl → sauce frites → panier → valider → confirmer (caisse Plan B) → GET frontend/order/show/{id}/escpos?ticket=kitchen + /kds : aucune trace de la boisson"
+    },
+    {
+      "id": "C-P3-1",
+      "severity": "P3",
+      "title": "Tuile « Oignons cuits » borne sans visuel produit (placeholder + grisé au lieu d'une photo)",
+      "observed": "Au step QUELLE CRUDITÉ ?, Salade/Tomate/Oignon ont une photo ; Oignons cuits affiche un rond + générique (état désélectionné ET sélectionné). Cosmétique, le libellé est correct.",
+      "evidence": ["C/05-garnitures-initial.png", "C/06-garnitures-final.png"]
+    },
+    {
+      "id": "C-P3-2",
+      "severity": "P3-INFO",
+      "title": "Churn console au boot borne (pré-existant, hors range)",
+      "observed": "À chaque contexte neuf : 3×401 (kiosk-event, frontend/menu, login) avant re-login auto 201, + POST /api/broadcasting/auth 403 (Echo → repli polling). Aucun toast/dialog, aucune erreur Vue (pageerror=0). Non imputable au range (aucun commit auth/broadcast).",
+      "evidence": ["C/attack-result.json consoleErrors", "attribution runs : seuls ces 4 endpoints en 4xx"]
+    }
+  ],
+  "attacks_passed": [
+    "A1 flux borne complet NON régressé : idle (attract OK) → catégories → Cayenne wizard 6 steps → panier → upsell skip → paiement Plan B 'Confirmer ma commande' → A0012/5533 créée (proof DB). Tacos M multi-étapes ouvert/attaqué aussi (abandon + réouverture).",
+    "A1 crudités : « Oignons cuits » VISIBLE, défaut OFF (aria-checked=false, capture 05) ; exclusivité cru↔cuit LES DEUX SENS (cuit ON→cru OFF ; cru ON→cuit OFF) ; 6 toggles rapides = jamais les deux cochés ; rétention après PRÉCÉDENT/SUIVANT (cuits reste ON, cru OFF, capture 07) ; réouverture produit = état neuf (0/1, pas de résidu Mexicanos).",
+    "A1 composition_snapshot DB : extras contient {extra_id:408, 'Oignons cuits', unit_price:0, line_total:0} + Salade + Tomate, Oignon cru ABSENT (bien retiré), addon menu_full 2,50, total 9,90 exact.",
+    "A2 ticket borne = renderer serveur : navigation cash-instruction porte orderId (URL .../cash-instruction?number=A0012&total=9.9&timeout=45&orderId=5533) ; avec pont UP : GET /api/frontend/order/show/5533/escpos?ticket=client 200 puis POST 127.0.0.1:9100/raw — octets bridge == octets endpoint (1124 B byte-exact). Décodage : accents CP858 réels (Élie, Hénin, Algérienne, BON APPÉTIT ET À BIENTÔT), '** A REGLER EN CAISSE **' en GRAS, 0 ligne paiement, largeur max visible = 32, prix atomiques, A0012 double-largeur, TVA/SIRET/serial NF525.",
+    "A2 nuance design volontaire : pont ABSENT → le composant sonde /health d'abord et NE fait PAS le GET serveur (printFailed → bouton RÉIMPRIMER visible, capture 17) ; l'assertion 'l'appel part même si le pont échoue' ne vaut que pont-up-mais-erreur. Comportement propre, pas un défaut.",
+    "A2 sans orderId : fallback legacy PROPRE (0 GET serveur, page intacte, 0 dialog, 0 pageerror, filet réimpression) ; ordre inconnu → 404 propre ; tests/Feature/Frontend/KioskEscposCounterDeferredTest.php re-run = 3/3 PASS (machine étrangère 403, autre branche 404, 0 ligne paiement).",
+    "A3 'Hawaï 33cl' à la borne : présent catalogue Boissons (15 boissons) + grille boisson du step QUEL MENU ? (vraies boissons, sélection OK, récap 'Boisson : Hawaï 33cl') ; 'Fanta Hawai' = 0 en DOM ET 0 en DB (items/variations/extras) — seul reste la clé image legacy config/menu_images.php (voulu, VPS pré-migration). MAIS voir C-P1-1 pour cuisine/KDS.",
+    "A3 bonus : symbole O̲ (oignons cuits) rendu sur KDS (STO̲, capture 19) ET ticket cuisine (ESC - underline dans les octets décodés) — jumeaux PHP/JS en parité.",
+    "A4 console/réseau : 0 erreur Vue (pageerror=0 sur tous les runs), 0 fuite i18n (toutes surfaces FR propres), pricing/preview 422 compo incomplète SILENCIEUX (3×422 puis 200, 0 toast, 0 dialog, 0 flash), toasts=[]"
+  ],
+  "global_gates": {
+    "vitest_full": "318 fichiers / 2214 passed / 3 skipped / 0 fail (21,2 s). '02-pos-cash' N'EST PAS un spec vitest (tests/e2e/02-pos-cash.spec.js = Playwright) — rouge legacy PRÉ-EXISTANT documenté w5-perf/impl-report.md:91 (step 3 obsolète depuis POS-CATEGORY-FIRST 2026-06-23), hors périmètre vitest.",
+    "phpunit_full": "3165 passed / 30 skipped / 2 incomplete / 0 fail (500 s, exit 0)",
+    "frozen_diff_24e8a09c3_HEAD": "SEULS public/js/pos-wizard.js (+299/-?) et resources/js/components/frontend/kiosk/KioskWizardComponent.vue (+34) — les 2 tolérés par LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 ; les 12 autres fichiers protégés = 0 ligne. PAS de P0.",
+    "fiscal_chain": "CHAIN OK ×4 (branches 1/7/8/9), vérifié AVANT et APRÈS la commande e2e",
+    "audit_logs_baseline": "4873 au début → 4901 à la fin (≥ 4821, append-only respecté)"
+  },
+  "verdict": "BLOCKED",
+  "verdict_reason": "Gates globaux 5/5 VERTS et borne par ailleurs impeccable (crudités/exclusivité/ticket serveur/silence 422 tous prouvés), MAIS l'acceptance n°3 de la wave échoue avec un P1 produit : la boisson de menu borne n'atteint NI le ticket cuisine NI le KDS (perdue par le strip d'instruction), alors que le même choix côté caisse s'affiche. À corriger (côté writer borne « BOISSON: <nom> » ou addon menu_boisson, ou sanitizer préservant le nom) puis re-tester avant de déclarer la wave C propre."
+}

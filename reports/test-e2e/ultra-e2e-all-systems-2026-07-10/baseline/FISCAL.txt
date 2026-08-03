@@ -1,0 +1,475 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogBranchRequiredTest[39m
+  [32;1m✓[39;22m[39m [2mnull branch is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mexplicit null branch is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mzero branch is accepted as system chain[22m[39m
+  [32;1m✓[39;22m[39m [2msystem and tenant chains are independent[22m[39m
+  [32;1m✓[39;22m[39m [2mnegative branch is accepted but isolated[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogConcurrencyTest[39m
+  [32;1m✓[39;22m[39m [2munique chain index rejects fork[22m[39m
+  [32;1m✓[39;22m[39m [2mretry after forced collision produces consistent chain[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo sequential branches do not interfere[22m[39m
+  [32;1m✓[39;22m[39m [2mcache lock serialises writers[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogHashChainTest[39m
+  [32;1m✓[39;22m[39m [2mchain verified after sequence of writes[22m[39m
+  [32;1m✓[39;22m[39m [2mtampering detected on payload[22m[39m
+  [32;1m✓[39;22m[39m [2mforged row with wrong prev hash is detected[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload key order does not affect hash[22m[39m
+  [32;1m✓[39;22m[39m [2msecret mandatory[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogImmutabilityTest[39m
+  [32;1m✓[39;22m[39m [2minsert is allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mupdate blocked via eloquent[22m[39m
+  [32;1m✓[39;22m[39m [2mupdate blocked via raw sql[22m[39m
+  [32;1m✓[39;22m[39m [2mdelete blocked via eloquent[22m[39m
+  [32;1m✓[39;22m[39m [2mdelete blocked via raw sql[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditTruncateProtectionDeployDocTest[39m
+  [32;1m✓[39;22m[39m [2mansible playbook contains fiscal truncate revoke task[22m[39m
+  [32;1m✓[39;22m[39m [2mdb user and db name variables declared in group vars[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ChangePaymentStatusFiscalSealTest[39m
+  [32;1m✓[39;22m[39m [2munpaid to paid allocates a fiscal sequence number[22m[39m
+  [32;1m✓[39;22m[39m [2mpending counter to paid is still blocked 422[22m[39m
+  [32;1m✓[39;22m[39m [2muber order unpaid to paid is not fiscalized[22m[39m
+  [32;1m✓[39;22m[39m [2mcanceled order marked paid does not consume a sequence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalAllocErrorFlagOutsideTxSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mflag write uses raw db table update[22m[39m
+  [32;1m✓[39;22m[39m [2mflag write is outside parent db transaction closure[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy in tx eloquent flag save is absent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalAllocOrphanRetryTest[39m
+  [32;1m✓[39;22m[39m [2mfinalize flags order when alloc fails and returns false[22m[39m
+  [32;1m✓[39;22m[39m [2mfinalize clears error flag on successful retry[22m[39m
+  [32;1m✓[39;22m[39m [2mretry alloc command picks up flagged orders and promotes[22m[39m
+  [32;1m✓[39;22m[39m [2mretry alloc command short circuits when no orphans[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveMemoryBoundedTest[39m
+  [32;1m✓[39;22m[39m [2marchive with 1k orders stays under memory ceiling[22m[39m
+  [32;1m✓[39;22m[39m [2mempty window produces empty arrays[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveScheduledTest[39m
+  [32;1m✓[39;22m[39m [2mit schedules a daily fiscal archive at 02 00 with overlap and one server constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mit runs archive for all active branches on yesterday only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveTest[39m
+  [32;1m✓[39;22m[39m [2mzip contains all z reports and orders and audit logs[22m[39m
+  [32;1m✓[39;22m[39m [2mround trip deterministic[22m[39m
+  [32;1m✓[39;22m[39m [2marchive respects window boundaries[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveTtlTest[39m
+  [32;1m✓[39;22m[39m [2mnf525 archive retention defaults to six years[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveVerifyChainTest[39m
+  [32;1m✓[39;22m[39m [2marchive succeeds when z chain is intact[22m[39m
+  [32;1m✓[39;22m[39m [2marchive aborts when z chain signature is corrupted[22m[39m
+  [32;1m✓[39;22m[39m [2mno verify flag bypasses check and marks manifest unverified[22m[39m
+  [32;1m✓[39;22m[39m [2mverify disabled via config skips check silently[22m[39m
+  [32;1m✓[39;22m[39m [2marchive succeeds for branch with no z reports yet[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalCashAtCounterLifecycleTest[39m
+  [32;1m✓[39;22m[39m [2mcash at counter sequence is allocated only on confirm and not on reprint[22m[39m
+  [32;1m✓[39;22m[39m [2mcash at counter confirm is idempotent without second sequence or duplicate payment[22m[39m
+  [32;1m✓[39;22m[39m [2mcash at counter cancel before payment never allocates sequence or payment transaction[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalHardeningMinorTest[39m
+  [32;1m✓[39;22m[39m [2mz signature canonicalises closed at in utc[22m[39m
+  [32;1m✓[39;22m[39m [2mz signature differs when absolute moment differs[22m[39m
+  [32;1m✓[39;22m[39m [2maudit logs down is blocked in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit logs unique index down is blocked in production[22m[39m
+  [32;1m✓[39;22m[39m [2mfiscal sequence is monotonic under serial calls[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Fiscal\FiscalInstallImmutabilityTriggersCommandTest[39m
+  [32;1m✓[39;22m[39m [2minstaller targets exactly the eight verified triggers[22m[39m
+  [32;1m✓[39;22m[39m [2mcommand skips cleanly on sqlite[22m[39m
+  [33;1m-[39;22m[39m [2minstaller recreates all triggers after they are dropped[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+  [33;1m-[39;22m[39m [2minstaller is idempotent on repeated runs[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalObservabilityTest[39m
+  [32;1m✓[39;22m[39m [2mfiscal channel is registered[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log write emits breadcrumb[22m[39m
+  [32;1m✓[39;22m[39m [2mz report open and close emit breadcrumbs[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalPermissionTest[39m
+  [32;1m✓[39;22m[39m [2mpos operator cannot manage fiscal[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch manager can manage fiscal[22m[39m
+  [32;1m✓[39;22m[39m [2munrooled user has no fiscal permission[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalRateLimitTest[39m
+  [32;1m✓[39;22m[39m [2mz report open route declares throttle middleware[22m[39m
+  [32;1m✓[39;22m[39m [2mz report close route declares throttle middleware[22m[39m
+  [32;1m✓[39;22m[39m [2mread endpoints are not rate limited[22m[39m
+  [32;1m✓[39;22m[39m [2meleventh open call is throttled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalSealingHmacTest[39m
+  [32;1m✓[39;22m[39m [2mhmac is deterministic for canonical payload order[22m[39m
+  [32;1m✓[39;22m[39m [2mhmac is branch scoped[22m[39m
+  [32;1m✓[39;22m[39m [2mz report signature matches legacy service hmac contract[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalSecretProductionGuardTest[39m
+  [32;1m✓[39;22m[39m [2maudit log rejects dev sentinel in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log rejects short secret in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log accepts strong secret in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log allows dev sentinel outside production[22m[39m
+  [32;1m✓[39;22m[39m [2mz report rejects dev sentinel in production[22m[39m
+  [32;1m✓[39;22m[39m [2mz report rejects short secret in production[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalSequenceTest[39m
+  [32;1m✓[39;22m[39m [2mfirst number for a branch is one[22m[39m
+  [32;1m✓[39;22m[39m [2matomic per branch no gaps[22m[39m
+  [32;1m✓[39;22m[39m [2msequences are independent per branch[22m[39m
+  [32;1m✓[39;22m[39m [2mnon positive branch id is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mcontinues from existing max[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalVerifyChainCommandTest[39m
+  [32;1m✓[39;22m[39m [2mclean chain returns success and prints chain ok[22m[39m
+  [32;1m✓[39;22m[39m [2mtampered chain returns failure and prints tamper id[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch filter isolates verification scope[22m[39m
+  [32;1m✓[39;22m[39m [2munknown branch returns invalid exit code[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch zero is rejected with invalid exit code[22m[39m
+  [32;1m✓[39;22m[39m [2mall flag sweeps active branches and surfaces tamper[22m[39m
+  [32;1m✓[39;22m[39m [2mall flag returns success when every branch clean[22m[39m
+  [32;1m✓[39;22m[39m [2mservice throw returns execution error exit code[22m[39m
+  [32;1m✓[39;22m[39m [2mschedule registers daily fiscal chain monitor for all branches[22m[39m
+  [32;1m✓[39;22m[39m [2mactive branch ids includes both legacy and canonical status[22m[39m
+  [32;1m✓[39;22m[39m [2mtampered z report chain returns failure and prints z report id[22m[39m
+  [32;1m✓[39;22m[39m [2mmultiple z report tampers reported in single pass[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Fiscal\FiscalVerifyImmutabilityTriggersCommandTest[39m
+  [32;1m✓[39;22m[39m [2mexpected list is the eight mysql fiscal triggers[22m[39m
+  [32;1m✓[39;22m[39m [2mdiff missing flags an absent trigger[22m[39m
+  [32;1m✓[39;22m[39m [2mdiff missing is empty when all present[22m[39m
+  [32;1m✓[39;22m[39m [2mdiff missing flags all when none present[22m[39m
+  [32;1m✓[39;22m[39m [2mcommand skips cleanly on sqlite[22m[39m
+  [33;1m-[39;22m[39m [2mcommand passes on mysql when all triggers present[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+  [33;1m-[39;22m[39m [2mcommand fails on mysql when a trigger is dropped[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\Iter15CleanupFiscalGuardTest[39m
+  [32;1m✓[39;22m[39m [2mfiscalised test order is never deleted[22m[39m
+  [32;1m✓[39;22m[39m [2mfiscalised max sequence order survives cleanup[22m[39m
+  [32;1m✓[39;22m[39m [2morder with coupon row is deleted without fk rollback[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\KioskRetryFiscalDatedAtTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk fiscal allocation path stamps fiscal dated at[22m[39m
+  [32;1m✓[39;22m[39m [2mall deferred allocation sites stamp fiscal dated at[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ManualDiscountDisabledV1SentinelTest[39m
+  [32;1m✓[39;22m[39m [2mmanual discount killswitch engages when explicitly disabled[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator discount is refused when disabled[22m[39m
+  [32;1m✓[39;22m[39m [2mzero discount order still succeeds when disabled[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon discount is refused when disabled[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty redeem is refused when disabled[22m[39m
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\MenuVat10PercentSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mevery active item carries vat 10 percent after seed[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\NF525ComplianceE2ETest[39m
+  [32;1m✓[39;22m[39m [2mscenario 1 day open inserts z with monotonic sequence[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 2 n orders processed in window aggregated[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 3 day close signs and chains hmac[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 4 z aggregate completeness pos kiosk and cash variance[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 5 audit chain integrity verify chain passes[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 6 refund post z creates counter entry mirror[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 7 destroy paid post z returns 409[22m[39m
+  [32;1m✓[39;22m[39m [2mscenario 8 receipt pdf returns verified signed bundle[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch isolation in z aggregate[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\OrderFiscalSequenceSchemaTest[39m
+  [32;1m✓[39;22m[39m [2mfiscal sequence column exists on orders[22m[39m
+  [32;1m✓[39;22m[39m [2munique branch fiscal sequence is enforced[22m[39m
+  [32;1m✓[39;22m[39m [2msame sequence allowed on different branches[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\OrderTotalHtDecompositionTest[39m
+  [32;1m✓[39;22m[39m [2mtotal ht is total minus tax so ttc equals ht plus tva[22m[39m
+  [32;1m✓[39;22m[39m [2mtotal ht with zero tax equals total[22m[39m
+  [32;1m✓[39;22m[39m [2mtotal ht defaults to zero on empty order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PosOrderBL1WireInTest[39m
+  [32;1m✓[39;22m[39m [2mpos order receives fiscal sequence no monotonic per branch[22m[39m
+  [32;1m✓[39;22m[39m [2mfiscal sequence is scoped per branch[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order stores allergens snapshot from pivot[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot remains immutable after item allergens change[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PosOrderBL2AuditCallSitesTest[39m
+  [32;1m✓[39;22m[39m [2mpos order with manual discount writes discount applied audit[22m[39m
+  [32;1m✓[39;22m[39m [2mchange status to cancel writes order cancelled audit[22m[39m
+  [32;1m✓[39;22m[39m [2mchange status to returned writes order returned audit[22m[39m
+  [32;1m✓[39;22m[39m [2mreturned without reason fails validation[22m[39m
+  [32;1m✓[39;22m[39m [2mchange payment status writes payment status changed audit[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy order writes order destroyed audit[22m[39m
+  [32;1m✓[39;22m[39m [2mcash back writes payment cash back issued audit[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PosOrderBL3DestroyAfterZTest[39m
+  [32;1m✓[39;22m[39m [2mdestroy rejected 409 when sealed by closed z[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy allowed when z report still open[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy allowed for order without fiscal sequence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PreflightMenuVatCheckTest[39m
+  [32;1m✓[39;22m[39m [2mpreflight flags zero vat menu as critical[22m[39m
+  [32;1m✓[39;22m[39m [2mpreflight flags null tax menu as critical[22m[39m
+  [32;1m✓[39;22m[39m [2mpreflight passes menu vat when all items carry vat10[22m[39m
+  [32;1m✓[39;22m[39m [2mpreflight warns on incomplete menu count[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RealizedRevenueExcludesNonFiscalTest[39m
+  [32;1m✓[39;22m[39m [2mnon fiscal uber order is excluded from realized revenue[22m[39m
+  [32;1m✓[39;22m[39m [2mrefund mirror still counts negatively[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RefundCounterEntryNettedInZTest[39m
+  [32;1m✓[39;22m[39m [2min window counter entry refund mirror nets into signed z[22m[39m
+  [32;1m✓[39;22m[39m [2mreal refund service mirror nets into signed z[22m[39m
+  [32;1m✓[39;22m[39m [2msingle tender cash refund records cashback out movement[22m[39m
+  [32;1m✓[39;22m[39m [2msingle tender card refund records no cashback out[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RefundDiscountTvaNettingTwoWindowSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mdiscounted post z refund nets per rate tva to zero[22m[39m
+  [32;1m✓[39;22m[39m [2mnon discounted refund is byte identical full reversal[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RefundPostZTest[39m
+  [32;1m✓[39;22m[39m [2mreturned order after previous z is counted as negative adjustment[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RefundPreZTest[39m
+  [32;1m✓[39;22m[39m [2mreturned order before z close is not counted as positive revenue[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\SealedOrderMutationGuardTest[39m
+  [32;1m✓[39;22m[39m [2mguard blocks returned when order in closed z window[22m[39m
+  [32;1m✓[39;22m[39m [2mguard allows returned when order in open z window[22m[39m
+  [32;1m✓[39;22m[39m [2mguard noop for unfiscalised order[22m[39m
+  [32;1m✓[39;22m[39m [2mguard disabled via feature flag[22m[39m
+  [32;1m✓[39;22m[39m [2mrefund with counter entry creates mirror order with negated total[22m[39m
+  [32;1m✓[39;22m[39m [2mrefund double call throws[22m[39m
+  [32;1m✓[39;22m[39m [2mrefund requires non empty reason[22m[39m
+  [32;1m✓[39;22m[39m [2mrefund requires parent with fiscal sequence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\SealedOrderTerminalVoidGuardTest[39m
+  [32;1m✓[39;22m[39m [2msealed order cannot be canceled in place[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter entry mirror refused on terminal parent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\TaxTypeMisconfigDetectionTest[39m
+  [32;1m✓[39;22m[39m [2mno tax row has percentage rate with fixed type[22m[39m
+  [32;1m✓[39;22m[39m [2mtax compute 2 eur at 20 percent returns 0 40 not 20[22m[39m
+  [32;1m✓[39;22m[39m [2mtax compute with fixed type returns full rate as amount[22m[39m
+  [32;1m✓[39;22m[39m [2mtax with high rate above 100 with fixed type is legitimate[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\Vat10ZReconciliationTest[39m
+  [32;1m✓[39;22m[39m [2mplain ttc line decomposes ht plus tva equals ttc[22m[39m
+  [32;1m✓[39;22m[39m [2mpricing service extracts vat from ttc line[22m[39m
+  [32;1m✓[39;22m[39m [2morder level ht plus tva equals ttc at 10 percent[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscounted order correct tva is on net base[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\VerifyZMembershipCommandTest[39m
+  [32;1m✓[39;22m[39m [2morder inside a signed  z window is not flagged[22m[39m
+  [32;1m✓[39;22m[39m [2morder in dead window but covered by next signed  z is not flagged[22m[39m
+  [32;1m✓[39;22m[39m [2morder created in window but numbered after close is covered[22m[39m
+  [32;1m✓[39;22m[39m [2morder pending in current open window is not flagged[22m[39m
+  [32;1m✓[39;22m[39m [2mtrue orphan after last close with no open  z is flagged[22m[39m
+  [32;1m✓[39;22m[39m [2mnumbered order on branch with no  z at all is flagged[22m[39m
+  [32;1m✓[39;22m[39m [2mpre c33 dead window order is flagged as historical orphan[22m[39m
+  [32;1m✓[39;22m[39m [2mpost c33 dead window order is covered[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\VerifyZMembershipSoftDeletedOrphanTest[39m
+  [32;1m✓[39;22m[39m [2msoft deleted fiscalised orphan is flagged[22m[39m
+  [32;1m✓[39;22m[39m [2msoft deleted non fiscalised order is ignored[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\VoidPreZTest[39m
+  [32;1m✓[39;22m[39m [2mcanceled order before z close is counted as void without revenue[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\XReportTest[39m
+  [32;1m✓[39;22m[39m [2msnapshot matches orders since last close[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot handles no prior z[22m[39m
+  [32;1m✓[39;22m[39m [2mbad date param returns 422 not 500[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot is idempotent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZAggregationKioskRoutingTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk payment confirm auto allocates fiscal sequence under p k11[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk payment confirm does not fiscalize when flag disabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZOpenChainVerifiedTest[39m
+  [32;1m✓[39;22m[39m [2mno z reports chain trivially valid[22m[39m
+  [32;1m✓[39;22m[39m [2msingle z with legacy genesis shape is valid[22m[39m
+  [32;1m✓[39;22m[39m [2mchain of three consistent z reports is valid[22m[39m
+  [32;1m✓[39;22m[39m [2msignature tampering is detected[22m[39m
+  [32;1m✓[39;22m[39m [2mchain break prev hash mismatch is detected[22m[39m
+  [32;1m✓[39;22m[39m [2msequence gap is detected in chain[22m[39m
+  [32;1m✓[39;22m[39m [2mstrict mode throws runtime exception[22m[39m
+  [32;1m✓[39;22m[39m [2mopen and close enforce pre checks when strict mode is enabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportAggregateFilterTest[39m
+  [32;1m✓[39;22m[39m [2morders without fiscal sequence are excluded[22m[39m
+  [32;1m✓[39;22m[39m [2msoft deleted post allocation orders are counted[22m[39m
+  [32;1m✓[39;22m[39m [2mterminal status orders remain excluded even when soft deleted[22m[39m
+  [32;1m✓[39;22m[39m [2mx report inherits same filter[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportBoundaryTest[39m
+  [32;1m✓[39;22m[39m [2morder on lower boundary is excluded[22m[39m
+  [32;1m✓[39;22m[39m [2mfirst z with null from counts whole history[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo back to back z windows never double count[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportCloseAuditAnchorSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mclose writes audit logs anchor row[22m[39m
+  [32;1m✓[39;22m[39m [2mopen alone does not write audit anchor[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportCloseTest[39m
+  [32;1m✓[39;22m[39m [2msequential open close five times no gap[22m[39m
+  [32;1m✓[39;22m[39m [2mclose aggregates only paid orders within window[22m[39m
+  [32;1m✓[39;22m[39m [2msecond close blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mopen blocked while one is already open[22m[39m
+  [32;1m✓[39;22m[39m [2msignature verifies and detects tampering[22m[39m
+  [32;1m✓[39;22m[39m [2msignature chains between consecutive closes[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportContinuityTest[39m
+  [32;1m✓[39;22m[39m [2mdead window order between close and next open lands in next z[22m[39m
+  [32;1m✓[39;22m[39m [2mfirst z absorbs sales made before it was opened[22m[39m
+  [32;1m✓[39;22m[39m [2mpost z cancel nets once under previous close bound[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportControllerTest[39m
+  [32;1m✓[39;22m[39m [2mpermission required for open[22m[39m
+  [32;1m✓[39;22m[39m [2mpermission required for close[22m[39m
+  [32;1m✓[39;22m[39m [2mmanager can open and close[22m[39m
+  [32;1m✓[39;22m[39m [2mpdf route returns signed bundle[22m[39m
+  [32;1m✓[39;22m[39m [2mcross branch show is forbidden[22m[39m
+  [32;1m✓[39;22m[39m [2mx report requires permission[22m[39m
+  [32;1m✓[39;22m[39m [2mx report returns snapshot for manager[22m[39m
+  [32;1m✓[39;22m[39m [2mindex returns cross branch for admin without pinned branch[22m[39m
+  [32;1m✓[39;22m[39m [2mindex remains branch scoped for pinned user[22m[39m
+  [32;1m✓[39;22m[39m [2mopen still requires pinned branch for admin[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportDeferredMembershipTest[39m
+  [32;1m✓[39;22m[39m [2mdeferred order created in z1 but collected in z2 lands in z2 only[22m[39m
+  [32;1m✓[39;22m[39m [2mnon deferred order keyed by created at unchanged and fiscal date overrides[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo z closed same instant no double count[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Fiscal\ZReportDeleteTriggerMysqlOnlyTest[39m
+  [33;1m-[39;22m[39m [2mraw delete on z reports is rejected by trigger[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+  [33;1m-[39;22m[39m [2meloquent delete on z reports is rejected by trigger[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+  [33;1m-[39;22m[39m [2mtrigger is present in information schema[22m[39m[33m → MysqlOnly: this test requires MySQL/MariaDB to exercise SIGNAL-based triggers; current driver = sqlite.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportDeliveryVatTest[39m
+  [32;1m✓[39;22m[39m [2mdelivery charge adds food rate vat to bucket[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery only order isolates the exact delivery vat[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery with discount composes without double count[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery refund mirror reverses delivery vat[22m[39m
+  [32;1m✓[39;22m[39m [2mnon delivery order breakdown is unchanged[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportDiscountNettingTest[39m
+  [32;1m✓[39;22m[39m [2mdiscounted order z tva is netted to post discount base[22m[39m
+  [32;1m✓[39;22m[39m [2mmulti rate discount allocates proportionally[22m[39m
+  [32;1m✓[39;22m[39m [2mnon discounted order breakdown is unchanged[22m[39m
+  [32;1m✓[39;22m[39m [2mtotal tva exactly equals sum of total by tax rate[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscounted z close signs and chain verifies[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportSchemaTest[39m
+  [32;1m✓[39;22m[39m [2mtable has required columns[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch sequence unique[22m[39m
+  [32;1m✓[39;22m[39m [2maggregates round trip through json casts[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Fiscal\ZReportSplitBucketingLockTest[39m
+  [33;1m-[39;22m[39m [2mle z signe ventile un split par tranche et non par tender dominant[22m[39m[33m → LOCK M6-002 non contresigné — ZReportService ne lit pas encore les tranches order_payments (état attendu). Le test s'armera automatiquement à l'application du LOCK.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportTaxBreakdownTest[39m
+  [32;1m✓[39;22m[39m [2mtax breakdown groups per rate[22m[39m
+  [32;1m✓[39;22m[39m [2mempty when no orders[22m[39m
+  [32;1m✓[39;22m[39m [2mtax rate keys are canonicalised[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportTerminalBreakdownTest[39m
+  [32;1m✓[39;22m[39m [2mbreakdown aggregates by terminal with correct fees[22m[39m
+  [32;1m✓[39;22m[39m [2menrich merges breakdown and net after fees[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy payments without terminal grouped with zero fees[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch isolation excludes other branch payments[22m[39m
+  [32;1m✓[39;22m[39m [2mpayments outside window excluded[22m[39m
+  [32;1m✓[39;22m[39m [2menrich is read only no zreport mutation[22m[39m
+
+  [37;1mTests:  [39;22m[33;1m8 skipped[39;22m[39m, [39m[32;1m246 passed[39;22m
+  [37;1mTime:   [39;22m[39m41.66s[39m
+
+

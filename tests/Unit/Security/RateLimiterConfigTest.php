@@ -29,8 +29,14 @@ class RateLimiterConfigTest extends TestCase
      * @var array<string, array{0:int,1:bool}>
      */
     private const EXPECTED_LIMITERS = [
-        'api' => [120, true],
-        'admin-mutation' => [30, true],
+        // [Wave Y RATE-LIMIT 2026-05-21] admin-mutation default doubled from 30
+        // to 60/min via env-knob ADMIN_MUTATION_RATE_LIMIT (RouteServiceProvider
+        // L77-117 + config/app.php). Still tight enough for brute-force defence
+        // against admin-CRUD abuse; generous enough to absorb owner manual-test
+        // bursts on online-order/table-order Livré/Cancel CTAs. Local dev
+        // overrides to 1000 in `.env`. NF525 chain UNAFFECTED.
+        'admin-mutation' => [60, true],
+        'pos-quote' => [120, true],
         'pos-order-create' => [60, true],
         'pos-order-update' => [120, true],
     ];
@@ -66,6 +72,107 @@ class RateLimiterConfigTest extends TestCase
         );
     }
 
+    public function test_admin_mutation_elevates_cap_for_pos_quote_preview(): void
+    {
+        $resolver = RateLimiter::limiter('admin-mutation');
+        $this->assertIsCallable($resolver);
+
+        $quoteRequest = Request::create('/api/admin/pos/quote', 'POST');
+        $quoteLimit = $resolver($quoteRequest);
+        $this->assertInstanceOf(Limit::class, $quoteLimit);
+        $this->assertSame(
+            120,
+            $quoteLimit->maxAttempts,
+            'POS quote preview must not share the 30/min CRUD ceiling (E2E + busy checkout)'
+        );
+
+        $counterRequest = Request::create('/api/admin/pos/counter-collect/1/confirm', 'POST');
+        $counterLimit = $resolver($counterRequest);
+        $this->assertInstanceOf(Limit::class, $counterLimit);
+        $this->assertSame(120, $counterLimit->maxAttempts);
+
+        $crudRequest = Request::create('/api/admin/items', 'POST');
+        $crudLimit = $resolver($crudRequest);
+        $this->assertInstanceOf(Limit::class, $crudLimit);
+        // [Wave Y RATE-LIMIT 2026-05-21] CRUD path now resolves to env-knob
+        // value (default 60/min, doubled from prior 30/min hardcoded).
+        $this->assertSame(
+            max(1, (int) config('app.admin_mutation_rate_limit', 60)),
+            $crudLimit->maxAttempts,
+            'CRUD path must respect config(app.admin_mutation_rate_limit)'
+        );
+    }
+
+    /**
+     * [Wave Y RATE-LIMIT 2026-05-21] Env-knob ADMIN_MUTATION_RATE_LIMIT must
+     * be honored through `config('app.admin_mutation_rate_limit')`. This guards
+     * the env-pattern parity with POS_RATE_LIMIT_* / KDS_RATE_LIMIT_BUMP and
+     * prevents silent regression to a hardcoded ceiling.
+     */
+    public function test_admin_mutation_owner_rapid_ctas_are_lifted_to_120_per_minute(): void
+    {
+        $resolver = RateLimiter::limiter('admin-mutation');
+        $this->assertIsCallable($resolver);
+
+        // online-order/change-status — owner-tested "Livré" CTA
+        $onlineOrderReq = Request::create('/api/admin/online-order/change-status/42', 'POST');
+        $onlineOrderLimit = $resolver($onlineOrderReq);
+        $this->assertInstanceOf(Limit::class, $onlineOrderLimit);
+        $this->assertSame(
+            120,
+            $onlineOrderLimit->maxAttempts,
+            'online-order/change-status must be lifted to 120/min — owner rapid-CTA family'
+        );
+
+        // table-order/change-status — table service status flip
+        $tableOrderReq = Request::create('/api/admin/table-order/change-status/7', 'POST');
+        $tableOrderLimit = $resolver($tableOrderReq);
+        $this->assertInstanceOf(Limit::class, $tableOrderLimit);
+        $this->assertSame(
+            120,
+            $tableOrderLimit->maxAttempts,
+            'table-order/change-status must be lifted to 120/min — owner rapid-CTA family'
+        );
+    }
+
+    public function test_admin_mutation_cap_matches_config(): void
+    {
+        $resolver = RateLimiter::limiter('admin-mutation');
+        $this->assertIsCallable($resolver);
+
+        $crudRequest = Request::create('/api/admin/items', 'POST');
+        $crudLimit = $resolver($crudRequest);
+        $this->assertInstanceOf(Limit::class, $crudLimit);
+
+        $expected = max(1, (int) config('app.admin_mutation_rate_limit', 60));
+        $this->assertSame(
+            $expected,
+            $crudLimit->maxAttempts,
+            'admin-mutation cap must resolve from config(app.admin_mutation_rate_limit) — env-knob ADMIN_MUTATION_RATE_LIMIT'
+        );
+    }
+
+    public function test_api_limiter_cap_matches_config(): void
+    {
+        $resolver = RateLimiter::limiter('api');
+
+        $this->assertIsCallable(
+            $resolver,
+            'Named RateLimiter `api` is not registered in RouteServiceProvider'
+        );
+
+        $request = Request::create('/api/probe', 'POST');
+        $limit = $resolver($request);
+
+        $this->assertInstanceOf(Limit::class, $limit);
+        $expected = max(1, (int) config('app.api_throttle_per_minute', 120));
+        $this->assertSame(
+            $expected,
+            $limit->maxAttempts,
+            'api limiter maxAttempts must match config(app.api_throttle_per_minute) (default 120)'
+        );
+    }
+
     public function test_login_lockout_limiter_is_registered(): void
     {
         $resolver = RateLimiter::limiter('login-lockout');
@@ -76,13 +183,17 @@ class RateLimiterConfigTest extends TestCase
         );
 
         $request = Request::create('/api/auth/login', 'POST', ['email' => 'abuse@example.com']);
-        $limit = $resolver($request);
+        $limits = $resolver($request);
 
-        $this->assertInstanceOf(Limit::class, $limit);
+        // [SEC MISSION-31 2026-07-31] Le limiteur renvoie désormais un ARRAY : couche par-(email|IP) +
+        // plafond GLOBAL (ferme le bypass X-Forwarded-For sous TrustProxies='*'). Miroir des limiteurs PIN.
+        $limits = is_array($limits) ? $limits : [$limits];
+        $this->assertGreaterThanOrEqual(2, count($limits), 'login-lockout doit avoir une couche par-clé + un plafond global (anti XFF-spoof)');
+        $this->assertContainsOnlyInstancesOf(Limit::class, $limits);
         $this->assertSame(
-            10,
-            $limit->maxAttempts,
-            'login-lockout: V1 spec requires 10 attempts ceiling'
+            max(1, (int) config('auth.login_lockout.max_attempts', 10)),
+            $limits[0]->maxAttempts,
+            'login-lockout maxAttempts (couche par-clé) must match config(auth.login_lockout.max_attempts) (default 10 in prod)'
         );
     }
 
@@ -115,6 +226,7 @@ class RateLimiterConfigTest extends TestCase
         foreach (self::EXPECTED_LIMITERS as $name => [$cap]) {
             $cases[$name] = [$name, $cap];
         }
+
         return $cases;
     }
 }

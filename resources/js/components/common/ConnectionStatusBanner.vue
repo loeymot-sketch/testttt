@@ -1,11 +1,24 @@
 <template>
   <div
-    v-if="showBanner && !dismissed"
+    v-if="visible"
     class="connection-status-banner"
-    :class="isOffline ? 'connection-status-banner--offline' : 'connection-status-banner--reconnecting'"
+    :class="bannerClass"
+    role="alert"
+    :aria-live="isSessionInvalid ? 'assertive' : 'polite'"
   >
     <span class="connection-status-banner__text">{{ bannerText }}</span>
+
     <button
+      v-if="isSessionInvalid"
+      type="button"
+      class="connection-status-banner__action"
+      @click="reloadPage"
+    >
+      {{ reloadLabel }}
+    </button>
+
+    <button
+      v-else
       type="button"
       class="connection-status-banner__close"
       aria-label="Fermer"
@@ -21,6 +34,16 @@ import { wsService, WS_STATE } from "../../services/WebSocketService";
 
 export default {
   name: "ConnectionStatusBanner",
+  props: {
+    suppressTransient: {
+      type: Boolean,
+      default: false,
+    },
+    suppressSessionInvalid: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       wsState: WS_STATE.INITIALIZED,
@@ -29,10 +52,15 @@ export default {
       dismissed: false,
       _onStateChange: null,
       _bannerInterval: null,
+      _onOffline: null,
+      _onOnline: null,
     };
   },
   computed: {
-    showBanner() {
+    isSessionInvalid() {
+      return this.wsState === WS_STATE.SESSION_INVALID;
+    },
+    showTransientBanner() {
       if (this.bannerTick < 0) return false;
       if (!this.disconnectedSince) return false;
       return Date.now() - this.disconnectedSince > 5000;
@@ -42,20 +70,55 @@ export default {
       if (!this.disconnectedSince) return false;
       return Date.now() - this.disconnectedSince > 30000;
     },
+    isDevEnv() {
+      // [iter15-mega-fix A-003 2026-05-10] In local/dev (no Pusher/Soketi), the
+      // banner shouts "Connexion temps réel perdue" permanently — useless noise
+      // that pollutes demos and dev sessions. Production keeps it.
+      try {
+        const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
+        return env === 'local' || env === 'testing';
+      } catch (_e) {
+        return false;
+      }
+    },
+    visible() {
+      // [F-12] session_invalid takes precedence and ignores the dismissal flag.
+      if (this.isSessionInvalid) return !this.suppressSessionInvalid;
+      if (this.suppressTransient) return false;
+      // [iter15-mega-fix A-003 2026-05-10] Hide transient banner in dev/local.
+      if (this.isDevEnv) return false;
+      return this.showTransientBanner && !this.dismissed;
+    },
+    bannerClass() {
+      if (this.isSessionInvalid) return "connection-status-banner--session-invalid";
+      return this.isOffline
+        ? "connection-status-banner--offline"
+        : "connection-status-banner--reconnecting";
+    },
     bannerText() {
+      if (this.isSessionInvalid) {
+        return this.$te && this.$te("ws_session_invalid_text")
+          ? this.$t("ws_session_invalid_text")
+          : "Session expirée — votre session est terminée. Rechargez la page.";
+      }
       return this.isOffline
         ? "Connexion perdue — hors ligne"
         : "Reconnexion en cours…";
     },
+    reloadLabel() {
+      return this.$te && this.$te("ws_session_invalid_action")
+        ? this.$t("ws_session_invalid_action")
+        : "Recharger";
+    },
   },
   watch: {
-    showBanner(val) {
+    visible(val) {
       if (!val) this.dismissed = false;
     },
   },
   mounted() {
     this.wsState = wsService.getState();
-    if (this.wsState !== WS_STATE.CONNECTED) {
+    if (this.wsState !== WS_STATE.CONNECTED && this.wsState !== WS_STATE.SESSION_INVALID) {
       this.disconnectedSince = Date.now();
     }
 
@@ -64,11 +127,23 @@ export default {
       if (current === WS_STATE.CONNECTED) {
         this.disconnectedSince = null;
         this.dismissed = false;
+      } else if (current === WS_STATE.SESSION_INVALID) {
+        // session_invalid is terminal until reload — keep disconnectedSince as-is
+        this.dismissed = false;
       } else if (previous === WS_STATE.CONNECTED) {
         this.disconnectedSince = Date.now();
       }
     };
     wsService.on("state_change", this._onStateChange);
+
+    // [RED-R1 O1] navigator.onLine fallback: si réseau coupe sans que Pusher déconnecte,
+    // on amorce le timer banner. wsService reste seule autorité pour clear (CONNECTED).
+    this._onOffline = () => { if (!this.disconnectedSince) this.disconnectedSince = Date.now(); };
+    this._onOnline = () => { /* no-op : laisse wsService.CONNECTED clear */ };
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("offline", this._onOffline);
+      window.addEventListener("online", this._onOnline);
+    }
 
     this._bannerInterval = setInterval(() => {
       this.bannerTick += 1;
@@ -81,6 +156,17 @@ export default {
     if (this._bannerInterval) {
       clearInterval(this._bannerInterval);
     }
+    if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+      if (this._onOffline) window.removeEventListener("offline", this._onOffline);
+      if (this._onOnline) window.removeEventListener("online", this._onOnline);
+    }
+  },
+  methods: {
+    reloadPage() {
+      if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function") {
+        window.location.reload();
+      }
+    },
   },
 };
 </script>
@@ -114,6 +200,10 @@ export default {
   background: #b91c1c;
 }
 
+.connection-status-banner--session-invalid {
+  background: #7f1d1d;
+}
+
 .connection-status-banner__text {
   flex: 1;
 }
@@ -135,5 +225,21 @@ export default {
 
 .connection-status-banner__close:hover {
   opacity: 1;
+}
+
+.connection-status-banner__action {
+  background: #fff;
+  color: #7f1d1d;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.connection-status-banner__action:hover {
+  background: #fef2f2;
 }
 </style>

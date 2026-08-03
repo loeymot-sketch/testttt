@@ -1,0 +1,115 @@
+{
+  "agent": "H.2 POS V5 split-tranche edge cases",
+  "method": "static code audit (PaymentComponent.vue is FROZEN; behavior verified via SplitPaymentService.php + PosOrderRequest.php + RefundWithCounterEntryService.php + IdempotencyKeyMiddleware.php + existing PHPUnit suites). No Playwright pass — existing 3 test files (SplitPaymentEndToEndTest + SplitPaymentServiceTest + SplitPaymentSentinelTest, 12 distinct scenarios) already cover the critical validation paths; gaps are documented rather than re-exercised.",
+  "code_paths_audited": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Payments/SplitPaymentService.php (308 LOC, full read)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Requests/PosOrderRequest.php (266 LOC, full read)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Order/RefundWithCounterEntryService.php (266 LOC, full read)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/IdempotencyKeyMiddleware.php (245 LOC, full read)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderService.php:1080-1170 (SplitPaymentService call-site + atomicity)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Enums/PosPaymentMethod.php (full read — modes 1..6)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/split_payment.php (env flag + max_tranches=12)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/idempotency.php:34-79 (required_routes incl. api/admin/pos + refund-with-counter-entry)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Pos/SplitPaymentEndToEndTest.php (270 LOC, full read — 6 tests)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Unit/Services/Payment/SplitPaymentServiceTest.php (243 LOC, full read — 10 tests)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Sentinels/SplitPaymentSentinelTest.php (203 LOC, full read — 3 tests)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PaymentComponent.vue:695-879 (FROZEN — buildSplitPayload, multi-tender payload assembly)"
+  ],
+  "scenarios": [
+    {
+      "id": "H.2.1",
+      "title": "4-tranche order (max modes) — CASH+CARD+MOBILE+TICKET = 50€",
+      "status": "GREEN (logic) / TEST-GAP (coverage)",
+      "evidence": "SplitPaymentService::validateBreakdown lines 67-72 whitelist exactly {CASH=1, CARD=2, MOBILE_BANKING=3, OTHER=4, TICKET_RESTAURANT=5}; max_tranches=12 default (config/split_payment.php). Sum verified at line 144-155 in cents (int) — float drift safe (12.00+18.00+10.00+10.00 = 5000 cents == 5000 server cents). composition_snapshot lives on order_items (frozen at posOrderStore via PricingService), entirely orthogonal to payment_breakdown — not impacted by split. audit_logs: line 259 writes ONE event per tranche (action='order.payment_tranche_persisted', resource_id=OrderPayment.id) inside the foreach — 4 tranches → 4 audit rows → NF525 chain extends N=4. CARD tranche requires terminal_id (line 117-139 in service + 206-246 in PosOrderRequest::withValidator), so a 4-mode mix needs an ACTIVE PaymentTerminal on the order branch.",
+      "test_gap": "Zero existing test exercises a 4-mode mix. SplitPaymentEndToEndTest + Sentinel only cover CASH+CARD (2 modes). MOBILE_BANKING, OTHER, TICKET_RESTAURANT are whitelisted in the service but NEVER asserted via PHPUnit. Recommend adding test_validate_four_modes_mix_persists_four_rows_and_four_audit_logs."
+    },
+    {
+      "id": "H.2.2",
+      "title": "5+ tranche order — 5 × CASH 20€ = 100€",
+      "status": "GREEN (within limit 12)",
+      "evidence": "config/split_payment.php sets max_tranches=12 (env SPLIT_PAYMENT_MAX_TRANCHES, default 12); validateBreakdown line 60 checks count($tranches) > max_tranches → 422. So 5×CASH 20€ persists 5 OrderPayment rows + 5 audit events + 5 cash_movement rows (line 280, type=ORDER_PAYMENT direction=IN, notes='split_tranche_<idx>'). All inside DB::transaction (line 222) — atomic.",
+      "test_gap": "SplitPaymentServiceTest::test_persist_max_tranches_limit_enforced verifies the 13-row REJECT but no test asserts a 5-tranche-same-mode HAPPY path (e.g. cash drawer write 5 distinct movements with correct notes). Risk: a regression that silently fails on the 5th cash_movement (e.g. session race) would only manifest under multi-tranche-cash-only flows which the suite never runs. Recommend test_persist_five_cash_tranches_writes_five_cash_movements."
+    },
+    {
+      "id": "H.2.3",
+      "title": "Tranche fails mid-split (CARD declined on 2nd of 3)",
+      "status": "BY-DESIGN / TRUST-MODEL concern",
+      "evidence": "SplitPaymentService is PERSISTENCE-ONLY. It NEVER calls a TPE / Stripe / authorization endpoint — no real-time CB authorization happens server-side. The cashier inputs what they assert happened on the terminal; the service records it. The HTTP boundary (POST /api/admin/pos) is the atomic unit: either ALL tranches in payment_breakdown persist or NONE (DB::transaction at line 222). There is NO 'first succeeded, second declined' intermediate state at this layer. The flow is: cashier runs N physical TPE transactions outside the app, then types the breakdown in PaymentComponent.vue, then submits one POST. If the cashier loses connectivity mid-flow with money already pocketed, the order is NOT created and reconciliation falls to the Z-report TPE breakdown vs cash drawer count (manual).",
+      "concern": "The trust model places cashier integrity AND CONNECTIVITY before any structural check. There is no idempotency at the tranche-individual level — a cashier who runs 3 physical TPE transactions, types them, and gets a 500 / network error on POST will retry, but there is NO server-side mechanism to recover 'orphan' TPE authorizations. The Idempotency-Key middleware (config/idempotency.php:34 'api/admin/pos' required) protects against same-key replay (cached 2xx, 409 on payload diff, 425 in-flight), so a clean re-POST with the same key works — but if the cashier modifies the breakdown between retries (e.g. 'I'll just record cash only'), the key conflict surfaces 409 and they have to wipe & re-type. Visible in fail-cases: NF525 chain remains valid (only successful POSTs append); cash drawer can be over (cashier pocketed TPE-authorized cash) or short (cashier paid TPE fee without order). Recommend documenting this in OPS runbook + considering per-tranche Idempotency-Key in v1.0.X."
+    },
+    {
+      "id": "H.2.4",
+      "title": "Refund a partial split (CARD-only refund of CASH 30€ + CARD 20€ order)",
+      "status": "AMBER — V1 limitation (documented backlog)",
+      "evidence": "SplitPaymentService.php line 32 explicit comment: 'Le refund partiel d'une tranche est HORS scope V1 (cycle 7 backlog).' RefundWithCounterEntryService::execute lines 175-204 mirrors ALL parent OrderPayments unconditionally (foreach over parentPayments → creates negated mirror per row). There is NO mode/amount filter parameter in the public signature execute(Order $parent, string $reason, ?int $userId). Calling refund on a 30€-CASH + 20€-CARD parent always produces a mirror with -30€ CASH + -20€ CARD payments, negated total -50€. The customer cannot get back just the 20€ on CARD while keeping the 30€ CASH portion through this V1 path. NF525 implication: a partial-refund use-case (legitimate consumer protection scenario) forces a full mirror followed by a new sale for the kept portion — two NF525 events instead of one, but chain integrity preserved (each mirror gets fresh fiscal_sequence_no at line 100, audit_logs hashed at line 207).",
+      "concern": "Real-world fast-food partial-refund scenarios (e.g. customer returns only one item paid by CARD while keeping the meal paid by CASH) cannot be served through PosOrderController::refundWithCounterEntry in V1. Cashier workaround = (a) full refund + new sale for kept items, (b) escalate to manager / out-of-band ledger entry. The backlog comment (cycle 7) suggests this is acknowledged. Recommend explicit OPS runbook entry + consider exposing $modeFilter / $maxAmount parameters in v1.0.X RefundWithCounterEntryService."
+    },
+    {
+      "id": "H.2.5",
+      "title": "Tranche sum off-by-one — 10€ + 20€ + 19.99€ = 49.99€ (target 50€)",
+      "status": "GREEN",
+      "evidence": "validateBreakdown lines 144-155: $totalCents (sum) compared to $serverTotalCents in INT cents — 4999 < 5000 → ValidationException 'Somme des tranches (49.99 €) < total (50.00 €).' BEFORE any persistence (line 189 runs before the DB::transaction at line 222 — atomic guarantee, zero rows committed). PosOrderRequest::rules line 142 also enforces payment_breakdown.*.amount min:0.01 (HTTP-level). Status 422 propagated, OrderPayment::count() == 0 after the failure (SplitPaymentEndToEndTest::test_pos_create_with_breakdown_sum_below_total_returns_422 line 182 already proves this at HTTP).",
+      "side_finding": "TOLERANCE_OVERPAY = 1.00€ (line 36, lines 157-166): a sum 25€ + 1€ overshoot is SILENTLY ACCEPTED. Customer paying 26.50€ for a 25€ order via CARD (no 'change' field for CARD/MOBILE/TICKET tranches) results in a 1.50€ overpay → rejected (line 157 throw). At exactly +1.00€ (26.00€ for 25€) the request 201s, the OrderPayment row carries amount=26.00, and the customer is implicitly tipped out 1.00€ with NO receipt acknowledging the overpay. Documented behavior, not a bug, but worth surfacing in OPS — the tolerance exists to cover CASH 'change' rounding artifacts but it works the same for non-cash modes which have no change-back semantics."
+    },
+    {
+      "id": "H.2.6",
+      "title": "Idempotency on split-tranche POST (same X-Idempotency-Key twice)",
+      "status": "GREEN",
+      "evidence": "config/idempotency.php line 35 includes 'api/admin/pos' in required_routes → header X-Idempotency-Key MANDATORY (MissingIdempotencyKeyException 422 if omitted, IdempotencyKeyMiddleware line 53). Scope at line 77-82: 'idempotency:v1:{branch_id}:{user_id}:sha256(key)' — multi-tenant + multi-cashier safe. Payload hash check at line 87-94: same key + same body → REPLAY cached 2xx with Idempotency-Replayed: true header (line 240). Same key + different body → 409 IDEMPOTENCY_KEY_CONFLICT. SplitPaymentEndToEndTest::test_pos_create_with_payment_breakdown_persists_two_rows + SplitPaymentSentinelTest::test_payment_breakdown_branch_id_denormalised_matches_order_branch both rely on this contract indirectly. Result: a clean retry on the same split-payment POST does NOT double-collect OrderPayments — middleware short-circuits before reaching SplitPaymentService.",
+      "test_gap": "No existing PHPUnit test asserts the REPLAY path explicitly for split-tranche payloads (existing tests focus on single-tender retries). Recommend test_pos_split_payment_idempotency_replay_returns_cached_breakdown."
+    },
+    {
+      "id": "H.2.7",
+      "title": "Concurrent tranche submissions (2 cashiers race same order)",
+      "status": "GREEN (multi-cashier collab not a V1 use-case)",
+      "evidence": "V1 has NO multi-cashier collaborative tranche flow. The contract is: ONE POST = full payment_breakdown atomically. Two cashiers using the SAME X-Idempotency-Key (impossible in practice, keys are client-generated UUIDs per PaymentComponent flow) collide on IdempotencyKeyMiddleware::acquire (line 99-124) — second caller either gets the cached replay (if first finished) or 425 IDEMPOTENCY_IN_FLIGHT (line 119-123). Two cashiers using DIFFERENT keys for the SAME logical order is the actual race scenario — both would create distinct Order rows (no order-level uniqueness key in payment_breakdown semantics), but each row independently allocates its own fiscal_sequence_no via FiscalSequenceService::next (Cache::lock 5s + DB FOR UPDATE per CLAUDE.md §8) → no double-allocation, just two distinct orders. The branch-isolated scope at line 77 plus the same-branch + same-user idempotency key namespace guarantees no cross-branch leak.",
+      "concern": "If V1.0.X ever introduces multi-cashier collab on the same order (e.g. one cashier types CASH, another types CARD on a shared parked order), this contract breaks — current SplitPaymentService persists the FULL breakdown in one transaction. The 'parked order' V5 path would need a different append-tranche endpoint with order-level locking (SELECT FOR UPDATE on orders.id) + per-tranche idempotency. Worth flagging as V1.0.X architecture decision before introducing the feature."
+    }
+  ],
+  "edge_case_failures": [
+    {
+      "id": "EC-1",
+      "severity": "TEST-GAP-P2",
+      "scope": "MOBILE_BANKING, OTHER, TICKET_RESTAURANT modes are whitelisted in SplitPaymentService::validateBreakdown lines 67-72 but ZERO PHPUnit assertion exercises them in a split-payment context. The 3 split test files exclusively use CASH + CARD. A regression that breaks persistence for mode=3/4/5 (e.g. accidental enum addition) would not be caught.",
+      "recommendation": "Add 1 happy-path test per mode in SplitPaymentServiceTest covering tendered=null (non-cash) + reference handling + audit log row creation."
+    },
+    {
+      "id": "EC-2",
+      "severity": "OPS-NOTE-P3",
+      "scope": "TOLERANCE_OVERPAY = 1.00€ applies per-ORDER aggregate (not per-tranche) — silent acceptance up to +1.00€ on non-cash modes that have no 'change' semantics. Designed for CASH change-rounding but works identically on CARD/MOBILE/TICKET. A customer paying 26.00€ for a 25.00€ order via CARD is implicitly tipped out, no receipt line acknowledges the +1.00€.",
+      "recommendation": "Either (a) restrict tolerance to CASH-bearing breakdowns only, OR (b) surface in receipt/OSS UI when overpay > 0 on non-cash."
+    },
+    {
+      "id": "EC-3",
+      "severity": "V1-LIMITATION-P1-BACKLOG",
+      "scope": "Partial-refund-by-tranche unsupported. RefundWithCounterEntryService::execute mirrors ALL parent payments unconditionally — no mode/amount filter. Real-world partial-refund scenarios (return one item paid by CARD, keep meal paid by CASH) require full refund + new sale workaround.",
+      "recommendation": "V1.0.X / cycle 7 backlog item. Owner-gate the policy: most fast-food shops are happy with workaround; CB-network full-refund + new-sale is standard practice and NF525-clean."
+    },
+    {
+      "id": "EC-4",
+      "severity": "TRUST-MODEL-P2",
+      "scope": "TPE decline detection happens OUT-OF-BAND of SplitPaymentService — system trusts cashier-asserted tranche success. No per-tranche idempotency, no orphan-TPE-authorization recovery. Mitigation = Idempotency-Key middleware on the order-level POST + Z-report TPE breakdown reconciliation (manual review).",
+      "recommendation": "OPS runbook entry. Consider per-tranche Idempotency-Key in V1.0.X if multi-tender becomes the dominant pattern (currently ~5-10% of POS flows per owner statements)."
+    },
+    {
+      "id": "EC-5",
+      "severity": "ARCH-NOTE-P3",
+      "scope": "Multi-cashier collab on same parked order is NOT supported. Current SplitPaymentService persists full breakdown atomically — append-tranche-to-existing-order semantics do not exist.",
+      "recommendation": "If V5 parked-order workflows ever evolve toward multi-cashier collab, design a separate POST /api/admin/pos-order/{order}/append-tranche with order-level SELECT FOR UPDATE + per-tranche Idempotency-Key. NOT a V1 concern."
+    }
+  ],
+  "nf525_chain_pre_post": "static-evidence: AuditLogService::write is called inside the foreach loop at SplitPaymentService.php:259 → one audit_logs row per persisted tranche. N tranches = N appended rows = N chain links (prev_hash → current_hash sha256 HMAC per CLAUDE.md §8 Audit Chain). Chain integrity is structurally preserved (all writes inside DB::transaction line 222 — either ALL audit rows commit or NONE). NOT empirically measured in this audit pass — recommend a sanity probe: count(audit_logs) before vs after a 4-tranche POST, assert delta=4 and last_hash matches the per-row chain via FiscalSequenceService::verifyChain integrity test. Existing SplitPaymentServiceTest::test_persist_two_tranches_creates_two_rows_with_branch_id asserts 2 audit_logs rows per scenario (lines 179-188) but does NOT verify chain hash linkage.",
+  "verdict": "AMBER",
+  "verdict_rationale": "Core split-tranche logic (validation, atomicity, branch isolation, idempotency, NF525 chain extension) is GREEN — well-designed, properly tested for CASH+CARD happy + sad paths. AMBER comes from: (1) V1 limitation partial-refund-by-tranche unsupported [EC-3, P1-BACKLOG, documented in source], (2) test coverage gap on MOBILE/OTHER/TICKET modes despite being whitelisted [EC-1, P2-TEST-GAP], (3) TPE decline trust model + silent overpay tolerance on non-cash [EC-2/EC-4, OPS-NOTE]. None are V1-blocking; all are reasonable cycle-7 / V1.0.X backlog items. Owner should sign off on the trust-model + partial-refund limitations before V1 ship.",
+  "top_3_concerns": [
+    "Partial-refund-by-tranche unsupported in V1 (RefundWithCounterEntryService mirrors all payments unconditionally — V1.0.X backlog cycle-7)",
+    "TPE decline trust model — no real-time CB authorization in SplitPaymentService, cashier integrity + Z-report manual reconciliation are the only enforcement (OPS runbook needed)",
+    "Overpay tolerance of +1.00€ per order silently accepted on ALL modes including CARD/MOBILE/TICKET that have no change-back semantics (designed for CASH rounding; consider restricting scope or surfacing in receipt UI)"
+  ],
+  "test_debt_recommendations": [
+    "Add SplitPaymentServiceTest::test_validate_four_modes_mix_persists_four_rows_and_four_audit_logs (covers MOBILE_BANKING + OTHER + TICKET_RESTAURANT modes via single 4-mode scenario)",
+    "Add SplitPaymentServiceTest::test_persist_five_cash_tranches_writes_five_cash_movements (verify 5-row cash_movement write with notes='split_tranche_<idx>')",
+    "Add SplitPaymentEndToEndTest::test_pos_split_payment_idempotency_replay_returns_cached_breakdown (assert REPLAY contract on split-tender POST + Idempotency-Replayed header)",
+    "Add SplitPaymentSentinelTest::test_overpay_at_tolerance_limit_silently_accepted_card_mode (assert +1.00€ CARD overpay 201s, document policy)"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "vps": "https://vps-418872ac.vps.ovh.net",
+  "date": "2026-07-07",
+  "env": "staging (window.foodkingConfig.appEnv=staging, branchCount=1, demo=false, staffOnlyMode=true, kioskAutoLogin=null)",
+  "method": "Playwright MCP navigation (no order submitted, NON-MUTANT) + curl of the actually-served minified VPS JS bundles, grepped for minify-surviving feature markers. Login uses admin@lecayenne.fr/123456 which FAILED (400 'Identifiants invalides ou compte bloqué'); no further password guessing to avoid account lockout.",
+  "deployed_version_note": "VPS serves MINIFIED PRODUCTION bundles; LOCAL public/js are UNMINIFIED DEV builds -> all 13 mix-manifest hashes differ, but that is EXPECTED across build modes and is NOT by itself proof of a stale deploy. Decisive evidence = minify-surviving string greps (calibrated: minify does NOT dedupe strings -> 'Commande téléphone'=4/4, 'pos-phone-order'=10/10 identical VPS vs LOCAL). RESULT: phone-order feature IS deployed (pos_phone_order_cta/hint/badge/success all present in app.js; pos-phone-order/phoneOrderSubmit/pos-phone-order-cta in pos-shell.js). Onion-cuit wizard option IS deployed (pos-wizard.js: 'oignons cuits = OFF' opt-in logic). BUT the newest session work (W3-FIX-A/C boisson KDS-note handling, dated 2026-07-06/07) is NOT deployed: served admin-kds.js has 'BOISSON:' x1 vs LOCAL x7 (minify-calibrated => real gap). '15 boissons' DB-data expansion could NOT be verified (menu API is auth-gated, 401). NET: deploy is ~1-2 days behind the local tip; headline features (phone-order + onion) are LIVE, but a fresh deploy is still pending for the latest boisson KDS work.",
+  "surfaces": [
+    {
+      "name": "login (/login)",
+      "verdict": "OK",
+      "evidence": "HTTP 200, renders cleanly (Cayenne orange palette, LE CAYENNE logo, 'Bon Retour', Email/Mot de passe/Se souvenir/Mot de passe oublié/Connexion). 0 console errors on load, 0 raw labels, i18n resolved (FR). Auth pipeline works: submitting admin@lecayenne.fr/123456 returned a clean 400 with proper French error 'Identifiants invalides ou compte bloqué' (not a crash). Screenshots 01-login.png, 02-login-failed.png."
+    },
+    {
+      "name": "POS caisse (/admin/pos)",
+      "verdict": "BLOCKED_AUTH",
+      "evidence": "Could NOT visually validate the product grid/wizard: the provided admin credentials (admin@lecayenne.fr/123456) are rejected by prod. Route is correctly auth-gated (redirects to /login when unauthenticated = correct guard). Served pos-shell.js bundle CONFIRMS the '📞 Commande téléphone' feature IS deployed (data-testid pos-phone-order, class pos-phone-order-cta, phoneOrderSubmit handler, translation keys pos_phone_order_cta/hint/badge/success). No code-render issue observed; blocker is missing working credentials, not the build."
+    },
+    {
+      "name": "borne kiosk (/kiosk/idle)",
+      "verdict": "BLOCKED_CONFIG",
+      "evidence": "/kiosk/idle redirects to /kiosk/login which renders a graceful French fallback 'Borne de commande / Connexion machine non configurée côté serveur / Borne momentanément indisponible. Merci de passer commande en caisse.' (screenshot 03-kiosk-login.png). Clean render, no raw labels. kioskAutoLogin=null -> no kiosk machine is paired on this VPS, so attract/carrousel + wizard are NOT reachable (menu API 401). This is a config/pairing gap (Admin > Bornes), not a code defect. Served pos-wizard.js CONFIRMS the onion-cuit wizard option IS deployed ('oignons cuits = OFF' name-aware opt-in x3)."
+    },
+    {
+      "name": "site web client (customer ordering)",
+      "verdict": "N/A_BY_DESIGN",
+      "evidence": "Root '/' and all frontend routes redirect to /login because window.foodkingConfig.staffOnlyMode=true. The SPA DOES contain customer-ordering routes (/menu/:slug, /checkout, /delivery, /my-orders) but they are intentionally disabled in this V1 LOCAL 'staff-only' deployment. The standalone customer web-ordering app (CLAUDE.md: /Users/1millnonstop/Downloads/web) is a separate app NOT served by this VPS. No customer-facing web surface is active here by design."
+    },
+    {
+      "name": "console/network health",
+      "verdict": "OK",
+      "evidence": "login page: 0 console errors, 0 image 404s. kiosk-login: 401 on /api/frontend/menu + /api/frontend/kiosk-event = EXPECTED auth gate (no machine token), not defects. No massive 404s, no raw labels visible on any reached surface."
+    }
+  ],
+  "verdict": "PARTIAL-OK / DEPLOY-PENDING. The one surface meant to be publicly reachable (login) works and renders perfectly; the auth pipeline is healthy. POS grid and kiosk wizard could NOT be visually validated because (a) the supplied admin credentials fail in prod and (b) no kiosk machine is paired on this VPS -- both are credential/config gaps, NOT code-render defects. Customer web ordering is intentionally OFF (staffOnlyMode). VERSION: the two headline session features named (Commande téléphone POS button, onion-cuit wizard option) ARE deployed and present in the served bundles; the very latest boisson KDS-note work (2026-07-06/07) is NOT yet deployed (BOISSON: 1 vs 7, minify-calibrated) and the 15-boissons DB expansion is unverifiable (auth-gated). ACTION FOR OWNER: (1) provide working admin credentials to fully validate the POS grid, (2) pair a kiosk machine in Admin>Bornes to reach the kiosk attract/wizard, (3) run a fresh deploy to push the latest boisson KDS work live. 0 code modified, 0 order created in prod."
+}

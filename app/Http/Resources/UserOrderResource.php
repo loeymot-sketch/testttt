@@ -35,6 +35,9 @@ class UserOrderResource extends JsonResource
             'order_datetime'                 => AppLibrary::datetime($this->order_datetime),
             'status'                         => $this->status,
             'is_advance_order'               => $this->is_advance_order,
+            // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible programmée (NULL = ASAP)
+            // — liste « mes commandes » côté client. Projection pure.
+            'scheduled_at'                   => optional($this->scheduled_at)->toIso8601String(),
             'status_name'                    => trans('orderStatus.' . $this->status)
         ];
     }

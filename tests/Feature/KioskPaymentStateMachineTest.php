@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
 use App\Enums\Source;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
@@ -17,6 +18,7 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\User;
+use App\Services\FrontendOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Smartisan\Settings\Facades\Settings;
@@ -120,6 +122,22 @@ class KioskPaymentStateMachineTest extends TestCase
         ];
     }
 
+    private function kioskPayloadWithQuote(int $paymentMethod): array
+    {
+        $payload = $this->kioskPayload($paymentMethod);
+        $quote = $this
+            ->actingAs($this->kioskUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return $payload + [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+        ];
+    }
+
     public function test_card_order_stays_pending_until_payment_confirm(): void
     {
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
@@ -127,7 +145,7 @@ class KioskPaymentStateMachineTest extends TestCase
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $this->kioskPayload(PaymentGateway::CARD));
+            ->postJson('/api/frontend/order', $this->kioskPayloadWithQuote(PaymentGateway::CARD));
 
         $this->assertContains($response->status(), [200, 201]);
         $orderId = $response->json('data.id');
@@ -158,13 +176,20 @@ class KioskPaymentStateMachineTest extends TestCase
                 'transaction_id' => 'TXN-STATE-001',
                 'card_type' => 'VISA',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 1250,
             ]);
 
         $confirm->assertOk();
 
+        // [Wave S-1 — 2026-05-20] Owner decision P-OWNER Wave S-1: kiosk paid
+        // TPE auto-promotes to PREPARING the moment payment is confirmed, so
+        // the chef sees "en cours" without a second tap. The order is created
+        // PENDING → finalize promotes PENDING → ACCEPT then S-1 hook flips to
+        // PREPARING inside the same DB::transaction (kept atomic so a
+        // rollback leaves status=PENDING and not a half-flipped state).
         $this->assertDatabaseHas('orders', [
             'id' => $orderId,
-            'status' => OrderStatus::ACCEPT,
+            'status' => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,
             'transaction_id' => 'TXN-STATE-001',
         ]);
@@ -182,14 +207,14 @@ class KioskPaymentStateMachineTest extends TestCase
         $this->assertContains($orderId, collect($afterRows)->pluck('id')->all());
     }
 
-    public function test_cash_order_is_immediately_accepted_and_paid(): void
+    public function test_cash_order_is_immediately_sent_to_kds_pending_counter_payment(): void
     {
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
 
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $this->kioskPayload(PaymentGateway::CASH_ON_DELIVERY));
+            ->postJson('/api/frontend/order', $this->kioskPayloadWithQuote(PaymentGateway::CASH_ON_DELIVERY));
 
         $this->assertContains($response->status(), [200, 201]);
         $orderId = $response->json('data.id');
@@ -197,12 +222,25 @@ class KioskPaymentStateMachineTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'id' => $orderId,
             'status' => OrderStatus::ACCEPT,
-            'payment_status' => PaymentStatus::PAID,
+            'payment_status' => PaymentStatus::PENDING_COUNTER,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+            'fiscal_sequence_no' => null,
         ]);
 
         Event::assertDispatched(OrderCreated::class);
         Event::assertDispatched(OrderStatusChanged::class);
+
+        $kdsAfter = $this
+            ->actingAs($this->chefUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->getJson('/api/admin/kds-order');
+
+        $kdsAfter->assertOk();
+        $row = collect($kdsAfter->json('data') ?? [])->firstWhere('id', $orderId);
+
+        $this->assertNotNull($row, 'Pending counter kiosk cash order must appear on KDS immediately.');
+        $this->assertTrue((bool) ($row['payment_pending_counter'] ?? false));
     }
 
     public function test_payment_confirm_can_finalize_an_already_paid_but_pending_kiosk_order(): void
@@ -234,13 +272,111 @@ class KioskPaymentStateMachineTest extends TestCase
                 'transaction_id' => 'TXN-STATE-ALREADY',
                 'card_type' => 'VISA',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 1250,
             ]);
 
         $response->assertOk();
 
+        // [Wave S-1 — 2026-05-20] Auto-prepare hook applies on payment-confirm
+        // finalize regardless of how the row got into the PAID-but-PENDING
+        // half-state. The order lands in PREPARING per the owner decision.
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
-            'status' => OrderStatus::ACCEPT,
+            'status' => OrderStatus::PREPARING,
+            'payment_status' => PaymentStatus::PAID,
+        ]);
+
+        Event::assertDispatched(OrderCreated::class);
+        Event::assertDispatched(OrderStatusChanged::class);
+    }
+
+    /**
+     * [F-21] Defense in depth — finalizePaidKioskOrder must REJECT a non-paid order
+     * even if called directly (bypassing the controller pre-check). Caller paths like
+     * job retries, future refactors, or any service-to-service call must NOT be able
+     * to advance an unpaid kiosk order to ACCEPT.
+     *
+     * @see app/Services/FrontendOrderService.php finalizePaidKioskOrder
+     * @see tasks/gates/GATE_FROZEN_F21_FINALIZE_PAID_KIOSK_2026-04-23.md
+     * @see plans/PLAN_POS_KIOSK_KDS_SYNC_REPAIR_v2_2026-04-23.md lot 1.G
+     */
+    public function test_finalize_paid_kiosk_order_rejects_unpaid_order(): void
+    {
+        Event::fake([OrderCreated::class, OrderStatusChanged::class]);
+
+        $unpaidOrder = FrontendOrder::forceCreate([
+            'order_serial_no' => '310326F21A',
+            'user_id' => $this->kioskUser->id,
+            'branch_id' => $this->branch->id,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::UNPAID,
+            'payment_method' => PaymentGateway::CARD,
+            'order_type' => OrderType::TAKEAWAY,
+            'source' => Source::APP,
+            'subtotal' => 12.50,
+            'total' => 12.50,
+            'discount' => 0,
+            'delivery_charge' => 0,
+            'order_datetime' => now(),
+            'preparation_time' => 30,
+            'queue_number' => 'A0F21',
+        ]);
+
+        $service = app(FrontendOrderService::class);
+        $promoted = $service->finalizePaidKioskOrder($unpaidOrder);
+
+        $this->assertFalse($promoted, 'Service must return false when payment is not confirmed.');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $unpaidOrder->id,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::UNPAID,
+        ]);
+
+        Event::assertNotDispatched(OrderCreated::class);
+        Event::assertNotDispatched(OrderStatusChanged::class);
+    }
+
+    /**
+     * [F-21] Counterpart positive path — calling the service directly on a paid order
+     * still succeeds (no regression introduced by the defense-in-depth check).
+     */
+    public function test_finalize_paid_kiosk_order_promotes_paid_order_when_called_directly(): void
+    {
+        Event::fake([OrderCreated::class, OrderStatusChanged::class]);
+
+        $paidOrder = FrontendOrder::forceCreate([
+            'order_serial_no' => '310326F21B',
+            'user_id' => $this->kioskUser->id,
+            'branch_id' => $this->branch->id,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::PAID,
+            'payment_method' => PaymentGateway::CARD,
+            'order_type' => OrderType::TAKEAWAY,
+            'source' => Source::APP,
+            'subtotal' => 12.50,
+            'total' => 12.50,
+            'discount' => 0,
+            'delivery_charge' => 0,
+            'order_datetime' => now(),
+            'preparation_time' => 30,
+            'queue_number' => 'A0F21B',
+        ]);
+
+        $service = app(FrontendOrderService::class);
+        $promoted = $service->finalizePaidKioskOrder($paidOrder);
+
+        $this->assertTrue($promoted, 'Service must promote a paid kiosk order.');
+
+        // [Wave S-1 — 2026-05-20] Direct-call service path also flips the
+        // newly-promoted order to PREPARING when the auto-prepare policy
+        // fires. The (PaymentStatus::PAID, source_surface='kiosk') tuple
+        // satisfies AutoPrepareOnPaidPolicy::shouldPromote with no S-5
+        // exception (kiosk cash-at-counter never reaches finalizePaidKioskOrder
+        // — it routes via PaymentService::confirmCounterPayment instead).
+        $this->assertDatabaseHas('orders', [
+            'id' => $paidOrder->id,
+            'status' => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,
         ]);
 

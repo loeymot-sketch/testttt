@@ -1,0 +1,50 @@
+{
+  "zone": "PLOY-3-CROSS-SURFACE",
+  "role": "Security",
+  "scope": "Cross-surface authz boundaries, phone-only lookup risk, mobile↔POS handoff trust, audit-log gap on cross-surface ops",
+  "findings": [
+    {
+      "id": "PLOY-3-S-01",
+      "severity": "P1",
+      "title": "Phone-only customer lookup enables impersonation",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:71-77", "app/Http/Controllers/Frontend/LoyaltyController.php:619-627"],
+      "finding": "LoyaltyController::check (line 71-77) accepts either loyalty_code OR phone number. /loyalty/scan (line 619-627) accepts either loyalty_code OR phone after preg_replace normalization. Phone is the LEAST secret credential — printed on receipts, often shared, available in contact lists. Anyone who knows a customer's phone number can call /api/loyalty/check (auth:sanctum required since SEC-CRIT FIX, throttle:10,1) and learn that customer's loyalty_code + name + balance + discount value. After scraping loyalty_code, attacker can redeem at any kiosk (no second factor — see PLOY-2-R-04).",
+      "impact": "Identity theft + financial loss. Particularly bad combined with PLOY-2-R-07 (cashier collusion) — cashier already knows customer phones from POS history.",
+      "remediation": "Either (a) remove phone-as-credential, require loyalty_code only for lookup, OR (b) add second factor for redemption (mobile-push confirmation, OTP to phone, PIN). Document phone-lookup as PII-disclosure risk."
+    },
+    {
+      "id": "PLOY-3-S-02",
+      "severity": "P2",
+      "title": "Mobile-app session token has full loyalty/redeem authority — no scoped ability",
+      "files": ["routes/api.php:1278", "app/Http/Controllers/Frontend/LoyaltyController.php:258-260"],
+      "finding": "/api/loyalty/redeem is gated by auth:sanctum. Mobile-app sessions are typically Sanctum tokens without ability restrictions (vs. kiosk tokens which carry 'kiosk:order' ability). A leaked mobile session token gives full redeem authority on the user's own account. Combined with PLOY-2-R-04 (screenshot OCR of mobile-app QR), an attacker who steals a session can drain points.",
+      "remediation": "Add 'loyalty:redeem' ability on mobile-app session tokens. Require step-up auth (re-prompt password or biometric) before redemption > X€ — pattern available in Sanctum + custom middleware."
+    },
+    {
+      "id": "PLOY-3-S-03",
+      "severity": "P2",
+      "title": "Audit-log gap on cross-surface loyalty operations",
+      "finding": "Per CLAUDE.md §8 + §13 evidence rules, loyalty (money-equivalent) operations should write to audit_logs (chain-signed) for dispute resolution. Current pattern only writes to loyalty_transactions which has no HMAC chain. Disputes about 'who redeemed my points' have only Log::info lines (LoyaltyController line 320, AwardLoyaltyPointsOnDelivery line 144) which are not chain-protected.",
+      "remediation": "On every LoyaltyTransaction insert, also call app(\\App\\Services\\Fiscal\\AuditLogService::class)->write([action='loyalty.earn'|'loyalty.redeem'|'loyalty.refund', resource='user', resource_id=$userId, payload=[...]]). Owner gate due to volume impact on audit_logs."
+    },
+    {
+      "id": "PLOY-3-S-04",
+      "severity": "P3",
+      "title": "Kiosk-redeem trusts 'kiosk:order' ability for ANY customer's loyalty_code",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:258"],
+      "finding": "Line 258: `$isKiosk = $caller && $caller->tokenCan('kiosk:order')`. Kiosk machine token can redeem on behalf of ANY customer who provides loyalty_code at the kiosk. This is by design (anonymous kiosk customer typing/scanning code) but the trust model assumes the customer is physically present. Same surface as PLOY-3-S-01 — leaked phone → kiosk impersonation.",
+      "remediation": "Document the trust model. No code change unless second-factor (PLOY-3-S-01 remediation) is implemented."
+    },
+    {
+      "id": "PLOY-3-S-05",
+      "severity": "P3",
+      "title": "GDPR opt-out path does not purge loyalty_transactions",
+      "files": ["tests/mobile-e2e/loyalty-11-opt-out.spec.js", "app/Models/LoyaltyConsent.php"],
+      "finding": "Opt-out spec exists in mobile-e2e but no PHP controller method confirmed for 'delete my loyalty data'. loyalty_transactions has 6-year retention implicit (no GC). GDPR 'right to be forgotten' requires either anonymization (user_id NULL, loyalty_code NULL) or hard-delete. If hard-delete via users.delete cascades (FK ON DELETE CASCADE per migration line 32), ledger rows are deleted — possibly violating audit trail requirements.",
+      "remediation": "Owner+legal decision: which retention rule wins? Recommend anonymization (UPDATE loyalty_transactions SET user_id=NULL, loyalty_code=NULL, description='[anonymized]' WHERE user_id=X) on opt-out, preserving aggregate analytics without PII linkage."
+    }
+  ],
+  "verdict": "FAIL",
+  "blocker_for_v1": "PLOY-3-S-01 is the worst — phone-lookup is a real attack surface. Recommend at minimum (a) disable phone lookup on /loyalty/check (require loyalty_code), (b) document the kiosk-trust-physical-presence model, in V1.0.2 add second-factor for redemption.",
+  "notes": "Most concerns are systemic — single-credential design (loyalty_code) treated as money-equivalent. NF525 doesn't require this (loyalty is not fiscal). But customer-impact is real."
+}

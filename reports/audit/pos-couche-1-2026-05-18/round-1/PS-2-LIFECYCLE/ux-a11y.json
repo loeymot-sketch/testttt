@@ -1,0 +1,68 @@
+{
+  "role": "ux-a11y",
+  "zone": "PS-2 admin POS list/show/tracker/parked Vue components",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "b0bc75987f0a117b150c829b6e34e9d6bd2ccf41",
+  "timestamp": "2026-05-18T22:22:29+0200",
+  "scope": "raw labels, keyboard nav, aria attributes, contrast, focus management, destructive-action confirmations.",
+  "findings": [
+    {
+      "id": "UX-PS2-01",
+      "severity": "P1",
+      "title": "PosOrderListComponent has a raw FR string 'N° file' (hard-coded, not i18n).",
+      "evidence": "resources/js/components/admin/posOrders/PosOrderListComponent.vue:88 — `<th class=\"db-table-head-th\">N° file</th>`. All other th use `$t(...)`. Branding break (no AR/EN equivalent) and accessibility break (the column header announced by SR is locale-glued).",
+      "verdict": "HEAL — replace with `$t('label.queue_number')` (key likely exists; if not, add the 3 locale files)."
+    },
+    {
+      "id": "UX-PS2-02",
+      "severity": "P2",
+      "title": "Vue v-for keys use the whole object (`:key=\"order\"`, `:key=\"item\"`) instead of stable id.",
+      "evidence": "resources/js/components/admin/posOrders/PosOrderListComponent.vue:99 `<tr ... v-for=\"order in orders\" :key=\"order\">`. resources/js/components/admin/posOrders/PosOrderShowComponent.vue:152 `v-for=\"item in orderItems\" :key=\"item\">`. Vue 3 dev console warns on these; the symptom is animation/transition glitches when an order is moved between status columns or when an item is toggled in the receipt. PosOrderShowComponent.vue:164,177 also do `v-for=\"(variation, index) in item.item_variations\"` without `:key` at all (relies on parent's :key fallback, but still a lint warning).",
+      "verdict": "HEAL — single-file edits to set `:key=\"order.id\"`/`:key=\"item.id\"` + add :key on the nested v-for. Scope-minimal."
+    },
+    {
+      "id": "UX-PS2-03",
+      "severity": "P2",
+      "title": "PosOrderListComponent status filter dropdown only exposes 3 statuses — missing CANCELED / REJECTED / RETURNED / PREPARED / OUT_FOR_DELIVERY.",
+      "evidence": "resources/js/components/admin/posOrders/PosOrderListComponent.vue:34-41 — searchStatus options array hard-codes ACCEPT, PREPARING, DELIVERED only. The admin sees a 'History' table that they cannot filter on cancellations or refunds. The data layer (OrderService::list line 154) accepts any integer status filter, so the backend is ready. UX symptom: history scrubbing impossible from the UI.",
+      "verdict": "HEAL — extend the options array to include the 5 missing statuses. Pure-UI, no schema change."
+    },
+    {
+      "id": "UX-PS2-04",
+      "severity": "P2",
+      "title": "PosOrderListComponent delete icon has no UI-level guard for PAID orders — server returns 403, but the cashier has no preview.",
+      "evidence": "resources/js/components/admin/posOrders/PosOrderListComponent.vue:128 — `<SmIconDeleteComponent @click=\"destroy(order.id)\" v-if=\"permissionChecker('pos-orders')\" />`. The destroy() method (line 349) shows a SweetAlert confirm then dispatches the destroy. There is NO check on order.payment_status === PAID — the cashier clicks, confirms, then sees a backend error. Server-side OrderService::destroy at line 2202-2205 returns 403 'Paid orders cannot be destroyed without elevated permission.' UX would be cleaner if the icon were disabled (or visually muted) when payment_status === PAID and the actor doesn't carry pos-destroy-paid.",
+      "verdict": "HEAL — gate the icon on `order.payment_status !== paymentStatusEnum.PAID || permissionChecker('pos-destroy-paid')`. Pure-UI."
+    },
+    {
+      "id": "UX-PS2-05",
+      "severity": "P2",
+      "title": "ParkedOrdersComponent discard button has NO confirm dialog — single click destructively deletes the parked cart.",
+      "evidence": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:84-91 — discard button calls discardOrder(order.id) directly. methods at line 204-214 dispatch posParked/discard with no confirm. Restore action at line 76-83 has appropriate UX (loading spinner, busyId), but accidental discard cannot be undone (the row is hard-deleted by PosParkedOrderService::discard line 195-202). Risk: 'thumb-fat finger' on a busy POS deletes a parked customer's order. Tracker's cancel-order flow has a proper modal with reason+confirm (PosOrdersTrackerComponent.vue:239+) — same UX rigor is missing here.",
+      "verdict": "HEAL — wrap discardOrder() in a confirm dialog (browser confirm() is acceptable for V1; a proper modal mirroring the cancel-order one is V1.0.2)."
+    },
+    {
+      "id": "UX-PS2-06",
+      "severity": "P3",
+      "title": "PosOrdersTrackerComponent has solid aria + role=tablist + role=alert + aria-live and a proper cancel dialog with focus management.",
+      "evidence": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:45 `role=\"tablist\" :aria-label=\"...\"` ; line 50-55 each tab has aria-selected; line 198-202 cancel icon has :title + :data-testid for E2E; line 239 modal has `aria-modal=\"true\"`, `:aria-labelledby` ; line 270 reason textarea + line 291 error banner has `role=\"alert\"` + `aria-live=\"assertive\"` ; line 673 nextTick focus on cancel reason input. Reference UX pattern.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "UX-PS2-07",
+      "severity": "P3",
+      "title": "PosOrderListComponent search has no `aria-label` on the order_serial_no input but does have `<label for>`.",
+      "evidence": "resources/js/components/admin/posOrders/PosOrderListComponent.vue:25-27 — visible label + for/id pair, accessible. The vue-select for status filter at line 34 lacks aria-label but uses an adjacent <label for=\"searchStatus\">. The Datepicker at line 60 has `aria-labels.input` set. All inputs SR-reachable.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "UX-PS2-08",
+      "severity": "P3",
+      "title": "ParkedOrdersComponent has clean focus + close UX (drawer close button, click outside, ESC implicit via overlay click).",
+      "evidence": "ParkedOrdersComponent.vue:3 `@click.self=\"closeDrawer\"` ; line 10 close button. No ESC handler but the close on overlay click + close button cover the standard exits. The drawer's transition (.parked-orders-slide) is properly defined in scoped CSS.",
+      "verdict": "KEEP (minor: ESC keyboard handler is a V1.0.2 polish item)."
+    }
+  ],
+  "summary": "Tracker UX is exemplary (modal with focus, role/aria, error banner). List + Parked components have 3 clear quick wins: P1 i18n 'N° file' + P2 v-for keys + P2 status filter coverage + P2 PAID delete UI guard + P2 parked-discard confirm. All are scope-minimal, single-file edits on non-DIRTY files. No P0. Frontend a11y baseline is solid.",
+  "produced_by": "PS-2 ux-a11y specialist, autonomous"
+}

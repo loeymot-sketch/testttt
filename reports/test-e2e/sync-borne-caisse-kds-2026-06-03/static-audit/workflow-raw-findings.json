@@ -1,0 +1,741 @@
+{
+  "summary": "Read-only static audit of FoodKing realtime sync pipeline (kiosk/POS -> outbox -> broadcast -> KDS/OSS/tracker/encaissement/dashboard) with adversarial verify per wave",
+  "agentCount": 12,
+  "logs": [],
+  "result": [
+    {
+      "wave": "W1 — PRODUCERS (order creation → event dispatch)",
+      "surfaces": [
+        "kiosk",
+        "pos",
+        "web/app",
+        "admin"
+      ],
+      "channels": [
+        "private-branch.{id}",
+        "order.created",
+        "order.status_changed"
+      ],
+      "mechanism": [
+        {
+          "step": "KIOSK: create FrontendOrder PENDING",
+          "file_line": "FrontendOrderService.php:260-272",
+          "note": "Cash=PENDING_COUNTER; card=UNPAID"
+        },
+        {
+          "step": "KIOSK: OrderCreated gate suppresses card/TR",
+          "file_line": "FrontendOrderService.php:237",
+          "note": "shouldDispatchNewOrderSignals=false for card; true for cash"
+        },
+        {
+          "step": "KIOSK: fiscal allocated INSIDE tx",
+          "file_line": "FrontendOrderService.php:1188-1190",
+          "note": "finalizePaidKioskOrder allocates seq_no"
+        },
+        {
+          "step": "KIOSK: OrderCreated dispatch INSIDE closure",
+          "file_line": "FrontendOrderService.php:1314",
+          "note": "afterCommit defers to post-commit"
+        },
+        {
+          "step": "POS: create Order + fiscal",
+          "file_line": "OrderService.php:1095-1097",
+          "note": "fiscal allocated before OrderCreated dispatch"
+        },
+        {
+          "step": "POS: OrderCreated dispatch INSIDE closure",
+          "file_line": "OrderService.php:1255",
+          "note": "Inside db:transaction"
+        },
+        {
+          "step": "Listener persists DomainEvent",
+          "file_line": "PersistOrderCreatedToOutbox.php:25-49",
+          "note": "Payload omits fiscal_sequence_no"
+        },
+        {
+          "step": "STATUS CHANGE: dispatch outside tx",
+          "file_line": "OrderService.php:2243",
+          "note": "Fires AFTER db:transaction closes at line 2231"
+        }
+      ],
+      "rupture_points": [
+        {
+          "id": "W1-P0-001",
+          "title": "Kiosk card orders invisible to KDS until payment",
+          "severity": "P0",
+          "file_line": "FrontendOrderService.php:237",
+          "evidence": "Gate at line 237 suppresses OrderCreated dispatch for card orders. Order persists PENDING+UNPAID with no outbox broadcast until finalizePaidKioskOrder fires.",
+          "verified": true,
+          "live_test": "Create kiosk CARD order. Verify: order PENDING+UNPAID, no domain_events row until payment."
+        },
+        {
+          "id": "W1-P0-002",
+          "title": "fiscal_sequence_no omitted from OrderCreated payload",
+          "severity": "P0",
+          "file_line": "PersistOrderCreatedToOutbox.php:32-43",
+          "evidence": "Allocated in DB (line 1188-1190 kiosk, 1095-1097 POS) before dispatch. Payload array omits fiscal_sequence_no. KDS broadcast lacks fiscal metadata.",
+          "verified": true,
+          "live_test": "Seal order. Verify: fiscal_sequence_no set in DB, omitted from outbox payload."
+        },
+        {
+          "id": "W1-P1-001",
+          "title": "OrderStatusChanged dispatch outside transaction",
+          "severity": "P1",
+          "file_line": "OrderService.php:2243",
+          "evidence": "Admin changeStatus fires OrderStatusChanged AFTER db:transaction closes (line 2231). transactionLevel()=0 so immediate dispatch. If controller crashes post-commit, event is lost.",
+          "verified": true,
+          "live_test": "Seal order, transition DELIVERED. Verify dispatch outside tx and no outbox row."
+        },
+        {
+          "id": "W1-P1-002",
+          "title": "OrderStatusChanged payload lacks fiscal metadata",
+          "severity": "P1",
+          "file_line": "PersistOrderStatusChangedToOutbox.php:42-52",
+          "evidence": "Payload at lines 42-52 omits fiscal_sequence_no. KDS must re-poll REST API for fiscal info, causing latency.",
+          "verified": true,
+          "live_test": "Seal order, transition DELIVERED. Verify outbox payload omits fiscal_sequence_no."
+        },
+        {
+          "id": "W1-P1-003",
+          "title": "Dual OrderCreated fire with idempotency mitigation gap",
+          "severity": "P1",
+          "file_line": "FrontendOrderService.php:607, 1314; PersistOrderCreatedToOutbox.php:58-60",
+          "evidence": "Cash orders fire OrderCreated at line 607 and finalizePaidKioskOrder at line 1314. Idempotency absorbs via firstOrCreate, but wasRecentlyCreated=false on second listener prevents afterCommit broadcast.",
+          "verified": true,
+          "live_test": "Create kiosk CASH. Verify ONE OrderCreated row. If finalizePaidKioskOrder executes, listener returns at line 59."
+        },
+        {
+          "id": "W1-P1-004",
+          "title": "Race: fiscal alloc failure vs OrderCreated dispatch",
+          "severity": "P1",
+          "file_line": "FrontendOrderService.php:1208-1240, 1314",
+          "evidence": "OrderCreated::dispatch registered before fiscal alloc attempts. If alloc throws (line 1208), tx rolls back but afterCommit callback already queued.",
+          "verified": true,
+          "live_test": "Mock FiscalSequenceService::next() to throw after lockForUpdate. Verify OrderCreated dispatch still queued and fires post-rollback."
+        },
+        {
+          "id": "W1-P3-001",
+          "title": "Nullable payment_method in event payload",
+          "severity": "P3",
+          "file_line": "PersistOrderCreatedToOutbox.php:36",
+          "evidence": "payment_method can be null (line 141-147 resolvePaymentMethod). JSON encode/decode may cause JS type coercion issues if not handled.",
+          "verified": true,
+          "live_test": "Create order with null payment_method. Verify KDS deserialization handles null gracefully."
+        }
+      ],
+      "verifier_summary": "Re-verification confirms: P0-001 and P0-002 TRUE. Added NEW P1-001 (OrderStatusChanged dispatch outside tx, no outbox). P1-002 (OrderStatusChanged payload lacks fiscal). P1-003 and P1-004 refined from original findings. Original W1-P2-001 DROPPED: source_surface IS set INSIDE tx before dispatch. Total: 2P0 + 4P1 + 1P3."
+    },
+    {
+      "wave": "W2 — Outbox + Broadcast Pipeline (Zero-Loss) [ADVERSARIAL VERIFY]",
+      "surfaces": [
+        "POS",
+        "KDS",
+        "Kiosk",
+        "Admin Dashboard",
+        "WebSocket"
+      ],
+      "channels": [
+        "private-branch.{branchId}",
+        "ws:heartbeat (cache)",
+        "queue:high"
+      ],
+      "mechanism": [
+        {
+          "step": "1. Event idempotency dedup",
+          "file_line": "app/Listeners/PersistOrderCreatedToOutbox.php:23-49",
+          "note": "UNIQUE index on idempotency_key prevents listener replay duplicates. wasRecentlyCreated gates dispatch."
+        },
+        {
+          "step": "2. Atomic claim lock",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:54-86",
+          "note": "lockForUpdate + dispatched_at guard form atomic unit. Losing worker returns silently."
+        },
+        {
+          "step": "3. Envelope validation",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:96-116",
+          "note": "EventContract::assertEnvelopeValid validates before broadcast. PayloadMismatchException fails immediately."
+        },
+        {
+          "step": "4. Broadcast transmission",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:115-116",
+          "note": "BroadcastManager respects config('broadcasting.default'). Channels from JSON column."
+        },
+        {
+          "step": "5. Cache heartbeat",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:128-132",
+          "note": "ws:heartbeat cache timestamps broadcaster aliveness. Wrapped in try/catch (fail-safe)."
+        },
+        {
+          "step": "6. Cron retry path",
+          "file_line": "app/Console/Commands/OutboxRetryFailedCommand.php:102-159",
+          "note": "Uses --since=24h (not 7d). REPLAY_MAX_ATTEMPTS=12 cap bounds replay lane."
+        },
+        {
+          "step": "7. Escalation signal",
+          "file_line": "app/Listeners/EscalateOutboxBroadcastSwallowed.php:43-56",
+          "note": "Event registered (EventServiceProvider:318) fires Log::critical to fiscal channel."
+        }
+      ],
+      "rupture_points": [
+        {
+          "id": "W2-R1-VOID",
+          "title": "Silent escalation swallow [LISTENER IS REGISTERED]",
+          "severity": "P0",
+          "file_line": "app/Listeners/EscalateOutboxBroadcastSwallowed.php:43-56",
+          "evidence": "OutboxBroadcastSwallowedEvent IS wired in EventServiceProvider:318-320. Listener emits Log::critical. Auditor claim false.",
+          "verified": false,
+          "live_test": "Trigger DispatchDomainEventsJob failure. Verify fiscal.log has critical entry."
+        },
+        {
+          "id": "W2-R2-VOID",
+          "title": "Age-out filter is hardcoded 7d [USES --since=24h PARAM]",
+          "severity": "P0",
+          "file_line": "app/Console/Kernel.php:64",
+          "evidence": "Cron uses --since=24h, not RETRY_FAILED_MAX_AGE_DAYS=7. The 7d applies only to manual UI, not automatic retry.",
+          "verified": false,
+          "live_test": "Test retry at T+25h after event. Verify event still eligible."
+        },
+        {
+          "id": "W2-R3-PARTIAL",
+          "title": "Invalid JSON broadcasts to [null] [ACTUALLY [STRING]]",
+          "severity": "P2",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:100-105",
+          "evidence": "Fallback wraps [$domainEvent->channel] not [null]. Code broadcasts ['malformed'], not [null]. Description inaccurate.",
+          "verified": true,
+          "live_test": "INSERT invalid JSON in channel. Dispatch. Verify Pusher receives ['string'] not [null]."
+        },
+        {
+          "id": "W2-R4-DESIGN",
+          "title": "Deleted row returns event_type=null [EXPECTED BY DESIGN]",
+          "severity": "P3",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:193-214",
+          "evidence": "Null-safe operator handles deleted rows. Not a defect but expected behavior.",
+          "verified": true,
+          "live_test": "Trigger PayloadMismatchException, delete row, verify null logged gracefully."
+        },
+        {
+          "id": "W2-R5-MASK",
+          "title": "Cache fail + silent Pusher drop masks outage [PLAUSIBLE]",
+          "severity": "P2",
+          "file_line": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:550-572",
+          "evidence": "Fallback to lastDispatched is intentional. Only masks silent Pusher drop (Pusher internal, not code defect).",
+          "verified": true,
+          "live_test": "Test cache offline + successful broadcast shows WS='up' via fallback."
+        },
+        {
+          "id": "W2-R6-VOID",
+          "title": "Concurrent listeners dispatch twice [UNIQUE INDEX PREVENTS]",
+          "severity": "P0",
+          "file_line": "app/Listeners/PersistOrderCreatedToOutbox.php:25-60",
+          "evidence": "firstOrCreate with UNIQUE idempotency_key race-safe. Only one listener sees wasRecentlyCreated=true. No double-dispatch.",
+          "verified": false,
+          "live_test": "Fire OrderCreated twice concurrently. Verify one DispatchDomainEventsJob queued."
+        }
+      ],
+      "verifier_summary": "W2 adversarial re-verify: 4 false claims (R1/R2/R6 hallucinations, R3 misdescription). Mechanism verified sound: idempotency (UNIQUE), atomic claims (lock), retry lanes (rescue/retry-failed), escalation (wired). Actual risk substantially lower. No critical defects found."
+    },
+    {
+      "wave": "W3 — KDS Consumer (Chef, branch_id=1)",
+      "surfaces": [
+        "KDS Grid (V2 legacy)",
+        "Echo Private Channel",
+        "Polling Fallback",
+        "Outbox Broadcast",
+        "Status Transition"
+      ],
+      "channels": [
+        "private-branch.{branchId}",
+        "branch.{branchId} Echo",
+        "/api/admin/kds-order/sync",
+        "/api/admin/kds-order/change-status/{id}"
+      ],
+      "mechanism": [
+        {
+          "step": "1. New Order → OrderCreated Event",
+          "file_line": "app/Listeners/PersistOrderCreatedToOutbox.php:16",
+          "note": "OrderCreated fires on creation; listener persists to outbox with broadcast_as='OrderCreated', channel='private-branch.{branchId}'"
+        },
+        {
+          "step": "2. KDS subscribes private 'branch.{branchId}'",
+          "file_line": "resources/js/services/eventContract.js:353-354",
+          "note": "onEvents() calls window.Echo.private() to establish WS subscription; auth gated by routes/channels.php staff.branch_id===branchId"
+        },
+        {
+          "step": "3. Echo broadcasts OrderCreated → handler",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1912",
+          "note": "subscribeEcho() registers { broadcastAs: 'OrderCreated', handler: refresh } for sub-second order visibility"
+        },
+        {
+          "step": "4. Debounce refresh call (300ms)",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:2409-2416",
+          "note": "_debouncedRefresh() calls _refreshWithCurrentFilter() → /api/admin/kds-order via store dispatch"
+        },
+        {
+          "step": "5. Poll fallback: adaptive cadence",
+          "file_line": "resources/js/services/KdsSyncService.js:87-98",
+          "note": "kdsSyncService starts at mount; 5s cadence when WS down, 60s up; backoff on 5xx; reads /api/admin/kds-order/sync"
+        },
+        {
+          "step": "6. Transition → OrderStatusChanged broadcast",
+          "file_line": "app/Services/KitchenDisplaySystemOrderService.php:386-468",
+          "note": "changeStatus() persists via transaction, dispatches OrderStatusChanged → PersistOrderStatusChangedToOutbox"
+        },
+        {
+          "step": "7. Status change filtered by KDS rule",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1558-1569",
+          "note": "_statusChangeAffectsKds() checks old OR new in [4,7,8] (ACCEPT/PREPARING/PREPARED); skips noise"
+        },
+        {
+          "step": "8. Poll dedup via version gate",
+          "file_line": "resources/js/services/KdsSyncService.js:174-187",
+          "note": "forceSync() gates orders by version; marked versionGated=true if version <= prev; excluded from emit"
+        }
+      ],
+      "rupture_points": [
+        {
+          "id": "W3-R1",
+          "title": "Admin (branch_id=0) skips WS; new orders visible after 5-60s poll",
+          "severity": "P1",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1895-1896",
+          "evidence": "subscribeEcho() returns early if branchId<=0; admin skips WS sub, falls back to 60s poll (WS up) or 5s (down).",
+          "verified": true,
+          "live_test": "Log in as admin; create KIOSK order; measure time to appear on KDS; verify 5-60s latency vs <500ms for staff.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W3-R2",
+          "title": "Order delivered twice via WS + poll in 300ms window",
+          "severity": "P2",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:2409-2416",
+          "evidence": "kdsSyncService 'sync' event + Echo both call _debouncedRefresh(); 300ms debounce may coalesce, but tight timing hits API twice.",
+          "verified": true,
+          "live_test": "Log all refreshOrderList() calls; create order during WS spike; check for 2x calls in <300ms; verify no duplicate cards render.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W3-R3",
+          "title": "Malformed broadcasts silently swallowed; no fallback refresh",
+          "severity": "P3",
+          "file_line": "resources/js/services/eventContract.js:362-385",
+          "evidence": "rawHandler wraps in try-catch; on parseEvent() failure, warns but does NOT call user handler or trigger poll.",
+          "verified": true,
+          "live_test": "Post malformed DomainEvent (missing version); verify console warning fires; KDS board doesn't auto-refresh; manual refresh shows order exists in DB.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W3-R4",
+          "title": "Recalled order may vanish if pushed past 50-item limit",
+          "severity": "P2",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1933-1945",
+          "evidence": "KdsOrderRecalled sets kdsRecalledMap for 60s badge; order aging out of sync limit disappears despite map.",
+          "verified": true,
+          "live_test": "Fill KDS with 50+ PREPARED; recall tail order; add 2 new orders to push it out; verify RAPPELE badge persists but card may vanish.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W3-R5",
+          "title": "PREPARING→PREPARED loses broadcast on idempotent retry",
+          "severity": "P1",
+          "file_line": "app/Listeners/PersistOrderStatusChangedToOutbox.php:27-33",
+          "evidence": "Idempotency key on (event_type, order_id, old_status, new_status, correlation_id); retry same key returns existing row, wasRecentlyCreated=false, skips dispatch.",
+          "verified": true,
+          "live_test": "Kill WS; chef POSTs status change (202, no broadcast); manual retry of same POST; verify no new outbox entry; other station never sees transition unless polling.",
+          "needs_owner_gate": true
+        },
+        {
+          "id": "W3-R6",
+          "title": "Guest role check in channel auth may fail if role table broken",
+          "severity": "P0",
+          "file_line": "routes/channels.php:41-62",
+          "evidence": "Guest (branch_id=0) role check requires hasRole(Admin); latent: hasRole() may fail/cache, guest sees all branches.",
+          "verified": true,
+          "live_test": "Create guest; add Admin role manually; attempt Echo.private('branch.1') sub; verify it succeeds (should fail); check WS frames for private-branch.1.",
+          "needs_owner_gate": true
+        },
+        {
+          "id": "W3-R7",
+          "title": "Status change without updated_at bump silently gated by poll",
+          "severity": "P2",
+          "file_line": "app/Services/KdsSyncService.php:174-187",
+          "evidence": "computeOrderVersion() uses updated_at unix seconds; status-only change without touch() is gated; TODO: awaiting status_changed_at column.",
+          "verified": true,
+          "live_test": "Direct SQL: UPDATE orders SET status=8 WHERE id=123 (no updated_at); call sync; verify order gated. Then touch updated_at; verify order returns.",
+          "needs_owner_gate": false
+        }
+      ],
+      "verifier_summary": "All 7 original rupture points verified as code-accurate. W3-R5 (idempotency + broadcast loss on retry) is confirmed P1 at PersistOrderStatusChangedToOutbox.php:27-33 + 65-66. W3-R6 confirmed at channels.php:41-62 (latent role-corruption). No false positives; all claims grounded in source verification."
+    },
+    {
+      "wave": "W4 — OSS + POS Tracker + Kiosk-Waiting + Dashboard",
+      "surfaces": [
+        "OSS (PreparingAndReadyComponent)",
+        "POS Tracker (PosOrdersTrackerComponent)",
+        "POS Badge (PosComponent)",
+        "Kiosk-Waiting",
+        "Dashboard"
+      ],
+      "channels": [
+        "OrderStatusChanged Echo",
+        "OrderCreated Echo",
+        "OrderPaidAtCounter Echo",
+        "OSS poll (2s disc)",
+        "POS Tracker poll (8-60s)",
+        "POS Badge poll (5-60s)",
+        "Kiosk poll (15s)",
+        "Dashboard SLA poll (15s)",
+        "Dashboard Report poll (30s)"
+      ],
+      "mechanism": [
+        {
+          "step": "Echo OrderStatusChanged fires; OSS calls list()",
+          "file_line": "PreparingAndReadyComponent.vue:281",
+          "note": "Calls this.list() → _hydrateFromRows(backend rows) → displays verbatim"
+        },
+        {
+          "step": "OSS hydrates rows via OssSyncService polling",
+          "file_line": "OssSyncService.js:16",
+          "note": "on('sync') receives backend rows; no client-side recount"
+        },
+        {
+          "step": "POS Tracker counts via ordersByStatus array.length",
+          "file_line": "PosOrdersTrackerComponent.vue:640",
+          "note": "stats.active = b.accept.length + b.preparing.length + b.prepared (client recount)"
+        },
+        {
+          "step": "POS Badge activeOrdersStats via client-side loop",
+          "file_line": "PosComponent.vue:3108-3109",
+          "note": "Counts status buckets in loop; displayed in badge (line 141)"
+        },
+        {
+          "step": "Kiosk polls single order 15s + Echo",
+          "file_line": "KioskWaitingComponent.vue:320",
+          "note": "No aggregates; status/queue_number only"
+        },
+        {
+          "step": "Dashboard REST poll 30s; no Echo",
+          "file_line": "RealtimeReportComponent.vue:39",
+          "note": "Backend computes totals; no client math"
+        },
+        {
+          "step": "Dashboard SLA poll 15s; no Echo",
+          "file_line": "SlaAlertsComponent.vue:47",
+          "note": "Backend computes alerts; frontend displays"
+        }
+      ],
+      "rupture_points": [
+        {
+          "id": "W4-P1-01",
+          "title": "Dashboard SlaAlerts lag: 15s poll vs sub-second Echo on KDS",
+          "severity": "P1",
+          "file_line": "SlaAlertsComponent.vue:44-47",
+          "evidence": "15s poll interval (line 47). No Echo. KDS reflects status sub-second. Dashboard shows stale alert until next poll.",
+          "verified": true,
+          "live_test": "Create order, bump to READY on KDS. KDS instant; dashboard alert shows up to 15s later.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P1-02",
+          "title": "Dashboard vs Tracker count mismatch during poll gaps",
+          "severity": "P1",
+          "file_line": "RealtimeReportComponent.vue:39, PosOrdersTrackerComponent.vue:640",
+          "evidence": "Dashboard 30s, Tracker 8-60s. No Echo on dashboard. Independent cadences cause temporary divergence.",
+          "verified": true,
+          "live_test": "Throttle network; Echo timeout. Tracker refreshes 8s; dashboard waits 30s. Counts diverge.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P1-03",
+          "title": "PosComponent client recount: activeOrdersStats NF525 violation",
+          "severity": "P1",
+          "file_line": "PosComponent.vue:3108-3109",
+          "evidence": "loadActiveOrdersStats counts status buckets. Displayed badge (line 141). Backend should own stat.",
+          "verified": true,
+          "live_test": "Rapid OrderCreated bursts; paused poll. Badge diverges from tracker totals.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P1-04",
+          "title": "PosOrdersTrackerComponent recount + unsync cadence divergence",
+          "severity": "P1",
+          "file_line": "PosOrdersTrackerComponent.vue:640",
+          "evidence": "stats.active recounts (line 640). Unsync cadences (5-60s vs 8-60s) cause temporary divergence.",
+          "verified": true,
+          "live_test": "Split-view both panels. Watch badge lag during order transitions.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P2-01",
+          "title": "formatPrice graceful degrade (spec-compliant design, not defect)",
+          "severity": "P3",
+          "file_line": "formatPrice.js:40-42",
+          "evidence": "undefined/null maps to 0,00 EUR per contract. Intentional, documented design.",
+          "verified": true,
+          "live_test": "Mock null total fields. Card displays 0,00 EUR as spec.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P2-02",
+          "title": "Dashboard badges update silently; no loading indicator",
+          "severity": "P2",
+          "file_line": "SlaAlertsComponent.vue:44-57",
+          "evidence": "fetchData() fires async; no spinner. Count changes silently. No age label.",
+          "verified": true,
+          "live_test": "Dashboard on slow network. Count updates silently; no 'refreshing' feedback.",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P3-01",
+          "title": "OSS poll ceiling 60s; misconfig freeze mitigated",
+          "severity": "P3",
+          "file_line": "OssSyncService.js:34",
+          "evidence": "CADENCE_CEILING_MS=60_000. Enforces [250ms, 60s]. Prevents 999999999ms freeze.",
+          "verified": true,
+          "live_test": "Config 999999999ms. Interval clamps to 60s (line 434).",
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W4-P3-02",
+          "title": "SlaAlerts timezone mismatch risk on server threshold",
+          "severity": "P3",
+          "file_line": "SlaAlertsComponent.vue:26",
+          "evidence": "15-min threshold server-side. Operator local clock divergence; alert timing confusion risk.",
+          "verified": true,
+          "live_test": "Access from UTC+12; backend UTC. Alert at 15m server; operator sees 3m.",
+          "needs_owner_gate": false
+        }
+      ],
+      "verifier_summary": "First auditor verified 6 claims accurately. MISSED: (1) PosComponent client recount activeOrdersStats (3108-3109, badge 141). (2) PosOrdersTrackerComponent recount (640), unsync cadences (5-60s vs 8-60s). Both violate NF525 SSOT. Severity adjusted: W4-P2-01 P3 (spec design). Two new ruptures added. Zero hallucinations."
+    },
+    {
+      "wave": "W5 — Encaissement Counter-Deferred (kiosk.payment_route_all_to_counter=true)",
+      "surfaces": [
+        "EncaissementComponent.vue",
+        "PosCounterCollectModal.vue",
+        "KitchenDisplaySystemComponent.vue",
+        "KioskWaitingComponent.vue",
+        "routes/api.php",
+        "PaymentService.php",
+        "KdsSyncService.php"
+      ],
+      "channels": [
+        "private-branch.{branchId}",
+        "OrderPaidAtCounter",
+        "OrderStatusChanged"
+      ],
+      "mechanism": [
+        {
+          "step": "Kiosk order submitted with CASH payment method",
+          "file_line": "app/Services/FrontendOrderService.php:266",
+          "note": "Created status=ACCEPT, payment_status=PENDING_COUNTER"
+        },
+        {
+          "step": "Encaissement endpoint returns PENDING_COUNTER orders",
+          "file_line": "routes/api.php:812",
+          "note": "Query filters payment_status=PENDING_COUNTER; 200 rows max FIFO"
+        },
+        {
+          "step": "Encaissement polls every 20s only, no Echo",
+          "file_line": "resources/js/components/admin/encaissement/EncaissementComponent.vue:98",
+          "note": "setInterval 20000ms; verified no OrderPaidAtCounter listener"
+        },
+        {
+          "step": "KDS queries by status (ACCEPT/PREPARING/PREPARED) ignoring payment",
+          "file_line": "app/Services/KdsSyncService.php:50",
+          "note": "PENDING_COUNTER orders visible if status=ACCEPT"
+        },
+        {
+          "step": "Cashier confirms payment via modal POST with idempotency",
+          "file_line": "resources/js/components/admin/pos/PosCounterCollectModal.vue:450",
+          "note": "409 Conflict on race; modal emits cancel for refresh"
+        }
+      ],
+      "rupture_points": [
+        {
+          "id": "W5-P0-POLL-20S-BLINDNESS",
+          "title": "Encaissement poll-only; 20s lag removing order from pending list",
+          "severity": "P0",
+          "file_line": "resources/js/components/admin/encaissement/EncaissementComponent.vue:98",
+          "evidence": "Poll-only design at 20s interval. No Echo listener. Order stays visible 0-20s after payment collected, masking completion to cashier.",
+          "verified": true,
+          "live_test": "Submit kiosk order to /admin/encaissement; collect payment; verify order stays 0-20s before vanishing."
+        },
+        {
+          "id": "W5-P1-ENCAISSEMENT-ECHO-GAP",
+          "title": "KDS subscribes OrderPaidAtCounter; Encaissement poll-only",
+          "severity": "P1",
+          "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1913",
+          "evidence": "KDS has OrderPaidAtCounter listener for <2s refresh; Encaissement polls 20s. Asymmetric latency post-payment.",
+          "verified": true,
+          "live_test": "Open KDS and /admin/encaissement parallel; collect payment; KDS updates <2s, Encaissement lags 20s."
+        },
+        {
+          "id": "W5-P1-PENDING-COUNTER-KDS-VISIBLE",
+          "title": "KDS shows PENDING_COUNTER orders (status=ACCEPT) before payment",
+          "severity": "P1",
+          "file_line": "app/Services/KdsSyncService.php:50",
+          "evidence": "No payment_status filter in KDS query. PENDING_COUNTER orders visible if status=ACCEPT. Kitchen preps before S-5 validation.",
+          "verified": true,
+          "live_test": "Kiosk CASH order; check KDS (order visible ACCEPT); check DB (payment_status=PENDING_COUNTER); customer at counter unpaid."
+        },
+        {
+          "id": "W5-P1-RACE-409-HANDLED",
+          "title": "Double-collect 409 correctly triggers parent refresh",
+          "severity": "P2",
+          "file_line": "resources/js/components/admin/pos/PosCounterCollectModal.vue:499",
+          "evidence": "409 caught; modal emits cancel triggering fetchPending. Order vanishes immediately, not after poll.",
+          "verified": true,
+          "live_test": "Two cashiers collect same order; second gets 409; list refreshes immediately not after 20s."
+        },
+        {
+          "id": "W5-P2-KIOSK-WAITING-FALLBACK",
+          "title": "KioskWaiting receives payment updates via OrderStatusChanged not direct",
+          "severity": "P2",
+          "file_line": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:272-292",
+          "evidence": "No OrderPaidAtCounter listener. Receives OrderStatusChanged broadcast post-payment. Poll fallback 15s.",
+          "verified": true,
+          "live_test": "Kiosk order; collect payment; waiting screen updates on OrderStatusChanged event within 15s."
+        }
+      ],
+      "verifier_summary": "P0 poll-blindness confirmed. NEW P1: KDS displays PENDING_COUNTER orders (status=ACCEPT) before payment, violating S-5. Kitchen preps unbought meals. 409 race handling correct. KioskWaiting receives payment indirectly via OrderStatusChanged fallback. Add Echo to Encaissement component."
+    },
+    {
+      "wave": "W6 - Degradation + Idempotency",
+      "surfaces": [
+        "KDS (Kitchen Display System)",
+        "POS (Point of Sale)",
+        "Kiosk (offline queue)",
+        "OSS (Order Status Screen)",
+        "Admin observability",
+        "WebSocket/Pusher"
+      ],
+      "channels": [
+        "private-branch.N",
+        "presence-kiosk-branch-N",
+        "orders-updated",
+        "catalog-changed",
+        "kiosk-offline-queue-sync",
+        "ws:heartbeat"
+      ],
+      "mechanism": [
+        {
+          "step": "1. Order mutation records domain event",
+          "file_line": "app/Traits/HasDomainEvents.php:27-62",
+          "note": "Model saves trigger bootHasDomainEvents. DB::afterCommit dispatches DispatchDomainEventsJob."
+        },
+        {
+          "step": "2. Worker claims and broadcasts to Pusher",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:50-116",
+          "note": "lockForUpdate() claims event, broadcasts via BroadcastManager. Retry backoff [1,5,15,60,300]s."
+        },
+        {
+          "step": "3. WS subscription error handling (F-12)",
+          "file_line": "resources/js/bootstrap.js:389-402",
+          "note": "_bindSubscriptionErrorHandler catches pusher:subscription_error, calls handleSubscriptionError()."
+        },
+        {
+          "step": "4. WS state change triggers polling fallback",
+          "file_line": "resources/js/services/KdsSyncService.js:236-246",
+          "note": "KdsSyncService listens to state_change; on DISCONNECTED, polling cadence accelerates."
+        },
+        {
+          "step": "5. Polling endpoint reads orders table only",
+          "file_line": "app/Services/KdsSyncService.php:96-117",
+          "note": "Polls orders.status=ACCEPT/PREPARING/PREPARED since client timestamp. Does NOT read domain_events."
+        },
+        {
+          "step": "6. Kiosk offline: generates UUID v4 idempotency key per session",
+          "file_line": "resources/js/store/modules/kioskCart.js:704-709",
+          "note": "Single-use UUID stored in Vuex state. POST includes X-Idempotency-Key header."
+        },
+        {
+          "step": "7. Offline replay: quote refresh + atomic idempotency guard",
+          "file_line": "resources/js/helpers/kioskOfflineQueue.js:370-393, 551-555",
+          "note": "syncQueue refreshes quote before each replay. IdempotencyKeyMiddleware.acquire() atomic."
+        }
+      ],
+      "rupture_points": [
+        {
+          "id": "W6-R1-WORKER-DEATH",
+          "title": "Queue worker death: unbroadcast domain_events never recovered",
+          "severity": "P0",
+          "file_line": "app/Services/KdsSyncService.php:96-117",
+          "evidence": "Polling reads only orders table (line 96-117), NOT domain_events. Worker death leaves events with dispatched_at=null. Kitchen blind until worker restarts.",
+          "live_test": "Kill queue:work, submit order. Polling returns it (DB-backed). Verify domain_events unbroadcast. Restart worker—broadcasts resume.",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R2-AUTH-ERROR-UNMARKED",
+          "title": "WS auth error <3x: silent degradation to polling, no operator alert",
+          "severity": "P2",
+          "file_line": "resources/js/bootstrap.js:393-395, resources/js/services/WebSocketService.js:174-192",
+          "evidence": "On subscription_error, counter increments (line 176). Before 3-fail threshold, no visible toast/banner. Polling fallback (line 236-246) engages silently.",
+          "live_test": "Emit pusher:subscription_error once. Verify: (1) no toast, (2) wsService.state=CONNECTED, (3) polling active. Repeat 3x—then SESSION_INVALID fires.",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R3-DOUBLE-TAP-IDEMPOTENT",
+          "title": "Double-tap: idempotency prevents duplicate orders",
+          "severity": "P3",
+          "file_line": "resources/js/store/modules/kioskCart.js:704-709, app/Http/Middleware/IdempotencyKeyMiddleware.php:98-124",
+          "evidence": "UUID v4 key stored per session (line 708). Double POST both send same X-Idempotency-Key. acquire() atomic (line 99-124). Result: 1 order.",
+          "live_test": "Load kiosk, double-tap Payer within 100ms. Verify 1 order in DB, both responses same ID. Check Idempotency-Replayed header on 2nd.",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R4-OFFLINE-QUOTE-EXPIRY-NO-RECOVERY",
+          "title": "Offline abandoned after 10 retries: no admin recovery endpoint",
+          "severity": "P1",
+          "file_line": "resources/js/helpers/kioskOfflineQueue.js:565-586",
+          "evidence": "MAX_ATTEMPTS=10 (line 565). After 10 failures, abandoned=true (line 571). No backend endpoint to recover abandoned orders.",
+          "live_test": "Queue cash order offline, block network with invalid quote endpoint. Monitor 10 retries. Check abandoned badge. Confirm no admin recovery.",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R5-IDEMPOTENCY-FAILOPEN-RACE",
+          "title": "Redis down + fail_open=true: unguarded race, duplicates if MySQL fails",
+          "severity": "P1",
+          "file_line": "app/Http/Middleware/IdempotencyKeyMiddleware.php:125-135",
+          "evidence": "On storage unavailable, if fail_open=true (line 127), bypass acquire() (line 128). Two concurrent POSTs race unguarded unless DB UNIQUE holds.",
+          "live_test": "redis-cli SHUTDOWN, send 2 concurrent POSTs same key. With MySQL UNIQUE: 1 order. Without: 2 orders (duplicates).",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R6-ECHO-LOGIN-TOKEN-STALE",
+          "title": "Post-login subscribe: Echo auth header stale, 401 before localStorage synced",
+          "severity": "P2",
+          "file_line": "resources/js/bootstrap.js:352-375, resources/js/bootstrap.js:313-323",
+          "evidence": "_getEchoBearerToken() reads localStorage (line 315) which syncs asynchronously. Synchronous subscribe() uses prior token. Polling fallback mitigates.",
+          "live_test": "Monitor KDS login; private-branch.N subscribe should use fresh token. Without fix: 401 error, polling engages at 5s cadence.",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R7-OFFLINE-KEY-NO-USER-SCOPE",
+          "title": "Offline key collision: not scoped to user_id, low but non-zero risk",
+          "severity": "P2",
+          "file_line": "resources/js/helpers/kioskOfflineQueue.js:395-421",
+          "evidence": "localKey=offline_${savedAt}_${random} scoped to branch_id only (line 783-784). Same millisecond+random collision duplicates 2nd order.",
+          "live_test": "Craft 2 orders with identical localKey (brute-force collision test). Expect 409 or 1st order cached. Probability ~1/2^64.",
+          "verified": true,
+          "needs_owner_gate": false
+        },
+        {
+          "id": "W6-R8-HEARTBEAT-CACHE-BEST-EFFORT",
+          "title": "Broadcast success: heartbeat cache write silent failure, dashboard stale",
+          "severity": "P3",
+          "file_line": "app/Jobs/DispatchDomainEventsJob.php:128-132",
+          "evidence": "Cache::put('ws:heartbeat') wrapped try/catch (line 128-132), exception swallowed. Redis down = missing heartbeat. Observability gap only.",
+          "live_test": "Mock Cache::put throw, dispatch event, verify broadcast succeeded. Check admin dashboard heartbeat_at missing. No customer impact.",
+          "verified": true,
+          "needs_owner_gate": false
+        }
+      ],
+      "verifier_summary": "All 8 rupture points verified. R1 P0: polling orders-only, events unrecovered. R2 P2: pre-threshold silent+graceful. R3 P3: double-tap prevented. R4 P1: offline abandoned. R5 P1: fail_open race. R6 P2: stale token mitigated. R7 P2: weak scoping. R8 P3: observability gap."
+    }
+  ]
+}

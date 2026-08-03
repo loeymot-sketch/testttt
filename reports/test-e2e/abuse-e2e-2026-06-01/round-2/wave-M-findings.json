@@ -1,0 +1,60 @@
+{
+  "wave": "M",
+  "round": 2,
+  "states_reviewed": 9,
+  "scope": "Kiosk machine boot + offline sync (order-loss risk). Adversarial review of all 9 captured states (PNG+DOM+console+network quartet) + audit-integrity review of tests/e2e/test-e2e-abuse-M-kiosk-offline.spec.js.",
+  "audit_integrity": {
+    "offline_path_actually_exercised": true,
+    "evidence": "Spec lines 240-247 route.abort('internetdisconnected') on POST /api/frontend/order; 05-...console.json shows TWO net::ERR_INTERNET_DISCONNECTED on /api/frontend/order (ts 1780494115871 + 1780494115932). Hard assertion abortedOrderPost>0 (spec:274-276) has NO silent catch.",
+    "offline_indicator_assertion_is_real": true,
+    "indicator_assertion_detail": "spec:284-287 (state 06), 314-316 (survives reload 07), 344-346 (clears 08) are bare expect(...).toBeVisible()/.toBeHidden() with NO .catch() — load-bearing, not swallowed. DOM confirms: 06 + 07 contain element '.kiosk-offline-indicator' with pill text '1 commande en attente d'envoi'; 08 DOM has only the CSS rule, no element instance (cleared).",
+    "no_proceed_without_201": true,
+    "kiosk_login_201": "01-...network.json: POST /api/auth/kiosk-login -> 201; spec:136-138 hard-asserts kioskLoginStatus===201 before proceeding (no catch).",
+    "double_charge_defense": "05 console: two aborted POSTs -> 06 indicator reads exactly '1 commande en attente d'envoi' -> 08 network shows exactly ONE POST /api/frontend/order -> 201 replay. Two-aborts -> one-order = no duplicate write, no reconcile double-charge."
+  },
+  "findings": [
+    {
+      "id": "M-001",
+      "state_artifact": "test-e2e-M/(coverage gap — 3 enumerated states never driven)",
+      "category": "coverage_gap",
+      "severity": "P2",
+      "evidence": "AUDIT_PLAN Wave M (line 145) enumerates 'conflict modal (partial-sent PENDING) · resolved · unresolved->cashier CTA'. The spec self-gates these via offlineConflictGated (spec:301-303): the kiosk-offline-conflict-cta only surfaces when a buffered entry is marked stale (KioskAppComponent.vue:819-822 getStaleEntries), which this run never seeded. No 06b-offline-conflict-modal artifact exists. The electronic reconcile-pending path (/api/frontend/payment/reconcile-pending) is also untested by design (Plan-B cash routing gates it; spec:59-65). NOT a defect (an unobserved state cannot fail) and does NOT block convergence — but the GREEN verdict covers ONLY the cash-buffer offline path; offline-CONFLICT resolution + electronic reconcile remain UNVERIFIED.",
+      "fix_hint": "Add a Wave M follow-up that seeds a stale buffered entry (86 an item while queued) to exercise the conflict modal -> resolved -> unresolved->cashier CTA chain, and a separate electronic-payment offline case to exercise reconcile-pending idempotency. Until then, do not represent Wave M as full-coverage.",
+      "blocking": false
+    },
+    {
+      "id": "M-002",
+      "state_artifact": "test-e2e-M/07-offline-indicator-survives-reload.png + test-e2e-M/09-error-network-screen-reachable.png",
+      "category": "capture_methodology",
+      "severity": "P2",
+      "evidence": "2 of 9 PNGs do not visually show what their filename claims, because the snapshot fires at assertion-resolve without settling transitions/overlays. (a) 07: DOM proves the offline pill survived reload (class='kiosk-offline-indicator slide-down-enter-active slide-down-enter-to' = mid slide-down Vue transition) so the PNG caught the pill still animating in from above the top edge -> pill absent from frame though element present + assertion passed. (b) 09: DOM contains kiosk-error-network-title + cta-retry + cta-staff (assertions real, spec:356-358), BUT kiosk-init-overlay is still present (grep count 1) and the PNG shows the boot loader 'Demarrage en cours...' occluding the error screen. Playwright isVisible() ignores occlusion, so the assertion passes over a boot spinner. The assertions/DOM are sound; only the visual evidence is unrepresentative.",
+      "fix_hint": "Before snap(): for 07 await the slide-down transition to settle (await indicator transition end or fixed 600ms after toBeVisible); for 09 await page.locator('.kiosk-init-overlay').waitFor({state:'hidden'}) (same pattern already used at spec:128,313) before snapping the error/network screen.",
+      "blocking": false
+    },
+    {
+      "id": "M-003",
+      "state_artifact": "test-e2e-M/05-offline-order-buffered-cash-instruction.png",
+      "category": "ux_semantic",
+      "severity": "P2",
+      "evidence": "Offline cash-instruction screen reads 'Presentez votre numero a un membre de l'equipe' while 'Numero de commande' renders the synthetic placeholder '#—' (em-dash). A customer is literally told to present a dash. The synthetic '#—' itself is acceptable (author pre-blessed it; spec:262-263 only forbids literal 'undefined'/'null', and DOM confirms ' #—' with neither) — this is a distinct copy/UX wrinkle, not the technical null-render question.",
+      "fix_hint": "On the offline-buffered path, either suppress/soften the 'present your number' instruction when no real queue number exists yet, or show offline-specific copy (e.g. 'Votre commande sera transmise — un membre de l'equipe vous donnera votre numero'). Frozen-zone-adjacent (KioskCash/Payment components) — observe-only here; route any change through owner gate.",
+      "blocking": false
+    }
+  ],
+  "allowlisted_signals_accounted": [
+    "02-...console.json level=error 401 on http://localhost:8000/api/login + 02-...network.json POST /api/broadcasting/auth 302 -> GET /api/login 401: matches AUDIT_PLAN KNOWN SIGNALS (lines 108-114) kiosk Echo private-channel auth attempt with web/session guard the public kiosk lacks. Core ordering flow (idle->menu->cart->payment->offline-buffer->recover) works WITHOUT it -> classified P2 realtime-degraded, NOT P0/P1. Wave-specific KNOWN SIGNALS overrides generic Reviewer-Protocol category 9/10.",
+    "CSP report-only violations (broadcasting/auth, /api/login) + POST /api/frontend/csp-report 204 in 01/02/07: allowlisted noise (REVIEWER_PROTOCOL allowlist; AUDIT_PLAN 116-117).",
+    "net::ERR_INTERNET_DISCONNECTED on /api/frontend/order in 05/07 console: INTENTIONAL route.abort to exercise the offline buffer — expected, the discriminator of the test, not a defect."
+  ],
+  "numeric_integrity": {
+    "result": "PASS",
+    "chain": "online cart total 1,00 EUR (03 'VOTRE COMMANDE' + cart-total) == payment counter 'Total a regler' (04, EUR1,00) == offline cash 'Montant a regler' 1,00 EUR (05 DOM '1,00 €') == offline-indicator-state montant 1,00 EUR (06). No drift online vs offline."
+  },
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 3, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 3, "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "verdict_note": "Wave M cash-buffer offline path is GREEN: boot 201 gate enforced, order survives reload (07 DOM), offline indicator visible (06) — NOT a silent hang, total identical online vs offline across 4 surfaces, single 201 replay on reconnect (no double-charge), indicator clears on recovery (08), no non-allowlisted console errors, no i18n raw-label leak. The core order-loss + silent-hang + double-charge paranoia points are all empirically rebutted. Three non-blocking P2s recorded: (M-001) offline-conflict resolution + electronic reconcile-pending are UNVERIFIED coverage gaps — GREEN scope is the cash-buffer path only; (M-002) 2/9 PNGs caught mid-transition/under-overlay so don't visually show their named state though DOM+assertions are sound; (M-003) 'present your number' copy shown alongside synthetic '#—'."
+}

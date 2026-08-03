@@ -1,0 +1,2 @@
+OFF flag -> false methods: ["counter"]
+ON  flag -> true methods: ["counter","card"]

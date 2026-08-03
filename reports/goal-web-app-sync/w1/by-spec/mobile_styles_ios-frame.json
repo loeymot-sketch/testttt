@@ -1,0 +1,67 @@
+{
+ "spec": "mobile:styles+ios-frame",
+ "scope": "Système de design mobile (prototype in-repo /mobile) : styles.css (tokens + primitives lc-*), redesigns-styles.css (bibliothèque rdw-/rdl-/rdo-), ios-frame.jsx (frame device iOS), design-canvas.jsx (canvas Figma-like dev), tweaks-panel.jsx (panneau tweaks dev) — audit read-only en vue d'ajout d'écrans wallet QR / checkout carte.",
+ "summary": "Le design system mobile est en 2 couches : styles.css (tokens :root autoritaires + primitives lc-*, avec corrections a11y WCAG documentées) et redesigns-styles.css (composants rdw- wizard / rdl- loyalty-wallet / rdo- onboarding, tokens additifs uniquement). L'entrée production index.html ne charge QUE ces 2 CSS + les screens ; ios-frame.jsx, tweaks-panel.jsx et design-canvas.jsx sont dev-only (les 2 premiers chargés seulement par « Le Cayenne - Prototype.html », design-canvas.jsx est orphelin, chargé par rien). Risque principal pour de nouveaux écrans : redesigns-styles.css consomme des tokens JAMAIS définis (--shadow-1 ×7, --shadow-selected, --fs-caption/--fs-body/--fs-h3/--fs-base/--fs-micro) — supprimés avec l'ancien bloc :root lors de l'intégration cycle C — donc box-shadow silencieusement absent et font-size héritée non déterministe sur toute réutilisation des classes rdw-/rdl-. Second risque : le filet de contraste de styles.css force color:ink via [data-screen-label] et ne blanchit le texte que sur des patterns inline-style exacts (background: var(--ink) / #0A0A0A / #000) — un nouvel écran sombre à fond gradient ou hexa différent aura du texte noir-sur-noir s'il ne fixe pas color explicitement (le précédent A-005 pill black-on-black documente exactement ce piège).",
+ "findings": [
+  {
+   "severity": "P2",
+   "title": "redesigns-styles.css consomme 7 tokens jamais définis (--shadow-1, --shadow-selected, --fs-*) — ombres perdues et tailles de police héritées sur toute la lib rdw-/rdl-",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/redesigns-styles.css",
+   "line": 53,
+   "evidence": "box-shadow: var(--shadow-1); (lignes 53,115,244,313,520,578,988) et .rdw-choice.is-on { box-shadow: var(--shadow-selected); } (l.121), font-size: var(--fs-caption) (l.59 et al.). Le header du fichier (l.3-13) dit « Le bloc :root original ... a été RETIRÉ » mais grep -rn \"shadow-1:\" et \"fs-caption:\" sur tout /mobile = 0 définition. var() invalide → box-shadow: none, font-size: inherit.",
+   "recommendation": "Avant d'ajouter des écrans réutilisant rdw-/rdl-, redéfinir ces tokens dans le :root de styles.css (ou de redesigns-styles.css) : --shadow-1, --shadow-selected, --fs-micro/caption/body/base/h3 — sinon éviter ces classes et utiliser des valeurs explicites."
+  },
+  {
+   "severity": "P2",
+   "title": "Filet de contraste par sélecteurs d'attribut style fragile — nouvel écran sombre (gradient, autre hexa) = texte noir-sur-noir",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/styles.css",
+   "line": 66,
+   "evidence": "[style*=\"background: var(--ink)\"], [style*=\"background:var(--ink)\"], [style*=\"background: #0A0A0A\"] ... { color: #fff; } — ne matche ni linear-gradient(155deg, #1a1a1a...) ni les classes CSS. Le fix historique l.108-120 (« SIGNATURE pill collapsing to black-on-black ») prouve que [data-screen-label] span { color: inherit } (l.60-64) écrase les couleurs des composants.",
+   "recommendation": "Pour les nouveaux écrans wallet QR / checkout : poser color explicite sur tout wrapper sombre (pattern .rdl-wallet-card l.346 : background gradient + color:#fff) et ne jamais compter sur le filet ; tester une pill/label sur fond sombre visuellement."
+  },
+  {
+   "severity": "P3",
+   "title": "screens-item-steps.jsx référence déjà le token indéfini --fs-caption en inline style",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-item-steps.jsx",
+   "line": 251,
+   "evidence": "fontSize: 'var(--fs-caption)' dans le hint aria-live du wizard CTA — var indéfinie → font-size héritée du parent (taille non maîtrisée).",
+   "recommendation": "Couvrir par la redéfinition des tokens --fs-* (même fix que le finding P2 n°1)."
+  },
+  {
+   "severity": "P3",
+   "title": "design-canvas.jsx est un orphelin dev-only (canvas Figma-like) — ne jamais le charger dans index.html",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/design-canvas.jsx",
+   "line": 2,
+   "evidence": "« DesignCanvas.jsx — Figma-ish design canvas wrapper ... State persists to a .design-canvas.state.json sidecar via the host bridge ». grep \"design-canvas\" sur *.html = 0 référence (ni index.html ni Prototype.html).",
+   "recommendation": "Laisser hors production ; ses classes dc-* et le token --dc-inv-zoom n'existent que pour l'outillage host."
+  },
+  {
+   "severity": "P3",
+   "title": "tweaks-panel.jsx et ios-frame.jsx = outillage prototype uniquement, exposent des globals window.* et postMessage('*')",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/tweaks-panel.jsx",
+   "line": 171,
+   "evidence": "window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*') (l.171) + Object.assign(window, { useTweaks, TweaksPanel, ... }) (l.564-568) ; ios-frame.jsx l.336-338 idem (IOSDevice, IOSKeyboard...). Chargés seulement par « Le Cayenne - Prototype.html » l.37-38, PAS par index.html (grep confirmé).",
+   "recommendation": "Ne pas importer TweaksPanel/IOSDevice dans les nouveaux écrans de l'app (index.html) — ils n'y sont pas chargés et le protocole __edit_mode_* suppose un host iframe dev. Le device frame de prod est le CSS .lc-device de index.html (l.25-53), pas IOSDevice."
+  },
+  {
+   "severity": "INFO",
+   "title": "index.html charge React/Babel depuis unpkg CDN à runtime (prototype-grade, assumé)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/index.html",
+   "line": 76,
+   "evidence": "<!-- React + Babel runtime (prototype-grade ; en prod = build Vite/esbuild) --> + scripts unpkg avec SRI (l.77-79) ; Google Fonts (l.12-14).",
+   "recommendation": "Aucun changement requis pour ce cycle ; nécessite réseau (pas offline-first)."
+  }
+ ],
+ "facts": [
+  "Tokens couleurs autoritaires (styles.css:3-27) : --ink #0A0A0A, --orange #FF5A1F, --orange-dark #E54A12, --orange-text #C2410C (WCAG AA 4.86:1 pour texte orange sur clair — utiliser CELUI-CI pas --orange pour du texte), --yellow #FFD93D, --yellow-soft #FFF4C2, --paper #FFFFFF, --cream #FAF7F2, --gray-3 #6F6A60 (AA 4.7:1), --red #E5341A, --green #1FA653, --green-dark #168842 (AA pour blanc-sur-vert). Fonts : --font-display Anton, --font-body Inter, --font-mono JetBrains Mono.",
+  "Tokens additifs (redesigns-styles.css:15-27) : --cream-2 #F3EFE5, --orange-deep, --shadow-card, --shadow-cta, --shadow-glass, --ease-spring cubic-bezier(0.22,1,0.36,1), --dur-fast 160ms / --dur-base 220ms / --dur-slow 360ms, --ios-safe-bottom 28px. Safe-top : --ios-safe-top 68px (styles.css:76).",
+  "Classes à RÉUTILISER pour nouveaux écrans : .lc-screen (scroll plein écran + safe-top, styles.css:79), .lc-btn + variantes --ink/--orange/--yellow/--ghost (l.83-94), .lc-pill (l.96-106), .lc-tap (div cliquable a11y, l.236-250, à combiner role=button + tabIndex=0 + onKeyDown=lcTapKey), .lc-sr-only (l.253), .lc-card (l.191), .lc-tabs/.lc-tab (l.129-150), .lc-pulse (animation QR existante, l.206-207), .lc-grad-fire (l.229).",
+  "Wallet/QR : composants CSS déjà prêts dans redesigns-styles.css — .rdl-wallet-card (l.342, carte sombre gradient avec color:#fff explicite), .rdl-qr-art (grille QR 13×13, l.469), .rdl-barcode (l.486), .rdl-code-switch (l.447), .rdl-progress (l.416), .rdl-hist* (l.620-645). Composants JSX existants : components/LoyaltyQR.jsx, components/BarcodeMock.jsx, hooks/useLoyaltyQR.js (chargés par index.html:88-90).",
+  "Checkout carte : écran 'stripe' existe déjà dans le routeur App (index.html:196 case 'stripe': <ScreenStripe .../>) et 'stripe' est dans NO_TAB_SCREENS (index.html:105) — les écrans sans tab bar doivent être ajoutés à cette liste.",
+  "Entrée PRODUCTION = index.html : charge uniquement styles.css + redesigns-styles.css (l.15-16), data layer window.LC.* (api/storage.js, data/menu.js, data/loyalty.js..., l.66-74), puis icons/shared/hooks/components/screens en Babel. Frame device prod = CSS .lc-device (index.html:25-53, iPhone framé ≥480px, full-bleed <480px).",
+  "DEV-ONLY à ne PAS exposer : ios-frame.jsx (IOSDevice/IOSStatusBar/IOSKeyboard, globals window l.336-338), tweaks-panel.jsx (TweaksPanel/useTweaks + protocole host __activate_edit_mode/__edit_mode_set_keys, globals l.564-568) — chargés seulement par « Le Cayenne - Prototype.html » l.37-38 ; design-canvas.jsx = orphelin (0 référence HTML).",
+  "Pièges connus du filet de contraste : [data-screen-label] force color ink en cascade (styles.css:59-64) ; les pills solides ont un escape hatch !important (l.113-120) ; le blanchiment auto ne matche que background inline exactement var(--ink)/#0A0A0A/#000 (l.66-70). Tout nouveau fond sombre → color explicite obligatoire.",
+  "A11y déjà câblée à respecter : :focus-visible outline 3px orange global (styles.css:37-46), prefers-reduced-motion coupe toutes animations (l.53-55), .rdw-cta-wrap a un fallback @supports not backdrop-filter (redesigns-styles.css:193-195).",
+  "BUG latent : --shadow-1, --shadow-selected, --fs-micro/caption/body/base/h3 utilisés (redesigns-styles.css:53,59,71,115,121,244,255,263... et screens-item-steps.jsx:251) mais définis NULLE PART dans /mobile (bloc :root d'origine retiré au cycle C 2026-05-11, cf. header redesigns-styles.css:1-13) — à redéfinir avant de bâtir les nouveaux écrans sur les classes rdw-/rdl-."
+ ]
+}

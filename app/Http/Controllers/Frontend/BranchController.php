@@ -22,7 +22,20 @@ class BranchController extends Controller
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return BranchResource::collection($this->branchService->list($request));
+            // [A-002 2026-07-17] Ordre STABLE id ASC côté frontend : la borne
+            // (KioskAppComponent frozen) prend branches[0] pour se scoper et
+            // s'abonner au temps réel — le défaut DESC du service mettait une
+            // branche Faker dev (id 9) en tête → abonnement private-branch.9 ≠
+            // branche machine → broadcasting/auth 403, push rupture-86 mort.
+            // Tri explicite du résultat (pas de merge de request : fiable
+            // uniformément en HTTP live ET en Feature tests).
+            $result = $this->branchService->list($request);
+            if (! $request->filled('order_column') && ! $request->filled('order_type')
+                && $result instanceof \Illuminate\Support\Collection) {
+                $result = $result->sortBy('id')->values();
+            }
+
+            return BranchResource::collection($result);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

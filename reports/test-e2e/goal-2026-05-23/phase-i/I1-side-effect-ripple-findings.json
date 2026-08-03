@@ -1,0 +1,639 @@
+{
+  "agent": "I.1 Side-effect ripple chain",
+  "phase": "I — Indirect + hidden tests (8 agents parallel)",
+  "mission": "Code-static deep-dive on side-effect side-channels per user action — audit_logs, cache invalidations, Echo broadcasts, queued jobs, file writes, external API calls, updated_at touches. Flag silently swallowed failures.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "10 most-frequent user actions traced through controller/service/listener call graph",
+  "method": "Grep for event(new ...), broadcast(...), Cache::forget(, Log::warning(, try{...}catch, dispatch(...), Queue::push(, Notification::send(. Per callsite, classified as ENFORCED (rethrows / 5xx) or SILENT-SWALLOW (try/catch → Log::warning → continue).",
+  "files_examined": [
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "app/Http/Controllers/Admin/PosController.php",
+    "app/Http/Controllers/Admin/PosOrderController.php",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Http/Controllers/Admin/AvailabilityController.php",
+    "app/Http/Controllers/Admin/Fiscal/ZReportController.php",
+    "app/Http/Controllers/Auth/LoginController.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/OrderService.php",
+    "app/Services/PaymentService.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Services/Cash/CashDrawerService.php",
+    "app/Services/Delivery/DeliveryBoyCashSessionService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/Menu/AvailabilityService.php",
+    "app/Services/Order/RefundWithCounterEntryService.php",
+    "app/Services/FcmNotificationService.php",
+    "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php",
+    "app/Listeners/InvalidateKioskMenuCacheOnCatalogChange.php",
+    "app/Domain/Order/OrderStateMachine.php",
+    "app/Jobs/DispatchDomainEventsJob.php",
+    "app/Jobs/SendFcmNotificationJob.php",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "app/Providers/EventServiceProvider.php",
+    "app/Console/Commands/Backup/RunDailyBackup.php",
+    "routes/api.php"
+  ],
+  "route_truth_corrections": [
+    {
+      "claim_in_brief": "POST /admin/pos-order/{id}/payment-confirm (PaymentComponent V5 confirm)",
+      "actual_route": "POST /api/admin/pos (PosController::store via posOrder/save Vuex action)",
+      "evidence": "PaymentComponent.vue:879 dispatches `posOrder/save`; resources/js/store/modules/posOrder.js:207 POSTs admin/pos. Route is the SAME as direct sale. There is NO /pos-order/{id}/payment-confirm — that endpoint does not exist. POS payment confirm = POS order create.",
+      "implication": "Side-effects of PaymentComponent V5 confirm == side-effects of POS direct sale (action #2 below)."
+    },
+    {
+      "claim_in_brief": "POST /admin/pos/counter-collect/{order}/confirm",
+      "actual_route": "POST /api/admin/pos/counter-collect/{order}/confirm",
+      "evidence": "routes/api.php:797-820 inline closure → PaymentService::confirmCounterPayment",
+      "implication": "Endpoint exists, traced below as action #3."
+    }
+  ],
+  "actions_traced": [
+    {
+      "action": "Kiosk order create",
+      "endpoint": "POST /api/frontend/order",
+      "controller": "Frontend\\OrderController::store",
+      "service": "FrontendOrderService::myOrderStore",
+      "side_effects": [
+        {
+          "type": "Cache::lock (idempotency)",
+          "what_fires": "Cache::lock('frontend_order_idempotency_' . sha1(branch|key), 10) → block(5)",
+          "callsite": "app/Services/FrontendOrderService.php:157",
+          "silent_fail_risk": "ENFORCED-PARTIAL: lock acquisition wrapped in finally release; if Redis driver dies BEFORE lock acquisition, Laravel Cache::lock falls back to a NullStore lock that may return true immediately, allowing duplicate orders past idempotency. No code-level guard; relies on Cache driver soundness.",
+          "severity": "P2 (V1 LOCAL file/db driver — moot; V2 cloud Redis = P1 risk)"
+        },
+        {
+          "type": "DB::transaction (Eloquent)",
+          "what_fires": "FrontendOrder::create + OrderItem::insert + OrderCoupon::create + OrderAddress::create + LoyaltyTransaction lock+update + OrderCreated::dispatch (inside closure via DispatchableAfterCommit)",
+          "callsite": "FrontendOrderService.php:177-597",
+          "silent_fail_risk": "ENFORCED: any throw rolls back tx → caller catches QueryException at :629 + Exception at :641. Caller-facing 422."
+        },
+        {
+          "type": "Echo broadcast (OrderCreated)",
+          "what_fires": "OrderCreated event → PersistOrderCreatedToOutbox (first), DecrementItemAvailabilityOnOrder, DecrementStockOnOrderCreated, SendFcmOnOrderCreated",
+          "callsite": "FrontendOrderService.php:594-596 (inside DB::transaction via DispatchableAfterCommit afterCommit())",
+          "silent_fail_risk": "SEMI-SILENT: outbox listener runs first (sync), persists DomainEvent row inside same tx. Once committed, DispatchDomainEventsJob picks it up (queue 'high', tries=6, backoff 1/5/15/60/300s). If Pusher dies for >6 min the job lands in failed_jobs and last_error is persisted. Frontend kiosk does NOT poll DomainEvent.dispatched_at — KDS/Kiosk converge via next poll (15s / 5-60s) until job catches up. ACCEPTABLE for V1 LOCAL via observability/ws:heartbeat (heal R1 SRE-001 added 2026-05-19, DispatchDomainEventsJob.php:128-132 best-effort stamp).",
+          "monitoring": "HealthController.php:155 flags >10 stale outbox events as 'queue worker appears down'"
+        },
+        {
+          "type": "Queued job (SendOrderMail/Sms/Push) + dispatchNewOrderSignals",
+          "what_fires": "SendOrderMail / SendOrderSms / SendOrderPush dispatch + SendOrderGotMail/Sms/Push dispatch (post-commit)",
+          "callsite": "FrontendOrderService.php:614-624",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Exception $e){ Log::warning(...); } at FrontendOrderService.php:622-624. If queue driver dies, every kiosk customer gets the order but no SMS/mail/push notification — NO ALERT.",
+          "severity": "P2 (notifications are convenience, not NF525-critical)"
+        },
+        {
+          "type": "Log::debug (dispatch gate decision)",
+          "what_fires": "Log::debug at FrontendOrderService.php:239 with full payload",
+          "silent_fail_risk": "ACCEPTABLE: debug channel typically disabled in production"
+        },
+        {
+          "type": "audit_logs write",
+          "what_fires": "NONE for kiosk order create — kiosk does not append to AuditLogService on initial create (only on counter-payment confirm + on Z aggregation)",
+          "silent_fail_risk": "NONE — no write means no risk on this path"
+        }
+      ],
+      "silent_swallow_count": 2,
+      "silent_swallow_callsites": [
+        "FrontendOrderService.php:622-624 (post-commit notifications)",
+        "FrontendOrderService.php:1387-1389 (OrderStatusChanged broadcast in dispatchOrderStatusSignals helper)"
+      ]
+    },
+    {
+      "action": "POS direct sale",
+      "endpoint": "POST /api/admin/pos",
+      "controller": "Admin\\PosController::store",
+      "service": "OrderService::posOrderStore",
+      "side_effects": [
+        {
+          "type": "audit_logs write (order discount)",
+          "what_fires": "AuditLogService::write({'action':'order.discount.applied'}) if calculatedDiscount > 0",
+          "callsite": "OrderService.php:1085-1105",
+          "silent_fail_risk": "ENFORCED: NO try/catch around the write — inside the DB::transaction. If AuditLogService rethrows (e.g. Cache::lock timeout, UNIQUE constraint on prev_hash retry exhausted), the entire order rolls back. CORRECT behavior per CLAUDE.md §8 NF525."
+        },
+        {
+          "type": "audit_logs write (order created POS — cashier attribution)",
+          "what_fires": "AuditLogService::write({'action':'order.created.pos'}) inside DB::transaction",
+          "callsite": "OrderService.php:1116-1137 (H.1 P1 AMBER 2026-05-24 / H2-HEAL-02)",
+          "silent_fail_risk": "ENFORCED: same — no try/catch, atomic with order create. P0 if it rolled back silently; P0-SAFE because it does NOT swallow."
+        },
+        {
+          "type": "Cash drawer movement",
+          "what_fires": "PaymentService::recordCashOrderMovement(strict=true) for CASH single-tender",
+          "callsite": "OrderService.php:1170-1177",
+          "silent_fail_risk": "ENFORCED (strict=true): CashDrawerSessionNotOpenException rethrows → order rollback. NF525 cash trail invariant preserved. NOTE: PaymentService.php:401-403 downgrades strict→false when config('pos.simulation_hardware')===true — production boot guard at AppServiceProvider.php:78-145 REFUSES BOOT in prod if simulation flag != false."
+        },
+        {
+          "type": "OrderCreated dispatch (after commit)",
+          "what_fires": "OrderCreated::dispatch($order) at OrderService.php:1187 inside DB::transaction (DispatchableAfterCommit)",
+          "silent_fail_risk": "SEMI-SILENT: outbox-first ensures persistence; broadcast failure retried via DispatchDomainEventsJob backoff."
+        },
+        {
+          "type": "Post-commit notifications (mail/sms/push)",
+          "what_fires": "SendOrderGotMail/Sms/Push dispatch + tryReleaseTableAfterPosOrderPaid",
+          "callsite": "OrderService.php:1194-1208",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Exception $e){ Log::warning('Notification KDS échouée …'); } at OrderService.php:1198-1200 AND :1206 (floorplan table release). Cashier UI sees success even if Mailgun + SMS provider down."
+        },
+        {
+          "type": "ActionLog write (legacy admin journal)",
+          "what_fires": "ActionLog::create({'action':'Nouvelle commande POS'}) at OrderService.php:1073-1078",
+          "silent_fail_risk": "ENFORCED inside tx: no catch — rollback on failure. NOTE: ActionLog is a separate admin display, not the HMAC chain."
+        }
+      ],
+      "silent_swallow_count": 2,
+      "silent_swallow_callsites": [
+        "OrderService.php:1198-1200 (KDS notification dispatch — already documented Wave M)",
+        "OrderService.php:1206-1208 (floorplan table release)"
+      ]
+    },
+    {
+      "action": "PosCounterCollectModal Confirm",
+      "endpoint": "POST /api/admin/pos/counter-collect/{order}/confirm",
+      "controller": "Inline closure routes/api.php:797-820",
+      "service": "PaymentService::confirmCounterPayment",
+      "side_effects": [
+        {
+          "type": "Cache::lock (idempotency middleware)",
+          "what_fires": "IdempotencyKeyMiddleware acquires lock via repository->acquire()",
+          "silent_fail_risk": "FAIL-CLOSED by default (env IDEMPOTENCY_FAIL_OPEN=false in config/idempotency.php:32). If storage dies → 503. Production boot guard at AppServiceProvider.php blocks CACHE_DRIVER in ['array','null']. NOTE V1.0.X UNI-03: 'file'/'database' PASS the guard but lack atomic cross-worker semantics — V2 cloud risk."
+        },
+        {
+          "type": "FiscalSequenceService::next allocation",
+          "what_fires": "FiscalSequenceService::next(branch_id) if locked->fiscal_sequence_no===null",
+          "callsite": "PaymentService.php:241-243",
+          "silent_fail_risk": "ENFORCED: inside DB::transaction, no try/catch → rollback on failure. NF525 invariant: no order PAID without fiscal_sequence_no."
+        },
+        {
+          "type": "audit_logs write (counter payment confirmed)",
+          "what_fires": "AuditLogService::write({'action':'order.counter_payment_confirmed'})",
+          "callsite": "PaymentService.php:309-321",
+          "silent_fail_risk": "ENFORCED inside tx — no try/catch → rollback if audit chain fails. Good."
+        },
+        {
+          "type": "Transaction model firstOrCreate",
+          "what_fires": "Transaction record COUNTER-{id}-{Ymd}",
+          "callsite": "PaymentService.php:296-307",
+          "silent_fail_risk": "ENFORCED inside tx."
+        },
+        {
+          "type": "OrderPaidAtCounter dispatch + OrderStatusChanged dispatch (auto-prepare)",
+          "what_fires": "OrderPaidAtCounter::dispatch + conditionally OrderStatusChanged::dispatch (Wave S-1) — POST commit",
+          "callsite": "PaymentService.php:329, 341-354",
+          "silent_fail_risk": "SILENT-SWALLOW on OrderStatusChanged: try{...}catch(\\Throwable $e){ Log::warning('[PaymentService] OrderStatusChanged broadcast (auto-prepare Wave S-1) failed: …'); } at PaymentService.php:348-353. ACCEPTABLE per documented Wave S-1 intent (Pusher hiccup shouldn't escalate to 5xx for cashier)."
+        },
+        {
+          "type": "Cash movement (if mode===CASH)",
+          "what_fires": "PaymentService::recordCashOrderMovement(strict=false) → CashDrawerService::recordMovement",
+          "callsite": "PaymentService.php:362-364",
+          "silent_fail_risk": "SILENT-SWALLOW: best-effort (strict=false) at PaymentService.php:460-464. If cashier has no open session OR DB hiccup, order stays PAID but cash_movements row is missing — reconciliation gap. Documented [F-003] AUDIT carve-out."
+        }
+      ],
+      "silent_swallow_count": 2,
+      "silent_swallow_callsites": [
+        "PaymentService.php:348-353 (OrderStatusChanged auto-prepare)",
+        "PaymentService.php:460-464 (recordCashOrderMovement best-effort)"
+      ]
+    },
+    {
+      "action": "PaymentComponent V5 confirm (POS sale via UI)",
+      "endpoint": "POST /api/admin/pos (NOT /admin/pos-order/{id}/payment-confirm — that endpoint does not exist)",
+      "controller": "Admin\\PosController::store (same as action #2 POS direct sale)",
+      "service": "OrderService::posOrderStore",
+      "side_effects": "SEE action #2 POS direct sale — IDENTICAL side-effect graph. The PaymentComponent.vue:879 dispatches Vuex 'posOrder/save' which POSTs admin/pos via posOrder.js:207.",
+      "additional_client_side_effects": [
+        {
+          "type": "Hardware drawer open (CASH mode)",
+          "what_fires": "openDrawer() Promise at PaymentComponent.vue:889 — best-effort no-op on web-only POS",
+          "silent_fail_risk": "SILENT-SWALLOW: .catch(()=>{}) at line 889. Drawer-not-opened goes unnoticed by cashier (only physical signal)."
+        },
+        {
+          "type": "Receipt modal show (after confirm)",
+          "what_fires": "modalHide('#orderpayment') then showReceiptModalFromDom",
+          "silent_fail_risk": "SILENT-SWALLOW: try{}catch(e){/* no-op */} at PaymentComponent.vue:1010"
+        }
+      ],
+      "silent_swallow_count": 4,
+      "silent_swallow_callsites": "Same 2 as action #2 + 2 client-side (drawer + receipt modal)"
+    },
+    {
+      "action": "KDS bump (status change)",
+      "endpoint": "POST /api/admin/kds/change-status/{order}",
+      "controller": "Admin\\KitchenDisplaySystemController::changeStatus",
+      "service": "KitchenDisplaySystemOrderService::changeStatus",
+      "side_effects": [
+        {
+          "type": "Optimistic lock 409",
+          "what_fires": "Log::channel('stack')->warning('[KDS_409]', …) when fromLocked !== expectedFrom",
+          "callsite": "KitchenDisplaySystemOrderService.php:271-281",
+          "silent_fail_risk": "SILENT-SWALLOW on inner log: try{...}catch(\\Throwable $logEx){/* never break the abort flow */} at line 281. Acceptable — log failure shouldn't block abort(409)."
+        },
+        {
+          "type": "OrderStateMachine::recordTransition",
+          "what_fires": "audit transition row via OrderStateMachine.php:132-160",
+          "callsite": "KitchenDisplaySystemOrderService.php:299-306",
+          "silent_fail_risk": "SILENT-SWALLOW inside recordTransition: try{...}catch(\\Throwable $e){ Log::warning('[OrderStateMachine] Failed to record transition: ' . $e->getMessage()); } at OrderStateMachine.php:156-157. If audit insert fails, transition still committed but no audit row. ORDER_FLOW.md §49 audit invariant silently violated."
+        },
+        {
+          "type": "Notifications dispatch (post-commit)",
+          "what_fires": "SendOrderMail/Sms/Push dispatch (queue jobs)",
+          "callsite": "KitchenDisplaySystemOrderService.php:318-320",
+          "silent_fail_risk": "NO TRY/CATCH around dispatch — if queue driver throws synchronously, the request 5xxs (but the status change is already committed). Asymmetric with FrontendOrderService:614-624 wrap. INCONSISTENT pattern."
+        },
+        {
+          "type": "Echo broadcast (KDS ticket dispatcher)",
+          "what_fires": "kdsTicketDispatcher->dispatch (likely dispatches OrderStatusChanged via outbox)",
+          "callsite": "KitchenDisplaySystemOrderService.php:322-326",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Exception $e){ Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage()); } at line 325."
+        }
+      ],
+      "silent_swallow_count": 3,
+      "silent_swallow_callsites": [
+        "KitchenDisplaySystemOrderService.php:281 (KDS_409 log)",
+        "OrderStateMachine.php:156-157 (recordTransition — applies to ALL transitions, V1-wide silent gap)",
+        "KitchenDisplaySystemOrderService.php:325 (Echo broadcast)"
+      ]
+    },
+    {
+      "action": "Admin availability toggle",
+      "endpoint": "POST /api/admin/menu/availability/toggle",
+      "controller": "Admin\\AvailabilityController::toggle",
+      "service": "AvailabilityService::toggle (app/Services/Menu/)",
+      "side_effects": [
+        {
+          "type": "DB upsert (ItemBranchAvailability)",
+          "callsite": "AvailabilityService.php:46-85",
+          "silent_fail_risk": "ENFORCED: inside DB::transaction → throws on failure → controller 5xx."
+        },
+        {
+          "type": "ItemAvailabilityChanged event (dispatched)",
+          "callsite": "AvailabilityService.php:68, 82, 144, 155, 386 (dispatchEvent helper)",
+          "listeners_chain": "EventServiceProvider.php:191-199: BumpMenuSnapshotOnItemAvailabilityChanged + InvalidateKioskMenuCacheOnItemAvailabilityChanged + PersistCatalogChangedToOutbox + PersistItemAvailabilityChangedToOutbox",
+          "silent_fail_risk": "SILENT-SWALLOW on Cache::forget: InvalidateKioskMenuCacheOnItemAvailabilityChanged.php:59-66 wraps Cache::forget in try/catch → Log::warning. If Redis down, kiosk shows stale availability for up to 60s (natural TTL expiry). DOCUMENTED as acceptable degradation."
+        },
+        {
+          "type": "audit_logs write",
+          "what_fires": "NONE — availability toggle does NOT append to AuditLogService HMAC chain",
+          "silent_fail_risk": "GAP: an 86 of an item by an admin is NOT traceable in audit_logs. The PersistItemAvailabilityChangedToOutbox listener writes to domain_events (outbox), not audit_logs. NF525 not directly impacted (not fiscal), but ops forensics ('which admin toggled this item') relies ONLY on action_logs (admin-display, not HMAC-signed)."
+        }
+      ],
+      "silent_swallow_count": 2,
+      "silent_swallow_callsites": [
+        "InvalidateKioskMenuCacheOnItemAvailabilityChanged.php:59-66 (Cache::forget — kiosk menu)",
+        "InvalidateKioskMenuCacheOnCatalogChange.php:41-46 (catalog cache invalidation)"
+      ]
+    },
+    {
+      "action": "Refund counter-entry",
+      "endpoint": "POST /api/admin/pos-order/{order}/refund-with-counter-entry",
+      "controller": "Admin\\PosOrderController::refundWithCounterEntry",
+      "service": "Order\\RefundWithCounterEntryService::execute",
+      "side_effects": [
+        {
+          "type": "DB::transaction: Order mirror create + OrderItem negated insert + Transaction REFUND row + audit_logs write + LoyaltyService::refundPoints + RefundCreated dispatch",
+          "callsite": "RefundWithCounterEntryService.php:43-263",
+          "silent_fail_risk": "ENFORCED for audit chain: AuditLogService::write at line 207-222 not wrapped in try/catch → rollback if HMAC chain fails. CORRECT NF525."
+        },
+        {
+          "type": "Fiscal channel log",
+          "callsite": "RefundWithCounterEntryService.php:224-234",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Throwable){/* best-effort log */} — acceptable, channel log is informational."
+        },
+        {
+          "type": "LoyaltyService::refundPoints inside tx",
+          "callsite": "RefundWithCounterEntryService.php:253",
+          "silent_fail_risk": "ENFORCED inside tx — no try/catch → rollback on failure. Atomic with mirror order."
+        },
+        {
+          "type": "RefundCreated event dispatch",
+          "callsite": "RefundWithCounterEntryService.php:260",
+          "listeners_chain": "EventServiceProvider.php:179-186: PersistOrderPaymentStatusChangedOnRefundCreated (first per HEAL-PLAN-D.3) + ReleaseStockOnRefundCreated + ReleaseAvailabilityOnRefundCreated",
+          "silent_fail_risk": "SEMI-SILENT: PersistOrderPaymentStatusChangedOnRefundCreated:79-138 wraps its own body in try/catch envelope (documented). Outbox SSOT preserved; downstream listeners may swallow. ACCEPTABLE per documented Wave D.3 intent."
+        },
+        {
+          "type": "Controller-level 409 catch for UNIQUE(parent_order_id)",
+          "callsite": "PosOrderController.php:81-96",
+          "silent_fail_risk": "ENFORCED: 409 with MIRROR_ALREADY_EXISTS code returned to client. Good."
+        }
+      ],
+      "silent_swallow_count": 1,
+      "silent_swallow_callsites": [
+        "RefundWithCounterEntryService.php:232-234 (fiscal channel log only)"
+      ]
+    },
+    {
+      "action": "Z-close (fiscal close)",
+      "endpoint": "POST /api/admin/fiscal/z-report/close (and CLI fiscal:close-all-active-branches)",
+      "controller": "Admin\\Fiscal\\ZReportController::close",
+      "service": "Fiscal\\ZReportService::close",
+      "side_effects": [
+        {
+          "type": "Cache::lock (z_report_b{branchId})",
+          "callsite": "ZReportService.php:191-197",
+          "silent_fail_risk": "ENFORCED: throws RuntimeException if lock not acquired in self::LOCK_ACQUIRE_SECONDS → propagates to controller → 5xx."
+        },
+        {
+          "type": "verifyChain pre-close",
+          "callsite": "ZReportService.php:201",
+          "silent_fail_risk": "ENFORCED: throws if chain integrity broken — close ABORTS. Good NF525 invariant."
+        },
+        {
+          "type": "warnOnOrphanedPaidOrders",
+          "callsite": "ZReportService.php:229, 611-614",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Throwable $e){ Log::warning('[FISCAL-ORPHAN-RETRY] warnOnOrphanedPaidOrders failed: ' . $e->getMessage()); } at ZReportService.php:611-614. Acceptable — warning helper only, not data write."
+        },
+        {
+          "type": "aggregate + sign + DB save",
+          "callsite": "ZReportService.php:231-247",
+          "silent_fail_risk": "ENFORCED inside DB::transaction → rollback on failure → propagates to controller."
+        },
+        {
+          "type": "Fiscal channel log (z_report.close)",
+          "callsite": "ZReportService.php:253-265",
+          "silent_fail_risk": "NO TRY/CATCH around the Log::channel('fiscal')->info — if fiscal log channel dies, the call may throw. Outer catch at :275-285 logs FISCAL_TIMING and rethrows. Effectively ENFORCED (rethrows after logging)."
+        },
+        {
+          "type": "Cache lock release in finally",
+          "callsite": "ZReportService.php:272-274",
+          "silent_fail_risk": "SILENT-SWALLOW: try{ $lock->release(); }catch(\\Throwable $e){} — acceptable, release-failure on already-expired lock is no-op."
+        },
+        {
+          "type": "audit_logs write",
+          "what_fires": "NONE for z-report close itself — the z_reports table IS the fiscal record (separate HMAC chain via signature column). audit_logs covers individual orders.",
+          "silent_fail_risk": "BY DESIGN — z_reports is a separate signed chain."
+        },
+        {
+          "type": "Echo broadcast",
+          "what_fires": "NONE direct — Z close does NOT broadcast to KDS/POS. Last-Z-widget polls via separate index endpoint.",
+          "silent_fail_risk": "ACCEPTABLE polling pattern."
+        }
+      ],
+      "silent_swallow_count": 3,
+      "silent_swallow_callsites": [
+        "ZReportService.php:283 (FISCAL_TIMING log inner)",
+        "ZReportService.php:273 (lock release)",
+        "ZReportService.php:611-614 (warnOnOrphanedPaidOrders)"
+      ]
+    },
+    {
+      "action": "Login",
+      "endpoint": "POST /api/auth/login",
+      "controller": "Auth\\LoginController::login",
+      "side_effects": [
+        {
+          "type": "Sanctum token revoke + create",
+          "callsite": "LoginController.php:155-161 (Sprint 5D Z6-01: revoke prior auth_token rows, then createToken)",
+          "silent_fail_risk": "ENFORCED: DB writes — exception → controller 5xx."
+        },
+        {
+          "type": "audit_logs write (user.login)",
+          "what_fires": "AuditLogService::write({'action':'user.login'}) at LoginController.php:118-134",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Throwable $auditEx){ Log::warning('[H2-HEAL-02] user.login audit write failed', …); } at LoginController.php:135-144. DOCUMENTED intent: 'a cashier locked out by an audit-chain hiccup is worse than a missing audit row in a single login event'. NF525 chain GAP risk: silent skipped login events. Mitigation: ops Log::warning grep + monitoring."
+        },
+        {
+          "type": "Bcrypt rehash (transparent)",
+          "callsite": "LoginController.php:103-106",
+          "silent_fail_risk": "ENFORCED: $user->save() throws on DB failure → 5xx. Good."
+        },
+        {
+          "type": "defaultAccessService::storeOrUpdate (branch_id)",
+          "callsite": "LoginController.php:88",
+          "silent_fail_risk": "ENFORCED: throws → 5xx."
+        }
+      ],
+      "silent_swallow_count": 1,
+      "silent_swallow_callsites": [
+        "LoginController.php:135-144 (user.login audit write)"
+      ]
+    },
+    {
+      "action": "Logout",
+      "endpoint": "POST /api/auth/logout",
+      "controller": "Auth\\LoginController::logout",
+      "side_effects": [
+        {
+          "type": "PersonalAccessToken::delete (current)",
+          "callsite": "LoginController.php:207-216",
+          "silent_fail_risk": "ENFORCED: DB exception → 5xx."
+        },
+        {
+          "type": "audit_logs write (user.logout)",
+          "what_fires": "AuditLogService::write({'action':'user.logout'}) at LoginController.php:226-241",
+          "silent_fail_risk": "SILENT-SWALLOW: try{...}catch(\\Throwable $auditEx){ Log::warning('[H2-HEAL-02] user.logout audit write failed', …); } at LoginController.php:242-248. Same docu intent as login: missing audit row better than blocking logout. NF525 chain GAP."
+        }
+      ],
+      "silent_swallow_count": 1,
+      "silent_swallow_callsites": [
+        "LoginController.php:242-248 (user.logout audit write)"
+      ]
+    }
+  ],
+  "specific_hunts": {
+    "H1_AuditLogService_write_failure_path": {
+      "verdict": "AMBER — confirmed gaps",
+      "total_callsites": "34 AuditLogService::write or writeAuditLog calls grep'd in app/",
+      "silent_swallow_sites_found": [
+        {
+          "file": "app/Services/Cash/CashDrawerService.php:534",
+          "context": "Sprint 1D / F-8 wrapper",
+          "documented": "YES — block comment lines 507-514 explicitly documents 'audit log failures are downgraded to log warnings — the fiscal invariants enforced upstream (DB triggers, immutability, FK RESTRICT) remain the source of truth even if the chain temporarily fails'"
+        },
+        {
+          "file": "app/Services/Delivery/DeliveryBoyCashSessionService.php:424",
+          "context": "V1.0.2 Sub-6.3 wrapper",
+          "documented": "YES — same pattern as CashDrawerService"
+        },
+        {
+          "file": "app/Http/Controllers/Auth/LoginController.php:135-144",
+          "context": "H2-HEAL-02 user.login",
+          "documented": "YES — explicit intent comment"
+        },
+        {
+          "file": "app/Http/Controllers/Auth/LoginController.php:242-248",
+          "context": "H2-HEAL-02 user.logout",
+          "documented": "YES"
+        },
+        {
+          "file": "app/Services/OrderService.php:1815-1823",
+          "context": "DeliveryBoy cash-collection audit write fail",
+          "documented": "YES — explicit comment: 'Never let an audit write error cascade into a billing rollback — NF525 chain breakage is surfaced via verifyChain() + ops alerting'"
+        },
+        {
+          "file": "app/Services/OrderService.php:2369-2374",
+          "context": "DeliveryBoy driver-assignment audit_log write fail",
+          "documented": "PARTIAL"
+        },
+        {
+          "file": "app/Services/OrderService.php:2164-2166",
+          "context": "best-effort audit at sealed order refund attempt",
+          "documented": "YES — comment '// best-effort audit'"
+        },
+        {
+          "file": "app/Services/OrderService.php:1974-1976",
+          "context": "anonymous catch \\Throwable for audit best-effort",
+          "documented": "INFERRED from pattern"
+        },
+        {
+          "file": "app/Http/Controllers/Frontend/OrderController.php:234-236",
+          "context": "Kiosk Rejected payment ActionLog (NOT AuditLogService — ActionLog model, but same silent pattern)",
+          "documented": "YES"
+        },
+        {
+          "file": "app/Http/Controllers/Frontend/OrderController.php:303-305",
+          "context": "Kiosk Paiement carte confirmé ActionLog write fail",
+          "documented": "YES"
+        }
+      ],
+      "production_impact": "Silent NF525 chain GAPS are possible at cash drawer session events (open/close/reconcile/movement), delivery boy cash events, login/logout events. The DB-layer immutability (no-delete triggers) protects the EXISTING rows but missing-write events are unrecoverable. Mitigated by: (1) FiscalChainValidator periodic verifyChain, (2) Log::warning grep in ops, (3) DB unique constraints prevent duplicate retries. Compliance risk: missing audit events for cash sessions during ops review = audit finding. V1 LOCAL Le Cayenne ACCEPTABLE per documented intent; V2 SaaS multi-tenant requires alerting pipeline."
+    },
+    "H2_Cache_forget_pattern_audit": {
+      "verdict": "AMBER — documented but unmonitored",
+      "callsites": 6,
+      "all_wrapped_in_try_catch": true,
+      "details": [
+        {
+          "file": "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php:59-66",
+          "key_pattern": "kiosk.menu.branch.{branchId}",
+          "fail_consequence": "Kiosk shows stale availability for up to config('kiosk.menu_cache_ttl', 60) seconds",
+          "v1_local_acceptable": "YES — 60s acceptable for single-resto"
+        },
+        {
+          "file": "app/Listeners/InvalidateKioskMenuCacheOnCatalogChange.php:41-46",
+          "fail_consequence": "Catalog stale, snapshot version bump may still propagate via outbox"
+        },
+        {
+          "file": "app/Listeners/InvalidateMenuProjectionOnIngredientChange.php:61",
+          "needs_verification": "Pattern not yet read — assume same wrap"
+        }
+      ],
+      "monitoring_gap": "No alerting on Cache::forget failure rate. Production should grep Log::warning('[KioskMenu]') and alert if >5/hour."
+    },
+    "H3_Echo_broadcast_failure_path": {
+      "verdict": "GREEN — well-instrumented",
+      "details": "DispatchDomainEventsJob.php:96-191 has comprehensive retry curve (1s/5s/15s/60s/300s × 6 tries = 6.4 min worst case). On Pusher 5xx the job retries; on PayloadMismatchException it short-circuits via \\$this->fail() (F-3 SYNC P1 V1.0.1 quick win 2026-05-19). HealthController.php:155 flags >10 stale outbox events as 'queue worker appears down'. SyncOverviewController.php:165,372,398 surfaces metrics + replays. The 742 stale outbox events on dev box are NOT a silent failure — they are SURFACED via health endpoint.",
+      "concerns": [
+        "ws:heartbeat best-effort write at DispatchDomainEventsJob.php:128-132 — if Cache::put fails, heartbeat stale, admin dashboard shows red-amber but outbox dispatch continues. CORRECT order of priority.",
+        "SyncMetricsRecorder swallows internally (line 147-149) — observability MUST NEVER break outbox dispatch."
+      ]
+    },
+    "H4_Idempotency_middleware_Cache_lock_failure_path": {
+      "verdict": "GREEN — fail-closed default",
+      "details": "config/idempotency.php:32 'fail_open' => (bool) env('IDEMPOTENCY_FAIL_OPEN', false). Default FALSE → IdempotencyStorageUnavailableException returns 503. AppServiceProvider.php:78-145 production boot guard BLOCKS CACHE_DRIVER in ['array','null']. Cashier sees toast 'Service indisponible' on Redis outage instead of duplicate orders.",
+      "v1_caveat": "CLAUDE.md line ~239 notes UNI-03 backlog: 'file' / 'database' cache drivers PASS the guard but lack atomic cross-worker semantics. V1 LOCAL single-box file driver SAFE; V2 cloud ALB multi-instance requires widening forbidden list."
+    },
+    "H5_File_write_failure_storage_full": {
+      "verdict": "AMBER — backup marker uses error-suppression",
+      "details": [
+        {
+          "file": "app/Console/Commands/Backup/RunDailyBackup.php:430",
+          "pattern": "@file_put_contents(\\$this->failureMarker, \\$payload)",
+          "concern": "@-suppress prevents the marker write from throwing — if disk is full at the same moment as the backup failed, the marker is silently dropped AND the alerter (which tails .last-failure) sees nothing. Cron mail fallback (exit code) is the backstop."
+        },
+        {
+          "files": [
+            "app/Services/LanguageService.php:214 (language file write — admin op, no NF525 concern)",
+            "app/Services/InstallerService.php:110,113 (one-time installer)"
+          ]
+        }
+      ],
+      "production_impact": "Backup failure marker can be lost on disk-full. Backup itself depends on cron exit code → MTA delivery → ops mailbox. Multiple fallback layers but no single bullet-proof channel. Receipt PDF generation NOT found in code-grep (V1 may not generate PDFs server-side)."
+    },
+    "H6_Updated_at_implicit_touches": {
+      "verdict": "GREEN — no implicit relationships",
+      "details": "Grep for 'protected \\$touches' returns 0 results in app/Models. No Eloquent parent-touch relationships. Order::create() does NOT touch branch.updated_at. Stale-data risk via implicit touches is ABSENT."
+    }
+  },
+  "total_silent_swallow_callsites": 22,
+  "top_silent_swallow_concerns": [
+    {
+      "rank": 1,
+      "severity": "P1",
+      "file": "app/Domain/Order/OrderStateMachine.php:156-157",
+      "pattern": "OrderStateMachine::recordTransition wraps DB insert in try/catch → Log::warning",
+      "scope_of_impact": "ALL order status transitions across POS/Kiosk/KDS/DeliveryBoy/Admin paths swallow OrderStatusTransition audit-row failures silently",
+      "production_risk": "ORDER_FLOW.md §49 audit invariant ('every transition recorded') silently violated. Forensic reconstruction of 'when did order X move from ACCEPT to PREPARING' becomes lossy. Single-point-of-failure on transition audit table.",
+      "fix_recommendation": "Either (a) rethrow on critical-status writes (ACCEPT, PAID, DELIVERED) and let caller decide; or (b) add SyncMetricsRecorder hook to fire alert when warning rate >5/min. NOT a V1 ship blocker (events still committed; just no audit row), but operationally important.",
+      "v1_acceptable": "YES (documented), V1.0.2 hardening item"
+    },
+    {
+      "rank": 2,
+      "severity": "P1",
+      "file": "app/Services/Cash/CashDrawerService.php:534 + app/Services/Delivery/DeliveryBoyCashSessionService.php:424",
+      "pattern": "writeAuditLog helper swallows AuditLogService::write failures",
+      "scope_of_impact": "Cash session open/close/reconcile/movement events + delivery boy cash events. NF525 chain gaps possible on Cache::lock outage or DB hiccup.",
+      "production_risk": "NF525 compliance audit: missing audit_logs rows for cash session lifecycle = ops finding. DB-layer immutability triggers PROTECT existing rows but cannot recover missing writes. Mitigation: FiscalChainValidator periodic verifyChain.",
+      "fix_recommendation": "Add a fallback persistent-queue (cash_audit_pending table) for failed writes + reconciler cron. Or: bubble the failure when Cache::lock specifically times out (distinguish transient vs systemic).",
+      "v1_acceptable": "YES (documented intent), V2 SaaS HARDEN"
+    },
+    {
+      "rank": 3,
+      "severity": "P2",
+      "file": "app/Http/Controllers/Auth/LoginController.php:135-144 + :242-248",
+      "pattern": "user.login / user.logout audit_logs write swallowed",
+      "scope_of_impact": "Per-user authentication events not recorded if AuditLogService fails",
+      "production_risk": "Security forensics ('who logged in at 02:00') depends solely on Laravel session/Sanctum token table. NF525 6-year traceability for user attribution requires audit_logs rows.",
+      "fix_recommendation": "Same as #2 — fallback queue. The cashier-lockout-priority intent is correct but absorbs the entire failure silently.",
+      "v1_acceptable": "YES (documented), V2 HARDEN"
+    },
+    {
+      "rank": 4,
+      "severity": "P2",
+      "file": "app/Services/PaymentService.php:460-464",
+      "pattern": "recordCashOrderMovement(strict=false) silently swallows missing cash session linkage",
+      "scope_of_impact": "Kiosk counter-collect (CASH mode at counter) — order stays PAID but cash_movements table missing the row → cash drawer reconciliation gap",
+      "production_risk": "Cashier closes drawer at end of shift, variance reconciliation shows X € in drawer but Y € expected — variance unexplained. NF525 cash trail incomplete.",
+      "fix_recommendation": "Surface a cashier UI warning when strict=false fall-through fires. Or: alert ops on rate >2/hour.",
+      "v1_acceptable": "DOCUMENTED legacy carve-out per [F-003] AUDIT"
+    },
+    {
+      "rank": 5,
+      "severity": "P2",
+      "file": "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php:59-66 + InvalidateKioskMenuCacheOnCatalogChange.php:41-46",
+      "pattern": "Cache::forget swallowed → kiosk stale up to 60s on Redis outage",
+      "scope_of_impact": "Customer sees item available, adds to cart, POST /order returns 409 conflict (catalog flipped during cache TTL)",
+      "production_risk": "Kiosk friction. NOT fiscal. UX-grade.",
+      "fix_recommendation": "Acceptable for V1 LOCAL (60s natural TTL). V2 cloud: switch to per-event cache versioning (snapshot_version bump already in place for the snapshot, but Cache::forget on the raw key still needed for /api/frontend/menu).",
+      "v1_acceptable": "YES per existing doc"
+    }
+  ],
+  "production_monitoring_recommendations": [
+    {
+      "priority": "P0",
+      "recommendation": "Add a metrics counter for [OrderStateMachine] Failed to record transition warning rate. Alert ops if >5/min sustained for 5 min. Currently invisible — would only be noticed by manually grepping logs.",
+      "implementation": "SyncMetricsRecorder::recordStateMachineAuditFailure(orderId, fromStatus, toStatus). Wire into OrderStateMachine.php:157 inside the catch block."
+    },
+    {
+      "priority": "P0",
+      "recommendation": "Periodic FiscalChainValidator::verifyChain scheduled task (Console/Kernel.php schedule) + alert on first GAP detected. The chain validator exists (app/Services/Fiscal/FiscalChainValidator.php) — verify it is scheduled.",
+      "implementation": "Inspect Console/Kernel.php for fiscal:verify-chain schedule. If absent, add daily 02:00 + alert via observability channel."
+    },
+    {
+      "priority": "P1",
+      "recommendation": "Add cash_audit_pending fallback table: when CashDrawerService::writeAuditLog falls into catch block, persist the (action, session_id, payload, retry_count) tuple. A retry cron reapplies them. Same for DeliveryBoyCashSessionService.",
+      "implementation": "New migration + cash:audit-replay artisan command + Console/Kernel scheduled hourly."
+    },
+    {
+      "priority": "P1",
+      "recommendation": "Surface a UI banner in admin/observability when ws:heartbeat is stale >120s (the current TTL). Already wired via SyncOverviewController.php:531 read — verify dashboard actually shows it.",
+      "implementation": "Frontend admin observability page render — check Vue.js component."
+    },
+    {
+      "priority": "P2",
+      "recommendation": "Replace @file_put_contents at RunDailyBackup.php:430 with file_put_contents inside try/catch → fallback to syslog if backup-marker disk is full. The @-suppress hides the only ops signal.",
+      "implementation": "5-line change in RunDailyBackup::reportFailure."
+    },
+    {
+      "priority": "P2",
+      "recommendation": "Add observability counter for FCM legacy URL failure rate. FcmNotificationService swallows every API failure with Log::warning/error. Counter + 5xx-rate alert prevents silent push notification outage.",
+      "implementation": "New counter in SyncMetricsRecorder — increment in FcmNotificationService.php:85,93,149,156,216,222."
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "V1 LOCAL Le Cayenne is SHIPPABLE — the silent-swallow pattern is consistently DOCUMENTED with explicit intent comments and the dominant invariants (NF525 fiscal_sequence_no allocation, payment_status flip, OrderCreated outbox-first) ARE enforced inside DB transactions and rollback on failure. However, 22 silent-swallow callsites form an unmonitored degradation surface: when ANY of them fire, ops has no signal except grepping Log::warning manually. The top 3 (OrderStateMachine recordTransition, CashDrawer writeAuditLog, Login/Logout audit) are NF525-adjacent and warrant V1.0.2 metric+alert pipeline before V2 multi-tenant SaaS rollout. ZERO V1 SHIP BLOCKERS — all swallows are downstream best-effort; the upstream DB invariants are intact.",
+  "convergence_with_other_audits": {
+    "phase_f_outbox_audit": "Confirms 742 stale outbox events = signature of Pusher silent failure pre R1 SRE-001 ws:heartbeat heal (2026-05-19). Healed.",
+    "B5_cash_drawer_audit": "Documented CashDrawerService:534 + DeliveryBoyCashSessionService:424 — re-confirmed here.",
+    "F6_idempotency_audit": "Confirms IDEMPOTENCY_FAIL_OPEN=false default → fail-closed semantics intact.",
+    "UNI_03_backlog": "Confirms file/database cache driver V2 risk for ALB multi-instance — irrelevant V1 LOCAL."
+  }
+}

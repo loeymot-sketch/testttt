@@ -1,6 +1,6 @@
 <template>
     <button v-if="order.order_type === enums.orderTypeEnum.TAKEAWAY" @click.prevent="mapModal" data-modal="#mapModal"
-        type="button" class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]">
+        type="button" class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]">
         <i class="lab lab-map-navigate lab-font-size-16 text-primary"></i>
     </button>
 

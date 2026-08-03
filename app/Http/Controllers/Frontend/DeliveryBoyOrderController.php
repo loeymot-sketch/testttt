@@ -8,10 +8,11 @@ use App\Models\Order;
 use App\Services\OrderService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PaginateRequest;
-use App\Http\Requests\OrderStatusRequest;
 use App\Http\Resources\OrderDetailsResource;
 use App\Http\Resources\DeliveryBoyOrderCountResource;
 use App\Http\Resources\SimpleDeliveryBoyOrderResource;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class DeliveryBoyOrderController extends Controller
 {
@@ -35,6 +36,8 @@ class DeliveryBoyOrderController extends Controller
     {
         try {
             return new OrderDetailsResource($this->orderService->deliveryBoyOrderDetails($order));
+        } catch (HttpExceptionInterface $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -49,10 +52,33 @@ class DeliveryBoyOrderController extends Controller
         }
     }
 
-    public function deliveryBoyOrderChangeStatus(Order $order, OrderStatusRequest $request)
+    public function deliveryBoyOrderChangeStatus(Order $order, Request $request)
     {
         try {
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-04 P1] Defense-in-depth.
+            // Constrain the accepted status values at the HTTP request boundary
+            // to the four driver-permitted OrderStatus codes. The downstream
+            // OrderStateMachine via ValidStatusTransition still enforces the
+            // legal flow ; the explicit `in:` rule produces a deterministic
+            // 422 enum violation on out-of-range integers (e.g. 99, -1) and
+            // documents the driver-side contract in code. Mirrors OSS / KDS
+            // request-layer whitelists.
+            $request->validate([
+                'status' => [
+                    'required',
+                    'integer',
+                    'in:' . implode(',', [
+                        \App\Enums\OrderStatus::PREPARED,
+                        \App\Enums\OrderStatus::OUT_FOR_DELIVERY,
+                        \App\Enums\OrderStatus::DELIVERED,
+                        \App\Enums\OrderStatus::RETURNED,
+                    ]),
+                ],
+            ]);
+
             return new OrderDetailsResource($this->orderService->deliveryBoyOrderChangeStatus($order, $request));
+        } catch (HttpExceptionInterface $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

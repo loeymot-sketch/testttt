@@ -51,12 +51,39 @@ class OutboxTest extends TestCase
         try {
             OrderCreated::dispatch($order);
 
-            $this->assertDatabaseCount('domain_events', 1);
+            // Gate C9 — KI-001 : OrderCreated uses DispatchableAfterCommit, so
+            // the listener (PersistOrderCreatedToOutbox) is NOT invoked while the
+            // transaction is still pending. The afterCommit callback is queued
+            // on the connection's transactionsManager and only fires on COMMIT.
+            // This is strictly safer than the legacy "insert + rely on rollback"
+            // because it eliminates the window where downstream consumers could
+            // observe a row that gets rolled back.
+            $this->assertDatabaseCount('domain_events', 0);
         } finally {
             DB::rollBack();
         }
 
+        // After rollback the queued afterCommit callback is discarded, so no
+        // domain_events row was ever created — exactly the invariant we want.
         $this->assertDatabaseCount('domain_events', 0);
+    }
+
+    public function test_domain_event_persisted_only_after_commit(): void
+    {
+        Queue::fake();
+
+        $order = $this->createOrder();
+
+        DB::transaction(function () use ($order): void {
+            OrderCreated::dispatch($order);
+
+            // Inside the transaction the listener is still deferred.
+            $this->assertDatabaseCount('domain_events', 0);
+        });
+
+        // After successful commit the deferred dispatch fires synchronously
+        // (Queue is faked → handler runs in-process), persisting the outbox row.
+        $this->assertDatabaseCount('domain_events', 1);
     }
 
     public function test_dispatch_job_marks_event_dispatched(): void
@@ -66,15 +93,18 @@ class OutboxTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 123,
             'branch_id' => 1,
-            'payload' => ['order_id' => 123],
+            'payload' => $this->orderCreatedPayload(123),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'correlation_id' => 'test-uuid-1234',
             'occurred_at' => now(),
         ]);
 
-        $pusher = Mockery::mock();
-        $pusher->shouldReceive('trigger')
+        // [T09b] Mock the Laravel Broadcaster::broadcast() API, not the
+        // Pusher SDK trigger(). The job now goes through the standard
+        // Laravel broadcasting API so we assert that contract directly.
+        $connection = Mockery::mock(\Illuminate\Contracts\Broadcasting\Broadcaster::class);
+        $connection->shouldReceive('broadcast')
             ->once()
             ->withArgs(function ($channels, $eventName, $data) {
                 return $channels === ['private-branch.1']
@@ -82,18 +112,13 @@ class OutboxTest extends TestCase
                     && $data['version'] === 1
                     && $data['type'] === EventType::ORDER_CREATED
                     && $data['aggregate_id'] === 123
-                    && $data['payload'] === ['order_id' => 123];
+                    && $data['payload'] === $this->orderCreatedPayload(123);
             });
-
-        $connection = Mockery::mock();
-        $connection->shouldReceive('getPusher')
-            ->once()
-            ->andReturn($pusher);
 
         $manager = Mockery::mock(BroadcastManager::class);
         $manager->shouldReceive('connection')
             ->once()
-            ->with('pusher')
+            ->withNoArgs()
             ->andReturn($connection);
 
         $this->app->instance(BroadcastManager::class, $manager);
@@ -116,7 +141,7 @@ class OutboxTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 321,
             'branch_id' => 1,
-            'payload' => ['order_id' => 321],
+            'payload' => $this->orderCreatedPayload(321),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'occurred_at' => now()->subMinutes(3),
@@ -136,8 +161,13 @@ class OutboxTest extends TestCase
         });
     }
 
-    public function test_retry_failed_resets_and_requeues(): void
+    public function test_retry_failed_preserves_attempts_and_requeues(): void
     {
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Sentinel updated post-heal.
+        // Pre-heal the OutboxRetryFailedCommand wiped `attempts=0` + `last_error=null`
+        // on every replay, causing chronic-fail rows to flap indefinitely (prune
+        // lane `attempts>=6 AND created_at<cutoff` was unreachable). Post-heal:
+        // attempts + last_error PRESERVED; only dispatched_at re-nulled.
         Bus::fake();
 
         $domainEvent = DomainEvent::query()->create([
@@ -145,7 +175,7 @@ class OutboxTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 654,
             'branch_id' => 1,
-            'payload' => ['order_id' => 654],
+            'payload' => $this->orderCreatedPayload(654),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'occurred_at' => now()->subMinutes(10),
@@ -163,9 +193,9 @@ class OutboxTest extends TestCase
 
         $domainEvent->refresh();
 
-        $this->assertSame(0, $domainEvent->attempts);
-        $this->assertNull($domainEvent->last_error);
-        $this->assertNull($domainEvent->dispatched_at);
+        $this->assertSame(5, $domainEvent->attempts, 'attempts must be PRESERVED (Heal B.1 monotonic semantics).');
+        $this->assertSame('Pusher timeout', (string) $domainEvent->last_error, 'last_error must be PRESERVED as forensic trail.');
+        $this->assertNull($domainEvent->dispatched_at, 'dispatched_at must be re-nulled so DispatchDomainEventsJob can re-claim.');
 
         Bus::assertDispatched(DispatchDomainEventsJob::class, function (DispatchDomainEventsJob $job) use ($domainEvent): bool {
             return $job->domainEventId === $domainEvent->id;
@@ -194,5 +224,18 @@ class OutboxTest extends TestCase
             'order_type' => 1,
             'total' => 19.90,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function orderCreatedPayload(int $orderId): array
+    {
+        return [
+            'order_id' => $orderId,
+            'queue_number' => 'Q-' . $orderId,
+            '_origin' => 'pos',
+            'payment_method' => 'cash',
+        ];
     }
 }

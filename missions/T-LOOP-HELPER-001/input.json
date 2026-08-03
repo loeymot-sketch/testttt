@@ -1,0 +1,14 @@
+{
+  "task_id": "T-LOOP-HELPER-001",
+  "context": "FoodKing POS frontend (Vue 3 + plain JS helpers). Le helper actuel manque de fonctions arithmetiques en cents (entiers) reutilisables. Vitest est deja configure (tests/js/*.spec.js).",
+  "objective": "Creer 2 fichiers : 1) resources/js/helpers/posCentsArith.js exposant addCents, subCents, sumCents (variadique) et toCents(amount) qui convertit un float decimal (max 2 decimales) en cents entier en evitant les pieges du float (ex 0.1+0.2). 2) tests/js/posCentsArith.spec.js avec au moins 8 cas couvrant : somme simple, soustraction, valeurs negatives interdites (throw), variadique vide -> 0, conversion 0.1 -> 10, conversion 0.30000004 -> 30, refus d entier non-fini (Infinity, NaN), refus de string. Tout en CommonJS-friendly (export par default ET nomme), code defensif, aucun import externe.",
+  "constraints": [
+    "Pas de calcul de prix metier (juste arithmetique cents)",
+    "Pas de string OrderStatus",
+    "Pas de touch a OrderService / FrontendOrderService / branch_id",
+    "ESM: export named + export default object",
+    "Vitest syntax (describe/it/expect)",
+    "Aucune dependance externe (utilise Math.round)"
+  ],
+  "expected_output_format": "Renvoie strictement un objet JSON avec keys files_to_modify, implementation_steps, code_blocks (array de { path, op, excerpt }), risks, notes, execution_trace. execution_trace.delegation doit etre exactement codex-terminal et execution_trace.invariants_considered un sous-ensemble de [pricing_ssot, order_status, branch_id, commit_before_dispatch]. Aucun markdown, aucun texte hors JSON."
+}

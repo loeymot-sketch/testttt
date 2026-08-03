@@ -1,0 +1,14 @@
+{
+  "report": {
+    "isAuthed": true,
+    "acctDom": {
+      "hasLogout": false,
+      "hasFakeCard": false,
+      "hasAucuneCarte": false,
+      "mentionsStripe": false,
+      "hasDeleteInert": false,
+      "loyaltyPointsVisible": true
+    }
+  },
+  "errors": []
+}

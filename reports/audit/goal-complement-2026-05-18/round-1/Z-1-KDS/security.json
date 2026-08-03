@@ -1,0 +1,107 @@
+{
+  "role": "Security",
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "scope": "Branch isolation, BranchScope, token leak, GDPR data minimization, FormRequest authz",
+  "anchors_verified": [
+    "app/Http/Controllers/Admin/KdsSyncController.php:21-79",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:14-61",
+    "app/Services/KitchenDisplaySystemOrderService.php:63-85,170-228",
+    "app/Services/KdsSyncService.php:37-149",
+    "app/Http/Resources/KDSOrderDetailsResource.php:56-71",
+    "app/Http/Requests/Kds/KdsOrderStatusRequest.php:11-21"
+  ],
+  "findings": [
+    {
+      "id": "Z1-SEC-P1-01",
+      "severity": "P1",
+      "title": "GDPR-leak risk: KDS Order broadcast channel for OrderStatusChanged is per-tenant — not per-branch — and ships customer name to every subscriber",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php",
+        "lines": "67-71",
+        "code_excerpt": "'customer' => $this->whenLoaded('user', fn () => $this->user ? ['name' => $this->user->name, 'phone' => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user->phone : null] : null)",
+        "comment_at_line_62": "[Sprint 5A Z9-P0-03] GDPR data-minimization: customer.phone is shipped ONLY for DELIVERY orders. ... but JSON wire still leaked phone to all KDS WebSocket subscribers."
+      },
+      "impact": [
+        "customer.name is still shipped on ALL KDS payloads (kiosk/takeaway/dine-in/delivery) — not minimized to delivery only",
+        "If a multi-tenant deployment shares an Echo Pusher app key across tenants, names could leak cross-tenant via channel subscription escape (not verified, but worth confirming Pusher app-id-per-tenant isolation)"
+      ],
+      "scope_minimal_heal_recommendation": "Audit Pusher app/key isolation (out of scope, see Z-6 Sync). Verify channel name includes branch_id prefix; restrict customer.name to dine-in/delivery only (kiosk/takeaway: queue_number suffices). Estimated 1h heal + 1h sentinel.",
+      "backlog_ticket": "V1.0.2-KDS-CUSTOMER-NAME-GDPR-MINIMIZATION",
+      "audit_status": "Read-verified — comment at line 62 acknowledges historic phone leak"
+    },
+    {
+      "id": "Z1-SEC-PASS-02",
+      "severity": "PASS",
+      "title": "Branch isolation in KdsSyncController is correctly enforced",
+      "evidence": {
+        "file": "app/Http/Controllers/Admin/KdsSyncController.php",
+        "lines": "50-66",
+        "code_excerpt": "$userBranchId = (int) ($user->branch_id ?? 0); $requestedBranchId = $request->query('branch_id'); $resolvedBranchId = $userBranchId; if ($userBranchId === 0) { /* admin global */ if ($requestedBranchId) $resolvedBranchId = (int) $requestedBranchId; } elseif ((int) $requestedBranchId !== $userBranchId) { return 403 'Cross-branch access is forbidden.'; }"
+      },
+      "verdict": "Branch isolation enforced server-side; explicit 403 for cross-branch staff attempt. Admin bypass (branch_id=0) honors explicit override. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SEC-PASS-03",
+      "severity": "PASS",
+      "title": "changeStatus enforces branch isolation under DB lock + optimistic concurrency",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "176-202",
+        "code_excerpt": "$locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail(); $userBranchId = (int) (auth()->user()->branch_id ?? 0); if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) { abort(403, ...); } ... if ($fromLocked !== $expectedFrom) { ...abort(409, ...); }"
+      },
+      "verdict": "FOR UPDATE lock + branch check + 409 conflict on stale expected_status. Audit log via [KDS_409] channel preserves attempted_status + user_id. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SEC-PASS-04",
+      "severity": "PASS",
+      "title": "FormRequest authz on changeStatus correctly restricts to kitchen roles",
+      "evidence": {
+        "file": "app/Http/Requests/Kds/KdsOrderStatusRequest.php",
+        "lines": "11-21",
+        "code_excerpt": "public function authorize(): bool { if (! auth()->check()) return false; $user = auth()->user(); return method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['Admin', 'Branch Manager', 'Chef', 'POS Operator', 'Cashier']); }"
+      },
+      "verdict": "Spatie role check on top of permission:kitchen-display-system middleware. Double-defense. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SEC-P2-05",
+      "severity": "P2",
+      "title": "Cache TTL 5s on KDS sync payload could leak admin-global data to a freshly downgraded staff user",
+      "evidence": {
+        "file": "app/Services/KdsSyncService.php",
+        "lines": "39-48",
+        "code_excerpt": "$cacheBranchKey = $branchId === 0 ? 'all' : (string) $branchId; $cacheKey = sprintf('kds.sync.%s.%s.%s', $cacheBranchKey, $minuteBucket, md5(...));"
+      },
+      "impact": "Cache key correctly salted with branch_id. If admin sees 'all' then ROLE is reduced to staff branch X within 5s, the staff endpoint call uses branch_id=X which generates a DIFFERENT cache key. PASS — but worth a sentinel test asserting cache key salt includes branch context.",
+      "scope_minimal_heal_recommendation": "Add sentinel test: kds.sync cache key MUST include resolved branch_id. Estimated 30min.",
+      "backlog_ticket": "V1.0.2-KDS-SYNC-CACHE-KEY-SENTINEL",
+      "audit_status": "Read-verified — actually a PASS but worth a sentinel"
+    },
+    {
+      "id": "Z1-SEC-P3-06",
+      "severity": "P3",
+      "title": "KDS bump localStorage is shared across browser tabs of the SAME station regardless of user identity",
+      "evidence": {
+        "file": "resources/js/store/modules/kds.js",
+        "lines": "1,16-26",
+        "code_excerpt": "const STORAGE_BUMPED = 'kds.bumped_items_v1'; // no user_id salt"
+      },
+      "impact": "Workstation handover: outgoing chef's bump state visible to incoming chef. Not a data-leak per se (only own-branch orders rendered) but operational confusion.",
+      "scope_minimal_heal_recommendation": "Same as Z1-ARCH-P2-03. Heal duplicate.",
+      "backlog_ticket": "V1.0.2-KDS-BUMP-USER-NAMESPACE (dup)",
+      "audit_status": "Read-verified"
+    }
+  ],
+  "branch_isolation_check": {
+    "controller_resolution": "PASS — KdsSyncController:50-66, KitchenDisplaySystemOrderService:182-185",
+    "service_query_scoping": "PASS — KitchenDisplaySystemOrderService:83-85, KdsSyncService:96-98",
+    "branchscope_global_applied": "PASS — Order model inherits BranchScope per CLAUDE.md §9 (Order is in 11-model post-iter11+12 list)",
+    "admin_bypass_explicit": "PASS — userBranchId === 0 honors ?branch_id override only",
+    "cross_branch_403_on_stale_token": "PASS — explicit abort(403) at controller AND service layers"
+  },
+  "summary_one_line": "Branch isolation is exemplary (double-defense: controller + service + BranchScope). Only P1 finding is residual customer.name in KDS payload across all order types — historic GDPR phone leak was healed for phone only, name still ships."
+}

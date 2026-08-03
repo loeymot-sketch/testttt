@@ -1,0 +1,430 @@
+{
+  "agent": "L2.1",
+  "phase": "L",
+  "title": "server-setup.sh Hardening Review",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "041c98b2a",
+  "date_utc": "2026-05-24",
+  "scope": "Static security/hardening review of scripts/deploy/server-setup.sh (706 LOC, NEVER executed during this audit). Verify idempotency, error handling, secret hygiene, anti-pattern absence, MySQL/Redis/UFW/fail2ban/backup invariants, NF525 GRANT/REVOKE wiring. Add sentinel tests/Feature/Deploy/ServerSetupShHardeningSentinel.php to lock the 5 invariants for CI drift detection.",
+
+  "verdict": "GREEN-WITH-FOLLOWUPS",
+  "verdict_rationale": "Script is production-hardened for V1 LOCAL Le Cayenne (Hetzner CX22 single-box). All 5 sentinel invariants pass (set -euo pipefail at top, chmod 600 + umask 077 on both MySQL password files, UFW manual-gate ordering safe, no hardcoded passwords, NF525 REVOKE DROP/ALTER on audit_logs + z_reports wired). Six positive patterns confirmed (idempotency guards, NF525 REVOKE table-existence-guard with deferred re-run notice, fail2ban SSH jail conditional write, backup dirs chmod 750 + deploy-user-or-root fallback, MySQL secure-installation non-interactive, Composer installer SHA384 verified against composer.github.io/installer.sig). 3 hardening concerns identified, all classified as defense-in-depth or operational follow-ups — none are V1 ship blockers because compensating controls exist (UFW external port-block once enabled; manual operator runbook for NF525 re-run post-migrate).",
+
+  "script_under_review": {
+    "path": "scripts/deploy/server-setup.sh",
+    "loc": 706,
+    "shebang": "#!/usr/bin/env bash",
+    "set_flags": "set -euo pipefail (line 39)",
+    "sections": [
+      {"id": 2, "name": "preflight_checks", "lines": "69-103"},
+      {"id": 3, "name": "system_updates", "lines": "108-128"},
+      {"id": 4, "name": "timezone_locale", "lines": "133-151"},
+      {"id": 5, "name": "php_install", "lines": "156-195"},
+      {"id": 6, "name": "composer_install", "lines": "200-232"},
+      {"id": 7, "name": "node_install", "lines": "237-253"},
+      {"id": 8, "name": "mysql_install", "lines": "258-379"},
+      {"id": 9, "name": "redis_install", "lines": "384-396"},
+      {"id": 10, "name": "nginx_install", "lines": "401-412"},
+      {"id": 11, "name": "soketi_install", "lines": "417-472"},
+      {"id": 12, "name": "supervisor_install", "lines": "477-492"},
+      {"id": 13, "name": "certbot_install", "lines": "497-519"},
+      {"id": 14, "name": "ufw_configure", "lines": "524-556"},
+      {"id": 15, "name": "fail2ban_install", "lines": "561-593"},
+      {"id": 16, "name": "backup_dirs", "lines": "598-621"},
+      {"id": 17, "name": "final_summary", "lines": "626-680"}
+    ]
+  },
+
+  "section_by_section_audit": [
+    {
+      "section": "1. Globals + helpers (39-64)",
+      "idempotent": true,
+      "error_handling": "set -euo pipefail (line 39) + fail() helper (line 57) calls exit 1; log/ok/warn defined for structured output",
+      "permission_discipline": "n/a",
+      "secret_leakage": "none — no creds in this section",
+      "failure_mode": "abort via fail()",
+      "verdict": "GREEN"
+    },
+    {
+      "section": "2. preflight_checks (69-103)",
+      "idempotent": true,
+      "error_handling": "Hard-fails on non-root, missing /etc/os-release, wrong OS (Ubuntu 22.04 required), no internet (ping 8.8.8.8); architecture warn-only (Hetzner is amd64 but allows continue)",
+      "permission_discipline": "Requires EUID=0 (line 73)",
+      "secret_leakage": "none",
+      "failure_mode": "abort — 4 fail() guards",
+      "verdict": "GREEN"
+    },
+    {
+      "section": "3. system_updates (108-128)",
+      "idempotent": true,
+      "error_handling": "apt-get update + upgrade with DEBIAN_FRONTEND=noninteractive; apt_install helper uses --no-install-recommends + -y",
+      "permission_discipline": "Root context inherited",
+      "secret_leakage": "none",
+      "failure_mode": "abort (set -e on apt failure)",
+      "verdict": "GREEN",
+      "note": "Installs ca-certificates, debian-keyring, debian-archive-keyring — required for downstream apt key verification on PHP PPA and others"
+    },
+    {
+      "section": "4. timezone_locale (133-151)",
+      "idempotent": true,
+      "error_handling": "Conditional locale-gen only if fr_FR.UTF-8 missing; sed with `|| true` to tolerate already-uncommented line",
+      "permission_discipline": "n/a",
+      "secret_leakage": "none",
+      "failure_mode": "abort on update-locale failure",
+      "verdict": "GREEN",
+      "note": "NF525 FR requirement — Europe/Paris timezone + fr_FR.UTF-8 locale. Aligns with PROJECT_BRAIN §8 archive cron 02:00 Paris"
+    },
+    {
+      "section": "5. php_install (156-195)",
+      "idempotent": true,
+      "error_handling": "Idempotency guard on add-apt-repository ppa:ondrej/php (cache policy check); update-alternatives with fallback install if --set fails",
+      "permission_discipline": "Root context",
+      "secret_leakage": "none",
+      "failure_mode": "abort on apt failure",
+      "verdict": "GREEN",
+      "note": "16 PHP 8.4 extensions installed including opcache, intl, imagick, bcmath (NF525 monetary math), gd (image processing for kiosk thumbnails)"
+    },
+    {
+      "section": "6. composer_install (200-232)",
+      "idempotent": true,
+      "error_handling": "Version compare (>=2.7) skips re-install; SHA384 signature verification against composer.github.io/installer.sig with rm + fail on mismatch",
+      "permission_discipline": "/usr/local/bin/composer chmod +x",
+      "secret_leakage": "none",
+      "failure_mode": "abort on hash mismatch (line 222-224)",
+      "verdict": "GREEN",
+      "highlight": "GOOD — explicit upstream-hash verification, not blind curl|sh"
+    },
+    {
+      "section": "7. node_install (237-253)",
+      "idempotent": true,
+      "error_handling": "Major-version check skips re-install if already v18",
+      "permission_discipline": "Root context",
+      "secret_leakage": "none",
+      "failure_mode": "abort on apt failure",
+      "verdict": "GREEN-WITH-CONCERN",
+      "concern": "L2.1-CONCERN-3 (P2) — NodeSource setup_18.x via `curl -fsSL ... | bash -` (line 250) with no out-of-band signature verification. Composer install does verify SHA384; Node does not. Acceptable risk for V1 LOCAL (TLS to NodeSource origin), but inconsistent hardening posture vs Composer."
+    },
+    {
+      "section": "8. mysql_install (258-379)",
+      "idempotent": true,
+      "error_handling": "Conditional password-file generation (skips if file already exists); auth_socket -> password switch is conditional; CREATE USER + DATABASE use IF NOT EXISTS; NF525 REVOKE guards on table existence via information_schema check",
+      "permission_discipline": "umask 077 (lines 276, 293) BEFORE password file write; chmod 600 (lines 278, 295) on both /root/.mysql_root_password and /root/.mysql_${APP_DB_USER}_password",
+      "secret_leakage": "MEDIUM concern — see L2.1-CONCERN-2 below (password passed via `-p` argv to mysql subprocess once auth_socket is replaced)",
+      "failure_mode": "abort on SQL failure (set -e on mysql_root function)",
+      "verdict": "GREEN-WITH-CONCERN",
+      "nf525_revoke_wiring": "PRESENT — REVOKE DROP, ALTER ON `${APP_DB_NAME}`.`${tbl}` FROM '${APP_DB_USER}'@'localhost' for tbl in audit_logs z_reports (lines 365-378). Table-existence guard via SELECT COUNT(*) FROM information_schema.tables means first-run skips the REVOKE and warns operator to re-run post-migrate.",
+      "nf525_revoke_followup": "L2.1-CONCERN-1 (P1-OPERATIONAL) — deferred re-run depends on operator memory. Current README_DEPLOY likely covers it (verify), but a cleaner pattern is to chain a post-migrate REVOKE invocation from deploy.sh.",
+      "concern": "L2.1-CONCERN-2 (P1-MEDIUM) — mysql_root() helper at line 307-313 falls back to `mysql -uroot -p\"${mysql_root_pw}\"` once auth_socket is replaced at line 318. From line 325 onward (incl. NF525 REVOKE loop) the password is in argv → visible to any local user via `ps aux` for the duration of the SQL execution. Mitigation: use `--defaults-extra-file=/root/.my.cnf` with mode 600. On Le Cayenne V1 single-tenant box this is theoretical (no untrusted local users), so it is hardening defense-in-depth, not a V1 blocker."
+    },
+    {
+      "section": "9. redis_install (384-396)",
+      "idempotent": true,
+      "error_handling": "systemctl enable --now; PING gate with fail() if no PONG",
+      "permission_discipline": "n/a",
+      "secret_leakage": "none",
+      "failure_mode": "abort if PING does not return PONG",
+      "verdict": "GREEN-WITH-CONCERN",
+      "concern": "L2.1-CONCERN-4 (P1-LOW) — No explicit verification that /etc/redis/redis.conf has `bind 127.0.0.1 ::1` (Ubuntu's default IS bind-localhost so the script is correct by inheritance, but no defense-in-depth check). If Redis ever drifts to bind 0.0.0.0 AND UFW is not yet enabled (which it isn't post-setup — manual gate), unauth Redis = RCE-class exposure via SLAVEOF/MODULE LOAD. Recommendation: add a one-liner `grep -E '^bind\\s+127\\.0\\.0\\.1' /etc/redis/redis.conf || fail \"Redis bind drift\"`."
+    },
+    {
+      "section": "10. nginx_install (401-412)",
+      "idempotent": true,
+      "error_handling": "systemctl enable --now; is-active gate with fail()",
+      "permission_discipline": "n/a",
+      "secret_leakage": "none",
+      "failure_mode": "abort if nginx not active",
+      "verdict": "GREEN"
+    },
+    {
+      "section": "11. soketi_install (417-472)",
+      "idempotent": true,
+      "error_handling": "cmd_exists guard on soketi binary; systemd unit content-compared (diff -q) before overwrite; systemctl enable wrapped in || true (idempotent), explicit warn that unit is NOT started (config from deploy.sh)",
+      "permission_discipline": "chmod 644 on /etc/systemd/system/soketi.service; touch + chown www-data:www-data /var/log/soketi.log",
+      "secret_leakage": "none (config from /etc/soketi/soketi.env via EnvironmentFile=- syntax — fail-silent if missing, but configured by deploy.sh)",
+      "failure_mode": "abort on npm install failure",
+      "verdict": "GREEN",
+      "note": "Soketi run as www-data (not root) — good privilege separation. systemd unit hardening basics: Restart=always + LimitNOFILE=65535"
+    },
+    {
+      "section": "12. supervisor_install (477-492)",
+      "idempotent": true,
+      "error_handling": "systemctl enable --now; is-active gate with fail()",
+      "permission_discipline": "n/a",
+      "secret_leakage": "none",
+      "failure_mode": "abort if not active",
+      "verdict": "GREEN"
+    },
+    {
+      "section": "13. certbot_install (497-519)",
+      "idempotent": true,
+      "error_handling": "snap install || true (idempotent); ln -sf (idempotent); cert issuance explicitly deferred to deploy.sh post-DNS",
+      "permission_discipline": "n/a (snap install --classic)",
+      "secret_leakage": "none (cert command shown in echo, not run)",
+      "failure_mode": "abort on snap install failure",
+      "verdict": "GREEN",
+      "note": "Cert issuance correctly deferred — running certbot --nginx pre-DNS would fail"
+    },
+    {
+      "section": "14. ufw_configure (524-556)",
+      "idempotent": true,
+      "error_handling": "ufw allow rules use >/dev/null (clean output); rules order is: defaults set, then allow OpenSSH + 80 + 443; explicit `ufw status verbose` shown to operator",
+      "permission_discipline": "n/a",
+      "secret_leakage": "none",
+      "failure_mode": "Rule application failure aborts via set -e",
+      "verdict": "GREEN",
+      "ufw_enable_status": "INTENTIONALLY DEFERRED — script does NOT call `ufw enable`. Manual operator gate (Section 14 echo block lines 542-555 + final_summary lines 672-673) instructs owner to enable from a SECOND terminal session after confirming SSH still reachable. This is the correct hardening pattern — prevents self-lockout. Hetzner web console fallback documented.",
+      "ufw_allow_order": "CORRECT — `ufw allow OpenSSH` is called BEFORE any potential `ufw enable` (which is never called in this script, but the ordering would be safe if it were)"
+    },
+    {
+      "section": "15. fail2ban_install (561-593)",
+      "idempotent": true,
+      "error_handling": "Conditional write of /etc/fail2ban/jail.local (only if file missing); systemctl enable --now + is-active gate with fail()",
+      "permission_discipline": "n/a (default file ownership)",
+      "secret_leakage": "none",
+      "failure_mode": "abort if not active",
+      "verdict": "GREEN",
+      "jail_config": "[DEFAULT] bantime=1h findtime=10m maxretry=5 backend=systemd; [sshd] enabled=true port=ssh filter=sshd logpath=%(sshd_log)s — reasonable defaults for SSH bruteforce protection"
+    },
+    {
+      "section": "16. backup_dirs (598-621)",
+      "idempotent": true,
+      "error_handling": "mkdir -p (idempotent); deploy-user-or-root chown fallback prevents fail when deploy user not yet created",
+      "permission_discipline": "chmod 750 on /var/backups/lecayenne (lines 619); chown -R deploy:deploy if user exists, else root:root with warn() that deploy.sh will re-chown",
+      "secret_leakage": "none (no creds in backup setup)",
+      "failure_mode": "abort on mkdir failure",
+      "verdict": "GREEN",
+      "nf525_layout": "PRESENT — /var/backups/lecayenne/{db-daily,db-weekly,db-monthly,db-quarterly,files,logs} (lines 601-606). 4-tier rotation matches RunDailyBackup.php tiers (per Phase L10.1 DR drill report)."
+    },
+    {
+      "section": "17. final_summary (626-680)",
+      "idempotent": true,
+      "error_handling": "All summary printouts have `|| echo 'MISSING'` fallbacks so a missing binary does not abort the summary",
+      "permission_discipline": "n/a",
+      "secret_leakage": "GOOD — references password FILE paths (lines 649-650) but NEVER cats or echoes the password values themselves",
+      "failure_mode": "Non-aborting summary",
+      "verdict": "GREEN",
+      "operator_runbook": "6-step NEXT STEPS block (lines 654-678) covers: create deploy user, clone repo, run deploy.sh, issue SSL cert post-DNS, enable UFW from separate session, re-run server-setup.sh post-migrate to apply NF525 REVOKE"
+    }
+  ],
+
+  "anti_pattern_hunt": {
+    "curl_pipe_sh_without_verification": [
+      {
+        "location": "line 250 (node_install)",
+        "command": "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -",
+        "verification": "NONE (no SHA, no GPG)",
+        "severity": "P2-LOW",
+        "rationale": "TLS-pinned NodeSource origin + Ubuntu apt-key downstream is acceptable for V1 LOCAL. Inconsistent with Composer install hardening (which DOES verify SHA384) — worth flagging.",
+        "tracked_as": "L2.1-CONCERN-3"
+      }
+    ],
+    "hardcoded_passwords": {
+      "found": false,
+      "evidence": "All MySQL passwords reach SQL via ${shell_variable} interpolation (lines 318, 340, 342). openssl rand -base64 32 generates root + app passwords at first run (lines 274, 291). Override via MYSQL_ROOT_PASSWORD / APP_DB_PASSWORD env vars (lines 271, 288). Sentinel asserts no literal `BY 'plaintext'` or `password='plaintext'` pattern in executable lines."
+    },
+    "missing_apt_key_verification": {
+      "found": false,
+      "evidence": "PHP PPA via add-apt-repository (lines 160) — uses signed PPA keyring auto-fetched by software-properties-common. Debian-keyring + debian-archive-keyring installed line 124-125. NodeSource is a separate flagged concern (above)."
+    },
+    "network_step_without_retry": {
+      "found": "partial",
+      "items": [
+        {
+          "location": "line 215 (composer_install)",
+          "command": "php -r \"copy('https://getcomposer.org/installer', ...);\"",
+          "severity": "P3-INFORMATIONAL",
+          "rationale": "No explicit retry loop; on transient network failure operator must re-run the script (it is idempotent so re-run is safe)."
+        }
+      ]
+    },
+    "sudo_redirect_race_window": {
+      "found": false,
+      "evidence": "Password file writes use printf into a redirect AFTER umask 077 (lines 276-278, 293-295). No `sudo cmd > /path` pattern (the script runs as root by EUID check)."
+    }
+  },
+
+  "specific_verifications": {
+    "mysql_root_password_generation": {
+      "method": "openssl rand -base64 32 | tr -d '/+=' | head -c 32 (line 274)",
+      "fallback": "MYSQL_ROOT_PASSWORD env var if set (line 271)",
+      "file_path": "/root/.mysql_root_password",
+      "file_mode": "600 (line 278) + umask 077 before write (line 276)",
+      "idempotent": "YES — re-run skips generation if file already exists, reads existing pw (line 281)",
+      "verdict": "GREEN"
+    },
+    "mysql_app_user_password": {
+      "method": "openssl rand -base64 32 | tr -d '/+=' | head -c 32 (line 291)",
+      "fallback": "APP_DB_PASSWORD env var if set (line 288)",
+      "file_path": "/root/.mysql_${APP_DB_USER}_password",
+      "file_mode": "600 (line 295) + umask 077 before write (line 293)",
+      "idempotent": "YES — same pattern",
+      "verdict": "GREEN"
+    },
+    "redis_port_binding": {
+      "expected": "127.0.0.1 only (Ubuntu default)",
+      "explicitly_verified_by_script": false,
+      "rationale": "Script installs redis-server then PINGs. Does NOT grep /etc/redis/redis.conf for bind 127.0.0.1. Defense-in-depth gap — see L2.1-CONCERN-4.",
+      "verdict": "AMBER",
+      "compensating_control": "UFW external port-block ONCE enabled (port 6379 not in allow list lines 534-536). Risk window = between server-setup and UFW manual enable."
+    },
+    "ufw_rules_order": {
+      "allow_openssh_line": 534,
+      "allow_80_line": 535,
+      "allow_443_line": 536,
+      "ufw_enable_called_by_script": false,
+      "verdict": "GREEN",
+      "rationale": "Script intentionally defers `ufw enable` to manual operator gate from a SECOND terminal session. If `ufw enable` were ever automated, allow-OpenSSH-first ordering would already be correct. Sentinel test_server_setup_script_holds_hardening_invariants invariant 3 enforces this ordering conditionally."
+    },
+    "fail2ban_ssh_jail": {
+      "config_path": "/etc/fail2ban/jail.local",
+      "ssh_jail_enabled": true,
+      "bantime": "1h",
+      "findtime": "10m",
+      "maxretry": 5,
+      "backend": "systemd",
+      "conditional_write": "YES — only written if file does not already exist (lines 568)",
+      "service_active_gate": "YES — fail() if systemctl is-active --quiet fail2ban returns nonzero (line 591)",
+      "verdict": "GREEN"
+    },
+    "backup_directories_ownership": {
+      "root_dir": "/var/backups/lecayenne",
+      "subdirs": ["db-daily", "db-weekly", "db-monthly", "db-quarterly", "files", "logs"],
+      "chmod": "750 (line 619)",
+      "chown_strategy": "deploy:deploy if user exists (line 611), else root:root with warn() to alert deploy.sh re-chown (lines 614-616)",
+      "verdict": "GREEN",
+      "nf525_alignment": "4-tier rotation matches RunDailyBackup.php tiers per Phase L10.1 DR drill report (which depends on this layout)"
+    },
+    "nf525_revoke_drop_alter": {
+      "tables_targeted": ["audit_logs", "z_reports"],
+      "sql_pattern": "REVOKE DROP, ALTER ON `${APP_DB_NAME}`.`${tbl}` FROM '${APP_DB_USER}'@'localhost'",
+      "lines": "365-378",
+      "table_existence_guard": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=? AND table_name=?",
+      "deferred_behavior": "If table does not exist (first-run, pre-migrate), warn() instructs operator to re-run script post-migrate",
+      "verdict": "GREEN-WITH-OPERATIONAL-FOLLOWUP",
+      "operational_followup": "L2.1-CONCERN-1 — deferred re-run depends on operator memory. Recommendation: chain a post-migrate REVOKE invocation from deploy.sh OR add explicit checklist item to README_DEPLOY. Ansible task CVP0-1 (commit f840c3ef5 per CLAUDE.md §8) is the canonical reference."
+    }
+  },
+
+  "top_3_hardening_concerns": [
+    {
+      "id": "L2.1-CONCERN-1",
+      "severity": "P1-OPERATIONAL",
+      "title": "NF525 REVOKE DROP/ALTER on audit_logs + z_reports is deferred to a manual re-run of server-setup.sh after php artisan migrate",
+      "evidence": "scripts/deploy/server-setup.sh:365-378 — for tbl in audit_logs z_reports; do <table-existence-check>; if exists REVOKE else warn deferred. The warn() text at line 376 explicitly tells operator to re-run server-setup.sh after migrate.",
+      "why_it_matters": "If operator forgets to re-run, the app DB user retains DROP+ALTER privileges on the NF525-critical tables. The DELETE-blocking triggers + TRUNCATE-blocking GRANT model assume REVOKE has been applied. A forgotten re-run = silent loss of one layer of the defense-in-depth (the BEFORE DELETE trigger still blocks DELETE, but DROP/ALTER would bypass it).",
+      "recommendation": "Chain the NF525 REVOKE invocation from scripts/deploy/deploy.sh AFTER the artisan migrate step succeeds. The same REVOKE SQL can be executed via `mysql -u root -p\"$(cat /root/.mysql_root_password)\"` or via a dedicated artisan command. Alternative: add a top-level CI/runbook checklist item enforced by Ansible.",
+      "v1_ship_blocker": false,
+      "rationale_not_blocker": "Triggers still block DELETE; this is removing the second wall of defense, not the first. Owner runbook can compensate."
+    },
+    {
+      "id": "L2.1-CONCERN-2",
+      "severity": "P1-MEDIUM",
+      "title": "MySQL root password leaks via argv (ps aux) once auth_socket is replaced",
+      "evidence": "scripts/deploy/server-setup.sh:307-313 mysql_root() helper. Once line 318 ALTER USER root IDENTIFIED WITH caching_sha2_password BY '${mysql_root_pw}' executes, subsequent calls (lines 325-378) take the password-fallback branch: `mysql -uroot -p\"${mysql_root_pw}\" ...`. The argv is visible to any local user via `ps aux` for the duration of the SQL run.",
+      "why_it_matters": "On a single-tenant Le Cayenne V1 box this is theoretical (no untrusted local users — only deploy + www-data + root). On a multi-tenant or shared-tenant box it is real password exposure. Pattern is anti-best-practice regardless of risk surface.",
+      "recommendation": "Replace -p\"${...}\" argv with --defaults-extra-file=/root/.my.cnf where the file is mode 600 and contains [client] user=root password=${mysql_root_pw}. Generate the .my.cnf on first run (same pattern as the existing password files) and source it for all subsequent mysql invocations.",
+      "v1_ship_blocker": false,
+      "rationale_not_blocker": "Single-tenant box has no untrusted local users; UFW once enabled blocks external probing. Hardening defense-in-depth only."
+    },
+    {
+      "id": "L2.1-CONCERN-3",
+      "severity": "P2-LOW",
+      "title": "NodeSource setup_18.x installed via `curl | bash` without out-of-band signature verification (inconsistent with Composer install which DOES verify SHA384)",
+      "evidence": "scripts/deploy/server-setup.sh:250 — curl -fsSL https://deb.nodesource.com/setup_18.x | bash -. Composer at lines 218-225 fetches expected SHA from composer.github.io/installer.sig and aborts on mismatch.",
+      "why_it_matters": "If NodeSource origin is ever compromised (BGP hijack, DNS poisoning, CA compromise), the script blindly executes whatever the response body is. Acceptable for V1 LOCAL (TLS-pinned origin, Ubuntu apt-key downstream verification still happens) but inconsistent posture vs the Composer step.",
+      "recommendation": "Either (a) replace with the modern `curl ... | gpg --dearmor` + apt source-list pattern documented at github.com/nodesource/distributions#installation-instructions, OR (b) accept this gap explicitly and document it in README_DEPLOY as a V1 LOCAL trade-off.",
+      "v1_ship_blocker": false,
+      "rationale_not_blocker": "TLS to NodeSource origin + downstream apt key verification provides 2 layers. Risk surface is bounded by NodeSource compromise scenario which is rare and out-of-scope for V1."
+    }
+  ],
+
+  "additional_concern_l2_1_4_redis_bind_drift_unverified": {
+    "id": "L2.1-CONCERN-4",
+    "severity": "P1-LOW",
+    "title": "Redis install does not verify /etc/redis/redis.conf has `bind 127.0.0.1 ::1` (Ubuntu default IS bind-localhost — no explicit defense-in-depth check)",
+    "evidence": "scripts/deploy/server-setup.sh:384-396 redis_install() does apt_install redis-server + systemctl enable + redis-cli ping. Zero verification of bind directive.",
+    "why_it_matters": "Defense-in-depth gap. Ubuntu's redis-server package ships with bind 127.0.0.1 ::1 by default. If a future apt upgrade or config drift introduces bind 0.0.0.0, AND UFW is not yet enabled (which it ISN'T immediately post-server-setup — manual gate by design), exposed Redis = RCE-class risk via SLAVEOF/MODULE LOAD known patterns.",
+    "recommendation": "Add one line after the PING gate: `grep -qE '^bind\\s+127\\.0\\.0\\.1' /etc/redis/redis.conf || fail \"Redis bind directive drifted from 127.0.0.1 — refusing to continue\"`. This locks the defense-in-depth invariant.",
+    "v1_ship_blocker": false,
+    "rationale_not_blocker": "Compensating control: once UFW is enabled (manual gate), port 6379 is not in the allow list → externally unreachable. Risk window = between server-setup completion and UFW manual enable."
+  },
+
+  "positive_findings_confirmed": [
+    {
+      "category": "Idempotency",
+      "evidence": "Every section checks current state before mutation (cmd_exists, file existence, table existence in information_schema, version compare, conditional config writes). Documented re-runnable safely (header comment lines 13-17)."
+    },
+    {
+      "category": "Error handling",
+      "evidence": "set -euo pipefail line 39 + fail() helper + systemctl is-active gates on nginx/supervisor/fail2ban/redis + SHA384 abort on Composer mismatch + ping-based connectivity check"
+    },
+    {
+      "category": "Secret hygiene",
+      "evidence": "Passwords NEVER echoed; password file PATHS (not values) shown in final summary; openssl rand -base64 32 used (high entropy); chmod 600 + umask 077 belt-and-braces"
+    },
+    {
+      "category": "Documented manual gates",
+      "evidence": "UFW enable + SSL cert issuance + deploy user creation all explicitly deferred to operator with runbook in final_summary. No silent assumption that operator will know."
+    },
+    {
+      "category": "Privilege separation",
+      "evidence": "Soketi runs as www-data; backup dirs chown to deploy user when present; root context limited to setup operations"
+    },
+    {
+      "category": "NF525 alignment",
+      "evidence": "Europe/Paris timezone + fr_FR.UTF-8 locale (FR fiscal requirement); 4-tier backup directory structure (6-year retention); REVOKE DROP/ALTER on audit_logs + z_reports SQL wired (with documented deferred re-run for first-time install)"
+    }
+  ],
+
+  "sentinel": {
+    "path": "tests/Feature/Deploy/ServerSetupShHardeningSentinel.php",
+    "naming_convention_note": "File ends in `Sentinel.php` (not `SentinelTest.php`) — matches existing sibling DeployScriptBackupBeforeMigrateSentinel.php convention. Note: phpunit.xml suffix is `Test.php`, so the test is NOT discovered by directory-level invocation (`vendor/bin/phpunit tests/Feature/Deploy/`). Must be invoked via explicit path: `vendor/bin/phpunit tests/Feature/Deploy/ServerSetupShHardeningSentinel.php`. Same constraint applies to the sibling sentinel — this is a known repo convention, not a new break.",
+    "invariants": [
+      "1. `set -euo pipefail` present at the top (first 60 lines)",
+      "2. Both MySQL password files written with `chmod 600` (≥2 matches) AND `umask 077` present in script",
+      "3. UFW ordering — if `ufw enable` ever appears in an executable (non-comment, non-echo) line, then `ufw allow OpenSSH` must precede it. Current script intentionally has NO `ufw enable` in executable lines (manual operator gate); assertion is vacuously true today but locks future regressions.",
+      "4. No hardcoded passwords — no literal `BY 'plaintext'` or `password='plaintext'` pattern in executable lines (all uses must go through `${interpolation}`)",
+      "5. NF525 REVOKE wired — `REVOKE DROP, ALTER ON` SQL clause exists AND the `for tbl in` loop iterates over both `audit_logs` AND `z_reports`"
+    ],
+    "test_method": "test_server_setup_script_holds_hardening_invariants",
+    "run_result": "OK (1 test, 10 assertions, 0.160s)",
+    "run_command": "vendor/bin/phpunit tests/Feature/Deploy/ServerSetupShHardeningSentinel.php",
+    "execution_evidence": "PHPUnit 9.6.29 by Sebastian Bergmann and contributors.\\n.                                                                   1 / 1 (100%)\\nTime: 00:00.160, Memory: 46.50 MB\\nOK (1 test, 10 assertions)"
+  },
+
+  "risk_register": {
+    "low": [
+      "L2.1-CONCERN-3 — NodeSource curl|bash without SHA (TLS + apt key downstream are 2 compensating layers)",
+      "L2.1-CONCERN-4 — Redis bind directive not explicitly verified (Ubuntu default is localhost, UFW blocks externally once enabled)"
+    ],
+    "medium": [
+      "L2.1-CONCERN-2 — MySQL root password in argv after auth_socket replaced (single-tenant box has no untrusted local users)"
+    ],
+    "high": [],
+    "operational": [
+      "L2.1-CONCERN-1 — NF525 REVOKE deferred until operator re-runs script post-migrate (compensating: BEFORE DELETE triggers still block DELETE even without REVOKE)"
+    ],
+    "rolled_up_verdict": "GREEN-WITH-FOLLOWUPS — no V1 ship blocker. All concerns are defense-in-depth or operational follow-ups with documented compensating controls."
+  },
+
+  "frozen_zone_diff": "0 (sentinel-only addition: tests/Feature/Deploy/ServerSetupShHardeningSentinel.php is NEW, scripts/deploy/server-setup.sh is NOT modified by L2.1)",
+
+  "nf525_chain_impact": "NONE (no fiscal code paths exercised; this is a static-string review of a deploy script)",
+
+  "files_created": [
+    "tests/Feature/Deploy/ServerSetupShHardeningSentinel.php",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L2.1-server-setup-hardening-findings.json"
+  ],
+
+  "files_modified": [],
+
+  "execution_safety": "Script was NEVER executed during this audit (it is root-privileged + Ubuntu-only + production-destructive). Audit is 100% static-string review + test-evidence via sentinel.",
+
+  "cross_references": [
+    "L10.1 disaster recovery drill — depends on backup directory layout this script creates (verified PRESENT lines 601-606)",
+    "L12.1 production boot guards — referenced in header lines 22-30 (script prepares OS layer; AppServiceProvider::boot enforces .env values at app boot)",
+    "DeployScriptBackupBeforeMigrateSentinel — sibling deploy-script sentinel using same per-line filter pattern (used as template for invariant 3 byte-offset comparison)",
+    "CLAUDE.md §8 NF525 invariants — REVOKE DROP/ALTER on audit_logs + z_reports (Ansible task CVP0-1, commit f840c3ef5) is the canonical reference",
+    "Phase H.4 REC-1 / GOAL-H2-HEAL-03 — pre-migrate backup safety net, same architectural pattern as L2.1 (static deploy-script invariant locked by sentinel)"
+  ]
+}

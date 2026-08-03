@@ -1,0 +1,168 @@
+{
+  "specialist": "Architect",
+  "zone": "PS-1 POS Wizard composition",
+  "scope": "public/js/pos-wizard.js (5964 LOC, 296 KB), resources/views/admin-pos-v4.blade.php (165 LOC), public/css/pos-wizard.css (40 KB), backend composer_profile + composition_snapshot lifecycle",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d3dc4c2c6",
+  "mode": "READ-ONLY (FROZEN — CLAUDE.md §7)",
+  "generated_at": "2026-05-18",
+  "findings": {
+    "wizard_structure": {
+      "summary": "Vanilla JS IIFE that hijacks Vue's #item-variation-modal and replaces the inner body with a single-page (S25) composition wizard. The wizard NEVER builds composition_snapshot itself — that is server-side SSOT. The wizard's sole role is to populate Vue store state (variations/extras/addons + total) and dispatch a synthetic CustomEvent('wizard:add-to-cart') that the legacy Vue ItemComponent listens for.",
+      "entry_point": {
+        "file": "public/js/pos-wizard.js:5946",
+        "function": "init()",
+        "trigger": "MutationObserver on document.body watches for #item-variation-modal mount/unmount (Vue Router SPA re-mount aware, ref pos-wizard.js:5923-5944)"
+      },
+      "state_machine": {
+        "file": "public/js/pos-wizard.js:35-44",
+        "globals": [
+          "lastItemData (XHR/fetch-intercepted item payload)",
+          "wizardItemData (BUG-W1 alias for instruction build)",
+          "wizardEl (rendered shell)",
+          "originalBody (Vue modal body to hide)",
+          "currentStep (multi-step legacy path)",
+          "steps (built from buildSteps OR buildStepsFromComposerProfile)",
+          "selections (the actual user choices, plain object)",
+          "itemQuantity",
+          "instructionText",
+          "currentCategory (sandwich/taco/burger/assiette/menu_formule/bowl/...)"
+        ],
+        "lifecycle": "openWizard(modal) → buildSteps(data) → renderSinglePage() / renderWizard() → bindSinglePageEvents() → user clicks .add-to-cart → syncAndSubmit() → submitWhenSynced() → modalRoot.dispatchEvent('wizard:add-to-cart') → Vue ItemComponent.addToCart() → closeWizard(true)"
+      },
+      "data_capture": {
+        "primary": "XMLHttpRequest.prototype.send override (pos-wizard.js:184-196) intercepts /admin/item/* responses and stores data in lastItemData",
+        "fallback_a": "window.fetch override (pos-wizard.js:202+) for Vue axios fallback path",
+        "fallback_b": "modal.getAttribute('data-wizard-item-data') JSON injection from Vue edit-from-cart path (pos-wizard.js:4286-4296)",
+        "concern": "Three independent ingestion paths increase surface area but are all idempotent overwrites of lastItemData. Race is not observable because openWizard reads only after retry loop tryOpen() confirms presence (pos-wizard.js:5905-5913)."
+      },
+      "submit_pipeline": {
+        "function": "syncAndSubmit() at pos-wizard.js:3708 — 580+ LOC",
+        "steps": [
+          "1. Mirror itemQuantity to qty input via native setter + bubbling events (pos-wizard.js:3711-3718)",
+          "2. Click sauce/variation radios to drive Vue v-model (pos-wizard.js:3720-3750)",
+          "3. Click pain radios (legacy sandwich) — supports both numeric IDs and string fallbacks (pos-wizard.js:3754-3774)",
+          "4. Check/uncheck extras checkboxes against allSelectedExtras map (pos-wizard.js:3820-3899) — includes crudités default-included logic",
+          "5. Build pos-line-addons payload for menu addons (sauce frites + grande portion + cheddar) and attach to modal via data-wizard-pos-line-addons (pos-wizard.js:4083-4223)",
+          "6. Set data-wizard-total (running total before submit), data-wizard-cart-display (multi-line summary)",
+          "7. submitWhenSynced() dispatches CustomEvent('wizard:add-to-cart') on modalRoot (pos-wizard.js:4267)",
+          "8. closeWizard(true) after 200ms (pos-wizard.js:4270-4273)"
+        ],
+        "concern_low": "The chain depends on Vue radios/checkboxes being present in originalBody. If Vue mutates the DOM structure (e.g. catalog v15 refactor), the click-driven sync breaks silently. No explicit fallback; user sees empty extras on Vue side. Mitigated in practice by frozen state."
+      },
+      "edit_from_cart_path": {
+        "file": "public/js/pos-wizard.js:4731-4798",
+        "logic": "When the wizard re-opens for cart edit, Vue injects data-wizard-restore-selections JSON; wizard parses and Object.assign into selections. Notable restores: instruction text (Y1), _cartQuantity (Y1), menu_restore branch (X4 boissonChoice, X5 viandeSupplItems). Risk = stale selection keys not present in current item data; mitigated by buildSteps() running BEFORE restore (A1 fix at line 4698).",
+        "concern_low": "JSON.parse on attribute is wrapped in try/catch with console.warn; corrupted state degrades to default selections, no crash."
+      }
+    },
+    "profile_mirror": {
+      "summary": "POS wizard is composer-aware via feature flag posWizardComposerAware.enabled (DEFAULT OFF, ref admin-pos-v4.blade.php:110-111). When enabled AND data.composer_profile is non-empty, the wizard delegates to buildStepsFromComposerProfile() instead of legacy buildSteps() heuristic.",
+      "flag_source": {
+        "frontend_config": "window.foodkingConfig.posWizardComposerAware (admin-pos-v4.blade.php:109-111)",
+        "backend_config": "config('catalog_v15.pos_wizard_composer_aware.enabled', false)",
+        "default": "false (off in production today)"
+      },
+      "data_path": {
+        "backend_emit": "App\\Http\\Resources\\NormalItemResource::toArray returns 'composer_profile' => $this->composerProfilePayload($surface, $branchId) (NormalItemResource.php:109-112); same in ItemResource.php:107",
+        "backend_kiosk_emit": "KioskMenuService.php:358 emits composer_profile via composerProfileProjection",
+        "frontend_consume": "getComposerProfileFromData(data) at pos-wizard.js:442 reads data.composer_profile, validates Array.isArray(steps) && length > 0"
+      },
+      "step_normalization": {
+        "function": "normalizeComposerStep(step) at pos-wizard.js:477-491",
+        "fields_kept": ["step_key", "label", "min_select", "max_select", "choices (Array)", "allow_repeat (bool)", "visible_on (Array)", "addon_role"],
+        "defensive_seam_notes": "[V2-WIZARD-RT-REFACTOR-XL Batch C] — malformed payloads degrade gracefully; if not object → null → skipped. Good practice."
+      },
+      "type_resolution": {
+        "step_key_map": "pain/galette/bun→pain, viande/meat/proteine→viande, sauce/sauces→sauce, garnitures/garniture/crudites→garnitures, supplements/supplement/extras→supplements, menu/formule/boisson/drink/frites/side/dessert→menu, taille/size→taille (pos-wizard.js:449-458)",
+        "addon_role_map": "drink/side/dessert/menu_component→menu (pos-wizard.js:460-462)",
+        "fallback": "If step_key+addon_role both unmatched but choices.length>0, internalType=generic_choices; else skip with console.warn (pos-wizard.js:513-524)",
+        "concern_low": "Composer step types are tightly coupled to the legacy step_key vocabulary. Adding a new admin-configurable step type requires JS map update. V1.0.X backlog: convert to declarative table (e.g. data-driven renderers per step type)."
+      },
+      "visible_on_filter": {
+        "function": "isComposerStepVisibleOnPos(step) at pos-wizard.js:466-473",
+        "rule": "Empty visible_on array OR missing field → all surfaces; else 'pos' must be present"
+      }
+    },
+    "composition_snapshot_lifecycle": {
+      "summary": "The wizard does NOT build composition_snapshot. Snapshot is built backend-side by CompositionSnapshotBuilder (app/Services/Pricing/CompositionSnapshotBuilder.php) and inserted at order creation time by PricingService, OrderService, FrontendOrderService.",
+      "frontend_contribution": "Wizard contributes ONLY item_id / variations / extras / addons via Vue store (legacy POS payload). Backend re-validates and re-prices in PricingService::calculateOrder.",
+      "backend_insert_points": [
+        "app/Services/Pricing/PricingService.php:291 — SSOT path",
+        "app/Services/OrderService.php:466, 821, 1277 — POS order creation paths",
+        "app/Services/FrontendOrderService.php:441 — Kiosk/online order path"
+      ],
+      "immutability_contract": "Per CompositionSnapshotBuilder docblock and OrderService comments: composition_snapshot is NEVER re-written after the initial insert. NF525 fiscal SSOT. Reprint flows must read from snapshot, never recompute.",
+      "concern_zero": "Architecture is sound. Pricing SSOT enforced; wizard is correctly subordinated. CLAUDE.md §8 invariants respected."
+    },
+    "duplication_with_kiosk_wizard": {
+      "summary": "POS wizard (Vanilla JS) and Kiosk wizard (Vue KioskWizardComponent family) share substantial conceptual scope: viande/sauce/garniture/menu addon step semantics, sauce_frites + grande_portion + cheddar pricing logic, crudités default-included rules. They DO NOT share code today.",
+      "shared_concepts": [
+        "VIANDES catalog list (pos-wizard.js:49-60) vs Kiosk hardcoded list",
+        "ALL_SAUCES catalog (pos-wizard.js:65-83) vs Kiosk i18n-keyed list",
+        "Emoji maps SUPPLEMENT/GARNITURE/ADDON/VIANDE/SAUCE (pos-wizard.js:96-129) — POS-only today",
+        "sauce_frites + frites_grande + frites_cheddar pricing — both surfaces apply same prices via window.POS_WIZARD_CONFIG / kiosk config",
+        "composer_profile + composer_aware feature flag — both surfaces eventually converge on admin-defined wizard when flag flips ON"
+      ],
+      "duplication_cost": "Maintenance burden when adding new viande/sauce. Today, owner adds via DB admin UI (composer_profile path) but legacy heuristic falls back to hardcoded VIANDES list when composer_aware flag is OFF. Bowl wizard 3-step (Menu V3 cycle 2026-05-14) confirms drift risk when one surface evolves faster than the other.",
+      "recommendation_long_term": "V1.0.X+ backlog: complete the composer_aware migration (flip flag ON in prod) and deprecate the hardcoded VIANDES + ALL_SAUCES constants in pos-wizard.js. Until then, the duplication is acceptable per CLAUDE.md §3 principle 5 (partial is better than wrong)."
+    },
+    "known_stale_references": {
+      "test_debt_from_v1_0_1": "Per BRAIN entry 'V1.0.1 Hardening Cycle 2026-05-17', H6 trait fixed 27 POS test debt failures. The wizard JS itself is not under PHPUnit; it's exercised by Playwright/E2E only. No direct unit test for syncAndSubmit() or buildStepsFromComposerProfile() exists.",
+      "sentinel_test_present": {
+        "file": "tests/Feature/Stock/WizardOptionStockSyncTest.php",
+        "purpose": "T-WC-STOCK-PROPAGATION-01 — locks variation/extra/addon stock propagation through StockService::decrementForOrder",
+        "status": "Tests path through wizard's payload but doesn't exercise pos-wizard.js JS itself. Asymmetry documented in test docblock (Variation/Extra → StockLevelChanged only; Addon-Item → IBA + ItemAvailabilityChanged + StockLevelChanged)."
+      }
+    },
+    "structural_recommendations_v1_0_x_backlog": [
+      {
+        "id": "WIZ-REC-1",
+        "title": "Documentary inventory of selections schema",
+        "rationale": "selections {} object has 20+ ad-hoc keys (viandes, sauceOrder, sauceFrites, sauceFritesOrder, pain, garnitures, supplements, accompagnement, viandeSupplItems, menuChoice, boissonChoice, fritesGrande, fritesCheddar, individualAddons, ...). No single-source schema doc. Future composer_aware migration will need this map.",
+        "effort": "S (1 day)",
+        "priority": "P3",
+        "frozen_zone_touch": false
+      },
+      {
+        "id": "WIZ-REC-2",
+        "title": "Composer-aware feature flag rollout plan",
+        "rationale": "Flag is OFF in prod. Risk of admin adding a custom step type that legacy buildSteps() can't render. Need rollout checklist + per-item flagging or full-fleet flip with regression coverage.",
+        "effort": "M (3-5 days)",
+        "priority": "P2",
+        "frozen_zone_touch": false,
+        "dependencies": ["WIZ-REC-1", "composer_profile coverage report"]
+      },
+      {
+        "id": "WIZ-REC-3",
+        "title": "Wizard E2E sentinel suite (Playwright)",
+        "rationale": "No automated coverage of the open→build→render→sync→submit→close cycle. Manual testing only. Regression risk on Vue catalog refactors (catalog_v15 has multiple flags).",
+        "effort": "M (5-7 days)",
+        "priority": "P1",
+        "frozen_zone_touch": false
+      },
+      {
+        "id": "WIZ-REC-4",
+        "title": "Selections schema validation seam",
+        "rationale": "Edit-from-cart Object.assign trust-injects whatever Vue restored. Add a normalize step (similar to normalizeComposerStep) that drops unknown keys + coerces types.",
+        "effort": "S (2 days)",
+        "priority": "P3",
+        "frozen_zone_touch": true,
+        "frozen_zone_LOCK_required": "LOCK_WIZ-REC-4 — surgical patch to openWizard()"
+      },
+      {
+        "id": "WIZ-REC-5",
+        "title": "Hard-coded VIANDES + ALL_SAUCES deprecation tracker",
+        "rationale": "These constants drift from DB if owner adds new viande or sauce. Document expected behavior under composer_aware ON vs OFF to scope the deprecation.",
+        "effort": "S (1 day)",
+        "priority": "P3",
+        "frozen_zone_touch": false
+      }
+    ]
+  },
+  "verdict": {
+    "keep_as_is_count": "majority of code (FROZEN by design + working impeccably per owner)",
+    "structural_recommendations": "5 backlog items, all V1.0.X+, none blocking",
+    "architecture_score": "8/10 — solid SSOT, defensive seams in place, composer_aware migration path exists, duplication with Kiosk is the main long-term debt"
+  }
+}

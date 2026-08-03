@@ -1,0 +1,110 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 13,
+  "findings": [
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Round 2 multimodal inspection of 01-idle-screen.png, 02-idle-language-fr.png, 03-idle-language-en.png — the FoodKing wordmark on the kiosk idle screen is STILL rendered in hot pink/magenta (visually consistent with #E8001C / #FF1493 family) — NOT Cayenne #F4501E. Direct read of the asset file public/images/theme/theme-logo.png confirms the PNG itself contains the legacy pink colorway (the 'Food' lettering reads pink-magenta in the bitmap; only the crown is yellow). Round 1 cluster-2 palette sweep claim (closure of A-003 + A-005) only touched CSS variables / Vue inline styles — it did NOT regenerate or replace the embedded PNG brand asset. DOM-side palette sweep IS clean (0 #E8001C instances across all 13 dom.html — verified via `grep -cE '#[Ee]8001[Cc]|rgba?\\(\\s*232\\s*,\\s*0\\s*,\\s*28\\b'` returning 0 for every state), so A-003 the CSS-side leak IS legitimately closed. The brand-wordmark surface, which is the very first thing every customer sees, remains in the rejected pink palette. Round 1 closure claim for A-005 is therefore false-positive — the fix CSS-only fix never reached the actual rendered logo bitmap.",
+      "fix_hint": "Replace public/images/theme/theme-logo.png with a Cayenne (#F4501E) wordmark version. If the original SVG/AI source exists, re-export with the V2 palette. Coordinate with brand/design owner — the wordmark is THE brand sentinel for the kiosk surface. Add a lightweight test that asserts the dominant non-transparent pixel hue of the logo file is in the Cayenne range (R>240, G in 60-100, B in 20-50) so a future palette regression on the asset is caught at CI time, not by a human reviewer.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-borne-A/13-cat-318-supplements.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Round 2 placeholder count via `grep -oE 'item-default\\.svg'` per state DOM: 05-cat-309-assiettes 1, 10-cat-314-menus-enfants 2, 11-cat-316-desserts 2, 13-cat-318-supplements 8. Total 13 placeholders unchanged from round 1. Visual confirmation in state 13 PNG: 8 supplement tiles render the generic '+' placeholder (Sauce Supplémentaire, Boursin, Fromage à Raclette, Fromage Supplémentaire, Galette pommes de terre, Jambon de dinde, Œuf, Salade verte) with no product photography; same in state 10 (Menus Enfants — 2 generic '+') and state 11 (Desserts — 2 generic '+', only Glace has a real photo); state 05 cat 309 still has 1 placeholder (Assiette Mixte). Round 1 P2 finding remains untouched in round 2 fix waves (correctly — content data, not code).",
+      "fix_hint": "Two-pronged (unchanged from round 1): (1) data team uploads product photos for the 13 missing items (paths /storage/<id>/item-default.svg). (2) UX fallback — when item.image_url ends with item-default.svg, render a category-icon glyph or skeleton-with-name rather than the generic '+' card. resources/js/components/frontend/kiosk/KioskProductCardComponent.vue (or equivalent — verify path).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-borne-A/02-idle-language-fr.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 2 re-capture: 02-idle-language-fr.png and 03-idle-language-en.png both still render 'Bienvenue !' (French) and the same FoodKing pink wordmark — no English copy, no language toggle UI present. Diff vs 01-idle-screen.png reports 'Files differ' but the visible text content is identical (likely tiny pixel-level animation drift on the CTA pulse). DOM grep on 02-idle-language-fr.dom.html still shows zero `kiosk-idle-lang-*` testids; only `aria-pressed=\"false\"` is present (likely on a non-language toggle). The audit-plan capture of FR + EN states remains unverifiable — the env config kiosk_languages_enabled has not been enabled. Round 1 P2 finding unchanged.",
+      "fix_hint": "Decision required from owner — either (a) configure kiosk_languages_enabled=['fr','en'] in branch config so the lang selector renders and the EN toggle actually flips i18n, OR (b) drop states 02 and 03 from AUDIT_PLAN.md to stop spending artifact budget on visually-redundant captures. Out-of-code-scope until owner decision.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Round 2: state 04 (welcome / first paint after takeaway tap) STILL auto-selects cat 317 BOISSONS. DOM regex confirms only the cat 317 sidebar button has the `active` class: `class=\"kiosk-sidebar-item active\"` immediately followed by `data-testid=\"kiosk-categories-sidebar-item-317\"`. Right-side product grid shows 8 Boissons cards (Eau Plate 50CL, Capri-Sun, Coca-Cola 33CL, Coca-Cola Zero 33CL, Fanta Orange 33CL, Oasis Tropical 33CL, Orangina 33CL, Sprite 33CL — kiosk-product-card-407..414). The audit-plan acceptance for state 04 says first paint after idle tap; it does NOT prescribe boissons should be the default. UX issue: customer arrives at the menu pre-funneled to drinks (likely lowest-margin upsell anchor for a meal-ordering kiosk).",
+      "fix_hint": "resources/js/store/modules/kioskCategories.js (or KioskCategoriesView.vue) — initial selectedCategoryId should be null on welcome paint, with a hero/welcome panel rendered until customer taps a category. If a default MUST be picked, choose a hero meal category (cat 309 Assiettes is the FoodKing positioning anchor) not boissons. Round 1 fix-hint unchanged.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-borne-A/05-cat-309-assiettes.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 2 re-capture of 05-cat-309-assiettes.png visually shows the four 'Assiette' product photos as bread-based items (visually reading as sandwiches / bocadillos with bread + filling), not as plates with separate components. Image filenames are correctly named (assiette_kefta.png, assiette_merguez.png, assiette_poulet.png plus assiette_mixte placeholder), so this is a content-photography mismatch, not a code-side bug. Round 1 P2 finding unchanged.",
+      "fix_hint": "Content team verification. If photos are correct but mislead, consider category label rename to 'Plats Assiettes' or replace photos with plate-style hero shots. Out of code scope.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "Round 2: console.json sinks confirm Pusher / Echo wss errors persist on 01-idle-screen and 04-categories-welcome — `WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?...' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED` from vendor.js. Allowlisted per REVIEWER_PROTOCOL.md (vendor.js + wss + dev-mode Pusher unavailable). No application-code console.error entries detected anywhere — full sweep `jq '[.[] | select(.level==\"error\" and (.location.url|test(\"vendor|pusher|wss?:|6001\")|not))] | length'` returns 0 across every state. Filing as P3 informational.",
+      "fix_hint": "No fix required — allowlisted. Optional: gate Echo init via APP_DEBUG / Echo.connector === 'null' fallback in resources/js/bootstrap.js to silence dev-only noise.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-100",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "NEW round-2 finding. All 9 sidebar category thumbnails on every state (04..13) point to the SAME placeholder image — `http://127.0.0.1:8000/images/category/cover.png`. Verified by `grep -oE '<img[^>]*kiosk-sidebar-thumb[^>]*>'` returning 9 identical lines on 04-categories-welcome.dom.html with src=\"/images/category/cover.png\" for Assiettes, Salades, Poulet croustillant, Ojja, Omelettes, Menus Enfants, Suppléments, Desserts, Boissons. Visual confirmation across all category PNGs (05–13): the sidebar consistently shows nine identical small burger icons, regardless of the actual category. Customers cannot navigate by visual cue — they must read each label. This is a content-data issue (categories.thumbnail_url defaulting to cover.png) but it materially degrades kiosk UX (a primary use case is rapid visual scan). Not loop-blocking but should be tracked.",
+      "fix_hint": "Two paths: (1) Backend/data — populate categories.thumbnail_path with category-specific images for each cat (Assiettes plate hero, Salades fresh greens hero, Boissons drink, etc.). Migration + content team upload. (2) Frontend fallback — when category.thumbnail equals the generic cover.png, replace with a category-emoji glyph (🍽️/🥗/🥤/🍰/🍔) instead of repeating the same bitmap. resources/js/components/frontend/kiosk/KioskCategoriesView.vue or KioskSidebar.vue.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 5,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 5,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "A-001": "PASS",
+    "A-002": "PASS",
+    "A-003": "PASS",
+    "A-004": "FAIL",
+    "A-005": "FAIL",
+    "A-006": "FAIL",
+    "A-007": "PASS",
+    "A-008": "FAIL",
+    "A-009": "FAIL",
+    "A-010": "PASS",
+    "A-011": "PASS",
+    "A-012": "PASS"
+  },
+  "verdict": "AMBER",
+  "notes": "Wave A round 2 — 13 states reviewed against HEAD d2918927a. Cluster fixes for round 1 closures: 7/12 PASS, 5/12 FAIL. PASS: A-001 (cats 306/307/308 fully removed from sidebar — DOM confirms 9 unique cats 309-318 except 315), A-002 (cat 307 row eliminated, no duplicate testid), A-003 (CSS-side pink #E8001C purged — 0 instances across all 13 DOMs vs 33 in round 1), A-007 (allowlisted ws noise unchanged), A-010 (sidebar count now matches plan), A-011 (aria-label 'Ajouter <product>' present on add buttons), A-012 (palette sentinel now backed by DOM-wide 0-pink reality). FAIL: A-005 the cluster-2 palette sweep was CSS/Vue-only — the actual brand asset public/images/theme/theme-logo.png remains hot-pink in the bitmap, visible on every idle PNG (states 01/02/03), so the most-seen surface still ships rejected pink palette; A-004 photos still missing (13 placeholders unchanged, content team scope); A-006 lang selector still absent (env config); A-008 cat 317 Boissons still auto-selected on welcome (DOM `active` class confirmed); A-009 assiettes photo content mismatch (content team scope). NEW round-2 finding A-100 (P2): all 9 sidebar thumbnails share identical /images/category/cover.png — visual navigation is broken, customer cannot scan by icon. No application console errors detected anywhere. Network sinks empty across all 13 states. Verdict AMBER — open_P0=0 but open_P1=1 (A-005 brand asset). Round 3 must (a) replace theme-logo.png with Cayenne version, (b) decide owner-side scope on A-006/A-008/A-009/A-100. NOT GREEN until A-005 logo asset replaced."
+}

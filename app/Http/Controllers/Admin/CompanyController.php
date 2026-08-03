@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\SettingsUpdated;
 use App\Http\Requests\CompanyRequest;
 use App\Http\Resources\CompanyResource;
 use App\Services\CompanyService;
@@ -30,7 +31,10 @@ class CompanyController extends AdminController
     public function update(CompanyRequest $request) : \Illuminate\Http\Response | CompanyResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new CompanyResource($this->companyService->update($request));
+            $resource = new CompanyResource($this->companyService->update($request));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['company']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

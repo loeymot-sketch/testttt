@@ -34,7 +34,7 @@
                         <li class="text-xs">
                             {{ $t("label.payment_type") }}:
                             <span class="text-heading" v-if="order.transaction">
-                                {{ order.transaction.payment_method }}
+                                {{ paymentMethodLabel(order.transaction.payment_method) }}
                             </span>
                             <span v-else class="text-heading">
                                 {{ paymentTypeEnumArray[order.payment_method] }}
@@ -243,7 +243,7 @@
                             <li class="flex items-center gap-2.5" v-if="orderUser.phone">
                                 <i class="lab lab-call-calling-linear lab-font-size-14"></i>
                                 <span dir="ltr" class="text-xs">{{
-                                    orderUser.country_code + "" + orderUser.phone
+                                    (orderUser.country_code || '') + orderUser.phone
                                     }}</span>
                             </li>
                         </ul>
@@ -274,9 +274,11 @@ import alertService from "../../../services/alertService";
 import TableOrderReasonComponent from "./TableOrderReasonComponent";
 import TableOrderTokenComponent from "./TableOrderTokenComponent";
 import TableOrderReceiptComponent from "./TableOrderReceiptComponent";
+import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "tableOrderShowComponent",
+    mixins: [paymentMethodLabelMixin],
     components: {
         TableOrderReceiptComponent,
         LoadingComponent,

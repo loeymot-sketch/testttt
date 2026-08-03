@@ -1,0 +1,145 @@
+{
+  "wave": "fluidity",
+  "round": 1,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "F-001",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/01-step-viandes-to-sauce.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Cross-validated with W-001 (sub-agent #2 — screens-item-steps.jsx:822-834). Perf JSON timing measurement attempt failed because waitForSelector timed out — meaning the step transition either took >1500ms (unlikely given F03 back-nav measured 24.8ms) or the DOM transition is so instant no visible state captured. F03/F04/F05/F06/F08 all PASS easily (24.8ms/120FPS/120FPS/56.7ms/24px) — raw perf is excellent, so the gap is PERCEPTUAL, not timing.",
+      "fix_hint": "See W-001 fix_hint — add CSS animation wrapping step body. Test should add visual mid-state check rather than pure timing assertion (improvement for next round). Tighten thresholds back to 200ms once motion is present.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-002",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/03-back-recap-to-fritessauce.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Cross-validated with W-005 (sub-agent #2 — screens-item-steps.jsx:264-279). ChoiceCard inline transition: all 0.12s but no :active scale rule. Only .lc-btn has scale(0.97). Cards feel 'dead' on tap.",
+      "fix_hint": "Same as W-005 — add .lc-choice :active scale(0.985) rule in styles.css ; apply className to ChoiceCard at screens-item-steps.jsx:257.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-003",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/04-menu-scroll-fps.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "screens-main.jsx grep `onClick` returns 15 div+onClick sites with no :active feedback: lines 68 (featured signature), 94 (category tiles), 111 (envies card), 134 (curated), 201 (menu item rows), 361, 388, 413, 461, 616 (upsell), 766 (active order), 818 (history orders), 873 (item-detail), 911 (profile rows) + screens-modals.jsx:9 ModalShell backdrop. None have role=button + tabIndex + keyboard. A11y critical-path: keyboard nav broken across all primary surfaces.",
+      "fix_hint": "Add global .lc-tap helper in styles.css : `.lc-tap { transition: transform 0.10s ease, opacity 0.10s ease; } .lc-tap:active:not([aria-disabled=\"true\"]) { transform: scale(0.985); opacity: 0.92; }`. Apply className=\"lc-tap\" + role=\"button\" + tabIndex=0 + onKeyDown to the 15 sites. Skip modal backdrop (l.9). Effort M (15 callsites).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-004",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/04-tabbar-aria-pressed.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "Cross-validated with A11-001 (sub-agent #5) + S-004 (sub-agent #4) + round-1 A-007 still open. Primary-source via evidence JSON 04-tabbar-aria-pressed.evidence.json (all 4 tabs DIV, no role, no aria-pressed) + axe.json (`button-name` impact:critical, nodes:1). styles.css:136-143 .lc-tab also lacks :active scale.",
+      "fix_hint": "shared.jsx:40-61 TabBar — swap <div> → <button type=\"button\" aria-pressed={isActive} aria-label={t.label} className={lc-tab...} style={{background:'transparent',border:0,padding:'6px 0',cursor:'pointer',color:'inherit',font:'inherit'}}>. Also add styles.css `.lc-tab:active .lc-tab-dot { transform: scale(1.4); }` for tactile snap. Effort S.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-005",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/08-cta-thumb-reach.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "screens-item-steps.jsx:213 WizardCTA `padding: '12px 16px 24px'` — only 24px bottom padding. iPhone X+ home indicator (~34px) overlaps the last 10px of CTA. Perf JSON measured CTA bottom at 24px from viewport bottom — PASSES threshold ≤80, but doesn't account for safe-area inset env().",
+      "fix_hint": "screens-item-steps.jsx:213 replace `padding: '12px 16px 24px'` with `padding: '12px 16px max(24px, env(safe-area-inset-bottom))'`. Also apply to screens-main.jsx cart sticky bar + screens-modals.jsx modal sheets.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-006",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/06-modal-pay-open.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "screens-modals.jsx:6-15 ModalShell renders position:absolute bottom:0 with no transition or animation. Perf JSON measured modal open at 56.7ms — well below 250ms threshold, BUT the open is instant pop, not slide-up sheet. Material spec = 200-250ms ease-out slide-up. Cross-validation with sub-agent #3 F-006 + sub-agent #5 A11-006 dialog semantics.",
+      "fix_hint": "Add styles.css `@keyframes lc-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }` + `.lc-sheet { animation: lc-sheet-up 0.24s cubic-bezier(0.2,0.8,0.2,1); will-change: transform; }`. Apply className=\"lc-sheet\" to ModalShell inner sheet div at screens-modals.jsx:11. Also `@keyframes lc-fade-in` for backdrop fade. Effort S.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-007",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/06-modal-pay-open.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "ModalShell close (screens-modals.jsx:6-15) unmounts immediately on setModal(null). No exit animation. Babel-standalone has no Framer Motion ; doable via 'closing' intermediate state + setTimeout but invasive.",
+      "fix_hint": "Phase 6 enhancement. V0 acceptance gap documented.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-008",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/09-prefers-reduced-motion.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "FALSE POSITIVE — styles.css:52-54 global `* { animation-duration: 0.01ms !important; }` covers .lc-marquee-track and all animations correctly. Verified via perf JSON 09 measured: '1e-05s' (= 10 microseconds, essentially 0).",
+      "fix_hint": "No code change. Test spec F09 has string-match bug ('1e-05s' vs '0.01ms') — fix in spec at tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js:271 (accept scientific notation).",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "F-009",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/04-menu-scroll-fps.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-modals.jsx:91-101 ModalPointsGain renders 24 confetti spans with `animation: lc-confetti 3.4s {delay}s ease-in infinite`. Keyframes animate transform+opacity (compositor-friendly) BUT no will-change hint. Perf measured 120 FPS scroll — no jank detected during normal scroll, but confetti scenario not measured.",
+      "fix_hint": "Add `willChange: 'transform, opacity'` to confetti span inline style in screens-modals.jsx:96. Also clamp translateY(1000%) → translateY(120vh) for compositor predictability.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-010",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/04-menu-scroll-fps.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-main.jsx:165-235 ScreenMenu renders all CATS+items without virtualization. Perf measured 120 FPS on scroll — V0 OK. Phase 6 optimization: content-visibility: auto.",
+      "fix_hint": "Phase 6+ ; not blocking.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-011",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/06-modal-pay-open.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "Multi-site backdrop-filter absent: screens-item-steps.jsx:213 WizardCTA (linear-gradient only), screens-main.jsx:632 cart sticky checkout (solid white), styles.css:128-135 .lc-tabs (solid white). Cross-validated with W-003.",
+      "fix_hint": "Add backdrop-filter: blur(16px) saturate(180%) on .lc-tabs, .lc-cta-blur (new), cart sticky wrapper. Fallback to opaque rgba(255,255,255,0.78) when not supported.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-012",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-fluidity/10-touch-feedback-lc-btn.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "grep navigator.vibrate in mobile/ → 0 hits. No haptic feedback on Add-to-cart, redeem confirm, order placed. iOS Safari not support web Vibration API (≤17), but Android Chrome does. V0 acceptance gap.",
+      "fix_hint": "Add LC.haptic = { tap: () => navigator.vibrate?.(10), success: () => navigator.vibrate?.([0,30,50,30]) } in shared.jsx. Call from addToCart + redeem.onConfirm. Visual fallback : 80ms orange flash. Phase 6 full integration.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 2, "P2": 4, "P3": 6,
+    "open_P0": 0, "open_P1": 2, "open_P2": 4, "open_P3": 5
+  },
+  "verdict": "AMBER",
+  "notes": "Raw timings excellent (120 FPS scroll, 56.7ms modal open, 24px CTA bottom). PERCEPTUAL fluidity gap is the real finding. 2 P1 (F-003 div+onClick keyboard + F-004 TabBar div) are a11y critical-path, cross-validated 3 sources. Closes F-008 (false positive marquee) + F-009 test bug (separate spec patch). Top-2 commits for AMBER → GREEN: (1) F-003 lc-tap helper + 15 callsites refactor (M); (2) F-004 TabBar div→button (S, same fix as A11-001/S-004)."
+}

@@ -1,0 +1,37 @@
+ADVERSARY RE-VERIFY — dimension nf525-chain (2026-07-09)
+=========================================================
+Goal: try HARD to refute the prior PASS. Result: COULD NOT REFUTE. All core claims reproduced.
+
+HEAD = a693aa096 ("p", .claude/brain + .playwright-mcp housekeeping only — no fiscal touch)
+Goal range = 7470535a6~1..HEAD ; 7470535a6 dated 2026-07-08 17:59:39 (entire goal on 2026-07-08)
+
+1. CHAIN VERIFY re-run: php artisan fiscal:verify-chain --all -> EXIT=0
+   branch=1/7/8/9 all "CHAIN OK"; "SWEEP COMPLETE — CHAIN OK on every active branch (4 total)"
+   (matches proof/chain-verify.txt exactly)
+
+2. INDEPENDENT DB QUERY (tinker):
+   AUDIT_MIN_ID=1  AUDIT_COUNT=4938  ZREPORT_COUNT=25   (exact match to claim)
+   br1 min=1 max=2641 count=2638 dup=0 rev=0 gaps=[2506,2507,2508]
+   br7 min=1 max=1 count=1 dup=0 rev=0 gaps=[]
+   br8 min=1 max=1 count=1 dup=0 rev=0 gaps=[]
+   br9 min=101 max=102 count=2 dup=0 rev=0 gaps=[]
+
+3. GAP DATING (P3 pre-existing claim) — CONFIRMED:
+   seq2505 => 2026-06-19 00:31:59 id=4974
+   seq2506/2507/2508 => ABSENT (raw query, no scope, incl. soft-deleted, ALL branches: 0 rows)
+   seq2509 => 2026-06-20 01:13:26 id=5019
+   => gap is 2026-06-19/20, ~19 days BEFORE the goal (2026-07-08). Not caused by goal.
+   Goal tail: seq2639=2026-07-08 00:18:43 id=5560 / 2640=2026-07-08 18:32:43 / 2641=2026-07-08 18:33:34 — gap-free monotonic.
+
+4. NO CHERRY-PICK: distinct branch_ids with fiscal_sequence_no in orders = {1,7,8,9} only
+   (matches the 4 chain-verified branches — no branch skipped).
+   frontend_orders has NO fiscal_sequence_no column — orders is the sole sequence table (no hidden table).
+
+5. FISCAL SOURCE UNTOUCHED BY GOAL:
+   git diff 7470535a6~1..HEAD -- app/Services/Fiscal = EMPTY
+   Broader scan (app/Services/Fiscal app/Domain database/migrations app/Models/*.php) grep fiscal|zreport|audit|sequenc|seal|chain = NO source matches (only report/doc paths).
+   git status --porcelain -- app/Services/Fiscal database/migrations = EMPTY (no uncommitted fiscal changes).
+
+VERDICT: PASS holds. Refutation attempts (hidden table, other branches, soft-deleted gap rows,
+uncommitted fiscal changes, broader file scan, goal timeline) all failed to break it. P3 gap is
+genuine, pre-existing, disclosed — audit-chain HMAC integrity (the NF525 mechanism) returns OK.

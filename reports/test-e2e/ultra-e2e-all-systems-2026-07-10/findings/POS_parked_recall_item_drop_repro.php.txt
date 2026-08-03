@@ -1,0 +1,99 @@
+<?php
+
+namespace Tests\Feature\Pos;
+
+use App\Enums\Status;
+use App\Models\Branch;
+use App\Models\Item;
+use App\Models\ItemCategory;
+use App\Models\ItemVariation;
+use App\Models\Tax;
+use App\Models\User;
+use App\Services\PosParkedOrderService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ZzParkedRecallItemDropReproTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_recall_keeps_line_when_parent_item_soft_deleted(): void
+    {
+        $this->seedSpatieRoles();
+        $this->seedMinimalSettings();
+
+        $branch = Branch::factory()->create();
+        $operator = User::factory()->create(['branch_id' => $branch->id]);
+
+        $tax = Tax::factory()->create(['tax_rate' => 0, 'status' => Status::ACTIVE]);
+        $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);
+        $item = Item::factory()->create([
+            'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
+            'price' => 8.00,
+            'status' => Status::ACTIVE,
+        ]);
+        $attr = \App\Models\ItemAttribute::create([
+            'name' => 'Attr', 'status' => Status::ACTIVE,
+            'min_select' => 0, 'max_select' => 1, 'allow_repeat' => 0, 'is_available' => 1,
+        ]);
+        $variation = ItemVariation::create([
+            'item_id' => $item->id,
+            'item_attribute_id' => $attr->id,
+            'name' => 'Var',
+            'price' => 0,
+            'status' => Status::ACTIVE,
+        ]);
+
+        $svc = app(PosParkedOrderService::class);
+
+        // --- Scenario A: soft-deleted parent item, line WITH a variation ---
+        $payloadA = [
+            'lists' => [[
+                'item_id' => $item->id,
+                'name' => 'Test Item',
+                'quantity' => 1,
+                'item_variations' => [['id' => $variation->id, 'name' => 'Var']],
+            ]],
+            'total' => 8.00,
+        ];
+        $parkedA = $svc->park($operator->id, $branch->id, $payloadA, 'A', 'tokA');
+
+        $item->delete(); // soft-delete parent item
+
+        $recalledA = $svc->recall($operator->id, $branch->id, $parkedA->id);
+        $linesA = $recalledA->payload_json['lists'] ?? [];
+        fwrite(STDERR, "\n[REPRO-A soft-deleted parent] lines_count=" . count($linesA)
+            . " warnings=" . json_encode($recalledA->getAttribute('warnings')) . "\n");
+        fwrite(STDERR, "[REPRO-A] line0=" . json_encode($linesA[0] ?? null) . "\n");
+
+        // --- Scenario B: inactive (not trashed) parent item, no variations ---
+        $item2 = Item::factory()->create([
+            'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
+            'price' => 5.00,
+            'status' => Status::ACTIVE,
+        ]);
+        $payloadB = [
+            'lists' => [[
+                'item_id' => $item2->id,
+                'name' => 'Inactive Item',
+                'quantity' => 1,
+                'item_variations' => [],
+            ]],
+            'total' => 5.00,
+        ];
+        $parkedB = $svc->park($operator->id, $branch->id, $payloadB, 'B', 'tokB');
+
+        $item2->status = Status::INACTIVE;
+        $item2->save();
+
+        $recalledB = $svc->recall($operator->id, $branch->id, $parkedB->id);
+        $linesB = $recalledB->payload_json['lists'] ?? [];
+        fwrite(STDERR, "[REPRO-B inactive parent no-var] lines_count=" . count($linesB)
+            . " warnings=" . json_encode($recalledB->getAttribute('warnings')) . "\n");
+        fwrite(STDERR, "[REPRO-B] line0=" . json_encode($linesB[0] ?? null) . "\n");
+
+        $this->assertTrue(true);
+    }
+}

@@ -167,19 +167,50 @@ class ItemCategoryService
         try {
             $categoryId = (int) $itemCategory->id;
             DB::transaction(function () use ($itemCategory, $categoryId): void {
-                $checkItem = $itemCategory->items->whereNull('deleted_at');
-                if (!blank($checkItem)) {
+                // [CAISSE-LOGIC-HEAL 2026-07-11 P1-C] Bloquer la suppression d'une catégorie
+                // qui contient des produits ACTIFS. L'ancienne branche `!blank($checkItem)`
+                // (= a des items actifs) soft-supprimait quand même la catégorie → les items
+                // gardaient `item_category_id` pointant vers une catégorie invisible →
+                // `$item->itemCategory` null → disparition des grilles category-first (caisse/
+                // borne). Le gérant doit d'abord déplacer/désactiver les produits.
+                // [F-CATEGORY-DELETE-ORPHAN 2026-07-15 / P2] Compter TOUS les produits non-supprimés,
+                // pas seulement les ACTIFS. La relation items() filtre status=ACTIVE → un produit
+                // DÉSACTIVÉ (status=10) échappait au compte → la suppression passait et laissait le
+                // produit orphelin (item_category_id → catégorie soft-deleted), RÉACTIVABLE ensuite
+                // en produit actif avec category_name=null (invisible des grilles category-first —
+                // exactement le trou que le heal 2026-07-11 voulait fermer, contournable en suivant
+                // le conseil « désactivez-les » de l'ancien message). Le gérant doit DÉPLACER les
+                // produits (pas juste les désactiver) avant de supprimer la catégorie.
+                $remainingItems = \App\Models\Item::query()
+                    ->where('item_category_id', $itemCategory->id)
+                    ->whereNull('deleted_at')
+                    ->count();
+                if ($remainingItems > 0) {
+                    throw new Exception(
+                        "Impossible de supprimer cette catégorie : elle contient encore {$remainingItems} produit(s). Déplacez-les vers une autre catégorie d'abord.",
+                        422
+                    );
+                }
+                // [AUDIT 2026-07-13 P3] Même pattern que la garde items : bloquer aussi la
+                // suppression d'une catégorie qui a des SOUS-CATÉGORIES non-supprimées. Sans
+                // ça, les enfants gardent `parent_id` pointant vers une catégorie soft-deleted
+                // → sous-catégorie orpheline (parent invisible). Le gérant doit d'abord
+                // supprimer/déplacer les sous-catégories.
+                $activeChildren = $itemCategory->children()->whereNull('deleted_at')->count();
+                if ($activeChildren > 0) {
+                    throw new Exception(
+                        "Impossible de supprimer cette catégorie : elle contient {$activeChildren} sous-catégorie(s). Supprimez-les ou déplacez-les d'abord.",
+                        422
+                    );
+                }
+                if (DB::getDriverName() === 'sqlite') {
+                    DB::statement('PRAGMA foreign_keys=0');
                     $itemCategory->delete();
+                    DB::statement('PRAGMA foreign_keys=1');
                 } else {
-                    if (DB::getDriverName() === 'sqlite') {
-                        DB::statement('PRAGMA foreign_keys=0');
-                        $itemCategory->delete();
-                        DB::statement('PRAGMA foreign_keys=1');
-                    } else {
-                        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-                        $itemCategory->delete();
-                        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-                    }
+                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+                    $itemCategory->delete();
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
                 }
 
                 DB::afterCommit(function () use ($categoryId): void {
@@ -211,10 +242,21 @@ class ItemCategoryService
     public function sortCategory(Request $request)
     {
         try {
-            DB::transaction(function () use ($request) {
-                foreach ($request->category_id as $index => $id) {
+            $categoryIds = array_values(array_filter(
+                array_map('intval', (array) $request->category_id),
+                static fn (int $id): bool => $id > 0
+            ));
+
+            DB::transaction(function () use ($categoryIds) {
+                foreach ($categoryIds as $index => $id) {
                     ItemCategory::where('id', $id)->update(['sort' => $index + 1]);
                 }
+
+                DB::afterCommit(function () use ($categoryIds): void {
+                    foreach ($categoryIds as $id) {
+                        event(new CategoryUpdated($id));
+                    }
+                });
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

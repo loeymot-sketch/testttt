@@ -1,0 +1,40 @@
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\ZReportCashEnrichmentSentinelTest[39m
+  [32;1m✓[39;22m[39m [2menrich close returns correct totals for single session[22m[39m
+  [32;1m✓[39;22m[39m [2menrich close aggregates multiple sessions same branch[22m[39m
+  [32;1m✓[39;22m[39m [2menrich close isolates by branch[22m[39m
+  [32;1m✓[39;22m[39m [2mverify consistency vs audit log ok after happy path[22m[39m
+  [32;1m✓[39;22m[39m [2menrich close counts session in period of close not open[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\Zone5PricingSsotConvergenceSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpr01 backend rereads db price ignores frontend price field[22m[39m
+  [32;1m✓[39;22m[39m [2mpr02 pricing service overwrites client forged totals[22m[39m
+  [32;1m✓[39;22m[39m [2mpr03 composition snapshot has zero update callsites in app code[22m[39m
+  [32;1m✓[39;22m[39m [2mpr04 composition snapshot freezes pricing across admin repricing[22m[39m
+  [32;1m✓[39;22m[39m [2mpr07 stripe cents round before cast[22m[39m
+  [32;1m✓[39;22m[39m [2mpr03bis composition snapshot schema invariant[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Menu\MenuProjectionParitySentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection keep shared item identity price and availability[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection filter channel specific composition without price drift[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection filter inactive unavailable and hidden addons[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection include composer selection constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk legacy menu shared fields match canonical projection[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk consume published composer profile for shared steps[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sync\OrderCreatedDispatchPlacementSentinelTest[39m
+  [32;1m✓[39;22m[39m [2morder created dispatch sites count matches expectation with data set "OrderService"[22m[39m
+  [32;1m✓[39;22m[39m [2morder created dispatch sites count matches expectation with data set "FrontendOrderService"[22m[39m
+  [32;1m✓[39;22m[39m [2morder created dispatch lines are inside db transaction closure with data set "OrderService"[22m[39m
+  [32;1m✓[39;22m[39m [2morder created dispatch lines are inside db transaction closure with data set "FrontendOrderService"[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sync\PusherChannelAuthWildcardSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mchannel auth uses token name not token can[22m[39m
+  [32;1m✓[39;22m[39m [2mchannel auth admin branch requires role check[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TableOrderSecurityTest[39m
+  [32;1m✓[39;22m[39m [2mfake price in table order is ignored[22m[39m
+
+  [37;1mTests:  [39;22m[33;1m2 skipped[39;22m[39m, [39m[32;1m433 passed[39;22m
+  [37;1mTime:   [39;22m[39m51.07s[39m
+
+

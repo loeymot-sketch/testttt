@@ -1,0 +1,25 @@
+metric	value
+item_categories total	18
+metric	value
+item_categories archived	8
+metric	value
+items active	37
+metric	value
+items archived	49
+metric	value
+item_wizard_profiles published	7
+metric	value
+item_wizard_steps	22
+metric	value
+item_attributes	11
+metric	value
+item_variations	909
+metric	value
+orders total	185
+metric	value
+order_items total	341
+metric	value
+audit_logs total	26
+metric	value
+z_reports total	0
+ERROR 1146 (42S02) at line 14: Table 'foodking.fiscal_sequences' doesn't exist

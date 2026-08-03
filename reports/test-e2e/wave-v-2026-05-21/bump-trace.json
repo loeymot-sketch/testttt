@@ -1,0 +1,11 @@
+{
+  "spec": "wave-v-kds-multi-bump",
+  "cta_count_at_t0": 2,
+  "bump_requests_fired": 2,
+  "elapsed_ms": 1550,
+  "rate_limited_count": 0,
+  "idempotency_keys": [
+    "636e9ba1-95f2-4179-a463-2824e3954338",
+    "de126ce7-cc7f-4de7-9cd3-ac2cea06a59f"
+  ]
+}

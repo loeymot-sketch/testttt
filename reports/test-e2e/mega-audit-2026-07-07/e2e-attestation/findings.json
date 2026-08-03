@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "title": "E2E attestation — NF525 phone-order + deferred-fiscal + delivery-VAT + loyalty-refund (LOCAL)",
+    "date": "2026-07-07",
+    "head": "00842c17deb93d96da096978bb6ad04cb4464b1c",
+    "branch": "pos/category-first-caisse-2026-06-23",
+    "server": "http://127.0.0.1:8766 (canonique)",
+    "db": "foodking_e2e (dev, MySQL) — MUTATED IN LOCAL (allowed)",
+    "baseline": { "max_fiscal_branch1": 2636, "open_z": 26, "open_z_opened_at": "2026-06-25 14:09:07", "last_order_id": 5553 }
+  },
+  "cycle_telephone": {
+    "verdict": "GREEN",
+    "order_id": 5554,
+    "queue_number": "A0010",
+    "created_via": "UI real Playwright (POS caisse -> bouton 'Commande telephone', POST /admin/pos 201)",
+    "db_after_create": {
+      "status": 7,
+      "status_label": "PREPARING",
+      "payment_status": 15,
+      "payment_status_label": "PENDING_COUNTER",
+      "pos_payment_method": 6,
+      "pos_payment_method_label": "COUNTER_DEFERRED",
+      "source_surface": "phone",
+      "fiscal_sequence_no": null,
+      "fiscal_dated_at": null,
+      "created_at": "2026-07-07 16:31:49",
+      "pos_customer_name": "Test E2E",
+      "pos_customer_phone": "06 99 88 77 66",
+      "branch_id": 1,
+      "order_type": 10
+    },
+    "kitchen_kds": { "present": true, "card": "N°A0010", "source_badge": "Tél", "line": "1× Coca-Cola 33cl", "footer": "EN ATTENTE ENCAISSEMENT" },
+    "counter_collect_queue": { "in_pending_queue": true, "queue_count": 30, "proof": "replicated exact /counter-collect/pending WHERE clause (source_surface='phone' + COUNTER_DEFERRED) => CONTAINS 5554" },
+    "ticket_bytes": {
+      "endpoint_renderer": "EscPosTicketBytesService::render (SSOT, same as GET /orders/{id}/escpos)",
+      "printer_width_chars": 32,
+      "client_ticket": { "contains_client_line": "Client : Test E2E", "contains_tel_line": "Tel : 06 99 88 77 66", "max_effective_width": 32, "lines_over_32": 0, "deferred_payment_line": "** A REGLER EN CAISSE **", "tva_line": "TVA 10% : 0,17 €" },
+      "kitchen_ticket": { "contains_client_line": "Client : Test E2E", "contains_tel_line": "Tel : 06 99 88 77 66", "max_effective_width": 32, "lines_over_32": 0 },
+      "width_safe_32col": true
+    }
+  },
+  "deferred_z": {
+    "verdict": "GREEN",
+    "encashment": {
+      "via": "UI real Playwright (/admin/encaissement -> Encaisser N°A0010 -> Especes -> Confirmer, POST /counter-collect/5554/confirm 200 OK)",
+      "mode": "CASH (1)",
+      "db_after": {
+        "payment_status": 5,
+        "payment_status_label": "PAID",
+        "pos_payment_method": 1,
+        "pos_payment_method_label": "CASH",
+        "fiscal_sequence_no": 2637,
+        "fiscal_dated_at": "2026-07-07 16:42:23",
+        "created_at": "2026-07-07 16:31:49",
+        "fiscal_dated_at_ne_created_at": true
+      }
+    },
+    "z_close": {
+      "via": "ZReportService::close(1, admin) — method that ZReportController@close wraps (admin session is branch-0/unpinned so HTTP close 422s by design; sealing logic identical)",
+      "z_id": 26,
+      "opened_at": "2026-06-25 14:09:07",
+      "closed_at": "2026-07-07 16:44:35",
+      "total_ttc": 775.55,
+      "total_tva": 69.62,
+      "total_by_tax_rate": { "10": 69.62 },
+      "order_5554_in_window": true
+    },
+    "verify_z_membership": { "order_5554_flagged_orphan": false, "note": "fiscal 2637 / A0010 absent from orphan list (baseline had ~2445 pre-C33 historical orphans, untouched)" },
+    "verify_chain_all": { "result": "CHAIN OK", "branches_ok": 4 },
+    "assert_chain_clean": { "exit": 0, "message": "NF525 ASSERT OK — all chains clean across 4 active branch(es)" }
+  },
+  "tva_livraison": {
+    "verdict": "GREEN",
+    "method": "fresh isolated Z (id 27) containing exactly ONE paid delivery order",
+    "delivery_order": { "id": 5555, "fiscal_sequence_no": 2638, "source_surface": "delivery", "delivery_charge": 4.40, "food_item": "10.00 TTC @10% -> tax 0.91", "total": 14.40 },
+    "signed_z_report_db": {
+      "id": 27,
+      "branch_id": 1,
+      "total_ttc": 14.40,
+      "total_tva": 1.31,
+      "total_ht": 13.09,
+      "total_by_tax_rate": { "10": 1.31 },
+      "signature_present": true,
+      "prev_hash_present": true
+    },
+    "assertions": {
+      "delivery_vat_share_expected": 0.40,
+      "delivery_vat_formula": "round(4.40 * 10 / 110, 2) = 0.40",
+      "bucket_10_equals_food_plus_delivery": "0.91 + 0.40 = 1.31 (EXACT, window isolated to my order)",
+      "total_ttc_unchanged_includes_fee": true,
+      "identity_total_tva_eq_sum_bytaxrate": true,
+      "identity_ttc_eq_ht_plus_tva": "13.09 + 1.31 = 14.40"
+    }
+  },
+  "loyalty_cancel_refund": {
+    "verdict": "GREEN (feasible)",
+    "order_id": 5556,
+    "loyalty_user": { "id": 68, "loyalty_code": "LIVE2TAB1", "points_before": 350 },
+    "phone_order": { "source_surface": "phone", "payment_status": 15, "fiscal_sequence_no": null, "loyalty_customer_code": "LIVE2TAB1" },
+    "redeem": { "points": 100, "points_after_redeem": 250 },
+    "cancel": { "via": "PaymentService::cancelCounterPayment (method /counter-collect/{order}/cancel wraps) — C4-CAISSE-TELEPHONE FIX-1 under attestation", "payment_status_after": 20, "payment_status_label": "REFUNDED", "status_after": 16, "status_label": "CANCELED" },
+    "refund_result": { "points_after_cancel": 350, "points_restored": true, "manual_add_ledger_row": { "present": true, "id": 52, "points": 100, "balance_after": 350 } }
+  },
+  "console_network": {
+    "actual_flow_requests_clean": true,
+    "flow_requests": ["POST /admin/pos/quote 200", "POST /admin/pos 201", "POST /counter-collect/5554/confirm 200"],
+    "raw_labels_found": 0,
+    "console_noise_explained": "console errors are NOT from the attested flow: (a) my own out-of-band diagnostic fetches that failed API-key ('Cle API invalide' 400, escpos 401/400, counter-collect 400 req#44); (b) my browser_evaluate dispatching synthetic events into legacy jQuery theme scripts (drawer.js/customScript.js TypeErrors, stack = UtilityScript.evaluate); (c) ESC/POS print bridge 127.0.0.1:9100 not running in dev -> graceful fallback; (d) pre-existing dashboard 401/403 + stale VPS calls from a prior session"
+  },
+  "artifacts": {
+    "screenshots": [
+      "01-pos-initial.png",
+      "02-after-coca-click.png",
+      "03-phone-order-ready.png",
+      "04-kds-tel-badge.png",
+      "05-encaissement-after-pay.png"
+    ],
+    "ticket_decode": "client-5554.bin / kitchen-5554.bin (scratchpad) decoded with double-width (GS! / ESC!) + bold(ESC E) stripping"
+  },
+  "test_data_note": "Created orders 5554 (phone, PAID, fiscal 2637, sealed Z26 — KEPT: fiscalised), 5555 (delivery, PAID, fiscal 2638, sealed Z27 — KEPT: fiscalised), 5556 (phone loyalty, REFUNDED/CANCELED, fiscal NULL — KEPT: inert, loyalty ledger balanced net-zero). Z26 closed + Z27 opened/closed (normal cashier activity). Per instructions, fiscalised/sealed records NOT deleted.",
+  "verdict": "GREEN"
+}

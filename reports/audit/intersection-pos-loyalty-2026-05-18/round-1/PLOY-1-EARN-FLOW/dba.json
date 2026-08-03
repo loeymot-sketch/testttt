@@ -1,0 +1,68 @@
+{
+  "zone": "PLOY-1-EARN-FLOW",
+  "role": "DBA",
+  "scope": "loyalty_transactions schema, UNIQUE constraint analysis, FK integrity, append-only enforcement, indexing, branch-scoping",
+  "schema_audit": {
+    "table": "loyalty_transactions",
+    "columns": [
+      {"name": "id", "type": "BIGINT UNSIGNED PK AUTO_INCREMENT"},
+      {"name": "user_id", "type": "BIGINT UNSIGNED NOT NULL", "index": "loyalty_transactions_user_id_index", "fk": "FK → users.id ON DELETE CASCADE"},
+      {"name": "loyalty_code", "type": "VARCHAR(25) NULLABLE", "index": "loyalty_transactions_loyalty_code_index"},
+      {"name": "order_id", "type": "BIGINT UNSIGNED NULLABLE", "index": "loyalty_transactions_order_id_index", "fk": "NONE — no FK to orders.id"},
+      {"name": "type", "type": "ENUM('earn','redeem','manual_add','manual_deduct','expire') DEFAULT 'earn'"},
+      {"name": "points", "type": "INT NOT NULL (signed: positive=earn, negative=redeem/deduct)"},
+      {"name": "balance_after", "type": "INT NOT NULL — snapshot of user's loyalty_points after this txn"},
+      {"name": "source_surface", "type": "VARCHAR(20) NULLABLE — kiosk|pos|web|mobile|admin"},
+      {"name": "description", "type": "VARCHAR(255) NULLABLE"},
+      {"name": "created_at, updated_at", "type": "TIMESTAMP NULLABLE (Eloquent timestamps)"}
+    ],
+    "unique_keys": [
+      "loyalty_transactions_user_order_type_unique = UNIQUE(user_id, order_id, type) — added in migration 2026_03_26_075919"
+    ]
+  },
+  "findings": [
+    {
+      "id": "PLOY-1-DBA-01",
+      "severity": "P1",
+      "title": "UNIQUE(user_id, order_id, type) is NULL-permissive — does NOT enforce earn-per-order uniqueness when order_id is NULL",
+      "finding": "MySQL (and most SQL engines) treat each NULL as distinct in UNIQUE constraints. UNIQUE(user_id, order_id=NULL, type='redeem') allows unlimited rows. Pre-order kiosk redemptions (LoyaltyController::redeem line 312, FrontendOrderService::createKioskLoyaltyRedeemLedger first attempt line 872 uses order_id=$this->frontendOrder->id but the LoyaltyController path uses NULL) and admin manual_add (LoyaltyController::addPoints line 224 uses order_id=null) bypass uniqueness entirely.",
+      "impact": "Double-redeem race in LoyaltyController::redeem (kiosk path before order persisted, manual_add by staff) cannot be DB-blocked. Only the lockForUpdate + balance-check at controller line 274-300 prevents overdraft — but UNIQUE provides no defense in depth.",
+      "files": ["database/migrations/2026_03_26_075919_add_unique_to_loyalty_transactions.php", "app/Http/Controllers/Frontend/LoyaltyController.php:312", "app/Http/Controllers/Frontend/LoyaltyController.php:223"],
+      "remediation": "Option A: Add a deterministic synthetic key column (e.g. dedup_key VARCHAR(64) NOT NULL DEFAULT '') populated via app-layer hash of (user_id|order_id|type|context|nonce) and UNIQUE(dedup_key). Option B (lighter): for manual_add and pre-order redeem, write a non-NULL placeholder pseudo-id (e.g. negative bigint derived from a UUID) into order_id. Option B has FK implications since order_id has no FK — feasible. Owner gate required."
+    },
+    {
+      "id": "PLOY-1-DBA-02",
+      "severity": "P2",
+      "title": "loyalty_transactions has NO branch_id column — analytics are global, not branch-scoped",
+      "finding": "Per BranchScope discipline (CLAUDE.md §9), all multi-tenant analytics tables should carry branch_id. loyalty_transactions does not. Analytics queries 'redeem in Branch A this month' must JOIN orders to derive branch — possible but slow, and impossible for order_id=NULL rows.",
+      "files": ["database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php"],
+      "remediation": "ALTER TABLE ADD COLUMN branch_id BIGINT UNSIGNED NULLABLE AFTER user_id + index. Populate via backfill from orders. App-layer changes in listener + controller + service to set branch_id from $order->branch_id (or User::branch_id for manual_add)."
+    },
+    {
+      "id": "PLOY-1-DBA-03",
+      "severity": "P3",
+      "title": "No append-only DB trigger on loyalty_transactions (UPDATE/DELETE not blocked)",
+      "finding": "Per CLAUDE.md §8, fiscal-grade tables (audit_logs, z_reports) have BEFORE DELETE triggers raising SIGNAL SQLSTATE '45000'. loyalty_transactions has none. App-layer comments call it 'immutable audit trail' (LoyaltyTransaction docblock line 8-15) but DB allows UPDATE/DELETE.",
+      "impact": "Defense-in-depth gap. An attacker with DB write access (or a buggy command) can rewrite history. Not NF525-required since loyalty is not fiscal — but it's money-equivalent (1€ discount = 100pts).",
+      "remediation": "Add migration with BEFORE DELETE and BEFORE UPDATE triggers (MySQL prod only — sqlite tests skip). Pattern available in existing audit_logs trigger migrations."
+    },
+    {
+      "id": "PLOY-1-DBA-04",
+      "severity": "P3",
+      "title": "No FK from loyalty_transactions.order_id → orders.id",
+      "finding": "order_id is indexed but not FK-constrained. Orphan rows (order deleted, txn remains) are possible. Since orders are soft-deletable in this codebase (verify), this might be intentional to preserve audit trail on hard delete — but if orders is purged, txn becomes orphan.",
+      "files": ["database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php:24"],
+      "remediation": "Add FK with ON DELETE SET NULL — preserves txn audit even if order is purged. Or document intentional no-FK choice."
+    },
+    {
+      "id": "PLOY-1-DBA-05",
+      "severity": "P3",
+      "title": "users.loyalty_points is INT — overflow possible at ~21M points",
+      "finding": "Migration 2026_03_08_145926 declares loyalty_points INT (signed, ~2.1B max but Laravel INT default is signed 11-digit). For LeCayenne V1 single-resto this is far from a concern. Documented for V2 multi-resto scaling.",
+      "files": ["database/migrations/2026_03_08_145926_add_loyalty_fields_to_users_table.php:17"],
+      "remediation": "V1: none. V2: BIGINT UNSIGNED."
+    }
+  ],
+  "verdict": "PASS-WITH-CONCERN",
+  "notes": "PLOY-1-DBA-01 (NULL-permissive UNIQUE) is the main DB-layer defense gap. App-layer lockForUpdate compensates for the earn happy-path (UNIQUE INDEX prevents earn double-write — order_id is NOT NULL for earn). Concern primarily applies to redeem and manual_add paths."
+}

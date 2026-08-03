@@ -1,0 +1,162 @@
+{
+  "micro_system": "S13-marketing",
+  "files_examined": [
+    "app/Http/Controllers/Admin/CouponController.php",
+    "app/Services/CouponService.php",
+    "app/Models/Coupon.php",
+    "app/Http/Requests/CouponRequest.php",
+    "app/Http/Requests/CouponCheckRequest.php",
+    "app/Services/Pricing/PricingService.php",
+    "app/Services/Pricing/DiscountCalculator.php",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Http/Controllers/Admin/OfferController.php",
+    "app/Services/OfferService.php",
+    "app/Http/Controllers/Admin/PushNotificationController.php",
+    "app/Services/PushNotificationService.php",
+    "app/Http/Requests/PushNotificationRequest.php",
+    "app/Services/FirebaseService.php",
+    "app/Http/Controllers/Admin/MessageController.php",
+    "app/Services/MessageService.php",
+    "app/Http/Controllers/Admin/AdminController.php",
+    "config/pos.php",
+    "config/features.php",
+    "routes/api.php",
+    "resources/js/components/admin/coupons/CouponListComponent.vue",
+    "resources/js/components/admin/pushNotification/PushNotificationCreateComponent.vue"
+  ],
+  "findings": [
+    {
+      "id": "S13-01",
+      "severity": "P1",
+      "category": "functional",
+      "title": "Coupon UI fully operational but coupon discount is REFUSED at order time when discount kill-switch is off — create/validate/apply disconnect",
+      "file_line": "app/Services/OrderService.php:543-555,2863-2870 ; app/Services/CouponService.php:350-409",
+      "evidence": "Admin can create a coupon, toggle it active, and /coupon-checking (CouponService::couponChecking -> resolveCouponByCode -> calculateDiscountAmount) returns a positive discount to the customer/cashier. But every order-creation chokepoint calls assertDiscretionaryDiscountAllowed((float)$calculatedDiscount) (OrderService.php:414,554,848,1023,1395,1556 ; FrontendOrderService.php:502). That guard (OrderService.php:2863) throws ValidationException 'Les remises (manuelle, coupon, fidelite) sont desactivees en V1' whenever discount>0 AND config('pos.manual_discount_enabled') !== true. So when the kill-switch is engaged (POS_MANUAL_DISCOUNT_ENABLED=false), a valid coupon previews a discount then hard-fails at checkout.",
+      "why_it_matters": "Marketing can publish a working-looking promo code that customers/cashiers see validated (discount shown in the coupon-check response) yet cannot redeem — the order throws a generic validation error at the final step. That is a broken promise to the customer and a support burden, and there is no admin-side signal that coupons are inert. The coupon module's entire create/toggle/validity surface is dead-end functionality in the kill-switch state.",
+      "reproduction": "Set POS_MANUAL_DISCOUNT_ENABLED=false. Create coupon code SAVE10 (10% , min_order 0). Call POST /api/frontend/coupon/coupon-checking {code:SAVE10,total:20} -> returns discount 2.00. Place a web/kiosk order with coupon_id=that coupon -> OrderService throws 422 'Les remises ... sont desactivees en V1'.",
+      "recommended_correction": "Make the coupon UI/coupon-checking endpoint honor the same kill-switch: when pos.manual_discount_enabled is false, hide/disable coupon entry on customer surfaces and have /coupon-checking return a 'promotions temporarily unavailable' message instead of a redeemable discount, so create/validate/apply stay consistent.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S13-02",
+      "severity": "P1",
+      "category": "nf525",
+      "title": "Per-order persisted total_tax is computed on PRE-discount subtotal; only the Z-report re-nets TVA by discount ratio — order/receipt TVA disagrees with Z (residual F1 surface)",
+      "file_line": "app/Services/OrderService.php:551-563 ; app/Services/Fiscal/ZReportService.php:672-685",
+      "evidence": "OrderService persists $this->order->total_tax = $totalTax where $totalTax is the sum of per-line tax computed on the full (pre-discount) line totals; the coupon discount is then subtracted only from the order TOTAL (line 570), never from total_tax. ZReportService (lines 672-685) introduces a discount-netting ratio (subtotal-discount)/subtotal and scales per-rate TVA by it for the signed Z. So the Z TVA reflects the discount but the order row's stored total_tax (used on the customer receipt / order resource) does not. For a discounted order the receipt TVA line and the Z report TVA bucket diverge.",
+      "why_it_matters": "NF525 expects the per-ticket fiscal TVA and the daily Z aggregate to be coherent. A coupon-discounted order shows a TVA on the receipt computed on the pre-discount base while the signed Z books a smaller (netted) TVA — an internal inconsistency a fiscal audit would flag. The coupon discount is exactly the marketing->pricing->F1 link the system must get right.",
+      "reproduction": "Enable discounts (POS_MANUAL_DISCOUNT_ENABLED=true). Order 20 EUR TTC at 10% with a 2 EUR coupon. Inspect orders.total_tax (still full-base ~1.82) vs the Z bucket for that order (netted by 18/20). Compare receipt TVA vs Z total_by_tax_rate.",
+      "recommended_correction": "Net the per-order total_tax by the same discount ratio at order creation (or recompute TVA on the post-discount base) so the persisted/receipt TVA matches the Z netting. Cover with a behavioral test asserting order.total_tax == Z per-rate contribution for a discounted order. Touches frozen pricing/fiscal zone -> requires lock-plan.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    },
+    {
+      "id": "S13-03",
+      "severity": "P1",
+      "category": "functional",
+      "title": "Push notification broadcast fires immediately on submit with no confirmation dialog — irreversible mass send is one click",
+      "file_line": "resources/js/components/admin/pushNotification/PushNotificationCreateComponent.vue:169-205 ; app/Services/PushNotificationService.php:55-116",
+      "evidence": "PushNotificationCreateComponent save() builds a FormData and dispatches pushNotification/save with no confirm()/modal gate. The backend store() synchronously fans out to FCM for every matching token (PushNotificationService.php:113-115 -> FirebaseService::sendNotification). With role_id=0 AND user_id=0 the fan-out selects ALL User rows with web_token/device_token (lines 84-92). There is no draft/preview/confirm step and no scheduled-send — the broadcast is irreversible the moment the Save button is pressed.",
+      "why_it_matters": "A mistyped title/body or an accidental click pushes a permanent notification to every device. Unlike coupons/offers there is no undo, no edit-after-send, and no toggle. Modern admin tooling (Toast, Olo) gates broadcast sends behind an explicit 'Send to N recipients?' confirmation showing the audience size. Its absence here is a real operational hazard.",
+      "reproduction": "Open admin push-notification drawer, leave role/user empty (=0/0), type any title+description, click Save once -> notification is delivered to all tokened users with no confirmation prompt.",
+      "recommended_correction": "Add a confirmation step before dispatch that states the resolved audience ('Envoyer a N destinataires ? Action irreversible.'). Optionally surface the computed recipient count from the backend before committing the send.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S13-04",
+      "severity": "P2",
+      "category": "security",
+      "title": "Push notification store() trusts request branch_id with no ownership check and no Rule::exists — branch user can broadcast globally by sending branch_id=0",
+      "file_line": "app/Services/PushNotificationService.php:63,82-92 ; app/Http/Requests/PushNotificationRequest.php:37 ; app/Http/Controllers/Admin/PushNotificationController.php:37-44",
+      "evidence": "store() sets $pushNotification->branch_id = $request->branch_id directly. PushNotificationRequest validates branch_id only as required|numeric (no Rule::exists, no clamp, authorize() returns true). The controller never calls AdminController::authorizeBranchScope() (which exists, AdminController.php:14-27). The 2026-05-18 tenant-isolation heal only filters the fan-out WHEN $pushBranchId !== 0; a branch-scoped sender POSTing branch_id=0 takes the role_id==0 && user_id==0 path with no branch filter -> reaches ALL users across ALL branches.",
+      "why_it_matters": "A branch manager with push-notifications_create can escalate a branch-local promo into a cross-tenant global broadcast simply by forcing branch_id=0 in the request (the Vue UI sources it from the sender's own branch, but the API does not enforce that). In V1 single-branch this is latent, but it is a real branch-isolation weakening that becomes exploitable the moment a second branch/staff exists.",
+      "reproduction": "As a branch_id=1 staff with push-notifications_create, POST /api/admin/push-notification with branch_id=0, role_id=0, user_id=0 -> backend broadcasts to every tenant's users; no 403.",
+      "recommended_correction": "In store() (or PushNotificationRequest), force branch_id to the authenticated non-admin user's branch via AdminController::authorizeWritableBranchScope(), and add Rule::exists('branches','id'); only Admin/Tenant Admin may target branch_id=0 (global).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S13-05",
+      "severity": "P2",
+      "category": "functional",
+      "title": "Push send swallows every per-token FCM error silently — failed/invalid tokens never logged or pruned, admin sees success for a no-op send",
+      "file_line": "app/Services/FirebaseService.php:56-66",
+      "evidence": "sendNotification() posts to FCM per token inside try{...}catch(\\Throwable $th){} with an EMPTY catch body (lines 61-62) — every HTTP failure (401 bad credentials, 404 invalid registration token, network) is discarded. The outer catch only Log::info()s. The method returns void; the controller always responds 200 with the created row. There is no dead-token cleanup (invalid web_token/device_token are never nulled), and no per-token failure surfaced.",
+      "why_it_matters": "An admin can fire a 'broadcast' that silently delivers to zero devices (e.g. expired FCM access token or all-stale tokens) and still gets a success toast. Stale tokens accumulate forever, degrading future sends. For a marketing broadcast feature, 'did it actually send and to whom' is unanswerable from the UI.",
+      "reproduction": "Misconfigure FCM (or use an expired token). Trigger a push -> controller returns 200, alert shows success, no error logged at warning/error level, recipients receive nothing.",
+      "recommended_correction": "Log per-token failures at warning level with the FCM error code; on UNREGISTERED/INVALID_ARGUMENT responses, null out the offending web_token/device_token so they are not retried. Optionally return a delivered/failed count to the UI.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S13-06",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Coupon::isUsableNow() checks max_uses_global against the dead usage_count column (always 0) — global cap unenforced for any caller relying on the model alone",
+      "file_line": "app/Models/Coupon.php:150-155 ; app/Services/CouponService.php:236,449-459",
+      "evidence": "Coupon::isUsableNow() (line 152) gates max_uses_global with `(int)$this->usage_count >= max_uses_global`, but usage_count is only ever written to 0 at create (CouponService.php:236) and NEVER incremented anywhere (grep usage_count across app/ shows only the cast, the seed-to-0, the resource echo, and this check). The CouponService order path compensates by separately counting OrderCoupon rows (lines 453-459) BEFORE calling isUsableNow, so the HTTP order path is safe — but any code that trusts isUsableNow() for the global cap (e.g. a future kiosk_promo/availability listing) gets a check that can never trip.",
+      "why_it_matters": "The model method advertises a global-usage cap that is structurally inert. It is a correctness trap: the comment at CouponService:449 acknowledges usage_count is a dead column, yet the model's own guard still reads it, so the two enforcement sites disagree. A maintainer reusing isUsableNow() would ship an unenforced max_uses_global.",
+      "reproduction": "Create coupon max_uses_global=1, redeem it once (OrderCoupon row created, usage_count stays 0). Call $coupon->fresh()->isUsableNow() -> returns true (cap not tripped) even though the global limit is reached.",
+      "recommended_correction": "Either remove the usage_count branch from isUsableNow() and make it count OrderCoupon (matching CouponService), or actually increment usage_count atomically on redemption. Drop the dead column if unused.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S13-07",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Coupon limit_per_user and max_uses_global enforced via non-atomic count-then-create (TOCTOU) — concurrent redemptions can exceed the cap",
+      "file_line": "app/Services/CouponService.php:437-459 ; app/Services/OrderService.php:589-595",
+      "evidence": "validateCouponForOrder() enforces both per-user (OrderCoupon::where(user_id,coupon_id)->count() >= limit, lines 439-447) and global (OrderCoupon::where(coupon_id)->count() >= max, lines 454-458) caps by a plain COUNT, then OrderCoupon::create() happens later during order persistence (OrderService.php:589). No row lock, no unique constraint, no SELECT ... FOR UPDATE between the count and the insert. Two concurrent checkouts each read count=limit-1 and both insert.",
+      "why_it_matters": "A single-use or limited promo can be redeemed N times under concurrency, over-discounting beyond the configured cap. CLAUDE.md notes single-box V1 has 'same non-atomic semantics' as limit_per_user (so this is acknowledged/low-risk for one machine), but it is a real correctness gap that becomes a money leak in any multi-terminal or cloud deployment.",
+      "reproduction": "Coupon limit_per_user=1. Fire two near-simultaneous order creations for the same user with the same coupon -> both pass validation (count==0<1) and both create OrderCoupon rows; user redeemed twice.",
+      "recommended_correction": "Add a UNIQUE(user_id, coupon_id) DB constraint (or a redemption ledger with unique key) for single-use-per-user, and wrap the global-cap check + insert in a locked transaction (Cache::lock or SELECT FOR UPDATE) mirroring the fiscal-sequence triple-defense pattern.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S13-08",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Coupon active/inactive toggle has no confirmation — one click silently activates/deactivates a live promo",
+      "file_line": "resources/js/components/admin/coupons/CouponListComponent.vue:182-188,382-398",
+      "evidence": "The toggle-status icon button @click=\"toggleStatus(coupon)\" dispatches coupon/toggleStatus immediately (CouponListComponent.vue:383-398) with no confirm() dialog, unlike destroy() which typically confirms. Backend CouponController::toggleStatus + CouponService::toggleStatus flip ACTIVE<->INACTIVE and persist instantly. A mis-click deactivates a running promo (customers' codes start failing) with only a success toast.",
+      "why_it_matters": "Deactivating an active coupon is a customer-facing state change. A guardless single-click toggle in a dense table row is easy to fumble; there is no 'are you sure' and no visual diff before/after beyond the badge. Low blast radius but a polish/UX gap on a state-mutating control.",
+      "reproduction": "On the coupon list, accidentally click the eye/eye-off icon -> coupon status flips with no confirmation.",
+      "recommended_correction": "Add a lightweight confirm (or an undo toast) on toggleStatus, especially when deactivating a currently-active coupon.",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Coupon discount is fully server-recalculated — client discount value never trusted",
+      "file_line": "app/Services/OrderService.php:372-374,543-563,589-595 ; app/Services/CouponService.php:397-409",
+      "note": "OrderService unset()s client total/subtotal/discount and recomputes coupon discount via resolveCouponById + calculateDiscountAmount; OrderCoupon stores the SERVER value. calculateDiscountAmount clamps with min($amount,$subtotal), max(0,...) and honors maximum_discount, so a coupon cannot over-discount below zero or beyond the cart. Good SSOT discipline."
+    },
+    {
+      "title": "Offers mutation paths correctly hard-disabled in V1 to prevent display-vs-charge mismatch",
+      "file_line": "app/Http/Controllers/Admin/OfferController.php:31-43 ; config/features.php:27",
+      "note": "store/update/changeImage are abort_unless(config('features.offers_enabled')===true,403) with a clear French message; default FEATURE_OFFERS_ENABLED=false. Because PricingService does not apply offer discounts, blocking creation avoids a 'shows X, charges Y' defect. Read paths stay open. Honest dormancy."
+    },
+    {
+      "title": "Coupon advanced scopes (status/days/hours/branch/surface) are wired into the HTTP validation path",
+      "file_line": "app/Services/CouponService.php:350-365,461-472 ; app/Models/Coupon.php:90-158",
+      "note": "couponChecking reads branch_id+surface and validateCouponForOrder calls $coupon->isUsableNow($branchId,$surface,$now) with a generic non-leaking failure message, plus explicit minimum_order, date-window, and limit_per_user checks. The CV6 P0 wiring is present and the date guards null-safe (couponDateWise guards null start/end against Carbon crash)."
+    },
+    {
+      "title": "Coupon list ordering/search hardened against SQL injection and LIKE-wildcard abuse",
+      "file_line": "app/Services/CouponService.php:63-64,115-130",
+      "note": "sanitizeOrderColumn (allow-list), sanitizeOrderDirection (asc/desc only), and escapeLike (escapes \\ % _) protect the dynamic orderBy/where-like in list(). Integer enum filters (status/discount_type) use exact (int) match. Solid input hygiene on the admin list."
+    },
+    {
+      "title": "Marketing mutation endpoints consistently permission-gated (defense-in-depth)",
+      "file_line": "app/Http/Controllers/Admin/CouponController.php:25-29 ; app/Http/Controllers/Admin/PushNotificationController.php:22-25 ; app/Http/Controllers/Admin/MessageController.php:22-25",
+      "note": "Coupon store/update/toggle/delete each gated by the matching coupons_* permission; CouponRequest also re-checks can('coupons_create')||can('coupons_edit'); MessageController's changeStatus was explicitly added to the permission:messages ->only() list (2026-06-01 heal) closing a gap. Authz coverage on state-mutating marketing routes is consistent."
+    }
+  ]
+}

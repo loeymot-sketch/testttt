@@ -1,0 +1,25 @@
+  [32;1m✓[39;22m[39m [2madmin stock rupture reason subblock localizes all known reasons with data set "fr"[22m[39m
+  [32;1m✓[39;22m[39m [2madmin stock rupture reason subblock localizes all known reasons with data set "en"[22m[39m
+  [32;1m✓[39;22m[39m [2madmin stock rupture reason subblock localizes all known reasons with data set "ar"[22m[39m
+  [32;1m✓[39;22m[39m [2marabic locale contains arabic codepoints[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\SyncComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk order appears in kds[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order appears in kds[22m[39m
+  [32;1m✓[39;22m[39m [2mkds status change reflected in oss[22m[39m
+  [32;1m✓[39;22m[39m [2mtable order appears in kds[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order updates dashboard counters[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TimeZone\DashboardSalesReportParisBoundsSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mdashboard order statistics includes 23h30 paris order[22m[39m
+  [32;1m✓[39;22m[39m [2mdashboard order statistics excludes yesterday paris order[22m[39m
+  [32;1m✓[39;22m[39m [2mdashboard realtime report includes late evening paris order[22m[39m
+  [32;1m✓[39;22m[39m [2mdashboard binds paris local literal not utc shifted[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Uber\UberGoLiveHardeningTest[39m
+  [32;1m✓[39;22m[39m [2mdedup deux events meme commande et champs kds poses[22m[39m
+
+  [37;1mTests:  [39;22m[33;1m1 skipped[39;22m[39m, [39m[32;1m172 passed[39;22m
+  [37;1mTime:   [39;22m[39m39.06s[39m
+
+

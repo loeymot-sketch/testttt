@@ -3,12 +3,17 @@
 namespace App\Services\Kiosk;
 
 use App\Enums\Status;
+use App\Libraries\AppLibrary;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
+use App\Models\ItemWizardProfile;
 use App\Models\KioskPromo;
 use App\Models\UpsellRule;
+use App\Services\Composer\ComposerProfileProjection;
+use App\Services\Menu\MenuSnapshot;
+use App\Services\Stock\ChoiceAvailabilityResolver;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -34,12 +39,23 @@ final class KioskMenuService
 {
     public const CHANNEL = 'kiosk';
 
+    public function __construct(
+        private ?MenuSnapshot $snapshot = null,
+        private ?ComposerProfileProjection $composerProjection = null,
+        private ?ChoiceAvailabilityResolver $choiceAvailabilityResolver = null,
+    )
+    {
+    }
+
     /**
      * @return array{
      *   branch: array<string, mixed>,
      *   categories: array<int, array<string, mixed>>,
      *   items: array<int, array<string, mixed>>,
-     *   upsell_rules: array<int, array<string, mixed>>
+     *   upsell_rules: array<int, array<string, mixed>>,
+     *   snapshot_version: int,
+     *   branch_id: int,
+     *   channel: string
      * }
      */
     public function build(Branch $branch): array
@@ -47,8 +63,11 @@ final class KioskMenuService
         $branchId = (int) $branch->id;
 
         // -- Catégories actives visibles sur le canal kiosk ----------------
+        // [TERRAIN-HEAL 2026-07-16 · DBPERF-KIOSKCAT-N1] eager-load media : sinon 1 requête média
+        // par catégorie au rendu borne (reliquat non couvert par DBPERF-P1-01 qui n'a healé que les items).
         $categories = ItemCategory::query()
             ->where('status', Status::ACTIVE)
+            ->with('media')
             ->get();
 
         $visibleCategories = $categories
@@ -63,7 +82,18 @@ final class KioskMenuService
                 ->with([
                     'variations:id,item_id,item_attribute_id,name,price,visible_on,status',
                     'extras:id,item_id,name,price,visible_on,group_label,status',
+                    'addons:id,item_id,addon_item_id,addon_item_variation,role',
+                    'addons.addonItem:id,name,status,is_available,channels',
                     'allergens:id,code,name_key,icon,sort',
+                    // [DBPERF-P1-01 heal 2026-05-29] Eager-load Item media
+                    // (Spatie polymorphic). Wave D measured 89 queries on
+                    // /api/frontend/menu cold path due to lazy
+                    // getFirstMediaUrl() on Item::thumb accessor. Only Item
+                    // implements HasMedia (verified app/Models/Item.php:15).
+                    // Variations/Extras do NOT have media — those N+1 hits
+                    // come from addonItem.thumb chain which loads Item media.
+                    'media',
+                    'addons.addonItem.media',
                 ])
                 ->where('status', Status::ACTIVE)
                 ->whereIn('item_category_id', $categoryIds)
@@ -93,10 +123,18 @@ final class KioskMenuService
         return [
             'branch' => $this->projectBranch($branch),
             'categories' => $this->projectCategories($visibleCategories),
-            'items' => $this->projectItems($visibleItems, $availability),
+            'items' => $this->projectItems($visibleItems, $availability, $branchId),
             'upsell_rules' => $this->projectUpsellRules($upsellRules),
             'promos' => $this->projectPromos($promos),
+            'snapshot_version' => $this->snapshot()->current($branchId),
+            'branch_id' => $branchId,
+            'channel' => self::CHANNEL,
         ];
+    }
+
+    private function snapshot(): MenuSnapshot
+    {
+        return $this->snapshot ??= MenuSnapshot::make();
     }
 
     /**
@@ -212,11 +250,16 @@ final class KioskMenuService
      */
     private function projectCategories(Collection $categories): array
     {
-        // Sort par ordre kiosk (ou sort legacy), puis par id pour stabilité.
-        $sorted = $categories->sortBy([
-            fn (ItemCategory $c) => $c->sortFor(self::CHANNEL),
-            fn (ItemCategory $c) => (int) $c->id,
-        ])->values();
+        // [F-KIOSK-CAT-SORT-TIEBREAK 2026-07-15] La forme tableau sortBy([fn1, fn2]) interprète
+        // fn2 comme une DIRECTION, pas un tie-breaker → ordre de catégories NON-déterministe/faux
+        // (prouvé : [58(s1),1(s1),2(s2),4(s4)] → 4,1,2,58 au lieu de 1,58,2,4). C'est EXACTEMENT le
+        // bug corrigé pour les items plus bas (Wave Y A-001) mais laissé ici → à sort égal, la borne
+        // pouvait présenter/atterrir sur une catégorie arbitraire. sortBy chaîné = stable (PHP 8 spl) :
+        // trie d'abord par id (tie-breaker), puis par sort kiosk (le tri stable préserve l'id sur égalité).
+        $sorted = $categories
+            ->sortBy(fn (ItemCategory $c) => (int) $c->id)
+            ->sortBy(fn (ItemCategory $c) => $c->sortFor(self::CHANNEL))
+            ->values();
 
         $byId = $sorted->keyBy('id');
 
@@ -232,6 +275,10 @@ final class KioskMenuService
                 'parent_id'           => $cat->parent_id !== null ? (int) $cat->parent_id : null,
                 'slug'                => (string) $cat->slug,
                 'name'                => $cat->displayNameFor(self::CHANNEL),
+                'thumb'               => $cat->thumb,
+                'cover'               => $cat->cover,
+                'image'               => $cat->thumb ?: $cat->cover,
+                'image_full_path'     => $cat->cover ?: $cat->thumb,
                 'kiosk_label'         => $cat->kiosk_label,
                 'sort'                => $cat->sortFor(self::CHANNEL),
                 'wizard_template'     => $cat->wizard_template,
@@ -247,26 +294,62 @@ final class KioskMenuService
      * @param  Collection<int, Item>  $items
      * @param  Collection<int, ItemBranchAvailability>  $availability
      */
-    private function projectItems(Collection $items, Collection $availability): array
+    private function projectItems(Collection $items, Collection $availability, int $branchId): array
     {
-        return $items->sortBy([
-            fn (Item $it) => (int) ($it->order ?? 0),
-            fn (Item $it) => (int) $it->id,
-        ])->map(function (Item $item) use ($availability): array {
+        $composerProfiles = $this->publishedComposerProfiles($items, $branchId);
+        $choiceAvailability = $this->choiceAvailabilityResolver()->snapshotForItems($items, $branchId, self::CHANNEL);
+
+        // Wave Y A-001 root-cause fix — Laravel `sortBy([fn1, fn2])` interprets
+        // fn2 as a direction string for fn1, NOT as a tie-breaker. The old form
+        // produced non-deterministic ordering across all kiosk categories.
+        // Chained sortBy is stable in PHP (since 8.0 spl) so the second sort
+        // preserves the first sort's order on ties.
+        return $items->sortBy(fn (Item $it) => (int) $it->id)
+            ->sortBy(fn (Item $it) => (int) ($it->order ?? 0))
+            ->values()
+            ->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId): array {
             $avail = $availability->get($item->id);
             $isAvailable = $avail ? (bool) $avail->is_available : true;
+            $itemChoiceAvailability = $choiceAvailability[(int) $item->id] ?? [
+                'variations' => [],
+                'extras' => [],
+                'addons' => [],
+            ];
+
+            // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
+            // = nombre d'attributs « Viande N » ayant des variations actives. La
+            // borne (KioskWizardComponent.detectViandeCount, frozen) lit ce champ
+            // EN PRIORITÉ (avant l'heuristique nom buggée : « Méga »→4, « Terminator »
+            // / « Bol »→null = pas d'étape viande). Méga/Terminator=2, Tacos M/Bols=1,
+            // Tacos L=2, burgers/desserts=0 (la borne retombe alors sur le nom = 0).
+            $projectedItemAttributes = $this->projectItemAttributes($item, self::CHANNEL);
+            $viandeCount = collect($projectedItemAttributes)
+                ->filter(function ($a): bool {
+                    $n = mb_strtolower((string) ($a['name'] ?? ''));
+                    return str_contains($n, 'viande') || str_contains($n, 'meat');
+                })
+                ->count();
 
             return [
+                'viande_count'       => $viandeCount,
                 'id'                 => (int) $item->id,
                 'category_id'        => (int) $item->item_category_id,
+                'item_category_id'   => (int) $item->item_category_id,
                 'slug'               => (string) $item->slug,
                 'name'               => (string) $item->name,
                 'description'        => $item->description,
                 'price'              => (float) $item->price,
+                'convert_price'      => AppLibrary::convertAmountFormat($item->price),
+                'currency_price'     => AppLibrary::currencyAmountFormat($item->price),
+                'flat_price'         => AppLibrary::flatAmountFormat($item->price),
                 'tax_id'             => $item->tax_id !== null ? (int) $item->tax_id : null,
                 'item_type'          => (int) $item->item_type,
                 'is_featured'        => (int) $item->is_featured,
                 'is_upsell'          => (int) ($item->is_upsell ?? 0),
+                // Wave Y A-001 — surface the admin-controlled display order so
+                // the kiosk client can sort signatures first within a category.
+                // Cf. compareKioskItemsDisplay() in helpers/kioskItemDisplayOrder.js.
+                'order'              => (int) ($item->order ?? 0),
                 'is_chef_pick'       => (bool) ($item->is_chef_pick ?? false),
                 'chef_pick_order'    => $item->chef_pick_order !== null ? (int) $item->chef_pick_order : null,
                 // Phase 8.1 — Flags diététiques (DATA_CONTRACT §3.3).
@@ -277,9 +360,14 @@ final class KioskMenuService
                 'is_halal'           => (bool) ($item->is_halal ?? false),
                 'is_gluten_free'     => (bool) ($item->is_gluten_free ?? false),
                 'kiosk_emoji'        => $item->kiosk_emoji,
+                'thumb'              => $item->thumb,
+                'cover'              => $item->cover,
+                'image'              => $item->thumb ?: $item->cover,
+                'preview'            => $item->preview,
                 'is_available'       => $isAvailable && (bool) ($item->is_available ?? true),
                 'unavailable_reason' => $avail && !$isAvailable ? $avail->unavailable_reason : null,
                 'channels'           => is_array($item->channels) ? array_values($item->channels) : null,
+                'offer'              => [],
                 'allergens'          => $item->allergens->map(fn ($a) => [
                     'id'       => (int) $a->id,
                     'code'     => (string) $a->code,
@@ -288,25 +376,138 @@ final class KioskMenuService
                     'is_trace' => (bool) ($a->pivot->is_trace ?? false),
                 ])->values()->all(),
                 'variations'         => $item->variations
-                    ->filter(fn ($v) => $v->isVisibleOn(self::CHANNEL))
-                    ->map(fn ($v) => [
-                        'id'           => (int) $v->id,
-                        'attribute_id' => $v->item_attribute_id !== null ? (int) $v->item_attribute_id : null,
-                        'name'         => (string) $v->name,
-                        'price'        => (float) $v->price,
-                        'visible_on'   => $v->visible_on,
-                    ])->values()->all(),
+                    ->filter(fn ($v) => (int) $v->status === \App\Enums\Status::ACTIVE && $v->isVisibleOn(self::CHANNEL))
+                    ->map(function ($v) use ($itemChoiceAvailability) {
+                        $availability = $itemChoiceAvailability['variations'][(int) $v->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+
+                        return [
+                            'id'           => (int) $v->id,
+                            'attribute_id' => $v->item_attribute_id !== null ? (int) $v->item_attribute_id : null,
+                            'item_attribute_id' => $v->item_attribute_id !== null ? (int) $v->item_attribute_id : null,
+                            'name'         => (string) $v->name,
+                            'price'        => (float) $v->price,
+                            'convert_price' => AppLibrary::convertAmountFormat($v->price),
+                            'currency_price' => AppLibrary::currencyAmountFormat($v->price),
+                            'thumb'        => $v->thumb,
+                            'status'       => (int) $v->status,
+                            'visible_on'   => $v->visible_on,
+                            'is_available' => $availability['is_available'],
+                            'unavailable_reason' => $availability['unavailable_reason'],
+                        ];
+                    })->values()->all(),
+                'itemAttributes'      => $projectedItemAttributes,
+                'composer_profile'    => $this->composerProfileProjection()->project($composerProfiles->get($item->id), $item, self::CHANNEL, $branchId),
                 'extras'             => $item->extras
-                    ->filter(fn ($e) => $e->isVisibleOn(self::CHANNEL))
-                    ->map(fn ($e) => [
-                        'id'          => (int) $e->id,
-                        'name'        => (string) $e->name,
-                        'price'       => (float) $e->price,
-                        'group_label' => $e->group_label,
-                        'visible_on'  => $e->visible_on,
-                    ])->values()->all(),
+                    // [P1-A 2026-07-30] Défense-en-profondeur : filtre status == ACTIVE
+                    // en plus de la garde relationship Item::extras() (parité avec le
+                    // projeté `variations` ci-dessus). Rend la projection borne
+                    // auto-suffisante — un extra inactif ne peut jamais fuir sur les
+                    // étapes Suppléments/Garnitures même si la relation évolue.
+                    ->filter(fn ($e) => (int) $e->status === Status::ACTIVE && $e->isVisibleOn(self::CHANNEL))
+                    ->map(function ($e) use ($itemChoiceAvailability) {
+                        $availability = $itemChoiceAvailability['extras'][(int) $e->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+
+                        return [
+                            'id'          => (int) $e->id,
+                            'name'        => (string) $e->name,
+                            'price'       => (float) $e->price,
+                            'convert_price' => AppLibrary::convertAmountFormat($e->price),
+                            'currency_price' => AppLibrary::currencyAmountFormat($e->price),
+                            'thumb'       => $e->thumb,
+                            'status'      => (int) $e->status,
+                            'group_label' => $e->group_label,
+                            'visible_on'  => $e->visible_on,
+                            'is_available' => $availability['is_available'],
+                            'unavailable_reason' => $availability['unavailable_reason'],
+                        ];
+                    })->values()->all(),
+                'addons'             => $item->addons
+                    ->filter(function ($addon): bool {
+                        $addonItem = $addon->addonItem;
+
+                        return $addonItem !== null
+                            && (int) $addonItem->status === Status::ACTIVE
+                            && (bool) ($addonItem->is_available ?? true)
+                            && $addonItem->isVisibleOn(self::CHANNEL);
+                    })
+                    ->map(function ($addon) use ($itemChoiceAvailability): array {
+                        $availability = $itemChoiceAvailability['addons'][(int) $addon->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+
+                        return [
+                            'id' => (int) $addon->id,
+                            'addon_item_id' => (int) $addon->addon_item_id,
+                            'addon_item_variation' => $addon->addon_item_variation,
+                            'role' => $addon->role,
+                            'addon_item_name' => $addon->addonItem?->name,
+                            'is_available' => $availability['is_available'],
+                            'unavailable_reason' => $availability['unavailable_reason'],
+                        ];
+                    })->values()->all(),
             ];
         })->values()->all();
+    }
+
+    /**
+     * @param  Collection<int, Item>  $items
+     * @return Collection<int, ItemWizardProfile>
+     */
+    private function publishedComposerProfiles(Collection $items, int $branchId): Collection
+    {
+        $itemIds = $items->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        if (empty($itemIds)) {
+            return collect();
+        }
+
+        return ItemWizardProfile::query()
+            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
+            ->whereIn('item_id', $itemIds)
+            ->where('is_published', true)
+            ->where(function ($query) use ($branchId): void {
+                $query->whereNull('branch_id_scope')
+                    ->when($branchId > 0, fn ($q) => $q->orWhere('branch_id_scope', $branchId));
+            })
+            ->get()
+            ->groupBy('item_id')
+            ->map(fn (Collection $profiles): ItemWizardProfile => $profiles
+                ->sort(fn (ItemWizardProfile $a, ItemWizardProfile $b): int => $this->compareComposerProfiles($a, $b))
+                ->first());
+    }
+
+    private function compareComposerProfiles(ItemWizardProfile $a, ItemWizardProfile $b): int
+    {
+        $aScope = $a->branch_id_scope === null ? 0 : 1;
+        $bScope = $b->branch_id_scope === null ? 0 : 1;
+
+        return [$bScope, (int) $b->version, (int) $b->id] <=> [$aScope, (int) $a->version, (int) $a->id];
+    }
+
+    private function projectItemAttributes(Item $item, string $channel): array
+    {
+        return $item->variations
+            ->filter(fn ($variation): bool => $variation->isVisibleOn($channel) && $variation->itemAttribute !== null)
+            ->map(fn ($variation) => $variation->itemAttribute)
+            ->unique('id')
+            ->sortBy('id')
+            ->values()
+            ->map(fn ($attribute): array => [
+                'id'           => (int) $attribute->id,
+                'name'         => (string) $attribute->name,
+                'status'       => (int) $attribute->status,
+                'min_select'   => (int) ($attribute->min_select ?? 0),
+                'max_select'   => (int) ($attribute->max_select ?? 1),
+                'allow_repeat' => (bool) ($attribute->allow_repeat ?? false),
+            ])
+            ->all();
+    }
+
+    private function composerProfileProjection(): ComposerProfileProjection
+    {
+        return $this->composerProjection ??= app(ComposerProfileProjection::class);
+    }
+
+    private function choiceAvailabilityResolver(): ChoiceAvailabilityResolver
+    {
+        return $this->choiceAvailabilityResolver ??= app(ChoiceAvailabilityResolver::class);
     }
 
     /**

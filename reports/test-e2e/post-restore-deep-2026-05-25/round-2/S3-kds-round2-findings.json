@@ -1,0 +1,128 @@
+{
+  "wave": "S3 KDS Round 2",
+  "round": 2,
+  "date": "2026-05-25",
+  "agent": "KDS ROUND-2 ISOLATED AGENT",
+  "mode": "capture + analyze ONLY (no code edits)",
+  "approach": "Node Playwright direct (NOT MCP) with chromium.launch() isolated context",
+  "verdict": "GREEN",
+  "blocked": false,
+  "previous_round_blocker": "Round 1 stuck at S3-01 loading state (only 1 screenshot). Suspected MCP-Chrome shared user-data-dir contention. Round 2 used fresh chromium.launch() context — confirmed root cause = MCP shared profile, NOT app defect.",
+  "routes_verified": {
+    "/kds": {
+      "http_status": 200,
+      "redirect_to": "/admin/kitchen-display-system",
+      "redirect_type": "client-side (Vue router)",
+      "works": true
+    },
+    "/admin/kitchen-display-system": {
+      "http_status": 200,
+      "redirect_to": null,
+      "works": true,
+      "is_canonical": true
+    }
+  },
+  "states_captured": [
+    {"id": "S3R2-01", "file": "S3R2-01-kds-mount.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "KDS mount after /kds redirect — 1 order A0001 BORNE source (Cheddar + Tacos) ATTENTE 370:28, EN ATTENTE ENCAISSEMENT lane, banner pastilles disclaimer visible, header pill LOCAL, Historique button top-right"},
+    {"id": "S3R2-02", "file": "S3R2-02-kds-alt-route.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "Direct /admin/kitchen-display-system load — identical layout. Both routes converge to same canonical view."},
+    {"id": "S3R2-03", "file": "S3R2-03-header-pill.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "Header pill LOCAL visible top-right (under Historique button) — same-poste bump memorization disclaimer rendered."},
+    {"id": "S3R2-04", "file": "S3R2-04-historique-drawer-clicked.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "Historique du jour drawer opens cleanly on right side — header Historique du jour (0), empty state Aucune commande historique aujourd'hui, X close button visible, background grey overlay over KDS grid."},
+    {"id": "S3R2-05", "file": "S3R2-05-drawer-content.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "Drawer content after 1s settle — empty state rendered correctly. No labels raw or i18n leakage."},
+    {"id": "S3R2-06", "file": "S3R2-06-console-net.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "Console + network snapshot — no JS errors, only WebSocket Pusher fallback warnings (Reverb not running, polling mode active per API /kds-order/sync calls every 5s)."},
+    {"id": "S3R2-07", "file": "S3R2-07-dom-state.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "DOM probe: 1 [data-order-id], 1 .kds-card, body 29758 bytes, #app Vue mounted, .kds-root present, title Le Cayenne."},
+    {"id": "S3R2-08", "file": "S3R2-08-final.png", "url": "http://127.0.0.1:8000/admin/kitchen-display-system", "describe": "Final stable state — drawer still open, no flicker, no console errors."}
+  ],
+  "dom_probe": {
+    ".order-card": 0,
+    ".kds-order": 0,
+    "[data-order-id]": 1,
+    ".kds-card": 1,
+    ".order-tile": 0,
+    "allDataOrder": 0,
+    "bodyLen": 29758,
+    "kdsRootPresent": true,
+    "vueAppPresent": true,
+    "title": "Le Cayenne"
+  },
+  "network_summary": {
+    "total_requests_captured": 45,
+    "status_200": 42,
+    "status_201": 1,
+    "status_204": 2,
+    "errors_4xx_5xx": 0,
+    "kds_endpoints_called": [
+      "/api/admin/kds-order?paginate=0&order_column=id&order_by=desc",
+      "/api/admin/kds-order/items",
+      "/api/admin/kds-order/sync?since=...&branch_id=1&include_deleted=true",
+      "/api/admin/kds-order/history-today"
+    ]
+  },
+  "console_summary": {
+    "total_messages": 4,
+    "errors": 0,
+    "warnings": 2,
+    "warning_text": "WebSocket connection to ws://127.0.0.1:6001/app/app-key failed — Pusher/Reverb server not running, fallback to polling (expected in V1 LOCAL Le Cayenne mode, KDS sync via /api/admin/kds-order/sync polling). Confirmed working via network log.",
+    "csp_violations": 2,
+    "csp_note": "report-only CSP for /api/broadcasting/auth — informational, not blocking"
+  },
+  "findings": [
+    {
+      "id": "S3R2-F1",
+      "severity": "INFO",
+      "title": "KDS route /kds redirects client-side to /admin/kitchen-display-system",
+      "evidence": "Both /kds and /admin/kitchen-display-system return HTTP 200 SPA shell, Vue router resolves /kds -> /admin/kitchen-display-system. Adversarial-A round-1 claim 'sometimes redirects' VERIFIED but BENIGN — canonical route is /admin/kitchen-display-system, /kds is a working alias.",
+      "blocking": false
+    },
+    {
+      "id": "S3R2-F2",
+      "severity": "INFO",
+      "title": "Reverb WebSocket server not running — fallback to polling mode",
+      "evidence": "console warnings WebSocket ws://127.0.0.1:6001 failed; network log shows /api/admin/kds-order/sync polled instead. Expected V1 LOCAL mode (no Pusher dependency for single-restaurant Le Cayenne). No functional impact.",
+      "blocking": false
+    },
+    {
+      "id": "S3R2-F3",
+      "severity": "P3",
+      "title": "Stale order A0001 with attente 370:28 (6h10m) visible in EN ATTENTE ENCAISSEMENT lane",
+      "evidence": "S3R2-01-kds-mount.png line 1 — order A0001 BORNE source, 1x Cheddar + 1x Tacos, attente counter 370:28 mm:ss = ~6h. This is a kiosk order that was paid (status=7) but not collected — likely seeded from previous test session never cleaned. NOT a sync defect, NOT a route defect — KDS shows it correctly per its state machine. Owner verify: cleanup test data periodically OR add KDS auto-archive threshold for >24h pending orders. Not blocking V1 ship.",
+      "blocking": false
+    },
+    {
+      "id": "S3R2-F4",
+      "severity": "INFO",
+      "title": "Historique du jour drawer opens correctly with empty state",
+      "evidence": "S3R2-04-historique-drawer-clicked.png — drawer slides in from right, header 'Historique du jour (0)', empty state 'Aucune commande historique aujourd'hui', X close icon top-right. /api/admin/kds-order/history-today returned 200 with empty array. Wave X X3 historique drawer (commit 4428e3ca4) verified working post-restore.",
+      "blocking": false
+    },
+    {
+      "id": "S3R2-F5",
+      "severity": "INFO",
+      "title": "Header pill LOCAL visible — same-poste bump memorization disclaimer rendered",
+      "evidence": "S3R2-03-header-pill.png — banner 'Les pastilles Prêt (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.' rendered with LOCAL pill on right. This is the documented V1 limitation (per-poste localStorage bump memory, no cross-poste sync for bump state).",
+      "blocking": false
+    },
+    {
+      "id": "S3R2-F6",
+      "severity": "INFO",
+      "title": "1 order card rendered, grid layout intact (4 cols)",
+      "evidence": "DOM probe shows 1 .kds-card + 1 [data-order-id]. Grid shows 4 cols × 2 rows (8 cells) with dashed empty placeholders, order A0001 in cell [0,0]. Layout responsive, no overflow. Branding LE CAYENNE intact (logo top-left, tagline 'TACOS-BURGERS-SANDWICHS-BOWLS')."
+    }
+  ],
+  "verdict_rationale": "GREEN: KDS mounts successfully, all 4 KDS APIs respond 200, Historique drawer functional, header pill rendered, 1 order visible with correct state lane (EN ATTENTE ENCAISSEMENT). Zero console errors, zero network failures. Round 1 BLOCKED was MCP-Chrome shared-profile contention, NOT a KDS defect. P0=0, P1=0, P2=0, P3=1 (stale test order — data cleanup hygiene, not a ship blocker). Frozen-zone OrderStateMachine.php untouched (read-only mode). NF525 chain unaffected.",
+  "round1_vs_round2": {
+    "round1_state": "BLOCKED — stuck on S3-01 loading state, only 1 screenshot",
+    "round1_suspected_cause": "MCP-Chrome shared user-data-dir mcp-chrome-9b44929 contention (multi-agent parallel)",
+    "round2_state": "GREEN — 8/8 states captured cleanly",
+    "round2_proof_of_isolation": "chromium.launch() fresh context, no shared profile, all 4 KDS APIs returned 200, full DOM mounted in <4s after navigation",
+    "conclusion": "Round 1 BLOCKED was tooling artifact (MCP shared profile), NOT an app defect. KDS is GREEN."
+  },
+  "code_changes": "NONE — capture + analyze only",
+  "frozen_zone_touched": false,
+  "nf525_chain_impact": "NONE — read-only audit, no DB writes",
+  "cleanup": {
+    "seeded_orders": "Failed at first seed attempt (column 'total_amount_price' not in schema — factory API mismatch). Skipped per script instructions. KDS already had 1 pre-existing order A0001 from prior session.",
+    "cleanup_required": false,
+    "cleanup_command_attempted": "N/A (no orders seeded by this script)"
+  },
+  "summary": "S3 KDS Round 2 GREEN. KDS mounts on /kds (redirects to /admin/kitchen-display-system) and direct route. 8 states captured: mount, alt-route, header-pill, Historique-click, drawer-content, console-net, DOM-probe, final. Historique du jour drawer opens cleanly with empty state. 1 order A0001 (BORNE source) visible in EN ATTENTE ENCAISSEMENT lane (stale test data, not a defect). Zero console errors. Zero 4xx/5xx network responses. All 4 KDS APIs respond 200. Round 1 BLOCKED root cause confirmed = MCP-Chrome shared profile contention, fully isolated by chromium.launch(). Verdict GREEN — 0 P0, 0 P1, 0 P2, 1 P3 (stale order cleanup hygiene)."
+}

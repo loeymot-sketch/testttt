@@ -14,7 +14,10 @@ class TaxRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // V1.0.1 R7 heal: defense-in-depth — TaxController middleware enforces
+        // `permission:settings` on show/store/update/destroy; FormRequest doubles down
+        // so any future route bypass still authz-checks.
+        return $this->user()?->can('settings') ?? false;
     }
 
     /**

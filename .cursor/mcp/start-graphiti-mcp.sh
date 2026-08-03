@@ -13,12 +13,29 @@ unset DEBUG LITELLM_DEBUG 2>/dev/null || true
 
 set -uo pipefail
 
+# Secrets Neo4j / Moonshot / OpenRouter / Willow / etc. : plus dans mcp.json.
+# Fichier local uniquement (chmod 600 recommandé).
+_GRAPHITI_ENV_FILE="${GRAPHITI_ENV_FILE:-${HOME}/.cursor/mcp-graphiti.env}"
+if [[ -f "${_GRAPHITI_ENV_FILE}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${_GRAPHITI_ENV_FILE}"
+  set +a
+  echo "[start-graphiti-mcp] Env chargé depuis ${_GRAPHITI_ENV_FILE}" >&2
+else
+  echo "[start-graphiti-mcp] ERREUR : ${_GRAPHITI_ENV_FILE} introuvable." >&2
+  echo "  Crée ce fichier (copie depuis testttt/.cursor/mcp/mcp-graphiti.env.example) et remplis les clés." >&2
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/lib-litellm-health.sh"
 
-REPO_DIR="/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt"
-GRAPHITI_DIR="/Users/1millnonstop/graphiti"
+# Repo root = parent of `.cursor/` (portable across clones / machines).
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# Graphiti clone: override with GRAPHITI_DIR in mcp-graphiti.env for non-default layouts.
+GRAPHITI_DIR="${GRAPHITI_DIR:-${HOME}/graphiti}"
 MCP_DIR="${GRAPHITI_DIR}/mcp_server"
 CONFIG="${REPO_DIR}/.cursor/mcp/litellm_config.yaml"
 PROXY_PORT=4000
@@ -74,13 +91,12 @@ fi
 
 if [[ -z "${MOONSHOT_API_KEY:-}" ]]; then
   echo "[start-graphiti-mcp] ERREUR : MOONSHOT_API_KEY vide." >&2
-  echo "  Définis-la dans ~/.cursor/mcp.json → mcpServers.graphiti.env (ou export avant Cursor)." >&2
+  echo "  Définis-la dans ${_GRAPHITI_ENV_FILE} (ou export avant Cursor)." >&2
   exit 1
 fi
 
-if [[ -z "${OPENAI_EMBEDDING_API_KEY:-}" ]]; then
-  echo "[start-graphiti-mcp] AVERTISSEMENT : OPENAI_EMBEDDING_API_KEY vide — recherche Graphiti (embeddings) échouera." >&2
-  echo "  Ajoute une clé projet OpenAI dans mcpServers.graphiti.env (voir graphiti.json.example)." >&2
+if [[ -z "${OPENROUTER_API_KEY:-}" && -z "${OPENAI_EMBEDDING_API_KEY:-}" ]]; then
+  echo "[start-graphiti-mcp] AVERTISSEMENT : ni OPENROUTER_API_KEY ni OPENAI_EMBEDDING_API_KEY — embeddings LiteLLM peuvent échouer." >&2
 fi
 
 # LiteLLM litellm_config.yaml lit ce base URL pour Moonshot / Kimi (Chine vs international).

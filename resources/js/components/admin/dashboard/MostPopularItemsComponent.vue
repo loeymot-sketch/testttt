@@ -13,7 +13,7 @@
                         <div class="py-2 px-3 flex flex-col justify-between overflow-hidden">
                             <h4 class="text-sm overflow-hidden whitespace-nowrap text-ellipsis font-medium capitalize">
                                 {{ popular_item.name }}</h4>
-                            <h5 class="text-xs font-medium capitalize text-[#008BBA]">
+                            <h5 class="text-xs font-medium capitalize text-sky-800">
                                 {{ popular_item.category_name }}
                             </h5>
                             <h6 class="text-sm font-bold">{{ popular_item.currency_price }}</h6>

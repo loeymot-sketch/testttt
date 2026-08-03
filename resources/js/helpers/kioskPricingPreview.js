@@ -18,8 +18,9 @@
  *
  * Invariants respectés :
  *   - Aucun prix envoyé côté client : on ne passe QUE (item_id, quantity,
- *     item_variations[].id, item_extras[].id, instruction, coupon_code,
- *     kiosk_promo_code). `branch_id` est résolu serveur-side via `KioskMachine`.
+ *     item_variations[].id/quantity, item_extras[].id/quantity,
+ *     item_addons[].id/quantity, instruction, coupon_code, kiosk_promo_code).
+ *     `branch_id` est résolu serveur-side via `KioskMachine`.
  *   - Debounce 400 ms (`KIOSK_HARDWARE.DEBOUNCE_PRICING_PREVIEW_MS` → 400) pour
  *     éviter la storm de requêtes pendant que le client ajuste ses sélections.
  *   - Abort de la requête précédente dès qu'une nouvelle est émise (axios
@@ -51,8 +52,12 @@ function resolveAxios(override) {
  *   items[].item_id              (int, requis)
  *   items[].quantity             (int, requis)
  *   items[].instruction          (string|null, ≤ 255)
- *   items[].item_variations[].id (int, requis si array)
- *   items[].item_extras[].id     (int, requis si array)
+ *   items[].item_variations[].id       (int, requis si array)
+ *   items[].item_variations[].quantity (int, optionnel)
+ *   items[].item_extras[].id           (int, requis si array)
+ *   items[].item_extras[].quantity     (int, optionnel)
+ *   items[].item_addons[].id           (int, requis si array)
+ *   items[].item_addons[].quantity     (int, optionnel)
  *
  * On REJETTE toute clé de prix (convert_price, price, total, …) — la liste
  * blanche `validated()` côté serveur strip déjà, mais on évite un round-trip
@@ -64,32 +69,42 @@ export function normalizeKioskPricingPreviewItem(raw = {}) {
 
     const quantity = Math.max(1, parseInt(raw.quantity, 10) || 1);
 
-    const rawVariations = Array.isArray(raw.item_variations) ? raw.item_variations : [];
-    const rawExtras = Array.isArray(raw.item_extras) ? raw.item_extras : [];
-
-    const item_variations = rawVariations
-        .map((v) => {
-            const id = parseInt(v?.id ?? v, 10);
-            return Number.isFinite(id) && id > 0 ? { id } : null;
-        })
-        .filter(Boolean);
-
-    const item_extras = rawExtras
-        .map((e) => {
-            const id = parseInt(e?.id ?? e, 10);
-            return Number.isFinite(id) && id > 0 ? { id } : null;
-        })
-        .filter(Boolean);
+    const item_variations = normalizePreviewModifiers(raw.item_variations);
+    const item_extras = normalizePreviewModifiers(raw.item_extras);
+    const item_addons = normalizePreviewModifiers(raw.item_addons);
 
     const instruction = typeof raw.instruction === 'string' ? raw.instruction.slice(0, 255) : '';
 
-    return {
+    const normalized = {
         item_id: itemId,
         quantity,
         instruction,
         item_variations,
         item_extras,
     };
+
+    if (item_addons.length > 0) {
+        normalized.item_addons = item_addons;
+    }
+
+    return normalized;
+}
+
+function normalizePreviewModifiers(rawRows) {
+    return (Array.isArray(rawRows) ? rawRows : [])
+        .map((row) => {
+            const id = parseInt(row?.id ?? row, 10);
+            if (!Number.isFinite(id) || id < 1) return null;
+
+            const normalized = { id };
+            const quantity = parseInt(row?.quantity, 10);
+            if (Number.isFinite(quantity) && quantity > 1) {
+                normalized.quantity = quantity;
+            }
+
+            return normalized;
+        })
+        .filter(Boolean);
 }
 
 /**
@@ -171,6 +186,26 @@ export function createKioskPricingPreview(options = {}) {
                     return;
                 }
 
+                // [rush-100 WA-R1-05/06 heal round-2 2026-05-13] Skip preview
+                // when payload is just base items with zero modifier selections.
+                // At composer-step open the wizard's selections-watcher fires
+                // with the base item and empty modifier arrays — calling
+                // /pricing/preview at this point yields a 422 SSOT-exception
+                // (item-level guard) AND has no useful effect (server total
+                // would equal the locally-computed base price). The runningTotal
+                // computed property already falls back to runningTotalLocal in
+                // this state. Wait for the first real user selection to fire.
+                const hasAnyModifier = payload.items.some((it) => {
+                    const v = (it.item_variations || []).length;
+                    const e = (it.item_extras || []).length;
+                    const a = (it.item_addons || []).length;
+                    return v + e + a > 0;
+                });
+                if (!hasAnyModifier) {
+                    resolve(null);
+                    return;
+                }
+
                 // AbortController si dispo (fetch / axios ≥ 0.22), sinon
                 // CancelToken legacy.
                 let config = {};
@@ -207,7 +242,16 @@ export function createKioskPricingPreview(options = {}) {
                     const isCancel = err && (err.name === 'CanceledError'
                         || err.name === 'AbortError'
                         || (client.isCancel && client.isCancel(err)));
-                    if (!isCancel && options.onError) options.onError(err);
+                    // [FIX SIGNAL-JAUNE 2026-06-30] Un 422 = composition INCOMPLÈTE en cours :
+                    // l'utilisateur n'a pas fini de choisir (il manque une viande/sauce requise,
+                    // ex. « Sélectionnez au moins 1 Viande 2 »). C'est ATTENDU à chaque sélection
+                    // intermédiaire d'un produit multi-attributs (Tacos L, Méga…), PAS une erreur.
+                    // On ne déclenche le toast jaune « Tarif rafraîchi » QUE pour les VRAIES
+                    // erreurs (réseau / 401 / 5xx). Le total local provisoire est de toute façon
+                    // affiché, et le prix est scellé/vérifié au paiement (SSOT). Avant ce fix, le
+                    // client voyait un signal jaune à chaque clic intermédiaire de composition.
+                    const isIncompleteComposition = !!(err && err.response && err.response.status === 422);
+                    if (!isCancel && !isIncompleteComposition && options.onError) options.onError(err);
                     resolve(null);
                 }
             }, debounceMs);

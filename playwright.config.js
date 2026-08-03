@@ -1,20 +1,69 @@
 // FoodKing — Playwright Config (Phase 3)
 // Utilisé par : post-execute.sh (CLI) et Playwright MCP (outils Cursor)
 // Base URL : http://localhost:8000
+//
+// Serveur Laravel : par défaut Playwright lance `php artisan serve` si aucun
+// processus ne répond déjà sur l’URL (reuseExistingServer: true) — pratique en
+// local / agents. CI (workflow qui démarre déjà le serveur) réutilise l’existant.
+// Désactiver : PLAYWRIGHT_NO_WEB_SERVER=1
 
 const { defineConfig, devices } = require('@playwright/test');
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000';
+
+/** URL utilisée pour la sonde « serveur prêt » (webServer.url) */
+function webServerProbeUrl() {
+  try {
+    const u = new URL(baseURL);
+    if (u.hostname === 'localhost') {
+      u.hostname = '127.0.0.1';
+    }
+    return u.toString().replace(/\/$/, '');
+  } catch (_e) {
+    return 'http://127.0.0.1:8000';
+  }
+}
+
+function buildWebServer() {
+  if (process.env.PLAYWRIGHT_NO_WEB_SERVER === '1') {
+    return undefined;
+  }
+  return {
+    command:
+      process.env.PLAYWRIGHT_WEB_SERVER_CMD || 'php artisan serve --host=127.0.0.1 --port=8000',
+    url: webServerProbeUrl(),
+    reuseExistingServer: true,
+    timeout: 180_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  };
+}
+
+const webServer = buildWebServer();
+
 module.exports = defineConfig({
-  testDir: './tests/e2e',
-  timeout: 30_000,
+  ...(webServer ? { webServer } : {}),
+  testDir: './tests',
+  globalSetup: require.resolve('./tests/Playwright/global-setup.js'),
+  testMatch: [
+    'e2e/**/*.spec.{js,ts}',
+    'playwright/**/*.spec.{js,ts}',
+    'Playwright/**/*.spec.{js,ts}',
+  ],
+  // Un seul worker : les specs déclenchent POST /api/auth/login en rafale ; en parallèle
+  // (défaut ~5 workers) on déclenche throttle:login-lockout / collisions côté IP (429 → SPA reste sur /login).
+  workers: 1,
+  // Mega-specs (central-management, c3, …) dépassent 2 min ; les describe.configure locaux peuvent être plus bas.
+  timeout: 600_000,
   retries: 1,
   reporter: [
     ['list'],
     ['json', { outputFile: 'reports/antigravity/playwright-latest.json' }],
   ],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000',
+    baseURL,
     headless: true,
+    ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
     screenshot: 'only-on-failure',
     video: 'off',
     trace: 'on-first-retry',

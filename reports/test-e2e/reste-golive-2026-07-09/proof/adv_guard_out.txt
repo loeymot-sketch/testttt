@@ -1,0 +1,3 @@
+GUARD THREW=YES
+MSG=NF525: composition_snapshot is immutable after creation. Attempted mutation on OrderItem #5395
+POST-ROLLBACK extras[0].line_total=0.9

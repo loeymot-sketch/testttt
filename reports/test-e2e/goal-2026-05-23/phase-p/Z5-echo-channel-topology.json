@@ -1,0 +1,230 @@
+{
+  "agent": "Z5 Echo channel topology",
+  "mission": "Cross-system broadcast mesh (Echo/Pusher/Soketi) — topology + leak detection",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "date": "2026-05-24",
+  "scope_root": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+
+  "channels_defined": [
+    {
+      "name": "App.Models.User.{id}",
+      "file": "routes/channels.php:16-18",
+      "auth_check": "(int) $user->id === (int) $id",
+      "scope": "per-user (Laravel notifications default)",
+      "auth_callback_bypass": false
+    },
+    {
+      "name": "branch.{branchId}",
+      "wire_format": "private-branch.{branchId}",
+      "file": "routes/channels.php:41-62",
+      "auth_check": "TOKEN-NAME discriminator (un-spoofable, immune to Sanctum wildcard '*'):  (a) kiosk-token => KioskMachine.branch_id == channel.branchId (withoutGlobalScope BranchScope); (b) Admin OR Tenant Admin role => true (cross-branch); (c) staff => user.branch_id == channel.branchId",
+      "scope": "branch-scoped multi-tenant",
+      "auth_callback_bypass": false,
+      "history": "P4-1 + GAP-21-5 + GOAL-CMS-2026-05-18 S-R3-P0-G (F-SEC-W6-01 kiosk-token-name flip from tokenCan to currentAccessToken()->name; F-SEC-W6-02 admin-zero clause requires hasRole, closes Guest-Echo-Bypass)"
+    }
+  ],
+
+  "broadcasting_architecture": {
+    "pattern": "Centralized outbox (table=domain_events) — events do NOT carry broadcastOn()/broadcastAs() methods. Listeners write rows into domain_events with channel + broadcast_as JSON columns. DispatchDomainEventsJob (queue=high) replays them through Illuminate\\Broadcasting\\BroadcastManager::connection() after DB::afterCommit().",
+    "central_job_file": "app/Jobs/DispatchDomainEventsJob.php:116 ($broadcaster->broadcast($channels, $domainEvent->broadcast_as, $envelope))",
+    "auth_endpoint": "POST /api/broadcasting/auth (sanctum-protected) — app/Providers/BroadcastServiceProvider.php:22",
+    "broadcast_driver_default": "env('BROADCAST_DRIVER')  -> config/broadcasting.php:18  -> connections: pusher | ably | redis | log | null",
+    "ws_heartbeat_observability": "On every successful broadcast, Cache::put('ws:heartbeat', now()->timestamp, 120) — read by SyncOverviewController:531. Added in GOAL-CMS-2026-05-18 S-P0-A SRE-001 heal (DispatchDomainEventsJob.php:128-132)."
+  },
+
+  "events_broadcast_count": 12,
+  "events_broadcast_inventory": [
+    { "broadcast_as": "OrderCreated", "event_type": "order.created", "channel_template": "private-branch.{order.branch_id}", "file": "app/Listeners/PersistOrderCreatedToOutbox.php:44-45" },
+    { "broadcast_as": "OrderStatusChanged", "event_type": "order.status_changed", "channel_template": "private-branch.{order.branch_id}", "file": "app/Listeners/PersistOrderStatusChangedToOutbox.php:53-54" },
+    { "broadcast_as": "OrderPaidAtCounter", "event_type": "order.payment_confirmed", "channel_template": "private-branch.{order.branch_id}", "file": "app/Listeners/PersistOrderPaidAtCounterToOutbox.php:40-41" },
+    { "broadcast_as": "OrderPaymentStatusChanged", "event_type": "order.payment_status_changed", "channel_template": "private-branch.{order.branch_id}", "file": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:60-61" },
+    { "broadcast_as": "OrderTableChanged", "event_type": "order.table_changed", "channel_template": "private-branch.{order.branch_id}", "file": "app/Listeners/PersistOrderTableChangedToOutbox.php:75-76" },
+    { "broadcast_as": "ItemAvailabilityChanged", "event_type": "menu.item_availability_changed", "channel_template": "private-branch.{event.branchId} OR fan-out across all Branch::status=ACTIVE/1 when event.branchId is null (admin global edit)", "file": "app/Listeners/PersistItemAvailabilityChangedToOutbox.php:35-49,79-80" },
+    { "broadcast_as": "ItemExtraAvailabilityChanged", "event_type": "menu.extra_availability_changed", "channel_template": "private-branch.{event.branchId}", "file": "app/Listeners/PersistItemExtraAvailabilityChangedToOutbox.php:32,56-57" },
+    { "broadcast_as": "ItemVariationAvailabilityChanged", "event_type": "menu.variation_availability_changed", "channel_template": "private-branch.{event.branchId}", "file": "app/Listeners/PersistItemVariationAvailabilityChangedToOutbox.php:31,55-56" },
+    { "broadcast_as": "CatalogChanged", "event_type": "catalog.changed", "channel_template": "private-branch.{branchId} (per active branch fan-out when global, else single)", "file": "app/Listeners/PersistCatalogChangedToOutbox.php:83-84" },
+    { "broadcast_as": "CouponChanged", "event_type": "promo.coupon_changed", "channel_template": "private-branch.{branchId} (per scoped branch)", "file": "app/Listeners/PersistCouponChangedToOutbox.php:73-74" },
+    { "broadcast_as": "SettingsUpdated", "event_type": "settings.updated", "channel_template": "private-branch.{branchId} (event.branchId or fan-out across ACTIVE branches)", "file": "app/Listeners/PersistSettingsUpdatedToOutbox.php:68-69" },
+    { "broadcast_as": "BranchStatusChanged", "event_type": "branch.status_changed", "channel_template": "private-branch.{branchId}", "file": "app/Listeners/PersistBranchStatusChangedToOutbox.php:73-74" }
+  ],
+
+  "subscribers_count": 7,
+  "subscribers_inventory": [
+    {
+      "surface": "Admin OSS (Preparing + Ready)",
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:264-282",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["OrderStatusChanged", "OrderCreated"]
+    },
+    {
+      "surface": "Admin POS (Caisse main shell)",
+      "file": "resources/js/components/admin/pos/PosComponent.vue:2666-2715",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["OrderCreated", "OrderStatusChanged", "OrderPaidAtCounter", "ItemAvailabilityChanged", "CatalogChanged"]
+    },
+    {
+      "surface": "Admin POS Orders Tracker",
+      "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:661-675",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["OrderCreated", "OrderStatusChanged", "OrderPaidAtCounter"]
+    },
+    {
+      "surface": "Admin Stock Rupture Dashboard",
+      "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:478-481",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["ItemAvailabilityChanged", "ItemVariationAvailabilityChanged", "ItemExtraAvailabilityChanged"]
+    },
+    {
+      "surface": "KDS (Kitchen Display System)",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1848-1872",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["OrderStatusChanged", "OrderCreated", "OrderPaidAtCounter", "ItemAvailabilityChanged", "OrderTableChanged"]
+    },
+    {
+      "surface": "Kiosk App (idle/menu wizard cart)",
+      "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:546-571",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["ItemAvailabilityChanged", "CatalogChanged", "ComposerProfileChanged", "CouponChanged"]
+    },
+    {
+      "surface": "Kiosk Waiting (post-order)",
+      "file": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:246-258",
+      "channel": "branch.{branchId}",
+      "broadcast_as_listened": ["OrderCreated", "OrderStatusChanged"]
+    }
+  ],
+
+  "subscription_layer": {
+    "single_entry_point": "resources/js/services/eventContract.js:330-386 (onEvents)",
+    "channel_construction": "`branch.${branchId}` (line 337) → Echo.private() prefixes to wire form `private-branch.{branchId}`",
+    "early_return_on_invalid_branch": "lines 331-335 — returns no-op subscription object when Echo absent / branchId falsy / bindings empty",
+    "correlation_id_dedupe": "isDuplicateCorrelation() drops envelopes with already-seen correlation_id (2048-cap bounded set, 10-min TTL, sessionStorage-persisted)",
+    "type_mismatch_warning": "line 351-357 — console.warn when BROADCAST_MAP[broadcastAs] !== parsed.type"
+  },
+
+  "orphan_emits": [
+    {
+      "broadcast_as": "OrderPaymentStatusChanged",
+      "severity": "INFO",
+      "evidence": "grep -rn \"'OrderPaymentStatusChanged'\" resources/js/ returns 0 matches",
+      "note": "Server emits on every payment_status transition (incl. refund chain via PersistOrderPaymentStatusChangedOnRefundCreated). Refund visibility currently flows to admin only via Polling (POS Orders Tracker fetchOrders / KDS _debouncedRefresh). Wasted Pusher frames; latent UX gap if a customer-facing refund banner is ever wired."
+    },
+    {
+      "broadcast_as": "SettingsUpdated",
+      "severity": "INFO",
+      "evidence": "grep -rn \"'SettingsUpdated'\" resources/js/ returns 0 matches",
+      "note": "Wave 5G R9 (2026-05-17) wired the server-side fan-out (changed_keys payload). Frontend `frontend/setting` payload still refreshed via REST. Wasted Pusher frames; live propagation not wired in V1."
+    },
+    {
+      "broadcast_as": "BranchStatusChanged",
+      "severity": "INFO",
+      "evidence": "grep -rn \"'BranchStatusChanged'\" resources/js/ returns 0 matches",
+      "note": "T-6.4 GOAL Phase 2 (2026-05-18) added the outbox row for branch INACTIVE deactivation. Concrete cash-trail protection is in `RevokeTokensOnBranchDeactivated::class` (sync DB delete) which fires BEFORE this listener — so the broadcast is for UI awareness only. No subscriber wired."
+    }
+  ],
+
+  "orphan_subscribers": [
+    {
+      "broadcast_as": "ComposerProfileChanged",
+      "severity": "INFO",
+      "subscriber": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:561 (also resources/js/composables/useCatalogChangeNotifier.js:423)",
+      "note": "Server-side ComposerProfileChanged Laravel event IS dispatched (ComposerStepService:120, ComposerProfileService:142/168/169/245), and EventServiceProvider:269-272 wires it to PersistCatalogChangedToOutbox — but the OUTBOX ROW is written with broadcast_as='CatalogChanged' (bridge pattern in CatalogChanged::fromAny()). So Echo.listen('.ComposerProfileChanged') will never fire over the wire; functional coverage is preserved because the same handler is also wired to broadcast_as='CatalogChanged'. Action: remove the dead binding for clarity, or wire a true ComposerProfile broadcast_as if granular handling is needed. V1.0.2 dead-code cleanup candidate."
+    }
+  ],
+
+  "branch_isolation_clean": true,
+  "branch_isolation_evidence": [
+    "All 13 emitter rows use the literal prefix 'private-branch.' concatenated with a non-null branch_id (Order::branch_id, $event->branchId int-typed, or fan-out across Branch::status=ACTIVE/1).",
+    "$event->branchId on ItemExtra/ItemVariation events is typed `int` (non-nullable) — no empty-suffix `private-branch.` channel injection vector.",
+    "ItemAvailabilityChanged supports null branchId for global menu changes; in that branch the channel set is constructed from Branch::query()->whereIn('status', [ACTIVE, 1]) — bounded and explicit (PersistItemAvailabilityChangedToOutbox:38-48).",
+    "Channel auth callback at routes/channels.php:41-62 enforces user.branch_id == channel.branchId for staff; kiosk tokens are restricted via KioskMachine row lookup (`withoutGlobalScope(BranchScope::class)`)."
+  ],
+
+  "channel_auth_bypasses": [],
+  "channel_auth_bypasses_review": {
+    "return_true_at_line_57": "routes/channels.php:57 contains `return true;` BUT it is INSIDE the conditional `if ($user->hasRole('Admin') || $user->hasRole('Tenant Admin'))` block (line 56). NOT an unconditional bypass. This is the documented Admin/Tenant-Admin cross-branch supervision flow. F-SEC-W6-02 explicitly closed the prior Guest-Echo-Bypass that used a bare `branch_id===0` sentinel.",
+    "kiosk_token_branch_isolation": "Token-name discriminator (currentAccessToken()->name === 'kiosk-token') is immune to Sanctum `*` wildcard match. Confirmed by F-SEC-W6-01 heal (2026-05-18)."
+  },
+
+  "payload_bloat_candidates": [
+    {
+      "broadcast_as": "OrderPaymentStatusChanged",
+      "field": "token",
+      "file": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:58",
+      "severity": "INFO (bounded)",
+      "note": "Payload includes `$order->token` — this is the per-Order anonymous session token (string, set in OrderService::tokenCreate line 2286/2293, persisted on orders.token + frontend_orders.token columns). It is NOT a Sanctum auth token, but it IS used by guest payment-redirect flows (Stripe/Credit gateways) to authorize follow-up requests on the order. Risk is bounded by branch-channel isolation (only same-branch admin/staff/kiosk receive it) and the field is also exposed via /api/admin/order/{id} so leakage attack surface is consistent with existing REST. Recommend documenting + revisiting under Phase D Sanctum hardening (V1.0.X cloud-prep). NOT a P0/P1 ship blocker."
+    }
+  ],
+
+  "echo_disconnect_handling_pattern": "polling_fallback",
+  "echo_disconnect_handling_detail": {
+    "ws_service": "resources/js/services/WebSocketService.js — STATE machine (CONNECTING/CONNECTED/DISCONNECTED/UNAVAILABLE/FAILED/SESSION_INVALID), heartbeat 30s, F-12 sliding-window auth-failure counter (3 fails / 60s -> SESSION_INVALID), NEW-02 reconnect-storm circuit breaker (4 disconnects / 30s -> 5-30s decorrelated jitter).",
+    "subscription_error_binding": "bootstrap.js:368-394 — Echo.private / encryptedPrivate / join all wrapped to bind `pusher:subscription_error`. Handler (a) reinjects bearer token via _refreshEchoAuth, (b) forwards to wsService.handleSubscriptionError for sliding-window count.",
+    "per_surface_polling_cadence": {
+      "POS": "MIX_BROADCAST_POLLING_FALLBACK_MS env (default 30000ms) — resources/js/store/modules/posOrder.js:59-64; PosComponent.vue:2629 returns 60000ms when WS up, 5000ms when WS down",
+      "KDS": "5000ms when WS down, 60000ms when WS up — KitchenDisplaySystemComponent.vue:1819-1836 (_pollingInterval())",
+      "Kiosk": "15000ms always — KioskWaitingComponent.vue:152-154"
+    },
+    "polling_sot_note": "config/broadcasting.php:20-31 documents per-surface divergence as intentional tuning (operator-density vs kitchen-staleness budget vs customer wait-time UX). Single SoT wire is V1.0.2 backlog item. RED-Z3 §B-6 P1 closed.",
+    "ui_banners": {
+      "POS_offline_banner": "PosComponent.vue:22-35 'pos-offline-banner' / 'MODE DÉGRADÉ' label + manual sync button",
+      "Kiosk_connection_status_banner": "KioskAppComponent.vue:1219-1225 connection-status-banner--offline / --reconnecting CSS classes",
+      "OSS_polling_hint": "PreparingAndReadyComponent.vue:90-247 wsConnected reactive flag + label.kds_admin_polling_hint i18n key",
+      "KDS_sync_mode_banner": "kds-sync-mode-banner element (line 50 reference) + admin-polling-hint",
+      "Outbox_observability_dashboard": "OutboxOverviewComponent.vue:113-331 websockets_serve.status badge (up/down with last_signal_age_seconds reading ws:heartbeat cache key — wired in S-P0-A heal)"
+    },
+    "polling_self_recursion_check": "H-SYNC-001 + N-HEAL-04 polling self-recursive integration — wsService events ('connected'/'disconnected') propagate through state machine, KDS adaptive polling pauses when CONNECTED and resumes on transition; KioskAppComponent.vue:383-413 reconnect hook re-arms full refetch on reconnect (F-03 / Lot 1.C)."
+  },
+
+  "adversarial_findings": [
+    {
+      "vector": "Cross-branch broadcast attempt (admin sends to a wrong branch channel)",
+      "mitigated": true,
+      "evidence": "All 13 emitter listeners construct channels from server-trusted state (Order::$branch_id PK FK, $event->branchId int-typed, or scoped Branch::query()). No path accepts user-controlled branchId in body. Channel auth at routes/channels.php:41-62 also re-verifies on subscribe-side (defense-in-depth)."
+    },
+    {
+      "vector": "Replay attack (record + re-broadcast envelope)",
+      "mitigated": true,
+      "evidence": "EventContract::assertEnvelopeValid (DispatchDomainEventsJob.php:110) enforces V1 envelope shape. Frontend dedupes by `correlation_id` (eventContract.js:103,326-386 — 2048 cap, 10-min TTL, sessionStorage-persisted). Backend writes correlation_id from sharedContext/X-Correlation-ID/Str::uuid (PersistOrderCreatedToOutbox:108-124 pattern). Replayer would need same correlation_id (already deduped) or a forged one (still bound to original branch channel; receivers ignore stale aggregate_id state)."
+    },
+    {
+      "vector": "Channel name injection (user-controlled string in channel ref)",
+      "mitigated": true,
+      "evidence": "Channel construction is server-side concatenation `'private-branch.' . (int)$branchId`. No string interpolation from request body. Channel auth wildcard `branch.{branchId}` only accepts integer-shape via type coercion `(int) $branchId` (channels.php:49,61)."
+    },
+    {
+      "vector": "Echo memory growth over long sessions (4h+ connection)",
+      "mitigated": true,
+      "evidence": "WebSocketService heartbeat 30s + pongTimeout 5s + activityTimeout 30s + reconnect circuit-breaker (NEW-02). Frontend correlation dedupe has 2048-entry hard cap with FIFO eviction (eventContract.js:99-104). sessionStorage TTL 10min (lines 100-101). KDS adaptive polling tears down on tab close (_pollingInterval cleanup line 2372)."
+    },
+    {
+      "vector": "Token leakage via Echo payload",
+      "mitigated": false,
+      "severity": "INFO",
+      "evidence": "PersistOrderPaymentStatusChangedToOutbox:58 includes `$order->token` (Order session token) in payload. Bounded by branch-scoped channel isolation. Listed in payload_bloat_candidates."
+    },
+    {
+      "vector": "PHP↔JS BROADCAST_MAP drift (envelope type mismatch warnings)",
+      "mitigated": false,
+      "severity": "INFO",
+      "evidence": "PHP `EventContract::BROADCAST_MAP` (app/Domain/Events/EventContract.php:34-49) declares 11 entries; JS `BROADCAST_MAP` (resources/js/services/eventContract.js:16-25) declares 7. Missing JS: OrderItemAdded, OrderCancelled, StockLow, OrderPaymentStatusChanged. If any of these are ever subscribed in the frontend, eventContract.js:351-357 logs `console.warn('[eventContract] Event type mismatch for broadcast.')` for every envelope. Contract drift, not a security risk."
+    }
+  ],
+
+  "summary": {
+    "channels_total": 2,
+    "events_emitted_via_outbox": 12,
+    "subscribers_total": 7,
+    "orphan_emits": 3,
+    "orphan_subscribers": 1,
+    "channel_auth_bypasses": 0,
+    "branch_isolation_clean": true,
+    "echo_disconnect_handling": "polling_fallback (per-surface tuned)",
+    "p0_findings": 0,
+    "p1_findings": 0,
+    "info_findings": 6
+  },
+
+  "verdict": "AMBER",
+  "verdict_rationale": "Topology is structurally sound — single canonical branch-scoped channel, token-name auth discriminator immune to Sanctum wildcard, fan-out via centralized outbox + envelope contract validation, correlation-id dedupe, polling fallback per-surface, F-12 auth-failure sliding window, NEW-02 storm circuit-breaker. No P0/P1 defects. AMBER (not GREEN) because: (1) three outbox rows are emitted with zero Echo listeners (SettingsUpdated, OrderPaymentStatusChanged, BranchStatusChanged) — wasted Pusher frames + latent UX gaps; (2) ComposerProfileChanged Echo binding is dead (server bridges to CatalogChanged); (3) order.token field in OrderPaymentStatusChanged payload is bounded-risk but worth documenting; (4) PHP/JS BROADCAST_MAP contract drift (11 vs 7 entries) emits console.warn for any future subscriber on the 4 missing entries. All four findings are V1.0.2 dead-code cleanup / observability hygiene candidates — none block V1 LOCAL ship."
+}

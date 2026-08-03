@@ -1,0 +1,75 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "All decrement buttons on the cart strip carry an incomplete aria-label. Five .kiosk-cart-strip-btn--minus buttons read aria-label=\"Supprimer du panier\" (no item name) and one reads aria-label=\"Retirer un\" (sentence truncated mid-string, no item name). All increment buttons (.kiosk-cart-strip-btn--plus) read aria-label=\"Ajouter un\" (truncated mid-string, no item name). These are icon-only +/- buttons, so a screen-reader user navigating the 7-article cart hears five identical 'Supprimer du panier' and seven 'Ajouter un' with no way to distinguish which line (Glace / Tarte Daim / Tiramisu / Coca-Cola 33cl / Fromage supplémentaire) is being acted on.",
+      "fix_hint": "resources/js/components/frontend/kiosk/CartBottomSheetComponent.vue (or KioskCartStripComponent.vue, data-v-01b8ee94 scope) — change aria-label bindings to template-literals that interpolate item.name, e.g. :aria-label=\"$t('kiosk.cart.add_one', { item: item.name })\" and :aria-label=\"$t('kiosk.cart.remove_one', { item: item.name })\". Add missing FR/EN/AR keys in lang/*/kiosk.php. Also normalise the inconsistent minus label ('Supprimer du panier' vs 'Retirer un') to a single key.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Cart strip items use .kiosk-cart-strip-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } inside a 280px-wide horizontal card and have no title attribute. Visible result in PNG: 'Coca-Cola 33cl' renders as 'Coca Co...', 'Fromage à raclette' / 'Fromage supplémentaire' renders as 'Fromage à...' / 'Fromage ...'. DOM grep for title attr on .kiosk-cart-strip-name returns 0 matches across all 7 strip items, so hover/touch users cannot recover the full name.",
+      "fix_hint": "Same component as D-001 — add :title=\"item.name\" on the .kiosk-cart-strip-name element so the full label is available via tooltip and accessible name. Alternative: widen the strip card to 320px (still fits 3+ items in viewport) or wrap on two lines with -webkit-line-clamp: 2.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State filename promises an expanded bottom-sheet view ('09-d-bottom-sheet-after-mixed-cart') but the captured PNG and DOM are identical to state 10 (same Suppléments grid, same docked cart strip, same '7 articles' count, same 16,90€ total). md5 differs (52945388 vs 275b6448) only because of timestamp/dynamic data; visually they are the same surface. There is no '.kiosk-cart-bottom-sheet' element with an open/expanded class anywhere in 09-d DOM — only the docked .kiosk-cart-strip is rendered. The spec did not actually open the bottom-sheet overlay; coverage of the expanded sheet (full item list, sticky checkout, line edit controls) is missing for Wave D.",
+      "fix_hint": "tests/e2e/test-e2e-borne-D.spec.ts — add an explicit await page.getByTestId('kiosk-bottom-cart').click() (or equivalent click on '.kiosk-bottom-cart' / aria-label='Ouvrir le panier') before capturing state 09, then wait for the expanded sheet selector (likely [data-state=\"open\"] or .kiosk-cart-bottom-sheet--open) before screenshot. Without this, the 'bottom-sheet' name in the artifact is misleading and the Phase A coverage matrix has a gap.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-borne-D/08-d-318-tap-fromage-direct-add.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "On all three category pages (Desserts 316, Boissons 317, Suppléments 318) most product cards display a generic rounded-square light-grey placeholder with a '+' icon instead of a product photo (e.g. Tarte Daim, Capri-Sun, Coca-Cola Zero 33cl, Oasis Tropical 33cl, Sauce Supplémentaire, Boursin, Fromage à raclette, Fromage supplémentaire, Galette pommes de terre, Jambon de Dinde). Only Glace, Coca-Cola 33cl, Fanta Orange, Eau Plate, Tiramisu, Sprite have real product imagery. The placeholder gives no indication that it is a 'no-photo' fallback (no caption such as 'Photo bientôt disponible'); customers may read the giant '+' as 'tap here to add' confusion overlay rather than a missing-image state.",
+      "fix_hint": "Either (a) backfill product photos in storage/app/public/products/ for the listed items, or (b) update the no-image placeholder template (likely resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue product-card slot) to render an explicit visual fallback with an icon + 'Photo à venir' caption rather than the empty '+' tile that mimics an action affordance.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-borne-D/01-d-cat-316-baseline.dom.html",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Currency formatting on price chips is inconsistent with the rest of the FR locale. Strip price renders as '€3,80' / '€4,50' (prefix, no space) and category card prices render as '€5,80' / '€1,00' (prefix). The bottom-right cart-total CTA, however, renders '€16,90' as a prefix too. French AFNOR / NF Z11-013 convention is suffix with NBSP: '3,80 €'. The aria-label 'Ouvrir le panier — N articles' uses NBSP correctly so the i18n layer supports it. This is cosmetic only (no key leak, no broken plural), but it visibly drifts from the rest of FoodKing's POS/OSS surfaces which use suffix euros.",
+      "fix_hint": "resources/js/utils/format.js (or wherever the kiosk price formatter lives) — switch the price formatter to Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value) which emits '3,80 €' with the correct NBSP. Audit all .kiosk-cart-strip-price, .kiosk-card-price and the strip-total CTA template.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 3,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 3,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Phase A direct-add gate PASS for all three categories (316/317/318): 0 .kiosk-wizard-overlay rendered in states 02/05/08; cart aria-label increments by exactly 1 per tap (3→4 between states 04→05; 6→7 between states 07→08). D-001 cart-count harmonization PASS at state 09: top kiosk-categories-cart-indicator aria-label 'Ouvrir le panier — 7 articles' matches bottom kiosk-cart-bottom-sheet-count text '7 articles'. Numeric integrity PASS: 11,40€ at state 03 (3×3,80), 15,90€ at state 06 (after Coca×3), 16,90€ at state 10 (mixed). Strip item layout PASS: 280px horizontal compact (flex-direction: row, height ~80px). Pink residue check: 0 matches of #e8001c across all 10 DOM files. Network 4xx/5xx: 0 unallowlisted across all 10 states. Console: only WSS Pusher ERR_CONNECTION_REFUSED (allowlisted). Five findings remain: D-001 P1 (broken aria-label on +/- buttons — blocks AMBER→GREEN), D-002 P2 truncation without title, D-003 P2 audit-integrity gap (bottom-sheet state never actually expanded by spec), D-004 P2 weak no-image placeholder, D-005 P3 currency-formatter drift. Verdict AMBER (open_P0=0, open_P1=1)."
+}

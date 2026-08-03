@@ -1,0 +1,37 @@
+{
+  "task_id": "CV1-M20-RUNBOOKS-SKELETON",
+  "mission_id": "M-20",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Produire 8 runbooks ops Caisse V1 prêts à signer : panne TPE, panne imprimante, perte réseau kiosk, queue dispatch saturée, outbox blocked, fiscal sequence break, KDS multi-screen desync, rollback canary. Chaque runbook : trigger, diagnostic, actions correctives par criticité, escalation matrix, post-mortem template. Aucun code.",
+  "instruction": "Crée les 8 runbooks markdown sous reports/runbooks/. Aucun code, aucun script. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "reports/runbooks/RUNBOOK_TPE_FAILURE_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_PRINTER_FAILURE_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_KIOSK_NETWORK_LOSS_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_DISPATCH_QUEUE_SATURATED_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_OUTBOX_BLOCKED_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_FISCAL_SEQUENCE_BREAK_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_KDS_MULTISCREEN_DESYNC_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_ROLLBACK_CANARY_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_INDEX_2026-04-25.md"
+  ],
+  "off_limits": ["app/**", "resources/**", "routes/**", "database/**", "tests/**", "scripts/**", "config/**", ".cursor/**", "AGENTS.md"],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [],
+  "self_audit_checklist": [
+    "8 runbooks créés + 1 index",
+    "Chaque runbook a : trigger, symptômes observables, diagnostic step-by-step, actions par criticité (P0/P1/P2), escalation matrix, post-mortem template",
+    "Chaque runbook réfère aux endpoints/services/scripts FoodKing réels (sans inventer)",
+    "Runbook ROLLBACK_CANARY décrit feature flags + rollback DB + rollback frontend (build legacy)",
+    "Index liste les 8 runbooks avec quand utiliser quoi",
+    "Aucun fichier produit modifié"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 runbooks ops",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_runbooks_skeleton_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-runbooks"
+}

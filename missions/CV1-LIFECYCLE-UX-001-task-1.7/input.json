@@ -1,0 +1,46 @@
+{
+  "task_id": "CV1-LIFECYCLE-UX-001-task-1.7",
+  "parent_cycle": "CV1-LIFECYCLE-UX-001",
+  "execution_tier": "complex",
+  "primary_execution_model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "plan_file": "plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md",
+  "plan_section": "§ 1.7 — Bouton 'Dupliquer ce produit'",
+  "audit_source": "reports/audit/CLAUDE_ULTRA_REVIEW_MISSION_2_STOCK_COMPOSITION_2026-05-02.md §B #4",
+  "delegated_by": "Claude (in-session orchestrator)",
+
+  "instruction": "Add a 'Duplicate item' feature in admin: a backend service method, a controller endpoint, an authorization gate, a button in ItemListComponent, and a Feature sentinel.\n\n**Goal**: from `/admin/items` admin list, an admin can click a 'Duplicate' icon on any row and obtain a draft copy of the item, including its variations/extras/addons/composer profile (the latter copied as draft, NOT auto-published).\n\n**Required steps**:\n\nA. **Service** `app/Services/ItemService.php` — add a public method `duplicate(Item $item): Item`:\n  - Wrap the entire copy in `DB::transaction(function () use ($item) { ... });`.\n  - Inside the transaction:\n    1. `$copy = $item->replicate();` then mutate `$copy->name = $item->name . ' (copie)'` (i18n-friendly suffix; if `name` is translatable via `Astrotomic\\Translatable`, replicate also the translations with the suffix). \n    2. Reset/clear: `$copy->slug = null;` (let observers regenerate), `$copy->status = Status::INACTIVE` (start as inactive draft), `$copy->is_featured = Ask::NO`. KEEP `tax_id`, `channels`, `item_category_id`, `flat_price`, `caution`, `description`.\n    3. `$copy->save();`.\n    4. For each `ItemVariation` in `$item->variations`: replicate, reset `id`, set `item_id = $copy->id`, save. Same for `ItemExtra`, `ItemAddon`. (Do this with raw model methods, not via ItemService::store, to avoid emitting ItemCreated events for the children.)\n    5. Spatie media: copy the first media in collection 'item' if exists, via `$item->getFirstMedia('item')->copy($copy, 'item')` (verify the exact API; Spatie supports `Media::copy()`).\n    6. ComposerProfile: if `$item->itemWizardProfile()->where('is_published', true)->exists()` (verify relationship name in Item model — could be `wizardProfile` or `itemWizardProfile`), replicate the LATEST profile + all its `ItemWizardStep` rows, but force `is_published = false` and bump `version` if applicable. Mark the cloned profile as draft.\n    7. Return $copy fresh from DB with relationships eager-loaded.\n  - **Outside the transaction (after commit)**: emit `ItemCreated::dispatch($copy)` so the catalog event chain treats it as a new item. Use `DB::afterCommit(fn () => ...)` if not already implicit.\n\nB. **Controller** `app/Http/Controllers/Admin/ItemController.php` — add `public function duplicate(Item $item)`:\n  - Middleware: must be in `permission:items_create` (per existing pattern lines 31-32).\n  - Body: `try { $copy = $this->itemService->duplicate($item); return new ItemResource($copy->fresh(['category','tax','variations','extras','addons','itemWizardProfile'])); } catch (Exception $e) { return response(['status'=>false,'message'=>$e->getMessage()], 422); }`.\n  - Add to constructor middleware: `$this->middleware(['permission:items_create'])->only('store', 'import', 'duplicate');` (replace the existing line).\n\nC. **Route** `routes/api.php` — add inside the existing admin group:\n  - `Route::post('/item/{item}/duplicate', [ItemController::class, 'duplicate'])->name('item.duplicate');`\n  - Place it next to the existing `Route::resource('item', ItemController::class)` declaration. Maintain throttle and middleware inheritance.\n\nD. **Sentinel** `tests/Feature/Catalog/ItemDuplicationTest.php` — NEW FILE, 5 cases:\n  1. `test_duplicate_creates_independent_copy_with_suffix` — original 'Tacos M' → copy 'Tacos M (copie)', different IDs, same flat_price.\n  2. `test_duplicate_copies_variations_extras_and_addons` — original has 3 variations + 2 extras → copy has 3 + 2 with new IDs.\n  3. `test_duplicate_copies_composer_profile_as_draft` — original has published profile → copy has profile with `is_published=false`.\n  4. `test_duplicate_does_not_touch_order_history` — create OrderItem referencing original id, duplicate, assert OrderItem still references original (count unchanged).\n  5. `test_duplicate_starts_as_inactive_status` — copy has `status = Status::INACTIVE`.\n\n  Use `RefreshDatabase`. Authenticate as a Spatie user with `items_create` permission via Sanctum.\n\nE. **Frontend** `resources/js/components/admin/items/ItemListComponent.vue` — add a small duplicate button per row:\n  - Find the existing actions cell (likely contains edit/delete icons).\n  - Add a duplicate button (icon `lab lab-copy` or fontawesome equivalent) with tooltip $t('label.duplicate') and click handler `duplicate(item)`.\n  - Method `duplicate(item)`: confirm via `$store.dispatch('alert/confirm', {...})` or simple confirm; on confirm, axios POST to `/api/admin/item/${item.id}/duplicate`; on success, alert message + `this.list()` (refresh table).\n  - **i18n keys** in 5 langues: `label.duplicate`, `message.item_duplicated`.\n\n**File list (HARD scope)**:\n- WRITE: `app/Services/ItemService.php` (add duplicate method)\n- WRITE: `app/Http/Controllers/Admin/ItemController.php` (add duplicate endpoint + middleware update)\n- WRITE: `routes/api.php` (add route)\n- WRITE: `tests/Feature/Catalog/ItemDuplicationTest.php` (new sentinel)\n- WRITE: `resources/js/components/admin/items/ItemListComponent.vue` (add button + method)\n- WRITE: `resources/js/languages/{fr,en,de,ar,bn}.json` (2 i18n keys each)\n\n**OFF-LIMITS (HARD)**:\n- `app/Services/Orders/OrderService.php` (frozen)\n- `app/Services/FrontendOrderService.php` (frozen)\n- `app/Services/Pricing/PricingService.php` (frozen)\n- `app/Services/Menu/AvailabilityService.php` (just modified in M2 1.9 — leave alone)\n- Any migration\n- Any other Vue component\n- Other test files\n\n**Invariants to respect**:\n- Pricing SSOT (#1): copy keeps the original `flat_price`. DO NOT recompute prices.\n- OrderStatus (#2): not in scope.\n- branch_id (#3): item duplication is global (no branch_id on items), but `item_branch_availability` rows are NOT duplicated (the copy starts with no per-branch rows; admin sets them later).\n- DispatchableAfterCommit (#4): emit ItemCreated AFTER transaction commit.\n- OrderService symmetry (#5): not in scope.\n- Frozen zones (#6): none touched.\n\n**Quality bar**:\n- Sentinel: 5/5 passing.\n- Existing tests: full suite must remain ≥1272 passed (baseline post M2 1.5 = 1277 passing if you count the new 5 from CatalogWarningServiceExtraCodes).\n- Run `php artisan test --filter=Catalog` and `php artisan test --filter=ItemDup` before commit.\n- `php -l` on all modified PHP files.\n- ESLint clean on Vue + JS.\n- Single commit, conventional message.\n\n**HALT conditions**:\n- Item model uses Astrotomic translations and replicate() doesn't copy them — investigate, document, but DO NOT introduce a new dependency.\n- Spatie media `copy()` API doesn't exist as expected — fall back to `addMediaFromString` from the original's path.\n- ItemWizardProfile relationship name is unknown — probe with grep first.\n- More than 2 attempts to make any sentinel case pass.\n- Any off-limits file appears modified.\n\n**Log integrity**: same protocol as M2 1.9 round 2. No amend, no sweep.\n\n**Trace** in `reports/post_execute_latest.log` and **self-audit** in `reports/audit/GPT_SELF_AUDIT_CV1-LIFECYCLE-UX-001-task-1.7.md`.",
+
+  "subsystems": [
+    "app/Services/ItemService.php (write — add duplicate method)",
+    "app/Http/Controllers/Admin/ItemController.php (write — add endpoint + middleware update)",
+    "routes/api.php (write — add route)",
+    "tests/Feature/Catalog/ItemDuplicationTest.php (write — new sentinel, 5 cases)",
+    "resources/js/components/admin/items/ItemListComponent.vue (write — add button + method)",
+    "resources/js/languages/fr.json (write — 2 i18n keys)",
+    "resources/js/languages/en.json (write — 2 i18n keys)",
+    "resources/js/languages/de.json (write — 2 i18n keys)",
+    "resources/js/languages/ar.json (write — 2 i18n keys)",
+    "resources/js/languages/bn.json (write — 2 i18n keys)"
+  ],
+
+  "subsystems_off_limits": [
+    "app/Services/Orders/OrderService.php (frozen)",
+    "app/Services/FrontendOrderService.php (frozen)",
+    "app/Services/Pricing/PricingService.php (frozen)",
+    "app/Services/Menu/AvailabilityService.php (recently modified in M2 1.9, do not touch)",
+    "All migrations",
+    "All Vue components except ItemListComponent.vue",
+    "All test files except ItemDuplicationTest.php",
+    "Tailwind config / kiosk DS"
+  ],
+
+  "invariants_to_respect": [
+    "Pricing SSOT (#1) — copy preserves original flat_price; no recomputation",
+    "OrderStatus (#2) — not in scope",
+    "branch_id (#3) — items have no branch_id; per-branch availability rows are NOT duplicated",
+    "DispatchableAfterCommit (#4) — emit ItemCreated AFTER DB::transaction commits",
+    "OrderService symmetry (#5) — not in scope",
+    "Frozen zones (#6) — none touched"
+  ]
+}

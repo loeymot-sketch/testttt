@@ -2,14 +2,21 @@
     <LoadingComponent :props="loading" />
 
     <div class="col-12">
-        <div class="grid grid-cols-1 sm:grid-cols-5 mb-4 sm:mb-0">
+        <ComposerProfileWarningBadge
+            class="mb-4"
+            :warnings="warnings"
+            @action="onCatalogWarningAction"
+            @dismiss="onCatalogWarningDismiss"
+        />
+
+        <div class="grid grid-cols-1 sm:grid-cols-7 mb-4 sm:mb-0">
             <button type="button" @click="handleTab($event, '#information', '.db-tabBtn', '.db-tabDiv', 'active')"
                 class="db-tabBtn !justify-start active">
                 <i class="lab lab-information lab-font-size-16"></i>
                 {{ $t('label.information') }}
             </button>
             <button type="button" @click="handleTab($event, '#image', '.db-tabBtn', '.db-tabDiv', 'active')"
-                class="db-tabBtn !justify-start"><i class="lab lab-image lab-font-size-16"></i>
+                class="db-tabBtn !justify-start" data-testid="admin-item-tab-image"><i class="lab lab-image lab-font-size-16"></i>
                 {{ $t('label.images') }}
             </button>
             <button type="button" class="db-tabBtn !justify-start"
@@ -27,6 +34,17 @@
                     class="lab lab-addon lab-font-size-16"></i>
                 {{ $t('label.addon') }}
             </button>
+            <button type="button" class="db-tabBtn !justify-start"
+                @click="handleTab($event, '#composition', '.db-tabBtn', '.db-tabDiv', 'active')"><i
+                    class="lab lab-menu lab-font-size-16"></i>
+                Composition
+            </button>
+            <button type="button"
+                data-testid="admin-item-tab-preview"
+                @click="handleTab($event, '#preview', '.db-tabBtn', '.db-tabDiv', 'active')"
+                class="db-tabBtn !justify-start"><i class="lab lab-eye lab-font-size-16"></i>
+                {{ $t('admin.item_preview.tab_label') }}
+            </button>
         </div>
         <div class="db-tabDiv active" id="information">
             <div class="row py-2">
@@ -39,7 +57,7 @@
                 <div class="col-12 sm:col-6 !py-1.5">
                     <div class="db-list-item p-0">
                         <span class="db-list-item-title w-full sm:w-1/2">{{ $t('label.price') }}</span>
-                        <span class="db-list-item-text w-full sm:w-1/2">{{ item.flat_price }}</span>
+                        <span class="db-list-item-text w-full sm:w-1/2">{{ item.currency_price }}</span>
                     </div>
                 </div>
 
@@ -130,10 +148,10 @@
                             }}</span>
                             <input v-if="uploadButton" @change="changePreviewImage" ref="imageProperty"
                                 accept="image/png, image/jpeg, image/jpg" type="file" id="photo"
-                                class="absolute top-0 left-0 w-full h-full -z-10 opacity-0" />
+                                class="absolute top-0 left-0 w-full h-full -z-10 opacity-0" data-testid="admin-item-photo-input" />
                         </label>
                         <button v-if="saveButton" type="submit"
-                            class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(26,_183,_89,_0.24)] text-white bg-[#1AB759]">
+                            class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(26,_183,_89,_0.24)] text-white bg-[#1AB759]" data-testid="admin-item-photo-save">
                             <i class="lab lab-tick-circle-2"></i>
                             <span class="hidden sm:inline-block">{{ $t("button.save") }}</span>
                         </button>
@@ -156,6 +174,17 @@
         <div class="db-tabDiv" id="addon">
             <ItemAddonListComponent :item="parseInt($route.params.id)" />
         </div>
+        <div class="db-tabDiv" id="composition">
+            <ProductComposerSummaryComponent :item="item" />
+        </div>
+        <div class="db-tabDiv" id="preview">
+            <ItemPreviewComponent
+                v-if="branches.length"
+                :item="item"
+                :branches="branches"
+                @parity-warning="onParityWarning"
+            />
+        </div>
     </div>
 </template>
 
@@ -169,6 +198,9 @@ import alertService from "../../../services/alertService";
 import ItemVariationListComponent from "./variation/ItemVariationListComponent";
 import ItemExtraListComponent from "./extra/ItemExtraListComponent";
 import ItemAddonListComponent from "./addon/ItemAddonListComponent";
+import ProductComposerSummaryComponent from "./ProductComposerSummaryComponent";
+import ComposerProfileWarningBadge from "./ComposerProfileWarningBadge";
+import ItemPreviewComponent from "./ItemPreviewComponent";
 
 export default {
     name: "ItemShowComponent",
@@ -176,10 +208,16 @@ export default {
         ItemVariationListComponent,
         LoadingComponent,
         ItemExtraListComponent,
-        ItemAddonListComponent
+        ItemAddonListComponent,
+        ProductComposerSummaryComponent,
+        ComposerProfileWarningBadge,
+        ItemPreviewComponent,
     },
     data() {
         return {
+            warnings: [],
+            branches: [],
+            parityWarningMsg: '',
             loading: {
                 isActive: false
             },
@@ -215,9 +253,15 @@ export default {
     },
     mounted() {
         this.loading.isActive = true;
+        this.$store.dispatch('backendGlobalState/branches', {}).then(() => {
+            this.branches = this.$store.getters['backendGlobalState/branches'] || [];
+        }).catch(() => {
+            this.branches = [];
+        });
         this.$store.dispatch('item/show', this.$route.params.id).then(res => {
             this.defaultImage = res.data.data.preview;
             this.previewImage = res.data.data.preview;
+            this.warnings = Array.isArray(res.data.warnings) ? res.data.warnings : [];
             this.loading.isActive = false;
         }).catch((error) => {
             this.loading.isActive = false;
@@ -229,6 +273,16 @@ export default {
         },
         handleTab: function (event, targetID, targetButton, targetDiv, activeClass) {
             return appService.handleTab(event, targetID, targetButton, targetDiv, activeClass);
+        },
+        onCatalogWarningAction(warning) {
+            void warning;
+            /* Composer codes route inside ComposerProfileWarningBadge; other targets may be wired later */
+        },
+        onCatalogWarningDismiss(warning) {
+            void warning;
+        },
+        onParityWarning(msg) {
+            this.parityWarningMsg = msg;
         },
         changePreviewImage: function (e) {
             if (e.target.files[0]) {

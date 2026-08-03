@@ -5,8 +5,10 @@
             <div class="db-card-header">
                 <h3 class="db-card-title">{{ $t('label.sales_summary') }}</h3>
                 <div id="sales-range" class="cursor-pointer flex items-center gap-3 custom-datepicker">
-                    <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
-                        @update:modelValue="salesSummary" v-model="date" range :preset-ranges="presetRanges">
+                    <label for="dp-input-salesSummaryDate" class="sr-only">{{ $t('label.date') }}</label>
+                    <Datepicker uid="salesSummaryDate" name="salesSummaryDate" hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                        @update:modelValue="salesSummary" v-model="date" range :preset-ranges="presetRanges"
+                        :aria-labels="{ input: $t('label.date') }">
                         <template #yearly="{ label, range, presetDateRange }">
                             <span @click="presetDateRange(range)">{{ label }}</span>
                         </template>
@@ -58,10 +60,10 @@ export default {
             total_sales: null,
             avg_per_day: null,
             presetRanges: [
-                { label: 'Today', range: [new Date(), new Date()] },
-                { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+                { label: 'Aujourd’hui', range: [new Date(), new Date()] },
+                { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
                 {
-                    label: 'Last month',
+                    label: 'Mois dernier',
                     range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
                 },
             ],

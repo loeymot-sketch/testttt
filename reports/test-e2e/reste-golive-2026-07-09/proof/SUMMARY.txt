@@ -1,0 +1,38 @@
+DIMENSION: Cross-surface sync borne->caisse->KDS with frozen NF525 composition
+DATE: 2026-07-09  |  HEAD: a693aa096  |  Live server 127.0.0.1:8000, MySQL live
+
+REAL ORDER via LIVE borne HTTP flow (quote -> signed -> order):
+  Endpoints: POST /api/frontend/order/quote  then  POST /api/frontend/order
+  Auth: Sanctum kiosk:order token (user 3, KioskMachine 1, branch 1) + x-api-key
+  Item: 22 "Cayenne" 7.40 EUR + Sauce Algerienne(var 281) + Type de Pain(var 450)
+        + extra "Oignons frits"(329, +0.90)
+  RESULT: HTTP 201  id=5622  serial=0907265622  queue=A0036
+          order_type=10(TAKEAWAY) source_surface=kiosk payment_method=1(CASH/PlanB)
+          payment_status=15(PENDING_COUNTER) status=4(Acceptee) branch_id=1
+          fiscal_sequence_no=null (allocated at counter encashment - NF525 correct)
+
+(A) CAISSE "a encaisser" (pos.counter-collect.pending route query, PENDING_COUNTER):
+      order 5622 present = YES ; caisse total = 8.30
+
+(B) KDS board (visibleStatuses[4,7,8] + KitchenReleaseRule::applyBoardReleaseFilter):
+      order 5622 present = YES ; orderIsReleasedForBoard=YES ; composition present
+
+(C) composition_snapshot (order_item 5395) FROZEN:
+      lines: Sauce(attr5)=Algerienne(281), Type de Pain(attr6)=Pain(450)
+      extras: Oignons frits(329) unit 0.90 line_total 0.90
+      schema_version=1 captured_at=2026-07-09T13:21:36+02:00
+      Immutability: OrderItem::updating() throws on dirty snapshot (model:51-54)
+                    + DB trigger migration 2026_05_24_040211 RAN
+      Live in-place mutation test blocked by harness (correct: no live fiscal write)
+
+PRICE INTEGRITY (identical @ 8.30):
+      borne quote total_ttc = 8.30 (subtotal 8.30, tax 0.75)
+      order create total    = 8.30 ("8,30 EUR")
+      caisse DB Order.total = 8.30
+      composition           = 7.40 base + 0.90 extra = 8.30
+
+BONUS correctness: order 5621 (earlier, payment_method=5 TICKET_RESTAURANT/UNPAID)
+      correctly ABSENT from KDS board (ghost-order gate: only PAID|PENDING_COUNTER
+      released). Confirms payment gate works.
+
+VERDICT: PASS - one order coherent across caisse + KDS + frozen snapshot, identical price.

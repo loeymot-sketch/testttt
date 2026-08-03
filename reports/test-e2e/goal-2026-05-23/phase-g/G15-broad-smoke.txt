@@ -1,0 +1,60 @@
+    135▕             ->assertJsonPath('data.branch_id_scope', $this->branchA->id);
+    136▕ 
+    137▕         $this->actingAs($user, 'sanctum')
+    138▕             ->getJson($this->profileUrl().'?branch_id_scope='.$this->branchB->id)
+  ➜ 139▕             ->assertForbidden();
+    140▕     }
+    141▕ 
+    142▕     public function test_branch_admin_can_show_global_item_profile_when_no_branch_scoped_profile_exists(): void
+    143▕     {
+
+  [31;1m• Tests\Feature\Composer\ComposerAuthzMinimalTest [39;22m> [31;1mbranch admin cannot mutate composer steps for other branch[39;22m
+[39;1m  Expected response status code [403] but received 404.
+  Failed asserting that 403 is identical to 404.[39;22m
+
+  at [32mtests/Feature/Composer/ComposerAuthzMinimalTest.php[39m:[32m237[39m
+    233▕         $ownStep = ItemWizardStep::factory()->create(['profile_id' => $ownProfile->id]);
+    234▕ 
+    235▕         $this->actingAs($user, 'sanctum')
+    236▕             ->postJson($this->stepsUrlForProfile($foreignProfile->id), $this->stepPayload())
+  ➜ 237▕             ->assertForbidden();
+    238▕ 
+    239▕         $this->actingAs($user, 'sanctum')
+    240▕             ->putJson($this->stepUrl($foreignStep->id), $this->stepPayload('Crudités modifié', $foreignStep->step_key))
+    241▕             ->assertForbidden();
+
+
+  [37;1mTests:  [39;22m[31;1m3 failed[39;22m[39m, [39m[33;1m2 incomplete[39;22m[39m, [39m[33;1m7 skipped[39;22m[39m, [39m[32;1m496 passed[39;22m
+  [37;1mTime:   [39;22m[39m74.43s[39m
+
+
+    135▕             ->assertJsonPath('data.branch_id_scope', $this->branchA->id);
+    136▕ 
+    137▕         $this->actingAs($user, 'sanctum')
+    138▕             ->getJson($this->profileUrl().'?branch_id_scope='.$this->branchB->id)
+  ➜ 139▕             ->assertForbidden();
+    140▕     }
+    141▕ 
+    142▕     public function test_branch_admin_can_show_global_item_profile_when_no_branch_scoped_profile_exists(): void
+    143▕     {
+
+  [31;1m• Tests\Feature\Composer\ComposerAuthzMinimalTest [39;22m> [31;1mbranch admin cannot mutate composer steps for other branch[39;22m
+[39;1m  Expected response status code [403] but received 404.
+  Failed asserting that 403 is identical to 404.[39;22m
+
+  at [32mtests/Feature/Composer/ComposerAuthzMinimalTest.php[39m:[32m237[39m
+    233▕         $ownStep = ItemWizardStep::factory()->create(['profile_id' => $ownProfile->id]);
+    234▕ 
+    235▕         $this->actingAs($user, 'sanctum')
+    236▕             ->postJson($this->stepsUrlForProfile($foreignProfile->id), $this->stepPayload())
+  ➜ 237▕             ->assertForbidden();
+    238▕ 
+    239▕         $this->actingAs($user, 'sanctum')
+    240▕             ->putJson($this->stepUrl($foreignStep->id), $this->stepPayload('Crudités modifié', $foreignStep->step_key))
+    241▕             ->assertForbidden();
+
+
+  [37;1mTests:  [39;22m[31;1m3 failed[39;22m[39m, [39m[32;1m9 passed[39;22m
+  [37;1mTime:   [39;22m[39m2.33s[39m
+
+

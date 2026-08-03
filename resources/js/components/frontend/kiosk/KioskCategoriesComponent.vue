@@ -33,13 +33,11 @@
            Aucune régression i18n : les 2 clefs FR/EN/AR restent utilisées
            par le wizard header. -->
       <div class="kiosk-catalogue-top-actions">
-        <button
+        <button type="button"
           class="kiosk-top-chip kiosk-top-chip--active"
-          type="button"
           :aria-label="$t('kiosk.catalog.my_account')"
           data-testid="kiosk-categories-top-account"
-          @click="openMyAccount"
-        >
+          @click="openMyAccount">
           <span class="kiosk-top-chip-icon" aria-hidden="true">👤</span>
           {{ $t('kiosk.catalog.my_account') }}
         </button>
@@ -82,7 +80,7 @@
       <div v-if="loadError" class="kiosk-catalogue-error" role="alert">
         <span class="kiosk-catalogue-error-icon" aria-hidden="true">📡</span>
         <p>{{ $t('kiosk.catalog.load_error_title') }}</p>
-        <button
+        <button type="button"
           class="kiosk-catalogue-retry-btn"
           @click="loadCatalogue"
           data-testid="kiosk-categories-retry"
@@ -99,7 +97,7 @@
           role="navigation"
           data-testid="kiosk-categories-sidebar"
         >
-          <button
+          <button type="button"
             v-for="cat in sidebarCategories"
             :key="cat.kioskRowKey"
             class="kiosk-sidebar-item"
@@ -139,53 +137,26 @@
               <div class="kiosk-product-zone-header">
                 <h1 class="kiosk-zone-title" data-testid="kiosk-categories-zone-title">{{ selectedCategoryDisplayName }}</h1>
                 <p class="kiosk-zone-subtitle" data-testid="kiosk-categories-zone-count">
-                  {{ filteredProducts.length }}
-                  {{ filteredProducts.length > 1 ? $t('kiosk.catalog.product_many') : $t('kiosk.catalog.product_one') }}
+                  {{ filteredProductCount }}
+                  {{ filteredProductCount > 1 ? $t('kiosk.catalog.product_many') : $t('kiosk.catalog.product_one') }}
                 </p>
               </div>
 
-              <!-- Phase 8.4 — Filter chips row (DATA_CONTRACT §9.3) -->
-              <div
-                class="kiosk-filter-bar"
-                role="group"
-                :aria-label="$t('kiosk.catalog.filters_label') || 'Filtres'"
-                data-testid="kiosk-filter-bar"
-              >
-                <KsFilterChip
-                  v-for="f in kioskFilterDefs"
-                  :key="f.key"
-                  :filter="f.key"
-                  :icon="f.icon"
-                  :label="$t(f.i18n) || f.key"
-                  :active="activeFilters.includes(f.key)"
-                  :data-testid="`kiosk-filter-${f.key}`"
-                  @toggle="toggleFilter"
-                />
-                <button
-                  v-if="activeFilters.length > 0"
-                  type="button"
-                  class="kiosk-filter-reset"
-                  @click="resetFilters"
-                  data-testid="kiosk-filter-reset"
-                >
-                  {{ $t('kiosk.catalog.filters_reset') || 'Tout effacer' }}
-                </button>
-              </div>
-
-              <div class="kiosk-product-grid" role="list">
+              <div class="kiosk-product-grid" :class="productGridLayoutClass" role="list">
                 <div
-                  v-for="product in filteredProducts"
+                  v-for="product in catalogProducts"
                   :key="product.id"
                   class="kiosk-product-card"
-                  :class="{ 'is-loading': loadingItemId === product.id }"
-                  role="button"
-                  tabindex="0"
-                  :aria-label="sanitizeItemName(product.name)"
+                  :class="{
+                    'is-loading': loadingItemId === product.id,
+                    'kiosk-product-card--filtered-out': !isProductCatalogAllowed(product),
+                  }"
+                  role="listitem"
+                  :aria-disabled="!isProductCatalogAllowed(product) ? 'true' : 'false'"
                   :aria-busy="loadingItemId === product.id ? 'true' : 'false'"
                   :data-testid="`kiosk-product-card-${product.id}`"
-                  @click="openProduct(product)"
-                  @keydown.enter.prevent="openProduct(product)"
-                  @keydown.space.prevent="openProduct(product)"
+                  :title="productFilteredOutTooltip(product)"
+                  @click="onProductCardActivate(product, $event)"
                 >
                   <div class="kiosk-product-media">
                     <img
@@ -193,6 +164,7 @@
                       :src="product.thumb || product.image"
                       :alt="''"
                       class="kiosk-product-image"
+                      :class="productSizeClass(product)"
                       loading="lazy"
                       aria-hidden="true"
                     />
@@ -208,21 +180,19 @@
                       {{ getProductBadge(product) }}
                     </span>
 
-                    <button
+                    <button type="button"
                       class="kiosk-product-add"
-                      type="button"
-                      @click.stop="openProduct(product)"
-                      :disabled="!!loadingItemId"
+                      @click.stop="onProductCardActivate(product, $event)"
+                      :disabled="!!loadingItemId || !isProductCatalogAllowed(product)"
                       :aria-label="$t('kiosk.catalog.add', { name: sanitizeItemName(product.name) })"
-                      :data-testid="`kiosk-product-add-${product.id}`"
-                    >
+                      :data-testid="`kiosk-product-add-${product.id}`">
                       <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner" aria-hidden="true"></span>
                       <span v-else aria-hidden="true">+</span>
                     </button>
                   </div>
 
                   <div class="kiosk-product-copy">
-                    <h3 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h3>
+                    <h2 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h2>
                     <div v-if="productBadges(product).length" class="kiosk-product-flag-row" aria-hidden="false">
                       <KsBadge
                         v-for="b in productBadges(product)"
@@ -254,6 +224,16 @@
         </main>
       </div>
 
+      <!-- FoodKing brand V2 (2026-05-10) — Cart bottom-sheet visible direct
+           sur la welcome page dès qu'un item est ajouté. Remplace le toast
+           d'ajout (owner refuse les notifications). -->
+      <KsCartBottomSheet
+        :items="cartItems"
+        :format-price="formatPrice"
+        @increment="incrementCartItem"
+        @decrement="decrementCartItem"
+      />
+
       <div
         class="kiosk-bottom-bar"
         role="region"
@@ -261,7 +241,7 @@
         data-testid="kiosk-categories-bottom-bar"
       >
         <div class="kiosk-bottom-summary">
-          <button
+          <button type="button"
             class="kiosk-bottom-cart"
             @click="goToCart"
             :disabled="cartCount === 0"
@@ -285,7 +265,7 @@
         </div>
 
         <div class="kiosk-bottom-actions">
-          <button
+          <button type="button"
             class="kiosk-bottom-abandon"
             @click="abandonOrder"
             data-testid="kiosk-categories-abandon"
@@ -293,7 +273,7 @@
             {{ $t('kiosk.catalog.abandon_order') }}
           </button>
 
-          <button
+          <button type="button"
             class="kiosk-bottom-pay"
             @click="goToCart"
             :disabled="cartCount === 0"
@@ -307,7 +287,11 @@
 
     <transition name="slide-up">
       <div v-if="activeItem" class="kiosk-wizard-overlay">
+        <!-- V3.6.1 (2026-05-10) Adversarial fix P1-8 : :key force remount sur
+             changement d'item, garantit selections fresh (pas de ghost
+             fritesStyleExtraId carried-over d'un produit précédent). -->
         <KioskWizardComponent
+          :key="activeItem.id"
           :item="activeItem"
           :on-add-to-cart="addToCartAndClose"
           :on-close="closeWizard"
@@ -323,12 +307,11 @@ import KioskWizardComponent from './KioskWizardComponent.vue';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 // [PHASE-6.4] Analytics — event `menu_viewed` au mount, `category_selected` sur clic.
-// [PHASE-8.4/8.8] Ajouts filtres produits + events item_opened.
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
-import { KIOSK_FILTERS, applyKioskFilters, extractAllergenCodes } from '../../../helpers/kioskFilters';
-import KsFilterChip from './ds/KsFilterChip.vue';
+import { extractAllergenCodes } from '../../../helpers/kioskFilters';
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 import KsBadge from './ds/KsBadge.vue';
+import KsCartBottomSheet from './ds/KsCartBottomSheet.vue';
 import KioskPromoCarouselComponent from './KioskPromoCarouselComponent.vue';
 
 const EMOJI_MAP = {
@@ -342,9 +325,9 @@ export default {
   name: 'KioskCategoriesComponent',
   components: {
     KioskWizardComponent,
-    KsFilterChip,
     KsAllergenBadge,
     KsBadge,
+    KsCartBottomSheet,
     KioskPromoCarouselComponent,
   },
   mixins: [kioskPriceMixin],
@@ -356,17 +339,6 @@ export default {
       loadError: false,
       activeItem: null,
       loadingItemId: null,
-      // Phase 8.4 — filtres diététiques (stockés en session, pas persistés
-      // hors session — invariant RGPD : pas de profilage sans consent).
-      activeFilters: [],
-      kioskFilterDefs: [
-        { key: 'halal',       icon: '🕌', i18n: 'kiosk.filters.halal' },
-        { key: 'vegetarian',  icon: '🥗', i18n: 'kiosk.filters.vegetarian' },
-        { key: 'pork_free',   icon: '🚫🥓', i18n: 'kiosk.filters.pork_free' },
-        { key: 'gluten_free', icon: '🌾', i18n: 'kiosk.filters.gluten_free' },
-        { key: 'spicy',       icon: '🌶️', i18n: 'kiosk.filters.spicy' },
-        { key: 'under_10',    icon: '💶', i18n: 'kiosk.filters.under_10' },
-      ],
     };
   },
   computed: {
@@ -382,6 +354,7 @@ export default {
       'kioskCatalogItems',
     ]),
     ...mapGetters('kioskCart', { cartCount: 'count', cartTotal: 'total' }),
+    ...mapState('kioskCart', { cartItems: 'items' }),
     selectedSidebarRow() {
       const sid = parseInt(this.selectedCategoryId, 10);
       const sub = this.kioskSandwichSubcolumn;
@@ -407,12 +380,23 @@ export default {
     selectedCategoryDisplayName() {
       return this.stripLeadingNos(this.selectedCategoryName);
     },
-    filteredProducts() {
-      const base = this.selectedCategoryId
+    /** Liste complète (jamais masquée par v-if — greyout uniquement). */
+    catalogProducts() {
+      return this.selectedCategoryId
         ? this.kioskCatalogItems
         : (this.allItems || []);
-      if (!this.activeFilters || this.activeFilters.length === 0) return base;
-      return applyKioskFilters(base, this.activeFilters);
+    },
+    filteredProductCount() {
+      return this.catalogProducts.length;
+    },
+    // [BORNE-UX 2026-07-11] Layout adaptatif : peu de produits → cartes très
+    // grandes qui remplissent l'espace (2 tacos = empilés ~80%). Owner.
+    productGridLayoutClass() {
+      const n = this.catalogProducts.length;
+      if (n <= 1) return 'kiosk-product-grid--solo';
+      if (n === 2) return 'kiosk-product-grid--duo';
+      if (n <= 4) return 'kiosk-product-grid--quad';
+      return '';
     },
     customerAllergenCodes() {
       // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
@@ -430,12 +414,21 @@ export default {
         }
       },
     },
+    loading(val) {
+      if (!val) this.syncCategoryRouteIfNeeded();
+    },
+    categories: {
+      handler(val) {
+        if (val?.length) this.$nextTick(() => this.syncCategoryRouteIfNeeded());
+      },
+    },
   },
   async mounted() {
-    await this.loadCatalogue();
-    if (!this.$route.query.cat && this.selectedCategoryId) {
-      this.replaceCategoryQuery(this.selectedCategoryId, this.kioskSandwichSubcolumn === 'cold');
+    if (!this.ensureOrderTypeSelected()) {
+      return;
     }
+    await this.loadCatalogue();
+    this.syncCategoryRouteIfNeeded();
     // [PHASE-6.4] Analytics : menu chargé / vu par l'utilisateur. Ne pas émettre
     // l'ID catégorie courante (ça arrive via category_selected quand il clique).
     try {
@@ -446,7 +439,61 @@ export default {
   },
   methods: {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
-    ...mapActions('kioskCart', ['addItem', 'reset']),
+    ...mapActions('kioskCart', ['addItem', 'reset', 'updateQuantity', 'removeItem']),
+
+    // [BORNE-UX 2026-07-11 #3] Variantes de taille : la grande (L/XL) est rendue
+    // ~30 % plus grande que la petite (M/S) pour que la différence saute aux yeux
+    // (ex Tacos M vs Tacos L). Détection par suffixe de taille du nom produit.
+    productSizeClass(product) {
+      const name = String(product?.name || '').trim().toLowerCase();
+      const last = name.split(/\s+/).pop();
+      if (last === 'l' || last === 'xl' || last === 'xxl' || /\b(grande?|large|maxi)$/.test(name)) {
+        return 'kiosk-product-image--size-l';
+      }
+      if (last === 'm' || last === 's' || /\b(petite?|moyen(?:ne)?|small)$/.test(name)) {
+        return 'kiosk-product-image--size-m';
+      }
+      return '';
+    },
+
+    hasExplicitOrderType() {
+      const getter = this.$store?.getters?.['kioskCart/hasExplicitOrderType'];
+      return getter !== false;
+    },
+    ensureOrderTypeSelected() {
+      if (this.hasExplicitOrderType()) return true;
+      try {
+        this.$router.replace({ name: 'kiosk.idle' });
+      } catch (_) {}
+      return false;
+    },
+
+    isProductCatalogAllowed(product) {
+      if (this.isProductUnavailable(product)) return false;
+      return true;
+    },
+    isProductUnavailable(product) {
+      if (!product) return false;
+      if (product.is_available === false || product.is_available === 0 || product.is_available === '0') {
+        return true;
+      }
+      const status = Number(product.status);
+      return status === 0 || status === 2 || status === 10;
+    },
+    productFilteredOutTooltip(product) {
+      if (this.isProductCatalogAllowed(product)) return '';
+      if (this.isProductUnavailable(product)) {
+        return product.unavailable_reason || this.$t('pos.item_86_d') || 'Épuisé';
+      }
+      return '';
+    },
+    onProductCardActivate(product, evt) {
+      if (!this.isProductCatalogAllowed(product)) {
+        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+        return;
+      }
+      this.openProduct(product);
+    },
 
     // Kiosk Phase 9.1.13 — wire du chip "Mon compte" vers l'écran loyalty.
     // Trace analytics optionnelle : si l'event `loyalty_scanned` n'est pas
@@ -501,6 +548,14 @@ export default {
       });
     },
 
+    /** Met ?cat= dès que le menu est prêt (évite URL nue /categories + états bizarres après SPA). */
+    syncCategoryRouteIfNeeded() {
+      if (this.loading) return;
+      if (!this.categories?.length || !this.selectedCategoryId) return;
+      if (this.$route.query.cat) return;
+      this.replaceCategoryQuery(this.selectedCategoryId, this.kioskSandwichSubcolumn === 'cold');
+    },
+
     selectCategory(cat) {
       const cold = cat.kioskSandwichSub === 'cold';
       this.selectKioskCategory({
@@ -528,6 +583,7 @@ export default {
     },
 
     async openProduct(product) {
+      if (!this.ensureOrderTypeSelected()) return;
       if (this.loadingItemId) return;
       this.loadingItemId = product.id;
       // Phase 8.8 — Analytics : item_opened (sans PII ; juste ID + contexte
@@ -536,7 +592,6 @@ export default {
         kioskAnalytics.track('item_opened', {
           item_id: product.id,
           category_id: product.item_category_id ?? null,
-          active_filters: Array.isArray(this.activeFilters) ? this.activeFilters.slice() : [],
         });
       } catch (_) {}
       try {
@@ -550,20 +605,39 @@ export default {
           this.activeItem = detail;
         } else {
           this.addItem(this.buildSimpleCartItem(detail));
-          this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(detail.name) }), 'success', 1800);
+          // FoodKing brand V2 (2026-05-10) — owner request : pas de toast sur
+          // add-to-cart, le KsCartBottomSheet rend l'ajout visible directement.
         }
       } catch (_) {
         this.addItem(this.buildSimpleCartItem(product));
-        this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(product.name) }), 'success', 1800);
+        // FoodKing brand V2 — toast retiré (cf. KsCartBottomSheet ci-dessous).
       } finally {
         this.loadingItemId = null;
       }
     },
 
     hasOptions(detail) {
+      // V3.5 (2026-05-10) Owner gate : `addons` (3 default seeded sur TOUS les
+      // items pour menu full/frites/boisson) ne devrait PAS déclencher le wizard
+      // pour des produits simples (boissons, desserts) sans variations ni extras.
+      // → on retire `addons.length > 0` du check.
+      // V3.6 (2026-05-10) Owner gate : la catégorie "Suppléments" doit toujours
+      // s'ajouter direct, même si extras techniques présents en DB.
+      // Detail API expose `category_name` (string flat) — pas `category.name`.
+      // V3.6.1 adversarial fix P0-1 : check robuste via normalize+startsWith
+      // + fallback ID 318. Tolère "Supplément"/"Supplements"/"SUPPLÉMENT".
+      const catName = (detail.category_name || detail.category?.name || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '') // strip diacritics: "suppléments" → "supplements"
+        .trim();
+      const catId = parseInt(detail.item_category_id, 10);
+      const isSupplementCategory =
+        catName.startsWith('supplement') || // catches "supplement", "supplements", "supplément(s)"
+        catId === 318;
+      if (isSupplementCategory) return false;
       return (detail.itemAttributes?.length > 0) ||
              (detail.extras?.length > 0) ||
-             (detail.addons?.length > 0) ||
              (detail.variations && Object.keys(detail.variations).length > 0) ||
              !!detail.has_menu;
     },
@@ -597,7 +671,28 @@ export default {
     addToCartAndClose(cartItem) {
       this.addItem(cartItem);
       this.closeWizard();
-      this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(cartItem.name) }), 'success', 1800);
+      // FoodKing brand V2 (2026-05-10) — owner request : pas de toast sur
+      // add-to-cart depuis le wizard. L'item apparaît dans KsCartBottomSheet.
+    },
+
+    incrementCartItem(index) {
+      const item = this.cartItems[index];
+      if (!item) return;
+      const next = (item.quantity || 0) + 1;
+      const max = window.foodkingConfig?.maxItemQty ?? 20;
+      if (next > max) return;
+      this.updateQuantity({ index, quantity: next });
+    },
+
+    decrementCartItem(index) {
+      const item = this.cartItems[index];
+      if (!item) return;
+      const next = (item.quantity || 0) - 1;
+      if (next <= 0) {
+        this.removeItem(index);
+      } else {
+        this.updateQuantity({ index, quantity: next });
+      }
     },
 
     closeWizard() {
@@ -605,6 +700,7 @@ export default {
     },
 
     goToCart() {
+      if (!this.ensureOrderTypeSelected()) return;
       if (this.cartCount === 0) return;
       this.$router.push({ name: 'kiosk.cart' });
     },
@@ -644,6 +740,7 @@ export default {
     },
 
     getProductBadge(product) {
+      if (this.isProductUnavailable(product)) return this.$t('pos.item_86_d') || 'Épuisé';
       if (product.is_featured == 5) return this.$t('kiosk.catalog.badge_new');
       if (this.hasOptions(product)) return this.$t('kiosk.catalog.badge_customize');
       return '';
@@ -672,54 +769,19 @@ export default {
     productAllergens(product) {
       return extractAllergenCodes(product);
     },
-    // Phase 8.4 — gestion filtres (en session, pas persistée hors conversation).
-    toggleFilter(key) {
-      if (!KIOSK_FILTERS.includes(key)) return;
-      const idx = this.activeFilters.indexOf(key);
-      if (idx >= 0) {
-        this.activeFilters.splice(idx, 1);
-      } else {
-        this.activeFilters.push(key);
-      }
-      try {
-        kioskAnalytics.track('filter_toggled', {
-          filter: key,
-          active: idx < 0,
-          active_filters: this.activeFilters.slice(),
-          result_count: this.filteredProducts.length,
-        });
-      } catch (_) {}
-    },
-    resetFilters() {
-      if (this.activeFilters.length === 0) return;
-      this.activeFilters = [];
-      try {
-        kioskAnalytics.track('filter_reset', { result_count: this.filteredProducts.length });
-      } catch (_) {}
-    },
   },
 };
 </script>
 
 <style scoped>
-/* Phase 8.4 — Filter bar */
-.kiosk-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--kiosk-space-2, 8px);
-  padding: var(--kiosk-space-3, 12px) 0 var(--kiosk-space-4, 16px);
-  align-items: center;
+.kiosk-product-card--filtered-out {
+  opacity: 0.42;
+  filter: grayscale(0.35);
+  cursor: not-allowed;
 }
-.kiosk-filter-reset {
-  background: transparent;
-  border: none;
-  color: var(--kiosk-text-muted, #5A5A5A);
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 8px 12px;
-  font-size: calc(13px * var(--kiosk-text-scale, 1));
+.kiosk-product-card--filtered-out:active {
+  transform: none;
 }
-.kiosk-filter-reset:hover { color: var(--kiosk-primary, #E8001C); }
 
 .kiosk-product-flag-row {
   display: flex;
@@ -733,19 +795,21 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--kiosk-surface);
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   overflow: hidden;
   position: relative;
 }
 
 .kiosk-catalogue-header {
-  height: 82px;
-  padding: 0 22px 0 18px;
+  height: 96px;
+  padding-block: 0;
+  padding-inline: 24px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   flex-shrink: 0;
 }
 
@@ -757,11 +821,11 @@ export default {
 }
 
 .kiosk-brand-thumb-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
   overflow: hidden;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -776,7 +840,7 @@ export default {
 }
 
 .kiosk-brand-thumb-fallback {
-  font-size: 28px;
+  font-size: 34px;
 }
 
 .kiosk-catalogue-breadcrumb {
@@ -788,18 +852,19 @@ export default {
 }
 
 .kiosk-breadcrumb-muted {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--kiosk-text-mute);
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .kiosk-breadcrumb-current {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 900;
   color: var(--kiosk-text);
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -810,14 +875,15 @@ export default {
 }
 
 .kiosk-top-chip {
-  height: 38px;
-  padding: 0 14px;
+  min-height: 54px;
+  height: auto;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
-  background: var(--kiosk-primary);
-  color: var(--kiosk-text-on-red);
-  font-size: 13px;
-  font-weight: 700;
+  border: 2px solid var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 900;
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
@@ -831,6 +897,7 @@ export default {
 .kiosk-top-chip--active:focus-visible {
   opacity: 1;
   outline: none;
+  box-shadow: 0 0 0 3px var(--kiosk-focus-ring, #2563eb);
 }
 .kiosk-top-chip--active:active {
   transform: scale(0.97);
@@ -912,49 +979,64 @@ export default {
 .kiosk-catalogue-body {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(128px, 17vw) 1fr;
+  /* [BORNE-UX 2026-07-11] Sidebar catégories ≥ doublée (124→256px) : chaque
+     catégorie plus visible + mieux distinguée (owner). */
+  grid-template-columns: clamp(256px, 24vw, 340px) 1fr;
   min-height: 0;
 }
 
 .kiosk-sidebar {
   background: var(--kiosk-surface);
-  border-right: 1px solid var(--kiosk-border);
-  padding: 12px 10px 90px;
+  border-inline-end: 1px solid var(--kiosk-border);
+  padding: 10px 8px 128px;
   overflow-y: auto;
-  scrollbar-width: none;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.24) transparent;
 }
 
-.kiosk-sidebar::-webkit-scrollbar { display: none; }
+.kiosk-sidebar::-webkit-scrollbar { width: 6px; }
+.kiosk-sidebar::-webkit-scrollbar-track { background: transparent; }
+.kiosk-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.24);
+  border-radius: 999px;
+}
 
 .kiosk-sidebar-item {
   width: 100%;
-  border: none;
-  background: transparent;
+  /* [BORNE-UX 2026-07-11] Chaque catégorie = une carte distincte (fond + bordure)
+     pour bien séparer catégorie de catégorie (owner). */
+  border: 2px solid var(--kiosk-border);
+  background: var(--kiosk-surface-alt);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 10px 6px 14px;
-  border-bottom: 3px solid transparent;
+  gap: 12px;
+  padding: 18px 12px 16px;
+  margin-bottom: 14px;
+  border-radius: 24px;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .kiosk-sidebar-item:active {
   background: var(--kiosk-surface-alt);
+  transform: scale(0.98);
 }
 
 .kiosk-sidebar-item.active {
-  border-bottom-color: var(--kiosk-primary);
-  background: linear-gradient(180deg, var(--kiosk-primary-soft), transparent);
+  border-color: var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
+  box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-sidebar-thumb-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 14px;
+  /* [BORNE-UX 2026-07-11] Miniature catégorie agrandie (~74→120px). */
+  width: clamp(104px, 11vw, 132px);
+  height: clamp(104px, 11vw, 132px);
+  border-radius: 50%;
   overflow: hidden;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -964,34 +1046,50 @@ export default {
 .kiosk-sidebar-thumb {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain (pas cover) pour respecter les visuels détourés sans arrière-plan. */
+  object-fit: contain;
+  padding: 6px;
 }
 
 .kiosk-sidebar-thumb-fallback {
-  font-size: 36px;
+  font-size: 32px;
 }
 
 .kiosk-sidebar-name {
-  font-size: 11px;
-  line-height: 1.15;
-  font-weight: 700;
-  color: var(--kiosk-text-muted);
+  width: 100%;
+  /* [BORNE-UX 2026-07-11] Libellé catégorie agrandi (~12→18px) pour lisibilité. */
+  font-size: clamp(16px, 1.5vw, 20px);
+  line-height: 1.12;
+  font-weight: 900;
+  color: var(--kiosk-text);
   text-align: center;
   text-transform: uppercase;
-  min-height: 26px;
-  display: flex;
-  align-items: flex-end;
+  min-height: 24px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .kiosk-sidebar-item.active .kiosk-sidebar-name {
-  color: var(--kiosk-primary-dark);
+  color: #FFFFFF;
 }
 
 .kiosk-product-zone {
-  background: var(--kiosk-surface);
+  background: transparent;
   overflow-y: auto;
-  padding: 12px 18px 110px;
+  padding: 22px 28px 142px;
   scrollbar-width: none;
+}
+
+/* FoodKing brand V3 (2026-05-10) — sheet horizontal compact ~150px.
+   Padding total = 150 (sheet) + 118 (bar) + 32 (clearance) ≈ 300px. */
+.kiosk-catalogue:has([data-testid="kiosk-cart-bottom-sheet"]) .kiosk-product-zone {
+  padding-bottom: 300px;
+}
+.kiosk-catalogue:has([data-testid="kiosk-cart-bottom-sheet"]) .kiosk-sidebar {
+  padding-bottom: 300px;
 }
 
 .kiosk-product-zone::-webkit-scrollbar { display: none; }
@@ -1000,31 +1098,39 @@ export default {
   min-height: 0;
 }
 
-/* Changement de catégorie : fondu doux local, sans glissement plein écran. */
+/* Changement de catégorie : fondu doux local, sans glissement plein écran.
+   [A-003 test-e2e 2026-07-17] blur(4px) plein pane retiré : captures montraient
+   le contenu central FIGÉ flou (prix illisibles) après transition, et un filter
+   plein viewport coûte cher au GPU de la borne (mandat perf owner). Le fondu
+   opacité seul suffit. */
 .kiosk-cat-pane-enter-active,
 .kiosk-cat-pane-leave-active {
-  transition:
-    opacity 0.18s ease-out,
-    filter 0.18s ease-out;
+  transition: opacity 0.18s ease-out;
 }
 
 .kiosk-cat-pane-enter-from,
 .kiosk-cat-pane-leave-to {
   opacity: 0;
-  filter: blur(4px);
 }
 
 .kiosk-product-zone-header {
-  padding: 2px 4px 14px;
+  padding: 2px 4px 18px;
 }
 
 .kiosk-zone-title {
   margin: 0;
-  font-size: 30px;
-  font-weight: 800;
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 900;
   color: var(--kiosk-text);
   text-transform: uppercase;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
+  line-height: 1.04;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .kiosk-zone-subtitle {
@@ -1036,19 +1142,49 @@ export default {
 .kiosk-product-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px 22px;
+  gap: 24px;
 }
+
+/* [BORNE-UX 2026-07-11] Layout adaptatif : occuper le MAXIMUM d'espace selon le
+   nombre de produits, sans déborder de la zone allouée (owner). */
+.kiosk-product-grid--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.kiosk-product-grid--solo .kiosk-product-card { min-height: min(74vh, 760px); }
+.kiosk-product-grid--solo .kiosk-product-media { height: min(56vh, 580px); }
+
+/* 2 produits (ex Tacos M/L) : empilés haut/bas, très grands (~80% de la zone). */
+.kiosk-product-grid--duo {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+.kiosk-product-grid--duo .kiosk-product-card { min-height: min(41vh, 470px); }
+.kiosk-product-grid--duo .kiosk-product-media { height: min(30vh, 360px); }
+
+/* 3-4 produits : 2 colonnes mais cartes agrandies. */
+.kiosk-product-grid--quad .kiosk-product-card { min-height: min(44vh, 470px); }
+.kiosk-product-grid--quad .kiosk-product-media { height: min(30vh, 320px); }
+
+/* [BORNE-UX 2026-07-11 #3] Différence de taille visible entre variantes :
+   l'image L est ~30 % plus grande que la M (owner). */
+.kiosk-product-image--size-l { transform: scale(1.18); }
+.kiosk-product-image--size-m { transform: scale(0.9); }
 
 .kiosk-product-card {
   position: relative;
-  min-height: 350px;
-  padding: 4px 8px 10px;
+  min-height: 392px;
+  padding: 16px 18px 18px;
+  border-radius: 30px;
+  border: 1.5px solid var(--kiosk-border);
+  background: var(--kiosk-surface);
+  box-shadow: var(--kiosk-shadow-card);
   cursor: pointer;
-  /* Pas d’animation par carte au changement de catégorie : évite l’effet en cascade / livre */
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
 .kiosk-product-card:active {
-  transform: scale(0.985);
+  transform: scale(0.98);
 }
 
 /* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */
@@ -1059,26 +1195,30 @@ export default {
 
 .kiosk-product-media {
   position: relative;
-  height: 250px;
+  height: 234px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 28px;
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
 }
 
 .kiosk-product-image {
-  width: 100%;
-  height: 100%;
+  width: 94%;
+  height: 94%;
   object-fit: contain;
+  filter: drop-shadow(0 18px 28px rgba(0,0,0,0.18));
 }
 
 .kiosk-product-image-fallback {
-  width: 100%;
-  height: 100%;
+  width: 176px;
+  height: 176px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--kiosk-surface-alt);
-  border-radius: 16px;
+  background: var(--kiosk-surface);
+  border-radius: 50%;
+  box-shadow: inset 0 -8px 18px rgba(0,0,0,0.08);
 }
 
 .kiosk-product-emoji {
@@ -1088,23 +1228,23 @@ export default {
 .kiosk-product-badge {
   position: absolute;
   top: 10px;
-  left: 18px;
+  inset-inline-start: 18px;
   background: var(--kiosk-primary-dark);
-  color: white;
+  color: var(--kiosk-text-on-red, #fff);
   font-size: 11px;
   font-weight: 800;
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: 999px;
   transform: rotate(-4deg);
   box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-product-add {
   position: absolute;
-  top: 12px;
-  right: 18px;
-  width: 38px;
-  height: 38px;
+  bottom: -12px;
+  inset-inline-end: 16px;
+  width: 64px;
+  height: 64px;
   border: none;
   border-radius: 50%;
   background: var(--kiosk-primary-dark);
@@ -1112,10 +1252,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 36px;
+  font-weight: 900;
   box-shadow: var(--kiosk-shadow-cta);
-  outline: 2px solid rgba(255,255,255,0.85);
+  outline: 4px solid var(--kiosk-surface);
 }
 
 .kiosk-product-add:disabled {
@@ -1132,45 +1272,52 @@ export default {
 }
 
 .kiosk-product-copy {
-  margin-top: 2px;
-  text-align: center;
+  margin-top: 16px;
+  text-align: start;
 }
 
 .kiosk-product-name {
   margin: 0;
-  font-size: 23px;
-  font-weight: 800;
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 900;
   line-height: 1.15;
-  color: var(--kiosk-primary-dark);
+  color: var(--kiosk-text);
   text-transform: uppercase;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .kiosk-product-desc {
-  margin: 6px auto 0;
-  max-width: 82%;
-  font-size: 12px;
+  margin: 8px 0 0;
+  max-width: calc(100% - 58px);
+  font-size: 14px;
   color: var(--kiosk-text-muted);
   line-height: 1.35;
 }
 
 .kiosk-product-price {
   display: block;
-  margin-top: 6px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--kiosk-text);
+  margin-top: 10px;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--kiosk-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .kiosk-bottom-bar {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
-  height: 96px;
+  height: 118px;
   display: grid;
-  grid-template-rows: 40px 56px;
+  grid-template-rows: 48px 70px;
   background: var(--kiosk-surface);
   border-top: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   z-index: 20;
 }
 
@@ -1197,14 +1344,14 @@ export default {
 .kiosk-bottom-pay {
   border: none;
   background: var(--kiosk-surface);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
   letter-spacing: 0.01em;
 }
 
 .kiosk-bottom-abandon {
   color: var(--kiosk-primary-dark);
-  border-right: 1px solid var(--kiosk-border);
+  border-inline-end: 1px solid var(--kiosk-border);
 }
 
 .kiosk-bottom-cart {
@@ -1230,11 +1377,12 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 0 18px;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--kiosk-primary-dark);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--kiosk-primary);
   white-space: nowrap;
   background: var(--kiosk-primary-soft);
+  font-variant-numeric: tabular-nums;
 }
 
 .kiosk-bottom-pay {
@@ -1248,15 +1396,17 @@ export default {
 }
 
 .kiosk-bottom-pay:disabled {
-  background: var(--kiosk-primary-soft);
-  color: var(--kiosk-primary-dark);
+  background: var(--kiosk-surface-alt);
+  color: var(--kiosk-text-mute);
+  border-inline-start: 1px solid var(--kiosk-border);
+  cursor: not-allowed;
 }
 
 .kiosk-wizard-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: var(--kiosk-surface);
-  z-index: 50;
+  z-index: 180;
 }
 
 .slide-up-enter-active,
@@ -1267,5 +1417,232 @@ export default {
 .slide-up-enter-from,
 .slide-up-leave-to {
   transform: translateY(100%);
+}
+
+/* =============================================================================
+   CV1-KIOSK-VISUAL-REDESIGN-001 V2.C — Bold Appétissant overrides
+   Plan : §9.2.3
+   Refonte chirurgicale : redéclare les classes les plus visibles avec
+   --kiosk-bold-* tokens. Aucun changement de template, layout, dimensions
+   ou data-testid — les sentinels Playwright/Vitest restent verts.
+   Light + dark via cascade [data-kiosk-theme='dark'].
+   Bug categories black à l'écran : pré-existant (tenant sans menu seedé /
+   route guard), non causé par ce override CSS — vérifié par revert/test.
+   ============================================================================= */
+.kiosk-catalogue {
+  background: var(--kiosk-bold-bg, #FFF8F1);
+  color: var(--kiosk-bold-text-primary, #1A1410);
+}
+
+/* HEADER — sticky brand + breadcrumb + top chips */
+.kiosk-catalogue-header {
+  background: var(--kiosk-bold-surface, #FFFFFF);
+  border-bottom: 1px solid var(--kiosk-bold-border, #E8DDD4);
+  box-shadow: var(--kiosk-shadow-sticky-bold, 0 -8px 24px rgba(26, 20, 16, 0.06));
+}
+
+.kiosk-brand-thumb-wrap {
+  background: var(--kiosk-bold-surface-subtle, #FBF2E6);
+  box-shadow: var(--kiosk-shadow-card-bold, 0 4px 16px rgba(26, 20, 16, 0.08));
+}
+
+.kiosk-breadcrumb-muted {
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  color: var(--kiosk-bold-text-secondary, #6B5D52);
+  font-weight: var(--kiosk-font-weight-bold, 700);
+}
+
+.kiosk-breadcrumb-current {
+  font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+  font-weight: var(--kiosk-display-weight-black, 900);
+  color: var(--kiosk-bold-text-primary, #1A1410);
+  text-transform: none;
+  letter-spacing: var(--kiosk-display-tracking-snug, -0.02em);
+  font-variation-settings: 'opsz' 36;
+}
+
+/* TOP CHIP — compte client */
+.kiosk-top-chip {
+  border-color: var(--kiosk-bold-primary-dark, #DC4517);
+  background: var(--kiosk-bold-primary-dark, #DC4517);
+  color: #FFFFFF;
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  font-weight: var(--kiosk-font-weight-bold, 700);
+  letter-spacing: 0.04em;
+  box-shadow: var(--kiosk-shadow-cta-bold, 0 12px 32px rgba(230, 57, 70, 0.32));
+  opacity: 1;
+  transition: transform var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+              box-shadow var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.kiosk-top-chip--active:hover,
+.kiosk-top-chip--active:focus-visible {
+  background: var(--kiosk-bold-primary-hover, #97000D);
+  box-shadow: var(--kiosk-shadow-cta-bold-hover, 0 16px 40px rgba(230, 57, 70, 0.42));
+  transform: translateY(-2px) scale(1.03);
+}
+
+/* CACHE BANNER */
+.kiosk-cache-banner {
+  background: var(--kiosk-bold-warning-soft, #FEF3C7);
+  border-bottom-color: var(--kiosk-bold-warning, #F59E0B);
+  color: var(--kiosk-bold-warning-text, #92400E);
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  font-weight: var(--kiosk-font-weight-bold, 700);
+}
+
+/* LOADING + EMPTY */
+.kiosk-catalogue-loading,
+.kiosk-catalogue-empty {
+  color: var(--kiosk-bold-text-secondary, #6B5D52);
+}
+.kiosk-spinner {
+  border-color: var(--kiosk-bold-border, #E8DDD4);
+  border-top-color: var(--kiosk-bold-primary, #E63946);
+}
+
+/* PRODUCT ZONE HEADER */
+.kiosk-zone-title {
+  font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+  font-weight: var(--kiosk-display-weight-black, 900);
+  color: var(--kiosk-bold-text-primary, #1A1410);
+  letter-spacing: var(--kiosk-display-tracking-snug, -0.02em);
+}
+.kiosk-zone-subtitle {
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  color: var(--kiosk-bold-text-secondary, #6B5D52);
+  font-weight: var(--kiosk-font-weight-medium, 500);
+}
+
+/* PRODUCT CARDS */
+.kiosk-product-card {
+  background: var(--kiosk-bold-surface, #FFFFFF);
+  border: 2px solid var(--kiosk-bold-border, #E8DDD4);
+  box-shadow: var(--kiosk-shadow-card-bold, 0 4px 16px rgba(26, 20, 16, 0.08));
+  transition: transform var(--kiosk-duration-card, 240ms) var(--kiosk-motion-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+              box-shadow var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1)),
+              border-color var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.kiosk-product-card:hover:not(.kiosk-product-card--filtered-out) {
+  transform: translateY(-3px);
+  box-shadow: var(--kiosk-shadow-card-bold-hover, 0 8px 24px rgba(26, 20, 16, 0.12));
+  border-color: var(--kiosk-bold-primary, #E63946);
+}
+
+.kiosk-product-name {
+  font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+  font-weight: var(--kiosk-display-weight-bold, 700);
+  color: var(--kiosk-bold-text-primary, #1A1410);
+  letter-spacing: -0.01em;
+}
+
+.kiosk-product-desc {
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  color: var(--kiosk-bold-text-secondary, #6B5D52);
+  font-weight: var(--kiosk-font-weight-medium, 500);
+}
+
+.kiosk-product-price {
+  font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+  font-weight: var(--kiosk-display-weight-black, 900);
+  color: var(--kiosk-bold-primary, #E63946);
+  letter-spacing: var(--kiosk-display-tracking-snug, -0.02em);
+}
+
+.kiosk-product-add {
+  background: var(--kiosk-bold-primary, #E63946);
+  color: var(--kiosk-bold-text-on-primary, #FFF5E8);
+  border: 0;
+  box-shadow: var(--kiosk-shadow-cta-bold, 0 12px 32px rgba(230, 57, 70, 0.32));
+  transition: transform var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+              background var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.kiosk-product-add:hover:not(:disabled) {
+  background: var(--kiosk-bold-primary-hover, #DC4517);
+  transform: scale(1.08);
+}
+.kiosk-product-add:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.kiosk-product-badge {
+  background: var(--kiosk-bold-accent, #FFB627);
+  color: var(--kiosk-bold-text-on-accent, #1A1410);
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  font-weight: var(--kiosk-font-weight-bold, 700);
+}
+
+.kiosk-product-image-fallback {
+  background: var(--kiosk-bold-surface-subtle, #FBF2E6);
+}
+
+/* BOTTOM BAR */
+.kiosk-bottom-bar {
+  background: var(--kiosk-bold-surface, #FFFFFF);
+  border-top: 1px solid var(--kiosk-bold-border, #E8DDD4);
+  box-shadow: var(--kiosk-shadow-sticky-bold, 0 -8px 24px rgba(26, 20, 16, 0.06));
+}
+
+.kiosk-bottom-cart {
+  background: var(--kiosk-bold-surface-subtle, #FBF2E6);
+  color: var(--kiosk-bold-text-primary, #1A1410);
+  border: 1px solid var(--kiosk-bold-border, #E8DDD4);
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  font-weight: var(--kiosk-font-weight-bold, 700);
+}
+.kiosk-bottom-cart:not(:disabled):hover {
+  background: var(--kiosk-bold-surface, #FFFFFF);
+  border-color: var(--kiosk-bold-text-primary, #1A1410);
+}
+
+.kiosk-bottom-total {
+  font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+  font-weight: var(--kiosk-display-weight-black, 900);
+  font-size: calc(32px * var(--kiosk-text-scale, 1));
+  color: var(--kiosk-bold-primary, #E63946);
+  letter-spacing: var(--kiosk-display-tracking-snug, -0.02em);
+  font-variation-settings: 'opsz' 32;
+}
+
+.kiosk-bottom-abandon {
+  color: var(--kiosk-bold-text-secondary, #6B5D52);
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  font-weight: var(--kiosk-font-weight-bold, 700);
+  background: transparent;
+  border: 2px solid var(--kiosk-bold-border-strong, #1A1410);
+}
+.kiosk-bottom-abandon:hover {
+  background: var(--kiosk-bold-text-primary, #1A1410);
+  color: var(--kiosk-bold-text-inverse, #FFF5E8);
+}
+
+.kiosk-bottom-pay {
+  background: var(--kiosk-bold-primary, #E63946);
+  color: var(--kiosk-bold-text-on-primary, #FFF5E8);
+  border: 0;
+  font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+  font-weight: var(--kiosk-font-weight-black, 900);
+  letter-spacing: 0.04em;
+  box-shadow: var(--kiosk-shadow-cta-bold, 0 12px 32px rgba(230, 57, 70, 0.32));
+  transition: transform var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+              background var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1)),
+              box-shadow var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.kiosk-bottom-pay:not(:disabled):hover {
+  background: var(--kiosk-bold-primary-hover, #DC4517);
+  transform: translateY(-2px);
+  box-shadow: var(--kiosk-shadow-cta-bold-hover, 0 16px 40px rgba(230, 57, 70, 0.42));
+}
+.kiosk-bottom-pay:disabled {
+  background: var(--kiosk-bold-text-tertiary, #9C8C7E);
+  box-shadow: none;
+}
+
+/* Reduced motion guard */
+[data-kiosk-reduced-motion='true'] .kiosk-product-card,
+[data-kiosk-reduced-motion='true'] .kiosk-top-chip,
+[data-kiosk-reduced-motion='true'] .kiosk-product-add,
+[data-kiosk-reduced-motion='true'] .kiosk-bottom-pay {
+  transition: none;
+  transform: none !important;
 }
 </style>

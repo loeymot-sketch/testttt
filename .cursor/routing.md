@@ -1,45 +1,63 @@
 # FoodKing – Model Routing Policy
 
-Auto/Premium routing: DISABLED
-One PRIMARY_MODEL per cycle. Assignment is explicit in every plan file.
+Auto/Premium routing: DISABLED  
+One PRIMARY_EXECUTION_MODEL per cycle.
+
+**SSOT en cas de contradiction** : si ce fichier entre en conflit avec `CLAUDE.md`, `.cursor/rules/global.mdc`, ou `.cursor/commands/run-cycle.md`, **les documents constitutionnels ci-dessus l’emportent** ; mettre à jour `routing.md` en conséquence (pas l’inverse). Changement de routing : décision de plan / gate tracée (`docs/gates/GATE_LOG.md` si requis).
+
+**Doctrine synchronisée (2026-05-02 — pivot multi-agents)** :
+- **Claude (chat session par défaut, ou sub-agent `foodking-planner-orchestrator`)** = **PLAN**, **AUDIT post-impl**, escalade critique. **Ne fait pas** d'implémentation produit.
+- **Composer (sub-agent `foodking-routine-implementer`, Max mode + thinking)** = **EXECUTE routine** (S effort, hors invariants critiques).
+- **GPT-5.5-pro xhigh (`codex-extension` — CLI `codex` Pro, fallback sub-agent `foodking-complex-implementer`)** = **EXECUTE complex** (M/L/XL effort OU invariants critiques), **PLAN_REVIEW**, **GPT_FINAL_AUDIT**.
+
+Tier-routing **déterministe** : voir matrice §Tier-Routing ci-dessous **et** `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT procédurale du pivot).
 
 ---
 
-## Routing Table
+## Routing Table — Multi-Agent Loop (2026-05-02)
 
-| Phase | Model | Permitted scope |
+| Phase | Canal | Permitted scope |
 |---|---|---|
-| PLAN | Claude | Read task, write scoped plan, flag invariant risks and gate conditions |
-| EXECUTE — complex | GPT-5.4 | Backend logic, sync, data layer, API contracts, non-trivial algorithms; **schema/migrations (non-routine)** |
-| EXECUTE — routine | Composer | CRUD, config, UI copy, boilerplate, scaffold generation **excluding** database migrations and any schema/DDL work |
-| VALIDATE | Composer | Diff summary, test results, anomaly flags, report draft |
-| AUDIT | Claude | Plan adherence, invariant check, drift assessment, gate brief or close |
-| GATE BRIEF | Claude → Human | Claude writes, human decides, loop blocked until resolved |
-| REPORT | Composer | Cycle summary aligned to `reports/` discipline |
+| **PLAN** | **Claude** (session Cursor par défaut ; sinon Task `foodking-planner-orchestrator`) | Rédige / amende `plans/PLAN_<TASK_ID>_<DATE>.md`, déclare `SUBSYSTEMS_TOUCHED`, invariants, gates, **`EXECUTION_TIER: routine \| complex`**. **Pas** d'implémentation produit. |
+| **PLAN_REVIEW** (mandatory) | **GPT-5.5-pro xhigh** via **`codex-extension`** | `npm run codex:plan-review -- <TASK_ID>`. Second avis avant EXECUTE. Trace : `PLAN_REVIEW_VERDICT: PASS \| REWORK \| ESCALATE`. |
+| **EXECUTE — routine** | **Composer** via Task `foodking-routine-implementer` | Tâches **S effort** (≤2h, ≤5 fichiers, hors `app/Services/Order*`, pricing, `branch_id`, dispatch, schema, auth, frozen). Trace : `EXECUTE_DELEGATION: foodking-routine-implementer`. |
+| **EXECUTE — complex (PRIMARY)** | **`codex-extension`** — GPT-5.5-pro xhigh CLI `codex` (compte ChatGPT Pro) | M/L/XL effort OU invariants critiques. `npm run codex:complex -- <TASK_ID>` → `output_codex.json` + `GPT_SELF_AUDIT_*.md`. Trace : `EXECUTE_DELEGATION: codex-extension`. |
+| **EXECUTE — complex (FALLBACK)** | Sub-agent Cursor **`foodking-complex-implementer`** | Si `codex` / Pro indispo après ≥2 reprises documentées. Trace : `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:`. |
+| **VALIDATE** | Session Cursor / hooks / tests | `post-execute-guard.sh`, PHPUnit, Vitest, lint. Aucune correction produit ici → retour à l'EXECUTE du tier d'origine. |
+| **AUDIT (PRIMARY)** | **Claude — terminal** (`foodking-claude-orchestrate.sh` **context** puis **audit-brief** / **audit**) | `AUDIT_VERDICT: PASS \| REWORK`, `AUDIT_CHANNEL: claude-terminal`, `TERMINAL_AUDIT_OK: 1`. **Fallback** quota/HS : Task `foodking-planner-orchestrator` ou session Claude + `AUDIT_FALLBACK_REASON:`. |
+| **GPT_FINAL_AUDIT** (mandatory) | **GPT-5.5-pro xhigh** via **`codex-extension`** | `npm run codex:final-audit -- <TASK_ID>`. Verdict final après PASS Claude. Pas de close sans double PASS. |
+| **Escalade critique** | **Claude** (chat ou terminal) | Arbitrage gate / invariant / conflit d'audits — pas un canal AUDIT de routine. |
+| **GATE BRIEF** | Rédaction Claude → décision **Humain** | `docs/gates/GATE_*.md` |
+| **REPORT / VALIDATE summary** | Composer (sans écriture produit) | Synthèses, exécution de tests, rapports — jamais d'édition hors plan. |
+
+---
+
+## Tier-Routing — classification déterministe routine vs complex
+
+Une tâche est **routine** si **toutes** les conditions sont vraies :
+1. Effort **S** (≤2h dev + tests, ≤5 fichiers touchés).
+2. **Aucun** invariant critique en scope : pricing logic, `OrderStatus` enum, `branch_id` data isolation, dispatch logic, `OrderService`/`FrontendOrderService` symmetry, frozen zones, schema/DDL/migration, auth/middleware/guards.
+3. Pas de nouveau service ni de refactor cross-module.
+4. Tests à écrire ≤ 2 nouveaux fichiers de tests, pas de réécriture de suite existante.
+
+Si **une seule** condition tombe → tâche **complex** → routage Codex.
+
+En cas de doute → **complex par défaut** (principe de prudence FoodKing : « partial > wrong »).
 
 ---
 
 ## Hard Boundaries
 
 **Claude**
-- No product/application implementation code (`app/`, `resources/`, `routes/`, etc.)
-- No edits to product/application source files
-- **May** write governance artifacts: plan files under `plans/`, gate briefs under `docs/gates/`, and cycle metadata per workflow (e.g. `ACTIVE_CYCLE.md` where the procedure requires it)
-- Sole author of plan files, audit records, and gate briefs
+- **Peut** : orchestrer le plan (`plans/*.md`), auditer le cycle (terminal), produire briefs / gates, escalader.
+- **Ne peut pas** : implémenter du code applicatif (`app/`, `resources/js` produit, `routes/` métier, etc.) ; contourner les gates humains ; éditer frozen zones sans gate.
 
-**GPT-5.4**
-- No planning, no self-routing, no auditing
-- Executes within plan scope only — does not redefine it
-- **Schema, migrations, and DDL** are **non-routine**: only here, only when explicitly listed in `SUBSYSTEMS_TOUCHED` with gates satisfied as required
-- No auth changes or external service wiring unless explicitly scoped
-- No frozen zone edits without gate clearance
+**GPT-5.5 / Codex**
+- PLAN_REVIEW, EXECUTE produit, GPT_FINAL_AUDIT dans le périmètre du plan ; invariants FoodKing ; pas d’auto-approbation des gates humains.
 
-**Composer**
-- **No** `database/migrations`, migration stubs, schema, or DDL — not even “scaffold-only”; route schema work to GPT-5.4 (complex) with explicit plan scope
-- No auth, sync, pricing, dispatch, or `branch_id` filtering logic
-- No frozen zone edits
-- No architectural decisions
-- No gate briefs
+**Composer (`foodking-routine-implementer`)**
+- **Peut** : EXECUTE routine (tier S, hors invariants critiques) ; tests unit/integration locaux ; UI cosmétique scoped ; documentation in-code ; rapports de validation.
+- **Ne peut pas** : migrations / DDL / auth / sync produit / pricing logic / `branch_id` / `OrderStatus` enum / dispatch logic / frozen zones / décision d'architecture / refactor cross-module. Sur contact avec un de ces périmètres → halt + `ESCALATION` dans le plan → repassage en EXECUTE complex (Codex).
 
 ---
 
@@ -47,26 +65,27 @@ One PRIMARY_MODEL per cycle. Assignment is explicit in every plan file.
 
 | Condition | Routing consequence |
 |---|---|
-| `OrderService` or `FrontendOrderService` in scope | GPT-5.4 + symmetry check required in plan |
-| Pricing logic in scope | Claude confirms backend-first in plan before routing to GPT-5.4 |
-| `OrderStatus` reference in scope | GPT-5.4 must reference enum from code — no strings |
-| Dispatch logic in scope | GPT-5.4 + post-commit constraint explicit in plan |
-| `branch_id` filtering or scoping in scope | GPT-5.4 + isolation logic declared in plan |
-| Frozen zone file in scope | Gate brief required before any implementation begins |
-| Schema / migrations / DDL in scope | **Complex (GPT-5.4)** only, explicitly declared; **never** Composer (routine) |
+| `OrderService` or `FrontendOrderService` in scope | Symmetry review dans le plan + EXECUTE |
+| Pricing logic in scope | Backend SSOT explicit dans le plan |
+| `OrderStatus` reference in scope | Enum depuis le code — pas de chaînes libres |
+| Dispatch logic in scope | Post-commit explicit dans le plan |
+| `branch_id` in scope | Isolement déclaré dans le plan |
+| Frozen zone in scope | Gate brief avant impl |
+| Schema / DDL in scope | GPT complexe + gate ; jamais Composer routine |
 
 ---
 
 ## Escalation Protocol
-If Composer or GPT-5.4 discovers a scope gap or invariant conflict mid-cycle:
-1. Stop execution
-2. Log under `ESCALATION` in the active plan file
-3. Do not self-resolve — Claude reviews and decides: re-plan or gate
 
-Mid-cycle model switch requires Claude confirmation logged in the plan file.
+Si scope gap ou invariant conflict mid-cycle :
+1. Stop execution  
+2. Log `ESCALATION` dans le plan actif  
+3. **Claude** ou humain tranche : replan ou gate  
+
+Mid-cycle model switch : confirmation tracée dans le plan (`ESCALATION`).
 
 ---
 
 ## Routing Integrity
-This file is version-controlled and may not be modified during an active cycle.
-Routing changes require a plan-phase Claude decision recorded in `docs/gates/GATE_LOG.md`.
+
+Ce fichier est versionné. **Ne pas** modifier **pendant** un cycle actif sans procédure ; après correction doctrine, enregistrer si besoin dans `docs/gates/GATE_LOG.md`.

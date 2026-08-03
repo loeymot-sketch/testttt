@@ -1,0 +1,120 @@
+[
+  {
+    "id": "OSS-T-03-CHIME-MUTED",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Chime is intentionally muted on public wall (authBranchId<=0).",
+    "rationale": "See PreparingAndReadyComponent.vue:330-338 + :139-144. Visual .oss-ready-flash + .oss-pulse-ready is the documented heal path (GOAL Round 2 Impl C — P0-OSS-01 / Agent 4 [OSS-B-02]). The public TV wall has no operator gesture to unlock AudioContext, so chime is structurally inaudible — visual feedback channel is sufficient.",
+    "evidence": {
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "chime_gate_line": 338,
+      "listener_gate_line": 139,
+      "spec_drift_caveat": "Mission asked 'file path resolves, no 404' — chime is WebAudio oscillator-synthesized (lines 355-366), not a file fetch. Criterion does not apply."
+    },
+    "ts": "2026-05-28T17:08:48.676Z"
+  },
+  {
+    "id": "OSS-T-04-WAKELOCK-CODE",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "navigator.wakeLock.request('screen') wired correctly + visibility re-acquire path.",
+    "rationale": "Acquisition on mount (line 146) + visibilitychange listener attached (line 150) confirmed via instrumented runtime hook. Release on unmount (line 174). Graceful degrade via line 207 catch on browsers without API. Headless Playwright denies the underlying API silently so the runtime assertion targets the wiring (listener count >=1), not the sentinel state.",
+    "evidence": {
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "acquire_line": 198,
+      "release_line": 209,
+      "visibility_attach_line": 150,
+      "visibility_detach_line": 171
+    },
+    "ts": "2026-05-28T17:08:49.974Z"
+  },
+  {
+    "id": "OSS-T-05-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Stale prune 8h asserted via SSOT inspection.",
+    "rationale": "service.list() :132 and service.listForBranch() :256 both apply where('order_datetime','>=', now(app.timezone)->subHours(config('oss.stale_window_hours',8))). config/oss.php:29 sets default 8h. Wave T R5 + GOAL-G2-HEAL-04 timezone alignment heals are in place. Runtime repro skipped — would need backdated seeder; cross-system spec (#190) covers DB reality.",
+    "evidence": {
+      "service_path": "app/Services/OrderStatusScreenOrderService.php",
+      "list_line": 132,
+      "list_for_branch_line": 256,
+      "config_path": "config/oss.php",
+      "config_line": 29,
+      "default_hours": 8
+    },
+    "ts": "2026-05-28T17:08:50.170Z"
+  },
+  {
+    "id": "OSS-VISUAL-01",
+    "level": "P1",
+    "kind": "defect",
+    "title": "Mobile viewport (390x844): 'En préparation' header truncated to 'En preparat'",
+    "rationale": "Visual review of 08-oss-mobile-viewport.png shows column header overflowing its container on iPhone-class viewport. Component uses h3.text-[40px] inside col-span-1 — at 195px column width (390/2 - gutter) the 40px French label clips horizontally. Spec test passed because it only counts visible .customer-screen panes, not header integrity.",
+    "evidence": {
+      "screenshot": "reports/test-e2e/goal-functional-validation-2026-05-28/OSS/screenshots/08-oss-mobile-viewport.png",
+      "viewport": { "width": 390, "height": 844 },
+      "observed_text": "En preparat",
+      "expected_text": "En préparation",
+      "component_path": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "component_line": 27,
+      "suggested_fix": "Add responsive size: text-[28px] md:text-[40px] on h3 at lines 27 and 49. Preserves ≥3m TV-wall readability mandate on desktop. NOTE: OSS is a TV wall — mobile may be out of scope for V1; verify with owner before patching."
+    },
+    "ts": "2026-05-28T17:10:00.000Z"
+  },
+  {
+    "id": "OSS-API-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Public OSS endpoint /api/frontend/oss-order returns JSON (no HTML masquerade)",
+    "rationale": "Content-Type asserted application/json via T-07 against live backend port 8000 (status<500, header includes application/json). Guards against the Laravel SPA catchall returning 200 HTML for unmatched /api routes (CLAUDE.md feedback note Silent HTML masquerade audit pattern).",
+    "evidence": {
+      "endpoint": "/api/frontend/oss-order?branch_id=1",
+      "middleware": "installed + apiKey + localization + throttle:oss-public",
+      "controller": "app/Http/Controllers/Admin/OrderStatusScreenController.php::publicIndex",
+      "controller_line": 80
+    },
+    "ts": "2026-05-28T17:08:48.500Z"
+  },
+  {
+    "id": "OSS-FIFO-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "FIFO queue_number ASC + id ASC ordering preserved end-to-end (Wave Z 5C)",
+    "rationale": "T-02 renders 5 orders (3 PREPARING + 2 PREPARED + 1 TAKEAWAY token). DOM ordering of the PREPARING column places N°7 strictly before N°12 (queue ASC enforced). Service SSOT: OrderStatusScreenOrderService.php :144 (list) + :264 (listForBranch).",
+    "evidence": {
+      "screenshot": "reports/test-e2e/goal-functional-validation-2026-05-28/OSS/screenshots/02-oss-mixed-preparing-prepared.png",
+      "preparing_dom_order": ["N°7", "N°12", "TAKE-A1"],
+      "prepared_dom_order": ["N°9", "N°14"],
+      "service_list_line": 144,
+      "service_list_for_branch_line": 264
+    },
+    "ts": "2026-05-28T17:08:49.500Z"
+  },
+  {
+    "id": "OSS-POPULAR-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Popular widget branch-scoped per Sprint H5",
+    "rationale": "service.mostPopularItems(?int $branchId = null) accepts an explicit branch (lines 169-195). Controller::publicMostPopularItems resolves branch_id from query param OR first ACTIVE branch (line 124-129). Prevents Branch A wall surfacing Branch B popularity — multi-tenant SaaS correctness preserved.",
+    "evidence": {
+      "service_path": "app/Services/OrderStatusScreenOrderService.php",
+      "service_line": 169,
+      "controller_path": "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+      "controller_line": 116
+    },
+    "ts": "2026-05-28T17:08:49.700Z"
+  },
+  {
+    "id": "OSS-FAILCLOSED-WALL-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Public-wall allowlist KIOSK+TAKEAWAY only (fail-closed)",
+    "rationale": "Wave RED R-3 heal (2026-05-18) replaced the prior != DELIVERY blacklist with whereIn(KIOSK, TAKEAWAY). POS / DINING_TABLE / DELIVERY can no longer leak even if they carry a token. Sister coverage tests/Feature/OSS/OssCustomerScreenFilterTest.php.",
+    "evidence": {
+      "service_path": "app/Services/OrderStatusScreenOrderService.php",
+      "service_list_line": 59,
+      "service_listForBranch_line": 220
+    },
+    "ts": "2026-05-28T17:08:49.800Z"
+  }
+]

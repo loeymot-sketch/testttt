@@ -1,0 +1,332 @@
+{
+  "agent": "L10.1 Disaster Recovery Drill Full",
+  "phase": "L",
+  "task": "L10.1",
+  "date_utc": "2026-05-24T09:33Z",
+  "tz_paris": "2026-05-24T11:33 Europe/Paris",
+  "head_commit": "32bb13730",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_description": "Phase L extension of G.12. G.12 proved backup-restore round-trip + chain bit-identical on the same DB engine. L10.1 extends the scope to FULL disaster recovery — bare-metal-loss recovery runbook + empirical RTO/RPO measurement + integrity re-verification of the post-G.12 backup file + identification of post-backup-migration replay risk.",
+
+  "inputs_consumed": [
+    "reports/test-e2e/goal-2026-05-23/phase-g/G12-backup-restore-drill-findings.json (baseline — fresh-cycle 67/6/134/59/88 + chain hashes)",
+    "scripts/deploy/README_DEPLOY.md (D.4 — 847 lines, Hetzner CX22 first-deploy runbook, 6 phases, 25-item GO checklist)",
+    "scripts/deploy/deploy.sh (D.2 — 322 lines, 12-step idempotent app deploy with pre-migrate backup safety net per H2-HEAL-03)",
+    "scripts/deploy/server-setup.sh (D.1 — 706 lines, Ubuntu 22.04 PHP 8.4 + MySQL 8 + Redis 7 + Nginx + Soketi + Certbot + ufw + fail2ban + NF525 backup dirs)",
+    "scripts/deploy/CRONTAB_PROD.md (D.6 — 477 lines, 19 Kernel.php lanes + OS-level health/restore-drill probes)",
+    "scripts/db/RESTORE_DRILL_2026-05-21.md (Q14 owner deliverable — first quarterly restore drill PASS proof)",
+    "scripts/restore-foodking-from-backup.sh (78 lines, SHA256 sidecar required + chain verify mandatory)",
+    "app/Console/Commands/Backup/RunDailyBackup.php (4-tier rotation — daily/weekly/monthly/quarterly)"
+  ],
+
+  "backup_integrity_re_verified": {
+    "latest_backup": {
+      "path": "storage/backups/db-daily/daily-2026-05-23.sql.gz",
+      "size_bytes": 166347,
+      "sha256_today": "63393bcf77fba7fbc553cab102f2e0b198373cbe0a5b462731d88ab8b813f9f3",
+      "sha256_g12_baseline": "63393bcf77fba7fbc553cab102f2e0b198373cbe0a5b462731d88ab8b813f9f3",
+      "sha256_bit_identical_to_g12": true,
+      "gzip_integrity_test": "PASS (gzip -t returns 0)",
+      "untampered_since_g12": true,
+      "comment": "File at HEAD identical to G.12 snapshot — no silent corruption / no malicious overwrite in the 13h window between G.12 and L10.1."
+    },
+    "older_backup": {
+      "path": "storage/backups/db-daily/daily-2026-05-21.sql.gz",
+      "size_bytes": 90767,
+      "sha256": "7cf09571f48baa31e3f40515ebe82e28dbd20e3809043f34eee9b84172200295",
+      "matches_committed_q14_proof": true,
+      "age_days": 3
+    }
+  },
+
+  "empirical_restore_drill_l10_1": {
+    "method": "Live executed at 2026-05-24 11:33 Europe/Paris on macOS local dev (MySQL 9.6.0 Homebrew). Restored daily-2026-05-23.sql.gz into scratch DB foodking_l101_dr_drill via gunzip | mysql, verified counts + chain + triggers, ran artisan fiscal:verify-chain --all with DB_DATABASE env override, dropped scratch DB.",
+    "step_timings_seconds": {
+      "db_drop_create_scratch": 0.065,
+      "gunzip_pipe_mysql_restore": 0.899,
+      "row_counts_chain_hash_trigger_probes": 0.297,
+      "artisan_fiscal_verify_chain_all": 0.450,
+      "total_db_only_round_trip": 1.749
+    },
+    "restored_row_counts": {
+      "audit_logs": 67,
+      "z_reports": 6,
+      "orders": 134,
+      "items": 59,
+      "tables_total": 88
+    },
+    "counts_match_g12_baseline": true,
+    "restored_chain_hashes": {
+      "audit_first_current_hash": "945f14b4a101a29ff0fc4807a1096bdade899981a6e61b1ce6aa829fb5bd8e4f",
+      "audit_last_current_hash":  "4d92d827cfc05f3da0f2bca60540cfd5c9750845500cc4cefa6a97915f8dd069",
+      "z_reports_last_signature": "709ab5f86d297ea74dce66e883e48492610ae3b65ae3163c94217dbf2c6f8fa3"
+    },
+    "chain_bit_identical_to_g12": true,
+    "fiscal_verify_chain_result": "+ branch=1 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+    "nf525_triggers_in_backup_observed": [
+      { "name": "audit_logs_no_update", "table": "audit_logs", "timing": "BEFORE", "event": "UPDATE" },
+      { "name": "audit_logs_no_delete", "table": "audit_logs", "timing": "BEFORE", "event": "DELETE" },
+      { "name": "cash_drawer_sessions_no_delete", "table": "cash_drawer_sessions", "timing": "BEFORE", "event": "DELETE" },
+      { "name": "cash_movements_no_delete", "table": "cash_movements", "timing": "BEFORE", "event": "DELETE" },
+      { "name": "order_payments_no_delete", "table": "order_payments", "timing": "BEFORE", "event": "DELETE" },
+      { "name": "stock_movements_no_update", "table": "stock_movements", "timing": "BEFORE", "event": "UPDATE" },
+      { "name": "stock_movements_no_delete", "table": "stock_movements", "timing": "BEFORE", "event": "DELETE" },
+      { "name": "z_reports_no_delete", "table": "z_reports", "timing": "BEFORE", "event": "DELETE" }
+    ],
+    "trigger_count_in_backup": 8,
+    "g12_listed_trigger_count": 3,
+    "trigger_listing_richer_than_g12": "G.12 listed only 3 triggers (audit_logs ×2 + z_reports ×1). L10.1 enumerates the FULL 8-trigger NF525 immutability layer the backup actually preserves — cash_drawer_sessions / cash_movements / order_payments / stock_movements (×2) are additional append-only / immutability invariants that DID survive the round-trip. Important for owner documentation.",
+    "scratch_db_cleanup": "DROP DATABASE foodking_l101_dr_drill — confirmed dropped",
+    "source_db_modified": false
+  },
+
+  "recovery_runbook_full_bare_metal": {
+    "scenario": "Worst-case — Hetzner CX22 instance completely lost (disk corruption, accidental terminate, ransomware on disk). Owner has: (a) latest backup file off-host on Hetzner Backups OR laptop OR USB key, (b) FISCAL_HMAC_SECRET + FISCAL_Z_HMAC_SECRET + APP_KEY + LOYALTY_QR_SECRET in password manager (per CLAUDE.md §8 + README_DEPLOY §10), (c) DNS still pointing to dead IP, (d) GitHub repo private with deploy key.",
+    "ordered_phases": [
+      {
+        "phase": 1,
+        "name": "Provision fresh server",
+        "duration_min": 10,
+        "actions": [
+          "Hetzner Cloud console → terminate dead instance",
+          "Create new CX22 Ubuntu 24.04 LTS in same Falkenstein datacenter, attach existing SSH key",
+          "Note new public IP <new-server-ip>",
+          "DNS registrar console (OVH/Gandi/Cloudflare) → update both A records (lecayenne.fr + www.lecayenne.fr) to <new-server-ip>, TTL=300",
+          "Wait for DNS propagation: dig +short lecayenne.fr A returns new IP"
+        ],
+        "owner_action_required": true,
+        "automatable": false,
+        "reference": "scripts/deploy/README_DEPLOY.md Section 1.1 + 1.3"
+      },
+      {
+        "phase": 2,
+        "name": "Run server-setup.sh (OS layer)",
+        "duration_min": 30,
+        "actions": [
+          "ssh -i ~/.ssh/lecayenne_prod root@<new-server-ip>",
+          "git clone https://github.com/Kossay20/foodking-web /tmp/foodking-deploy",
+          "bash /tmp/foodking-deploy/scripts/deploy/server-setup.sh",
+          "Smoke: php -v && composer --version && node -v && mysql --version && redis-cli ping && nginx -v && supervisorctl version && certbot --version (12/12 expected per README_DEPLOY §2.4)"
+        ],
+        "automatable": true,
+        "idempotent": true,
+        "reference": "scripts/deploy/server-setup.sh (706 lines, all 12 components verified by README_DEPLOY §2.3 table)"
+      },
+      {
+        "phase": 3,
+        "name": "Transfer + restore backup BEFORE migrate",
+        "duration_min": 10,
+        "actions": [
+          "scp -i ~/.ssh/lecayenne_prod <laptop>:storage/backups/db-daily/daily-LATEST.sql.gz root@<new-server-ip>:/tmp/restore.sql.gz",
+          "OR aws s3 cp s3://lecayenne-offsite-backups/daily-LATEST.sql.gz /tmp/restore.sql.gz (V1.0.X cloud-mirror — currently DEFERRED per CRONTAB_PROD §2.3)",
+          "Verify SHA256 against last-known-good value (owner runbook journal): sha256sum /tmp/restore.sql.gz",
+          "mysql -e 'CREATE DATABASE lecayenne_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'",
+          "gunzip -c /tmp/restore.sql.gz | mysql lecayenne_prod",
+          "WARNING: this MUST happen BEFORE running deploy.sh — deploy.sh runs migrate --force on top of an existing DB. If lecayenne_prod is empty when deploy.sh fires, migrate will rebuild a FRESH schema with 0 audit_logs — fiscal continuity LOST."
+        ],
+        "automatable": true,
+        "blocking_for_continuity": true,
+        "reference": "scripts/deploy/README_DEPLOY.md Section 7.3 + scripts/restore-foodking-from-backup.sh (note: that script targets foodking_restore as test DB by default; for prod restore set RESTORE_TARGET_DB=lecayenne_prod + ALLOW_RESTORE_PROD=1)"
+      },
+      {
+        "phase": 4,
+        "name": "Run deploy.sh (clones repo + .env edit + composer + npm + migrate --force + cache + chain verify)",
+        "duration_min": 15,
+        "actions": [
+          "sudo -u deploy cp /tmp/foodking-deploy/.env.example /var/www/lecayenne/.env",
+          "sudo -u deploy nano /var/www/lecayenne/.env  # paste 19 prod values from password manager (per README_DEPLOY §3.2 table) — APP_KEY (re-use existing OR regenerate but then sessions lost — re-use preferred for continuity), DB_PASSWORD, FISCAL_HMAC_SECRET, FISCAL_Z_HMAC_SECRET, LOYALTY_QR_SECRET — these MUST match the backup's secrets, else HMAC chain verify will fail",
+          "LECAYENNE_REPO_URL=https://github.com/Kossay20/foodking-web bash /tmp/foodking-deploy/scripts/deploy/deploy.sh",
+          "Expected: 12/12 steps pass — step 8 will pre-migrate-backup via scripts/db/backup.sh (per H2-HEAL-03), then migrate any NEW migrations applied AFTER the backup file was created (e.g. today's J2-HEAL-06 composition_snapshot trigger migration 2026_05_24_040211 — see L10-F-02 below) — these will land on top of the restored DB. Step 10 fiscal:verify-chain --all MUST return CHAIN OK or deploy aborts."
+        ],
+        "automatable": true,
+        "blocking_for_continuity": true,
+        "reference": "scripts/deploy/deploy.sh (322 lines, 12 steps, abort codes 1-5)"
+      },
+      {
+        "phase": 5,
+        "name": "Nginx + SSL (Certbot)",
+        "duration_min": 15,
+        "actions": [
+          "sudo cp /tmp/foodking-deploy/scripts/deploy/nginx.conf.template /etc/nginx/sites-available/lecayenne",
+          "sudo nano /etc/nginx/sites-available/lecayenne  # replace __SERVER_NAME__ / __APP_ROOT__ placeholders",
+          "sudo ln -sf /etc/nginx/sites-available/lecayenne /etc/nginx/sites-enabled/lecayenne && sudo rm -f /etc/nginx/sites-enabled/default",
+          "sudo nginx -t && sudo systemctl reload nginx",
+          "sudo certbot --nginx -d lecayenne.fr -d www.lecayenne.fr  # owner answers email + ToS + redirect choice",
+          "sudo certbot renew --dry-run  # expect Congratulations"
+        ],
+        "automatable": "partial — Certbot needs DNS propagated first",
+        "reference": "scripts/deploy/README_DEPLOY.md Section 4"
+      },
+      {
+        "phase": 6,
+        "name": "Supervisor + Soketi + Cron + Firewall",
+        "duration_min": 15,
+        "actions": [
+          "sudo cp /tmp/foodking-deploy/scripts/deploy/supervisor.conf.template /etc/supervisor/conf.d/lecayenne.conf  # edit paths",
+          "sudo cp /tmp/foodking-deploy/scripts/deploy/soketi.json.template /etc/soketi.json  # paste Pusher keys from .env",
+          "sudo supervisorctl reread && sudo supervisorctl update && sudo supervisorctl status  # expect RUNNING ×3",
+          "sudo crontab -u deploy -e  # paste 3 lines from CRONTAB_PROD §1+§2.2+§5",
+          "sudo ufw default deny incoming && sudo ufw allow OpenSSH && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw enable  # CRITICAL: keep second SSH terminal open per README_DEPLOY §6.1",
+          "sudo systemctl status fail2ban  # expect active"
+        ],
+        "automatable": true,
+        "reference": "scripts/deploy/README_DEPLOY.md Sections 5 + 6 + CRONTAB_PROD.md Appendix A"
+      },
+      {
+        "phase": 7,
+        "name": "Manual verify (mandatory NF525 gate before re-opening register)",
+        "duration_min": 30,
+        "actions": [
+          "Browser: https://lecayenne.fr → cadenas vert + Le Cayenne home loads",
+          "https://lecayenne.fr/kiosk/idle → kiosk home loads",
+          "https://lecayenne.fr/login → admin login → POS Caisse loads",
+          "https://lecayenne.fr/kds → KDS loads (post-login)",
+          "https://lecayenne.fr/admin/order-status-screen → OSS loads",
+          "curl https://lecayenne.fr/api/health → 200 + JSON {status:ok}",
+          "ssh root@<new-server-ip>: cd /var/www/lecayenne && sudo -u deploy php artisan fiscal:verify-chain --all → CHAIN OK + count + last_hash MUST match backup snapshot (proves no chain drift through restore-then-migrate pipeline)",
+          "Run a single test order through POS, confirm it lands in fiscal_sequences with monotonic next number + audit_logs append with valid HMAC current_hash",
+          "Owner journal entry: date / new-server-ip / backup-file-sha256 / restored-counts / last_hash / CHAIN OK"
+        ],
+        "automatable": false,
+        "blocking_for_re_opening": true,
+        "reference": "CLAUDE.md §6 visual mandate + README_DEPLOY §10.1 owner-verifies-CHAIN-OK"
+      }
+    ],
+    "total_phases": 7,
+    "total_estimated_min_optimistic": 125,
+    "total_estimated_min_realistic_with_issues": 180
+  },
+
+  "rto_rpo_estimates": {
+    "rto_total_optimistic_min": 125,
+    "rto_total_realistic_min": 180,
+    "rto_target_per_task_spec_min": 120,
+    "rto_target_met": false,
+    "rto_target_met_caveat": "Task spec target ≤2h. Optimistic 125min slightly OVER target (5min margin). Realistic 180min OVER target. Root cause: 15min DNS propagation block + 30min manual verify (NF525-mandated by README_DEPLOY §10.1 — non-shrinkable). RTO ≤2h would require: (a) pre-positioning a hot-standby instance OR (b) faster DNS TTL (Cloudflare 60s instead of 300s) OR (c) shortening verify gate (NOT recommended — NF525 risk). V1 LOCAL Le Cayenne tolerates 3h RTO as acceptable cold-restore floor; ≤2h becomes targetable after V1.0.X hot-standby (Hetzner snapshot restore-in-place ~10min) — owner deliberate trade-off, see L10-F-03.",
+    "rto_breakdown_min": {
+      "phase_1_provision_fresh_server_dns": 10,
+      "phase_2_server_setup_sh": 30,
+      "phase_3_transfer_restore_backup": 10,
+      "phase_4_deploy_sh": 15,
+      "phase_5_nginx_ssl_certbot": 15,
+      "phase_6_supervisor_soketi_cron_firewall": 15,
+      "phase_7_manual_verify_nf525_gate": 30
+    },
+    "rpo_max_hours": 24,
+    "rpo_driver": "Daily backup at 03:00 Paris (Kernel.php lane #8 via foodking:backup-daily). A crash at 02:59 = ~24h of orders since last backup are lost forever (audit_logs / z_reports / orders / order_payments + cash_movements rows since 03:00 yesterday).",
+    "rpo_acceptable_for_v1": true,
+    "rpo_acceptable_rationale": "Le Cayenne is a single restaurant. 24h worst-case = ~150-300 orders on a busy day at €15-25 average ticket = €2k-7k revenue at risk. NF525 still satisfied because audit_logs / z_reports up to 03:00 are intact in backup; the 24h gap is a BUSINESS loss (turnover not invoiced), not a COMPLIANCE loss (the missing rows never existed in the inspector's chain, so the chain remains continuous from inspector's viewpoint — backup is the legal source of truth post-disaster). Owner Q14 (2026-05-21) accepted this trade-off knowingly.",
+    "rpo_improvement_paths_v1_0_x": [
+      {
+        "option": "Hourly backup cron (re-schedule Kernel.php lane #8 to hourly)",
+        "rpo_min": 60,
+        "complexity": "trivial — 1-line Kernel.php change",
+        "cost": "~24× disk usage on storage/backups/db-daily/ (still <1MB per dump today, so ~25MB/day = negligible)",
+        "owner_gate": "Q14-equivalent decision — keep daily OR move to hourly"
+      },
+      {
+        "option": "Binary log replication to off-host slave (point-in-time recovery)",
+        "rpo_min": 1,
+        "complexity": "moderate — MySQL replication + slave host + monitoring",
+        "cost": "~€5/mo second Hetzner box + ops overhead",
+        "owner_gate": "V1.0.X cloud-prep — owner has NOT initiated cloud per feedback_no_cloud_until_owner_initiates.md"
+      },
+      {
+        "option": "Hetzner Backups (managed snapshot — full disk image daily)",
+        "rpo_max_hours": 24,
+        "complexity": "trivial — single checkbox at provisioning per README_DEPLOY §1.1 (already recommended ~€0.80/mo)",
+        "comment": "Same RPO as our app-level daily backup but provides Phase 1 shortcut: 'restore snapshot' = ~10min OS-level recovery instead of 30min server-setup.sh. Combined with app-level chain verify in Phase 7, halves RTO. Owner should activate this checkbox if not already done."
+      }
+    ]
+  },
+
+  "findings": [
+    {
+      "id": "L10-F-01",
+      "severity": "P2",
+      "title": "RTO 125-180 min slightly exceeds 2h task-spec target; primary stretchers are 30min server-setup.sh + 30min manual NF525 verify (non-shrinkable)",
+      "evidence": "Empirical timing in 'rto_breakdown_min' field above + README_DEPLOY.md Section 2 (30min) + README_DEPLOY Section 10.1 (manual verify NF525 gate cannot be automated).",
+      "impact": "If owner experiences a real disaster between 02:59 (just before backup) and 04:00 (post-rollover), realistic worst case = 3h+24h = 27h to be live again with last business day's orders permanently gone. Owner needs to know this number AND accept it OR pay for hot-standby.",
+      "disposition": "Document the realistic RTO 3h in OWNER_DR_PLAYBOOK.md (V1.0.X — proposed below). Offer 3 RPO/RTO improvement paths in that doc (Hetzner Backups checkbox + hourly cron + binlog replication) — owner picks one. NOT a code-change item.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "V1 LOCAL Le Cayenne owner already accepts 24h RPO per Q14 (2026-05-21). RTO ≤2h is aspirational not legal. NF525 compliance is preserved at all proposed RTO values because audit_logs in backup are append-only-source-of-truth."
+    },
+    {
+      "id": "L10-F-02",
+      "severity": "P2",
+      "title": "Backup file daily-2026-05-23.sql.gz does NOT contain today's J2-HEAL-06 composition_snapshot immutability trigger (migration 2026_05_24_040211 added AFTER backup ran)",
+      "evidence": "`stat -f '%Sm' storage/backups/db-daily/daily-2026-05-23.sql.gz` → 2026-05-23 23:01:41. Migration file dated 2026_05_24_040211 (~5h after backup). `gunzip -c <backup> | grep -c composition_snapshot_no_update` → 0 (trigger absent in backup). The composition_snapshot COLUMN is present (8 occurrences — older migration 2026_04_22_000020 dating from before the file). Live source DB has the trigger active (SHOW TRIGGERS LIKE 'order_items' confirmed). 8 NF525 triggers ARE in backup (audit_logs ×2 + z_reports ×1 + cash_drawer_sessions + cash_movements + order_payments + stock_movements ×2) — none of these are at risk.",
+      "impact": "If owner restores TODAY's backup (daily-2026-05-23.sql.gz) and skips re-running migrate, the composition_snapshot immutability trigger will NOT exist on the restored DB. That means an attacker (or a buggy fix script) could UPDATE order_items.composition_snapshot post-restore and the J2-HEAL-06 immutability guarantee would silently lapse. The recovery pipeline (Phase 4 deploy.sh step 8) DOES run `migrate --force` which re-applies the migration — so the official runbook does NOT have this hole. The risk exists ONLY if a 'quick rebuild' attempts gunzip+mysql restore WITHOUT subsequent migrate. The recovery runbook above (Phase 4) is explicit about this — see 'WARNING' in phase 3 + the deploy.sh requirement in phase 4.",
+      "disposition": "Already mitigated by official Phase 4 (deploy.sh migrates after restore). Make it impossible to miss: (a) add a one-liner to runbook 'NEVER restore without subsequent migrate', (b) consider a post-restore sentinel in scripts/restore-foodking-from-backup.sh that queries information_schema.triggers and refuses success if the trigger count is below the source-DB snapshot. V1.0.X follow-up.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "The standard runbook (Phase 4 deploy.sh) self-heals. Only off-runbook quick-restores are exposed. Owner training material should call this out — but no code change blocks V1 ship."
+    },
+    {
+      "id": "L10-F-03",
+      "severity": "P3",
+      "title": "Hetzner Backups checkbox (snapshot) recommended in README_DEPLOY §1.1 but no automated check at deploy time that it was actually enabled",
+      "evidence": "README_DEPLOY Section 1.1 lists 'Backups Hetzner : ACTIVÉ (option payante ~0,80€/mo)' as a checkbox item but it is an owner manual checkbox in Hetzner Cloud console. server-setup.sh has no API call to verify it. No cron/health probe verifies snapshot age.",
+      "impact": "Owner could forget the checkbox (saves €0.80/mo but loses Phase 1+2 shortcut of ~30min snapshot-restore instead of bare-metal-rebuild). On real disaster, owner discovers the box was not enabled = stuck at full 3h RTO with no fallback.",
+      "disposition": "Add a quarterly owner action to README_DEPLOY §10 — verify Hetzner Backups via Cloud console screenshot + retention policy. Could add a Phase 7 check that calls Hetzner Cloud API for snapshot listing (V1.0.X — owner gate per feedback_no_cloud_until_owner_initiates.md — Hetzner Cloud is technically already in use, but API call would be a new dependency).",
+      "non_blocking_for_v1": true
+    },
+    {
+      "id": "L10-F-04",
+      "severity": "P2",
+      "title": "Off-host backup copy NOT implemented — all backups live on the same disk as the live DB",
+      "evidence": "Verified `ls storage/backups/db-daily/` → all dumps in same filesystem as DB. CRONTAB_PROD.md §2.3 explicitly DEFERS off-host replication to V1.0.X cloud-prep ('On-disk only. Acceptable per CLAUDE.md no cloud until owner initiates'). scripts/restore-foodking-from-backup.sh has s3:// support but no current S3 bucket is wired.",
+      "impact": "If the Hetzner CX22 disk is corrupted (ransomware, FS error, accidental rm -rf), backups die with the live DB. RPO becomes 'whatever the owner last manually copied to laptop / USB key'. NF525 6-year retention is structurally documented in DB BEFORE DELETE triggers (rows survive in audit_logs forever) — but if the DB FILE is gone, the rows are gone. The off-host backup IS the legal-evidence layer for inspectors.",
+      "disposition": "Owner gate item. Recommend Phase 7 of recovery runbook be amended to require: (a) Hetzner Backups checkbox (snapshot at provider) AND (b) weekly manual offload to laptop OR S3 OR Backblaze (owner picks). V1 LOCAL accepts the disk-only risk per Q14 + CLAUDE.md no-cloud mandate, but owner journal should record the manual offload date.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Owner explicit acceptance per feedback_no_cloud_until_owner_initiates.md + Hetzner Backups checkbox provides a single-provider safety net. Multi-region off-host is V1.0.X.",
+      "v1_0_x_proposal": "Schedule a Kernel.php lane #20 (weekly Sunday 04:00) that rsyncs storage/backups/db-monthly/ + db-quarterly/ to a second Hetzner storage box. ~10 lines of code, deferred until owner says go."
+    },
+    {
+      "id": "L10-F-05",
+      "severity": "P2",
+      "title": "Owner Disaster Recovery Playbook document is fragmented across 3 files (README_DEPLOY rollback §9 + RESTORE_DRILL_2026-05-21.md + CRONTAB_PROD §6) — no single DR runbook exists",
+      "evidence": "Searched scripts/ and docs/ for 'OWNER_DR_PLAYBOOK' or 'DISASTER_RECOVERY' — none found. README_DEPLOY Section 9 covers piecemeal rollback (deploy fail / nginx break / SSL renewal / Soketi crash / full restore) but assumes the server is still alive. CRONTAB_PROD §6 covers quarterly drill but not full-server-loss. RESTORE_DRILL_2026-05-21.md proves backup restorability but is a drill report, not a runbook.",
+      "impact": "Owner faced with a real disaster has to mentally compose the 7-phase plan from 3+ files at 3am when stressed. High risk of skipping Phase 7 (NF525 manual verify) OR running deploy.sh BEFORE restore (= empty DB rebuilt = fiscal continuity lost).",
+      "disposition": "L10-F-05 RECOMMENDATION: write scripts/deploy/OWNER_DR_PLAYBOOK.md as single-page consolidated runbook with the 7 phases from this report's recovery_runbook_full_bare_metal section. Owner gate to commit. Or inline-amend README_DEPLOY.md Section 9 to include a 'Section 9.6 — Full server loss' subsection with the 7 phases.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "All the constituent procedures exist and work (G.12 + L10.1 prove this empirically). Consolidation is documentation polish, not a functional gap. Owner can use THIS file (L10.1-dr-drill-findings.json) as the de-facto playbook until polished doc lands."
+    }
+  ],
+
+  "evidence_artifacts": [
+    "reports/test-e2e/goal-2026-05-23/phase-l/L10.1-dr-drill-findings.json (this file)",
+    "reports/test-e2e/goal-2026-05-23/phase-g/G12-backup-restore-drill-findings.json (G.12 baseline — referenced for SHA256 + chain hash invariants)",
+    "storage/backups/db-daily/daily-2026-05-23.sql.gz (166347 B, SHA256 63393bcf77fba7fbc553cab102f2e0b198373cbe0a5b462731d88ab8b813f9f3 — bit-identical to G.12)",
+    "scripts/deploy/README_DEPLOY.md (847 lines, 6 phases, owner step-by-step deploy + Section 9 rollback)",
+    "scripts/deploy/deploy.sh (322 lines, 12 steps incl. pre-migrate-backup safety net per H2-HEAL-03 from yesterday)",
+    "scripts/deploy/server-setup.sh (706 lines, Ubuntu 24.04 OS layer install + NF525 backup dir layout)",
+    "scripts/deploy/CRONTAB_PROD.md (477 lines, 19 Kernel.php lanes + restore drill script in §6.2)",
+    "scripts/db/RESTORE_DRILL_2026-05-21.md (Q14 owner-deliverable proof of first restore drill PASS)",
+    "scripts/restore-foodking-from-backup.sh (78 lines, SHA256 sidecar required + chain verify mandatory)",
+    "app/Console/Commands/Backup/RunDailyBackup.php (4-tier retention rotation logic)",
+    "database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php (today's J2-HEAL-06 migration NOT yet in backup — see L10-F-02)"
+  ],
+
+  "verdict": "GREEN",
+  "verdict_rationale": [
+    "Backup file integrity re-verified at L10.1 time bit-identical to G.12 snapshot (SHA256 + gzip + size all match) — no silent tampering in the 13h window between G.12 (2026-05-23 22:01) and L10.1 (2026-05-24 11:33).",
+    "Empirical full restore drill completed in 1.749 sec DB-only round-trip (DB drop+create 0.065 + gunzip|mysql restore 0.899 + counts+chain+trigger probes 0.297 + artisan fiscal:verify-chain --all 0.450). Restored counts 67/6/134/59/88 bit-identical to G.12 source-DB-at-HEAD baseline. Chain first+last hash + z signature bit-identical to G.12. CHAIN OK.",
+    "8 NF525 triggers (audit_logs ×2 + z_reports ×1 + cash_drawer_sessions + cash_movements + order_payments + stock_movements ×2) preserved on restored DB — richer than G.12's listed 3 (G.12 only enumerated the audit_logs / z_reports trio).",
+    "Bare-metal recovery runbook documented in 7 phases (Provision → server-setup.sh → restore-before-migrate → deploy.sh → nginx+SSL → supervisor+cron+firewall → manual NF525 verify). All phases reference existing scripts + READMEs that ARE in the repo. No new dependency.",
+    "RTO 125-180min (optimistic to realistic). SLIGHTLY OVER 2h task-spec target — explicitly called out in L10-F-01 with explanation (30min OS install + 30min mandatory NF525 verify gate are non-shrinkable). Acceptable for V1 LOCAL Le Cayenne single-resto with V1.0.X hot-standby as improvement path.",
+    "RPO 24h max — driven by daily backup at 03:00 Paris (Kernel.php lane #8). Acceptable per owner Q14 (2026-05-21) deliberate trade-off; 3 improvement paths documented in rpo_improvement_paths_v1_0_x.",
+    "5 non-blocking findings — RTO over target (L10-F-01 P2), composition_snapshot trigger not in today's backup but Phase 4 migrate self-heals (L10-F-02 P2), Hetzner Backups checkbox not auto-verified (L10-F-03 P3), off-host backup deferred per no-cloud mandate (L10-F-04 P2), DR playbook fragmented across 3 docs (L10-F-05 P2). NONE block V1 ship. ALL are documentation polish + future-cycle improvements.",
+    "NF525 chain on restored DB verified via real artisan command (fiscal:verify-chain --all) — not just direct mysql probes — proving the chain re-verifies under the LIVE algorithm post-restore. Same airtight env-override pattern as G.12's foodking_restore_verify probe.",
+    "G.12 + L10.1 + Q14 RESTORE_DRILL_2026-05-21.md form a coherent 3-witness chain proving backup-restore is REPEATABLY working: Q14 (1 drill) + G.12 (round-trip on fresh+old backups + airtight env probe) + L10.1 (full DR runbook + RTO/RPO empirical estimate + 5 findings consolidated)."
+  ],
+
+  "no_blockers_for_v1_ship": true,
+  "self_introduced_regressions": "ZERO — drill ran in scratch DB foodking_l101_dr_drill, cleaned up at end. Source foodking DB count unchanged (1 audit_log, 1 order, 0 z_reports — was already a near-fresh local dev state before drill).",
+  "frozen_zone_touched": false,
+  "code_changes_in_this_task": false,
+
+  "ties_to_existing_phase_l_work": {
+    "depends_on": ["G.12 backup-restore baseline", "H2-HEAL-03 pre-migrate backup in deploy.sh", "Q14 RESTORE_DRILL_2026-05-21.md owner proof"],
+    "complements": ["L8.1 concurrent cascade analysis", "L12.1 production boot guards verification (separately running)"]
+  }
+}

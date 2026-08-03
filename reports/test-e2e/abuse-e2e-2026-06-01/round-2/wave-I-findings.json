@@ -1,0 +1,60 @@
+{
+  "wave": "I",
+  "round": 2,
+  "title": "Refund + counter-entry (NF525 netting) — POS pos-orders/show refund modal",
+  "states_reviewed": 5,
+  "states": [
+    "01-order-detail-refund-enabled",
+    "02-refund-modal-reason-required",
+    "03-refund-in-flight",
+    "04-refund-422-closed-z-block",
+    "05-modal-dismissed-after-block"
+  ],
+  "captured_states_note": "Spec passed: 1 test passed (open-Z 422 block), 1 test.fixme-skipped (sealed-parent 201/409/REMBOURSEMENT). Only the 422-block path produced screenshots 01-05. States 06-08 (06-refund-in-flight-sealed, 07-refund-success-201, 08-mirror-receipt-remboursement) do NOT exist on disk — the success/mirror path was NOT exercised this run.",
+  "contract_note": "Refund contract is INVERTED by design: an open-Z PAID order is 422-blocked because RefundWithCounterEntryService requires a SEALED (closed-Z) parent (SealedOrderGuard::assertSealed). This is NOT a defect. The 422 + visible error is the correct, expected outcome of the default run.",
+  "findings": [
+    {
+      "id": "I-001",
+      "state_artifact": "test-e2e-I/01-order-detail-refund-enabled.dom.html",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Order detail header renders the label 'Type de paiement:' with NO value. DOM: '<li class=\"text-xs\">Type de paiement: <span class=\"text-heading\"> <!--v-if--></span></li>'. The v-if is false ⇒ a freshly PAID card order shows an orphaned label + trailing colon and an empty value span (visible in PNG states 01 and 05). The sibling 'Type de commande: À emporter' renders fine. Numeric integrity intact (Total/Sous-Total/line all 3,00 €) — this is a display gap, not a fiscal/numeric defect.",
+      "measured": true,
+      "fix_hint": "PosOrderShowComponent.vue order-summary <li> — the payment-type binding resolves to empty for a kiosk-seeded card order whose payment-method label is null. Either suppress the whole <li> when no payment type (v-if on the <li>, not just the value span) or map payment_method=4 → 'Carte' so the label is never orphaned. Cosmetic; non-blocking.",
+      "blocking": false
+    },
+    {
+      "id": "I-002",
+      "state_artifact": "tests/e2e/test-e2e-abuse-I-refund.spec.js:339-443",
+      "category": "coverage_gap",
+      "severity": "P2",
+      "evidence": "The SUCCESS path (201 mirror order, fresh mirror fiscal_sequence_no > parent seq, order_serial_no ^RTN-, negative mirror total, negated line quantities, REMBOURSEMENT receipt marker, 409 MIRROR_ALREADY_EXISTS on dup) is GENUINELY GATED behind test.fixme(!SEAL_PARENT,...) (line 340), NOT vacuously skipped — when E2E_SEAL_PARENT=1 it runs with FULL real assertions (no silent .catch on critical asserts). However, this run did NOT set E2E_SEAL_PARENT, so the entire NF525-netting happy path (the ⭐⭐ core of Wave I) is UNPROVEN this round. States 06/07/08 do not exist on disk. AUDIT INTEGRITY VERDICT: gated, acceptable, but the mirror-seq / REMBOURSEMENT / 409 assertions are paper, not evidence. Per brief this is a coverage gap (P2/P3), not a P0.",
+      "measured": true,
+      "fix_hint": "To close the gap, run one isolated-fiscal-context invocation with E2E_SEAL_PARENT=1 (closes the live Z, so must be serialized away from other parallel authors) to capture 06/07/08 and prove: mirror_fiscal_sequence_no > parentSeq, mirror.parent_order_id == parent, order_serial_no =~ /^RTN-/, mirror.total < 0, every line qty < 0, REMBOURSEMENT marker visible, 2nd refund => 409 MIRROR_ALREADY_EXISTS. Until then, NF525 netting on the success leg is asserted-by-code only.",
+      "blocking": false
+    },
+    {
+      "id": "I-003",
+      "state_artifact": "test-e2e-I/05-modal-dismissed-after-block.png",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "After the modal is dismissed, the 422 message is ALSO surfaced as a Vue-Toastification toast (role=alert, '.Vue-Toastification__toast-body') pinned top-right. In the PNG it visually overlaps the header 'Bonjour Admin Le Cayenne' / account-menu zone (top-right). It is transient (auto-dismiss) and duplicates a message the cashier already saw in-modal, on a non-critical surface. No measured >50% bounding-box intersection with a clickable header node was captured (toast is a fixed overlay z-index above the header), so this does not meet the measured-P1 overlap bar. Cosmetic / info-only.",
+      "measured": false,
+      "fix_hint": "Optional: toast container top-offset should clear the 64px app header, or suppress the toast when the same error is already shown in the modal error band (currently double-surfaced: inline error band + toast). Non-blocking.",
+      "blocking": false
+    }
+  ],
+  "non_findings_verified": [
+    "SILENT_ERROR (P0 hypothesis) REFUTED: the 422 IS surfaced TWICE — inline modal error band [data-testid=pos-refund-modal-error] with role=alert (3 occurrences in 04 DOM) carrying the full 'CLOSED Z window' message, AND a Vue-Toastification role=alert toast. Modal stays open on error (spec asserts overlay still visible). No silent failure.",
+    "NUMERIC_INTEGRITY clean: refund modal [data-testid=pos-refund-modal-total]='3,00\\u00a0€' == order Total 3,00 € == Sous-Total 3,00 € == line 'Menu (Frites + Boisson)' 3,00 €. No contradictory total between modal and order.",
+    "i18n LEAK: NONE. Tag-stripped visible-text scan for ^[a-z]+(\\.[a-z_]+){1,4}$ keys across all 5 DOMs returned zero hits. Reason-counter '42/700', 'Minimum 5 caractères', 'NF525' badge all render as proper copy.",
+    "CONSOLE ERROR: the only console.error is state 03 'Failed to load resource: ... 422 (Unprocessable Content)' on the refund POST — a browser-level resource log for an EXPECTED 422 (allowlisted: 422 on validation/form-state), no application stack, not vendor/app code error. Not a finding.",
+    "UNEXPECTED 4xx/5xx: the single 422 on /api/admin/pos-order/4128/refund-with-counter-entry is the DESIGNED open-Z block (allowlisted expected 422). login 201 + authcheck 200 normal. No 5xx, no unexpected 4xx.",
+    "AUDIT INTEGRITY (422 leg): real. spec:303-310 expect(status).toBe(422) + body regex /CLOSED Z window|.../ + spec:313-319 asserts error band visible with non-empty innerText. Not swallowed."
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 2, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 2, "open_P3": 1
+  },
+  "verdict": "GREEN (no open P0/P1). Default 422-block leg is correct & well-surfaced; two non-blocking P2 (empty payment-type label I-001; unproven success/mirror path I-002) + one P3 toast overlap (I-003). The NF525 netting SUCCESS leg remains a documented coverage gap until a sealed-parent E2E_SEAL_PARENT=1 run captures 06/07/08."
+}

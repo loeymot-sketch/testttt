@@ -1,0 +1,245 @@
+{
+  "db_ground_truth": {
+    "total_sales": 573.4,
+    "total_orders": 27,
+    "total_items": 45,
+    "daily_sales": 0,
+    "daily_orders": 3,
+    "preparing_over_15min": 12
+  },
+  "api_responses": {
+    "total_sales": {
+      "data": {
+        "total_sales": "573.40€"
+      }
+    },
+    "total_orders": {
+      "data": {
+        "total_orders": 27
+      }
+    },
+    "total_items": {
+      "data": {
+        "total_menu_items": 45
+      }
+    },
+    "realtime": {
+      "data": {
+        "daily_sales": "0.00€",
+        "daily_orders": 2,
+        "average_ticket": "0.00€"
+      }
+    },
+    "sla": {
+      "data": [
+        {
+          "order_serial_no": "20052671",
+          "queue_number": "A0003",
+          "time_preparing": 3797,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052673",
+          "queue_number": "A0005",
+          "time_preparing": 3750,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052675",
+          "queue_number": "A0007",
+          "time_preparing": 3718,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052676",
+          "queue_number": "A0008",
+          "time_preparing": 3716,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052677",
+          "queue_number": "A0009",
+          "time_preparing": 3706,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052678",
+          "queue_number": "A0010",
+          "time_preparing": 3699,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052679",
+          "queue_number": "A0011",
+          "time_preparing": 3696,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052680",
+          "queue_number": "A0012",
+          "time_preparing": 3693,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052681",
+          "queue_number": "A0013",
+          "time_preparing": 3690,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052682",
+          "queue_number": "A0014",
+          "time_preparing": 3687,
+          "total": "17.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "20052683",
+          "queue_number": "A0015",
+          "time_preparing": 3687,
+          "total": "24.00€",
+          "customer": "Client passage"
+        },
+        {
+          "order_serial_no": "210526288",
+          "queue_number": "A0018",
+          "time_preparing": 2309,
+          "total": "7.90€",
+          "customer": "Client passage"
+        }
+      ]
+    },
+    "channel": {
+      "data": [
+        {
+          "name": "Web",
+          "value": 0
+        },
+        {
+          "name": "Kiosk/App",
+          "value": 0
+        },
+        {
+          "name": "POS",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "dom": {
+    "greeting_present": true,
+    "quick_access_chip_count": 10,
+    "sidebar_hrefs": [
+      {
+        "href": "/admin/dashboard",
+        "text": "Tableau De Bord"
+      },
+      {
+        "href": "/admin/pos",
+        "text": "POS"
+      },
+      {
+        "href": "/admin/stock/rupture",
+        "text": "Produits & Stock"
+      },
+      {
+        "href": "/admin/items/studio",
+        "text": "Catalogue"
+      },
+      {
+        "href": "/admin/settings/item-attributes/list",
+        "text": "Attribut D’articles"
+      },
+      {
+        "href": "/admin/ingredients",
+        "text": "Ingrédients"
+      },
+      {
+        "href": "/admin/pos-orders",
+        "text": "Commandes Caisse"
+      },
+      {
+        "href": "/admin/cash-overview",
+        "text": "Vue Caisse Unifiée"
+      },
+      {
+        "href": "/admin/delivery-boy-cash-sessions",
+        "text": "Caisse Livreur"
+      },
+      {
+        "href": "/admin/kitchen-display-system",
+        "text": "Écran Cuisine"
+      },
+      {
+        "href": "/admin/order-status-screen",
+        "text": "Suivi Client"
+      },
+      {
+        "href": "/admin/push-notifications",
+        "text": "Notification Pushs"
+      },
+      {
+        "href": "/admin/messages",
+        "text": "Messages"
+      },
+      {
+        "href": "/admin/subscribers",
+        "text": "Abonnés"
+      },
+      {
+        "href": "/admin/administrators",
+        "text": "Administrateurs"
+      },
+      {
+        "href": "/admin/employees",
+        "text": "Employés"
+      },
+      {
+        "href": "/admin/chefs",
+        "text": "Chefs"
+      },
+      {
+        "href": "/admin/transactions",
+        "text": "Transactions"
+      },
+      {
+        "href": "/admin/sales-report",
+        "text": "Rapport Des Ventes"
+      },
+      {
+        "href": "/admin/items-report",
+        "text": "Rapport Articles"
+      },
+      {
+        "href": "/admin/settings",
+        "text": "Paramètres"
+      }
+    ],
+    "branch_selector_visible": false,
+    "logout_flow_worked": false,
+    "channel_data": [
+      {
+        "name": "Web",
+        "value": 0
+      },
+      {
+        "name": "Kiosk/App",
+        "value": 0
+      },
+      {
+        "name": "POS",
+        "value": 0
+      }
+    ],
+    "overview_text_excerpt": "Filiale\nLe Cayenne (Principal)\nLe Cayenne (Principal)\nBonjour\nAdmin Le Cayenne\nAdmin Le Cayenne\n\nadmin@lecayenne.fr\n\n+330600000000\n\n0.00€\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\nTableau De Bord\nPOS\nProduits & Stock\nCatalogue\nAttribut D’articles\nIngrédients\nCommandes Caisse\nVue Caisse Unifiée\nCaisse Livreur\nCAISSE ET COMMANDES\nÉcran Cuisine\nSuivi Client\nCOMMUNICATIONS\nNotification Pushs\nMessages\nAbonnés\nUTILISATEURS\nAdministrateurs\nEmployés\nChefs\nCOMPTES\nTransactions\nRAPPORTS\nRapport Des Ventes\nRapport Articles\nCONFIGURATION\nParamètres\nBon Après-Midi !\nAdmin Le Cayenne\nAccès rapides\nPOS\nCommandes caisse\nSuivi caisse (kanban)\nÉcran cuisine\nSuivi client\nCatalogue\nIngrédients\nProduits & Stock\nRapport caisses quotidien\nVue caisse unifiée\nVue D’ensemble\nTotal ventes\n573.40€\nTotal commandes\n27\nTotal articles menu\n45\nSuivi en direct\nChiffre d'Affaires du Jour\n0.00€\nCommandes du Jour\n3\nTicket Moyen\n0.00€\nAlertes SLA (Cuisine > 15min)\n12 Alerte(s)\nTicket #A0003 (20052671)\n\n En attente depuis 3797 minutes\n\nTicket #A0005 (20052673)\n\n En attente depuis 3749 minutes\n\nTicket #A0007 (20052675)\n\n En attente depuis 3718 minutes\n\nTicket #A0008 (20052676)\n\n En attente depuis 3716 minutes\n\nTicket #A0009 (20052677)\n\n En attente depuis 3706 minutes\n\nTicket #A0010 (20052678)\n\n En attente depuis 3698 minutes\n\nTicket #A0011 (20052679)\n\n En attente depuis 3696 minutes\n\nTicket #A0012 (20052680)\n\n En attente depuis 3693 minutes\n\nTicket #A0013 (20052681)\n\n En attente depuis 3690 minutes\n\nTicket #A0014 (20052682)\n\n En attente depuis 3687 minutes\n\nTicket #A0015 (20052683)\n\n En attente depuis 3687 minutes\n\nTicket #A0018 (210526288)\n\n En attente depuis 2309 minutes\n\nRépartition par Canal (Aujourd'hui)\nWeb\n0%\nKiosk/App\n0%\nPOS\n0%\nAudit Trail (Historique des Actions)\nUTILISATEUR\tACTION\tRESSOURCE\tTEMPS\nAdmin Le Cayenne\tKiosk event: hardware_health\tBorne\til y a 42 secondes\nAdmin Le Cayenne\tKiosk event: hardware_health\tBorne\til y a 3 minutes\nAdmin Le Cayenne\tKiosk event: hardware_health\tBor"
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "zone": "WI-4-ROUTES-MIDDLEWARE-SURFACE",
+  "role": "RED",
+  "specialist_mode": "adversarial read-only — find unprotected mutations + shadow routes + HTTP verb bypass + idempotency parallels to WH-5 catch",
+  "scope": "Adversarial sweep: unprotected mutation routes missed by F-2 + Z-4 + Wave E-1 + WH-5 + S-1. Look for parallel WH-5-style catches (mutation route with no idempotency that needs one). Shadow routes (/admin/.../delete vs DELETE /admin/...). HTTP verb bypass (HEAD/OPTIONS on guarded routes). Wildcard ability bypass via Sanctum '*' on abilities:kiosk:order.",
+  "anchors_attacked": {
+    "routes_api": "routes/api.php — 204 mutation routes scanned",
+    "channels": "routes/channels.php — token-name discriminator + role check",
+    "kernel_priority": "Kernel.php:85-97 $middlewarePriority intact",
+    "form_request_authorize_returns": "66 FormRequest classes still have `return true;`",
+    "wh5_heal_branch_zero_admin_mint": "AdministratorBranchZeroMintBypassSentinelTest verified existing"
+  },
+  "red_findings": [
+    {
+      "id": "WI-4-RED-01",
+      "severity": "P0",
+      "rank": "HIGH-CONFIDENCE-MUTATION-UNGUARDED",
+      "label": "Customer Sanctum token (loyalty signup) reaches POST /api/admin/menu-template + /default-access + /analytic-section/{analytic}",
+      "attack_path": [
+        "1. Attacker self-registers as a Customer via the standard signup flow (POST /api/auth/signup/otp → /verify → /register, throttle:5,1 + 3,5 + 10,1). On success, User row created with role CUSTOMER, branch_id=0. NO token issued at signup endpoint.",
+        "2. Attacker calls POST /api/auth/login with the credentials they just chose. LoginController.php:109 deletes prior auth_token rows then LoginController.php:111-115 mints a fresh PersonalAccessToken with name='auth_token' AND abilities=['*'] (verified line 113). Returns the plain-text token in the JSON response.",
+        "3. Token in hand, attacker calls POST /api/admin/menu-template with X-Api-Key (extracted from public kiosk JS bundle) + Authorization: Bearer <token> + valid MenuTemplate body.",
+        "4. Middleware chain: installed → apiKey (200 if x-api-key matches) → auth:sanctum (200 since token resolves to ACTIVE User) → localization → throttle:admin-mutation (admits low-volume).",
+        "5. EnsureUserStatusActive admits (status=ACTIVE for newly-registered customer).",
+        "6. SubstituteBindings → route hits MenuTemplateController::store.",
+        "7. AdminController->__construct does NOTHING (parent::__construct() body is empty, line 10-13).",
+        "8. MenuTemplateRequest::authorize() returns `true` (verified line 17).",
+        "9. MenuTemplateService::store(MenuTemplate::create(...)) executes. → 200 Created."
+      ],
+      "verification_steps_performed": [
+        "Read LoginController.php:111-115 — confirmed `$user->createToken('auth_token', ['*'], now()->addMinutes(...))` mints wildcard ability token for ANY authenticated user including newly-registered customers.",
+        "Read SignupController.php:54-100 — confirmed signup creates User with role CUSTOMER, branch_id=0. No token at signup; token issued on subsequent login.",
+        "Read app/Http/Controllers/Frontend/LoyaltyController.php register path (L114-182) — confirms loyalty registration is a DIFFERENT endpoint that does NOT mint a token (returns only name/loyalty_code/points).",
+        "Read routes/api.php:384-390 — confirmed /api/admin/menu-template prefix has NO permission middleware.",
+        "Read app/Http/Controllers/Admin/MenuTemplateController.php — confirmed __construct only injects MenuTemplateService, no $this->middleware().",
+        "Read app/Http/Requests/MenuTemplateRequest.php — confirmed authorize() returns `true` at line 17.",
+        "Verified parent AdminController::__construct body is empty (line 11-13).",
+        "Cross-checked: /api/admin parent group at api.php:270 applies auth:sanctum + apiKey but NO permission gate (gates are per-sub-prefix)."
+      ],
+      "impact": "Attacker creates rogue menu templates, modifying admin's authoritative catalog data. Could insert malicious payload data exfiltrable via stored XSS to admin SPA if MenuTemplate fields are rendered without escaping. Could DoS catalog via mass-insert. Could overwrite legitimate templates if route accepts an ID for update.",
+      "blocking_mitigations_in_place": "None at the route layer. Only mitigation: API key extraction requires kiosk JS bundle reverse-engineering (Medium effort).",
+      "files": [
+        "routes/api.php:384-390",
+        "app/Http/Controllers/Admin/MenuTemplateController.php (no middleware)",
+        "app/Http/Requests/MenuTemplateRequest.php:17"
+      ],
+      "remediation": "Add `permission:settings` to the menu-template route group: `Route::prefix('menu-template')->name('menu-template.')->middleware('permission:settings')->group(...)`. Add a sentinel `RouteCoverage_AdminPermissionGateSentinelTest` that asserts every mutating /api/admin/* route has either route-level `permission:*` or controller-level `permission:*` middleware on the corresponding action.",
+      "parallel_to_wh5": "YES — exact parallel pattern: a mutation endpoint slipped through 5+ waves of authz audit because the FormRequest authorize() returned true AND no route gate was applied. WH-5 caught Admin@Branch0 mint bypass (AdministratorRequest authz had a per-field check that missed branch_id=0). This catches MenuTemplate/AnalyticSection/DefaultAccess which never had any check."
+    },
+    {
+      "id": "WI-4-RED-02",
+      "severity": "P1",
+      "rank": "MUTATION-WEAK-AUTHZ",
+      "label": "PosReceiptPrintController::increment writes to NF525 audit_logs chain without permission gate",
+      "attack_path": [
+        "1. Attacker obtains a branch-pinned Sanctum token (e.g., a junior employee account with branch_id=N, even without `pos` permission).",
+        "2. POST /api/admin/pos/orders/{any_order_in_branch}/print-receipt with X-Idempotency-Key + Authorization: Bearer <token>.",
+        "3. Middleware: installed → apiKey → auth:sanctum (admits ACTIVE user) → admin-mutation (POS bucket = 120/min) → idempotency (admits new key) → no permission check → PosReceiptPrintController::increment.",
+        "4. Controller scopes UPDATE to user's branch_id (line 37-46) → if order_id exists in branch, counter is incremented + audit_log row written to chain.",
+        "5. Attacker spams 100+ print events. Each writes an audit_logs row.",
+        "6. Side-effects: receipt_print_count inflates; audit chain accrues pollution; print history is corrupted.",
+        "7. SECONDARY: a maliciously inflated print_count flips a NF525-relevant DUPLICATA flag (per controller doc line 16-19), polluting reissue policy in {@see ReceiptDuplicataMarker.vue}."
+      ],
+      "verification_steps_performed": [
+        "Read app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php — confirmed extends Controller (NOT AdminController), no __construct middleware.",
+        "Read routes/api.php:840 — confirmed only `->middleware('idempotency')` applied to the route.",
+        "Confirmed audit_logs row write is BEFORE the row-not-found check by reading the controller body.",
+        "Junior employee user model paths verified via Spatie Permission seeders — POS Operator has `permission:pos`, but a Branch Manager assistant role may have access to /api/admin without `pos` permission."
+      ],
+      "impact": "Audit chain pollution + DUPLICATA flag manipulation. Pollutes NF525 trace evidence.",
+      "files": ["app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php", "routes/api.php:840"],
+      "remediation": "Add `permission:pos` to the route declaration + ALSO add `$this->middleware(['permission:pos'])` in controller __construct (defense-in-depth, mirrors ParkedOrderController + FloorplanController + CashDrawerSessionController which extend AdminController and gate consistently)."
+    },
+    {
+      "id": "WI-4-RED-03",
+      "severity": "P2",
+      "rank": "WILDCARD-ABILITY-BYPASS",
+      "label": "abilities:kiosk:order is bypassed by admin/staff '*' tokens",
+      "attack_path": [
+        "1. Admin user authenticates via POST /api/auth/login — LoginController.php:111 mints token with abilities=['*'].",
+        "2. Sanctum's PersonalAccessToken::can('kiosk:order') returns TRUE when abilities array contains '*' (wildcard match).",
+        "3. Admin token now satisfies `abilities:kiosk:order` middleware (routes/api.php:1316 + 1362 — /api/frontend/kiosk-event + /api/frontend/kiosk/event).",
+        "4. Admin can post kiosk events on behalf of any kiosk machine.",
+        "5. KioskEventController::store likely writes to event store with user_id = admin (not kiosk machine_id) — verify via read."
+      ],
+      "verification_steps_performed": [
+        "Read LoginController.php:111-115 (verified via grep) — confirms ['*'] wildcard mint.",
+        "Read routes/api.php:1315-1317 — confirms `abilities:kiosk:order` middleware applied.",
+        "Read routes/channels.php:30-36 comments — confirms tokenCan('kiosk:order') was the OLD discriminator before the fix flipped to token-NAME (un-spoofable).",
+        "Inferred: abilities middleware applies the SAME tokenCan() check, so it still suffers the wildcard bypass."
+      ],
+      "impact": "Admin tokens have free-pass on any kiosk-event endpoint. Low impact because kiosk-event is observability-only (event logging, not state mutation). But this is an architectural correctness violation — the ability gate is supposed to be a hard scope, not a soft pass-through.",
+      "files": ["app/Http/Controllers/Auth/LoginController.php:111", "routes/api.php:1316+1362"],
+      "remediation": "V1.0.2 — narrow LoginController token mint to NON-wildcard abilities. E.g., `['admin:read', 'admin:write']` for admin tokens. Then the abilities:kiosk:order gate becomes truly enforcing. Alternative: switch /kiosk-event + /kiosk/event to a token-NAME discriminator (mirror the channels.php fix). Sentinel: a `AbilitiesKioskOrderTokenNameSentinelTest` asserting an admin token (name='auth_token') 403s on /kiosk-event."
+    },
+    {
+      "id": "WI-4-RED-04",
+      "severity": "P3",
+      "rank": "HTTP-VERB-DOS",
+      "label": "OPTIONS preflight on /api/* bypasses throttle:api throttle middleware (Laravel default)",
+      "attack_path": [
+        "1. Laravel's default behavior: OPTIONS requests are auto-handled by CORS middleware (HandleCors at Kernel.php:25) before route dispatch.",
+        "2. CORS returns a 204 No Content response with Access-Control-Allow-* headers if Origin is allowed.",
+        "3. throttle:api middleware in the api group (Kernel.php:55) only fires AFTER CORS handles OPTIONS — meaning OPTIONS requests do NOT consume a throttle bucket.",
+        "4. Attacker spams OPTIONS /api/anywhere from any allowed origin → no throttle. DoS vector for the CORS layer + PHP-FPM cycles.",
+        "5. Impact bounded by config/cors.php allowed_origins. If allowed_origins is '*' (production posture risk), unbounded.",
+        "6. Single-restaurant deploy: allowed_origins is likely restricted to APP_URL — bounded."
+      ],
+      "verification_steps_performed": [
+        "Reviewed Kernel.php:25 — HandleCors runs BEFORE api middleware group via global $middleware.",
+        "Did not read config/cors.php directly (read-only audit scope keeps this bounded).",
+        "Confirmed throttle:api is INSIDE the api middleware group (Kernel.php:55) — fires after global CORS."
+      ],
+      "impact": "Low. PHP-FPM cycle DoS on OPTIONS spam. Mitigated by nginx-level rate limits (if configured) and bounded by CORS allowed_origins.",
+      "files": ["app/Http/Kernel.php:25"],
+      "remediation": "Defer to V1.0.2. Confirm config/cors.php allowed_origins is NOT wildcard in production. Add nginx-level rate limiter on OPTIONS for defense-in-depth."
+    },
+    {
+      "id": "WI-4-RED-05",
+      "severity": "P3",
+      "rank": "SHADOW-ROUTE-ENUMERATION",
+      "label": "Multiple DELETE-only routes have GET-show siblings that REVEAL the resource without permission gate (when controller has no constructor middleware)",
+      "attack_path": [
+        "1. /api/admin/customer/show/{customer} (api.php:516) — CustomerController extends AdminController with __construct that DOES set `$this->middleware(['permission:customers_show'])`. Verified by inference (consistent with the controller pattern).",
+        "2. Similar pattern for /api/admin/waiter/{waiter}/show/{waiter} + 4 other staff roles.",
+        "3. EXCEPTION: /api/admin/my-order/show/{user}/{order} was the WH-5 / S-1 IDOR — previously no controller-level middleware. Now route-level alternation gate applied (api.php:583).",
+        "4. /api/admin/menu-template/show/{menuTemplate} (api.php:386) has NO gate at controller OR route — but it's a GET, less critical than the WI-4-RED-01 mutation.",
+        "5. /api/admin/analytic-section/{analytic} GET (api.php:439) has NO gate — read-only enumeration of tracking pixel sections."
+      ],
+      "verification_steps_performed": [
+        "Cross-referenced ungated controller list against route definitions.",
+        "Confirmed MenuTemplateController + AnalyticSectionController GET endpoints are reachable without permission gate."
+      ],
+      "impact": "Information disclosure. Attacker authenticates as any user → reads menu template list (catalog enumeration) + analytic section list (tracking pixel config disclosure including potentially API keys for 3rd-party analytics).",
+      "files": ["routes/api.php:384-390", "routes/api.php:438-446"],
+      "remediation": "Bundled with WI-4-RED-01 remediation — add `permission:settings` to the entire menu-template + analytic-section + default-access route groups (covers both GET and mutation)."
+    },
+    {
+      "id": "WI-4-RED-06",
+      "severity": "P3",
+      "rank": "FISCAL-OPEN-DOUBLE-CLICK-PARALLEL-TO-WH5",
+      "label": "POST /api/admin/fiscal/z-report/open lacks `idempotency` middleware — but internal Cache::lock + DB serial guard make this safe today",
+      "attack_path": [
+        "1. Cashier double-clicks 'Open Z' button.",
+        "2. Two requests arrive ~100ms apart from same browser.",
+        "3. throttle:10,1 admits both (10 req/min budget).",
+        "4. ZReportController::open invokes ZReportService::open with branchId.",
+        "5. Both calls race for `Cache::lock('z_report_b<N>', 10s)`. First acquires (4s block timeout).",
+        "6. Second waits up to 4s for the lock. First completes the transaction in ~20-50ms, opens Z, releases lock.",
+        "7. Second acquires lock, checks `existingOpen = ZReport::where('branch_id', N)->where('status', STATUS_OPEN)->first()` → finds the Z opened by the first → throws RuntimeException 'branch already has an OPEN Z report'.",
+        "8. Result: NO double-open. Sequence is monotonic. Chain integrity preserved.",
+        "9. EXTREMELY UNLIKELY EDGE: if the 4s lock-block timeout expires before first request finishes (e.g., DB stall + DB transaction takes >4s), second request throws RuntimeException 'cannot acquire lock' — NOT a double-open. Safe failure."
+      ],
+      "verification_steps_performed": [
+        "Read app/Services/Fiscal/ZReportService.php:71-137 — verified Cache::lock(LOCK_TTL_SECONDS=10) + lock->block(LOCK_ACQUIRE_SECONDS=4).",
+        "Verified existingOpen check INSIDE the connection->transaction (line 100-110) — atomic with DB transaction.",
+        "Verified sequence_no allocation is max+1 inside the same transaction (line 112-114). DB serializable isolation would matter here — MySQL default is REPEATABLE READ which DOES allow phantom inserts in concurrent transactions, BUT the Cache::lock outside the transaction serializes the entries before the DB ever sees concurrent writes."
+      ],
+      "verdict": "DEFENSE-IN-DEPTH GAP, NOT P0. Internal lock + serial guard provides idempotency. Adding `idempotency` middleware would harden but is not strictly needed.",
+      "impact": "Currently NONE. If Cache::lock ever fails (e.g., Redis outage + cache fallback to file driver), the lock becomes non-distributed and two requests could pass the check. But ZReport::create would then race on DB UNIQUE on (branch_id, sequence_no) — MySQL would error on duplicate. Verified migration schema has UNIQUE (branch_id, sequence_no).",
+      "files": ["routes/api.php:1112-1115", "app/Services/Fiscal/ZReportService.php:71-137"],
+      "remediation": "V1.0.2 — add `idempotency` middleware to /api/admin/fiscal/z-report/{open,close} routes + add patterns to config/idempotency.php required_routes. Hardens against Cache::lock outage edge."
+    },
+    {
+      "id": "WI-4-RED-07",
+      "severity": "P3",
+      "rank": "CUSTOMER-PII-VIA-OSS-PUBLIC",
+      "label": "/api/frontend/oss-order (UNAUTHENTICATED) accepts branch_id query and returns order list — verified slim resource (no PII)",
+      "attack_path": [
+        "1. Attacker (no auth) hits GET /api/frontend/oss-order?branch_id=1 → 200 with order list.",
+        "2. Iterates branch_id=1..N → enumerates branches + order volume.",
+        "3. Each row returned uses CDSOrderDetailsResource: id / order_serial_no / token / queue_number / order_type / status (per inline doc api.php:1156-1162 — no PII fields).",
+        "4. Mitigation: oss-public 60/min/IP throttle.",
+        "5. Branch sweep detection deferred to V1.0.2."
+      ],
+      "verification_steps_performed": [
+        "Read api.php:1156-1170 — confirmed inline doc states 'no PII'.",
+        "Read RateLimiter::for('oss-public') — confirmed 60/min IP-keyed.",
+        "Did not verify the actual CDSOrderDetailsResource fields directly (defer to V1.0.2 audit if needed)."
+      ],
+      "impact": "Branch enumeration + order-volume inference. NO PII exposure verified inline. Single-restaurant deploy: only 1-2 branches anyway, so enumeration value is minimal.",
+      "remediation": "V1.0.2 — implement the branch_id sweep-detection sentinel (Sprint H5-B Z4-P2-05 deferred item)."
+    },
+    {
+      "id": "WI-4-RED-08",
+      "severity": "P3",
+      "rank": "INSTALLED-MIDDLEWARE-BYPASS",
+      "label": "If storage_path('installed') file gets deleted post-install, ALL routes 503",
+      "attack_path": [
+        "1. Disk operation (cleanup script, restore-from-backup, manual rm) removes the storage/installed sentinel file.",
+        "2. Installed middleware (Installed.php:18-28) checks file_exists() — false → returns 503 for /api/* and redirects to /install for web.",
+        "3. /api/auth/login + /api/admin/* + /api/frontend/* all 503. Restaurant operation halts.",
+        "4. Operator must `touch storage/installed` to recover. This is documented runbook procedure but adds friction."
+      ],
+      "impact": "Operational availability risk. Not a security finding per se — installed-flag is a guardrail against accidental re-install, not a security boundary.",
+      "files": ["app/Http/Middleware/Installed.php"],
+      "remediation": "Document in deploy runbook. Defer."
+    }
+  ],
+  "shadow_routes_investigation": {
+    "scope": "Sought routes with shadow alternates (POST /admin/x/delete + DELETE /admin/x) to find authz mismatches.",
+    "finding": "Pattern is generally consistent — DELETE verb used for destroy actions. NO shadow /delete-style POST endpoints found. Some controllers have `changeStatus` POST routes (legitimate state-transition endpoints — POST /admin/pos-order/change-status/{order}), correctly authorized via the controller + idempotency middleware.",
+    "verdict": "CLEAN"
+  },
+  "http_verb_bypass_investigation": {
+    "scope": "Sought endpoints exploitable via HEAD/OPTIONS verbs.",
+    "findings": [
+      "Route::match(['get','post'], '/login', ...) at api.php:143 — closure returning 401 for both GET and POST. Safe.",
+      "Route::match(['get','post'], '/refresh-token', ...) at api.php:148 — accepts either verb. Refresh-token endpoint protected by apiKey only. Verified the controller does proper validation of the refresh_token body content.",
+      "Route::match(['get','post'], '/{paymentGateway:slug}/{order}/success' in routes/web.php:41 — accepts both verbs. Some external gateways POST callbacks, others redirect-GET. Correctly multi-verb. CSRF except list covers the specific gateway slugs (sslcommerz, paytm, etc.) — see WI-4-S-06.",
+      "Route::match(['get','post','put','patch'] on language file-text-store + several Update endpoints — all under auth:sanctum + permission gate.",
+      "OPTIONS preflight is handled by HandleCors BEFORE throttle:api — see WI-4-RED-04.",
+      "HEAD verb: Laravel auto-handles HEAD as GET with stripped body — same authorization applies. No bypass found."
+    ],
+    "verdict": "MOSTLY CLEAN — see WI-4-RED-04 for the OPTIONS-throttle-bypass observation"
+  },
+  "summary_red_verdict": {
+    "p0_findings": 1,
+    "p1_findings": 1,
+    "p2_findings": 1,
+    "p3_findings": 5,
+    "critical_path_ungated": "MenuTemplate + DefaultAccess + AnalyticSection mutating endpoints reachable by any authenticated Sanctum user — P0 immediate remediation recommended",
+    "parallel_to_wh5_caught": "YES — WI-4-RED-01 is a direct parallel: an authz pattern (FormRequest returns true + no route gate) admitted unauthorized callers to an admin mutation endpoint."
+  }
+}

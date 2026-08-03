@@ -1,0 +1,30 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF",
+  "mode": "execute",
+  "objective": "Close the Product Composer / Catalogue / Stock / POS-Kiosk sync execution with Playwright evidence and a signable hardware UAT checklist. Add the missing cash-at-counter E2E scenario covering KDS pending badge, POS collection, fiscal sequence allocation, and cancel-without-fiscalization.",
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF/allowlist.txt",
+  "gates_referenced": [
+    "HG-E2E-HARDWARE-COMPOSER-SIGNOFF"
+  ],
+  "forbidden": [
+    "Do not claim physical hardware signoff without signed human evidence.",
+    "Do not delete NF525 audit_logs rows; they are append-only.",
+    "Do not change pricing logic or order services in B9.",
+    "Do not bypass fiscal audit secret guards in product code."
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "NF525-respected",
+    "kiosk-lockdown",
+    "cash-at-counter-payment-lifecycle",
+    "audit-log-append-only"
+  ],
+  "expected_outputs": [
+    "Playwright B9 scenario",
+    "24-test local browser pack pass",
+    "Hardware UAT checklist marked pending human signature",
+    "Final Codex audit report"
+  ]
+}

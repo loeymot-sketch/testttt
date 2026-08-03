@@ -1,0 +1,113 @@
+{
+  "specialist": "Security",
+  "zone": "F-2 Auth + Security",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "date": "2026-05-18",
+  "mode": "READ-ONLY",
+  "scope_summary": "Adversarial scope sweep: token leakage, ability escalation, OWASP top 10 surfaces (SQLi/XSS/CSRF/auth bypass), bcrypt rounds, Sanctum config, password reset flow.",
+  "files_read": [
+    "app/Http/Controllers/Auth/LoginController.php",
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php",
+    "app/Http/Controllers/Auth/ForgotPasswordController.php",
+    "app/Http/Controllers/Auth/RefreshTokenController.php",
+    "app/Http/Controllers/Auth/GuestSignupController.php",
+    "app/Http/Controllers/Auth/SignupController.php",
+    "app/Http/Controllers/Auth/DeactivateController.php",
+    "app/Http/Middleware/VerifyCsrfToken.php",
+    "app/Http/Middleware/EnsureUserStatusActive.php",
+    "app/Http/Middleware/ApiKeyMiddleware.php",
+    "app/Http/Middleware/ContentSecurityPolicyHeader.php",
+    "config/hashing.php",
+    "config/security.php",
+    "config/sanctum.php",
+    "config/auth.php",
+    "routes/channels.php",
+    "app/Models/User.php"
+  ],
+  "findings": {
+    "P0_security": [],
+    "P1_security": [
+      {
+        "id": "F-2-SEC-01",
+        "title": "Password reset rules at ForgotPasswordController.php:122-124 enforce only min:6 on the new password during reset. config/hashing.php:39 bumped to 12 rounds AND AdministratorRequest.php:53 + EmployeeRequest.php:52 enforce min:12 on staff create/update. But reset flow keeps min:6 -- an admin who triggered forgot-password could reset to a 6-char password, bypassing the documented staff policy. ForgotPasswordController is the OTP+reset path, so this affects every user (customers + staff).",
+        "evidence": "ForgotPasswordController.php:122-124: `'password' => ['required','string','min:6','confirmed'], 'password_confirmation' => ['required','string','min:6']`. Whereas AdministratorRequest.php:53 already enforces min:12. Login min:6 (LoginController.php:49) and Kiosk login min:6 (KioskMachineLoginController.php:32) are not exploitable -- they only validate inbound, not stored, password length. Reset IS exploitable.",
+        "category": "RECOMMENDATION",
+        "user_impact": "A staff member could reset their password to 6 characters via /api/auth/forgot-password/reset-password even though create/update via admin panel requires 12.",
+        "proposed_v1_action": "V1.0.1 quick win: bump reset-password rules to min:12 if the resolved user has staff role (Branch Manager / Admin / POS Operator / etc.) OR universally to min:12 (simpler). Single-line change in ForgotPasswordController.php:122."
+      },
+      {
+        "id": "F-2-SEC-02",
+        "title": "OTP for password reset is a 6-digit numeric PIN stored as cleartext in password_resets.token column (ForgotPasswordController.php:44 `$this->pin = random_int(100000, 999999); ... password_resets->insert(['token' => $this->pin, ...])`). The verify-code endpoint at line 80 looks up by (email, code) match. Rate-limit at routes/api.php:167 is throttle:5,1 (5/min) per IP. At 5 attempts per minute / 900,000 possible PINs the brute-force expectation is high BUT TTL (otp_expire_time config) limits the window. Reset-token at line 98 is Str::random(64) -- safe.",
+        "evidence": "ForgotPasswordController.php:44, 80, 98. Throttle config at routes/api.php:167.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Practically safe given OTP TTL window (default minutes-long) + per-IP throttle. Defendable.",
+        "proposed_v1_action": "None V1. V1.0.2 may consider per-email rather than per-IP throttle on verify-code (current login-lockout pattern keys by email|ip)."
+      },
+      {
+        "id": "F-2-SEC-03",
+        "title": "Plaintext password is HASH-rehashed inside the login response path (LoginController.php:95-98). The plaintext sits in $request['password'] for the duration of the controller and is sent to Hash::make. Standard practice but worth attesting -- some pen-test reports would flag plaintext-in-memory windows.",
+        "evidence": "LoginController.php:91-98 with full audit comment block.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Acceptable per Laravel community practice. Plaintext only exists in the request scope and is GC'd after response.",
+        "proposed_v1_action": "None. Documented and gated."
+      },
+      {
+        "id": "F-2-SEC-04",
+        "title": "VerifyCsrfToken middleware excludes /payment/{stripe,senangpay}-webhook and 6 other payment provider endpoints (VerifyCsrfToken.php:14-36). Each exclusion relies on the provider's own signature header to authenticate (Stripe-Signature, SenangPay HMAC) -- which Stripe/SenangPay handlers must enforce. NOT verified by this Auth audit (out of scope -- see F-7 payments).",
+        "evidence": "VerifyCsrfToken.php lines 14-36, comment at lines 21-31 documents the gate.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Standard payment webhook pattern. Defendable.",
+        "proposed_v1_action": "None for F-2. Cross-ref F-7 payments audit."
+      }
+    ],
+    "P2_security": [
+      {
+        "id": "F-2-SEC-05",
+        "title": "CSP mode defaults to 'report_only' (config/security.php:26 `env('CSP_ENFORCE_MODE', 'report_only')`). Directives include 'unsafe-inline' and 'unsafe-eval' on script-src. This is documented as 'volontairement portees a l'identique du <meta> kiosk existant' and deferred to a 'cycle K-9 dedie'.",
+        "evidence": "config/security.php:30-43. Comment block at lines 13-22 documents the staged enforcement plan.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "report_only mode = browser logs CSP violations but does not block. Working as designed. Tightening 'unsafe-inline' away is risky for the kiosk Vue app which inline-imports many vendor scripts.",
+        "proposed_v1_action": "None V1. V1.0.2 backlog: collect 30 days of CSP-report data then tighten unsafe-inline. Owner gate required."
+      },
+      {
+        "id": "F-2-SEC-06",
+        "title": "x-api-key (config('app.api_key')) is checked by ApiKeyMiddleware (app/Http/Middleware/ApiKeyMiddleware.php:18-29) on all admin + most kiosk routes. Single shared secret -- not per-tenant. If exposed, the whole API is callable (still need auth:sanctum BUT defends against accidental public exposure / scanner traffic).",
+        "evidence": "ApiKeyMiddleware.php:21 reads config('app.api_key'). Used on routes/api.php:241,256,270,148. Single value.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Defence-in-depth layer only. Real auth is auth:sanctum. Acceptable for single-restaurant V1.",
+        "proposed_v1_action": "None for single-tenant V1. SaaS multi-tenant would need per-tenant API keys (V2 scope per BRAIN)."
+      },
+      {
+        "id": "F-2-SEC-07",
+        "title": "GuestSignupController.php:130 calls Auth::guard('web')->loginUsingId($user->id) inside a /verify endpoint. The OTP verification (Settings::group('site')->get('site_phone_verification')) can be DISABLED globally -- in which case the entire OTP layer is skipped (GuestSignupController.php:63-70 `if ($site_phone_verification == DISABLE) { $otp->delete(); return $this->register(...) }`). With OTP disabled, anyone with a phone string can mint a guest token bound to that phone (after the existence/staff-account checks). Acceptable risk for V1 -- single restaurant has OTP enabled.",
+        "evidence": "GuestSignupController.php:63-77 (the OTP disable branch). Settings flag site_phone_verification.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Owner-configurable. Owner has OTP enabled in Le Cayenne config. Documenting the flag's impact.",
+        "proposed_v1_action": "None V1. V1.0.2 attestation: confirm OTP stays enabled in prod via a deploy doctrine check."
+      },
+      {
+        "id": "F-2-SEC-08",
+        "title": "Mass assignment surface: User::$fillable (User.php:42-53) includes branch_id and status. The kiosk login flow correctly bypasses BranchScope explicitly (KioskMachineLoginController:55,90). LoginController.php:58 does `$request->merge(['status' => Status::ACTIVE])` to FORCE status=ACTIVE in the attempt() call -- preventing a malicious POST with status=INACTIVE from succeeding. Defensive.",
+        "evidence": "LoginController.php:58. User.php:42-53.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Defended. Working.",
+        "proposed_v1_action": "None."
+      }
+    ],
+    "P3_security": []
+  },
+  "owasp_top10_attestations": {
+    "A01_broken_access_control": "Mixed but functional. See F-2-ARCH-01 for the unification opportunity.",
+    "A02_cryptographic_failures": "bcrypt rounds=12 (config/hashing.php:39). Reset token Str::random(64). HTTPS-only assumed in prod via APP_URL.",
+    "A03_injection": "Eloquent + parameter-bound DB facade calls throughout Auth controllers. No raw SQL in Auth/. Verified by grep.",
+    "A04_insecure_design": "OTP brute-force window for password reset (F-2-SEC-02). Acceptable per TTL + per-IP throttle.",
+    "A05_security_misconfiguration": "TrustProxies::$proxies='*' + anchored TrustHosts (Wave 3c heal). CSP report_only by design. SANCTUM_TOKEN_EXPIRATION=480min default.",
+    "A06_vulnerable_components": "Out of scope F-2 (see F-9 Test/CI for Composer audit).",
+    "A07_authn_failures": "Strong: per-IP throttle, per-email lockout, transparent bcrypt upgrade, token rotation on relogin, EnsureUserStatusActive per-request check. PASS.",
+    "A08_integrity_failures": "RefreshTokenController preserves source abilities (no privilege escalation). Token NAME used for channel auth (not tokenCan). PASS.",
+    "A09_logging_failures": "NO Log::warning on auth failures in LoginController/KioskMachineLoginController. Brute-force attempts visible only through rate-limiter telemetry. RECOMMENDATION below.",
+    "A10_ssrf": "Not applicable to Auth surface."
+  },
+  "frozen_zones_touched": false,
+  "wall_clock_minutes": 8
+}

@@ -1,0 +1,27 @@
+{
+    "id": "PROBE-3b-REDO",
+    "title": "KDS bump on order that was JUST CANCELED (pre-Z void path \u2014 correct scope-mandate target)",
+    "started_at": "2026-05-24T00:17:43+00:00",
+    "pre": {
+        "audit": 98,
+        "fiscal": 224
+    },
+    "quote_minted": true,
+    "order_create_status": 201,
+    "order_id": 949,
+    "order_status_at_create": 7,
+    "cancel_status": 200,
+    "cancel_body_excerpt": "{\"data\":{\"id\":949,\"order_serial_no\":\"240526949\",\"queue_number\":\"A0226\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_price\":\"2,50\\u00a0\\u20ac\",\"subtotal_without_tax_currency_price\":\"2,50\\u00a0\\u20ac\",\"discount_currenc",
+    "order_status_after_cancel": 16,
+    "bump_after_cancel_status": 409,
+    "bump_after_cancel_body_excerpt": "{\"status\":false,\"message\":\"Order status was updated elsewhere \\u2014 please refresh the KDS.\"}",
+    "post": {
+        "audit": 99,
+        "fiscal": 225
+    },
+    "audit_delta": 1,
+    "fiscal_delta": 1,
+    "nf525_chain_after": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+    "verdict": "GREEN \u2014 cancel persisted (status=CANCELED) + bump rejected by state\/expected_status guard + NF525 chain intact",
+    "finished_at": "2026-05-24T00:17:44+00:00"
+}

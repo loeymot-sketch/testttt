@@ -5,9 +5,12 @@
 
 @layer base {
     :root {
-        --primary: 255 0 107;
-        --primary-slate: 255 59 142;
-        --primary-light: 255 237 244;
+        /* [test-e2e round-2 cluster-2 A-002] Migration palette legacy pink
+           (255 0 107 / #FF006B) → Cayenne primary (244 80 30 / #F4501E)
+           per owner gate 2026-05-10. Aligns with tailwind.config.js primary. */
+        --primary: 244 80 30;
+        --primary-slate: 220 69 23;
+        --primary-light: 255 232 221;
         --client-font: 'Rubik', sans-serif;
         --admin-font: 'Public Sans', sans-serif;
     }
@@ -32,8 +35,54 @@
     h5,
     h6 { @apply text-heading; font-style: initial; }
 
-    body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-white }
+body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-white }
 }
+
+.Vue-Toastification__toast {
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(17, 24, 39, 0.22);
+}
+
+.Vue-Toastification__toast-body {
+    color: #111827;
+    font-weight: 600;
+}
+
+.Vue-Toastification__toast--default,
+.Vue-Toastification__toast--info {
+    background: #E5EEF9;
+    color: #111827;
+}
+
+.Vue-Toastification__toast--success {
+    background: #166534;
+    color: #FFFFFF;
+}
+
+.Vue-Toastification__toast--warning {
+    background: #F59E0B;
+    color: #1F2937;
+}
+
+.Vue-Toastification__toast--error {
+    background: #B91C1C;
+    color: #FFFFFF;
+}
+
+/*
+ * [test-e2e round-2 cluster-5 — B-003 2026-05-10]
+ * Removed forced `color: #FFFFFF` on success/error toast bodies.
+ * The pos-v5.css cascade (imported below) sets the toast root color to
+ * `--pos-v5-success-dark` (#126B2A) on `--pos-v5-success-soft` (#ECFDF5)
+ * background — soft theme intent. The body white-color override killed
+ * inheritance, producing white-on-light-green = invisible title.
+ * Note (finding mis-attribution): B-003 calls the toast `.swal2-toast`
+ * / SweetAlert2 — the actual library is vue-toastification
+ * (.Vue-Toastification__toast). Visual signature matched because both
+ * use a green container + check icon + close X.
+ * Body now inherits the dark color from the toast root (success: dark
+ * green on soft green; error: dark red on soft pink) — WCAG-fine.
+ */
 
 @layer components {
     .container { @apply max-w-6xl mx-auto px-2.5 sm:px-4 }
@@ -88,7 +137,13 @@
               LAYOUT PART START
     ====================================*/
     /* HEADER */
-    .db-header { @apply fixed top-0 left-0 z-30 w-full p-4 flex items-center justify-between lg:gap-36 bg-white transition }
+    /* [POS-V4-DENSITY 2026-05-02] Padding tightened (was p-4 = 16px → py-2 = 8px).
+       The fixed header had ~72-76px effective height, leaving the POS shell with
+       a cramped product grid below. Vertical squeeze: 8-10px reclaimed for the
+       grid without changing logo size or operator avatar density. KDS / OSS
+       surfaces also benefit from a lighter top bar — confirmed visually with
+       the 64px max-line still leaving room for the language pill / branch pill. */
+    .db-header { @apply fixed top-0 left-0 z-30 w-full py-2 px-4 flex items-center justify-between lg:gap-12 bg-white transition }
     .db-header-left { @apply flex items-center w-full md:gap-36 }
     .db-header-right { @apply flex-shrink-0 w-fit flex items-center gap-2.5 sm:gap-4 }
     .db-header-logo { @apply flex-auto w-28 flex-shrink-0 }
@@ -108,7 +163,7 @@
     .db-sidebar.active { @apply ltr:translate-x-0 rtl:-translate-x-0 ltr:lg:-translate-x-[100%] rtl:lg:translate-x-full shadow-sidebar lg:shadow-none }
     .db-sidebar-header { @apply flex lg:hidden items-center justify-between mb-8 }
     .db-sidebar-nav { @apply mb-6 last:mb-0 }
-    .db-sidebar-nav-title { @apply uppercase text-xs mb-3 font-medium tracking-[2px] text-gray-400 }
+.db-sidebar-nav-title { @apply uppercase text-xs mb-3 font-medium tracking-[2px] text-[#111827] }
     .db-sidebar-nav-item.active .db-sidebar-nav-menu { @apply text-primary bg-primary/5 }
     .db-sidebar-nav-item.router-link-active .db-sidebar-nav-menu { @apply text-primary bg-primary/5 }
     .db-sidebar-nav-menu.router-link-active { @apply text-primary bg-primary/5 }
@@ -247,7 +302,7 @@
     .thin-scrolling::-webkit-scrollbar { @apply w-[3px] }
     .thin-scrolling::-webkit-scrollbar { @apply rounded-2xl bg-transparent }
     .thin-scrolling {
-        scrollbar-color: rgb(255 0 107);
+        scrollbar-color: rgb(244 80 30);
     }
 
     /* OTHER */
@@ -264,6 +319,12 @@
     /* MAIN CONTENT */
     .db-main { @apply font-public px-3 sm:px-4 pb-4 xh:pt-[170px] pt-[80px] lg:pt-[84px] ltr:lg:pl-[280px] rtl:lg:pr-[280px] ltr:lg:pr-5 rtl:lg:pl-5 lg:pb-5 h-screen overflow-auto transition bg-[#f7f7fc] }
     .db-main.expand { @apply ltr:lg:pl-5 rtl:lg:pr-5 }
+    /* [KDS-A-01 2026-07-06] Route-scoped (classe posée/retirée par KitchenDisplaySystemComponent
+       mounted/beforeUnmount, même pattern que `.expand`) : db-main est display:block, donc le
+       `flex:1` de .kds-v2 était inerte → la grille prenait la hauteur de son contenu (~514px)
+       au lieu du viewport. En flex-column, .kds-v2 remplit toute la hauteur restante (h-screen
+       - paddings - bande historique) → 3 cartes plein écran, zéro vide en dessous. */
+    .db-main.db-main--kds { @apply flex flex-col }
 
     /* BACKLDROP */
     .backdrop { @apply w-full h-full fixed top-0 left-0 z-40 invisible opacity-0 bg-black/60 transition }
@@ -304,7 +365,7 @@
     .db-card-filter-btn { @apply flex items-center justify-start gap-1.5 pt-2 pb-1.5 px-2.5 text-sm leading-none capitalize rounded-md transition border text-paragraph border-primary bg-white hover:text-primary hover:border-primary/10 hover:bg-primary/5 }
     .db-card-filter-select { @apply cursor-pointer h-9 ltr:pl-2.5 ltr:pr-7 rtl:pr-2.5 rtl:pl-7 text-sm leading-none capitalize appearance-none rounded-md transition border text-primary border-primary bg-white }
     .db-card-filter-btn i { @apply text-sm text-primary}
-    .db-card-filter-btn span { @apply ltr:pr-1 rtl:pl-1 text-primary }
+    .db-card-filter-btn span { @apply ltr:pr-1 rtl:pl-1 text-heading }
     .db-card-filter .db-field-down-arrow { @apply text-primary }
     .db-card-filter-dropdown-list { @apply absolute top-10 right-0 z-20 p-2 rounded-md bg-white shadow-lg }
     .db-card-filter-dropdown-menu { @apply flex items-center whitespace-nowrap justify-start gap-2.5 px-3 py-1.5 text-sm rounded-md capitalize transition text-gray-500 hover:text-primary hover:bg-primary/5 }
@@ -435,6 +496,69 @@
     .modal-btn-outline { @apply inline-flex items-center gap-1.5 capitalize !text-sm py-1.5 px-3 rounded-md border border-gray-200 !text-gray-600 bg-white }
     .modal-close { @apply leading-none text-xl text-[#FB4E4E]  }
 
+    /*
+     * POS V4 — item wizard modal only (#item-variation-modal in admin pos ItemComponent).
+     * Overrides global .ff-modal offsets (lg:top-[74px], lg:mb-32) that shrink the dialog and bury the footer,
+     * AND the wizard CSS rule "#item-variation-modal .modal-dialog { max-height: 92vh }" which beat us on specificity.
+     * Selector keyed on the modal id => wins on specificity.
+     */
+    #item-variation-modal.pos-v4-item-wizard-modal {
+        @apply left-0 translate-x-0 overflow-hidden flex items-stretch justify-center p-0;
+        top: 0 !important;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog,
+    #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog.pos-v4-item-wizard-dialog {
+        @apply my-0 mx-auto flex flex-col w-full overflow-hidden;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        max-width: min(1100px, 100vw) !important;
+        border-radius: 0 !important;
+    }
+    @media (min-width: 1024px) {
+        #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog,
+        #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog.pos-v4-item-wizard-dialog {
+            height: min(96dvh, 1000px) !important;
+            max-height: min(96dvh, 1000px) !important;
+            margin-top: 2dvh !important;
+            margin-bottom: 2dvh !important;
+            border-radius: 18px !important;
+        }
+    }
+    /*
+     * Single scroll context inside the wizard:
+     * dialog (no scroll) → #pos-wizard-root (no scroll, flex column) → .pos-wizard.single-page (the ONLY scroller)
+     * The sticky bar lives inside .pos-wizard.single-page so it pins to bottom of the visible area.
+     */
+    #item-variation-modal.pos-v4-item-wizard-modal #pos-wizard-root {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal #pos-wizard-root .pos-wizard.single-page {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal .pos-wizard.single-page .wizard-sticky-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        background: #fff;
+        box-shadow: 0 -8px 22px rgba(20, 24, 33, 0.10);
+    }
+    /* Tighter section spacing so the wizard fits a 21" viewport without overflow */
+    #item-variation-modal.pos-v4-item-wizard-modal .pos-wizard.single-page .wizard-section {
+        margin-bottom: 14px !important;
+        padding-bottom: 12px !important;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal .pos-wizard.single-page .wizard-item-header {
+        padding-bottom: 8px;
+    }
+
 
     /* PAGINATION */
     .db-pagination-navigate { @apply flex items-center gap-2 capitalize rounded-md border px-4 py-2 text-sm font-medium border-gray-300 bg-white text-gray-700 transition hover:bg-gray-50 }
@@ -545,8 +669,8 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 .btnr { @apply py-1.5 px-2 shadow-[0px_3px_8px_rgba(0,0,0,0.24)] bg-white rounded-md cursor-pointer w-full flex items-center justify-center}
 #cursor { @apply text-3xl inline-block pt-2.5}
 .btnr:active{@apply bg-[rgb(177,176,176)]}
-.btnr:hover{@apply bg-[#ff006b0d]}
-.num:hover{@apply bg-[#ff006b0d]}
+.btnr:hover{@apply bg-[#f4501e0d]}
+.num:hover{@apply bg-[#f4501e0d]}
 .btnr::selection {
     user-select: none;
 }
@@ -554,5 +678,17 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 .cs-custom-switcher input { @apply relative flex-shrink-0 w-11 h-6 cursor-pointer before:content-[''] before:inline-block before:absolute before:inset-0 before:w-full before:h-full before:rounded-3xl before:bg-paragraph before:transition-all before:duration-300 after:content-[''] after:absolute after:top-1/2 ltr:after:left-[26%] rtl:after:right-[26%] after:-translate-y-1/2 ltr:after:-translate-x-1/2 rtl:after:translate-x-1/2 after:w-5 after:h-5 after:rounded-full after:bg-gradient-to-b after:from-white after:to-white/70 after:transition-all after:duration-300 }
 .cs-custom-switcher input:checked { @apply before:bg-primary ltr:after:left-[72%] rtl:after:right-[72%] }
 
-/* KIOSK WIZARD - Styles tactiles pour borne */
+@import './pos-a11y.css';
+
+/* CV1 design tokens (sémantique admin — mission CV1-CATALOG-CONVERGENCE-001) */
+@import './foundations/cv1-tokens.css';
+
+/* POS V5 design tokens (warm premium — mission CV1-POS-DESIGN-CONVERGENCE-001) */
+@import './foundations/pos-v5-tokens.css';
+
+/* POS V5 composants partagés (consomme pos-v5-tokens) */
+@import './pos-v5.css';
+
+/* KIOSK WIZARD - Styles tactiles pour borne (FROZEN — wizard kiosk + POS) */
 @import './kiosk-wizard.css';
+@import './kiosk-fallback.css';

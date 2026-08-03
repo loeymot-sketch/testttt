@@ -1,0 +1,131 @@
+{
+  "micro_system": "S7-settings-business",
+  "files_examined": [
+    "resources/js/components/admin/settings/Branch/BranchCreateComponent.vue",
+    "resources/js/components/admin/settings/Company/CompanyComponent.vue",
+    "resources/js/components/admin/settings/OrderSetup/OrderSetupComponent.vue",
+    "resources/js/components/admin/settings/Site/SiteComponent.vue",
+    "resources/js/components/admin/settings/TimeSlot/TimeSlotComponent.vue",
+    "resources/js/components/admin/settings/TimeSlot/TimeSlotCreateComponent.vue",
+    "app/Http/Controllers/Admin/BranchController.php",
+    "app/Http/Controllers/Admin/OrderSetupController.php",
+    "app/Http/Controllers/Admin/TimeSlotController.php",
+    "app/Http/Controllers/Admin/SiteController.php",
+    "app/Services/BranchService.php",
+    "app/Services/SiteService.php",
+    "app/Services/TimeSlotService.php",
+    "app/Http/Requests/BranchRequest.php",
+    "app/Http/Requests/OrderSetupRequest.php",
+    "app/Http/Requests/TimeSlotRequest.php",
+    "app/Http/Requests/SiteRequest.php",
+    "app/Http/Requests/OrderRequest.php",
+    "app/Http/Requests/PosOrderRequest.php",
+    "app/Services/Receipt/ReceiptDataService.php",
+    "app/Http/Resources/OrderDetailsResource.php",
+    "app/Models/Branch.php",
+    "app/Providers/AppServiceProvider.php",
+    "database/migrations/2026_04_20_210000_add_fiscal_identity_to_branches.php"
+  ],
+  "findings": [
+    {
+      "id": "S7-01",
+      "severity": "P1",
+      "category": "nf525",
+      "title": "Branch fiscal identity (SIRET / TVA intra / register_id / legal_footer) has NO settings UI and is never seeded — receipt prints them blank",
+      "file_line": "resources/js/components/admin/settings/Branch/BranchCreateComponent.vue:14-118 (form) + app/Http/Requests/BranchRequest.php:34-46 (rules) + app/Services/Receipt/ReceiptDataService.php:66-69 (consumer)",
+      "evidence": "Migration 2026_04_20_210000_add_fiscal_identity_to_branches.php:12-23 adds nullable columns siret/vat_intra/register_id/legal_footer to branches. Branch.php:18 has them in $fillable. ReceiptDataService.php:66-69 reads them onto every receipt as pos_siret/pos_vat_intra/pos_register_id/pos_legal_footer, surfaced by ReceiptComponent.vue:67. BUT: (a) BranchCreateComponent.vue form (lines 14-118) and its reset/save payloads (lines 216-227, 246-257) contain ONLY name/email/phone/lat/long/city/state/zip/address/status — no fiscal inputs; (b) BranchRequest::rules() (lines 34-46) has no rule for any of the 4 columns, so even a hand-crafted POST is dropped by $request->validated() in BranchService::store/update; (c) grep of the entire resources/js tree returns ONLY i18n label strings (fr.json:532/589/594) and the read-only ReceiptComponent.vue:67 — zero <input> bound to these fields; (d) grep of database/seeders returns 0 hits — nothing populates them. Net: the columns are NULL forever and the receipt omits the mandatory mentions.",
+      "why_it_matters": "NF525 / French law (art. 286 CGI) requires the établissement's SIRET, TVA intracommunautaire and a register/caisse identifier on every customer ticket. The renderer is wired to print them, but because there is no admin surface to set them and no seed, every ticket Le Cayenne hands a customer is legally non-conform. This is the direct root of the receipt-omission P1 raised by the POS audit: it is not a printer bug, it is a missing settings field. An inspection (contrôle fiscal) can fine on a blank ticket.",
+      "reproduction": "Admin > Settings > Branches > edit Le Cayenne: no SIRET/TVA/N° caisse field exists. Place any POS/kiosk order, print receipt: pos_siret/pos_vat_intra/pos_register_id are null (optional($order->branch)->siret on a branch whose column was never written).",
+      "recommended_correction": "Add siret/vat_intra/register_id/legal_footer inputs to BranchCreateComponent.vue (and BranchShow), add their validation rules to BranchRequest (e.g. siret digits:14 nullable, vat_intra regex FR, register_id/legal_footer string max). For immediate V1 single-box compliance, also seed branch_id=1 with Le Cayenne's real values. No frozen-zone touch (BranchService/Request/Vue are all editable).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S7-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "TimeSlot overlap guard misses full-containment and exact-duplicate slots — overlapping opening hours can be saved",
+      "file_line": "app/Services/TimeSlotService.php:54-61",
+      "evidence": "store() overlap check has exactly 3 conditions (lines 55,57,59): (1) new is strictly inside existing; (2) new opening falls inside existing; (3) new closing falls inside existing. For an existing slot [10:00,12:00]: a new slot [09:00,13:00] that FULLY CONTAINS it passes all three (09>10 false; 09>10 false; 13>10 && 13<12 false) -> status stays true -> created. An EXACT DUPLICATE [10:00,12:00] also passes (10>10 false on every comparison). Both are real overlaps the guard fails to reject.",
+      "why_it_matters": "Opening hours feed FrontendTimeSlotService::todayTimeSlot (FrontendTimeSlotService.php:29) which generates the customer-facing schedule-order slot picker. Overlapping/duplicate time slots produce duplicated or contradictory pickup windows, and a containing slot silently widens hours the owner thinks are bounded. This is precisely the 'flou' (logic blur) the owner ranks first: a validation that looks complete but leaks the two simplest overlap cases.",
+      "reproduction": "Settings > Time Slots: add Mon 10:00-12:00, save. Add Mon 09:00-13:00 (or 10:00-12:00 again) -> saves without the 'time_slot_exist' error instead of being rejected.",
+      "recommended_correction": "Replace the 3-branch check with the canonical interval-overlap test: reject when (new.opening < existing.closing) AND (new.closing > existing.opening). That single condition covers partial overlap, containment (both directions) and exact duplicates.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S7-03",
+      "severity": "P1",
+      "category": "security",
+      "title": "Site settings exposes an 'App Debug -> Enable' toggle that writes APP_DEBUG=true to .env — self-inflicted prod boot failure / debug leak",
+      "file_line": "resources/js/components/admin/settings/Site/SiteComponent.vue:331-354 (toggle) -> app/Services/SiteService.php:48 (.env write)",
+      "evidence": "SiteComponent.vue:331-354 renders an Enable/Disable radio bound to form.site_app_debug. On save (SiteComponent.vue:535 -> site/save) SiteService::update writes to .env via EnvEditor: line 48 'APP_DEBUG' => $request->site_app_debug == Activity::ENABLE ? 'true' : 'false', then Artisan::call('optimize:clear') (line 64). AppServiceProvider.php:202-208 confirms the consequence in its own comments (lines 193-208: 'ALLOWS admin-UI writing of APP_DEBUG into .env ... refuses to boot when APP_DEBUG=true ... If APP_DEBUG was set true via the admin UI (SiteService), revoke') and throws RuntimeException at line 203 when config('app.debug') is true under app()->environment('production') (gate at line 158).",
+      "why_it_matters": "One admin mis-click on a settings screen rewrites the production .env: in production the NF525 boot guard then REFUSES TO BOOT, taking POS + Kiosk + KDS offline mid-service (self-inflicted DoS during a shift). In any non-prod/un-guarded run it leaks stack traces, SQL and secrets to customers. A destructive, irreversible-from-the-UI toggle sitting in plain Site settings is exactly an 'unnecessary / not good' control the owner wants removed; the codebase authors documented the footgun but left the toggle.",
+      "reproduction": "Settings > Site > App Debug -> Enable -> Save. .env now has APP_DEBUG=true. On next boot in production AppServiceProvider throws; in dev, any error page shows full stack/SQL.",
+      "recommended_correction": "Remove the App Debug radio from SiteComponent.vue and stop writing APP_DEBUG from SiteService::update (drop the APP_DEBUG key from the addData array, line 48). Debug state is an ops/deploy concern, never a runtime admin toggle. No frozen-zone touch.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S7-04",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Order Setup lets admin disable BOTH takeaway and delivery, leaving zero web fulfillment channels with no guard",
+      "file_line": "app/Http/Requests/OrderSetupRequest.php:30-31 + app/Http/Requests/OrderRequest.php:238-244",
+      "evidence": "OrderSetupRequest::rules() (lines 30-31) validates order_setup_takeaway and order_setup_delivery independently as numeric/min:0 — no cross-field rule preventing both = DISABLE. These flags ARE consumed: OrderRequest.php:238-244, PosOrderRequest.php:172-174, TableOrderRequest.php:57-59 each reject the order_type when its channel is DISABLE. With both disabled, every web/POS DELIVERY and TAKEAWAY submit returns the 'This order type is disabled' 422 (OrderRequest.php:239/241) — no remaining channel except the kiosk-token bypass (OrderRequest.php:232-235, allowed regardless of setting).",
+      "why_it_matters": "An owner toggling both off (or a partial save) silently bricks all web + POS ordering with a generic 'try another order type' error and no warning at the settings screen — the customer sees a dead end, the cashier sees a 422. The asymmetry (kiosk always works, web/POS dies) is non-obvious and hard to diagnose live. A settings form that can put the business in a no-fulfillment state without guarding it is a logic blur the owner ranks high.",
+      "reproduction": "Settings > Order Setup: set Takeaway=Disable and Delivery=Disable, save (passes validation). Attempt a POS takeaway order -> 422 'This order type is disabled'. Kiosk order still succeeds.",
+      "recommended_correction": "Add a cross-field rule in OrderSetupRequest (withValidator) rejecting the save when both order_setup_takeaway and order_setup_delivery are DISABLE, with a clear message ('au moins un canal de commande doit rester actif'). Optionally surface the active-channel state in OrderSetupComponent.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S7-05",
+      "severity": "P2",
+      "category": "functional",
+      "title": "TimeSlot has NO update path — opening hours can only be created or deleted, not edited",
+      "file_line": "app/Http/Controllers/Admin/TimeSlotController.php:20 + app/Services/TimeSlotService.php (no update method)",
+      "evidence": "TimeSlotController defines only index/store/destroy (no update; middleware line 20 lists only store/destroy). TimeSlotService.php exposes list/store/destroy only — no update method. TimeSlotCreateComponent.vue dispatches timeSlot/save which only creates. To change a single slot's time the owner must delete it and re-add; combined with the S7-02 overlap-guard hole, re-adding a corrected slot that still touches the old one can throw 'time_slot_exist' unexpectedly.",
+      "why_it_matters": "Editing opening hours is a routine restaurant operation (holiday hours, seasonal changes). Forcing delete+recreate is error-prone (lose the slot, mistype the re-entry) and there is no inline edit affordance — a functional gap that makes a daily settings task clumsy. Lower than the fiscal/security items but a real 'not good' workflow.",
+      "reproduction": "Settings > Time Slots: there is an Add and a Delete action but no Edit. To shift Mon 10:00-12:00 to 11:00-12:00 you must delete and re-create.",
+      "recommended_correction": "Add an update endpoint (TimeSlotController::update + TimeSlotService::update) reusing the corrected overlap check, and an edit modal in TimeSlotCreate/List. Scope-minimal, no frozen-zone.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S7-06",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "SiteController::update has an identical if/else DEMO branch — both arms run the same code",
+      "file_line": "app/Http/Controllers/Admin/SiteController.php:33-37",
+      "evidence": "update() wraps the call in 'if (env('DEMO')) { $resource = new SiteResource($this->siteService->update($request)); } else { $resource = new SiteResource($this->siteService->update($request)); }' — the then-branch and else-branch are byte-identical, so the DEMO check has zero effect. The real DEMO gating actually lives inside SiteService::update (line 58 getValue('DEMO')) for the map key, making this controller-level check dead.",
+      "why_it_matters": "Dead conditional that reads as if DEMO mode changes behavior here when it does not — misleads the next maintainer and calls env('DEMO') on a hot settings-save path for nothing. Low impact but exactly the kind of 'unnecessary thing' the owner flagged.",
+      "reproduction": "Read SiteController.php:33-37; both branches are identical.",
+      "recommended_correction": "Delete the if/else and keep a single line: $resource = new SiteResource($this->siteService->update($request));",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "BranchController captures old status BEFORE service mutation to fire BranchStatusChanged correctly",
+      "file_line": "app/Http/Controllers/Admin/BranchController.php:67-73 and 94-99",
+      "note": "Both update() and destroy() read $oldStatus before BranchService mutates the model in place (tap()->update), then dispatch BranchStatusChanged only on a real transition. Well-reasoned (documented Wave 5G R10 heal) — prevents stale token revocation gaps and avoids double-firing when status is unchanged. Good security-aware lifecycle handling."
+    },
+    {
+      "title": "OrderSetupRequest enforces min:0 on every numeric field with a clear rationale",
+      "file_line": "app/Http/Requests/OrderSetupRequest.php:28-37",
+      "note": "All durations, activity codes and money/distance fields are guarded against negatives ([P10] comment). Prevents a negative delivery charge or prep time from corrupting downstream pricing/scheduling — a small but correct invariant most settings forms miss."
+    },
+    {
+      "title": "ReceiptDataService is correctly wired to print fiscal identity (the data, not the renderer, is the gap)",
+      "file_line": "app/Services/Receipt/ReceiptDataService.php:66-69",
+      "note": "The receipt builder already pulls register_id/siret/vat_intra/legal_footer from the order's branch and exposes them via OrderDetailsResource.php:118-121 with a defensive optional(). The fiscal-omission problem (S7-01) is purely the missing settings UI/seed upstream — the rendering layer is production-correct and ready the moment the columns are populated."
+    },
+    {
+      "title": "Kiosk dine-in disablement is enforced server-authoritatively, not just hidden in the UI",
+      "file_line": "app/Http/Requests/OrderRequest.php:209-231",
+      "note": "V1 'à emporter only' is enforced backend-side: a kiosk token submitting order_type=KIOSK/DINING_TABLE while pos_dine_in_enabled is off is rejected with an FR-locked message, defending against UI bypass / replay. Correct defense-in-depth that matches the V1 dine-in-disabled mandate rather than relying on frontend gating."
+    }
+  ]
+}

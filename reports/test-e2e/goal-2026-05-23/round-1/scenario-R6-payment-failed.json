@@ -1,0 +1,55 @@
+{
+  "scenario": "R6 Payment failed mid-flow",
+  "method": "code_static",
+  "method_note": "Disk 199Mi avail (100% full) — empirical Playwright not viable. Code-static verification of all four payment surfaces (PosCounterCollectModal, PaymentComponent POS direct sale, KioskPaymentComponent client-driven TPE, counter-collect route handler).",
+  "evidence_paths": [
+    "app/Services/PaymentService.php:193-368 confirmCounterPayment DB::transaction envelope",
+    "routes/api.php:791-814 counter-collect.confirm route (try/catch → 422 on exception)",
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue:358-420 onConfirm + catch block",
+    "resources/js/components/admin/pos/PaymentComponent.vue:820-922 runConfirmOrderAttempt + handlePaymentError L926-962",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:512-565 processCardPayment + TPE decline path (analytics + void POST + throw)",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:434-482 catch block + paymentFailureCount + route to kiosk.error.payment-refused",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:620-694 _invokeTpe + ?tpe_force=declined|timeout QA toggle (dev/staging only, webpack DefinePlugin dead-codes prod)",
+    "app/Services/PaymentService.php:309-321 AuditLogService::write order.counter_payment_confirmed INSIDE transaction (rollback-safe)",
+    "app/Services/PaymentService.php:510-570 cancelCounterPayment + order.counter_payment_canceled audit",
+    "config/pos.php:37 + app/Providers/AppServiceProvider.php:85-95 production boot guard refuses POS_SIMULATION_HARDWARE=true"
+  ],
+  "verifications": {
+    "order_not_marked_paid": true,
+    "order_not_marked_paid_evidence": "PaymentService::confirmCounterPayment wraps payment_status=PAID + fiscal_sequence_no allocation + audit_log + Transaction insertion inside ONE DB::transaction (PaymentService.php:219). Any exception (validation, lock conflict, hardware failure exception) rolls back the entire envelope: zero PAID flip, zero audit row, zero fiscal sequence consumed. Route handler at routes/api.php:807-813 catches generic Exception → 422 response with status=false. PosOrderRequest direct-sale path (PaymentComponent) similarly atomic via posOrderStore. Kiosk path (KioskPaymentComponent.vue:536-565) on TPE decline NEVER calls paymentConfirm → order stays PENDING + fires void change-status to CANCELED.",
+    "error_visible_to_cashier": true,
+    "error_visible_to_cashier_evidence": "PosCounterCollectModal.vue:415-419 catch shows alertService.error(err.response.data.message || label.encaisser_failed) toast + submitting=false. PaymentComponent.vue:926-962 handlePaymentError handles _paymentTimeout, _idempotencyConflict, 429 (delegated to global interceptor), errors[] map, and generic fallback — all via alertService.error toast. KioskPaymentComponent.vue:446-448 sets this.error + showToast(msg,'error',6000) + speech announce attempt.",
+    "retry_path_available": true,
+    "retry_path_available_evidence": "PosCounterCollectModal.vue:418 sets submitting=false in catch — re-enables Confirm button, preserves selectedMode + cashReceivedRaw state so cashier re-taps without re-entering. PaymentComponent.vue:998 finally block sets loading.isActive=false. KioskPaymentComponent.vue:448-449 sets submitting=false + submitted=false + tpeWaiting=false, and below MAX_PAYMENT_FAILURES (3) stays on /payment screen for immediate retry. Above MAX, routes to /kiosk/error/payment-refused which exposes retry / cash-fallback / cancel CTAs.",
+    "audit_logs_truthful": true,
+    "audit_logs_truthful_evidence": "AuditLogService::write for action=order.counter_payment_confirmed executes ONLY at PaymentService.php:309 — INSIDE the DB::transaction AFTER payment_status was set to PAID at line 245 and saved at line 282. Transaction rollback (on any throw from FiscalSequenceService, lock conflict, ValidationException, etc.) discards this audit row atomically (no partial chain entry). Kiosk decline path writes audit only via OrderStateMachine::recordTransition on CANCELED change-status request — never a false-positive payment event. PaymentService::payment() (gateway callback path, line 47) asserts gateway context (backtrace check) to refuse forged PAID writes from outside PaymentAbstract subclasses.",
+    "composition_snapshot_preserved": true,
+    "composition_snapshot_preserved_evidence": "composition_snapshot is set ONCE at order creation (PricingService SSOT / CLAUDE.md §8). PaymentService::confirmCounterPayment (lines 193-368) and cancelCounterPayment (510-570) NEVER read, write, or touch composition_snapshot. The only mutations on the locked Order row are payment_status, pos_payment_method, pos_received_amount, pos_payment_note, fiscal_sequence_no (when null), and optionally status (ACCEPT→PREPARING auto-promote). Bit-identical guarantee holds on success AND on failure (rollback discards even those non-snapshot mutations).",
+    "nf525_chain_ok_throughout": true,
+    "nf525_chain_ok_throughout_evidence": "fiscal_sequence_no allocation via FiscalSequenceService::next (PaymentService.php:242) happens INSIDE the DB::transaction — rollback releases the slot via the standard MySQL transaction semantics. FiscalSequenceService uses Cache::lock 5s + DB FOR UPDATE (CLAUDE.md §8 triple defense) so a rollback after allocation leaves the counter consistent. AuditLogService::write (line 309) writes HMAC-chained rows INSIDE the same transaction — no half-state chain entry possible on TPE failure. CACHE_DRIVER guard (AppServiceProvider.php:215) refuses array/null in production so Cache::lock cross-worker coherence is enforced. POS_SIMULATION_HARDWARE=true boot guard (AppServiceProvider.php:85-95) refuses production — TPE failure simulation is dev/staging-only, can never run in production where NF525 chain matters."
+  },
+  "additional_findings": [
+    {
+      "finding": "PosCounterCollectModal CARD/MOBILE/TICKET success toast uses label.tpe_validated_simulation copy ('TPE validé' simulation language). Acceptable because POS_SIMULATION_HARDWARE=true is refused in production by AppServiceProvider.php:85 RuntimeException — the simulation-flavored toast cannot reach production. Production path will need a non-simulation copy when real TPE bridge is wired (V1.0.X or hardware-cutover).",
+      "severity": "info_v1_local"
+    },
+    {
+      "finding": "PaymentComponent POS direct sale path does NOT invoke any TPE bridge from JS — cashier physically charges the customer TPE OUT OF BAND, then taps Confirm. 'TPE failed mid-flow' for direct sale is therefore a CASHIER-DRIVEN abort: cashier sees TPE decline, presses Cancel/Close on the modal (orderpayment), order is never created. The PosCounterCollectModal path has identical semantics for kiosk-paid-at-counter. Backend has no visibility of TPE charge outcome before save — by design (V1 LOCAL).",
+      "severity": "info_v1_design"
+    },
+    {
+      "finding": "Counter-collect route uses idempotency middleware with PosCounterCollectModal.vue:350-353 key formula pos-counter-collect-{orderId}-{modeInt}-{minuteBucket}. A retry within the same minute on the SAME mode replays the cached 422 (not a new attempt). Cashier wanting to re-attempt within 60s must either wait the minute roll, change mode (e.g. CARD → MOBILE), or it's a no-op replay. NOT a regression — protects against double-PAID on double-tap. Documented for runbook awareness.",
+      "severity": "info_design"
+    },
+    {
+      "finding": "Kiosk TPE QA toggle (?tpe_force=declined|timeout) is gated by process.env.NODE_ENV !== 'production' AND only present in dev/staging bundle (webpack DefinePlugin tree-shake). KioskPaymentComponent.vue:625-628 explicitly documents this is non-bypassable in production. Confirmed correct.",
+      "severity": "info_design"
+    },
+    {
+      "finding": "On kiosk TPE decline, the fire-and-forget void POST (KioskPaymentComponent.vue:559-562) is .catch(e => console.warn(...)) — if the void itself fails (e.g. branch_id mismatch, 401 token expiry), the order stays orphan PENDING. RUNBOOK_TPE_FAILURE_2026-04-25.md §3 step 7 ('Confirmer promotion kiosk payée') addresses this — staff procedure exists. Not a code defect, runbook-documented.",
+      "severity": "info_runbook_covered"
+    }
+  ],
+  "verdict": "GREEN",
+  "verdict_rationale": "All six verification points met by static reading of PaymentService::confirmCounterPayment (atomic DB::transaction envelope), PaymentComponent + PosCounterCollectModal error handlers (visible toast + retry re-enable + state preserved), KioskPaymentComponent TPE decline path (no paymentConfirm called → no PAID flip + void POST + escalation to dedicated error screen after MAX_PAYMENT_FAILURES), AuditLogService writes gated inside committed transaction (rollback-safe), composition_snapshot untouched by all payment service mutations, and NF525 chain protected by the FiscalSequenceService + Cache::lock + DB FOR UPDATE triple defense INSIDE the rollback envelope. The simulation_hardware flag is forbidden in production by AppServiceProvider boot guard so TPE simulation copy cannot leak. Auxiliary findings (simulation copy, idempotency replay semantics, runbook-covered void void path) are V1 LOCAL non-blockers — runbook RUNBOOK_TPE_FAILURE_2026-04-25.md already addresses the documented escalation paths."
+}

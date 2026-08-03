@@ -1,0 +1,269 @@
+{
+  "agent": "DEEP-CASH-LOYALTY",
+  "mission": "Cash drawer reconciliation + Loyalty integration POS edge cases",
+  "timestamp": "2026-05-27T16:45:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "user": "admin@lecayenne.fr",
+  "captures_dir": "reports/test-e2e/deep-uncovered-2026-05-27/captures/DEEP-CASH-LOYALTY/",
+
+  "cash_workflow": {
+    "verdict": "GREEN-WITH-FINDINGS",
+    "session_observed": {
+      "id": 1,
+      "branch_id": 1,
+      "opened_by_user_id": 2,
+      "opened_at": "2026-05-25T12:32:25+02:00",
+      "opening_amount": 50.00,
+      "status": "open",
+      "cash_movements_count_in_db": 7,
+      "cash_movements_total_in": 105.70,
+      "expected_closing_amount_actual": 155.70
+    },
+    "endpoints_probed": [
+      "GET  /api/admin/pos/cash-drawer/sessions/current?branch_id=1 -> 200",
+      "GET  /api/admin/pos/cash-drawer/sessions/1/movements?branch_id=1 -> 200 (7 rows)",
+      "POST /api/admin/pos/cash-drawer/sessions/1/close -> NOT EXECUTED (would destroy shared session blocking parallel agents)",
+      "POST /api/admin/pos/cash-drawer/sessions/1/reconcile -> NOT EXECUTED (depends on close)"
+    ],
+    "ui_flow_captured": [
+      "01-pos-init.png: POS dashboard, drawer button visible",
+      "03-cash-overview.png: 'Vue Caisse Unifiée' 3-cell reconciliation Fond=50/Encaissé=46/Attendu=96",
+      "04-cash-dialog-open.png: PosCashDrawerSessionDialog active view — FIRST OPEN bug visible",
+      "05-movements-view.png: 'Mouvements de caisse' modal lists 7 rows with raw col header label.notes",
+      "06-dialog-after-mvts.png: parent stats refresh AFTER store hydrated -> Mouvements=7 Attendu=155.70",
+      "07-close-mode.png: 'Clôturer la caisse' form (Montant compté + écart preview + raison required)"
+    ],
+    "static_invariants_verified_in_code": {
+      "service_path": "app/Services/Cash/CashDrawerService.php",
+      "close_idempotent_already_closed_returns_unchanged": "line 177-179 OK",
+      "reconcile_blocks_open_session": "line 243 throws 422 OK",
+      "reconcile_idempotent_already_reconciled": "line 248-254 OK",
+      "variance_gate_throws_without_reason": "line 276-288 CashVarianceRequiresApprovalException OK",
+      "variance_gate_threshold_config": "config('cash.variance_threshold_eur') default 2.00€",
+      "manager_gate_routine_close_optional": "Sprint H2 F-11 line 151-160 — disabled in V1 default",
+      "fiscal_audit_chain_close": "writeAuditLog('cash.session.closed') line 197-202 OK"
+    },
+    "three_cell_reconciliation": {
+      "vue_caisse_unifiee_screen": {
+        "opening_amount": 50.00,
+        "cash_collected_today": 46.00,
+        "expected_drawer": 96.00,
+        "matches_3cell_design_X4": true,
+        "screen_caveat": "uses Transaction table (6 rows today via FrontendOrderService) — does NOT reflect ALL cash_movements (which has 7 rows). 5 of today's cash_movements [orders 79,81,82,84,85 totaling 90€] lack matching transactions rows, so UI shows 46€ collected while drawer actually holds 105.70€ ledger sum."
+      },
+      "pos_cash_session_dialog": {
+        "uses_cash_movements_directly": true,
+        "after_movements_loaded_shows": "Opening=50 + Movements=7 (sum=105.70) -> Expected=155.70"
+      }
+    },
+    "findings": [
+      {
+        "id": "CASH-F1",
+        "severity": "P2",
+        "title": "PosCashDrawerSessionDialog active-view shows 'Mouvements 0 / Attendu 50.00€' until cashier clicks 'Voir les mouvements'",
+        "where": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue:379-391",
+        "evidence": "movementsCount returns this.movements.length which is empty until $store.dispatch('cashDrawer/loadMovements') is called by openMovements(). On first dialog open in 'active' mode, expectedTotal computes (opening + []) = opening only.",
+        "captures": ["04-cash-dialog-open.png (shows MOUVEMENTS 0 / MONTANT ATTENDU 50.00€)", "06-dialog-after-mvts.png (post-fix MOUVEMENTS 7 / ATTENDU 155.70€)"],
+        "impact": "Cashier opening drawer dialog at end of shift sees WRONG expected total until they manually click 'Voir les mouvements' — risk of premature close with wildly negative variance, false 'forgot to record cash' panic.",
+        "suggested_fix": "Call cashDrawer/loadMovements() inside resolveMode() when mode='active' (or on dialog mount)."
+      },
+      {
+        "id": "CASH-F2",
+        "severity": "P3",
+        "title": "Raw i18n key 'label.notes' rendered as column header in Mouvements de caisse modal",
+        "where": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (movements table)",
+        "evidence": "DOM table header reads literally 'label.notes' instead of resolved FR translation 'Notes'",
+        "captures": ["05-movements-view.png"],
+        "impact": "User-facing visual defect; CLAUDE.md §6 raw label red-flag.",
+        "suggested_fix": "Use $t('label.cash_session_movement_notes') or add 'label.notes' key to lang/fr/label.php."
+      },
+      {
+        "id": "CASH-F3",
+        "severity": "P2",
+        "title": "Vue Caisse Unifiée 'Espèces encaissées aujourd'hui' DOES NOT MATCH cash_movements ledger sum",
+        "where": "app/Http/Controllers/Admin/CashOverviewController.php drawerCashCollectedUnfiltered() (line 333-358)",
+        "evidence": "UI shows 46.00€ (6 transactions rows in transactions table today) — actual cash_movements for same day sum to 105.70€ (7 rows for session_id=1). 5 cash_movements rows [4,5,6,7] for orders 79,81,82,84,85 have NO matching transactions entry, so the cash-overview accounting is short by 59.70€.",
+        "impact": "If admin reconciles by Vue Caisse Unifiée's 'Espèces attendues au tiroir' (96€) while the dialog's reconcile uses cash_movements (155.70€), they will produce a -59.70€ variance reason needed. Cross-surface number disagreement = bad UX + risk of false fraud alert.",
+        "suggested_fix": "Either (a) backfill transactions table on every cash payment to keep both ledgers in sync, OR (b) make CashOverviewController.drawerCashCollectedUnfiltered() pull from cash_movements (authoritative for drawer reconcile) instead of transactions. Recommend (b) — cash_movements is the SSOT for drawer state."
+      },
+      {
+        "id": "CASH-F4",
+        "severity": "INFO",
+        "title": "Variance threshold = 2.00€ (config('cash.variance_threshold_eur'))",
+        "evidence": "config/cash.php:32 default 2.00€",
+        "impact": "Any |variance|>2.00€ requires variance_reason+permission cash.reconcile.variance.override. Within tolerance (e.g. 155.70 expected vs 154.00 counted = -1.70€) closes cleanly.",
+        "captures": ["07-close-mode.png"]
+      },
+      {
+        "id": "CASH-F5",
+        "severity": "INFO",
+        "title": "Suspicious variance (>20€) NOT auto-escalated beyond manager permission",
+        "where": "app/Services/Cash/CashDrawerService.php reconcileSession()",
+        "evidence": "Only ONE threshold (2€). A -50€ écart with reason='theft suspected' + admin permission would reconcile without further escalation. No notification to upper management, no quarantine state, no automatic audit-log alert beyond the standard cash.session.reconciled HMAC entry.",
+        "impact": "V1 acceptable (single-cashier Le Cayenne LOCAL). V2 SaaS multi-branch would benefit from second-tier threshold (e.g. >20€ -> branch_manager + auto-email regional)."
+      }
+    ],
+    "adversarial_close_idempotency": {
+      "status": "VERIFIED VIA CODE READ (not executed to preserve shared session)",
+      "expected_behavior": "POST /sessions/{id}/close twice with different idempotency keys: first transitions OPEN->CLOSED, second returns same session unchanged (line 177-179 returns 'transitioned'=false, no duplicate audit log).",
+      "double_reconcile": "Already RECONCILED returns cached (expected, variance, session) without re-running calc (line 248-254). Single-use HMAC entry guaranteed."
+    }
+  },
+
+  "loyalty_workflow": {
+    "verdict": "GREEN",
+    "test_customer_created": {
+      "user_id": 26,
+      "name": "Loyalty Test",
+      "phone": "0600000001",
+      "loyalty_code": "LOY-TEST-001",
+      "initial_points": 500
+    },
+    "test_order": {
+      "id": 87,
+      "subtotal": 10.00,
+      "branch_id": 1,
+      "state_before": "PENDING / UNPAID"
+    },
+    "config_verified": {
+      "loyalty_points_for_1_euro_discount": 100,
+      "pricing_tax_inclusive_prices": "true (TTC mode)"
+    },
+    "ui_flow_observed": {
+      "main_cta_pos_loyalty_redeem_main_cta_open": "DISABLED until order in flight",
+      "evidence": "PosComponent.vue:202 :disabled='!canShowLoyaltyMainCta' — gate documented Wave Q-5 2026-05-20",
+      "gate_logic": "canShowLoyaltyMainCta requires (currentOrder bound via order:confirmed event) AND not PAID AND not terminal",
+      "captures": ["10-loyalty-modal.png shows Coca-Cola in cart but CTA still disabled — cart is not a SAVED order yet"]
+    },
+    "api_adversarial_tests": [
+      {
+        "case": "1. 999 pts (over balance AND not multiple)",
+        "expected": "422",
+        "actual_status": 422,
+        "actual_code": "POINTS_NOT_MULTIPLE",
+        "verdict": "OK — POINTS_NOT_MULTIPLE wins over INSUFFICIENT_BALANCE (validation order in PosRedemptionService:86)"
+      },
+      {
+        "case": "2. Invalid loyalty_code 'LOY-DOES-NOT-EXIST'",
+        "expected": "404",
+        "actual_status": 404,
+        "actual_code": "CUSTOMER_NOT_FOUND",
+        "verdict": "OK"
+      },
+      {
+        "case": "3. Negative points -100",
+        "expected": "422",
+        "actual_status": 422,
+        "actual_error": "PosLoyaltyRedeemRequest validation: 'points must be at least 1'",
+        "verdict": "OK — FormRequest min:1 gate fires before service"
+      },
+      {
+        "case": "4. Fractional 50 pts (rate=100)",
+        "expected": "422",
+        "actual_status": 422,
+        "actual_code": "POINTS_NOT_MULTIPLE",
+        "verdict": "OK"
+      },
+      {
+        "case": "5. Valid 100 pts -> 1.00€ discount",
+        "expected": "200 + balance_after=400 + order.total recomputed",
+        "actual_status": 200,
+        "actual_data": { "discount_eur": 1.00, "balance_after": 400, "order_total": 9.00, "order_subtotal": 10.00, "order_discount": 1.00, "loyalty_customer_code": "LOY-TEST-001" },
+        "verdict": "OK — TTC math: total = subtotal − discount = 10 − 1 = 9 (NO double-count of tax)"
+      },
+      {
+        "case": "6. Idempotent replay (same X-Idempotency-Key)",
+        "expected": "200 cached identical response, NO new ledger row",
+        "actual_status": 200,
+        "actual_body_match_prev": true,
+        "verdict": "OK — IdempotencyKeyMiddleware caches 2xx response"
+      },
+      {
+        "case": "7. Double redeem (different idempotency key, same order)",
+        "expected": "409 ALREADY_REDEEMED via UNIQUE(user_id, order_id, type)",
+        "actual_status": 409,
+        "actual_code": "ALREADY_REDEEMED",
+        "verdict": "OK — LOCK §6.2 single-redemption enforced"
+      },
+      {
+        "case": "8. 5000 pts (over remaining balance 400)",
+        "expected": "422 INSUFFICIENT_BALANCE",
+        "actual_status": 422,
+        "actual_code": "INSUFFICIENT_BALANCE",
+        "verdict": "OK"
+      }
+    ],
+    "h2_heal_04_ttc_double_count_fix": {
+      "status": "VERIFIED",
+      "where": "app/Services/Loyalty/PosRedemptionService.php:209-213",
+      "test_evidence": "Order 87 subtotal=10.00, redeem 100 pts -> discount=1.00 -> total = 10 − 1 + 0 + 0 = 9.00 (correct). If H2-HEAL-04 had regressed (TTC + add tax), total would have been 10 − 1 + (10*0.10) + 0 = 10.00 incorrectly. Verified by direct DB read post-redeem.",
+      "config_branch": "pricing.tax_inclusive_prices=true -> total = max(0, subtotal − discount + delivery) [NO tax re-add]"
+    },
+    "loyalty_transaction_ledger": {
+      "row_created": {
+        "id": 1,
+        "user_id": 26,
+        "loyalty_code": "LOY-TEST-001",
+        "order_id": 87,
+        "type": "redeem",
+        "points": -100,
+        "balance_after": 400,
+        "source_surface": "pos",
+        "pos_session_id": 1,
+        "description": "Reduction fidelite POS appliquee par cashier #2"
+      },
+      "anti_replay_pos_session_captured": true,
+      "comment": "LOCK §6.6 anti-replay OK — pos_session_id=1 links the redeem to the currently-open cashier drawer session"
+    },
+    "findings": [
+      {
+        "id": "LOY-F1",
+        "severity": "P2",
+        "title": "Loyalty redemption does NOT write to NF525 audit_logs HMAC chain",
+        "where": "app/Services/Loyalty/PosRedemptionService.php (no AuditLog usage)",
+        "evidence": "audit_logs count BEFORE redeem = 19, AFTER redeem = 19 unchanged. Only Log::info(channel='[Loyalty] POS redeem applied') line 234-242 + loyalty_transactions row.",
+        "impact": "A successful loyalty redemption modifies order.discount + order.total (post-create NF525-relevant changes) but is NOT entered in the tamper-evident HMAC chain. Forensic reconstruction relies on loyalty_transactions (which has its own append-only design + UNIQUE constraint) — acceptable for V1 single-resto, but LOCK_POS_LOYALTY_REDEEM_UI §6.5 wording 'audit log' is ambiguous and arguably misleading.",
+        "suggested_fix": "Add CashDrawerService::writeAuditLog equivalent for 'pos.loyalty.redeemed' so the change to order.total is traceable in the HMAC chain alongside cash.session.* events.",
+        "v1_acceptable": true
+      }
+    ]
+  },
+
+  "nf525_chain_state_pre_existing": {
+    "verify_chain_status": "TAMPER detected (branch=1, breaches=1) — z_reports.id=2 signature_mismatch",
+    "caveat": "This breach PRE-EXISTS this agent's session. Likely caused by parallel agent DEEP-NF525-EDGES Edge 3 (task #158). Verified our agent did NOT introduce new audit_logs entries: count=19 before and after our loyalty redeem.",
+    "our_impact_on_chain": "ZERO new rows in audit_logs / z_reports / fiscal_sequence_no"
+  },
+
+  "adversarial_summary": {
+    "close_drawer_twice_idempotent": "VERIFIED VIA CODE READ — CashDrawerService::closeSession line 177-179 returns unchanged session on already-CLOSED status, skips duplicate audit_log entry (line 197 'transitioned' guard).",
+    "redeem_more_than_balance_blocked": "VERIFIED VIA API — case 8 returns 422 INSUFFICIENT_BALANCE",
+    "loyalty_ttc_vs_ht_double_count_fix": "VERIFIED — H2-HEAL-04 line 209-213 config-branched, default TTC subtracts discount directly, NO tax re-add. Order 87 math: 10.00 − 1.00 = 9.00 confirmed in DB.",
+    "suspicious_cash_variance_escalation": "PARTIAL — single 2€ threshold gates variance_reason + permission, BUT no second-tier suspicious-amount auto-escalation (V1 acceptable for single-resto, V2 SaaS gap)."
+  },
+
+  "verdict_global": {
+    "cash_workflow": "GREEN-WITH-FINDINGS (3 actionable: CASH-F1 dialog stat stale, CASH-F2 raw label.notes, CASH-F3 cash-overview vs cash_movements desync 59.70€)",
+    "loyalty_workflow": "GREEN (8/8 adversarial probes pass, H2-HEAL-04 TTC fix verified, UNIQUE+idempotency double-defense OK, 1 P2 finding LOY-F1 NF525 chain coverage)",
+    "frozen_zone_diff": "0 lines touched",
+    "nf525_chain_unchanged_by_our_actions": true,
+    "v1_ship_blockers_introduced": 0,
+    "p2_findings_total": 4,
+    "p3_findings_total": 1,
+    "info_findings_total": 2
+  },
+
+  "captures_manifest": [
+    "01-pos-init.png",
+    "03-cash-overview.png",
+    "04-cash-dialog-open.png",
+    "05-movements-view.png",
+    "06-dialog-after-mvts.png",
+    "07-close-mode.png",
+    "08-loyalty-modal-open.png",
+    "09-cart-coca.png",
+    "10-loyalty-modal.png"
+  ]
+}

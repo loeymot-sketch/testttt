@@ -1,0 +1,494 @@
+{
+  "verdict": "PASS_LOCAL_D4_SMOKE",
+  "generated_at": "2026-05-05T21:28:05.621Z",
+  "results": [
+    {
+      "domain": "admin",
+      "name": "dashboard",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/dashboard",
+      "expectedUrl": "/admin/dashboard",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/admin/admin-dashboard-iter-1-1920x1080.png",
+      "textLength": 5102,
+      "testIds": [
+        "stock-low-alerts-view-all",
+        "last-z-report-link"
+      ],
+      "interactiveCount": 31,
+      "smallTargetCount": 18,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "a",
+          "text": "Caisse",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Fermer",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Bonjour Admin Le Cayenn..",
+          "width": 194,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Caisse",
+          "width": 103,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "POS (dedicated shell)",
+          "width": 201,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "Commandes caisse",
+          "width": 186,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "Suivi commandes",
+          "width": 174,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "Écran cuisine",
+          "width": 147,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "Suivi client",
+          "width": 132,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "Catalogue",
+          "width": 127,
+          "height": 42
+        },
+        {
+          "tag": "a",
+          "text": "Ingredients",
+          "width": 135,
+          "height": 42
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "admin",
+      "name": "catalogue-produits",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/items/studio",
+      "expectedUrl": "/admin/items/studio",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/admin/admin-catalogue-produits-iter-1-1920x1080.png",
+      "textLength": 8106,
+      "testIds": [
+        "catalog-studio-page",
+        "catalog-studio-add-category",
+        "catalog-studio-add-product",
+        "catalog-studio-category-row-156",
+        "catalog-studio-category-edit-156",
+        "catalog-studio-category-delete-156",
+        "catalog-studio-category-row-189",
+        "catalog-studio-category-edit-189",
+        "catalog-studio-category-delete-189",
+        "catalog-studio-category-row-16",
+        "catalog-studio-category-edit-16",
+        "catalog-studio-category-delete-16",
+        "catalog-studio-category-row-233",
+        "catalog-studio-category-edit-233",
+        "catalog-studio-category-delete-233",
+        "catalog-studio-category-row-108",
+        "catalog-studio-category-edit-108",
+        "catalog-studio-category-delete-108",
+        "catalog-studio-category-row-109",
+        "catalog-studio-category-edit-109",
+        "catalog-studio-category-delete-109",
+        "catalog-studio-category-row-110",
+        "catalog-studio-category-edit-110",
+        "catalog-studio-category-delete-110",
+        "catalog-studio-category-row-134",
+        "catalog-studio-category-edit-134",
+        "catalog-studio-category-delete-134",
+        "catalog-studio-category-row-135",
+        "catalog-studio-category-edit-135",
+        "catalog-studio-category-delete-135",
+        "catalog-studio-category-row-136",
+        "catalog-studio-category-edit-136",
+        "catalog-studio-category-delete-136",
+        "catalog-studio-category-row-137",
+        "catalog-studio-category-edit-137",
+        "catalog-studio-category-delete-137",
+        "catalog-studio-category-row-138",
+        "catalog-studio-category-edit-138",
+        "catalog-studio-category-delete-138",
+        "catalog-studio-category-row-139",
+        "catalog-studio-category-edit-139",
+        "catalog-studio-category-delete-139",
+        "catalog-studio-category-row-153",
+        "catalog-studio-category-edit-153",
+        "catalog-studio-category-delete-153",
+        "catalog-studio-category-row-154",
+        "catalog-studio-category-edit-154",
+        "catalog-studio-category-delete-154",
+        "catalog-studio-category-row-21",
+        "catalog-studio-category-edit-21",
+        "catalog-studio-category-delete-21",
+        "catalog-studio-category-row-235",
+        "catalog-studio-category-edit-235",
+        "catalog-studio-category-delete-235",
+        "catalog-studio-category-row-190",
+        "catalog-studio-category-edit-190",
+        "catalog-studio-category-delete-190",
+        "catalog-studio-category-row-191",
+        "catalog-studio-category-edit-191",
+        "catalog-studio-category-delete-191"
+      ],
+      "interactiveCount": 299,
+      "smallTargetCount": 247,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "a",
+          "text": "Caisse",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Fermer",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Bonjour Admin Le Cayenn..",
+          "width": 194,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Accueil",
+          "width": 96,
+          "height": 24
+        },
+        {
+          "tag": "a",
+          "text": "Articles",
+          "width": 99,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "Ajouter une catégorie",
+          "width": 184,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Ajouter un article",
+          "width": 156,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Update",
+          "width": 38,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Delete",
+          "width": 20,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "Update",
+          "width": 38,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Delete",
+          "width": 20,
+          "height": 24
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "admin",
+      "name": "stock-rupture",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/stock/rupture",
+      "expectedUrl": "/admin/stock/rupture",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/admin/admin-stock-rupture-iter-1-1920x1080.png",
+      "textLength": 448,
+      "testIds": [
+        "stock-rupture-dashboard",
+        "stock-rupture-cron-off",
+        "stock-rupture-run-now",
+        "stock-rupture-currently-86",
+        "stock-rupture-low-alerts"
+      ],
+      "interactiveCount": 18,
+      "smallTargetCount": 5,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "a",
+          "text": "Caisse",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Fermer",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Bonjour Admin Le Cayenn..",
+          "width": 194,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Lancer le contrôle",
+          "width": 163,
+          "height": 40
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "admin",
+      "name": "commandes-caisse",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/pos-orders",
+      "expectedUrl": "/admin/pos-orders",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/admin/admin-commandes-caisse-iter-1-1920x1080.png",
+      "textLength": 1298,
+      "testIds": [],
+      "interactiveCount": 55,
+      "smallTargetCount": 38,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "a",
+          "text": "Caisse",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Fermer",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Bonjour Admin Le Cayenn..",
+          "width": 194,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Accueil",
+          "width": 96,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "10",
+          "width": 63,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Filtrer",
+          "width": 109,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Exporter",
+          "width": 129,
+          "height": 36
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 377,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 339,
+          "height": 20
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 339,
+          "height": 20
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 377,
+          "height": 40
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "admin",
+      "name": "commandes-en-ligne",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/online-orders",
+      "expectedUrl": "/admin/online-orders",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/admin/admin-commandes-en-ligne-iter-1-1920x1080.png",
+      "textLength": 1384,
+      "testIds": [],
+      "interactiveCount": 47,
+      "smallTargetCount": 29,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "a",
+          "text": "Caisse",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Fermer",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Bonjour Admin Le Cayenn..",
+          "width": 194,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Accueil",
+          "width": 96,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "10",
+          "width": 63,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Filtrer",
+          "width": 109,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Exporter",
+          "width": 129,
+          "height": 36
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 377,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 339,
+          "height": 20
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 339,
+          "height": 20
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 377,
+          "height": 40
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    }
+  ]
+}

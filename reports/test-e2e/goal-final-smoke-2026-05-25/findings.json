@@ -1,0 +1,36 @@
+{
+  "surfaces": {
+    "S1": {
+      "borne_idle_visible": true,
+      "catalog_signals_in_dom": true
+    },
+    "S2": {
+      "pos_loaded": true,
+      "button_count": 93,
+      "item_dom_elements": 83,
+      "pending_create_leak": false
+    },
+    "S4": {
+      "oss_loaded": true,
+      "phone_leak_suspected": false,
+      "email_leak_suspected": true
+    },
+    "S5": {
+      "cash_overview_loaded": true,
+      "has_autre_mode": false
+    },
+    "S6": {
+      "stock_loaded": true
+    },
+    "S7": {
+      "dashboard_loaded": true
+    }
+  },
+  "errors": [],
+  "summary": {
+    "pending_create_leak_remaining": false,
+    "surfaces_tested": 6,
+    "errors_count": 0,
+    "timestamp": "2026-05-25T19:16:09.230Z"
+  }
+}

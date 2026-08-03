@@ -1,0 +1,48 @@
+---
+# FoodKing Ansible vars — playbook-templated values only.
+# Full app .env (75+ keys) lives at docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt.
+# This file holds infra-level vars + secret placeholders consumed by site.yml templates.
+#
+# SECRETS: every `vault_*` var below MUST be sourced from an ansible-vault file:
+#   ansible-vault edit group_vars/vault.yml
+# and each secret regenerated via `openssl rand -hex 32` (NF525 — never commit).
+
+# --- App ---------------------------------------------------------------------
+app_repo_url: "git@github.com:foodking/foodking-web.git"
+app_branch: "main"
+app_root: "/var/www/foodking"
+app_url: "https://lecayenne.fr"
+
+# --- PHP / MySQL / Redis sizing (VPS-1 €8.11/mo: 2 vCPU, 4 GB RAM) -----------
+php_version: "8.2"
+php_extensions: [cli, fpm, bcmath, ctype, curl, dom, mbstring, mysql, redis, tokenizer, xml, zip]
+mysql_innodb_buffer_pool_size: "2G"  # capped — leave RAM for Redis 1.5G + app 0.5G
+mysql_max_connections: 50
+redis_maxmemory: "1.5gb"
+
+# --- Nginx / TLS --------------------------------------------------------------
+nginx_server_name: "lecayenne.fr"
+letsencrypt_email: "ops@lecayenne.fr"
+
+# --- Backup / Object Storage --------------------------------------------------
+backup_s3_bucket: "s3://foodking-backups-gra"
+backup_s3_endpoint: "https://s3.gra.io.cloud.ovh.net"
+
+# --- Secrets (vault refs — never inline) -------------------------------------
+# [GOAL-CMS-2026-05-18 CVP0-1] DB identity for fiscal-table REVOKE task —
+# closes the deploy-doc gap explicitly acknowledged in migration
+# 2026_05_09_160000_add_z_reports_delete_trigger_immutability.php (z_reports
+# BEFORE DELETE trigger does NOT fire on TRUNCATE) and
+# 2026_05_10_010000_secure_fiscal_audit_trail_immutability.php (same for
+# audit_logs). Without REVOKE TRUNCATE, an app-credential breach can wipe
+# the NF525 chain in ~50ms → Art. 1743 CGI criminal exposure.
+db_name: "foodking"
+db_user: "foodking_app"
+db_password: "{{ vault_db_password }}"
+redis_password: "{{ vault_redis_password }}"
+soketi_app_id: "{{ vault_soketi_app_id }}"
+soketi_app_key: "{{ vault_soketi_app_key }}"
+soketi_app_secret: "{{ vault_soketi_app_secret }}"
+fiscal_audit_secret: "{{ vault_fiscal_audit_secret }}"          # openssl rand -hex 32
+fiscal_z_report_secret: "{{ vault_fiscal_z_report_secret }}"    # openssl rand -hex 32
+backup_alert_webhook: "{{ vault_backup_alert_webhook }}"        # Slack/Discord/PagerDuty

@@ -31,15 +31,6 @@
           <span v-else class="kiosk-login-spinner"></span>
         </button>
 
-        <button
-          v-if="maintenanceMode"
-          type="button"
-          class="kiosk-login-secondary-btn"
-          :disabled="loading"
-          @click="disableMaintenanceMode"
-        >
-          {{ $t('kiosk.login_screen.exit_maintenance') }}
-        </button>
       </div>
 
       <p v-if="showDevSeedHint" class="kiosk-login-devhint">
@@ -60,13 +51,6 @@ export default {
   computed: {
     showDevSeedHint() {
       return process.env.NODE_ENV !== 'production';
-    },
-    maintenanceMode() {
-      try {
-        return sessionStorage.getItem('kiosk_maintenance_mode') === '1';
-      } catch (_) {
-        return false;
-      }
     },
   },
   data() {
@@ -89,11 +73,6 @@ export default {
     ...mapActions('kioskCart', ['kioskLogin']),
 
     getAutoCredentials() {
-      try {
-        if (sessionStorage.getItem('kiosk_maintenance_mode') === '1') {
-          return null;
-        }
-      } catch (_) { /* ignore if sessionStorage unavailable */ }
       const auto = window.foodkingConfig?.kioskAutoLogin || null;
       if (!auto?.username || auto.password === undefined || auto.password === null || String(auto.password) === '') {
         return null;
@@ -119,9 +98,16 @@ export default {
       const auto = this.getAutoCredentials();
       if (!auto) {
         this.setupRequired = true;
-        this.error = this.maintenanceMode
-          ? this.$t('kiosk.login_screen.err_maintenance')
-          : this.$t('kiosk.login_screen.err_no_credentials');
+        // [SEC/UX 2026-07-04] L'écran /kiosk est PUBLIC (client). Ne JAMAIS y exposer .env /
+        // artisan (fuite d'infos techniques). Le client voit un message propre ; les
+        // instructions dev vont en CONSOLE seulement. NB : la vraie borne s'ouvre avec
+        // ?machine_key=<clé> — ce chemin ne passe pas ici.
+        this.error = this.$t('kiosk.login_screen.err_no_credentials');
+        // eslint-disable-next-line no-console
+        console.warn('[Kiosk] Auto-login indisponible (identifiants machine absents). ' +
+          'Corriger côté serveur : renseigner KIOSK_MACHINE_* dans .env (identiques à Admin → Bornes) ' +
+          'puis `php artisan foodking:ensure-kiosk-machine` + `php artisan config:clear` ; ' +
+          'OU ouvrir la borne avec l\'URL ?machine_key=<clé> (méthode borne physique).');
         return;
       }
       this.setupRequired = false;
@@ -133,11 +119,24 @@ export default {
         this.retryAttempts = 0;
         this.$router.replace({ name: 'kiosk.idle' });
       } catch (err) {
-        const msg = err?.response?.data?.errors?.validation
-          || err?.response?.data?.errors?.username?.[0]
-          || err?.response?.data?.errors?.password?.[0]
-          || err?.message
-          || this.$t('kiosk.login_screen.err_login_failed');
+        // [iter15-mega-fix D-007 2026-05-10] 429 must surface a localized
+        // user-facing message — not the raw axios `Request failed with
+        // status code 429`. The Laravel response body carries `{message,
+        // retry_after}`, but the UI prefers the i18n key when available so
+        // the wording matches the locale of the borne and never leaks
+        // internal axios strings (D-007 i18n leak observed on iter15
+        // mega-audit Wave D state 05).
+        const status = err?.response?.status;
+        let msg;
+        if (status === 429) {
+          msg = this.$t('kiosk.login_screen.err_rate_limited');
+        } else {
+          msg = err?.response?.data?.errors?.validation
+            || err?.response?.data?.errors?.username?.[0]
+            || err?.response?.data?.errors?.password?.[0]
+            || err?.response?.data?.message
+            || this.$t('kiosk.login_screen.err_login_failed');
+        }
         this.error = msg;
         this.retryAttempts += 1;
         this.scheduleRetry();
@@ -147,14 +146,6 @@ export default {
     },
 
     retryAutoLogin() {
-      this.retryAttempts = 0;
-      this.startAutoLogin();
-    },
-
-    disableMaintenanceMode() {
-      try {
-        sessionStorage.removeItem('kiosk_maintenance_mode');
-      } catch (_) { /* ignore */ }
       this.retryAttempts = 0;
       this.startAutoLogin();
     },
@@ -257,7 +248,7 @@ export default {
   outline: none;
   transition: border-color 0.2s;
 }
-.kiosk-login-input:focus { border-color: #e8001c; }
+.kiosk-login-input:focus { border-color: #f4501e; }
 .kiosk-login-input::placeholder { color: rgba(255,255,255,0.25); }
 .kiosk-login-input:disabled { opacity: 0.5; }
 .kiosk-login-hint {
@@ -286,8 +277,8 @@ export default {
 }
 .kiosk-login-error {
   margin: 0;
-  background: rgba(232,0,28,0.12);
-  border: 1px solid rgba(232,0,28,0.3);
+  background: rgba(244,80,30,0.12);
+  border: 1px solid rgba(244,80,30,0.3);
   border-radius: 10px;
   padding: 0.7rem 1rem;
   color: #ff6b7a;
@@ -295,7 +286,7 @@ export default {
   text-align: center;
 }
 .kiosk-login-btn {
-  background: #e8001c;
+  background: #f4501e;
   color: #fff;
   border: none;
   border-radius: 50px;

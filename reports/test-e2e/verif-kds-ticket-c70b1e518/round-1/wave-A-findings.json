@@ -1,0 +1,65 @@
+{
+  "wave": "A",
+  "head": "c70b1e518",
+  "surface": "http://127.0.0.1:8000/kds (-> /admin/kitchen-display-system)",
+  "test_data": "6 commandes E2E- creees (clones DB reelles, serials E2E*, queue E001-E006) : E006=2x Cayenne(item_id=22)+extras, E001=Terminator+5 extras (Champignons/Jambon affiches), E002=PREPARING, +3 en overflow. Statuts ACCEPT/PREPARING, payment PAID/PENDING_COUNTER (board-release OK).",
+  "captures": [
+    "round-1/wave-A/kds-1920x1080.png (4 actives, +1 en attente)",
+    "round-1/wave-A/kds-1920x1080-7orders.png (7 actives, +4 en attente)",
+    "round-1/wave-A/kds-final-landscape.png (CAY top-3, +3 en attente) — capture de reference",
+    "round-1/wave-A/kds-portrait-1080x1920.png",
+    "round-1/wave-A/console-messages.log, network-requests.log, dom-snapshot.md, kds-order-response.json"
+  ],
+  "findings": [
+    {
+      "id": "KDS-A-01",
+      "severity": "P1",
+      "category": "layout/owner-requirement",
+      "summary": "Les 3 cartes ne sont PAS plein ecran en hauteur : ~70-84% d'espace vide sous les cartes. L'intention CSS existe (.kds-v2{flex:1} + grid-template-rows:1fr, KdsV2Grid.vue:400-431 commentaire [KDS-3CARDS 2026-07-05] 'chacune sur TOUTE la hauteur') mais echoue car le parent <main class=\"db-main expand\"> est display:block — flex:1 sans contexte flex => hauteur contenu.",
+      "evidence": "Mesure DOM (browser_evaluate) : viewport 2160px de haut, .kds-v2 height=514px, cartes h=462px ; chaine d'ancetres : .kds-v2 (flex:1 1 0%) -> MAIN.db-main display:block h=2160. Captures kds-final-landscape.png (cartes finissent a ~15% de la hauteur) et kds-portrait-1080x1920.png (~84% vide). Fichier: resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:400-408 et 413-431."
+    },
+    {
+      "id": "KDS-A-02",
+      "severity": "P2",
+      "category": "network/console",
+      "summary": "Erreur console a CHAQUE chargement du KDS : GET /api/admin/kds-order/sync => 403 (session du 05/07, branch_id=0) puis 401 (session du 06/07). Le fallback polling sync est donc mort silencieusement dans cet env : KdsSyncService utilise window.fetch avec URL RELATIVE (origin 8000) alors que toutes les autres requetes API passent par axios baseURL (127.0.0.1:8766).",
+      "evidence": "console-messages.log : '[ERROR] 401 @ http://127.0.0.1:8000/api/admin/kds-order/sync?...branch_id=0&include_deleted=true' (3 occurrences, 1 par navigation) ; network-requests.log #45 => [401]. Hier: meme endpoint => [403]. Code: resources/js/services/KdsSyncService.js:145 (fetch relatif) vs bootstrap axios baseURL 8766. Le flux principal /api/admin/kds-order (8766) repond 200 avec les commandes."
+    },
+    {
+      "id": "KDS-A-03",
+      "severity": "P2",
+      "category": "environment/to-triage",
+      "summary": "Le navigateur a quitte le KDS vers /admin/pos par FULL RELOAD 4 fois pendant l'audit (60-90s apres l'arrivee sur /kds). Aucun chemin de code trouve qui navigue KDS->POS (grep 'admin/pos' + location.href/assign/replace negatif hors pos-app.js login). Hook history.pushState pose avant l'incident = perdu (donc rechargement complet, pas une navigation SPA). Suspicion forte : pilote externe partageant le meme profil Chrome/Playwright (le log console du POS montre du trafic pos-wizard/quote/imprimante 9100 non genere par cette wave). A faire trancher par le superviseur adversarial avant d'imputer au code KDS.",
+      "evidence": "Pages URL flips observes 21:33:53Z, 14:09:39, 14:11:34, 14:15 (logs .playwright-mcp/console-*). grep -rn 'admin/pos' resources/js => seulement dashboard quick-access, pos-app.js (routes POS), aucun dans kitchenDisplaySystem/*. Screenshot kds-landscape-cayenne-top3.png capture pendant un episode = page POS."
+    },
+    {
+      "id": "KDS-A-04",
+      "severity": "P3",
+      "category": "design/palette",
+      "summary": "Suppléments affiches en jaune fonce #CA8A04 gras 800 (pas le jaune brand #FFB800). Choix lisibilite sur fond clair probablement volontaire — l'exigence owner 'jaune gras cote a cote' est satisfaite visuellement.",
+      "evidence": "getComputedStyle .kds-line__supplement : color rgb(202,138,4), font-weight 800, display inline. Source: KdsOrderLine.vue:250-258 (color:#CA8A04, font-weight:800, commentaire [K2-KDS 2026-07-05] owner)."
+    },
+    {
+      "id": "KDS-A-05",
+      "severity": "P3",
+      "category": "content/symbol-codes",
+      "summary": "Codes produits 3 lettres OK (CAY, TER, STO, AND, TAC, MAY, ST) mais les viandes multi s'affichent 'Mex Cordon' (Cordon = 6 lettres). Conforme au format ticket cuisine deja valide owner ('Mex Cordon' partout, memoire 2026-06-30) — note seulement vs une lecture stricte '3 lettres'.",
+      "evidence": "Capture kds-final-landscape.png carte E001 : '1x S | TER | Mex Cordon | STO | AND' ; carte E006 : '2x CAY | ST'. Aucun nom entier 'CAYENNE' rendu."
+    },
+    {
+      "id": "KDS-A-06",
+      "severity": "P3",
+      "category": "network/asset",
+      "summary": "Avatar navbar casse : GET http://127.0.0.1:8766/storage/18/clean.jpg bloque net::ERR_BLOCKED_BY_ORB (image cross-origin no-cors). Artefact env split-origin 8000/8766 ; icone image cassee visible dans le header sur toutes les captures.",
+      "evidence": "network-requests.log #27 => [FAILED] ERR_BLOCKED_BY_ORB ; captures header a droite de 'Bonjour Admin Le Cayenne'."
+    },
+    {
+      "id": "KDS-A-07",
+      "severity": "P3",
+      "category": "layout/badge",
+      "summary": "La pastille '+N en attente' chevauche legerement la ligne 'SYNC · ADMIN' et touche le bord droit (clipping partiel en portrait).",
+      "evidence": "Captures kds-final-landscape.png (badge sur le texte SYNC/ADMIN, x~1866) et kds-portrait-1080x1920.png (badge colle au bord droit, y~77)."
+    }
+  ],
+  "pass_summary": "VERTS — (1) 3 cartes MAX affichees quelle que soit la file (4, 6 et 7 actives testees) ; (2) pastille '+N en attente' exacte et reactive (+1, +4, +3 selon la file) ; (3) codes courts partout : '2x CAY | ST' pour Cayenne (jamais 'CAYENNE'), TER/STO/AND/TAC/MAY ; (4) 1 seule ligne par produit, texte symbolique 18px gras 800 (KdsOrderLine.vue:196) ; (5) supplements '⭐ Champignons ⭐ Jambon' COTE A COTE en jaune gras (inline, weight 800) ; (6) bande Historique FINE en haut (trigger row 36px, y=84) ; (7) zero label brut (Label.X / kds.foo / 0undefined) sur toutes les captures ; (8) statuts NOUVELLE/EN COURS + 'EN ATTENTE ENCAISSEMENT' (PENDING_COUNTER) corrects ; (9) network principal propre (kds-order 200, items 200). ECHECS — P1 hauteur cartes non plein-ecran (KDS-A-01, root cause CSS identifiee) ; P2 sync fallback 401/403 console a chaque load (KDS-A-02) ; P2 redirections /admin/pos a trancher (KDS-A-03, suspicion env partage)."
+}

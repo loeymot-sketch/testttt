@@ -1,0 +1,132 @@
+{
+  "agent": "SYNC CHAIN AGENT C5",
+  "mission": "Encaisser-borne → KDS preservation",
+  "goal": "GOAL ULTRA-DEEP 2026-05-23 Phase B.2",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_sha": "f28688675",
+  "verdict": "GREEN",
+  "summary": "Empirically proven: PosCounterCollectModal encaissement of a kiosk-cash order in PREPARING preserves KDS state (status unchanged), composition_snapshot bit-identical (NF525 §8 frozen), allergens_snapshot bit-identical, audit_logs append-only with valid HMAC chain (verifyChain=null), fiscal_sequence_no preserved (no re-allocation, no gap), and is idempotent on replay (both middleware-level AND service-level short-circuit at PaymentService.php:227-230).",
+  "scope": {
+    "surface_under_test": "PosCounterCollectModal.vue (Wave X X1 sibling SSOT)",
+    "route_under_test": "POST /api/admin/pos/counter-collect/{order}/confirm",
+    "controller_service": "PaymentService::confirmCounterPayment (app/Services/PaymentService.php:193-368)",
+    "frontend_component": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+    "frozen_zones_touched": "0 (new test file only, no implementation change)",
+    "nf525_invariants_touched": "0 (read-only invariant verification)"
+  },
+  "test_file_created": "tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php",
+  "phpunit_run": {
+    "command": "./vendor/bin/phpunit tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php",
+    "result": "OK (3 tests, 28 assertions)",
+    "duration_ms": 825,
+    "memory_mb": 67
+  },
+  "verifications": {
+    "V5.1_kds_state_preserved": {
+      "status": "PASS",
+      "evidence": "status=7 (PREPARING) pre AND post; payment_status flipped PENDING_COUNTER→PAID; pos_payment_method set to CASH (=1); pos_received_amount=20.00. Only payment-related fields mutate.",
+      "pre_status": 7,
+      "post_status": 7,
+      "pre_status_label": "PREPARING",
+      "post_status_label": "PREPARING",
+      "kds_card_unchanged": true,
+      "test_methods": [
+        "test_encaissement_preserves_kds_state_composition_audit_chain_and_fiscal_sequence"
+      ],
+      "static_analysis_note": "Wave S-1 auto-prepare (PaymentService.php:271-294) only fires when prePaidStatus===ACCEPT; orders already in PREPARING bypass that branch entirely. Verified by seeding directly in PREPARING.",
+      "carve_out_note": "When the order is in ACCEPT and mode is non-CASH, Wave S-1 auto-prepare DOES promote ACCEPT→PREPARING. This is by-design behavior (kitchen-release on paid). Verified by reading PaymentService.php:271-294 and AutoPrepareOnPaidPolicy::shouldPromote logic."
+    },
+    "V5.2_composition_snapshot_frozen": {
+      "status": "PASS",
+      "evidence": "composition_snapshot bytes bit-identical pre/post (DB.table('order_items')->value()); SHA-256 also bit-identical. allergens_snapshot also bit-identical (same DB row never written to by PaymentService).",
+      "composition_snapshot_sha256_pre": "89edb3148f33b6840da23d37a987fa5070f412acb8badbad9799d79ad1605cda",
+      "composition_snapshot_sha256_post": "89edb3148f33b6840da23d37a987fa5070f412acb8badbad9799d79ad1605cda",
+      "allergens_snapshot_sha256_pre": "0ea847c6d95756560e8ac1bb7d9e53a5927b6e5a203b397fa9e148382c3a59fd",
+      "allergens_snapshot_sha256_post": "0ea847c6d95756560e8ac1bb7d9e53a5927b6e5a203b397fa9e148382c3a59fd",
+      "bit_identical": true,
+      "static_analysis_note": "grep -n 'composition_snapshot' app/Services/PaymentService.php → ZERO mutations. PaymentService::confirmCounterPayment touches Order (lines 245-282), Transaction (lines 296-307), AuditLog (lines 309-321), CashMovement (line 362-364, via recordCashOrderMovement). order_items.composition_snapshot is NEVER written to by this code path. NF525 §8 invariant honored."
+    },
+    "V5.3_audit_logs_append_only": {
+      "status": "PASS",
+      "evidence": "audit_logs count advanced by exactly +1 (one 'order.counter_payment_confirmed' row appended). HMAC chain verified via AuditLogService::verifyChain($branchId) → null (CHAIN OK).",
+      "audit_logs_count_pre": 0,
+      "audit_logs_count_post": 1,
+      "audit_logs_last_hash_pre": null,
+      "audit_logs_last_hash_post": "937f2715fd669ad577cc1e9a66ac1ef23c55765f55b3e6c9e1b590c5ac789d3b",
+      "delta": 1,
+      "chain_verify_result": "OK (verifyChain returned null — no broken row)",
+      "appended_action": "order.counter_payment_confirmed",
+      "appended_payload_fields": ["payment_method", "payment_status", "received", "fiscal_sequence_no"],
+      "static_analysis_note": "PaymentService.php:309-321 calls AuditLogService::write() with append-only semantics. No DELETE; UNIQUE(branch_id, prev_hash) prevents fork; BEFORE DELETE trigger SIGNAL SQLSTATE '45000' (MySQL prod only) prevents tampering."
+    },
+    "V5.4_fiscal_sequence_preserved": {
+      "status": "PASS",
+      "evidence": "fiscal_sequence_no=42 pre AND post (seeded with non-null value to exercise the guard at PaymentService.php:241-243). No re-allocation. No gap.",
+      "fiscal_sequence_no_pre": 42,
+      "fiscal_sequence_no_post": 42,
+      "reallocated": false,
+      "gap_created": false,
+      "static_analysis_note": "PaymentService.php:241-243 `if ($locked->fiscal_sequence_no === null) { $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next(...); }`. Allocation ONLY when null. Kiosk-paid orders that already burned a sequence at creation keep their number; the encaissement is a payment confirmation, NOT a fiscal mutation."
+    },
+    "V5.5_idempotency_replay_safety": {
+      "status": "PASS",
+      "evidence_layer_1_middleware": "Second POST with same X-Idempotency-Key returns 200 with `Idempotency-Replayed: true` header; audit_logs count does NOT advance (no double-collect).",
+      "evidence_layer_2_service": "Second POST with DIFFERENT idempotency key (middleware cache miss) still no-ops: PaymentService.php:227-230 detects payment_status===PAID and returns the locked row without mutating. fiscal_sequence_no still 99, audit_logs count for the order still 1.",
+      "double_collect_blocked": true,
+      "dual_defense_in_depth": true,
+      "test_methods": [
+        "test_idempotent_replay_does_not_double_collect",
+        "test_second_confirm_with_different_key_is_a_noop"
+      ]
+    }
+  },
+  "nf525_chain": {
+    "branch_id_under_test": "(per-test branch, RefreshDatabase isolates)",
+    "audit_chain_pre": {
+      "count": 0,
+      "last_hash": null
+    },
+    "audit_chain_post": {
+      "count": 1,
+      "last_hash": "937f2715fd669ad577cc1e9a66ac1ef23c55765f55b3e6c9e1b590c5ac789d3b"
+    },
+    "chain_status": "OK",
+    "verify_method": "AuditLogService::verifyChain(branchId) returned null (no broken row)",
+    "hmac_algo": "HMAC-SHA256 (canonical(payload) || prev_hash)"
+  },
+  "side_effects_audit": {
+    "domain_events_dispatched": [
+      "OrderPaidAtCounter (after the transaction commits)",
+      "OrderStatusChanged (ONLY when ACCEPT→PREPARING auto-prepare fires; suppressed when seeded directly in PREPARING)"
+    ],
+    "transaction_row_created": "Transaction::firstOrCreate(['order_id'=>X,'type'=>'payment'], ...) — idempotent by composite key",
+    "cash_movement_recorded": "PaymentService::recordCashOrderMovement (best-effort, only if mode=CASH and an open CashDrawerSession exists)",
+    "kds_card_status_unchanged": true,
+    "kds_card_composition_unchanged": true,
+    "kds_card_allergens_unchanged": true
+  },
+  "evidence_chain": [
+    "Static analysis: grep -n 'composition_snapshot' app/Services/PaymentService.php → 0 hits. Read PaymentService.php:193-368 confirms no order_items writes inside confirmCounterPayment.",
+    "Empirical: tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php (3 tests, 28 assertions, all GREEN)",
+    "Regression: tests/Feature/Payment/CounterDeferredPaymentLifecycleTest.php + tests/Feature/Idempotency/CounterCollectAndPrintIdempotencyTest.php still GREEN (9 tests across both, 27+ assertions)",
+    "Empirical snapshot of pre/post DB state preserved at storage/app/c5-encaisser-kds-preserve.report.json"
+  ],
+  "advisor_consultations": 1,
+  "lock_required": false,
+  "frozen_zone_diff_lines": 0,
+  "files_modified": [
+    "tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php (NEW — read-only verification test)"
+  ],
+  "files_created": [
+    "tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php",
+    "reports/test-e2e/goal-2026-05-23/round-1/C5-encaisser-kds-preserve.json"
+  ],
+  "next_actions_recommended": [
+    "No-op for V1 GREEN — invariants hold. Continue Phase B.2 with remaining SYNC CHAIN AGENT missions (C1, C2, C3, C4, C6+).",
+    "Consider promoting C5 test to a sentinel by adding it to a tagged suite (e.g. @group nf525-invariants) if not already in the default CI run."
+  ],
+  "caveats_and_gaps": [
+    "V5.5 layer 1 (middleware replay) test asserts the Idempotency-Replayed header. The cache lookup uses minute-bucketed keys per IdempotencyKeyMiddleware design — in a flaky CI clock crossing a minute boundary, an extremely rare false-positive double-execute could slip past layer 1. Layer 2 (service-level short-circuit on payment_status===PAID) catches that residual case.",
+    "Test seeds run under SQLite RefreshDatabase. MySQL prod has additional BEFORE DELETE SIGNAL trigger on audit_logs + z_reports that this SQLite suite does NOT exercise (driver-gated DDL in the migration). Production tampering protection is verified separately by the production migration trigger tests."
+  ]
+}

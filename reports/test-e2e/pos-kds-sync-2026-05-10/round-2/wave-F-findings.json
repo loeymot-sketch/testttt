@@ -1,0 +1,106 @@
+{
+  "wave": "F",
+  "round": 2,
+  "states_reviewed": 12,
+  "findings": [
+    {
+      "id": "F-001",
+      "state_artifact": "test-e2e-pos-kds-sync-F/01-f-idempotency-replay-same-payload.png + 02-f-idempotency-conflict-different-payload.png + 00-f-runtime-config.assertion.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "IdempotencyKeyMiddleware is GLOBALLY DISABLED. Direct primary-source proof: 00-f-runtime-config.assertion.json reports `idempotency_enabled=false` at runtime. Source corroboration: app/Http/Middleware/IdempotencyKeyMiddleware.php:41-43 short-circuits `if (! config('idempotency.enabled', false)) return $next($request);` — config/idempotency.php:20 reads `env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false)` and the env var is NOT set in .env. Visible symptoms across two states: (a) state 01 sidecar — 2 calls with same key+same payload returned same orderId=596 BUT both with `replayed: false` — the `Idempotency-Replayed: true` header is NEVER emitted because the middleware short-circuits before the IdempotencyKeyRepository runs; the dedup is provided exclusively by the app-level UNIQUE (branch_id, idempotency_key) backstop in the QueryException recovery path (FrontendOrderService.php:556-561) — which works but masks middleware regression and emits zero header signal; (b) state 02 sidecar — 2 calls with same key+DIFFERENT payload returned status=200 with TWO DIFFERENT response bodies (qty=1 then qty=2 inferred), where the second response is the result of running the second request all the way through the pipeline (UNIQUE constraint did not fire because the route uses `findExistingFrontendOrderForIdempotencyRecovery` which returns the existing order and silently re-runs the pipeline) — instead of HTTP 409 Conflict that the contract requires. Net effect: a malicious or buggy client retrying with a mutated payload under the same key will silently get a NEW order id and a successful 200 — quote/totals lifted from the FIRST order body but pipeline side-effects (stock decrement, fiscal seq, listeners) re-run for the second payload — fiscal/financial integrity at risk. Listed routes in config/idempotency.php:25-34 include `api/frontend/order` and `api/admin/pos` — production traffic uses these routes daily, so this is not a test-only artifact: prod is shipping with the middleware disabled too. Note: this finding has TWO angles in two states (replay header missing, conflict 409 missing) but ONE root cause — closing the env flag closes both states at once.",
+      "fix_hint": "Single-line fix in .env: add `IDEMPOTENCY_MIDDLEWARE_ENABLED=true`. Then `php artisan config:clear`. Re-run wave F states 01+02 to verify: (1) 01 second response carries `Idempotency-Replayed: true` header; (2) 02 second response returns HTTP 409 with `Idempotency-Key-Conflict` header per IdempotencyKeyMiddleware.php:31. Roll-out caveat: enabling the flag activates `required_routes` (config/idempotency.php:25-34) → kiosk SPA + admin POS clients MUST send X-Idempotency-Key on those POSTs; verify they already do (they do — `kiosk-order.js:441` sends the header), but worth a 30s axios trace pass before flipping in prod.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "notes": "Same root cause as Wave D's idempotency surface (D-001/D-003 closure relied on UNIQUE backstop, NOT on the middleware path). Wave D never tested the conflict-detection 409 path or the Replayed header — F-001 is the first round to surface that the middleware is in fact disabled. Should be closed jointly with any Wave-D idempotency re-verify."
+    },
+    {
+      "id": "F-002",
+      "state_artifact": "test-e2e-pos-kds-sync-F/05-f-outbox-retry-curve.assertion.json + 10-f-source-correlation-id-trace.assertion.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "PersistOrderCreatedToOutbox listener does NOT fire for kiosk orders created through `POST /api/frontend/order` (FrontendOrderService::myOrderStore) — broken across the entire wave-F kiosk-orders block. Direct primary-source proof via `php artisan tinker` query at review time: `DB::table('domain_events')->whereIn('aggregate_id',[596,597,599,600,604,605])->get()` returns `[]`. Cross-check: same query on `aggregate_type=App\\Models\\FrontendOrder` AND `event_type=order.created` — last persisted row is id 733 (aggregate_id=348, occurred_at 21:25:52). NONE of the wave-F kiosk orders (created 22:21+) produced a row. Yet `OrderStatusChanged` IS persisted for the same orders (e.g. row id 807 aggregate_id=627, row id 808 aggregate_id=668) — proving the post-commit dispatcher works for status transitions but is silently skipping the OrderCreated dispatch path. Source-trace: FrontendOrderService.php:208 — `$shouldDispatchNewOrderSignals = !$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod`. For kiosk + CARD or kiosk + TICKET_RESTAURANT (the two pre-paid kiosk methods), this evaluates to `false || false || false = false` → OrderCreated::dispatch is skipped entirely (line 543 gate). State 05 used CASH so the gate should evaluate true — but the row STILL didn't appear, suggesting an additional masking factor (possibly the order goes through a paymentConfirm-driven path that does not re-fire OrderCreated when status transitions from PENDING_COUNTER → ACCEPT, or the auto-accept branch at FrontendOrderService.php:516-520 short-circuits the new-order signal). Either way, the outbox row is empty for legitimate kiosk traffic. Downstream consequences: (a) DispatchDomainEventsJob has no row to process → broadcast NEVER fires → KDS / OSS / POS-suivi receive zero realtime notification for kiosk orders → all kiosk surfaces fall through to polling fallback, masquerading as 'broadcast works' in dev but actually shipping zero broadcasts in prod for kiosk traffic; (b) state 10 (correlation-id trace) reports `domain_event_correlation_id=null, domain_event_id=null` — same root cause; (c) audit trail for kiosk orders is INCOMPLETE — the outbox is the audit-source for fiscal observability and the correlation-id-trace endpoint relies on it; (d) cross-reference: this is the upstream cause of Wave E SYNC-E-1/SYNC-E-3 budget breaches reported in earlier rounds — KDS pickup of kiosk orders relies on broadcast fast-path; without an outbox row, the only path is the 10s polling tick (verified PASS at state 09 with 4044ms latency, but this is the floor of a degraded path, not the realtime contract).",
+      "fix_hint": "Two-step diagnosis required: (1) instrument FrontendOrderService.php at line 543 to log when `$shouldDispatchNewOrderSignals` is false vs true for each kiosk order; verify the cash/takeaway gate fires correctly. (2) If gate is true but no row appears, instrument PersistOrderCreatedToOutbox::handle to log entry/exit — possible trait dispatch issue with DispatchableAfterCommit (transactionLevel may still be >0 at the call site, deferring the closure forever if the outer caller threw before commit). Likely fix: reorganize FrontendOrderService::myOrderStore so OrderCreated::dispatch is called once per unique order at the same lifecycle hook OrderStatusChanged is, regardless of payment-method gate (the listener is idempotent via `firstOrCreate`). Alternative fix: register `static::created` boot hook on FrontendOrder model that fires OrderCreated unconditionally, mirroring how OrderStatusChanged is emitted from OrderStateMachine.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "notes": "This is the SINGLE most consequential finding of the wave because it explains why kiosk-source orders rely on polling for cross-surface sync — production realtime is silently disabled for the kiosk path. Closes states 05 + 10 jointly. Cross-reference with Wave E SYNC-E-1 / SYNC-E-3 timing observations: any kiosk-leg broadcast budget breach upstream-traces to F-002."
+    },
+    {
+      "id": "F-003",
+      "state_artifact": "test-e2e-pos-kds-sync-F/03-f-idempotency-pos-double-tap-actually-exercised.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 03 sidecar reports `requests_observed=0, outgoing_keys=[], orders_delta=0, verdict=DEFERRED`. The wizard-double-tap intercept observed ZERO POST traffic during the test window. Root cause is spec methodology, not product: the POS wizard handles `Ajouter au panier` as local Vuex mutation (no POST until pay-confirm); the spec author appears to have targeted the wrong CTA, hooking the cart-add button instead of the `pos-payment-confirm` button. Wave D PHASE 16 (now D-001/D-003 closed) targets the correct CTA and produced 1 unique idempotency key + 1 HTTP 201. Independent of F-001 (middleware disabled): even with middleware on, this state cannot validate idempotency because no requests are emitted. Audit-integrity finding — does NOT block convergence (Wave D state 17 already covers double-tap) but creates false-deferred noise.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-F.spec.js state 03 — relocate the click target to `[data-testid=\"pos-payment-confirm\"]` (mirror Wave D PHASE 16 selector). Add network listener to capture both retry posts BEFORE the click using `page.waitForRequest(req => req.url().includes('/api/admin/pos') && req.method()==='POST', { timeout: 4000 })` x2.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-004",
+      "state_artifact": "test-e2e-pos-kds-sync-F/04-f-concurrent-kiosk-pos-same-branch.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 04 sidecar reports `kioskResult.ok=true, posResult.ok=false posResult.status=401`. Promise.all created 1 kiosk order (id=599) but the POS leg returned 401 Unauthorized — Sanctum/CSRF helper used inside the spec did not propagate POS session cookies into the page.evaluate axios.post('admin/pos') context. SYNC-F-CONCURRENT contract is therefore unverified — we have no evidence whether the system handles 2 concurrent POSTs to the same branch correctly. PARTIAL verdict, not a product defect (no merge / no race observed because only 1 leg executed). Audit-integrity finding — methodology, not product.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-F.spec.js state 04 — replace the `posPage.evaluate(axios.post(...))` direct call with `posPage.locator('pos-payment-confirm').click()` (same approach as Wave D state 17 which works). OR restore CSRF token / session cookie via `posPage.context().cookies()` before the evaluate call. Re-run + assert orders_delta=2.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-005",
+      "state_artifact": "test-e2e-pos-kds-sync-F/06-f-version-gating-replay.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 06 sidecar reports `dispatch_result.error: 'Class \\\"App\\\\Events\\\\OrderUpdated\\\" not found'`. Direct verification: `find /app/Events/OrderUpdated.php` returns NO match — the class does not exist in the codebase. The spec assumes an event class that was never implemented; KdsSyncService version-gating may be exercised via OrderStatusChanged or other events, but the spec invocation points at a phantom class. This is a spec correctness defect; SYNC-F-VERSION is therefore unverified at protocol level. Status quo: kiosk version-gating remains untested deterministically. Possibly a real product gap (no OrderUpdated event surface for arbitrary status/data changes), but adversarial review cannot conclude that without spec correction first.",
+      "fix_hint": "Two paths: (a) tests/e2e spec — replace `Event::dispatch(new OrderUpdated($order, ...))` with `Event::dispatch(new OrderStatusChanged($order, $oldStatus, $newStatus))` and assert KdsSyncService gates duplicate status transitions (closer to real-world replay scenario); OR (b) instrument KdsSyncService to expose `window.__kdsVersionMapPeek` and dispatch via the actual broadcast path (Soketi `private-branch.{id}` channel) using `Echo.private(...).whisper(...)` from a second context. Path (a) is simpler and matches the production replay model.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-006",
+      "state_artifact": "test-e2e-pos-kds-sync-F/12-f-kds-version-map-lru-eviction.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "State 12 sidecar honestly reports `kds_sync_service_export: 'default singleton; _versionMap is module-private (no window export)' — instrumentation_required: code patch in resources/js/services/KdsSyncService.js`. AUDIT_PLAN risk register explicitly allows this state to DEFER if module instrumentation isn't acceptable. No assertion was made — verdict DEFERRED is the correct call. Informational only: SYNC-F-LRU is a P3 stretch goal, no blocking impact, but the LRU cap remains untested deterministically.",
+      "fix_hint": "Optional dev-mode hook: in resources/js/services/KdsSyncService.js add `if (import.meta.env.MODE === 'development') window.__kdsSyncDebug = { peekVersionMap: () => ({ size: this._versionMap.size, keys: [...this._versionMap.keys()] }) };`. Tree-shaken in prod build. Then state 12 can assert `versionMap.size <= 256` after 260 dispatches. Non-blocking — defer to next maintenance pass.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-007",
+      "state_artifact": "test-e2e-pos-kds-sync-F/01-f-idempotency-replay-same-payload.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "evidence": "01.network.json contains a single 401 entry on `POST /api/frontend/order/quote` at 1778444478227 — this happened during the rate-limit-clear / pre-auth phase before the test got its kiosk bearer; the eventual order placement succeeded (sidecar shows orderId=596 returned twice). It is captured in the artifact because the network listener buffers all 4xx in the same array. Not in the route-protocol allowlist (only `/api/auth/logout` 401 is allowlisted) but is a genuine pre-auth race — bearer token rebound before second attempt. Document in allowlist as expected during `getKioskApiToken()` warm-up, OR ensure the placeKioskOrder helper waits for the kiosk SPA bearer to be loaded before firing the first quote call.",
+      "fix_hint": "Add `'pre-auth bearer warmup 401 on /api/frontend/order/quote'` to the protocol allowlist for wave F, OR fix tests/e2e/helpers/kiosk-order.js to await `window.localStorage.getItem('kiosk_token')` non-empty before issuing the first quote post. Non-blocking.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 0,
+    "P2": 4,
+    "P3": 1,
+    "open_P0": 2,
+    "open_P1": 0,
+    "open_P2": 4,
+    "open_P3": 1,
+    "deferred_P0": [],
+    "closed_this_round": [],
+    "new_this_round": ["F-001", "F-002", "F-003", "F-004", "F-005", "F-006", "F-007"],
+    "passed_states": ["07-f-broadcast-after-commit-only", "08-f-rate-limit-kiosk-orders-feedback", "09-f-poll-fallback-when-broadcast-down", "11-f-broadcast-channel-isolation-cross-branch"],
+    "passed_with_caveats": ["00-f-runtime-config (CONFIG_RECORDED)"],
+    "failed_states": ["01-f-idempotency-replay-same-payload", "02-f-idempotency-conflict-different-payload", "05-f-outbox-retry-curve", "06-f-version-gating-replay", "10-f-source-correlation-id-trace"],
+    "deferred_states": ["03-f-idempotency-pos-double-tap-actually-exercised", "04-f-concurrent-kiosk-pos-same-branch", "12-f-kds-version-map-lru-eviction"]
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Wave F Round 2 — first review of new wave. Two convergence-blocking P0 findings discovered, both upstream and load-bearing for the entire cross-surface sync story: (1) F-001 IdempotencyKeyMiddleware globally disabled by missing env flag — service-layer UNIQUE constraint hides the blast radius but conflict-detection 409 + Replayed header are non-functional; covers states 01+02 with one root cause; (2) F-002 PersistOrderCreatedToOutbox listener does not persist domain_events rows for kiosk orders — primary-source verified by tinker query at review time: zero rows for any of 596-605 wave-F kiosk orders, despite 43 rows of historical 'order.created' on FrontendOrder existing through order id 348 — kiosk path regressed circa order id 348 (~21:25 today) and has been silently shipping no broadcasts for kiosk traffic since; covers states 05+10 with one root cause AND likely upstream-causes Wave E SYNC-E-1 / SYNC-E-3 budget breaches. State 07 (DispatchableAfterCommit invariant) PASSES: rollback transaction = 0 orders + 0 events — proves the after-commit gate works. State 08 (rate-limit UI feedback) PASSES with toast visible. State 09 (poll fallback) PASSES at 4044ms (floor of degraded path; not the realtime contract — see F-002). State 11 (channel isolation) PASSES tinker-only — degradation acceptable per AUDIT_PLAN risk register. States 03, 04, 06 are spec-methodology defects (F-003, F-004, F-005) — non-blocking but reduce wave proof value; should be patched before round 3 to convert deferreds into real evidence. State 12 (LRU) is a documented stretch defer (F-006). One P2 unexpected 401 on quote pre-auth (F-007) — captured in 01.network.json, recommend allowlist tweak. Wave-D D-009 referenced in the brief is in fact the OSS SYNC-2 spec relocation finding, NOT idempotency-disabled; F-001 is the FIRST appearance of the IdempotencyKeyMiddleware-disabled finding across all waves — this should be flagged to the owner as 'we shipped this audit thinking idempotency middleware was on; it was off the whole time, only the UNIQUE backstop saved us'. Round 3 must: (1) flip IDEMPOTENCY_MIDDLEWARE_ENABLED=true + re-run states 01+02 with assertions on the Replayed header and 409 response; (2) resolve F-002 root cause inside FrontendOrderService::myOrderStore — fire OrderCreated unconditionally per order, not gated on payment-method/order-type combo; (3) patch states 03, 04, 06 spec methodology to convert deferreds into real evidence; (4) re-validate Wave E SYNC-E-1 / SYNC-E-3 latency post-F-002 fix to confirm broadcast fast-path is actually fast in prod-like conditions. Convergence-eligible open_P0=2, open_P1=0 → verdict RED; not eligible for cross-wave merge until F-001 + F-002 closed."
+}

@@ -1,0 +1,121 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 10,
+  "round_to_round_closures": {
+    "A-001": "PASS — closed/test-env-artifact. La réfutation multi-suites est VALIDÉE pour l'ampleur P0 du R1 (« tokens morts <90s en continu + heartbeats 401 partout ») : en run sérialisé, kiosk-login 201 + kiosk-event 200 sur A01/A02/A03/A05/A07/A08, et A10 (l'état incriminé au R1) est CLEAN — heartbeats kiosk-event 200 à ts=1784322371194 puis 1784322402359 (~31s d'écart, MÊME token vivant). Les seuls 401 restants (A06/A09) sont un phénomène DIFFÉRENT, circonscrit aux reloads de page — re-classé A-011 (P2). Correction de preuve R1 : l'affirmation « aucun menu 200 de récupération » n'était pas prouvable — le network sink ne loggue pas les GET 2xx (seuls POST 2xx + status>=400) ; les violations CSP report-only d'A09 montrent 5 tentatives connect-src /api/frontend/menu pour seulement 2×401 → des refetch menu 200 de recovery ont bien eu lieu.",
+    "A-002": "FAIL — persiste en sérialisé, réfutation multi-suites REJETÉE, cause racine DÉMONTRÉE par reproduction live. Le 403 broadcasting/auth revient sur artefacts frais (A03 ts=1784322293818, A08 ts=1784322324863, A10 ts=1784322402375) et le boot race 302→GET /api/login 401 sur chaque boot (A01/A06×2/A09×2/A10). Repro curl sur :8766 : kiosk-login 201 (token kiosk-token) → POST /api/broadcasting/auth channel_name=private-branch.1 ⇒ HTTP 200 (signature délivrée) ; private-branch.9 et private-branch.0 ⇒ HTTP 403. Or GET /api/frontend/branch renvoie [9 «Skiles-Johns Branch», 8, 7, 1 «Le Cayenne (principal)»] — 3 branches Faker de seed AVANT la principale — et KioskAppComponent.vue:516 prend res?.data?.data?.[0] puis :526 subscribe branch.9, pendant que la machine kiosk-lecayenne est branch 1 (routes/channels.php clause kiosk-token → KioskMachine.branch_id). Une révocation de token inter-suites produirait des 401, jamais ce 403 déterministe.",
+    "A-003": "PASS — fix confirmé code + vision. KioskCategoriesComponent.vue:1101-1109 : blur(4px) retiré (commentaire daté [A-003 test-e2e 2026-07-17]), transition = opacity 0.18s ease-out seule. Vision des 10 PNG frais : ZÉRO état flou — A02/A03/A08 nets, tous les prix lisibles (€7,00/€8,00/€9,00/€7,40 A02 ; €4,90 A03 ; €7,90 A08). Reliquat : A03/A08 figés mi-fondu d'opacité (contenu délavé mais net et lisible) — artefact de timing de capture re-classé A-012 (P3 process).",
+    "A-004": "FAIL — reproduit à l'identique sur le frais : POST /api/frontend/pricing/preview 422 à ts=1784322366682 (A09, console error) puis 200 à ts=1784322367638 (~956ms). Garde client vérifiée (kioskPricingPreview.js ~185-205 : skip uniquement si ZÉRO modifier) — un payload partiel mid-flow (viande sans sauce) passe la garde et prend le 422 SSOT min-select, auto-récupéré. Wizard FROZEN → re-classé P2 disclosed gate conformément au contexte tranché ; aucun impact utilisateur observé au-delà de la fenêtre ~1s (total footer A09 correct €7,90).",
+    "A-005": "FAIL — persiste. PNG A10 : drawer « VOTRE COMMANDE » affiche « Menu Enf... » ; DOM A10 : <div class=\"kiosk-cart-strip-name\">Menu Enfant Nuggets</div> toujours SANS title, CSS inchangé (overflow:hidden;text-overflow:ellipsis;white-space:nowrap).",
+    "A-006": "FAIL — persiste. DOM A02 frais : kiosk-product-desc littéralement tronquées en dur (« ...salade, ... », « ...salade, s... », « ...oignons rouges... », « ...sau... ») — texte complet ABSENT du DOM, cards title=\"\" vide (kiosk-product-card-103/104/105/22).",
+    "A-007": "FAIL — persiste. DOM A10 : aria-label=\"Ouvrir le panier — 1 articles\" vs compteur visible « 1 article » (kiosk-cart-bottom-sheet-count).",
+    "A-008": "FAIL — persiste (P2 known config, compté une fois). 100% du trafic API/images sur 127.0.0.1:8766 depuis page localhost:8000 ; rafales POST /api/frontend/csp-report 204 sur les 10 états frais ; violations CSP report-only connect-src (menu/kiosk-event/kiosk-login) + img-src (30+ thumbs) confirmées en console A09.",
+    "A-009": "FAIL — persiste. Captures fraîches : format monétaire hybride partout — €7,00/€8,00/€9,00/€7,40 (A02), €4,90 (A03/A04/A05/A10), €0,90/€2,50/€2,00 (A07/A09), footers €0,00/€4,90 — convention FR attendue « 7,00 € ».",
+    "A-010": "FAIL — persiste. A04 tuiles « FROMAGÈRE MAISON »/« SPICY MAISON » (item 40) vs A09 chip « Sauce fromagère maison » et carte « Sauce spicy » (item 41) — libellés cross-items toujours incohérents (curation DB voulue par ailleurs, tranché R1)."
+  },
+  "findings": [
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-A/A03-grille-menu-enfant.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P1",
+      "status": "open",
+      "evidence": "La borne ne réussit JAMAIS l'abonnement push sur les 10 états frais (run sérialisé) : broadcasting/auth 403 à A03 ts=1784322293818, A08 ts=1784322324863, A10 ts=1784322402375 + boot race 302→GET /api/login 401 loggé console error à chaque boot (A01 ts=1784322246748/246922, A06 ×2, A09 ×2, A10). CAUSE RACINE PROUVÉE (repro curl live :8766) : (1) le token kiosk est SAIN — private-branch.1 ⇒ HTTP 200 {auth: app-key:187d55da...} ; (2) private-branch.9 et .0 ⇒ 403 ; (3) GET /api/frontend/branch liste [9 «Skiles-Johns Branch», 8 «Brekke...», 7 «Shields...», 1 «Le Cayenne (principal)»] — 3 branches Faker AVANT la principale ; (4) KioskAppComponent.vue:516 `const branch = res?.data?.data?.[0]` puis :520 setBranch + :523 fetchMenu + :526 _subscribeEchoChannel sur cette branche = la borne du run opérait ENTIÈREMENT scopée branch 9 (Faker) pendant que la machine kiosk-lecayenne, la caisse et le KDS vivent branch 1. Menus branch 1 vs 9 identiques (42 items, dispo défaut) → affichage correct en apparence, MAIS : zéro push temps réel (403 avalé — catch silencieux KioskAppComponent.vue:577), et un 86 déclaré caisse/KDS sur branch 1 serait invisible de la borne scopée 9 (ni push ni refetch) — l'angle mort EXACT du scénario GOAL. De plus la wave A entière a donc testé la borne sur une branche Faker : la couverture « sync 86 borne » de ce run est invalide. En prod V1 mono-branche [0]=1 par coïncidence — le code reste fragile (dépend de l'ordre d'une liste publique).",
+      "fix_hint": "1) KioskAppComponent : scoper setBranch/fetchMenu/subscribe sur la branche de la MACHINE (déjà renvoyée par kiosk-login via KioskMachineResource) au lieu de branchList[0] ; 2) différer le subscribe Echo jusqu'à pose du token pour tuer le 302→401 de boot ; 3) purger les branches Faker 7/8/9 de la DB dev (ou seeder la principale en tête) puis RE-CAPTURER la wave A sur la vraie topologie ; 4) surfacer l'échec d'auth broadcast (compteur/console warn) au lieu du catch muet :577."
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "test-e2e-A/A06-wizard-kidsburger-crudites.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "status": "new-open",
+      "evidence": "Résidu réel extrait d'A-001 après réfutation : à chaque RELOAD de page, rafale de 401 self-healing + double re-login de course. A06 : reload ~ts=1784322319034 (rafale csp) → GET menu 401 ts=319284 + POST kiosk-event 401 ts=319347 (vieux token storage, révoqué par le login du boot précédent ts=297834) → kiosk-login 201 ts=319614 → RE-401 menu ts=319640 (retry parti avec l'ancien token, 26ms après le 201) → kiosk-event 200 ts=319663 → 2e kiosk-login 201 ts=320073. Séquence identique A09 : 401 menu/kiosk-event ts=364210/364271 → login 201 ts=364535 → RE-401 menu ts=364563 → 3e login ts=364886 (3 tokens créés dans l'état). Mécanique : KioskLoginComponent.vue:97-120 startAutoLogin fait un kioskLogin INCONDITIONNEL à chaque montage, et KioskMachineLoginController.php:102-104 révoque tous les kiosk-token à chaque login → toute requête en vol avec l'ancien token 401. Impact : 5 console errors par reload, sprawl de tokens, fenêtre <1s de menu potentiellement stale ; recovery prouvée (CSP logs A09 : 5 connect menu pour 2×401). Toast « Session rafraîchie » NON observé dans les DOM/PNG frais malgré fenêtre compatible. En prod : ne se produit qu'au reload réel de la borne (veille/recovery/restart) — pas en usage SPA normal.",
+      "fix_hint": "Réutiliser le token stocké s'il est encore valide (probe légère) au lieu d'un login systématique au montage ; sinon sérialiser les fetchs post-boot derrière la promesse d'auth (le RE-401 à +26ms prouve que le retry lit le token avant sa mise à jour) ; vérifier que le toast kiosk-auth-retried s'affiche réellement."
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-A/A09-bolfrites-quel-supplement-gratine-200.network.json",
+      "category": "console_error",
+      "severity": "P2",
+      "status": "open-disclosed",
+      "evidence": "Reproduit à l'identique sur artefacts frais : POST /api/frontend/pricing/preview 422 ts=1784322366682 (console error) → 200 ts=1784322367638 (~956ms), wizard Bol Frites mid-flow. Garde client vérifiée présente (kioskPricingPreview.js ~185-205) mais ne couvre que le cas zéro-modifier : un payload partiel (viande sans sauce) déclenche le 422 SSOT min-select, auto-récupéré à la sélection suivante. Total footer A09 correct (€7,90). Wizard FROZEN → P2 disclosed gate (pré-existant, self-healing) ; aucun impact utilisateur au-delà de la fenêtre ~1s observé.",
+      "fix_hint": "Si un LOCK wizard est un jour ouvert : étendre la garde au « payload étape incomplète » (min-select non satisfait localement) ou debouncer jusqu'à étape valide."
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-A/A10-panier-nuggets-490.png",
+      "category": "truncation",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "Persiste tel quel : PNG A10 « Menu Enf... » dans le drawer panier ; DOM <div class=\"kiosk-cart-strip-name\">Menu Enfant Nuggets</div> sans title, CSS ellipsis inchangé. Les 2 produits de la catégorie partagent le préfixe « Menu Enf... » → indiscernables au panier avec les deux dedans (mitigé par vignette + aria-labels complets).",
+      "fix_hint": "flex-grow / 2 lignes / troncature milieu de chaîne (inchangé depuis R1)."
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-A/A02-categories.dom.html",
+      "category": "truncation",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "Persiste : descriptions tronquées EN DUR dans le DOM frais (« Steak haché, cordon bleu, cheddar, oignons rouges, tomates, salade, ... », « 2 viandes au choix, cheddar, œuf, oignons rouges, tomates, salade, s... », « ...sau... » CAYENNE), texte complet absent, title=\"\" vide sur les cards. Aucun moyen borne de lire la composition complète depuis la grille.",
+      "fix_hint": "Description complète dans le DOM + line-clamp CSS, ou coupe à frontière de mot (inchangé depuis R1)."
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-A/A10-panier-nuggets-490.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "Persiste : aria-label=\"Ouvrir le panier — 1 articles\" vs compteur visible « 1 article » dans le DOM frais A10.",
+      "fix_hint": "Même pluralisation i18n pour l'aria-label que pour le compteur (inchangé depuis R1)."
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-A/A01-idle.network.json",
+      "category": "config",
+      "severity": "P2",
+      "status": "open-known",
+      "evidence": "Persiste (bruit connu C-003/A-008, compté une fois) : page localhost:8000, API/images 127.0.0.1:8766 ; rafales csp-report 204 sur les 10 états frais ; console A09 : violations Report-Only connect-src (kiosk-login/menu/kiosk-event) + img-src (30+ thumbs). À neutraliser par l'alignement base URL au deploy — bloquant si CSP passe un jour en enforce.",
+      "fix_hint": "Aligner la base URL compilée sur l'origine servie avant tout passage CSP enforce (inchangé depuis R1)."
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-A/A02-categories.png",
+      "category": "i18n_format",
+      "severity": "P3",
+      "status": "open",
+      "evidence": "Persiste sur toutes les captures fraîches : « €7,00 », « €4,90 », « €0,90 », « €2,50 », « €2,00 », footers « €0,00 »/« €4,90 » — symbole avant montant + virgule FR, convention fr-FR attendue « 7,00 € ». Cohérent en interne, zéro mismatch numérique.",
+      "fix_hint": "Intl.NumberFormat('fr-FR', {style:'currency'}) au point unique de formatage (inchangé depuis R1)."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "test-e2e-A/A04-wizard-nuggets-sauce.png",
+      "category": "naming_consistency",
+      "severity": "P3",
+      "status": "open",
+      "evidence": "Persiste : A04 « FROMAGÈRE MAISON »/« SPICY MAISON » (item 40, attr 5) vs A09 « Sauce fromagère maison »/« Sauce spicy » (item 41, attr 8). Purement éditorial, curation DB voulue (tranché R1).",
+      "fix_hint": "Harmoniser les libellés en admin catalogue (inchangé depuis R1)."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "test-e2e-A/A03-grille-menu-enfant.png",
+      "category": "visual_drift",
+      "severity": "P3",
+      "status": "new-open",
+      "evidence": "Défaut de PREUVE (process spec, pas produit) : A03 et A08 sont capturés mi-fondu d'opacité (~50-70%) — titres gris au lieu de noir, prix orange pâle, images délavées — alors qu'A02/A10 (même grille) sont saturés. Contenu NET et lisible (le fix blur est acquis), mais 2 captures sur 3 grilles post-changement-de-catégorie tombent encore DANS la transition 180ms : le spec ne l'attend pas et ne désactive pas les animations, source récurrente de faux positifs visuels d'un round à l'autre.",
+      "fix_hint": "Dans le spec : screenshot({animations:'disabled'}) ou attendre 250ms/fin de transition après clic catégorie avant capture."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 6,
+    "P3": 3,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 6,
+    "open_P3": 3
+  },
+  "verdict": "RED",
+  "notes": "RUN SÉRIALISÉ CONFIRMÉ EFFICACE : les 401 « morts continues de tokens » du R1 ont disparu (A-001 closed test-env-artifact) — il reste le cycle reload→401 self-healing (A-011 P2) et surtout A-002 requalifié avec cause racine PROUVÉE : la borne s'abonne et se scope sur branchList[0] = branch 9 « Skiles-Johns » (Faker seed) au lieu de la branch 1 de sa machine — curl : private-branch.1=200 / branch.9=403 ; liste = [9,8,7,1]. Conséquence adversariale : la wave A round 2 a testé une borne scopée sur une branche Faker → la couverture « rupture 86 temps réel jusqu'à la borne » (objet du GOAL) n'est PAS prouvée par ce run, même si le funnel commande l'est. INTÉGRITÉ NUMÉRIQUE : PASS — €0,00 (A02) ; 4,90 grille A03 = wizard A04 = récap A05 (sauce Gratuite) = panier A10 (1×4,90, badge 1 article ×2) ; suppléments 0,90 ×8 + viande supp 2,50 + gratiné 2,00 (A07/A09) ; bol 7,90 grille A08 = footer wizard A09 ; compteurs « 4 produits »/« 2 produits » = nombre de cartes. I18N LEAKS : 0 sur les 10 DOM. CONSOLE : 16 erreurs, toutes = Failed to load resource des 401/403/422 réseau tracés ; zéro pageerror JS, zéro erreur Vue. VISION 10/10 : zéro blur, palette Cayenne conforme, light mode, idle A01 impeccable, wizard crudités A06 « AVEC »×3 correct, empty-state panier non-régressé. Toast « Session rafraîchie » toujours jamais observé dans une capture. Bordure orange carte BOL RIZ (A08) vs grise BOL FRITES : notée, non expliquée (probable hover Playwright), pas assez d'éléments pour un finding. VERDICT RED porté par A-002 seul (P1>0) : fix code (branche machine, pas [0] d'une liste publique triée Faker-first) + purge branches Faker dev + re-capture wave A requis pour prouver la promesse temps réel du GOAL ; en prod V1 mono-branche l'impact runtime est nul par coïncidence de topologie."
+}

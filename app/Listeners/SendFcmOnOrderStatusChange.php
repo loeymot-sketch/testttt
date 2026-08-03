@@ -46,19 +46,34 @@ class SendFcmOnOrderStatusChange
             $order
         );
 
-        // Dispatch queued FCM jobs (non-blocking)
+        // Dispatch queued FCM jobs (non-blocking).
+        // [F-002 round-3 2026-05-10] Each dispatch is isolated in try/catch so a
+        // failure (sync-queue RuntimeException, missing FCM creds, transient
+        // network error) is logged and absorbed locally — it MUST NOT propagate
+        // to sibling listeners (PersistOrderStatusChangedToOutbox is the SSOT
+        // for KDS/Kiosk/POS sync). Combined with the listener-order change in
+        // EventServiceProvider (outbox first) this is defense-in-depth.
         foreach ($notifications as $notif) {
-            SendFcmNotificationJob::dispatch(
-                $notif['token'] ?? null,
-                $notif['topic'] ?? null,
-                $notif['title'],
-                $notif['body'],
-                array_merge(
-                    ['order_id' => $orderId, 'queue_number' => $queueNumber, 'status' => $newStatus],
-                    $notif['data'] ?? []
-                ),
-                $notif['sound'] ?? 'default'
-            );
+            try {
+                SendFcmNotificationJob::dispatch(
+                    $notif['token'] ?? null,
+                    $notif['topic'] ?? null,
+                    $notif['title'],
+                    $notif['body'],
+                    array_merge(
+                        ['order_id' => $orderId, 'queue_number' => $queueNumber, 'status' => $newStatus],
+                        $notif['data'] ?? []
+                    ),
+                    $notif['sound'] ?? 'default'
+                );
+            } catch (\Throwable $e) {
+                Log::warning('[SendFcmOnOrderStatusChange] dispatch isolated', [
+                    'order_id'   => $orderId,
+                    'new_status' => $newStatus,
+                    'topic'      => $notif['topic'] ?? null,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
         }
     }
 

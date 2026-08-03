@@ -1,0 +1,140 @@
+{
+  "specialist": "RED",
+  "task": "WF-6 Refund Cascade Sync Confirmation — adversarial failure-mode probing",
+  "scope_read_only": true,
+  "frozen_zones_touched": 0,
+  "attack_surface_explored": [
+    "Loyalty point double-refund / no-refund on cashBack vs refundPoints sequencing",
+    "Mirror order self-cascade through OrderCreated event listeners",
+    "Listener exception mid-cascade under QUEUE_CONNECTION=sync",
+    "OrderPaymentStatusChanged dispatch absence on cashBack — broadcast hole",
+    "Cross-branch refund tool authz when controller layer skipped",
+    "Idempotency drift across cashBack + RefundWithCounterEntryService double-invocation",
+    "Outbox broadcast hole for refund events"
+  ],
+  "findings": [
+    {
+      "id": "WF-6-R-1",
+      "severity": "P1",
+      "title": "cashBack() does NOT update parent.payment_status and does NOT dispatch OrderPaymentStatusChanged — refund payment_status sync silently invisible to outbox/realtime listeners",
+      "evidence": [
+        "PaymentService::cashBack lines 90-156 — payment_status never set to PaymentStatus::REFUNDED. The parent order's payment_status remains PaidStatus::PAID after cashBack() returns.",
+        "OrderPaymentStatusChanged::dispatch never called from cashBack (grep confirmed: only OrderService:2040 dispatches it).",
+        "EventServiceProvider:156 wires OrderPaymentStatusChanged to PersistOrderPaymentStatusChangedToOutbox — the ONLY outbox broadcast path for payment_status changes.",
+        "Consequence: connected POS/admin/OSS clients listening on private-branch.{id} do NOT receive a 'refund happened' broadcast. They learn the order is refunded ONLY by re-polling, or by inspecting Transaction.type='cash_back' row, or via ZReport mirror aggregate."
+      ],
+      "trigger_scenario": "Admin issues a cashBack via PaymentService::cashBack (pre-Z path or post-Z mirror path). Order DB row keeps payment_status=PAID (UI semantically wrong) and no realtime broadcast goes out. KDS/POS dashboards do not refresh.",
+      "compounding_factor": "RefundWithCounterEntryService also never dispatches OrderPaymentStatusChanged — only creates mirror with payment_status=REFUNDED on the MIRROR order, not on the parent. Same broadcast hole.",
+      "recommendation": "V1.0.1 heal: after cashBack() succeeds, dispatch OrderPaymentStatusChanged($order, OLD=PAID, NEW=REFUNDED) and/or set $order->payment_status = REFUNDED. Alternatively, register a dedicated PersistRefundCreatedToOutbox listener on RefundCreated event.",
+      "verdict": "P1 GAP — visible to operators as 'refund happened but order still shows PAID until refresh'."
+    },
+    {
+      "id": "WF-6-R-2",
+      "severity": "P1",
+      "title": "Post-Z refund (PosOrderController::refundWithCounterEntry) does NOT refund loyalty points — caller-layer omission",
+      "caller_layer_audit": {
+        "PaymentService::cashBack callers": [
+          "OrderService.php:1696 — cancel-status path, refundPoints called at line 1702 immediately after.",
+          "OrderService.php:1799 — cancel-status path, refundPoints called at line 1805 immediately after.",
+          "FrontendOrderService.php:701 — kiosk cancel path, refundPoints called at line 707 immediately after."
+        ],
+        "verdict_for_cashBack_path": "All cashBack() callers PAIR with refundPoints() at the controller/service-orchestrator layer. No loyalty hole for the pre-Z cancel path.",
+        "RefundWithCounterEntryService::execute callers": [
+          "PosOrderController.php:64 (refundWithCounterEntry action) — calls $service->execute($order, $reason). Does NOT call LoyaltyService::refundPoints. Only HTTP response handling + branch authz."
+        ],
+        "verdict_for_counter_entry_path": "PosOrderController::refundWithCounterEntry is the SOLE caller of execute(). It does NOT companion-call refundPoints(). This is the real gap."
+      },
+      "evidence": [
+        "LoyaltyService::refundPoints is invoked from 3 sites: OrderService:1702, OrderService:1805, FrontendOrderService:707. All cancel paths.",
+        "RefundWithCounterEntryService::execute is invoked from 1 site: PosOrderController::refundWithCounterEntry at line 64. NO refundPoints call alongside.",
+        "Consequence: a customer who redeemed loyalty points on an order that is later refunded post-Z via the admin POS refund-with-counter-entry button loses BOTH the cash (refunded via mirror) AND the loyalty points (consumed permanently). Business-invariant violation specifically in the post-Z refund flow."
+      ],
+      "trigger_scenario": "Customer redeems 100 loyalty points worth -€10 on order #1234. Day closes (Z report). Day +1 admin opens order details and clicks 'Refund with Counter-Entry'. PosOrderController::refundWithCounterEntry → RefundWithCounterEntryService::execute. Mirror created with NEGATED total; fiscal chain extends. Customer's 100 points are gone — never reversed because PosOrderController does not call LoyaltyService::refundPoints.",
+      "test_evidence_gap": "OrderCancellationLoyaltyTest covers cancel path (refundPoints called via OrderService). NO test covers loyalty reversal on RefundWithCounterEntryService::execute or on the PosOrderController::refundWithCounterEntry route.",
+      "recommendation": "V1.0.1 heal options: (a) add LoyaltyService::refundPoints($order, 'pos') call inside PosOrderController::refundWithCounterEntry right after $service->execute($order, $reason); (b) register a RefundLoyaltyPointsOnRefundCreated listener on RefundCreated event (centralizes loyalty cascade at the event layer for both cashBack and counter-entry paths); (c) move loyalty reversal INSIDE RefundWithCounterEntryService::execute itself (closest to the fiscal transaction).",
+      "preferred_heal": "Option (b) — listener on RefundCreated event — because it removes the omission risk for future refund entry points and unifies loyalty cascade with stock/availability cascade. Idempotency via LoyaltyTransaction.type='manual_add' lookup against this order_id is straightforward.",
+      "verdict": "P1 GAP CONFIRMED — caller-layer audit confirms post-Z refund path skips loyalty reversal. Pre-Z cancel path is safe (3 callers all pair). Fiscal cascade COMPLETE; loyalty cascade INCOMPLETE on post-Z path only."
+    },
+    {
+      "id": "WF-6-R-3",
+      "severity": "INFO",
+      "title": "Mirror order does NOT self-cascade — Order::create() inside RefundWithCounterEntryService is safe",
+      "evidence": [
+        "AppServiceProvider:67 attaches SoftDeleteAuditObserver to Order — this observer writes audit rows on soft-delete, NOT dispatches OrderCreated.",
+        "OrderCreated::dispatch is called explicitly at OrderService:564, 1067, 1377 and FrontendOrderService:1226 — all explicit dispatch sites, none triggered by Order::create() in RefundWithCounterEntryService:95.",
+        "Mirror order with negated quantity therefore does NOT trigger DecrementStockOnOrderCreated → would have caused double-release if it had."
+      ],
+      "verdict": "SAFE — adversarial concern dismissed."
+    },
+    {
+      "id": "WF-6-R-4",
+      "severity": "P2",
+      "title": "RefundCreated listener exception in sync mode silently kills downstream listeners",
+      "evidence": [
+        "QUEUE_CONNECTION=sync (default test + production-Le-Cayenne). EventServiceProvider:165-168 lists ReleaseStockOnRefundCreated BEFORE ReleaseAvailabilityOnRefundCreated.",
+        "If ReleaseStockOnRefundCreated throws (StockService::releaseForOrder failure — e.g., missing StockLevel row, integrity error), the exception propagates up the Laravel event dispatcher and ReleaseAvailabilityOnRefundCreated NEVER fires.",
+        "Parent order is committed, audit chain extended, mirror created (in RefundWithCounterEntryService path) — but availability counters stay decremented forever. Items remain 'sold out' until manual heal.",
+        "Same vulnerability documented in EventServiceProvider:128-137 for OrderStatusChanged. The fix doctrine there was: Outbox-first listener + try/catch wrap inside FCM listener. Refund cascade has NEITHER protection (no outbox listener AND no try/catch in stock/availability listeners)."
+      ],
+      "trigger_scenario": "Branch has a StockLevel row deletion (operator error in catalog UI). Subsequent refund of an order containing that item throws inside ReleaseStockOnRefundCreated → ReleaseAvailabilityOnRefundCreated skipped → availability counter never released → item shows 0 stock permanently in UI.",
+      "recommendation": "V1.0.1 heal: wrap ReleaseStockOnRefundCreated body in try/catch + Log::warning (defense in depth) OR reorder listeners (availability release first, stock release second, since availability is the user-visible counter).",
+      "verdict": "P2 GAP — degraded resilience but bounded blast radius."
+    },
+    {
+      "id": "WF-6-R-5",
+      "severity": "P2",
+      "title": "Customer deletion does NOT block refund — orphaned audit and orphaned mirror are possible",
+      "evidence": [
+        "RefundWithCounterEntryService:95-112 sets mirror's user_id = $parent->user_id without verifying customer still exists.",
+        "If parent.user_id was soft-deleted between sale and refund, mirror Order references a deleted user. Eloquent withTrashed() relations work but UI joins assume active users.",
+        "LoyaltyService::refundPoints (the cancellation path) DOES handle this via line 47-54 — logs warning + returns. But the refund cascade itself never queries User for the mirror; orphaned mirror persists silently."
+      ],
+      "recommendation": "V1.0.2 — add User::withTrashed() guard in mirror creation path and surface a warning audit row if customer was deleted. Non-blocking for V1.",
+      "verdict": "P2 EDGE-CASE — low frequency."
+    },
+    {
+      "id": "WF-6-R-6",
+      "severity": "INFO",
+      "title": "Idempotency on cashBack() prevents double-RefundCreated dispatch — proven by test",
+      "evidence": [
+        "PaymentService::cashBack:92-98 early-returns if existing Transaction.type='cash_back' is found.",
+        "RefundCreated dispatch happens INSIDE 'if ($transaction)' block (line 145), so second cashBack() call hits the early-return BEFORE reaching dispatch.",
+        "RefundCreatedDispatchTest::test_cashback_idempotent_call_does_not_re_dispatch_event explicitly asserts only 1 dispatch across 2 cashBack() calls. PASSING."
+      ],
+      "verdict": "CONFIRMED — idempotency guard correct."
+    },
+    {
+      "id": "WF-6-R-7",
+      "severity": "INFO",
+      "title": "Idempotency on RefundWithCounterEntryService::execute prevents double-mirror",
+      "evidence": [
+        "Line 73-78 refuses if parent.status === RETURNED. After first successful execute(), parent's status would be... wait — actually parent.status is NEVER changed by execute(). The guard relies on the MIRROR existing with parent_order_id=parent.id?",
+        "Looking deeper: line 73 checks parent.status (not mirror count). But parent.status is set ONLY by the calling controller (which transitions parent to RETURNED before/after calling this service). If a future caller invokes execute() twice without transitioning parent → DOUBLE MIRROR. Mitigation depends on caller discipline.",
+        "Sentinel test RefundCounterEntryRequiresSealedParentSentinelTest covers the sealed-parent guard but not the 'parent.status set externally' invariant."
+      ],
+      "verdict": "ACCEPTABLE per current caller pattern — but flag as a 'be careful when refactoring caller' risk; recommend adding an explicit 'mirror already exists' check (SELECT mirror WHERE parent_order_id = parent.id LIMIT 1) for defense in depth in V1.0.2."
+    },
+    {
+      "id": "WF-6-R-8",
+      "severity": "INFO",
+      "title": "RefundCreated::dispatch($parent) passes PARENT, not mirror — critical correctness",
+      "evidence": [
+        "RefundWithCounterEntryService:229 — RefundCreated::dispatch($parent). Comment block lines 224-229 explicitly explains why: 'mirror has NEGATED qty which would no-op / corrupt the released_qty ledger'.",
+        "ReleaseAvailabilityOnRefundCreated:30-44 iterates $event->order->orderItems and uses (int)$orderItem->quantity as POSITIVE release amount. If mirror were passed, qty=-N would feed into AvailabilityService.releaseForOrderItems with negative qty → silent no-op or undefined behavior.",
+        "ReleaseStockOnRefundCreated:12 delegates to StockService::releaseForOrder which iterates parent.orderItems().get() — same positivity assumption."
+      ],
+      "verdict": "CONFIRMED — design choice documented and correct."
+    }
+  ],
+  "test_run_evidence": {
+    "command": "php artisan test --filter \"Refund|RefundCreated|RefundWithCounter\"",
+    "result": "29 passed, 0 failed in 4.20s",
+    "coverage_gap_observed": [
+      "No test asserting OrderPaymentStatusChanged fires on cashBack — would catch R-1.",
+      "No test asserting LoyaltyService::refundPoints fires via RefundCreated cascade — would catch R-2.",
+      "No test asserting RefundWithCounterEntryService refunds loyalty points — would catch R-2.",
+      "No test asserting availability release survives stock-release exception — would catch R-4."
+    ]
+  },
+  "verdict": "REFUND CASCADE FISCAL SAFE but BUSINESS CASCADE INCOMPLETE. 2 P1 findings (R-1 payment_status broadcast hole + R-2 loyalty no-reversal), 2 P2 (R-4 cross-listener exception, R-5 deleted customer), 3 INFO (R-3 mirror safety, R-6/R-7 idempotency, R-8 dispatch correctness). V1 Le Cayenne acceptable; V1.0.1 heal mandatory before SaaS expansion (loyalty business rule violation is a customer-trust issue)."
+}

@@ -100,17 +100,17 @@
                                     {{ transaction.date }}
                                 </td>
                                 <td class="db-table-body-td">
-                                    {{ transaction.payment_method }}
+                                    {{ paymentMethodLabel(transaction.payment_method) }}
                                 </td>
                                 <td class="db-table-body-td">
                                     {{ transaction.order_serial_no }}
                                 </td>
                                 <td class="db-table-body-td">
                                     <span class="text-[#2AC769]" v-if="transaction.sign == '+'">
-                                        {{ transaction.sign }} {{ transaction.amount }}
+                                        {{ transaction.sign }} {{ formatAmount(transaction.amount) }}
                                     </span>
                                     <span class="text-[#FB4E4E]" v-else>
-                                        {{ transaction.sign }} {{ transaction.amount }}
+                                        {{ transaction.sign }} {{ formatAmount(transaction.amount) }}
                                     </span>
                                 </td>
 
@@ -164,6 +164,8 @@ import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import statusEnum from "../../../enums/modules/statusEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import ENV from "../../../config/env";
+import { formatPrice } from "../../../helpers/formatPrice";
+import { paymentMethodLabel } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "TransactionListComponent",
@@ -266,6 +268,18 @@ export default {
         },
     },
     methods: {
+        // [visual-round-3 P3 fix 2026-07-07] Map raw backend payment-method slugs
+        // to human FR labels via the shared helper (single source of truth reused
+        // by the receipt/detail surfaces — resources/js/helpers/paymentMethodLabel.js).
+        paymentMethodLabel: function (raw) {
+            return paymentMethodLabel(raw, (k) => this.$t(k));
+        },
+        // [visual-round-1 P3 fix 2026-07-07] Render the amount with the canonical
+        // FR EUR formatter ("6,90 €") instead of the raw dot-decimal string
+        // ("6.90"), matching Sales Report / Encaissement / Historique.
+        formatAmount: function (amount) {
+            return formatPrice(amount);
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },

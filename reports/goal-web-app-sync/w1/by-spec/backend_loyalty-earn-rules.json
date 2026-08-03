@@ -1,0 +1,90 @@
+{
+ "spec": "backend:loyalty-earn-rules",
+ "scope": "Audit read-only fidélité backend (LoyaltyService, Services/Loyalty/*, AwardLoyaltyPointsOnDelivery, ClawbackLoyaltyPointsOnRefund, LoyaltyController, DiscountCalculator, LoyaltyConsent/LoyaltyTransaction + migrations, config loyalty/pos, valeurs LIVE DB via tinker) vs helpers démo web (/Users/1millnonstop/Downloads/web/data/loyalty.js) et mobile (mobile/data/loyalty.js)",
+ "summary": "Règles canoniques LIVE (settings group loyalty_setup, lues en DB) : earn = 1 pt/€ (défaut code = 10 — le seed a été abaissé à 1), redeem = 100 pts = 1 €, min_redeem = 100 pts. Earn est calculé en floor(total TTC × rate) au changement de statut (DELIVERED, ou PREPARED/DELIVERED pour kiosk/takeaway), jamais au paiement, jamais sur CANCELED, avec sentinel idempotent. Le helper web est aligné sur les valeurs live (1/100/100) mais diverge sur l'arrondi (round vs floor) et sur la granularité redeem (linéaire au centime vs multiple-de-100 obligatoire sur l'endpoint /loyalty/redeem). Le mobile est le plus divergent : earn_ratio=10 hardcodé (10× le réel), catalogue REWARDS 100% mock sans table backend, welcome_bonus/expiry inexistants backend, et QR plaintext FK:<code> désormais REJETÉ par défaut (accept_legacy_plaintext=false). Consent RGPD réel : table loyalty_consents avec IP/UA hashés sha256+app.key, privacy_notice_version, cascade delete pour droit à l'effacement.",
+ "facts": [
+  "EARN — taux : Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10) — app/Listeners/AwardLoyaltyPointsOnDelivery.php:84 ; VALEUR LIVE DB vérifiée par tinker = 1 (1 pt / 1 €). Le défaut code (10) ne s'applique jamais tant que le setting existe.",
+  "EARN — formule : pointsToAward = (int) floor($orderTotal * $rate) — AwardLoyaltyPointsOnDelivery.php:102. Base = FrontendOrder.total (kiosk/takeaway) ou Order.order_amount fallback total (POS/web) — lignes 96-101. C'est le total TTC APRÈS remise (total = subtotal − discount + delivery), pas le sous-total.",
+  "EARN — déclencheur : événement OrderStatusChanged, PAS le paiement. Ordres normaux → DELIVERED uniquement (ligne 42) ; kiosk/takeaway (OrderType::KIOSK|TAKEAWAY) → PREPARED ou DELIVERED (lignes 37-40). Jamais si status CANCELED (lignes 32-35 et 55).",
+  "EARN — idempotence : sentinel atomique -1 sur orders.loyalty_points_awarded (whereNull → -1, finalisé avec les points réels) — AwardLoyaltyPointsOnDelivery.php:52-56 et 139-141.",
+  "EARN — résolution client : order.loyalty_customer_code → users.loyalty_code, fallback order.user_id si ce user a un loyalty_code ; sinon aucun point — AwardLoyaltyPointsOnDelivery.php:65-81.",
+  "REDEEM — taux : Settings 'loyalty_points_for_1_euro_discount', défaut code 100, VALEUR LIVE DB = 100 → 100 pts = 1 € — LoyaltyController.php:360, PosRedemptionService.php:96, DiscountCalculator.php:45.",
+  "REDEEM — min : Settings 'loyalty_min_redeem_points', défaut code 50 (LoyaltyController.php:485, DiscountCalculator.php:58, LoyaltySetupResource.php:22), VALEUR LIVE DB = 100.",
+  "REDEEM — granularité endpoint : POST /api/frontend/loyalty/redeem REJETTE tout montant non multiple du taux (points % 100 !== 0 → 400) — LoyaltyController.php:364-367 ; idem POS — PosRedemptionService.php:100-106 (discountEur = points/rate, euros entiers).",
+  "REDEEM — granularité kiosk in-order (DiscountCalculator::kioskLoyaltyRedemption) : modèle CONTINU pointsRequired = floor(euros_demandés × 100), remise re-snappée = points/100, min_redeem_points appliqué (rejet si pointsRequired < min) — app/Services/Pricing/DiscountCalculator.php:49-68.",
+  "REDEEM POS — kill-switch : refuse avec DISCOUNTS_DISABLED_V1 si config('pos.manual_discount_enabled') !== true — PosRedemptionService.php:72-78 ; défaut actuel TRUE (env POS_MANUAL_DISCOUNT_ENABLED, config/pos.php:172-176, flippé false→true 2026-05-31 post-fix F1).",
+  "CLAWBACK annulation : LoyaltyService::refundPoints re-crédite les rows type='redeem' d'une commande annulée via type='manual_add', NOOP idempotent si déjà remboursé — app/Services/LoyaltyService.php:21-107.",
+  "CLAWBACK remboursement : ClawbackLoyaltyPointsOnRefund (event RefundCreated) → LoyaltyService::clawbackEarnedPoints : déduit orders.loyalty_points_awarded via type='manual_deduct', balance clampée à 0 jamais négative — LoyaltyService.php:141-199. V1 : refund PARTIEL claw back le montant TOTAL (backlog V1.0.2) — app/Listeners/ClawbackLoyaltyPointsOnRefund.php:31-36.",
+  "LEDGER : loyalty_transactions enum type ['earn','redeem','manual_add','manual_deduct','expire'], points signés, balance_after snapshot, source_surface (kiosk|pos|web|mobile|admin), UNIQUE(user_id,order_id,type) — migrations 2026_03_26_075918 + 2026_03_26_075919.",
+  "RGPD consent : POST /api/frontend/loyalty/opt-in exige consent_accepted (required|accepted) + privacy_notice_version ; écrit loyalty_consents avec ip_hash/user_agent_hash = sha256(app.key|valeur), jamais d'IP/UA brut — LoyaltyController.php:431-474, app/Models/LoyaltyConsent.php:60-68, migration 2026_04_18_120008 (FK cascadeOnDelete = droit à l'effacement).",
+  "CONFIG API : GET /api/frontend/loyalty/config expose points_per_euro, points_for_1_euro_discount, min_redeem_points, tiers (défaut '100,250,500,1000,2000') + label — LoyaltyController.php:480-517. Web/mobile DOIVENT lire ça plutôt que hardcoder.",
+  "QR : signé HMAC (LOYALTY_QR_SECRET, TTL 300 s, leeway 30 s) ; plaintext legacy 'FK:<code>' REFUSÉ par défaut (accept_legacy_plaintext=false depuis GOAL-J2-HEAL-03) — config/loyalty.php:39,68-72.",
+  "Idempotency HTTP : api/frontend/loyalty/redeem, api/frontend/loyalty/add-points, api/admin/pos-order/*/redeem-loyalty sous middleware X-Idempotency-Key — config/idempotency.php:85-93."
+ ],
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Mobile earn_ratio=10 hardcodé — 10× la valeur LIVE (1 pt/€) : soldes et historique mobile faux d'un facteur 10",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 49,
+   "evidence": "mobile loyalty.js:49 `earn_ratio: 10, // 1 € spent = 10 points (backend default; admin-editable)` + lignes 148-150 l'historique DEFAULT_HISTORY est dérivé à 10 pt/€ ; or Settings live (tinker) = `'loyalty_points_per_euro' => 1` et web loyalty.js:24 = `earn_ratio: 1`. Le mobile promet 247 pts pour ~24,70 € quand le backend n'en créditera que 24.",
+   "recommendation": "W4 : aligner CONFIG.earn_ratio=1 (ou mieux, hydrater depuis GET /api/frontend/loyalty/config) et re-dériver DEFAULT_HISTORY ; ne jamais hardcoder le défaut code (10) qui ne reflète pas le setting seedé."
+  },
+  {
+   "severity": "P1",
+   "title": "Web+mobile redeem linéaire au centime (250 pts = 2,50 €) incompatible avec l'endpoint /loyalty/redeem qui exige un multiple de 100 pts",
+   "file": "/Users/1millnonstop/Downloads/web/data/loyalty.js",
+   "line": 57,
+   "evidence": "web loyalty.js:57 `const pointsUsed = Math.round(granted * CONFIG.redeem_ratio); // linéaire : 2,50 € = 250 pts` et :38 `points/100` (347 → 3,47 €) ; backend LoyaltyController.php:364 `if ($pointsToRedeem % $rate !== 0) { ... 'Les points doivent être un multiple de {$rate}' status 400 }` — 250 ou 347 pts seraient REJETÉS par POST /api/frontend/loyalty/redeem (et par le POS, PosRedemptionService.php:100). Seul le chemin kiosk in-order (DiscountCalculator.php:56) est continu.",
+   "recommendation": "W3/W4 : soit snapper l'UI web/mobile aux multiples de 100 pts (euros entiers) pour coller à l'endpoint redeem, soit câbler le futur checkout sur le chemin continu type DiscountCalculator — décision à trancher dans le GOAL avant wiring ; ne pas afficher '3,47 € utilisables' si l'API refusera 347 pts."
+  },
+  {
+   "severity": "P1",
+   "title": "QR mobile plaintext FK:<code> + signature SHA-256 mock → rejeté par /loyalty/scan (accept_legacy_plaintext=false par défaut)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 180,
+   "evidence": "mobile loyalty.js:180 `const payload = 'FK:' + code;` avec signature mock sans secret (lignes 182-195) ; config/loyalty.php:68-72 `accept_legacy_plaintext` défaut FALSE (flippé GOAL-J2-HEAL-03 2026-05-24 : « allowed attacker with 8-char loyalty_code to POST /api/frontend/loyalty/scan and harvest customer_token » ). Le commentaire mobile ligne 169 (« V0 backend scan() strips the FK: prefix... IGNORES signature ») décrit l'état pré-flip, obsolète.",
+   "recommendation": "W4 : le wallet QR mobile réel doit obtenir un token signé HMAC côté serveur (LoyaltyQrSigner, TTL 300 s) — le format plaintext ne marchera pas contre le backend actuel sans opt-in env explicite (non recommandé)."
+  },
+  {
+   "severity": "P2",
+   "title": "Arrondi earn divergent : web Math.round vs backend floor",
+   "file": "/Users/1millnonstop/Downloads/web/data/loyalty.js",
+   "line": 32,
+   "evidence": "web loyalty.js:32 `return Math.round(euros * CONFIG.earn_ratio); // parité mobile (round, ex. 0,90 € → 1 pt)` ; backend AwardLoyaltyPointsOnDelivery.php:102 `$pointsToAward = (int) floor($orderTotal * $rate);` — à 1 pt/€ : 15,90 € → web affiche 16 pts, backend crédite 15 ; 0,90 € → web 1 pt, backend 0.",
+   "recommendation": "Aligner les helpers sur Math.floor pour parité exacte avec le crédit réel."
+  },
+  {
+   "severity": "P2",
+   "title": "Valeurs fidélité hardcodées dans les helpers alors qu'un endpoint config existe — drift garanti si l'owner change les settings admin",
+   "file": "/Users/1millnonstop/Downloads/web/data/loyalty.js",
+   "line": 23,
+   "evidence": "web loyalty.js:23-27 `CONFIG = Object.freeze({ earn_ratio: 1, redeem_ratio: 100, min_redeem_points: 100 })` et mobile loyalty.js:48-55 hardcodent ; backend expose GET /api/frontend/loyalty/config (LoyaltyController.php:480-517) admin-éditable via LoyaltySetupRequest (loyalty_points_per_euro 0-1000). Les valeurs matchent la DB live AUJOURD'HUI mais aucun mécanisme ne les resynchronise.",
+   "recommendation": "Lors du wiring (W3/W4) : fetch /loyalty/config au boot + cache, garder les hardcodes uniquement comme fallback offline."
+  },
+  {
+   "severity": "P2",
+   "title": "Earn affiché « instantané » côté helpers vs crédit backend différé au statut PREPARED/DELIVERED (jamais au paiement)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/AwardLoyaltyPointsOnDelivery.php",
+   "line": 40,
+   "evidence": "AwardLoyaltyPointsOnDelivery.php:40-42 : kiosk/takeaway → PREPARED|DELIVERED ; autres → DELIVERED seulement. Une commande web/mobile payée mais jamais passée DELIVERED ne crédite RIEN. Les UI démo (mobile LC.dev.earnPoints, web earnPoints) créditent immédiatement côté client.",
+   "recommendation": "Web/mobile doivent afficher « points à venir après retrait/livraison » (pending) au lieu de créditer à l'ajout panier/paiement, sinon le solde affiché divergera du solde serveur."
+  },
+  {
+   "severity": "P3",
+   "title": "Catalogue REWARDS mobile (8 récompenses, free_item/percent/flat_price) 100% mock — aucune table loyalty_rewards ni route /loyalty/rewards backend",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 116,
+   "evidence": "mobile loyalty.js:102 (commentaire honnête) « NO loyalty_rewards TABLE OR /loyalty/rewards ROUTE EXISTS BACKEND » + REWARDS lignes 116-125 (ex. 'Tacos M offert' 1500 pts, 'Repas complet à 1 €' 3000 pts). Le backend ne connaît que des points continus 100 pts=1 €. welcome_bonus:25 et expires_after_days:365 (lignes 52-53) n'ont aucun trigger backend.",
+   "recommendation": "W4 : soit dégrader l'UI rewards en « remise en € » pure (modèle backend réel), soit assumer le mock avec bandeau démo ; ne pas promettre de récompenses non honorées par le serveur."
+  },
+  {
+   "severity": "INFO",
+   "title": "min_redeem : défaut code 50 ≠ valeur live 100 — les helpers (100) matchent la DB, pas le code",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 485,
+   "evidence": "LoyaltyController.php:485 défaut 50, LoyaltySetupResource.php:22 défaut 50, mais tinker live = `'loyalty_min_redeem_points' => 100`. Drift déjà auto-documenté dans mobile loyalty.js:51 (« backend kiosk default; controller default is 50 »). Sans effet pratique : la règle multiple-de-100 de l'endpoint rend le minimum effectif = 100 de toute façon.",
+   "recommendation": "Canoniser 100 comme valeur affichée partout ; la source runtime reste le setting DB via /loyalty/config."
+  }
+ ]
+}

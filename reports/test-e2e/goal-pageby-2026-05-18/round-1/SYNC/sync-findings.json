@@ -1,0 +1,241 @@
+[
+  {
+    "flow": "SETUP",
+    "slug": "env",
+    "state": "branches=1",
+    "severity": "OK",
+    "note": "spaUp=true token=true branchId=1 itemId=375 extraId=172 variationId=271 fiscalSeqBefore=349",
+    "ts": "2026-05-18T02:53:04.916Z"
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "pos-quote",
+    "state": "HTTP 200",
+    "severity": "OK",
+    "note": "POS quote in 273ms, ttl=299s, total_ttc=2",
+    "ts": "2026-05-18T02:53:06.786Z",
+    "ms": 273
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "pos-create",
+    "state": "HTTP 201",
+    "severity": "OK",
+    "note": "Order created in 327ms after quote in 273ms",
+    "ts": "2026-05-18T02:53:07.114Z",
+    "httpStatus": 201,
+    "totalMs": 600
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "pusher-dispatch",
+    "state": "780ms",
+    "severity": "OK",
+    "note": "OrderCreated event id=1930 dispatched in 780ms within 2000ms budget",
+    "ts": "2026-05-18T02:53:08.172Z",
+    "eventId": 1930,
+    "elapsed_ms": 780,
+    "budget_ms": 2000
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "kds-visual",
+    "state": "captured",
+    "severity": "OK",
+    "note": "KDS screenshot 2000ms post-create",
+    "ts": "2026-05-18T02:53:14.947Z",
+    "screenshot": "tests/e2e/__screenshots__/goal-pageby-sync-2026-05-18/flow-1-kds-after-order-t+2s.png"
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "oss-visual",
+    "state": "captured",
+    "severity": "OK",
+    "note": "OSS screenshot 2000ms post-create",
+    "ts": "2026-05-18T02:53:19.953Z",
+    "screenshot": "tests/e2e/__screenshots__/goal-pageby-sync-2026-05-18/flow-1-oss-after-order-t+2s.png"
+  },
+  {
+    "flow": "FLOW2",
+    "slug": "pusher-dispatch",
+    "state": "274ms",
+    "severity": "OK",
+    "note": "OrderStatusChanged dispatched in 274ms within 2000ms budget",
+    "ts": "2026-05-18T02:53:22.975Z",
+    "eventId": 1931,
+    "elapsed_ms": 274
+  },
+  {
+    "flow": "FLOW3",
+    "slug": "pusher-dispatch",
+    "state": "1054ms",
+    "severity": "OK",
+    "note": "ItemAvailabilityChanged dispatched in 1054ms within 2000ms budget",
+    "ts": "2026-05-18T02:53:26.113Z",
+    "eventId": 1933,
+    "elapsed_ms": 1054
+  },
+  {
+    "flow": "FLOW3",
+    "slug": "kiosk-cache-invalidate",
+    "state": "flushed",
+    "severity": "OK",
+    "note": "kiosk.menu.branch.1 cache_present=false post-rupture",
+    "ts": "2026-05-18T02:53:26.399Z"
+  },
+  {
+    "flow": "FLOW4",
+    "slug": "pusher-dispatch",
+    "state": "671ms",
+    "severity": "OK",
+    "note": "Reverse cascade event dispatched in 671ms within 2000ms budget",
+    "ts": "2026-05-18T02:53:28.853Z",
+    "eventId": 1935,
+    "elapsed_ms": 671
+  },
+  {
+    "flow": "FLOW5",
+    "slug": "fiscal-monotonic",
+    "state": "OK",
+    "severity": "OK",
+    "note": "Fiscal sequence monotonic verified across last 5 orders: 350,349,348,347,346",
+    "ts": "2026-05-18T02:53:30.399Z",
+    "latest_5": [
+      350,
+      349,
+      348,
+      347,
+      346
+    ]
+  },
+  {
+    "flow": "FLOW5",
+    "slug": "fiscal-alloc-error",
+    "state": "0",
+    "severity": "OK",
+    "note": "No orders flagged fiscal_alloc_error_at — allocator healthy",
+    "ts": "2026-05-18T02:53:30.399Z"
+  },
+  {
+    "flow": "FLOW5",
+    "slug": "fiscal-unique-per-branch",
+    "state": "OK",
+    "severity": "OK",
+    "note": "fiscal_sequence_no unique per branch: 181/181",
+    "ts": "2026-05-18T02:53:30.399Z",
+    "distinct": 181,
+    "total": 181
+  },
+  {
+    "flow": "FLOW5",
+    "slug": "oss-visual",
+    "state": "captured",
+    "severity": "OK",
+    "note": "OSS visual after wait",
+    "ts": "2026-05-18T02:53:36.702Z",
+    "screenshot": "tests/e2e/__screenshots__/goal-pageby-sync-2026-05-18/flow-5-oss-fiscal-state-displayed.png"
+  },
+  {
+    "flow": "FLOW6",
+    "slug": "polling-config",
+    "state": "30000ms",
+    "severity": "OK",
+    "note": "Polling fallback enabled at 30000ms (broadcasting.polling_fallback.interval_ms)",
+    "ts": "2026-05-18T02:53:38.234Z",
+    "cfg": {
+      "polling_enabled": true,
+      "interval_ms": 30000,
+      "hint_when_off": true
+    }
+  },
+  {
+    "flow": "FLOW6",
+    "slug": "kds-survives-pusher-loss",
+    "state": "OK",
+    "severity": "OK",
+    "note": "KDS page rendered with Pusher blocked. pageerrors=0 console.errors=2",
+    "ts": "2026-05-18T02:53:45.785Z",
+    "screenshot": "tests/e2e/__screenshots__/goal-pageby-sync-2026-05-18/flow-6-kds-pusher-blocked-after-3s.png",
+    "pageErrors": [],
+    "consoleErrors": [
+      "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'htt",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "flow": "FLOW6",
+    "slug": "server-side-cascade-during-block",
+    "state": "OK",
+    "severity": "OK",
+    "note": "Server-side Pusher dispatch still works when client WS blocked: eventId=1937 dispatched=true elapsed=280ms",
+    "ts": "2026-05-18T02:53:47.439Z",
+    "eventId": 1937,
+    "elapsed_ms": 280
+  },
+  {
+    "flow": "FLOW6",
+    "slug": "kds-poll-delivery-snapshot",
+    "state": "captured",
+    "severity": "OK",
+    "note": "KDS visual after 25s wait (allows 1-2 polling cycles to fire)",
+    "ts": "2026-05-18T02:54:12.492Z",
+    "screenshot": "tests/e2e/__screenshots__/goal-pageby-sync-2026-05-18/flow-6-kds-after-poll-post-25s.png"
+  },
+  {
+    "flow": "FLOW6",
+    "slug": "reconnect-no-double-event",
+    "state": "OK",
+    "severity": "OK",
+    "note": "Post-reconnect: exactly 1 event emitted for the toggle (idempotency via wasRecentlyCreated guard preserved)",
+    "ts": "2026-05-18T02:54:14.878Z",
+    "eventCount": 1
+  },
+  {
+    "flow": "FLOW7",
+    "slug": "idempotency-creation",
+    "state": "delta=1",
+    "severity": "OK",
+    "note": "Single order created despite 2 concurrent POSTs with same idempotency key (369ms). Statuses: 201,201",
+    "ts": "2026-05-18T02:54:17.308Z",
+    "statuses": [
+      201,
+      201
+    ],
+    "delta": 1,
+    "ms": 369
+  },
+  {
+    "flow": "FLOW7",
+    "slug": "idempotency-contract",
+    "state": "PASS",
+    "severity": "OK",
+    "note": "Idempotency contract honored: 2 2xx + 0 409",
+    "ts": "2026-05-18T02:54:17.308Z",
+    "statuses": [
+      201,
+      201
+    ]
+  },
+  {
+    "flow": "FLOW8",
+    "slug": "isolation-architecture",
+    "state": "CONFIRMED",
+    "severity": "OK",
+    "note": "Branch isolation architecture verified: BranchScope global, channel auth restricts kiosk tokens to their branch, admin (branch_id=0) bypass intentional",
+    "ts": "2026-05-18T02:54:18.733Z",
+    "codeProof": {
+      "branchscope_active": true,
+      "channel_auth_kiosk_check": true,
+      "channel_auth_admin_branch_zero_bypass": true
+    }
+  },
+  {
+    "flow": "FLOW8",
+    "slug": "live-test",
+    "state": "N/A_1_BRANCH",
+    "severity": "P3",
+    "note": "Live cross-branch cascade test SKIPPED: only 1 branch exists in DB (Le Cayenne). Backend channel auth callback covers the isolation contract.",
+    "ts": "2026-05-18T02:54:18.733Z",
+    "branchCount": 1
+  }
+]

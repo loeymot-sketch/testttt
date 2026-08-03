@@ -1,0 +1,69 @@
+{
+  "wave": "E",
+  "round": 2,
+  "states_reviewed": 21,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/04-E-rupture-toggle-item-362-admin-click.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P0",
+      "evidence": "POST /api/admin/menu/availability/toggle returns HTTP 500 in round 2 (NOT 200). Sidecar reports/test-e2e/rush-hour-50x50-2026-05-10/round-1/wave-E-toggle-responses.json (overwritten by round-2 run, REPORTS_DIR not bumped per spec) records 4 entries: item toggle ts=1778461554775 status=500, extra toggle ts=1778461556083 status=200, item restore ts=1778461639820 status=500, extra restore ts=1778461641021 status=200. Both invocations of /api/admin/menu/availability/toggle (state04 toggle + state18 restore) crash. Cluster-6 fix (commit 762bf7812) wrapped DispatchDomainEventsJob::dispatch in try/catch in 3 listeners (PersistItemAvailabilityChangedToOutbox, PersistItemExtraAvailabilityChangedToOutbox, PersistItemVariationAvailabilityChangedToOutbox) but MISSED a fourth listener subscribed to ItemAvailabilityChanged event: PersistCatalogChangedToOutbox.php line 97 still does unguarded DispatchDomainEventsJob::dispatch($domainEventId). Stack trace in storage/logs/laravel.log confirms: '#23 PersistCatalogChangedToOutbox.php(97): App\\Jobs\\DispatchDomainEventsJob::dispatch(1283)' followed by Pusher BroadcastException 'cURL error 7: Failed to connect to 127.0.0.1 port 6001'. EventServiceProvider.php line 175 wires PersistCatalogChangedToOutbox to ItemAvailabilityChanged. Extra toggle (200) bypasses this listener because ItemExtraAvailabilityChanged at line 182-184 only triggers PersistItemExtraAvailabilityChangedToOutbox (which IS guarded). Same root cause as round 1 — fix incomplete.",
+      "fix_hint": "app/Listeners/PersistCatalogChangedToOutbox.php line 95-99 — wrap DispatchDomainEventsJob::dispatch($domainEventId) inside the foreach with try/catch and Log::warning('[Outbox] PersistCatalogChangedToOutbox inline dispatch failed (non-blocking)') — same pattern as cluster-6 commit 762bf7812 already applied to the 3 other listeners. Also audit and patch 5 remaining unguarded callers: PersistCouponChangedToOutbox.php:92, PersistOrderCreatedToOutbox.php:52, PersistOrderPaidAtCounterToOutbox.php:48, PersistOrderStatusChangedToOutbox.php:61, PersistOrderPaymentStatusChangedToOutbox.php:68, PersistOrderTableChangedToOutbox.php:86 — all share the same Pusher-failure-bubbles-to-HTTP-500 risk for any flow that triggers the corresponding domain events.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/04-E-rupture-toggle-item-362-admin-click.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Admin catalog table after item-362 toggle click shows row Boisson Seule with action button still labelled 'Marquer Indisponible' (would be 'Marquer Disponible' if toggle had succeeded), STATUT pill still 'Actif' (green), and stat card 'INDISPONIBLES' still shows 0 — UI is in stale post-500 state. No error toast/banner is rendered to inform the operator. Console JSON state04 + DOM HTML for state04 contain no error toast node. E-002 is by-side-effect of E-001: the 500 is not caught client-side, so the optimistic UI rolls back silently. Will close automatically when E-001 closes; cannot be independently verified until then.",
+      "fix_hint": "Closes by-side-effect when E-001 fixed (see PersistCatalogChangedToOutbox patch). If desired as defense-in-depth, add an axios interceptor warning toast on 5xx for /api/admin/menu/availability/* in resources/js/admin views.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/07-E-cascade-pos-wizard-tacos-extra-175-disabled.png",
+      "category": "empty_state",
+      "severity": "P1",
+      "evidence": "Cluster-7 spec change (commit 7aea3962f) re-opened the POS wizard for Tacos M (id 363) and the captured PNG now shows the wizard mounted (header 'Tacos M (1 Viande)', viande-step grid visible). However the wizard is captured at the FIRST STEP (viande selection) — extras step is NOT reached because the spec did not advance through Viande/Crudités/Sauce/Suppléments steps. The DOM probe in observations confirms wizard_mounted=true, supplement_grid found with text including 'Jambon de dinde +1.00€', but disabled_signal=false (disabled=false, ariaDisabled=null, pointerEvents=auto, opacity=1, hasUnavailableClass=false, hasUnavailableText=false). Independently, code search on public/js/pos-wizard.js (frozen-zone Vanilla JS wizard per CLAUDE.md §7) finds NO usage of is_available / épuisé / unavailable / out_of_stock for supplement rendering — only viande +/- enable/disable based on count. The POS wizard has no rupture handling for supplements at the source-code level. Round-2 capture cluster-7 change made wizard visible but did not produce a passing visual disabled signal because (a) wizard not advanced to extras step and (b) the wizard does not render any disabled signal for ruptured supplements.",
+      "fix_hint": "Two-part. (1) Spec: tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-E.spec.js state07 — after wizard mount, click through viande selection then advance to '+ Suppléments' button before snapping. (2) Product gap (frozen-zone, requires LOCK_E-003.md per CLAUDE.md §7): public/js/pos-wizard.js currently renders supplements as <button> with no per-extra is_available check; must read extra.is_available from payload and add 'disabled' class + 'ÉPUISÉ' label + pointer-events:none, mirroring the kiosk wizard pattern (state09 confirms KioskWizardComponent already does this — supplement card text contains 'ÉPUISÉ' and opacity 0.907). Owner gate required before touching pos-wizard.js.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/17-E-kds-cards-mixed-20-orders.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "state17 KDS observations: card_count_total=20, pos_token_matches=10/10, kiosk_instruction_matches=0/10, rupture_leak_count=0/20. POS-originated orders carry the [POS] sentinel token in instructions and are matched, but kiosk-originated orders' special_instructions text is not propagated/visible at KDS for the burst. Re-verified same behavior as round 1 — informational only (does not block convergence; 20/20 KDS cards present, no fiscal/payment regression).",
+      "fix_hint": "Investigate kiosk burst order payload — KioskOrderController may strip special_instructions before persistence, or KDS card template may not render the field for orders with origin=kiosk. Defer to a separate kiosk-KDS audit cycle (out of scope for rush-hour P0 closure).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 2,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 1,
+    "open_P1": 2,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "FAIL",
+    "E-002": "FAIL",
+    "E-003": "PARTIAL_PASS",
+    "E-004": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Round-2 spec passed (1 passed, 133s wallclock). Cluster-6 fix (3 listener try/catches) was correct in pattern but incomplete in coverage — it missed PersistCatalogChangedToOutbox (4th listener for ItemAvailabilityChanged + 6 other Order/Coupon listeners with identical risk pattern). Item-toggle (state04, state18) still 500; extra-toggle (state05, state19) is 200 because extras flow does not pass through the unpatched listener. Cluster-7 spec change made the POS wizard mount visible (positive) but exposed a deeper product gap: the frozen-zone Vanilla JS pos-wizard.js has no supplement is_available rendering at all (kiosk equivalent does — KioskWizardComponent shows 'ÉPUISÉ' on supplement 175). All P0 cascades (E1, E2, E5a/b/c, E7, E8) PASS — bypass blocked 422, reversibility 3-12ms, branch isolation 0/5, numeric integrity 5/5. Recommend Phase 2 NOT ready: 1 more fix cycle needed (cluster-8 covering PersistCatalogChangedToOutbox + the 5 Order listeners + audit cluster-7 spec to advance to extras step). E-003 product fix requires LOCK_E-003.md owner gate (frozen zone). 21/20 PNGs captured; sidecars overwrote round-1 because spec did not bump REPORTS_DIR — recommend spec env tweak for round-3 to preserve isolated round-2 sidecars."
+}

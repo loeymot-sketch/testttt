@@ -1,0 +1,147 @@
+{
+  "role": "sre",
+  "system": "F-9 Observability",
+  "scope": "Production-readiness — log retention, log rotation, queue worker health probes, scheduling, metrics surface, dashboard cardinality",
+  "read_only": true,
+  "files_inspected": [
+    "config/logging.php",
+    "config/fiscal.php",
+    "app/Console/Kernel.php",
+    "app/Http/Controllers/HealthController.php",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php",
+    "app/Console/Commands/MonitorOutboxStaleness.php",
+    "app/Console/Commands/OutboxRescueCommand.php (path verified via filesystem)",
+    "app/Console/Commands/OutboxRetryFailedCommand.php (path verified)",
+    "app/Console/Commands/PruneOutboxCommand.php (path verified)",
+    "app/Logging/JsonFormatter.php",
+    "docs/REALTIME_SETUP.md (referenced lines 197, 207)",
+    "docs/QUEUE_WORKER_SETUP.md (referenced grep matches)",
+    "docs/DEPLOYMENT_GUIDE_V1.md (referenced grep matches)",
+    "storage/logs/ (directory listing)"
+  ],
+  "findings_keep": [
+    {
+      "id": "SRE-OBS-K1",
+      "title": "Three-probe health stack matches K8s/SRE convention",
+      "evidence": "routes/api.php:139-141 — three endpoints. HealthController::live() returns plain text 'OK' 200 (line 34-37) — port-open + process-up probe. HealthController::ready() returns JSON 200 or 503 with subsystems (line 39-60) — load-balancer rotation probe. HealthController::full() returns JSON 200 always with 4 subsystems including queue size (line 13-32) — operator dashboard. Asymmetric design is intentional.",
+      "verdict": "KEEP — matches Kubernetes liveness/readiness pattern. /live deliberately public for LB."
+    },
+    {
+      "id": "SRE-OBS-K2",
+      "title": "Channel retention tiers calibrated to compliance windows",
+      "evidence": "config/logging.php — hardware 30d (line 125), security 90d (line 145, forensic), observability 90d (line 167, ops post-mortem), fiscal 400d (line 186, NF525 6-year archive long-tail). config/fiscal.php:148 — archive_retention_years=6 default. Generic stack/single = laravel.log 14d default Laravel — short retention isolates noise.",
+      "verdict": "KEEP — explicit retention rationale in code comments lines 128-140, 158-169, 171-186."
+    },
+    {
+      "id": "SRE-OBS-K3",
+      "title": "Outbox pipeline has 5 scheduled lanes with serialization primitives",
+      "evidence": "Console/Kernel.php — foodking:outbox:rescue everyMinute (line 40-43), foodking:outbox:monitor everyMinute (line 50), foodking:outbox:retry-failed hourly (line 64-68), foodking:outbox:prune dailyAt 04:00 (line 101-103), webhook-events prune dailyAt 04:15 (line 118). All wrapped in withoutOverlapping() + onOneServer() for horizontal-scale safety.",
+      "verdict": "KEEP — explicit W9-AUDIT FIX-6 hardening rationale (line 36-39)."
+    },
+    {
+      "id": "SRE-OBS-K4",
+      "title": "SLO evaluator scheduled every 5min with overlap protection",
+      "evidence": "Console/Kernel.php:125-128 — $schedule->job(new SloEvaluatorJob())->everyFiveMinutes()->withoutOverlapping(5)->onOneServer(). 5-minute mutex matches the cadence so no double-fire. SloEvaluatorJob.php:41-43 tries=3 backoff=10s timeout=120s — safely below the 5min cadence ceiling.",
+      "verdict": "KEEP."
+    },
+    {
+      "id": "SRE-OBS-K5",
+      "title": "Outbox dashboard query is bounded (SELECT_LIMIT=50000)",
+      "evidence": "SyncOverviewController.php:35 const SELECT_LIMIT = 50000. Used at lines 91 (sync_metrics), :339 (latency rollup). Truncation surfaced to UI via response['truncated']=true (line 93, 159). Deterministic order (occurred_at + id) at line 89-91 — percentile p95/p99 stable across calls when cap hit.",
+      "verdict": "KEEP — graceful degradation on high-cardinality, documented (line 30-35)."
+    },
+    {
+      "id": "SRE-OBS-K6",
+      "title": "MonitorOutboxStaleness sends non-zero exit + Log::error for supervisor pager hooks",
+      "evidence": "MonitorOutboxStaleness.php:80-83 — Log::error($message, $context) then return self::FAILURE. Supervisor/cron sees exit-code != 0 and fires pager backend (PagerDuty/OpsGenie integration left to ops, scheduler-agnostic). $context includes stale_count + oldest_event_type + oldest_created_at + oldest_attempts for operator triage at first glance.",
+      "verdict": "KEEP — alert design correct (DON'T silently retry, fail loudly)."
+    },
+    {
+      "id": "SRE-OBS-K7",
+      "title": "Heuristic process-up probes documented as heuristics",
+      "evidence": "SyncOverviewController.php:283-302 (outboxOverview comment block), :554-565 (probeHealth return payload) — both queue_work and websockets_serve return method='heuristic_jobs_reserved_or_event_dispatched_within_90s' / 'heuristic_cache_heartbeat_or_recent_dispatch_within_60s'. Out-of-scope for V1 (real pgrep / supervisor RPC) documented (line 301-302). Dashboards see method=heuristic and adjust confidence.",
+      "verdict": "KEEP — explicit limitation, NOT silent."
+    },
+    {
+      "id": "SRE-OBS-K8",
+      "title": "Queue worker setup documented in 3 deployment docs",
+      "evidence": "docs/DEPLOYMENT_GUIDE_V1.md:75-90, docs/REALTIME_SETUP.md:138-180, docs/QUEUE_WORKER_SETUP.md:61-113 — all reference supervisor + queue:work --queue=high. Cross-referenced from HealthController error messages (line 197) and MonitorOutboxStaleness messages (line 78).",
+      "verdict": "KEEP — error messages point operators at the right runbook."
+    }
+  ],
+  "findings_heal": [
+    {
+      "id": "SRE-OBS-H1",
+      "title": "Daily channels rotate to laravel-YYYY-MM-DD.log but with no max-files cap on observability/security/fiscal",
+      "evidence": "config/logging.php — 'daily' channel sets days=14 (line 70), but 'security' days=90 (line 145), 'observability' days=90 (line 167), 'fiscal' days=400 (line 186). Monolog rotating-file deletes files older than days. No size cap (max-files works on date, not size). Real-world risk: a chatty error loop (kiosk reconnect storm, fiscal alloc retry burst) can blow disk in <1 day before rotation triggers.",
+      "impact": "Disk fill → /ready may itself fail (Schema check on tables crashes if mysqld is paused on innodb_file_per_table fill). Cascading silent outage.",
+      "verdict": "HEAL — add Monolog RotatingFileHandler with maxFiles + size limit, or supervise with logrotate(8) at OS level. Operator-config task, not a code patch."
+    },
+    {
+      "id": "SRE-OBS-H2",
+      "title": "Health probe /live has no rate limit or middleware",
+      "evidence": "routes/api.php:140 — Route::get('/health/live', [HealthController::class, 'live']) — no middleware, no throttle. Public DDoS surface. Even a 200 'OK' response over HTTPS is ~500B; 1Mreq/s = 500MB/s egress. Cloud LB usually rate-caps but local nginx default doesn't.",
+      "impact": "Bandwidth exhaustion vector if an attacker hammers /health/live. Health probe latency may also spike under normal load if shared with API throttle pool — currently no shared pool, so OK.",
+      "verdict": "HEAL — add throttle:120,1 (120/min) or whitelist by source IP for the K8s/LB callers. Trivial route patch."
+    },
+    {
+      "id": "SRE-OBS-H3",
+      "title": "No on-disk log size monitoring",
+      "evidence": "No /healthz subsystem checks df -h / disk-free. Storage/logs/ directory listing shows serve-round2.log = 2.4MB and serve-round3-final.log = 3.0MB from May 10-11 — orphan dev logs accumulated. Real production disk-fill events would not flip /ready to 503.",
+      "impact": "Silent failure when disk fills. Logs stop writing (Monolog fails open with warning, but app keeps running blind).",
+      "verdict": "HEAL — add disk_free check in HealthController::full() (warn at 15%, error at 5%). Also schedule a storage:gc command to vacuum old dev logs."
+    },
+    {
+      "id": "SRE-OBS-H4",
+      "title": "SyncMetrics dashboard percentile is in-memory; no degradation hint at high-data-rate",
+      "evidence": "SyncOverviewController.php:252-265 percentile() — sort+ceil in-memory on up-to-50000 rows. At 1000 metrics/min per branch (realistic kiosk load) the table reaches SELECT_LIMIT in ~50min. Truncated flag is set (line 93) but dashboard UI consuming it not audited here.",
+      "impact": "Percentiles become approximated when cap hits. /sync-overview takes 2-5s wall-clock per call at full cap (PHP sort 50k ints).",
+      "verdict": "HEAL (V1.0.2) — migrate to a materialized percentile view or precomputed rollup (per-hour bucket). Documented as out-of-scope in line 26-27."
+    },
+    {
+      "id": "SRE-OBS-H5",
+      "title": "No /metrics Prometheus-style endpoint",
+      "evidence": "grep '/metrics' in routes returns 1064 (/client-metrics POST = telemetry ingestion, not Prometheus scrape). No GET /metrics endpoint exposing counters in Prometheus exposition format. Grafana wireup limited to: log scraping (Loki) + DB queries against sync_metrics/ActionLog/domain_events.",
+      "impact": "Operators using Prometheus must scrape DB indirectly (laggy, expensive). No native counter increments for ops dashboards.",
+      "verdict": "HEAL (V1.0.2) — optional. Add a /metrics endpoint behind permission:settings reading from cache or sync_metrics aggregation. Production-grade but not V1 critical."
+    },
+    {
+      "id": "SRE-OBS-H6",
+      "title": "KDS overflow flag UI is in place but no server-side alert",
+      "evidence": "KitchenDisplaySystemComponent.vue:1888,1926 — this.kdsOverflowDetected = res?.data?.meta?.overflow === true. UI surfaces a 'see more' button (line 90). Backend sets meta.overflow when KDS query truncates — but no Log::warning/observability emit, no SLO breach signal. Operators only see it if a chef is physically watching the screen.",
+      "impact": "Silent KDS-truncation → orders stuck in the unseen tail → kitchen workflow stall. Documented as V1.0.1 backlog per CLAUDE.md / project memory.",
+      "verdict": "HEAL (V1.0.1) — add Log::channel('observability')->warning('kds.overflow_detected', [branch_id, count_truncated]) + counter increment to sync_metrics. Already on roadmap."
+    }
+  ],
+  "findings_duplicate": [
+    {
+      "id": "SRE-OBS-D1",
+      "title": "Outbox dashboard health probes overlap with /healthz/ready",
+      "evidence": "/healthz/ready (HealthController::checkQueueWorker line 143-168) and /api/admin/observability/outbox health.queue_work (SyncOverviewController::probeHealth line 492-525) both compute 'queue_work UP/DOWN' but use different signals (stale-count threshold vs reserved-job timestamp). Two answers can disagree.",
+      "impact": "Dashboard says UP, LB rotates the node out — operator confusion.",
+      "verdict": "DUPLICATE — unify the heuristic in a shared service (QueueHealthProbe). Out-of-scope read-only. Mark for V1.0.2 docs alignment."
+    }
+  ],
+  "findings_dead": [
+    {
+      "id": "SRE-OBS-DEAD1",
+      "title": "No alert on observability channel writes themselves",
+      "evidence": "Log::channel('observability') has no Slack/Sentry/pager forwarding configured in config/logging.php. Only 'slack' channel (line 73-79, LOG_SLACK_WEBHOOK_URL env). Slack channel referenced from SloEvaluatorJob.php:105 (alert on breach). But observability-channel errors (slo_evaluator.branch_failed at line 57, csp_violation, kiosk_locale.*) emit to file only.",
+      "impact": "Errors written to observability.log are invisible to pager until someone tails the file. Inverts the channel-isolation intent (file separation without alert forwarding = silent storage).",
+      "verdict": "DEAD-LIKE — observability channel currently is a write-only sink. Add stack: ['observability', 'slack-error-only'] composition or configure Loki/Logtail alert rules. Operator decision."
+    },
+    {
+      "id": "SRE-OBS-DEAD2",
+      "title": "Hardware channel logs at 'info' but only used for warnings",
+      "evidence": "config/logging.php:121-126 — 'hardware' channel level 'info'. Single caller KioskEventController.php:265 — Log::channel('hardware')->warning($details). No info-level write found via grep.",
+      "impact": "Channel 'level=info' permits info-level writes but no code emits them. Minor — over-permissive level wastes nothing.",
+      "verdict": "DEAD-LIKE — promote channel level to 'warning' to express intent, or add info-level emit for routine hardware events (printer-ready, drawer-opened) per UAT plan."
+    }
+  ],
+  "open_questions_for_owner": [
+    "Should we add a Prometheus /metrics endpoint in V1.0.2, or stay on DB-scrape via /api/admin/observability/sync-overview indefinitely?",
+    "Is the disk-free check on /healthz worth the boot complexity (env-specific path config), or is OS-level logrotate sufficient?",
+    "The 'observability' channel is write-only today (no Slack/Sentry forward). Wire it or document the intent?"
+  ],
+  "word_count_approx": 1465
+}

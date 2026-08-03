@@ -1,0 +1,51 @@
+{
+  "round": 2,
+  "head": "056581cf9",
+  "date": "2026-07-06",
+  "findings": [
+    {
+      "id": "R2-OBS-01",
+      "severity": "P3",
+      "status": "KNOWN_NOT_WORSE",
+      "title": "KDS sync endpoint échoue (401 au lieu de 403 round 1) — fallback polling actif",
+      "evidence": "Console: 4x 'GET http://127.0.0.1:8000/api/admin/kds-order/sync?...&include_deleted=true => 401'. Le board principal charge via http://127.0.0.1:8766/api/admin/kds-order => 200 (network req #44/#47/#49). Bandeau 'Mode admin centralisé: rafraîchissement automatique toutes les 60 s' visible, 6 commandes actives rendues correctement. Même famille que le P2 connu round 1 (sync 403/URL relative, fallback polling OK) — le sync utilise l'URL relative :8000 sans bearer pendant que l'app pointe :8766. Fonctionnellement identique au round 1, pas empiré."
+    },
+    {
+      "id": "R2-OBS-02",
+      "severity": "P3",
+      "status": "KNOWN_NOT_WORSE",
+      "title": "Pastille +3 chevauche SYNC·ADMIN et effleure le bord haut de la carte C",
+      "evidence": "DOM: .kds-overflow-chip rect y=135.7..176.3 (device px), cartes top=162 → recouvrement ~14 device px (~7 css px) du liseré haut de la carte C. Identique au P2 connu round 1 ('+N chevauche SYNC·ADMIN'). Texte '+3en attente' lisible, aucun contenu de carte masqué."
+    },
+    {
+      "id": "R2-OBS-03",
+      "severity": "P3",
+      "status": "KNOWN_NOT_WORSE",
+      "title": "Avatar navbar bloqué ORB",
+      "evidence": "Network /admin/items: GET http://127.0.0.1:8766/storage/18/clean.jpg => FAILED net::ERR_BLOCKED_BY_ORB. Connu round 1, inchangé."
+    }
+  ],
+  "verified_pass": {
+    "commit": "056581cf9 existe (fix(kds+tests) au-dessus de c70b1e518) ; diff --stat = 6 fichiers (resources/css/app.css +6, KdsOrderCard.vue ±6, KitchenDisplaySystemComponent.vue +12, BorneClientTicketLongFeedTest.php, KdsV2GridOverflowChipSentinel.spec.js, kdsV2ArchiveSlotSentinel.spec.js) — AUCUN fichier frozen CLAUDE.md §7",
+    "kds_full_height": "getBoundingClientRect 3 cartes: top=162 bottom=2130 h=1968 dans grille .kds-v2 h=2020 (viewport device 3840x2160) ; style.height inline = null sur les 3 (le 462px hardcodé est bien mort) ; hauteurs STRICTEMENT identiques A/B/C",
+    "cta_pret": "bouton 'Prêt' présent sur les 3 cartes, btnBottom=2119 vs card bottom=2130 → collé en bas, pleinement visible (paysage ET portrait)",
+    "pastille_exacte": "payload /api/admin/kds-order = 28 commandes dont 6 actives status∈{4,7} (E2E052327541..54C) → 3 cartes affichées + chip '+3 en attente' = EXACT",
+    "codes_3_lettres": "CAY|ST, S|TER|Mex Cordon|STO|AND, G|TAC|L|K Mex|MAY — conformes ('Mex Cordon' = format owner validé)",
+    "supplements_inline": "carte B: 'Champignons / Jambon' inline sous la ligne article ; fond jaune PLEINE carte = classe délibérée kds-card--has-supplements (KdsOrderCard.vue:333 et :816), pas un bug de stretch",
+    "portrait_1080x1920": "3 colonnes pleine hauteur, CTA en bas, aucune troncature, aucune scrollbar horizontale",
+    "regression_admin": "/admin/pos : db-main className='db-main expand' (pas de db-main--kds résiduel après navigation SPA depuis /kds → beforeUnmount OK) ; layout POS intact (grille catégories, files PRÊT À LIVRER + À ENCAISSER BORNE, ticket). /admin/items : sidebar+table 55 produits+pagination intacts. Captures regression-admin-pos.png / regression-admin-items.png",
+    "console": "1 seule erreur = sync 401 connu ; 0 erreur Vue ; 0 warning",
+    "i18n": "scan TreeWalker regex ^[a-z]+\\.[a-z_.]+$ sur tout le body = 0 fuite",
+    "network": "aucun 4xx/5xx NOUVEAU (401 sync connu + ORB avatar connu ; le 400/401 sur :8000 déclenchés par mes propres fetch de vérification exclus)",
+    "vitest_kds": "27 fichiers / 211 tests PASSED (incl. sentinelles kdsV2ArchiveSlotSentinel + KdsV2GridOverflowChipSentinel réalignées)",
+    "phpunit": "--filter 'BorneClientTicketLongFeedTest|TicketWidthSafe' = OK 15 tests / 45 assertions"
+  },
+  "captures": [
+    "reports/test-e2e/verif-kds-ticket-c70b1e518/round-2/kds-1920x1080.png",
+    "reports/test-e2e/verif-kds-ticket-c70b1e518/round-2/kds-1080x1920.png",
+    "reports/test-e2e/verif-kds-ticket-c70b1e518/round-2/regression-admin-pos.png",
+    "reports/test-e2e/verif-kds-ticket-c70b1e518/round-2/regression-admin-items.png"
+  ],
+  "verdict": "CLEAN",
+  "pass_summary": "Round 2 adversaire: 0 nouveau P0/P1/P2. Le fix 056581cf9 tient sous mesure DOM (3 cartes h=1968/2020, inline height morte, CTA Prêt en bas, paysage+portrait), pastille +3 exacte vs payload (6 actives), suppléments inline + fond jaune = classe intentionnelle has-supplements, 0 fuite i18n, 0 régression /admin/pos + /admin/items (classe db-main--kds correctement retirée au beforeUnmount), Vitest KDS 211/211, PHPUnit tickets 15/15, commit hors zones frozen. Les 3 observations restantes sont les P2/P3 déjà connus, non empirés."
+}

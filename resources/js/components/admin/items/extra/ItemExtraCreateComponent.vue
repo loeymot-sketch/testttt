@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <button type="button" @click="add" data-modal="#extraModal" class="db-btn h-[37px] text-white bg-primary">
+    <button type="button" @click="add" data-modal="#extraModal" class="db-btn h-[37px] text-white bg-primary" data-testid="admin-extra-add-button">
         <i class="lab lab-add-circle-line"></i>
         <span>{{ addButton.title }}</span>
     </button>
@@ -10,16 +10,17 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.extras") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" :aria-label="$t('button.close')"
                     @click="reset"></button>
             </div>
             <div class="modal-body">
+                <CatalogConceptHelpComponent concept="extra" />
                 <form @submit.prevent="save">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-6">
                             <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                             <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                                id="name" class="db-field-control" />
+                                id="name" class="db-field-control" data-testid="admin-extra-form-name" />
                             <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                         </div>
 
@@ -29,7 +30,7 @@
                             }}</label>
                             <input v-on:keypress="numberOnly($event)" v-model="props.form.price"
                                 v-bind:class="errors.price ? 'invalid' : ''" type="text" id="price"
-                                class="db-field-control" />
+                                class="db-field-control" data-testid="admin-extra-form-price" />
                             <small class="db-field-alert" v-if="errors.price">{{ errors.price[0] }}</small>
                         </div>
 
@@ -93,7 +94,7 @@
 
                         <div class="form-col-12">
                             <div class="modal-btns">
-                                <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                                <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>
@@ -111,6 +112,7 @@
     </div>
 </template>
 <script>
+import CatalogConceptHelpComponent from "../CatalogConceptHelpComponent.vue";
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
@@ -118,7 +120,7 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 
 export default {
     name: "ItemExtraCreateComponent",
-    components: { LoadingComponent },
+    components: { CatalogConceptHelpComponent, LoadingComponent },
     props: ["props"],
     data() {
         return {

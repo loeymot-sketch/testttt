@@ -1,0 +1,17 @@
+app/Services/Delivery/DeliveryQuoteService.php
+app/Exceptions/Delivery/GeocodeUnavailableException.php
+app/Http/Requests/OrderRequest.php
+app/Http/Controllers/Frontend/OrderController.php
+resources/js/components/frontend/checkout/CheckoutComponent.vue
+resources/js/components/admin/pos/PosComponent.vue
+tests/Feature/Delivery/DeliveryFeeForgePosTest.php
+tests/Feature/Delivery/DeliveryFeeForgeWebTest.php
+tests/Feature/Delivery/GeocodeFailureBlocksOrderTest.php
+tests/Feature/Frontend/OrderRequestDeliveryFeeAuthorityTest.php
+tests/js/checkoutGeocodeError.spec.js
+docs/delivery/DELIVERY_FEE_POLICY_2026-04-27.md
+missions/PRODUCT-COMPOSER-SYNC-B8-DELIVERY-MAPS-HARDENING/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-B8-DELIVERY-MAPS-HARDENING/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-B8-DELIVERY-MAPS-HARDENING/input.json
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-B8-DELIVERY-MAPS-HARDENING.md
+reports/post_execute_latest.log

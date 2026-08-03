@@ -1,0 +1,86 @@
+{
+  "wave": "E",
+  "round": 2,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-pos-kds-sync-E/14-e-kiosk-order-cancel-edge.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "14-e-kiosk-order-cancel-edge.network.json contains POST http://127.0.0.1:8000/api/admin/pos-order/change-status/524 status=422 ts=1778444133791. The DOM (14-e-kiosk-order-cancel-edge.dom.html) contains zero rendered Vue-Toastification__toast--error / role=\"alert\" body element (only the CSS class definitions appear in <style> blocks; no live toast container has a child toast with role=\"alert\"). Console.json confirms the 422 was emitted (\"Failed to load resource: the server responded with a status of 422 (Unprocessable Content)\" url=/api/admin/pos-order/change-status/524) but no UI feedback was shown to the operator. This is the operator-driven kiosk-cancel pathway (PosOrdersTrackerComponent tracker-cancel-{id} → tracker-cancel-confirm). The 422 allowlist applies to form-validation submissions; this is a status-mutation action whose validation rejection is hidden from the user.",
+      "fix_hint": "PosOrdersTrackerComponent.vue around line ~660 (cancelOrderConfirm / changeStatus handler) — when the change-status POST returns 422, surface the validation error via this.$toast.error or this.cancelDialog.error. Currently the catch path appears to suppress 422 on the cancel reason flow. Likely the reason-text validation rejects on length/required and the operator is left wondering why the cancel didn't take effect.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-pos-kds-sync-E/04-e-kiosk-order-placed.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "04-e-kiosk-order-placed.network.json contains POST http://127.0.0.1:8000/api/frontend/order/quote status=401 ts=1778444065155. 04-e-kiosk-order-placed.console.json corroborates: \"Failed to load resource: the server responded with a status of 401 (Unauthorized)\" url=/api/frontend/order/quote. The kiosk helper placeKioskOrder() succeeded (orderId=514 in 04-e-kiosk-order-placed.payload.json) and would have THROWN on a quote 401 (kiosk-order.js:417-424 wraps the POST in try/catch and returns ok:false stage:\"quote\"). Therefore the 401 was emitted by a *different* caller — most likely the kiosk surface itself (KioskPaymentComponent.vue:490 axios.post('frontend/order/quote') OR resources/js/store/modules/kioskCart.js:608 axios.post('frontend/order/quote')) firing a quote BEFORE the spec-injected bearer token is attached, i.e. the kiosk page auto-quotes on hydration without authentication. The DOM at state 04 shows the kiosk idle screen and no role=\"alert\" / error-toast was rendered for the 401 → silent error path on the kiosk surface itself.",
+      "fix_hint": "Investigate KioskPaymentComponent.vue:490 + resources/js/store/modules/kioskCart.js:608. The kiosk surface should not auto-fire /quote until a Sanctum bearer + cart payload is ready. Either gate the call on cart non-empty + token-present, or catch 401 specifically and surface a visible session-expired prompt. Adversarial concern: in production a 401 here would silently break the cart-pricing display and the user would see stale or zeroed prices without warning.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-pos-kds-sync-E/05-e-kds-after-kiosk-pay-DEBUG.dom.html",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "GStack summary claims 'KDS source distinction: column-as-badge [data-kds-order-card=\"kiosk\"] + \"🖥️ Borne\" column header (KitchenDisplaySystemComponent.vue:690)'. The DOM evidence contradicts: state 05 (immediately after kiosk-paid order 514) contains 33× data-kds-order-card=\"takeaway\" and ZERO data-kds-order-card=\"kiosk\". State 13 (after 2 concurrent kiosk-source orders) contains 28× data-kds-order-card=\"takeaway\" and ZERO data-kds-order-card=\"kiosk\". Root cause traced: V1 forces kiosk POSTs to submit order_type=TAKEAWAY(10) per OrderRequest.php:200 enforcement (\"Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à emporter).\", spec line 124-128). KitchenDisplaySystemComponent.vue:1563 buckets kiosk vs takeaway by order_type === orderTypeEnum.KIOSK(25). Net result: in V1 production, the dedicated \"🖥️ Borne\" column at line 690 is ALWAYS empty; every kiosk-paid order lands in the takeaway lane indistinguishable from POS-source takeaways. This directly violates Wave E acceptance criterion 'Source badge \"Borne\" visually distinct from POS source on KDS card (P1)'. Note: POS suivi DOES correctly show kiosk source via 47× pos-tracker-card-source--kiosk pills (state 13b) because PosOrdersTrackerComponent.sourceOf() reads source_surface field, not order_type.",
+      "fix_hint": "KitchenDisplaySystemComponent.vue:1555-1563 _applyOrderBuckets() — bucket on the source_surface field as PRIMARY signal (mirroring PosOrdersTrackerComponent.sourceOf() at line 700-712), with order_type as fallback only. Pseudocode: kioskOrders = visibleRows.filter(o => o.source_surface === 'kiosk' || o.order_type === orderTypeEnum.KIOSK); takeawayOrders = remaining. Verify order resource projects source_surface to KDS payload (already done for POS suivi). Without this fix, the 'Borne' lane added in iter15 is dead UI in V1.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-pos-kds-sync-E/11-e-kds-mark-served-or-pos-deliver.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "11-e-kds-mark-served-or-pos-deliver.dom.html contains an active Vue-Toastification__toast--error with body text 'No query results for model.' This is a literal Laravel ModelNotFoundException::getMessage() string surfaced raw to the operator. Network.json confirms the 404 origin: POST /api/admin/pos-order/change-status/514 status=404 ts=1778444104837. The 404 itself is NOT silent (toast renders) so it does not qualify as silent_error category, but the leaked English Laravel exception copy is unprofessional in a French-language POS UI and violates the i18n_leak detection rule (raw debug text exposed to user).",
+      "fix_hint": "PosOrdersTrackerComponent.vue around the markDelivered handler — catch 404 specifically and emit a translated toast (e.g. this.$toast.error(this.$t('pos.tracker.order_not_found'))). Add the i18n key to lang/fr/pos.json. The same pattern likely affects every change-status path; centralize via an axios interceptor that maps Laravel exception messages to translated strings.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-pos-kds-sync-E/05-e-kds-after-kiosk-pay-DEBUG.png",
+      "category": "loading_state_missing",
+      "severity": "P1",
+      "evidence": "Per GStack report SYNC-E-1 measured kiosk→KDS latency = 15.3 s vs ≤8 s budget. SYNC-E-3-A (KDS PREPARING→POS) = 12.3 s vs ≤5 s. SYNC-E-3-B (KDS PREPARED→POS) = 7.99 s vs ≤5 s. Root cause: ws://127.0.0.1:6001 connection refused on every state (vendor.js stack — allowlisted as a console signal but it cripples broadcast). Without Pusher/Reverb, both surfaces fall back to ~10-13 s polling. This audit cannot prove production Pusher/Reverb works because no WS infrastructure is provisioned in dev. Per audit-plan letter the budget breach is P0; per orchestrator pre-brief this is downgraded to P1 with a 'blocked on WS test infrastructure' qualifier — owner decides whether to invest in a Reverb dev container before declaring V1 sync-budget green. Production Pusher path is currently UNVERIFIED by this run.",
+      "fix_hint": "Two parts: (1) infra — provision a Reverb (or Pusher mock) dev container so future runs can validate ≤8 s / ≤5 s budgets end-to-end. (2) product — even with Pusher up, KDS/POS surfaces should expose a visible 'connection lost' banner (already partially done via ConnectionStatusBanner.vue per state 13b DOM comment) and force operators to fallback to manual refresh; verify the banner actually renders during ws-down windows (its v-if branch was muted in the captured DOM).",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-pos-kds-sync-E/13-e-source-isolation-borne-vs-pos.dom.html",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Per spec line 808-895, SYNC-E-4 was weakened from full kiosk+POS Promise.all to two concurrent kiosk POSTs on independent pages because the quote_token is single-use (backend response 'Order quote has already been consumed.' yields HTTP 409 on duplicate consumption). This is real backend single-use replay-protection — not a defect — but it surfaces a UX risk: a kiosk user who triggers a network retry (idle bounce, slow connection) will see the second leg fail with 409. Spec verified 2 distinct order ids resulted on this run (concIds.length===2 path), so the property held. Open observational risk: kiosk frontend handling of 409 is unverified — if the kiosk page shows a raw 'Order quote has already been consumed' to a guest customer, that's UX-grade. State 04-13 DOM does not capture a 409 path because the helper used 2 separate kiosk pages with distinct quote tokens. Recommend: a Wave F state should explicitly fire two stores against the SAME quote_token to verify kiosk frontend recovery behavior (silent reissue vs raw error toast).",
+      "fix_hint": "Add a Wave F scenario placeKioskOrderTwiceSameQuote that asserts the kiosk surface either (a) silently reissues a fresh quote on 409, or (b) shows a translated user-facing message — not the raw English. Audit KioskPaymentComponent.vue submission handler around the catch on /api/frontend/order POST.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 3,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 2,
+    "open_P1": 3,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "First adversarial review of Wave E (no round-1 baseline). Kiosk↔KDS↔POS sync flow exposes 2 P0 silent errors (E-001 cancel-422, E-002 kiosk-quote-401), 1 P1 architectural defect (E-003 KDS Borne column dead in V1 — contradicts GStack summary claim), 1 P1 raw English error leaked to operator (E-004), 1 P1 broadcast-budget breach unverifiable in dev (E-005), and 1 P2 observational on quote-token single-use UX (E-006). Numeric integrity SYNC-E-5 verified PASS (T_kiosk_paid=2€ === DB orders.total === POS suivi card total; KDS confirmed money-blind). SYNC-E-2 PASS verified (tracker-order-514 present in state 06 POS suivi DOM, 87ms latency from spec timing). SYNC-E-CANCEL latency 3.39s remains under budget BUT the cancel pathway emits a silent 422 (E-001) which means the captured 'pass' may be a false-green — KDS removal could be the result of the polling refresh masking an actual server-side rejection rather than a confirmed cancel. Recommend re-running state 14 with deterministic 200-path before declaring SYNC-E-CANCEL green. Per-scenario verdicts: SYNC-E-1=DEV_BUDGET_BREACH, SYNC-E-2=PASS, SYNC-E-3-A=DEV_BUDGET_BREACH, SYNC-E-3-B=DEV_BUDGET_BREACH, SYNC-E-4=PARTIAL (weakened to 2 concurrent kiosk only), SYNC-E-5=PASS, SYNC-E-CANCEL=PARTIAL (latency ok but silent 422 below). Verdict mechanically RED per schema (open_P0=2)."
+}

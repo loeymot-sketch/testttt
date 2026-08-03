@@ -1,22 +1,51 @@
 <template>
-    <div class="grid grid-cols-3 gap-2.5 mb-8 md:mb-0">
-        <div v-for="item in items" :key="item"
-            class="flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:shadow-sm transition cursor-pointer select-none"
-            style="min-height: 90px;"
-            @click.prevent="variationModalShow(item)" data-modal="#item-variation-modal">
-            <div class="flex-1 flex items-center justify-center w-full">
-                <h3 class="text-xs font-semibold font-rubik capitalize text-center leading-tight text-[#2E2F38] line-clamp-3">{{ item.name }}</h3>
+    <!--
+      [POS-V5-DESIGN-CONVERGENCE 2026-05-02 R2] Tiles produits avec photo hero.
+      - Photo aspect-ratio 4/3 si `item.thumb` existe, sinon fallback emoji 🍴
+      - Body sous photo : nom (clamp 2 lignes) + prix rouge brand + bouton "+" rond
+      - Hover : lift + scale image + bouton "+" devient rouge brand plein
+      - Disponibilité : overlay rouge translucide centré "Indisponible"
+      - Grille auto-fill responsive (s'adapte selon largeur cart panel/sidebar)
+    -->
+    <div ref="itemsGrid" class="pos-v5-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8 md:mb-0">
+        <!-- [iter15-mega-fix D-010 round-7 2026-05-10] aria-label must reflect tile state: when disabled (rupture), 'Ajouter' is misleading -->
+        <button v-for="item in items" :key="item.id || item"
+            type="button"
+            :class="['pos-v5-tile', tileClassList(item)]"
+            :aria-disabled="isCatalogTileUnavailable(item) ? 'true' : 'false'"
+            :disabled="isCatalogTileUnavailable(item)"
+            :aria-label="isCatalogTileUnavailable(item)
+                ? $t('a11y.unavailable_item', { item: item.name })
+                : $t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
+            :data-pos-item-id="item.id"
+            :aria-busy="pendingItemId != null && String(pendingItemId) === String(item.id) ? 'true' : 'false'"
+            @keyup.enter.prevent="addItem(item)"
+            @keyup.space.prevent="addItem(item)">
+            <!-- Photo hero (aspect-ratio 4/3) -->
+            <div class="pos-v5-tile__visual">
+                <img loading="lazy" decoding="async" v-if="item.thumb"
+                    :src="item.thumb"
+                    :alt="item.name"
+                    class="pos-v5-tile__image" />
+                <span v-else class="pos-v5-tile__visual-fallback" aria-hidden="true">🍴</span>
+                <span v-if="isCatalogTileUnavailable(item)" class="pos-item-86-badge pos-v5-tile__overlay">{{ $t('pos.item_86_d') }}</span>
             </div>
-            <div class="flex items-center justify-between w-full mt-1">
-                <h4 class="text-[11px] font-rubik font-medium text-primary">
-                    {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
-                </h4>
-                <button @click.stop.prevent="variationModalShow(item)" data-modal="#item-variation-modal"
-                    class="flex items-center justify-center w-6 h-6 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition">
-                    <i class="lab lab-bag-2 font-fill-primary lab-font-size-10 group-hover:text-white" style="font-size:11px;"></i>
-                </button>
+            <!-- Body -->
+            <div class="pos-v5-tile__body">
+                <h3 class="pos-v5-tile__name text-sm font-bold capitalize leading-snug line-clamp-2">{{ item.name }}</h3>
+                <!-- [CAISSE-INGREDIENTS 2026-06-04] Ingrédients lisibles sur la tuile (sans clic) :
+                     le caissier répond "qu'y a-t-il dedans ?" d'un coup d'œil. Texte muté, 2 lignes max. -->
+                <p v-if="item.description" class="pos-v5-tile__desc" :title="item.description">{{ item.description }}</p>
+                <div class="pos-v5-tile__foot">
+                    <h4 class="pos-v5-tile__price">
+                        {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
+                    </h4>
+                    <span aria-hidden="true" class="pos-v5-tile__add">
+                        <i class="lab lab-bag-2" style="font-size:13px;"></i>
+                    </span>
+                </div>
             </div>
-        </div>
+        </button>
     </div>
 
     <!--========INFO PART START=========-->
@@ -24,7 +53,7 @@
         <div class="modal-dialog" v-if="itemInfo">
             <div class="modal-header flex items-start gap-3">
                 <h3 class="modal-title text-base font-medium">{{ itemInfo.name }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click.prevent="infoModalHide"></button>
+                <button type="button" class="modal-close fa-regular fa-circle-xmark" :aria-label="$t('button.close')" @click.prevent="infoModalHide"></button>
             </div>
             <div class="modal-body">
                 {{ itemInfo.caution }}
@@ -33,30 +62,36 @@
     </div>
     <!--========INFO PART END===========-->
 
-    <!--========VARIATION PART START=========-->
-    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal">
-        <div class="modal-dialog max-w-[820px]" v-if="item">
-            <div class="modal-header items-start border-none pb-0">
-                <div class="flex gap-4">
-                    <img class="flex-shrink-0 w-[72px] h-[72px] object-cover rounded-lg" :src="item.thumb"
+    <!--========VARIATION PART START=========
+       [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal + header V5.
+       L'image item devient ronde 88px (mirror wizard composition chips).
+       La logique du wizard reste FROZEN (utilisé pour produits sans wizard).
+    -->
+    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal" role="dialog" aria-modal="true" aria-labelledby="item-variation-modal-title" tabindex="-1" :data-pos-drinks-catalog="drinksCatalogJson">
+        <div
+            class="modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden rounded-xl bg-white shadow-xl"
+            v-if="item">
+            <div class="modal-header items-start border-none pb-0 flex-shrink-0 pos-v5-item-modal__head">
+                <div class="flex gap-4 items-center">
+                    <img loading="lazy" decoding="async" class="flex-shrink-0 w-[88px] h-[88px] object-cover rounded-full ring-2 ring-[var(--pos-v5-brand-red-soft)] shadow-md" :src="item.thumb"
                         alt="thumbnail">
                     <div class="flex-auto">
                         <div class="flex items-start gap-2 mb-1">
-                            <h3 class="text-sm font-semibold capitalize">{{ item.name }}</h3>
+                            <h3 id="item-variation-modal-title" class="text-base font-bold capitalize text-[var(--pos-v5-ink)]">{{ item.name }}</h3>
                             <button v-if="item.caution" type="button" class="info-btn mt-0.5 flex items-start"
                                 data-modal="#item-info-modal" @click.prevent="infoModalShow(item.name, item.caution)">
                                 <i class="lab lab-information font-fill-paragraph transition lab-font-size-16"></i>
                             </button>
                         </div>
-                        <p class="text-xs mb-2">{{ item.description }}</p>
-                        <h4 class="text-sm font-semibold">{{ item.offer.length > 0 ? item.offer[0].currency_price :
+                        <p class="text-xs mb-2 text-[var(--pos-v5-ink-soft)]">{{ item.description }}</p>
+                        <h4 class="text-lg font-extrabold text-[var(--pos-v5-brand-red)] pos-v5-tabular">{{ item.offer.length > 0 ? item.offer[0].currency_price :
                             item.currency_price }}</h4>
                     </div>
                 </div>
-                <button class="modal-close lab-close-circle-line font-fill-danger lab-font-size-24"
-                    @click.prevent="variationModalHide"></button>
+                <button type="button" class="modal-close lab-close-circle-line font-fill-danger lab-font-size-24"
+                    :aria-label="$t('button.close')" @click.prevent="variationModalHide"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body pos-v4-item-wizard-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 <div class="flex items-center gap-2 mb-4">
                     <h3 class="text-sm leading-6 font-medium first-letter:uppercase text-heading">
                         {{ $t('label.quantity') }}:</h3>
@@ -70,103 +105,175 @@
                             class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
                     </div>
                 </div>
-                <div class="mb-4" v-if="item.itemAttributes.length > 1">
-                    <div class="row">
-                        <div v-for="itemAttribute in item.itemAttributes" class="col-12 sm:col-6">
-                            <label class="text-sm leading-6 block font-medium capitalize mb-1.5 text-heading">
-                                {{ itemAttribute.name }}
-                            </label>
-                            <div class="relative">
-                                <i
-                                    class="lab lab-arrow-down text-sm absolute top-1/2 right-2.5 -translate-y-1/2 lab-font-size-16"></i>
-                                <select
-                                    @change.prevent="changeVariationAdjust(itemAttribute.id, temp.item_variations.variations[itemAttribute.id])"
-                                    v-model="temp.item_variations.variations[itemAttribute.id]"
-                                    class="text-xs capitalize rounded-lg h-10 w-full py-1.5 px-2.5 appearance-none transition border border-[#EFF0F6] text-heading hover:border-primary/30">
-                                    <option :value="variation.id" v-for="variation in item.variations[itemAttribute.id]"
-                                        :key="variation">{{ variation.name }} +{{ variation.currency_price }}
-                                    </option>
-                                </select>
+                <div class="mb-4" v-if="item.itemAttributes.length > 0">
+                    <div class="space-y-4">
+                        <div v-for="itemAttribute in item.itemAttributes" :key="itemAttribute.id"
+                            class="rounded-xl border border-[#EFF0F6] p-3 bg-white">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div>
+                                    <h3 class="text-sm leading-6 font-medium capitalize text-heading">
+                                        {{ itemAttribute.name }}
+                                    </h3>
+                                    <p class="text-[11px] text-[#6E7191]">
+                                        Min {{ getAttributeConfig(itemAttribute).minSelect }} / Max {{ getAttributeConfig(itemAttribute).maxSelect }}
+                                    </p>
+                                </div>
+                                <span v-if="isMultiAttribute(itemAttribute)"
+                                    :class="hasAttributeSelectionError(itemAttribute) ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'"
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold">
+                                    {{ getAttributeTotalQuantity(itemAttribute.id) }} / {{ getAttributeConfig(itemAttribute).maxSelect }}
+                                </span>
+                            </div>
+
+                            <p v-if="hasAttributeSelectionError(itemAttribute)" class="mb-2 text-[11px] text-red-600">
+                                {{ itemAttribute.name }}: minimum {{ getAttributeConfig(itemAttribute).minSelect }} requis.
+                            </p>
+
+                            <div class="space-y-2">
+                                <template v-for="variation in getAttributeVariations(itemAttribute)" :key="variation.id">
+                                    <label v-if="!isMultiAttribute(itemAttribute)"
+                                        :title="modifierUnavailableReason(variation)"
+                                        :aria-disabled="isModifierUnavailable(variation) ? 'true' : 'false'"
+                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
+                                        class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"
+                                        :style="isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : ''">
+                                        <div class="custom-radio sm flex-shrink-0">
+                                            <input :checked="getVariationQuantity(variation.id) > 0"
+                                                :disabled="isModifierUnavailable(variation)"
+                                                @change="selectLegacyVariation(itemAttribute, variation)"
+                                                type="radio"
+                                                :id="variation.item_attribute_id + '-' + variation.name"
+                                                class="custom-radio-field">
+                                            <span class="custom-radio-span"></span>
+                                        </div>
+                                        <img loading="lazy" decoding="async" v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
+                                        <div class="flex-1 min-w-0">
+                                            <h3 class="block capitalize text-xs text-heading">
+                                                {{ textShortener(variation.name, 15) }}</h3>
+                                            <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
+                                                +{{ variation.currency_price }}
+                                            </h4>
+                                            <span v-if="isModifierUnavailable(variation)" class="block text-[10px] font-semibold text-danger">
+                                                {{ $t('pos.item_86_d') }}
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    <div v-else class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3"
+                                        :title="modifierUnavailableReason(variation)"
+                                        :style="isModifierUnavailable(variation) ? 'opacity:.5;' : ''">
+                                        <img loading="lazy" decoding="async" v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
+                                        <div class="flex-1 min-w-0">
+                                            <h3 class="block capitalize text-xs text-heading">
+                                                {{ textShortener(variation.name, 18) }}
+                                            </h3>
+                                            <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
+                                                +{{ variation.currency_price }}
+                                            </h4>
+                                            <span v-if="isModifierUnavailable(variation)" class="block text-[10px] font-semibold text-danger">
+                                                {{ $t('pos.item_86_d') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-white">
+                                            <button @click.prevent="decrementVariation(itemAttribute, variation)"
+                                                :disabled="getVariationQuantity(variation.id) === 0"
+                                                class="fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus disabled:opacity-40 disabled:cursor-not-allowed"></button>
+                                            <span class="text-center w-7 text-xs font-semibold text-heading">
+                                                {{ getVariationQuantity(variation.id) }}
+                                            </span>
+                                            <button @click.prevent="incrementVariation(itemAttribute, variation)"
+                                                :disabled="isAttributeAtMax(itemAttribute) || isModifierUnavailable(variation)"
+                                                class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus disabled:opacity-40 disabled:cursor-not-allowed"></button>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="mb-4" v-else-if="item.itemAttributes.length > 0">
-                    <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">
-                        {{ item.itemAttributes[0].name }}
-                    </h3>
-                    <div class="swiper size-swiper">
-                        <div class="size-tabs">
-                            <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
-                                <SwiperSlide class="!w-fit"
-                                    v-for="variation in item.variations[item.itemAttributes[0].id]" :key="variation">
-                                    <label
-                                        :class="temp.item_variations.variations[variation.item_attribute_id] === variation.id ? 'active' : ''"
-                                        :for="variation.item_attribute_id + '-' + variation.name"
-                                        class="variation-margin-right w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
-                                        <div class="custom-radio sm flex-shrink-0">
-                                            <input :value="variation.id"
-                                                @click="changeVariation(variation.item_attribute_id, variation.id, variation.name, variation.convert_price)"
-                                                v-model="temp.item_variations.variations[variation.item_attribute_id]"
-                                                type="radio" :id="variation.item_attribute_id + '-' + variation.name"
-                                                class="custom-radio-field">
-                                            <span class="custom-radio-span"></span>
-                                        </div>
-                                        <img v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
-                                        <div class="flex-1 min-w-0">
-                                            <h3 class="block capitalize text-xs text-heading">
-                                                {{ textShortener(variation.name, 15) }}</h3>
-                                            <h4 v-if="variation.price > 0"
-                                                class="block text-xs font-medium text-heading">
-                                                +{{ variation.currency_price }}
-                                            </h4>
-                                        </div>
-                                    </label>
-                                </SwiperSlide>
-                            </Swiper>
-                        </div>
+                <!-- [WIZARD-VARIATION-BRIDGE 2026-06-24] Le shim FROZEN public/js/pos-wizard.js
+                     (overlay « design parfait » de la caisse) transfère les choix viande/sauce/pain
+                     vers le modal Vue en écrivant dans des <select> (viande l.4039, sauce l.3740,
+                     pain l.3764). Or la v5 rend ces attributs single-select en radios SANS `value`
+                     → le bridge value-based no-op → l'ordre soumettait les variations PAR DÉFAUT
+                     (1ʳᵉ viande/sauce), faussant le composition_snapshot NF525 + le KDS, et perdant
+                     la 2ᵉ viande (Tacos L/Méga/Terminator). Ces <select> cachés write-only sont des
+                     CIBLES de bridge : le wrapper .form-group porte le nom d'attribut (filtre viande),
+                     l'option.value = id de variation (sauce/pain par id ; viandes par index → la 2ᵉ
+                     viande tombe dans le 2ᵉ select). @change → setVariationQuantity = SSOT de sélection.
+                     Aucun fichier frozen modifié. -->
+                <div aria-hidden="true" class="pos-wizard-variation-bridge"
+                     style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;"
+                     v-if="item.itemAttributes.length > 0">
+                    <div v-for="bridgeAttr in item.itemAttributes" :key="'vbridge-' + bridgeAttr.id"
+                         class="form-group" :data-bridge-attr="bridgeAttr.id">
+                        <span>{{ bridgeAttr.name }}</span>
+                        <!-- [B-006] tabindex=-1 : conteneur aria-hidden → jamais focusable
+                             clavier (disabled casserait le shim pos-wizard). -->
+                        <select tabindex="-1" :data-bridge-select="bridgeAttr.id" @change="onWizardBridgeSelect(bridgeAttr, $event)">
+                            <option value=""></option>
+                            <option v-for="bridgeVar in getAttributeVariations(bridgeAttr)"
+                                    :key="'vbo-' + bridgeVar.id" :value="bridgeVar.id">{{ bridgeVar.name }}</option>
+                        </select>
+                    </div>
+                    <!-- Extras (crudités + suppléments) : le shim frozen toggle des
+                         `.extra .custom-checkbox-field` (value=extra id). La v5 rend les
+                         extras en boutons +/- → sans ces checkboxes le supplément +0,90 ne
+                         se transférait pas → le backend re-facturait SANS (sous-facturation
+                         NF525). @change → setExtraQuantity = SSOT extras. -->
+                    <div v-for="bridgeExtra in item.extras" :key="'ebridge-' + bridgeExtra.id"
+                         class="extra" :data-bridge-extra="bridgeExtra.id">
+                        <label>{{ bridgeExtra.name }}</label>
+                        <input type="checkbox" tabindex="-1" class="custom-checkbox-field" :value="bridgeExtra.id"
+                               :checked="getExtraQuantity(bridgeExtra.id) > 0"
+                               @change="onWizardBridgeExtra(bridgeExtra, $event)">
                     </div>
                 </div>
                 <div class="mb-4" v-if="item.extras.length > 0">
                     <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">{{ $t('label.extras') }}</h3>
-                    <div class="extra-swiper">
-                        <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
-                            <SwiperSlide v-for="extra in item.extras" :key="extra" class="!w-fit !relative">
-                                <label :for="extra.id + extra.name"
-                                    class="extra w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
-                                    <div class="custom-checkbox w-3 h-3 flex-shrink-0">
-                                        <input :id="extra.id + extra.name"
-                                            @change.prevent="changeExtra($event, extra.id, extra.name)"
-                                            :value="extra.id" type="checkbox" class="custom-checkbox-field">
-                                        <i
-                                            class="fa-solid fa-check custom-checkbox-icon leading-[9px] text-[9px] rounded-[3px]"></i>
-                                    </div>
-                                    <img v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
-                                    <div class="flex-1 min-w-0">
-                                        <h3 class="block capitalize mb-1 text-xs text-heading">
-                                            {{ textShortener(extra.name, 15) }}</h3>
-                                        <h4 class="block text-xs font-medium text-heading">+{{
-                                            extra.currency_price
-                                            }}</h4>
-                                    </div>
-                                </label>
-                            </SwiperSlide>
-                        </Swiper>
+                    <div class="space-y-2">
+                        <div v-for="extra in item.extras" :key="extra.id"
+                            class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3"
+                            :title="modifierUnavailableReason(extra)"
+                            :style="isModifierUnavailable(extra) ? 'opacity:.5;' : ''">
+                            <img loading="lazy" decoding="async" v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="block capitalize mb-1 text-xs text-heading">
+                                    {{ textShortener(extra.name, 18) }}</h3>
+                                <h4 class="block text-xs font-medium text-heading">+{{ extra.currency_price }}</h4>
+                                <span v-if="isModifierUnavailable(extra)" class="block text-[10px] font-semibold text-danger">
+                                    {{ $t('pos.item_86_d') }}
+                                </span>
+                            </div>
+                            <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-white">
+                                <button @click.prevent="decrementExtra(extra)"
+                                    :disabled="getExtraQuantity(extra.id) === 0"
+                                    class="fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus disabled:opacity-40 disabled:cursor-not-allowed"></button>
+                                <span class="text-center w-7 text-xs font-semibold text-heading">
+                                    {{ getExtraQuantity(extra.id) }}
+                                </span>
+                                <button @click.prevent="incrementExtra(extra)"
+                                    :disabled="isModifierUnavailable(extra)"
+                                    class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="mb-5" v-if="item.addons.length > 0">
                     <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">{{ $t('label.addons') }}</h3>
                     <div class="swiper addon-swiper">
-                        <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
+                        <Swiper :speed="280" slidesPerView="auto" :spaceBetween="16">
                             <SwiperSlide v-for="addon in item.addons" :key="addon">
                                 <div class="!w-fit !relative">
                                     <div @click.prevent="changeAddon(addon)"
                                         :data-addon-id="addon.id"
                                         :data-addon-name="addon.addon_item_name"
                                         :data-addon-active="addons[addon.id] ? '1' : '0'"
-                                        class="addon cursor-pointer w-fit min-w-[200px] h-[70px] rounded-lg flex border border-[#EFF0F6]">
-                                        <img class="w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0"
+                                        :title="modifierUnavailableReason(addon)"
+                                        class="addon cursor-pointer w-fit min-w-[200px] h-[70px] rounded-lg flex border border-[#EFF0F6]"
+                                        :style="isAddonUnavailable(addon) ? 'opacity:.5;cursor:not-allowed;' : ''">
+                                        <img loading="lazy" decoding="async" class="w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0"
                                             :src="addon.thumb" alt="thumbnail">
                                         <div class="ltr:rounded-r-lg rtl:rounded-l-lg w-full py-1 px-2">
                                             <span
@@ -185,6 +292,9 @@
                                                 class="block text-xs font-semibold text-heading ltr:text-left rtl:text-right">
                                                 {{ addon.total_currency_price }}
                                             </span>
+                                            <span v-if="isAddonUnavailable(addon)" class="block text-[10px] font-semibold text-danger">
+                                                {{ $t('pos.item_86_d') }}
+                                            </span>
                                         </div>
                                     </div>
                                     <div
@@ -200,9 +310,11 @@
                                                 class="fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
                                             <input v-on:keypress="onlyNumber($event)"
                                                 v-on:keyup="addonQuantityUp(addon.id)" v-model="addonQuantity[addon.id]"
+                                                :disabled="isAddonUnavailable(addon)"
                                                 type="number"
                                                 class="text-center w-5 text-xs font-semibold text-heading indec-value">
                                             <button @click.prevent="addonQuantityIncrement(addon.id)"
+                                                :disabled="isAddonUnavailable(addon)"
                                                 class="fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
                                         </div>
                                     </div>
@@ -220,23 +332,45 @@
                         class="h-12 w-full rounded-lg border py-1.5 px-2 placeholder:text-[10px] placeholder:text-[#6E7191] border-[#D9DBE9]"></textarea>
                     <small class="db-field-alert" v-if="instructionError">{{ instructionError }}</small>
                 </div>
-                <div class="pos-add-to-cart-sticky">
-                    <button type="button" :disabled="temp.total_price <= 0" @click.prevent="addToCart"
-                        class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary">
-                        <i class="icon-bag-2"></i>
+            </div>
+            <div
+                class="pos-v4-item-wizard-footer pos-add-to-cart-sticky pos-v5-item-modal__foot flex-shrink-0 border-t border-[var(--pos-v5-border)] bg-white px-4 pb-4 pt-3"
+                data-wiz-vue-footer
+            >
+                    <button type="button" :disabled="!canAddToCart" @click.prevent="addToCart"
+                        class="pos-v5-item-add-cta flex items-center justify-center gap-3 rounded-2xl text-base py-3 px-4 font-extrabold w-full text-white disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        <i class="icon-bag-2" aria-hidden="true"></i>
                         <span>
-                            {{ $t('button.add_to_cart') }} -
-                            {{
+                            {{ $t('button.add_to_cart') }} ·
+                            <span class="pos-v5-tabular">{{
                                 currencyFormat(temp.total_price, setting.site_digit_after_decimal_point,
                                     setting.site_default_currency_symbol, setting.site_currency_position)
-                            }}
+                            }}</span>
                         </span>
                     </button>
-                </div>
+                    <div v-if="itemUnavailabilityBannerVisible" class="alert alert-warning mt-2" role="status">
+                        {{ $t('pos.item_unavailable_during_edit') }}
+                    </div>
             </div>
         </div>
     </div>
     <!--========VARIATION PART END===========-->
+
+    <!--========TILE LOADING (feedback instantané) START=========
+       [PERF 2026-07-23 POS-instant-open] Réaction visuelle < 16 ms au clic tuile :
+       overlay « Chargement… » affiché AVANT le retour réseau de item/details, puis
+       remplacé par le wizard dès que la donnée arrive (ou fermé proprement en cas d'échec).
+       Élément SÉPARÉ de #item-variation-modal : la classe .active du modal reste posée
+       UNIQUEMENT au succès → contrat du shim frozen pos-wizard.js strictement inchangé.
+    -->
+    <div v-if="wizardLoading" class="pos-tile-loading-overlay" role="status" aria-live="polite"
+        aria-busy="true" data-testid="pos-tile-loading">
+        <div class="pos-tile-loading-card">
+            <span class="pos-tile-loading-spinner" aria-hidden="true"></span>
+            <span class="pos-tile-loading-label">{{ $t('label.loading') }}</span>
+        </div>
+    </div>
+    <!--========TILE LOADING END===========-->
 </template>
 
 <script>
@@ -245,6 +379,30 @@ import _ from "lodash";
 import alertService from "../../../services/alertService";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
+import {
+    normalizeExtraEntries,
+    normalizeId,
+    normalizeQuantity,
+    normalizeVariationEntries,
+} from "../../../helpers/posNormalizeIds";
+
+function createEmptyTemp() {
+    return {
+        name: "",
+        image: "",
+        item_id: 0,
+        quantity: 0,
+        discount: 0,
+        currency_price: 0,
+        convert_price: 0,
+        item_variations: [],
+        item_extras: [],
+        item_variation_total: 0,
+        item_extra_total: 0,
+        total_price: 0,
+        instruction: "",
+    };
+}
 
 export default {
     name: "itemComponent",
@@ -253,12 +411,26 @@ export default {
         SwiperSlide,
     },
     props: {
-        items: Object
+        items: Object,
+        drinksCatalog: {
+            type: Array,
+            default: function () { return []; }
+        }
     },
+    // [POS-CATEGORY-FIRST 2026-06-23 /goal] Emitted after a NEW cart line is
+    // added (simple item or Vanilla-wizard add) so PosComponent can auto-return
+    // to the category grid hub. Edits (replaceCartLine) do NOT emit.
+    emits: ['item:added'],
     data() {
         return {
             item: null,
             itemInfo: null,
+            // [PERF 2026-07-23 POS-instant-open] Feedback instantané au clic tuile :
+            // `wizardLoading` pilote l'overlay « Chargement… » (rendu AVANT le retour
+            // réseau de item/details) ; `pendingItemId` marque la tuile pressée (aria-busy
+            // + état visuel). Aucun impact sur la classe .active du modal (contrat frozen).
+            wizardLoading: false,
+            pendingItemId: null,
             addons: {},
             addonQuantity: {},
             itemArrays: [],
@@ -276,33 +448,50 @@ export default {
                 wrapAround: false,
                 snapAlign: "start"
             },
-            temp: {
-                name: "",
-                image: "",
-                item_id: 0,
-                quantity: 0,
-                discount: 0,
-                currency_price: 0,
-                convert_price: 0,
-                item_variations: {
-                    variations: {},
-                    names: {}
-                },
-                item_extras: {
-                    extras: [],
-                    names: []
-                },
-                item_variation_total: 0,
-                item_extra_total: 0,
-                total_price: 0,
-                instruction: "",
-            },
+            temp: createEmptyTemp(),
             instructionError: ""
         }
     },
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        /**
+         * Live catalogue flag from ItemAvailabilityChanged / API.
+         * Absent legacy items are treated as available (backward compat).
+         */
+        catalogItemAvailable: function () {
+            if (!this.item) return true;
+            const v = this.item.is_available;
+            if (v === undefined || v === null) return true;
+            return v === true || v === 1 || v === '1';
+        },
+        itemUnavailabilityBannerVisible: function () {
+            return Boolean(this.item) && !this.catalogItemAvailable;
+        },
+        canAddToCart: function () {
+            const modal = this.$refs?.itemVariationModal;
+            const wizardBridged = parseFloat(modal?.dataset?.wizardTotal || 0) || 0;
+            // Single-page pos-wizard submits via dataset + instruction; legacy <select> sync often
+            // does not run on POS V5 (no viande dropdowns), so Vue temp.item_variations can lag while
+            // the wizard state is authoritative — do not block on hasSelectionErrors in that case.
+            if (wizardBridged > 0) {
+                return this.catalogItemAvailable;
+            }
+            return this.temp.total_price > 0 && !this.hasSelectionErrors() && this.catalogItemAvailable;
+        },
+        /**
+         * [POS-WIZARD-DRINKS 2026-05-02] Sérialisation du catalogue boissons pour le shim
+         * `public/js/pos-wizard.js` (vanilla JS hors webpack). Le wizard lit cet attribut
+         * DOM pour détecter quels addons du produit sont des boissons (cross-reference
+         * id catalogue / nom catalogue), assurant la symétrie POS↔borne.
+         */
+        drinksCatalogJson: function () {
+            try {
+                return JSON.stringify(Array.isArray(this.drinksCatalog) ? this.drinksCatalog : []);
+            } catch (e) {
+                return '[]';
+            }
         },
     },
     methods: {
@@ -314,6 +503,380 @@ export default {
         },
         currencyFormat: function (amount, decimal, currency, position) {
             return appService.currencyFormat(amount, decimal, currency, position);
+        },
+        resetTempState: function () {
+            this.temp = createEmptyTemp();
+            this.addons = {};
+            this.addonQuantity = {};
+        },
+        normalizeLoadedItem: function (raw) {
+            const item = Object.assign({}, raw || {});
+            item.offer = Array.isArray(item.offer) ? item.offer : [];
+            item.addons = Array.isArray(item.addons) ? item.addons : [];
+            item.extras = Array.isArray(item.extras) ? item.extras : [];
+            item.itemAttributes = Array.isArray(item.itemAttributes) ? item.itemAttributes : [];
+            item.variations = item.variations && typeof item.variations === 'object' ? item.variations : {};
+            return item;
+        },
+        showItemLoadError: function (error) {
+            if (typeof console !== 'undefined' && console.error) {
+                console.error('[POS] item/details failed', error);
+            }
+            alertService.error(this.$t('message.something_went_wrong') || 'Erreur lors du chargement du produit.');
+        },
+        renderedItemsList: function () {
+            if (Array.isArray(this.items)) {
+                return this.items;
+            }
+            if (this.items && typeof this.items === 'object') {
+                return Object.values(this.items);
+            }
+            return [];
+        },
+        findRenderedItemById: function (itemId) {
+            const normalizedItemId = normalizeId(itemId);
+            if (normalizedItemId === null) {
+                return null;
+            }
+
+            return this.renderedItemsList()
+                .find((row) => normalizeId(row && row.id) === normalizedItemId) || null;
+        },
+        handleNativeTileClick: function (event) {
+            if (event?.__fkPosTileHandled) {
+                return;
+            }
+
+            const tile = event?.target?.closest?.('[data-pos-item-id]');
+            if (!tile) {
+                return;
+            }
+            if (tile.disabled || tile.getAttribute('aria-disabled') === 'true') {
+                return;
+            }
+
+            const selectedItem = this.findRenderedItemById(tile.getAttribute('data-pos-item-id'));
+            if (!selectedItem || this.isCatalogTileUnavailable(selectedItem)) {
+                return;
+            }
+
+            event.__fkPosTileHandled = true;
+            event.preventDefault();
+            this.variationModalShow(selectedItem);
+        },
+        // [PERF 2026-07-23 POS-instant-open] Préchauffe item/details AVANT le clic (au survol
+        // `pointerover` / à l'appui `pointerdown`) : la donnée est prête au relâchement, le
+        // wizard s'ouvre quasi-instantanément. La dédup réseau (in-flight + TTL) est assurée
+        // par le cache store, donc pointer + clic ne déclenchent qu'UNE requête.
+        handleTilePrewarm: function (event) {
+            const tile = event?.target?.closest?.('[data-pos-item-id]');
+            if (!tile) {
+                return;
+            }
+            if (tile.disabled || tile.getAttribute('aria-disabled') === 'true') {
+                return;
+            }
+            const selectedItem = this.findRenderedItemById(tile.getAttribute('data-pos-item-id'));
+            if (!selectedItem || this.isCatalogTileUnavailable(selectedItem)) {
+                return;
+            }
+            this.prewarmItemDetails(selectedItem.id);
+        },
+        prewarmItemDetails: function (itemId) {
+            if (itemId === null || itemId === undefined) {
+                return;
+            }
+            // Best-effort : on avale les erreurs (le vrai clic re-tentera et surfacera l'erreur).
+            try {
+                const pending = this.$store.dispatch('item/details', this.posItemDetailsPayload(itemId));
+                if (pending && typeof pending.catch === 'function') {
+                    pending.catch(() => {});
+                }
+            } catch (e) { /* ignore */ }
+        },
+        posItemDetailsPayload: function (id) {
+            const payload = { id, surface: 'pos' };
+            const branchId = this.$store.getters['auth/authBranchId']
+                || this.$store.getters.authBranchId
+                || this.$store.state?.auth?.authBranchId
+                || null;
+            if (branchId) {
+                payload.branch_id = branchId;
+            }
+            return payload;
+        },
+        getAttributeConfig: function (attribute) {
+            const maxSelect = normalizeQuantity(attribute && attribute.max_select, 1);
+            const allowRepeat = Boolean(attribute && attribute.allow_repeat);
+            const isMulti = maxSelect > 1 || allowRepeat;
+            const minSelectRaw = normalizeId(attribute && attribute.min_select);
+            const minSelect = minSelectRaw === null ? (isMulti ? 0 : 1) : Math.min(minSelectRaw, maxSelect);
+
+            return {
+                minSelect,
+                maxSelect,
+                allowRepeat,
+                isMulti,
+            };
+        },
+        isMultiAttribute: function (attribute) {
+            return this.getAttributeConfig(attribute).isMulti;
+        },
+        getAttributeVariations: function (attribute) {
+            if (!this.item || !attribute) return [];
+            return Array.isArray(this.item.variations && this.item.variations[attribute.id])
+                ? this.item.variations[attribute.id]
+                : [];
+        },
+        findVariationById: function (variationId) {
+            if (!this.item || !this.item.variations) return null;
+            const normalizedVariationId = normalizeId(variationId);
+            if (normalizedVariationId === null) return null;
+            return Object.values(this.item.variations)
+                .flatMap((rows) => Array.isArray(rows) ? rows : [])
+                .find((variation) => normalizeId(variation && variation.id) === normalizedVariationId) || null;
+        },
+        findExtraById: function (extraId) {
+            if (!this.item || !Array.isArray(this.item.extras)) return null;
+            const normalizedExtraId = normalizeId(extraId);
+            if (normalizedExtraId === null) return null;
+            return this.item.extras.find((extra) => normalizeId(extra && extra.id) === normalizedExtraId) || null;
+        },
+        isModifierUnavailable: function (modifier) {
+            if (!modifier) return false;
+            const availability = modifier.is_available;
+            if (availability === false || availability === 0 || availability === '0') {
+                return true;
+            }
+            const status = Number(modifier.status);
+            return status === 0 || status === 2 || status === 10;
+        },
+        isAddonUnavailable: function (addon) {
+            return this.isModifierUnavailable(addon);
+        },
+        getAddonById: function (id) {
+            if (!this.item || !Array.isArray(this.item.addons)) return null;
+            const normalizedId = normalizeId(id);
+            if (normalizedId === null) return null;
+            return this.item.addons.find((addon) => normalizeId(addon && addon.id) === normalizedId) || null;
+        },
+        modifierUnavailableReason: function (modifier) {
+            return modifier && modifier.unavailable_reason ? modifier.unavailable_reason : '';
+        },
+        pruneUnavailableRestoredSelections: function () {
+            this.temp.item_variations = normalizeVariationEntries(this.temp.item_variations)
+                .filter((entry) => {
+                    const variation = this.findVariationById(entry.id);
+                    return variation && !this.isModifierUnavailable(variation);
+                });
+            this.temp.item_extras = normalizeExtraEntries(this.temp.item_extras)
+                .filter((entry) => {
+                    const extra = this.findExtraById(entry.id);
+                    return extra && !this.isModifierUnavailable(extra);
+                });
+            Object.keys(this.addons || {}).forEach((addonId) => {
+                const addon = this.getAddonById(addonId);
+                if (!addon || this.isAddonUnavailable(addon)) {
+                    delete this.addons[addonId];
+                    this.addonQuantity[addonId] = 1;
+                }
+            });
+        },
+        getVariationEntriesByAttribute: function (attributeId) {
+            const normalizedAttributeId = normalizeId(attributeId);
+            return normalizeVariationEntries(this.temp.item_variations)
+                .filter((entry) => entry.item_attribute_id === normalizedAttributeId);
+        },
+        getVariationQuantity: function (variationId) {
+            const normalizedVariationId = normalizeId(variationId);
+            if (normalizedVariationId === null) return 0;
+
+            const existing = normalizeVariationEntries(this.temp.item_variations)
+                .find((entry) => entry.id === normalizedVariationId);
+
+            return existing ? normalizeQuantity(existing.quantity, 1) : 0;
+        },
+        getAttributeTotalQuantity: function (attributeId) {
+            return this.getVariationEntriesByAttribute(attributeId)
+                .reduce((total, entry) => total + normalizeQuantity(entry.quantity, 1), 0);
+        },
+        isAttributeAtMax: function (attribute) {
+            const config = this.getAttributeConfig(attribute);
+            return this.getAttributeTotalQuantity(attribute.id) >= config.maxSelect;
+        },
+        hasAttributeSelectionError: function (attribute) {
+            const config = this.getAttributeConfig(attribute);
+            return this.getAttributeTotalQuantity(attribute.id) < config.minSelect;
+        },
+        hasSelectionErrors: function () {
+            if (!this.item || !Array.isArray(this.item.itemAttributes)) return false;
+            return this.item.itemAttributes.some((attribute) => this.hasAttributeSelectionError(attribute));
+        },
+        setVariationQuantity: function (attribute, variation, quantity) {
+            this.bumpPricingToCatalog();
+            const attributeId = normalizeId(attribute && attribute.id);
+            const variationId = normalizeId(variation && variation.id);
+
+            if (attributeId === null || variationId === null) return;
+            if (this.isModifierUnavailable(variation) && quantity > this.getVariationQuantity(variationId)) return;
+
+            const config = this.getAttributeConfig(attribute);
+            const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+            let next = normalizeVariationEntries(this.temp.item_variations)
+                .filter((entry) => entry.item_attribute_id !== attributeId || entry.id !== variationId);
+
+            if (!config.isMulti) {
+                next = next.filter((entry) => entry.item_attribute_id !== attributeId);
+            }
+
+            if (safeQuantity > 0) {
+                next.push({
+                    id: variationId,
+                    item_attribute_id: attributeId,
+                    quantity: safeQuantity,
+                    variation_name: attribute.name,
+                    name: variation.name,
+                });
+            }
+
+            this.temp.item_variations = next;
+            this.totalPriceSetup();
+        },
+        selectLegacyVariation: function (attribute, variation) {
+            this.setVariationQuantity(attribute, variation, 1);
+        },
+        // [WIZARD-VARIATION-BRIDGE 2026-06-24] @change des <select> cachés pilotés par
+        // le shim frozen pos-wizard.js. Mappe la variation choisie (par id) vers
+        // temp.item_variations via le SSOT de sélection setVariationQuantity, pour que
+        // l'ordre soumette la vraie viande/sauce/pain (et non le défaut). Single-select :
+        // setVariationQuantity remplace déjà la variation de l'attribut.
+        onWizardBridgeSelect: function (attribute, event) {
+            const variationId = normalizeId(event && event.target ? event.target.value : null);
+            if (variationId === null) return;
+            const variation = (this.getAttributeVariations(attribute) || [])
+                .find((entry) => normalizeId(entry && entry.id) === variationId);
+            if (variation) {
+                this.setVariationQuantity(attribute, variation, 1);
+            }
+        },
+        // [WIZARD-VARIATION-BRIDGE 2026-06-24] @change des checkboxes cachées extras
+        // pilotées par le shim frozen pos-wizard.js (cb.click() toggle). Reflète l'état
+        // coché dans temp.item_extras via setExtraQuantity (SSOT) -> suppléments facturés.
+        onWizardBridgeExtra: function (extra, event) {
+            const checked = !!(event && event.target && event.target.checked);
+            // [VIANDE-SUPPL-CHARGE 2026-07-01 — LOCK_POS_WIZARD_VIANDE_SUPPL_CHARGE_2026-07-01.md]
+            // pos-wizard.js peut poser data-wizard-qty sur la checkbox de l'extra
+            // « Viande supplémentaire » (N viandes en plus × 2,50€). Sinon binaire (1)
+            // — comportement inchangé pour Cheddar & co.
+            let quantity = checked ? 1 : 0;
+            if (checked && event.target && typeof event.target.getAttribute === 'function') {
+                const q = parseInt(event.target.getAttribute('data-wizard-qty'), 10);
+                if (Number.isFinite(q) && q > 0) quantity = q;
+            }
+            this.setExtraQuantity(extra, quantity);
+        },
+        incrementVariation: function (attribute, variation) {
+            if (this.isAttributeAtMax(attribute)) return;
+            this.setVariationQuantity(attribute, variation, this.getVariationQuantity(variation.id) + 1);
+        },
+        decrementVariation: function (attribute, variation) {
+            this.setVariationQuantity(attribute, variation, this.getVariationQuantity(variation.id) - 1);
+        },
+        getExtraQuantity: function (extraId) {
+            const normalizedExtraId = normalizeId(extraId);
+            if (normalizedExtraId === null) return 0;
+
+            const existing = normalizeExtraEntries(this.temp.item_extras)
+                .find((entry) => entry.id === normalizedExtraId);
+
+            return existing ? normalizeQuantity(existing.quantity, 1) : 0;
+        },
+        setExtraQuantity: function (extra, quantity) {
+            this.bumpPricingToCatalog();
+            const extraId = normalizeId(extra && extra.id);
+
+            if (extraId === null) return;
+            if (this.isModifierUnavailable(extra) && quantity > this.getExtraQuantity(extraId)) return;
+
+            const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+            const next = normalizeExtraEntries(this.temp.item_extras)
+                .filter((entry) => entry.id !== extraId);
+
+            if (safeQuantity > 0) {
+                next.push({
+                    id: extraId,
+                    quantity: safeQuantity,
+                    name: extra.name,
+                });
+            }
+
+            this.temp.item_extras = next;
+            this.totalPriceSetup();
+        },
+        incrementExtra: function (extra) {
+            this.setExtraQuantity(extra, this.getExtraQuantity(extra.id) + 1);
+        },
+        decrementExtra: function (extra) {
+            this.setExtraQuantity(extra, this.getExtraQuantity(extra.id) - 1);
+        },
+        initializeDefaultSelections: function () {
+            if (!this.item || !Array.isArray(this.item.itemAttributes)) return;
+
+            _.forEach(this.item.itemAttributes, (attribute) => {
+                const config = this.getAttributeConfig(attribute);
+                const variations = this.getAttributeVariations(attribute);
+
+                const firstAvailable = variations.find((variation) => !this.isModifierUnavailable(variation));
+
+                if (!config.isMulti && firstAvailable) {
+                    this.setVariationQuantity(attribute, firstAvailable, 1);
+                }
+            });
+        },
+        isCatalogTileUnavailable: function (row) {
+            if (!row) return false;
+            const v = row.is_available;
+            if (v === undefined || v === null) return false;
+            return v === false || v === 0 || v === '0';
+        },
+        tileClassList: function (row) {
+            // [POS-V5 R2] Layout délégué à .pos-v5-tile (CSS scoped). Cette méthode
+            // garde uniquement les flags d'état pour la compat sentinels.
+            return {
+                'pos-item-tile': true,
+                'is-unavailable': this.isCatalogTileUnavailable(row),
+                // [PERF 2026-07-23] État « pressé/chargement » de la tuile cliquée.
+                'is-pending': this.pendingItemId != null && row != null
+                    && String(this.pendingItemId) === String(row.id),
+            };
+        },
+        onProductTileClick: function (selectedItem) {
+            if (this.isCatalogTileUnavailable(selectedItem)) return;
+            this.variationModalShow(selectedItem);
+        },
+        itemOfferPrice: function (row) {
+            if (!row) return '';
+            return row.offer && row.offer.length > 0 ? row.offer[0].currency_price : row.currency_price;
+        },
+        addItem: function (item) {
+            this.onProductTileClick(item);
+        },
+        /**
+         * [T11 POS_AVAILABILITY_LIVE_GUARD] Sync modal item when parent updates list from Echo.
+         */
+        syncItemAvailabilityFromBroadcast: function (itemId, isAvailable, reason) {
+            // [PERF 2026-07-23 POS-instant-open] La dispo de cet item a changé → purge son
+            // entrée du cache details POS pour que la prochaine ouverture reflète l'état
+            // réel (sinon la fraîcheur est bornée par le TTL 60 s). Best-effort.
+            try {
+                this.$store.dispatch('item/invalidateDetails', itemId);
+            } catch (e) { /* ignore */ }
+            if (!this.item) return;
+            if (parseInt(this.item.id, 10) !== parseInt(itemId, 10)) return;
+            this.item = Object.assign({}, this.item, {
+                is_available: isAvailable,
+                availability_reason: reason != null ? reason : this.item.availability_reason,
+            });
         },
         infoModalShow: function (name, caution) {
             this.itemInfo = {
@@ -333,24 +896,22 @@ export default {
         variationModalShow: function (selectedItem) {
             this.editingCartIndex = null;
             this.usePricedCartBase = false;
+            this.resetTempState();
+
+            // [PERF 2026-07-23 POS-instant-open] Feedback visuel IMMÉDIAT (< 16 ms), AVANT
+            // l'aller-retour réseau : tuile pressée (aria-busy) + overlay « Chargement… ».
+            // La classe .active du modal reste posée UNIQUEMENT au succès (plus bas) → le
+            // shim frozen pos-wizard.js voit exactement la même séquence qu'aujourd'hui.
+            this.pendingItemId = selectedItem ? selectedItem.id : null;
+            this.wizardLoading = true;
 
             // [AUDIT 2026-04-17 R2] Surface=pos so the backend only returns
             // extras/variations visible on the cashier channel (NormalItemResource).
-            this.$store.dispatch('item/details', { id: selectedItem.id, surface: 'pos' })
+            this.$store.dispatch('item/details', this.posItemDetailsPayload(selectedItem.id))
                 .then((res) => {
 
-                    const item = res.data.data;
-                    this.item = res.data.data;
-
-                    if (this.item.itemAttributes.length > 0) {
-                        _.forEach(this.item.itemAttributes, (element) => {
-                            if (typeof this.item.variations[element.id][0] !== "undefined") {
-                                this.temp.item_variations.variations[this.item.variations[element.id][0].item_attribute_id] = this.item.variations[element.id][0].id;
-                                this.temp.item_variations.names[element.name] = this.item.variations[element.id][0].name;
-                                this.temp.item_variation_total += this.item.variations[element.id][0].convert_price;
-                            }
-                        });
-                    }
+                    const item = this.normalizeLoadedItem(res.data.data);
+                    this.item = item;
 
                     if (this.item.addons.length > 0) {
                         _.forEach(this.item.addons, (addon) => {
@@ -365,7 +926,8 @@ export default {
                     this.temp.discount = 0;
                     this.temp.convert_price = item.offer.length > 0 ? item.offer[0].convert_price : item.convert_price;
                     this.temp.currency_price = item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price;
-                    this.temp.total_price = (item.offer.length > 0 ? item.offer[0].convert_price : item.convert_price) + this.temp.item_variation_total;
+                    this.initializeDefaultSelections();
+                    this.totalPriceSetup();
 
                     const modalTarget = this.$refs.itemVariationModal;
                     // Inject item data directly so wizard doesn't depend solely on XHR interceptor
@@ -374,7 +936,23 @@ export default {
                     }
                     modalTarget?.classList?.add("active");
                     document.body.style.overflowY = "hidden";
-                }).catch({});
+                    this._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                    setTimeout(() => {
+                        if (modalTarget && modalTarget.classList?.contains('active')) {
+                            modalTarget.focus({ preventScroll: true });
+                        }
+                    }, 150);
+                    // [PERF 2026-07-23] Contenu prêt + modal ouvert → masque l'overlay et
+                    // relâche l'état pressé de la tuile (transition sans clignotement).
+                    this.wizardLoading = false;
+                    this.pendingItemId = null;
+                }).catch((error) => {
+                    // [PERF 2026-07-23] Échec → fermeture propre : overlay off, tuile relâchée,
+                    // toast d'erreur. La classe .active n'a jamais été posée (aucun modal fantôme).
+                    this.wizardLoading = false;
+                    this.pendingItemId = null;
+                    this.showItemLoadError(error);
+                });
         },
         /**
          * Rouvre le modal article depuis une ligne panier (édition).
@@ -385,14 +963,14 @@ export default {
             if (!cartLine || cartLine.item_id == null) return;
             this.editingCartIndex = typeof index === 'number' ? index : null;
             // [AUDIT 2026-04-17 R2] Keep the POS channel projection on edit too.
-            this.$store.dispatch('item/details', { id: cartLine.item_id, surface: 'pos' })
+            this.$store.dispatch('item/details', this.posItemDetailsPayload(cartLine.item_id))
                 .then((res) => {
-                    const item = res.data.data;
+                    const item = this.normalizeLoadedItem(res.data.data);
                     this.item = item;
                     this.addons = {};
                     this.addonQuantity = {};
-                    this.temp.item_variations = { variations: {}, names: {} };
-                    this.temp.item_extras = { extras: [], names: [] };
+                    this.temp.item_variations = [];
+                    this.temp.item_extras = [];
                     this.temp.item_variation_total = 0;
                     this.temp.item_extra_total = 0;
                     this.temp.name = cartLine.name;
@@ -403,8 +981,8 @@ export default {
                     this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
                     this.temp.currency_price = cartLine.currency_price;
                     this.temp.instruction = cartLine.instruction || '';
-                    this.temp.item_variations = _.cloneDeep(cartLine.item_variations);
-                    this.temp.item_extras = _.cloneDeep(cartLine.item_extras);
+                    this.temp.item_variations = normalizeVariationEntries(cartLine.item_variations);
+                    this.temp.item_extras = normalizeExtraEntries(cartLine.item_extras);
 
                     _.forEach(cartLine.pos_line_addons || [], (b) => {
                         const ad = item.addons && item.addons.find((x) => String(x.id) === String(b.parent_addon_id));
@@ -435,6 +1013,7 @@ export default {
                             }
                         });
                     }
+                    this.pruneUnavailableRestoredSelections();
                     this.totalPriceSetup();
                     // Conserver la base déjà enregistrée en panier (pont wizard / ajustements), pas le prix catalogue brut
                     this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
@@ -464,6 +1043,12 @@ export default {
 
                     modalTarget?.classList?.add('active');
                     document.body.style.overflowY = 'hidden';
+                    this._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                    setTimeout(() => {
+                        if (modalTarget && modalTarget.classList?.contains('active')) {
+                            modalTarget.focus({ preventScroll: true });
+                        }
+                    }, 150);
                 })
                 .catch(() => {
                     // [V7 FIX] Show error feedback — silent failure leaves cashier confused
@@ -476,28 +1061,7 @@ export default {
             this.editingCartIndex = null;
             this.usePricedCartBase = false;
             this.item = null;
-
-            this.temp.name = "";
-            this.temp.image = "";
-            this.temp.item_id = 0;
-            this.temp.quantity = 0;
-            this.temp.discount = 0;
-            this.temp.currency_price = 0;
-            this.temp.convert_price = 0;
-            this.temp.item_variations = {
-                variations: {},
-                names: {}
-            };
-            this.temp.item_extras = {
-                extras: [],
-                names: []
-            };
-            this.temp.item_variation_total = 0;
-            this.temp.item_extra_total = 0;
-            this.temp.total_price = 0;
-            this.temp.instruction = "";
-            this.addons = {};
-            this.addonQuantity = {}; // [BUG-A6 FIX] Reset addon quantities
+            this.resetTempState();
 
             if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
                 delete this.$refs.itemVariationModal.dataset.wizardTotal;
@@ -508,6 +1072,11 @@ export default {
             const modalDiv = this.$refs.itemVariationModal;
             modalDiv?.classList?.remove("active");
             document.body.style.overflowY = "auto";
+            const returnFocusEl = this._wizardReturnFocusEl;
+            this._wizardReturnFocusEl = null;
+            if (returnFocusEl && typeof returnFocusEl.focus === 'function' && document.contains(returnFocusEl)) {
+                this.$nextTick(() => returnFocusEl.focus());
+            }
         },
         bumpPricingToCatalog: function () {
             if (!this.usePricedCartBase || !this.item) return;
@@ -516,68 +1085,41 @@ export default {
             this.temp.currency_price = this.item.offer.length > 0 ? this.item.offer[0].currency_price : this.item.currency_price;
         },
         changeVariation: function (attributeId, variationId, variationName, variationPrice) {
-            this.bumpPricingToCatalog();
-            this.temp.item_variations.variations[attributeId] = variationId;
-            // [W7 FIX] Coerce both sides to string for comparison — attributeId from DOM events
-            // is a string, while element.id from API response is a number. Strict === fails.
-            // [V2 FIX] Also store names_by_id[attrId] = {attrName, varName} so buildPosCheckoutOrderRow
-            // can join by attrId instead of fragile index-zip.
-            if (!this.temp.item_variations.names_by_id) {
-                this.temp.item_variations.names_by_id = {};
-            }
-            _.forEach(this.item.itemAttributes, (element) => {
-                if (String(element.id) === String(attributeId)) {
-                    this.temp.item_variations.names[element.name] = variationName;
-                    this.temp.item_variations.names_by_id[String(attributeId)] = {
-                        attrName: element.name,
-                        varName: variationName,
-                    };
-                }
-            });
-            this.totalPriceSetup();
+            const attribute = (this.item.itemAttributes || []).find((element) => String(element.id) === String(attributeId));
+            const variation = this.getAttributeVariations(attribute || { id: attributeId })
+                .find((entry) => String(entry.id) === String(variationId));
+
+            if (!attribute || !variation) return;
+
+            this.selectLegacyVariation(attribute, variation);
         },
         changeVariationAdjust: function (attributeId, variationId) {
-            _.forEach(this.item.variations[attributeId], (variation) => {
+            _.forEach(this.getAttributeVariations({ id: attributeId }), (variation) => {
                 if (variation.id === variationId) {
                     this.changeVariation(attributeId, variationId, variation.name, variation.convert_price);
                 }
             });
         },
         changeExtra: function (e, id, name) {
-            this.bumpPricingToCatalog();
-            if (e.target.checked) {
-                this.temp.item_extras.extras.push(id);
-                this.temp.item_extras.names.push(name);
-            } else {
-                for (let i = 0; i < this.temp.item_extras.extras.length; i++) {
-                    if (this.temp.item_extras.extras[i] === id) {
-                        this.temp.item_extras.extras.splice(i, 1);
-                    }
-                }
-                for (let i = 0; i < this.temp.item_extras.names.length; i++) {
-                    if (this.temp.item_extras.names[i] === name) {
-                        this.temp.item_extras.names.splice(i, 1);
-                    }
-                }
-            }
-            this.totalPriceSetup();
+            this.setExtraQuantity({ id, name }, e.target.checked ? 1 : 0);
         },
         totalPriceSetup: function () {
             let item_variation_total = 0;
             let item_extra_total = 0;
             let item_addon_total = 0;
-            _.forEach(this.temp.item_variations.variations, (variationId, attributeId) => {
-                _.forEach(this.item.variations[attributeId], (itemVariation) => {
-                    if (variationId === itemVariation.id) {
-                        item_variation_total += itemVariation.convert_price;
+            _.forEach(normalizeVariationEntries(this.temp.item_variations), (selectedVariation) => {
+                const itemVariations = this.getAttributeVariations({ id: selectedVariation.item_attribute_id });
+                _.forEach(itemVariations, (itemVariation) => {
+                    if (selectedVariation.id === itemVariation.id) {
+                        item_variation_total += (parseFloat(itemVariation.convert_price) || 0) * normalizeQuantity(selectedVariation.quantity, 1);
                     }
                 });
             });
 
-            _.forEach(this.temp.item_extras.extras, (extraId) => {
+            _.forEach(normalizeExtraEntries(this.temp.item_extras), (selectedExtra) => {
                 _.forEach(this.item.extras, (itemExtra) => {
-                    if (extraId === itemExtra.id) {
-                        item_extra_total += itemExtra.convert_price;
+                    if (selectedExtra.id === itemExtra.id) {
+                        item_extra_total += (parseFloat(itemExtra.convert_price) || 0) * normalizeQuantity(selectedExtra.quantity, 1);
                     }
                 });
             });
@@ -624,6 +1166,11 @@ export default {
         },
         addonQuantityUp: function (id) {
             this.bumpPricingToCatalog();
+            const addon = this.getAddonById(id);
+            if (this.isAddonUnavailable(addon) && typeof this.addons[id] === "undefined") {
+                this.addonQuantity[id] = 1;
+                return;
+            }
             if (typeof this.addonQuantity[id] !== "undefined") {
                 if (this.addonQuantity[id] === 0) {
                     this.addonQuantity[id] = 1;
@@ -637,6 +1184,10 @@ export default {
         },
         addonQuantityIncrement: function (id) {
             this.bumpPricingToCatalog();
+            const addon = this.getAddonById(id);
+            if (this.isAddonUnavailable(addon)) {
+                return;
+            }
             if (typeof this.addonQuantity[id] !== "undefined") {
                 this.addonQuantity[id]++;
                 if (this.addonQuantity[id] <= 0) {
@@ -663,6 +1214,9 @@ export default {
         },
         changeAddon: function (addon) {
             this.bumpPricingToCatalog();
+            if (this.isAddonUnavailable(addon) && typeof this.addons[addon.id] === "undefined") {
+                return;
+            }
             if (typeof this.addons[addon.id] === "undefined") {
                 this.addons[addon.id] = {
                     name: addon.addon_item_name,
@@ -743,8 +1297,11 @@ export default {
             };
 
             // 1. Variations → pain, viande, sauce
-            if (cartLine.item_variations && cartLine.item_variations.names) {
-                Object.entries(cartLine.item_variations.names).forEach(([attrName, varName]) => {
+            const variationEntries = normalizeVariationEntries(cartLine.item_variations);
+            if (variationEntries.length > 0) {
+                variationEntries.forEach((variationEntry) => {
+                    const attrName = variationEntry.variation_name || '';
+                    const varName = variationEntry.name || '';
                     const attrLower = attrName.toLowerCase();
                     
                     // Pain / Galette — match by exact attrName first, then fallback
@@ -780,7 +1337,7 @@ export default {
                             const viandeVar = item.variations[viandeAttr.id].find(v => v.name === varName);
                             if (viandeVar) {
                                 const key = 'v_' + viandeVar.id;
-                                restore.viandes[key] = (restore.viandes[key] || 0) + 1;
+                                restore.viandes[key] = (restore.viandes[key] || 0) + normalizeQuantity(variationEntry.quantity, 1);
                             }
                         }
                     }
@@ -823,8 +1380,10 @@ export default {
             }
 
             // 2. Extras → garnitures, suppléments, sauces extras, sauce frites
-            if (cartLine.item_extras && cartLine.item_extras.names) {
-                cartLine.item_extras.names.forEach((extraName) => {
+            const extraEntries = normalizeExtraEntries(cartLine.item_extras);
+            if (extraEntries.length > 0) {
+                extraEntries.forEach((extraEntry) => {
+                    const extraName = extraEntry.name || '';
                     const extra = item.extras?.find(e => e.name === extraName);
                     if (!extra) return;
 
@@ -934,10 +1493,14 @@ export default {
                 });
             // [W6 FIX] Use proper typeof check instead of comparing to string "undefined"
             } else if (this.addons && typeof this.addons === 'object' && Object.keys(this.addons).length !== 0) {
-                _.forEach(this.addons, (addon) => {
+                _.forEach(this.addons, (addon, parentKey) => {
+                    const catalogAddon = this.getAddonById(parentKey);
+                    if (!catalogAddon || this.isAddonUnavailable(catalogAddon)) return;
                     addonTotal += (parseFloat(addon.total_price) || 0) * (parseInt(addon.quantity) || 1);
                 });
                 _.forEach(this.addons, (addon, parentKey) => {
+                    const catalogAddon = this.getAddonById(parentKey);
+                    if (!catalogAddon || this.isAddonUnavailable(catalogAddon)) return;
                     pos_line_addons.push({
                         parent_addon_id: parentKey,
                         name: addon.name,
@@ -968,13 +1531,21 @@ export default {
             return {
                 name: this.temp.name,
                 image: this.temp.image,
-                item_id: this.temp.item_id,
-                quantity: this.temp.quantity,
+                item_id: normalizeId(this.temp.item_id) || this.temp.item_id,
+                quantity: normalizeQuantity(this.temp.quantity, 1),
                 discount: this.temp.discount,
                 currency_price: this.temp.currency_price,
                 convert_price: adjustedBaseConvertPrice,
-                item_variations: this.temp.item_variations,
-                item_extras: this.temp.item_extras,
+                item_variations: normalizeVariationEntries(this.temp.item_variations)
+                    .filter((entry) => {
+                        const variation = this.findVariationById(entry.id);
+                        return variation && !this.isModifierUnavailable(variation);
+                    }),
+                item_extras: normalizeExtraEntries(this.temp.item_extras)
+                    .filter((entry) => {
+                        const extra = this.findExtraById(entry.id);
+                        return extra && !this.isModifierUnavailable(extra);
+                    }),
                 item_variation_total: this.temp.item_variation_total,
                 item_extra_total: this.temp.item_extra_total,
                 instruction: this.temp.instruction,
@@ -983,54 +1554,60 @@ export default {
             };
         },
         addToCart: function () {
+            if (!this.canAddToCart) return;
             var mainPayload = this.buildPosCartMainPayload();
             var editIdx = this.editingCartIndex;
-            var dispatchPromise =
-                editIdx !== null && editIdx >= 0
-                    ? this.$store.dispatch('posCart/replaceCartLine', { index: editIdx, item: mainPayload })
-                    : this.$store.dispatch('posCart/lists', [mainPayload]);
+            var finishSuccess = () => {
+                this.editingCartIndex = null;
+                this.usePricedCartBase = false;
+                this.item = null;
+                this.resetTempState();
+                if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                    delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                }
+                this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
+                this.itemArrays = [];
 
-            dispatchPromise
+                alertService.success(this.$t('message.add_to_cart'));
+                appService.modalHide('#item-variation-modal');
+            };
+            var finishError = () => {
+                if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                    delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                }
+                this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
+                this.itemArrays = [];
+            };
+
+            if (editIdx !== null && editIdx >= 0) {
+                this.$store.dispatch('posCart/replaceCartLine', { index: editIdx, item: mainPayload })
+                    .then(finishSuccess)
+                    .catch(finishError);
+                return;
+            }
+
+            var optimisticTempId = null;
+            this.$store.dispatch('posCart/addOptimistic', { item: mainPayload })
+                .then((tempId) => {
+                    optimisticTempId = tempId;
+                    return this.$store.dispatch('posCart/lists', [mainPayload]);
+                })
                 .then(() => {
-                    this.editingCartIndex = null;
-                    this.usePricedCartBase = false;
-                    this.item = null;
-                    this.temp.name = "";
-                    this.temp.image = "";
-                    this.temp.item_id = 0;
-                    this.temp.quantity = 0;
-                    this.temp.discount = 0;
-                    this.temp.currency_price = 0;
-                    this.temp.convert_price = 0;
-                    this.temp.item_variations = {
-                        variations: {},
-                        names: {}
-                    };
-                    this.temp.item_extras = {
-                        extras: [],
-                        names: []
-                    };
-                    this.temp.item_variation_total = 0;
-                    this.temp.item_extra_total = 0;
-                    this.temp.total_price = 0;
-                    this.temp.instruction = "";
-                    this.addons = {};
-                    this.addonQuantity = {};
-                    if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
-                        delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                    if (optimisticTempId != null) {
+                        this.$store.commit('posCart/__optimisticConfirm', optimisticTempId);
+                        this.$store.commit('posCart/subtotal');
                     }
-                    this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
-                    this.itemArrays = [];
-
-                    alertService.success(this.$t('message.add_to_cart'));
-                    appService.modalHide('#item-variation-modal');
+                    finishSuccess();
+                    // [POS-CATEGORY-FIRST 2026-06-23 /goal] New line taken →
+                    // signal the parent to return to the category grid hub.
+                    this.$emit('item:added');
                 })
                 .catch(() => {
-                    if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
-                        delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                    if (optimisticTempId != null) {
+                        this.$store.commit('posCart/__optimisticRollback', optimisticTempId);
+                        this.$store.commit('posCart/subtotal');
                     }
-                    this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
-                    this.itemArrays = [];
+                    finishError();
                 });
         },
     },
@@ -1049,19 +1626,40 @@ export default {
     },
 
     mounted() {
+        this._posTileClickHandler = (event) => this.handleNativeTileClick(event);
+        // [PERF 2026-07-23 POS-instant-open] Préchauffe au survol/à l'appui (délégation
+        // document, comme le click handler ci-dessus). Nettoyé au beforeUnmount.
+        this._posTilePrewarmHandler = (event) => this.handleTilePrewarm(event);
+        this.$nextTick(() => {
+            document?.addEventListener?.('click', this._posTileClickHandler, true);
+            document?.addEventListener?.('pointerdown', this._posTilePrewarmHandler, true);
+            document?.addEventListener?.('pointerover', this._posTilePrewarmHandler, true);
+        });
+
         // [WIZARD-SUBMIT] The pos-wizard.js dispatches 'wizard:add-to-cart' on the modal element
         // instead of clicking the (potentially disabled) Vue button.
         // This listener calls addToCart() directly, bypassing the :disabled guard.
         const modal = this.$refs.itemVariationModal;
         if (modal) {
             modal.addEventListener('wizard:add-to-cart', () => {
-                // Ensure total_price is set from wizard total if Vue hasn't computed it yet
                 const wizardTotal = parseFloat(modal.dataset?.wizardTotal || 0);
-                if (wizardTotal > 0 && this.temp.total_price <= 0) {
+                if (wizardTotal > 0) {
                     this.temp.total_price = wizardTotal;
                 }
+                if (!this.canAddToCart) return;
                 this.addToCart();
             });
+        }
+    },
+    beforeUnmount() {
+        if (this._posTileClickHandler) {
+            document?.removeEventListener?.('click', this._posTileClickHandler, true);
+            this._posTileClickHandler = null;
+        }
+        if (this._posTilePrewarmHandler) {
+            document?.removeEventListener?.('pointerdown', this._posTilePrewarmHandler, true);
+            document?.removeEventListener?.('pointerover', this._posTilePrewarmHandler, true);
+            this._posTilePrewarmHandler = null;
         }
     },
 
@@ -1069,6 +1667,281 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   ItemComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.2
+   - Tiles produits stylisées via :deep() override dans PosComponent.vue
+     (tokens V5 unifiés). On ne redéfinit pas ici pour ne pas fragmenter.
+   - Modal item variation : chrome refondu en warm V5 (cf. .pos-v5-item-modal*).
+   ============================================================================= */
+
+/* =============================================================================
+   POS V5 R2 — Tiles produits avec photo hero (layout vertical : visual + body)
+   ============================================================================= */
+.pos-v5-tile.pos-item-tile {
+    /* Reset de l'ancien flex-col items-center forcé */
+    display: flex;
+    flex-direction: column;
+    background: var(--pos-v5-bg-panel);
+    border: 1px solid var(--pos-v5-border);
+    border-radius: var(--pos-v5-radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    appearance: none;
+    text-align: left;
+    font-family: var(--pos-v5-font-sans);
+    color: inherit;
+    padding: 0 !important;
+    box-shadow: var(--pos-v5-shadow-sm);
+    transition:
+        transform var(--pos-v5-duration-base) var(--pos-v5-ease-bounce),
+        border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+        box-shadow var(--pos-v5-duration-base) var(--pos-v5-ease-standard);
+    min-height: 0;
+}
+.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable):not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-lift);
+}
+.pos-v5-tile.pos-item-tile:active:not(.is-unavailable):not(:disabled) {
+    transform: translateY(0);
+}
+.pos-v5-tile.pos-item-tile:focus-visible {
+    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);
+    outline-offset: var(--pos-v5-focus-offset);
+}
+
+/* Photo visual (hero 4/3) */
+.pos-v5-tile__visual {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: var(--pos-v5-bg-subtle);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.pos-v5-tile__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);
+}
+.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__image {
+    transform: scale(1.06);
+}
+.pos-v5-tile__visual-fallback {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--pos-v5-ink-muted);
+}
+
+/* Body (name + price + add) */
+.pos-v5-tile__body {
+    padding: var(--pos-v5-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pos-v5-space-2);
+    flex: 1;
+    min-height: 84px;
+}
+.pos-v5-tile__name {
+    margin: 0;
+    color: var(--pos-v5-ink);
+    font-size: var(--pos-v5-text-body) !important;
+    font-weight: var(--pos-v5-weight-bold) !important;
+    line-height: var(--pos-v5-leading-snug) !important;
+    /* [CAISSE-INGREDIENTS 2026-06-04] flex:1 retiré : le nom + la description
+       s'empilent en haut, le pied (prix) reste collé en bas via margin-top:auto. */
+    text-transform: capitalize;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-align: left;
+}
+/* [CAISSE-INGREDIENTS 2026-06-04] Ingrédients sous le nom, muté, 2 lignes max. */
+.pos-v5-tile__desc {
+    margin: calc(-1 * var(--pos-v5-space-1)) 0 0 0;
+    color: var(--pos-v5-ink-soft);
+    font-size: var(--pos-v5-text-caption);
+    line-height: var(--pos-v5-leading-snug);
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.pos-v5-tile__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pos-v5-space-2);
+    margin-top: auto;
+}
+.pos-v5-tile__price {
+    margin: 0;
+    font-family: var(--pos-v5-font-sans);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    font-size: var(--pos-v5-text-body-lg) !important;
+    font-weight: var(--pos-v5-weight-extrabold) !important;
+    color: var(--pos-v5-brand-red) !important;
+    line-height: 1;
+}
+.pos-v5-tile__add {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition:
+        background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+        color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+        transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);
+}
+.pos-v5-tile__add i {
+    line-height: 1;
+}
+.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__add {
+    background: var(--pos-v5-brand-red);
+    color: var(--pos-v5-ink-on-red);
+    transform: scale(1.08);
+}
+
+/* Unavailable overlay (pos-item-86-badge devient un overlay full surface) */
+.pos-v5-tile__overlay,
+.pos-item-86-badge {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(194, 30, 47, 0.86);
+    color: var(--pos-v5-ink-on-red);
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h6);
+    font-weight: var(--pos-v5-weight-extrabold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    text-align: center;
+    padding: var(--pos-v5-space-2);
+    backdrop-filter: blur(2px);
+    /* Reset des anciens placement / radius */
+    top: auto;
+    right: auto;
+    border-radius: 0;
+    box-shadow: none;
+    line-height: 1.1;
+}
+/* When pos-item-86-badge is OUTSIDE the tile__visual (legacy compat — no longer used) */
+.pos-item-tile > .pos-item-86-badge:not(.pos-v5-tile__overlay) {
+    inset: auto;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    background: rgba(194, 30, 47, 0.92);
+    backdrop-filter: none;
+    box-shadow: 0 2px 6px rgba(26, 26, 26, 0.18);
+}
+
+.pos-item-tile.is-unavailable {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: grayscale(0.4);
+}
+
+/* =============================================================================
+   [PERF 2026-07-23 POS-instant-open] Feedback instantané au clic tuile
+   - .is-pending : tuile pressée + mini-spinner dans le badge « + » (< 16 ms).
+   - .pos-tile-loading-overlay : overlay « Chargement… » plein écran (mime le fond
+     du modal) affiché tant que item/details n'est pas revenu → l'ouverture est
+     perçue comme instantanée même sur un premier clic à froid.
+   ============================================================================= */
+.pos-v5-tile.pos-item-tile.is-pending {
+    transform: scale(0.97);
+    border-color: var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-lift);
+}
+.pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add {
+    background: var(--pos-v5-brand-red);
+    color: var(--pos-v5-ink-on-red);
+}
+.pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add i {
+    display: none;
+}
+.pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add::after {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top-color: #fff;
+    animation: pos-tile-spin 0.6s linear infinite;
+}
+
+.pos-tile-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    animation: pos-tile-loading-in 0.12s ease-out;
+}
+.pos-tile-loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 34px;
+    border-radius: var(--pos-v5-radius-xl, 20px);
+    background: #fff;
+    box-shadow: 0 18px 48px rgba(26, 26, 26, 0.28);
+    min-width: 200px;
+}
+.pos-tile-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid var(--pos-v5-bg-subtle, #f1f1f5);
+    border-top-color: var(--pos-v5-brand-red, #f4501e);
+    animation: pos-tile-spin 0.7s linear infinite;
+}
+.pos-tile-loading-label {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body, 14px);
+    font-weight: var(--pos-v5-weight-bold, 700);
+    color: var(--pos-v5-ink, #1a1a1a);
+    letter-spacing: 0.2px;
+}
+@keyframes pos-tile-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes pos-tile-loading-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pos-tile-loading-overlay { animation: none; }
+    .pos-tile-loading-spinner,
+    .pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add::after { animation: none; }
+}
+
 .pos-add-to-cart-sticky {
     position: sticky;
     bottom: 0;
@@ -1076,5 +1949,61 @@ export default {
     background: #fff;
     padding-top: 8px;
     padding-bottom: 2px;
+}
+/* Wizard shell: footer is a flex column — not sticky inside scroll */
+.pos-v4-item-wizard-footer.pos-add-to-cart-sticky {
+    position: relative;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* =============================================================================
+   POS V5 Item Modal (variation modal léger — produits sans wizard kiosk)
+   -----------------------------------------------------------------------------
+   Le wizard kiosk reste FROZEN. Ce modal sert pour les produits simples
+   (boisson avec taille, dessert avec variantes, etc.) — refonte chrome warm V5.
+   ============================================================================= */
+.pos-v5-item-modal :deep(.modal-dialog) {
+    border-radius: var(--pos-v5-radius-xl) !important;
+    box-shadow: var(--pos-v5-shadow-modal) !important;
+    background: var(--pos-v5-bg-panel) !important;
+    border: 1px solid var(--pos-v5-border) !important;
+    font-family: var(--pos-v5-font-sans);
+}
+
+.pos-v5-item-modal__head {
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);
+    border-bottom: 1px solid var(--pos-v5-border) !important;
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-3) !important;
+}
+
+.pos-v5-item-modal__foot {
+    background: var(--pos-v5-bg-panel) !important;
+    box-shadow: var(--pos-v5-shadow-sticky-top);
+}
+
+/* CTA "Ajouter au panier — X €" : pleine largeur, brand gradient, ombre soft */
+.pos-v5-item-add-cta {
+    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;
+    border: 0;
+    box-shadow: var(--pos-v5-shadow-cta);
+    min-height: var(--pos-v5-tap-large);
+    letter-spacing: var(--pos-v5-tracking-tight);
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);
+}
+.pos-v5-item-add-cta:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(244, 80, 30, 0.32);
+}
+
+/* Attribute / variation cards within the modal body */
+.pos-v5-item-modal :deep(.modal-body) > * {
+    font-family: var(--pos-v5-font-sans);
+}
+
+/* Respecte reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .pos-v5-item-add-cta { transition: none !important; }
+    .pos-v5-item-add-cta:hover:not(:disabled) { transform: none; }
 }
 </style>

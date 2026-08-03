@@ -1,0 +1,61 @@
+Tu es auditeur externe senior FoodKing. Fais un audit profond, adversarial et orienté orchestration finale du système centralisé data/sync/gestion produit.
+
+Contexte:
+- Repo: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+- Hardware/TPE/imprimante/Google Maps live restent hors scope maintenant.
+- Objectif actuel: finir le logiciel central avant UAT matériel.
+- Ne valide pas aveuglément. Distingue PASS prouvé, PARTIAL, NOT_VALIDATED, REWORK.
+
+Préambule disque (si présent sur ce workspace): lis en premier reports/audit/_TERMINAL_CONTEXT_BRIEF.md (cycle + mémoire locale). Graphiti / Neo4j n'est pas interrogeable depuis ce terminal : si besoin d'épisodes, cite memory/INDEX.md et les chemins JSONL que tu as effectivement lus.
+
+Lis impérativement:
+1. AGENTS.md
+2. missions/VERSION-A-SYSTEM-FINISHING/TASKLIST.md
+3. reports/audit/CODEX_VA_SYS_06_STOCKABLE_CHOICES_EXECUTION_2026-04-29.md
+4. reports/audit/CODEX_VA_SYS_07B_EXTENDED_AUTHZ_EXECUTION_2026-04-30.md
+5. reports/audit/CODEX_VA_SYS_08_REALTIME_OUTBOX_EXECUTION_2026-04-30.md
+6. reports/audit/CODEX_VA_SYS_09_DOCS_RUNBOOK_MEMORY_2026-04-30.md
+7. reports/audit/CODEX_VA_SYS_10_FINAL_MASSIVE_VALIDATION_2026-04-30.md
+8. docs/sync/CATALOG_COMPOSER_DATA_FLOW.md
+9. docs/sync/WIZARD_PRODUCT_MODEL.md
+10. docs/sync/STOCK_SYNC_AND_AVAILABILITY.md
+11. docs/sync/API_VS_MCP_DECISION.md
+12. docs/sync/CENTRAL_MANAGEMENT_RUNBOOK.md
+13. docs/sync/VERSION_A_SYNC_VALIDATION_MATRIX_2026-04-30.md
+
+Ce qui est déjà livré par Codex:
+- VA-SYS-06 PASS_LOCAL: rupture produit + rupture choix wizard stockable, backend pricing reject stale/forged/unavailable choices, POS/Kiosk guards.
+- VA-SYS-07B PASS_LOCAL_STRONG: authz central management, branch dashboard scope, composer show no leak, availability fanout scoped, photo produit réservée rôles globaux.
+- VA-SYS-08 PASS_RUNTIME_LOCAL_STRONG: test prod-like outbox, rescue/retry, provider failure recovery, CatalogChanged fanout active branches, contract violation before broadcast, C3 runtime local.
+- VA-SYS-09 PASS_DOCS_MEMORY: docs sync canoniques, décision API/outbox/realtime et non MCP runtime.
+- VA-SYS-10 PASS_CORE_SYNC_VALIDATION_WITH_REMAINING_SYSTEM_GATES: 175 PHP PASS, 42 Vitest PASS, Playwright C3 4 PASS, npm production PASS. Mais VA-SYS-00..05 restent ouverts.
+
+Audit demandé:
+1. Vérifie si le verdict Codex est cohérent: core sync/data PASS mais système complet HOLD.
+2. Audite spécifiquement la centralisation:
+   - ajout/modification/suppression produit
+   - catégories
+   - photos
+   - stock produit
+   - stock choix wizard
+   - composer/wizard produit simple vs complexe
+   - projection POS/Kiosk/KDS/OSS
+   - outbox/realtime/fallback
+   - branch isolation
+   - historique/snapshots
+3. Identifie les risques P0/P1/P2 restants avant de dire logiciel prêt.
+4. Donne un plan d'exécution précis pour VA-SYS-00 à VA-SYS-05.
+5. Pour chaque mission, donne:
+   - objectif exact
+   - fichiers à lire/modifier
+   - tests à créer/lancer
+   - critères PASS/REWORK
+   - ordre d'exécution
+   - risques business
+6. Ne propose pas hardware maintenant sauf comme liste UAT séparée.
+7. Si un point est déjà prouvé par les tests/rapports, dis PASS avec preuve fichier/test.
+8. Si un point manque, dis NOT_VALIDATED et donne la mission Codex exacte pour le fermer.
+9. Termine par:
+   MASTER_AUDIT_VERDICT: PASS | REWORK
+   SOFTWARE_DECISION: READY_FOR_VA_SYS_01_05_EXECUTION | HOLD
+   NEXT_CODEX_MISSION: ...

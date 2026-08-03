@@ -68,25 +68,29 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            return;
+        }
+
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropIndexIfExists('idx_orders_branch_status');
-            $table->dropIndexIfExists('idx_orders_user_id');
-            $table->dropIndexIfExists('idx_orders_datetime');
-            $table->dropIndexIfExists('idx_orders_status');
+            $this->dropIndexIfExists($table, 'orders', 'idx_orders_branch_status');
+            $this->dropIndexIfExists($table, 'orders', 'idx_orders_user_id');
+            $this->dropIndexIfExists($table, 'orders', 'idx_orders_datetime');
+            $this->dropIndexIfExists($table, 'orders', 'idx_orders_status');
         });
 
         Schema::table('items', function (Blueprint $table) {
-            $table->dropIndexIfExists('idx_items_status_category');
-            $table->dropIndexIfExists('idx_items_id_price');
+            $this->dropIndexIfExists($table, 'items', 'idx_items_status_category');
+            $this->dropIndexIfExists($table, 'items', 'idx_items_id_price');
         });
 
         Schema::table('users', function (Blueprint $table) {
-            $table->dropIndexIfExists('idx_users_deleted_at');
-            $table->dropIndexIfExists('idx_users_email');
+            $this->dropIndexIfExists($table, 'users', 'idx_users_deleted_at');
+            $this->dropIndexIfExists($table, 'users', 'idx_users_email');
         });
 
         Schema::table('order_items', function (Blueprint $table) {
-            $table->dropIndexIfExists('idx_order_items_order_id');
+            $this->dropIndexIfExists($table, 'order_items', 'idx_order_items_order_id');
         });
     }
 
@@ -96,10 +100,35 @@ return new class extends Migration
     private function indexExists(string $table, string $indexName): bool
     {
         try {
-            $indexes = \Illuminate\Support\Facades\DB::select("SHOW INDEX FROM {$table}");
+            $driver = Schema::getConnection()->getDriverName();
+            if ($driver === 'sqlite') {
+                $indexes = \Illuminate\Support\Facades\DB::select("PRAGMA index_list('" . str_replace("'", "''", $table) . "')");
+
+                return collect($indexes)->pluck('name')->contains($indexName);
+            }
+
+            $indexes = \Illuminate\Support\Facades\DB::select('SHOW INDEX FROM `' . str_replace('`', '``', $table) . '`');
+
             return collect($indexes)->pluck('Key_name')->contains($indexName);
         } catch (\Exception $e) {
             return false;
+        }
+    }
+
+    private function dropIndexIfExists(Blueprint $table, string $tableName, string $indexName): void
+    {
+        if (! $this->indexExists($tableName, $indexName)) {
+            return;
+        }
+
+        try {
+            $table->dropIndex($indexName);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (str_contains($e->getMessage(), 'needed in a foreign key constraint')) {
+                return;
+            }
+
+            throw $e;
         }
     }
 };

@@ -1,0 +1,21 @@
+{
+  "captured_at": "2026-05-28T16:30:38+00:00",
+  "audit_logs_count": 96,
+  "audit_logs_last_hash": "0938b9189900f0f436e1270042e610fd0023893b7eba8a4b20fbc8a1cf0679d8",
+  "domain_events_count": 142,
+  "domain_events_pending": 0,
+  "orders_count": 83,
+  "orders_last_id": 110,
+  "orders_last_queue_number": "A0077",
+  "orders_fiscal_alloc_errors_total": 0,
+  "cash_movements_count": 4,
+  "z_reports_count": 1,
+  "z_report_last_sequence_no": 1,
+  "z_report_last_status": "closed",
+  "failed_jobs_count": 151,
+  "failed_jobs_last_failed_at": "2026-05-28 18:04:46",
+  "broadcasting_driver": "pusher",
+  "queue_driver": "redis",
+  "branch_id": 1,
+  "note": "True pre-test baseline captured directly via php artisan tinker — use this as authoritative reference if snapshots[0] is missing any field (analyzer should prefer this when fiscal_alloc_errors_total field absent on snapshot[0])."
+}

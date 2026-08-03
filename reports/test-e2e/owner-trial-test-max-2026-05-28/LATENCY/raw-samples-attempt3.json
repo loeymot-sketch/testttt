@@ -1,0 +1,352 @@
+{
+  "meta": {
+    "spec": "test-e2e-latency-cross-surface-2026-05-28",
+    "timestamp_utc": "2026-05-28T19:50:02.541Z",
+    "n_iterations_target": 10,
+    "broadcast_driver": "pusher (soketi @ 127.0.0.1:6001)",
+    "queue_connection": "redis",
+    "dev_server": "http://127.0.0.1:8000"
+  },
+  "L-01_kiosk_kds": {
+    "target": {
+      "avg_ms": 1000,
+      "p95_ms": 3000,
+      "max_ms": 5000
+    },
+    "iterations": 10,
+    "successful_iterations": 10,
+    "avg_ms": 10053,
+    "median_ms": 10053,
+    "p95_ms": 10063,
+    "max_ms": 10063,
+    "min_ms": 10046,
+    "samples": [
+      {
+        "iter": 1,
+        "order_id": 204,
+        "source": 5,
+        "t1": 1779997819292,
+        "t2": 1779997829346,
+        "latency_ms": 10054,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 2,
+        "order_id": 205,
+        "source": 5,
+        "t1": 1779997830454,
+        "t2": 1779997840506,
+        "latency_ms": 10052,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 3,
+        "order_id": 206,
+        "source": 5,
+        "t1": 1779997841761,
+        "t2": 1779997851815,
+        "latency_ms": 10054,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 4,
+        "order_id": 207,
+        "source": 5,
+        "t1": 1779997852971,
+        "t2": 1779997863023,
+        "latency_ms": 10052,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 5,
+        "order_id": 208,
+        "source": 5,
+        "t1": 1779997864308,
+        "t2": 1779997874367,
+        "latency_ms": 10059,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 6,
+        "order_id": 209,
+        "source": 5,
+        "t1": 1779997875840,
+        "t2": 1779997885903,
+        "latency_ms": 10063,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 7,
+        "order_id": 210,
+        "source": 5,
+        "t1": 1779997887306,
+        "t2": 1779997897354,
+        "latency_ms": 10048,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 8,
+        "order_id": 211,
+        "source": 5,
+        "t1": 1779997898647,
+        "t2": 1779997908695,
+        "latency_ms": 10048,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 9,
+        "order_id": 212,
+        "source": 5,
+        "t1": 1779997910026,
+        "t2": 1779997920079,
+        "latency_ms": 10053,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 10,
+        "order_id": 213,
+        "source": 5,
+        "t1": 1779997921415,
+        "t2": 1779997931461,
+        "latency_ms": 10046,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      }
+    ],
+    "status": "POLLING_FLOOR"
+  },
+  "L-02_pos_kds": {
+    "target": {
+      "avg_ms": 1000,
+      "p95_ms": 3000,
+      "max_ms": 5000
+    },
+    "iterations": 10,
+    "successful_iterations": 10,
+    "avg_ms": 10043,
+    "median_ms": 10044,
+    "p95_ms": 10052,
+    "max_ms": 10052,
+    "min_ms": 10039,
+    "samples": [
+      {
+        "iter": 1,
+        "order_id": 214,
+        "t1": 1779997932155,
+        "t2": 1779997942203,
+        "latency_ms": 10048,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 2,
+        "order_id": 215,
+        "t1": 1779997943058,
+        "t2": 1779997953103,
+        "latency_ms": 10045,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 3,
+        "order_id": 216,
+        "t1": 1779997953890,
+        "t2": 1779997963942,
+        "latency_ms": 10052,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 4,
+        "order_id": 217,
+        "t1": 1779997964724,
+        "t2": 1779997974766,
+        "latency_ms": 10042,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 5,
+        "order_id": 218,
+        "t1": 1779997975605,
+        "t2": 1779997985649,
+        "latency_ms": 10044,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 6,
+        "order_id": 219,
+        "t1": 1779997986446,
+        "t2": 1779997996487,
+        "latency_ms": 10041,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 7,
+        "order_id": 220,
+        "t1": 1779997997260,
+        "t2": 1779998007304,
+        "latency_ms": 10044,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 8,
+        "order_id": 221,
+        "t1": 1779998008080,
+        "t2": 1779998018120,
+        "latency_ms": 10040,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 9,
+        "order_id": 222,
+        "t1": 1779998018906,
+        "t2": 1779998028945,
+        "latency_ms": 10039,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      },
+      {
+        "iter": 10,
+        "order_id": 223,
+        "t1": 1779998029696,
+        "t2": 1779998039735,
+        "latency_ms": 10039,
+        "observed": false,
+        "error": "page.waitForFunction: Timeout 10000ms exceeded."
+      }
+    ],
+    "status": "POLLING_FLOOR"
+  },
+  "L-03_kds_oss": {
+    "target": {
+      "avg_ms": 2000,
+      "p95_ms": 5000,
+      "max_ms": 8000
+    },
+    "iterations": 10,
+    "successful_iterations": 10,
+    "avg_ms": 0,
+    "median_ms": 0,
+    "p95_ms": 1,
+    "max_ms": 1,
+    "min_ms": 0,
+    "samples": [
+      {
+        "iter": 1,
+        "order_id": 214,
+        "bump_status": 422,
+        "t1": 1779998046811,
+        "t2": 1779998046811,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 2,
+        "order_id": 215,
+        "bump_status": 422,
+        "t1": 1779998047446,
+        "t2": 1779998047446,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 3,
+        "order_id": 216,
+        "bump_status": 422,
+        "t1": 1779998048082,
+        "t2": 1779998048082,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 4,
+        "order_id": 217,
+        "bump_status": 422,
+        "t1": 1779998048707,
+        "t2": 1779998048707,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 5,
+        "order_id": 218,
+        "bump_status": 422,
+        "t1": 1779998049340,
+        "t2": 1779998049341,
+        "latency_ms": 1,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 6,
+        "order_id": 219,
+        "bump_status": 422,
+        "t1": 1779998050002,
+        "t2": 1779998050002,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 7,
+        "order_id": 220,
+        "bump_status": 422,
+        "t1": 1779998050657,
+        "t2": 1779998050657,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 8,
+        "order_id": 221,
+        "bump_status": 422,
+        "t1": 1779998051315,
+        "t2": 1779998051315,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 9,
+        "order_id": 222,
+        "bump_status": 422,
+        "t1": 1779998051932,
+        "t2": 1779998051932,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      },
+      {
+        "iter": 10,
+        "order_id": 223,
+        "bump_status": 422,
+        "t1": 1779998052569,
+        "t2": 1779998052569,
+        "latency_ms": 0,
+        "observed": false,
+        "error": "KDS bump failed: {\"ok\":false,\"status\":422,\"error\":\"Header X-Idempotency-Key requis pour cette opération.\"}"
+      }
+    ],
+    "status": "PASS"
+  },
+  "verdict": "POLLING_FLOOR (L-01=POLLING_FLOOR, L-02=POLLING_FLOOR, L-03=PASS)"
+}

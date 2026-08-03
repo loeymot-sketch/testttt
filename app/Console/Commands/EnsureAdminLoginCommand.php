@@ -5,9 +5,11 @@ namespace App\Console\Commands;
 use App\Enums\Ask;
 use App\Enums\Role as EnumRole;
 use App\Enums\Status;
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Smartisan\Settings\Facades\Settings;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -42,15 +44,13 @@ class EnsureAdminLoginCommand extends Command
             return 1;
         }
 
-        $role = Role::query()
-            ->where('name', 'Admin')
-            ->where('guard_name', 'sanctum')
-            ->first();
-
-        if (! $role) {
-            $this->error('Rôle Spatie « Admin » introuvable. Lancez d’abord les seeders (RoleTableSeeder).');
-
-            return 1;
+        // Bases partiellement migrées (ex. E2E / fixtures) : créer le rôle minimal plutôt qu’échouer.
+        $role = Role::firstOrCreate(
+            ['name' => 'Admin', 'guard_name' => 'sanctum'],
+            []
+        );
+        if ($role->wasRecentlyCreated) {
+            $this->warn('Rôle Spatie « Admin » créé (aucune entrée préalable — pense à RoleTableSeeder en prod complète).');
         }
 
         $other = User::withoutGlobalScopes()
@@ -77,6 +77,7 @@ class EnsureAdminLoginCommand extends Command
                 return 0;
             }
 
+            $branchId = $this->resolveAssignableBranchId();
             $admin = User::create([
                 'name'              => 'Admin Le Cayenne',
                 'email'             => $email,
@@ -84,13 +85,13 @@ class EnsureAdminLoginCommand extends Command
                 'username'          => 'admin',
                 'email_verified_at' => now(),
                 'password'          => Hash::make($password),
-                'branch_id'         => 0,
+                'branch_id'         => $branchId,
                 'status'            => Status::ACTIVE,
                 'country_code'      => '+33',
                 'is_guest'          => Ask::NO,
             ]);
             $admin->assignRole($role);
-            $this->info("Utilisateur créé : id={$admin->id} email={$email}");
+            $this->info("Utilisateur créé : id={$admin->id} email={$email} branch_id={$branchId}");
 
             return 0;
         }
@@ -128,6 +129,9 @@ class EnsureAdminLoginCommand extends Command
         $admin->status            = Status::ACTIVE;
         $admin->deleted_at        = null;
         $admin->email_verified_at = $admin->email_verified_at ?? now();
+        if ((int) $admin->branch_id === 0) {
+            $admin->branch_id = $this->resolveAssignableBranchId();
+        }
         $admin->save();
 
         if (! $admin->hasRole('Admin')) {
@@ -138,5 +142,21 @@ class EnsureAdminLoginCommand extends Command
         $this->info("OK — connecte-toi avec : {$email} / (mot de passe défini par --password)");
 
         return 0;
+    }
+
+    /**
+     * Évite branch_id=0 + site_default_branch absent → default_access.default_id NULL au login.
+     */
+    private function resolveAssignableBranchId(): int
+    {
+        $fromSettings = Settings::group('site')->get('site_default_branch');
+        $id = (int) ($fromSettings ?: 0);
+        if ($id > 0) {
+            return $id;
+        }
+
+        $first = Branch::query()->orderBy('id')->value('id');
+
+        return (int) ($first ?: 1);
     }
 }

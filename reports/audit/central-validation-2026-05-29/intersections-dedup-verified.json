@@ -1,0 +1,85 @@
+{
+  "system": "FoodKing / Le Cayenne V1 LOCAL — cross-surface intersections + sync + dedup (POS / Kiosk / KDS / OSS / Stock / Loyalty / Fiscal NF525). HEAD 8db38d801.",
+  "lens": "intersections-dedup (architect + sresync merged, deduplicated)",
+  "head": "8db38d80195d945d01d6265b3d915a01195341c3",
+  "verified_at": "2026-05-29",
+  "read_only": true,
+  "raw_count": 6,
+  "confirmed_count": 5,
+  "dropped_count": 1,
+  "findings": [
+    {
+      "severity": "P2",
+      "file": "app/Services/OrderService.php",
+      "line": "2166-2322 (changePaymentStatus)",
+      "title": "Refund of a PENDING_COUNTER kiosk order via change-payment-status route permanently leaks decremented stock (refund cascade bypassed)",
+      "confirmed": true,
+      "is_new": true,
+      "frozen": false,
+      "grep_evidence": "VERIFIED at HEAD. PaymentStateMachine.php:13-16 allows PENDING_COUNTER=>[PAID,REFUNDED]. OrderService::changePaymentStatus:2266-2315 sets payment_status, writes ActionLog+AuditLog, dispatches ONLY OrderPaymentStatusChanged (2310-2314); orders.status left UNCHANGED. EventServiceProvider.php:180-182 OrderPaymentStatusChanged listener list = [PersistOrderPaymentStatusChangedToOutbox] ONLY — no stock/loyalty release. Stock release is keyed exclusively to OrderCanceled (EventServiceProvider:185-188 ReleaseStockOnOrderCanceled) and RefundCreated (197-211 ReleaseStockOnRefundCreated + ClawbackLoyaltyPointsOnRefund); changePaymentStatus dispatches NEITHER. Reachability confirmed: Order.php:19 and FrontendOrder.php:19 BOTH map protected $table='orders', so OnlineOrderController::changePaymentStatus(Order $order) route-model binding (routes/api.php:983) resolves a kiosk FrontendOrder row. PaymentStatusRequest.php:19 authorizes Admin/Branch Manager/POS Operator; REFUNDED is whitelisted (PaymentStatusRequest.php:37). Kiosk-cash precondition confirmed: FrontendOrderService.php:266-267 sets PENDING_COUNTER, :578-580 auto-accepts PENDING->ACCEPT, :237/:594-595 dispatch OrderCreated for counter-deferred cash -> DecrementStockOnOrderCreated (EventServiceProvider:173) decrements stock unconditionally (DecrementStockOnOrderCreated.php:35, no payment gate). NO self-heal: CleanupStalePendingKioskOrders.php:36-37 purges only status=PENDING AND payment_status IN {UNPAID,PENDING_COUNTER}; a status>=ACCEPT, payment=REFUNDED order matches neither. NO covering test: tests/Feature/Order/ChangePaymentStatusOutboxTest.php does not mention REFUNDED/stock; tests/Feature/Refund/RefundListenerFailureIsolationTest.php triggers via RefundCreated::dispatch directly (L104/L156), not via changePaymentStatus.",
+      "recommendation": "Either (a) in changePaymentStatus, when target==REFUNDED and old==PENDING_COUNTER, route through the refund cascade (dispatch RefundCreated or call PaymentService::cancelCounterPayment which sets status=CANCELED alongside REFUNDED AND fires RefundCreated -> ReleaseStockOnRefundCreated + ClawbackLoyaltyPointsOnRefund), or (b) remove PENDING_COUNTER->REFUNDED from PaymentStateMachine::TRANSITIONS and force all refunds through cancelCounterPayment / refund-with-counter-entry. Add a sentinel asserting REFUNDED via change-payment-status releases stock. NOTE: this is DISTINCT from the already-known backlog P1 (changePaymentStatus PENDING_COUNTER->PAID skips fiscal_seq alloc) — confirmed separate: PaymentService::confirmCounterPayment DOES allocate fiscal_sequence_no at PaymentService.php:321-322, so the PAID-path fiscal gap only applies to the change-payment-status route, not the counter-collect flow.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/KdsSyncService.php",
+      "line": "96-108 (active query, no payment filter) + 51/132-153 (deleted_ids) vs app/Services/KitchenDisplaySystemOrderService.php:74-82 (/list WITH payment filter)",
+      "title": "KDS /sync active-orders query omits the payment_status filter that /list enforces, and deleted_ids never emits a REFUNDED-while-active order — /sync and /list disagree on the same order",
+      "confirmed": true,
+      "is_new": true,
+      "frozen": false,
+      "grep_evidence": "VERIFIED at HEAD. KitchenDisplaySystemOrderService.php:74-82 (/list): whereIn('status',KitchenReleaseRule::visibleStatuses()) AND (payment_status=PAID OR PENDING_COUNTER OR (order_type=POS AND pos_payment_method=CASH)). KdsSyncService.php:96-108 (/sync): Order::with(...)->whereIn('status',$activeStatuses=[ACCEPT,PREPARING,PREPARED] (L50)) ->where('updated_at','>=',...) — NO payment_status predicate. KdsSyncService deleted_ids (L132-153) emits only soft-deleted (onlyTrashed L135) + leftWindow whereIn('status',$inactiveStatuses=[DELIVERED,CANCELED,REJECTED] L51) — REFUNDED-while-active absent. Effect: the order from the P2 finding above (status=PREPARING, payment_status=REFUNDED, kiosk) is EXCLUDED by /list (fails payment gate) but INCLUDED by /sync active set, and never reported in deleted_ids. Production board self-heals because KitchenDisplaySystemComponent.vue:1527-1532 sync handler triggers _debouncedRefresh -> authoritative /list removal; a sync-delta-only consumer would keep a stale card.",
+      "recommendation": "Mirror the /list payment_status predicate into KdsSyncService::sync active query, and either add REFUNDED-while-active to the deleted_ids emission or drop such orders from the active set, so the delta feed is consistent with the authoritative list. Add a sentinel comparing the row-set of /list and /sync over a payment_status matrix including REFUNDED. Note: fixing the P2 root cause (refund moves order out of the active window) would also close this divergence.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": "74-82 (KDS /list explicit payment gate) vs app/Services/OrderStatusScreenOrderService.php:59-63 (OSS status-as-proxy, no payment predicate)",
+      "title": "KDS and OSS encode the same 'order is released' invariant via two independent mechanisms — KDS uses an explicit payment_status allowlist, OSS relies on status in [PREPARING,PREPARED] as a proxy; they agree today only by coincidence of the V1 state graph",
+      "confirmed": true,
+      "is_new": true,
+      "frozen": false,
+      "grep_evidence": "VERIFIED at HEAD. KDS /list KitchenDisplaySystemOrderService.php:75-82 filters payment_status IN {PAID,PENDING_COUNTER} OR (POS+CASH) — explicit payment gate. OSS OrderStatusScreenOrderService.php:59-63 filters whereIn('order_type',[KIOSK,TAKEAWAY]) + whereIn('status',[PREPARING,PREPARED]) with NO payment_status predicate. Harmless today because the only unpaid order reaching PREPARING+ is the intended PENDING_COUNTER kiosk-cash case (card/TR stay UNPAID at PENDING, never bumped). But the same 'don't show unpaid orders' invariant is enforced by two unrelated mechanisms. Concrete divergence: a REFUNDED-while-active order (see P2 finding) is HIDDEN by KDS (fails payment gate) but still DISPLAYED to the customer by OSS (passes status proxy) — the two surfaces disagree on the same order.",
+      "recommendation": "Route both KDS and OSS visibility through one shared domain predicate (KitchenReleaseRule::orderIsReleased / isReleasedToKitchen, already the live SSOT). Have OSS add the same payment-status gate (or call the shared rule) so 'released to customer wall' and 'released to kitchen' derive from ONE definition instead of two hand-maintained filters that currently agree only by coincidence.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Domain/Order/OrderStateMachine.php",
+      "line": "87-94 + 96-99 + 101-109 + 111-127 vs app/Domain/Kds/KitchenReleaseRule.php:16-23 + 36-49 + 56-72; consumer-side hardcoded copies KdsSyncService.php:50 + KitchenDisplaySystemComponent.vue:1559",
+      "title": "Kitchen-release rules duplicated across sites — OrderStateMachine carries a byte-identical (and currently DEAD) copy of isReleasedToKitchen + the release-status set + the transition rule, and the visible-status set [ACCEPT,PREPARING,PREPARED] is also hardcoded in KdsSyncService and the Vue board. SSOT-consolidation / dead-code hardening.",
+      "confirmed": true,
+      "is_new": false,
+      "frozen": true,
+      "grep_evidence": "VERIFIED at HEAD. OrderStateMachine.php IS in the CLAUDE.md §7 FROZEN list (do NOT edit without owner LOCK). OrderStateMachine::isReleasedToKitchen (OrderStateMachine.php:111-127) is character-for-character identical to KitchenReleaseRule::isReleasedToKitchen (KitchenReleaseRule.php:56-72). OrderStateMachine::kitchenReleaseStatuses() (87-94) == KitchenReleaseRule::visibleStatuses() (16-23) (identical [ACCEPT,PREPARING,PREPARED]). OrderStateMachine::isKitchenReleaseTransition (101-109) == KitchenReleaseRule::canTransition (41-49). IMPORTANT NUANCE (refines both raw architect+sresync items): grep across app/ and tests/ shows OrderStateMachine::{isReleasedToKitchen,kitchenReleaseStatuses,isKitchenReleaseStatus,isKitchenReleaseTransition} have ZERO callers — the OrderStateMachine copy is DEAD duplicate code. KitchenReleaseRule (NOT frozen) is the LIVE SSOT (5 callers: DispatchKdsTicket.php:13, KitchenDisplaySystemOrderService.php:74/425/481). So the 'two surfaces disagree on the same order' framing in the raw findings is OVERSTATED — only KitchenReleaseRule is consumed; the real risk is (a) dead-duplicate maintenance drift and (b) the consumer-side hardcoded copies of the visible-status set: KdsSyncService.php:50 ($activeStatuses literal) and KitchenDisplaySystemComponent.vue:1559 (const KDS_VISIBLE=[4,7,8] // mirror KitchenReleaseRule) which are NOT derived from the live rule and CAN drift independently.",
+      "recommendation": "DO NOT edit OrderStateMachine.php (frozen §7 — requires owner LOCK). The dead duplicate copies in OrderStateMachine should be left in place pending an owner LOCK to physically remove or delegate them; flag for backlog, not direct edit. The safe, NON-frozen consolidation available now: (1) change KdsSyncService.php:50 ($activeStatuses literal) to use KitchenReleaseRule::visibleStatuses() so the live SSOT drives the /sync window; (2) the Vue KDS_VISIBLE=[4,7,8] literal (KitchenDisplaySystemComponent.vue:1559) cannot import PHP — keep it but add a sentinel (e.g. extend tests/Feature/KitchenReleaseRuleTest.php) asserting KitchenReleaseRule::visibleStatuses()===[4,7,8] so a server-side change forces a known test break; (3) optionally add a reflection-based lockstep sentinel asserting the frozen OrderStateMachine copy stays byte-identical to KitchenReleaseRule until an owner LOCK lands to merge them. is_new=false: matches the known dedup backlog anchor (KitchenReleaseRule vs OrderStateMachine copy).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Services/Stock/StockService.php",
+      "line": "327-344 (movementKey) + 102 (dedup) ; callers OrderService.php:989 + FrontendOrderService.php:512 (inline) vs DecrementStockOnOrderCreated.php:35 (after-commit)",
+      "title": "Stock decrement dispatched twice per order (inline + OrderCreated listener) with divergent failure semantics; dedup hinges on a single seed-exclusion line",
+      "confirmed": true,
+      "is_new": true,
+      "frozen": false,
+      "grep_evidence": "VERIFIED at HEAD. Inline: OrderService.php:989 decrementForOrder($this->order,$idempotencyKey) inside the order tx; FrontendOrderService.php:512 decrementForOrder($this->frontendOrder,$idempotencyKey). After-commit listener: DecrementStockOnOrderCreated.php:35 decrementForOrder($event->order) with NO seed. decrementForOrder (StockService.php:27-29) -> mutateForOrder reason='order_created'. movementKey() (StockService.php:327-344) builds key from [reason,class,id,line_uid,stockable_type,stockable_id] and appends seed ONLY when reason !== 'order_created' (L337). So inline(seed) and listener(no-seed) compute the SAME key for order_created -> the second insert is skipped by StockMovement::where('idempotency_key',$movementKey)->exists() (L102). Failure-policy divergence CONFIRMED: inline path throws StockUnavailableException (L111-113) inside the order tx -> whole order rolls back (order rejected); listener path is failure-ISOLATED (DecrementStockOnOrderCreated.php:36-61 log + StockDecrementFailedEvent + swallow, with an explicit comment block L13-31 documenting the intentional isolation). The no-double-decrement guarantee depends entirely on the L337 seed-exclusion: any future change re-including the seed for order_created, or any path that dispatches OrderCreated WITHOUT a prior inline decrement, silently double-decrements.",
+      "recommendation": "Pick ONE authoritative decrement path. Either make DecrementStockOnOrderCreated the single owner and remove the inline OrderService:989 / FrontendOrderService:512 calls (uniform isolated failure policy — but stock-shortage would no longer block order creation, a product decision), or keep inline authoritative and unregister/no-op the listener for surfaces that already decrement inline. At minimum add a sentinel asserting movementKey() drops the seed for reason==='order_created' so the dedup invariant cannot silently regress.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php (counter-collect endpoint-drift anchor)",
+      "line": "n/a",
+      "title": "DROPPED — counter-collect endpoint-drift / change-payment-status PAID fiscal-seq / loyalty-clawback / changePaymentStatus auth=true dead-branch (false alarms or already-known backlog)",
+      "confirmed": false,
+      "is_new": false,
+      "frozen": false,
+      "grep_evidence": "Counter-collect endpoint anchor is a FALSE alarm — routes/api.php:799/815/857 region match the Vue axios calls; confirmCounterPayment DOES allocate fiscal_sequence_no (PaymentService.php:321-322). The changePaymentStatus auth=true customer self-service branch (OrderService.php:2171-2191) bypasses PaymentStateMachine but is DEAD in V1: all 3 controllers (OnlineOrderController.php:103, PosOrderController.php:203, TableOrderController.php:72) call changePaymentStatus($order,$request) with default $auth=false. Loyalty clawback idempotent (LoyaltyService.php:147-150).",
+      "recommendation": "No action — verified non-issues / separate already-known backlog items. The PENDING_COUNTER->PAID fiscal-seq-skip on the change-payment-status route remains an already-found P1 (not re-reported per task baseline).",
+      "drop_reason": "False alarms or already-known backlog per task baseline; not re-surfaced as new."
+    }
+  ],
+  "summary": "Read-only intersections+dedup deep-dive at HEAD 8db38d801, every anchor grep/Read-verified. ONE genuinely NEW P2 with full reproduction: a refund of a PENDING_COUNTER kiosk order via the change-payment-status route (PaymentStateMachine allows PENDING_COUNTER->REFUNDED) sets payment_status=REFUNDED, leaves orders.status untouched, and dispatches ONLY OrderPaymentStatusChanged whose sole listener is the outbox persister — neither OrderCanceled nor RefundCreated fires, so ReleaseStockOnRefundCreated never runs and the decremented stock_levels are leaked permanently, with no Cleanup self-heal. This sits at the Refund x Stock x KDS x OSS intersection: the same REFUNDED-while-active order then exposes two latent cross-surface divergences (KDS /sync omits the payment filter that /list enforces and never emits the order in deleted_ids; OSS shows it to the customer via status-as-proxy while KDS hides it via its explicit payment gate). A second NEW P2 is the dual stock-decrement design (inline-throws-and-blocks vs listener-isolated) deduped only by a single seed-exclusion line. The KitchenReleaseRule vs OrderStateMachine byte-identical copy is confirmed but refined: the OrderStateMachine copy is DEAD (zero callers) so it is dead-code/SSOT hardening, not a live disagreement (is_new=false, known backlog). Dropped 2 raw items (counter-collect endpoint anchor false alarm, and a bundle of already-known/dead-branch non-issues) per the task baseline. None block ship for V1 LOCAL single-box, but the P2 refund-stock-leak is the highest-value new finding and warrants a sentinel + cascade-routing fix. NO new P0/P1 — consistent with the 0-P0 baseline."
+}

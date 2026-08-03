@@ -19,6 +19,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Smartisan\Settings\Facades\Settings;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -33,6 +34,7 @@ use Tests\TestCase;
 class PosOrderBL2AuditCallSitesTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected Branch $branch;
     protected User $admin;
@@ -49,6 +51,9 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
             'broadcasting.default' => 'log',
             'pricing.use_ssot_service' => true,
             'fiscal.audit_secret' => str_repeat('a', 48),
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] This suite exercises
+            // the manual-discount audit path; enable the flag (V1 default OFF).
+            'pos.manual_discount_enabled' => true,
         ]);
 
         Settings::group('order_setup')->set([
@@ -90,31 +95,50 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->admin = \Database\Factories\UserFactory::new()->create([
             'branch_id' => $this->branch->id,
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->admin->assignRole('Admin');
+        // [REFUND-BYPASS-GUARD 2026-06-26] PosOrderController::changeStatus now
+        // gates RETURNED (22) on can('pos-refund') — mirroring the dedicated
+        // refund endpoint. In production Admin holds this via Permission::all()
+        // (RolePermissionTableSeeder:19); seedSpatieRoles()'s fixed list omits
+        // it, so grant it explicitly to the Admin actor so the returned-audit
+        // test exercises a LEGITIMATE refund (not the closed bypass).
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'pos-refund', 'guard_name' => 'sanctum']);
+        $this->admin->givePermissionTo('pos-refund');
+
+        // [Sprint 1B 2026-05-16] POS CASH path now requires an OPEN cash
+        // drawer session — open one for the admin actor so the BL2 audit
+        // tests can issue PAID POS orders without the cash guard tripping.
+        app(\App\Services\Cash\CashDrawerService::class)
+            ->openSession($this->branch->id, $this->admin->id, 100.00);
     }
 
     public function test_pos_order_with_manual_discount_writes_discount_applied_audit(): void
     {
+        $payload = [
+            'customer_id'         => $this->admin->id,
+            'branch_id'           => $this->branch->id,
+            'subtotal'            => 10.00,
+            'discount'            => 2.50,
+            'discount_reason'     => 'Geste commercial — BL2 test',
+            'total'               => 8.50,
+            'order_type'          => OrderType::TAKEAWAY,
+            'is_advance_order'    => Ask::NO,
+            'source'              => Source::POS,
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 10.00,
+            'items' => json_encode([[
+                'item_id' => $this->item->id, 'quantity' => 1,
+                'item_variations' => [], 'item_extras' => [],
+            ]]),
+        ];
+
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', [
-                'customer_id'         => $this->admin->id,
-                'branch_id'           => $this->branch->id,
-                'subtotal'            => 10.00,
-                'discount'            => 2.50,
-                'discount_reason'     => 'Geste commercial — BL2 test',
-                'total'               => 8.50,
-                'order_type'          => OrderType::TAKEAWAY,
-                'is_advance_order'    => Ask::NO,
-                'source'              => Source::POS,
-                'pos_payment_method'  => PosPaymentMethod::CASH,
-                'pos_received_amount' => 10.00,
-                'items' => json_encode([[
-                    'item_id' => $this->item->id, 'quantity' => 1,
-                    'item_variations' => [], 'item_extras' => [],
-                ]]),
-            ])->assertStatus(201);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->admin, $payload))
+            ->assertStatus(201);
 
         $audit = AuditLog::where('action', 'order.discount_applied')
             ->where('branch_id', $this->branch->id)
@@ -158,14 +182,61 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
         );
     }
 
-    public function test_change_payment_status_writes_payment_status_changed_audit(): void
+    public function test_change_status_to_returned_writes_order_returned_audit(): void
     {
         $order = $this->createPaidOrder();
+        $order->status = OrderStatus::DELIVERED;
+        $order->save();
+
+        $this->actingAs($this->admin)
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::RETURNED,
+                'reason' => 'Produit retourné — non conforme',
+            ])->assertStatus(200);
+
+        $audit = AuditLog::where('action', 'order.returned')
+            ->where('resource_id', $order->id)
+            ->first();
+
+        $this->assertNotNull($audit, 'Expected an order.returned audit entry.');
+        $this->assertSame((int) OrderStatus::RETURNED, (int) $audit->payload['to_status']);
+        $this->assertSame('Produit retourné — non conforme', $audit->payload['reason']);
+
+        $this->assertNull(
+            app(\App\Services\Fiscal\AuditLogService::class)->verifyChain($this->branch->id),
+            'Audit chain must stay intact after return write.'
+        );
+    }
+
+    public function test_returned_without_reason_fails_validation(): void
+    {
+        $order = $this->createPaidOrder();
+        $order->status = OrderStatus::DELIVERED;
+        $order->save();
+
+        $this->actingAs($this->admin)
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::RETURNED,
+            ])->assertStatus(422);
+    }
+
+    public function test_change_payment_status_writes_payment_status_changed_audit(): void
+    {
+        // [P13 — F-VERIFY-09-01] Under Option B (D1), PAID is terminal and
+        // PAID → UNPAID is rejected by PaymentStateMachine::assertCanTransition.
+        // To exercise the audit-write call site we use the legal transition
+        // UNPAID → PAID instead. The audit-log invariant being tested
+        // (one row written, chain intact) is the same.
+        $order = $this->createPaidOrder();
+        $order->payment_status = PaymentStatus::UNPAID;
+        $order->save();
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
             ->postJson("/api/admin/pos-order/change-payment-status/{$order->id}", [
-                'payment_status' => PaymentStatus::UNPAID,
+                'payment_status' => PaymentStatus::PAID,
             ])->assertStatus(200);
 
         $audit = AuditLog::where('action', 'order.payment_status_changed')
@@ -173,7 +244,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
             ->first();
 
         $this->assertNotNull($audit, 'Expected an order.payment_status_changed audit entry.');
-        $this->assertSame((int) PaymentStatus::UNPAID, (int) $audit->payload['to_payment_status']);
+        $this->assertSame((int) PaymentStatus::PAID, (int) $audit->payload['to_payment_status']);
+        $this->assertSame((int) PaymentStatus::UNPAID, (int) $audit->payload['from_payment_status']);
 
         $this->assertNull(
             app(\App\Services\Fiscal\AuditLogService::class)->verifyChain($this->branch->id),
@@ -235,23 +307,25 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
     private function createPaidOrder(): Order
     {
+        $payload = [
+            'customer_id'         => $this->admin->id,
+            'branch_id'           => $this->branch->id,
+            'subtotal'            => 10.00,
+            'total'               => 11.00,
+            'order_type'          => OrderType::TAKEAWAY,
+            'is_advance_order'    => Ask::NO,
+            'source'              => Source::POS,
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([[
+                'item_id' => $this->item->id, 'quantity' => 1,
+                'item_variations' => [], 'item_extras' => [],
+            ]]),
+        ];
+
         $resp = $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', [
-                'customer_id'         => $this->admin->id,
-                'branch_id'           => $this->branch->id,
-                'subtotal'            => 10.00,
-                'total'               => 11.00,
-                'order_type'          => OrderType::TAKEAWAY,
-                'is_advance_order'    => Ask::NO,
-                'source'              => Source::POS,
-                'pos_payment_method'  => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([[
-                    'item_id' => $this->item->id, 'quantity' => 1,
-                    'item_variations' => [], 'item_extras' => [],
-                ]]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->admin, $payload));
         $resp->assertStatus(201);
         return Order::findOrFail((int) $resp->json('data.id'));
     }

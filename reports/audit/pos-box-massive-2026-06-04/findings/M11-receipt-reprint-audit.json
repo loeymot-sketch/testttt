@@ -1,0 +1,125 @@
+{
+  "micro_system": "M11-receipt-reprint",
+  "files_examined": [
+    "app/Services/Receipt/ReceiptDataService.php",
+    "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php",
+    "resources/js/components/admin/pos/ReceiptComponent.vue",
+    "resources/js/components/admin/pos/ReceiptDuplicataMarker.vue",
+    "resources/js/helpers/posReceiptBuilder.js",
+    "app/Http/Resources/OrderDetailsResource.php",
+    "app/Models/Order.php",
+    "app/Services/OrderService.php",
+    "tests/Feature/Receipt/ReceiptDataServiceWireInTest.php",
+    "routes/api.php",
+    "database/migrations/2026_04_20_210000_add_fiscal_identity_to_branches.php",
+    "resources/js/languages/fr.json",
+    "app/Http/Middleware/BlockKioskTokenFromAdminRoutes.php"
+  ],
+  "findings": [
+    {
+      "id": "M11-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Receipt 'Operateur' prints the CUSTOMER (Client passage), not the cashier — heal commit 6b26e1be3 is NOT in this branch",
+      "file_line": "app/Services/Receipt/ReceiptDataService.php:70",
+      "evidence": "Line 70: \"'operator_name' => optional($order->user)->name\". The Order->user() relation (Order.php:173) is the CUSTOMER. OrderService.php:766-777 creates POS orders with user_id=$request->customer_id (Walking Customer id=2 'Client passage' on anonymous counter sales) and persists the real cashier on creator_id. Live DB: order #4214 user_id=2 -> User(2).name='Client passage', creator_id=1 -> User(1).name='Admin Le Cayenne'; the receipt renders 'Client passage'. Commit 6b26e1be3 ('fix(nf525): receipt Operateur = cashier (creator_id)') message describes the fix but `git merge-base --is-ancestor 6b26e1be3 HEAD` = NO — the heal is on another branch; current working tree at line 70 still reads ->user. Wrong value flows to BOTH the client header (ReceiptComponent.vue:72) and the kitchen ticket (ReceiptComponent.vue:287). Note: Order.php has NO creator() relation, so the heal commit's approach (resolve creator_id) needs a relation or direct column read to land.",
+      "why_it_matters": "Every anonymous POS ticket (the dominant fast-food case at Le Cayenne) prints 'Operateur : Client passage' — nonsensical to a customer and contradicting the field's documented NF525 intent ('caissier ayant cloture', ReceiptDataService.php:18). It also makes the printed ticket useless for the 'which cashier sold this?' question during a shift dispute or a refund challenge. Severity is P1 not P0: the PERSISTED fiscal record is correct (creator_id column + the order.created.pos audit_logs HMAC entry both hold the true operator), so a tax inspection reconstructs the operator — only the printed display field is wrong.",
+      "reproduction": "Live-verified: `php artisan tinker` -> Order::withoutGlobalScopes()->whereNotNull('creator_id')->latest('id')->first() = #4214, user_id=2/creator_id=1; optional($o->user)->name='Client passage', creator User(1).name='Admin Le Cayenne'. Render any anonymous POS receipt -> 'Operateur: Client passage'.",
+      "recommended_correction": "In ReceiptDataService::buildForOrderModel resolve the operator from creator_id first, falling back to user only when creator_id is null (legacy/pre-encashment self-service). E.g. read $order->creator_id and load the User by id (interface-safe for both Order + FrontendOrder on the orders table), since no creator() relation exists yet. This is exactly what commit 6b26e1be3 did on its branch — cherry-pick / re-apply it here. NOT a frozen file. Add a test case where user_id != creator_id (see M11-05).",
+      "evidence_type": "live-verified",
+      "confidence": "high"
+    },
+    {
+      "id": "M11-02",
+      "severity": "P1",
+      "category": "nf525",
+      "title": "Legal ticket silently omits SIRET / TVA intra / N° caisse / legal mentions — branch 1 fiscal identity columns are all NULL",
+      "file_line": "resources/js/components/admin/pos/ReceiptComponent.vue:67-73",
+      "evidence": "The fiscal header block is gated on `v-if=\"order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name\"` and each line is individually `v-if=\"order.pos_siret\"` etc. These map to optional($order->branch)->siret / vat_intra / register_id / legal_footer (ReceiptDataService.php:66-69). The columns exist (migration 2026_04_20_210000_add_fiscal_identity_to_branches.php, all nullable) but NO seeder populates them (grep of database/seeders for siret/legal_footer/register_id = 0 hits). Live DB: Branch(1) siret=NULL, vat_intra=NULL, legal_footer=NULL, register_id=NULL.",
+      "why_it_matters": "NF525 / Article 286 requires the SIRET and TVA intracommunautaire (and legal mentions) on the customer fiscal ticket. With all four NULL, the entire fiscal-identity header disappears AND the nf525FooterLines legal_mentions line never renders (posReceiptBuilder.js:121). Combined with M11-01, the only thing that would show in that header block today is operator_name = the wrong 'Client passage'. The single-box Le Cayenne is shipping tickets with zero legal establishment identity. This is an owner DATA gap (fill the branch fiscal fields), not a code bug — but it is a real conformity blocker for going live with real cash.",
+      "reproduction": "Live-verified: `php artisan tinker` -> Branch::withoutGlobalScopes()->find(1) returns siret=NULL vat=NULL legal=NULL reg=NULL. Render a POS receipt -> the SIRET/TVA/N° caisse/mentions lines are all absent.",
+      "recommended_correction": "Owner data-ops: populate branch 1 with the real Le Cayenne SIRET, TVA intra, register_id, and legal_footer (admin branch settings UI or a seeder). No code change needed — the rendering path is correct once data exists. Optionally add a production boot/health check warning when branch fiscal identity is empty so this never ships silently.",
+      "evidence_type": "live-verified",
+      "confidence": "high"
+    },
+    {
+      "id": "M11-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "'Print anyway' error path emits a physical fiscal ticket with NO server counter increment and NO audit_logs entry",
+      "file_line": "resources/js/components/admin/pos/ReceiptComponent.vue:567-589",
+      "evidence": "In handlePrintClientClick, the catch block on 403/404/409/500 shows a warning toast then sets `this.localPrintCount = Number(this.localPrintCount ?? 0) + 1` (line 578) and falls through to `trigger.click()` (line 585) which physically prints. So when the POST /print-receipt fails, paper is emitted but receipt_print_count is NOT incremented server-side and PosReceiptPrintController never runs emitAudit -> no pos.receipt.print / pos.receipt.reprint row in the hash-chained audit_logs. The duplicata marker (driven by server receipt_print_count via effectiveOrder) can then under-count on the next successful print.",
+      "why_it_matters": "NF525 requires every reissue of a fiscal document to leave a tamper-evident trace (the controller docblock cites Article 286-I-3 bis). The deliberate 'print anyway' is defensible for operational continuity (don't trap the cashier), and the warning toast surfaces it — but it means a fiscal ticket can exist with no audit-chain evidence and a desynced print counter. For the owner 'flous' mandate this is a genuine blur: the UI counts the print locally (+1) while the server believes it never happened, so a later DUPLICATA marker may be mislabeled. Worth an explicit decision rather than a silent fallthrough.",
+      "reproduction": "needs-live-verify: force the POST to fail (e.g. revoke pos permission -> 403, or stop the API) then click 'Ticket client'. Observe: warning toast, paper prints, audit_logs has no new pos.receipt.* row, orders.receipt_print_count unchanged, but the on-screen duplicata state advanced locally.",
+      "recommended_correction": "Keep print-anyway (continuity) but reconcile the counter: on failure do NOT optimistically bump localPrintCount as if the server recorded it, OR queue a retry of the increment+audit (offline outbox pattern) so the fiscal counter and audit chain eventually catch up. At minimum, log a structured client-side fiscal-gap event. Behavior change — confirm with owner before altering the continuity fallback.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M11-04",
+      "severity": "P2",
+      "category": "security",
+      "title": "print-receipt route lacks the permission:pos / abort_unless(can('pos')) gate its 4 sibling POS routes carry",
+      "file_line": "routes/api.php:911",
+      "evidence": "Line 911: `Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')` — only the idempotency middleware. The four sibling counter-collect / collect-kiosk-cash routes in the same pos prefix group inline `abort_unless(auth()->user()?->can('pos'), 403)` (4 occurrences confirmed). The pos prefix group (api.php:792) inherits only the outer admin group middleware (api.php:295: installed, apiKey, auth:sanctum, block_kiosk_token_admin, localization, throttle) — there is no permission:pos on the group or the route. The controller itself does no can() check; it only branch-scopes the update.",
+      "why_it_matters": "Any authenticated non-kiosk admin-session token (kiosk tokens are correctly 403'd by block_kiosk_token_admin) can drive the NF525 fiscal print counter and write pos.receipt.print/reprint into the audit chain for any order in their branch — even a role that should not operate the till (e.g. a Chef or a read-only manager). Lower severity because it still requires a valid branch-scoped admin token and only increments a counter + appends a benign audit row (no money movement, no data loss), but it is an authz inconsistency with every sibling fiscal route.",
+      "reproduction": "code: compare api.php:911 (no can check, controller has none) against the 4 sibling routes' inline abort_unless(can('pos')). needs-live-verify to confirm a non-pos role can POST it successfully.",
+      "recommended_correction": "Add the same gate as siblings: either `->middleware('permission:pos')` on the route, or `abort_unless($request->user()?->can('pos'), 403)` at the top of PosReceiptPrintController::increment. The Vue already handles a 403 gracefully (receipt_print_forbidden toast), so the UX is already wired for it.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M11-05",
+      "severity": "P2",
+      "category": "deadcode",
+      "title": "ReceiptDataServiceWireInTest gives FALSE GREEN on operator_name — it never models the production user_id!=creator_id case",
+      "file_line": "tests/Feature/Receipt/ReceiptDataServiceWireInTest.php:59-66,91",
+      "evidence": "makeOrderWithFiscalContext() creates the order with `'user_id' => $user->id` and names that same user 'Jane Operator' (lines 55-66), then asserts `operator_name === 'Jane Operator'` (line 91). Because user_id and the operator are the SAME user in the fixture, the buggy `optional($order->user)->name` (ReceiptDataService.php:70) passes. In production user_id=customer (Client passage) and creator_id=cashier are DIFFERENT (verified order #4214). The regression guard therefore stays green against exactly the broken field (M11-01).",
+      "why_it_matters": "This is why the operator bug survived to production despite a dedicated NF525 wire-in test. The test locks the SSOT delegation (good) but the scenario it asserts is not the real attribution shape, so it provides false confidence on the single most legally-sensitive header field. A test that cannot fail on the real defect is worse than no test because it suppresses suspicion.",
+      "reproduction": "code: read lines 59-66 + 91; the fixture's user_id equals the operator user. Add a case with user_id=Walking Customer and creator_id=a distinct cashier and assert operator_name == cashier -> it fails today.",
+      "recommended_correction": "Add a test case to ReceiptDataServiceWireInTest where user_id points to a 'Client passage' customer and creator_id points to a distinct cashier user, asserting operator_name resolves to the CASHIER. Land it together with the M11-01 fix so the guard actually guards the NF525 operator scenario.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M11-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Duplicata marker counts EVERY print incl. reprints from the tracker, but only fresh-payment print increments cart-reset — semantics differ across entry points (no bug, but a blur worth noting)",
+      "file_line": "resources/js/components/admin/pos/ReceiptComponent.vue:444-454",
+      "evidence": "effectiveOrder (lines 444-454) takes Math.max(server receipt_print_count, localPrintCount) so the DUPLICATA marker (ReceiptDuplicataMarker.vue:25, count>=2) reflects the post-increment count at print time. Logic is correct: first print = count 1 (no marker), second = 2 (DUPLICATA #1). However the marker keys purely off receipt_print_count, which is incremented by BOTH the post-payment print (PaymentComponent path, clearCartOnClose=true) AND tracker reprints (clearCartOnClose=false). If a cashier opens the post-payment receipt, closes WITHOUT clicking 'Ticket client' (no print happened, count stays 0/1), then reprints from the tracker, the FIRST physical paper could already be labeled DUPLICATA if an earlier auto/preview print bumped the counter. This is edge-case and not reproduced as a defect — flagged as a clarity/audit-trail blur per the owner mandate.",
+      "why_it_matters": "Low risk but matches the 'flous' mandate: the duplicata legal marker is driven by a counter that increments on intent-to-print (the POST fires before the browser actually prints, and even bumps on API error per M11-03). A counter that can advance without paper, or paper that can print without advancing it (M11-03), means the DUPLICATA #n number is not a guaranteed 1:1 with physical reissues. Acceptable for V1 but the owner should know the marker is best-effort, not exact.",
+      "reproduction": "needs-live-verify: print once (count->1), trigger an API error on a second print (count bumps locally +1 to 2 per M11-03 line 578 but server may be 1), then a successful third print -> marker numbering can drift from physical reissue count.",
+      "recommended_correction": "Document the duplicata counter as 'intent-based, best-effort' or tie the increment strictly to a confirmed server-side success (resolve M11-03 first). No urgent change for V1 single-box.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Admin (branch_id=0) reprint bypass is correct and audits on the order's REAL branch",
+      "file_line": "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php:49,73",
+      "note": "Branch staff are scoped with `when($branchId > 0, where branch_id)` (defense in depth on top of BranchScope); admin (branch_id=0) may reprint any branch's receipt — matching the global scope bypass. Crucially the NF525 audit is attributed to (int)$freshOrder->branch_id, NOT 0, so an admin reprinting a branch order audits on the correct branch. This is the kind of subtle multi-tenant correctness that is easy to get wrong."
+    },
+    {
+      "title": "Atomic, race-safe print-count increment with a re-read for the duplicata decision",
+      "file_line": "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php:43-65",
+      "note": "Uses a single `UPDATE ... receipt_print_count = COALESCE(receipt_print_count,0)+1` (DB-side atomic, no read-modify-write race between two stations), then re-selects the fresh row to compute is_duplicata = count>=2. 404 when 0 rows updated (wrong branch or missing). Solid concurrency design for two cashiers reprinting the same ticket."
+    },
+    {
+      "title": "Best-effort audit emission never blocks the cashier, but surfaces the gap to the UI",
+      "file_line": "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php:83-110 + ReceiptComponent.vue:564-566",
+      "note": "emitAudit() try/catch returns audit_emitted=false on chain failure (lock/cache/DB hiccup) instead of throwing — the HTTP call still 200s so the cashier delivers paper (operational continuity), and the Vue surfaces pos.receipt_audit_chain_warning so the manager/SIEM is alerted. Correct NF525 trade-off: continuity without silently swallowing the fiscal-chain failure."
+    },
+    {
+      "title": "Granular, localized error UX on the print path (403/404/409/500 each mapped to a specific FR message)",
+      "file_line": "resources/js/components/admin/pos/ReceiptComponent.vue:567-580 + resources/js/languages/fr.json",
+      "note": "Each HTTP status maps to a distinct, fully-translated French toast (receipt_print_forbidden / not_found / conflict / server_error), all present in fr.json with accurate NF525-aware wording. The idempotency key is freshly generated per click (pos-print-receipt-{id}-{ts}) so a same-click network retry dedupes while an intentional reprint increments. No raw label leaks. Thoughtful production-grade error handling."
+    },
+    {
+      "title": "Composer addon line_total (NOT catalog_price) on the receipt — NF525 'charge what was billed'",
+      "file_line": "resources/js/helpers/posReceiptBuilder.js:226-249 + ReceiptComponent.vue:140-148",
+      "note": "normalizeReceiptAddons renders the ratio-adjusted line_total, explicitly never catalog_price (a Coca bundled in a menu shows ~1.20 not 3.00). The kitchen ticket shows the same addon names with NO price (line 318-326). This is exactly the right fiscal nuance for menu_formule bundles and is well-commented."
+    }
+  ]
+}

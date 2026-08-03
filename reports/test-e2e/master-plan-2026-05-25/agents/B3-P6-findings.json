@@ -1,0 +1,281 @@
+{
+  "agent": "B3-P6",
+  "mission": "KDS × Staff-newbie safety — confirmation before bump irreversible, allergen visible prominently, color status clarity, training mode, are-you-sure before destructive action, miss-tap recovery",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "executed_at": "2026-05-25T22:45:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a6ed32807",
+  "auth": {
+    "method": "Read-only static source audit (DM6 RO); no live HTTP requests issued. Source-of-truth = Vue SFCs + helpers + i18n JSON + cross-reference to phase-m/M-KDS-1 and M-KDS-5 deep findings (goal-2026-05-23 cycle)."
+  },
+  "states": [
+    {
+      "n": 1,
+      "title": "KdsOrderCard.vue — rendering states + status colors",
+      "files_inspected": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (752 LOC)",
+        "resources/js/helpers/kdsState.js (KDS_STATE_THEME / KDS_STATE_I18N_KEYS / kdsStateFromStatus)",
+        "resources/js/helpers/kdsSource.js (KDS_SOURCE_THEME / kdsSourceFromSurface)",
+        "resources/js/helpers/kdsDisplay.js (getKdsAgeBucket / parseOrderCreatedMs)"
+      ],
+      "evidence": {
+        "state_machine_render": [
+          "kdsState computed (line 219-221) maps order.status → NEW | ACCEPT | PREPARING | READY | CANCELLED via kdsStateFromStatus()",
+          "stateTheme computed (line 225-227) → KDS_STATE_THEME[kdsState] palette {bg, text, border, dot}",
+          "statePillStyle (line 241-247) renders pill with bg + text + 1px border only on NEW (other states use solid bg, no border)",
+          "stateLabel (line 231-235) translates KDS_STATE_I18N_KEYS[kdsState] — fallback to raw state code if i18n key missing"
+        ],
+        "age_bucket_colors": [
+          "AGE_HEADER_BG (line 184-188): fresh=#FFFFFF (white), warning=#FFEDD5 (light orange), critical=#FEE2E2 (light red) — header bg tinted by age",
+          "AGE_ELAPSED_COLOR (line 189-193): fresh=#111827 (gray-900), warning=#9A3412 (orange-800), critical=#991B1B (red-800) — elapsed timer color",
+          "AGE_BORDER (line 194-198): fresh=#E5E7EB (gray-200), warning=#EA580C (orange-600), critical=#DC2626 (red-600) — 3px solid border",
+          "bucket computed (line 263-265) → getKdsAgeBucket(createdMs, now) — wall-clock-derived",
+          "stripeColor (line 285-293): allergen=#F97316 (orange-500) override > fresh+PREPARING=#111827 (gray-900 black) > fresh+other=#E5E7EB > warning/critical from AGE_BORDER",
+          "borderColor (line 278-284): allergen=#F97316 ALWAYS overrides age (allergen > age priority)"
+        ],
+        "wcag_contrast_compliance": [
+          "KDS-R1-02 heal (line 273-277): elapsed-label color fixed at #374151 (gray-700) = 9.5:1 on white (WCAG AA-large) — replaces previous bucket-tinted label which hit 1.94:1 axe-confirmed FAIL",
+          "KDS-R1-03 heal (line 437-450): shortcut .kds-card__shortcut color=#1F2937 (gray-800) on bg=#F3F4F6 (gray-100) = ~12.6:1 stable across ALL buckets (was 3.63:1 on critical / 4.43:1 on fresh — both FAILED AA for normal text)",
+          "Cash-pending badge (line 705-726 CSS): bg=#FEF3C7 + color=#92400E = 7.94:1 AAA (Wave S-2 P-OWNER 2026-05-20)"
+        ],
+        "ready_state_visual_hierarchy": [
+          ".kds-card--ready (line 737-739): opacity=0.7 — bumped card fades but stays visible (NOT removed instantly)",
+          ".kds-card--cancelled (line 740-742): background=rgba(254, 226, 226, 0.5) — cancelled card tinted red",
+          ".kds-pulse-digit (line 728-735): 1Hz opacity pulse animation on critical-bucket elapsed timer (prefers-reduced-motion: respected at line 744-751)"
+        ],
+        "verdict_state1": "Status color system is layered, deterministic, and WCAG-validated. State pill + age bucket + allergen override priority is clear. Color alone is supplemented by text label + dot + border — newbie chef has multiple redundant signals."
+      },
+      "owner_q_answered": "Color status clear ? — STRONG GREEN. 3-tier age bucket (fresh white / warning light-orange / critical light-red) + 5-state pill + allergen orange override + stripe top accent (6px) = 4 redundant visual signals. WCAG AA-large healed (KDS-R1-02/03). prefers-reduced-motion respected. Newbie can scan board at 2m and read status without ambiguity."
+    },
+    {
+      "n": 2,
+      "title": "Allergen 3-layer rendering verification (cross-ref M-KDS-5 + Wave Q-4)",
+      "files_inspected": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:46-56 (card-level allergen pill)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:22-23 + 75-82 (line-level allergen icon + block)",
+        "resources/js/helpers/kdsCustomization.js:148-243 (renderItem) + 252-260 (orderHasAnyAllergen)",
+        "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-5-allergen-badges-deep.json (prior cycle deep audit reference)"
+      ],
+      "evidence": {
+        "layer_1_card_pill": {
+          "location": "KdsOrderCard.vue:46-56",
+          "trigger": "hasAllergen computed (line 254-256) = orderHasAnyAllergen(order.order_items)",
+          "rendering": "<span class='kds-card__allergen-pill' role='alert' aria-live='assertive'>⚠ {{ $t('label.kds_allergie') }}</span>",
+          "css": "lines 492-506: bg=#EA580C (orange-600) + color=#FFFFFF + box-shadow ring rgba(234,88,12,0.30) + uppercase + bold 800",
+          "type": "passive span (NOT button — see Layer 1 caveat below)",
+          "a11y": "role=alert + aria-live=assertive → screen reader announces on every refresh"
+        },
+        "layer_2_line_header_icon": {
+          "location": "KdsOrderLine.vue:23",
+          "trigger": "line.hasAllergen — set by renderItem header line at kdsCustomization.js:162 when allergens_snapshot codes are non-empty",
+          "rendering": "<span class='kds-line__allergen-icon' :aria-label='label.kds_line_allergen_icon_aria'>⚠</span>",
+          "purpose": "per-item visual flag — chef can see WHICH item carries the allergen, not just that the order has one"
+        },
+        "layer_3_explicit_codes_block": {
+          "location": "KdsOrderLine.vue:75-82",
+          "trigger": "line.type === 'allergen' — emitted by renderItem at kdsCustomization.js:238-240 when allergens_snapshot codes present",
+          "rendering": "<div class='kds-line__allergen-block' role='alert'>⚠ {{ allergenLabel }} {{ joinedCodes }}</div>",
+          "translation_chain": "each code mapped via `allergens.<code>` i18n key (KdsOrderLine.vue:108-115) with raw-code fallback — covers gluten / lait / arachides / etc.",
+          "purpose": "human-readable list of WHICH allergens (gluten · lait …) per item"
+        },
+        "border_override": "borderColor computed (KdsOrderCard.vue:278-284) returns #F97316 orange-500 whenever hasAllergen — overrides age-bucket gray/orange/red. Top stripe also (line 285-288) — 6px orange band on top of card.",
+        "wave_q4_retraction_check": "Per M-KDS-5-allergen-badges-deep.json header: Wave Q-4 retraction trace = seeder NOOP + migration idempotent clear + e2e regression spec. Allergen path is CLEAN — no residual badge from a removed feature.",
+        "verdict_state2": "3 layers verified + 4th signal (border + stripe override) + 5th signal (role=alert+aria-live=assertive on pill). Allergen visibility on KDS = MAX possible without invasive modal popup."
+      },
+      "owner_q_answered": "Allergen visible prominently ? — VERY STRONG GREEN. Five concurrent visual signals: (1) card top stripe 6px orange, (2) card border 3px orange override, (3) card-header pill 'ALLERGIE' with ring shadow, (4) per-item line ⚠ icon next to item name, (5) per-item codes block 'Allergènes: gluten · lait' in orange-bold. role=alert + aria-live=assertive guarantees screen-reader announcement. Cannot be missed by a chef at 2m glance."
+    },
+    {
+      "n": 3,
+      "title": "Confirmation dialog presence for bump action — bump CTA gate",
+      "files_inspected": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:148-160 (CTA button) + 375-390 (onCta + onCardKeydownEnter handlers)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:60 + 270-290 (onKey) + 291-346 (onCtaTap — Wave V comment)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue (ORPHANED — Wave V removed import)",
+        "resources/js/languages/fr.json:719-726 (kds_undo_bump / kds_undo_bump_aria / kds_undo_done / kds_toast_bumped — DEAD i18n keys)"
+      ],
+      "evidence": {
+        "bump_handler_flow": {
+          "step_1_user_action": "Tap CTA (KdsOrderCard.vue:148-160) OR press Enter on focused card (line 25 @keydown.enter='onCardKeydownEnter') OR press [A]-[H] global shortcut (KdsV2Grid.vue:270-290)",
+          "step_2_card_level_gate": "onCta (line 375-382) ONLY guards isCashPending → returns early; otherwise emits 'ready' with order.id. NO 'are you sure?' interstitial.",
+          "step_3_grid_level_gate": "onCtaTap (KdsV2Grid.vue:324-346) emits 'change-status' UPWARD immediately with computed nextStatus (ACCEPT→PREPARING ladder or PREPARING→PREPARED ladder)",
+          "step_4_server_dispatch": "Parent KitchenDisplaySystemComponent forwards to axios PATCH — fires immediately. No client-side debounce, no confirm modal."
+        },
+        "wave_v_undo_removal_history": {
+          "previous_design": "Wave Q-2 2026-05-20 had a 3-second undo window: tap Prêt → KdsUndoToast appears bottom-right → after 3s timer expires PATCH fires; clicking Annuler within 3s cancels.",
+          "owner_mandate_to_remove": "KdsV2Grid.vue:291-323 verbatim comment: 'Owner mandate: enlève cette sécurité — je veux valider 3 commandes en même temps, puis 3 commandes livrées. So we remove the 3s undo window entirely. Each tap fires a PATCH immediately with its own X-Idempotency-Key…'",
+          "rationale": "Single-slot serialization (shared pendingTimeoutId) was cancelling in-flight pending bumps when chef chained 3 tickets back-to-back — A & B got dropped, only C transitioned, then UX read 'trop de requêtes' from incidental 429s. Owner accepted the tradeoff: lose undo, gain reliable rapid-fire bump.",
+          "current_state": "Wave V 2026-05-21 — undo removed by design. NO undo affordance on KDS. PATCH is irreversible from KDS UI (manager can later cancel via PosOrdersTrackerComponent on POS surface)."
+        },
+        "orphan_artifacts_detected": [
+          "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue — full file 213 LOC still present in tree, NO import anywhere (verified grep 'KdsUndoToast' across resources/js/ = only KdsV2Grid.vue:108 comment + 125 comment + the file's own self-name on line 66)",
+          "resources/js/languages/fr.json:719-726: kds_undo_bump='Annuler' / kds_undo_bump_aria / kds_undo_done / kds_toast_bumped — 4 i18n keys NEVER read by code anymore",
+          "Mirror in en.json:1207-1208 and ar.json:1055-1059 — same dead keys in all 3 locales",
+          "Cleanup risk: zero functional impact, but future Wave should rm KdsUndoToast.vue + 4 i18n keys × 3 locales to keep tree honest"
+        ],
+        "explicit_confirm_search": {
+          "grep_pattern": "grep -nE '(confirm|êtes-vous|sûr|are you sure|really|destructive)' resources/js/components/admin/kitchenDisplaySystem/",
+          "hits": [
+            "KdsV2Grid.vue line 12 comment: 'optimistic toast 3s window→PATCH on Prêt tap (Wave V 2026-05-21 — was 3s pending+undo, removed)' — historical only",
+            "No active confirmation logic anywhere in KDS component tree"
+          ]
+        },
+        "isCashPending_gate_caveat": "Bump IS blocked on cash-pending orders (KdsOrderCard.vue:367-369 + onCta:376-380 + onCardKeydownEnter:385-388 + KdsV2Grid.onKey:282-285). This is a STATE gate (cashier must encaisser first), NOT a newbie safety gate.",
+        "verdict_state3": "ZERO confirmation dialog on bump action. Wave V removed the 3s undo by owner mandate. Tap = irreversible PATCH (from KDS perspective). Orphan KdsUndoToast.vue + 4 dead i18n keys × 3 locales remain in tree."
+      },
+      "owner_q_answered": "Confirmation before bump irréversible ? — NONE (and undo also NONE post Wave V 2026-05-21). Owner explicitly mandated removal: 'enlève cette sécurité, je veux valider 3 commandes en même temps'. Mission premise 'KDS undo absent confirmed' is CORRECT but the context is INTENTIONAL — not an oversight, but an owner-accepted tradeoff for rapid-fire bump throughput. Newbie miss-tap risk EXISTS and is conceded by the design."
+    },
+    {
+      "n": 4,
+      "title": "M-KDS-1 hardcoded height: 462px verification",
+      "files_inspected": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:294-299 (cardStyle computed)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (parent grid template) + CSS lines 356-358 (grid-template-rows)",
+        "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-1-board-grid-deep.json (prior deep finding reference)",
+        "reports/audits/SUPER6_CHEF_RUSH_STRESS_2026-05-25.md (independent corroboration line 28)"
+      ],
+      "evidence": {
+        "current_state_verbatim_code": {
+          "file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+          "lines": "294-299",
+          "snippet": "cardStyle() { return { border: `3px solid ${this.borderColor}`, height: '462px' }; }",
+          "applied_via": "<div class='kds-card' :style='cardStyle' …> (line 18-21)",
+          "verdict": "M-KDS-1 finding STILL OPEN — hardcoded `height: '462px'` PERSISTS in head a6ed32807"
+        },
+        "deterministic_overflow_math": {
+          "from_M-KDS-1-deep_json": "2 rows × 462px = 924px grid height + 16px gap + 32px padding + 164px header chrome = 1136px",
+          "viewport_1080p": "1136 - 1080 = 56px overflow below the fold for bottom row at viewport 1920×1080",
+          "viewport_sensitivity": "Closed-form: at viewport <1136px tall, bottom row is partially clipped. SUPER6_CHEF_RUSH_STRESS_2026-05-25.md:28 independently measures 56px overflow at 1920×1080.",
+          "owner_objection_preserved": "M-KDS-1 doc records owner concern: 'chef ferait pas attention' to scroll cue. Wave U 2026-05-21 widened webkit scrollbar (4px→8px) + darker thumb #6B7280 + fade gradient — improves discoverability but does NOT eliminate need to scroll."
+        },
+        "scroll_cue_strength_wave_u": [
+          "KdsOrderCard.vue:582-599 — scrollbar-width: thin (Firefox) + scrollbar-color: #6B7280 transparent",
+          "::-webkit-scrollbar width: 8px (line 586-588) — was 4px pre-Wave U",
+          "::-webkit-scrollbar-thumb bg: #6B7280 (line 589-592)",
+          "body-fade pseudo-element height: 8px (line 661-678) — sticky bottom gradient hint",
+          "comment line 578-582: 'chef could not discover scroll on long-item orders (Sandwich Cayenne with 4 variations + extras + crudités + sauces + supplements)'"
+        ],
+        "card_structure_height_audit": [
+          "Layout: 6px stripe + ~110px header + body (flex 1 1 auto) + ~60px footer CTA",
+          "Body usable height: 462 - 6 - ~110 - ~60 = ~286px",
+          "At 24px line-height a body item-block fits ~12 visual rows MAX",
+          "Sandwich Cayenne worst case: 1 header + 4 variations + 5 extras + 3 sauces lines + 2 supplements + instruction wrap (3-4 lines) = ~18-20 rows → REQUIRES SCROLL"
+        ],
+        "verdict_state4": "M-KDS-1 hardcoded `height: 462px` REMAINS at KdsOrderCard.vue:297 (head a6ed32807). Wave U mitigated scroll discoverability but did not address root cause. Newbie chef-rush risk: long-item orders (Sandwich Cayenne / Tacos 7-sauces) require scroll inside the card body to see all customizations — newbie may bump before reading bottom items. STATUS: OPEN owner-gate (Option A 5-col single-row ≤5 + 5-col 2-row 6-10 + drop height:462px proposed in M-KDS-1-board-grid-deep.json:152-155, awaiting countersign)."
+      },
+      "owner_q_answered": "M-KDS-1 hardcoded height ? — VERIFIED PRESENT at KdsOrderCard.vue:297. Closed-form math confirms 56px overflow at 1920×1080 viewport bottom row + long-item orders force in-card scroll (worst case Sandwich Cayenne ~18-20 rows in 286px usable body = scroll needed). Wave U scroll-cue hardening (8px scrollbar + dark thumb + fade gradient) improved discoverability but root cause unaddressed. Owner-gate Option A (5-col adaptive) awaiting countersign."
+    },
+    {
+      "n": 5,
+      "title": "Adversarial — newbie miss-tap bump → no undo → customer impact",
+      "files_inspected": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (onCtaTap + onKey + Wave V comment)",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (parent — to verify post-bump remedies)",
+        "app/Domain/Order/OrderStateMachine.php (per project memory — server-side state guard)"
+      ],
+      "evidence": {
+        "adversarial_challenges": [
+          {
+            "challenge": "Can a newbie chef miss-tap the Prêt CTA and irreversibly bump a wrong order?",
+            "answer": "YES. Single tap on .kds-card__cta (KdsOrderCard.vue:148-160) emits 'ready' → onCtaTap (KdsV2Grid.vue:324-346) emits 'change-status' upward → KitchenDisplaySystemComponent PATCHes the order. NO confirmation, NO undo (Wave V 2026-05-21), NO modal. Card transitions ACCEPT→PREPARING on first tap, PREPARING→PREPARED on second tap. Bottom row + small CTA = increased miss-tap risk on adjacent cards.",
+            "severity": "P1 (owner-accepted tradeoff but real-world risk)"
+          },
+          {
+            "challenge": "Can a newbie chef accidentally bump via keyboard [A]-[H] shortcut?",
+            "answer": "YES. KdsV2Grid.onKey (line 270-290) listens for [A]-[H] case-insensitive → fires onCtaTap on the matching slot. NO confirmation. Mitigation: bumpLocalOnlyNotice prop + shortcut visible as `[A]` badge on card header (KdsOrderCard.vue:34) so the chef sees which slot maps to which order. But a typing-finger slip = irreversible.",
+            "severity": "P1"
+          },
+          {
+            "challenge": "Does the server-side OrderStateMachine validate the transition and protect against accidental bump on a non-ready order?",
+            "answer": "YES at SERVER (per CLAUDE.md §7 frozen-zone OrderStateMachine + project memory). Duplicate PATCH on same order = 409 idempotency conflict OR InvalidTransition (KdsV2Grid.vue:314-317). But the FIRST bump on the WRONG order is NEVER server-blocked (the order IS in a valid bumpable state, the chef just picked the wrong one).",
+            "severity": "Inherent — server cannot protect against wrong-but-valid bump"
+          },
+          {
+            "challenge": "Is there a manager-only 'revert bump' affordance after the fact?",
+            "answer": "NOT ON KDS. Per cross-reference with B2-P6 findings (this same cycle): post-payment cancel is via PosOrdersTrackerComponent.confirmCancelOrder (POS surface, requires reason ≥3 chars). For PREPARED-but-not-collected/delivered, the manager must navigate from KDS → POS Tracker → cancel/refund flow. Newbie chef cannot self-revert.",
+            "severity": "P2 (workflow gap — recovery exists but not in KDS surface)"
+          },
+          {
+            "challenge": "Is there ANY KDS 'training mode' / sandbox / first-day walkthrough?",
+            "answer": "NONE detected. Grep on `training|mode_demo|sandbox` across resources/js/components/admin/kitchenDisplaySystem/ = ZERO hits. No 'demo' route variant. No coachmark/spotlight overlay. No tour library (driver.js/shepherd/intro.js — verified absent from package.json in B2-P6). LeCayenneRoleLandingUrlSeeder per memory maps Chef → KDS landing → newbie lands cold on live KDS.",
+            "severity": "P2 — same onboarding gap as POS (B2-P6-F03 sibling)"
+          },
+          {
+            "challenge": "What is the customer impact of a wrong-order bump?",
+            "answer": "Order N°X (wrong) is marked PREPARED → KDS removes it from the active board (kds-card--ready opacity 0.7 then refresh removes it) → OSS surface displays N°X as ready → customer at counter approaches → cashier hands over an order that was NOT actually prepared. Domino: real order N°Y is still PREPARING but chef forgot it. Net: 1 customer gets premature item / wrong item, 1 order goes cold. In dine-in (V1 disabled), worse — server brings out a half-cooked plate."
+          },
+          {
+            "challenge": "Does the system warn against rapid-fire chains of bumps?",
+            "answer": "NO. Wave V explicitly removed the throttle because owner wanted rapid-fire. KdsV2Grid.vue:308-310 verbatim: 'enlève cette sécurité — je veux valider 3 commandes en même temps, puis 3 commandes livrées'. The trade is owner-conscious — this is NOT a defect, it is a feature decision."
+          }
+        ],
+        "newbie_safety_scaffolding_inventory": {
+          "shortcut_badge_per_card": "GREEN — [A]–[H] visible top-left of card meta row (KdsOrderCard.vue:34)",
+          "state_pill_+_dot": "GREEN — 5-state pill with color-coded dot is unambiguous",
+          "allergen_5_signals": "GREEN — see State 2",
+          "elapsed_timer_pulse": "GREEN — critical-bucket pulses at 1Hz (KdsOrderCard.vue:728-735)",
+          "cash_pending_block": "GREEN — passive amber badge instead of green CTA (Wave S-2 P-OWNER 2026-05-20) prevents premature bump on cash-at-counter orders",
+          "aria_live_announce": "GREEN — sr-only live region announces 'Commande #X prête' / 'en préparation' (kds_aria_live_ready / preparing keys verified at fr.json:699-700)",
+          "training_mode": "ABSENT — see Finding B3-P6-F03",
+          "confirm_modal": "ABSENT by owner mandate Wave V — see State 3",
+          "undo_toast": "ABSENT by owner mandate Wave V — see State 3",
+          "long_card_scroll_discovery": "PARTIAL — Wave U widened scrollbar + darker thumb + fade hint; M-KDS-1 hardcoded 462px still forces scroll for long-item orders, OPEN owner-gate"
+        },
+        "scoring": {
+          "completeness": "5/5 states executed",
+          "owner_questions_answered": "5/5 (confirm-bump / allergen-visible / color-status-clear / training-mode / are-you-sure)",
+          "evidence_strength": "HIGH — every claim references file:line in source + cross-reference to M-KDS-1/M-KDS-5/B2-P6 prior findings",
+          "P0_blockers_found": 0,
+          "P1_findings": 2,
+          "P2_findings": 1,
+          "verdict": "YELLOW — Status colors + allergen visibility are STRONG GREEN (best-in-class for V1). Bump irreversibility (no confirm + no undo) is an OWNER-ACCEPTED tradeoff post Wave V — flag as risk but not a defect. M-KDS-1 hardcoded height = OPEN owner-gate. Training mode absent. Newbie chef on first day is dependent on shadow-mentoring + the 5-signal allergen/state visual contract."
+        }
+      },
+      "owner_q_answered": "Are you sure ? Training mode ? — BOTH ABSENT. Confirm dialog never shipped. Undo shipped Wave Q-2 then explicitly removed Wave V 2026-05-21 by owner mandate. Training mode never built. The board is OPTIMIZED for the rapid-fire expert chef, not the first-day newbie. Mitigations: strong visual signaling (color + state pill + allergen 5-layer + age bucket + shortcut badge) compensates for the missing safety net. Recovery via manager-driven PosOrdersTrackerComponent cancel (post-facto, off-KDS-surface)."
+    }
+  ],
+  "verdict": "YELLOW",
+  "findings": [
+    {
+      "id": "B3-P6-F01",
+      "severity": "P1",
+      "category": "bump-irreversibility-by-design",
+      "title": "KDS bump (CTA + [A]-[H] keyboard) fires immediate PATCH with NO confirmation + NO undo since Wave V 2026-05-21 — newbie miss-tap = irreversible from KDS surface",
+      "details": "KdsOrderCard.vue:148-160 wires the .kds-card__cta button to onCta (line 375-382) which emits 'ready' → KdsV2Grid.onCtaTap (line 324-346) emits 'change-status' upward immediately. Parent PATCHes the order with X-Idempotency-Key. ZERO interstitial. ZERO 'are you sure?' modal. ZERO 3s undo window — explicitly removed Wave V 2026-05-21 (KdsV2Grid.vue:291-323 verbatim comment captures the owner mandate: 'enlève cette sécurité — je veux valider 3 commandes en même temps'). Recovery from a wrong-order bump requires the chef to flag a manager who navigates to PosOrdersTrackerComponent on the POS surface (B2-P6-F01 context) — off-KDS, off-flow, time-costly. Customer impact: wrong order displayed READY on OSS, real order forgotten in queue (see State 5 adversarial chain).",
+      "evidence": "State 3 + State 5 adversarial; KdsOrderCard.vue:148-160 + 375-390 + KdsV2Grid.vue:291-346 + Wave V verbatim comment + KdsUndoToast.vue orphan file + 4 dead i18n keys (kds_undo_bump/kds_undo_bump_aria/kds_undo_done/kds_toast_bumped) × 3 locales (fr.json:719-726 / en.json:1207-1208 / ar.json:1055-1059)",
+      "impact": "P1 risk — newbie chef first-day or chef-rush miss-tap = irreversible bump → wrong order on OSS → customer collects unprepared food OR real order goes cold. Owner ACCEPTED this tradeoff for rapid-fire bump throughput; documented as a feature decision, not a defect. Risk re-emerges with new staff onboarding (chef rotation, holiday backfill, new opening Le Cayenne sites).",
+      "fix_hint": "V1.0.X owner-conscious options (any of, not all): (a) RESTORE 1.5s undo window with batched-PATCH (preserve owner's rapid-fire by serializing per-order in a queue rather than canceling on next-click); (b) ADD opt-in 'newbie mode' user-preference flag → enables 2s undo + confirm modal for the first N shifts of a Chef role user.preferences.kds_safety_mode='newbie'|'expert'; (c) ADD manager-callable 'rollback last bump' button in KDS top bar that re-opens the most-recent PREPARED order created by current user within last 5 minutes; (d) cleanup orphan KdsUndoToast.vue + 4 i18n keys × 3 locales (tree hygiene). Owner-gate REQUIRED — do not silently re-add undo, since Wave V removal was explicit owner mandate."
+    },
+    {
+      "id": "B3-P6-F02",
+      "severity": "P1",
+      "category": "layout-overflow-open-owner-gate",
+      "title": "M-KDS-1 hardcoded `height: 462px` PERSISTS in KdsOrderCard.vue:297 — deterministic 56px overflow at 1920×1080 bottom row + scroll required inside card body for long-item orders",
+      "details": "KdsOrderCard.vue:294-299 cardStyle returns inline `height: '462px'`. KdsV2Grid grid-template-rows uses `repeat(2, minmax(0, 1fr))` but the child card refuses to shrink because of the inline 462px lock. Closed-form math (from M-KDS-1-board-grid-deep.json:77): 2 rows × 462 + 16 gap + 32 padding + 164 header chrome = 1136px > 1080px viewport → 56px overflow for the bottom row (independently corroborated by reports/audits/SUPER6_CHEF_RUSH_STRESS_2026-05-25.md:28). Inside-card body chrome: 6 stripe + 110 header + 60 footer = 176px chrome, leaving ~286px body usable. Sandwich Cayenne worst case (1 header + 4 variations + 5 extras + 3 sauces + 2 supplements + instruction 3-4 line wrap ≈ 18-20 rows × 24px = 480px) FORCES scroll. Wave U mitigated scrollbar discoverability (8px width + #6B7280 thumb + fade gradient at line 661-678) but root cause persists.",
+      "evidence": "State 4 verbatim code snippet + M-KDS-1-board-grid-deep.json:77+82+99+152-155 + SUPER6_CHEF_RUSH_STRESS_2026-05-25.md:28",
+      "impact": "Chef rush 1s glance on bottom row at 1080p viewport: bottom 56px clipped → CTA possibly off-screen → chef misses entire bottom card. Long-item orders within card: chef bumps before reading scrolled-out customizations (allergen alert is in header so still seen, but supplement+exclusion lines may be off-screen). Compounds F01 risk — wrong-customizations bump is worse than wrong-order bump.",
+      "fix_hint": "Owner-gated proposal from M-KDS-1 deep finding (lines 152-155): drop hardcoded `height: 462px` from cardStyle + set `min-height: 0` to allow flex shrink + optional CSS clamp() on body max-height. Combine with Option A (5-col single-row ≤5 orders, 5-col 2-row 6-10 orders) so the layout adapts. Owner-gate is open — do not implement without countersign because Wave Q-3/Q-4 retraction history shows board-layout changes carry regression risk (M-KDS-5-allergen-badges-deep references Q-4 retraction NOOP + e2e regression spec)."
+    },
+    {
+      "id": "B3-P6-F03",
+      "severity": "P2",
+      "category": "training-mode-absent",
+      "title": "No training/sandbox/coachmark mode on KDS surface — newbie chef lands cold on live board with zero walkthrough",
+      "details": "Grep `training|mode_demo|sandbox` across resources/js/components/admin/kitchenDisplaySystem/ returns ZERO hits. No demo route variant for KDS. No coachmark overlay component. No tour library in package.json (verified absent in B2-P6-F03 sibling — driver.js / shepherd / intro.js all missing). Per project memory LeCayenneRoleLandingUrlSeeder, Chef role lands directly on KDS. New chef sees: 4-col grid + N cards + shortcut badges + state pills + age buckets + 5-layer allergen contract — strong visual contract, BUT no inline explanation of what [A]-[H] means until pressed, what 'CONFIRMÉE' vs 'EN PRÉPARATION' vs 'PRÊT' transitions cost, what happens after Prêt tap (Wave V removed undo, see F01). aria-live announcements help on screen reader but a sighted newbie has no tutorial. Owner-mandated UX is 'lean expert tool' — that's a defensible posture, but it does compound F01.",
+      "evidence": "State 5 newbie_safety_scaffolding_inventory training_mode field + State 5 adversarial challenge 5",
+      "impact": "P2 onboarding cost — every new Chef hire (or holiday backfill, or new Le Cayenne site opening) requires shadow-mentoring by senior chef. Cannot self-serve. Combined with F01 (irreversible bump), first-week miss-tap rate is highest. Long-term recruitment friction.",
+      "fix_hint": "V1.0.X UX backlog: lightweight first-login coachmark overlay (4 step bubbles pointing at: shortcut badge meaning, state pill meaning, allergen pill priority, Prêt CTA irreversibility warning) persisted via user.preferences.kds_coachmark_seen=true. No third-party library — Vue transition + 4 step components. Sibling to B2-P6-F03 (same approach proposed for POS). Owner-discretionary."
+    }
+  ],
+  "scores": {
+    "completeness": "5/5 states",
+    "owner_questions": "5/5 answered with evidence + caveats",
+    "evidence_strength": "HIGH — every claim source-cited (file:line) + cross-referenced to prior phase-m deep findings (M-KDS-1, M-KDS-5) + Wave V mandate verbatim comment + Wave U Wave S-2 Wave Q-4 retraction history",
+    "verdict_short": "YELLOW — Status colors + allergen visibility STRONG GREEN (5 redundant signals, WCAG AA-large healed KDS-R1-02/03, Wave S-2 cash-pending 7.94:1 AAA). Bump irreversibility (no confirm + no undo) is OWNER-ACCEPTED tradeoff post Wave V 2026-05-21 — flagged P1. M-KDS-1 hardcoded 462px OPEN owner-gate P1. Training mode absent P2."
+  },
+  "top_3_findings_summary": [
+    "P1 B3-P6-F01: KDS bump fires immediate PATCH with NO confirm + NO undo since Wave V 2026-05-21 (owner-mandated removal). Newbie miss-tap = irreversible from KDS surface; recovery requires manager off-KDS via PosOrdersTrackerComponent. Orphan KdsUndoToast.vue + 4 dead i18n keys × 3 locales remain in tree.",
+    "P1 B3-P6-F02: M-KDS-1 hardcoded `height: 462px` PERSISTS in KdsOrderCard.vue:297 → deterministic 56px overflow at 1920×1080 bottom row + Sandwich Cayenne long-item orders force in-card scroll. Wave U widened scrollbar but root cause unaddressed. Open owner-gate (Option A 5-col proposal).",
+    "P2 B3-P6-F03: Zero training/sandbox/coachmark on KDS — newbie chef lands cold on live board. No tour library in package.json. Compounds F01 first-week miss-tap risk. Sibling to B2-P6-F03 POS onboarding gap."
+  ]
+}

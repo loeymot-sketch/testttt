@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\SettingsUpdated;
 use App\Http\Requests\TaxRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\TaxResource;
@@ -33,7 +34,10 @@ class TaxController extends AdminController
     public function store(TaxRequest $request): \Illuminate\Http\Response|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Contracts\Foundation\Application|TaxResource
     {
         try {
-            return new TaxResource($this->taxService->store($request));
+            $resource = new TaxResource($this->taxService->store($request));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['tax']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -42,7 +46,10 @@ class TaxController extends AdminController
     public function update(TaxRequest $request, Tax $tax): \Illuminate\Http\Response|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Contracts\Foundation\Application|TaxResource
     {
         try {
-            return new TaxResource($this->taxService->update($request, $tax));
+            $resource = new TaxResource($this->taxService->update($request, $tax));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['tax']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -52,6 +59,8 @@ class TaxController extends AdminController
     {
         try {
             $this->taxService->destroy($tax);
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['tax']);
             return response('', 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);

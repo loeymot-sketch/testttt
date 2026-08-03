@@ -1,0 +1,632 @@
+{
+  "meta": {
+    "spec": "_wave-e-t3-a11y-keyboard-2026-05-29.spec.js",
+    "generated_at": "2026-05-28T22:52:42.494Z",
+    "base_url": "http://127.0.0.1:8000",
+    "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+    "scope": "Keyboard-only navigation (Tab/Shift+Tab/Enter/Space/Escape) + focus-visible + trap detection + axe-core ARIA"
+  },
+  "surfaces": {
+    "01-login": {
+      "label": "01-login",
+      "url": "http://127.0.0.1:8000/login",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/01-login.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 72,
+        "interactive_stops": 72,
+        "focus_visible_pass": 72,
+        "focus_visible_fail": 0,
+        "no_focus_visible_samples": [],
+        "trap_hits": [],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": false,
+        "dom_size_delta": 0,
+        "activated": false
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 1,
+        "critical": [],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".lg\\:flex > .whitespace-nowrap"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".text-primary"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #f4501e, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  "button[type=\"submit\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "02-admin-pos": {
+      "label": "02-admin-pos",
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/02-admin-pos.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 78,
+        "interactive_stops": 78,
+        "focus_visible_pass": 77,
+        "focus_visible_fail": 1,
+        "no_focus_visible_samples": [
+          {
+            "step": 27,
+            "tag": "INPUT",
+            "path": "main.db-main.expand > section.pos-v5-shell.fk-pos-v4 > div.pos-v4-main.md:w-[calc(100%-316px)] > form.pos-v5-search-input.pos-v4-search > input.pos-v5-search-input__field",
+            "text": "",
+            "role": null,
+            "aria_label": "Rechercher un article du menu"
+          }
+        ],
+        "trap_hits": [
+          {
+            "step": 23,
+            "path": "div.pos-shortcuts > section.pos-shortcuts__panel.pos-shortcuts__panel--cash > ul.pos-shortcuts__list > li.pos-shortcuts__item > button.pos-shortcuts__cta.pos-shortcuts__cta--cash",
+            "text": "💳 Encaisser"
+          },
+          {
+            "step": 24,
+            "path": "div.pos-shortcuts > section.pos-shortcuts__panel.pos-shortcuts__panel--cash > ul.pos-shortcuts__list > li.pos-shortcuts__item > button.pos-shortcuts__cta.pos-shortcuts__cta--cash",
+            "text": "💳 Encaisser"
+          },
+          {
+            "step": 25,
+            "path": "div.pos-shortcuts > section.pos-shortcuts__panel.pos-shortcuts__panel--cash > ul.pos-shortcuts__list > li.pos-shortcuts__item > button.pos-shortcuts__cta.pos-shortcuts__cta--cash",
+            "text": "💳 Encaisser"
+          }
+        ],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": true,
+        "dom_size_delta": 3286,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 3,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  "#profile-menu-ylynrie3"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+              }
+            ]
+          }
+        ],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(1) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(2) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(3) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          },
+          {
+            "id": "scrollable-region-focusable",
+            "impact": "serious",
+            "help": "Scrollable region must have keyboard access",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/scrollable-region-focusable?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".space-y-3"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element should have focusable content\n  Element should be focusable"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "03-kds": {
+      "label": "03-kds",
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/03-kds.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 73,
+        "interactive_stops": 73,
+        "focus_visible_pass": 73,
+        "focus_visible_fail": 0,
+        "no_focus_visible_samples": [],
+        "trap_hits": [],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": true,
+        "dom_size_delta": 4508,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 3,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  "#profile-menu-czjoo8vq"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+              }
+            ]
+          }
+        ],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".router-link-exact-active > .text-base.flex-auto"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.27 (foreground color: #f4501e, background color: #fef6f4, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(1) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(2) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          },
+          {
+            "id": "scrollable-region-focusable",
+            "impact": "serious",
+            "help": "Scrollable region must have keyboard access",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/scrollable-region-focusable?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".space-y-3"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element should have focusable content\n  Element should be focusable"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "04-admin-items": {
+      "label": "04-admin-items",
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/04-admin-items.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 78,
+        "interactive_stops": 78,
+        "focus_visible_pass": 74,
+        "focus_visible_fail": 4,
+        "no_focus_visible_samples": [
+          {
+            "step": 56,
+            "tag": "INPUT",
+            "path": "div#vs79-combobox > div.vue-select-header > div.vue-input > input",
+            "text": "",
+            "role": null,
+            "aria_label": null
+          },
+          {
+            "step": 58,
+            "tag": "INPUT",
+            "path": "div#vs82-combobox > div.vue-select-header > div.vue-input > input",
+            "text": "",
+            "role": null,
+            "aria_label": null
+          },
+          {
+            "step": 77,
+            "tag": "INPUT",
+            "path": "div#vs85-combobox > div.vue-select-header > div.vue-input > input",
+            "text": "",
+            "role": null,
+            "aria_label": null
+          },
+          {
+            "step": 79,
+            "tag": "INPUT",
+            "path": "div#vs88-combobox > div.vue-select-header > div.vue-input > input",
+            "text": "",
+            "role": null,
+            "aria_label": null
+          }
+        ],
+        "trap_hits": [],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": true,
+        "dom_size_delta": 3672,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 3,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  "#profile-menu-ddtj6lf0"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+              }
+            ]
+          }
+        ],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".border-primary > span"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(1) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(2) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          },
+          {
+            "id": "scrollable-region-focusable",
+            "impact": "serious",
+            "help": "Scrollable region must have keyboard access",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/scrollable-region-focusable?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".space-y-3"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element should have focusable content\n  Element should be focusable"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "05-admin-stock-rupture": {
+      "label": "05-admin-stock-rupture",
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/05-admin-stock-rupture.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 74,
+        "interactive_stops": 74,
+        "focus_visible_pass": 74,
+        "focus_visible_fail": 0,
+        "no_focus_visible_samples": [],
+        "trap_hits": [],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": true,
+        "dom_size_delta": 5062,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 3,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  "#profile-menu-cxpvdnm2"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+              }
+            ]
+          }
+        ],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".router-link-exact-active > .text-base.flex-auto"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.27 (foreground color: #f4501e, background color: #fef6f4, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".border-primary > span"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  ".bg-red-50.border-red-100.justify-between:nth-child(1) > div > .text-red-600.mt-1"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #dc2626, background color: #fef2f2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          },
+          {
+            "id": "scrollable-region-focusable",
+            "impact": "serious",
+            "help": "Scrollable region must have keyboard access",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/scrollable-region-focusable?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  ".space-y-3"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element should have focusable content\n  Element should be focusable"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "06-kiosk-idle": {
+      "label": "06-kiosk-idle",
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/06-kiosk-idle.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 54,
+        "interactive_stops": 54,
+        "focus_visible_pass": 54,
+        "focus_visible_fail": 0,
+        "no_focus_visible_samples": [],
+        "trap_hits": [],
+        "wrapped_to_first": false
+      },
+      "enter_activation": {
+        "url_changed": false,
+        "dom_size_delta": 445,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 1,
+        "dialogs_after": 0,
+        "esc_closed_modal": true
+      },
+      "axe": {
+        "total": 0,
+        "critical": [],
+        "serious": [],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "07-kiosk-catalog": {
+      "label": "07-kiosk-catalog",
+      "url": "http://127.0.0.1:8000/login",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/07-kiosk-catalog.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 40,
+        "interactive_stops": 40,
+        "focus_visible_pass": 40,
+        "focus_visible_fail": 0,
+        "no_focus_visible_samples": [],
+        "trap_hits": [],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": true,
+        "dom_size_delta": -1,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 1,
+        "critical": [],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  "a"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #f4501e, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  "button"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    },
+    "08-kiosk-wizard": {
+      "label": "08-kiosk-wizard",
+      "url": "http://127.0.0.1:8000/login",
+      "screenshot": "/tmp/foodking-wave-e-2026-05-29/a11y-kb/08-kiosk-wizard.png",
+      "tab_walk": {
+        "steps_total": 80,
+        "stops_total": 40,
+        "interactive_stops": 40,
+        "focus_visible_pass": 40,
+        "focus_visible_fail": 0,
+        "no_focus_visible_samples": [],
+        "trap_hits": [],
+        "wrapped_to_first": true
+      },
+      "enter_activation": {
+        "url_changed": true,
+        "dom_size_delta": -1,
+        "activated": true
+      },
+      "escape_probe": {
+        "dialogs_before": 0,
+        "dialogs_after": 0,
+        "esc_closed_modal": false
+      },
+      "axe": {
+        "total": 1,
+        "critical": [],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "target": [
+                  "a"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #f4501e, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+              },
+              {
+                "target": [
+                  "button"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+              }
+            ]
+          }
+        ],
+        "moderate_count": 0,
+        "minor_count": 0
+      }
+    }
+  },
+  "summary": {
+    "surfaces_audited": 8,
+    "surfaces_with_traps": 1,
+    "surfaces_with_focus_invisible": 2,
+    "axe_critical_total": 4,
+    "axe_serious_total": 11,
+    "verdict": "TRAPS_FOUND"
+  },
+  "caveats": {
+    "enter_probe_navigated_away": "On 02-admin-pos, the Enter-activation probe triggered router navigation, pushing the SPA to /admin/dashboard. Subsequent admin tests inherited the dashboard URL because Playwright reused the page context; their tab_walk thus audited admin sidebar+topbar+main on dashboard, not their target view. The findings remain valid for the admin shell (which is the dominant focus surface) but the deep-page-specific issues for /admin/pos, /admin/items, /admin/stock-rupture-dashboard were NOT separately probed.",
+    "pos_trap_location": "The 3 traps detected on 02-admin-pos are on the .pos-shortcuts__cta--cash button (\"💳 Encaisser\") in the dashboard pos-shortcuts panel — same 3 consecutive Tabs stop on the same button, indicating a focus trap or a nested li > button structure that is not advancing focus.",
+    "kiosk_catalog_wizard_unauth": "07-kiosk-catalog and 08-kiosk-wizard URLs resolved to /login because the kiosk machine login (loginAsKiosk default kiosk-lecayenne/kiosk123) did not authenticate. Those two surfaces measured the /login page, not real kiosk catalog / wizard.",
+    "scope_match": "Surfaces audited as a keyboard-nav sweep: login, kiosk idle (real), admin SPA shell (5x, dominated by dashboard chrome). POS-specific cashier-flow, KDS chef bump, admin items list, stock-rupture dashboard, kiosk catalog and kiosk wizard need a re-run with cookie-isolated browser contexts and a verified kiosk machine fixture to audit their unique focus trees."
+  }
+}

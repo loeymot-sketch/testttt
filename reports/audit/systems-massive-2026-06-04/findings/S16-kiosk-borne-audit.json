@@ -1,0 +1,137 @@
+{
+  "micro_system": "S16-kiosk-borne",
+  "files_examined": [
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskLoginComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+    "resources/js/store/modules/kioskCart.js",
+    "resources/js/router/modules/kioskRoutes.js",
+    "routes/api.php",
+    "config/kiosk.php",
+    "resources/views/master.blade.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/OrderService.php",
+    "app/Services/PaymentService.php",
+    "app/Services/Receipt/ReceiptDataService.php",
+    "app/Models/FrontendOrder.php"
+  ],
+  "findings": [
+    {
+      "id": "S16-01",
+      "severity": "P1",
+      "category": "nf525",
+      "title": "Kiosk-counter-collected order never records the collecting cashier on the order — receipt 'Opérateur' stays the kiosk machine (live Plan B path)",
+      "file_line": "app/Services/PaymentService.php:389-401 (confirmCounterPayment) + app/Services/Receipt/ReceiptDataService.php:70 + app/Services/FrontendOrderService.php:260-272",
+      "evidence": "Live V1 path (Plan B, see S16-02): kiosk order is created in FrontendOrderService::store with 'user_id => Auth::user()->id' (the KioskMachine user) and NO creator_id/editor_id (lines 260-272). When the cashier encaisses at POS, collectKioskCash -> PaymentService::confirmCounterPayment writes the collecting cashier ONLY into an audit_logs row ('user_id' => Auth::id(), line 391) — it never sets creator_id/editor_id on the order row. ReceiptDataService::buildForOrderModel line 70 builds 'operator_name' => optional($order->user)->name, and FrontendOrder has only a user() relation (FrontendOrder.php:113), no creator()/editor(). So the printed/displayed 'Opérateur' is always the kiosk machine account, never the human who took the money.",
+      "why_it_matters": "NF525 requires the receipt to identify the operator who processed the sale. On the real Le Cayenne shift EVERY kiosk order is collected at the counter (Plan B default true), so EVERY one of those receipts mis-identifies the operator. The cashier identity exists in audit_logs but is unreachable by the receipt builder. This is the documented operator gap, root-caused here on the LIVE path (not only the dormant TPE path).",
+      "reproduction": "Place a kiosk order (lands PENDING_COUNTER). Encaisse it at POS as cashier X. Inspect the order: orders.user_id = kiosk machine user, creator_id/editor_id unchanged/NULL. ReceiptDataService returns operator_name = machine name. The audit_logs 'order.counter_payment_confirmed' row has the real user_id=X but the receipt never reads it.",
+      "recommended_correction": "At collection time in confirmCounterPayment, persist the collecting cashier onto the order (e.g. set editor_id = Auth::id() on $locked before save, line ~362) AND change ReceiptDataService:70 to resolve operator from editor_id/creator_id (the cashier) with a fallback, not from $order->user (the customer/machine). Coordinate with the receipt/POS owners; ReceiptDataService is fiscal-adjacent so gate the change.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S16-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Whole card/TR/TPE pipeline in KioskPaymentComponent is dead code under the V1 Plan B envelope (route-all-to-counter default true)",
+      "file_line": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:333-339,586-768 + config/kiosk.php:54 + resources/views/master.blade.php:154",
+      "evidence": "paymentRouteAllToCounter reads window.foodkingConfig.kiosk.paymentRouteAllToCounter (line 333). config/kiosk.php:54 sets it from env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER', true) — DEFAULT TRUE — and master.blade.php:154 injects config('kiosk.payment_route_all_to_counter', true). When true, the template hides method selection and the only reachable action is confirmCounterRoute() (line 421) which forces method='cash' -> processCashPayment -> kiosk.cash-instruction. The entire card/TR branch: selectMethod for card/tr, processCardPayment (586), _invokeTpe (694), TPE decline/timeout/void, confirmBackendPayment retry loop, the reconcile queue (_reconcilePendingPayments), and the offline-electronic-refused path — none of it executes on the Le Cayenne borne.",
+      "why_it_matters": "Owner explicitly flagged 'unnecessary things'. ~400 lines of intricate TPE/reconcile logic ship in the kiosk bundle and run dormant. It inflates the bundle, complicates every future kiosk change, and any bug found inside it (e.g. the quote-total-vs-order-total nuance) is a phantom in V1. It also masks where real review effort should go (the counter route). Not a bug today, but a maintenance and clarity tax.",
+      "reproduction": "grep -n payment_route_all_to_counter config/kiosk.php -> env default true. Load /kiosk/payment with default config: only the counter-route screen renders; the card/TR cards never mount.",
+      "recommended_correction": "Either gate the TPE code behind a clearly-named build/feature flag and lazy-load it only when paymentRouteAllToCounter is false, or annotate it prominently as 'inactive under V1 Plan B — do not audit as live'. Do not delete (it is the Plan A path for when terminals are wired), but stop carrying it as if it were the live flow.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S16-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Upsell add-to-cart jumps straight to payment and silently invalidates the priced quote without re-quoting",
+      "file_line": "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue:220-257 + resources/js/store/modules/kioskCart.js:256 (ADD_ITEM sets orderQuote=null)",
+      "evidence": "addAndContinue (line 220) calls addItem for each selected suggestion then this.$router.push({ name: 'kiosk.payment' }) (line 254). The cart's path to payment (KioskCartComponent.proceedToUpsell:684) always runs quoteOrder() first, but the upsell screen does NOT — it relies on KioskPaymentComponent.confirmPayment->refreshQuote() to re-quote at pay time. ADD_ITEM mutation (kioskCart.js:256) sets state.orderQuote = null, so between upsell and the pay tap the cart total shown is the LOCAL getters.total (subtotal - discounts), never re-validated against the server until the customer commits to paying.",
+      "why_it_matters": "The amount card the customer sees on the payment screen is computed from the local cart, and the authoritative server quote is only fetched when they press the final confirm. If a promo/loyalty/availability condition changed, the displayed total can differ from what they are actually charged, and the discrepancy only surfaces at the last step (or as a confusing late error). Re-quoting on the upsell->payment transition (as the cart path does) would keep the displayed total honest.",
+      "reproduction": "Add a main item, Valider (quote computed), reach upsell, select a drink, Add & continue -> payment screen. Inspect store: kioskCart.orderQuote === null. The amount card shows local total; server quote only runs on the pay tap.",
+      "recommended_correction": "In addAndContinue, dispatch quoteOrder({ orderType }) (await) before navigating to kiosk.payment, mirroring proceedToUpsell, so the payment amount card always reflects a fresh server quote.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S16-04",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Upsell-added items can never be reviewed or removed before paying — straight to payment, no return to cart",
+      "file_line": "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue:254,267 + resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:55-57 (back goes to cart only when method UI shown)",
+      "evidence": "Both addAndContinue (line 254) and skip (line 267) push directly to kiosk.payment. On the live Plan B payment screen the counter-route view (KioskPaymentComponent template lines 5-49) has NO back button (the back button at lines 55-64 is inside the v-if=!paymentRouteAllToCounter header). So once an upsell item is added, the only way back to the cart to remove it is the global idle/abandon reset — the customer cannot de-select an upsell they accepted by mistake.",
+      "why_it_matters": "A customer who taps a 2 EUR dessert on the high-pressure upsell screen and changes their mind has no in-flow way to remove it before paying on the live borne — they either pay for the unwanted item or abandon the whole order. On a fast-food kiosk this is a direct revenue-trust and satisfaction issue, and it is specifically the kind of 'flou' the owner asked to surface.",
+      "reproduction": "On the live borne (Plan B), accept an upsell item, land on the counter-route payment screen: there is no back control; pressing nothing leaves you with the extra item; only a full abandon clears it.",
+      "recommended_correction": "Either route upsell back through the cart (so the customer reviews the updated cart with remove controls before paying), or add a 'review cart' / back affordance on the counter-route payment screen.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S16-05",
+      "severity": "P3",
+      "category": "visual",
+      "title": "Kiosk login/diagnostic screen uses a dark navy gradient, breaking the V1 kiosk light-mode mandate",
+      "file_line": "resources/js/components/frontend/kiosk/KioskLoginComponent.vue:148-155,279-294",
+      "evidence": "KioskLoginComponent .kiosk-login-screen uses background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 100%) (line 150) with white-on-dark text, and the retry button hover uses #c0001a (line 294) — neither matches the Cayenne light-mode palette (primary #F4501E on white) used by every other kiosk surface (idle bg defaults to #FFFFFF, KioskIdleScreenComponent.vue:337). CLAUDE.md §3bis: 'Light mode 100% on kiosk (owner mandate dark mode désactivé)'.",
+      "why_it_matters": "This screen is the boot/auto-login diagnostic the borne shows when the machine token is missing or rate-limited. It is rare but customer-visible on a failed boot, and it visibly clashes with the brand (dark navy vs the warm light Cayenne look), plus #c0001a is a non-palette red. Low impact because it is a transient diagnostic, but it is a real brand/light-mode inconsistency.",
+      "reproduction": "Open /kiosk/login (or trigger it by clearing the kiosk token): the screen renders dark navy with white text, unlike every other kiosk screen.",
+      "recommended_correction": "Restyle the login/diagnostic screen to the kiosk light tokens (white surface, var(--kiosk-primary) #F4501E accents, dark text) to match idle/cart/payment.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S16-06",
+      "severity": "P3",
+      "category": "logic",
+      "title": "TPE is charged the client quote total instead of the server order total (dormant TPE path)",
+      "file_line": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:459-468,601",
+      "evidence": "After submitOrder, rawTotal is read from the server response (res.data.data.total / order_amount, line 459) into n, but then total = Number.isFinite(Number(quote.total_ttc)) ? Number(quote.total_ttc) : n (line 468) — i.e. the CLIENT quote.total_ttc wins over the server order total. processCardPayment charges amountEuros = this._lastOrder.total (line 601), so the physical terminal is charged the client quote figure, with the server order total used only as a fallback.",
+      "why_it_matters": "Both values derive from the same signed quote (quote_token/signature) so they normally match, and the backend echo-verify (amount_cents vs order.total, F-002) catches a >1c divergence. But preferring the client-supplied figure as the charge basis is backwards for an SSOT model: the server-persisted order total should be the charge amount, the client quote only a display fallback. Dormant under Plan B (no kiosk TPE in V1), hence P3, but worth fixing before terminals are wired (Plan A).",
+      "reproduction": "Static read: line 468 selects quote.total_ttc when finite, ignoring the server total n; line 601 uses that as the TPE charge amount.",
+      "recommended_correction": "Invert the precedence: charge the server order total (n) when finite, fall back to quote.total_ttc only offline. Keep the F-002 echo check as defense in depth.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S16-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Plan B counter-route payment screen shows a perpetual spinner if order submit hangs, with no timeout or cancel",
+      "file_line": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:30-48,421-428,770-782",
+      "evidence": "confirmCounterRoute (line 421) sets method='cash' and calls confirmPayment, which sets submitting=true and runs refreshQuote()+submitOrder()+processCashPayment. The counter-route template shows a spinner while submitting (lines 30-33) and hides the confirm button while submitting/submitted (line 41 v-if=!submitting && !submitted). processCashPayment (line 770) only clears submitting and navigates on success; on a slow/stuck submitOrder there is no client-side timeout and no cancel on this screen (the TPE cancel button at line 235 is inside the tpeWaiting overlay, not shown for cash). A network error rejects and clears submitting via the catch, but a request that hangs without rejecting leaves the spinner forever.",
+      "why_it_matters": "On the live borne, if the order POST stalls (backend slow, captive-portal style hang that never errors), the customer is stuck on a spinner with no escape except the inactivity reset, and staff have no signal. The TPE path has TPE_TIMEOUT protection; the live cash counter-route has none. Edge case, hence P3, but it is the only live payment action and deserves the same timeout safety.",
+      "reproduction": "Simulate a hanging POST /frontend/order on the counter-route screen: the spinner (lines 30-33) persists indefinitely; no timeout or cancel control is rendered.",
+      "recommended_correction": "Wrap the counter-route submit in a client timeout (like TPE_TIMEOUT_MS) that surfaces an error + retry, and/or render a cancel/back affordance on the counter-route screen after a few seconds of submitting.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Composition parity with POS is enforced server-side via PricingService SSOT",
+      "file_line": "resources/js/store/modules/kioskCart.js:98-140 (sanitizeKioskOrderItem) + app/Services/FrontendOrderService.php:277-296",
+      "note": "The kiosk wizard builds a rich local composition but the payload is sanitized to {item_id, quantity, item_variations:[{id}], item_extras:[{id}], item_addons:[{id}]} and the backend recomputes everything through PricingService::calculateOrder (forKiosk). Frontend never sets prices; this is exactly the SSOT discipline CLAUDE.md §8 mandates and means kiosk/POS price parity cannot drift from the client."
+    },
+    {
+      "title": "Order type is set explicitly at idle start and asserted, eliminating the null-order-type 422 risk",
+      "file_line": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue:257-261 + KioskAppComponent.vue:948-953 + kioskCart.js:40-47 (assertExplicitKioskOrderType)",
+      "note": "selectOrderTypeAndStart emits start-order -> KioskAppComponent.startOrder dispatches setOrderType BEFORE navigating to categories, and quoteOrder/submitOrder assert an explicit KIOSK/TAKEAWAY value. The dine-in tile is gated by dineInEnabled (false in V1), so a customer cannot reach the cart without a valid order_type. Clean guard chain."
+    },
+    {
+      "title": "Concurrent kiosk-login coalescing prevents token-rotation self-DoS",
+      "file_line": "resources/js/store/modules/kioskCart.js:456-478 (_inFlightKioskLogin) + routes/api.php:167-168 (dedicated kiosk-login throttle)",
+      "note": "A single module-scoped in-flight Promise coalesces the 3 racing login call sites (router guard, login component, 401 interceptor) into one server-side token rotation, and the route uses a dedicated 30/min kiosk-login limiter instead of the human 10/10min lockout. This is a well-reasoned fix to a real boot-time race that previously revoked freshly-minted tokens."
+    },
+    {
+      "title": "Offline cash queue refuses electronic payment and preserves idempotency key for safe replay",
+      "file_line": "resources/js/store/modules/kioskCart.js:760-804",
+      "note": "On network error submitOrder rejects card/TR with KIOSK_OFFLINE_ELECTRONIC_PAYMENT_REFUSED (never lets the borne pretend an electronic payment succeeded offline), and for cash it queues the order stripped of the stale quote token while keeping the original idempotency key so the replay layer re-quotes and cannot double-charge. Correct fail-safe behavior for a single-box LOCAL deployment."
+    }
+  ]
+}

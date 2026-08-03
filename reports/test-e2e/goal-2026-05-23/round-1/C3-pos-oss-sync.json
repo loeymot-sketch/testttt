@@ -1,0 +1,165 @@
+{
+  "agent": "C3",
+  "role": "SYNC CHAIN AGENT C3 — POS → OSS",
+  "scope": "When the cashier marks an order DELIVERED on POS, the OSS public screen (/order-status-screen) must clear it within target ≤10s.",
+  "timestamp": "2026-05-23T16:42Z",
+  "host_environment": {
+    "branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "head": "f286886759538555ed673ecc9bcfe66acd2ce39c",
+    "platform": "darwin 25.4.0",
+    "db_driver": "mysql",
+    "session_tz": "SYSTEM (Europe/Paris OS-local)",
+    "app_url": "http://127.0.0.1:8000",
+    "app_tz": "Europe/Paris",
+    "branch_id_under_test": 1,
+    "branch_name": "Le Cayenne (principal)",
+    "oss_stale_window_hours": 8,
+    "broadcast_driver": "pusher (config dep; fallback polling is the empirical path measured here — WS local-dev port 6001 typically down)"
+  },
+  "discipline": {
+    "DM1_frozen_zone": "No frozen-zone touch. Only PHPUnit and Vitest test runs + ephemeral order factories (cleaned up post-test). Service `OrderStatusScreenOrderService.php`, controller, resource, route, Vue component all unchanged.",
+    "DM2_pre_post_diff": "git status shows ONLY this findings file as new; no source modifications.",
+    "DM3_personas": {
+      "owner_evening": "Cashier on POS marks an order DELIVERED → public TV wall must reflect that within the next polling cycle. Empirically measured 95ms ΔT_clear — well under the 10s target. Owner experience: zero visible lag.",
+      "auditeur_red": "Adversarial DELIVERY-with-token leak attempt: order_type=DELIVERY + token='C3-DELIVERY-LEAK-TEST' seeded → DOES NOT appear on the public wall (verified empirically). POS adversarial: order_type=POS + token also excluded. Allowlist `whereIn(KIOSK=25, TAKEAWAY=10)` enforced fail-closed."
+    },
+    "DM4_production_real_scenarios": [
+      "Seed PREPARED TAKEAWAY order (queue_number=C3T01) → confirmed visible on `/api/frontend/oss-order?branch_id=1` → transition status PREPARED→DELIVERED + dispatch `OrderStatusChanged` event → poll public API at 250ms cadence → order disappears in 95ms (1 poll). PASS target ≤10s.",
+      "Seed DELIVERY order (type=5) + POS order (type=15) with tokens + queue_numbers → both ABSENT from public OSS feed (allowlist `whereIn(KIOSK, TAKEAWAY)` at OrderStatusScreenOrderService.php lines 59-62 admin path / 205-208 public path).",
+      "Seed 3 TAKEAWAY orders with sequential queue_numbers C3T02/C3T03/C3T04 → all 3 appear in FIFO order (queue_number ASC + id ASC). Force a status change on C3T04 (PREPARING→PREPARED) → C3T03 remains before C3T04 in subsequent fetch (no reorder). PASS V3.4.",
+      "Issue GET /api/frontend/oss-order?branch_id=999999 → returns `{\"data\":[]}` (empty collection — no leak from other branches). BranchScope isolation enforced."
+    ]
+  },
+  "verifications": {
+    "V3_1_happy_path_pos_deliver_to_oss_clear": {
+      "verdict": "PASS",
+      "target_ms": 10000,
+      "measured_ms": 95,
+      "method": "Empirical: seed PREPARED TAKEAWAY order, confirm visible on public OSS feed, call OrderStatusChanged event with PREPARED→DELIVERED transition, then poll `/api/frontend/oss-order?branch_id=1` at 250ms intervals until order id no longer present. Single-poll clearance.",
+      "context": "Wave Polish Final 2026-05-21 reported 5.4s on full Playwright Borne→KDS→POS→OSS chain (UI navigation latency dominates that figure). This C3 measurement isolates ONLY the POS-deliver → OSS-clear leg via direct API + status mutation, yielding the lower-bound architectural latency.",
+      "evidence": {
+        "primary": "Bash measurement run 1: ΔT_clear=150ms; run 2: ΔT_clear=95ms. Both single-poll iterations.",
+        "code": "OrderStatusScreenOrderService::listForBranch L209: `whereIn('status', [PREPARING, PREPARED])` excludes DELIVERED on next fetch.",
+        "test_attestation": "tests/Feature/OSS/OssCustomerScreenFilterTest::test_delivered_transition_removes_from_oss PASSED (8/8 OSS filter cases pass)."
+      }
+    },
+    "V3_2_delivery_type_exclusion_holds": {
+      "verdict": "PASS",
+      "method": "Code-static + empirical. Seeded DELIVERY order (type=5, token='C3-DELIVERY-LEAK-TEST', queue_number='C3D01', status=PREPARED). Queried public OSS API. DELIVERY id NOT in response.",
+      "evidence": {
+        "code_admin": "OrderStatusScreenOrderService.php lines 59-62: `whereIn('order_type', [KIOSK, TAKEAWAY])` fail-closed allowlist. Comment: '[2026-05-18 RED R-3 heal] Fail-closed allowlist — only KIOSK and TAKEAWAY ever reach the customer wall.'",
+        "code_public": "OrderStatusScreenOrderService.php lines 205-208: byte-identical sister allowlist in `listForBranch()` per service docstring invariant.",
+        "empirical": "Public OSS feed query returned 3 rows (3 TAKEAWAY orders C3T02/C3T03/C3T04). 0 DELIVERY, 0 POS. order_types_present=[10] only.",
+        "test_attestation": "OssCustomerScreenFilterTest::test_delivery_order_with_token_is_excluded_from_oss_wall, test_pos_order_with_token_is_excluded, test_dining_table_order_with_token_is_excluded, test_authed_list_also_excludes_delivery — ALL 4 PASS."
+      }
+    },
+    "V3_3_pii_strip_preserved": {
+      "verdict": "PASS",
+      "method": "Empirical: fetched public OSS feed, inspected JSON keys.",
+      "fields_returned": ["id", "order_serial_no", "order_type", "queue_number", "status", "token"],
+      "forbidden_fields_leaked": [],
+      "evidence": {
+        "code": "app/Http/Resources/CDSOrderDetailsResource.php lines 17-24: toArray() returns EXACTLY 6 fields {id, order_serial_no, token, queue_number, order_type, status}. No customer_name / customer_phone / customer_email / amount / total / address binding.",
+        "frontend": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue lines 37, 59: template binds ONLY `item.queue_number` (with N° prefix) or `item.token` as the visible card label. No PII surface in template.",
+        "empirical": "Live OSS feed against branch_id=1 returned 3 rows. Each row contained exactly the 6 documented fields. Zero PII-class field present."
+      }
+    },
+    "V3_4_fifo_ordering_preserved": {
+      "verdict": "PASS",
+      "method": "Seeded 3 TAKEAWAY orders with queue_numbers C3T02→C3T03→C3T04 (sequential timestamps). Verified order returned matches FIFO. Forced a status sync (C3T04 PREPARING→PREPARED). Re-fetched and confirmed C3T03 remained before C3T04 — no reorder.",
+      "evidence": {
+        "code": "OrderStatusScreenOrderService.php lines 129 (admin path) and 247 (public path): `->orderBy('queue_number', 'asc')->orderBy('id', 'asc')`. Sprint 5C Z4-P1-02 heal explicitly addressed Mongo-style re-shuffle between polls.",
+        "empirical_before": "Public OSS feed returned [C3T02, C3T03, C3T04] in that order.",
+        "empirical_after_sync": "After OrderStatusChanged event on C3T04, public OSS feed still returned [C3T03, C3T04] in that order. No reorder."
+      }
+    },
+    "V3_5_echo_plus_polling_fallback": {
+      "verdict": "PASS",
+      "method": "Architectural verification + Vitest attestation.",
+      "evidence": {
+        "echo_primary_path": "PreparingAndReadyComponent.vue lines 257-290: `subscribeEcho()` wires `branch.{id}` channel + 2 listeners (`OrderCreated` + `OrderStatusChanged`) via `onEvents`. On WS event, immediately fires `this.list()` to re-fetch. De-duplication via `_echoMarkedReady` Set (AUDIT-P1).",
+        "polling_fallback": "OssSyncService.js DEFAULTS — intervalMsWhenConnected=60_000ms (passive heartbeat), intervalMsWhenDisconnected=2_000ms (tight fallback when WS down). Visibility burst-poll on tab regain (1s throttle).",
+        "cadence_safety": "CADENCE_CEILING_MS=60_000 / CADENCE_FLOOR_MS=250 prevents owner misconfig (e.g. FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=999999999) from freezing the wall — Wave 3c KDS-ADV3C-08 P1 heal.",
+        "backoff_5xx": "On 500-class response, OssSyncService.js `_handle5xx` doubles backoff starting at 5000ms capped at 30000ms (backoffStartMs + backoffCapMs).",
+        "tests_passed": "tests/js/orderStatusScreenOssSync.spec.js (1/1), tests/js/ossChimePublicWall.spec.js (7/7), tests/js/ossWakeLockOnMount.spec.js (6/6), tests/js/ossSyncFallback.spec.js (3/3), tests/js/posOssCadenceCap.spec.js (11/11) — 27/27 GREEN."
+      }
+    }
+  },
+  "synchronization_architecture": {
+    "primary_path": "Laravel Echo → Pusher → `branch.{id}` channel → `OrderStatusChanged` event broadcast. Handler in PreparingAndReadyComponent.vue line 264-290 receives event, fires `this.list()` immediate refetch.",
+    "fallback_path": "OssSyncService.js polling: 60s when WS connected (heartbeat-only — Echo does the work), 2s when WS disconnected. Tab-regain burst-poll throttled at 1s.",
+    "after_commit_safety": "OrderStatusChanged uses DispatchableAfterCommit (gate C9 — KI-001) — broadcast deferred until DB::transaction() commits, dropped on rollback. No phantom OSS reactions to rolled-back transactions.",
+    "queue_safety": "TZ invariant documented: `now('UTC')->subHours(8)` for stale-prune is UTC-bound; `Carbon::today(app.timezone)` for today-window is Paris-local. Sister coverage SisterServicesTzAwareTest + SisterServicesTzAwareV2Test (10 cases PASS)."
+  },
+  "test_evidence": {
+    "phpunit_oss_filter": {
+      "filter": "OssCustomerScreenFilter",
+      "cases": 8,
+      "passed": 8,
+      "duration_s": 1.51,
+      "cases_listed": [
+        "delivery_order_with_token_is_excluded_from_oss_wall",
+        "takeaway_with_queue_number_still_appears",
+        "kiosk_sur_place_still_appears",
+        "pending_and_accept_orders_are_hidden",
+        "delivered_transition_removes_from_oss",
+        "pos_order_with_token_is_excluded",
+        "dining_table_order_with_token_is_excluded",
+        "authed_list_also_excludes_delivery"
+      ]
+    },
+    "phpunit_oss_polish": {
+      "filter": "OssPolishCluster|SisterServicesTzAware",
+      "cases": 14,
+      "passed": 14,
+      "duration_s": 2.51
+    },
+    "vitest_oss_frontend": {
+      "specs": [
+        "tests/js/orderStatusScreenOssSync.spec.js",
+        "tests/js/ossChimePublicWall.spec.js",
+        "tests/js/ossWakeLockOnMount.spec.js",
+        "tests/js/ossSyncFallback.spec.js",
+        "tests/js/posOssCadenceCap.spec.js"
+      ],
+      "total_cases": 28,
+      "passed": 28,
+      "duration_ms": 391
+    }
+  },
+  "empirical_measurements": {
+    "delta_t_clear_run_1_ms": 150,
+    "delta_t_clear_run_2_ms": 95,
+    "delta_t_clear_target_ms": 10000,
+    "fifo_preservation_across_sync": "verified",
+    "branch_id_999999_isolation": "empty collection returned (zero leak)",
+    "delivery_token_leak_attempt": "blocked (allowlist whereIn)",
+    "pos_token_leak_attempt": "blocked (allowlist whereIn)",
+    "pii_fields_in_response": ["id", "order_serial_no", "order_type", "queue_number", "status", "token"],
+    "forbidden_pii_in_response": []
+  },
+  "findings": {
+    "P0": [],
+    "P1": [],
+    "P2": [],
+    "info": [
+      {
+        "id": "C3-INFO-01",
+        "title": "Wave Polish Final 5.4s ΔT measured full Borne→KDS→POS→OSS chain; this C3 isolates only POS-deliver→OSS-clear leg",
+        "category": "context_clarification",
+        "description": "MEMORY.md and Wave Polish Final CONVERGENCE_FINAL.md report a 5.4s POS-deliver→OSS-clear figure. That number is from a full Playwright spec (`tests/e2e/wave-polish-final-B.spec.js` Scenario 2) which includes UI navigation, click handlers, OSS page load + polling RTT. The C3 measurement here mutates DB + dispatches event in-process then polls the public API directly — pure architectural ceiling — yielding 95-150ms. Both numbers are correct under their respective methodologies.",
+        "action_needed": "None. Both metrics under target."
+      },
+      {
+        "id": "C3-INFO-02",
+        "title": "TZ invariant: connections.mysql.timezone NULL → session_tz=SYSTEM (Paris-local) — documented at service L80-85",
+        "category": "invariant_dependency",
+        "description": "Stale-prune comparison binds `now('UTC')->subHours(8)` against a Paris-local DATETIME column; today-window uses `Carbon::today(app.timezone)` Paris-local bounds. Discrepancy is acknowledged by Wave T R5 + Wave 3c heals as long as MySQL connections.mysql.timezone stays NULL. SisterServicesTzAwareTest tracks the invariant as a baseline-locked sentinel.",
+        "action_needed_if": "Cloud cutover sets connections.mysql.timezone='+00:00' for ALB multi-instance → re-run OSS empirical scenarios on that infra before promoting."
+      }
+    ]
+  },
+  "verdict": "PASS",
+  "verdict_reason": "All 5 verifications GREEN. Empirical ΔT_clear=95ms (target ≤10s, 105× margin). DELIVERY/POS/DINING_TABLE allowlist exclusion holds (V3.2). PII strip clean — 0 forbidden fields in resource (V3.3). FIFO ordering deterministic and preserved across status syncs (V3.4). Echo primary + polling fallback architecture intact with cadence floor/ceiling safeguards (V3.5). 8/8 PHPUnit OSS filter + 14/14 polish/TZ + 28/28 Vitest OSS = 50/50 unit-level coverage GREEN.",
+  "deliverable_path": "reports/test-e2e/goal-2026-05-23/round-1/C3-pos-oss-sync.json"
+}

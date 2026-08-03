@@ -1,0 +1,111 @@
+{
+  "wave": "C",
+  "round": 2,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-pos-kds-sync-C/14-kds-error-resilience.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-2 verification PASS. State 14 dom.html now contains a persistent in-page banner element: <div data-v-66aac04e=\"\" class=\"kds-hint-banner kds-hint-banner--danger kds-hint-banner--action\" role=\"alert\" aria-live=\"assertive\" data-testid=\"kds-error-banner\"><span data-v-66aac04e=\"\">⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.</span> + ✕ dismiss button. Multimodal Read of 14-kds-error-resilience.png confirms the pink banner is rendered visibly across the page header, beneath the Vue-Toastification toast 'Service indisponible — réessayez dans quelques instants.' KitchenDisplaySystemComponent.vue:2068-2081 has `.kds-hint-banner--danger { position: sticky; top: 0; z-index: 50; }` (commit f912e5a9c, round-3 cluster-B sticky fix landed before this round-2 capture), so the banner pins to the scroll container's top. The banner element itself bears NO Vue leave-animation classes; the `v-leave-to`/`bounce-leave-active` class occurrences in the DOM are on the separate Vue-Toastification toast wrapper, not on the persistent banner. network.json records the GET /api/admin/kds-order ... 503 that triggered both surfaces. Per the audit doctrine kitchen-glance ≥5s window, the banner persists until next 2xx tick or manual ✕ — operator-readable.",
+      "fix_hint": "Round-1 fix (95c2fd799) + sticky positioning (f912e5a9c) both landed and verified.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-pos-kds-sync-C/04-kds-mark-in-progress-order-1.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-2 verification PASS. md5 -r tests/e2e/__screenshots__/test-e2e-pos-kds-sync-C/*.png yields 14 distinct hashes, each with count=1 (verified with `md5 -r *.png | awk '{print $1}' | sort | uniq -c` — every line shows count 1). Round-1 had 8 PNGs collapsed into 4 hash-groups; round-2 has 0 duplicates. Per fix commit 10456234c, badge waitForSelector now scoped to the seeded order serial, PREPARED-terminal collapse, and lane scrollTop modulation between transitions made every state visually distinct.",
+      "fix_hint": "Round-1 fix landed and verified.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-pos-kds-sync-C/03-kds-card-detail-order-1.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Round-1 P2 documented as non-blocking under owner scope ('que côté technique'). Status badge contrast ratios remain identical across rounds (Confirmées purple #5e36e5 / En Préparation brown #9c4a08 / Terminées green #2c8c3c on white — all WCAG-AA passing). Active filter tab still uses same purple as Confirmées badge; color is still the only differentiator between status badges. No regression vs round-1.",
+      "fix_hint": "Out of round-2 scope (visual/a11y P2). Recommend status icon + larger badge font + filter-tab recolor in a future KDS-design pass.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Round-1 P2 documented as non-blocking. Long AUDIT-prefixed serials still wrap onto 2 lines on state 02 cards (verified in 02-kds-after-seed-three-pending.dom.html — title binding has no max-width / ellipsis). Real customer order serials (8-10 chars) render fine; the defect only manifests on artificially long serials. No regression vs round-1.",
+      "fix_hint": "Out of round-2 scope (visual P2). Recommend ellipsis + :title hover on a future KDS card-layout pass.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Round-1 P2 documented as non-blocking. Status filter tabs ('Toutes Les Commandes', 'Confirmées', 'En Préparation', 'Terminées') still lack role=tab / role=tablist / aria-selected — verified by grep on 02-kds-after-seed-three-pending.dom.html (0 occurrences). No regression vs round-1.",
+      "fix_hint": "Out of round-2 scope (a11y P2). Recommend WAI-ARIA tabs pattern in a future KDS-a11y pass.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-pos-kds-sync-C/01-kds-empty-state.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-1 P2: state 01 still labelled '01-kds-empty-state' but contains pre-existing pile pollution (DB state, not spec defect). Verified state 01 DOM in round-2 still shows pre-existing #100526xxx serials. No regression but defect persists.",
+      "fix_hint": "Out of round-2 scope (P2 audit-integrity, requires DB cleanup work). Recommend renaming state 01 + adding 'after-cleanup-empty' state as round-1 hint suggested.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Round-1 P3 informational (KDS money-blind by design). KDSOrderDetailsResource still exposes no monetary fields (verified: template binding contains 0 occurrences of total/amount/price). Wave D adversarial reviewer should assert T_kds via tinker fallback rather than DOM scrape.",
+      "fix_hint": "Not a bug — informational. Documented for cross-wave handoff.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Round-1 P2 documented as non-blocking under owner scope. Multi-station bump-warning notice 'Les pastilles \"Prêt\" (bump) sont mémorisées sur ce poste...' still rendered with role='note' (not role='alert' or role='status'); the dismissal is still per-browser localStorage. No regression vs round-1, but defect persists.",
+      "fix_hint": "Out of round-2 scope (P2 a11y/UX). Recommend role=status + per-user server-side dismissal preference in a future KDS-a11y pass.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 1, "P2": 5, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "DEFERRED_P2",
+    "C-004": "DEFERRED_P2",
+    "C-005": "DEFERRED_P2",
+    "C-006": "DEFERRED_P2",
+    "C-007": "DEFERRED_P3",
+    "C-008": "DEFERRED_P2"
+  },
+  "verdict": "GREEN",
+  "notes": "Round-2 verdict GREEN. Both round-1 blockers verified PASS. C-001 (P0 silent 503): persistent <div data-testid=\"kds-error-banner\" role=\"alert\" aria-live=\"assertive\"> with body '⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.' is visible in 14-kds-error-resilience.png (multimodal-confirmed pink banner pinned at viewport top below the toast). Sticky positioning landed in CSS at KitchenDisplaySystemComponent.vue:2068-2081 (commit f912e5a9c) before the round-2 capture (commit 1ba7aaf59). The prior round-2 reviewer's PARTIAL_PASS + C-009 'banner offscreen' claim no longer applies to the current artifacts: the sticky fix is in the captured DOM and the banner renders in-viewport. C-002 (P1 8 duplicate PNGs): all 14 PNGs are byte-distinct (verified macOS `md5 -r *.png | awk '{print $1}' | sort | uniq -c` — every line shows count 1). Network.json sweep across all 14 states: 0 unexpected 4xx/5xx (only the intentional 503 at state 14, which is paired with the role=alert banner — passes silent_error rule). Console.json sweep: 0 error entries across all 14 states. No new i18n leaks (regex `^[a-z]+(\\.[a-z_]+){1,4}$` on stripped DOM text — 0 matches). Spec `.catch(() => {})` patterns reviewed: all on cosmetic helpers (hover, isVisible probes, route cleanup) — none swallowing a critical assertion (errorBannerVisible probe sets a flag the test logs, not silently passes). KDS source-badge (Wave E mandate): Wave C does NOT seed kiosk-sourced orders (verified by grep on the spec — 0 occurrences of origin/frontend_order/kiosk_machine_id), so source-attribution absence in Wave C cards is by design, not a defect. Carried-forward P2/P3 (C-003 through C-008) are visual/a11y/audit-design issues outside the owner's 'que côté technique' scope; they remain open as documented non-blocking debt. Final: open_P0=0, open_P1=0 → GREEN."
+}

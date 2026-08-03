@@ -1,0 +1,16 @@
+[
+  {
+    "severity": "P2",
+    "viewport": "tablet",
+    "state": "item-detail",
+    "png": "-",
+    "observed": "no product card found to open detail modal"
+  },
+  {
+    "severity": "P2",
+    "viewport": "tablet",
+    "state": "cascade",
+    "png": "-",
+    "observed": "menu-formule step not reached / full formule not selected — cascade not exercised"
+  }
+]

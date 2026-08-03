@@ -1,0 +1,220 @@
+{
+  "agent": "B2-P2",
+  "surface": "POS Caisse /admin/pos",
+  "persona": "Client-impatient at counter",
+  "persona_reframe": "Customer is physically standing at the counter — either (a) just dropped a cash-pending borne order off and now waiting for the cashier to take their money, or (b) being rung up direct by the cashier. Across the five states, what slows down their wait? What does the cashier-visible workflow + receipt printing latency + order-number visibility + estimated wait actually look like to them?",
+  "timestamp": "2026-05-25T22:08:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — 3 HTTP captures via curl (state-1 /admin/pos, state-4 /admin/order-status-screen, state-5 /admin/pos/q10) all returned the SAME 10173-byte SPA shell (Laravel catchall — normal, NOT a distinct-screen confirmation, just a 200 on the route auth). States 2/3 (PosCounterCollectModal keyboard flow + encaisser borne path) are code-driven reasoning across PosComponent.vue (4874 LOC), PosCounterCollectModal.vue (768 LOC), PaymentComponent.vue (1478 LOC), ReceiptComponent.vue (706 LOC), PaymentService.php (counter-collect path 193-450), PreparingAndReadyComponent.vue (OSS), and OssSyncService.js — NOT Playwright browser-driven. DM8: signaled honestly.",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra",
+    "DM6_NF525_readonly": "RESPECTÉ — zéro INSERT/UPDATE on audit_logs, z_reports, migrations. Read-only inspection of source + curl HTTP HEAD/GET only. PaymentService::confirmCounterPayment NF525 fiscal_sequence alloc/HMAC chain NOT touched.",
+    "DM8_honest_reporting": "OUI — 3 HTTP states are identical SPA shells (10173 bytes — same baseline as B1-P1), keyboard flow + receipt absence are code-read evidence not browser-captured, peer reference B1-P1-findings.json structure mirrored where possible"
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "POS shell load — /admin/pos (cashier landing)",
+      "evidence": "captures/B2-P2/state-1-pos.html (10173 bytes, HTTP 200, Laravel SPA catchall — auth gate enforced server-side; the shell renders for any path then Vue router redirects unauthed to /login)",
+      "route": "GET /admin/pos",
+      "render_mode": "SPA shell — Vue mounts client-side after auth check",
+      "customer_relevance": "Customer doesn't see this directly, but its load time + the cashier's reaction time on it defines how fast the cashier can start ringing. The shell is 10 KB minified (good). PosComponent main render brings the full operator bar (CashSession 🏦 + Tracker 📋 + Customer-screen 🖥️ + Loyalty 🎁 + 2 shortcut panels Q10 + Caisse) — dense but information-rich.",
+      "observations": [
+        "Top bar Q10 shortcut panels (PosComponent.vue:267-398) ALWAYS render — Q10 P-OWNER 2026-05-21 mandate (formerly v-if hidden when both lists empty). Empty-state shows 'Mis à jour il y a Xs' health beacon. This is positive for the impatient customer: cashier never wonders 'is the system down?'.",
+        "Polling cadence (PosComponent.vue:2615-2629 _kioskPollingInterval): 5s if empty/stale OR WS disconnected, 60s if WS connected + non-empty. Self-recursive setTimeout (N-HEAL-04 M-POS-4 2026-05-24) auto-downshifts to 5s if Echo silently dies. Mid-shift visibility resilient — borne cash-pending row surfaces within ≤5s in degraded WS case.",
+        "auth gate: any route under /admin/pos must satisfy auth()->user()?->can('pos') server-side (routes/api.php:816). On the SPA side the router guards client-side. From outside the SPA shell looks the same — customer perspective sees normal load."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "PosCounterCollectModal keyboard flow (M-POS-2)",
+      "evidence": "PosCounterCollectModal.vue (full read 768 LOC). [GOAL-M-POS-2 2026-05-24] comments at lines 304-314 + 319-394.",
+      "render_mode": "Sibling SSOT modal (Wave X X1) mounted permanently by parent; inner overlay toggles via v-if='visible'",
+      "customer_relevance": "When a customer hands cash to the cashier for a borne order, the cashier opens this modal (1 click on Encaisser pill in Q10 panel). Speed of close = customer's wait time. Modal does have keyboard ergonomics — but only at modal scope, NOT global POS shortcuts.",
+      "observations": [
+        "Auto-focus on cashReceivedRaw input (line 309-313) on modal open + select() — cashier sees pre-filled FR-formatted total ('8,50') and can type-then-Enter without a mouse hop. Good.",
+        "Document-level Escape handler (line 326-331 mounted/beforeUnmount + 389-394 _onEsc) — visibility + submitting guards, mirrors KdsHistoryDrawer:189-204 pattern. Cashier can ESC out in <100ms when customer asks to switch payment mode.",
+        "Enter on input → onConfirm (line 113). Cashier rhythm: open → type if non-exact → Enter. ~2 keystrokes for exact-change typical case.",
+        "BUT (gap): mode picker has NO keyboard shortcut. To switch from CASH (default) to CARD/MOBILE/TICKET, cashier must mouse-click one of the 4 tiles. No 1/2/3/4 number-key handler. In a rush, the cashier can't keyboard-pivot — they must hover their hand over the screen. Minor for borne (most borne are cash anyway) — meaningful for direct POS.",
+        "Idempotency-Key formula pos-counter-collect-{orderId}-{modeInt}-{minuteBucket} (line 375-378) → double-tap protection. Wave K Z7 middleware replays 2xx. Customer sees no flicker even if cashier double-clicks Confirmer.",
+        "Race protection 409 payment_already_collected (line 466-475) explicit FR toast + emits cancel — when 2 cashiers grab the same Q10 row simultaneously, the loser is told clearly. Customer perceives no phantom drawer-open.",
+        "FR decimal parsing: cashReceivedNumber accepts both `,` and `.` (line 254-256) — cashier typing keyboard num-pad period AND on-screen FR comma both work. GOAL-D2 2026-05-23 heal."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Encaisser borne — customer arrives + cashier picks up the row",
+      "evidence": "PosComponent.vue:3049-3082 openCounterCollect + onCounterCollectConfirmed + L335-398 Q10 cash panel. PaymentService.php:193-450 confirmCounterPayment.",
+      "render_mode": "Code-read trace (not Playwright-captured)",
+      "customer_relevance": "This IS the critical persona path. Customer arrives at counter with their queueNumber on their phone/in-hand from the borne. Cashier sees the row in the right-hand Q10 panel (kioskCashOrders list, sorted oldest-first). Cashier clicks Encaisser → modal opens with pre-filled total → customer hands cash → cashier clicks Confirmer → … and then what?",
+      "observations": [
+        "Row sort = created_at ASC (PosComponent.vue:3027) — oldest borne cash-pending bubbles to top. Good: customer who has waited longest is served first.",
+        "Cashier confirms (PaymentService::confirmCounterPayment:193-450): DB::transaction → lockForUpdate → assertCounterOrderVisible → if status=PAID already (race) throws PaymentAlreadyCollectedException (409). If clean: allocate fiscal_sequence_no (line 321-322), write audit_logs counter_payment_confirmed (309-321), CASH-only: cash_drawer movement IN (Sprint 1B), dispatch OrderPaidAtCounter event.",
+        "OrderPaidAtCounter event (app/Events/OrderPaidAtCounter.php) → ONLY listener registered is PersistOrderPaidAtCounterToOutbox (EventServiceProvider.php:161-163) → writes outbox row for broadcast to channels (KDS auto-promote ACCEPT→PREPARING per Wave S-1, OSS refresh, PosComponent Echo reload). NO ReceiptPrint job, NO print listener.",
+        "Modal's onConfirm success branch (PosCounterCollectModal.vue:431-443) → alertService.success toast ('Tiroir caisse ouvert simulation N°123' for CASH, 'TPE validé simulation N°123' for CARD, generic 'encaisser_success' for mobile/ticket). Then emits 'confirmed' to parent.",
+        "Parent onCounterCollectConfirmed (PosComponent.vue:3070-3082): sets counterCollectOrder=null (modal closes), refreshes 3 lists (loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders). DONE. No receipt component mounted, no ReceiptComponent.handlePrintFiscalClick triggered, no automatic ticket print.",
+        "Cashier MAY navigate to /admin/pos-orders/{id} (PosOrderShowComponent) and click Print to reprint a fiscal receipt manually (admin/pos/orders/{id}/print-receipt POST endpoint exists, ReceiptComponent.vue:540-579). But this is an EXPLICIT manual step the cashier must take — adds clicks + cognitive load + customer wait.",
+        "Customer originally on the BORNE had auto-print attempted at confirmation screen (KioskConfirmationComponent.vue:337-341) BUT only when kioskHardware.isKioskBridge() === true (real ESC/POS bridge present). In dev/simulated mode (bypassMode.printing=true, see B1-P1-F02), no paper. Customer arrives at counter receipt-less; counter-collect doesn't fix that gap."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "OSS visibility cross-link from POS — /admin/order-status-screen",
+      "evidence": "captures/B2-P2/state-4-oss.html (10173 bytes, same SPA shell). PosComponent.vue:148-159 header link (router-link target='_blank' to admin.order-status-screen). OrderStatusScreenComponent.vue (68 LOC) + PreparingAndReadyComponent.vue (333+ LOC). OssSyncService.js cadence 9/16.",
+      "render_mode": "Public customer-facing wall (authBranchId===0 case). Opened in new tab by cashier.",
+      "customer_relevance": "The OSS wall is THE customer-impatient's primary information surface IF a screen is visible from the counter. They look up, find their N°, see whether they are in EN PRÉPARATION (orange/red) or PRÊT (green). Crucial reassurance signal.",
+      "observations": [
+        "OSS poll cadence: 60s when WS connected, 2s when disconnected (OssSyncService.js:9-16). Resilient. Echo OrderStatusChanged immediately surfaces transitions. PREPARED→DELIVERED flash + audio chime (oss-ready-flash + .oss-pulse-ready, ~3s flash window).",
+        "Filter scope (OrderStatusScreenOrderService.php:42-50, 63): includes KIOSK + TAKEAWAY where queue_number IS NOT NULL, status in (PREPARING, PREPARED). DELIVERED orders disappear instantly — customer knows they should approach the counter.",
+        "BUT: OSS shows ONLY 2 columns now (Wave Q-3 owner directive 2026-05-20 — PopularItem sidebar removed). 'EN PRÉPARATION' + 'PRÊT'. NOTHING else. No ETA next to each N°, no cumulative wait time, no 'votre commande est X minutes'.",
+        "preparation_time field EXISTS on Order model (Order.php:35, 83 — int, default 15 min from order_setup.food_preparation_time setting). Used by FRONTEND (mobile online ordering) OrderStatusComponent.vue:42. NOT exposed by CDSOrderDetailsResource / PosShortcutOrderResource — OSS wall does NOT see preparation_time. ETA data exists but stops at the resource layer for the wall display.",
+        "Cashier CAN click 🖥️ button in POS header (PosComponent.vue:148-159) to open OSS in a new browser tab. Helpful for the cashier to redirect a confused customer ('voyez l'écran derrière vous, vous êtes N°12 en orange'), but adds NO customer-visible affordance to surface ETA from the counter.",
+        "queue_number display on OSS: large red 'N°{queue_number}' (PreparingAndReadyComponent.vue:36-37) — high-contrast, visible 5m+ on a 32-inch wall. Token fallback (no queue_number) renders smaller. Customer who watches wall = clear feedback channel.",
+        "No second-screen at the counter facing the customer (customer-display CSS in BackendNavbarComponent.vue:559-583 is the SAME OSS view in fullscreen mode — NOT a 2nd-display secondary monitor showing cart-in-progress to the customer). Customer being rung up direct by POS cashier sees the cashier's screen (sideways at best, often obscured) or nothing. No 'customer pole display'."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Adversarial + scores",
+      "evidence": "Synthesis across states 1-4 + adversarial paragraph infra",
+      "render_mode": "N/A",
+      "customer_relevance": "See adversarial_paragraph below + scores object",
+      "observations": [
+        "Receipt-printing latency at counter-collect = ∞ (no auto-print) — biggest customer-visible defect uncovered.",
+        "ETA absence on OSS + cashier surfaces = persistent low-grade frustration (no acute incident, just slow burn of 'is mine soon?').",
+        "Keyboard shortcuts gap = cashier wall-clock cost ≈ 1-2s/order × many orders → adds up to noticeable counter throughput drag in rush.",
+        "Cashier's affordances ARE rich (Q10 panels + Tracker + Cash session + Loyalty + Customer-screen link) — system is information-dense, not under-built. The defects are at the EDGES (receipt path, ETA surface, keyboard pivot) not at the core."
+      ]
+    }
+  ],
+  "client_impatient_workflow_map": {
+    "scenario_A_borne_to_counter": [
+      "1. Client ordered at borne, paid CASH-pending. Borne shows confirmation + queueNumber + auto-print attempt (works only with real ESC/POS bridge).",
+      "2. Client walks to counter holding queue number (paper or memorized).",
+      "3. Cashier sees row in Q10 panel (poll 5-60s + Echo). Total + N° visible.",
+      "4. Cashier clicks 🟥 Encaisser → PosCounterCollectModal opens (auto-focus input, pre-fill total, FR decimal, ESC closes, Enter confirms).",
+      "5. Client hands cash. Cashier types received amount if not exact, Enter. POST counter-collect/{id}/confirm.",
+      "6. Backend PaymentService: lockForUpdate → assertCounterOrderVisible → allocate fiscal_sequence_no → cash_movement IN → audit row → OrderPaidAtCounter event → outbox broadcast.",
+      "7. Modal toasts success + emits confirmed. Parent refreshes 3 lists. Row disappears from Q10.",
+      "8. NO RECEIPT printed automatically. Cashier must either (a) navigate to pos-orders/{id} and click Print, or (b) leave the customer receipt-less.",
+      "9. Client walks away. Their next signal = OSS wall (if visible) showing N° in EN PRÉPARATION → PRÊT (Echo near-real-time)."
+    ],
+    "scenario_B_direct_pos": [
+      "1. Client at counter, cashier scans/taps items in PosComponent grid.",
+      "2. NO customer-pole-display so client sees the cashier's screen sideways, with potential obscuration.",
+      "3. Cashier clicks Payer → PaymentComponent modal opens (PaymentComponent.vue 1478 LOC — different surface from counter-collect modal).",
+      "4. Cashier mode picker (cash/card/multi-tranche/mobile/etc.), tape amount, confirm.",
+      "5. handleOrderSuccess (PaymentComponent.vue:882-922) opens drawer simulation + shows ReceiptComponent in modal (showReceiptModalFromDom).",
+      "6. ReceiptComponent.vue:540-579 handlePrintFiscalClick (cashier-initiated) → POST admin/pos/orders/{id}/print-receipt → window.print() native browser dialog.",
+      "7. Client gets receipt IF cashier clicks Print AND printer is configured AND browser allows window.print(). 3-link chain failure modes possible (cashier oversight, printer offline, popup blocker)."
+    ]
+  },
+  "findings_top_3": [
+    {
+      "id": "B2-P2-F01",
+      "severity": "P1",
+      "title": "Counter-collect (encaisser borne) flow has NO receipt-print path — customer leaves receipt-less or cashier must manually re-navigate to print",
+      "category": "ux / workflow / fiscal-adjacent",
+      "evidence_file": "resources/js/components/admin/pos/PosCounterCollectModal.vue:395-450 (onConfirm — emits 'confirmed', no ReceiptComponent mount, no print invocation) + resources/js/components/admin/pos/PosComponent.vue:3070-3082 (onCounterCollectConfirmed — refreshes lists, closes modal, NO receipt) + app/Services/PaymentService.php:193-450 (confirmCounterPayment — fiscal seq alloc + cash_movement + audit row + dispatch OrderPaidAtCounter, NO print job) + app/Providers/EventServiceProvider.php:161-163 (OrderPaidAtCounter has ONLY PersistOrderPaidAtCounterToOutbox listener, no print listener)",
+      "description": "When a customer pays cash at the counter for a borne order via the Wave X X1 PosCounterCollectModal, the entire path is silent on receipts. Backend allocates fiscal_sequence_no (NF525 OK) and writes the audit_logs row — but it does NOT emit a ReceiptPrint event/job. The only listener registered for OrderPaidAtCounter writes an outbox row for broadcast (UI refresh, NOT print). The frontend modal toasts success and emits 'confirmed', then PosComponent.onCounterCollectConfirmed just refreshes 3 lists. No ReceiptComponent is mounted, no window.print() is called, no auto-print to ESC/POS bridge. The customer has not received a paper receipt at the borne (kiosk auto-print only runs when kioskHardware.isKioskBridge()===true; in simulated/local mode and many ESC/POS hardware-failure states, no paper printed at borne either). For NF525 fiscal sequence/audit trail this is fine (chain is intact). For CUSTOMER service it is a defect: customer hands cash, waits for the cashier to confirm, then leaves WITHOUT a paper receipt. In a French restaurant context where customers reasonably expect a ticket de caisse upon cash payment, this is a Wave U+ omission. Cashier's workaround is to navigate to /admin/pos-orders/{id} (PosOrderShowComponent) and click Print (admin/pos/orders/{id}/print-receipt endpoint exists, ReceiptComponent handlePrintFiscalClick functional) — adds 3 clicks + ~5s + cognitive load + risk of cashier forgetting altogether in a rush.",
+      "client_impatient_impact": "Customer pays cash, expects receipt, leaves without one — minor irritation in low-stakes case, blocker in case of B2B reimbursement, expense filing, exchange/refund. In rush conditions: cashier never re-navigates, customer has to ask later, friction in support flow. Reduces perceived professionalism vs Toast/Square/SumUp competitors who all auto-print on counter cash settle.",
+      "v1_blocker": false,
+      "nf525_blocker": false,
+      "recommendation": "Two-step heal: (a) Inside PosCounterCollectModal.onConfirm success path (after this.$emit('confirmed')), call await axios.post(`admin/pos/orders/${orderId}/print-receipt`) and trigger window.print() — same path as ReceiptComponent.handlePrintFiscalClick. Mount a hidden ReceiptComponent in parent PosComponent so the print is automatic. (b) Backend: add a ReceiptAutoPrintListener subscribed to OrderPaidAtCounter that increments fiscal_print_count and emits the ESC/POS print job for real hardware. Owner gate suggested: a config flag pos.counter_collect.auto_print_receipt=true|false so quiet-hour cashiers can opt out. Quick win 2-3 hours.",
+      "estimated_fix": "2-3 hours — 1 modal patch + 1 backend listener + 1 config flag + 1 E2E spec"
+    },
+    {
+      "id": "B2-P2-F02",
+      "severity": "P2",
+      "title": "Estimated wait time (preparation_time) exists in data model but is NOT surfaced on OSS wall or counter — impatient customer has no ETA signal",
+      "category": "ux / observability",
+      "evidence_file": "app/Models/Order.php:35,83 + app/Services/OrderService.php:347,717,1258 + app/Services/FrontendOrderService.php:265 (preparation_time stored, default 15min from order_setup.food_preparation_time setting). resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:36-37, 59 (OSS template — renders ONLY queue_number, ZERO ETA). app/Services/OrderStatusScreenOrderService.php:22 (allowed fields: 'order_serial_no' — preparation_time NOT in the resource select). resources/js/components/frontend/components/OrderStatusComponent.vue:42 confirms preparation_time IS rendered on mobile customer surface — so the data path exists, just stops at OSS.",
+      "description": "FoodKing has an ETA data point: preparation_time in minutes (default 15, configurable via Settings::group('order_setup')->get('order_setup_food_preparation_time')). It is persisted on every Order via OrderService::store. It IS displayed on the customer-side mobile order-tracking view (OrderStatusComponent.vue:42 — '{{preparation_time}} min'). It is NOT displayed on the OSS public wall — Wave Q-3 P-OWNER 2026-05-20 stripped OSS to a 2-column EN PRÉPARATION / PRÊT layout with just queue_number badges. It is NOT displayed on the POS counter cashier panels either. The impatient customer at the counter has THREE places to look at their order's progress: (a) the OSS wall (only sees their N° as a colored badge, no ETA), (b) the cashier's screen behind the counter (not customer-facing, often obscured), (c) their phone if mobile-online (NOT the kiosk-borne case). The data exists, the rendering path exists, but the OSS surface — the ONLY public-facing real-time channel — does not surface it.",
+      "client_impatient_impact": "Anxious customers loiter at the counter asking the cashier 'c'est encore long ?' — interrupts cashier workflow, defeats the kiosk-borne self-service value prop, slows down everyone in the queue behind them. A '~12 min' inline next to the orange N° badge would reduce this anxiety silently. Restaurants that surface ETA (Five Guys NYC, Shake Shack, McDonald's DOMv2) see measurable drop in cashier-interrupt rate.",
+      "v1_blocker": false,
+      "nf525_blocker": false,
+      "recommendation": "OssOrderResource: add preparation_time to the select (OrderStatusScreenOrderService:22). PreparingAndReadyComponent.vue: render a small subscript next to the preparing badge ('~{{ item.preparation_time }} min'). Optional: compute live remaining ETA = preparation_time - (now - created_at) in minutes, server-side or via a Vue computed. Owner gate: per-branch override (some branches may not want this UX). Quick win 1 hour for OSS surface alone, 3 hours including live-ETA computation.",
+      "estimated_fix": "1-3 hours depending on static vs live ETA"
+    },
+    {
+      "id": "B2-P2-F03",
+      "severity": "P3",
+      "title": "No global keyboard shortcuts on POS shell — cashier must mouse-click every action, ~1-2s drag per order in rush",
+      "category": "ux / workflow / accessibility",
+      "evidence_file": "Full grep across resources/js/components/admin/pos/PosComponent.vue (4874 LOC): only 4 @keydown/@keypress handlers exist (delivery autocomplete nav 693-696, floatNumber 894, phoneNumber 1044). NO global hotkey for: opening Q10 panel, focusing first Encaisser pill, opening Tracker, opening Customer-screen, opening CashSession, focusing search, opening Payment. PosCounterCollectModal has Enter-to-confirm + Escape-to-cancel — but mode picker (CASH/CARD/MOBILE/TICKET) has NO 1/2/3/4 number-key shortcut (PosCounterCollectModal.vue:78-94 buttons need click).",
+      "description": "Modern restaurant POS systems (Toast, Square, Lightspeed) provide keyboard shortcuts for fast-counter staff: F1 to focus search, F2 to add line, F3 to apply discount, Enter to pay, 1-4 to pick payment mode, etc. FoodKing POS shell has zero global keyboard listeners — every cashier action is a mouse click on a tile or button. In counter-collect specifically, switching payment mode (rare for borne but happens — customer asked for cash, changes mind to card mid-flow) requires a mouse hop from keyboard to screen, ~700-1200ms tracking + click cost. Across 50 orders in a 90-minute rush that compounds to a meaningful 1-3 minute throughput drag, and degrades the cashier rhythm (eye drops from customer to screen, breaks rapport).",
+      "client_impatient_impact": "Customer at counter perceives every micro-pause when the cashier looks down to mouse-click. In a 4-customer queue, an extra 8 seconds of mousing = 1 lost order serve cycle. Soft impact, slow burn, but real.",
+      "v1_blocker": false,
+      "nf525_blocker": false,
+      "recommendation": "Phase 1 (1 day): add a usePosShortcuts composable hooked in PosComponent.mounted: F1=focus search, F2=open Tracker, F3=open CashSession, F4=focus first Q10 cash row's Encaisser, Esc=close any modal. Phase 2 (modal-scope): in PosCounterCollectModal, bind 1=CASH, 2=CARD, 3=MOBILE, 4=TICKET on _onEsc-style document listener. Phase 3: a discoverable 'shortcuts cheat sheet' overlay (Cmd+/) showing all bindings. Already a partial pattern in KdsHistoryDrawer.vue:189-204 (the modal author mirrors). V1.0.2 backlog candidate — not V1 blocker.",
+      "estimated_fix": "1-2 days including E2E spec + discoverable overlay"
+    }
+  ],
+  "adversarial_paragraph": "Worst case I see is: 12h30 samedi, 4 personnes en file au comptoir, 6 commandes borne en Q10 pile up. Client #1 (cash-pending borne) tend 20€ pour 17,80€. Cashier clique Encaisser sur la première Q10 pill, modal s'ouvre, input auto-focus, total pre-filled 17,80, customer tend 20, cashier tape '20' (override la pre-fill via select() au mount qui a sélectionné le texte), appuie Enter. Backend: lockForUpdate → fiscal_sequence_no #1247 alloué, cash_movement IN 17,80, audit row written, OrderPaidAtCounter dispatched → outbox row écrit (broadcast pickup KDS/OSS/POS dans ~1s via Soketi). Modal toaste 'Tiroir caisse ouvert simulation N°142', emits confirmed. Parent refresh, row disparaît. Cashier passe au client #2. Client #1 attend. Quoi ? Pas de ticket papier. Pas de toast 'Ticket imprimé'. Pas de notification audio 'votre reçu sort de l'imprimante'. Le client réalise après 3 secondes qu'aucun papier n'est sorti. Demande 'Vous me donnez un reçu ?'. Cashier — en plein milieu du client #2 — doit s'interrompre, naviguer vers /admin/pos-orders, chercher la commande #1247 (par recherche queueNumber ou ID), cliquer Détails, mounter ReceiptComponent, cliquer Imprimer fiscal, attendre window.print() native dialog Chrome avec destination=printer/PDF/cancel... 8-12 secondes de friction. Le client #2 et la file derrière patientent. Client #1 est légèrement irrité. Multiplié par 6 commandes borne par heure × 1 jour de service × 365 jours, on parle de plusieurs heures cumulées de mauvaise expérience qui se traduit en avis Google négatifs ('le service est lent', 'on ne donne pas de tickets'). Worst case secondaire: même 12h30, client #3 (impatient, 3e enfant qui pleure) regarde l'écran OSS depuis le comptoir, voit son N°139 en colonne EN PRÉPARATION (orange) à côté de N°135, 137, 138. Ne sait pas si c'est dans 2 minutes ou 10 minutes. Demande à la cashière 'C'est encore long ?'. Cashière, qui ne voit elle-même nulle part le preparation_time côté caisse (ni Q10 panel ni Tracker), répond à l'aveugle 'normalement 5-10 minutes'. Customer reste insatisfait, va prendre une chaise, perd une minute à se rasseoir, revient demander encore. La data preparation_time EXISTE dans la base (Order.preparation_time int default 15), elle EST rendue sur le mobile customer-side, mais le pipeline d'affichage public (OSS wall + POS shortcuts panels) ne la transporte JAMAIS. C'est un trou de pipeline classique — la donnée est là, le rendu existe ailleurs, le surface qui en aurait le plus besoin (l'écran que regardent les clients dans la salle) ne la voit pas. La défense que je peux imaginer ('le client peut consulter son ticket borne'), elle tombe pour le scénario où le ticket borne n'a pas été imprimé (bypassMode.printing ou hardware down — voir B1-P1-F02). Ces deux trous (no receipt at counter-collect, no ETA on public wall) sont symétriques: la donnée fiscale est OK NF525, le côté operations est OK, mais la communication CLIENT est interrompue à un palier. Le système a été conçu opération-first, pas client-first dans son endgame de polish. La cashière + le système font leur job de façon réglementaire impeccable — mais le client impatient au comptoir, lui, vit une expérience strictement appauvrie par rapport à ce que la data du backend pourrait lui offrir.",
+  "scores": {
+    "scope_note": "POS shell + counter-collect modal + OSS + cross-link scoring is code-driven (no Playwright capture). Server returned identical 10173-byte SPA shell on all 3 routes (Laravel catchall — expected). UX/ergonomics scored against the impatient-customer reframe specifically, not the generic POS-vibe heuristic.",
+    "pos_shell_for_impatient_customer": {
+      "UX": 7,
+      "perf": 8,
+      "a11y": 7,
+      "i18n": 8,
+      "polish": 7,
+      "rationale": "Operator-bar is dense and information-rich (Q10 + Tracker + CashSession + Loyalty + Customer-screen link). Polling resilient (5s/60s + Echo + Q10 health beacon 'Mis à jour il y a Xs'). Self-recursive setTimeout adapts to WS death mid-shift. BUT: NO keyboard shortcuts for cashier workflow speed (F3 lost cost). NO customer-pole secondary display for direct POS rings — customer sees cashier screen sideways or nothing. i18n FR-immutable (V1 mandate) — OK."
+    },
+    "counter_collect_modal_M_POS_2": {
+      "UX": 8,
+      "perf": 9,
+      "a11y": 8,
+      "i18n": 9,
+      "polish": 9,
+      "rationale": "Auto-focus + pre-fill + FR decimal + Enter-to-confirm + Escape-to-cancel + 4-mode SSOT picker + Idempotency key + 409 race protection. Excellent for the modal's own scope. 1 point off UX for no number-key mode shortcut. Visual parity with PaymentComponent V5 design language preserved (hero total 40-48px monospace tabular, brand red active state, etc.)."
+    },
+    "encaisser_borne_path_to_customer_takeaway": {
+      "UX": 5,
+      "perf": 9,
+      "a11y": 7,
+      "i18n": 9,
+      "polish": 5,
+      "rationale": "Fiscal sequence alloc + cash_movement + audit + outbox broadcast all bit-perfect (NF525-grade). BUT: NO automatic receipt-print path. Customer leaves receipt-less unless cashier manually re-navigates. 5/10 UX + Polish because the operational completeness ends mid-flow from the customer's vantage."
+    },
+    "oss_cross_link_for_impatient_customer": {
+      "UX": 6,
+      "perf": 9,
+      "a11y": 8,
+      "i18n": 8,
+      "polish": 6,
+      "rationale": "OSS polling cadence excellent (2s/60s + Echo, wakeLock, audio chime gated to non-public surfaces). Public wall layout impeccable visually (Wave Q-3 2-column flat). BUT: NO ETA next to queue_number, NO 'preparation_time' surfaced (data exists, route stops at resource layer). Customer-impatient gets a colored badge with no time signal. 6/10 — adequate-but-not-great signal density for the persona."
+    }
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "POS shell is information-dense, well-engineered, NF525-compliant. PosCounterCollectModal is a clean SSOT modal with strong keyboard ergonomics WITHIN its scope. But three persona-specific defects degrade the impatient-customer experience: (F01-P1) no receipt path post counter-collect — customer leaves receipt-less; (F02-P2) preparation_time exists in model but never reaches OSS or POS counter surfaces — no ETA signal; (F03-P3) zero global keyboard shortcuts on POS shell — cashier mouses everything, accumulates throughput drag in rush. Aucun défaut n'est V1 blocker strict (NF525 OK, no security breach, no data loss). F01 et F02 sont V1.0.1/V1.0.2 P1/P2 ux-completeness investments. La borne fait son métier client-side avec excellence, le POS opère NF525-correctement, mais le palier final 'le client repart content' n'est pas terminé. Verdict AMBER reflects: solid foundation + clear last-mile gaps.",
+  "captures_paths": [
+    "reports/test-e2e/master-plan-2026-05-25/captures/B2-P2/state-1-pos.html",
+    "reports/test-e2e/master-plan-2026-05-25/captures/B2-P2/state-4-oss.html",
+    "reports/test-e2e/master-plan-2026-05-25/captures/B2-P2/state-5-q10.html"
+  ],
+  "captures_note": "All 3 captures returned the same 10173-byte SPA shell — Laravel catchall returns the same Vue app for /admin/pos, /admin/order-status-screen, /admin/pos/q10. This is expected SPA behavior (NOT a defect). Honest declaration: no distinct browser-screen visual captured; analysis is code-driven across the components listed in files_read.",
+  "files_read": [
+    "resources/js/components/admin/pos/PosComponent.vue (4874 LOC — partial focus: Q10 panels L267-398, polling L2615-2716, counter-collect handlers L3049-3082, OSS link L148-159)",
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue (768 LOC — full read)",
+    "resources/js/components/admin/pos/PaymentComponent.vue (1478 LOC — partial: confirmOrder L963-999, handleOrderSuccess L882-922)",
+    "resources/js/components/admin/pos/ReceiptComponent.vue (706 LOC — partial: handlePrintFiscalClick L540-583)",
+    "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue (68 LOC — full read)",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue (333+ LOC — partial: template L1-70 + mounted L110-150)",
+    "resources/js/services/OssSyncService.js (partial: cadence L1-20 + interval logic L330-360)",
+    "app/Services/PaymentService.php (partial: confirmCounterPayment L193-450)",
+    "app/Services/OrderStatusScreenOrderService.php (partial: resource select L22, filter logic L42-265)",
+    "app/Events/OrderPaidAtCounter.php (8 LOC)",
+    "app/Listeners/PersistOrderPaidAtCounterToOutbox.php (partial)",
+    "app/Providers/EventServiceProvider.php (partial: OrderPaidAtCounter mapping L161-163)",
+    "app/Models/Order.php (partial: preparation_time field L35, 83)",
+    "app/Services/OrderService.php (partial: preparation_time persist L347, 717, 1258)",
+    "routes/api.php (partial: counter-collect/{order}/confirm L815-856)",
+    "resources/js/components/layouts/backend/BackendNavbarComponent.vue (partial: customer-display fullscreen toggle L555-590)",
+    "resources/js/components/frontend/components/OrderStatusComponent.vue (partial: preparation_time render L42)",
+    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue (partial: printReceipt L337-414)"
+  ],
+  "frozen_zone_touch": "NONE — read-only inspection only. PaymentComponent.vue is in CLAUDE.md §7 frozen zone, was read but NOT modified. PosCounterCollectModal.vue is the sibling SSOT modal (Wave X X1 design specifically because PaymentComponent is frozen) and was read fully.",
+  "nf525_touch": "NONE — DM6 respected. PaymentService::confirmCounterPayment NF525 fiscal_sequence_no alloc + HMAC audit_logs chain inspected read-only. Zero INSERT/UPDATE on audit_logs / z_reports / migrations."
+}

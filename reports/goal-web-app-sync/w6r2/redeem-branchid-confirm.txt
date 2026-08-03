@@ -1,0 +1,10 @@
+CYCLE2 W6R2 — redeem branch_id fix confirmation (2026-07-08)
+
+WEB api.js:500  body: { code, points, branch_id: CFG.branchId }  + idempotencyKey web-lr<uuid>
+MOBILE client.js:129 body: { branch_id, code, points } + idempotencyKey mob-lr<uuid>
+
+curl WEB  WITH branch_id  -> 404 {"status":false,"message":"Code introuvable"}   (business logic, reached controller)
+curl WEB  WITHOUT branch_id -> 422 {"code":"MISSING_IDEMPOTENCY_KEY","message":"Idempotency requires authenticated user with resolvable branch_id."} (control: old bug still fires without the field)
+curl MOBILE WITH branch_id -> 404 {"status":false,"message":"Code introuvable"}   (business logic, reached controller)
+
+VERDICT: 422 branch_id error DISAPPEARED on both surfaces. Fix confirmed.

@@ -1,0 +1,13 @@
+{
+  "after_login_url": "/admin/pos",
+  "caisse": {
+    "url": "/admin/pos-v4",
+    "tiles": 0,
+    "hasCartArea": true,
+    "webPanel": true,
+    "cashPanel": true,
+    "webCount": "10"
+  },
+  "cart_items": 0,
+  "reset_note": "aucun item ajouté (tuile composable/wizard) — reset non testé en UI, couvert par vitest"
+}

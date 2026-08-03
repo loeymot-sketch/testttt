@@ -1,0 +1,127 @@
+{
+  "agent": "L7.3 Adversarial RED — Header Injection + CRLF + HTTP Smuggling",
+  "date": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — 8 header-injection attack vectors A1-A8 + frontier sweep on response-header sinks, redirect targets, Host header dependence, password reset URL construction, cookie value flow",
+  "method": "Static code attack via multi-pass grep matrix on header(...), Response::header(...), withHeaders(...), Set-Cookie, Location, cookie(...), redirect()->away(...). For each sink, traced upstream input source through controllers → middleware → request methods. Verified Symfony header dispatch path (HeaderBag::set → Response::sendHeaders → PHP native header()). Verified PHP 8.2.30 retains CVE-2011-1398 CRLF rejection in sapi_header_op. Cross-referenced TrustHosts.php Wave 3c anchored regex against Host-spoofing attack class. Hostile mindset: every header reflection assumed broken until proven sanitized.",
+
+  "environment": {
+    "php_version": "8.2.30",
+    "symfony_http_foundation_version": "from vendor/symfony/http-foundation",
+    "laravel_response_path": "Symfony HttpFoundation Response → header() native",
+    "crlf_protection_layer": "PHP native sapi_header_op rejects \\r and \\n in header value since 5.3.11/5.4.x (CVE-2011-1398 fix)"
+  },
+
+  "scenarios_attacked": [
+    {
+      "id": "A1",
+      "name": "Set-Cookie injection via user-controlled cookie value",
+      "result": "CLEAN",
+      "evidence": "Grep matrix found ZERO calls to Cookie::queue / Cookie::make / ->withCookie / Response::cookie in app/ source (only app/Services/CookiesService.php READS cookies via $request->cookie, never writes). Sanctum auth is stateless bearer-token — no session cookie reflects user data. Symfony Cookie::__construct (vendor/symfony/http-foundation/Cookie.php:100-108) throws InvalidArgumentException on bad name. Production session cookie is server-issued opaque ID. Verdict: surface-area zero."
+    },
+    {
+      "id": "A2",
+      "name": "Location header injection / open redirect via redirect()->away($userInput)",
+      "result": "CLEAN",
+      "evidence": "Only 3 ->away() call sites: Stripe.php:93 (route('payment.success', server-bound order+token)), Credit.php:40 (same pattern), Paypal.php:94 ($links['href'] from PayPal API response, server-trusted). NO ->away($request->input(...)) or ->away($request->query(...)) sink anywhere. All other redirects use redirect()->route('payment.index' | 'payment.fail' | 'home' | 'installer.*') — internal-route name-based, not URL-based. InstallerController.php:135 uses redirect(env('APP_URL')) — server config, not user input."
+    },
+    {
+      "id": "A3",
+      "name": "Content-Type injection (trick browser to render JSON as HTML)",
+      "result": "CLEAN",
+      "evidence": "JsonMiddleware.php:19 forcibly sets $request->headers->set('Accept', 'application/json') BEFORE controller runs (forcing JSON branch in Laravel content negotiation). Lines 24-27 unconditionally set X-Content-Type-Options=nosniff + X-Frame-Options=SAMEORIGIN + X-XSS-Protection=1; mode=block + Referrer-Policy=strict-origin-when-cross-origin on every API response. nosniff blocks MIME-type confusion at browser layer. Response content-type is fixed by JsonResponse class. No path observed where user input controls Content-Type header."
+    },
+    {
+      "id": "A4",
+      "name": "CRLF in custom request headers reflected to response (X-Idempotency-Key, X-Correlation-ID, X-Request-Id, X-Kiosk-Locale)",
+      "result": "CLEAN — mitigation stack: PHP native + middleware sanitization",
+      "evidence": "X-Idempotency-Key: IdempotencyKeyMiddleware.php:61 enforces preg_match /^[A-Za-z0-9._\\-]{8,64}$/ + raises MissingIdempotencyKeyException on bad pattern — no CRLF possible. X-Kiosk-Locale: ValidateKioskLocale.php:39 enforces /^[a-z]{2}(-[A-Z]{2})?$/ — no CRLF possible. x-localization: localization.php:43 enforces in_array against ['fr','en','ar'] allowlist — no CRLF possible. X-Correlation-ID: see L7.3-V01 — reflected without sanitization BUT PHP 8.2.30 sapi_header_op blocks CRLF at SAPI layer (CVE-2011-1398). X-Loyalty-QR-Status (LoyaltyController.php:752/754): value is server-controlled literal 'legacy-plaintext' | 'signed' — no taint. X-Request-Id (KioskEventController.php:216): only LOGGED, never reflected."
+    },
+    {
+      "id": "A5",
+      "name": "HTTP request smuggling via Transfer-Encoding / Content-Length conflict",
+      "result": "CLEAN",
+      "evidence": "Grep zero matches on Transfer-Encoding manipulation in app/ or config/. Laravel/Symfony delegate framing to upstream (nginx/php-fpm). PHP-FPM does not honor application Transfer-Encoding overrides. NO custom Symfony StreamedResponse or chunked-output controllers found that would create CL/TE ambiguity. Smuggling surface depends on nginx config — out of scope for application audit but no app-level amplifier identified."
+    },
+    {
+      "id": "A6",
+      "name": "Host header injection (password reset email URL spoofing)",
+      "result": "CLEAN — robust by design (PIN-only, no URL)",
+      "evidence": "ResetPassword.php:28 returns markdown('emails.password'). emails/password.blade.php contains ONLY {{$pin}} (6-digit random_int from ForgotPasswordController.php:44) + config('app.name') — NO Host-header-derived URL, NO clickable link, NO {{$reset_url}} template variable. The PIN-only design intrinsically defeats Host injection: even if attacker spoofs Host: evil.com, the email body has no URL to redirect victim to. Defense-in-depth: TrustHosts.php Wave 3c heal (commit explicitly cited) anchors regex (^127\\.0\\.0\\.1$, ^localhost$, ^\\[::1\\]$, ^0\\.0\\.0\\.0$) — prior bypass via {127.0.0.1}i pattern (dot=any) is closed. URL::route()/signed-URL paths also benefit from anchored Host validation."
+    },
+    {
+      "id": "A7",
+      "name": "Cache poisoning via Vary header manipulation",
+      "result": "CLEAN",
+      "evidence": "Grep zero matches on Vary | setMaxAge | setSharedMaxAge | setPublic | setPrivate in app/Http/. No application-layer setVary() calls. No CDN-cache directives emitted from controllers. JsonMiddleware ships default no-cache semantics (no Cache-Control set → browser default + nosniff). V1 LOCAL deployment has no shared cache layer (Le Cayenne single-box) — even if app emitted Vary, no Varnish/CloudFront upstream to poison."
+    },
+    {
+      "id": "A8",
+      "name": "Response splitting via Content-Disposition filename",
+      "result": "CLEAN",
+      "evidence": "All 3 Content-Disposition emissions are HARDCODED string literals: SalesReportController.php:74 (filename=\"sales_report.pdf\"), OnlineOrderController.php:86 (filename=\"online_order_report.pdf\"), ItemsReportController.php:68 (filename=\"items_report.pdf\"). No user input flows into Content-Disposition. Spatie Media Library upload path (ItemPhotoController) sanitizes filename via slug — Symfony's BinaryFileResponse::setContentDisposition() applies its own sanitization. No raw filename injection sink found."
+    }
+  ],
+
+  "vulnerabilities_found": [
+    {
+      "id": "L7.3-V01",
+      "severity": "P3 (informational — defense-in-depth gap; primary CRLF blocked by PHP native)",
+      "title": "CorrelationIdMiddleware reflects user-controlled X-Correlation-ID without value validation",
+      "endpoint": "Every route that runs CorrelationIdMiddleware (web + API)",
+      "file_line": "app/Http/Middleware/CorrelationIdMiddleware.php:14 + :15 + :24",
+      "exploit_path": "Line 14: $correlationId = $request->header('X-Correlation-ID') ?: Str::uuid(); — no length cap, no format check, no character allowlist. Line 24: $response->headers->set('X-Correlation-ID', $correlationId) — reflects verbatim. PRIMARY MITIGATION: PHP 8.2.30 sapi_header_op rejects \\r and \\n in header values (CVE-2011-1398 since PHP 5.3.11/5.4 — header() call fails silently or warns; CRLF response-splitting blocked at SAPI). RESIDUAL SURFACE: (a) non-CRLF garbage reflected — attacker can pump 4-16KB string into header (RAM amplification × concurrent requests), or arbitrary control chars / unicode that mess with log parsing. (b) SUB-VECTOR L7.3-V01b: Log::withContext at line 17-21 writes the SAME unsanitized $correlationId into every log line for that request's lifetime — CRLF in header would NOT be blocked by PHP's sapi check at the log layer; if log files are tailed by SIEM/Loki parsers that split on \\n, attacker can inject FAKE log lines (log forgery, hides real attack lines, or fabricates 'admin login from 1.2.3.4' lines for confusion). PHP's CRLF block protects HTTP but not application logs.",
+      "fix_recommended": "1) Validate $correlationId against /^[A-Za-z0-9_\\-]{1,64}$/ (or strict UUID regex) — if format fails, replace with Str::uuid() instead of reflecting. Mirrors the IdempotencyKeyMiddleware:61 pattern (existing in-codebase precedent). 2) Same single validator covers both response-header reflection (line 24) AND log context (line 17-21) — fix both vectors with one regex check. ~5 LOC change. 3) Optional: add unit test asserting that X-Correlation-ID: A\\r\\nX-Injected: 1 is rejected/replaced. V1 LOCAL Le Cayenne risk class = informational because (i) Host=127.0.0.1 attack surface is internal, (ii) PHP SAPI blocks the HTTP response splitting variant. V1.0.X cloud-prep should consider this BEFORE ALB/CloudFront cutover (multi-instance log aggregation amplifies log-injection impact).",
+      "verified": "Code-static: read CorrelationIdMiddleware.php lines 12-27 verbatim. Cross-referenced IdempotencyKeyMiddleware.php:61 as in-codebase fix-pattern precedent. PHP 8.2.30 confirmed via `php -r 'echo PHP_VERSION;'`. CVE-2011-1398 fix verified via PHP bugs.php.net bug #19344 + CVE database (PHP < 5.3.11 / 5.4.0 fixed). Symfony Response::sendHeaders (vendor/symfony/http-foundation/Response.php:338-396) dispatches via native PHP header() call line 374 — relies on SAPI-layer rejection."
+    }
+  ],
+
+  "known_issues_confirmed": [
+    {
+      "id": "TrustHosts Wave 3c anchored regex (mitigation in place)",
+      "severity": "MITIGATED — heal already shipped",
+      "file_line": "app/Http/Middleware/TrustHosts.php:14-41 + commit cited in inline comment (SYNC-ADV3C-01 2026-05-18)",
+      "status": "Anchored regex /^127\\.0\\.0\\.1$/ /^localhost$/ /^\\[::1\\]$/ /^0\\.0\\.0\\.0$/ closes prior bypass where {127.0.0.1}i (dot=any) matched 127X0X0X1, and {localhost}i (no anchors) matched attacker-localhost.com / evil.localhost-bypass.io. Combined with TrustProxies::$proxies='*' (Wave 3 SYNC-ADV3-01) + HEADER_X_FORWARDED_HOST enabled. Wave-K already documented; re-validated here."
+    },
+    {
+      "id": "IdempotencyKey replay safeHeaders strip (mitigation in place)",
+      "severity": "MITIGATED — defense-in-depth shipped",
+      "file_line": "app/Services/Idempotency/RedisIdempotencyKeyRepository.php:147-167 (safeHeaders method)",
+      "status": "Explicit blocklist strip on replay: ['set-cookie', 'date', 'x-correlation-id', 'x-request-id']. Even if attacker-injected garbage made it into the original response headers, the cached replay does NOT re-emit set-cookie / correlation IDs — they are filtered before rebuildReplayResponse() runs. Content-Type alone survives (semantically required)."
+    },
+    {
+      "id": "Password reset PIN-only design (intrinsic defense)",
+      "severity": "MITIGATED by design",
+      "file_line": "app/Mail/ResetPassword.php + resources/views/emails/password.blade.php + app/Http/Controllers/Auth/ForgotPasswordController.php:44",
+      "status": "Email body contains ONLY {{$pin}} (random_int(100000, 999999)) + config('app.name'). NO URL, NO clickable link, NO Host-derived value. Host header injection cannot weaponize the email — attacker has no link to redirect to. User must manually type/paste the PIN into the app. This intrinsically defeats the most common Host-header-injection class (account takeover via spoofed reset link)."
+    },
+    {
+      "id": "PHP 8.2.30 sapi_header_op CRLF rejection (mitigation by PHP SAPI)",
+      "severity": "MITIGATED by language runtime",
+      "file_line": "PHP-CGI / FPM sapi/cgi/cgi_main.c sapi_header_op() (CVE-2011-1398 fix)",
+      "status": "Since PHP 5.3.11 / 5.4 (April 2012), header() rejects values containing \\r or \\n with E_WARNING + header NOT emitted. PHP 8.2.30 (current runtime) retains this protection. This is WHY application-level reflection of X-Correlation-ID (L7.3-V01) is not exploitable for HTTP-response splitting — but the protection does NOT extend to log files (see V-01 sub-vector)."
+    }
+  ],
+
+  "scenarios_clean": [
+    "A1 Set-Cookie injection (zero Cookie::queue / Cookie::make sinks in app source)",
+    "A2 Open redirect via redirect()->away (3 sinks: 2 internal route(), 1 PayPal-API-trusted)",
+    "A3 Content-Type injection (JsonMiddleware forces Accept + nosniff)",
+    "A5 HTTP request smuggling (no Transfer-Encoding application override)",
+    "A6 Host header injection / password reset (PIN-only email + TrustHosts anchored regex)",
+    "A7 Cache poisoning via Vary (zero Vary manipulation in app source)",
+    "A8 Response splitting via Content-Disposition filename (3 sinks all hardcoded literals)"
+  ],
+
+  "scenarios_partial_clean": [
+    "A4 CRLF in custom request headers reflected to response — see L7.3-V01 P3 informational. Primary HTTP vector blocked by PHP SAPI; residual log-injection sub-vector via Log::withContext warrants the simple regex fix already established by sibling IdempotencyKeyMiddleware:61."
+  ],
+
+  "verdict": "CLEAN",
+  "verdict_reasoning": "FoodKing Le Cayenne V1 has NO header-injection P0 or P1 surface attack vector. Defense stack is layered: (1) PHP 8.2.30 SAPI rejects CRLF in HTTP headers natively (CVE-2011-1398), (2) IdempotencyKeyMiddleware + ValidateKioskLocale + localization middleware allowlist/regex-validate every relevant request header, (3) TrustHosts.php Wave 3c anchored regex closes Host-spoofing surface, (4) password reset email is PIN-only by design (no URL to weaponize), (5) IdempotencyKey replay safeHeaders strips dangerous response headers from cache, (6) all Content-Disposition filenames are hardcoded literals, (7) all redirect()->away() sinks point to internal routes or PayPal-server-trusted URLs, (8) zero Cookie::queue/make sinks. The single finding (L7.3-V01) is informational P3 — CorrelationIdMiddleware reflects user header without format validation, but PHP SAPI blocks the primary HTTP-splitting impact. Residual log-injection sub-vector justifies a ~5 LOC fix mirroring the in-codebase IdempotencyKeyMiddleware:61 regex pattern. V1 LOCAL SHIPS — no header-injection blocker. V1.0.X cloud-prep should address V-01 BEFORE multi-instance log aggregation (ALB/CloudFront) amplifies log forgery impact.",
+
+  "top_3_for_owner_priority": [
+    "1. L7.3-V01 (P3 informational) — Add /^[A-Za-z0-9_\\-]{1,64}$/ validation on X-Correlation-ID in CorrelationIdMiddleware.php:14 (replace bad input with Str::uuid() instead of reflecting). ~5 LOC. Mirror IdempotencyKeyMiddleware:61 in-codebase pattern. Closes BOTH response-header reflection AND Log::withContext log-injection sub-vector with one regex check. Defer if V1 LOCAL ships before V1.0.X cloud-prep.",
+    "2. Documentation — Document password reset PIN-only design as a deliberate Host-header-injection mitigation in docs/AUTHZ_MATRIX.md or docs/BUSINESS_RULES.md. Currently the design choice is undocumented — future devs adding a 'Click here to reset' link would unknowingly re-introduce Host injection. ~10 LOC doc.",
+    "3. Defense-in-depth (optional) — Consider adding response header sanitization unit test (X-Correlation-ID: A\\r\\nX-Injected: 1 → response does NOT contain X-Injected). Asserts that the PHP SAPI mitigation is functioning as expected and catches future PHP downgrades / SAPI changes. ~15 LOC test under tests/Feature/Security/."
+  ]
+}

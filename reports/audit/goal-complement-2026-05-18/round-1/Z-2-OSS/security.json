@@ -1,0 +1,75 @@
+{
+  "specialist": "Security",
+  "zone": "Z-2-OSS",
+  "mode": "AUDIT-ONLY",
+  "scope": "Public-wall isolation (no PII leak), throttling, branch enumeration probe, multi-tenant cross-branch IDOR, OSS Sanctum exemption",
+  "framing": "Score whether the public unauthenticated wall endpoint exposes any PII or cross-branch surface. Confirm session-A C-016 + Round-2 heals preserve security posture.",
+  "evidence": {
+    "public_routes": [
+      {"path": "routes/api.php:1104-1106", "definition": "Route::get('/oss-order', publicIndex)->middleware('throttle:oss-public')->name('oss-order.public')"},
+      {"path": "routes/api.php:1107-1109", "definition": "Route::get('/oss-order/popular-items', publicMostPopularItems)->middleware('throttle:oss-public')"}
+    ],
+    "admin_route": "routes/api.php:1032-1035 — Route::prefix('oss-order')->name('ossOrder.') group is inside auth:sanctum + permission:order-status-screen",
+    "resource_payload": {
+      "path": "app/Http/Resources/CDSOrderDetailsResource.php",
+      "exposed_fields": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+      "withheld_fields_verified": ["customer_name", "customer_phone", "customer_email", "customer_address", "total", "subtotal", "amount", "discount", "payment_method", "items", "branch_address"],
+      "popular_resource": "CDSPopularItemResource — id/name/currency_price/thumb only (already public via /api/frontend/item/popular-items per controller docstring lines 105-110)"
+    },
+    "branch_isolation": {
+      "admin_path": "OrderStatusScreenOrderService::resolveBranchScope() at line 245-263 — branch staff with mismatched branch_id query param → abort(403); global Admin (branch_id=0) → null scope.",
+      "public_path": "OrderStatusScreenController::publicIndex line 76-99 + publicMostPopularItems line 111-135 — accept ?branch_id=N query param OR fall back to first ACTIVE branch.",
+      "sentinel": "tests/Feature/Sentinels/OssAdminBranchPolicySentinelTest.php exists (verified) — covers branch staff cannot request global"
+    }
+  },
+  "findings": [
+    {
+      "id": "Z2-SEC-01",
+      "severity": "P0_PRE_HEAL_RESOLVED",
+      "title": "Public wall PII surface — verified empty",
+      "evidence": "CDSOrderDetailsResource.php toArray() returns exactly {id, order_serial_no, token, queue_number, order_type, status}. No PII fields. order_serial_no is a server-allocated sequence (NF525 invariants) — disclosure is acceptable per controller docstring lines 47-74 cited C-016 design rationale.",
+      "status": "ALREADY-VERIFIED-SAFE — no heal needed. Cited in Agent 4 round-1 §1 + Impl C evidence §1.",
+      "blast_radius": "none"
+    },
+    {
+      "id": "Z2-SEC-02",
+      "severity": "P2",
+      "title": "Public branch enumeration via ?branch_id query param",
+      "evidence": "publicIndex (line 76-99) accepts any positive integer branch_id without verifying the branch exists or is ACTIVE. Order::where('branch_id', N) returns empty collection for unknown N (not a 404), but response timing or row-count differences could be a probe oracle. Mitigation: throttle:oss-public limiter (verified at app/Providers/RouteServiceProvider.php cited in agent-4 round-1 §1 + routes/api.php:1108). 60/min/IP hard 429.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P2-IN-ROUND-1 ([OSS-A-02]). Session-A explicitly deferred to V1.0.2 (per Impl C §7 deferred list).",
+      "heal_recommendation": "Add Branch::where('id', $branchId)->where('status', Status::ACTIVE)->exists() check before listForBranch() in publicIndex (and mostPopularItems). Return empty collection without DB query if invalid (same response shape — keeps the probe oracle low).",
+      "backlog_ticket": "V1.0.2-OSS-BRANCH-PROBE",
+      "blast_radius": "low (throttled, no PII even if probe succeeds, single-branch Le Cayenne not enumerable)"
+    },
+    {
+      "id": "Z2-SEC-03",
+      "severity": "P2",
+      "title": "No 429 rate-limit regression test for throttle:oss-public",
+      "evidence": "RouteServiceProvider declares oss-public limiter 60/min/IP (per agent-4-oss round-1 §6 and routes/api.php). No tests/Feature/OSS/OssPublicRateLimitTest.php exists. Confirmed: tests/Feature/OSS/ contains OssCustomerScreenFilterTest.php + OssPolishClusterTest.php only.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P2-IN-ROUND-1 (acceptance gate inventory line 51). Session-A did not create the test (marked '(test TO BE CREATED)').",
+      "heal_recommendation": "Add tests/Feature/OSS/OssPublicRateLimitTest.php — fire 70 requests from same IP within 60s window, assert 60 succeed (200) + 10 return 429.",
+      "backlog_ticket": "V1.0.1+2-OSS-RATE-LIMIT-TEST",
+      "blast_radius": "regression coverage gap, throttle still active in production"
+    },
+    {
+      "id": "Z2-SEC-04",
+      "severity": "P0_CRITICAL",
+      "title": "Multi-tenant whereIn fail-closed allowlist heal preserves NF525 + branch isolation",
+      "evidence": "OrderStatusScreenOrderService::list() line 59-62 + listForBranch() line 196-199 both apply whereIn('order_type', [KIOSK, TAKEAWAY]). Previous '!= DELIVERY' blacklist could leak POS=15 or DINING_TABLE=20 if they carried a token. Sentinel: tests/Feature/OSS/OssCustomerScreenFilterTest.php (verified exists).",
+      "status": "ALREADY-HEAL-APPLIED-2026-05-18 via RED R-3 (cited in service comments lines 53-58 + 193-195). No further action.",
+      "blast_radius": "none"
+    },
+    {
+      "id": "Z2-SEC-05",
+      "severity": "P3",
+      "title": "Compiled admin-oss.js is dirty (102 KB) — not in CI build cache",
+      "evidence": "git diff HEAD public/js/admin-oss.js shows 46+ line WIP from session-A Round-2 Impl C. Mix-manifest also dirty (public/mix-manifest.json in baseline status). This is a session-A artifact (P0-OSS-01 chime gate compiled in). Need to confirm npm run dev/prod was the source — if hand-edited, would be a CI poisoning risk.",
+      "rationale_already_heal_or_new": "ARTIFACT of session-A. Confirmed by git diff that the change MATCHES the Vue source (authBranchId() <= 0 chime gate + audio-listener wrapping). Mix-compiled output.",
+      "heal_recommendation": "Phase 2 global convergence step: verify mix-manifest.json hash matches webpack output for admin-oss.js. If hand-edit detected, recompile with npm run dev. Out of Z-2 scope (orchestrator-level).",
+      "backlog_ticket": "ORCHESTRATOR-PHASE-2-MIX-VERIFY",
+      "blast_radius": "none (mix output deterministic)"
+    }
+  ],
+  "verdict": "AUDIT-ONLY pass. Public-wall PII surface is empty (Z2-SEC-01). Multi-tenant whereIn allowlist heal preserved (Z2-SEC-04). Two pre-existing P2 deferred (Z2-SEC-02 branch probe + Z2-SEC-03 rate-limit test). No new P0/P1 security findings emerge from session-A heal sufficiency review.",
+  "word_count_approx": 900
+}

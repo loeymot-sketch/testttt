@@ -1,0 +1,88 @@
+{
+  "specialist": "SRE",
+  "zone": "Z-2-OSS",
+  "mode": "AUDIT-ONLY",
+  "scope": "Cadence floor/ceiling clamp coverage; polling fallback resilience; wake-lock release; abort-controller cleanup; broadcast queue + rate-limiter observability",
+  "framing": "Score session-A Wave 3b (TZ-aware) + Wave 3c KDS-ADV3C-08 (cadence clamp 60s ceiling) heal sufficiency from an operational-reliability lens. Confirm no silent freeze, no leaked timers, no Echo-storm amplification.",
+  "evidence": {
+    "cadence_clamp": {
+      "constants": {
+        "CADENCE_FLOOR_MS": 250,
+        "CADENCE_CEILING_MS": 60_000,
+        "DEFAULTS.intervalMsWhenConnected": 60_000,
+        "DEFAULTS.intervalMsWhenDisconnected": 2_000
+      },
+      "code_anchor": "resources/js/services/OssSyncService.js:29-35 + 419-435",
+      "entry_points_covered": {
+        "_runtimeConfig (start)": "lines 117-136 — clamps both intervalMsWhenConnected + intervalMsWhenDisconnected via _clampCadence",
+        "_burstPoll (visibility)": "lines 237-252 — bypasses _scheduleNext clamp path (NET-NEW Architect finding Z2-ARCH-03)",
+        "_scheduleNormalCadence": "lines 334-347 — uses _opts.* which are already clamped at start"
+      }
+    },
+    "wake_lock_lifecycle": {
+      "acquire": "PreparingAndReadyComponent.vue:186-196 — best-effort async wakeLock.request('screen'), idempotent sentinel guard, gated by window.foodkingConfig.ossWakeLockEnabled",
+      "re_acquire_on_visible": "lines 135-138 — document.addEventListener('visibilitychange', _onVisibilityChange) re-acquires on visible",
+      "release_on_unmount": "lines 157-162 in beforeUnmount — releases sentinel + removes visibility listener",
+      "release_on_explicit_stop": "OssSyncService.stop() drops listeners; component beforeUnmount calls stopOssSync() (line 144)"
+    },
+    "abort_controller_cleanup": {
+      "_poll": "OssSyncService.js:281-321 — AbortController created per poll, _abortInFlight aborts on overlap, cleared in finally block",
+      "_cleanup": "lines 363-378 — clears timer + aborts in-flight + tears down visibility listener + nulls _disconnectedSinceMs/_devWarnedDisconnected/_lastBurstPollAt"
+    },
+    "5xx_backoff": {
+      "implementation": "OssSyncService.js:323-332 — exponential 5000 → 10000 → 20000 → 30000ms cap",
+      "sentinel": "tests/js/ossSyncFallback.spec.js test 'uses 5xx backoff doubling capped at 30s' (verified lines 98-124)"
+    },
+    "rate_limiter_throttle_oss_public": "60/min/IP via throttle:oss-public in RouteServiceProvider (cited agent-4-oss round-1 §6)"
+  },
+  "findings": [
+    {
+      "id": "Z2-SRE-01",
+      "severity": "P0_PRE_HEAL_RESOLVED",
+      "title": "Cadence clamp 60s ceiling prevents customer-wall freeze",
+      "evidence": "_clampCadence applied at both intervalMsWhenConnected + intervalMsWhenDisconnected entry points. A runtime misconfig like FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=999999999 now resolves to 60_000ms instead of 11.5 days. SYNC-2 8s budget preserved.",
+      "status": "ALREADY-HEAL-APPLIED via Wave 3c KDS-ADV3C-08 in c2613cab0+downstream. No further action.",
+      "blast_radius": "none"
+    },
+    {
+      "id": "Z2-SRE-02",
+      "severity": "P1",
+      "title": "Cadence clamp applied only on start() — not on runtime config refresh",
+      "evidence": "OssSyncService._runtimeConfig() (lines 117-136) reads window.foodkingConfig.ossFallbackPolling at start() only (line 61). If a CDN-pushed config or admin live-edit mutates window.foodkingConfig.ossFallbackPolling.intervalMsWhenConnected post-start, the new value is NOT clamped — _opts values remain whatever start() captured. RISK: if start() never re-runs (component does not unmount/remount across long-running TV-wall sessions), a corrupted in-flight config goes unenforced.",
+      "rationale_already_heal_or_new": "NET-NEW gap — Wave 3c clamp heal protects boot path but does not protect runtime refresh path. Was not surfaced in round-1.",
+      "heal_recommendation": "Either (a) document that ossFallbackPolling config is set-once-per-mount and runtime mutation is unsupported, OR (b) wire a periodic re-read in _scheduleNormalCadence that re-clamps via _clampCadence on each tick. Option (a) is the simpler V1 path. Test: add static-source assertion to ossSyncFallback.spec.js that _clampCadence is only called from _runtimeConfig (single-source-of-truth).",
+      "backlog_ticket": "V1.0.2-OSS-RUNTIME-CLAMP-DOC",
+      "blast_radius": "low (no production observation of CDN-pushed config mutation today)"
+    },
+    {
+      "id": "Z2-SRE-03",
+      "severity": "P2",
+      "title": "No observability for sustained disconnect on production walls",
+      "evidence": "OssSyncService._maybeWarnDisconnect (lines 254-274) only fires console.warn in NON-PRODUCTION (line 261-264 explicit appEnv !== 'production' check). Production walls running in fallback-only mode for hours emit no telemetry. SRE has no signal to detect that a real WS infrastructure issue caused a fleet of walls to silently degrade.",
+      "rationale_already_heal_or_new": "NET-NEW gap (slightly — was implicit in agent-4-oss but not flagged as a P2 SRE concern). Not addressed in session-A.",
+      "heal_recommendation": "When OssSyncService disconnects for > 60s in production, emit a single beacon to a /api/admin/observability endpoint (existing Laravel route per V1.0.2 backlog). Bounded by one beacon per disconnect window (already have _devWarnedDisconnected guard). Defer V1.0.2.",
+      "backlog_ticket": "V1.0.2-OSS-OBSERVABILITY",
+      "blast_radius": "ops blind-spot, no runtime impact"
+    },
+    {
+      "id": "Z2-SRE-04",
+      "severity": "P2",
+      "title": "Echo subscription `eventContract.onEvents` lacks visible re-subscribe sentinel",
+      "evidence": "PreparingAndReadyComponent.vue:252-273 — _eventSub created via onEvents(branchId, [...]); unsubscribe wired in unsubscribeEcho() at line 279-289. eventContract.onEvents implementation owns reconnect logic. No test asserts re-subscription after a connection drop/reconnect storm. The wsState handler in OssSyncService (lines 191-199) fires _burstPoll on reconnect — that ensures the polling path catches up — but Echo channel re-subscription is implicit.",
+      "rationale_already_heal_or_new": "NET-NEW gap — discovered cross-referencing agent-4-oss §3 reconnect strategy.",
+      "heal_recommendation": "Add tests/js/ossEchoReconnect.spec.js (mirroring orderStatusScreenOssSync.spec.js static-source style) asserting onEvents/eventContract returns an unsubscribe handle AND PreparingAndReadyComponent.vue calls unsubscribe before re-subscribing on remount.",
+      "backlog_ticket": "V1.0.2-OSS-ECHO-RECONNECT-TEST",
+      "blast_radius": "coverage gap, no production observation"
+    },
+    {
+      "id": "Z2-SRE-05",
+      "severity": "P0_PRE_HEAL_RESOLVED",
+      "title": "AUDIT-P1 double-chime/flash de-dup guard works",
+      "evidence": "PreparingAndReadyComponent.vue:258-264 + 354-362 — _echoMarkedReady Set prevents double _markNewReady when list() refresh follows an Echo PREPARED event. Confirmed working in ossChimePublicWall.spec.js attestation suite.",
+      "status": "ALREADY-MITIGATED. No further action.",
+      "blast_radius": "none"
+    }
+  ],
+  "verdict": "AUDIT-ONLY pass. Wave 3c cadence clamp + 5xx backoff + abort-controller cleanup + visibility burst + wake-lock acquire/release are all sound. Two net-new P1/P2 SRE forward-looking gaps: (Z2-SRE-02 runtime-refresh clamp scope) and (Z2-SRE-03 production observability beacon). Both deferred V1.0.2 with backlog tickets.",
+  "word_count_approx": 1050
+}

@@ -1,0 +1,143 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Boot\ProductionBootGuardsCompletenessSentinelTest[39m
+  [32;1m✓[39;22m[39m [2meach guard refuses boot when its prerequisite is bad with data set "guard_5_LOYALTY_QR_SECRET"[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ConcurrentOrderTest[39m
+  [32;1m✓[39;22m[39m [2mloyalty concurrent redemption does not overdraw[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Configuration\EnvExampleHasLoyaltyQrSecretSentinelTest[39m
+  [32;1m✓[39;22m[39m [2menv example declares loyalty qr secret key[22m[39m
+  [32;1m✓[39;22m[39m [2menv example documents secret generation command[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ManualDiscountDisabledV1SentinelTest[39m
+  [32;1m✓[39;22m[39m [2mloyalty redeem is refused when disabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\FrontendDiscountIntegrityTest[39m
+  [32;1m✓[39;22m[39m [2mcoupon takes priority over loyalty discount on frontend order[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty below minimum points is not applied server side[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Jobs\CleanupStalePhoneOrderTest[39m
+  [32;1m✓[39;22m[39m [2mstale phone order is canceled marker broken and loyalty refunded[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kiosk\CleanupStaleLoyaltyRefundTest[39m
+  [32;1m✓[39;22m[39m [2mabandoned kiosk order with redeem refunds loyalty points on cleanup[22m[39m
+  [32;1m✓[39;22m[39m [2mabandoned kiosk order without loyalty is canceled with no refund[22m[39m
+  [32;1m✓[39;22m[39m [2mcleanup refund is idempotent on rerun[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskLoyaltyDoubleRedeemRefusedTest[39m
+  [32;1m✓[39;22m[39m [2mredeem then kiosk order joins existing transaction without second decrement[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order direct redeem still deducts once and writes ledger[22m[39m
+  [32;1m✓[39;22m[39m [2mpending redeem with different discount amount is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mguest with kiosk ability cannot redeem foreign code[22m[39m
+  [32;1m✓[39;22m[39m [2mpre redeem is refused when discounts disabled v1[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskLoyaltyLedgerAtomicTest[39m
+  [32;1m✓[39;22m[39m [2mledger failure rolls back points and order[22m[39m
+  [32;1m✓[39;22m[39m [2mnominal redeem decrements points and writes one ledger entry[22m[39m
+  [32;1m✓[39;22m[39m [2mduplicate ledger insert recovers existing entry without second entry[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\LoyaltyConsentTest[39m
+  [32;1m✓[39;22m[39m [2mhash identifier returns 64 char hex sha256[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier is deterministic with app key[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier differs with different inputs[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier empty input returns placeholder[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier is not reversible to ip[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\LoyaltyOptInEndpointTest[39m
+  [32;1m✓[39;22m[39m [2mopt in creates user and consent log[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in rejects without consent[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in rejects consent false[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in rejects without privacy notice version[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in requires phone or email[22m[39m
+  [32;1m✓[39;22m[39m [2mip is stored hashed not raw[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\Phase1MigrationsTest[39m
+  [32;1m✓[39;22m[39m [2mloyalty consents table exists[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Loyalty\KioskLoyaltyEarnCycleProofTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk order  p r e p a r e d awards points to customer and ledger[22m[39m
+  [32;1m✓[39;22m[39m [2mearn is idempotent no double award on replay[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Loyalty\KioskRedeemWholePointSnapSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mfractional request is snapped to whole points[22m[39m
+  [32;1m✓[39;22m[39m [2mclean multiple request is unchanged[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount never exceeds subtotal[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Loyalty\LoyaltyClawbackOnRefundSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mrefund claws back earned loyalty points[22m[39m
+  [32;1m✓[39;22m[39m [2mdouble refund event is idempotent noop[22m[39m
+  [32;1m✓[39;22m[39m [2mclawback clamps balance at zero[22m[39m
+  [32;1m✓[39;22m[39m [2manonymous order refund is safe noop[22m[39m
+  [32;1m✓[39;22m[39m [2morder with zero awarded is noop[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Loyalty\LoyaltyRefundPointsIdempotentTest[39m
+  [32;1m✓[39;22m[39m [2mdouble refund points is idempotent noop[22m[39m
+  [32;1m✓[39;22m[39m [2mdistinct orders still refund normally[22m[39m
+  [32;1m✓[39;22m[39m [2msingle refund still credits and writes ledger[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Loyalty\PosRedemptionTtcTaxDoubleCountSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mttc partial redeem does not double count tax[22m[39m
+  [32;1m✓[39;22m[39m [2mttc full redeem clamps to zero[22m[39m
+  [32;1m✓[39;22m[39m [2mht partial redeem keeps adding tax[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\LoyaltyApiTest[39m
+  [32;1m✓[39;22m[39m [2mloyalty register[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty check[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty add points[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty redeem[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty redeem not enough points[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\ChangeStatusReturnedSelfAuditR2Test[39m
+  [32;1m✓[39;22m[39m [2mpre z direct cash return dispatches refund created for loyalty clawback[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderCancellationLoyaltyTest[39m
+  [32;1m✓[39;22m[39m [2mcancel order refunds loyalty points[22m[39m
+  [32;1m✓[39;22m[39m [2mcancel order without loyalty does nothing[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\PhoneOrderCancelLoyaltyTest[39m
+  [32;1m✓[39;22m[39m [2mcancel deferred phone order with redeem refunds loyalty points[22m[39m
+  [32;1m✓[39;22m[39m [2mcancel deferred order without loyalty is noop refund[22m[39m
+  [32;1m✓[39;22m[39m [2mdouble cancel does not double refund[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\PosLoyaltyRedeemTest[39m
+  [32;1m✓[39;22m[39m [2mhappy path decrements balance and writes ledger[22m[39m
+  [32;1m✓[39;22m[39m [2minsufficient balance returns 422 and rolls back[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer not found returns 404[22m[39m
+  [32;1m✓[39;22m[39m [2mredeem after paid returns 409[22m[39m
+  [32;1m✓[39;22m[39m [2mcashier without permission returns 403[22m[39m
+  [32;1m✓[39;22m[39m [2mdouble redemption rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mcross branch cashier gets 403 on foreign order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Refund\RefundLoyaltyTryCatchHardenedSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mloyalty refund throw does not roll back mirror and emits isolated log[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Refund\RefundWithCounterEntryRefundsLoyaltyPointsTest[39m
+  [32;1m✓[39;22m[39m [2mcounter entry refund credits back redeemed loyalty points[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter entry refund without loyalty code is noop safe[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\LoyaltyCheckIdorTest[39m
+  [32;1m✓[39;22m[39m [2mun guest ne peut pas consulter le compte fidelite d autrui[22m[39m
+  [32;1m✓[39;22m[39m [2mle proprietaire peut consulter son propre compte[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\LoyaltyRegisterNoLeakTest[39m
+  [32;1m✓[39;22m[39m [2mconflit email ne divulgue pas le code ni le telephone d autrui[22m[39m
+  [32;1m✓[39;22m[39m [2mlookup par telephone seul ne divulgue pas les pii d un compte existant[22m[39m
+  [32;1m✓[39;22m[39m [2mnouveau compte recoit bien son code[22m[39m
+  [32;1m✓[39;22m[39m [2mregister public ne doit pas attacher un email a un compte existant[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\LoyaltyQrSigningSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mvalid signed token scan succeeds with signed header[22m[39m
+  [32;1m✓[39;22m[39m [2mexpired signed token is rejected with qr expired error code[22m[39m
+  [32;1m✓[39;22m[39m [2mtampered hmac is rejected with qr invalid signature[22m[39m
+  [32;1m✓[39;22m[39m [2mreplayed signed token is rejected with qr replay[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy plaintext fk prefix still accepted with legacy header[22m[39m
+  [32;1m✓[39;22m[39m [2mgenerate qr endpoint requires authentication[22m[39m
+  [32;1m✓[39;22m[39m [2mgenerate qr endpoint returns signed token that round trips through scan[22m[39m
+  [32;1m✓[39;22m[39m [2mgenerate qr mints loyalty code for customer without one[22m[39m
+  [32;1m✓[39;22m[39m [2mproduction boot guard refuses empty loyalty qr secret[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m83 passed[39;22m
+  [37;1mTime:   [39;22m[39m13.67s[39m
+
+

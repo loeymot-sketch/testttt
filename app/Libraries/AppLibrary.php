@@ -18,10 +18,18 @@ use Smartisan\Settings\Facades\Settings;
 
 class AppLibrary
 {
+    // [FR-DATE-SAFE 2026-06-26] env() returns null after `config:cache` (same class as
+    // the money flatAmountFormat null bug — BRAIN PR-07) → Carbon::format(null) breaks the
+    // date/time on every fiscal-adjacent display. FR-safe defaults mirror the canonical
+    // site settings (site_date_format="d-m-Y", site_time_format="H:i" — 24h FR, ADR-007).
+    // NB: the live "h:i A" (12h English « PM ») symptom is an env↔DB drift (env TIME_FORMAT
+    // mis-set vs DB site_time_format="H:i") — corrected by setting .env TIME_FORMAT="H:i"
+    // or re-saving Site settings (SiteService:54 re-propagates). These defaults guarantee a
+    // valid FR format even when env is empty/null; they do not override a non-empty env.
     public static function date($date, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            $pattern = env('DATE_FORMAT') ?: 'd-m-Y';
         }
         return Carbon::parse($date)->format($pattern);
     }
@@ -29,7 +37,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            $pattern = env('TIME_FORMAT') ?: 'H:i';
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -37,7 +45,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT') . ', ' . env('DATE_FORMAT');
+            $pattern = (env('TIME_FORMAT') ?: 'H:i') . ', ' . (env('DATE_FORMAT') ?: 'd-m-Y');
         }
         return Carbon::parse($dateTime)->format($pattern);
     }
@@ -45,7 +53,10 @@ class AppLibrary
     public static function increaseDate($dateTime, $days, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            // [FR-DATE-SAFE 2026-06-27] jumeau de date()/datetime() : env() null après
+            // config:cache → format(null) casse la date de livraison (KDSOrderDetailsResource
+            // delivery_date). Défaut FR-safe d-m-Y.
+            $pattern = env('DATE_FORMAT') ?: 'd-m-Y';
         }
         return Carbon::parse($dateTime)->addDays($days)->format($pattern);
     }
@@ -53,7 +64,8 @@ class AppLibrary
     public static function deliveryTime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            // [FR-DATE-SAFE 2026-06-27] jumeau : créneau de livraison « HH:MM - HH:MM » 24h FR.
+            $pattern = env('TIME_FORMAT') ?: 'H:i';
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {
@@ -270,20 +282,50 @@ class AppLibrary
 
     public static function currencyAmountFormat($amount): string
     {
-        if (env('CURRENCY_POSITION') == CurrencyPosition::LEFT) {
-            return env('CURRENCY_SYMBOL') . number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [GOAL-G2-HEAL-02 2026-05-23] FR-canonical currency format per NF525
+        // receipt compliance + ISO 4217. Previous implementation hardcoded
+        // "." decimal separator and concatenated the symbol with no nbsp →
+        // produced "12.50€" on receipts/emails/reports, while PaymentComponent
+        // (D3 LOCK_PAY) + formatPrice.js (WT-D-R1-F4) emit canonical "12,50 €"
+        // (Intl fr-FR EUR with NBSP). Same caisse, divergent format ≠
+        // ISO 4217 + FR locale convention. Surfaced by Phase G.5 finding
+        // G5-F-003 P1.
+        //
+        // Resolution: use NumberFormatter::CURRENCY with fr_FR locale (matches
+        // frontend Intl output bit-for-bit) and fall back to manual FR layout
+        // (virgule decimal + NBSP + symbol) when ext-intl is unavailable. The
+        // env CURRENCY_SYMBOL / CURRENCY_POSITION / CURRENCY_DECIMAL_POINT
+        // contract is preserved for the fallback branch — admins keep control
+        // if they want a non-EUR display in some downstream surface.
+        $amount = (float) $amount;
+        $decimal = (int) (env('CURRENCY_DECIMAL_POINT') ?: 2);
+
+        if (class_exists('NumberFormatter')) {
+            $fmt = new \NumberFormatter('fr_FR', \NumberFormatter::CURRENCY);
+            $fmt->setAttribute(\NumberFormatter::FRACTION_DIGITS, $decimal);
+            return $fmt->formatCurrency($amount, 'EUR');
         }
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '') . env('CURRENCY_SYMBOL');
+
+        // Fallback: manual FR layout (virgule + nbsp + symbol).
+        $symbol    = env('CURRENCY_SYMBOL', '€');
+        $position  = env('CURRENCY_POSITION');
+        $formatted = number_format($amount, $decimal, ',', "\xC2\xA0");
+        return $position == CurrencyPosition::LEFT
+            ? $symbol . "\xC2\xA0" . $formatted
+            : $formatted . "\xC2\xA0" . $symbol;
     }
 
     public static function flatAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [MONEY-FIX 2026-06-25] `?? 2` : sous config:cache (prod) env() renvoie null
+        // → number_format($x, null) arrondit à l'ENTIER (rapports faux). Garde-fou
+        // identique à currencyAmountFormat:289. Idéalement config() (survit au cache).
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', '');
     }
 
     public static function convertAmountFormat($amount): float
     {
-        return (float)number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', '');
     }
 
     public static function fcmDataBind($request)
@@ -374,7 +416,9 @@ class AppLibrary
 
     public static function reportCurrencyAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', ',');
+        // [MONEY-FIX 2026-06-25] `?? 2` : voir flatAmountFormat — évite l'arrondi
+        // entier des totaux de rapport sous config:cache.
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', ',');
     }
 
     public static function textShortener($text, $number = 30)
@@ -402,7 +446,13 @@ class AppLibrary
                     return "Now";
                 } else {
                     if (!$pattern) {
-                        $pattern = env('TIME_FORMAT', 'h:i A');
+                        // [KDS-FR-TIME HEAL 2026-06-27] Align with sibling methods time():40 /
+                        // deliveryTime():68 — `env('TIME_FORMAT') ?: 'H:i'` (24h FR). The old
+                        // `env('TIME_FORMAT', 'h:i A')` leaked a 12h en-US default ("08:30 PM")
+                        // into the KDS delivery slot after `config:cache` (env() returns its 2nd
+                        // arg when the cached config strips the var) — the documented env-null /
+                        // flatAmountFormat trap, an ADR-007 FR violation in prod.
+                        $pattern = env('TIME_FORMAT') ?: 'H:i';
                     }
                     $explode = explode('-', $dateTime);
                     if (count($explode) == 2) {

@@ -1,0 +1,7 @@
+{
+  "task": "Implement a queue system with Redis and fallback to DB",
+  "constraints": [
+    "must be scalable",
+    "must support retries"
+  ]
+}

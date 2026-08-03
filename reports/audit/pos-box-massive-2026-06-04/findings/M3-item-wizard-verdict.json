@@ -1,0 +1,78 @@
+{
+  "micro_system": "M3-item-wizard",
+  "verdicts": [
+    {
+      "id": "M3-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED. Active path = single-page only. openWizard:4773 and refreshWizard:5136 render renderSinglePage() then call bindSinglePageEvents() (4777/5136). The add-to-cart handler in bindSinglePageEvents (pos-wizard.js:5850-5855) calls syncAndSubmit() with NO completeness gate. canProceedFromStep() (5149-5226) is invoked ONLY in bindEvents() at 5454-5467 — and bindEvents() has ZERO call sites (grep: only def at 5288; line 5493 comment 'Removed duplicate ... from bindEvents()' confirms it is legacy/dead). So the 'Selectionnez N viandes / sauce / pain' guard never runs in the active flow: a Tacos with 0 viande / sandwich with 0 pain can be added to cart. Real defect, worth correcting (the guard exists but is dead). FROZEN: describe-only + owner gate."
+    },
+    {
+      "id": "M3-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED by code alone (no DB query needed). calculateRunningTotal adds FRITES_GRANDE_PRICE + FRITES_CHEDDAR_PRICE to the preview (pos-wizard.js:1325-1326). But addonToPayload (4143-4159) sets convert_price = base addon price and pushes 'Grande Portion (+...)' / 'Cheddar Fondu (+...)' ONLY into menu_extras + instruction (TEXT). Server SSOT PricingService::calculateOrder prices addons strictly from $dbAddon->addonItem->price (PricingService.php:226) and extras strictly from $dbExt->price*qty (line 189) — it NEVER reads client convert_price/total_price/menu_extras/instruction. OrderQuoteService:209/224 routes through this. Therefore the +1.00/+1.00 surcharges are display-only and never billed → preview > billed total. Systematic silent under-billing on frites options. FROZEN: describe + owner gate."
+    },
+    {
+      "id": "M3-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED real, but the auditor's stated mechanism is partly MISDIAGNOSED. The single-page viande-supplement rows (renderSinglePage 2954-3019) are built from lastItemData.variations (viandeVariations.push(v)), keyed 'v_<variationId>' — these are ItemVariation IDs, NOT ItemExtra IDs. syncAndSubmit (3886-3897) does allSelectedExtras[parseInt(variationId)]=true then applies it to '.extra .custom-checkbox-field' (extra checkboxes, 3905-3912). Variation and extra ID spaces differ, and there is no DB item_extra for an extra viande, so the surcharge is almost never matched to a real priced extra → not just 'flat price vs catalogue / qty lost' but NOT BILLED AT ALL server-side (PricingService only prices DB extras by id+qty, 184-189). Net effect = preview shows +2.50/+5.00, server quote bills 0 for the extra viande (M3-02-class under-bill). Real preview/bill discrepancy; severity held at P2 because exact magnitude is bounded to the viande-supplement flow and the precise DB mapping warrants live confirm. FROZEN: describe with corrected mechanism + owner gate."
+    },
+    {
+      "id": "M3-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "EXISTENCE CONFIRMED: renderWizard() (1046) has zero call sites; active render is renderSinglePage() only (4773/5135); bindEvents() (5288, containing goToNext/PrevActiveStep + canProceedFromStep wiring) has zero call sites; getActiveSteps/Index also feed only the dead path. So ~250+ lines of multi-step engine + progress bar are dead. HOWEVER necessity is LOW: pure dead code in a FROZEN file has zero runtime effect. Removing it is a frozen-zone touch with regression risk and no functional gain; the only actionable consequence (the dead guard) is already captured by M3-01. Downgraded P3 and is_necessary:false — document-only, do NOT inflate the same root cause (dead multi-step engine) twice with M3-01. Owner gate before any deletion."
+    },
+    {
+      "id": "M3-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. fmtPrice (pos-wizard.js:218-221) returns '€' + num.toFixed(2) → '€3.00' (symbol before, dot decimal), used across all wizard preview prices. FR locale (ADR-007 immutable) convention is '3,00 €' (symbol after, comma decimal), as honored by PaymentComponent. Real, visible, permanent cosmetic inconsistency on the cashier screen. Low severity (cosmetic, no pricing/fiscal impact) → P3. FROZEN: describe-only + owner gate."
+    },
+    {
+      "id": "M3-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "EXISTENCE CONFIRMED: isComposerAwareEnabled (436-439) reads FK_POS_WIZARD_COMPOSER_AWARE_ENABLED, default false (config/catalog_v15.php:104). buildStepsFromComposerProfile (493) is only reached from buildSteps at 553-556 when the flag is ON; renderSinglePage has no 'generic_choices' renderer branch, so composer steps would not drive the single-page UI even if flipped. Verdict: LATENT, not an active V1 bug (flag OFF). is_necessary:false for V1 — it is a documentation item / pre-cloud-flip caveat, not a correction owner must make now. P3 latent, document-only. Owner gate before any flip."
+    },
+    {
+      "id": "M3-07",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "DROP. grep -i 'allerg' public/js/pos-wizard.js = 0 occurrences (existence of absence confirmed), but the finding self-admits 'pas un defaut confirme', evidence_type needs-live-verify, and frames it as 'IF an allergen requirement exists on POS'. That is a clarification request, not a defect — POS wizard allergen display is plausibly out-of-scope by design (allergen surface is KDS/client-facing). No reproducible defect, no owner-stated requirement → is_real:false, is_necessary:false, DROP per RED-team mandate to destroy weak findings."
+    },
+    {
+      "id": "M3-08",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "DOWNGRADED. Unlike M3-02/03, extra sauces ARE mapped to REAL DB-backed Vue checkboxes 'Sauce supplementaire: <name>' in syncAndSubmit (3776-3818: extraSauceCheckedIds → allSelectedExtras → clicks '.extra .custom-checkbox-field'), so they ARE sent and server-priced from DB (PricingService:184-189). So this is NOT an under-bill like M3-02. The only residual question is whether the flat SAUCE_EXTRA_PRICE (0.50, configurable POS_WIZARD_CONFIG) preview equals the DB extra price — an unverifiable data-alignment guess (evidence_type needs-live-verify, confidence medium by author's own admission). Real-but-minor preview-accuracy concern, not a confirmed billing defect → P3 needs-verify, is_necessary:false (owner/data-ops alignment check, not a code correction). Not a P2 under-bill."
+    }
+  ],
+  "coverage_gaps": [
+    "Edit-from-cart restore path (openWizard isEditRestore=true → JSON.parse(data-wizard-cart-restore) + updateSinglePageUI at 4783): no finding examines whether restored selections (viandes/sauces/garnitures/menu_restore.fritesGrande/fritesCheddar/viandeSupplItems) round-trip correctly vs the original cart line — a likely source of qty/total drift on re-edit.",
+    "Quantity stepper ([data-qty] plus/minus → itemQuantity → refreshWizard, 5874-5883): un-audited; calculateRunningTotal multiplies (base+extra+addon) by itemQuantity (line 1334) — interaction with the per-line addon payload and Vue qty sync (.indec-value, 3712-3719) is unverified.",
+    "Cancel / close-wizard handler ([data-action=cancel-wizard] → closeWizard(false), 5860-5869) and the MutationObserver re-attach logic (_attachModalObserver 5892, retries up to 20×50ms) — SPA-navigation re-binding correctness not audited; risk of stale wizardEl / double-bind.",
+    "Ctrl+Enter keyboard submit (document-level keydown, 5872-5883, guarded by window.wizardSinglePageKeyboardBound) — global listener never removed; potential cross-modal submit or leak across Vue route changes not examined.",
+    "sauceSingle radio path (omelette/snacking, renderSauceSingleStep + selections.sauceSingle, synced at 3724-3729) and accompagnement/boisson sync (boissonChoice → addon cards 3970-4003; accompagnement → allSelectedExtras 3884) — these alternate single-select flows are not covered by any of the 8 findings for preview-vs-billed parity.",
+    "buildTicketInstruction gating (line 44 currentCategory + totalViandes>0): finding M3-01 notes the viande block is omitted from the ticket when totalViandes=0, but the full KDS-ticket text-generation correctness (compact format, what reaches kitchen) is unaudited.",
+    "Frites sauce selection (sauceFritesOrder, .sauce-frite-opt handler ~5823) priced as (n-1)*SAUCE_EXTRA_PRICE in preview (1284) but sent only as 'Sauce frites: ...' instruction text in buildMenuExtras (4126-4133) — same text-only/under-bill class as M3-02 but for frites sauces; NOT raised by any finding."
+  ]
+}

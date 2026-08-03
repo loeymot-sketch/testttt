@@ -113,4 +113,66 @@ class PosReceiptTaxLinesTest extends TestCase
         $sum = collect($payload['tax_lines'])->sum(fn ($l) => (float) $l['tax']);
         $this->assertEqualsWithDelta(4.00, $sum, 0.01);
     }
+
+    /**
+     * [SUPERVISOR A2-P1 2026-07-31] La ventilation TVA du reçu ÉCRAN doit être NETTÉE de la remise
+     * — miroir du ticket imprimé (OrderReceiptEscPosRenderer::taxLines) + du Z. Avant le fix,
+     * buildTaxLines() sommait le brut → Σ(base HT + TVA) affichée = 10,00 alors que le total payé
+     * remisé = 8,00 (TVA surévaluée). Verrouille l'identité facture écran == ticket == Z.
+     */
+    public function test_tax_lines_are_netted_of_order_discount(): void
+    {
+        $this->seedSpatieRoles();
+        $this->seedMinimalSettings();
+
+        $branch = Branch::factory()->create();
+        $tva10 = Tax::factory()->create([
+            'name' => 'TVA 10', 'code' => 'TVA10',
+            'type' => TaxType::PERCENTAGE, 'tax_rate' => 10.00, 'status' => Status::ACTIVE,
+        ]);
+        $cat = ItemCategory::factory()->create(['has_menu' => true, 'wizard_template' => 'tacos']);
+        $i10 = Item::factory()->create(['item_category_id' => $cat->id, 'tax_id' => $tva10->id, 'price' => 10.00, 'status' => Status::ACTIVE]);
+
+        // 1 ligne @ 10,00 TTC (TVA 10% = 0,91) ; remise 2,00 → total PAYÉ 8,00. Ratio net = 0,8.
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::POS,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PAID,
+            'subtotal' => 10.00,
+            'discount' => 2.00,
+            'total_tax' => 0.91,
+            'total' => 8.00,
+            'pos_received_amount' => 8.00,
+        ]);
+        OrderItem::create([
+            'order_id' => $order->id, 'branch_id' => $branch->id,
+            'discount' => 0, 'item_variations' => '[]', 'item_extras' => '[]',
+            'item_variation_total' => 0, 'item_extra_total' => 0,
+            'item_id' => $i10->id, 'tax_name' => 'TVA 10', 'tax_rate' => '10',
+            'tax_type' => TaxType::PERCENTAGE, 'tax_amount' => 0.91,
+            'price' => 10.00, 'quantity' => 1, 'total_price' => 10.00,
+        ]);
+
+        $admin = User::factory()->create(['branch_id' => $branch->id]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin, 'sanctum');
+
+        $resp = $this->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos-order/show/' . $order->id);
+        $resp->assertStatus(200);
+        $lines = $resp->json('data.tax_lines');
+        $this->assertNotEmpty($lines);
+
+        // Identité facture : Σ(base HT + TVA) NETTÉE == total PAYÉ (8,00), PAS le brut (10,00).
+        $sum = 0.0;
+        foreach ($lines as $l) {
+            $sum += (float) $l['base_ht'] + (float) $l['tax'];
+        }
+        $this->assertEqualsWithDelta(8.00, round($sum, 2), 0.01,
+            'La ventilation TVA du recu ecran doit etre nettee de la remise (Somme == total paye).');
+        // Prorata exact : TVA nettee = 0,91 x 0,8 = 0,73 (pas 0,91 brute).
+        $this->assertEqualsWithDelta(0.73, (float) $lines[0]['tax'], 0.01,
+            'TVA nettee = brut 0,91 x ratio 0,8 = 0,73.');
+    }
 }

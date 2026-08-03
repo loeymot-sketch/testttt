@@ -1,0 +1,24 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B6-CATALOG-EVENTING-PHOTO-E2E",
+  "date": "2026-04-27",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "mission": "Catalog eventing unifie + photo E2E",
+  "preconditions": [
+    "B3 dashboard composer write PASS",
+    "B5a/B5b stock and counter-payment paths already validated",
+    "No new human gate required for B6"
+  ],
+  "decisions": [
+    "Use existing domain_events outbox as SSOT; do not create a second catalog_outbox table.",
+    "CatalogChanged is added as a canonical broadcast contract over existing catalog/menu mutations.",
+    "ItemAvailabilityChanged remains backward compatible for POS/Kiosk/KDS consumers.",
+    "Frontend menu endpoint must expose snapshot_version so kiosk can compare stale cached menu state."
+  ],
+  "invariants": [
+    "Backend remains pricing SSOT; no price calculation added to frontend.",
+    "branch_id fanout is explicit and branch-scoped.",
+    "DispatchDomainEventsJob remains after-commit dispatch path.",
+    "No OrderService or FrontendOrderService changes in this mission."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "report": {
+    "dom": {
+      "logout": true,
+      "fakeCard": false,
+      "aucuneCarte": true,
+      "stripe": false,
+      "deleteInert": false,
+      "profilName": "Guest User"
+    }
+  },
+  "errors": []
+}

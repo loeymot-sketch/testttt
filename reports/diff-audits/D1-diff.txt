@@ -1,0 +1,33 @@
+1c1
+< D1 PRE-AUDIT 2026-05-23T13:54:47Z
+---
+> D1 POST-AUDIT 2026-05-23T13:55:32Z
+3c3
+< Lines 100-235 verbatim:
+---
+> Lines 100-258 verbatim (extended window — file grew +23 LOC):
+38a39,55
+>     // [GOAL-D1 TELEMETRY 2026-05-23] Telemetry endpoints intentionally accept
+>     // 429 silently (the call-site already wraps in `.catch(()=>{})` and the
+>     // event is fire-and-forget — losing a single event is acceptable). Without
+>     // this allowlist, a kiosk burst of /kiosk/event POSTs surfaces a customer-
+>     // facing "Trop de requêtes" toast on the borne idle screen — UX regression
+>     // surfaced by Wave Final 2026-05-23 S1-002 P1. The allowlist suppresses
+>     // the toast ONLY; the rejection chain stays intact so per-call .catch()
+>     // still runs and metrics can drop the event.
+>     const _TELEMETRY_ALLOWLIST_PATTERNS = [
+>         '/api/frontend/kiosk/event',
+>         '/api/admin/client-metrics',
+>     ];
+>     function _isTelemetryEndpoint(error) {
+>         const url = String(error?.config?.url || '');
+>         return _TELEMETRY_ALLOWLIST_PATTERNS.some((p) => url.includes(p));
+>     }
+> 
+86a104,109
+>                     // [GOAL-D1 2026-05-23] Suppress toast for telemetry endpoints.
+>                     // Rejection still propagates so per-call .catch() handler can
+>                     // drop the metric event without surfacing UX noise.
+>                     if (_isTelemetryEndpoint(error)) {
+>                         return Promise.reject(error);
+>                     }

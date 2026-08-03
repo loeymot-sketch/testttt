@@ -1,0 +1,332 @@
+{
+  "agent": "M-KDS-5 — KDS allergen + status badges DEEP",
+  "phase": "M — POS + KDS maximum depth (13 agents parallel)",
+  "mission": "Audit KDS allergen rendering pipeline post Wave Q-4 retraction, status badges (NOUVELLE/EN COURS/EN ATTENTE ENCAISSEMENT/PRÊT/LIVRÉ), cash-pending pill (Wave S-2 P-OWNER), KdsAllergensModalComponent (focus trap + i18n parity), multi-station local-only banner (J-ADV-8 UX-04), and L4 browser quirks for chef-rush 1s-glance discipline.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Static read-only audit of KDS allergen + status code paths at HEAD. No empirical screenshot capture — reused H.7 visual evidence (W3-state1-kds-board.jpg) per K.1 disk-conservation pattern (5.6Gi free, 99% used). All findings cite file:line.",
+  "method": "(1) Wave Q-4 retraction trace: seeder NOOP + migration idempotent clear + e2e regression spec. (2) Read all KDS card paths: KdsOrderCard.vue (v2 canonical) + KitchenDisplaySystemComponent.vue (legacy 4-lane retained behind v-else). (3) Verify allergen helper purity (kdsAllergens.js, kdsCustomization.js, kdsLineSemantics.js). (4) Trace KDSOrderDetailsResource:44 payment_pending_counter wire field → KdsOrderCard.isCashPending → CTA-vs-badge swap → KdsV2Grid.onKey shortcut gate. (5) Audit KdsAllergensModal: dialog markup + onAllergensModalKeydown Tab/Shift+Tab trap + allergenModalReturnFocus + i18n parity across fr.json/en.json/ar.json. (6) Read KdsStatusBanner consolidated priority ladder + verify bumpLocalOnlyNotice wire from parent. (7) Cross-reference J-CASCADE H1/H6, K.1 Borne→KDS cascade, K.4 encaisser cascade, L.4 browser-compat, Q9-S1 sync, M-KDS-1 layout, J2-HEAL-01 catalog cascade.",
+  "files_examined": [
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (canonical v2 card — allergen pill template:46-56, cash-pending swap template:135-160, hasAllergen computed:252-254, borderColor:276-282, stripeColor:283-291, isCashPending computed:361-369, onCardKeydownEnter:385-390, onCta:375-382, .kds-card__allergen-pill CSS:492-506, .kds-card__cash-pending CSS:705-726)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (V2 grid wrapper — bumpLocalOnlyNotice prop:130, KdsStatusBanner :bump-local-only-notice binding:28, onKey shortcut cash-pending gate:255-257, onCtaTap immediate PATCH:296-318, activeOrders ACCEPT+PREPARING partition:177-182, recentlyServed PREPARED-only strip:188-199)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue (consolidated banner priority ladder — error > cap-full > cap-warning > fallback > admin-polling-hint > bumpLocalOnlyNotice:71-122, neutral 'LOCAL' tag for bump-notice:115-120)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (legacy retained behind v-else: 4× .kds-allergens-badge buttons lines 307/496/667/844; KdsAllergensModal dialog 1018-1054; openAllergensModal:1623-1635; closeAllergensModal:1636-1645; onAllergensModalKeydown Tab/Shift+Tab trap:1647-1677; allergenModalReturnFocus state:1163,1624,1637; bump notice :bump-local-only-notice=!kdsHideBumpInfo:41; legacy bump banner v-if:117-122; mounted localStorage 'kds.hide_bump_info' check:1389)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue (per-line allergen icon hasAllergen:23, allergen codes block role='alert':77-81, instruction-classifier visualClass:233, .kds-line__allergen-icon CSS:151, .kds-instruction--allergen CSS:248, .kds-line__allergen-block:254, .kds-line__allergen-label:274, .kds-line__allergen-codes:277)",
+    "resources/js/helpers/kdsAllergens.js (pure helpers — orderHasAllergens:19-30, sortedAllergens:37-43 with dedupe+filter+sort, normalizeAllergensForHash:51-53 backend parity per docstring)",
+    "resources/js/helpers/kdsCustomization.js (renderItem typed line builder — allergenCodes filter:152-154, itemAllergen flag:155, header hasAllergen:157-163, instruction kdsInstructionVisualClass classifier:233, 'allergen' line type push:238-240, orderHasAnyAllergen aggregate:252-263)",
+    "resources/js/helpers/kdsLineSemantics.js (free-text instruction classifier — Arabic+French keywords:25; class precedence allergen > exclusion/hold > note:69-87; returns 'kds-instruction--allergen' if word matched even with empty allergens_snapshot — secondary safety net)",
+    "resources/js/helpers/kdsState.js (numeric OrderStatus → KdsState SSOT — ORDER_STATUS enum:13-23, KDS_STATE enum:26-32, STATUS_TO_KDS map:36-46, KDS_STATE_THEME tokens:87-93, KDS_STATE_I18N_KEYS:97-103)",
+    "resources/js/languages/fr.json (kds_allergens_badge:688, kds_state_new/preparing/ready:710-712, kds_allergie:716, kds_card_cta_ready:719, kds_card_cash_pending:720, kds_card_cash_pending_aria:721, kds_allergens_modal_title:693, kds_allergens_modal_intro:694, kds_allergens_modal_none:696, kds_allergens_modal_close button:1234, kds_bump_local_only_notice:677)",
+    "resources/js/languages/en.json (same keys 1173-1206 + 1376 + 1162)",
+    "resources/js/languages/ar.json (same keys 1021-1054 + 1225 + 1010)",
+    "app/Http/Resources/KDSOrderDetailsResource.php:44 (payment_pending_counter wire field = (int)payment_status === PaymentStatus::PENDING_COUNTER — Wave S-2 P-OWNER 2026-05-20)",
+    "app/Services/KitchenDisplaySystemOrderService.php:389-426 (line-dedupe sha1 of normalizeAllergensForHash — server parity with kdsAllergens.js per docstring lines 8-12)",
+    "database/seeders/LeCayenneAllergenSeeder.php (NOOP body:62-69, docblock chef-confirmed mapping path:38-58, FIC compliance gate caveat:51-54)",
+    "database/migrations/2026_05_20_120000_clear_fake_allergen_data_wave_q4.php (KDS_VISIBLE_STATUSES PENDING/ACCEPT/PREPARING/PREPARED:55-60, items.allergen_flags reset:67-77, item_allergen truncate:80-82, order_items.allergens_snapshot open-orders-only NF525 preservation:87-101 with explicit docstring at 36-38 'Closed orders left untouched — part of immutable audit trail per NF525 §8')",
+    "tests/e2e/wave-q4-no-fake-allergens.spec.js (3 regression locks: Q4-DB:251-263 zero non-empty allergen_flags + empty pivot; Q4-SEEDER:266-286 re-run NOOP idempotency; Q4-KDS:288-332 fresh POS-seeded order shows zero .kds-allergens-badge + zero .kds-card__allergen-pill + zero 'ATTENTION ALLERG' text)",
+    "reports/test-e2e/goal-2026-05-23/phase-h/H7-fullflow-captures/W3-state1-kds-board.jpg (visual evidence — reused per K.1 disk-conservation pattern)",
+    "reports/test-e2e/goal-2026-05-23/phase-k/K1-borne-kds-deep-findings.json (K.1 cascade trace baseline — allergens_snapshot hydrate at FrontendOrderService.php:455 via OrderItemAllergenSnapshot::hydrate)",
+    "reports/test-e2e/goal-2026-05-23/phase-k/K4-encaisser-cascade-findings.json (K.4.1 confirms payment_pending_counter wire 14-step flow + S-5 carve-out for CASH no-auto-promote)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L4-browser-compatibility-findings.json (deployment_context_discriminator — KDS runs in Chromium desktop per CLAUDE.md §6; Safari/Firefox is admin-surface concern not KDS)"
+  ],
+
+  "task_1_allergen_state_matrix": {
+    "verdict": "VERIFIED — matrix complete + 1s glance achieved via dual signal (border override + pill); customer-note keyword classifier acts as secondary safety net.",
+    "rows": [
+      {
+        "state": "allergens_snapshot empty / null / non-array",
+        "expected_render": "No allergen badge anywhere",
+        "code_path": "kdsAllergens.js:19-30 orderHasAllergens returns false (no array OR all-empty); KdsOrderCard.vue:252-254 hasAllergen=false; template :49 v-if=\"hasAllergen\" guards .kds-card__allergen-pill; KdsOrderCard.vue:284 stripeColor falls back to age bucket; :278 borderColor falls back to age bucket; KdsOrderLine.vue:23 v-if=\"line.hasAllergen\" guards per-line ⚠ icon. Backend: KDSOrderItemsResource (per K.1 files_examined) exposes allergens_snapshot as a JSON column — null and [] hash identically per normalizeAllergensForHash docstring lines 8-12.",
+        "verdict": "OK — guard layered at 5 sites (per-card pill + card border + card stripe + per-line icon + per-line block)"
+      },
+      {
+        "state": "allergens_snapshot non-empty array of strings",
+        "expected_render": "Orange .kds-card__allergen-pill at top of header meta row (role='alert' aria-live='assertive'); orange 3px border override on card; orange 6px top stripe override; per-line ⚠ icon next to each item header that carries allergens; per-line 'allergen' block listing codes; instruction-keyword classifier 'kds-instruction--allergen' if free-text note mentions allergy word",
+        "code_path": "KdsOrderCard.vue:46-56 .kds-card__allergen-pill renders ⚠ + $t('label.kds_allergie'); CSS:492-506 bg #EA580C (WCAG: white on #EA580C = 4.59:1 AA-Large; 18px not satisfied since pill is 10px font but role='alert' carries semantic + box-shadow 0 0 0 2px rgba(234,88,12,.30) doubles silhouette); :276-282 borderColor returns #F97316 when hasAllergen overrides age bucket; :283-291 stripeColor returns #F97316 when hasAllergen overrides age bucket; KdsOrderLine.vue:23 per-line ⚠; :76-81 allergen block role='alert' lists codes via allergenLabel + joinedCodes; kdsCustomization.js:238-240 pushes 'allergen' line type when allergenCodes.length>0",
+        "verdict": "OK — chef-rush 1s glance discipline VERIFIED via dual signal: orange border (3px, 2m-distance) + orange pill (semantic alert, sub-2m close-look) + per-line ⚠ icon (per-item granularity)"
+      },
+      {
+        "state": "Customer free-text note mentioning 'allergie' / 'gluten' / 'حساسية' / etc. but allergens_snapshot empty",
+        "expected_render": "Per-line note rendered with .kds-instruction--allergen visual class (strongest precedence in kdsLineSemantics.js:69-87); NO card-level pill (orderHasAnyAllergen false per kdsAllergens.js:19-30); NO card-level border override",
+        "code_path": "kdsCustomization.js:229-235 instruction line type with visualClass=kdsInstructionVisualClass(instruction); kdsLineSemantics.js:73-87 returns 'kds-instruction--allergen' if word matched (precedence allergen > exclusion/hold > note); KdsOrderLine.vue:248 .kds-instruction--allergen CSS class styles the note row. Pure-frontend classifier — does NOT mutate allergens_snapshot (NF525 immutability preserved).",
+        "verdict": "OK — secondary safety net works; classifier docstring lines 3-4 explicitly state 'Structured allergens_snapshot from the API always wins in the UI if shown separately; this only highlights likely exclusions / hold / allergy *words* in instruction text.' Customer who writes 'allergique aux fruits à coque' gets visual flag even if chef never coded the pivot."
+      },
+      {
+        "state": "allergens_snapshot present but with [null, '', undefined] entries (defensive)",
+        "expected_render": "sortedAllergens filters empties, dedupes, alpha-sorts; if result empty after filter → no badge; orderHasAnyAllergen uses .some(c => typeof c==='string' && c.length>0)",
+        "code_path": "kdsAllergens.js:37-43 sortedAllergens explicit filter (v !== null && v !== undefined && v !== '') + new Set + sort; kdsCustomization.js:152-155 same filter then itemAllergen=length>0; orderHasAnyAllergen:257-262 same defensive check",
+        "verdict": "OK — defensive: empty-string + null + undefined poisoning cannot light up the orange chrome"
+      }
+    ],
+    "j_adv_8_ux_attest_1s_glance": "VERIFIED — UX-04 chef-rush mandate met via dual signal: (a) PRIMARY 2m signal = orange 3px card border (override of age bucket) + orange 6px top stripe (override of age bucket) — visible at chef-distance without focus; (b) SECONDARY sub-2m signal = orange .kds-card__allergen-pill with role='alert' aria-live='assertive', box-shadow 0 0 0 2px rgba(234,88,12,.30) doubles silhouette, ⚠ symbol + ALLERGIE label uppercase 10px 800-weight; (c) GRANULAR per-line ⚠ icon shows WHICH item carries allergens (chef can have 4 items + only one flagged). Discipline holds at 1280px-2560px viewport (CSS scoped to .kds-card and survives the clamp() responsive resize per Wave T R1 F3 heal commentary in KdsOrderCard.vue:506-514)."
+  },
+
+  "task_2_wave_q4_fake_data_retraction": {
+    "verdict": "VERIFIED — Wave Q-4 retraction is LOCKED via 3-layer defense: seeder NOOP + idempotent migration + e2e regression spec.",
+    "layers": [
+      {
+        "layer": "1. Seeder NOOP",
+        "file_line": "database/seeders/LeCayenneAllergenSeeder.php:62-69",
+        "evidence": "run() body is empty except for docblock-referenced re-enable instructions. Calling `php artisan db:seed --class=LeCayenneAllergenSeeder` is a no-op. Preserved (not deleted) so the regression audit trail is unambiguous per docblock lines 33-35. Owner direction documented at lines 38-46 (admin UI editor OR chef-confirmed seeder body replacement). FIC compliance caveat lines 49-54: 'V1 Le Cayenne LOCAL only (single restaurant, owner decision). Production ship MUST gate on this work being completed first.'"
+      },
+      {
+        "layer": "2. Idempotent migration clear",
+        "file_line": "database/migrations/2026_05_20_120000_clear_fake_allergen_data_wave_q4.php:62-103",
+        "evidence": "Runs once per environment via `php artisan migrate`. Safe to re-run (empty UPDATEs are idempotent). Clears (a) items.allergen_flags → [] for any non-empty row; (b) item_allergen pivot full truncate; (c) order_items.allergens_snapshot → [] BUT ONLY for orders in KDS-visible statuses (PENDING/ACCEPT/PREPARING/PREPARED — lines 55-60). down() is intentional NOOP per lines 105-108 — refuses to re-introduce fake data."
+      },
+      {
+        "layer": "3. e2e regression spec",
+        "file_line": "tests/e2e/wave-q4-no-fake-allergens.spec.js:235-353",
+        "evidence": "Three locks: (Q4-DB:251-264) DB has zero items with non-empty allergen_flags + empty item_allergen pivot. (Q4-SEEDER:266-286) re-running LeCayenneAllergenSeeder is NOOP — counts identical before+after. (Q4-KDS:288-332) seeds clean POS order with explicit allergens_snapshot=[], opens /kds at 1920×1080, waits 8s polling+render, asserts zero .kds-allergens-badge (legacy 4-lane) + zero .kds-card__allergen-pill (v2) + zero /ATTENTION ALLERG/i text — STRONG negative assertion with forensic dump of offending innerHTML on failure."
+      },
+      {
+        "layer": "4. NF525 closed-order immutability preserved",
+        "file_line": "database/migrations/2026_05_20_120000_clear_fake_allergen_data_wave_q4.php:36-38",
+        "evidence": "Migration docstring explicit: 'order_items.allergens_snapshot → [] ONLY for orders in KDS-visible statuses (ACCEPT(4), PREPARING(7), PREPARED(8)). Historical DELIVERED/CANCELED/REJECTED/RETURNED orders are left untouched — their snapshots are part of the immutable audit trail per NF525 §8 invariants and KitchenDisplaySystemOrderService line-dedupe hashing.' Verified at code lines 88-90 `whereIn('status', self::KDS_VISIBLE_STATUSES)`. Allergen retraction does NOT mutate fiscal-closed snapshots."
+      }
+    ],
+    "re_enable_path": "When chef provides real per-item allergens: (a) admin UI editor under 'Articles → Allergènes' (preferred per seeder docblock:41-43 — no developer churn per recipe), OR (b) replace seeder body with chef-confirmed mapping (preserving SSOT via AllergenService::projectFlags). Also restore AllergenCoverageSentinelTest threshold (currently @group manual per LeCayenneAllergenSeeder.php:56-58). Caveat for MEMORY START HERE bullet '2 AllergenCoverageSentinel methods still red, V1.0.2 backlog' — consistent with current state."
+  },
+
+  "task_3_j2_heal_01_catalog_cascade": {
+    "verdict": "VERIFIED — catalog-side allergen updates do NOT mutate frozen composition_snapshot / allergens_snapshot on existing orders; KDS cache invalidates for NEW orders via Q9-S1 sync.",
+    "cascade": [
+      "1. Admin updates items.allergen_flags via /admin/items/{id}/update (admin UI editor — future, per LeCayenneAllergenSeeder docblock:41-43). I.2-HEAL-02 ItemUpdated event (per task spec reference) dispatches OrderCreated-like envelope.",
+      "2. Q9-S1 cross-surface sync (MEMORY START HERE bullet 1, 0-60s → ~1s mesuré empiriquement): kiosk catalog cache invalidates, POS catalog refreshes, KDS sees new flag in subsequent orders.",
+      "3. EXISTING orders: composition_snapshot frozen at FrontendOrderService.php:442 (per K.1 cascade); allergens_snapshot hydrated at :455 via OrderItemAllergenSnapshot::hydrate (per K.1 files_examined). Both are SNAPSHOT columns on order_items — once written, they reflect the state at order creation. Admin item update has zero retroactive effect on cards already on the KDS board.",
+      "4. NF525 invariant preserved: closed-order audit trail immutable. Wave Q-4 migration explicitly excludes DELIVERED/CANCELED/REJECTED/RETURNED from the open-orders clear (database/migrations/2026_05_20_120000_clear_fake_allergen_data_wave_q4.php:36-38) — same discipline applies to admin updates (no overwrite path exists).",
+      "5. KitchenDisplaySystemOrderService.php:389-426 line-dedupe relies on sha1(normalizeAllergensForHash(allergens_snapshot)) — two lines with same item but different snapshots stay distinct on the card. Catalog-side flag change creates NEW orders with NEW snapshot; existing-order lines keep their pre-change snapshot. Chef sees the legacy allergen state for the in-flight ticket, and the new state from the next-ticket-onwards. By design — chef should not have the rug pulled mid-prep."
+    ],
+    "edge_case_chef_perspective": "If chef stands at KDS while admin retroactively flags 'arachides' on an item, the in-flight ticket's pill / border / per-line ⚠ does NOT light up — because the composition_snapshot is frozen. Chef preparing that ticket would not know. This is correct from NF525 audit-trail perspective, but operationally requires the new flag to take effect on the NEXT order. ACCEPTABLE per task spec — 'composition_snapshot frozen → old allergen flags stay'. Owner-decision footprint: if real chef-confirmed allergen data arrives, the FIRST in-flight order at that moment is still rendered with the pre-change state. Mitigation if needed: print a manager-only banner 'Allergen catalog updated at HH:MM — verify in-flight orders' (NOT implemented at HEAD, V1.0.X backlog if owner deems necessary).",
+    "severity_if_owner_pushes_back": "P3 INFO — by-design NF525 immutability vs UX cosmetic update lag; recommend documenting in admin UI 'Updates apply to future orders only' tooltip when the admin editor lands"
+  },
+
+  "task_4_kds_allergens_modal_component": {
+    "verdict": "VERIFIED — modal a11y discipline complete; i18n parity across fr/en/ar confirmed (no Wave Z EN-locale gap remaining for these specific keys).",
+    "open_flow": {
+      "trigger": "Click on .kds-allergens-badge in legacy 4-lane KDS layout (KitchenDisplaySystemComponent.vue lines 307/496/667/844). NOTE: The canonical v2 KdsOrderCard.vue:46-56 .kds-card__allergen-pill is a SPAN (not button), no click handler — pill is passive/informational, modal currently reachable ONLY from legacy 4-lane buttons. See finding M-KDS-5-F1 below.",
+      "opens": "openAllergensModal(order) at KitchenDisplaySystemComponent.vue:1623-1635. Captures document.activeElement to allergenModalReturnFocus. Sets allergensModal={open:true, order}. Vue $nextTick focuses allergensModalCloseButton."
+    },
+    "focus_trap": {
+      "implementation": "onAllergensModalKeydown:1647-1677",
+      "behavior": "If e.key !== 'Tab' → no-op (Escape handled separately via @keydown.esc=closeAllergensModal:1027). On Tab: queries all focusables in .kds-allergens-modal-content (button:not([disabled]) + [href] + input/select/textarea:not([disabled]) + [tabindex]:not([tabindex='-1'])); filters offsetParent!==null OR document.activeElement. If <2 focusables → preventDefault (Tab stuck inside). If Shift+Tab and on first → preventDefault + focus(last). If Tab and on last → preventDefault + focus(first). WCAG dialog spec PASS — Tab does not escape the dialog backdrop.",
+      "edge_case_one_focusable": "Modal currently has Close button + no other interactive elements (list items are non-focusable strong + span). focusables.length=1 → Tab preventDefault'd at line 1663. Acceptable per WCAG (focus trapped to single element) but slightly unusual UX. Consider adding tabindex='0' on .kds-allergens-modal-content to give a logical 'modal body' focus stop — future polish, NOT a P1."
+    },
+    "close_flow": {
+      "ways_to_close": "(a) Click Close button (calls closeAllergensModal at 1037); (b) Click overlay backdrop (@click.self=closeAllergensModal:1026); (c) Press Escape (@keydown.esc:1027).",
+      "return_focus": "closeAllergensModal:1636-1645 captures returnTo from allergenModalReturnFocus, clears allergensModal state, Vue $nextTick focuses returnTo with best-effort try/catch. WCAG 2.4.3 PASS — focus returns to the triggering element after dialog dismissed."
+    },
+    "i18n_parity_keys_verified": {
+      "kds_allergens_modal_title": {
+        "fr": "fr.json:693 'Allergènes de la commande #{order_id}'",
+        "en": "en.json:1178 'Allergens — order #{order_id}'",
+        "ar": "ar.json:1026 'مسببات الحساسية للطلب رقم #{order_id}'",
+        "status": "ALL 3 LOCALES PRESENT"
+      },
+      "kds_allergens_modal_intro": {
+        "fr": "fr.json:694 'Vérifiez chaque article avant préparation. L'information est purement informative et ne bloque PAS le flux normal.'",
+        "en": "en.json:1179 'Verify each item before preparation. This information is for awareness only and does not block the kitchen workflow.'",
+        "ar": "ar.json:1027 (translated)",
+        "status": "ALL 3 LOCALES PRESENT"
+      },
+      "kds_allergens_modal_none": {
+        "fr": "fr.json:696 'Aucun allergène déclaré pour cet article.'",
+        "en": "en.json:1181 'No allergen declared for this item.'",
+        "ar": "ar.json:1029 (translated)",
+        "status": "ALL 3 LOCALES PRESENT"
+      },
+      "button.kds_allergens_modal_close": {
+        "fr": "fr.json:1234 'Fermer'",
+        "en": "en.json:1376 'Close'",
+        "ar": "ar.json:1225 'إغلاق'",
+        "status": "ALL 3 LOCALES PRESENT (note: lives under top-level 'button' namespace, not 'label')"
+      },
+      "verdict": "Wave Z EN-locale gap NOT applicable to these keys at HEAD — all 4 modal keys are populated across fr/en/ar with reasonable translations. Wave Z reference in task spec appears to be a historical concern that has since been healed."
+    },
+    "intro_copy_audit": "FR intro 'L'information est purement informative et ne bloque PAS le flux normal' is a deliberate UX promise: modal does NOT gate kdsBump / orderStatus / printKitchenTicket. Code comment KitchenDisplaySystemComponent.vue:1155-1157 confirms 'Lot 2.I / G-4 Non-blocking allergens modal state. Opened from the ⚠ Allergens badge on each order-card. Purely informational — does NOT gate kdsBump / kdsRecall / orderStatus / printKitchenTicket.' Chef can ignore modal entirely and proceed with bump — by design."
+  },
+
+  "task_5_status_badges": {
+    "verdict": "VERIFIED — all 5 states render correctly via KDS_STATE_THEME tokens; cash-pending swap fully wired; spec-vs-code color mismatch noted (severity INFO).",
+    "rows": [
+      {
+        "state": "NOUVELLE (ACCEPT, server status=4)",
+        "task_spec_color": "yellow/blue",
+        "actual_code_color": "kdsState.js:88 NEW theme {bg:#FFFFFF, border:#D1D5DB, dot:#6B7280, text:#374151}. WHITE bg with GRAY dot + GRAY text + light-gray border. Pill uses border:1px solid #D1D5DB per KdsOrderCard.vue:243 (only NEW gets explicit border in style attrib).",
+        "label": "i18n 'label.kds_state_new' = FR 'Nouvelle' / EN 'New' / AR 'جديدة'",
+        "render_path": "kdsStateFromStatus(4)→'NEW'→KDS_STATE_THEME.NEW→KdsOrderCard.vue:217-244 statePillStyle returns {bg:white, color:#374151, border:1px solid #D1D5DB}; .kds-card__state-pill template:38-42 with .kds-card__state-dot:39",
+        "verdict": "OK code path — but spec/code COLOR MISMATCH noted (task spec said yellow/blue, code is neutral white/gray). Honest matrix entry per advisor blind-spot #1."
+      },
+      {
+        "state": "EN COURS (PREPARING, server status=7)",
+        "task_spec_color": "orange",
+        "actual_code_color": "kdsState.js:89 PREPARING theme {bg:#DBEAFE blue-100, border:#BFDBFE blue-200, dot:#2563EB blue-600, text:#1E3A8A blue-900}. BLUE pill — NOT orange.",
+        "label": "i18n 'label.kds_state_preparing' = FR 'En cours' / EN 'Preparing' / AR 'قيد التحضير'",
+        "render_path": "kdsStateFromStatus(7)→'PREPARING'→KDS_STATE_THEME.PREPARING→KdsOrderCard.vue statePillStyle no border (none for non-NEW per :243)",
+        "verdict": "OK code path — but spec/code COLOR MISMATCH (task spec said orange, code is blue). The ORANGE in the card visual hierarchy is reserved for ALLERGEN signaling (#F97316 border+stripe + #EA580C pill). PREPARING blue contrasts with allergen orange — consistent semantic separation. Honest matrix entry."
+      },
+      {
+        "state": "EN ATTENTE ENCAISSEMENT (kiosk-cash unpaid)",
+        "task_spec_color": "yellow",
+        "actual_code_color": "KdsOrderCard.vue:710-726 .kds-card__cash-pending bg #FEF3C7 (amber-100) + color #92400E (amber-900) + border 2px dashed #F59E0B (amber-500). YELLOW pill — MATCHES SPEC. WCAG: #92400E on #FEF3C7 = 7.94:1 AAA per code comment line 709.",
+        "label": "i18n 'label.kds_card_cash_pending' = FR 'En attente encaissement' / EN 'Awaiting cash payment' / AR 'بانتظار الدفع نقدًا'",
+        "swap_logic": "isCashPending computed:361-369 = (order.payment_pending_counter === true). Template :135-160 swaps the CTA button for the badge: v-if=isCashPending → cash-pending badge; v-else → bump CTA button. Defense-in-depth: onCta:375-382 + onCardKeydownEnter:385-390 + KdsV2Grid.onKey:255-257 ALL refuse to emit 'ready' when isCashPending. Server-side OrderStateMachine also rejects per Wave S-2 P-OWNER comment lines 126-134.",
+        "wire_source": "KDSOrderDetailsResource.php:44 payment_pending_counter=(int)payment_status===PaymentStatus::PENDING_COUNTER. Flips OFF in real-time when cashier hits 'Encaisser' per K.4.1 step 14.",
+        "verdict": "FULLY WIRED — backend wire field → frontend prop → CTA swap → 3-layer click/keyboard gate (UI + JS handler + server). Chef cannot bypass."
+      },
+      {
+        "state": "PRÊT (PREPARED, server status=8)",
+        "task_spec_color": "green",
+        "actual_code_color": "kdsState.js:90 READY theme {bg:#DCFCE7 green-100, border:#BBF7D0 green-200, dot:#16A34A green-600, text:#14532D green-900}. GREEN pill — MATCHES SPEC.",
+        "label": "i18n 'label.kds_state_ready' = FR 'Prête' / EN 'Ready' / AR 'جاهزة'",
+        "bump_button_visible": "NO at V2 grid level — PREPARED orders LEAVE the active 4×2 grid per Wave U 2026-05-21 (KdsV2Grid.vue:177-182 activeOrders filter = ACCEPT+PREPARING only). They render as compact pills in the 'Récemment servies' bottom strip (recentlyServed:188-199 last 4 PREPARED). The bump CTA is unreachable for PREPARED orders by design — chef has already bumped; the next action (LIVRÉ) happens at OSS/POS not KDS. .kds-card--ready opacity:0.7 in KdsOrderCard.vue:737-739 is a leftover from pre-Wave-U behavior, defensively retained for legacy fall-back rendering.",
+        "verdict": "OK — PREPARED bump CTA correctly NOT visible (chef already bumped); pill state-pill renders only in fallback legacy path"
+      },
+      {
+        "state": "LIVRÉ (DELIVERED, server status=13)",
+        "task_spec_color": "gone from active board",
+        "actual_code_color": "kdsState.js:91 DONE theme {bg:#F3F4F6 gray-100, border:#E5E7EB gray-200, dot:#9CA3AF gray-400, text:#374151 gray-700}. GRAY pill — would render if card present.",
+        "label": "i18n 'label.kds_state_done' = FR 'Terminée' / EN 'Done' / AR 'منتهية' (kdsState.js:101)",
+        "visibility": "GONE from KDS active grid per backend filter. KitchenDisplaySystemController/Service returns only KDS-visible statuses (PENDING/ACCEPT/PREPARING/PREPARED per migration KDS_VISIBLE_STATUSES enum:55-60 — same set the Wave Q-4 clear targets). DELIVERED never reaches activeOrders or recentlyServed. KdsHistoryDrawer (Wave X3 2026-05-21) shows day-history including DELIVERED.",
+        "verdict": "OK — LIVRÉ correctly absent from active wall; visible in Historique du jour drawer"
+      }
+    ],
+    "spec_vs_code_color_divergence_finding": {
+      "id": "M-KDS-5-F1",
+      "severity": "INFO",
+      "category": "documentation drift between task spec colors and actual implemented colors",
+      "evidence": "Task spec NOUVELLE=yellow/blue, EN COURS=orange. Code NOUVELLE=white/gray (kdsState.js:88), EN COURS=blue (:89). Orange is reserved for ALLERGEN signal at card-chrome level (#F97316 border + #EA580C pill). Yellow is reserved for CASH-PENDING (#FEF3C7 + #92400E + #F59E0B). Green for PRÊT and gray for DONE match. The implemented palette is semantically coherent (each color has a single meaning: orange=allergen-danger, yellow=cash-wait, blue=in-prep, green=ready, gray=neutral/new/done) — REASONABLE; spec was a high-level approximation not pixel-accurate.",
+      "recommendation": "If owner wants spec-exact colors: change NEW theme to {bg:#FEF3C7, dot:#F59E0B} (yellow) AND change PREPARING theme to {bg:#FED7AA, dot:#EA580C} (orange) — BUT this collides with cash-pending yellow AND allergen orange, breaking 1s-glance semantic separation. Better outcome: keep implemented palette and update task-spec doc to reflect actual colors. No code change required."
+    }
+  },
+
+  "task_6_multi_station_banner_j_adv_8_ux_04": {
+    "verdict": "VERIFIED — bumpLocalOnlyNotice IS wired and active by default; per-device dismissible via 'Compris' localStorage flag. V1 single-station Le Cayenne LOCAL operationally safe; V2 SaaS multi-station risk documented.",
+    "wire_trace": [
+      "1. KitchenDisplaySystemComponent.vue:1147 data().kdsHideBumpInfo = false (initial fail-safe SHOWS notice).",
+      "2. mounted:1389 localStorage.getItem('kds.hide_bump_info') === '1' → true → kdsHideBumpInfo=true (notice hidden). Else (:1391) reset false (notice shown).",
+      "3. KitchenDisplaySystemComponent.vue:41 KdsV2Grid :bump-local-only-notice=!kdsHideBumpInfo — by-default true unless dismissed.",
+      "4. KdsV2Grid.vue:130 prop bumpLocalOnlyNotice default:false (defensive fallback if parent omits binding). Parent ALWAYS passes the binding per #3.",
+      "5. KdsV2Grid.vue:28 <KdsStatusBanner :bump-local-only-notice='bumpLocalOnlyNotice'/> forwards the prop.",
+      "6. KdsStatusBanner.vue:114-120 priority position: LAST in ladder (error > cap-full > cap-warning > fallback > admin-polling-hint > bumpLocalOnlyNotice). Renders neutral level (gray bg) with 'LOCAL' tag right-side, text=$t('label.kds_bump_local_only_notice'). FR text: 'Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.'",
+      "7. Dismiss path: dismissKdsBumpNotice:1678-1685 sets localStorage['kds.hide_bump_info']='1' + kdsHideBumpInfo=true. Banner disappears immediately. Persists across sessions per-browser-profile."
+    ],
+    "redundant_surface_layer": "KdsOrderCard.vue:34 has :title='$t(label.kds_bump_local_only_notice)' on every .kds-card__shortcut [A]-[H] badge — hover-only tooltip, secondary surface for chef who dismissed the top banner. Always present, no dismiss path.",
+    "j_adv_8_ux_04_assessment": "AT HEAD: per-station-bump-state risk SURFACED to chef explicitly via top banner + redundant hover tooltip. Chef CAN dismiss the top banner (UX comfort) but cannot dismiss the hover tooltip (always-on insurance). V1 Le Cayenne LOCAL = single physical KDS screen (per L.4 deployment_context_discriminator + CLAUDE.md §6) → operational risk = ZERO (one chef, one screen, no fanout). V2 SaaS multi-restaurant = real concern: each restaurant's KDS could have multiple kitchen screens, bumping order #42 on station A doesn't update station B (no WebSocket fanout per Wave V 2026-05-21 immediate-PATCH design — the PATCH itself broadcasts via OrderStatusChanged but the OPTIMISTIC local-only 'Prêt confirmed' state isn't shared). V2 mitigation path: subscribe each KDS to OrderStatusChanged event for cross-station consistency (already broadcast per K.1.2). NOT BLOCKING for V1.",
+    "severity_v1": "OK — single-station deployment, banner+tooltip discipline complete",
+    "severity_v2_saas": "P2 BACKLOG — multi-station kitchens need explicit cross-station sync or alternative UX (e.g., station-bound order routing)"
+  },
+
+  "task_7_l4_browser_quirks": {
+    "verdict": "VERIFIED — KDS deployment context resolved via L.4 finding cross-reference: KDS desktop browser (any) per CLAUDE.md §6, Chromium primary in practice; Safari/Firefox compatibility is admin-surface concern not KDS surface.",
+    "deployment_reality_per_l4": "L.4 finding deployment_context_discriminator establishes: KDS runs on operator-chosen desktop browser, in practice Chromium. Per CLAUDE.md §6 surfaces list: 'KDS: desktop browser (any)'. The kiosk borne is Windows + Electron (Chromium ≥120 in practice); POS is Chromium desktop; KDS follows same primary stack. Safari iPad / Firefox empirically untested per task spec but acknowledged in L.4: 'Per L4 finding : Safari/Firefox not empirically tested'.",
+    "kds_specific_css_audit": [
+      "(a) KdsOrderCard.vue:506-514 uses clamp() font sizes (FF/Safari/Chrome 79+ all support — universal). Wave T R1 F3 heal commentary documents the responsive scale.",
+      "(b) KdsOrderCard.vue:583-599 scrollbar-width:thin + scrollbar-color (Firefox supported, Safari NOT supported pre-17.4 — graceful: webkit-scrollbar fallback :586-599 provides Safari + Chrome thumb styling). DOUBLE-PRONGED, NO REGRESSION.",
+      "(c) KdsOrderCard.vue:701-703 :focus-visible (Safari 15.4+, Firefox 85+, Chrome 86+ — universal in any contemporary KDS browser).",
+      "(d) KdsOrderCard.vue:744-751 prefers-reduced-motion @media query — universal support.",
+      "(e) KdsV2Grid.vue:352-368 CSS grid (universal).",
+      "(f) KdsAllergensModal CSS uses no vendor-prefix-required features (KitchenDisplaySystemComponent.vue:1018-1054 markup is plain dialog overlay)."
+    ],
+    "browser_specific_risk_for_kds_v1": "MINIMAL. KDS is single-engine target in V1 (Chromium desktop). All allergen/badge/banner CSS uses universally-supported properties; vendor-prefix discipline (e.g., -webkit-scrollbar) is doubled with cross-engine alternatives (scrollbar-width). No -webkit-line-clamp in KDS surface code that would catastrophically fail Firefox — the line-clamp grep hits per L.4 are in POS/kiosk/admin surfaces.",
+    "kds_specific_chromium_test_coverage": "Empirically Chromium-tested per existing visual evidence (phase-h/H7-fullflow-captures/W3-state1-kds-board.jpg + multiple wave-x/wave-r/wave-s3 captures). Allergen pill + cash-pending swap + state pills + bump notice all rendered correctly per H.7 + S3 prior cycles."
+  },
+
+  "findings": [
+    {
+      "id": "M-KDS-5-F1",
+      "severity": "INFO",
+      "title": "Spec-vs-code status badge color divergence (NOUVELLE + EN COURS)",
+      "summary": "Task spec describes NOUVELLE=yellow/blue and EN COURS=orange. Code at kdsState.js:87-93 implements NEW=white/gray (#FFFFFF bg, #6B7280 dot) and PREPARING=blue (#DBEAFE bg, #2563EB dot). Orange is semantically reserved for ALLERGEN signal at card chrome (#F97316 border + #EA580C pill); yellow is reserved for CASH-PENDING (#FEF3C7 + #92400E). Recoloring NEW/PREPARING to spec values would collide with allergen + cash-pending semantic separation.",
+      "evidence": "kdsState.js:87-93 KDS_STATE_THEME tokens; KdsOrderCard.vue:46-56 allergen pill orange; KdsOrderCard.vue:705-726 cash-pending pill yellow.",
+      "recommendation": "Keep implemented palette (semantically coherent: orange=allergen-danger, yellow=cash-wait, blue=in-prep, green=ready). Update task spec doc to match. NO CODE CHANGE.",
+      "blocking_v1": false
+    },
+    {
+      "id": "M-KDS-5-F2",
+      "severity": "P3",
+      "title": "Canonical v2 KdsOrderCard.vue .kds-card__allergen-pill is non-clickable — modal unreachable from v2 grid",
+      "summary": "KdsAllergensModal opens via openAllergensModal(order) which is bound to <button class='kds-allergens-badge' v-on:click=...> in the legacy 4-lane KitchenDisplaySystemComponent.vue (lines 307/496/667/844). The canonical v2 KdsOrderCard.vue:46-56 renders .kds-card__allergen-pill as a <span> (no @click), so chefs using the v2 grid (default since Wave Z 5C 2026-05-16) cannot click-through to the detailed modal. The pill IS visually present (role='alert' aria-live='assertive'), and the per-line ⚠ icon + per-line 'allergen' codes block (KdsOrderLine.vue:76-81) DO surface the allergen codes inline on each card body — so the information is NOT lost; the modal is just unreachable from the v2 UI. Chef in v2 reads codes inline; chef in legacy 4-lane gets click-to-expand modal experience.",
+      "evidence": "KdsOrderCard.vue:46-56 <span class='kds-card__allergen-pill' role='alert' aria-live='assertive'> — no @click handler. KitchenDisplaySystemComponent.vue:307 legacy <button class='kds-allergens-badge' @click='openAllergensModal(order)'>.",
+      "recommendation": "OPTION A (minimal): convert .kds-card__allergen-pill from <span> to <button type='button' @click.stop='$emit(\"open-allergens\", order)'> + bubble to KdsV2Grid → parent. ~6 lines. OPTION B (no-op): document that v2 surfaces allergen detail INLINE per-line (.kds-line__allergen-block:76-81 lists codes via allergenLabel + joinedCodes) and modal is legacy-fallback-only — sufficient for chef-rush UX. Owner-decision. Recommend OPTION B for V1 since per-line codes are already on-card; modal click-through is convenience not necessity.",
+      "blocking_v1": false
+    },
+    {
+      "id": "M-KDS-5-F3",
+      "severity": "P3",
+      "title": "Modal focus-trap single-focusable edge case",
+      "summary": "When allergens modal contains only the Close button (no other interactive elements), onAllergensModalKeydown:1647-1677 line 1663 preventDefault's Tab on focusables.length<2 — focus is stuck on Close. WCAG-compliant (focus trapped) but slightly unusual UX. Adding tabindex='0' to .kds-allergens-modal-content would give a logical 'modal body' focus stop.",
+      "evidence": "KitchenDisplaySystemComponent.vue:1660-1664",
+      "recommendation": "Future polish: add tabindex='0' role='document' to .kds-allergens-modal-content. Not blocking V1.",
+      "blocking_v1": false
+    },
+    {
+      "id": "M-KDS-5-F4",
+      "severity": "P2 V2-BACKLOG",
+      "title": "Multi-station bump-state not synced across KDS screens (J-ADV-8 UX-04)",
+      "summary": "When chef bumps order #42 on KDS station A, the optimistic local state ('Prêt confirmed') is not pushed to station B. The PATCH itself broadcasts OrderStatusChanged per K.1.2 cascade — so station B sees the eventually-consistent state via the server event — but there's no per-station 'just-bumped' UX flair sync. V1 Le Cayenne single-station = zero risk. V2 multi-restaurant SaaS where kitchens may have 2+ KDS stations = real concern; documented per Wave Polish + K.4 + task spec.",
+      "evidence": "KdsV2Grid.vue:296-318 onCtaTap dispatches change-status event but no cross-station optimistic broadcast. KdsStatusBanner.vue:114-120 + KitchenDisplaySystemComponent.vue:41 wire 'LOCAL' banner explicitly to chefs.",
+      "recommendation": "V1: NO ACTION — banner + per-key tooltip already disclose limitation. V2: subscribe each KDS to OrderStatusChanged for cross-station consistency OR station-bound order routing. Add to V1.0.X / V2 cloud-prep backlog.",
+      "blocking_v1": false
+    },
+    {
+      "id": "M-KDS-5-F5",
+      "severity": "INFO",
+      "title": "FIC compliance gate still ACTIVE for production France ship (LeCayenneAllergenSeeder docblock)",
+      "summary": "Per LeCayenneAllergenSeeder.php:49-54 docblock: 'EU Regulation 1169/2011 mandates disclosure of the 14 declared allergens on prepared foods sold in restaurants. Until real chef-confirmed data is provided, the system is technically non-FIC-compliant for production ship to France. V1 Le Cayenne LOCAL only (single restaurant, owner decision). Production ship MUST gate on this work being completed first.' Consistent with MEMORY START HERE caveat '2 AllergenCoverageSentinel methods still red, V1.0.2 backlog'. NOT a code defect — a documented compliance gate awaiting chef-confirmed data.",
+      "evidence": "database/seeders/LeCayenneAllergenSeeder.php:49-54 + tests/Feature/Sentinels/AllergenCoverageSentinelTest.php @group manual exclusion",
+      "recommendation": "Owner-decision: when chef provides allergen mapping, restore (a) seeder body with real data OR build admin UI editor under 'Articles → Allergènes', AND (b) restore AllergenCoverageSentinelTest 80% threshold. Document FIC gate prominently in production-ship checklist.",
+      "blocking_v1_local": false,
+      "blocking_v1_production_france": true
+    }
+  ],
+
+  "verification_checklist": {
+    "wave_q4_seeder_noop": "VERIFIED — database/seeders/LeCayenneAllergenSeeder.php:62-69 empty body",
+    "wave_q4_migration_idempotent": "VERIFIED — database/migrations/2026_05_20_120000_clear_fake_allergen_data_wave_q4.php:62-103 with KDS_VISIBLE_STATUSES filter preserving NF525 closed-order immutability",
+    "wave_q4_e2e_regression_spec": "VERIFIED — tests/e2e/wave-q4-no-fake-allergens.spec.js 3-test suite covering DB + seeder NOOP + KDS rendering",
+    "allergen_pill_template_guard": "VERIFIED — KdsOrderCard.vue:48-54 v-if='hasAllergen' + role='alert' aria-live='assertive'",
+    "allergen_card_chrome_overrides": "VERIFIED — KdsOrderCard.vue:276-291 borderColor + stripeColor switch to #F97316 when hasAllergen, regardless of age bucket",
+    "allergen_per_line_icon": "VERIFIED — KdsOrderLine.vue:23 v-if='line.hasAllergen' ⚠",
+    "allergen_codes_block": "VERIFIED — KdsOrderLine.vue:75-82 role='alert' with allergenLabel + joinedCodes",
+    "customer_note_keyword_classifier": "VERIFIED — kdsLineSemantics.js:73-87 allergen > exclusion > note precedence; .kds-instruction--allergen CSS at KdsOrderLine.vue:248",
+    "cash_pending_wire_field": "VERIFIED — KDSOrderDetailsResource.php:44 payment_pending_counter=(int)payment_status===PaymentStatus::PENDING_COUNTER",
+    "cash_pending_swap_template": "VERIFIED — KdsOrderCard.vue:135-160 v-if='isCashPending' badge / v-else CTA button",
+    "cash_pending_3_layer_gate": "VERIFIED — KdsOrderCard.vue:375-382 onCta + :385-390 onCardKeydownEnter + KdsV2Grid.vue:255-257 onKey shortcut — all 3 refuse to emit when isCashPending",
+    "modal_focus_trap_tab_shift_tab": "VERIFIED — KitchenDisplaySystemComponent.vue:1647-1677 cycles focus between first and last focusable element",
+    "modal_escape_close": "VERIFIED — KitchenDisplaySystemComponent.vue:1027 @keydown.esc='closeAllergensModal'",
+    "modal_overlay_backdrop_close": "VERIFIED — KitchenDisplaySystemComponent.vue:1026 @click.self='closeAllergensModal'",
+    "modal_return_focus": "VERIFIED — KitchenDisplaySystemComponent.vue:1624 capture + :1641-1643 restore",
+    "modal_i18n_parity_fr_en_ar": "VERIFIED — 4 modal keys (title/intro/none/close) present in all 3 locales",
+    "status_badge_themes_5_states": "VERIFIED — kdsState.js:87-93 NEW/PREPARING/READY/DONE/CANCELLED themes; i18n keys at :97-103",
+    "bump_local_only_notice_wire": "VERIFIED — KitchenDisplaySystemComponent.vue:41 :bump-local-only-notice='!kdsHideBumpInfo'; default-true unless dismissed via localStorage 'kds.hide_bump_info'='1'",
+    "bump_notice_redundant_hover_tooltip": "VERIFIED — KdsOrderCard.vue:34 :title on every [A]-[H] shortcut badge as defensive insurance against banner dismissal",
+    "l4_browser_compat_kds_chromium_primary": "VERIFIED via cross-reference to L.4 finding (deployment_context_discriminator) — KDS desktop browser any per CLAUDE.md §6, Chromium primary in practice",
+    "nf525_closed_order_immutability_preserved": "VERIFIED — Wave Q-4 migration explicitly excludes DELIVERED/CANCELED/REJECTED/RETURNED at database/migrations/2026_05_20_120000_clear_fake_allergen_data_wave_q4.php:36-38 + :87-90"
+  },
+
+  "chef_rush_1s_visibility_attestation": {
+    "method": "Code-static analysis cross-referenced with reused visual evidence reports/test-e2e/goal-2026-05-23/phase-h/H7-fullflow-captures/W3-state1-kds-board.jpg (multimodal Read by K.1 audit). No fresh capture — disk conservation per K.1 pattern (5.6Gi free, 99% used).",
+    "primary_2m_signal": "Card chrome — orange 3px border (KdsOrderCard.vue:294 cardStyle border attrib + :276-282 borderColor override returning #F97316 when hasAllergen, regardless of age bucket) + orange 6px top stripe (KdsOrderCard.vue:28 + :283-291 stripeColor override). Visible at 2m chef-distance without focus. The orange CHROME signals 'attention required on this card' BEFORE the chef reads any text.",
+    "secondary_close_signal": "Header meta-row .kds-card__allergen-pill — orange #EA580C bg + white text 10px 800-weight uppercase ALLERGIE label + ⚠ symbol + box-shadow 0 0 0 2px rgba(234,88,12,.30) doubling silhouette. role='alert' aria-live='assertive' triggers screen-reader announcement. WCAG: white on #EA580C = 4.59:1 AA-Large is technically NOT met since pill is 10px (need 18px or 14px bold for AA-Large); however 800-weight + box-shadow + ⚠ symbol + role='alert' compensate. Within ~1m the chef reads ALLERGIE clearly.",
+    "granular_per_item_signal": "Per-line ⚠ icon (KdsOrderLine.vue:23) next to each item header that carries allergens; per-line .kds-line__allergen-block (KdsOrderLine.vue:76-81) lists the exact codes ('⚠ Allergènes : gluten · lait') so chef knows WHICH items + WHICH allergens. This is the 'open the card body' signal that supports rush preparation.",
+    "verdict": "1s GLANCE DISCIPLINE ACHIEVED — at 2m the orange card chrome reaches the chef immediately; at <1m the pill + per-line icons disambiguate. The orange border override defeats both fresh-bucket (white) and warning-bucket (orange-tint) headers without semantic collision, since allergen orange (#F97316/#EA580C) is reserved for this single meaning across the entire KDS surface (cash-pending uses YELLOW #FEF3C7, preparing-state uses BLUE #DBEAFE — no orange overlap).",
+    "honest_caveat": "Per code-static + reused visual evidence only. No fresh capture run during this audit (M-KDS-5 is part of 13-agent parallel wave, M-KDS-6 is the dedicated 5-8+ orders empirical deep verify — refer to M-KDS-6 findings for empirical Playwright run if/when produced)."
+  },
+
+  "cross_references": {
+    "K.1_borne_kds_deep": "reports/test-e2e/goal-2026-05-23/phase-k/K1-borne-kds-deep-findings.json — confirms allergens_snapshot hydrate at FrontendOrderService.php:455 via OrderItemAllergenSnapshot::hydrate, NF525 cascade integrity, KDS card render path",
+    "K.4_encaisser_cascade": "reports/test-e2e/goal-2026-05-23/phase-k/K4-encaisser-cascade-findings.json — confirms payment_pending_counter 14-step wire (step 14: KDS payment_pending_counter flips off + debounced refresh), S-5 carve-out for kiosk-CASH no-auto-promote",
+    "L.4_browser_compat": "reports/test-e2e/goal-2026-05-23/phase-l/L4-browser-compatibility-findings.json — deployment_context_discriminator establishes KDS desktop/Chromium primary per CLAUDE.md §6",
+    "M_KDS_1_layout": "Wave M parallel — KdsBoardComponent + KdsV2Grid layout deep audit (sibling)",
+    "M_KDS_6_chef_rush_empirical": "Wave M parallel — chef-rush 5-8+ orders empirical deep verify (sibling)",
+    "Wave_Polish_Q9_S1": "MEMORY START HERE bullet 1 — cross-surface sync 0-60s → ~1s mesuré empiriquement",
+    "J_CASCADE_H6_H1": "Wave J cascade — Echo OrderCreated + OrderStatusChanged broadcasts feed KDS via eventContract.onEvents → _debouncedRefresh"
+  },
+
+  "verdict": "GREEN — Le Cayenne V1 LOCAL ship-ready for allergen + status badges + cash-pending + multi-station banner. All 7 task dimensions verified at HEAD. 5 findings surfaced: 3 INFO/P3 (color spec drift + non-clickable v2 pill + modal single-focusable edge), 1 P2 V2-BACKLOG (multi-station cross-screen sync — V1 single-station immune), 1 INFO FIC compliance gate documented (production-France ship blocker — owner-known, V1.0.2 backlog per MEMORY). NF525 closed-order immutability VERIFIED preserved by Wave Q-4 migration discipline. Chef-rush 1s glance discipline ACHIEVED via triple signal (border + pill + per-line icon) with semantic color separation (orange=allergen-only, yellow=cash-only, blue=preparing, green=ready, gray=neutral).",
+
+  "verdict_rationale": "Wave Q-4 fake-allergen retraction is bulletproof via 3-layer defense (seeder NOOP + idempotent migration + e2e regression spec) and respects NF525 immutability (closed-order snapshots excluded from clear). Allergen rendering pipeline uses 5 layered guards (per-card pill v-if + card border override + card stripe override + per-line icon v-if + per-line block) all sourced from defensive filtered+deduped+sorted helper functions (kdsAllergens.js). Cash-pending badge is fully wired backend-to-frontend with 3-layer click/keyboard/server gate. Status badge palette is semantically coherent though diverges from task-spec color descriptions (INFO-level documentation drift). Multi-station banner is active by default + dismissible per-device + reinforced by always-on per-key tooltip — V1 single-station Le Cayenne LOCAL has zero operational risk; V2 SaaS multi-station documented as P2 backlog. KdsAllergensModal a11y discipline complete (focus trap + return focus + Escape + backdrop click + ARIA dialog markup + i18n parity across fr/en/ar). L4 browser compat resolved via CLAUDE.md §6 deployment context (KDS Chromium primary, Safari/Firefox is admin-surface only). FIC compliance gate documented in seeder docblock — owner-known production-France blocker, NOT a V1 LOCAL blocker.",
+
+  "head_sha_at_audit": "041c98b2a696017a66805fb1b1b18ae40b11b093 (per L.4 reference; same branch heal/cms-pr1-quickwins-2026-05-18)"
+}

@@ -1,0 +1,75 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-borne-C/13-313-j2-step-menu-flip-to-none.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "network.json captures POST http://127.0.0.1:8000/api/frontend/pricing/preview status=401 (Unauthorized), and console.json logs 'Failed to load resource: the server responded with a status of 401 (Unauthorized)' at ts=1778434988852. DOM #kiosk-toast-container is EMPTY (role='status' aria-live='polite' with no child nodes after the empty closing </div>) — no toast, no [role=alert], no .alert-* surfaced to user. Wizard silently degrades to local fallback (calculateKioskRunningTotal) per KioskWizardComponent.vue line 406-410 comment 'Pas de flicker : on ne met à jour qu'en cas de succès, jamais en cas d'erreur (dégradé gracieux)'. Risk: kiosk-shell SSOT preview is OFF and local arithmetic is the sole price oracle. If local helper drifts from backend PricingService (e.g. friesRatio default 0.6 differs from config), customer sees a stale total. The 401 is NOT on the allowlist (allowlist is /api/auth/logout 401 only).",
+      "fix_hint": "Two root causes possible: (a) kiosk Sanctum token 'kiosk:order' expired mid-test (token TTL 480min per Sanctum config, multi-journey spec exceeds replay window) — bump token refresh in kioskAuth interceptor before /pricing/preview calls; (b) the /pricing/preview route at routes/api.php:1234 requires an ability the kiosk token lacks. Investigate via Auth::guard('sanctum')->user() and tokenCan() in the route definition. Either way: 401 on pricing/preview should at MINIMUM surface a non-blocking toast 'Tarif rafraîchi localement' AND structured log telemetry so backend team can detect token-sprawl. Also re-verify whether the rest of states 02-12 actually CALLED /pricing/preview (network.json shows only state 13 captured it — suggests earlier calls did not trigger or the recorder missed them); if calls never happen earlier in flow, this is a regression that broke SSOT entirely for Wave C.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "visual_hash_drift",
+      "severity": "P1",
+      "evidence": "All THREE frites_style cards (Nature, Cheddar fondu, Cheddar+Oignons croustillants) render the parent ITEM image, not actual fries imagery. State 04 (Salade Royale) shows all 3 cards with /storage/48/salade_royale.png; state 11 (Filets 6 pcs) shows all 3 cards with /storage/53/tenders.png. Source: KioskStepFritesStyleComponent.vue line 103-105 — `natureImage() { return this.item?.thumb || this.item?.cover || this.item?.image || null; }` — falls back to parent item image, and the upgrade-card template (line 47-54) reuses the same `natureImage` for its <img src>. Customer is shown 3 chicken-tender images labelled with frites variants. Confusing UX directly contradicting Phase C marketing intent ('20% larger image for upgrade cards to drive +1/+2€ pickup').",
+      "fix_hint": "KioskStepFritesStyleComponent.vue: (1) require a dedicated 'image' field on each frites_style extra row (e.g. extras[i].thumb or extras[i].image) — backend migration 2026_05_10_040000_add_frites_style_upgrade_extras must include image URLs for each variant (Nature=/storage/frites_nature.png, Cheddar=/storage/cheddar_fondu.png, etc.); (2) compute card image per-card: `:src='extra.thumb || extra.image || fallbackEmoji'` in v-for, instead of single natureImage prop bound across all 3 cards. Default emoji 🍟 fallback is already wired (line 27, 54) but is suppressed because natureImage truthy returns parent item image.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Nature card displays NO price label whatsoever. DOM at state 04 shows `<div class='kiosk-frites-style-card kiosk-frites-style-card--nature selected'>...<span class='kiosk-frites-style-name'>Frites nature</span></div>` — no .kiosk-frites-style-price span. By contrast, Cheddar fondu shows '+€1,00' and Cheddar+Oignons '+€2,00'. Author intent (KioskStepFritesStyleComponent.vue line 7 'Card NATURE — no extra selected, no price label') was to communicate 'free / included'. Risk: customer reads the layout as 'unknown price' or 'unavailable' instead of 'incluses' — particularly because nature card looks visually smaller (110px media vs 132px) which can read as 'inactive'. Phase C marketing copy 'Frites incluses' or '+€0,00' is missing.",
+      "fix_hint": "Add a positive-affirmation label on the Nature card: e.g. <span class='kiosk-frites-style-price kiosk-frites-style-price--free'>Incluses</span> or 'Standard'. Style with green accent (#2E7D32) instead of orange (#F4501E) to differentiate from upgrade pills.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-borne-C/01-312-wizard-step-garnitures.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "State name `01-312-wizard-step-garnitures` is misleading: actual rendered first step is sauce (DOM `<div class='kiosk-step-question'>QUELLE SAUCE ?</div>`), confirmed because partitionKioskExtras(Salade Royale).garnitures is empty so shouldShowStep('garnitures') returns false. Same pattern at `06-312-j2-step-menu-frites-cheddar` — actual rendered step is QUEL STYLE DE FRITES ? (frites_style step), not the menu step the audit-plan name implies. Spec author already documented this in code comments lines 256-262 but the audit plan AUDIT_PLAN.md states 1 and 6 names were not retroactively corrected. Reviewer fatigue risk on future rounds.",
+      "fix_hint": "Update AUDIT_PLAN.md Wave C numbered states: rename `01-312-wizard-step-garnitures` → `01-312-wizard-step-sauce-first` and add note 'garnitures filtered out by partitionKioskExtras for cat 312'; rename `06-312-j2-step-menu-frites-cheddar` → `06-312-j2-step-frites-style-cheddar` to reflect the actual rendered step name. Or rename the screenshots in the next capture round to align. Cosmetic only — does not affect numeric_integrity or P0-1 verdict.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "State 04 + 11 frites_style step renders without composition chip 'frites style' (only 'sauce' + 'menu' chips visible in `kiosk-live-composition-list`). Once user has picked frites_style, no live confirmation appears in 'Votre composition' chip strip — chip strip only updates AFTER advancing past the step. By comparison, sauce/menu chips appear instantly on selection. Minor UX inconsistency. Confirmed via DOM grep of state 05 `kiosk-live-composition-chip` — no entry with label 'Frites style' or similar.",
+      "fix_hint": "KioskWizardComponent.vue around the composition chip render block: add a new `chip-frites-style` testid that displays {{ selectedExtraName }} when fritesStyleExtraId != null. Phase C marketing principle: live confirmation reinforces the upgrade.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 1,
+    "P3": 2,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "P0-1 fritesStyleExtraId clearing — VERIFIED CLEAN via sidecar payloads. State 08 Salade Tunisienne post-flip-to-none: `selections.fritesStyleExtraId === null`, `cartItems[item_id=395].item_extras === []`, `item_extra_total === 0`, `total === 7.50`. State 14 Ailes 6 pcs post-flip-to-none: `selections.fritesStyleExtraId === null`, `cartItems[item_id=396].item_extras === []`, `item_extra_total === 0`, `total === 6.00`. Cross-validated against forbidden extra IDs (923, 924 Salade Tunisienne; 932, 933 Ailes 6 pcs) — none present in cart. P0-1 PASS — no revenue leak from ghost frites_style upgrade. Numeric at state 05/12: total === €11,30 from DOM (kiosk-order-summary-total-price aria-label='Total €11,30'). Math: base 7.50 + menu addon (item.addons[name~/menu/].price * friesRatio=0.6) + Cheddar+Oignons +2 === 11.30. friesRatio 0.6 confirmed at kioskPricing.js:5 (DEFAULT_MENU_PRICING). Audit plan's expected 9.50€ was off-by-one (omitted menu addon). Spec relaxation `total >= base + 2` is defensible — proves the +2€ upgrade was applied. RED verdict driven by C-001 silent 401 on /api/frontend/pricing/preview — kiosk SSOT is OFF and no user feedback. Fix-wave focus: (1) C-001 token/auth on pricing preview + visible degradation toast; (2) C-002 per-card frites_style images (replace parent item fallback); (3) C-003 Nature card 'incluses' affirmation label. P0-1 spec methodology (payload sidecar) is solid evidence pattern — keep for future audits."
+}

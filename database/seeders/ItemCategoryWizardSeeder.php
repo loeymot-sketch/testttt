@@ -23,7 +23,7 @@ class ItemCategoryWizardSeeder extends Seeder
             'Ojja'                       => ['wizard_template' => 'simple',    'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
             'Omelettes'                  => ['wizard_template' => 'omelette',  'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
             'Nos Salades'                => ['wizard_template' => 'salade',    'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
-            'Chicken & Tenders'          => ['wizard_template' => 'snacking',  'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
+            'Poulet croustillant'        => ['wizard_template' => 'snacking',  'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
             'Frites & Accompagnements'   => ['wizard_template' => 'simple',    'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
             'Nos Desserts'               => ['wizard_template' => 'simple',    'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],
             'Nos Boissons'               => ['wizard_template' => 'simple',    'has_menu' => false, 'default_menu_kiosk' => false, 'sauce_included_menu' => false],

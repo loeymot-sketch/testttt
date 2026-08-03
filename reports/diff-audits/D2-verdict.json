@@ -1,0 +1,46 @@
+{
+  "agent": "A.2-D2",
+  "scope": "PosCounterCollectModal hero total € FR format",
+  "pre_grep_matches": 44,
+  "post_grep_matches": 44,
+  "delta_LOC": 0,
+  "diff_clean": true,
+  "sentinel_passed": null,
+  "frozen_zone_touched": false,
+  "playwright_screenshot_taken": false,
+  "verdict": "BLOCKED-CONFLICT",
+  "reason": "Brief's prescribed fix (wrap hero with formatMoneyEuro) is a NO-OP. Hero ALREADY renders '8,50 €' correctly via formatPrice() → Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}) at line 71. formatMoneyEuro in CashOverviewComponent (lines 509-525) is functionally IDENTICAL to formatPrice — same Intl.NumberFormat call. Replacing one with the other changes nothing rendered.",
+  "evidence_hero_already_correct": {
+    "wave_final_S2_09_quote": "Hero MONTANT TOTAL 8,50 € (FR-format comma + nbsp + €). [...] MONTANT REÇU prefilled 8.50 (period — known pre-existing P2 documented as S2-001)",
+    "source": "reports/test-e2e/wave-final-2026-05-23/round-1/S2-pos-findings.json"
+  },
+  "evidence_helpers_identical": {
+    "formatPrice_path": "resources/js/helpers/formatPrice.js:40-54",
+    "formatMoneyEuro_path": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue:509-525",
+    "both_use": "new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)"
+  },
+  "actual_root_cause": {
+    "location": "resources/js/components/admin/pos/PosCounterCollectModal.vue:292",
+    "code": "this.cashReceivedRaw = String(this.orderTotal.toFixed(2));",
+    "result": "Pre-fills the INPUT with US-decimal '8.50' (period). Same on line 306 (setMode CASH switch-back)."
+  },
+  "why_brief_forbids_input_touch": {
+    "brief_quote": "Do NOT touch the INPUT (cashReceivedRaw line 113) — user types the value, the parsing logic doesn't change.",
+    "naive_fix_risk": "If pre-fill becomes '8,50' (comma) without updating parser, cashReceivedNumber computed (line 248-250) does parseFloat('8,50') = 8 (parseFloat stops at comma), breaks rendu calc, breaks canConfirm gate (cashReceivedNumber >= orderTotal fails for 8 >= 8.5), cashier CANNOT validate exact-change orders. NF525-adjacent flow (PaymentService::confirmCounterPayment) gets wrong received amount."
+  },
+  "proper_fix_LOC_estimate": ">10 LOC",
+  "proper_fix_outline": [
+    "Display-formatted FR string + raw numeric shadow (2 data props vs 1)",
+    "Parse-on-input that strips '€' / nbsp / replaces ',' with '.'",
+    "Update onReceivedInput / numpadInput / numpadBack / numpadClear / watcher (5 methods)",
+    "Update cashReceivedNumber to parse FR-formatted string",
+    "Update existing posCounterCollectModalSentinel.spec.js if assertions break"
+  ],
+  "recommendation": "DEFER to V1.0.2 as originally classified by Wave Polish Final (A-001) and Wave Final (S2-001). Owner has 3 options:\n  1. Accept defer-to-V1.0.2 (current Wave Final classification) — modal is operationally correct, hero FR-formatted, input is internal numeric entry zone where '8.50' (US-decimal) is the conventional spreadsheet/calculator input format anyway.\n  2. Authorize scope expansion to ~15-20 LOC + a 2-data-prop split + parser strip. New LOC fits a single commit but requires updating 5 methods + watcher + the existing sentinel + a NEW sentinel for parser robustness.\n  3. Accept the no-op commit (CLEAN-FIX of NOTHING) — NOT recommended: corrupts convergence trail with a misleading 'fix € format' commit that changes zero rendered output. Advisor pushback rejected this path.",
+  "no_commit_made": true,
+  "files_touched": [],
+  "artifacts": [
+    "reports/diff-audits/D2-pre.txt",
+    "reports/diff-audits/D2-verdict.json"
+  ]
+}

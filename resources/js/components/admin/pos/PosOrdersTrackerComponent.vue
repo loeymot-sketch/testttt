@@ -1,0 +1,2354 @@
+<template>
+    <!--
+      [POS-V4-ORDERS-TRACKER 2026-05-02]
+      Écran caisse plein écran : kanban des commandes actives (POS + borne + online)
+      pour le caissier, avec live update Echo. Aucune logique de pricing — affichage
+      des totaux renvoyés par le backend (invariant FoodKing : pricing SSOT).
+      L'écran client (OSS) reste séparé : route admin.order-status-screen.
+    -->
+    <section class="pos-tracker-shell" data-pos-tracker-shell>
+        <ConnectionStatusBanner suppress-transient suppress-session-invalid />
+
+        <header class="pos-tracker-bar">
+            <div class="pos-tracker-bar-left min-w-0">
+                <p class="pos-tracker-eyebrow">Caisse Le Cayenne</p>
+                <h1 class="pos-tracker-title">{{ $t('pos.tracker.title') }}</h1>
+                <div class="pos-tracker-status-row">
+                    <span>
+                        <strong>{{ stats.active }}</strong>
+                        {{ $t('pos.tracker.active_orders') }}
+                    </span>
+                    <span class="pos-tracker-status-pill pos-tracker-status-pill--ready" v-if="stats.ready > 0">
+                        <i class="fa-solid fa-bell-concierge" aria-hidden="true"></i>
+                        {{ stats.ready }} {{ $t('pos.tracker.ready_short') }}
+                    </span>
+                    <span>{{ stats.todayCount }} {{ $t('pos.tracker.today_total') }}</span>
+                    <!-- [CAISSE-HEALTH 2026-07-30] Santé système au cœur de la vue d'ensemble : l'opérateur
+                         voit une dégradation temps réel/fiscale AVANT de perdre des commandes en silence. -->
+                    <pos-system-health-pill />
+                </div>
+            </div>
+            <div class="pos-tracker-bar-right">
+                <div class="pos-tracker-search">
+                    <i class="lab lab-search-normal" aria-hidden="true"></i>
+                    <input
+                        type="search"
+                        v-model.trim="filters.query"
+                        :placeholder="$t('pos.tracker.search_placeholder')"
+                        :aria-label="$t('pos.tracker.search_placeholder')"
+                    />
+                    <button
+                        v-if="filters.query"
+                        type="button"
+                        class="pos-tracker-search-clear"
+                        @click="filters.query = ''"
+                        :aria-label="$t('button.clear')"
+                    >✕</button>
+                </div>
+                <div class="pos-tracker-source-tabs" role="tablist" :aria-label="$t('pos.tracker.source_filter')">
+                    <button
+                        v-for="src in sourceTabs"
+                        :key="src.id"
+                        type="button"
+                        role="tab"
+                        :aria-selected="filters.source === src.id"
+                        :class="['pos-tracker-source-tab', filters.source === src.id ? 'is-active' : '']"
+                        @click="filters.source = src.id"
+                    >
+                        <span class="pos-tracker-source-tab-icon" aria-hidden="true">{{ src.icon }}</span>
+                        <span>{{ src.label }}</span>
+                    </button>
+                </div>
+                <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Ouvre la modale de sortie de stock hors-vente. -->
+                <button
+                    type="button"
+                    class="pos-tracker-history-link"
+                    @click="stockOutflowOpen = true"
+                    title="Enregistrer un repas personnel ou une perte (sortie de stock)"
+                    data-testid="pos-tracker-outflow"
+                >
+                    <i class="fa-solid fa-utensils" aria-hidden="true"></i>
+                    <span>Sortie stock</span>
+                </button>
+                <router-link
+                    :to="{ name: 'admin.historique.list' }"
+                    class="pos-tracker-history-link"
+                    :title="$t('pos.tracker.history_hint')"
+                    data-testid="pos-tracker-history"
+                >
+                    <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+                    <span>{{ $t('pos.tracker.history') }}</span>
+                </router-link>
+                <router-link
+                    :to="{ name: 'admin.order-status-screen' }"
+                    target="_blank"
+                    rel="noopener"
+                    class="pos-tracker-customer-link"
+                    :title="$t('pos.tracker.customer_screen_hint')"
+                >
+                    <i class="fa-solid fa-display" aria-hidden="true"></i>
+                    {{ $t('pos.tracker.customer_screen') }}
+                </router-link>
+                <router-link
+                    :to="{ name: 'admin.pos' }"
+                    class="pos-tracker-back-link"
+                >
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                    {{ $t('pos.tracker.back_to_pos') }}
+                </router-link>
+            </div>
+        </header>
+
+        <!--
+          [iter15-mega-fix B-003/C-008 2026-05-10] Local realtime banner was
+          missed by run-1 fix that gated only the global ConnectionStatusBanner.
+          In local/dev (no Pusher/Soketi), `realtimeConnected` is permanently
+          false → banner shouts "Connexion temps réel perdue" forever, polluting
+          dev/demo screenshots and visual audits. Production keeps the banner
+          (genuinely useful when WS is down for staff). Same env gate pattern
+          as ConnectionStatusBanner.vue isDevEnv computed.
+        -->
+        <div v-if="!realtimeConnected && !isDevEnv" class="pos-tracker-rt-warn" role="status">
+            {{ $t('pos.tracker.realtime_lost') }}
+        </div>
+
+        <!--
+          [S2 F1 révisé 2026-07-29] Ce board ne montre que LE JOUR. S'il reste des
+          commandes à encaisser plus anciennes (elles vivent dans la file
+          all-time /admin/encaissement), on l'annonce ici — sans les rapatrier
+          dans les colonnes, ce qui écraserait le signal du jour et volerait
+          leurs cartes aux voies « Prêts » / « Livrés ».
+        -->
+        <router-link
+            v-if="olderPendingCount > 0"
+            :to="{ name: 'admin.encaissement' }"
+            class="pos-tracker-older-pending"
+            data-testid="tracker-older-pending"
+        >
+            💶 {{ $t('pos.tracker.older_pending', { count: olderPendingCount }) }}
+        </router-link>
+
+        <div class="pos-tracker-grid" :aria-busy="loading ? 'true' : 'false'">
+            <article
+                v-for="col in columns"
+                :key="col.id"
+                :class="['pos-tracker-col', `pos-tracker-col--${col.tone}`, col.highlight && col.orders.length > 0 ? 'is-pulse' : '']"
+            >
+                <header class="pos-tracker-col-head">
+                    <div class="pos-tracker-col-head-titles">
+                        <h2>
+                            <span class="pos-tracker-col-icon" aria-hidden="true">{{ col.icon }}</span>
+                            {{ col.label }}
+                        </h2>
+                        <!--
+                          [Wave S-4 P-OWNER 2026-05-20] Lane subtitle clarifies
+                          the renamed "À encaisser" lane semantic for the
+                          cashier (kiosk paid-at-counter orders only).
+                        -->
+                        <p v-if="col.subtitle" class="pos-tracker-col-subtitle">{{ col.subtitle }}</p>
+                    </div>
+                    <span class="pos-tracker-col-count" :aria-label="`${col.orders.length} ${col.label}`">
+                        {{ col.orders.length }}
+                    </span>
+                </header>
+
+                <div class="pos-tracker-col-body" v-if="col.orders.length > 0">
+                    <transition-group name="pos-tracker-card" tag="div" class="pos-tracker-cards">
+                        <article
+                            v-for="order in col.orders"
+                            :key="order.id"
+                            :class="['pos-tracker-card', `pos-tracker-card--${col.tone}`, newReadyIds.has(order.id) ? 'is-fresh' : '', trackerAgeClass(order, col.id)]"
+                            :data-testid="`tracker-order-${order.id}`"
+                        >
+                            <header class="pos-tracker-card-head">
+                                <span class="pos-tracker-card-num">
+                                    {{ order.queue_number ? 'N°' + order.queue_number : ('#' + (order.order_serial_no || order.id)) }}
+                                </span>
+                                <!--
+                                  [Wave S-4 P-OWNER 2026-05-20] Cash-pending
+                                  bell badge — visible only on cards in the
+                                  À encaisser lane. Same icon as the column
+                                  header (🔔) reinforces the cashier signal.
+                                -->
+                                <span
+                                    v-if="isCashPending(order)"
+                                    class="pos-tracker-card-cash-badge"
+                                    :title="$t('pos.tracker.cash_due_label')"
+                                    :data-testid="`tracker-cash-badge-${order.id}`"
+                                    aria-label="Commande à encaisser"
+                                >
+                                    🔔
+                                </span>
+                                <span :class="['pos-tracker-card-source', `pos-tracker-card-source--${sourceOf(order)}`]"
+                                      :title="$t('pos.tracker.source_' + sourceOf(order))">
+                                    {{ sourceIcon(order) }}
+                                </span>
+                                <span class="pos-tracker-card-time" :title="formatTime(order.created_at)">
+                                    {{ elapsedShort(order.created_at) }}
+                                </span>
+                            </header>
+                            <!--
+                              [IMP-AGING 2026-07-22] Age badge — À encaisser lane only.
+                              A web/kiosk order waiting for the cashier turns orange
+                              after 5 min (tracker-card--aging) and red/pulsing after
+                              10 min (tracker-card--urgent). Rendered only when the
+                              aging threshold is crossed so quiet cards stay clean.
+                              New testid (additive — no existing testid touched).
+                            -->
+                            <div
+                                v-if="trackerAgeClass(order, col.id)"
+                                :class="['pos-tracker-card-age', trackerAgeClass(order, col.id) === 'tracker-card--urgent' ? 'pos-tracker-card-age--urgent' : '']"
+                                :data-testid="`tracker-age-${order.id}`"
+                            >
+                                <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+                                <span>{{ agingLabel(order) }}</span>
+                            </div>
+                            <!--
+                              [OWNER 2026-07-31] Identité client VISIBLE avant l'accept/encaissement :
+                              nom + téléphone. Pour une commande WEB (distante) le caissier DOIT pouvoir
+                              rappeler le client pour CONFIRMER que c'est une vraie commande d'une vraie
+                              personne (anti « commande nulle »). Le téléphone vient de SimpleOrderResource
+                              (customer_phone, shippé pour web + delivery). Additif — nom déjà affiché.
+                            -->
+                            <div class="pos-tracker-card-customer" v-if="customerLabel(order) || customerPhone(order)">
+                                <i class="fa-solid fa-user" aria-hidden="true"></i>
+                                <span>{{ customerLabel(order) }}</span>
+                                <a
+                                    v-if="customerPhone(order)"
+                                    class="pos-tracker-card-phone"
+                                    :href="`tel:${customerPhone(order)}`"
+                                    :data-testid="`tracker-customer-phone-${order.id}`"
+                                    :title="`Appeler ${customerLabel(order) || 'le client'} pour confirmer la commande`"
+                                    @click.stop
+                                ><i class="fa-solid fa-phone" aria-hidden="true"></i> {{ customerPhone(order) }}</a>
+                            </div>
+                            <ul class="pos-tracker-card-items">
+                                <li
+                                    v-for="(item, idx) in itemsPreview(order)"
+                                    :key="idx"
+                                >
+                                    <span class="pos-tracker-card-qty">{{ item.quantity || 1 }}×</span>
+                                    <span class="pos-tracker-card-name">{{ item.item_name || item.name }}</span>
+                                </li>
+                                <li v-if="extraItemsCount(order) > 0" class="pos-tracker-card-more">
+                                    + {{ extraItemsCount(order) }} {{ $t('pos.tracker.more_items') }}
+                                </li>
+                            </ul>
+                            <footer class="pos-tracker-card-foot">
+                                <!--
+                                  [WT-D-R1-F4 2026-05-20] `order.total` is now
+                                  shipped raw by `SimpleOrderResource` (Wave T
+                                  R1 F4 heal). It's the SSOT we should prefer;
+                                  the `total_amount_price` / `order_amount`
+                                  fallbacks remain for callers that consume
+                                  the resource pre-WT (cache, legacy mirrors)
+                                  and to keep the existing failing-safe
+                                  pattern. The shared `formatPrice()` (from
+                                  `adminPriceMixin`) renders any of them as
+                                  the canonical "19,00 €".
+
+                                  Historical context (kept for archeology):
+                                  iter15-mega-fix B-001/C-002 2026-05-10
+                                  patched the `Number(undefined) || 0` →
+                                  `0,00 €` regression that the old projection
+                                  caused.
+                                -->
+                                <span
+                                    :class="['pos-tracker-card-total', isCashPending(order) ? 'pos-tracker-card-total--cash' : '']"
+                                    :data-testid="`tracker-amount-${order.id}`"
+                                >
+                                    <!--
+                                      [Wave S-4 P-OWNER 2026-05-20] When the
+                                      card is cash-pending, the total carries
+                                      a "À encaisser" prefix so the cashier
+                                      sees the amount due, not just a price.
+                                    -->
+                                    <!--
+                                      [S2 V4 2026-07-29] Le «&nbsp;:» est collé au
+                                      libellé (insécable) : en inline-flex il se
+                                      détachait sur sa propre ligne, produisant un
+                                      «&nbsp;:» orphelin sous un libellé cassé en 3
+                                      lignes qui chevauchait le bouton Encaisser.
+                                    -->
+                                    <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">{{ $t('pos.tracker.cash_due_label') }}&nbsp;:</span>
+                                    {{ formatPrice(order.cash_pending_amount ?? order.total ?? order.total_amount_price ?? order.order_amount) }}
+                                </span>
+                                <div class="pos-tracker-card-actions">
+                                    <!--
+                                      [Wave S-4 P-OWNER 2026-05-20] Encaisser
+                                      CTA — only on cash-pending cards. Wires
+                                      to Wave S-5 encaissement modal via a
+                                      window-level CustomEvent so the two
+                                      heals can ship independently. The card
+                                      stays clickable for details via the eye
+                                      link below; the encaisser CTA is the
+                                      primary action surface.
+                                    -->
+                                    <button
+                                        v-if="col.id === 'accept' && isCashPending(order)"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--cash"
+                                        :title="$t('pos.tracker.cash_collect_cta')"
+                                        :data-testid="`tracker-encaisser-${order.id}`"
+                                        @click="openEncaissement(order)"
+                                    >
+                                        <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ $t('pos.tracker.cash_collect_cta') }}</span>
+                                    </button>
+                                    <!--
+                                      [WEB-TRACKER-VISIBILITY 2026-07-20] Commande WEB PENDING
+                                      (pas encore acceptée) : CTA « Accepter » inline — même flux
+                                      que le panneau web caisse (C1). Après accept → cash-pending
+                                      → le CTA Encaisser ci-dessus prend le relais. FR direct.
+                                    -->
+                                    <button
+                                        v-else-if="col.id === 'accept' && isWebPending(order) && canProcessWebOrders"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--cash"
+                                        :disabled="!!webAccepting[order.id]"
+                                        title="Accepter la commande web — encaissement au comptoir"
+                                        :data-testid="`tracker-accept-web-${order.id}`"
+                                        @click="acceptWebOrder(order)"
+                                    >
+                                        <i class="fa-solid fa-globe" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ webAccepting[order.id] ? 'Acceptation…' : 'Accepter' }}</span>
+                                    </button>
+                                    <router-link
+                                        :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
+                                        class="pos-tracker-card-btn"
+                                        :title="$t('pos.tracker.view_details')"
+                                    >
+                                        <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                                    </router-link>
+                                    <!--
+                                      [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint.
+                                      Loads full order then mounts ReceiptComponent inside this view.
+                                    -->
+                                    <button
+                                        type="button"
+                                        class="pos-tracker-card-btn"
+                                        :disabled="reprintBusyId === order.id"
+                                        :title="$t('pos.reprint_ticket_hint')"
+                                        :data-testid="`tracker-reprint-${order.id}`"
+                                        @click="requestReprint(order)"
+                                    >
+                                        <i class="fa-solid fa-print" aria-hidden="true"></i>
+                                    </button>
+                                    <!--
+                                      [POS-V4-CASHIER-OPS 2026-05-02] Cancel with reason.
+                                      Visible only for non-final statuses (ACCEPT/PREPARING/PREPARED).
+                                      Backend OrderService L1546-1551 already enforces the reason
+                                      (required, max 700) — we duplicate the rule client-side
+                                      to short-circuit the round-trip + give immediate UX feedback.
+                                    -->
+                                    <button
+                                        v-if="col.id !== 'delivered'"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--danger"
+                                        :title="$t('pos.cancel_order_hint')"
+                                        :data-testid="`tracker-cancel-${order.id}`"
+                                        @click="openCancelDialog(order)"
+                                    >
+                                        <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                                    </button>
+                                    <button
+                                        v-if="col.id === 'prepared'"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--primary"
+                                        :disabled="!!order._delivering"
+                                        :title="$t('pos.tracker.mark_delivered')"
+                                        @click="markDelivered(order)"
+                                    >
+                                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ $t('pos.tracker.delivered_short') }}</span>
+                                    </button>
+                                </div>
+                            </footer>
+                        </article>
+                    </transition-group>
+                </div>
+                <div v-else class="pos-tracker-col-empty">
+                    <span class="pos-tracker-col-empty-icon" aria-hidden="true">{{ col.emptyIcon }}</span>
+                    <p>{{ col.emptyLabel || $t('pos.tracker.empty_column') }}</p>
+                </div>
+            </article>
+        </div>
+
+        <div v-if="loading && columns.every(c => c.orders.length === 0)" class="pos-tracker-loading">
+            <div class="pos-tracker-spinner" aria-hidden="true"></div>
+            <p>{{ $t('pos.tracker.loading') }}</p>
+        </div>
+
+        <!--
+          [POS-V4-CASHIER-OPS 2026-05-02] Cancel-order dialog.
+          Custom inline dialog (not using bootstrap modal) so we keep full
+          control of the textarea focus/validation lifecycle. Click on
+          backdrop dismisses; Esc dismisses (handled at element level).
+        -->
+        <div
+            v-if="cancelDialog.open"
+            class="pos-tracker-cancel-overlay"
+            role="dialog"
+            aria-modal="true"
+            :aria-labelledby="'pos-tracker-cancel-title'"
+            @click.self="closeCancelDialog"
+            @keydown.esc="closeCancelDialog"
+        >
+            <div class="pos-tracker-cancel-card">
+                <header class="pos-tracker-cancel-head">
+                    <h3 id="pos-tracker-cancel-title">{{ $t('pos.cancel_order_title') }}</h3>
+                    <button
+                        type="button"
+                        class="pos-tracker-cancel-close"
+                        :aria-label="$t('button.close')"
+                        @click="closeCancelDialog"
+                    >
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </header>
+                <div class="pos-tracker-cancel-body">
+                    <p class="pos-tracker-cancel-target" v-if="cancelDialog.order">
+                        <strong>{{ cancelDialog.order.queue_number ? 'N°' + cancelDialog.order.queue_number : '#' + (cancelDialog.order.order_serial_no || cancelDialog.order.id) }}</strong>
+                        <span v-if="customerLabel(cancelDialog.order)"> — {{ customerLabel(cancelDialog.order) }}</span>
+                        <!-- [iter15-mega-fix B-001/C-002 2026-05-10] Same field-projection mismatch as the card total. -->
+                        <span> — {{ formatPrice(cancelDialog.order.total ?? cancelDialog.order.total_amount_price ?? cancelDialog.order.order_amount) }}</span>
+                    </p>
+                    <label for="pos-tracker-cancel-reason" class="pos-tracker-cancel-label">
+                        {{ $t('pos.cancel_order_reason_label') }}
+                    </label>
+                    <textarea
+                        id="pos-tracker-cancel-reason"
+                        ref="cancelReasonInput"
+                        v-model="cancelDialog.reason"
+                        rows="3"
+                        maxlength="700"
+                        :placeholder="$t('pos.cancel_order_reason_placeholder')"
+                        class="pos-tracker-cancel-textarea"
+                        data-testid="tracker-cancel-reason"
+                    ></textarea>
+                    <!--
+                      [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]
+                      Persistent error banner inside the cancel dialog.
+                      Mirrors KDS C-001 pattern: toast fires for screen-reader
+                      attention, but the banner is the DURABLE visual evidence
+                      that survives adversarial capture timing (no fade).
+                      role="alert" + aria-live="assertive" forces SR announce;
+                      the banner stays visible until user dismisses or closes
+                      the dialog (closeCancelDialog clears `error`).
+                    -->
+                    <div
+                        v-if="cancelDialog.error"
+                        class="pos-tracker-cancel-error-banner"
+                        role="alert"
+                        aria-live="assertive"
+                        data-testid="tracker-cancel-error-banner"
+                    >
+                        <i class="fa-solid fa-circle-exclamation pos-tracker-cancel-error-icon" aria-hidden="true"></i>
+                        <span class="pos-tracker-cancel-error-msg">{{ cancelDialog.error }}</span>
+                    </div>
+                </div>
+                <footer class="pos-tracker-cancel-foot">
+                    <button
+                        type="button"
+                        class="pos-tracker-cancel-btn pos-tracker-cancel-btn--ghost"
+                        @click="closeCancelDialog"
+                        :disabled="cancelDialog.busy"
+                    >
+                        {{ $t('pos.cancel_order_cancel') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="pos-tracker-cancel-btn pos-tracker-cancel-btn--danger"
+                        :disabled="cancelDialog.busy"
+                        :aria-busy="cancelDialog.busy"
+                        data-testid="tracker-cancel-confirm"
+                        @click="confirmCancelOrder"
+                    >
+                        <i v-if="cancelDialog.busy" class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                        {{ $t('pos.cancel_order_confirm') }}
+                    </button>
+                </footer>
+            </div>
+        </div>
+
+        <!--
+          [POS-V4-CASHIER-OPS 2026-05-02] Hidden ReceiptComponent for one-click
+          reprints from the tracker. Uses the same existing #receiptModal so
+          the existing print buttons (kitchen + client) remain authoritative
+          for the actual paper output.
+        -->
+        <ReceiptComponent v-if="reprintOrder && reprintOrder.id" :order="reprintOrder" />
+
+        <!-- [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal so the
+             tracker's "Encaisser" CTA actually opens the encashment flow
+             (previously a dead button — un-listened CustomEvent only). -->
+        <PosCounterCollectModal
+            :order="encaisseOrder"
+            @confirmed="onEncaisseConfirmed"
+            @cancel="encaisseOrder = null"
+        />
+
+        <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Sortie de stock hors-vente. -->
+        <PosStockOutflowModal :open="stockOutflowOpen" @close="stockOutflowOpen = false" />
+    </section>
+</template>
+
+<script>
+import axios from 'axios';
+import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+import { onEvents } from '../../../services/eventContract';
+import alertService from '../../../services/alertService';
+import appService from '../../../services/appService';
+import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
+import ReceiptComponent from './ReceiptComponent.vue';
+// [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal — the tracker
+// must be self-sufficient for encashment (its Encaisser CTA was previously a
+// dead button: it only dispatched an un-listened CustomEvent).
+import PosCounterCollectModal from './PosCounterCollectModal.vue';
+import PosSystemHealthPill from './PosSystemHealthPill.vue';
+import PosStockOutflowModal from './PosStockOutflowModal.vue';
+// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
+// "19,00 €" rendering shared with PosOrderList / PosOrderShow.
+import { adminPriceMixin } from '../../../helpers/formatPrice';
+
+const POLL_WS_MS = 60000;
+const POLL_NO_WS_MS = 8000;
+// [S2 F1 révisé 2026-07-29] Le compteur d'anciennes commandes à encaisser tape un
+// endpoint lourd (OrderDetailsResource, ~1,3 s) : 5 min de TTL, jamais la cadence
+// du poll dégradé.
+const OLDER_PENDING_TTL_MS = 300000;
+const FRESH_HIGHLIGHT_MS = 6000;
+// [UX-TRACKER-02/POSPERF-09 2026-07-22] Event-staleness escape hatch.
+// `realtimeConnected` only proves the SOCKET is up (soketi alive) — NOT that
+// broadcasts are delivered (queue worker can be dead while the socket stays
+// "connected"). If no realtime order event has landed for EVENT_STALE_MS, or
+// the board is empty, we fall back to the fast poll cadence — freshness
+// parity with PosComponent which already has this escape hatch.
+const EVENT_STALE_MS = 35000;
+// [IMP-AGING 2026-07-22] Cash-pending card aging — the "À encaisser" lane is
+// the cashier's action queue; a card waiting >5 min turns orange, >10 min
+// red + pulse. Ages are recomputed on a light 30s ticker (single interval,
+// cleaned up in beforeUnmount) which also doubles as the poll-cadence
+// watchdog (the setInterval cadence is otherwise only re-read on ws
+// connect/disconnect — without the watchdog, staleness detected mid-flight
+// would never shorten an already-running 60s timer).
+const AGE_TICK_MS = 30000;
+const AGE_AGING_MIN = 5;
+const AGE_URGENT_MIN = 10;
+
+/**
+ * [POS-V4-ORDERS-TRACKER 2026-05-02]
+ * Écran caisse plein écran. Kanban 4 colonnes : ACCEPT, PREPARING, PREPARED, DELIVERED.
+ * Données : `admin/pos-order` (store posOrder/lists). Live: Echo `branch.{branchId}` —
+ * mêmes events que PosComponent (OrderCreated, OrderStatusChanged, OrderPaidAtCounter)
+ * pour cohérence cross-surface. Stock/availability sont gérés ailleurs (PosComponent).
+ */
+export default {
+    name: 'PosOrdersTrackerComponent',
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal },
+    mixins: [adminPriceMixin],
+    data() {
+        return {
+            loading: false,
+            // [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Modale sortie de stock hors-vente.
+            stockOutflowOpen: false,
+            orders: [],
+            filters: {
+                query: '',
+                source: 'all',
+            },
+            enums: { orderStatusEnum },
+            newReadyIds: new Set(),
+            _eventSub: null,
+            _pollTimer: null,
+            // [PERF SYNC 2026-07-31] Debounce trailing + garde in-flight. Les events WS
+            // (OrderCreated/OrderStatusChanged/OrderPaidAtCounter) arrivent en rafale — un seul
+            // encaissement emet StatusChanged ET PaidAtCounter → sans coalescing, 2 fetchOrders
+            // complets (per_page 100) par geste, ~5-6 par cycle de vie. Mirroir du _debouncedRefresh KDS.
+            _refreshTimeout: null,
+            _fetchInFlight: false,
+            _refetchQueued: false,
+            _onWsConnected: null,
+            _onWsDisconnected: null,
+            realtimeConnected: !!(window._wsService?.isConnected()),
+            _freshTimers: Object.create(null),
+            // [UX-TRACKER-02/POSPERF-09 2026-07-22] Timestamp of the last
+            // realtime order event actually DELIVERED (bumped by every Echo
+            // handler + on ws (re)connect as a grace period). Init = boot time
+            // so a fresh mount is not instantly declared stale.
+            lastEventAt: Date.now(),
+            // [UX-TRACKER-02/POSPERF-09 2026-07-22] Cadence (ms) the running
+            // poll timer was armed with — lets the 30s watchdog detect that
+            // `_pollInterval()` now disagrees with the live timer.
+            _pollTimerMs: 0,
+            // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: ids already
+            // seen on the board (seeded silently on the first successful
+            // fetch so the initial board load doesn't flash every card).
+            _seenOrderIds: new Set(),
+            _seenSeeded: false,
+            // [IMP-AGING 2026-07-22] Reactive "now" bumped every 30s so the
+            // aging classes/labels re-render without per-card timers.
+            ageTick: Date.now(),
+            _ageTimer: null,
+            // [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint state. Holds
+            // the full hydrated order to feed ReceiptComponent. We keep a
+            // single instance — only the most recent reprint is rendered.
+            reprintOrder: {},
+            reprintBusyId: null,
+            // [POS-V4-CASHIER-OPS 2026-05-02] Cancel-with-reason dialog state.
+            cancelDialog: {
+                open: false,
+                order: null,
+                reason: '',
+                error: '',
+                busy: false,
+            },
+            // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
+            // via the shared PosCounterCollectModal (null = modal closed).
+            encaisseOrder: null,
+            // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
+            // pour le CTA « Accepter » des commandes web PENDING.
+            webAccepting: {},
+            // [S2 F1 révisé 2026-07-29] Nombre de commandes à encaisser antérieures
+            // au jour affiché (bandeau → /admin/encaissement). Cf. _refreshOlderPendingCount.
+            olderPendingCount: 0,
+            _olderPendingFetchedAt: 0,
+        };
+    },
+    computed: {
+        // [WEB-ORDER-ACCEPT 2026-07-30 · décision owner + parité PosComponent.canProcessWebOrders]
+        // Le CTA « Accepter » d'une commande web POST vers online-order/change-status (gardé
+        // `permission:online-orders`). On garde le bouton sur CETTE permission : sinon un rôle
+        // portant `pos` mais pas `online-orders` voyait un bouton MORT (403 au clic — défaut audit
+        // « gestion » 2026-07-30). Le rôle Caissier (POS Operator) reçoit désormais cette permission
+        // (seeder + migration) → le bouton s'affiche ET fonctionne pour lui ; la garde protège tout
+        // futur rôle pos-only contre la réapparition du bouton mort.
+        canProcessWebOrders() {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+            const entry = perms.find((p) => p && p.url === 'online-orders');
+            return !!(entry && entry.access === true);
+        },
+        // [iter15-mega-fix B-003/C-008 2026-05-10] Hide the local
+        // `pos-tracker-rt-warn` realtime banner in dev/local where Pusher/Soketi
+        // is not running. Mirrors ConnectionStatusBanner.vue isDevEnv gate.
+        isDevEnv() {
+            try {
+                const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
+                return env === 'local' || env === 'testing';
+            } catch (_e) {
+                return false;
+            }
+        },
+        sourceTabs() {
+            return [
+                { id: 'all', icon: '🧾', label: this.$t('pos.tracker.source_all') },
+                { id: 'pos', icon: '🛒', label: this.$t('pos.tracker.source_pos') },
+                { id: 'kiosk', icon: '🖥️', label: this.$t('pos.tracker.source_kiosk') },
+                { id: 'online', icon: '🌐', label: this.$t('pos.tracker.source_online') },
+                { id: 'uber', icon: '🛵', label: this.$t('pos.tracker.source_uber') },
+            ];
+        },
+        filteredOrders() {
+            const q = this.filters.query.toLowerCase();
+            const src = this.filters.source;
+            return this.orders.filter((o) => {
+                if (src !== 'all' && this.sourceOf(o) !== src) return false;
+                if (q) {
+                    const hay = String(o.queue_number || '') + ' ' + String(o.order_serial_no || '') + ' ' + String(o.user?.name || '') + ' ' + String(o.user?.first_name || '');
+                    if (!hay.toLowerCase().includes(q)) return false;
+                }
+                return true;
+            });
+        },
+        ordersByStatus() {
+            const buckets = { accept: [], preparing: [], prepared: [], onTheWay: [], delivered: [] };
+            for (const o of this.filteredOrders) {
+                const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+                // [Wave S-4 P-OWNER 2026-05-20] The ACCEPT lane is now reserved
+                // for cash-pending kiosk orders ONLY. With Wave S-1 auto-PREPA
+                // active, every paid order skips ACCEPT entirely and lands in
+                // PREPARING — so the only orders that legitimately remain at
+                // ACCEPT are kiosk paid-at-counter orders waiting for cashier
+                // collection. Backend exposes `is_cash_pending` via
+                // SimpleOrderResource (PENDING_COUNTER + COUNTER_DEFERRED).
+                // Anything else lingering at ACCEPT is dropped from the view
+                // to avoid muddying the cashier's "À encaisser" signal — those
+                // orders still appear in the EN PRÉPARATION column once
+                // S-1 auto-promotes them (which happens at payment time).
+                // [S2 F1 2026-07-29] Une commande cash-pending appartient à la voie
+                // « À encaisser » QUEL QUE SOIT son statut cuisine. Repro : 5 commandes
+                // PREPARED + PENDING_COUNTER visibles dans /admin/encaissement mais
+                // « À ENCAISSER = 0 » ici, car le prédicat cash-pending n'était évalué
+                // que sous status===ACCEPT. Le signal argent prime sur le statut cuisine
+                // (l'avancement cuisine reste visible sur le KDS).
+                //
+                // [S2 auto-RED 2026-07-29] MAIS jamais un statut TERMINAL : une commande
+                // annulée/rejetée/remboursée garde `payment_status=PENDING_COUNTER` en base
+                // (30 lignes constatées) alors que `confirmCounterPayment` la REFUSE — sans
+                // ce garde on recréait la « carte fantôme incaissable » déjà fermée côté
+                // backend (routes/api.php, `whereNotIn('status', [CANCELED,REJECTED,RETURNED])`
+                // de counter-collect/pending). On miroite exactement ce set terminal.
+                if (this.isCashPending(o) && !this.isTerminalStatus(s)) {
+                    buckets.accept.push(o);
+                    continue;
+                }
+                if (s === orderStatusEnum.ACCEPT) {
+                    {
+                        // [GOAL-2026-05-29 TRACKER-CONTINUITY-FIX] A paid order
+                        // still at ACCEPT is the CASH counter-collect case: the
+                        // S-5 carve-out (AutoPrepareOnPaidPolicy::shouldPromote
+                        // === false for isCounterCollect+CASH) intentionally does
+                        // NOT auto-promote it to PREPARING — it waits for the chef
+                        // to bump it on the KDS, which DOES show it (KitchenRelease
+                        // Rule: PAID → released, "Prêt" action). The old code
+                        // assumed every paid order auto-promotes and silently
+                        // DROPPED this one → the paid order VANISHED from the
+                        // tracker board while the kitchen was still cooking it.
+                        // Surface it in the kitchen-active lane so the tracker
+                        // stays consistent with the KDS.
+                        buckets.preparing.push(o);
+                    }
+                }
+                // [WEB-TRACKER-VISIBILITY 2026-07-20] Une commande WEB arrive PENDING (UNPAID,
+                // source_surface='web') et n'était bucketée NULLE PART → invisible dans
+                // « commandes en cours » (plainte owner : commande web passée, introuvable).
+                // Elle rejoint la voie « À encaisser » avec un CTA « Accepter » qui réutilise
+                // le chemin EXISTANT OnlineOrderController::changeStatus (=ACCEPT → bascule
+                // PENDING_COUNTER+COUNTER_DEFERRED, même flux que le panneau web de la caisse
+                // C1 2026-07-18). Après acceptation elle reste dans la même voie en cash-pending
+                // (Encaisser) — continuité visuelle totale du cycle web.
+                else if (s === orderStatusEnum.PENDING && this.isWebPending(o)) buckets.accept.push(o);
+                else if (s === orderStatusEnum.PREPARING) buckets.preparing.push(o);
+                else if (s === orderStatusEnum.PREPARED) buckets.prepared.push(o);
+                // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane: any order at
+                // OUT_FOR_DELIVERY (status=10) — driver has picked it up and is
+                // in transit. Previously vanished from tracker for the 30+min
+                // delivery window. Lane is delivery-specific by domain (only
+                // DELIVERY orders transition through OUT_FOR_DELIVERY) but we
+                // filter on status alone — same approach as the other lanes —
+                // so any order arriving at this status surfaces here.
+                else if (s === orderStatusEnum.OUT_FOR_DELIVERY) buckets.onTheWay.push(o);
+                else if (s === orderStatusEnum.DELIVERED) buckets.delivered.push(o);
+            }
+            // Sort each bucket: oldest first for active queues, newest first for delivered.
+            buckets.accept.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            buckets.preparing.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            buckets.prepared.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            buckets.onTheWay.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            buckets.delivered.sort((a, b) => this._tsOf(b) - this._tsOf(a));
+            return buckets;
+        },
+        columns() {
+            const b = this.ordersByStatus;
+            // [iter15-mega-fix C-024 run-3 2026-05-10] The 'accept' lane maps
+            // to OrderStatus::ACCEPT (4) — exactly what the KDS surface labels
+            // "Confirmées" via `label.confirmed`. Previously the POS tracker
+            // labeled the same lane "À envoyer" so the same order looked like
+            // it lived in two different columns across surfaces. The column
+            // semantic is unchanged (still ACCEPT=4); only the display label
+            // is harmonised in `pos.tracker.col_accept` (fr.json + en.json).
+            return [
+                {
+                    // [Wave S-4 P-OWNER 2026-05-20] Renamed lane "Confirmées" →
+                    // "À encaisser". Wave S-1 auto-promotes all paid orders
+                    // ACCEPT → PREPARING, so this lane is now exclusively the
+                    // cashier's encaissement queue (kiosk paid-at-counter).
+                    // The accordion now carries a subtitle clarifying the
+                    // semantic, the count badge is the "fresh" pulsating tone
+                    // when ≥1 order awaits cash collection, and each card
+                    // shows the amount due + an "Encaisser" CTA. The 4-column
+                    // layout is preserved per owner directive — empty state
+                    // stays visible to signal "all clear".
+                    id: 'accept',
+                    label: this.$t('pos.tracker.col_accept'),
+                    subtitle: this.$t('pos.tracker.col_accept_subtitle'),
+                    icon: '🔔',
+                    tone: 'amber',
+                    highlight: true,
+                    orders: b.accept,
+                    emptyIcon: '✓',
+                    emptyLabel: this.$t('pos.tracker.empty_accept'),
+                },
+                {
+                    id: 'preparing',
+                    label: this.$t('pos.tracker.col_preparing'),
+                    icon: '🍳',
+                    tone: 'primary',
+                    orders: b.preparing,
+                    emptyIcon: '⏳',
+                    emptyLabel: this.$t('pos.tracker.empty_preparing'),
+                },
+                {
+                    id: 'prepared',
+                    label: this.$t('pos.tracker.col_prepared'),
+                    icon: '🛎️',
+                    tone: 'green',
+                    highlight: true,
+                    orders: b.prepared,
+                    emptyIcon: '—',
+                    emptyLabel: this.$t('pos.tracker.empty_prepared'),
+                },
+                // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane inserted before
+                // LIVRÉS so the cashier keeps visibility on in-flight delivery
+                // orders during the 30+min driver window. Tone 'blue' separates
+                // it visually from PRÊTS (green) and LIVRÉS (muted). Backend
+                // status code is OrderStatus::OUT_FOR_DELIVERY (10) — set when
+                // the driver picks up via DeliveryBoyController, cleared when
+                // they tap "Livré" which flips to status=13.
+                {
+                    id: 'onTheWay',
+                    label: this.$t('pos.tracker.col_on_the_way'),
+                    icon: '🛵',
+                    tone: 'blue',
+                    orders: b.onTheWay,
+                    emptyIcon: '—',
+                    emptyLabel: this.$t('pos.tracker.empty_on_the_way'),
+                },
+                {
+                    id: 'delivered',
+                    label: this.$t('pos.tracker.col_delivered'),
+                    icon: '✅',
+                    tone: 'muted',
+                    orders: b.delivered,
+                    emptyIcon: '—',
+                    emptyLabel: this.$t('pos.tracker.empty_delivered'),
+                },
+            ];
+        },
+        stats() {
+            const b = this.ordersByStatus;
+            return {
+                active: b.accept.length + b.preparing.length + b.prepared.length,
+                ready: b.prepared.length,
+                // [D-2 HEAL 2026-07-24 · reports/audit-sync-gestion-2026-07-23 §D-2]
+                // Compteur honnête. `fetchOrders` tire le jour SANS filtre de statut →
+                // un PENDING NON-web (panier borne abandonné, commande téléphone/pos
+                // naissante, source NULL) entre dans `this.orders` mais n'est bucketé
+                // dans AUCUNE voie (seul le web PENDING a la voie « À encaisser »). Il
+                // gonflait donc « X aujourd'hui » avec des cartes invisibles (162 en
+                // base). On l'exclut : le compteur ne compte plus que ce qui est
+                // représentable sur le board. Le web PENDING (actionnable, CTA
+                // Accepter) reste compté ; le bucketing est INCHANGÉ (le non-web
+                // PENDING reste hors board). Même calcul de statut que ordersByStatus.
+                todayCount: this.orders.reduce((n, o) => {
+                    const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+                    const isPhantomPending = s === orderStatusEnum.PENDING && !this.isWebPending(o);
+                    return isPhantomPending ? n : n + 1;
+                }, 0),
+            };
+        },
+    },
+    mounted() {
+        this.fetchOrders();
+        this._subscribeEcho();
+        this._bindWsService();
+        this._startPolling();
+        this._startAgeTicker();
+    },
+    beforeUnmount() {
+        this._unsubscribeEcho();
+        this._unbindWsService();
+        this._stopPolling();
+        this._stopAgeTicker();
+        Object.values(this._freshTimers).forEach((t) => clearTimeout(t));
+    },
+    methods: {
+        authBranchId() {
+            const candidates = [
+                this.$store.getters['auth/authBranchId'],
+                this.$store.getters.authBranchId,
+                this.$store.state?.auth?.authBranchId,
+            ];
+            for (const c of candidates) {
+                if (c === '' || c == null) continue;
+                const v = parseInt(c, 10);
+                if (Number.isFinite(v)) return v;
+            }
+            return 0;
+        },
+        _bindWsService() {
+            const ws = window._wsService;
+            if (!ws) return;
+            // [UX-TRACKER-02 2026-07-22] `_noteRealtimeEvent()` on (re)connect =
+            // grace period: give the fresh socket EVENT_STALE_MS to prove event
+            // delivery before the staleness escape hatch kicks in.
+            this._onWsConnected = () => { this.realtimeConnected = true; this._noteRealtimeEvent(); this._restartPolling(); this.fetchOrders(); };
+            this._onWsDisconnected = () => { this.realtimeConnected = false; this._restartPolling(); };
+            ws.on('connected', this._onWsConnected);
+            ws.on('disconnected', this._onWsDisconnected);
+        },
+        _unbindWsService() {
+            const ws = window._wsService;
+            if (!ws) return;
+            if (this._onWsConnected) ws.off('connected', this._onWsConnected);
+            if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
+        },
+        _subscribeEcho() {
+            if (!window.Echo) return;
+            const branchId = this.authBranchId();
+            if (branchId <= 0) return;
+            try {
+                // [UX-TRACKER-02 2026-07-22] Every delivered order event bumps
+                // `lastEventAt` — the ONLY proof that the realtime pipe (queue
+                // worker → soketi → Echo) is actually alive end-to-end.
+                this._eventSub = onEvents(branchId, [
+                    { broadcastAs: 'OrderCreated', handler: () => { this._noteRealtimeEvent(); this._debouncedFetch(); } },
+                    {
+                        broadcastAs: 'OrderStatusChanged',
+                        handler: (event) => {
+                            this._noteRealtimeEvent();
+                            const data = event?.payload || {};
+                            const newStatus = parseInt(data.new_status, 10);
+                            const oid = parseInt(data.order_id, 10);
+                            if (newStatus === orderStatusEnum.PREPARED && oid) {
+                                this._markFresh(oid);
+                            }
+                            this._debouncedFetch();
+                        },
+                    },
+                    { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._noteRealtimeEvent(); this._debouncedFetch(); } },
+                ]);
+            } catch (e) {
+                /* echo auth failed — polling fallback */
+            }
+        },
+        _unsubscribeEcho() {
+            try { this._eventSub?.unsubscribe(); } catch (e) { /* defensive */ }
+            this._eventSub = null;
+        },
+        // [UX-TRACKER-02 2026-07-22] Clock seam — every freshness/aging
+        // computation goes through _now() so tests can stub time
+        // deterministically (no raw Date.now() in tested logic).
+        _now() {
+            return Date.now();
+        },
+        _noteRealtimeEvent() {
+            this.lastEventAt = this._now();
+        },
+        _pollInterval() {
+            if (!this.realtimeConnected) return POLL_NO_WS_MS;
+            // [UX-TRACKER-02/POSPERF-09 2026-07-22] Socket "connected" is NOT
+            // proof of event delivery (dead queue worker ⇒ soketi up, 0 events,
+            // banner never shows). Fall back to the fast cadence as soon as no
+            // event has landed for EVENT_STALE_MS — or the board is empty —
+            // freshness parity with PosComponent's existing escape hatch.
+            const eventsStale = (this._now() - this.lastEventAt) > EVENT_STALE_MS;
+            const boardEmpty = this.orders.length === 0;
+            return (eventsStale || boardEmpty) ? POLL_NO_WS_MS : POLL_WS_MS;
+        },
+        _startPolling() {
+            this._stopPolling();
+            // Remember the cadence the timer is armed with: the 30s age ticker
+            // watchdog compares it against _pollInterval() and re-arms when the
+            // staleness state changed mid-flight (setInterval never re-reads it).
+            this._pollTimerMs = this._pollInterval();
+            this._pollTimer = setInterval(() => this.fetchOrders(), this._pollTimerMs);
+        },
+        _stopPolling() {
+            if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+        },
+        _restartPolling() {
+            this._startPolling();
+        },
+        _markFresh(orderId) {
+            const id = parseInt(orderId, 10);
+            if (!id) return;
+            this.newReadyIds = new Set([...this.newReadyIds, id]);
+            if (this._freshTimers[id]) clearTimeout(this._freshTimers[id]);
+            this._freshTimers[id] = setTimeout(() => {
+                const next = new Set(this.newReadyIds);
+                next.delete(id);
+                this.newReadyIds = next;
+                delete this._freshTimers[id];
+            }, FRESH_HIGHLIGHT_MS);
+        },
+        _tsOf(o) {
+            if (!o) return 0;
+            const t = o.created_at || o.updated_at;
+            if (!t) return 0;
+            const v = new Date(t).getTime();
+            return Number.isFinite(v) ? v : 0;
+        },
+        // [IMP-AGING + UX-TRACKER-02 2026-07-22] Single light 30s ticker:
+        // 1) bumps the reactive `ageTick` so aging classes/labels re-render;
+        // 2) poll-cadence watchdog — if the staleness state changed while a
+        //    60s setInterval is mid-flight, re-arm it (and fetch immediately
+        //    when downgrading to the fast cadence, to close the gap NOW).
+        _startAgeTicker() {
+            this._stopAgeTicker();
+            this._ageTimer = setInterval(() => this._onAgeTick(), AGE_TICK_MS);
+        },
+        _stopAgeTicker() {
+            if (this._ageTimer) { clearInterval(this._ageTimer); this._ageTimer = null; }
+        },
+        _onAgeTick() {
+            this.ageTick = this._now();
+            const want = this._pollInterval();
+            if (this._pollTimer && this._pollTimerMs !== want) {
+                this._restartPolling();
+                if (want === POLL_NO_WS_MS) this.fetchOrders();
+            }
+        },
+        _ageMinutes(o) {
+            const ts = this._tsOf(o);
+            if (!ts) return 0;
+            return Math.floor(Math.max(0, this.ageTick - ts) / 60000);
+        },
+        // [IMP-AGING 2026-07-22] Age class for the À encaisser lane ONLY (the
+        // cashier's action queue): '' | 'tracker-card--aging' (≥5 min, orange)
+        // | 'tracker-card--urgent' (≥10 min, red + pulse).
+        trackerAgeClass(o, laneId) {
+            if (laneId !== 'accept') return '';
+            const mins = this._ageMinutes(o);
+            if (mins >= AGE_URGENT_MIN) return 'tracker-card--urgent';
+            if (mins >= AGE_AGING_MIN) return 'tracker-card--aging';
+            return '';
+        },
+        // i18n-with-fallback: vue-i18n returns the KEY for missing entries, so
+        // a plain `|| 'fr'` never triggers — treat "value === key" as missing
+        // to avoid a raw-label window until the lang files gain the key.
+        _tOr(key, fallback) {
+            let v = '';
+            try { v = this.$t(key); } catch (_e) { v = ''; }
+            return (v && v !== key) ? v : fallback;
+        },
+        agingLabel(o) {
+            const mins = this._ageMinutes(o);
+            if (mins < AGE_AGING_MIN) return '';
+            return `${this._tOr('pos.tracker.age_ago', 'il y a')} ${mins} min`;
+        },
+        _debouncedFetch() {
+            // [PERF SYNC 2026-07-31] Collapse une rafale d'events WS en un seul fetch (trailing 250ms).
+            if (this._refreshTimeout) clearTimeout(this._refreshTimeout);
+            this._refreshTimeout = setTimeout(() => { this._refreshTimeout = null; this.fetchOrders(); }, 250);
+        },
+        async fetchOrders() {
+            // [PERF SYNC 2026-07-31] Garde in-flight : si un fetch tourne deja, memoriser la demande
+            // et rejouer un seul fetch au retour (etat le plus recent) au lieu d'un doublon concurrent.
+            if (this._fetchInFlight) { this._refetchQueued = true; return; }
+            this._fetchInFlight = true;
+            this.loading = this.orders.length === 0;
+            try {
+                const today = this._todayRange();
+                const res = await this.$store.dispatch('posOrder/lists', {
+                    // [POSPERF-07 2026-07-22] `paginate: 1` makes OrderService::list
+                    // HONOUR per_page — without it the backend runs ->get('*') and
+                    // returns EVERY order of the day (unbounded) with 8 eager
+                    // relations each. `lean: 1` swaps the heavy OrderResource
+                    // eager-load set (media/category/roles/branch/transaction.order),
+                    // which SimpleOrderResource never reads, for the tracker's real
+                    // needs (transaction/user/orderItems.orderItem) → lighter payload.
+                    // 100 most-recent (id desc) covers every active lane; only stale
+                    // DELIVERED rows beyond 100 fall off (they live in the muted lane).
+                    paginate: 1,
+                    per_page: 100,
+                    lean: 1,
+                    from_date: today.from,
+                    to_date: today.to,
+                    vuex: false,
+                });
+                const data = res?.data?.data || [];
+                this.orders = Array.isArray(data) ? data : [];
+                // [S2 F1 2026-07-29, révisé par auto-RED cycle 1] Ce fetch ne couvre
+                // que le JOUR COURANT alors que la file d'encaissement est all-time :
+                // une commande PENDING_COUNTER de la veille reste encaissable dans
+                // /admin/encaissement sans apparaître ici.
+                //
+                // La première version FUSIONNAIT la file counter-collect dans
+                // `this.orders`. C'était FAUX : l'endpoint renvoie 191 lignes tous
+                // statuts confondus (132 ACCEPT, 24 PREPARED, 32 DELIVERED…), donc
+                // (a) la voie « À encaisser » passait de 12 à 191 cartes, (b) les
+                // commandes PRÊTES/LIVRÉES quittaient leur colonne — le signal
+                // « plat prêt à remettre » disparaissait de la caisse, (c) le
+                // compteur « X aujourd'hui » annonçait 218 pour 39, (d) chaque fetch
+                // coûtait 1557 requêtes SQL / 1,3 s (OrderDetailsResource), toutes
+                // les 8 s en mode dégradé.
+                //
+                // Le tableau reste donc un board DU JOUR (une seule vérité par écran,
+                // DISCIPLINE §9) : on ne rapatrie qu'un COMPTEUR d'anciennes commandes
+                // à encaisser, affiché en bandeau qui renvoie vers /admin/encaissement,
+                // rafraîchi au plus toutes les 5 min (jamais au rythme du poll).
+                this._refreshOlderPendingCount();
+                // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: previously
+                // the "fresh" highlight was ONLY driven by Echo events — dead
+                // when the queue worker is down. Diff the fetched ids against
+                // what the board has already seen and flash every genuinely
+                // NEW order. The very first successful fetch seeds silently
+                // (no highlight storm on page load).
+                const ids = this.orders
+                    .map((o) => parseInt(o?.id, 10))
+                    .filter((id) => Number.isFinite(id) && id > 0);
+                if (!this._seenSeeded) {
+                    this._seenSeeded = true;
+                    this._seenOrderIds = new Set(ids);
+                } else {
+                    for (const id of ids) {
+                        if (!this._seenOrderIds.has(id)) {
+                            this._seenOrderIds.add(id);
+                            this._markFresh(id);
+                        }
+                    }
+                }
+            } catch (e) {
+                /* surface error sparingly to avoid alert fatigue */
+            } finally {
+                this.loading = false;
+                this._fetchInFlight = false;
+                if (this._refetchQueued) { this._refetchQueued = false; this._debouncedFetch(); }
+            }
+        },
+        _todayRange() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return { from: `${y}-${m}-${day}`, to: `${y}-${m}-${day}` };
+        },
+        async markDelivered(order) {
+            if (!order || order._delivering) return;
+            order._delivering = true;
+            try {
+                // [POS-V4-CASHIER-OPS 2026-05-02 FIX] Backend OrderStatusRequest
+                // validates `status`, not `order_status` — previous cycle shipped
+                // the wrong field name which silently no-op'd validation. Aligned
+                // with PosOrderShowComponent canonical usage.
+                await this.$store.dispatch('posOrder/changeStatus', {
+                    id: order.id,
+                    status: orderStatusEnum.DELIVERED,
+                });
+                await this.fetchOrders();
+            } catch (e) {
+                const msg = e?.response?.data?.message || this.$t('message.something_wrong');
+                alertService.error(msg);
+                order._delivering = false;
+            }
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint.
+        // Fetches the full order (we only hold the lightweight list payload)
+        // and opens the existing ReceiptComponent modal, which carries its own
+        // print buttons (kitchen + client) — fiscal compteur is updated by the
+        // existing `pos.print` endpoint, NOT here. We're a pure UI shortcut.
+        async requestReprint(order) {
+            if (!order || !order.id) return;
+            if (this.reprintBusyId === order.id) return;
+            this.reprintBusyId = order.id;
+            try {
+                const res = await this.$store.dispatch('posOrder/show', order.id);
+                const fullOrder = res?.data?.data;
+                if (!fullOrder || !fullOrder.id) {
+                    throw new Error('empty');
+                }
+                this.reprintOrder = fullOrder;
+                this.$nextTick(() => {
+                    appService.modalShow('#receiptModal');
+                });
+            } catch (e) {
+                alertService.error(this.$t('pos.reprint_error'));
+            } finally {
+                this.reprintBusyId = null;
+            }
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] Cancel-with-reason flow.
+        openCancelDialog(order) {
+            this.cancelDialog = {
+                open: true,
+                order,
+                reason: '',
+                error: '',
+                busy: false,
+            };
+            this.$nextTick(() => {
+                try { this.$refs.cancelReasonInput?.focus(); } catch (e) { /* defensive */ }
+            });
+        },
+        closeCancelDialog() {
+            if (this.cancelDialog.busy) return;
+            this.cancelDialog = {
+                open: false,
+                order: null,
+                reason: '',
+                error: '',
+                busy: false,
+            };
+        },
+        async confirmCancelOrder() {
+            const dlg = this.cancelDialog;
+            if (!dlg.open || !dlg.order || dlg.busy) return;
+            const reason = String(dlg.reason || '').trim();
+            if (reason.length < 3) {
+                this.cancelDialog.error = this.$t('pos.cancel_order_reason_required');
+                return;
+            }
+            this.cancelDialog.busy = true;
+            this.cancelDialog.error = '';
+            try {
+                // Backend OrderService::changeStatus accepts `reason` for the
+                // CANCELED transition (validates required|max:700, persists on
+                // order, dispatches OrderStatusChanged with reason). We rely on
+                // that single endpoint — no schema change here.
+                await this.$store.dispatch('posOrder/changeStatus', {
+                    id: dlg.order.id,
+                    status: orderStatusEnum.CANCELED,
+                    reason,
+                });
+                this.cancelDialog.busy = false;
+                this.closeCancelDialog();
+                alertService.success(this.$t('pos.cancel_order_done'));
+                await this.fetchOrders();
+            } catch (e) {
+                // [test-e2e/pos-kds-sync round-3 E-001 P0] silent-error visibility:
+                // backend 422/4xx on /pos-order/change-status was previously written
+                // only into cancelDialog.error inside the modal. Audit Wave E state 14
+                // showed zero [role=alert] / .toast in DOM → operator had no signal
+                // when the cancel was rejected (e.g. status already advanced past
+                // CANCELED-eligible). Now we ALSO fire alertService.error (vue-toastification
+                // toast with role="alert") so the rejection is visible at the page level,
+                // and we use a dedicated friendly message for HTTP 422 (rule violation).
+                this.cancelDialog.busy = false;
+                const status = Number(e?.response?.status) || 0;
+                const backendMsg = e?.response?.data?.message
+                    || e?.response?.data?.errors?.reason?.[0];
+                let msg;
+                if (status === 422) {
+                    msg = backendMsg || this.$t('error.order_cancel_rejected');
+                } else if (status === 401 || status === 403) {
+                    msg = backendMsg || this.$t('error.order_cancel_unauthorized');
+                } else if (status >= 400 && status < 500) {
+                    msg = backendMsg || this.$t('pos.cancel_order_error');
+                } else {
+                    msg = backendMsg || this.$t('pos.cancel_order_error');
+                }
+                this.cancelDialog.error = msg;
+                try { alertService.error(msg); } catch (_) { /* defensive — never block dialog */ }
+            }
+        },
+        // [Wave S-4 P-OWNER 2026-05-20] Cash-pending detection. The backend
+        // `SimpleOrderResource` exposes `is_cash_pending` (PENDING_COUNTER +
+        // COUNTER_DEFERRED). We keep a defensive fallback on the canonical
+        // numeric enum constants in case an older projection ships through
+        // (e.g. cached Vuex payload pre-deploy). PaymentStatus::PENDING_COUNTER
+        // = 15, PosPaymentMethod::COUNTER_DEFERRED = 6 — see app/Enums/.
+        /**
+         * [S2 F1 révisé 2026-07-29] Compteur des commandes à encaisser ANTÉRIEURES
+         * au jour affiché. Volontairement hors du board (voir fetchOrders) : on
+         * ne rapatrie qu'un nombre, jamais les lignes. Throttlé à 5 min car
+         * l'endpoint renvoie une resource lourde (~1,3 s) — il ne doit JAMAIS
+         * suivre la cadence du poll dégradé (8 s).
+         */
+        async _refreshOlderPendingCount() {
+            const now = Date.now();
+            if (this._olderPendingFetchedAt && (now - this._olderPendingFetchedAt) < OLDER_PENDING_TTL_MS) {
+                return;
+            }
+            this._olderPendingFetchedAt = now;
+            try {
+                const res = await axios.get('admin/pos/counter-collect/pending');
+                const rows = Array.isArray(res?.data?.data) ? res.data.data : [];
+                const onBoard = new Set(
+                    this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
+                );
+                this.olderPendingCount = rows.filter((r) => {
+                    const id = parseInt(r?.id, 10);
+                    return Number.isFinite(id) && !onBoard.has(id);
+                }).length;
+            } catch (_) {
+                // File indisponible → on garde la dernière valeur connue (pas de faux
+                // zéro). [S2 auto-RED cycle 2] Back-off : on ne remet PAS le TTL à 0,
+                // sinon un échec persistant (403/429/réseau) relancerait cet endpoint
+                // lourd à chaque poll, soit toutes les 8 s en mode dégradé. Retente
+                // dans 30 s.
+                this._olderPendingFetchedAt = now - OLDER_PENDING_TTL_MS + 30000;
+            }
+        },
+        /**
+         * [S2 auto-RED 2026-07-29] Set terminal du sceau d'encaissement — miroir
+         * strict de la garde backend de `counter-collect/pending`. Une commande
+         * dans un de ces statuts n'est plus encaissable, quel que soit son
+         * `payment_status` résiduel.
+         */
+        isTerminalStatus(status) {
+            const s = parseInt(status, 10);
+            return s === orderStatusEnum.CANCELED
+                || s === orderStatusEnum.REJECTED
+                || s === orderStatusEnum.RETURNED;
+        },
+        isCashPending(o) {
+            if (!o) return false;
+            if (o.is_cash_pending === true || o.is_cash_pending === 1) return true;
+            const ps = parseInt(o.payment_status, 10);
+            const ppm = parseInt(o.pos_payment_method, 10);
+            return ps === 15 && ppm === 6;
+        },
+        // [WEB-TRACKER-VISIBILITY 2026-07-20] Commande WEB fraîchement arrivée (PENDING, pas
+        // encore acceptée). Distincte de isCashPending (qui = déjà acceptée, PENDING_COUNTER).
+        isWebPending(o) {
+            if (!o) return false;
+            const surface = String(o.source_surface || '').toLowerCase();
+            return surface === 'web' && parseInt(o.status, 10) === orderStatusEnum.PENDING;
+        },
+        // [WEB-TRACKER-VISIBILITY 2026-07-20] Accepter une commande web SANS quitter le tracker —
+        // miroir exact de PosComponent.acceptWebOrder (C1 2026-07-18) : même endpoint
+        // online-order/change-status (ACCEPT), même clé d'idempotence minute-bucket. Le backend
+        // bascule le takeaway COD web en PENDING_COUNTER+COUNTER_DEFERRED → au refresh la carte
+        // reste dans la voie « À encaisser », désormais avec le CTA Encaisser (cash-pending).
+        async acceptWebOrder(order) {
+            if (!order || !order.id || this.webAccepting[order.id]) return;
+            this.webAccepting = { ...this.webAccepting, [order.id]: true };
+            try {
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                await axios.post(
+                    `admin/online-order/change-status/${order.id}`,
+                    { status: orderStatusEnum.ACCEPT },
+                    { headers: { 'X-Idempotency-Key': `web-accept-${order.id}-${minuteBucket}` } }
+                );
+                const num = order.queue_number || order.order_serial_no || order.id;
+                // FR direct (idiome du panneau web caisse, locale FR ADR-007) — pas de raw-label i18n.
+                try { alertService.success(`Commande web N°${num} acceptée — encaissement au comptoir`); } catch (_) { /* best-effort */ }
+                await this.fetchOrders();
+            } catch (err) {
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'acceptation de la commande web';
+                try { alertService.error(msg); } catch (_) { /* defensive */ }
+            } finally {
+                this.webAccepting = { ...this.webAccepting, [order.id]: false };
+            }
+        },
+        // [Wave S-4 P-OWNER 2026-05-20] Encaissement CTA — Wave S-5 owns the
+        // actual modal. We surface a window-level event so the parent shell
+        // (PosShell / global listener) can intercept, hydrate the order, and
+        // open the encaissement dialog. No direct coupling here — emitting a
+        // CustomEvent keeps the tracker decoupled while Wave S-5 lands in
+        // parallel. Fallback: deep-link to the POS payment screen.
+        openEncaissement(order) {
+            if (!order || !order.id) return;
+            // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Previously this ONLY dispatched a
+            // `foodking:pos:open-encaissement` CustomEvent expecting a global
+            // listener (PosShell/PosComponent) — but nothing in the app ever
+            // listened for it, and on the standalone /admin/pos-orders-tracker
+            // page PosComponent is not mounted, so the Encaisser CTA was a DEAD
+            // BUTTON. We now open the shared PosCounterCollectModal locally; it
+            // POSTs admin/pos/counter-collect/{id}/confirm itself, and on
+            // @confirmed we refresh the board. The modal reads `order.total`, so
+            // we map the cash-pending amount onto it.
+            const amount = order.cash_pending_amount ?? order.total_amount_price ?? order.total ?? order.order_amount ?? 0;
+            this.encaisseOrder = { ...order, total: amount };
+            // Keep the decoupled CustomEvent (harmless) for any future global host.
+            try {
+                window.dispatchEvent(new CustomEvent('foodking:pos:open-encaissement', {
+                    detail: { orderId: order.id, amount },
+                }));
+            } catch (_e) { /* defensive — environment without CustomEvent */ }
+        },
+        // [GOAL-2026-05-29 DEAD-BUTTON-FIX] PosCounterCollectModal already POSTed
+        // the counter-collect; clear it + refresh so the now-paid order leaves
+        // the "À encaisser" lane (the OrderPaidAtCounter broadcast also triggers
+        // fetchOrders, but we refresh immediately for local responsiveness).
+        onEncaisseConfirmed() {
+            this.encaisseOrder = null;
+            // [S2 F1 révisé 2026-07-29] Un encaissement change la file d'attente :
+            // on invalide le TTL du compteur d'anciennes commandes pour que le
+            // bandeau ne reste pas jusqu'à 5 min sur une valeur périmée.
+            this._olderPendingFetchedAt = 0;
+            this.fetchOrders();
+        },
+        sourceOf(o) {
+            const surface = String(o.source_surface || o._origin || '').toLowerCase();
+            if (surface === 'kiosk') return 'kiosk';
+            if (surface === 'pos') return 'pos';
+            if (surface === 'online') return 'online';
+            // [WEB-TRACKER-VISIBILITY 2026-07-20] source_surface='web' (site client) = onglet 🌐.
+            // Avant : non reconnu → retombait sur l'heuristique order_type → classé 'pos' à tort.
+            if (surface === 'web') return 'online';
+            // [UBER-CAISSE 2026-08-02] source_surface='uber_eats' (webhook Uber) = onglet 🛵 dédié.
+            // Avant : non reconnu → heuristique order_type (DELIVERY non listé) → classé 'pos' à tort.
+            if (surface === 'uber_eats' || surface === 'uber' || surface === 'ubereats') return 'uber';
+            const ot = parseInt(o.order_type, 10);
+            // Heuristics fallback when source_surface is missing
+            if (Number.isFinite(ot)) {
+                if (ot === 17 || ot === 18) return 'kiosk';
+                if (ot === 15 || ot === 20) return 'pos';
+            }
+            return 'pos';
+        },
+        sourceIcon(o) {
+            const s = this.sourceOf(o);
+            if (s === 'kiosk') return '🖥️';
+            if (s === 'online') return '🌐';
+            if (s === 'uber') return '🛵';
+            return '🛒';
+        },
+        customerLabel(o) {
+            const u = o.user || {};
+            const n = u.name || [u.first_name, u.last_name].filter(Boolean).join(' ');
+            return n || o.customer_name || '';
+        },
+        // [OWNER 2026-07-31] Téléphone du client pour la carte de suivi. SimpleOrderResource
+        // ship `customer_phone` pour les commandes WEB (client distant → le caissier appelle
+        // pour confirmer) et DELIVERY (livreur). null pour borne/walk-in (client présent).
+        customerPhone(o) {
+            return o.customer_phone || (o.user && o.user.phone) || '';
+        },
+        itemsPreview(o) {
+            const items = Array.isArray(o.order_items) ? o.order_items : [];
+            return items.slice(0, 3);
+        },
+        extraItemsCount(o) {
+            const items = Array.isArray(o.order_items) ? o.order_items : [];
+            return Math.max(0, items.length - 3);
+        },
+        // [WT-D-R1-F4 2026-05-20] `formatPrice()` is now provided by the
+        // shared `adminPriceMixin` (helpers/formatPrice.js) so every admin
+        // surface — tracker, orders list, detail page — renders the exact
+        // same "19,00 €" string for the same numeric input. Behaviour is
+        // byte-identical to the previous inline implementation (Intl
+        // fr-FR EUR with NBSP separator + fallback).
+        formatTime(iso) {
+            if (!iso) return '';
+            try {
+                return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return ''; }
+        },
+        elapsedShort(iso) {
+            if (!iso) return '';
+            const t = new Date(iso).getTime();
+            if (!Number.isFinite(t)) return '';
+            const diff = Math.max(0, Date.now() - t);
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return this.$t('pos.tracker.now');
+            if (mins < 60) return mins + ' min';
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return h + 'h' + (m < 10 ? '0' + m : m);
+        },
+    },
+};
+</script>
+
+<style scoped>
+/* =============================================================================
+   PosOrdersTrackerComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.6
+   - Approche chirurgicale : on remappe les tokens scoped --pos-tracker-*
+     aux tokens V5 globaux. Tous les styles existants (excellents) prennent
+     automatiquement la palette warm V5 sans toucher la structure DOM.
+   - Bordure left colorée par status (Q4 plan : signal scan visuel rapide)
+   ============================================================================= */
+.pos-tracker-shell {
+    /* Remap scoped tokens → V5 globals */
+    --pos-tracker-bg: var(--pos-v5-bg-app);
+    --pos-tracker-card-bg: var(--pos-v5-bg-panel);
+    --pos-tracker-border: var(--pos-v5-border);
+    --pos-tracker-text: var(--pos-v5-ink);
+    --pos-tracker-muted: var(--pos-v5-ink-soft);
+    --pos-tracker-primary: var(--pos-v5-brand-red);
+    --pos-tracker-primary-soft: var(--pos-v5-brand-red-soft);
+    --pos-tracker-amber: var(--pos-v5-warning);
+    --pos-tracker-amber-soft: var(--pos-v5-warning-soft);
+    --pos-tracker-green: var(--pos-v5-success);
+    --pos-tracker-green-soft: var(--pos-v5-success-soft);
+    --pos-tracker-muted-soft: var(--pos-v5-bg-subtle);
+    /* [Wave T R1 F1 P0 2026-05-20] Blue tone for EN LIVRAISON lane.
+       Hardcoded blue (not V5 token) — V5 palette has no info/blue role.
+       Hue chosen high-contrast on white (≥4.5:1) and distinct from
+       primary-red / amber / green to keep cashier scan unambiguous. */
+    --pos-tracker-blue: #1d4ed8;
+    --pos-tracker-blue-soft: #dbeafe;
+
+    min-height: 100dvh;
+    background: var(--pos-tracker-bg);
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-6);
+    color: var(--pos-tracker-text);
+    font-family: var(--pos-v5-font-sans);
+}
+
+.pos-tracker-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--pos-v5-space-4) var(--pos-v5-space-6);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
+    border-radius: var(--pos-v5-radius-lg);
+    background: var(--pos-tracker-card-bg);
+    border: 1px solid var(--pos-tracker-border);
+    border-left: 4px solid var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-md);
+    margin-bottom: var(--pos-v5-space-4);
+}
+
+.pos-tracker-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--pos-tracker-muted);
+    text-transform: uppercase;
+    margin: 0 0 4px;
+}
+
+.pos-tracker-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--pos-tracker-text);
+    margin: 0 0 6px;
+    line-height: 1.1;
+}
+
+.pos-tracker-status-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    font-size: 13px;
+    color: var(--pos-tracker-muted);
+}
+
+.pos-tracker-status-row strong {
+    color: var(--pos-tracker-text);
+    font-weight: 700;
+}
+
+.pos-tracker-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--pos-tracker-green-soft);
+    color: #166534;
+    border: 1px solid rgba(26, 183, 89, 0.25);
+}
+
+.pos-tracker-status-pill--ready {
+    animation: pos-tracker-soft-pulse 2.4s ease-in-out infinite;
+}
+
+.pos-tracker-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pos-tracker-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #F7F7FC;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 10px;
+    padding: 0 10px;
+    min-width: 200px;
+}
+
+.pos-tracker-search i {
+    color: var(--pos-tracker-muted);
+    font-size: 14px;
+}
+
+.pos-tracker-search input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 8px 6px;
+    font-size: 13px;
+    color: var(--pos-tracker-text);
+    outline: none;
+    min-width: 0;
+}
+
+.pos-tracker-search input::placeholder {
+    color: var(--pos-tracker-muted);
+}
+
+.pos-tracker-search-clear {
+    background: transparent;
+    border: 0;
+    color: var(--pos-tracker-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+}
+
+.pos-tracker-source-tabs {
+    display: inline-flex;
+    background: #F7F7FC;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.pos-tracker-source-tab {
+    background: transparent;
+    border: 0;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pos-tracker-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pos-tracker-source-tab:hover {
+    background: rgba(176, 0, 77, 0.06);
+    color: var(--pos-tracker-text);
+}
+
+.pos-tracker-source-tab.is-active {
+    background: var(--pos-tracker-primary);
+    color: #fff;
+}
+
+.pos-tracker-source-tab-icon {
+    font-size: 14px;
+}
+
+.pos-tracker-history-link,
+.pos-tracker-customer-link,
+.pos-tracker-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--pos-tracker-border);
+    background: #fff;
+    color: var(--pos-tracker-text);
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pos-tracker-history-link:hover,
+.pos-tracker-customer-link:hover,
+.pos-tracker-back-link:hover {
+    background: var(--pos-tracker-primary-soft);
+    border-color: var(--pos-tracker-primary);
+    color: var(--pos-tracker-primary);
+}
+
+.pos-tracker-rt-warn {
+    margin-bottom: 12px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #FEF3C7;
+    color: #92400E;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.pos-tracker-grid {
+    display: grid;
+    /* [Wave T R1 F1 P0 2026-05-20] 5-column layout: À ENCAISSER / EN
+       PRÉPARATION / PRÊTS / EN LIVRAISON / LIVRÉS. Wave S-4 left the
+       grid at 4 cols; with the new on-the-way lane the cashier keeps
+       full caisse-to-delivered visibility on a single screen. Wide
+       breakpoints unchanged for laptops & vertical caisse displays. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+@media (max-width: 1480px) {
+    .pos-tracker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+    .pos-tracker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+    .pos-tracker-grid { grid-template-columns: 1fr; }
+}
+
+.pos-tracker-col {
+    background: var(--pos-tracker-card-bg);
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+    max-height: calc(100dvh - 160px);
+}
+
+.pos-tracker-col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--pos-tracker-border);
+    flex-shrink: 0;
+}
+
+.pos-tracker-col-head h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--pos-tracker-text);
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pos-tracker-col-icon { font-size: 18px; }
+
+/* [Wave S-4 P-OWNER 2026-05-20] Lane subtitle (À encaisser semantic). */
+.pos-tracker-col-head-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.pos-tracker-col-subtitle {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pos-tracker-muted);
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.2;
+}
+
+/* [Wave S-4 P-OWNER 2026-05-20] Pulsing amber tint on the À encaisser
+ * column when ≥1 cash-pending order is present — matches the existing
+ * green pulse on PRÊTS À SERVIR for cross-lane visual consistency. */
+.pos-tracker-col--amber {
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.10) inset;
+}
+.pos-tracker-col--amber.is-pulse {
+    animation: pos-tracker-col-amber-glow 2.6s ease-in-out infinite;
+}
+@keyframes pos-tracker-col-amber-glow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12) inset; }
+    50%      { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.32) inset, 0 0 18px rgba(245, 158, 11, 0.18); }
+}
+
+.pos-tracker-col-count {
+    background: var(--pos-tracker-muted-soft);
+    color: var(--pos-tracker-text);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 26px;
+    text-align: center;
+}
+
+.pos-tracker-col--amber .pos-tracker-col-count { background: var(--pos-tracker-amber-soft); color: var(--pos-tracker-amber); }
+.pos-tracker-col--primary .pos-tracker-col-count { background: var(--pos-tracker-primary-soft); color: var(--pos-tracker-primary); }
+.pos-tracker-col--green .pos-tracker-col-count { background: var(--pos-tracker-green-soft); color: #166534; }
+.pos-tracker-col--blue .pos-tracker-col-count { background: var(--pos-tracker-blue-soft); color: var(--pos-tracker-blue); }
+.pos-tracker-col--muted .pos-tracker-col-count { background: var(--pos-tracker-muted-soft); color: var(--pos-tracker-muted); }
+
+.pos-tracker-col--green {
+    border-color: rgba(26, 183, 89, 0.4);
+    box-shadow: 0 0 0 1px rgba(26, 183, 89, 0.12) inset;
+}
+
+.pos-tracker-col--green.is-pulse {
+    animation: pos-tracker-col-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes pos-tracker-col-glow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(26, 183, 89, 0.12) inset; }
+    50%      { box-shadow: 0 0 0 2px rgba(26, 183, 89, 0.32) inset, 0 0 18px rgba(26, 183, 89, 0.18); }
+}
+
+.pos-tracker-col-body {
+    padding: 10px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.pos-tracker-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pos-tracker-col-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 16px;
+    color: var(--pos-tracker-muted);
+    font-size: 13px;
+    text-align: center;
+    gap: 8px;
+}
+
+.pos-tracker-col-empty-icon {
+    font-size: 28px;
+    opacity: 0.55;
+}
+
+.pos-tracker-card {
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 12px;
+    background: #fff;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.pos-tracker-card:hover {
+    box-shadow: 0 6px 16px rgba(31, 31, 57, 0.08);
+    transform: translateY(-1px);
+}
+
+/* Q4 plan : bordure left 4px par status — scan visuel rapide pour caissier */
+.pos-tracker-card--amber { border-left: 4px solid var(--pos-tracker-amber); }
+.pos-tracker-card--primary { border-left: 4px solid var(--pos-tracker-primary); }
+.pos-tracker-card--green { border-left: 4px solid var(--pos-tracker-green); }
+.pos-tracker-card--blue { border-left: 4px solid var(--pos-tracker-blue); }
+.pos-tracker-card--muted { border-left: 4px solid var(--pos-v5-border-strong); opacity: 0.85; }
+
+.pos-tracker-card.is-fresh { animation: pos-tracker-card-pop 1.2s ease-out 1; border-color: var(--pos-tracker-green); }
+
+@keyframes pos-tracker-card-pop {
+    0%   { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.45); }
+    40%  { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(26, 183, 89, 0.18); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.0); }
+}
+
+/* [IMP-AGING 2026-07-22] À encaisser cards escalate visually with wait time:
+ * ≥5 min = orange (aging), ≥10 min = red + gentle pulse (urgent). The two
+ * classes are chained after .pos-tracker-card so their border-color beats the
+ * per-tone left-border shorthand (0-2-0 > 0-1-0 specificity). */
+.pos-tracker-card.tracker-card--aging {
+    border-color: var(--pos-tracker-amber);
+    background: #fffbeb;
+}
+.pos-tracker-card.tracker-card--aging .pos-tracker-card-time {
+    color: #b45309;
+    font-weight: 700;
+}
+.pos-tracker-card.tracker-card--urgent {
+    border-color: #dc2626;
+    background: #fef2f2;
+    animation: pos-tracker-card-urgent-pulse 1.6s ease-in-out infinite;
+}
+.pos-tracker-card.tracker-card--urgent .pos-tracker-card-time {
+    color: #b91c1c;
+    font-weight: 700;
+}
+@keyframes pos-tracker-card-urgent-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    50%      { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.18); }
+}
+.pos-tracker-card-age {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--pos-tracker-amber-soft);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.pos-tracker-card-age--urgent {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: rgba(220, 38, 38, 0.35);
+}
+
+.pos-tracker-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.pos-tracker-card-num {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--pos-tracker-text);
+    letter-spacing: -0.01em;
+}
+
+.pos-tracker-card-source {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--pos-tracker-muted-soft);
+    font-size: 14px;
+}
+
+.pos-tracker-card-source--kiosk { background: #EEF2FF; }
+.pos-tracker-card-source--online { background: #ECFEFF; }
+.pos-tracker-card-source--uber { background: #E9F9EF; } /* vert Uber Eats (#06C167) éclairci */
+
+/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,
+ * gentle pulse to keep cashier attention without being aggressive. */
+.pos-tracker-card-cash-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--pos-tracker-amber-soft);
+    color: var(--pos-tracker-amber);
+    font-size: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    animation: pos-tracker-cash-bell-pulse 2.2s ease-in-out infinite;
+}
+@keyframes pos-tracker-cash-bell-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pos-tracker-card-cash-badge { animation: none; }
+}
+
+/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending amount emphasis. */
+/* [S2 V4 2026-07-29] Empilé (colonne) : en ligne, le libellé « À ENCAISSER : »
+   se cassait en 3 lignes dans la largeur restante à côté du bouton Encaisser et
+   chevauchait ce dernier. Le montant garde toute sa lisibilité. */
+.pos-tracker-card-total--cash {
+    color: var(--pos-tracker-amber);
+    font-weight: 800;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+}
+.pos-tracker-card-total-prefix {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pos-tracker-muted);
+    white-space: nowrap;
+}
+
+.pos-tracker-card-time {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pos-tracker-muted);
+}
+
+.pos-tracker-card-customer {
+    font-size: 12px;
+    color: var(--pos-tracker-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-tracker-card-customer span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* [OWNER 2026-07-31] Téléphone client = action visible (rappel de confirmation
+   commande web). Accent brand pour ressortir, tappable (tel:) sur tablette caisse. */
+.pos-tracker-card-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    font-weight: 700;
+    color: var(--pos-brand, #F4501E);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.pos-tracker-card-phone:hover {
+    text-decoration: underline;
+}
+
+.pos-tracker-card-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.pos-tracker-card-items li {
+    display: flex;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--pos-tracker-text);
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-tracker-card-qty {
+    font-weight: 700;
+    color: var(--pos-tracker-primary);
+    flex-shrink: 0;
+    min-width: 22px;
+}
+
+.pos-tracker-card-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-tracker-card-more {
+    color: var(--pos-tracker-muted);
+    font-style: italic;
+    font-size: 11px;
+}
+
+/* [S2 F1 révisé 2026-07-29] Bandeau « anciennes commandes à encaisser ». */
+.pos-tracker-older-pending {
+    display: block;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 600;
+}
+.pos-tracker-older-pending:hover { background: #ffedd5; }
+
+/* [S2 V4 2026-07-29] `flex-wrap` + `gap` : sur une carte « à encaisser », le
+   bloc montant porte le libellé « À ENCAISSER : » et les actions comptent 4
+   boutons — en une seule rangée non-wrappable, le libellé était rogné puis
+   recouvert par le bouton Encaisser. Il descend maintenant sur sa propre
+   rangée quand la place manque. */
+.pos-tracker-card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--pos-tracker-border);
+}
+
+.pos-tracker-card-total {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--pos-tracker-text);
+}
+
+.pos-tracker-card-actions {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.pos-tracker-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--pos-tracker-border);
+    background: #fff;
+    color: var(--pos-tracker-text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pos-tracker-card-btn:hover {
+    background: var(--pos-tracker-primary-soft);
+    border-color: var(--pos-tracker-primary);
+    color: var(--pos-tracker-primary);
+}
+
+.pos-tracker-card-btn--primary {
+    background: var(--pos-tracker-green);
+    border-color: var(--pos-tracker-green);
+    color: #fff;
+}
+
+.pos-tracker-card-btn--primary:hover {
+    background: #15a151;
+    border-color: #15a151;
+    color: #fff;
+}
+
+.pos-tracker-card-btn--primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* [Wave S-4 P-OWNER 2026-05-20] Encaisser CTA — amber primary action.
+ * Visually loud enough that the cashier can't miss it but stays within
+ * the existing V5 design token palette (warning tone, not error). */
+.pos-tracker-card-btn--cash {
+    background: var(--pos-tracker-amber);
+    border-color: var(--pos-tracker-amber);
+    color: #fff;
+}
+.pos-tracker-card-btn--cash:hover {
+    background: #d97706;
+    border-color: #d97706;
+    color: #fff;
+}
+.pos-tracker-card-btn--cash:focus-visible {
+    outline: 2px solid #fbbf24;
+    outline-offset: 2px;
+}
+
+/* [POS-V4-CASHIER-OPS 2026-05-02] danger variant for cancel-order */
+.pos-tracker-card-btn--danger {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #b91c1c;
+    background: #fff;
+}
+.pos-tracker-card-btn--danger:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+}
+.pos-tracker-card-btn--danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* [POS-V4-CASHIER-OPS 2026-05-02] cancel-with-reason inline dialog */
+.pos-tracker-cancel-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2400;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.pos-tracker-cancel-card {
+    width: min(480px, 100%);
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.pos-tracker-cancel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--pos-tracker-border);
+}
+.pos-tracker-cancel-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--pos-tracker-text);
+}
+.pos-tracker-cancel-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid var(--pos-tracker-border);
+    background: #fff;
+    color: var(--pos-tracker-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.pos-tracker-cancel-close:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+.pos-tracker-cancel-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.pos-tracker-cancel-target {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: var(--pos-tracker-muted);
+}
+.pos-tracker-cancel-target strong {
+    color: var(--pos-tracker-text);
+    font-weight: 700;
+}
+.pos-tracker-cancel-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pos-tracker-text);
+}
+.pos-tracker-cancel-textarea {
+    width: 100%;
+    min-height: 84px;
+    padding: 10px 12px;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--pos-tracker-text);
+    background: #f9fafb;
+    resize: vertical;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pos-tracker-cancel-textarea:focus {
+    outline: none;
+    border-color: #ef4444;
+    background: #fff;
+}
+.pos-tracker-cancel-error {
+    margin: 0;
+    padding: 8px 10px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 12px;
+    font-weight: 600;
+}
+/*
+ * [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]
+ * Persistent error banner — visually distinct from a transient toast.
+ * Stays inside the cancel dialog until the user dismisses or closes.
+ * Solid red left-border + icon + bold copy = unmistakable failure signal.
+ */
+.pos-tracker-cancel-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 12px 0 0 0;
+    padding: 12px 14px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+.pos-tracker-cancel-error-icon {
+    flex-shrink: 0;
+    color: #dc2626;
+    font-size: 16px;
+    line-height: 1.45;
+}
+.pos-tracker-cancel-error-msg {
+    flex: 1;
+    word-break: break-word;
+}
+.pos-tracker-cancel-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--pos-tracker-border);
+    background: #f9fafb;
+}
+.pos-tracker-cancel-btn {
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 1px solid var(--pos-tracker-border);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.pos-tracker-cancel-btn--ghost {
+    background: #fff;
+    color: var(--pos-tracker-text);
+}
+.pos-tracker-cancel-btn--ghost:hover {
+    background: var(--pos-tracker-muted-soft);
+}
+.pos-tracker-cancel-btn--ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.pos-tracker-cancel-btn--danger {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+.pos-tracker-cancel-btn--danger:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+.pos-tracker-cancel-btn--danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pos-tracker-loading {
+    margin-top: 24px;
+    text-align: center;
+    color: var(--pos-tracker-muted);
+}
+
+.pos-tracker-spinner {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--pos-tracker-border);
+    border-top-color: var(--pos-tracker-primary);
+    margin: 0 auto 10px;
+    animation: pos-tracker-spin 0.9s linear infinite;
+}
+
+@keyframes pos-tracker-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pos-tracker-soft-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0); }
+    50%      { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.18); }
+}
+
+/* Transition group animations for cards moving between columns */
+.pos-tracker-card-enter-active,
+.pos-tracker-card-leave-active {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.pos-tracker-card-enter-from { opacity: 0; transform: translateY(-6px); }
+.pos-tracker-card-leave-to { opacity: 0; transform: translateY(6px); }
+
+@media (prefers-reduced-motion: reduce) {
+    .pos-tracker-status-pill--ready,
+    .pos-tracker-col--green.is-pulse,
+    .pos-tracker-card.tracker-card--urgent,
+    .pos-tracker-card.is-fresh { animation: none; }
+}
+</style>

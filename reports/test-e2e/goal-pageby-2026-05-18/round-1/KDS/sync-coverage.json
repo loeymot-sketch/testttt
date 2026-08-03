@@ -1,0 +1,4 @@
+{
+  "coverage": "POS→KDS sync covered by test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js; KDS pulls via 5s polling + Echo broadcast (channels.php P4-1 fix verified Round 1).",
+  "ts": "2026-05-20T00:15:17.041Z"
+}

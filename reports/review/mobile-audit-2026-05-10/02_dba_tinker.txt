@@ -1,0 +1,449 @@
+
+###### SECTION 1: ItemAttribute master list ######
+ATTR id=307 name=Viande 1 min=0 max=1 allow_repeat=false status=5 available=true
+ATTR id=308 name=Viande 2 min=0 max=1 allow_repeat=false status=5 available=true
+ATTR id=309 name=Viande 3 min=0 max=1 allow_repeat=false status=5 available=true
+ATTR id=310 name=Viande 4 min=0 max=1 allow_repeat=false status=5 available=true
+ATTR id=311 name=Sauce (1ère Gratuite) min=0 max=1 allow_repeat=false status=5 available=true
+ATTR id=312 name=Type de Pain min=0 max=1 allow_repeat=false status=5 available=true
+ATTR id=317 name=E2E_PLAYWRIGHT_ATTRIBUTE_TOGGLE min=0 max=1 allow_repeat=false status=5 available=true
+
+###### SECTION 2: Categories master ######
+CAT id=306 name=Nos Tacos count=4 slug='nos-tacos' wizard_template='tacos' wizard_profile_id=NULL has_menu=1 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=307 name=Nos Sandwichs count=8 slug='nos-sandwichs' wizard_template='sandwich' wizard_profile_id=NULL has_menu=1 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=308 name=Nos Burgers count=6 slug='nos-burgers' wizard_template='burger' wizard_profile_id=NULL has_menu=1 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=309 name=Nos Assiettes count=4 slug='nos-assiettes' wizard_template='assiette' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=310 name=Ojja count=4 slug='ojja' wizard_template='omelette' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=311 name=Omelettes count=3 slug='omelettes' wizard_template='omelette' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=312 name=Nos Salades count=4 slug='nos-salades' wizard_template='salade' wizard_profile_id=NULL has_menu=1 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=313 name=Poulet croustillant count=4 slug='chicken-tenders' wizard_template='snacking' wizard_profile_id=NULL has_menu=1 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=314 name=Nos Menus Enfants count=2 slug='nos-menus-enfants' wizard_template='omelette' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=315 name=Frites & Accompagnements count=5 slug='frites-accompagnements' wizard_template='simple' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=316 name=Nos Desserts count=3 slug='nos-desserts' wizard_template='simple' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=317 name=Nos Boissons count=8 slug='nos-boissons' wizard_template='simple' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+CAT id=318 name=Suppléments count=8 slug='supplements' wizard_template='simple' wizard_profile_id=NULL has_menu=0 default_menu_kiosk=0 sauce_included_menu=0 kiosk_upsell_include=1 kiosk_upsell_skip_after_cart=0
+
+###### SECTION 3: Per-category items + relations (full) ######
+
+=== CAT 306: Nos Tacos (template=tacos) ===
+ITEM 363: Tacos M (1 Viande) (6.500000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 364: Tacos L (2 Viandes) (8.500000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[308:Viande 2]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 365: Tacos XL (3 Viandes) (10.500000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[308:Viande 2]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[309:Viande 3]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 366: Tacos XXL (4 Viandes) (12.500000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[308:Viande 2]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[309:Viande 3]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[310:Viande 4]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 307: Nos Sandwichs (template=sandwich) ===
+ITEM 367: Le Méga (8.000000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[308:Viande 2]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 368: Le Terminator (9.000000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[308:Viande 2]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 369: Le Suprême (7.000000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 370: Le Cayenne (7.000000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 371: Sandwich Froid (4.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 372: Panini (5.000000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 373: Sandwich Classique (Pain) (6.500000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 374: Sandwich Classique (Galette) (6.500000 EUR)
+  ATTR[307:Viande 1]: Merguez (0.000000), Kefta (0.000000), Mexicain (0.000000), Cordon Bleu (0.000000), Viande Hachée (0.000000), Nuggets (0.000000), Escalope de poulet (0.000000), Tenders (0.000000), Fricandelle (0.000000)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ATTR[312:Type de Pain]: Pain (0.000000), Galette (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 308: Nos Burgers (template=burger) ===
+ITEM 375: Burger Poulet (6.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 376: Cheese Burger (6.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 377: Fish Burger (6.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 378: Double Cheese (7.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 379: Big Burger (9.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 380: Grill Burger (8.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Salade (0.000000 EUR), Tomate (0.000000 EUR), Oignon (0.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Sauce supplémentaire: Ketchup (0.500000 EUR), Sauce supplémentaire: Mayonnaise (0.500000 EUR), Sauce supplémentaire: Algérienne (0.500000 EUR), Sauce supplémentaire: Curry (0.500000 EUR), Sauce supplémentaire: Andalouse (0.500000 EUR), Sauce supplémentaire: Burger (0.500000 EUR), Sauce supplémentaire: Samouraï (0.500000 EUR), Sauce supplémentaire: Barbecue (0.500000 EUR), Sauce supplémentaire: Cocktail (0.500000 EUR), Sauce supplémentaire: Américaine (0.500000 EUR), Sauce supplémentaire: Hannibal (0.500000 EUR), Sauce supplémentaire: Harissa (0.500000 EUR), Sauce supplémentaire: Blanche (0.500000 EUR), Sauce supplémentaire: Poivre (0.500000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 309: Nos Assiettes (template=assiette) ===
+ITEM 381: Assiette Poulet (12.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 382: Assiette Kefta (12.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 383: Assiette Merguez (12.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 384: Assiette Mixte (14.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 310: Ojja (template=omelette) ===
+ITEM 385: Ojja Bœuf (13.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 386: Ojja Poulet (13.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 387: Ojja Viande Hachée (13.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 388: Ojja Merguez (13.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 311: Omelettes (template=omelette) ===
+ITEM 389: Omelette Nature (7.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 390: Omelette Fromage (8.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 391: Omelette Champignons Fromage (9.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 312: Nos Salades (template=salade) ===
+ITEM 392: Salade Chèvre (7.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 393: Salade Royale (7.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 394: Salade Saumon (7.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 395: Salade Tunisienne (7.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 313: Poulet croustillant (template=snacking) ===
+ITEM 396: Ailes de poulet (6 pièces) (6.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 397: Ailes de poulet (12 pièces) (10.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 398: Filets de poulet croustillants (6 pièces) (7.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 399: Filets de poulet croustillants (12 pièces) (13.500000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=supplement_clone]: Fromage supplémentaire (1.000000 EUR), Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage à raclette (1.000000 EUR), Œuf (1.000000 EUR), Galette pommes de terre (1.000000 EUR), Salade verte (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 314: Nos Menus Enfants (template=omelette) ===
+ITEM 400: Menu Cheese Burger (Enfant) (6.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 401: Menu Nuggets (Enfant) (6.000000 EUR)
+  ATTR[311:Sauce (1ère Gratuite)]: Ketchup (0.000000), Mayonnaise (0.000000), Algérienne (0.000000), Curry (0.000000), Andalouse (0.000000), Burger (0.000000), Samouraï (0.000000), Barbecue (0.000000), Cocktail (0.000000), Américaine (0.000000), Hannibal (0.000000), Harissa (0.000000), Blanche (0.000000), Poivre (0.000000), Sans Sauce (0.000000)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 315: Frites & Accompagnements (template=simple) ===
+ITEM 360: Menu (Frites + Boisson) (3.000000 EUR)
+  EXTRA[group=ungrouped]: E2E_PLAYWRIGHT_EXTRA_TOGGLE (1.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 361: Frites Seules (2.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 362: Boisson Seule (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 402: Frites Moyenne (2.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Sauce Ketchup (0.500000 EUR), Sauce Mayonnaise (0.500000 EUR), Sauce Algérienne (0.500000 EUR), Sauce Curry (0.500000 EUR), Sauce Andalouse (0.500000 EUR), Sauce Burger (0.500000 EUR), Sauce Samouraï (0.500000 EUR), Sauce Barbecue (0.500000 EUR), Sauce Cocktail (0.500000 EUR), Sauce Américaine (0.500000 EUR), Sauce Hannibal (0.500000 EUR), Sauce Harissa (0.500000 EUR), Sauce Blanche (0.500000 EUR), Sauce Poivre (0.500000 EUR), Sauce Sans Sauce (0.500000 EUR), Cheddar fondu (1.000000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 403: Frites Grande (4.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Sauce Ketchup (0.500000 EUR), Sauce Mayonnaise (0.500000 EUR), Sauce Algérienne (0.500000 EUR), Sauce Curry (0.500000 EUR), Sauce Andalouse (0.500000 EUR), Sauce Burger (0.500000 EUR), Sauce Samouraï (0.500000 EUR), Sauce Barbecue (0.500000 EUR), Sauce Cocktail (0.500000 EUR), Sauce Américaine (0.500000 EUR), Sauce Hannibal (0.500000 EUR), Sauce Harissa (0.500000 EUR), Sauce Blanche (0.500000 EUR), Sauce Poivre (0.500000 EUR), Sauce Sans Sauce (0.500000 EUR), Cheddar fondu (1.500000 EUR)
+  EXTRA[group=frites_style]: Cheddar fondu (1.000000 EUR), Cheddar + Oignons croustillants (2.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 316: Nos Desserts (template=simple) ===
+ITEM 404: Glace (3.800000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 405: Tarte Daim (3.800000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 406: Tiramisu (3.800000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 317: Nos Boissons (template=simple) ===
+ITEM 407: Coca-Cola 33cl (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 408: Coca-Cola Zero 33cl (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 409: Fanta Orange 33cl (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 410: Sprite 33cl (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 411: Oasis Tropical 33cl (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 412: Orangina 33cl (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 413: Eau Plate 50cl (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 414: Capri-Sun (1.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+=== CAT 318: Suppléments (template=simple) ===
+ITEM 415: Sauce supplémentaire (0.500000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 416: Fromage supplémentaire (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 417: Jambon de dinde (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 418: Boursin (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 419: Fromage à raclette (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 420: Œuf (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 421: Galette pommes de terre (1.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+ITEM 422: Salade verte (2.000000 EUR)
+  ADDON[role=null]: Menu (Frites + Boisson) (item_price=3.000000), Frites Seules (item_price=2.000000), Boisson Seule (item_price=2.000000)
+  EXTRA[group=ungrouped]: Jambon de dinde (1.000000 EUR), Boursin (1.000000 EUR), Fromage a raclette (1.000000 EUR), Œuf (1.000000 EUR), Fromage (1.000000 EUR), Galette pommes de terre (1.000000 EUR)
+  FLAGS: item_type=5 | kds_station='none' | is_featured=5 | is_upsell=0
+
+###### SECTION 4: ItemAddon role distribution (full) ######
+  role=NULL: 180
+
+###### SECTION 5: Sample item_addons rows (first 15 with role NULL) ######
+  {"id":58,"item_id":363,"addon_item_id":360,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":59,"item_id":363,"addon_item_id":361,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":60,"item_id":363,"addon_item_id":362,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":61,"item_id":364,"addon_item_id":360,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":62,"item_id":364,"addon_item_id":361,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":63,"item_id":364,"addon_item_id":362,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":64,"item_id":365,"addon_item_id":360,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":65,"item_id":365,"addon_item_id":361,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":66,"item_id":365,"addon_item_id":362,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":67,"item_id":366,"addon_item_id":360,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":68,"item_id":366,"addon_item_id":361,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":69,"item_id":366,"addon_item_id":362,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":70,"item_id":367,"addon_item_id":360,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":71,"item_id":367,"addon_item_id":361,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+  {"id":72,"item_id":367,"addon_item_id":362,"addon_item_variation":null,"role":null,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"deleted_at":null,"created_at":"2026-05-06 06:46:02","updated_at":"2026-05-06 06:46:02"}
+
+###### SECTION 6: ItemExtra group distribution + samples ######
+  group=NULL: 531
+  group='frites_style': 38
+  group='supplement_clone': 105
+
+  -- frites_style samples --
+  {"item_id":360,"name":"Cheddar fondu","price":"1.000000","group_label":"frites_style"}
+  {"item_id":360,"name":"Cheddar + Oignons croustillants","price":"2.000000","group_label":"frites_style"}
+  {"item_id":361,"name":"Cheddar fondu","price":"1.000000","group_label":"frites_style"}
+  {"item_id":361,"name":"Cheddar + Oignons croustillants","price":"2.000000","group_label":"frites_style"}
+  {"item_id":402,"name":"Cheddar fondu","price":"1.000000","group_label":"frites_style"}
+  {"item_id":402,"name":"Cheddar + Oignons croustillants","price":"2.000000","group_label":"frites_style"}
+  {"item_id":403,"name":"Cheddar fondu","price":"1.000000","group_label":"frites_style"}
+  {"item_id":403,"name":"Cheddar + Oignons croustillants","price":"2.000000","group_label":"frites_style"}
+  {"item_id":385,"name":"Cheddar fondu","price":"1.000000","group_label":"frites_style"}
+  {"item_id":385,"name":"Cheddar + Oignons croustillants","price":"2.000000","group_label":"frites_style"}
+
+  -- supplement_clone samples --
+  {"item_id":385,"name":"Fromage suppl\u00e9mentaire","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":385,"name":"Jambon de dinde","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":385,"name":"Boursin","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":385,"name":"Fromage \u00e0 raclette","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":385,"name":"\u0152uf","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":385,"name":"Galette pommes de terre","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":385,"name":"Salade verte","price":"2.000000","group_label":"supplement_clone"}
+  {"item_id":386,"name":"Fromage suppl\u00e9mentaire","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":386,"name":"Jambon de dinde","price":"1.000000","group_label":"supplement_clone"}
+  {"item_id":386,"name":"Boursin","price":"1.000000","group_label":"supplement_clone"}
+
+  -- ungrouped (NULL) samples --
+  {"item_id":363,"name":"Salade","price":"0.000000","group_label":null}
+  {"item_id":363,"name":"Tomate","price":"0.000000","group_label":null}
+  {"item_id":363,"name":"Oignon","price":"0.000000","group_label":null}
+  {"item_id":363,"name":"Jambon de dinde","price":"1.000000","group_label":null}
+  {"item_id":363,"name":"Boursin","price":"1.000000","group_label":null}
+  {"item_id":363,"name":"Fromage a raclette","price":"1.000000","group_label":null}
+  {"item_id":363,"name":"\u0152uf","price":"1.000000","group_label":null}
+  {"item_id":363,"name":"Fromage","price":"1.000000","group_label":null}
+  {"item_id":363,"name":"Galette pommes de terre","price":"1.000000","group_label":null}
+  {"item_id":363,"name":"Sauce suppl\u00e9mentaire: Ketchup","price":"0.500000","group_label":null}
+  {"item_id":363,"name":"Sauce suppl\u00e9mentaire: Mayonnaise","price":"0.500000","group_label":null}
+  {"item_id":363,"name":"Sauce suppl\u00e9mentaire: Alg\u00e9rienne","price":"0.500000","group_label":null}
+  {"item_id":363,"name":"Sauce suppl\u00e9mentaire: Curry","price":"0.500000","group_label":null}
+  {"item_id":363,"name":"Sauce suppl\u00e9mentaire: Andalouse","price":"0.500000","group_label":null}
+  {"item_id":363,"name":"Sauce suppl\u00e9mentaire: Burger","price":"0.500000","group_label":null}
+
+###### SECTION 7: ItemVariation by attribute distribution ######
+  attr_id=307 name=Viande 1: 99 variations
+  attr_id=308 name=Viande 2: 45 variations
+  attr_id=309 name=Viande 3: 18 variations
+  attr_id=310 name=Viande 4: 9 variations
+  attr_id=311 name=Sauce (1ère Gratuite): 585 variations
+  attr_id=312 name=Type de Pain: 16 variations
+
+###### END ######

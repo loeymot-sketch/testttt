@@ -1,0 +1,90 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\BackfillAllergensSnapshotTest[39m
+  [32;1m✓[39;22m[39m [2mbackfill populates null snapshots from current item pivot[22m[39m
+  [32;1m✓[39;22m[39m [2mbackfill is idempotent and immutable for existing snapshots[22m[39m
+  [32;1m✓[39;22m[39m [2mbackfill handles orphan items gracefully[22m[39m
+  [32;1m✓[39;22m[39m [2mdry run does not write to database[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KDSDeliveryEnrichmentTest[39m
+  [32;1m✓[39;22m[39m [2mdelivery order payload includes address and customer contact[22m[39m
+  [32;1m✓[39;22m[39m [2mdine in order payload omits address block[22m[39m
+  [32;1m✓[39;22m[39m [2meager loaded relations are present on the underlying query[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsAllergenAggregationSplitTest[39m
+  [32;1m✓[39;22m[39m [2mtwo items same id same extras  d i f f e r e n t allergens are  n o t merged[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo items same id same extras  s a m e allergens  a r e merged[22m[39m
+  [32;1m✓[39;22m[39m [2mitems with  n u l l allergens snapshot merge with items with  e m p t y array[22m[39m
+  [32;1m✓[39;22m[39m [2mitems with unsorted allergens arrays merge correctly[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo orders same item different allergens are  n o t merged across orders[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kds\KdsBoardQueryPlanTest[39m
+  [32;1m✓[39;22m[39m [2mboard returns exact expected active set[22m[39m
+  [32;1m✓[39;22m[39m [2mboard preserves default id ordering[22m[39m
+  [32;1m✓[39;22m[39m [2mboard runs under branchscope and returns expected set[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kds\KdsHistoryTodayEndpointTest[39m
+  [32;1m✓[39;22m[39m [2mit returns today prepared out and delivered orders only[22m[39m
+  [32;1m✓[39;22m[39m [2mit sorts by updated at descending[22m[39m
+  [32;1m✓[39;22m[39m [2mit enforces branch isolation for branch staff[22m[39m
+  [32;1m✓[39;22m[39m [2madmin branch id zero sees all branches[22m[39m
+  [32;1m✓[39;22m[39m [2mit caps at 50 orders[22m[39m
+  [32;1m✓[39;22m[39m [2mit uses tz aware paris local bounds not utc[22m[39m
+  [32;1m✓[39;22m[39m [2munauthenticated request is denied[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsOrderItemsResourceAllergenExposureTest[39m
+  [32;1m✓[39;22m[39m [2mkds order items resource exposes allergens snapshot[22m[39m
+  [32;1m✓[39;22m[39m [2mkds order items resource handles null allergens as empty array[22m[39m
+  [32;1m✓[39;22m[39m [2mresource collection over raw items carries allergens[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsSnapshotImmutableTest[39m
+  [32;1m✓[39;22m[39m [2mtoggling availability does not mutate existing order[22m[39m
+  [32;1m✓[39;22m[39m [2mrearming availability also does not mutate orders[22m[39m
+  [32;1m✓[39;22m[39m [2mkds order item resource exposes composer addons from snapshot[22m[39m
+  [32;1m✓[39;22m[39m [2mkds items board keeps distinct addon choices unmerged[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsSyncBoardReleaseConsistencyTest[39m
+  [32;1m✓[39;22m[39m [2mune commande non released est absente du flux sync comme du board[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kds\KdsSyncSargableTest[39m
+  [32;1m✓[39;22m[39m [2msync query uses sargable range predicates not date function[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsSyncTimingExposureE2ETest[39m
+  [32;1m✓[39;22m[39m [2mle temps reel de prepa remonte dans le flux sync kds avec version croissante et sans doublage[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kds\KdsSyncTzAwareTest[39m
+  [32;1m✓[39;22m[39m [2msync binds paris local day boundaries[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsUnreleasedOrderBumpP1Test[39m
+  [32;1m✓[39;22m[39m [2munpaid delivery order is blocked from bump[22m[39m
+  [32;1m✓[39;22m[39m [2munpaid non cash pos order is blocked from bump[22m[39m
+  [32;1m✓[39;22m[39m [2mpaid order is still bumpable[22m[39m
+  [32;1m✓[39;22m[39m [2mpending counter order is still bumpable[22m[39m
+  [32;1m✓[39;22m[39m [2mpos cash unpaid order is still bumpable[22m[39m
+
+
+=== KDS UNRELEASED ORDER BUMP TEST ===
+HTTP Response Status: 422
+Order Status Before: 4
+Order Status After: 4
+Bump Blocked: YES - OK
+Order Payment Status: 10
+Order Type: 5
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsUnreleasedOrderBumpTest[39m
+  [32;1m✓[39;22m[39m [2mcan bump unpaid delivery order via kds change status[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kds\KitchenRecallEndpointSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mrecall succeeds within 60s window and appends transition row[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall rejects after 60s window with no row appended[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall requires authenticated actor[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall rejects authenticated user without kds permission[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall does not mutate orders status[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall is capped at one per order[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall rejects when status is not prepared[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall is branch scoped for branch staff[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m47 passed[39;22m
+  [37;1mTime:   [39;22m[39m8.42s[39m
+
+

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Sans sauce">
+  <rect width="200" height="200" rx="28" fill="#f3f4f6"/>
+  <ellipse cx="100" cy="108" rx="74" ry="58" fill="#e5e7eb" stroke="#9ca3af" stroke-width="3"/>
+  <line x1="56" y1="56" x2="144" y2="160" stroke="#d1d5db" stroke-width="6" stroke-linecap="round"/>
+</svg>

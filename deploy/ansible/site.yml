@@ -1,0 +1,238 @@
+---
+# FoodKing V1 Phase D — OVH VPS-1 Strasbourg. Mirrors Phase C (72b078682).
+# Idempotent. NEVER modifies app code (frozen-zone safe). See README.md.
+- name: FoodKing production provisioning
+  hosts: foodking_prod
+  become: true
+  vars_files: [group_vars/all.yml]
+  tasks:
+    - name: Base packages + firewall + intrusion detection
+      ansible.builtin.apt:
+        name: [git, curl, jq, htop, fail2ban, ufw, unzip, ca-certificates, supervisor]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      tags: [base]
+    - name: UFW allow SSH/HTTP/HTTPS
+      community.general.ufw: { rule: allow, port: "{{ item }}", proto: tcp }
+      loop: [22, 80, 443]
+      tags: [base]
+    - name: PHP {{ php_version }} extensions (Sury PPA assumed)
+      ansible.builtin.apt:
+        name: "php{{ php_version }}-{{ item }}"
+        state: present
+      loop: "{{ php_extensions }}"
+      tags: [php]
+    - name: Composer
+      ansible.builtin.apt: { name: composer, state: present }
+      tags: [php]
+    - name: MySQL 8 + client + python driver
+      ansible.builtin.apt:
+        name: [mysql-server, mysql-client, python3-pymysql]
+        state: present
+      tags: [mysql]
+    - name: MySQL tuning (VPS-1 capped)
+      ansible.builtin.copy:
+        dest: /etc/mysql/mysql.conf.d/foodking.cnf
+        mode: "0644"
+        content: |
+          [mysqld]
+          innodb_buffer_pool_size = {{ mysql_innodb_buffer_pool_size }}
+          max_connections = {{ mysql_max_connections }}
+          character-set-server = utf8mb4
+          collation-server = utf8mb4_unicode_ci
+      notify: restart mysql
+      tags: [mysql]
+
+    # [GOAL-CMS-2026-05-18 CVP0-1 heal — Round 1 Sec S-1 + Fiscal F-FISC-002]
+    # NF525 fiscal-table privilege-restriction. The BEFORE DELETE trigger on
+    # audit_logs + z_reports + cash_movements does NOT fire on TRUNCATE
+    # (MySQL design). Without revoking TRUNCATE/DROP/ALTER from the app DB
+    # user, an app-credential breach can wipe the entire 6-year NF525 chain
+    # in ~50 ms. Art. 1743 CGI criminal exposure. Sentinel test asserts this
+    # task's presence in the playbook (tests/Feature/Fiscal/AuditTruncate
+    # ProtectionDeployDocTest).
+    #
+    # Note: applies AFTER the DB user has been created by the operator
+    # (Ansible doesn't currently create it — see deploy README). Idempotent
+    # via MySQL's "no-op on already-revoked privilege" semantics.
+    - name: NF525 fiscal-table privilege REVOKE (CVP0-1 GOAL-CMS-2026-05-18)
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ vault_db_password | default(omit) }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query:
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`audit_logs` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`z_reports` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`cash_movements` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`cash_drawer_sessions` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`order_payments` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`domain_events` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`webhook_events` FROM `{{ db_user }}`@`%`"
+          - "FLUSH PRIVILEGES"
+      register: nf525_revoke_result
+      failed_when: false  # tolerate "no such user" on first deploy; sentinel test enforces presence in YAML
+      tags: [mysql, nf525, fiscal-protection]
+    - name: Redis 7
+      ansible.builtin.apt: { name: redis-server, state: present }
+      tags: [redis]
+    - name: Redis config (maxmemory + AOF + password)
+      ansible.builtin.copy:
+        dest: /etc/redis/redis.conf.d/foodking.conf
+        owner: redis
+        group: redis
+        mode: "0640"
+        content: |
+          maxmemory {{ redis_maxmemory }}
+          maxmemory-policy allkeys-lru
+          appendonly yes
+          requirepass {{ redis_password }}
+      no_log: true
+      notify: restart redis
+      tags: [redis]
+    - name: Nginx + Certbot
+      ansible.builtin.apt:
+        name: [nginx, certbot, python3-certbot-nginx]
+        state: present
+      tags: [nginx]
+    - name: Nginx site config (gzip + HTTP/2 + HSTS)
+      ansible.builtin.template:
+        src: templates/nginx-foodking.conf.j2
+        dest: /etc/nginx/sites-available/foodking
+        mode: "0644"
+      notify: reload nginx
+      tags: [nginx]
+    - name: Enable Nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/foodking
+        dest: /etc/nginx/sites-enabled/foodking
+        state: link
+      notify: reload nginx
+      tags: [nginx]
+    - name: Let's Encrypt cert (idempotent via creates:)
+      ansible.builtin.command:
+        cmd: certbot --nginx -n --agree-tos -m {{ letsencrypt_email }} -d {{ nginx_server_name }} -d www.{{ nginx_server_name }}
+        creates: "/etc/letsencrypt/live/{{ nginx_server_name }}/fullchain.pem"
+      tags: [nginx]
+    - name: Soketi global install (Node assumed pre-installed)
+      community.general.npm: { name: "@soketi/soketi", global: true, state: present }
+      tags: [soketi]
+    # [V1 Cloud-Prep insights P1-#11 2026-05-18] Render soketi.json from template.
+    # Previously the supervisor config referenced {{ app_root }}/soketi.json but
+    # no Ansible task created it — supervisor would leave foodking-soketi in
+    # FATAL state on first boot. This task closes the gap idempotently.
+    - name: Render soketi.json from template (V1 Cloud-Prep P1-#11)
+      ansible.builtin.template:
+        src: templates/soketi.json.j2
+        dest: "{{ app_root }}/soketi.json"
+        owner: www-data
+        group: www-data
+        mode: "0640"
+      no_log: true
+      notify: restart soketi
+      tags: [soketi]
+    - name: Supervisor config — Soketi + queue worker
+      ansible.builtin.template:
+        src: templates/supervisor-foodking.conf.j2
+        dest: /etc/supervisor/conf.d/foodking.conf
+        mode: "0644"
+      notify: reload supervisor
+      tags: [soketi]
+    - name: Clone FoodKing repo
+      ansible.builtin.git:
+        repo: "{{ app_repo_url }}"
+        dest: "{{ app_root }}"
+        version: "{{ app_branch }}"
+        force: false
+      become_user: www-data
+      tags: [app]
+    - name: Composer install (no-dev, optimize)
+      ansible.builtin.command:
+        cmd: composer install --no-dev --optimize-autoloader --no-interaction
+        chdir: "{{ app_root }}"
+        creates: "{{ app_root }}/vendor/autoload.php"
+      become_user: www-data
+      tags: [app]
+    - name: NPM ci + production build
+      ansible.builtin.command: { cmd: "{{ item }}", chdir: "{{ app_root }}" }
+      loop: [npm ci, npm run production]
+      become_user: www-data
+      changed_when: true
+      tags: [app]
+    # [RED-team Wave 5I A.2 — 2026-05-18] Pre-migrate snapshot (NF525 safety net).
+    # Runs BEFORE migrate --force so a destructive migration can be reverted via restore.
+    # Uses --triggers --routines to preserve BEFORE DELETE triggers on audit_logs / z_reports.
+    - name: Pre-migrate snapshot — mysqldump (NF525 safety net)
+      ansible.builtin.shell: >-
+        mysqldump --triggers --routines --single-transaction --quick
+        --user={{ db_user }} --password={{ vault_db_password }}
+        {{ db_name }} | gzip > /var/backups/foodking-pre-migrate-$(date +%Y%m%d-%H%M%S).sql.gz
+      args:
+        creates: "/var/backups/foodking-pre-migrate-marker-{{ ansible_date_time.date }}"
+      become: true
+      no_log: true
+      tags: [app]
+    - name: Artisan migrate --force
+      ansible.builtin.command:
+        cmd: "php{{ php_version }} artisan migrate --force"
+        chdir: "{{ app_root }}"
+      become_user: www-data
+      register: migrate_out
+      changed_when: "'Nothing to migrate' not in migrate_out.stdout"
+      tags: [app]
+    - name: Cron — Laravel schedule:run every minute
+      ansible.builtin.cron:
+        name: foodking-schedule-run
+        user: www-data
+        minute: "*"
+        job: "cd {{ app_root }} && php{{ php_version }} artisan schedule:run >> /dev/null 2>&1"
+      tags: [cron]
+    # [V1 Cloud-Prep insights P1-#10 2026-05-18] Render /etc/foodking-backup.env.
+    # The cron line below sources this file BEFORE invoking the backup script
+    # (cron has empty env by default). Previously documented as a manual owner
+    # step in docs/runbooks/BACKUP_RESTORE_NF525.md §1 — now Ansible-managed
+    # so a re-run is idempotent and secrets stay in sync with vault.yml.
+    - name: Render foodking-backup.env from template (V1 Cloud-Prep P1-#10)
+      ansible.builtin.template:
+        src: templates/foodking-backup.env.j2
+        dest: /etc/foodking-backup.env
+        owner: root
+        group: www-data
+        mode: "0640"
+      no_log: true
+      tags: [cron, backup]
+    - name: Cron — daily backup 03:00 UTC
+      ansible.builtin.cron:
+        name: foodking-backup-daily
+        user: www-data
+        minute: "0"
+        hour: "3"
+        job: ". /etc/foodking-backup.env && {{ app_root }}/scripts/backup-foodking-daily.sh >> /var/log/foodking-backup.log 2>&1"
+      tags: [cron]
+    - name: Logrotate (Laravel + backup logs)
+      ansible.builtin.copy:
+        dest: /etc/logrotate.d/foodking
+        mode: "0644"
+        content: |
+          {{ app_root }}/storage/logs/*.log /var/log/foodking-backup.log {
+            daily
+            rotate 14
+            compress
+            delaycompress
+            missingok
+            notifempty
+            copytruncate
+          }
+      tags: [cron]
+  handlers:
+    - { name: restart mysql, ansible.builtin.systemd: { name: mysql, state: restarted } }
+    - { name: restart redis, ansible.builtin.systemd: { name: redis-server, state: restarted } }
+    - { name: reload nginx, ansible.builtin.systemd: { name: nginx, state: reloaded } }
+    - { name: reload supervisor, ansible.builtin.systemd: { name: supervisor, state: restarted } }
+    # [V1 Cloud-Prep insights P1-#11 2026-05-18] Restart Soketi when its config rotates
+    # (vault_soketi_* key rotation, sizing knobs). Supervisor manages the process,
+    # so we go through `supervisorctl restart` rather than systemd.
+    - name: restart soketi
+      community.general.supervisorctl:
+        name: foodking-soketi
+        state: restarted

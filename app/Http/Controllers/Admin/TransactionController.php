@@ -8,6 +8,7 @@ use App\Services\TransactionService;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\TransactionResource;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class TransactionController extends AdminController
 {
@@ -24,6 +25,8 @@ class TransactionController extends AdminController
     {
         try {
             return TransactionResource::collection($this->transactionService->list($request));
+        } catch (HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -33,6 +36,8 @@ class TransactionController extends AdminController
     {
         try {
             return Excel::download(new TransactionExport($this->transactionService, $request), 'Transaction.xlsx');
+        } catch (HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

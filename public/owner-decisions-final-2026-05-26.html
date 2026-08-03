@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>FoodKing V1 — Owner Decisions Final · Le Cayenne</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a0a;color:#fff;line-height:1.5;padding:20px;padding-bottom:140px}
+  .header{max-width:1400px;margin:0 auto 24px}
+  .header h1{font-size:32px;color:#F4501E;margin-bottom:8px;font-weight:900}
+  .header .subtitle{color:#FFCB05;font-size:14px;margin-bottom:16px}
+  .header .meta{color:#999;font-size:13px}
+
+  .stats-banner{max-width:1400px;margin:0 auto 24px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px;background:#1a1a1a;padding:16px;border-radius:12px;border:1px solid #333}
+  .stat-cell{text-align:center;padding:8px}
+  .stat-cell .label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px}
+  .stat-cell .value{font-size:24px;font-weight:900;margin-top:4px}
+  .stat-cell.critical .value{color:#F4501E}
+  .stat-cell.warn .value{color:#FFCB05}
+  .stat-cell.ok .value{color:#1AB759}
+
+  .vision-box{max-width:1400px;margin:0 auto 24px;background:linear-gradient(135deg,#1a1a1a,#252525);padding:24px;border-radius:12px;border-left:4px solid #F4501E}
+  .vision-box h2{color:#F4501E;font-size:20px;margin-bottom:12px}
+  .vision-box p{color:#ddd;margin-bottom:8px;font-size:14px}
+  .vision-box .timeline{background:#0a0a0a;padding:12px;border-radius:8px;margin-top:12px;font-family:monospace;font-size:13px;color:#FFCB05;white-space:pre-line}
+  .vision-box .verdict{color:#1AB759;font-weight:bold;margin-top:12px;font-size:15px}
+
+  .filters{max-width:1400px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .filter-group{display:flex;gap:6px;align-items:center;background:#1a1a1a;padding:8px 12px;border-radius:8px;border:1px solid #333}
+  .filter-group .label{font-size:11px;color:#999;text-transform:uppercase;margin-right:8px}
+  .chip{background:#252525;color:#fff;border:1px solid #444;padding:5px 12px;border-radius:16px;cursor:pointer;font-size:12px;transition:all 0.2s}
+  .chip:hover{border-color:#F4501E}
+  .chip.active{background:#F4501E;border-color:#F4501E;color:#fff}
+  .search-box{background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;min-width:240px}
+  .reset-btn{background:transparent;border:1px solid #666;color:#999;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px}
+  .reset-btn:hover{border-color:#F4501E;color:#F4501E}
+
+  .section-divider{max-width:1400px;margin:32px auto 16px;font-size:18px;color:#FFCB05;font-weight:bold;border-bottom:2px solid #FFCB05;padding-bottom:8px}
+
+  .cards{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px}
+  .card{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:18px;position:relative;transition:all 0.2s;display:flex;flex-direction:column}
+  .card:hover{border-color:#F4501E;transform:translateY(-2px)}
+  .card.approved{border-left:4px solid #1AB759;background:#1a2a1a}
+  .card.rejected{border-left:4px solid #DC2626;opacity:0.6;background:#2a1a1a}
+  .card.deferred{border-left:4px solid #3B82F6;background:#1a1a2a}
+  .card.owner-mandatory{border:2px solid #F4501E;background:linear-gradient(135deg,#1a1a1a,#2a1414)}
+
+  .card .badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .badge{font-size:10px;padding:3px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold}
+  .badge.p0{background:#DC2626;color:#fff}
+  .badge.p1{background:#F4501E;color:#fff}
+  .badge.p2{background:#FFCB05;color:#0a0a0a}
+  .badge.p3{background:#666;color:#fff}
+  .badge.mandatory{background:#F4501E;color:#fff}
+  .badge.frozen{background:#FFCB05;color:#0a0a0a}
+  .badge.recommended{background:#1AB759;color:#fff}
+  .badge.system{background:#252525;color:#FFCB05;border:1px solid #FFCB05}
+
+  .card h3{font-size:16px;color:#fff;margin-bottom:8px;line-height:1.3}
+  .card .id{font-size:10px;color:#666;font-family:monospace;margin-bottom:8px}
+  .card .description{font-size:13px;color:#ccc;margin-bottom:12px;flex-grow:1}
+  .card .recommendation{background:#0a0a0a;border-left:3px solid #1AB759;padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px}
+  .card .recommendation .label{color:#1AB759;font-weight:bold;text-transform:uppercase;font-size:10px;letter-spacing:1px;margin-bottom:4px}
+  .card .effort{font-size:11px;color:#999;margin-bottom:10px}
+
+  .actions{display:flex;gap:6px;margin-top:auto}
+  .action-btn{flex:1;padding:8px 12px;border:1px solid #444;background:transparent;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;transition:all 0.2s}
+  .action-btn:hover{border-width:2px}
+  .action-btn.approve{border-color:#1AB759;color:#1AB759}
+  .action-btn.approve:hover,.action-btn.approve.selected{background:#1AB759;color:#fff;border-color:#1AB759}
+  .action-btn.reject{border-color:#DC2626;color:#DC2626}
+  .action-btn.reject:hover,.action-btn.reject.selected{background:#DC2626;color:#fff;border-color:#DC2626}
+  .action-btn.defer{border-color:#3B82F6;color:#3B82F6}
+  .action-btn.defer:hover,.action-btn.defer.selected{background:#3B82F6;color:#fff;border-color:#3B82F6}
+
+  .floating-cta{position:fixed;bottom:24px;right:24px;background:#F4501E;color:#fff;border:none;padding:16px 24px;border-radius:30px;cursor:pointer;font-size:14px;font-weight:bold;box-shadow:0 8px 24px rgba(244,80,30,0.4);z-index:100;display:flex;align-items:center;gap:8px}
+  .floating-cta:hover{transform:scale(1.05)}
+  .floating-cta .count{background:#fff;color:#F4501E;border-radius:12px;padding:2px 10px;font-size:12px}
+
+  .modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:#1a1a1a;border:1px solid #F4501E;border-radius:12px;padding:24px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto}
+  .modal h2{color:#F4501E;margin-bottom:16px}
+  .modal pre{background:#0a0a0a;padding:16px;border-radius:8px;color:#FFCB05;font-size:12px;white-space:pre-wrap;max-height:400px;overflow-y:auto;border:1px solid #333}
+  .modal-actions{display:flex;gap:12px;margin-top:16px}
+  .modal-actions button{flex:1;padding:12px;background:#F4501E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+  .modal-actions button.close{background:#333;color:#fff}
+
+  @media (max-width:768px){
+    .stats-banner{grid-template-columns:repeat(3,1fr)}
+    .cards{grid-template-columns:1fr}
+    .floating-cta{bottom:12px;right:12px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>🎯 FoodKing V1 — Owner Decisions Final</h1>
+<div class="subtitle">Le Cayenne · Toutes les décisions pour fermer V1 fonctionnel parfait</div>
+<div class="meta">Date: 2026-05-26 · Branche: heal/cms-pr1-quickwins-2026-05-18 · HEAD: d4867fc97 · 103 commits cycle · ~280 sub-agents · 504+ sentinels GREEN</div>
+</div>
+
+<div class="stats-banner">
+<div class="stat-cell critical"><div class="label">P0 Critique</div><div class="value" id="stat-p0">0</div></div>
+<div class="stat-cell warn"><div class="label">P1 Important</div><div class="value" id="stat-p1">0</div></div>
+<div class="stat-cell"><div class="label">P2 V1.0.X</div><div class="value" id="stat-p2">0</div></div>
+<div class="stat-cell ok"><div class="label">✓ Approuvés</div><div class="value" id="stat-approved" style="color:#1AB759">0</div></div>
+<div class="stat-cell"><div class="label">✗ Rejetés</div><div class="value" id="stat-rejected" style="color:#DC2626">0</div></div>
+<div class="stat-cell"><div class="label">⏸ Différés</div><div class="value" id="stat-deferred" style="color:#3B82F6">0</div></div>
+</div>
+
+<div class="vision-box">
+<h2>🧠 Ma vision forte — Ce qui reste pour V1 fonctionnel parfait</h2>
+<p><strong>Verdict supervisor :</strong> Code production-grade ✓ · NF525 chain OK ✓ · Frozen-zone 0 LOC ✓ · 504 sentinels GREEN ✓ · 0 ship blocker depuis 6 cycles consécutifs ✓</p>
+<p><strong>Mon raisonnement fort :</strong> Tu n'as plus de blocker TECHNIQUE. Tout ce qui reste est <em>3 catégories distinctes</em> :</p>
+<p>1. <strong>Owner-physical mandatory</strong> (3 actions, ~2h) — bloque le déploiement production</p>
+<p>2. <strong>Owner-decisions code</strong> (3 PROPOSAL queued) — fix V1 ship gates si tu veux les inclure pré-live</p>
+<p>3. <strong>V1.0.1 polish</strong> (16 P1 trouvés) — backlog post-live, n'empêche PAS le ship</p>
+
+<div class="timeline">Ordre d'exécution recommandé pour fermer V1 :
+09h00 → 09h15 · Disk cleanup macOS (libère 30-50GB)
+09h15 → 09h25 · .env production flip + config:cache
+09h25 → 10h00 · 3 PROPOSAL decisions ci-dessous (lecture + ✓/✗/⏸)
+10h00 → 11h30 · Physical walk Borne→POS→KDS→OSS→Cash
+JOUR J+1 18h00→18h18 · 5 G1.x manual verifies
+JOUR J+1 23h59 · Premier vrai Z close production NF525</div>
+
+<p class="verdict">✅ Si tu valides + exécutes les 3 owner-physical → GO-LIVE GREEN garanti. Le reste est polish post-live.</p>
+</div>
+
+<div class="filters">
+<div class="filter-group">
+<span class="label">Catégorie</span>
+<button class="chip active" data-filter="cat" data-value="all">Tous</button>
+<button class="chip" data-filter="cat" data-value="physical">Physical</button>
+<button class="chip" data-filter="cat" data-value="proposal">PROPOSAL</button>
+<button class="chip" data-filter="cat" data-value="g1x">G1.x verify</button>
+<button class="chip" data-filter="cat" data-value="v101">V1.0.1</button>
+<button class="chip" data-filter="cat" data-value="v102">V1.0.X</button>
+<button class="chip" data-filter="cat" data-value="v2">V2 SaaS</button>
+</div>
+<div class="filter-group">
+<span class="label">Sévérité</span>
+<button class="chip active" data-filter="sev" data-value="all">Tous</button>
+<button class="chip" data-filter="sev" data-value="P0">P0</button>
+<button class="chip" data-filter="sev" data-value="P1">P1</button>
+<button class="chip" data-filter="sev" data-value="P2">P2</button>
+</div>
+<input type="text" class="search-box" id="search" placeholder="🔍 Rechercher...">
+<button class="reset-btn" onclick="resetDecisions()">Reset votes</button>
+</div>
+
+<div class="section-divider">🔴 BLOC 1 — Owner-Physical Mandatory (bloque GO-LIVE)</div>
+<div class="cards" id="cards-physical"></div>
+
+<div class="section-divider">🟠 BLOC 2 — PROPOSAL Code Decisions (3 P0 queued)</div>
+<div class="cards" id="cards-proposal"></div>
+
+<div class="section-divider">🟡 BLOC 3 — V1.0.2 G1.x Manual Verifies</div>
+<div class="cards" id="cards-g1x"></div>
+
+<div class="section-divider">🔵 BLOC 4 — V1.0.1 P1 Findings (post-live polish)</div>
+<div class="cards" id="cards-v101"></div>
+
+<div class="section-divider">⚪ BLOC 5 — V1.0.X Backlog (V1.0.2+ chip away)</div>
+<div class="cards" id="cards-v102"></div>
+
+<div class="section-divider">🟣 BLOC 6 — V2 SaaS Strategic (long-term)</div>
+<div class="cards" id="cards-v2"></div>
+
+<button class="floating-cta" onclick="openModal()">📋 Envoyer plan validé <span class="count" id="cta-count">0</span></button>
+
+<div class="modal-bg" id="modal">
+<div class="modal">
+<h2>📋 Plan validé — Récap décisions</h2>
+<pre id="modal-content"></pre>
+<div class="modal-actions">
+<button onclick="copySummary()">📋 Copier dans presse-papier</button>
+<button onclick="downloadSummary()">💾 Télécharger .txt</button>
+<button class="close" onclick="closeModal()">Fermer</button>
+</div>
+</div>
+</div>
+
+<script>
+const DECISIONS = [
+  // BLOC 1 - OWNER PHYSICAL MANDATORY
+  {id:'PHYSICAL-01',cat:'physical',sev:'P0',sys:'INFRA',title:'.env production flip + config:cache',desc:'Éditer .env : APP_ENV=production + APP_DEBUG=false + POS_SIMULATION_HARDWARE=false + APP_URL=https://lecayenne.fr. Puis php artisan config:cache && route:cache && view:cache.',recommendation:'OBLIGATOIRE — Le boot guard AppServiceProvider refuse production sans ces flags. Safe-fail garanti.',effort:'10 min',mandatory:true,recommended:'APPROVE'},
+  {id:'PHYSICAL-02',cat:'physical',sev:'P0',sys:'INFRA',title:'Disk cleanup macOS local snapshots',desc:'sudo tmutil thinlocalsnapshots / 50000000000 4. Libère typiquement 30-50GB. Disque actuel 100% full → logs + uploads vont fail dans quelques heures.',recommendation:'OBLIGATOIRE — Sans ça, logs Laravel + uploads vont fail silencieusement.',effort:'15 min',mandatory:true,recommended:'APPROVE'},
+  {id:'PHYSICAL-03',cat:'physical',sev:'P0',sys:'WALK',title:'Physical walk + first real Z close',desc:'Walk complet Borne → POS encaisser → KDS bumper → OSS check → Cash drawer. Puis premier vrai Z close NF525 à 23:59 Paris (FIX-5 dry-run validé mécanique, real run reste).',recommendation:'OBLIGATOIRE — Seul test que Claude ne peut pas automatiser. Valide la chaîne end-to-end réelle.',effort:'60-90 min',mandatory:true,recommended:'APPROVE'},
+
+  // BLOC 2 - PROPOSAL CODE DECISIONS
+  {id:'PROPOSAL-01',cat:'proposal',sev:'P0',sys:'KDS',title:'KDS Archive undo — Path B compensating action',desc:'Owner mandate verbatim « écran de cuisine, je peux pas accéder aux archives pour corriger ». Path B : emit kitchen_recall OrderStatusTransition row sans muter status. Surface "RAPPELÉ" badge re-injecting card 60s. Append-only NF525-safe.',recommendation:'APPROUVER — Path B = middle complexity, NF525-safe par construction, exploit identity transition native (0 frozen touch). 3.5j dev.',effort:'3.5 jours',recommended:'APPROVE'},
+  {id:'PROPOSAL-02',cat:'proposal',sev:'P0',sys:'POS',title:'POS Refund UI — Option B modal dédié + permission',desc:'Backend ready (refund-with-counter-entry endpoint + RefundWithCounterEntryService + 7 sentinel tests). Manque UI button. Option B : composant PosRefundModal.vue réutilisable + permission pos-refund granted Admin+Branch Manager UNIQUEMENT (POS Operator off pour sécurité).',recommendation:'APPROUVER — Cassier ne peut PAS rembourser aujourd\'hui. Workaround dangereux via dropdown Returned bypass NF525. 6h dev.',effort:'6 heures',recommended:'APPROVE'},
+  {id:'PROPOSAL-03',cat:'proposal',sev:'P1',sys:'NF525',title:'Z dead zone — Path B business_date SSOT (V1.0.X)',desc:'Path A déjà shippé (23:59 close + 00:01 open = 2 min residual vs 10 min avant). Path B élimine totalement le risque via business_date column déjà existante. Requires LOCK_FISCAL countersign (ZReportService FROZEN §7).',recommendation:'DIFFÉRER V1.0.X — Path A résout 99.97% du risque. Path B = polish optionnel V1.0.X (avec LOCK).',effort:'V1.0.X',recommended:'DEFER'},
+
+  // BLOC 3 - G1.x MANUAL VERIFIES
+  {id:'G1-1',cat:'g1x',sev:'P2',sys:'Cash',title:'G1.1 — Cash Overview manual verify',desc:'Vérifier /admin/cash-overview affiche Wave X X4 Vue Caisse Unifiée + honest 3-cell reconciliation + 4 KPI.',recommendation:'APPROUVER — 5 min de ton temps, déjà code-verified GREEN.',effort:'5 min',recommended:'APPROVE'},
+  {id:'G1-2',cat:'g1x',sev:'P2',sys:'POS',title:'G1.2 — POS shortcuts manual verify',desc:'Vérifier shortcuts panel POS (Q10 + Wave X X1+X2) avec encaisser SSOT + counter-collect modal keyboard.',recommendation:'APPROUVER — 5 min, M-POS-2 keyboard heal déjà applied.',effort:'5 min',recommended:'APPROVE'},
+  {id:'G1-3',cat:'g1x',sev:'P2',sys:'Sync',title:'G1.3 — Q9-S1 sync 1s mesuré verify',desc:'Vérifier sync borne→KDS latence ~1s typique (Q9-S1 heal verified empirically).',recommendation:'APPROUVER — 3 min, déjà mesuré empiriquement.',effort:'3 min',recommended:'APPROVE'},
+  {id:'G1-4',cat:'g1x',sev:'P2',sys:'KDS',title:'G1.4 — KDS Historique drawer verify',desc:'Vérifier Wave X X3 Historique drawer accessible top-right KDS, read-only V1.',recommendation:'APPROUVER — 3 min, drawer working code-confirmed.',effort:'3 min',recommended:'APPROVE'},
+  {id:'G1-5',cat:'g1x',sev:'P2',sys:'Backup',title:'G1.5 — Backup automation verify',desc:'Vérifier backup auto cron + restore drill demain matin.',recommendation:'APPROUVER — 2 min, automation Laravel cmd + restore drill PASS prior cycle.',effort:'2 min',recommended:'APPROVE'},
+
+  // BLOC 4 - V1.0.1 P1 FINDINGS
+  {id:'V101-01',cat:'v101',sev:'P0',sys:'POS',title:'cancelKioskCashOrder one-click destructive (B2-P6 P0)',desc:'PosComponent.vue:3156-3183 cancels real customer order avec ONE CLICK sans modal. Reason hardcoded. Newbie miss-tap = commande perdue.',recommendation:'APPROUVER fix scope-minimal — Ajouter confirm modal mirror PosOrdersTracker.confirmCancelOrder existing pattern. 1h dev.',effort:'1 heure',recommended:'APPROVE'},
+  {id:'V101-02',cat:'v101',sev:'P0',sys:'NF525',title:'Refund dropdown Returned bypass NF525 (B2-P3 P0)',desc:'PosOrderShowComponent.vue:465 dropdown expose status RETURNED qui appelle changeStatus au lieu de RefundWithCounterEntryService → pseudo-refund non-NF525.',recommendation:'APPROUVER fix scope-minimal — Retirer option Returned du dropdown OU câbler vers vrai endpoint refund. 30 min dev.',effort:'30 min',recommended:'APPROVE'},
+  {id:'V101-03',cat:'v101',sev:'P1',sys:'Admin',title:'Dashboard under-reporting drift (triangulated)',desc:'B1-P4+B2-P4+B7 confirmed : sales-summary returns 0€ vs DB=7.80€ (order #63). Filter spec misalignment.',recommendation:'APPROUVER — Owner verra données fausses end-of-day. Audit DashboardService filter. 2h dev.',effort:'2 heures',recommended:'APPROVE'},
+  {id:'V101-04',cat:'v101',sev:'P1',sys:'KDS',title:'M-KDS-1 hardcoded height:462px persists',desc:'KdsOrderCard.vue:297 height:462px → overflow bottom row 1920×1080 long-content scroll in-card.',recommendation:'DIFFÉRER V1.0.X — Layout polish, pas blocker. Owner Option A/B/C decision separate.',effort:'V1.0.X',recommended:'DEFER'},
+  {id:'V101-05',cat:'v101',sev:'P1',sys:'NF525',title:'KDS bumps NOT in audit chain (B3-P5 score 1/10)',desc:'audit_logs WHERE action LIKE %kds% returns 0 rows. KDS transitions in order_status_transitions unsigned table only. Inspector cannot query bump history via fiscal chain.',recommendation:'DIFFÉRER V1.0.2 — V1 NF525 covers TVA/encaissement only (la vente IS covered). Strict cooking-chronology trace = V1.0.2 décision.',effort:'V1.0.2',recommended:'DEFER'},
+
+  // BLOC 5 - V1.0.X BACKLOG
+  {id:'V102-01',cat:'v102',sev:'P1',sys:'OSS',title:'Customer SMS PRET notification (C8-T1 P0 absent)',desc:'OrderSmsNotificationBuilder:30-33 short-circuit source==10 (kiosk) bloque SMS. Phone captured at loyalty signup, channel existe.',recommendation:'DIFFÉRER V1.0.1 — OSS visuel suffit V1. SMS = quick win mais V1.0.1 wave.',effort:'1 jour',recommended:'DEFER'},
+  {id:'V102-02',cat:'v102',sev:'P1',sys:'KDS',title:'Chef→cashier shortage signal absent (S6-P1)',desc:'Pas de bouton sur KdsOrderCard pour chef signal manque ingrédient. Channel ItemAvailabilityChanged reverse uniquement (cashier→chef).',recommendation:'DIFFÉRER V1.0.1 — V1 OK voix chef-cashier proximity. V2 dark-kitchen blocker.',effort:'1 jour',recommended:'DEFER'},
+  {id:'V102-03',cat:'v102',sev:'P1',sys:'Stock',title:'Stock 3-portions alert PARTIAL (S6-P1)',desc:'NotifyStockLowOnStockLevelChanged listener exists mais (a) flag FK_CATALOG_STOCK_LOW_ALERT_ENABLED=false default (b) StockLevelChanged only on boundary crossing.',recommendation:'APPROUVER — Quick win flip flag + threshold proximity. 4h dev.',effort:'4 heures',recommended:'APPROVE'},
+  {id:'V102-04',cat:'v102',sev:'P1',sys:'POS',title:'Pause caisse absent (S2-P3)',desc:'Zéro mécanisme pause/lock PIN re-prompt. Cashier absent → drawer ouvert non monitored.',recommendation:'DIFFÉRER V1.0.2 — V1 OK single-cashier short-shift. V2 multi-cashier critical.',effort:'V1.0.2',recommended:'DEFER'},
+  {id:'V102-05',cat:'v102',sev:'P1',sys:'POS',title:'Transfer commande cashier handoff (S2-P3)',desc:'PosParkedOrderService filtre user_id strict. Shift handover détruit parked orders.',recommendation:'DIFFÉRER V1.0.2 — V1 OK single-cashier. V2 shift-rotation blocker.',effort:'V1.0.2',recommended:'DEFER'},
+  {id:'V102-06',cat:'v102',sev:'P1',sys:'POS',title:'Customer history POS (S2-P3)',desc:'Customer history page existe mais RBAC customers gate POS Operator denied. Embed dans POS cart absent.',recommendation:'DIFFÉRER V1.0.1 — Permission narrowing customers_orders_read 30 min dev. Polish UX.',effort:'30 min',recommended:'DEFER'},
+  {id:'V102-07',cat:'v102',sev:'P1',sys:'POS',title:'Note transaction libre (S2-P3 P1 hidden NF525 hazard)',desc:'pos_payment_note dual-use as refund-reason overwrites original card stub / TPE TX ID. NF525 6-year traceability hazard.',recommendation:'APPROUVER — Decouple refund_reason into own column. 1h dev + migration. Scope-minimal.',effort:'1 heure',recommended:'APPROVE'},
+  {id:'V102-08',cat:'v102',sev:'P1',sys:'Admin',title:'PDF/Excel export EOD report (B2-P4 + B7)',desc:'Routes existent (sales-report/pdf + xlsx) mais PDF crash company_name undefined. Excel works. PDF blade fix shipped HEAL inline this cycle.',recommendation:'✅ DÉJÀ HEALED inline this cycle (PDF blade ?? fallback). Verify.',effort:'DONE',recommended:'APPROVE'},
+  {id:'V102-09',cat:'v102',sev:'P1',sys:'Admin',title:'Compare J vs J-1, J vs S-1 (B2-P4 + B7)',desc:'DashboardService no yesterdayTotals method. Owner blind to drops.',recommendation:'DIFFÉRER V1.0.1 — Nice owner-night feature. 4h dev.',effort:'4 heures',recommended:'DEFER'},
+  {id:'V102-10',cat:'v102',sev:'P1',sys:'Admin',title:'Note incident journalier (multiple agents)',desc:'Zero incidents/daily_notes table. Owner cannot trace TPE HS 19h45 ou cassoulet brûlé.',recommendation:'DIFFÉRER V1.0.1 — Quick win schema + UI. 4-6h dev.',effort:'4-6 heures',recommended:'DEFER'},
+  {id:'V102-11',cat:'v102',sev:'P2',sys:'KDS',title:'ETA propagation KDS→OSS (B3-P2 P2)',desc:'CDSOrderDetailsResource expose 6 keys only, no ETA. Client perceives FIFO position binary.',recommendation:'DIFFÉRER V1.0.X — Polish OSS UX.',effort:'V1.0.X',recommended:'DEFER'},
+  {id:'V102-12',cat:'v102',sev:'P2',sys:'KDS',title:'Cross-surface +N chip asymmetry OSS (B3-P2 B4)',desc:'HEAL-01 ships +N chip on KDS, OSS keeps oss-autoscroll silent. Chef sees count, client doesn\'t.',recommendation:'DIFFÉRER V1.0.X — Mirror chip in OSS PreparingAndReadyComponent. 30 min dev.',effort:'30 min',recommended:'DEFER'},
+  {id:'V102-13',cat:'v102',sev:'P2',sys:'Kiosk',title:'Kiosk Help button (B1-P6 broken)',desc:'kiosk.error.call_staff button emit black-hole (KioskAppComponent listens 4 events, call-staff not among). Fires analytics only.',recommendation:'DIFFÉRER V1.0.X — Wire call-staff to staff broadcast via Reverb channel. 1h dev.',effort:'1 heure',recommended:'DEFER'},
+  {id:'V102-14',cat:'v102',sev:'P2',sys:'POS',title:'POS global keyboard shortcuts (B2-P2)',desc:'Zero global hotkey for Q10/Tracker/Search. Cashier mouses every action. ~1-2s drag per order × rush.',recommendation:'DIFFÉRER V1.0.X — Keyboard polish post-V1.',effort:'V1.0.X',recommended:'DEFER'},
+  {id:'V102-15',cat:'v102',sev:'P2',sys:'NF525',title:'Wave C1 fiscal:assert-chain-clean waiver tamper id=34',desc:'Wave C1 deploy-gate blocks prod-cut on baseline id=34 (E2E-13 dev incident). Needs waiver mechanism OR migrate:fresh dev.',recommendation:'APPROUVER migrate:fresh dev — Production = fresh DB anyway. 2 min owner.',effort:'2 min',recommended:'APPROVE'},
+
+  // BLOC 6 - V2 SAAS STRATEGIC
+  {id:'V2-01',cat:'v2',sev:'P3',sys:'Architecture',title:'God Class density (Z1+Z3+Z4 cluster)',desc:'OrderService 2837 LOC + PaymentComponent 1478 LOC + KioskWizardComponent 3104 LOC (frozen). Repository layer absent (152 services, 2 repos only).',recommendation:'DIFFÉRER V2 — Architectural debt. V1 ok, V2 SaaS multi-tenant blocker.',effort:'30-40 jours',recommended:'DEFER'},
+  {id:'V2-02',cat:'v2',sev:'P3',sys:'Multi-tab',title:'Multi-tab state coherence (Z9)',desc:'Storage event listener absent + optimistic lock + BroadcastChannel + SharedWorker = V2 SaaS prep.',recommendation:'DIFFÉRER V2 — V1 single-cashier OK. V2 multi-admin blocker.',effort:'V2',recommended:'DEFER'},
+  {id:'V2-03',cat:'v2',sev:'P3',sys:'NF525',title:'KDS bumps audit chain integration (B3-P5)',desc:'Strict NF525 cooking-chronology trace via AuditLogService::write per bump. V1 covers vente only.',recommendation:'DIFFÉRER V2 — Owner décide si strict V1.0.3 ou V2.',effort:'V2',recommended:'DEFER'},
+  {id:'V2-04',cat:'v2',sev:'P3',sys:'Customer',title:'Feedback/Review/Rating customer (C8-G2)',desc:'Zero customer satisfaction surface. SpinBoost SaaS exists separate, not integrated.',recommendation:'DIFFÉRER V2 — Separate product roadmap.',effort:'V2',recommended:'DEFER'}
+];
+
+const STORAGE_KEY = 'foodking_owner_decisions_final_2026-05-26';
+let votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+function renderCards() {
+  const containers = {
+    physical: document.getElementById('cards-physical'),
+    proposal: document.getElementById('cards-proposal'),
+    g1x: document.getElementById('cards-g1x'),
+    v101: document.getElementById('cards-v101'),
+    v102: document.getElementById('cards-v102'),
+    v2: document.getElementById('cards-v2')
+  };
+  Object.values(containers).forEach(c => c.innerHTML = '');
+
+  const search = document.getElementById('search').value.toLowerCase();
+  const catFilter = document.querySelector('.chip[data-filter="cat"].active').dataset.value;
+  const sevFilter = document.querySelector('.chip[data-filter="sev"].active').dataset.value;
+
+  DECISIONS.forEach(d => {
+    if (catFilter !== 'all' && d.cat !== catFilter) return;
+    if (sevFilter !== 'all' && d.sev !== sevFilter) return;
+    if (search && !(d.title.toLowerCase().includes(search) || d.desc.toLowerCase().includes(search) || d.id.toLowerCase().includes(search))) return;
+
+    const card = document.createElement('div');
+    card.className = 'card ' + (votes[d.id] || '') + (d.mandatory ? ' owner-mandatory' : '');
+
+    let badges = `<span class="badge ${d.sev.toLowerCase()}">${d.sev}</span><span class="badge system">${d.sys}</span>`;
+    if (d.mandatory) badges += `<span class="badge mandatory">MANDATORY</span>`;
+    if (d.recommended === 'APPROVE') badges += `<span class="badge recommended">✓ recommandé</span>`;
+
+    card.innerHTML = `
+      <div class="badges">${badges}</div>
+      <div class="id">${d.id}</div>
+      <h3>${d.title}</h3>
+      <div class="description">${d.desc}</div>
+      <div class="recommendation">
+        <div class="label">💡 Ma recommandation</div>
+        ${d.recommendation}
+      </div>
+      <div class="effort">⏱️ Effort: ${d.effort}</div>
+      <div class="actions">
+        <button class="action-btn approve ${votes[d.id]==='approved'?'selected':''}" onclick="vote('${d.id}','approved')">✓ Approuver</button>
+        <button class="action-btn reject ${votes[d.id]==='rejected'?'selected':''}" onclick="vote('${d.id}','rejected')">✗ Rejeter</button>
+        <button class="action-btn defer ${votes[d.id]==='deferred'?'selected':''}" onclick="vote('${d.id}','deferred')">⏸ Différer</button>
+      </div>
+    `;
+    containers[d.cat].appendChild(card);
+  });
+
+  updateStats();
+}
+
+function vote(id, type) {
+  votes[id] = (votes[id] === type) ? null : type;
+  if (!votes[id]) delete votes[id];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+  renderCards();
+}
+
+function updateStats() {
+  const p0 = DECISIONS.filter(d => d.sev === 'P0').length;
+  const p1 = DECISIONS.filter(d => d.sev === 'P1').length;
+  const p2 = DECISIONS.filter(d => d.sev === 'P2').length;
+  const approved = Object.values(votes).filter(v => v === 'approved').length;
+  const rejected = Object.values(votes).filter(v => v === 'rejected').length;
+  const deferred = Object.values(votes).filter(v => v === 'deferred').length;
+
+  document.getElementById('stat-p0').textContent = p0;
+  document.getElementById('stat-p1').textContent = p1;
+  document.getElementById('stat-p2').textContent = p2;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-rejected').textContent = rejected;
+  document.getElementById('stat-deferred').textContent = deferred;
+  document.getElementById('cta-count').textContent = approved + rejected + deferred;
+}
+
+function buildSummary() {
+  const grp = {approved:[], rejected:[], deferred:[], pending:[]};
+  DECISIONS.forEach(d => {
+    if (votes[d.id]) grp[votes[d.id]].push(d);
+    else grp.pending.push(d);
+  });
+
+  let txt = `=== FOODKING V1 OWNER DECISIONS FINAL ===\nDate: ${new Date().toISOString()}\nBranche: heal/cms-pr1-quickwins-2026-05-18\nHEAD: d4867fc97\n\n`;
+
+  if (grp.approved.length) {
+    txt += `\n✅ APPROVED (${grp.approved.length}):\n`;
+    grp.approved.forEach(d => txt += `  - [${d.id}] ${d.title} · effort: ${d.effort}\n`);
+  }
+  if (grp.rejected.length) {
+    txt += `\n❌ REJECTED (${grp.rejected.length}):\n`;
+    grp.rejected.forEach(d => txt += `  - [${d.id}] ${d.title}\n`);
+  }
+  if (grp.deferred.length) {
+    txt += `\n⏸ DEFERRED V1.0.X (${grp.deferred.length}):\n`;
+    grp.deferred.forEach(d => txt += `  - [${d.id}] ${d.title} · effort: ${d.effort}\n`);
+  }
+  if (grp.pending.length) {
+    txt += `\n⏳ PENDING NO DECISION (${grp.pending.length}):\n`;
+    grp.pending.forEach(d => txt += `  - [${d.id}] ${d.title}\n`);
+  }
+
+  txt += `\n=== STATS ===\nTotal decisions: ${DECISIONS.length}\nApproved: ${grp.approved.length}\nRejected: ${grp.rejected.length}\nDeferred: ${grp.deferred.length}\nPending: ${grp.pending.length}\n`;
+
+  return txt;
+}
+
+function openModal() {
+  document.getElementById('modal-content').textContent = buildSummary();
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function copySummary() {
+  navigator.clipboard.writeText(buildSummary()).then(() => alert('✓ Copié dans presse-papier'));
+}
+function downloadSummary() {
+  const blob = new Blob([buildSummary()], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `owner-decisions-final-${new Date().toISOString().split('T')[0]}.txt`;
+  a.click();
+}
+function resetDecisions() {
+  if (confirm('Vraiment reset tous les votes ?')) {
+    votes = {};
+    localStorage.removeItem(STORAGE_KEY);
+    renderCards();
+  }
+}
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const filter = chip.dataset.filter;
+    document.querySelectorAll(`.chip[data-filter="${filter}"]`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderCards();
+  });
+});
+document.getElementById('search').addEventListener('input', renderCards);
+document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+renderCards();
+</script>
+</body>
+</html>

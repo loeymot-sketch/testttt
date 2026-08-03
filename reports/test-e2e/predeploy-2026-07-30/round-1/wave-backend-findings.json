@@ -1,0 +1,147 @@
+{
+  "wave": "backend",
+  "round": 1,
+  "supervisor": "adversarial",
+  "reviewed_at": "2026-07-30T06:15:00+02:00",
+  "screens_reviewed": [
+    "01-login.png",
+    "02-admin-pos.png",
+    "02a-admin-pos-landing.png",
+    "03-tracker-history.png",
+    "03a-tracker-before-click.png",
+    "04-kds.png",
+    "05-oss.png",
+    "06-admin-items.png",
+    "07-stock-rupture.png",
+    "08-kiosk-idle.png"
+  ],
+  "findings": [
+    {
+      "id": "BCK-R1-01",
+      "severity": "P1",
+      "surface": "04-kds.png",
+      "category": "donnée de production absente / silent failure potentielle",
+      "description": "La carte KDS unique N°W8675 n'affiche AUCUNE ligne d'article : le corps de carte (~1195x435px entre le header rose et le bouton Prêt) est intégralement blanc — zéro produit, zéro quantité, zéro modificateur, zéro message d'erreur ou d'état. La carte reste pourtant ACTIONNABLE : bouton pleine largeur '✓ Prêt' actif + bouton imprimante actif. La cuisine peut bumper/imprimer une commande sans savoir ce qu'elle contient.",
+      "evidence": "04-kds.png : header rose avec badge [A], 'N° W8675' ~46px, pills '● NOUVELLE' + 'EN LIGNE', 'ATTENTE 8172:15' rouge ; corps 100% vide de y~270 à y~700 ; footer '✓ Prêt' + imprimante. findings-tech.json 04-kds l'admet ('SANS aucune ligne d'article... à confirmer si défaut de rendu ou artefact de donnée périmée') — l'ambiguïté n'est PAS levée par l'équipe.",
+      "suggested_fix": "Lever l'ambiguïté par query DB : SELECT order_items pour la commande W8675. Si des items EXISTENT en DB → ESCALADE P0 (le rendu KDS avale silencieusement les lignes — même famille que la plainte 'ticket borne supprime sauces'). Si aucun item → garde de rendu : une commande sans lignes ne doit JAMAIS produire une carte actionnable (afficher un état d'erreur explicite + l'exclure du bump), et purger la donnée dev corrompue avant le deploy."
+    },
+    {
+      "id": "BCK-R1-02",
+      "severity": "P2",
+      "surface": "04-kds.png",
+      "category": "cycle de vie / file all-time sans purge + format timer",
+      "description": "La seule carte à l'écran est une commande web ZOMBIE : 'ATTENTE 8172:15' = 8172 minutes ≈ 5,7 jours, toujours au statut '● NOUVELLE'. Aucune purge/auto-archivage des commandes mortes : au premier service réel, ce zombie trône en tête de file KDS. Le format du timer (MMMM:SS) n'est pas prévu pour le long-stale — '8172:15' est illisible (aucun affichage en heures/jours).",
+      "evidence": "04-kds.png : 'ATTENTE' + '8172:15' en rouge en haut à droite de la carte ; pill '● NOUVELLE' ; liseré rouge pleine carte. Même pattern all-time-sans-scope que celui corrigé côté caisse (S2 2026-07-29).",
+      "suggested_fix": "Politique de stale KDS : commandes > N heures auto-masquées/archivées (ou section 'anciennes' repliée) + format timer humain au-delà de 99 min (ex. '5 j 16 h'). Purger les commandes de test avant le deploy."
+    },
+    {
+      "id": "BCK-R1-03",
+      "severity": "P2",
+      "surface": "02a-admin-pos-landing.png",
+      "category": "chevauchement / layout cassé (header landing caisse)",
+      "description": "CONFIRMÉ (contre-vérification du P2 GStack, zoom 2x) : le bloc titre haut-gauche de la landing caisse est un empilement illisible de 4 couches — 'CAISSE LE CAYENNE' wrappe sur 3 lignes dans une colonne trop étroite ; le label gris 'COMMANDES' s'imprime EN TRAVERS de 'CAYENNE' (deux textes entrelacés) ; le pill rouge 'À encaisser 16' recouvre le bas du bloc ; du titre de la carte il ne reste que 'rapide' (gros bold) dont le tiers supérieur est masqué par le pill ; l'icône couronne orange chevauche à gauche. Sévérité P2 JUSTE : aucune perte fonctionnelle (onglets cliquables, compteur 16 et 'Filiale #1'/'Articles 0' lisibles), mais c'est l'écran d'accueil quotidien du caissier et 3 textes y sont illisibles.",
+      "evidence": "02a-admin-pos-landing.png zone x~30-430 y~80-230 (crop 2x vérifié). findings-tech.json 02-admin-pos : reproductible 4 runs / 2 serveurs → défaut CSS déterministe, pas un flake de chargement.",
+      "suggested_fix": "Réserver l'espace du bloc titre : la rangée d'onglets est positionnée par-dessus le header de carte sans clearance (position/z-index). Donner au conteneur titre une largeur min + pousser la rangée d'onglets sous le bloc (flow normal), ou masquer le titre redondant quand les onglets sont rendus."
+    },
+    {
+      "id": "BCK-R1-04",
+      "severity": "P2",
+      "surface": "07-stock-rupture.png",
+      "category": "tuile sans libellé — risque d'erreur 86",
+      "description": "CONFIRMÉ (contre-vérification GStack : P2, PAS un non-issue) : les tuiles produits n'affichent AUCUN nom — chaque tuile = vignette photo + icône appareil-photo + badge 'EN STOCK', rien d'autre. Aggravant décisif vu au zoom 2x : pour 'Sandwichs' (4), les 4 vignettes sont quasi INDISTINGUABLES (même sandwich sombre, même fond noir, même cadrage). Or cet écran sert à basculer la disponibilité d'un produit précis, et son propre bandeau annonce une synchro 'en temps réel sur la caisse, la borne et le wizard' : cliquer la mauvaise tuile = 86 du mauvais produit propagé partout (produit vendable désactivé, ou produit épuisé toujours vendable). La fonction cœur repose sur la devinette visuelle.",
+      "evidence": "07-stock-rupture.png panneau droit (crop 2x vérifié) : 4 tuiles [photo|📷|EN STOCK] sans texte ; sidebar 'Sandwichs 4' ; bandeau 'Le changement est synchronisé en temps réel sur la caisse, la borne et le wizard.'",
+      "suggested_fix": "Afficher le nom du produit sur chaque tuile (fix trivial). Frontière P1 opérationnelle si la tuile est bien le seul sélecteur du flux 86 — à trancher par GStack ; en l'état P2 car la recherche par nom existe au-dessus (mais elle renvoie... des tuiles sans nom)."
+    },
+    {
+      "id": "BCK-R1-05",
+      "severity": "P2",
+      "surface": "03-tracker-history.png",
+      "category": "i18n — libellé anglais résiduel + incohérence inter-surfaces",
+      "description": "Colonne CLIENT ligne 1 : 'Guest User' (commande Caisse N°A0070, 11,30 €, Remboursé, N° fiscal 2691). La même entité s'appelle 'Client passage' dans le sélecteur du POS (02-admin-pos.png). Résidu anglais sur un produit 100% FR (ADR-007) + le caissier voit deux noms différents pour le même concept selon la surface. Non déclaré par l'équipe GStack.",
+      "evidence": "03-tracker-history.png ligne 1 : 'Guest User' en toutes lettres ; 02-admin-pos.png panneau ticket : dropdown 'Client passage'.",
+      "suggested_fix": "Renommer le customer par défaut en 'Client passage' (seed/DB) ou mapper l'affichage historique sur le libellé FR unique."
+    },
+    {
+      "id": "BCK-R1-06",
+      "severity": "P2",
+      "surface": "03a-tracker-before-click.png",
+      "category": "incohérence de comptage inter-surfaces (à contre-prouver)",
+      "description": "Au même instant, deux surfaces caisse annoncent 0 et 16 pour 'à encaisser' : le Suivi commandes (03a, 06:00:08) affiche '0 actives / 0 aujourd'hui' + board 'À ENCAISSER 0' avec coche verte 'Aucune commande à encaisser.' — alors que l'historique capturé UNE SECONDE plus tard (03, 06:00:09) liste 8+ commandes borne 'À encaisser' datées d'hier (A0062-A0070), et la landing caisse (02a, 06:04) affiche 'À encaisser 16' + 'À ENCAISSER BORNE (16)'. Pas un artefact temporel. Deux lectures : (a) day-scope intentionnel du board (décision S2 2026-07-29 'un board du jour n'absorbe pas la file all-time') → alors le libellé '0 actives' + coche verte SANS mention des 16 en file est trompeur pour l'équipe du matin ; (b) la branche S2 n'étant pas fusionnée d'après la mémoire projet, le comptage '0 actives' peut être simplement faux.",
+      "evidence": "03a-tracker-before-click.png : '0 actives  0 aujourd'hui', 'À ENCAISSER 0', '✓ Aucune commande à encaisser.' ; 03-tracker-history.png : lignes 'Borne / À encaisser' du 29-07 15:23→16:11 et 05:57 ; 02a-admin-pos-landing.png : 'À encaisser 16'. Horodatages fichiers vérifiés (06:00:08 / 06:00:09 / 06:04:13).",
+      "suggested_fix": "GStack doit trancher avec preuve : si day-scope voulu → étiqueter honnêtement ('0 aujourd'hui') et ajouter un lien '16 plus anciennes en file' au lieu de la coche verte ; sinon corriger le count 'actives' (all-time actives)."
+    },
+    {
+      "id": "BCK-R1-07",
+      "severity": "P3",
+      "surface": "02-admin-pos.png",
+      "category": "localisation input date (US) + harnais",
+      "description": "Le champ 'Programmer' du ticket caisse affiche 'mm/dd/yyyy, --:-- --' : placeholder natif datetime-local NON localisé FR (format US, risque d'inversion jour/mois pour une commande programmée si le Chrome du poste caisse n'est pas en fr-FR). A minima, le harnais Playwright ne force pas locale fr-FR : la capture ne prouve donc pas le rendu FR réel de ce champ.",
+      "evidence": "02-admin-pos.png panneau droit : '🕰 Programmer  [mm/dd/yyyy, --:-- --]'.",
+      "suggested_fix": "Forcer locale fr-FR dans le contexte Playwright ; vérifier la locale Chrome du poste caisse de prod ; ou remplacer l'input natif par un picker localisé."
+    },
+    {
+      "id": "BCK-R1-08",
+      "severity": "P3",
+      "surface": "02-admin-pos.png",
+      "category": "texte tronqué",
+      "description": "Placeholder du champ téléphone clippé sans ellipsis : on lit 'Téléphone (optionne' — le 'l)' est coupé par le bord du champ.",
+      "evidence": "02-admin-pos.png panneau ticket, champ droit sous 'SÉLECTIONNER LE TYPE DE COMMANDE'.",
+      "suggested_fix": "Raccourcir le placeholder ('Téléphone') ou élargir/ellipser le champ."
+    },
+    {
+      "id": "BCK-R1-09",
+      "severity": "P3",
+      "surface": "06-admin-items.png",
+      "category": "texte tronqué / débordement de boîte",
+      "description": "Cartes stats du pilotage catalogue : '35 CATÉGORIE' — le S final de 'CATÉGORIES' est clippé par le bord de la carte ; '0 INDISPONIBLES' — le mot déborde PAR-DESSUS la bordure droite du cadre rouge (vérifié au zoom 2x). Même racine : cartes à largeur fixe trop étroites pour leurs labels.",
+      "evidence": "06-admin-items.png rangée stats (crop 2x : lettres 'LES' de INDISPONIBLES à cheval sur la bordure rouge ; S de CATÉGORIES coupé).",
+      "suggested_fix": "min-width des cartes ou font-size/label plus courts ('INDISPO.' , 'CATÉG.') ; overflow:hidden n'est pas une solution (perte du S), préférer le fit."
+    },
+    {
+      "id": "BCK-R1-10",
+      "severity": "P3",
+      "surface": "01-login.png",
+      "category": "typographie FR (Title Case anglais) — systémique",
+      "description": "Libellés FR en Title Case anglais sur tout le back-office : 'Bon Retour', 'Mot De Passe', 'Se Souvenir De Moi', 'Mot De Passe Oublié' (01-login) ; 'Ajouter Un Article', 'Tableau De Bord' (06) ; 'Modifier Le Profil', 'Changer Le Mot De Passe' (samples findings-tech). La convention FR est la phrase case ('Mot de passe oublié'). Cosmétique mais systémique — trahit une traduction mot-à-mot.",
+      "evidence": "01-login.png : 'Mot De Passe Oublié' ; 06-admin-items.png : 'Ajouter Un Article' ; findings-tech.json samples.",
+      "suggested_fix": "Passe de nettoyage des clés de traduction FR en phrase case (hors marques/titres propres)."
+    },
+    {
+      "id": "BCK-R1-11",
+      "severity": "P3",
+      "surface": "05-oss.png",
+      "category": "empty state pauvre (écran client) + teinte hors palette",
+      "description": "Colonnes 'En préparation' / 'Prêt' vides : l'unique contenu est un tiret gris ~14px perdu au centre de ~600px de blanc — sur un écran PUBLIC salle, cela ressemble à un affichage cassé ou figé. Accessoirement, le bandeau 'En préparation' est carmin/framboise, hors palette brand (#F4501E/#FFB800/#1A1A1A) alors que 'Prêt' assume un vert sémantique.",
+      "evidence": "05-oss.png : deux tirets isolés au centre des colonnes ; header gauche carmin.",
+      "suggested_fix": "Message d'attente client ('Vos commandes s'affichent ici') ou visuel de marque ; aligner le carmin sur la palette (orange brand ou neutre sombre)."
+    },
+    {
+      "id": "BCK-R1-12",
+      "severity": "P3",
+      "surface": "08-kiosk-idle.png",
+      "category": "évidence de test non représentative (harnais)",
+      "description": "La borne (surface portrait 1080x1920) est capturée en viewport paysage 1280x800 : letterbox noir des deux côtés et bas de page clippé (rangée de points de pagination coupée à y≈786). Le contenu VISIBLE est sain — vérifié au zoom : 'Commandez en quelques touches' intact, aucun chevauchement pills/texte (soupçon initial infirmé), 'Le Terminator' + 100% HALAL + CTA propres. Mais toute conclusion 'idle borne validée' à partir de cette capture est partielle : le rendu portrait réel n'est pas prouvé.",
+      "evidence": "08-kiosk-idle.png : bandes noires x<415 et x>865, dots bas tronqués par le bord du viewport.",
+      "suggested_fix": "Capturer la borne en viewport 1080x1920 (ou 810x1440) dans le harnais pré-deploy — c'est la config déjà utilisée par les specs borne existantes."
+    }
+  ],
+  "gstack_counter_verification": {
+    "a_02a_header_overlap": "CONFIRMÉ, sévérité P2 juste. Précision apportée : ce n'est pas un simple chevauchement titre/onglets mais 4 couches empilées (CAISSE LE CAYENNE wrappé 3 lignes + COMMANDES imprimé en travers + pill 'À encaisser 16' par-dessus + titre réduit à 'rapide' aux 2/3 masqué + icône couronne). Aucune perte fonctionnelle → pas P1. Reproductible 4/4 runs → déterministe.",
+    "b_kds_w8675_no_lines": "CONFIRMÉ et AGGRAVÉ. Vu exactement : header rose ([A], N° W8675, pills NOUVELLE + EN LIGNE, ATTENTE 8172:15 rouge), corps ~1195x435px INTÉGRALEMENT blanc (zéro ligne, zéro message), footer '✓ Prêt' actif + imprimante active. L'équipe a classé 'observation à confirmer' — refusé : carte actionnable sans contenu = P1 minimum, et P0 si la query DB montre des order_items existants (rendu qui avale). Second défaut distinct sur la même carte : zombie 5,7 jours affiché 'NOUVELLE' avec timer illisible 8172:15 (P2).",
+    "c_stock_tiles_no_name": "P2 CONFIRMÉ, pas un non-issue. Argument décisif vu au zoom : les 4 vignettes 'Sandwichs' sont quasi identiques (même produit sombre sur même fond noir) — l'identification est impossible sans nom, sur un écran dont le bandeau annonce une synchro 86 temps réel caisse/borne/wizard. Mauvais clic = mauvais produit 86 propagé partout. Frontière P1 opérationnelle ; P2 retenu car une recherche par nom existe au-dessus."
+  },
+  "clean_screens": [
+    "01-login.png — sain hors Title Case (BCK-R1-10) ; palette brand OK, layout OK",
+    "08-kiosk-idle.png — contenu visible sain (voir BCK-R1-12 pour la limite d'évidence)"
+  ],
+  "cross_checks_negative": [
+    "Trou N° commande 2907266034 dans l'historique (037→036→035→033) : NON retenu comme finding — 02a montre N°A0034 (7,00 €) en COMMANDES WEB en attente d'acceptation, ce qui explique son absence de l'historique caisse. Cohérence inter-écrans plutôt que défaut.",
+    "N° fiscal '—' sur toutes les lignes 'À encaisser' + 2691 sur la ligne remboursée : conforme NF525 (allocation au paiement/clôture).",
+    "Prix : format FR '11,30 €' / '1,90 €' correct sur toutes les surfaces vérifiées.",
+    "findings-tech.json : zéro console/http error sur 8 surfaces — plausible mais 02a/03a n'ont AUCUNE entrée propre (couvertes implicitement par 02/03) ; sample 01 contient 'Anglais' dans le sélecteur de langue (V1 = FR-only, à garder à l'oeil, non visible à l'écran donc non compté)."
+  ],
+  "p0_count": 0,
+  "p1_count": 1,
+  "p2_count": 5,
+  "p3_count": 6
+}

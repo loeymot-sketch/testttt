@@ -14,64 +14,44 @@
         <h2 :id="titleId" class="ks-a11y-title" data-testid="kiosk-a11y-title">
           {{ $t('kiosk.a11y.title') }}
         </h2>
-        <button
-          type="button"
+        <button type="button"
           class="ks-a11y-close"
           :aria-label="$t('kiosk.a11y.close')"
           data-testid="kiosk-a11y-close"
-          @click="close"
-        >×</button>
+          @click="close">×</button>
       </div>
 
-      <!-- Section langue -->
-      <section
-        class="ks-a11y-section"
-        :aria-labelledby="langHeadingId"
-      >
-        <h3 :id="langHeadingId" class="ks-a11y-section-title">{{ $t('kiosk.a11y.language') }}</h3>
-        <div class="ks-a11y-options" role="radiogroup" :aria-labelledby="langHeadingId" data-testid="kiosk-a11y-lang-group">
-          <button
-            v-for="opt in localeOptions"
-            :key="opt.code"
-            type="button"
-            class="ks-a11y-option"
-            :class="{ 'is-selected': locale === opt.code }"
-            role="radio"
-            :aria-checked="locale === opt.code"
-            :data-testid="'kiosk-a11y-lang-' + opt.code"
-            @click="selectLocale(opt.code)"
-          >
-            <span class="ks-a11y-option-flag" aria-hidden="true">{{ opt.flag }}</span>
-            <span class="ks-a11y-option-label">{{ opt.label }}</span>
-          </button>
-        </div>
-      </section>
+      <!--
+        [ADR-007 / Sprint 3D 2026-05-16] Sélecteur de langue retiré : kiosk
+        runtime FR-immutable. Le drawer ne propose plus FR/EN/AR — la borne
+        reste FR pour toute la session, le clavier virtuel, la voix Web Speech
+        et la lecture i18n. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
+        Pour ré-ouvrir un pilote multi-langue post-V1, basculer
+        KIOSK_LOCALE_SWITCH_ALLOWED=true (config/kiosk.php) ET réintroduire
+        une UI dédiée — pas dans ce drawer a11y.
+      -->
 
       <!-- Contraste AA/AAA -->
       <section class="ks-a11y-section" :aria-labelledby="contrastHeadingId">
         <h3 :id="contrastHeadingId" class="ks-a11y-section-title">{{ $t('kiosk.a11y.contrast') }}</h3>
         <div class="ks-a11y-options" role="radiogroup" :aria-labelledby="contrastHeadingId" data-testid="kiosk-a11y-contrast-group">
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-option"
             :class="{ 'is-selected': contrast === 'aa' }"
             role="radio"
             :aria-checked="contrast === 'aa'"
             data-testid="kiosk-a11y-contrast-aa"
-            @click="selectContrast('aa')"
-          >
+            @click="selectContrast('aa')">
             <span class="ks-a11y-option-label">{{ $t('kiosk.a11y.contrast_aa') }}</span>
             <span class="ks-a11y-option-hint">{{ $t('kiosk.a11y.contrast_aa_hint') }}</span>
           </button>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-option"
             :class="{ 'is-selected': contrast === 'aaa' }"
             role="radio"
             :aria-checked="contrast === 'aaa'"
             data-testid="kiosk-a11y-contrast-aaa"
-            @click="selectContrast('aaa')"
-          >
+            @click="selectContrast('aaa')">
             <span class="ks-a11y-option-label">{{ $t('kiosk.a11y.contrast_aaa') }}</span>
             <span class="ks-a11y-option-hint">{{ $t('kiosk.a11y.contrast_aaa_hint') }}</span>
           </button>
@@ -85,16 +65,14 @@
             <span class="ks-a11y-section-title" :id="pmrHeadingId">{{ $t('kiosk.a11y.pmr') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.pmr_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': pmr }"
             role="switch"
             :aria-checked="pmr"
             :aria-labelledby="pmrHeadingId"
             data-testid="kiosk-a11y-pmr-toggle"
-            @click="togglePmr"
-          >
+            @click="togglePmr">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -107,16 +85,14 @@
             <span class="ks-a11y-section-title" :id="audioHeadingId">{{ $t('kiosk.a11y.audio') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.audio_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': audio }"
             role="switch"
             :aria-checked="audio"
             :aria-labelledby="audioHeadingId"
             data-testid="kiosk-a11y-audio-toggle"
-            @click="toggleAudio"
-          >
+            @click="toggleAudio">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -129,16 +105,14 @@
             <span class="ks-a11y-section-title" :id="audioDescHeadingId">{{ $t('kiosk.a11y.audio_description') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.audio_description_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': audioDescription }"
             role="switch"
             :aria-checked="audioDescription"
             :aria-labelledby="audioDescHeadingId"
             data-testid="kiosk-a11y-audio-description-toggle"
-            @click="toggleAudioDescription"
-          >
+            @click="toggleAudioDescription">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -151,35 +125,45 @@
             <span class="ks-a11y-section-title" :id="reducedMotionHeadingId">{{ $t('kiosk.a11y.reduced_motion') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.reduced_motion_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': reducedMotion }"
             role="switch"
             :aria-checked="reducedMotion"
             :aria-labelledby="reducedMotionHeadingId"
             data-testid="kiosk-a11y-reduced-motion-toggle"
-            @click="toggleReducedMotion"
-          >
+            @click="toggleReducedMotion">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
       </section>
 
+      <!-- CV1-KIOSK-VISUAL-REDESIGN-001 V1.4 — Sélection thème (Bold Appétissant) -->
+      <section class="ks-a11y-section" :aria-labelledby="themeHeadingId">
+        <div class="ks-a11y-toggle-row" style="display: flex; flex-direction: column; align-items: stretch; gap: 12px;">
+          <div class="ks-a11y-toggle-copy">
+            <span class="ks-a11y-section-title" :id="themeHeadingId">{{ $t('kiosk.a11y.theme', 'Thème') }}</span>
+            <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.theme_hint', 'Choisis l’apparence claire ou sombre, ou laisse le système décider.') }}</span>
+          </div>
+          <KsThemeToggle
+            :model-value="theme"
+            :aria-label="$t('kiosk.a11y.theme_aria', 'Sélection du thème')"
+            testid="kiosk-a11y-theme-toggle"
+            @update:modelValue="selectTheme"
+          />
+        </div>
+      </section>
+
       <!-- Footer : reset + close -->
       <div class="ks-a11y-footer">
-        <button
-          type="button"
+        <button type="button"
           class="ks-a11y-reset"
           data-testid="kiosk-a11y-reset"
-          @click="reset"
-        >{{ $t('kiosk.a11y.reset') }}</button>
-        <button
-          type="button"
+          @click="reset">{{ $t('kiosk.a11y.reset') }}</button>
+        <button type="button"
           class="ks-a11y-done"
           data-testid="kiosk-a11y-done"
-          @click="close"
-        >{{ $t('kiosk.a11y.done') }}</button>
+          @click="close">{{ $t('kiosk.a11y.done') }}</button>
       </div>
     </div>
   </div>
@@ -187,7 +171,7 @@
 
 <script>
 /**
- * KsA11ySettings — drawer de paramètres d'accessibilité & langue.
+ * KsA11ySettings — drawer de paramètres d'accessibilité.
  * -----------------------------------------------------------------------------
  * Phase 4.3 — European Accessibility Act (EAA).
  *
@@ -204,20 +188,25 @@
  * A11y :
  *  - role="dialog", aria-modal, aria-labelledby
  *  - Focus management : focus initial sur le drawer au mount (tabindex=-1)
- *  - Radiogroups pour langue & contraste (role=radio + aria-checked)
+ *  - Radiogroup pour contraste (role=radio + aria-checked)
  *  - Switches pour PMR/Audio (role=switch + aria-checked)
  *  - Escape ferme la modale
+ *
+ * [ADR-007 / Sprint 3D 2026-05-16] La sélection de langue (FR/EN/AR) a été
+ * retirée du drawer pour restaurer le FR-lock kiosk en V1. Voir
+ * docs/adr/ADR-007-kiosk-fr-lock.md pour la justification et la procédure de
+ * relaxation post-V1.
  */
 const UID = () => 'ks-a11y-' + Math.random().toString(36).slice(2, 10);
 
-const LOCALE_OPTIONS = [
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-    { code: 'en', label: 'English',  flag: '🇬🇧' },
-    { code: 'ar', label: 'العربية',  flag: '🇸🇦' },
-];
+// [ADR-007 / Sprint 3D 2026-05-16] LOCALE_OPTIONS retiré : kiosk runtime
+// FR-immutable. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
+
+import KsThemeToggle from './KsThemeToggle.vue';
 
 export default {
     name: 'KsA11ySettings',
+    components: { KsThemeToggle },
     props: {
         modelValue: { type: Boolean, default: false },
     },
@@ -226,18 +215,20 @@ export default {
         const uid = UID();
         return {
             titleId: uid + '-title',
-            langHeadingId: uid + '-lang',
+            // [ADR-007] langHeadingId conservé pour rétro-compat si un consumer
+            // externe le référençait — mais aucun radiogroup langue n'est plus
+            // rendu dans le drawer.
             contrastHeadingId: uid + '-contrast',
             pmrHeadingId: uid + '-pmr',
             audioHeadingId: uid + '-audio',
             audioDescHeadingId: uid + '-audio-desc',
             reducedMotionHeadingId: uid + '-reduced-motion',
-            localeOptions: LOCALE_OPTIONS,
+            themeHeadingId: uid + '-theme',
         };
     },
     computed: {
-        locale() { return this.$store.state.kioskSettings?.locale || 'fr'; },
         contrast() { return this.$store.state.kioskSettings?.contrast || 'aa'; },
+        theme() { return this.$store.state.kioskSettings?.theme || 'auto'; },
         pmr() { return !!this.$store.state.kioskSettings?.pmr; },
         audio() { return !!this.$store.state.kioskSettings?.audio; },
         audioDescription() { return !!this.$store.state.kioskSettings?.audioDescription; },
@@ -258,10 +249,10 @@ export default {
         close() {
             this.$emit('update:modelValue', false);
         },
-        selectLocale(code) {
-            this.$store.dispatch('kioskSettings/setLocale', code);
-            this.reportEvent('locale_change', { value: code });
-        },
+        // [ADR-007 / Sprint 3D 2026-05-16] selectLocale retiré : kiosk runtime
+        // FR-immutable. La méthode et son dispatch kioskSettings setLocale
+        // n'existent plus dans le drawer pour empêcher toute remise en place
+        // accidentelle par copier-coller. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
         selectContrast(mode) {
             this.$store.dispatch('kioskSettings/setContrast', mode);
             this.reportEvent('contrast_change', { value: mode });
@@ -285,6 +276,13 @@ export default {
             const next = !this.reducedMotion;
             this.$store.dispatch('kioskSettings/setReducedMotion', next);
             this.reportEvent('reduced_motion_toggle', { value: next });
+        },
+        selectTheme(value) {
+            // CV1-KIOSK-VISUAL-REDESIGN-001 V1.4 — propagation par useKioskTheme
+            // (composable monté à la racine kiosk) qui écoute le store et écrit
+            // data-kiosk-theme sur <html>.
+            this.$store.dispatch('kioskSettings/setTheme', value);
+            this.reportEvent('theme_change', { value });
         },
         reset() {
             this.$store.dispatch('kioskSettings/reset');
@@ -316,7 +314,7 @@ export default {
   background: var(--kiosk-overlay-modal, rgba(26,26,26,0.55));
   display: flex;
   align-items: stretch;
-  justify-content: flex-end;
+  justify-content: end;
 }
 
 .ks-a11y-drawer {
@@ -399,7 +397,7 @@ export default {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
-  text-align: left;
+  text-align: start;
 }
 
 .ks-a11y-option:hover { background: var(--kiosk-surface-alt); }
@@ -422,7 +420,7 @@ export default {
   font-size: 12px;
   color: var(--kiosk-text-muted);
   font-weight: 500;
-  margin-left: 8px;
+  margin-inline-start: 8px;
 }
 
 .ks-a11y-toggle-row {
@@ -465,7 +463,7 @@ export default {
 .ks-a11y-switch-thumb {
   position: absolute;
   top: 3px;
-  left: 3px;
+  inset-inline-start: 3px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -478,7 +476,8 @@ export default {
   border-color: var(--kiosk-primary);
 }
 .ks-a11y-switch.is-on .ks-a11y-switch-thumb {
-  left: 33px;
+  inset-inline-start: auto;
+  inset-inline-end: 3px;
   background: var(--kiosk-text-on-red);
 }
 

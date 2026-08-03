@@ -1,0 +1,60 @@
+{
+  "micro_system": "S7-settings-business",
+  "verdicts": [
+    {
+      "id": "S7-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. BranchRequest::rules() (app/Http/Requests/BranchRequest.php:33-47) has NO rule for siret/vat_intra/register_id/legal_footer. BranchCreateComponent.vue form (lines 14-130) binds only name/lat/long/email/phone/city/state/zip_code/status/address; reset payload (216-227) and save payload (246-258) omit all 4 fiscal fields. ReceiptDataService.php:66-69 reads optional(order->branch)->{register_id,siret,vat_intra,legal_footer} onto every ticket; ReceiptComponent.vue:67-71 + posReceiptBuilder.js:121 render them. grep database/seeders = ZERO hits. Verified the Company settings panel is NOT an alternative source: CompanyComponent.vue holds only company_name/email/phone/website/city/state/country/zip/address (no SIRET/VAT), and ReceiptDataService reads branch columns ONLY (no Settings::group('company')). So there is no admin surface anywhere to populate the 4 columns and no seed -> they are NULL forever, receipt omits mandatory NF525/art.286 CGI mentions. Sufficient proof = no-UI + no-seed; the validated()-strips-them mechanism is moot (form never sends the fields). Matches known owner gap 'branche siret/vat vides'. Real P1: legally non-conform ticket, root of the receipt-omission P1."
+    },
+    {
+      "id": "S7-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED at app/Services/TimeSlotService.php:55,57,59. store() overlap guard has exactly 3 conditions: (1) new strictly inside existing (opening>existing.opening && closing<existing.closing); (2) new.opening inside existing; (3) new.closing inside existing. For existing [10:00,12:00]: full-container [09:00,13:00] -> 09>10=F, 09>10=F, 13>10&&13<12=F -> status stays true -> CREATED. Exact duplicate [10:00,12:00] -> 10>10=F on every comparison -> CREATED. Both are genuine overlaps the guard fails to reject. Feeds FrontendTimeSlotService customer slot picker -> duplicate/contradictory windows + silently-widened hours. Canonical fix (new.opening<existing.closing && new.closing>existing.opening) covers all cases. Real P2 logic hole."
+    },
+    {
+      "id": "S7-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED but finding's 'leaks stack/SQL/secrets TO CUSTOMERS in production' prong is FACTUALLY WRONG and corrected here. SiteComponent.vue:331-354 renders the App Debug Enable/Disable radio (form.site_app_debug); SiteService.php:48 writes APP_DEBUG='true'/'false' to .env via envService->addData, then Artisan optimize:clear (line 64). AppServiceProvider.php:202-208 throws RuntimeException when config('app.debug')==true under app()->environment('production') (gate line 158). CORRECTED RISK: in production the boot guard REFUSES TO BOOT after debug=true is saved + cache cleared -> app hard-DOWN mid-service (self-inflicted DoS taking POS/Kiosk/KDS offline). The stack/SQL/secret leak only materializes in non-prod/un-guarded runs, NOT against production customers (the guard blocks that). Documented V1.0.2 backlog (M-P0-D/E/F per AppServiceProvider:198-206 comment) WITH compensating boot guard. Still real: a destructive env-rewriting toggle in plain Site settings should be removed. P1 retained on the DoS severity (mid-shift outage); compensating guard makes P2 also defensible -- P1 kept as deliberate call given outage blast radius."
+    },
+    {
+      "id": "S7-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. OrderSetupRequest::rules() (app/Http/Requests/OrderSetupRequest.php:30-31) validates order_setup_takeaway and order_setup_delivery independently (required/numeric/min:0); grep confirms NO withValidator/after cross-field rule -> both can be saved DISABLE. Flags consumed: OrderRequest.php:238-241, PosOrderRequest.php:172-174, TableOrderRequest.php:57-59 each reject the matching order_type when DISABLE. Both-disabled scenario: explicit order_type (DELIVERY/TAKEAWAY, not blank) hits the specific DISABLE branches -> 422 for all web+POS submits. Kiosk-token path bypasses (OrderRequest.php:233-235 returns before the guard). Net: owner can brick all web+POS ordering with no settings-screen warning while kiosk silently survives -- asymmetric, hard to diagnose live. Real P2."
+    },
+    {
+      "id": "S7-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED but OVER-RATED -> downgraded P2->P3. routes/api.php:503-506 registers time-slot GET/POST(store)/DELETE(destroy) only -- NO PUT/PATCH update route. TimeSlotController (app/Http/Controllers/Admin/TimeSlotController.php) defines index/store/destroy only; middleware line 20 covers store+destroy. TimeSlotService grep shows list/store/destroy only, NO update method. To change a slot the owner must delete+recreate. This is a MISSING FEATURE, not a malfunction -- delete+recreate works, nothing is broken. P2 implies something misbehaves; a missing edit affordance is a P3 functional/workflow gap. is_real/is_necessary kept true (worth adding), severity lowered to P3."
+    },
+    {
+      "id": "S7-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED at app/Http/Controllers/Admin/SiteController.php:33-37. update() wraps the call in if(env('DEMO')){ $resource = new SiteResource($this->siteService->update($request)); } else { $resource = new SiteResource($this->siteService->update($request)); } -- both branches byte-identical, so the DEMO check has ZERO effect (genuinely dead conditional; real DEMO gating lives in SiteService::update line 58 getValue('DEMO')). Conscious call: by strict 'really must be done' this is a no-op cleanup and a DROP candidate, but it is correctly stated and correctly low, and it calls env('DEMO') on the hot settings-save path for nothing while misleading the next maintainer. Kept as P3 dead-code cleanup (deliberate, not reflexive). Trivial 4-line deletion."
+    }
+  ],
+  "coverage_gaps": [
+    "Company settings save path (CompanyComponent.vue + CompanyRequest validation + persistence) was never audited -- zero findings filed; it holds name/email/phone/website/address but no SIRET/VAT, reinforcing S7-01's no-alternative-source conclusion yet its own validation/persist path is unverified.",
+    "SiteService env-write surface BEYOND APP_DEBUG: the same admin UI writes TIMEZONE/CURRENCY/CURRENCY_SYMBOL/CURRENCY_POSITION/CURRENCY_DECIMAL_POINT/DATE_FORMAT/TIME_FORMAT (SiteService.php:49-55) and MIX_GOOGLE_MAP_KEY (line 60) to .env. Only the app_debug key was examined; the broader admin-driven .env-edit attack surface (EnvEditor allowlist) is unaudited.",
+    "OrderSetup non-toggle fields (order_setup_food_preparation_time, schedule_order_slot_duration, free_delivery_kilometer, basic_delivery_charge, charge_per_kilo) are validated only min:0 with no sane upper bound -- a huge/garbage prep time or delivery charge can be saved; unaudited.",
+    "Branch UPDATE / updateZone path: only the create form/payload was read. Whether BranchService::store/update would even persist the fiscal fields if BranchRequest rules + form inputs were added (and BranchScope/admin-bypass implications) is unverified.",
+    "TimeSlotRequest validation (opening_time/closing_time format, opening<closing ordering, day enum) was not examined -- the overlap guard (S7-02) is only one layer; a malformed or inverted slot could pass before overlap logic even runs."
+  ]
+}

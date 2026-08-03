@@ -20,7 +20,11 @@ class LanguageController extends AdminController
     {
         parent::__construct();
         $this->languageService = $languageService;
-        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy');
+        // [P0 SEC-RCE] fileText (include() = LFI) + fileTextStore (file_put_contents = arbitrary
+        // file write) are RCE primitives. Combined with Sanctum wildcard ['*'] tokens issued to
+        // kiosk/customer logins, an unprivileged session could write PHP into /lang/* and execute.
+        // Gate ALL write-or-file-read endpoints behind permission:settings (admin-only).
+        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy', 'fileText', 'fileTextStore');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory

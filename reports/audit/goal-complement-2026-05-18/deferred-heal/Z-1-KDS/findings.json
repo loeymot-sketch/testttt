@@ -1,0 +1,262 @@
+{
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "branch": "pr/mobile-app-real-e2e-heal-2026-05-18",
+  "head": "fe595a4d67aac199a98551eb471cdcac2622510a",
+  "synthesizer": "Z-1 master sub-agent",
+  "source_reports": [
+    "round-1/Z-1-KDS/architect.json",
+    "round-1/Z-1-KDS/security.json",
+    "round-1/Z-1-KDS/dba.json",
+    "round-1/Z-1-KDS/sre.json",
+    "round-1/Z-1-KDS/red-team.json"
+  ],
+  "consolidated_findings": [
+    {
+      "id": "Z1-P1-01",
+      "severity": "P1",
+      "title": "Items-board KDSOrderItemsResource does NOT expose allergens_snapshot — chef batched-prep view is allergen-blind",
+      "source": "RED-team P0 challenge + Architect cross-verification + confirmed by passing KDSAllergenVisibilityTest covering CARDS view (/api/admin/kds-order) only",
+      "evidence": {
+        "missing_in_resource": "app/Http/Resources/KDSOrderItemsResource.php:17-26 (toArray omits allergens_snapshot)",
+        "split_by_allergen_in_service": "app/Services/KitchenDisplaySystemOrderService.php:298-319 (groupBy hashes allergens but rendered output discards them)",
+        "cards_view_exposes_allergens": "app/Http/Resources/OrderItemResource.php:37 (cards view at /api/admin/kds-order exposes via order_items[].allergens_snapshot)",
+        "test_coverage_gap": "tests/Feature/Orders/KDSAllergenVisibilityTest.php asserts CARDS view only — no test for /api/admin/kds-order/items items-board endpoint"
+      },
+      "rationale_severity": "Downgraded P0 → P1: cards-view (primary chef interface) exposes allergens correctly. Items-board (secondary batched-prep panel) is allergen-blind. Owner-gated severity escalation if items-board UI is used for allergen-sensitive batched prep.",
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "1 line addition in KDSOrderItemsResource.php",
+        "change": "Add 'allergens_snapshot' => $this->safeJsonDecode($this->allergens_snapshot) inside toArray array",
+        "test_addition": "Add tests/Feature/Kds/KdsItemsBoardAllergenExposureTest.php asserting /api/admin/kds-order/items returns allergens_snapshot per item",
+        "estimated_hours": 1,
+        "risk": "very-low (additive field; backward-compatible)"
+      },
+      "backlog_ticket": "V1.0.2-KDS-ITEMS-BOARD-ALLERGEN-EXPOSURE",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["app/Http/Resources/KDSOrderItemsResource.php", "tests/Feature/Kds/KdsItemsBoardAllergenExposureTest.php (NEW)"]
+    },
+    {
+      "id": "Z1-P1-02",
+      "severity": "P1",
+      "title": "Recall + bump mechanism is browser-local localStorage with NO backend persistence, NO audit trail, NO cross-station coherence",
+      "source": "Architect + Security + RED confirmed",
+      "evidence": {
+        "frontend_localstorage_only": "resources/js/store/modules/kds.js:1,55-85 (STORAGE_BUMPED key; bumpItem persistMap; recallItem persistMap)",
+        "no_backend_route": "routes/api.php:1005-1011 (only index/changeStatus/items/sync routes exist — no /bump and no /recall endpoints)",
+        "no_axios_in_kds_store": "Grep on kds.js confirms zero axios/fetch/window.api calls",
+        "owner_intent_gap": "i18n key fr.json:1176 'kds_recall_grace_expired' = 'Rappel impossible : délai d'annulation (60 s) dépassé' — suggests an undo of a finalized status, NOT a per-item per-browser revert"
+      },
+      "impact": [
+        "Cross-browser inconsistency: chef A bumps item, chef B (same station) cannot see bump state",
+        "Cache-clear / private browsing wipes ALL bump history mid-shift",
+        "No fiscal/operational audit log for bump events",
+        "No cross-station handoff: tablet stations cannot share readiness state",
+        "60s grace window enforced by Date.now() locally — clock skew untracked"
+      ],
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "moderate — new migration + new endpoints + Vuex action refactor",
+        "change": "Backend endpoint POST /kds-order/{order}/items/{item}/bump and POST /kds-order/{order}/items/{item}/recall persisting to new kds_item_events append-only table; broadcast on existing per-branch channel; localStorage becomes write-through cache",
+        "estimated_hours": "6-8",
+        "risk": "medium — touches Vue component (KitchenDisplaySystemComponent.vue not in frozen list but contains 2670 LOC; carefully scope changes to kdsBump/kdsRecall handlers only)"
+      },
+      "backlog_ticket": "V1.0.2-KDS-BUMP-RECALL-BACKEND-PERSISTENCE",
+      "frozen_zone_touch": "PARTIAL — public/js/admin-kds.js is dirty (do NOT touch), but Vue source component is touchable per scope",
+      "files_to_modify": ["routes/api.php", "app/Http/Controllers/Admin/KdsItemEventController.php (NEW)", "database/migrations/2026_05_19_..._create_kds_item_events_table.php (NEW)", "resources/js/store/modules/kds.js", "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1709-1740 (kdsBump/kdsRecall handlers only)"]
+    },
+    {
+      "id": "Z1-P1-03",
+      "severity": "P1",
+      "title": "GDPR data minimization — customer.name shipped on ALL KDS payloads (not minimized like customer.phone was)",
+      "source": "Security",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php",
+        "lines": "67-71",
+        "code_excerpt": "'customer' => $this->whenLoaded('user', fn () => $this->user ? ['name' => $this->user->name, 'phone' => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user->phone : null] : null)",
+        "historic_precedent": "Comment at lines 62-66 documents [Sprint 5A Z9-P0-03] GDPR minimization for phone (delivery-only). Same principle should apply to name."
+      },
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "1 line modification",
+        "change": "Wrap customer.name in delivery/dine-in conditional similar to phone: 'name' => in_array((int) $this->order_type, [OrderType::DELIVERY, OrderType::DINE_IN], true) ? $this->user->name : null",
+        "estimated_hours": "1 (incl. sentinel test)",
+        "risk": "very-low (kiosk/takeaway never displayed customer.name anyway)"
+      },
+      "backlog_ticket": "V1.0.2-KDS-CUSTOMER-NAME-GDPR-MINIMIZATION",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["app/Http/Resources/KDSOrderDetailsResource.php", "tests/Feature/Kds/KdsCustomerNameMinimizationTest.php (NEW)"]
+    },
+    {
+      "id": "Z1-P1-04",
+      "severity": "P1",
+      "title": "POST /kds-order/change-status has NO rate-limit middleware — insider DoS vector via flood of compromised Chef token",
+      "source": "RED-team",
+      "evidence": {
+        "file": "routes/api.php",
+        "lines": "1007",
+        "missing_middleware": "Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']); — no ->middleware('throttle:N,1')",
+        "comparison_other_routes": "routes/api.php:1016-1018 client-metrics has throttle:60,1; outbox/retry-failed has throttle:10,1 — pattern exists across the codebase"
+      },
+      "impact": "Insider attack (compromised chef token) can hammer lockForUpdate() exhausting MySQL connection pool. Even without compromise, a chef accidentally double-clicking 100x/min generates 100x audit_log [KDS_409] entries.",
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "1 chained method call",
+        "change": "Add ->middleware('throttle:60,1') to the change-status route declaration",
+        "estimated_hours": "0.5",
+        "risk": "very-low (60 req/min is generous for a single chef workflow)"
+      },
+      "backlog_ticket": "V1.0.2-KDS-CHANGE-STATUS-THROTTLE",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["routes/api.php:1007"]
+    },
+    {
+      "id": "Z1-P2-05",
+      "severity": "P2",
+      "title": "KDS orderItems() query has no LIMIT 50 (unlike list()) and no Redis cache (unlike sync) — admin-global path returns potentially unbounded payload",
+      "source": "DBA",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "263-295",
+        "code_excerpt": "$orders = $query->where(...)->get(); — no ->limit() chain; list() at line 150 uses ->limit(51) for overflow detection",
+        "no_cache": "Unlike KdsSyncService::sync() at line 49 which uses Cache::remember 5s TTL, orderItems() hits DB every call"
+      },
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "small",
+        "change": "Add ->limit(50) to orderItems() query; wrap in Cache::remember(2s) similar to sync() pattern; surface overflow flag in controller meta",
+        "estimated_hours": "1.5",
+        "risk": "low"
+      },
+      "backlog_ticket": "V1.0.2-KDS-ITEM-BOARD-LIMIT-AND-CACHE",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["app/Services/KitchenDisplaySystemOrderService.php", "tests/Feature/Kds/KdsItemBoardLimitTest.php (NEW)"]
+    },
+    {
+      "id": "Z1-P2-06",
+      "severity": "P2",
+      "title": "POST /kds-order/change-status lacks X-Idempotency-Key middleware — duplicate retry causes audit log double-entry",
+      "source": "Architect",
+      "evidence": {
+        "file": "routes/api.php",
+        "lines": "1007",
+        "missing_middleware": "IdempotencyKeyMiddleware not applied; expected_status optimistic lock catches duplicate transition but Mail/SMS/Push dispatches and [KDS_409] log entry still fire on the second attempt"
+      },
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "1 middleware chain",
+        "change": "->middleware(['idempotency-key', 'throttle:60,1'])",
+        "estimated_hours": "1.5 (test included)",
+        "risk": "low (matches existing pattern on POS/Order routes per CLAUDE.md §9)"
+      },
+      "backlog_ticket": "V1.0.2-KDS-CHANGE-STATUS-IDEMPOTENCY",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["routes/api.php:1007", "tests/Feature/Kds/KdsChangeStatusIdempotencyTest.php (NEW)"]
+    },
+    {
+      "id": "Z1-P2-07",
+      "severity": "P2",
+      "title": "KDS bump localStorage shared across operators (no user_id namespace) on a station",
+      "source": "Architect + Security duplicate",
+      "evidence": {
+        "file": "resources/js/store/modules/kds.js",
+        "lines": "1",
+        "code_excerpt": "const STORAGE_BUMPED = 'kds.bumped_items_v1';"
+      },
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "small",
+        "change": "STORAGE_BUMPED = `kds.bumped_items_v1.${userId}.${branchId}` — read auth from window.AUTH or Vuex",
+        "estimated_hours": 1,
+        "risk": "low",
+        "supersede_by_Z1_P1_02": "If Z1-P1-02 (backend persistence) is healed first, this finding becomes moot"
+      },
+      "backlog_ticket": "V1.0.2-KDS-BUMP-USER-NAMESPACE (subsumed by Z1-P1-02 if implemented)",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["resources/js/store/modules/kds.js"]
+    },
+    {
+      "id": "Z1-P2-08",
+      "severity": "P2",
+      "title": "No observability counter for OrderStatusChanged broadcast failures — silent degradation possible",
+      "source": "SRE",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "243-245",
+        "code_excerpt": "Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage()); — no metric increment"
+      },
+      "scope_minimal_heal_recommendation": {
+        "patch_size": "small",
+        "change": "On catch, increment observability counter (e.g. via SyncMetricsRecorder pattern) and surface in /admin/observability/sync-overview",
+        "estimated_hours": 2,
+        "risk": "low"
+      },
+      "backlog_ticket": "V1.0.2-KDS-BROADCAST-FAILURE-METRIC",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["app/Services/KitchenDisplaySystemOrderService.php", "app/Services/Observability/SyncMetricsRecorder.php (likely)"]
+    },
+    {
+      "id": "Z1-P3-09",
+      "severity": "P3",
+      "title": "KdsSyncService computeOrderVersion TODO: planned status_changed_at column not yet implemented",
+      "source": "Architect",
+      "evidence": {
+        "file": "app/Services/KdsSyncService.php",
+        "lines": "151-167",
+        "code_excerpt": "TODO(F-03 / Phase 3 dette technique D-03bis): when the planned `status_changed_at` column lands on Order"
+      },
+      "scope_minimal_heal_recommendation": "Document deferred to V1.0.3 (low-occurrence edge case)",
+      "backlog_ticket": "V1.0.3-KDS-STATUS-CHANGED-AT-COLUMN",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["database/migrations/...add_status_changed_at_to_orders.php (NEW)", "app/Services/KdsSyncService.php"]
+    },
+    {
+      "id": "Z1-P3-10",
+      "severity": "P3",
+      "title": "Side-effect dispatch (Mail/SMS/Push) fires before broadcast — recoverable via polling fallback but races possible",
+      "source": "SRE",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "237-245",
+        "self_gating_verified": "OrderMailNotificationBuilder::message at line 46-66 self-gates per-status — so RED P1 was overstated; downgrade to P3"
+      },
+      "scope_minimal_heal_recommendation": "Re-order: broadcast first (non-blocking), Mail/SMS/Push after broadcast confirmed",
+      "backlog_ticket": "V1.0.3-KDS-SIDEEFFECT-ORDERING",
+      "frozen_zone_touch": false,
+      "files_to_modify": ["app/Services/KitchenDisplaySystemOrderService.php:237-245"]
+    },
+    {
+      "id": "Z1-P3-11",
+      "severity": "P3",
+      "title": "Order.token field exposed in KDSOrderDetailsResource — semantic verified as internal (table-order pickup key, not customer-shared QR)",
+      "source": "RED-team challenged, verified internal",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php",
+        "line": "24",
+        "verification": "app/Services/OrderService.php:2061-2073 tokenCreate() sets order->token from TableOrderTokenRequest (internal table-order routing). Not a customer-shared secret."
+      },
+      "scope_minimal_heal_recommendation": "Defer — informational. Document that order.token is internal scoped to table-order routing.",
+      "backlog_ticket": "V1.0.3-KDS-ORDER-TOKEN-DOC",
+      "frozen_zone_touch": false,
+      "files_to_modify": []
+    }
+  ],
+  "p0_count": 0,
+  "p1_count": 4,
+  "p2_count": 4,
+  "p3_count": 3,
+  "total_findings": 11,
+  "frozen_zone_violations_required": 0,
+  "stuck_escalation_required": false,
+  "nf525_chain_impact": "NONE — all findings are operational, not fiscal. Audit_logs chain integrity unaffected.",
+  "test_existing_coverage": {
+    "kds_filter_test_count_pass": 77,
+    "kds_filter_test_count_fail": 0,
+    "kds_filter_assertion_count": 283,
+    "command": "php artisan test --filter \"Kds\"",
+    "elapsed_seconds": 13.122,
+    "memory_mb": 113,
+    "verdict": "PASS — no regression from baseline; 77 tests cover the audited surface"
+  },
+  "e2e_round1_reference": {
+    "summary_path": "reports/test-e2e/goal-pageby-2026-05-18/round-1/KDS/FINAL_SUMMARY.md",
+    "verdict": "AMBER (0 P0, 2 P1, 2 P2, 1 P3 visual)",
+    "intersection_with_this_audit": "E2E findings are visual-layer (queue+elapsed collision, contrast on Attente label, shortcut badge contrast, multi-item body-fade clip, scrollable-region-focusable a11y). This Z-1 audit findings are backend/contract-layer — disjoint. No overlap = no compounding severity.",
+    "next_round_re_seed_needed": "KDS-R1-04 (multi-item body-fade clip) — needs staggered-age reseed for Round 2 verification"
+  },
+  "summary_one_line": "Z-1 KDS deeper audit-only: 0 P0, 4 P1 (allergen exposure on items-board, recall localStorage-only, GDPR customer.name minimization, throttle missing), 4 P2 (item-board limit/cache, idempotency-key, bump namespace, broadcast metric), 3 P3. Branch isolation + transition whitelist + tz-aware + sargable queries PASS. 77/77 KDS tests pass. Heal deferred to V1.0.2/V1.0.3 backlog tickets."
+}

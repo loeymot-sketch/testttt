@@ -1,0 +1,120 @@
+{
+  "persona": "UX-A11y",
+  "zone": "Z-WEB-FINAL-V1-PREP",
+  "scope": "/Users/1millnonstop/Downloads/web/ — 17 files, 4 viewports (mobile 360 / tablet 768 / desktop 1280 / wide 1920), WCAG 2.1 AA, FR market legal completeness",
+  "date": "2026-05-19",
+  "mode": "READ-ONLY audit",
+  "executive_summary": "WCAG 2.1 AA: prior Z-7 cycle landed axe-core clean (0 critical / 0 serious × 4 viewports × 4 pages = 16 reports), heals applied for button-name P0 (cart close, trash, +/-, burger aria-expanded). Coherent 4-viewport responsive behavior with .lc-show-mobile / .lc-hide-mobile primitives + 4-col grid → 1-col mobile via styles-mobile.css. Critical NEW finding: **5 legal pages contain 29 'À COMPLÉTER' placeholders** (13 in mentions.html alone) covering SIREN, SIRET, RCS, TVA intracom, capital social, directeur de la publication, hébergeur identity. For 'FINAL V1 production-prep' on the French market this is **LCEN art. 6 III non-compliance** — site is technically online but identity disclosure is incomplete. Cannot heal without owner business data. Other a11y observations: focus-visible styling unverified (no :focus-visible audit), Esc-key not bound for modal close (P3), language switcher absent (acceptable — FR only V1), no skip-link to main content (P2). Funnel error states (promo-invalid, validation) have role='alert' aria-live='assertive' (P0 heal already landed).",
+  "viewports_check": {
+    "mobile_360": "PASS prior cycle — hamburger menu visible, .lc-show-mobile chips, drawer slide-in. Tested: home, menu, legal/×5, account modal, cart drawer.",
+    "tablet_768": "PASS prior cycle — middle breakpoint cleanly resolves (grid 2-col tablet, 4-col desktop). lc-footer-grid--4col handles correctly.",
+    "desktop_1280": "PASS prior cycle — desktop nav links visible, 4-col footer, sidebar+grid menu layout.",
+    "wide_1920": "PASS prior cycle — max-width container caps at 1200ish so wide gracefully centers."
+  },
+  "axe_core_summary_from_prior_cycle": {
+    "total_violations": 0,
+    "critical_serious": 0,
+    "pages_swept": ["index home", "index menu route", "legal/mentions.html", "legal/cgv.html"],
+    "viewports_each": 4,
+    "rules_disabled_by_precedent": ["color-contrast (handled Z-5 cross-system)", "region (SPA single-region pattern)"]
+  },
+  "findings": [
+    {
+      "id": "UX-001-P0",
+      "severity": "P0 (OWNER GATE — legal compliance)",
+      "title": "5 legal pages contain 29 'À COMPLÉTER' placeholders — LCEN art. 6 III non-compliance for V1 production",
+      "where": [
+        "/Users/1millnonstop/Downloads/web/legal/mentions.html — 13 placeholders (SIREN, SIRET, RCS, TVA intracom, capital social, directeur de la publication, raison sociale, forme juridique, code APE/NAF, hébergeur nom, hébergeur adresse, hébergeur téléphone, hébergeur site web)",
+        "/Users/1millnonstop/Downloads/web/legal/privacy.html — 7 placeholders",
+        "/Users/1millnonstop/Downloads/web/legal/cgv.html — 4 placeholders",
+        "/Users/1millnonstop/Downloads/web/legal/cookies.html — 4 placeholders",
+        "/Users/1millnonstop/Downloads/web/legal/allergens.html — 1 placeholder"
+      ],
+      "description": "Loi 2004-575 du 21 juin 2004 (LCEN) article 6 III requires editor identity disclosure on any website with a publication director. Article R10-1 du Code de la consommation requires vendor identification for online commerce. The legal pages have correct STRUCTURE (h1, breadcrumb, cross-refs, footer) but display literal '[À COMPLÉTER PAR PROPRIÉTAIRE — ...]' text where SIREN, SIRET, RCS, TVA intracom, hosting provider name, etc. should appear. A customer reading mentions.html sees raw template text — this is worse than 'page missing' because it announces unfinished compliance.",
+      "evidence": "grep -c 'COMPLÉTER' /Users/1millnonstop/Downloads/web/legal/*.html → mentions.html:13, privacy.html:7, cgv.html:4, cookies.html:4, allergens.html:1 = 29 total. Sample line mentions.html:62 '<strong>SIREN :</strong> [À COMPLÉTER PAR PROPRIÉTAIRE — 9 chiffres]'",
+      "impact": "Compliance: LCEN penalty up to 75k€ + 1y prison for editor (rarely enforced for SME but legally exposed). CGV non-compliance opens 14-day rétractation rule disputes. Consumer trust: customer reading 'À COMPLÉTER' loses confidence at purchase moment. SEO: search engines may flag placeholder content.",
+      "recommendation": "OWNER GATE G-WEB-LEGAL-1: owner provides 9 business identity values (SIREN / SIRET / RCS / TVA / capital / directeur / raison / forme juridique / code APE) + hosting provider info. Replace placeholders via simple sed/Edit. Until then BLOCKING for V1 production launch. Cannot heal in this audit — no owner data available."
+    },
+    {
+      "id": "UX-002-P2",
+      "severity": "P2",
+      "title": "No skip-link to main content (WCAG 2.4.1 Bypass Blocks)",
+      "where": "/Users/1millnonstop/Downloads/web/index.html line 17-18 (body opens, no skip-link)",
+      "description": "Standard a11y pattern: first focusable element should be 'Aller au contenu principal' link that jumps past nav. Keyboard-only users currently must tab through all 5 nav links + cart + account on every page. Mobile has the same issue (drawer adds more focusable elements).",
+      "evidence": "index.html lines 17-18: '<body>\\n<div id=\"root\"></div>'. No <a href='#main'> skip-link.",
+      "impact": "WCAG 2.4.1 Level A failure technically — minor in practice (nav is short) but pattern missing.",
+      "recommendation": "V1.x backlog: add absolutely-positioned visually-hidden-until-focused 'Passer au contenu' link. ~5 LOC + 1 CSS class."
+    },
+    {
+      "id": "UX-003-P2",
+      "severity": "P2",
+      "title": "Esc-key not bound for modal/drawer close (WCAG 2.1.2 No Keyboard Trap partial)",
+      "where": "components.jsx:151 WebModal + flows.jsx:8 CartDrawer + account-v2.jsx + wizard-v2.jsx + screens-v3.jsx ItemDetailModal",
+      "description": "All 5 modal/drawer surfaces close on backdrop-click + X-button. Esc-key not wired. Per WAI-ARIA dialog pattern, modals SHOULD trap focus AND respond to Escape. Current state: focus can escape modal via Tab (not strictly trapped), Escape does nothing.",
+      "evidence": "No occurrence of 'Escape' or 'keydown' in any web .jsx file.",
+      "impact": "Power-user UX gap, partial WCAG dialog pattern. Not user-blocking on touch devices.",
+      "recommendation": "V1.x backlog: useEffect listener in WebModal + CartDrawer for keydown Escape → onClose. ~10 LOC each, ≤30 LOC total."
+    },
+    {
+      "id": "UX-004-P2",
+      "severity": "P2",
+      "title": "Tab pattern (rewards/history/how/profile in WebLoyalty) lacks role='tablist' + aria-selected",
+      "where": "/Users/1millnonstop/Downloads/web/screens.jsx:661-665 (.lc-cat-tabs) + WebMenu .lc-cat-tabs lines ~469-474 + OrdersPage lines 40-42",
+      "description": "Three places use .lc-cat-tabs as tab UI: WebLoyalty (4 tabs rewards/history/how/profile), WebMenu (category chips mobile), OrdersPage (Tout/Livrées/Annulées). HTML markup is button.lc-cat-tab with is-on class — no role='tablist' on container, no role='tab' on buttons, no aria-selected. Screen readers announce 'Récompenses, button' not 'Récompenses, tab 1 of 4, selected'.",
+      "evidence": "screens.jsx:661-665, no ARIA tab attributes. Listed in prior Z-7 cycle deferred backlog (Tab ARIA polish P2).",
+      "impact": "Screen-reader UX gap. Tab pattern WCAG 4.1.2 Name/Role/Value partial.",
+      "recommendation": "V1.x backlog (already deferred prior cycle): refactor to <div role='tablist'> + <button role='tab' aria-selected={...} aria-controls={...}>. ~15 LOC × 3 places = ~45 LOC. Deferred V1.x acceptable since prior cycle owner-accepted."
+    },
+    {
+      "id": "UX-005-P2",
+      "severity": "P2",
+      "title": "Footer phone/email/address buttons not <a href> — non-semantic + no click action",
+      "where": "/Users/1millnonstop/Downloads/web/components.jsx:120-124 (Contact list)",
+      "description": "Footer 'Contact' section uses <button> wrappers around phone '06 51 30 XX XX', email 'contact@lecayenne.fr', address, hours — but no onClick handlers. tel: and mailto: hrefs should be <a> for mobile tap-to-call and tap-to-email UX.",
+      "evidence": "components.jsx:121-124 <li><button>06 51 30 XX XX</button></li> etc. (no onClick).",
+      "impact": "Mobile UX: customer cannot tap to call/email. SEO: structured data hint missing. A11y: button without action confuses keyboard nav.",
+      "recommendation": "P1 candidate for V1 launch polish (≤15 LOC): swap <button> to <a href='tel:0651300000'> / <a href='mailto:contact@lecayenne.fr'> / <a href='https://maps.google.com/?q=...' rel='noopener'>. Could heal in this cycle if owner OKs (≤10 LOC, no business data needed) — but defer until owner reviews mid-cycle."
+    },
+    {
+      "id": "UX-006-P3",
+      "severity": "P3",
+      "title": "Demo phone/email placeholders propagated to legal pages",
+      "where": "Multiple — components.jsx:122, screens.jsx:305, legal/mentions.html:68, legal/mentions.html:142, legal/cgv.html:61",
+      "description": "Phone '06 51 30 XX XX' (with literal XX XX masked digits) and 'contact@lecayenne.fr' appear in footer + about + legal pages. The 'XX XX' visible literal suggests owner-placeholder pending real number. If 06 51 30 is real prefix and XX XX is intentional privacy mask, document this in BRAIN. Otherwise treat as legal contact identity gap (folds into UX-001-P0).",
+      "evidence": "grep '06 51 30' across web/ returns 6 occurrences.",
+      "impact": "If 'XX XX' is placeholder for real digits, this compounds UX-001-P0 LCEN gap (LCEN requires real contact for editor).",
+      "recommendation": "OWNER CLARIFICATION (sub-item of G-WEB-LEGAL-1): confirm phone is intentional privacy or pending. If real, replace digits across 6 sites in 1 cycle."
+    },
+    {
+      "id": "UX-007-INFO",
+      "severity": "INFO",
+      "title": "Brand consistency: 'Le Cayenne / Hénin-Beaumont / 62210 / Sandwich Cayenne signature' propagated correctly",
+      "where": "all 17 files — sample data/menu.js BRAND object lines 18-29",
+      "description": "Brand identity is centrally defined in data/menu.js BRAND + replicated in static legal page headers. Address '14 rue de la République, 62210 Hénin-Beaumont' appears consistently. No 'Le Cayenne v3 demo' / 'lorem ipsum' / 'placeholder restaurant' leakage found in user-facing surfaces (legal placeholders are visible BUT in explicitly-bracketed admin-template form, not lorem-style ghost content).",
+      "evidence": "grep verified.",
+      "impact": "Positive — brand cohesion attested.",
+      "recommendation": "Maintain."
+    },
+    {
+      "id": "UX-008-P2",
+      "severity": "P2",
+      "title": "Pickup calendar buttons (Jour AUJ/JEU/...) lack aria-label per date",
+      "where": "/Users/1millnonstop/Downloads/web/funnel.jsx:153-156",
+      "description": "Day buttons render '<button>{d.d}/{d.n}</button>' → 'AUJ 14' visually. Screen reader announces 'AUJ 14, button' — no semantic 'aujourd'hui jeudi 14 mai 2026'. Same pattern slot buttons line 166 ('Dans 20 min 19h45' read correctly as buttons but no date context).",
+      "evidence": "funnel.jsx:153 const days = [{ id: 'today', d: 'AUJ', n: '14' }, ...]",
+      "impact": "Screen-reader UX during pickup time selection. Listed in prior Z-7 P2 backlog.",
+      "recommendation": "V1.x backlog (deferred prior cycle): add aria-label={`${d.d}, ${d.n} mai`}. ~5 LOC."
+    }
+  ],
+  "legal_pages_review": {
+    "structural_completeness": "PASS — 5 pages (mentions.html / cgv.html / privacy.html / cookies.html / allergens.html), each with h1 / breadcrumb / dated / cross-refs / footer",
+    "lcen_art_6_III_disclosure": "FAIL — 13 SIREN/SIRET/RCS/TVA/capital placeholders in mentions.html",
+    "cgv_l221_5_consumer_rights": "PARTIAL — structure present, 4 placeholders compromise full compliance",
+    "rgpd_privacy": "PARTIAL — 7 placeholders block DPO contact info + processing details",
+    "cnil_cookies": "PARTIAL — 4 placeholders compromise transparency notice",
+    "inco_1169_2011_allergens": "NEAR-PASS — 1 placeholder, 14 EU allergen list present, AllergenList component cross-ref",
+    "blocking_for_v1_launch": true,
+    "remediation_path": "Owner provides 9 identity values → Edit replace each placeholder → re-verify all 5 pages"
+  },
+  "verdict": "UX/A11y: 1 P0 OWNER GATE (29 LCEN placeholders block V1 launch) + 6 P2/P3 (5 deferred prior cycle, 1 NEW polish UX-005-P2 contact links non-clickable). axe-core compliance maintained (prior cycle PASS × 16 reports). 4-viewport responsive PASS prior cycle. **No safe heal in this cycle without owner business data.** Recommend SURFACE G-WEB-LEGAL-1 prominently in V1 launch checklist."
+}

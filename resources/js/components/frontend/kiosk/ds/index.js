@@ -1,9 +1,9 @@
 /**
- * FoodKing Kiosk — Design System (Phase 0 + Phase 4 + Phase 5)
+ * FoodKing Kiosk — Design System (Phase 0 + Phase 4 + Phase 5 + V1 Bold)
  * -----------------------------------------------------------------------------
  * Barrel export des atoms ds/. Consommer exclusivement ces composants depuis
- * les écrans kiosk (Phase 2+). Tous les atoms consomment `--kiosk-*` uniquement
- * (cf. resources/css/kiosk/tokens.css).
+ * les écrans kiosk (Phase 2+). Tous les atoms consomment `--kiosk-*` (V1)
+ * ou `--kiosk-bold-*` (V1.5+ Bold Appétissant) uniquement.
  *
  * Contrat :
  *  - Aucun atome ne contient de logique métier (pricing, branch_id, SSOT).
@@ -16,6 +16,13 @@
  *
  * Phase 5 ajoute :
  *  - KsConsentModal      : dialogue RGPD opt-in loyalty + analytics
+ *
+ * CV1-KIOSK-VISUAL-REDESIGN-001 V1 Bold Appétissant ajoute :
+ *  - KsThemeToggle       : sélecteur thème light/dark/auto (V1.4)
+ *  - KsHero              : bandeau d'identité (strip/cinematic/banner) (V1.11)
+ *  - + variants additifs sur tous les atoms existants (KsButton hero/ghost-bold/pop,
+ *    KsCard hero/option-bold/summary, KsChip composition, KsBadge promo/included/quota,
+ *    KsModal tone="warm-blur", KsStepper variant="minimal-bar", KsPriceLine size="hero")
  */
 
 import KsButton from './KsButton.vue';
@@ -30,6 +37,9 @@ import KsVirtualKeyboard from './KsVirtualKeyboard.vue';
 import KsConsentModal from './KsConsentModal.vue';
 import KsFilterChip from './KsFilterChip.vue';
 import KsAllergenBadge from './KsAllergenBadge.vue';
+/* CV1-KIOSK-VISUAL-REDESIGN-001 V1 Bold */
+import KsThemeToggle from './KsThemeToggle.vue';
+import KsHero from './KsHero.vue';
 
 export {
     KsButton,
@@ -44,6 +54,8 @@ export {
     KsConsentModal,
     KsFilterChip,
     KsAllergenBadge,
+    KsThemeToggle,
+    KsHero,
 };
 
 /**
@@ -65,6 +77,8 @@ export const KioskDesignSystem = {
         app.component('KsConsentModal', KsConsentModal);
         app.component('KsFilterChip', KsFilterChip);
         app.component('KsAllergenBadge', KsAllergenBadge);
+        app.component('KsThemeToggle', KsThemeToggle);
+        app.component('KsHero', KsHero);
     },
 };
 

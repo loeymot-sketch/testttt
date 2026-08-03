@@ -1,0 +1,111 @@
+{
+  "wave": "C",
+  "round": 3,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-pos-kds-sync-C/14-kds-error-resilience.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-3 verification PASS (regression-clean after E-003 source_surface change). State 14 dom.html still contains <div data-v-66aac04e class=\"kds-hint-banner kds-hint-banner--danger kds-hint-banner--action\" role=\"alert\" aria-live=\"assertive\" data-testid=\"kds-error-banner\"><span>⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.</span> + ✕ dismiss button. Spec log line for state 14: 'route_intercepts=1 kds_error_banner_visible=true toast_visible=true'. The persistent banner survives toast auto-fade for the 1m+ kitchen operator glance requirement. network.json confirms the route-intercepted GET /api/admin/kds-order...503 — paired with the visible role=alert.",
+      "fix_hint": "Already landed (round-1 95c2fd799 + sticky f912e5a9c). Confirmed stable across E-003 KDS bucketing changes.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-pos-kds-sync-C/04-kds-mark-in-progress-order-1.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-3 verification PASS. md5 -r tests/e2e/__screenshots__/test-e2e-pos-kds-sync-C/*.png → 14 distinct hashes (count=1 each). Round-3 capture is the third consecutive round with all 14 byte-distinct PNGs.",
+      "fix_hint": "Round-1 fix landed and verified across 3 rounds. Stable.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-pos-kds-sync-C/03-kds-card-detail-order-1.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Owner-deferred P2 (visual). Unchanged round-2→round-3.",
+      "fix_hint": "Out of scope (visual P2 owner-deferred).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Owner-deferred P2 (visual). Unchanged round-2→round-3.",
+      "fix_hint": "Out of scope (visual P2 owner-deferred).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Owner-deferred P2 (a11y). Unchanged round-2→round-3.",
+      "fix_hint": "Out of scope (a11y P2 owner-deferred).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-pos-kds-sync-C/01-kds-empty-state.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Owner-deferred P2 (audit-design). State 01 contains pre-existing pile pollution (DB state, not spec defect). state02 spec log shows 'takeaway-cards=11 (expected≥3)' — confirms 8 pre-existing orders before round-3 seed. Spec passes because it seeds 3 + checks ≥3.",
+      "fix_hint": "Out of scope (audit-design P2). Rename state 01 + add post-cleanup state in a future spec pass.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Informational (KDS money-blind by design). Round-3 spec state12 log: 'api_present=3/3 db_total_match=3/3' — DB-backed numeric integrity holds. KDSOrderDetailsResource still exposes 0 monetary fields by design.",
+      "fix_hint": "Not a bug — informational.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Owner-deferred P2. Multi-station bump-warning still role='note' (verified state 14 DOM contains <div ... role=\"note\">Les pastilles «  Prêt  » (bump) sont mémorisées sur ce poste...).",
+      "fix_hint": "Out of scope (a11y P2 owner-deferred).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 1, "P2": 5, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "DEFERRED_P2",
+    "C-004": "DEFERRED_P2",
+    "C-005": "DEFERRED_P2",
+    "C-006": "DEFERRED_P2",
+    "C-007": "DEFERRED_P3",
+    "C-008": "DEFERRED_P2"
+  },
+  "verdict": "GREEN",
+  "notes": "Round-3 verdict GREEN — no regression from E-003 KDS bucketing changes (source_surface attribute, KitchenDisplaySystemComponent.vue + KDSOrderDetailsResource). Verification cross-cuts: (1) 14/14 PNGs byte-distinct via md5 -r; (2) state 14 role=alert + aria-live=assertive banner DOM intact + spec-log kds_error_banner_visible=true; (3) numeric integrity 3/3 db_total_match via DB-backed audit (KDS money-blind by design — C-007 P3 documented); (4) console.json sweep: only allowlisted Pusher wss/vendor.js + intentional 503 paired with banner; (5) network.json sweep: only the intentional 503 at state 14 (paired with role=alert — silent_error rule passes); (6) state 02 DOM contains BOTH data-kds-order-card=\"kiosk\" (pre-existing pile) AND data-kds-order-card=\"takeaway\" (round-3 seed) — bucketing distinguishes the two surfaces, confirming E-003 source_surface change correctly differentiates POS-source TAKEAWAY orders (Wave C seeds) from kiosk-source orders without collapsing them. No new findings discovered round-3. Closures preserved: C-001/C-002 PASS, C-003 through C-008 deferred per owner 'que côté technique' scope."
+}

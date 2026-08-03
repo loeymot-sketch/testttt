@@ -18,7 +18,8 @@ class ItemAddonController extends AdminController
     {
         parent::__construct();
         $this->itemAddonService = $itemAddonService;
-        $this->middleware(['permission:items_show'])->only('index', 'store', 'destroy');
+        $this->middleware(['permission:items_show'])->only('index');
+        $this->middleware(['permission:items_edit'])->only('store', 'destroy');
     }
 
     public function index(PaginateRequest $request, Item $item) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

@@ -1,0 +1,53 @@
+{
+  "zone": "PLOY-2-REDEEM-FLOW",
+  "role": "Security",
+  "scope": "Redeem authz, anti-fraud, redemption-after-cancel, double-redeem races, customer impersonation",
+  "findings": [
+    {
+      "id": "PLOY-2-S-01",
+      "severity": "P1",
+      "title": "LoyaltyController::redeem isStaff branch trusts the cashier-supplied code unconditionally",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:255-339"],
+      "finding": "Line 259: `$isStaff = $caller && $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff'])`. Staff branch is exempt from the ownership check at line 280 (`$caller->id !== $user->id`). So a logged-in cashier can redeem ANY customer's points by submitting their loyalty_code — there is NO customer-presence verification (no PIN, no NFC tap, no customer-side OTP).",
+      "impact": "Cashier fraud: cashier silently redeems a customer's points and pockets the cash difference. Customer sees balance decrease but assumes legitimate use.",
+      "remediation": "Two-factor verification: customer scans NFC card or types last 4 digits of phone, validated server-side. OR require customer signature on receipt for redemption > X€. OR limit cashier-driven redemption to one-time-codes generated via mobile-app push (which already exists per mobile-e2e/loyalty-04-redeem-wizard.spec)."
+    },
+    {
+      "id": "PLOY-2-S-02",
+      "severity": "P2",
+      "title": "Anti-fraud: redemption-after-cancel — refund logic refunds REGARDLESS of original surface",
+      "files": ["app/Services/LoyaltyService.php:21-79", "app/Services/OrderService.php:1697"],
+      "finding": "OrderService cancellation paths (lines 1697, 1800) and FrontendOrderService line 707 call LoyaltyService::refundPoints with sourceSurface='pos' or 'kiosk'. The refund credits ALL redeem txns for the order_id regardless of source. If a fraudster (compromised cashier) creates+cancels orders rapidly: redeem on order N (points -100), cancel order N (points +100 via manual_add) — net zero, but loyalty_transactions ledger now has a redeem AND a manual_add for the SAME order, both anchored to order_id=N. Repeat 100× → ledger pollution + analytics break.",
+      "impact": "Ledger pollution + analytics 'redemptions per branch' becomes misleading. NO direct monetary loss because increment+decrement balance — but operational visibility into fraud is degraded.",
+      "remediation": "Add a `reversed_at` timestamp + `reversed_by_transaction_id` FK on loyalty_transactions. On refund, MARK the original redeem as reversed instead of writing a new manual_add row. Or add a 'cancel rate' alert in admin dashboard."
+    },
+    {
+      "id": "PLOY-2-S-03",
+      "severity": "P2",
+      "title": "Double-redeem race: pre-order kiosk redeem allows MULTIPLE pending rows per customer",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:271-323"],
+      "finding": "LoyaltyController::redeem uses lockForUpdate inside DB::transaction, but only locks the USER ROW. Two concurrent kiosk machines can call /api/loyalty/redeem with the same loyalty_code — each acquires the lock SEQUENTIALLY (one waits), each does its own balance-check + decrement + ledger-insert. Both succeed IF the total of both ≤ balance. Customer ends up with TWO pending redeem rows (order_id=NULL each), both within the 10-min window. Only ONE will be attached to a real order by FrontendOrderService; the other is orphaned (PLOY-2-A-02). Points were deducted for both → customer loses money.",
+      "impact": "Customer loses points equal to the orphaned redeem amount. Reproducible by attacker controlling two kiosks (or two browser tabs).",
+      "remediation": "Add 'one-pending-redeem-per-user' guard: in LoyaltyController::redeem, before decrement, check `LoyaltyTransaction::where('user_id', $user->id)->where('type', 'redeem')->whereNull('order_id')->where('created_at', '>=', now()->subMinutes(10))->exists()` and refuse if true. OR add a UNIQUE INDEX with a deterministic dedup key (see DBA PLOY-1-DBA-01 remediation)."
+    },
+    {
+      "id": "PLOY-2-S-04",
+      "severity": "P3",
+      "title": "LoyaltyController::redeem does not branch-scope the User lookup",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:274"],
+      "finding": "User::where('loyalty_code', ...)->lockForUpdate()->first() is global — no branch scoping. A Branch A cashier can redeem a Branch B customer's points. (Note: loyalty_code is UNIQUE so cross-branch collision is impossible; the question is whether redemption SHOULD be allowed cross-branch — a business decision tied to multi-resto loyalty design.)",
+      "remediation": "Document the intentional cross-branch redemption (if multi-resto group share loyalty) OR add branch_id scoping (if branch-isolated loyalty)."
+    },
+    {
+      "id": "PLOY-2-S-05",
+      "severity": "P3",
+      "title": "LoyaltyController::redeem rate limit insufficient for redeem-spam attack",
+      "files": ["routes/api.php:1277"],
+      "finding": "Route `/loyalty/redeem` is under `auth:sanctum` group with no explicit throttle middleware. The default Laravel throttle is global. An authenticated user (e.g. kiosk machine token) can spam redeem at high rate. Combined with PLOY-2-S-03 (race), this is exploitable.",
+      "remediation": "Add ->middleware('throttle:10,1') on the redeem route."
+    }
+  ],
+  "verdict": "FAIL",
+  "blocker_for_v1": "Yes for PLOY-2-S-01 (cashier-driven redeem fraud) IF POS redeem becomes a wired flow. Currently mitigated because POS UI does not call redeem endpoint (per PLOY-2-A-00). If V1 ships with kiosk-only redeem, PLOY-2-S-01 is dormant.",
+  "notes": "Three of five findings (S-01, S-02, S-03) are exploitable today via direct API call (curl with kiosk:order token or staff session). Recommend heal in V1.0.2 cycle with owner gate."
+}

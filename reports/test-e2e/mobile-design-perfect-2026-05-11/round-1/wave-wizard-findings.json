@@ -1,0 +1,145 @@
+{
+  "wave": "wizard",
+  "round": 1,
+  "states_reviewed": 12,
+  "findings": [
+    {
+      "id": "W-001",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/01-tacos-xxl-step1-viandes-0of4.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "screens-item-steps.jsx:822-834 switch(currentKey)/body re-render with no transition wrapper. PNGs 01 vs 03 show same shell, instant swap. Cross-validated F-001 (sub-agent #3). ADVERSARIAL DOWNGRADE P0→P2: motion absence = UX gap not production-blocking.",
+      "fix_hint": "Wrap body at screens-item-steps.jsx:849 with <div key={currentKey} className=\"lc-wizard-step\">{body}</div>. Add @keyframes lc-wizard-step-in (240ms cubic-bezier(0.22,1,0.36,1) opacity+translateX) to styles.css ; respects prefers-reduced-motion at styles.css:52.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-002",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/02-tacos-xxl-step1-viandes-4of4-valid-cta.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "screens-item-steps.jsx:269-276 ChoiceCard uses border-only selection signal (`2px solid var(--orange)` or `1.5px solid var(--gray-2)`), zero box-shadow. styles.css:184 .lc-card also defines no shadow. Premium-mobile reference uses subtle shadow + selected elevation.",
+      "fix_hint": "Add shadow tokens (--shadow-1, --shadow-card, --shadow-cta, --shadow-selected) in styles.css :root. Apply boxShadow conditionally on ChoiceCard at screens-item-steps.jsx:269-276 + transform: translateY(-1px) on selected state.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-003",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/02-tacos-xxl-step1-viandes-4of4-valid-cta.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "screens-item-steps.jsx:213 WizardCTA uses opaque `linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--paper) 30%)` — opaque white slab covers bottom 30% of viewport, occluding card peek-through. Premium-mobile pattern (iOS Tabbar, Apple Wallet) uses backdrop-filter glassmorphism.",
+      "fix_hint": "Add .lc-cta-blur class in styles.css : `background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.92)); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%);`. Apply to WizardCTA wrapper at screens-item-steps.jsx:213.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-004",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/03-tacos-xxl-step2-sauce-ketchup-free.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "screens-item-steps.jsx:275 `transition: 'all 0.12s'` shorthand animates every animatable property including border-width (1.5→2px), causes layout shift mid-transition. Best practice: explicit transition properties (transform/background-color/border-color/box-shadow).",
+      "fix_hint": "screens-item-steps.jsx:275 replace `transition: 'all 0.12s'` with `transition: 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease-out, border-color 160ms ease-out, box-shadow 200ms ease-out'`. Also keep border-width constant (1.5px) — use color/shadow shift to signal selection.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-005",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/01-tacos-xxl-step1-viandes-0of4.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "styles.css:89 .lc-btn:active { transform: scale(0.97) } covers buttons only. screens-item-steps.jsx:257-280 ChoiceCard is <div role=\"radio\"> with no :active rule, no scale-down on tap. Cross-validated F-002 (sub-agent #3).",
+      "fix_hint": "Add styles.css .lc-choice { -webkit-tap-highlight-color: transparent; touch-action: manipulation; } .lc-choice:active:not([aria-disabled=\"true\"]) { transform: scale(0.985); transition-duration: 80ms !important; }. Apply className=\"lc-choice\" to ChoiceCard wrapper at screens-item-steps.jsx:257-276.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-006",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/05-tacos-xxl-step3-crudites-default-on.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-item-steps.jsx:179 WizardHeader has `borderBottom: '1px solid var(--gray-1)'` only — no scroll-aware shadow. When content scrolls underneath the 1px hairline never changes.",
+      "fix_hint": "Add useState `scrolled` in ScreenItemWizard (screens-item-steps.jsx:734) + onScroll handler (`e.target.scrollTop > 4`). Pass scrolled prop to WizardHeader (l.177); dynamic borderBottom transparent → boxShadow var(--shadow-scroll-header) on scroll.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-007",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/07-tacos-xxl-step5-menu-full.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-item-steps.jsx:504, 570 Menu/FritesStyle radio uses `border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)'` — hard 3px delta swap on selection. Combined with W-004 `transition: all 0.12s`, animates border-width causing flicker. Inconsistent with checkbox pattern at l.317-319.",
+      "fix_hint": "Replace 5px border swap with fixed 1.5px border + animated inner fill: `<span style={{width:20,height:20,borderRadius:999,border:'1.5px solid '+(on?'var(--orange)':'var(--gray-2)'),background:'#fff',position:'relative'}}><span style={{position:'absolute',inset:3,borderRadius:999,background:'var(--orange)',transform:on?'scale(1)':'scale(0)',transition:'transform 200ms cubic-bezier(0.34,1.56,0.64,1)'}}/></span>`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-008",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/11-tacos-xxl-recap-full-combo-18eur.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-item-steps.jsx grep `fontSize:` returns 30+ raw px values across 7 sizes (10/11/12/13/14/16/18/22/24/28/32). No central scale in styles.css.",
+      "fix_hint": "Add type scale tokens in styles.css :root (--fs-micro 10 / --fs-caption 11 / --fs-small 12 / --fs-body 13 / --fs-base 14 / --fs-lg 16 / --fs-h3 18 / --fs-h2 22 / --fs-h1 28 / --fs-h0 32). Progressive JSX sweep next rounds.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-009",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/11-tacos-xxl-recap-full-combo-18eur.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-item-steps.jsx:635-642 recap header consumes ~70px (emoji 28px + name 16px + subtitle 11px) on 844px screen. With 8-9 rows + qty stepper + CTA the recap requires scroll on Tacos XXL full combo.",
+      "fix_hint": "Compress recap header at screens-item-steps.jsx:636-642 to horizontal strip pattern: 32px emoji + name (one line ellipsis) + subtitle Composition. Save ~30px vertical.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-010",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/02-tacos-xxl-step1-viandes-4of4-valid-cta.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-item-steps.jsx:233-237 CTA total uses color: var(--yellow) on var(--ink) bg. Visually high-frequency. Premium pattern uses neutral white + chip-style background for price.",
+      "fix_hint": "Replace yellow price text with neutral white + translucent chip: `<span style={{color:'#fff',background:'rgba(255,255,255,0.14)',padding:'6px 12px',borderRadius:999,fontFamily:'var(--font-mono)',fontWeight:700}}>{total} €</span>`. Reserve yellow for badges/accents.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-011",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/01-tacos-xxl-step1-viandes-0of4.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-item-steps.jsx:189-194 step counter fontSize:10 (eyebrow letter-spacing 0.12em) above title fontSize:18. 8-points size ratio 55% reads counter as 'tooltip'.",
+      "fix_hint": "Bump counter to fontSize: var(--fs-caption) (11) + title to var(--fs-h2) (22). New ratio 50% reads cleaner.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "W-012",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-wizard/02-tacos-xxl-step1-viandes-4of4-valid-cta.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "shared.jsx:124-132 Dots use `transition: all 0.2s` — width-bump on step change happens 'in the void' without content motion to anchor it.",
+      "fix_hint": "shared.jsx:128 replace `transition: 'all 0.2s'` with `transition: 'width 240ms cubic-bezier(0.22,1,0.36,1), background-color 200ms ease-out'`. Coordinated with W-001 step animation timing.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 5, "P3": 7,
+    "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 7
+  },
+  "verdict": "GREEN",
+  "notes": "FSM kiosk-aligned + pricing + a11y baseline solid post-cluster. All 12 findings are design-polish (motion / depth / typography / palette). Adversarial DOWNGRADED W-001 P0→P2 (motion absence = UX gap, not production-blocking). 0 P0/P1 = wizard wave converged on first round. 5 P2 cluster recommendation: bundle W-001+W-002+W-004+W-005 as 'motion+depth foundation' commit (effort S×4, single commit on screens-item-steps.jsx + styles.css)."
+}

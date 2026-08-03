@@ -3,8 +3,9 @@
     <div class="flex items-center justify-between mb-4">
         <h4 class="font-semibold text-[22px] leading-[34px] mb-3 capitalize">{{ $t('menu.order_statistics') }}</h4>
         <div class="relative cursor-pointer custom-datepicker">
-            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false" @update:modelValue="handleDate"
-                v-model="date" range :preset-ranges="presetRanges">
+            <label for="dp-input-orderStatisticsDate" class="sr-only">{{ $t('label.date') }}</label>
+            <Datepicker uid="orderStatisticsDate" name="orderStatisticsDate" hideInputIcon autoApply :enableTimePicker="false" utc="false" @update:modelValue="handleDate"
+                v-model="date" range :preset-ranges="presetRanges" :aria-labels="{ input: $t('label.date') }">
                 <template #yearly="{ label, range, presetDateRange }">
                     <span @click="presetDateRange(range)">{{ label }}</span>
                 </template>
@@ -159,15 +160,15 @@ export default {
             returned_order: null,
             rejected_order: null,
             presetRanges: [
-                { label: 'Today', range: [new Date(), new Date()] },
-                { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+                { label: 'Aujourd’hui', range: [new Date(), new Date()] },
+                { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
                 {
-                    label: 'Last month',
+                    label: 'Mois dernier',
                     range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
                 },
-                { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
+                { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
                 {
-                    label: 'This year (slot)',
+                    label: 'Cette année',
                     range: [startOfYear(new Date()), endOfYear(new Date())],
                     slot: 'yearly',
                 },

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 
 use App\Libraries\AppLibrary;
+use App\Support\PhoneDisplay;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrderUserResource extends JsonResource
@@ -21,7 +22,7 @@ class OrderUserResource extends JsonResource
             "name"             => $this->name,
             "first_name"       => $this->FirstName,
             "last_name"        => $this->LastName,
-            "phone"            => $this->phone,
+            "phone"            => PhoneDisplay::safe($this->phone),
             "email"            => $this->email,
             'username'         => $this->username,
             "balance"          => AppLibrary::flatAmountFormat($this->balance),

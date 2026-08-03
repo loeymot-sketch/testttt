@@ -1,0 +1,659 @@
+{
+  "agent": "M-SYNTH POS+KDS consensus",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_synthesis_time": "07e147cc1 (per M-POS-2 + M-POS-5 attestation)",
+
+  "wave_m_inputs_status": "PARTIAL — 3 of 12 M-* JSONs landed at synthesis time",
+  "wave_m_inputs_status_detail": "phase-m directory has 3 of 12 expected JSONs at synthesis time. M-KDS-1 + M-POS-2 + M-POS-5 are fully aggregated below. The other 9 slots (M-POS-1, M-POS-3, M-POS-4, M-POS-6, M-KDS-2, M-KDS-3, M-KDS-4, M-KDS-5, M-KDS-6) remain IN_PROGRESS or PENDING per TaskList. Their findings are SYNTHESIZED FROM phase-J/K/L + H.8 owner walk, FILTERED to POS+KDS scope, until literal JSONs land. Every claim is anchored to a Phase J/K/L finding ID for lineage. RE-RUN this synthesis when the 9 remaining JSONs land.",
+
+  "actual_inputs_landed": [
+    {
+      "slot": "M-KDS-1",
+      "path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-1-board-grid-deep.json",
+      "verdict": "P0 CONFIRMED — S3-CHEF-001 grid overflow + NEW deep root cause",
+      "headline_findings": [
+        "M-KDS-1-F-01 P0 layout_blocker_if_rush: 4×2 grid overflows 1080p at 6+ orders (~84px below fold). DEEP ROOT CAUSE: KdsOrderCard.vue:295 hardcoded `height: 462px` makes grid-template-rows: minmax(0,1fr) ineffective — child refuses to shrink. Owner verbatim violated at ≥6 orders (mandate says max 5 in 1 line then 2 lines, but current code = 4×2 for all [1..8]).",
+        "M-KDS-1-F-02 P3 silent slice: orders beyond index 8 silently dropped at KdsV2Grid.vue:55 v-for slice(0,8). NO surface signal at 8→9 transition. Side-effect on keyboard shortcuts: SHORTCUTS=[A..H] = 8 entries, chef cannot keyboard-bump hidden orders.",
+        "M-KDS-1-F-03 P3 long order scroll: KdsOrderCard body overflow-y: auto for 15+ item orders. Wave U improved scrollbar discoverability (4px→8px, fade gradient) but owner-objection 'chef ferait pas attention' NOT eliminated.",
+        "M-KDS-1-F-04 P1 bump button color: CTA is slate #1F2937, owner brand mandates Cayenne red #F4501E. WCAG: red on white = 3.06:1 marginal AA-normal but PASS AA-large at 22px/700.",
+        "M-KDS-1-F-05 UX-02 FALSE POSITIVE re-affirmed: card-body 1× Menu sparse = test fixture artifact (scripts/e2e_api.php:72-87 POSTs skeletal payloads bypassing kiosk composer)."
+      ],
+      "viewport_static_math": {
+        "1920x1080": ">=6 orders bottom-row CTAs at/below fold",
+        "1366x900": ">=1 order CATASTROPHIC (940px grid alone exceeds 736px content area)",
+        "1024x768": ">=1 order UNUSABLE (grid alone exceeds 768px before header)"
+      },
+      "refinement_to_S3-CHEF-001": "When implementing Option A, ALSO drop hardcoded height:462px from KdsOrderCard cardStyle. Replace with min-height:0 + let grid-template-rows: repeat(N, 1fr) drive child sizing. CSS-native, no JS resize observer needed. ~2 LOC removal + 0-2 LOC CSS adjustment.",
+      "frozen_zone_diff": 0,
+      "code_changes_applied": 0
+    },
+    {
+      "slot": "M-POS-2",
+      "path": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-2-counter-collect-deep.json",
+      "verdict": "GREEN — surgical L5.3 keyboard heal applied + sentinel 37→41 GREEN",
+      "headline_findings": [
+        "FK-M-POS-2-001 keyboard heal applied (12 LOC, inline-edit exception eligible <30 LOC + tests immédiats + hors frozen-zone): @keyup.enter on receivedInput + mounted/beforeUnmount document Escape listeners + _onEsc method (guarded by visible + submitting) + auto-focus + select on order watcher via $nextTick.",
+        "K2-HEAL-01 STILL LIVE: PaymentAlreadyCollectedException catch in onConfirm (line 429-438) branches on err.response.data.error_code === 'payment_already_collected'. Sentinel PosCounterCollectRaceProtectionSentinel 4/4 GREEN.",
+        "GOAL-D2 STILL LIVE: MONTANT REÇU pre-fill FR comma decimal at line 300 + 315. Dual parser at line 250 normalizes ',' → '.'. Sentinel counterCollectFrDecimalSentinel 4/4 GREEN.",
+        "Edge inputs hunt: empty input BLOCKED by canConfirm. 100% loyalty (orderTotal=0) correctly BLOCKED. '.50' parses 0.5. Very large 1234567890.50 parses correctly. ',,,,' parses NaN → blocked.",
+        "P3 observation no-heal: watcher race if parent transitions order_A → order_B mid-axios-POST (current parent only does null↔order, safe today).",
+        "P3 observation no-heal: ',,,,' multiple commas only replaces FIRST — could harden with /,/g if D2-adjacent decision wanted."
+      ],
+      "sentinel_extension": "KeyboardNavigationSentinel.spec.js + 4 NEW M-POS-2-001 assertions. 37/37 → 41/41 GREEN.",
+      "broader_regression_check": "npx vitest run tests/js/sentinels/ → 38/40 PASS, 312 tests / 3 failed (309 passed). 3 failures are PRE-EXISTING (verified via git stash → restore): f004KioskCancelReasonSent.spec.js (2) + kdsBundleFreshnessSentinel.spec.js (1). M-POS-2 heal introduces ZERO new failures.",
+      "frozen_zone_diff": 0
+    },
+    {
+      "slot": "M-POS-5",
+      "path": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-5-refund-duplicata-deep.json",
+      "verdict": "VERIFIED-LIVE — all 7 refund heals attested still live at HEAD",
+      "headline_findings": [
+        "K2-HEAL-07 cash_movements VERIFIED LIVE: RefundWithCounterEntryService.php:209-298 records TYPE_CASHBACK + DIRECTION_OUT per CASH tranche. Best-effort skip when no auth / no open session. Sentinel RefundCashMovementRecordedSentinel still passes.",
+        "K2-HEAL-03 loyalty try/catch VERIFIED LIVE: RefundWithCounterEntryService.php:382-394 wraps refundPoints in try/catch. Sentinel RefundLoyaltyTryCatchHardenedSentinel still passes.",
+        "J2-HEAL-07 loyalty clawback VERIFIED LIVE: ClawbackLoyaltyPointsOnRefund listener LAST in RefundCreated cascade. Sentinel LoyaltyClawbackOnRefundSentinel 5/5 still passes.",
+        "K2-HEAL-04 Stripe charge.refunded VERIFIED LIVE: Stripe.php:318-446 bridges to RefundCreated + audit row 'order.refunded.stripe_dashboard'. SEALED PARENT PATH: webhook does NOT auto-create NF525 mirror under concurrency (sealed_note=parent_sealed_mirror_deferred_v1_0_2 → V1.0.2 backlog).",
+        "K2-HEAL-05 stranded CPN drain VERIFIED LIVE: Kernel.php:162-184 + DrainStrandedCpnCommand 5-min cron schedule.",
+        "G2-HEAL-01 parent_order_id exposed VERIFIED LIVE: OrderDetailsResource.php:36.",
+        "G2-HEAL-03 ReceiptRemboursementMarker VERIFIED LIVE: ReceiptRemboursementMarker.vue:1-86 keys on parentId > 0. Coexists with DUPLICATA marker.",
+        "DUPLICATA atomic increment + audit chain VERIFIED LIVE: PosReceiptPrintController.php:35-104 atomic SQL UPDATE scoped to branch_id, audit row 'pos.receipt.print' OR 'pos.receipt.reprint'. Bypass mode does NOT affect counter (TCP/IP transport short-circuit independent of HTTP endpoint).",
+        "M-POS-5 DUP-1 P0 STILL OPEN: refund-with-counter-entry has 0 frontend caller (grep refund-with-counter-entry resources/js → 0 matches outside idempotencyHeaders.js comment). Path A workaround (cancel-with-reason) is NOT a fiscal counter-entry.",
+        "K.5 NEW-1 STILL OPEN P2: parent_order_serial_no NOT serialized by OrderDetailsResource. REMBOURSEMENT marker can render label but parent serial line stays empty.",
+        "NEW HUNT: V1.0.2 backlog item — sealed parent webhook auto-create NF525 mirror (currently deferred to ops tooling)."
+      ],
+      "nf525_chain": "audit_logs HMAC chain extends correctly. fiscal_sequence_no monotonic gap-free per branch. composition_snapshot bit-identical copy on mirror. Parent IMMUTABLE.",
+      "frozen_zone_diff": 0,
+      "code_changes_applied": 0
+    }
+  ],
+
+  "pending_inputs_slots": [
+    {"slot": "M-POS-1", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-1-*.json", "task_status": "not in TaskList — may not have been dispatched"},
+    {"slot": "M-POS-3", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-3-*.json", "task_status": "not in TaskList"},
+    {"slot": "M-POS-4", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-4-*.json", "task_status": "task #92 IN_PROGRESS (PosComponent main + Q10 panel UI states)"},
+    {"slot": "M-POS-6", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-6-*.json", "task_status": "task #91 PENDING (cash drawer session lifecycle)"},
+    {"slot": "M-KDS-2", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-2-*.json", "task_status": "captures-M-KDS-2/ directory exists but no JSON yet"},
+    {"slot": "M-KDS-3", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-3-*.json", "task_status": "task #88 IN_PROGRESS (multi-bump race + idempotency)"},
+    {"slot": "M-KDS-4", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-4-*.json", "task_status": "task #94 IN_PROGRESS (KdsHistoryDrawer DEEP)"},
+    {"slot": "M-KDS-5", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-5-*.json", "task_status": "task #90 IN_PROGRESS (KDS allergen + status badges)"},
+    {"slot": "M-KDS-6", "expected_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-*.json", "task_status": "task #93 IN_PROGRESS (chef-rush 5-8+ orders empirical) — will likely confirm/refute M-KDS-1 viewport math empirically"}
+  ],
+
+  "basis": "Three M-* JSONs landed (M-KDS-1 + M-POS-2 + M-POS-5) plus prior-phase findings filtered to POS+KDS scope: phase-j (J-STEP-POS, J-CASCADE, J-ADV-8) + phase-k (K.1 Borne→KDS, K.2 POS Livré + bump cascade, K.4 Encaisser cascade, K.5 Refund cascade, K.7 Z-close cascade, K.9 multi-tab fanout) + phase-l (L1.2 Printer ESC/POS, L8.2 Stripe refund clawback, L12.5 visual smoke) + phase-h H.8 OWNER_PHYSICAL_WALK_CHECKLIST.md Walks 2+3+6.",
+
+  "pos_verdict": "AMBER",
+  "pos_verdict_rationale": "POS surface SHIPPABLE for V1 LOCAL Le Cayenne single-cashier envelope with explicit owner acknowledgement of P11/P12 workaround posture. Backend hardened (15+ POS-related heals shipped). M-POS-2 verified PosCounterCollectModal GREEN + applied surgical 12-LOC L5.3 keyboard heal (sentinel 37→41 GREEN). M-POS-5 verified all 7 refund heals still LIVE at HEAD 07e147cc1. UI gaps remain: P11 Refund button NOT in resources/js/ (re-confirmed by M-POS-5 DUP-1), P12 Z-close button absent. FROZEN PaymentComponent + pos-wizard.js + PosV5TrancheRow 0 LOC diff verified.",
+
+  "kds_verdict": "AMBER",
+  "kds_verdict_rationale": "KDS cascade VERIFIED CITED end-to-end (K.1 Borne→KDS 7 cascades GREEN, K.2 bump scenario 11 steps GREEN, M-POS-5 step 17 KDS subscription gate still excludes DELIVERED/REFUNDED). Bump path triple-defense intact. composition_snapshot frozen + DB BEFORE UPDATE trigger (J2-HEAL-06). Allergen propagation kiosk→KDS intact (PK-3 Wave 1). M-KDS-1 P0 LAYOUT CONFIRMED: S3-CHEF-001 grid overflow EMPIRICALLY verified via 4 multimodal captures + NEW deep root cause (hardcoded 462px card height) + closed-form viewport math. 4×2 grid violates owner verbatim mandate (max 5 in 1 line then 2 lines) and overflows 1080p at ≥6 orders, CATASTROPHIC at 1366×900 and 1024×768. UX-02 FALSE POSITIVE re-affirmed (test fixture artifact). NEW M-KDS-1-F-04 P1 bump button color (slate-gray, should be Cayenne red per brand mandate).",
+
+  "combined_verdict": "GO-WITH-OWNER-DECISIONS — V1 LOCAL Le Cayenne single-resto SHIPPABLE within explicit envelope (single machine + FR locale + single-cashier + POS_SIMULATION_HARDWARE=true). 0 NF525-CRITICAL violations on POS+KDS path. 0 frozen-zone LOC diff. NF525 chain bit-identical (audit_logs count 99 last_hash 30f5a50df1b0a447512bb68bb93c6c6bb353e2dd3aad311c25ef6161bacfd6b1 per K.1 attestation, RE-AFFIRMED by M-POS-5 step 9 audit row 'order.refund.counter_entry' HMAC chain extension). 9 owner-gate items (1 P0 SECURITY, 2 P0 V1 ship gate, 1 P0 KDS layout BLOCKER_IF_RUSH, 1 P1 multi-cashier race, 1 P1 KDS bump color, 1 P2 OSS public wall lag, 1 P2 KDS recall UX, 1 P3 LOCK_PAY cosmetic).",
+
+  "open_owner_gates": [
+    {
+      "id": "OG-POS-WIZARD-XSS-LOCK",
+      "scope": "POS",
+      "severity": "P0 SECURITY (10+ days holding — highest priority)",
+      "title": "pos-wizard.js XSS escape — LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17 + ADDENDUM 2026-05-23",
+      "evidence_anchor": "Phase B.5 PROPOSAL + CONVERGENCE_FINAL §10 owner-gate item #1. Scope grew from 11→13 sinks via L3180 + L3187 NEW sites.",
+      "impact": "Owner-controlled wizard input could XSS until LOCK applied",
+      "recommendation": "Owner countersign LOCK + apply patches",
+      "owner_decision_needed": "Countersign LOCK now"
+    },
+    {
+      "id": "OG-POS-P11",
+      "scope": "POS",
+      "severity": "P0 V1 ship gate",
+      "title": "Refund UI button MISSING",
+      "evidence_anchor": "J-STEP-POS P11-CRITICAL-GAP + M-POS-5 DUP-1 (grep refund-with-counter-entry resources/js = 0 matches outside idempotencyHeaders.js comment). Backend routes/api.php:954-956 + RefundWithCounterEntryService.php 24-step cascade fully VERIFIED-LIVE.",
+      "impact": "Cashiers WILL use cancel-with-reason instead → NF525 books unbalanced (cash returned without HMAC-chained mirror order) → 6-year fiscal exposure. Per M-POS-5: Path A (cancel-with-reason) is NOT a fiscal counter-entry, does NOT allocate fresh fiscal_sequence_no, does NOT extend audit chain.",
+      "recommendation": "Add 'Rembourser' button to PosOrdersTrackerComponent row + reason-input modal. Invoke POST /admin/pos/orders/{order}/refund-with-counter-entry. ~6h dev. All backend hooks ready.",
+      "owner_decision_needed": "Accept cancel-with-reason workaround for V1 ship OR block ship until UI lands"
+    },
+    {
+      "id": "OG-POS-P12",
+      "scope": "POS",
+      "severity": "P0 V1 ship gate (MITIGATED by safety-net cron)",
+      "title": "Z-close UI button MISSING",
+      "evidence_anchor": "J-STEP-POS P12-CRITICAL-GAP. Only G2-HEAL-06 23:55 close + L2-HEAL-07 (449550179) 00:05 open daily safety-net cron protects fiscal closure.",
+      "impact": "Operator-initiated daily Z-close is NF525 best practice + only path for cashier to print Z-report at end of day. PROPOSAL_ZCLOSE_VUE_UI_BUTTON.md ready.",
+      "recommendation": "Approve PROPOSAL + ship Vue header CTA 'Clôturer la journée' (8h dev) OR document cron-only V1.0.X posture",
+      "owner_decision_needed": "Vue button now OR cron-only with documentation"
+    },
+    {
+      "id": "OG-KDS-S3-LAYOUT",
+      "scope": "KDS",
+      "severity": "BLOCKER_IF_RUSH (chef-rush persona) — P0 EMPIRICALLY CONFIRMED",
+      "title": "KDS layout 5+ orders Option A/B/C + M-KDS-1 refinement",
+      "evidence_anchor": "Phase B.5 PROPOSAL + R1 scenario verdict 'BLOCKER-IF-RUSH at ≥6 orders' + M-KDS-1-F-01 multimodal verified across 4 captures (S3-R1-6/8orders + H7 W3-state1) + NEW deep root cause closed-form viewport math.",
+      "impact": "Bottom-row may hide critical orders below 1080p fold; CATASTROPHIC at 1366×900 and 1024×768 (≥1 order triggers overflow). Chef may bump incomplete.",
+      "recommendation": "Owner picks Option A (5×1≤5 then 5×2 ≥6) OR B (compaction) OR C (strict 5-col scroll). M-KDS-1 ADDS REFINEMENT: when implementing Option A, ALSO drop hardcoded `height: 462px` from KdsOrderCard.vue:295 (replace with min-height:0 + grid-template-rows: repeat(N, 1fr) drives child sizing). ~2-4 LOC additional change. CSS-native, no JS resize observer.",
+      "owner_decision_needed": "A or B or C, then implementation includes M-KDS-1 hardcoded-height refinement"
+    },
+    {
+      "id": "OG-POS-K2-H5-LIVRE-RACE",
+      "scope": "POS",
+      "severity": "P1 audit-trail pollution (no data corruption)",
+      "title": "Multi-cashier Livré race produces duplicate OrderStatusTransition + ActionLog rows",
+      "evidence_anchor": "K.2 cascade hunt K2-H5 — OrderService::changeStatus !$auth branch lacks lockForUpdate inside DB::transaction (OrderService.php:1930-2043). Per-row _delivering guard is client-local only.",
+      "impact": "2 cashiers see same PREPARED order, both click Livré → both succeed → 2 transition rows + 2 action_log rows for same PREPARED→DELIVERED edge → 'who delivered' ambiguous. Order.status correctly = DELIVERED. NF525 chain UNTOUCHED.",
+      "recommendation": "Add Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail() at head of DB::transaction closure. Mirrors KitchenDisplaySystemOrderService:258-261 + PaymentService:220-223 pattern. ~20 LOC.",
+      "owner_decision_needed": "Ship V1 with K2-H5 known OR fix before ship"
+    },
+    {
+      "id": "OG-KDS-BUMP-COLOR",
+      "scope": "KDS",
+      "severity": "P1 brand drift",
+      "title": "KDS Prêt CTA is slate-gray #1F2937, owner brand mandates Cayenne red #F4501E",
+      "evidence_anchor": "M-KDS-1-F-04 + J-ADV-8 UX-03. Highest-frequency CTA on KDS surface.",
+      "impact": "Brand inconsistency vs kiosk + POS primary CTAs. WCAG: Cayenne red on white = 3.06:1 marginal AA-normal but PASS AA-large at 22px/700.",
+      "recommendation": "1-line CSS change (background: #F4501E in KdsOrderCard.vue:680-696) + verify contrast holds. Owner-gate via small UX proposal (NOT shipping unilaterally — bump button is single highest-frequency CTA).",
+      "owner_decision_needed": "Apply brand red now OR keep slate-gray (a11y argument valid)"
+    },
+    {
+      "id": "OG-KDS-RECALL-UX",
+      "scope": "KDS",
+      "severity": "P2 UX friction",
+      "title": "KDS recall affordance visible after PREPARED transition — local-only un-mark, NOT backend reverse",
+      "evidence_anchor": "K.2 cascade hunt K2-H4 — kdsRecall un-marks per-item bumped timestamp in localStorage with 60s grace window. NO PATCH /change-status with status PREPARING (canTransition forbids reverse).",
+      "impact": "Chef may think recall un-prepares the order; downstream POS Q10 still sees order as PREPARED",
+      "recommendation": "Either (a) v-if guard hides recall when order.status === PREPARED, OR (b) V1.0.2 backend reverse-transition endpoint (per LOCK_OrderStateMachine)",
+      "owner_decision_needed": "(a) cheap UI hide OR (b) defer V1.0.2"
+    },
+    {
+      "id": "OG-KDS-OSS-PUBLIC-WALL-LAG",
+      "scope": "KDS/OSS",
+      "severity": "P2 latency",
+      "title": "OSS public TV wall worst-case 60s lag between chef bump and customer-visible PREPARED state",
+      "evidence_anchor": "K.2 cascade hunt K2-H7 — public wall (authBranchId=0) has NO Echo subscription; ossSyncService polls every 60s when WS reports connected (intervalMsWhenConnected=60000)",
+      "impact": "Customer waiting at counter sees Prêt up to 60s late. Per owner mandate: kitchen calls out orders verbally so wall is reinforcement not primary signal.",
+      "recommendation": "(a) Wire public-branch.{id} unauthenticated channel, OR (b) Tighten cadence to 5s for authBranchId=0 (~10 LOC override), OR (c) Document 60s envelope",
+      "owner_decision_needed": "A or B or C (acceptable per owner mandate)"
+    },
+    {
+      "id": "OG-POS-LOCK-PAY",
+      "scope": "POS",
+      "severity": "P3 cosmetic FROZEN-PENDING-LOCK",
+      "title": "PaymentComponent FR currency format 4.90€ → 4,90 €",
+      "evidence_anchor": "J-STEP-POS P7-FRICTION-1 + LOCK_PAY draft at plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md (10+ days holding)",
+      "impact": "Cashier-facing only. NF525 receipt paper render unaffected (separate ReceiptComponent formatter).",
+      "recommendation": "Owner countersign LOCK_PAY + apply Intl.NumberFormat fix",
+      "owner_decision_needed": "Countersign now OR defer V1.0.X polish"
+    }
+  ],
+
+  "nf525_invariants_status": [
+    {
+      "invariant": "composition_snapshot frozen at creation + immutable post-INSERT",
+      "scope": "POS + KDS + Kiosk + Refund mirror",
+      "status": "VERIFIED",
+      "evidence_anchor": "K.1 cascade K.1.4. J2-HEAL-06 (fe7dacaa2) Layer 1 DB BEFORE UPDATE trigger + Layer 2 Eloquent updating() hook. Sentinel CompositionSnapshotImmutabilityTriggerSentinel 6/6 GREEN. M-POS-5 step 6 confirms mirror duplicates OrderItem rows with composition_snapshot COPY-FORWARD (pricing SSOT untouched).",
+      "concern": "NONE"
+    },
+    {
+      "invariant": "fiscal_sequence_no monotonic + gap-free per branch",
+      "scope": "POS + Kiosk-cash + Kiosk-card + Refund mirror (RTN- serial with fresh sequence)",
+      "status": "VERIFIED",
+      "evidence_anchor": "K.1 cascade K.1.1 step 3 + K.1.6 multi-borne race. FiscalSequenceService triple defense. Z6-P1-WGS heal 2026-05-19 added withTrashed. M-POS-5 step 5 confirms mirror Order created with fresh fiscal_sequence_no (sequence->next at line 103).",
+      "concern": "LOCK_FISCAL_WGS_Z6_P1 exception still applies"
+    },
+    {
+      "invariant": "audit_logs HMAC chain append-only with DB BEFORE DELETE trigger",
+      "scope": "POS payment + Z-close + Refund + status transitions (CANCELED/REJECTED/RETURNED only)",
+      "status": "VERIFIED",
+      "evidence_anchor": "K.1 nf525_chain_attestation count=99 last_hash=30f5a50df1b0a447512bb68bb93c6c6bb353e2dd3aad311c25ef6161bacfd6b1. K2-HEAL-06 (7b7ffb325) added Z-close cross-chain anchor. M-POS-5 step 9 confirms audit row 'order.refund.counter_entry' written via frozen AuditLogService::write. M-POS-5 step 21 confirms Stripe dashboard refund extends chain via 'order.refunded.stripe_dashboard' audit row.",
+      "concern": "NONE on POS+KDS scope"
+    },
+    {
+      "invariant": "cash_movements complete for refund counter-entry",
+      "scope": "POS refund",
+      "status": "VERIFIED (post K2-HEAL-07)",
+      "evidence_anchor": "K2-HEAL-07 (15b8a5665) RE-VERIFIED LIVE by M-POS-5 step 8: per CASH tranche, RefundWithCounterEntryService.php:209-298 records TYPE_CASHBACK + DIRECTION_OUT + amount=abs(payment.amount) + orderId=mirror.id + notes='RTN: refund counter-entry' + strict=false. Best-effort skip logic intact (no auth / no open session → Log::info skip).",
+      "concern": "P11 Refund UI MISSING means no cashier path to TRIGGER this — backend ready but mute. See OG-POS-P11."
+    },
+    {
+      "invariant": "Z-open/close daily safety-net cron loop complete",
+      "scope": "POS fiscal segregation",
+      "status": "VERIFIED",
+      "evidence_anchor": "G2-HEAL-06 (c98e94459) 23:55 close + L2-HEAL-07 (449550179) NEW FiscalOpenAllActiveBranchesCommand 00:05 open daily Paris. Sentinel ZOpenSafetyNetCronSentinel 6/6 GREEN.",
+      "concern": "NONE"
+    },
+    {
+      "invariant": "Stripe charge.refunded cascade",
+      "scope": "POS refund online",
+      "status": "VERIFIED (post K2-HEAL-04)",
+      "evidence_anchor": "K2-HEAL-04 (0579c0453) RE-VERIFIED LIVE by M-POS-5 step 21: Stripe.php:318-446 bridges to RefundCreated + audit row. SEALED PARENT EDGE CASE: webhook does NOT auto-create NF525 mirror under concurrency (sealed_note=parent_sealed_mirror_deferred_v1_0_2 → V1.0.2 backlog).",
+      "concern": "Sealed parent webhook mirror deferred V1.0.2 — DOCUMENTED"
+    },
+    {
+      "invariant": "Loyalty clawback on refund",
+      "scope": "POS refund",
+      "status": "VERIFIED (post J2-HEAL-07 + K2-HEAL-03)",
+      "evidence_anchor": "J2-HEAL-07 RE-VERIFIED LIVE by M-POS-5 step 16: ClawbackLoyaltyPointsOnRefund LAST in cascade. Resolves loyalty user via loyalty_customer_code (kiosk-machine-account safe). K2-HEAL-03 RE-VERIFIED LIVE by M-POS-5 step 10: refundPoints in-tx wrapped in try/catch. Sentinel LoyaltyClawbackOnRefundSentinel 5/5 GREEN + RefundLoyaltyTryCatchHardenedSentinel intact.",
+      "concern": "NONE"
+    },
+    {
+      "invariant": "Stripe stranded CPN browser-death window mitigated",
+      "scope": "POS payment",
+      "status": "VERIFIED (post K2-HEAL-05)",
+      "evidence_anchor": "K2-HEAL-05 RE-VERIFIED LIVE by M-POS-5 step 22: Kernel.php:162-184 + DrainStrandedCpnCommand 5-min cron schedule.",
+      "concern": "NONE"
+    },
+    {
+      "invariant": "DUPLICATA marker counter + audit chain (NF525 reprint distinction)",
+      "scope": "POS receipt",
+      "status": "VERIFIED",
+      "evidence_anchor": "M-POS-5 step 23 + hunt M-POS-5.2: PosReceiptPrintController.php:35-104 atomic SQL UPDATE scoped to branch_id (concurrent prints from 2 stations cannot lose count). is_duplicata = newCount >= 2. Audit row 'pos.receipt.print' first / 'pos.receipt.reprint' thereafter. Bypass mode does NOT affect counter.",
+      "concern": "NONE"
+    }
+  ],
+
+  "sentinel_coverage": {
+    "pos_kds_dedicated_sentinels_count_in_cycle": 23,
+    "sentinels_touching_pos_or_kds": [
+      {"name": "posShortcutsSentinel.spec.js", "scope": "POS keyboard shortcuts (Wave X X2)", "status": "GREEN"},
+      {"name": "counterCollectFrDecimalSentinel.spec.js", "scope": "POS PosCounterCollectModal FR comma pre-fill (D2) — M-POS-2 re-attested", "tests": 4, "status": "GREEN"},
+      {"name": "posKioskPollingCadenceSentinel.spec.js", "scope": "POS Q10 polling cadence ≤5s (C2 heal)", "tests": 12, "status": "GREEN"},
+      {"name": "telemetryAllowlistSentinel.spec.js", "scope": "POS+Kiosk telemetry 429 allowlist (S1 heal)", "tests": 8, "status": "GREEN"},
+      {"name": "PosCounterCollectRaceProtectionSentinelTest.php", "scope": "POS K2-HEAL-01 PaymentService 409 typed exception — M-POS-2 re-attested", "tests": 4, "status": "GREEN"},
+      {"name": "OrderServiceChangeStatusRaceSentinel.php", "scope": "POS K2-HEAL-02 OrderService::changeStatus lockForUpdate (kitchen path only — K2-H5 staff path STILL UNCOVERED)", "tests": 2, "status": "GREEN"},
+      {"name": "RefundLoyaltyTryCatchHardenedSentinelTest.php", "scope": "POS refund K2-HEAL-03 — M-POS-5 re-attested LIVE", "tests": "1 (13 assertions)", "status": "GREEN"},
+      {"name": "StripeChargeRefundedCascadeSentinelTest.php", "scope": "POS K2-HEAL-04 Stripe dashboard refund cascade — M-POS-5 re-attested LIVE", "tests": 4, "status": "GREEN"},
+      {"name": "DrainStrandedCpnCronSentinel.php", "scope": "POS K2-HEAL-05 stranded CPN drain — M-POS-5 re-attested LIVE", "tests": 11, "status": "GREEN"},
+      {"name": "ZReportCloseAuditAnchorSentinelTest.php", "scope": "POS K2-HEAL-06 Z-close audit_logs anchor", "tests": 2, "status": "GREEN"},
+      {"name": "RefundCashMovementRecordedSentinel.php", "scope": "POS K2-HEAL-07 cash_movement on refund — M-POS-5 re-attested LIVE", "tests": 5, "status": "GREEN"},
+      {"name": "ZOpenSafetyNetCronSentinel.php", "scope": "POS NF525 segregation L2-HEAL-07", "tests": 6, "status": "GREEN"},
+      {"name": "ProductionBootGuardsCompletenessSentinelTest.php", "scope": "POS_SIMULATION_HARDWARE + IDEMPOTENCY + APP_DEBUG + STRIPE + SENANGPAY (L2-05+06)", "tests": 18, "status": "GREEN"},
+      {"name": "CompositionSnapshotImmutabilityTriggerSentinel.php", "scope": "KDS+POS J2-HEAL-06 dual-layer immutability", "tests": 6, "status": "GREEN"},
+      {"name": "LoyaltyClawbackOnRefundSentinelTest.php", "scope": "POS J2-HEAL-07 — M-POS-5 re-attested LIVE", "tests": 5, "status": "GREEN"},
+      {"name": "frTypoHardenedSentinel.spec.js", "scope": "POS+Kiosk wizard FR copy", "tests": 4, "status": "GREEN"},
+      {"name": "UserSuperAdminDisableHardenedSentinel.php", "scope": "Admin/POS RBAC (HC-001 P0 healed)", "tests": 3, "status": "GREEN"},
+      {"name": "KioskTokenAdminBlockSentinelTest.php", "scope": "PATH-1 kiosk→admin escalation block (Layer 1)", "tests": 2, "status": "GREEN"},
+      {"name": "OrderCreatedDispatchPlacementSentinelTest", "scope": "KDS+POS DispatchableAfterCommit invariant locked", "status": "GREEN"},
+      {"name": "KdsOrderStatusRequestEnumSentinel (implicit)", "scope": "KDS FormRequest gate ACCEPT/PREPARING/PREPARED only", "status": "GREEN"},
+      {"name": "SisterServicesTzAwareV2Test", "scope": "OSS+KDS TZ alignment G2-HEAL-04", "status": "GREEN"},
+      {"name": "PaymentTerminalRequiredOnCardSentinel (PR-A heal)", "scope": "POS payment card-mode TPE selector", "status": "GREEN"},
+      {"name": "KeyboardNavigationSentinel.spec.js (+ M-POS-2-001 block)", "scope": "POS PosCounterCollectModal Enter+Escape+autoFocus FK-M-POS-2-001 heal", "tests": "22 (18 existing + 4 new)", "status": "GREEN"},
+      {"name": "refundReceiptMarkerSentinel.spec.js + posReceiptDuplicataMarker.spec.js", "scope": "POS REMBOURSEMENT + DUPLICATA markers — M-POS-5 re-attested", "status": "GREEN"}
+    ],
+    "uncovered_code_paths": [
+      {
+        "path": "OrderService.php:1930-2043 !$auth branch DB::transaction (POS Livré PREPARED→DELIVERED)",
+        "gap": "No lockForUpdate inside closure → K2-H5 multi-cashier race produces duplicate OrderStatusTransition + ActionLog rows.",
+        "owner_decision": "OG-POS-K2-H5-LIVRE-RACE"
+      },
+      {
+        "path": "OrderCanceled call sites — convention-enforced pairing with OrderStatusChanged",
+        "gap": "K.1 K1-F-01 INFO — no mechanical sentinel asserting paired dispatch. V1.0.2 sentinel suggestion.",
+        "owner_decision": "V1.0.2 backlog"
+      },
+      {
+        "path": "KitchenDisplaySystemComponent.vue kdsRecall — UI affordance vs backend reverse-transition mismatch",
+        "gap": "K2-H4 P2 — no sentinel asserting recall affordance is hidden post-PREPARED OR triggers backend reverse",
+        "owner_decision": "OG-KDS-RECALL-UX"
+      },
+      {
+        "path": "Public OSS wall — Echo subscription absent",
+        "gap": "K2-H7 P2 — no sentinel asserting public wall cadence ≤5s when authBranchId=0",
+        "owner_decision": "OG-KDS-OSS-PUBLIC-WALL-LAG"
+      },
+      {
+        "path": "PosCounterCollectModal — multi-tranche split unsupported",
+        "gap": "J-STEP-POS P9-FRICTION-2 — V1.0.2 deferred",
+        "owner_decision": "V1.0.2 backlog"
+      },
+      {
+        "path": "KdsOrderCard.vue:295 hardcoded `height: 462px` + KdsV2Grid.vue:355-356 grid-template",
+        "gap": "M-KDS-1-F-01 NEW deep root cause — no sentinel asserting card-height contract OR grid-overflow at viewport thresholds",
+        "owner_decision": "V1.0.2 sentinel (proposed by S3 §8 KdsV2GridLayout.spec.js)"
+      },
+      {
+        "path": "PosReceiptPrintController parent_order_serial_no field exposure",
+        "gap": "K.5 NEW-1 STILL OPEN P2 — REMBOURSEMENT marker can render label but parent serial line stays empty (per M-POS-5.3)",
+        "owner_decision": "V1.0.X polish"
+      },
+      {
+        "path": "Stripe charge.refunded sealed parent — auto-create NF525 mirror under webhook concurrency",
+        "gap": "M-POS-5 step 21 — sealed_note=parent_sealed_mirror_deferred_v1_0_2 → V1.0.2 backlog",
+        "owner_decision": "V1.0.2 backlog"
+      }
+    ],
+    "cumulative_total_cycle_sentinels_estimated": "293+ (Phase L+L2 reported 293; M-POS-2 +4 KeyboardNavigation assertions = ~297)"
+  },
+
+  "owner_manual_walk_pos_kds": [
+    {
+      "id": "W2-1",
+      "persona": "Chef-rush",
+      "surface": "http://127.0.0.1:8000/kds",
+      "setup": "Login admin@lecayenne.fr / 123456 then seed 8 orders: php artisan tinker → Order::factory()->count(8)->create(['status' => 7, 'branch_id' => 1])",
+      "action": "Observe KDS board with 5 orders visible",
+      "expected": "ALL 5 orders visible SANS scroll",
+      "anchor": "Phase H.8 Walk 2 line 89 + M-KDS-1-F-01 4×2 grid"
+    },
+    {
+      "id": "W2-2",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Add 6th order — observe layout",
+      "expected": "M-KDS-1 EMPIRICALLY CONFIRMED: still 4×2 (owner verbatim VIOLATED at ≥6 — should be 5×2). Bottom-row CTAs marginal on 1080p. OG-KDS-S3-LAYOUT owner-gate active.",
+      "anchor": "Phase H.8 Walk 2 line 90 + M-KDS-1 multimodal S3-R1-6orders capture"
+    },
+    {
+      "id": "W2-3",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Add 8th order — observe layout 4×2",
+      "expected": "M-KDS-1 EMPIRICALLY CONFIRMED: bottom-row CTAs ~84px below 1080p fold without page scroll. CATASTROPHIC at 1366×900.",
+      "anchor": "Phase H.8 Walk 2 line 91 + M-KDS-1 multimodal S3-R1-8orders + W3-state1 captures"
+    },
+    {
+      "id": "W2-3b",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Add 9th order (beyond V2 grid slice limit)",
+      "expected": "M-KDS-1-F-02: 9th order SILENTLY DROPPED — no overflow chip, no count badge, no '+N en attente' indicator. Chef discovers missing tickets only when cashier asks 'C'est où la 9e?'",
+      "anchor": "M-KDS-1-F-02 + KdsV2Grid.vue:55 slice(0,8)"
+    },
+    {
+      "id": "W2-4",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Open order with 15 items (long order)",
+      "expected": "Card body scrollbar visible (Wave U widened to 8px + fade gradient). Owner objection 'chef ferait pas attention' may still apply. M-KDS-1-F-03.",
+      "anchor": "Phase H.8 Walk 2 line 92 + CONVERGENCE_FINAL §8 R2"
+    },
+    {
+      "id": "W2-5",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Place order with allergen (seed allergens_snapshot)",
+      "expected": "Red ⚠️ ALLERGIE badge visible in 1 second glance",
+      "anchor": "Phase H.8 Walk 2 line 93 + K.1 K.1.5 allergen propagation (M-KDS-5 will confirm)"
+    },
+    {
+      "id": "W2-6",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Bump 3 orders rapidly (within 1s)",
+      "expected": "Pas de UI freeze. Toutes transitionnent. K2-H3 verified safe.",
+      "anchor": "Phase H.8 Walk 2 line 94 + K.2 K2-H3 (M-KDS-3 in-flight will confirm empirically)"
+    },
+    {
+      "id": "W2-7",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Click 'Historique du jour' button, press Escape",
+      "expected": "Drawer opens, Esc closes (Wave X3) — M-KDS-4 in-flight will deep-audit",
+      "anchor": "Phase H.8 Walk 2 line 95"
+    },
+    {
+      "id": "W2-8",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Bump order, click 'Recall' within 60s grace window",
+      "expected": "K2-H4 — local-only un-mark. Be aware: order STAYS PREPARED backend-side. Owner-gate OG-KDS-RECALL-UX may need decision.",
+      "anchor": "K.2 K2-H4"
+    },
+    {
+      "id": "W2-9",
+      "persona": "Chef-rush",
+      "surface": "KDS",
+      "action": "Inspect Prêt CTA button color",
+      "expected": "M-KDS-1-F-04: currently slate-gray #1F2937. Owner brand mandates Cayenne red #F4501E. OG-KDS-BUMP-COLOR owner-gate.",
+      "anchor": "M-KDS-1-F-04 + J-ADV-8 UX-03"
+    },
+    {
+      "id": "W3-1",
+      "persona": "Cashier-multitask",
+      "surface": "http://127.0.0.1:8000/admin/pos",
+      "action": "POS empty page",
+      "expected": "Q10 Prêt-à-livrer panel visible with empty state italic. Ticker 'Mis à jour il y a Xs' updates every 5s",
+      "anchor": "Phase H.8 Walk 3 line 110 + J-STEP-POS P3 (M-POS-4 in-flight will deep-audit)"
+    },
+    {
+      "id": "W3-2",
+      "persona": "Cashier-multitask",
+      "surface": "POS",
+      "action": "Place 10 orders successively",
+      "expected": "AUCUN toast 'Trop de requêtes 30s/60s' (S1 telemetry allowlist heal verified)",
+      "anchor": "Phase H.8 Walk 3 line 111 + sentinel telemetryAllowlistSentinel 8/8 GREEN"
+    },
+    {
+      "id": "W3-3",
+      "persona": "Cashier-multitask",
+      "surface": "POS PosCounterCollectModal",
+      "setup": "Seed kiosk-cash order via tinker",
+      "action": "Click 'Encaisser' on Q10 Prêt panel. Modal opens.",
+      "expected": "M-POS-2 VERIFIED: MONTANT REÇU pre-fill = '8,50' (virgule FR pas point — D2 heal). Hero affiche '8,50 €'. AUTO-FOCUS + SELECT-ALL on cash input (NEW FK-M-POS-2-001).",
+      "anchor": "Phase H.8 Walk 3 line 112 + J-STEP-POS P9 + M-POS-2 keyboard heal"
+    },
+    {
+      "id": "W3-4",
+      "persona": "Cashier-multitask",
+      "surface": "POS modal",
+      "action": "Type '10,00' in MONTANT REÇU + press Enter",
+      "expected": "M-POS-2 NEW: cashChange affiche '1,50 €' (FR comma decimal). Enter triggers Confirm directly (NEW FK-M-POS-2-001 @keyup.enter heal).",
+      "anchor": "Phase H.8 Walk 3 line 113 + M-POS-2 keyboard heal"
+    },
+    {
+      "id": "W3-5",
+      "persona": "Cashier-multitask",
+      "surface": "POS modal",
+      "action": "Type '10.00' (point — backward compat)",
+      "expected": "Idem, cashChange = '1,50 €' (dual parser)",
+      "anchor": "Phase H.8 Walk 3 line 114"
+    },
+    {
+      "id": "W3-5b",
+      "persona": "Cashier-multitask",
+      "surface": "POS modal",
+      "action": "Press Escape key",
+      "expected": "M-POS-2 NEW: modal closes via _onEsc handler (guarded by !visible || submitting). NEW FK-M-POS-2-001 heal.",
+      "anchor": "M-POS-2 keyboard heal"
+    },
+    {
+      "id": "W3-6",
+      "persona": "Cashier-multitask",
+      "surface": "POS modal",
+      "action": "Click Confirme",
+      "expected": "Receipt prints. Button désactivé pendant submitting.",
+      "anchor": "Phase H.8 Walk 3 line 115"
+    },
+    {
+      "id": "W3-7",
+      "persona": "Cashier-multitask",
+      "surface": "POS PaymentComponent",
+      "action": "V5 Split-tranche (4 modes mix CASH+CARD+MOBILE+TICKET)",
+      "expected": "Tranches add OK. Couvert + Reste dû computed cents-correct. Confirm only when balanced.",
+      "anchor": "Phase H.8 Walk 3 line 116 + J-STEP-POS P8"
+    },
+    {
+      "id": "W3-8",
+      "persona": "Cashier-multitask",
+      "surface": "POS (CRITICAL)",
+      "action": "Try to refund a past order",
+      "expected": "OG-POS-P11 OWNER-GATE — UI button does NOT exist. M-POS-5 re-confirmed grep refund-with-counter-entry resources/js = 0 matches. Cashier WILL fall back to cancel-with-reason (NOT a NF525 counter-entry).",
+      "anchor": "Phase H.8 Walk 3 line 117 + J-STEP-POS P11 + M-POS-5 DUP-1"
+    },
+    {
+      "id": "W3-8b",
+      "persona": "Cashier-multitask",
+      "surface": "POS (OPS WORKAROUND)",
+      "action": "Owner/admin invokes refund via curl/Postman/Tinker: POST /api/admin/pos-order/{order}/refund-with-counter-entry with reason. Then reprint receipt.",
+      "expected": "M-POS-5 VERIFIED-LIVE: full cascade fires (24 steps). REMBOURSEMENT marker renders on reprinted receipt (parentId > 0). DUPLICATA marker if reprinted ≥2x. Audit row 'order.refund.counter_entry' extends NF525 HMAC chain. cash_movements TYPE_CASHBACK + DIRECTION_OUT recorded.",
+      "anchor": "M-POS-5 hunts 1-8 + 24 steps VERIFIED-LIVE"
+    },
+    {
+      "id": "W3-9",
+      "persona": "Cashier-multitask",
+      "surface": "POS",
+      "action": "Place order with menu_formule (Coca bundled with Big Burger). Confirm + Print.",
+      "expected": "Coca visible sur le ticket (G2-HEAL-03 addons rendering verified by M-POS-5)",
+      "anchor": "Phase H.8 Walk 3 line 118"
+    },
+    {
+      "id": "W3-10",
+      "persona": "Cashier-multitask",
+      "surface": "POS (CRITICAL)",
+      "action": "Try to perform Z-close at end of shift",
+      "expected": "OG-POS-P12 OWNER-GATE — UI button does NOT exist. Safety-net cron G2-HEAL-06 (23:55) + L2-HEAL-07 (00:05) protect fiscal closure.",
+      "anchor": "Phase H.8 Walk 3 line 119 + J-STEP-POS P12"
+    },
+    {
+      "id": "W3-11-RACE",
+      "persona": "Cashier-multitask (advanced)",
+      "surface": "POS — open 2 browser windows as 2 cashiers",
+      "action": "Both windows see same PREPARED order in Q10 Prêt panel. Both click Livré simultaneously.",
+      "expected": "Both succeed (no error). Order = DELIVERED. But 2 OrderStatusTransition rows + 2 ActionLog rows persisted (K2-H5 RED). 'Who delivered' ambiguous. Owner-gate OG-POS-K2-H5-LIVRE-RACE.",
+      "anchor": "K.2 K2-H5"
+    },
+    {
+      "id": "W6-1",
+      "persona": "Owner",
+      "surface": "Owner decisions",
+      "action": "Read plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md + ADDENDUM",
+      "expected": "Decide countersign (P0 security 10+ days holding — highest priority)",
+      "anchor": "Phase H.8 Walk 6 line 160 + OG-POS-WIZARD-XSS-LOCK"
+    },
+    {
+      "id": "W6-2",
+      "persona": "Owner",
+      "surface": "Owner decisions",
+      "action": "Read plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md",
+      "expected": "Decide countersign FR currency polish (P3 cosmetic)",
+      "anchor": "Phase H.8 Walk 6 line 161 + OG-POS-LOCK-PAY"
+    },
+    {
+      "id": "W6-3",
+      "persona": "Owner",
+      "surface": "Owner decisions",
+      "action": "Read proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md + M-KDS-1-F-01 refinement",
+      "expected": "Pick Option A (5×1≤5 then 5×2 ≥6) / B (compaction) / C (strict 5-col scroll). Implementation MUST include drop of hardcoded height:462px per M-KDS-1.",
+      "anchor": "Phase H.8 Walk 6 line 162 + OG-KDS-S3-LAYOUT + M-KDS-1-F-01"
+    },
+    {
+      "id": "W6-4",
+      "persona": "Owner",
+      "surface": "Owner decisions",
+      "action": "Read proposals/PROPOSAL_ZCLOSE_VUE_UI_BUTTON.md",
+      "expected": "Decide Vue button V1 (8h dev) OR V1.0.X cron-only. Safety-net cron already active.",
+      "anchor": "Phase H.8 Walk 6 line 164 + OG-POS-P12"
+    },
+    {
+      "id": "W6-5",
+      "persona": "Owner",
+      "surface": "Owner decisions",
+      "action": "Decide on P11 Refund UI (M-POS-5 backend cascade VERIFIED-LIVE — only Vue caller missing)",
+      "expected": "Accept cancel-with-reason workaround for V1 ship (cashier writes ops ticket, owner runs curl) OR allocate ~6h dev for Rembourser Vue button",
+      "anchor": "J-STEP-POS P11 + M-POS-5 DUP-1 + OG-POS-P11"
+    },
+    {
+      "id": "W6-6",
+      "persona": "Owner",
+      "surface": "Owner decisions",
+      "action": "Decide on KDS bump button color",
+      "expected": "M-KDS-1-F-04: apply Cayenne red #F4501E (brand consistency, marginal WCAG AA-normal but PASS AA-large) OR keep slate #1F2937 (a11y AAA argument)",
+      "anchor": "OG-KDS-BUMP-COLOR"
+    }
+  ],
+
+  "critical_open_items_per_persona": {
+    "chef_rush": [
+      {"id": "OG-KDS-S3-LAYOUT", "severity": "BLOCKER_IF_RUSH P0", "summary": "M-KDS-1 EMPIRICALLY CONFIRMED grid overflow at ≥6 orders. NEW deep root cause + Option A refinement (drop hardcoded card height)."},
+      {"id": "M-KDS-1-F-02", "severity": "P3", "summary": "9th+ orders SILENTLY DROPPED — no surface signal. Chef discovers via cashier."},
+      {"id": "OG-KDS-BUMP-COLOR", "severity": "P1", "summary": "M-KDS-1-F-04 brand drift — slate-gray vs Cayenne red"},
+      {"id": "OG-KDS-RECALL-UX", "severity": "P2", "summary": "Recall affordance is local-only"}
+    ],
+    "client_impatient": [
+      {"id": "OUT_OF_SCOPE", "severity": "n/a", "summary": "Kiosk flow not covered by Wave M POS+KDS scope. See Phase J-STEP-KIOSK for 5 P1 UX friction items."}
+    ],
+    "cashier_multitask": [
+      {"id": "OG-POS-P11", "severity": "P0 V1 ship gate", "summary": "Refund UI button MISSING — M-POS-5 re-confirmed backend VERIFIED-LIVE (24-step cascade), but 0 Vue caller. Cancel-with-reason workaround = fiscal exposure."},
+      {"id": "OG-POS-P12", "severity": "P0 V1 ship gate", "summary": "Z-close UI button MISSING — only safety-net cron protects."},
+      {"id": "OG-POS-K2-H5-LIVRE-RACE", "severity": "P1", "summary": "Multi-cashier Livré race pollutes audit trail."},
+      {"id": "M-POS-2-EXTENDED", "severity": "GREEN HEAL", "summary": "PosCounterCollectModal now has Enter+Escape+autoFocus (FK-M-POS-2-001 heal applied)"},
+      {"id": "DRAWER_COUNT_INPUT", "severity": "V1.0.2 backlog", "summary": "Cash drawer count input at close — M-POS-6 PENDING may surface deeper findings"}
+    ],
+    "owner_night": [
+      {"id": "OBSERVABILITY_WIDGETS", "severity": "P1 V1.0.X", "summary": "NF525 chain widget + Backup status widget invisible UI (~5-6h dev)"},
+      {"id": "OG-KDS-OSS-PUBLIC-WALL-LAG", "severity": "P2", "summary": "60s lag on public TV wall — acceptable per owner mandate"}
+    ],
+    "auditeur_fiscal": [
+      {"id": "NF525_CHAIN_BIT_IDENTICAL", "severity": "GREEN", "summary": "audit_logs count=99 last_hash=30f5a50df1b0a447512bb68bb93c6c6bb353e2dd3aad311c25ef6161bacfd6b1. Cross-chain anchor (K2-HEAL-06). composition_snapshot DB-trigger (J2-HEAL-06). Z-loop complete (G2-HEAL-06 + L2-HEAL-07). M-POS-5 re-attested 7 refund heals all LIVE."},
+      {"id": "M-POS-5-SEALED-WEBHOOK", "severity": "V1.0.2 doc", "summary": "Stripe charge.refunded on sealed parent does NOT auto-create NF525 mirror under webhook concurrency — V1.0.2 backlog"},
+      {"id": "PRICING_NF525_LOCK", "severity": "P0 owner-gate (adjacent)", "summary": "PROP-PricingService-003-F1/F2 still need owner clarification"}
+    ]
+  },
+
+  "cross_reference_prior_phases": {
+    "phase_j_pos_kds_anchors": [
+      "J-STEP-POS — 12 atomic steps P1..P12 + 3 cross-flows. RED on P11 + P12 (both P0 V1 ship gate). GREEN on P1-P10.",
+      "J-CASCADE — kiosk-cash → POS counter-collect cascade. H8 receipt print label drift + H9 multi-cashier silent-success (HEALED by K2-HEAL-01).",
+      "J-ADV-8 — UX-02 P0 KDS card content FALSE POSITIVE (re-confirmed by M-KDS-1). UX-03 P1 bump button color (CONFIRMED by M-KDS-1-F-04).",
+      "J2-HEAL-06 composition_snapshot DB trigger.",
+      "J2-HEAL-07 loyalty clawback on refund (re-verified LIVE by M-POS-5 step 16)."
+    ],
+    "phase_k_pos_kds_anchors": [
+      "K.1 Borne→KDS — 7 cascades VERIFIED CITED. NF525 count=99 attested. allergen + composition_snapshot propagation intact.",
+      "K.2 POS→OSS+KDS bump — 11 steps verified KDS path + 9 steps verified POS Livré path. K2-H5 P1, K2-H4 P2, K2-H7 P2.",
+      "K.4 Encaisser cascade — H9 P1 cashier B silent-success HEALED (K2-HEAL-01, re-verified LIVE by M-POS-2).",
+      "K.5 Refund cascade — NEW-2 P1 cash_movement HEALED (K2-HEAL-07, re-verified LIVE by M-POS-5 step 8).",
+      "K.7 Z-close cascade — FIND-2 P2 audit_logs anchor HEALED (K2-HEAL-06).",
+      "K.9 Multi-tab fanout — GREEN."
+    ],
+    "phase_l_pos_kds_anchors": [
+      "L1.2 Printer ESC/POS — AMBER (5 PREREQs + 12 STEPS migration checklist).",
+      "L5.3 Keyboard nav F-02 — RESOLVED by M-POS-2 surgical 12-LOC heal (Enter+Escape+autoFocus).",
+      "L8.1 3-way concurrent — GREEN data/fiscal.",
+      "L8.2 Stripe + refund + clawback — GO-WITH-FINDINGS. K2-HEAL-04 holds under race (re-verified LIVE by M-POS-5 step 21).",
+      "L12.5 Visual smoke — GREEN.",
+      "L-PERSONA-CONSENSUS — GO-WITH-OWNER-DECISIONS. 6 D-L-01..06 owner gates."
+    ],
+    "wave_m_anchors_so_far": [
+      "M-KDS-1 board-grid-deep — P0 layout overflow EMPIRICALLY CONFIRMED + NEW deep root cause + refinement to S3-CHEF-001",
+      "M-POS-2 counter-collect-deep — GREEN + 12-LOC keyboard heal applied + sentinel 37→41 GREEN",
+      "M-POS-5 refund-duplicata-deep — VERIFIED-LIVE all 7 refund heals + 8 hunts + P11 still open + K.5 NEW-1 still open"
+    ],
+    "heals_already_shipped_count_pos_kds_related": "16+ (K2-HEAL-01 through K2-HEAL-07, J2-HEAL-06, J2-HEAL-07, H2-HEAL-01, H2-HEAL-02, H5 loyalty TTC, G2-HEAL-01/03/04/06, L2-HEAL-07, PR-A blocker, D2 FR comma, D1 telemetry, C2 polling cadence, FK-M-POS-2-001 keyboard)"
+  },
+
+  "wave_m_inputs_when_landed_should_anchor_to": [
+    {"slot": "M-KDS-2", "expected_to_confirm_or_refute": "OG-KDS-S3-LAYOUT empirical 5/6/7/8 captures (captures-M-KDS-2/ dir created but JSON pending)"},
+    {"slot": "M-KDS-3", "expected_to_confirm_or_refute": "K.2 K2-H3 multi-bump race SAFE (different rows). Triple-defense intact."},
+    {"slot": "M-KDS-4", "expected_to_confirm_or_refute": "Wave X3 KdsHistoryDrawer Esc dismiss + tabindex + focus trap"},
+    {"slot": "M-KDS-5", "expected_to_confirm_or_refute": "K.1 K.1.5 allergen propagation intact. Visual ⚠️ ALLERGIE badge 1s glance."},
+    {"slot": "M-KDS-6", "expected_to_confirm_or_refute": "OG-KDS-S3-LAYOUT — empirical Playwright at 5/6/7/8 orders to confirm bottom-row visibility (M-KDS-1 closed-form math should be empirically validated)"},
+    {"slot": "M-POS-1", "expected_to_confirm_or_refute": "unknown scope — not in TaskList"},
+    {"slot": "M-POS-3", "expected_to_confirm_or_refute": "unknown scope — not in TaskList"},
+    {"slot": "M-POS-4", "expected_to_confirm_or_refute": "J-STEP-POS P3 Q10 always-render + ticker + featured-categories. Empty state cohérent."},
+    {"slot": "M-POS-6", "expected_to_confirm_or_refute": "Sprint 1A 2026-05-16 GREEN. J-STEP-POS P2 friction (backdrop dismiss + no keyboard shortcut). Cash drawer reconciliation V1.0.2 deferred."}
+  ],
+
+  "final_v1_pos_kds_verdict": {
+    "verdict": "GO-WITH-OWNER-DECISIONS (AMBER → ship-conditional)",
+    "shipping_envelope": "V1 LOCAL Le Cayenne single-resto: SHIPPABLE within explicit constraints (single machine + FR locale + single-cashier + POS_SIMULATION_HARDWARE=true). 0 NF525-CRITICAL violations on POS+KDS scope. 0 frozen-zone LOC diff (M-POS-2 heal was 12 LOC inline-exception eligible, NOT frozen). NF525 chain bit-identical.",
+    "unhealed_owner_gate_items": [
+      "OG-POS-WIZARD-XSS-LOCK (P0 SECURITY, 10+ days holding — HIGHEST PRIORITY)",
+      "OG-POS-P11 Refund UI (P0 V1 ship gate, cancel-with-reason workaround = fiscal exposure, backend VERIFIED-LIVE)",
+      "OG-POS-P12 Z-close UI (P0 V1 ship gate, MITIGATED by safety-net cron)",
+      "OG-KDS-S3-LAYOUT (BLOCKER_IF_RUSH P0, M-KDS-1 EMPIRICALLY CONFIRMED, owner picks A/B/C + M-KDS-1 refinement)",
+      "OG-POS-K2-H5-LIVRE-RACE (P1 audit-trail pollution, ~20 LOC fix)",
+      "OG-KDS-BUMP-COLOR (P1 brand drift, 1-LOC CSS fix)",
+      "OG-KDS-RECALL-UX (P2 UX, hide affordance OR V1.0.2 reverse endpoint)",
+      "OG-KDS-OSS-PUBLIC-WALL-LAG (P2 latency, acceptable per owner mandate)",
+      "OG-POS-LOCK-PAY (P3 cosmetic, currency format)"
+    ],
+    "recommendations": [
+      "1. OWNER COUNTERSIGN pos-wizard XSS LOCK FIRST (P0 SECURITY, 10+ days held — fix it before anything else)",
+      "2. OWNER DECIDE on P11 + P12 UI: ship V1 with cron+workaround posture documented OR allocate 14h dev to land both before go-live. Backend cascade for P11 VERIFIED-LIVE by M-POS-5.",
+      "3. OWNER PICK KDS layout Option A/B/C for chef-rush ≥6 orders. M-KDS-1 ADDS REFINEMENT: implementation must include drop of hardcoded height:462px from KdsOrderCard.vue:295.",
+      "4. OWNER DECIDE on KDS bump CTA color (brand red vs slate a11y argument)",
+      "5. Apply K2-H5 lockForUpdate heal (~20 LOC, mirrors KitchenDisplaySystemOrderService pattern)",
+      "6. WHEN REMAINING 9 WAVE M JSONs LAND, RE-RUN this synthesis to ratify or revise verdicts based on empirical M-* findings"
+    ],
+    "next_step_after_wave_m_completes": "When remaining M-* JSONs land (M-POS-1, M-POS-3, M-POS-4, M-POS-6, M-KDS-2, M-KDS-3, M-KDS-4, M-KDS-5, M-KDS-6), re-invoke this synthesis agent. Verify the 9 owner-gate items above are confirmed by M-* empirical findings (and add any NEW gates surfaced)."
+  },
+
+  "honest_caveat": "This synthesis aggregates 3 of 12 expected Wave M JSONs (M-KDS-1 + M-POS-2 + M-POS-5) plus prior-phase findings filtered to POS+KDS scope. The remaining 9 M-* slots are IN_PROGRESS/PENDING. The orchestrator SHOULD treat this as a strong baseline pending full Wave M empirical confirmation, NOT as a ship-ready signal. Re-run when all 12 JSONs land. The 3 landed JSONs strongly support the AMBER verdict (M-KDS-1 confirms P0 KDS layout, M-POS-2 confirms GREEN counter-collect with surgical heal, M-POS-5 confirms refund backend VERIFIED-LIVE but P11 UI gap STILL OPEN)."
+}

@@ -1,0 +1,55 @@
+F.2 PHASE F — SOAK TEST 1h COMPRESSED — PRE-SOAK BASELINE
+==========================================================
+
+Captured: 2026-05-23 22:01:10 (local time)
+Branch: heal/cms-pr1-quickwins-2026-05-18
+HEAD: def15979b (path-to-prod visual checklist)
+Env: APP_ENV=local · DB=mysql · CACHE=redis · QUEUE=redis · REDIS_HOST=127.0.0.1
+Server status: dev http://127.0.0.1:8000 responding 200
+
+------------------------------------------------------------------
+BASELINE COUNTS
+------------------------------------------------------------------
+audit_logs_count               = 65
+orders_count                   = 87
+outbox_pending (NULL dispatched_at) = 751
+outbox_stale_30s               = 751   <-- persistent dev-box backlog (CLAUDE memory: ~742)
+fiscal_seq_branch_1_max        = 39
+fiscal_seq_branch_0_max        = null (no admin orders)
+branches_count                 = 1     <-- single Le Cayenne branch
+queue_depth_default            = 0     <-- no Redis queue worker depth
+php_memory_usage_bytes         = 83361792    (~79.5 MB)
+php_memory_peak_bytes          = 98762752    (~94.2 MB)
+
+------------------------------------------------------------------
+NF525 FISCAL CHAIN — PRE-SOAK
+------------------------------------------------------------------
+$ php artisan fiscal:verify-chain
+CHAIN OK (audit_logs + z_reports) (branch=1)
+
+------------------------------------------------------------------
+RUN PARAMETERS (PLANNED)
+------------------------------------------------------------------
+Command:  php artisan foodking:e2e:stress
+Args:     --orders=100 --branches=1 --concurrency=2 --type=kiosk
+Mode:     compressed soak (no inter-batch sleep flag on E2EStressCommand;
+          Guzzle Pool dispatches at concurrency 2 continuously)
+Expected duration: 5-15 minutes wall-clock (each kiosk order = 1 quote POST + 1 order POST sequential per index)
+
+Note on adaptation: original prompt referenced flags --count + --inter-batch-sleep-ms
+that don't exist on E2EStressCommand. We use the real signature (--orders / --branches
+/ --concurrency / --type). Continuous soak with concurrency=2 still produces the
+cumulative-pressure signal we are hunting (cache/listener/memory/connection-pool
+behaviour over 100 sequential orders).
+
+------------------------------------------------------------------
+INVARIANTS TO VERIFY POST-SOAK
+------------------------------------------------------------------
+[ ] audit_logs delta = orders persisted × N (each order ~ 3-5 audit events)
+[ ] fiscal_sequence_no contiguous, gap-free for kiosk-paid orders
+[ ] 0 BranchScope cross-tenant leak (single-branch, so trivially 0 if all rows match branch_id=1)
+[ ] CHAIN OK (audit_logs + z_reports) post-soak
+[ ] PHP memory growth bounded (target: <20 MB drift)
+[ ] Outbox growth: documented; drainage depends on worker presence
+[ ] Cache::lock fiscal allocation: no observable contention-driven 5xx
+[ ] Idempotency-Key cache: no unbounded growth signature (each STRESS-Q13-ART-N-uniqid)

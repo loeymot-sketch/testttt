@@ -1,0 +1,135 @@
+{
+  "wave": "web",
+  "round": 1,
+  "supervisor": "adversarial",
+  "generated_at": "2026-07-30",
+  "artifacts_inspected": {
+    "pngs_read_multimodal": 9,
+    "pngs_unique": 8,
+    "note": "08-confirm-direct.png est un doublon octet-pour-octet de 02-home-mobile.png (md5 3e30199e70d80b6eb70240be19901226 identique)",
+    "tech_json": "reports/test-e2e/predeploy-2026-07-30/web/findings-tech.json"
+  },
+  "verified_ok": [
+    "Ratio fidélité panier: 1,90 € -> +19 pts = 1€=10pts EXACT (05-panier.png, lignes Sous-total/+ Fidélité)",
+    "Intégrité numérique menu: '9 catégories · 38 références', chip 'Tout 38', somme des chips catégorie (4+2+6+2+2+2+3+15+2)=38, '38 résultats' (03-menu.png + findings-tech.json)",
+    "Prix format FR virgule partout où visible: 7,40 € (04-fiche), 1,90 € x3 (05-panier)",
+    "Cohérence horaires vitrine nuit: hero 'TOUS LES SOIRS · 18H – MINUIT' (01/02) == footer 'Ouvert 18h — 00h' (09) — minuit=00h, cohérent",
+    "Guard S4 cold-load: /#account, /#track, /#confirm rendent la HOME sans ticket fantôme (JSON: 0 canvas, 0 élément QR, 0 numéro de commande)",
+    "Aucun label i18n brut (Label.X / kiosk.foo / 0undefined) sur les 9 PNG; tutoiement de marque cohérent sur toutes les surfaces",
+    "Zoom rejeté: le X de fermeture du panneau compte ne chevauche PAS les onglets — notch concave design (06-account.png, coin haut-droit)"
+  ],
+  "findings": [
+    {
+      "id": "WEB-R1-01",
+      "severity": "P2",
+      "surface": "04-fiche.png",
+      "category": "consistency",
+      "description": "Triple promesse de temps de préparation contradictoire dans un même parcours: menu '~10-15 min', fiche produit 'Prêt en 10 min', panier '~12 min'.",
+      "evidence": "03-menu.png sous-titre: 'Nos plats sont faits maison, prêts en ~10-15 min.' | 04-fiche.png chip beige sous la description: '⏱ Prêt en 10 min' | 05-panier.png chip noir jaune: 'Dès que possible ~12 min'. Trois valeurs différentes visibles en 3 clics pour le même client.",
+      "suggested_fix": "Une seule source: injecter l'estimation dynamique de file (celle du panier) dans le chip de la fiche, ou aligner la copie statique fiche/menu sur '~10-15 min' et réserver la valeur dynamique au panier."
+    },
+    {
+      "id": "WEB-R1-02",
+      "severity": "P2",
+      "surface": "08-confirm-direct.png",
+      "category": "silent_error",
+      "description": "La capture 08-confirm-direct.png est un doublon binaire exact de 02-home-mobile.png — la preuve VISUELLE de l'absence de ticket fantôme sur /#confirm à froid n'est pas indépendante.",
+      "evidence": "md5 identique: 3e30199e70d80b6eb70240be19901226 pour les deux fichiers (1 189 437 octets chacun). Seuls les compteurs DOM du JSON (0 canvas / 0 qr / 0 order_number) attestent le comportement; le PNG n'ajoute aucune évidence propre.",
+      "suggested_fix": "Re-capturer /#confirm dans un contexte navigateur distinct (timestamp visible ou léger scroll) pour produire un artefact indépendant, ou documenter explicitement dans le JSON que le rendu est pixel-identique à la home par design du guard."
+    },
+    {
+      "id": "WEB-R1-03",
+      "severity": "P2",
+      "surface": "findings-tech.json",
+      "category": "consistency",
+      "description": "Aucune page légale (CGV / fidélité / mentions) capturée alors que le point de contrôle du protocole est le ratio fidélité annoncé — et qu'un défaut CGV '1€=1pt' (vs réel 1€=10pts) a été consigné le 2026-07-29 (vague S7). Le fix n'est PAS re-vérifié par cette vague.",
+      "evidence": "findings-tech.json énumère 9 surfaces: home x2, footer, menu, fiche, panier, account, track, confirm — zéro page CGV/légale/programme fidélité. 09-footer.png montre 5 liens LÉGAL (Mentions légales, CGV, Politique de confidentialité, Politique de cookies, Allergènes) dont aucun n'a de capture. Le panier affiche 1,90 € -> +19 pts (1€=10pts).",
+      "suggested_fix": "Ajouter à la vague la capture des pages CGV + Programme fidélité et vérifier que le ratio annoncé est 1€=10pts (10 pts par euro), conformément au comportement du panier."
+    },
+    {
+      "id": "WEB-R1-04",
+      "severity": "P2",
+      "surface": "05-panier.png",
+      "category": "visual",
+      "description": "Panneau panier: bande VIDE d'environ 236 px encadrée par DEUX filets horizontaux pleine largeur entre la ligne d'article et '// QUAND RÉCUPÉRER ?'. Lit comme un module silencieusement vide (slot suggestions/upsell?) au cœur de la surface de conversion.",
+      "evidence": "05-panier.png (px originaux): filet sous la ligne Coca-Cola à y≈487, second filet à y≈723, aucun contenu entre les deux — vérifié au zoom (crop 40,420-1042,800): deux règles grises et un aplat crème nu.",
+      "suggested_fix": "Collapser la section quand elle est vide (ne pas rendre son conteneur ni ses bordures), ou y rendre le contenu prévu."
+    },
+    {
+      "id": "WEB-R1-05",
+      "severity": "P2",
+      "surface": "09-footer.png",
+      "category": "i18n",
+      "description": "Français bancal dans le descriptif de marque du footer, présent sur toutes les pages: 'À emporter sur place — et en livraison via Uber Eats.' — 'à emporter' et 'sur place' sont deux modes opposés juxtaposés sans coordination.",
+      "evidence": "09-footer.png paragraphe sous LE CAYENNE, et repris à l'identique dans le footer visible de 07-track-vide.png: 'Du peuple, pour le peuple. À emporter sur place — et en livraison via Uber Eats.' Le panier dit par ailleurs 'Retrait sur place · Hénin-Beaumont 62110' (sens voulu = retrait).",
+      "suggested_fix": "Écrire 'À emporter (retrait sur place) — et en livraison via Uber Eats.' ou le canonique 'Sur place ou à emporter — et en livraison via Uber Eats.' selon l'offre réelle."
+    },
+    {
+      "id": "WEB-R1-06",
+      "severity": "P3",
+      "surface": "02-home-mobile.png",
+      "category": "visual",
+      "description": "Header mobile: le bouton pill 'Se connecter' casse sur DEUX lignes ('Se' / 'connecter') sur toutes les pages mobiles, pill anormalement haute face aux pills voisines une ligne.",
+      "evidence": "02-home-mobile.png, 03-menu.png, 07-track-vide.png: pill blanche à droite du Panier avec 'Se' centré ligne 1 et 'connecter' ligne 2, hauteur ≈ double du pill 'Panier'.",
+      "suggested_fix": "white-space:nowrap + libellé court ('Connexion') ou icône seule (avec aria-label) sous le breakpoint mobile."
+    },
+    {
+      "id": "WEB-R1-07",
+      "severity": "P3",
+      "surface": "03-menu.png",
+      "category": "i18n",
+      "description": "Chip catégorie 'Galette 2' au singulier alors que toutes les catégories sœurs sont au pluriel (Sandwichs 4, Burgers 6, Tacos, Bols, Frites, Desserts, Boissons) et que le footer écrit 'galettes'.",
+      "evidence": "03-menu.png: chip '🌯 Galette 2' à droite de 'Sandwichs 4'; findings-tech.json 03-menu text_excerpt confirme '🌯\\nGalette\\n2'; 09-footer.png: '...bols Frites/Riz, galettes —'.",
+      "suggested_fix": "Renommer la catégorie 'Galettes'."
+    },
+    {
+      "id": "WEB-R1-08",
+      "severity": "P3",
+      "surface": "05-panier.png",
+      "category": "visual",
+      "description": "Note pour la cuisine: le grip de redimensionnement natif du textarea déborde du coin arrondi bas-droit et rend un petit artefact sombre isolé au-dessus du compteur '0 / 190'.",
+      "evidence": "05-panier.png px originaux ≈(1012,1538): tick sombre détaché du champ, à l'extérieur du rayon d'arrondi — confirmé au zoom x2 (crop 700,1440-1082,1620).",
+      "suggested_fix": "CSS resize:none sur la textarea (hauteur gérée par l'app)."
+    },
+    {
+      "id": "WEB-R1-09",
+      "severity": "P3",
+      "surface": "09-footer.png",
+      "category": "visual",
+      "description": "Rythme vertical incohérent dans le footer: liens NAVIGATION espacés ≈141 px alors que CONTACT et LÉGAL sont à ≈79 px — la colonne nav paraît trouée.",
+      "evidence": "09-footer.png px originaux: Accueil y≈520, Menu complet y≈661, Programme fidélité y≈804 (gaps ≈141) vs Mentions légales y≈1509 → Allergènes y≈1826 (gaps ≈79).",
+      "suggested_fix": "Harmoniser le line-height/margin des listes du footer (ou assumer des tap-targets élargis mais alignés sur une échelle commune)."
+    },
+    {
+      "id": "WEB-R1-10",
+      "severity": "P3",
+      "surface": "05-panier.png",
+      "category": "visual",
+      "description": "'+19 pts' rendu en VERT — seule occurrence d'une couleur hors palette nuit/orange/jaune/blanc sur les 9 surfaces.",
+      "evidence": "05-panier.png ligne '+ Fidélité' : valeur '+19 pts' en vert foncé à droite, alors que tout le reste du panneau est noir/orange/jaune/crème.",
+      "suggested_fix": "Si le vert n'est pas un token sémantique assumé du design system, passer le gain fidélité en jaune brand (#FFB800) ou orange; sinon documenter le token succès."
+    },
+    {
+      "id": "WEB-R1-11",
+      "severity": "P3",
+      "surface": "findings-tech.json",
+      "category": "silent_error",
+      "description": "Le JSON technique affirme console_errors:[] et http_errors:[] sans AUCUNE métadonnée de capture (pas de total de messages console vus, pas d'attestation de listeners) — l'absence d'erreurs est asserted, pas évidencée.",
+      "evidence": "findings-tech.json lignes finales: \"console_errors\": [], \"http_errors\": [], \"critical\": [] — aucun champ compteur (ex: console_messages_seen) nulle part dans le fichier.",
+      "suggested_fix": "Faire émettre par le harnais des compteurs positifs (messages console totaux, requêtes observées, codes HTTP distincts) pour prouver que la collecte tournait."
+    },
+    {
+      "id": "WEB-R1-12",
+      "severity": "P3",
+      "surface": "06-account.png",
+      "category": "visual",
+      "description": "Champ TÉLÉPHONE: '06' rendu à l'encre pleine (noir) comme une VALEUR pré-remplie alors que le placeholder EMAIL 'prenom@exemple.fr' est gris — styles placeholder/valeur incohérents entre les deux champs du même formulaire.",
+      "evidence": "06-account.png: input téléphone à droite du chip '+33' affiche '06' en quasi-noir; input email au-dessus affiche son placeholder en gris clair.",
+      "suggested_fix": "Si '06' est un placeholder, appliquer le même gris; si c'est une valeur pré-remplie, vérifier le comportement curseur/suppression et l'uniformiser."
+    }
+  ],
+  "p0_count": 0,
+  "p1_count": 0,
+  "p2_count": 5,
+  "p3_count": 7
+}

@@ -1,0 +1,63 @@
+{
+  "task_id": "CV1-M02-SENTINEL-BASELINE",
+  "mission_id": "M-02",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Créer 18 sentinels fail-first PHP/JS/Playwright + 4 statiques (lint), avec baseline rouge documentée. Chaque sentinel doit échouer pour la raison documentée (FK-ID lié) et passera vert UNIQUEMENT après la mission qui implémente le fix.",
+  "instruction": "Crée les fichiers tests sous tests/Feature/Sentinels/, tests/js/sentinels/, tests/Playwright/sentinels/ et la baseline log. Aucune modification de code produit. Renvoie strictement un JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "tests/Feature/Sentinels/PaymentConfirmAbilitySentinelTest.php",
+    "tests/Feature/Sentinels/PaymentConfirmCrossBranchSentinelTest.php",
+    "tests/Feature/Sentinels/PaymentConfirmCashOrderSentinelTest.php",
+    "tests/Feature/Sentinels/PaymentConfirmConcurrencySentinelTest.php",
+    "tests/Feature/Sentinels/OrderStatusNoopSideEffectsSentinelTest.php",
+    "tests/Feature/Sentinels/CleanupVsConfirmRaceSentinelTest.php",
+    "tests/Feature/Sentinels/OrderListBranchExactnessSentinelTest.php",
+    "tests/Feature/Sentinels/OrderShowBranchGuardSentinelTest.php",
+    "tests/Feature/Sentinels/TransactionBranchExactnessSentinelTest.php",
+    "tests/Feature/Sentinels/FiscalZBranchExactnessSentinelTest.php",
+    "tests/Feature/Sentinels/OssAdminBranchPolicySentinelTest.php",
+    "tests/Feature/Sentinels/KdsTransitionWhitelistSentinelTest.php",
+    "tests/Feature/Sentinels/KdsExpectedStatusConflictSentinelTest.php",
+    "tests/Feature/Sentinels/PosCashEndpointSentinelTest.php",
+    "tests/Feature/Sentinels/PosSubtotalForgerySentinelTest.php",
+    "tests/Feature/Sentinels/QueueNumberUniquenessSentinelTest.php",
+    "tests/js/sentinels/kioskOfflineIdPrefix.spec.js",
+    "tests/js/sentinels/paymentComponentPropMutation.spec.js",
+    "tests/Playwright/sentinels/kioskCbTrOfflineRefused.spec.js",
+    "scripts/lint-fk-enum-status.sh",
+    "scripts/lint-fk-legacy-imports.sh",
+    "scripts/lint-fk-branch-isolation.sh",
+    "scripts/lint-fk-bundle-legacy.sh",
+    "reports/sentinels/CAISSE_V1_BASELINE_RUN_2026-04-25.log",
+    "reports/sentinels/CAISSE_V1_SENTINEL_INDEX.md"
+  ],
+  "off_limits": [
+    "app/**", "resources/**", "routes/**", "database/migrations/**", "config/**", ".cursor/**", "AGENTS.md"
+  ],
+  "invariants_at_risk": [
+    "pricing-ssot", "order-status-enum", "branch-id-isolation", "dispatch-after-commit", "frozen-zones"
+  ],
+  "gate_conditions": [],
+  "mandatory_tests": [
+    "php artisan test --filter='Sentinel' --stop-on-failure || true",
+    "npx vitest run tests/js/sentinels/ || true",
+    "bash scripts/lint-fk-enum-status.sh || true",
+    "bash scripts/lint-fk-branch-isolation.sh || true",
+    "bash scripts/lint-fk-legacy-imports.sh || true"
+  ],
+  "self_audit_checklist": [
+    "Chaque sentinel a une assertion claire qui échoue POUR la raison documentée (pas une erreur de setup)",
+    "Chaque sentinel cite dans son docblock le FK-ID, la source rapport, et la mission de fix attendue (M-XX)",
+    "La baseline log liste pour chaque sentinel : status (RED), commande, raison, mission de fix",
+    "Aucun fichier hors allowlist modifié",
+    "Aucune modification de code produit (app/, resources/, routes/)",
+    "Les 4 lints renvoient des findings cohérents avec la cartographie file:line du plan masterplay §2"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 sentinels fail-first baseline",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_sentinels_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-sentinels"
+}

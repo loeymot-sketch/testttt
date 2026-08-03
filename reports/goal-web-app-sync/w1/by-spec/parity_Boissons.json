@@ -1,0 +1,160 @@
+{
+ "spec": "parity:Boissons",
+ "scope": "Parity catégorie \"Boissons\" (category_id=10) — fixture canonique borne (reports/goal-web-app-sync/catalog-canonical.json) VS mirror WEB (/Users/1millnonstop/Downloads/web/data/menu.js) VS mirror MOBILE (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js). READ-ONLY, aucun fichier modifié.",
+ "summary": "La fixture canonique contient 15 boissons (ids 52-59 + 119-125, toutes is_available=true, composer_profile=null, 0 extras/addons/variations). Les deux mirrors n'en contiennent que 8 (mkItem 1001-1008) : les 7 boissons canoniques ids 119-125 (Coca Cherry, Tropico, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï, Perrier — toutes 1,90 €) sont ABSENTES du web ET du mobile → 14 findings P0 (items vendables manquants). Pour les 8 boissons présentes, la parité est PARFAITE sur les deux mirrors : noms, prix (1,90 / 1,00 / 1,50 €), descriptions identiques caractère par caractère, structure wizard cohérente (aucun wizard : has_sauce/has_crudites/has_supplements/has_menu_addon=false = composer_profile null canonique). Divergence structurelle secondaire : FORMULE_DRINKS (sélecteur boisson de la formule menu +2,50 €) ne propose que les 8 anciennes saveurs sur les deux mirrors → un client formule ne peut pas choisir les 7 nouvelles (P1). Formule menu +2,50 € elle-même conforme (f-menu 2.50 des deux côtés).",
+ "findings": [
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Coca Cherry 33cl (canonique id 119, 1,90 €, is_available=true)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 416,
+   "evidence": "Canonique: id 119 'Coca Cherry 33cl' flat_price '1.90' currency_price '1,90 €' desc 'Coca-Cola Cherry' available=true. Mirror: le tableau DRINKS (menu.js:416-425) s'arrête à mkItem(1008,'capri-sun') ; grep -in 'cherry' sur tout le fichier = 0 résultat.",
+   "recommendation": "Ajouter mkItem(1009,'coca-cherry',10,'Coca Cherry 33cl',1.90,'Coca-Cola Cherry',{…time:0}) dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Tropico 33cl (canonique id 120, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 416,
+   "evidence": "Canonique: id 120 'Tropico 33cl' 1,90 € desc 'Tropico' available=true. Mirror: 'tropico' n'apparaît qu'en tant qu'IMAGE d'Orangina (menu.js:82 'orangina': 'tropico.png' et :214 d-orangina image tropico.png), jamais comme item DRINKS.",
+   "recommendation": "Ajouter l'item Tropico 33cl 1,90 € dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Ice Tea Pêche 33cl (canonique id 121, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 416,
+   "evidence": "Canonique: id 121 'Ice Tea Pêche 33cl' 1,90 € desc 'Ice Tea saveur pêche' thumb lipton-peche.webp. Mirror: grep -i 'ice tea' = 0 résultat dans menu.js.",
+   "recommendation": "Ajouter l'item Ice Tea Pêche 33cl 1,90 € dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Fanta Citron 33cl (canonique id 122, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 419,
+   "evidence": "Canonique: id 122 'Fanta Citron 33cl' 1,90 € desc 'Fanta Citron'. Mirror: seul Fanta Orange existe (menu.js:419 mkItem(1003,'fanta',10,'Fanta Orange 33cl',1.90,…)) ; grep -i 'citron' = 0 résultat.",
+   "recommendation": "Ajouter l'item Fanta Citron 33cl 1,90 € dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Fuze Tea 33cl (canonique id 123, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 416,
+   "evidence": "Canonique: id 123 'Fuze Tea 33cl' 1,90 € desc 'Fuze Tea' thumb lipton-framboise.webp. Mirror: grep -i 'fuze' = 0 résultat.",
+   "recommendation": "Ajouter l'item Fuze Tea 33cl 1,90 € dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Hawaï 33cl (canonique id 124, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 416,
+   "evidence": "Canonique: id 124 'Hawaï 33cl' 1,90 € desc 'Hawaï' thumb fanta-fraise.webp. Mirror: grep -i 'hawa' = 0 résultat.",
+   "recommendation": "Ajouter l'item Hawaï 33cl 1,90 € dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "WEB — item vendable manquant : Perrier 33cl (canonique id 125, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 423,
+   "evidence": "Canonique: id 125 'Perrier 33cl' 1,90 € desc 'Perrier (eau gazeuse)'. Mirror: seule 'Eau Plate 50cl' 1.00 existe (menu.js:423 mkItem(1007,'eau-plate',…)) ; grep -i 'perrier' = 0 résultat — aucune eau gazeuse vendable sur le web.",
+   "recommendation": "Ajouter l'item Perrier 33cl 1,90 € dans DRINKS."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Coca Cherry 33cl (canonique id 119, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 421,
+   "evidence": "Canonique: id 119 'Coca Cherry 33cl' 1,90 € available=true. Mirror mobile: DRINKS (menu.js:421-430) = 8 items 1001-1008 seulement ; grep -in 'cherry' = 0 résultat.",
+   "recommendation": "Ajouter l'item Coca Cherry 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Tropico 33cl (canonique id 120, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 421,
+   "evidence": "Canonique: id 120 'Tropico 33cl' 1,90 €. Mirror mobile: 'tropico' n'existe que comme image d'Orangina (menu.js:93 et :206), pas comme item.",
+   "recommendation": "Ajouter l'item Tropico 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Ice Tea Pêche 33cl (canonique id 121, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 421,
+   "evidence": "Canonique: id 121 'Ice Tea Pêche 33cl' 1,90 €. Mirror mobile: grep -i 'ice tea' = 0 résultat.",
+   "recommendation": "Ajouter l'item Ice Tea Pêche 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Fanta Citron 33cl (canonique id 122, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 424,
+   "evidence": "Canonique: id 122 'Fanta Citron 33cl' 1,90 €. Mirror mobile: seul Fanta Orange (menu.js:424 mkItem(1003,'fanta',10,'Fanta Orange 33cl',1.90,…)) ; grep -i 'citron' = 0 résultat.",
+   "recommendation": "Ajouter l'item Fanta Citron 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Fuze Tea 33cl (canonique id 123, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 421,
+   "evidence": "Canonique: id 123 'Fuze Tea 33cl' 1,90 €. Mirror mobile: grep -i 'fuze' = 0 résultat.",
+   "recommendation": "Ajouter l'item Fuze Tea 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Hawaï 33cl (canonique id 124, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 421,
+   "evidence": "Canonique: id 124 'Hawaï 33cl' 1,90 €. Mirror mobile: grep -i 'hawa' = 0 résultat (hors 'Hawaï' absent, seul 'HAWAII' inexistant aussi).",
+   "recommendation": "Ajouter l'item Hawaï 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P0",
+   "title": "MOBILE — item vendable manquant : Perrier 33cl (canonique id 125, 1,90 €)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 428,
+   "evidence": "Canonique: id 125 'Perrier 33cl' 1,90 € desc 'Perrier (eau gazeuse)'. Mirror mobile: seule Eau Plate 50cl 1.00 (menu.js:428) ; grep -i 'perrier' = 0 résultat.",
+   "recommendation": "Ajouter l'item Perrier 33cl 1,90 € dans DRINKS mobile."
+  },
+  {
+   "severity": "P1",
+   "title": "WEB — sélecteur boisson de la formule menu (FORMULE_DRINKS) limité aux 8 anciennes saveurs",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 208,
+   "evidence": "FORMULE_DRINKS (menu.js:208-217) = 8 entrées d-coca…d-capri. Sur la borne canonique le choix de boisson d'une formule est alimenté par la catégorie 10 (15 boissons disponibles). Un client web en 'Menu (Frites + Boisson)' +2,50 € (menu.js:184) ne peut pas choisir Coca Cherry / Tropico / Ice Tea Pêche / Fanta Citron / Fuze Tea / Hawaï / Perrier.",
+   "recommendation": "Étendre FORMULE_DRINKS aux 15 saveurs de la catégorie 10 (aligné borne), en même temps que l'ajout des 7 items DRINKS."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — sélecteur boisson de la formule menu (FORMULE_DRINKS) limité aux 8 anciennes saveurs",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 199,
+   "evidence": "FORMULE_DRINKS (menu.js:199-209) = 8 entrées d-coca…d-capri, identique au web. Même impossibilité de choisir les 7 nouvelles saveurs en formule +2,50 € (f-menu menu.js:181).",
+   "recommendation": "Étendre FORMULE_DRINKS mobile aux 15 saveurs de la catégorie 10."
+  },
+  {
+   "severity": "INFO",
+   "title": "Parité PARFAITE des 8 boissons présentes (noms/prix/descriptions/structure) sur les deux mirrors",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 417,
+   "evidence": "Web menu.js:417-424 et mobile menu.js:422-429, lignes byte-identiques : Coca-Cola 33cl 1.90/'Coca-Cola original' ; Coca-Cola Zero 33cl 1.90/'Coca-Cola sans sucre' ; Fanta Orange 33cl 1.90/'Fanta Orange' ; Sprite 33cl 1.90/'Sprite' ; Oasis Tropical 33cl 1.90/'Oasis Tropical' ; Orangina 33cl 1.90/'Orangina' ; Eau Plate 50cl 1.00/'Eau minérale' ; Capri-Sun 1.50/'Capri-Sun 20cl' = exactement les valeurs canoniques (flat_price 1.90/1.00/1.50, currency_price '1,90 €'/'1,00 €'/'1,50 €'). Structure wizard conforme : canonique composer_profile=null, extras=[], addons=[], variations=[] pour les 15 boissons ↔ mirrors has_sauce/has_crudites/has_supplements/has_menu_addon=false. Aucune divergence sur ces 8.",
+   "recommendation": "Rien à faire sur ces 8 items."
+  },
+  {
+   "severity": "INFO",
+   "title": "Quirk d'images CANONIQUE (pas une divergence mirror) : Orangina→tropico.webp, Perrier→eau.webp, Hawaï→fanta-fraise.webp, Fuze Tea→lipton-framboise.webp",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json",
+   "line": 1,
+   "evidence": "Fixture : item 57 Orangina thumb=…/tropico.webp ; item 125 Perrier thumb=…/eau.webp ; item 124 Hawaï thumb=…/fanta-fraise.webp ; item 123 Fuze Tea thumb=…/lipton-framboise.webp. Les mirrors reproduisent le mapping Orangina→tropico.png (web menu.js:82, mobile menu.js:93) — cohérent avec la borne, donc conforme.",
+   "recommendation": "Lors de l'ajout des 7 items, réutiliser ces mêmes assets pour rester fidèle à la borne (ou signaler au owner que la borne elle-même a des placeholders)."
+  }
+ ],
+ "facts": [
+  "Fixture canonique: 15 items category_id=10 — ids 52 Coca-Cola 33cl, 53 Coca-Cola Zero 33cl, 54 Fanta Orange 33cl, 55 Sprite 33cl, 56 Oasis Tropical 33cl, 57 Orangina 33cl (tous 1,90 €), 58 Eau Plate 50cl 1,00 €, 59 Capri-Sun 1,50 €, 119 Coca Cherry 33cl, 120 Tropico 33cl, 121 Ice Tea Pêche 33cl, 122 Fanta Citron 33cl, 123 Fuze Tea 33cl, 124 Hawaï 33cl, 125 Perrier 33cl (tous 1,90 €) — 15/15 is_available=true, composer_profile=null, extras/addons/variations vides (reports/goal-web-app-sync/catalog-canonical.json)",
+  "Mirror WEB: tableau DRINKS = /Users/1millnonstop/Downloads/web/data/menu.js:416-425, 8 items mkItem 1001-1008 ; FORMULE_DRINKS = menu.js:208-217 (8 saveurs) ; formule f-menu 2.50 = menu.js:184",
+  "Mirror MOBILE: tableau DRINKS = /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js:421-430, 8 items mkItem 1001-1008 byte-identiques au web ; FORMULE_DRINKS = menu.js:199-209 ; formule f-menu 2.50 = menu.js:181",
+  "Les blocs DRINKS web et mobile sont identiques ligne à ligne (mêmes ids 1001-1008, mêmes prix, mêmes emojis) — un seul patch à dupliquer sur les 2 mirrors",
+  "Le drink-picker canonique des formules/addons pointe l'item caché 'Boisson Seule' (addon role=drink, addon_item_id=3) ; les items addon 1/2/3 ('Menu (Frites + Boisson)', 'Frites Seules', 'Boisson Seule') ne figurent PAS dans les 42 items de la fixture (items cachés backend) — le choix de saveur borne se fait sur la catégorie 10 (15 saveurs)",
+  "Seuls 2 items canoniques ont un step composer 'boisson' (Bol Frites id 41, Bol Riz id 45, min 0 max 1, choix unique 'Boisson Seule') — la fonction mobile drinkChoicesFor/case 10 retourne [] (mobile menu.js:239), conforme (les boissons n'ont pas de wizard)",
+  "Aucune divergence de prix sur les items présents : 0 finding prix-faux ; toutes les divergences P0 sont des absences d'items"
+ ]
+}

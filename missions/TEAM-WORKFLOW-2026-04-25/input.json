@@ -1,0 +1,28 @@
+{
+  "task_id": "TEAM-WORKFLOW-2026-04-25",
+  "role": "second-opinion-auditor",
+  "mode": "review-and-improve-plan",
+  "primary_model_hint": "gpt-5.5-pro",
+  "objective": "Auditer le plan d'équipe FoodKing (PLAN_TEAM_WORKFLOW_2026-04-25.md) et challenger en termes de logique d'équipe, sync stricte, mémoire partagée, dual-audit per-task, audit global avec re-loop. Aucun code produit. Réponse en français, structurée.",
+  "scope_files": [
+    "plans/PLAN_TEAM_WORKFLOW_2026-04-25.md",
+    "docs/orchestration/MEMORY_MATRIX.md",
+    "docs/orchestration/MULTI_AGENT_ORCHESTRATION.md",
+    ".cursor/commands/run-cycle.md",
+    "AGENTS.md",
+    ".cursor/routing.md"
+  ],
+  "deliverables": [
+    "Lister les angles morts du plan v1 par rapport à la vision utilisateur (équipe synchronisée, dual-audit per-task, mémoire partagée Graphiti+files, multi-agents en parallèle).",
+    "Pour chaque angle mort : correction concrète (1-3 lignes) à intégrer en v2.",
+    "Vérifier que la décompo en sous-tâches + routage difficulté + mini-audit per-task est compatible avec REMEDIATION_AUDIT_CYCLE existant (run-cycle.md Step 5).",
+    "Évaluer le risque de saturer Graphiti / Anthropic quotas avec un mini-audit Claude par sous-tâche — proposer batching si nécessaire.",
+    "Recommander si team-run-task.sh doit être 1 commande humaine ou auto-chaînée par l'orchestrateur Claude (préférence + raisons).",
+    "Score global (0..10) sur la couverture des 3 demandes utilisateur : (a) sync stricte, (b) multi-agents partagés, (c) boucle Claude→GPT-impl→GPT-audit→Claude-audit→audit-global→re-loop. Justifier chaque score."
+  ],
+  "constraints": [
+    "Ne PAS proposer de nouveau store mémoire (gate MEMORY).",
+    "Respecter les 4 stores autorisés (Code A / Graphiti+JSONL B / Missions C / Reports D).",
+    "Pas de réécriture du plan complet — uniquement deltas."
+  ]
+}

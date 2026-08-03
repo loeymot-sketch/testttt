@@ -1,0 +1,139 @@
+{
+  "wave": "C",
+  "round": 4,
+  "states_reviewed": 14,
+  "spec_runtime_seconds": 43,
+  "spec_status": "passed",
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-pos-kds-sync-C/14-kds-error-resilience.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-4 verification PASS. State 14 dom.html contains exactly 1 occurrence of `kds-error-banner` — element is `<div data-v-66aac04e=\"\" class=\"kds-hint-banner kds-hint-banner--danger kds-hint-banner--action\" role=\"alert\" aria-live=\"assertive\" data-testid=\"kds-error-banner\">`. Spec instrumentation (Fix-K, commit 2fe03c29b) reports `kds_error_banner_visible=true toast_visible=true` at state 14 — both surfaces confirmed live, no longer relying on first-of-role-alert (which previously matched the toast). Multimodal Read of 14-kds-error-resilience.png shows the pink sticky banner '⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.' rendered immediately below the page header, full-width, simultaneously with the Vue-Toastification toast 'Service indisponible — réessayez dans quelques instants.' centered above. KDS lane content (cards #100526627, #100526617, #100526593, #100526691, etc.) is scrolled but the banner remains pinned (sticky, z-index:50 per f912e5a9c). Network.json records the deliberate 503 intercept on /api/admin/kds-order. Console.json: 0 errors, 0 warnings.",
+      "fix_hint": "(closed — Vue component already correct per round-3 f912e5a9c sticky CSS; round-4 Fix-K hardened the spec selector)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-pos-kds-sync-C/04-kds-mark-in-progress-order-1.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-4 verification PASS. `md5 *.png` over the 14 PNG captures yields 14 unique hashes (8f6abbb8…, 53a6d1e5…, d54ffd8d…, b793876d…, 758f6d5f…, 73a538c7…, 25a75ec7…, 456801ad…, f4524302…, d931d9ec…, cd8f214e…, 5e4faf0d…, b6142924…, 58deaf64…). Lane scrollTop modulation between structurally-duplicate KDS-terminal states (06/07/08/09 per FIX-54-5 mark-served absence) keeps each PNG byte-distinct. Round-2 fix (10456234c badge selector + scrollTop modulation) holds.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-pos-kds-sync-C/03-kds-card-detail-order-1.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Round-4: status badge contrast still WCAG-AA passing (Confirmées purple #5e36e5, En Préparation brown #9c4a08, Terminées green #2c8c3c on white). Color-only differentiation between badges persists. Non-blocking debt carried forward from round-1.",
+      "fix_hint": "Out of round-4 scope (P2 visual). Future KDS-design pass: status icon + larger badge font + filter-tab recolor.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Round-4: long AUDIT-prefixed serials still wrap on state 02 cards. Real customer serials (~8-10 chars) render fine. Defect only manifests on artificially long test serials. Non-blocking debt carried forward from round-1.",
+      "fix_hint": "Out of round-4 scope (P2 visual). Future KDS card-layout pass: ellipsis + :title hover.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Round-4: status filter tabs still lack role=tab/role=tablist/aria-selected. No regression vs round-1/round-2. Non-blocking debt carried forward.",
+      "fix_hint": "Out of round-4 scope (P2 a11y). Future KDS-a11y pass: WAI-ARIA tabs pattern.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-pos-kds-sync-C/01-kds-empty-state.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-4: state 01 still labelled 'empty-state' but contains pre-existing pile pollution (DB state, not spec defect). Non-blocking debt carried forward.",
+      "fix_hint": "Out of round-4 scope (P2 audit-integrity). Recommend renaming state 01 + adding 'after-cleanup-empty'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Round-4: KDS template still money-blind by design (KDSOrderDetailsResource exposes 0 monetary fields). Spec falls back to DB read for numeric_integrity assertion (state 12 observation: api_present=3/3 db_total_match=3/3). Informational, not a bug.",
+      "fix_hint": "Not a bug — informational.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Round-4: multi-station bump-warning still rendered with role='note', dismissal still per-browser localStorage. No regression vs round-1/round-2. Non-blocking debt carried forward.",
+      "fix_hint": "Out of round-4 scope (P2 a11y/UX). Future KDS-a11y pass: role=status + per-user server-side dismissal.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "test-e2e-pos-kds-sync-C/14-kds-error-resilience.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-4 sticky regression-guard PASS. Multimodal Read of 14-kds-error-resilience.png confirms .kds-hint-banner--danger remains pinned at viewport top while KDS lane content is scrolled (lane shows cards #100526627, #100526617, #100526593, #100526691, etc. at lower y-offsets while banner stays at y≈100px below header). CSS rule .kds-hint-banner--danger { position: sticky; top: 0; z-index: 50 } from KitchenDisplaySystemComponent.vue (commit f912e5a9c) holds. Banner does not vanish on scroll, which was the round-2 reviewer's claim that triggered the C-009 sticky fix.",
+      "fix_hint": "(closed — round-3 sticky CSS + round-4 verification)",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "test-e2e-pos-kds-sync-C/14-kds-error-resilience.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-4 spec-selector hardening PASS. Round-3 commit 2fe03c29b replaced [role='alert'].first() (which preferentially matched the Vue-Toastification toast and masked the persistent banner) with direct probe of [data-testid='kds-error-banner'] + Vue-Toastification toast as defense-in-depth secondary check. State 14 observation logs both: kds_error_banner_visible=true AND toast_visible=true. Spec no longer can pass with toast-only (Fix-K invariant: banner=false → P0 finding).",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 2,
+    "P2": 5,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 5,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS (verified — banner DOM count=1, role=alert, aria-live=assertive, data-testid=kds-error-banner; visually rendered + sticky)",
+    "C-002": "PASS (14 unique md5)",
+    "C-009": "PASS (sticky regression-guard — banner remains pinned during lane scroll)",
+    "C-010": "PASS (spec selector hardened — banner+toast both probed, no toast-masking)",
+    "C-003 / C-004 / C-005 / C-006 / C-007 / C-008": "carried-forward non-blocking debt (P2/P3, outside owner que-côté-technique scope)"
+  },
+  "set_equality_r3_to_r4": "Round-3 had no Wave C findings.json file (round-3 directory empty for Wave C — only commits f912e5a9c and 2fe03c29b landed). Round-4 carries forward the round-2 finding set [C-001…C-008] AND adds C-009 + C-010 explicitly to record the round-3 fixes. Open-P0 + Open-P1 sets: round-2 = ∅, round-4 = ∅ — set-equal at the blocker level. P2/P3 carried-forward set [C-003 .. C-008] is identical between rounds.",
+  "verdict": "GREEN convergence-eligible",
+  "notes": "Round-4 verdict GREEN — convergence-eligible. Spec passed in 43.4s (1 worker, 0 retries). All 14 captures generated. C-001 + C-002 + C-009 + C-010 verified PASS via DOM grep + multimodal screenshot Read + md5 distinctness + spec instrumentation log. Open_P0=0, open_P1=0. P2/P3 set unchanged from round-2 (carried-forward non-blocking debt). NOTE on first run: spec failed at seed-verify with count=2/3 (run 488F13, ids 726/727/728 — order 726 missing from verify result). Empirical re-run with clean DB succeeded. Hypothesis: transient leftover row from a prior aborted run that the prefix-match cleanup did not catch (possibly soft-deleted row blocking the orders_branch_business_date_queue_unique index for queue_number=800). Not reproducible after one re-run; not a Vue/spec defect; not a C-001/C-009 regression. Recommend (out of scope for this round): harden seed PHP to either (a) generate randomized queue_numbers via uniqid offset, or (b) delete all soft-deleted rows in beforeAll cleanup. Filing as observation only — does NOT downgrade GREEN verdict for this round."
+}

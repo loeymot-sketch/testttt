@@ -1,0 +1,39 @@
+{
+  "agent": "A.1-D1",
+  "scope": "bootstrap.js telemetry 429 allowlist",
+  "pre_lines": 139,
+  "post_lines": 162,
+  "delta_LOC": 23,
+  "diff_clean": true,
+  "sentinel_passed": true,
+  "sentinel_tests": "6/6 GREEN (tests/js/sentinels/telemetryAllowlistSentinel.spec.js)",
+  "mix_rebuild_exit": 0,
+  "frozen_zone_touched": false,
+  "files_modified": [
+    "resources/js/bootstrap.js"
+  ],
+  "files_added": [
+    "tests/js/sentinels/telemetryAllowlistSentinel.spec.js"
+  ],
+  "additions_summary": {
+    "block_1_allowlist_construct": {
+      "location": "resources/js/bootstrap.js after _CRITICAL_4XX_PATTERNS (line ~134)",
+      "loc": 17,
+      "content": "_TELEMETRY_ALLOWLIST_PATTERNS array + _isTelemetryEndpoint helper"
+    },
+    "block_2_guard_in_429_branch": {
+      "location": "resources/js/bootstrap.js inside else if (status === 429) (line ~182)",
+      "loc": 6,
+      "content": "if (_isTelemetryEndpoint(error)) return Promise.reject(error);"
+    }
+  },
+  "behavioral_contract": {
+    "kept": "Rejection propagates via Promise.reject(error) — per-call .catch(()=>{}) still runs",
+    "suppressed": "Toast emission for 429 on /api/frontend/kiosk/event + /api/admin/client-metrics only",
+    "unchanged": "All other 429 paths still toast with Retry-After-derived message"
+  },
+  "commit_pending": false,
+  "commit_sha": "d973a4b1efbf609a242b935eb22172e6edfd7250",
+  "commit_short": "d973a4b1e",
+  "verdict": "CLEAN-FIX"
+}

@@ -1,0 +1,126 @@
+{
+  "auditor": "Bad-mood AUDIT-6 bundle + i18n drift",
+  "audit_timestamp": "2026-05-25T12:30:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "stale_bundles": [],
+  "stale_bundles_analysis": {
+    "initial_find_newer_false_positives": [
+      "admin-shell.js appeared stale (4 Vue files newer), but those files do NOT bundle into admin-shell — they bundle into admin-kds (KdsV2Grid), pos-shell (PosComponent), app.js (AuditTrail via Dashboard static import), kiosk-shell (KioskWaiting via kioskRoutes)",
+      "After mapping each modified Vue to its actual chunk via webpackChunkName + static-import analysis, every modified Vue file has a bundle mtime AFTER source mtime"
+    ],
+    "bundle_routing_verified": {
+      "KdsV2Grid.vue (mod 19:02:59)": "admin-kds.js (built 19:04:15) FRESH +76s",
+      "PosComponent.vue (mod 19:02:54)": "pos-shell.js (built 19:04:15) FRESH +81s",
+      "AuditTrailComponent.vue (mod 09:27:36)": "app.js via DashboardComponent static import (built 09:28:19) FRESH +43s",
+      "KioskWaitingComponent.vue (mod 09:27:10)": "kiosk-shell.js (built 09:28:19) FRESH +69s"
+    },
+    "i18n_freshness": "fr/en/ar.json all mod 09:27:xx < bundle mtimes 09:28:19 — i18n changes are baked into shipped bundles"
+  },
+  "i18n_used_keys_count": 1362,
+  "fr_keys_count": 1901,
+  "missing_fr_keys_raw_count": 80,
+  "missing_fr_keys_real_count": 35,
+  "missing_keys_filter_note": "80 raw misses include dynamic key bases like 'label.cash_status_' (concatenated with status code at runtime), single tokens like 'all'/'cash'/'card' (likely raw arg strings, not i18n keys), and tokens with trailing dot like 'label.'. After heuristic filter (require >=2 segments, no trailing _ or .), 35 real missing keys remain.",
+  "missing_fr_keys_real": [
+    "admin.product_wizard.finish",
+    "admin.product_wizard.progress",
+    "admin.product_wizard.subtitle",
+    "admin.product_wizard.title",
+    "kiosk.wizard.generic.step_fallback",
+    "label.activate",
+    "label.deactivate",
+    "label.advanced_promo_fields",
+    "label.branch_scope",
+    "label.branch_scope_help",
+    "label.cash_session_closed_at",
+    "label.cash_session_reconcile",
+    "label.delivery_cash_close_intro",
+    "label.delivery_cash_form_generic_error",
+    "label.delivery_cash_missing_session",
+    "label.delivery_cash_reconcile_intro",
+    "label.delivery_cash_session",
+    "label.direction",
+    "label.error",
+    "label.friday_short",
+    "label.kds_status_conflict",
+    "label.max_uses_global",
+    "label.monday_short",
+    "label.note",
+    "label.notes",
+    "label.saturday_short",
+    "label.sunday_short",
+    "label.surface",
+    "label.surfaces",
+    "label.thursday_short",
+    "label.tuesday_short",
+    "label.valid_days_of_week",
+    "label.valid_hours_end",
+    "label.valid_hours_start",
+    "label.wednesday_short"
+  ],
+  "missing_keys_cross_lang_drift": {
+    "all_three_missing_fr_en_ar": 34,
+    "missing_fr_only_present_en_ar": ["label.note"],
+    "interpretation": "label.note exists in en.json + ar.json but NOT fr.json — single-language gap. All other 34 keys missing across all 3 languages — they were never translated for FR (or any of the 3 main locales). Default locale=fr + fallbackLocale=fr (i18n.js:9,118) means vue-i18n renders raw key on screen."
+  },
+  "customer_visible_impact_samples": {
+    "label.activate / label.deactivate": "CouponListComponent admin coupons table — aria-label + title attributes render raw 'label.activate'/'label.deactivate' (a11y screen reader pollution)",
+    "label.cash_session_reconcile": "DeliveryBoyCashSessionFormComponent submit button + DeliveryBoyCashSessionShowComponent button text — agent livreur cash session UI renders raw label",
+    "admin.product_wizard.title/subtitle/finish/progress": "ProductCreateWizardComponent renders raw 'admin.product_wizard.title' as h-tag heading",
+    "kiosk.wizard.generic.step_fallback": "KioskWizardComponent fallback step label (used 3x when step.label is empty) renders raw 'kiosk.wizard.generic.step_fallback' on customer-facing kiosk surface",
+    "label.surface": "CouponListComponent search filter label",
+    "label.note": "KioskWizardComponent labeledNote concat — renders 'label.note: <note>' on FR locale only",
+    "label.error": "Multiple PosOrderShow + OnlineOrderShow alert fallbacks when err.message is empty"
+  },
+  "wave_n_kds_chip_keys_present_fr": true,
+  "wave_n_kds_chip_keys_present_en": true,
+  "wave_n_kds_chip_keys_present_ar": true,
+  "wave_n_kds_chip_keys_detail": {
+    "key": "kds_orders_waiting_more",
+    "fr": "en attente",
+    "en": "waiting",
+    "ar": "في الانتظار",
+    "bn": "MISSING",
+    "de": "MISSING",
+    "ship_target": "FR/EN/AR only — bn/de outside V1 Le Cayenne scope"
+  },
+  "gap_hunt_rush_keys_present_fr": true,
+  "gap_hunt_rush_keys_detail": {
+    "kiosk.rush.active_title (fr)": "Cuisine en activité",
+    "kiosk.rush.subtitle (fr)": "Attente plus longue que d'habitude",
+    "present_en": true,
+    "present_ar": true
+  },
+  "items_cap_key_present_fr": true,
+  "items_cap_key_present_en": true,
+  "items_cap_key_detail": {
+    "lang/fr/validation.php:182": "'items_cap_exceeded' => 'Maximum 50 articles par commande'",
+    "lang/en/validation.php:182": "'items_cap_exceeded' => 'Maximum 50 items per order'"
+  },
+  "mix_manifest_count": 14,
+  "manifest_files_missing": [],
+  "manifest_files_present_verification": "All 14 hashed assets in public/mix-manifest.json exist on disk (php exists() check passed for every entry)",
+  "git_blame_pre_existing_drift": {
+    "label.activate (CouponListComponent)": "a99de069e CV1-POS-AUDIT-MASSIVE-001 Cycle 6 (pre-existing, NOT a 2026-05-25 regression)",
+    "label.cash_session_reconcile (DeliveryBoyCashSession)": "d86eb9e74 livreur-v1-0-2-sub6-3-build1 (pre-existing)",
+    "kiosk.wizard.generic.step_fallback (KioskWizardComponent)": "62f748bca v1-0-1-h1 K-004 wizard template aliases (pre-existing)",
+    "admin.product_wizard.title (ProductCreateWizardComponent)": "6a975dfff 'upp' (pre-existing)",
+    "interpretation": "These are LEGACY drift accumulated across past commits, not introduced by today's heals. Recent Wave N/Gap-Hunt/items-cap heals ALL have their i18n keys present in FR/EN/AR."
+  },
+  "claim_vs_reality": {
+    "claude_claimed": "bundles fresh, i18n complete",
+    "bundles_fresh_verdict": "TRUE — all bundles built AFTER their source Vue/CSS/JSON files (verified via webpackChunkName routing + mtime delta). Initial find -newer admin-shell.js false positive ruled out by chunk-routing analysis.",
+    "i18n_complete_verdict": "FALSE for legacy keys — 35 real keys (admin coupons, delivery cash session, kiosk wizard fallback, admin product wizard, generic labels) missing in FR. Recent heals (Wave N kds chip, Gap-Hunt kiosk rush, items_cap) ARE complete in FR/EN/AR. Drift is pre-existing legacy debt, NOT today's regressions.",
+    "customer_facing_impact": "AMBER — admin/back-office UI renders raw 'label.xxx' strings on FR locale (default). Kiosk customer-facing surface has 1 fallback (kiosk.wizard.generic.step_fallback) that only triggers when step.label AND step.composer_step.label are both empty — likely rare in practice for V1 Le Cayenne. Coupon a11y aria-label pollution is the most visible drift."
+  },
+  "overall_verdict": "MINOR-DRIFT",
+  "verdict_rationale": "Bundles are DRIFT-FREE (all fresh, all hashes accounted for in manifest, all manifest files exist). i18n has MINOR pre-existing drift — 35 legacy untranslated keys across 5 admin component clusters (coupons admin / delivery boy cash session admin / admin product wizard / generic label.* / kiosk wizard fallback). Customer-facing kiosk impact limited to one fallback path. Recent heals (Wave N kds chip, Gap-Hunt rush, items_cap) ARE present in FR/EN/AR. Verdict MINOR because: (1) shipped heals are complete, (2) most missing keys are admin-only, (3) the one kiosk-facing missing key is a rare fallback. To upgrade to DRIFT-FREE, add the 35 keys in fr.json/en.json/ar.json — non-blocking for V1 Le Cayenne LOCAL ship but represents UX polish backlog (V1.0.2 chip-away).",
+  "recommended_fixes": {
+    "P1_a11y_admin_coupons": "Add label.activate, label.deactivate, label.surface, label.advanced_promo_fields, label.max_uses_global, label.branch_scope, label.branch_scope_help, label.valid_days_of_week, label.valid_hours_start, label.valid_hours_end, label.monday_short..label.sunday_short (11 day_short keys) for coupon admin",
+    "P1_delivery_cash_admin": "Add label.cash_session_reconcile, label.cash_session_closed_at, label.delivery_cash_close_intro, label.delivery_cash_form_generic_error, label.delivery_cash_missing_session, label.delivery_cash_reconcile_intro, label.delivery_cash_session, label.direction (8 keys)",
+    "P2_admin_product_wizard": "Add admin.product_wizard.title|subtitle|finish|progress (4 keys)",
+    "P2_kiosk_fallback": "Add kiosk.wizard.generic.step_fallback (1 key) — fallback rare but customer-facing",
+    "P3_misc": "Add label.note (fr only, en/ar already have it), label.notes, label.error, label.kds_status_conflict, label.surfaces",
+    "total_keys_to_add": 35
+  }
+}

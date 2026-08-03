@@ -1,0 +1,46 @@
+{
+  "system": "S10-customers",
+  "verifier": "hostile-red",
+  "date": "2026-06-04",
+  "micro_system": "Customers/CRM admin surface: CustomerController + CustomerService (list/store/update/show/destroy/changePassword/changeImage/myOrder), CustomerAddressController + UserAddressService (address CRUD), SubscriberService (broadcast email), profile change-password Vue. Auth = auth:sanctum + per-controller spatie permission middleware (no blanket gate on the /admin group). Route-model binding resolves {customer} to ANY User; BranchScope.apply() RETURNS EARLY for User (no branch filter) to avoid Sanctum recursion, so User binding is not branch-isolated. Seeded Branch Manager role holds the full customers_{show,create,edit,delete} set together.",
+  "verdicts": [
+    {
+      "id": "S10-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. CustomerService::show() (CustomerService.php:128-140) returns the route-bound User with NO role guard; its !in_array(EnumRole::CUSTOMER, $blockRoles) check is a tautology (blockRoles=[ADMIN=1], CUSTOMER=2 never in it -> always true; Role.php:7-8). Mutators update():98 / changePassword():196 / changeImage():218 all got assertTargetRole() (defined :180-188) in WAVE5-SEC-001; show() did NOT -> genuine reader/mutator asymmetry. Route GET /customer/show/{customer} (api.php:547) implicit-binds ANY User; no Route::bind/scopeBindings anywhere (grep clean). Gated only by permission:customers_show (CustomerController.php:39). CustomerResource (CustomerResource.php:20-31) leaks name/email/username/phone. REACHABILITY PROVEN: seeded Branch Manager holds customers_show (RolePermissionTableSeeder.php:57) and BranchScope.apply() returns early for User (BranchScope.php:21-23) so a branch_id>0 manager CAN resolve a branch_id=0 admin/staff User id -> reads their PII. P1 upheld: reachable info-disclosure under default RBAC mirroring the exact hole patched on writes."
+    },
+    {
+      "id": "S10-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED but DOWNGRADED P2->P3. CustomerAddressController.php:22 gates index/store/update/destroy/show all with permission:customers_show; granular customers_create/edit/delete exist (PermissionTableSeeder.php:474-496) and CustomerController.php:36-38 uses them correctly -> real internal least-privilege inconsistency, UserAddressService store/update/destroy add no role guard. BUT exploit is DORMANT under seeded RBAC: the ONLY role holding customers_show is Branch Manager, which ALSO holds customers_create/edit/delete (RolePermissionTableSeeder.php:53-57). No seeded role has customers_show in isolation, so the read-gated writes grant no additional capability to any default role. Only a hand-built custom role (customers_show alone, via admin UI) would exploit it. Real code smell, low real-world priority -> P3."
+    },
+    {
+      "id": "S10-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "EXISTENCE ok, RATIONALE FALSIFIED. ProfileChangePasswordComponent.vue:95 has res.config.method === 'put' ?? 0 -- the === yields a boolean so ?? 0 is genuinely dead (boolean is never null/undefined). HOWEVER the finding's behavioral claim ('toast may show wrong created/updated variant') is FALSE in this path: the component dispatches frontendEditProfile/changePassword (line 92) which is axios.put('/profile/change-password') (frontendEditProfile.js:51) -> method is ALWAYS 'put' -> status=true -> successFlip prints 'Updated Successfully' (alertService.js:50-52), the CORRECT wording for a password change. So there is NO user-visible defect, only a harmless dead operand. is_necessary:false, DROP. Do not carry the wrong-variant rationale forward."
+    },
+    {
+      "id": "S10-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED. SubscriberService::sendEmail() (SubscriberService.php:110-123) does Subscriber::pluck('email') then Mail::bcc(...)->send(new SubscriberMail) -- synchronous, single BCC, no chunk. Confirmed SubscriberMail (app/Mail/SubscriberMail.php:9-11) extends Mailable and only `use Queueable` WITHOUT `implements ShouldQueue`, so ->send() runs inline in the HTTP request (SubscriberController::sendEmail). Real blocking/deliverability concern that scales with list size; for V1 single-resto Le Cayenne the subscriber list is tiny so impact is low TODAY. P3 upheld (medium confidence -> real, low priority)."
+    }
+  ],
+  "coverage_gaps": [
+    "myOrder read-leak (DISTINCT gate from S10-01): CustomerController::myOrder is gated by permission:customers (line 29-35), and OrderService::userOrder (OrderService.php:253-254) filters ONLY where('user_id',$user->id) on the route-bound {customer}. A Branch Manager (holds 'customers', BranchScope no-ops on User) can pass any User id and read that user's full non-POS order history. Bundled into S10-01's narrative but has a different permission gate -- track separately.",
+    "CustomerService::destroy() (CustomerService.php:148) has an undocumented hardcoded magic guard `$customer->id != 2` protecting user id 2 from deletion -- no comment, no constant, brittle if seed ids shift (mirrors the role-id fragility flagged at list():40-42).",
+    "BranchScope does NOT isolate the User model: apply() returns early for any User instance (BranchScope.php:21-23) to avoid Sanctum recursion. CLAUDE.md §9 lists User among the 20 'scoped' models, but the scope is attached-yet-inert for User. Any admin route that binds {customer}/{user} by id is cross-branch readable by branch_id>0 staff -- a systemic root cause behind S10-01 and the myOrder gap, worth a documentation correction so future audits don't assume User is branch-isolated.",
+    "Address resolution (CustomerAddressController show/update/destroy bind {customer} AND {address} independently): no check that {address} belongs to {customer} was verified here (UserAddressService methods read by user_id for list but show/update/destroy take Address directly) -- potential cross-customer address access; not in the 4 findings, flagged for a follow-up pass."
+  ]
+}

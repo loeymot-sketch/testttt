@@ -1,0 +1,50 @@
+{
+  "surface": "caisse",
+  "head": "febe73b15",
+  "server": "http://127.0.0.1:8766",
+  "operator": "S-SYNC E2E Operator (admin session already authenticated)",
+  "method": "Real UI driven via Playwright MCP + ground-truth via DB (foodking_e2e), ESC/POS ticket bytes, asset HTTP checks, and code inspection. Every claim cross-checked (verify-before-report).",
+  "findings": [
+    {
+      "severity": "info-env",
+      "summary": "HARNESS CONTENTION (not a product defect): the Playwright MCP browser is a SINGLE shared tab driven concurrently by sibling surface agents (kiosk + KDS of this same final-e2e campaign). My POS tab was repeatedly yanked to /kiosk/idle, /kiosk/categories and /admin/kitchen-display-system between steps, so a fully self-driven fresh encaissement could not be captured cleanly. Every caisse INVARIANT was instead proven on real orders via DB + ESC/POS bytes + assets + code. No product defect observed.",
+      "evidence": "browser_tabs list showed a single tab moving POS->kiosk/idle->kiosk/categories->KDS with no action of mine; 2 separate evaluate() calls returned NOT_ON_POS:/admin/kitchen-display-system after siblings navigated."
+    },
+    {
+      "severity": "pass",
+      "summary": "STEP 1 - Menu + Boisson: Cayenne wizard drove correctly. Selecting 'Menu (Frites + Boisson)' (+2,50 EUR) reveals exactly 15 drinks all tagged 'Incluse' (Coca, Coca Zero, Fanta Orange, Sprite, Oasis, Orangina, Eau Plate, Capri-Sun, Coca Cherry, Tropico, Ice Tea Peche, Fanta Citron, Fuze Tea, Hawai, Perrier) + 'Sans boisson'. Total updates 7,40 -> 9,90 EUR. Real POS cash order A0013 (id=5534) proves the exact spec: total 9,90 (subtotal 9,90 / TVA 0,90 incluse), received 10,00 cash, payment_status=5 PAID, pos_payment_method=1 cash, fiscal_sequence_no=2631 allocated. Exactly 2 billed lines: Cayenne (item 22) 7,40 + 'Menu (Frites + Boisson)' (item 1) 2,50 = 9,90. ZERO drink line billed - the drink is free/'Incluse', carried in the item instruction 'BOISSON: Hawai 33cl'. No phantom drink charge.",
+      "evidence": "captures 01-cayenne-wizard-open.png, 02-menu-drinks-list.png (15 drinks Incluse). DB OrderItem(order 5534): item 22 instruction='CAYENNE\\nPain - Salade, Tomate, Oignons cuits Sauce : Algerienne\\n+ Menu (Frites + Boisson) (+2,50 EUR)\\nBOISSON: Hawai 33cl'; item 1 price=2.50. Order 5534: subtotal=9.90 tax=0.90 total=9.90 received=10.00 posPM=1 payStatus=5 fiscal=2631. fiscal:verify-chain --all => CHAIN OK on all 4 branches."
+    },
+    {
+      "severity": "pass",
+      "summary": "STEP 2 - Oignon cuit exclusivity + kitchen ticket symbol: composition_snapshot of A0013's Cayenne captures extras Salade+Tomate+Oignons cuits (all 0 EUR) with 'Oignon' (cru) ABSENT = the cru/cuit exclusivity swap worked. The ESC/POS KITCHEN ticket bytes render the underlined O next to STO: the byte stream contains 'ST <ESC>-01 O <ESC>-00 | ALG', i.e. ESC/POS underline-ON, 'O', underline-OFF = O-underlined for 'Oignons cuits'. KDS renders it as 'S | CAY | STO̲ | ALG' (combining low line). Separator is 32 chars = width-safe for 58mm.",
+      "evidence": "DB composition_snapshot(order 5534 item 22).extras = [Salade, Tomate, Oignons cuits]; no 'Oignon'. EscPosTicketBytesService->render(1,5534,'kitchen') decoded: '  ST<1B>-<01>O<1B>-<00> | ALG' and '** BOISSON: Hawai 33cl' and '1 x MENU'. capture 03-kds-cross-surface...png shows STO̲ underlined on A0013/A0012/A9001."
+    },
+    {
+      "severity": "pass",
+      "summary": "STEP 3 - Viande images: Tacos exposes exactly 7 viandes (Poulet marine, Mexicanos, Cordon Bleu, Viande Hachee, Nuggets, Tenders, Fricadelle). Each resolves via the thumb accessor to a REAL webp photo returning HTTP 200 image/webp, 12-29 KB (not color pastilles, not 404). Item tiles likewise resolve to webp thumbs.",
+      "evidence": "curl of the 7 model-resolved viande thumbs: viande-poulet.webp 200/image/webp/25240B, viande-mexicanos 29464B, viande-cordon-bleu 11858B, viande-hachee 24990B, viande-nuggets 19064B, viande-tenders 21028B, viande-fricadelle 20466B. Item::find(26/22)->thumb => tacos-cayenne.webp / sandwich-cayenne.webp. Note: variation.image column is null; images are resolved by name via config/menu_images + MenuImageThumb (public/images/menu/thumbs/*.webp, 152 pre-generated)."
+    },
+    {
+      "severity": "pass",
+      "summary": "STEP 4 - Instant/silent print, no window.print dialog, UI never frozen: POS payment pipeline fetches ESC/POS bytes (GET admin/pos/orders/{id}/escpos) and POSTs them to the caisse bridge 127.0.0.1:9100/raw asynchronously (printEscPosViaCaisseBridge). window.print() is NEVER auto-triggered ('fini l'ecran gris'); if the bridge is absent the fallback is a MANUAL button, not an auto dialog. Async => UI does not block. Verified indirectly by A0013/A0014 reaching PAID + fiscal allocation without hanging.",
+      "evidence": "PosComponent.vue:3452-3465 axios escpos -> printEscPosViaCaisseBridge; helpers/posLocalPrinter.js (fetch /raw, never throw); ReceiptComponent.vue:46/395/424/674/703/722 comments 'window.print() n'est plus JAMAIS automatique' + manual-button fallback ('PRINT-INSTANT 2026-07-06'). Console on POS: 0 errors during wizard build."
+    },
+    {
+      "severity": "pass",
+      "summary": "STEP 5 - Perceived perf: POS category + item tiles bind to the webp thumb (:src=category.thumb loading=lazy; item thumb = it.thumb||it.image), served as Ko-sized webp (Cayenne 15KB, Tacos 24KB, viandes 5-29KB), NOT the multi-MB source PNGs. Adding a cart line NO LONGER refetches /api/admin/item: the old per-add full re-GET was removed (W5-PERF 5.2, 2026-07-06); post-add resync is throttled to at most once / 60s. Console clean.",
+      "evidence": "PosComponent.vue:442/496 category thumb lazy; :2231 item thumb; :3906-3919 onProductAddedReturnToCategories throttles catalogue refetch to >=60000ms via _lastPostAddCatalogRefetchAt. Model thumb accessors -> /images/menu/thumbs/*.webp?v=..."
+    },
+    {
+      "severity": "pass",
+      "summary": "STEP 6 - Free client note -> instruction: the wizard 'Instruction speciale' free text is stored on the order item instruction (wrapped in [ ]) and rendered downstream on the KDS. Real caisse orders prove it: A0009 instruction ends with '[bien cuit svp]'; A0007 with a long allergen note; A9001 shows the free note '[Sans oignon cru - BIEN CUIT svp Allergie arachide & oeufs Merci beaucoup l'equipe]' highlighted in red on the KDS card.",
+      "evidence": "DB OrderItem instructions (oid 5530='...[bien cuit svp]', oid 5528='...[Tres bien cuit... allergie arachide & oeufs...]'). capture 03-kds-cross-surface...png shows A9001 red note block. pos-wizard.js instructionText -> buildWizardInstruction/buildTicketInstruction."
+    },
+    {
+      "severity": "observation",
+      "summary": "Non-blocking observations (not caisse defects): (a) the selected drink is persisted only in the free-text instruction ('BOISSON: <name>'), not as a structured composition_snapshot line - acceptable because it is a free/included item with no price impact (pricing SSOT unaffected). (b) /api/frontend/menu returned 503 for the authenticated KIOSK session ('Service indisponible' toast) during the run - this is the KIOSK surface, not caisse; the caisse menu (posCategory/lists + /api/admin/item) loaded and built the wizard fine. (c) laravel.log EMERGENCY: SlackWebhookHandler webhookUrl null - a local logging-config smell (LOG_SLACK_WEBHOOK_URL unset), harmless to caisse function.",
+      "evidence": "composition_snapshot(5534) has no drink line; browser console error 503 @ /api/frontend/menu (kiosk); storage/logs/laravel.log SlackWebhookHandler TypeError."
+    }
+  ],
+  "verdict": "GREEN"
+}

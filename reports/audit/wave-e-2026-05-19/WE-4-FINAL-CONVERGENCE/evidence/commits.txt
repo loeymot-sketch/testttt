@@ -1,0 +1,98 @@
+a1925707d feat(pos-loyalty-redeem-V1 wave-E-1): add main-page CTA where floorplan disabled
+ddf4b9aaa docs(web-demo-badges wave-E-2): tighten STATUS — distinguish 12 captures vs 8 unique images
+cfccb2da4 feat(web-demo-badges wave-E-2): DÉMO V1 disclosure badges on loyalty surfaces (G-WEB-1 Path A)
+ca2676da6 heal+docs(wave-D final): Mobile dead-code fix + 3 audit reports converged
+ca2af3915 docs(couche-0-backlog-v1-0-x): STATUS update — H4 cross-cutting reconciliation complete
+f3dbf903d fix(sync-F-3-P1 follow-up 3): reconcile EventContractTest with fail-once behaviour
+b1a7dc39d fix(sync-F-3-P1 follow-up 2): reconcile 2 more Outbox tests with fail-once behaviour
+4d2dd0342 feat(pos-loyalty-redeem-V1): Vue modal + Vitest + i18n + PosOrderShow wire-up
+e7d3fbc78 docs(couche-0-backlog-v1-0-x): STATUS — 5 quick wins shipped + 1 reconciliation
+b14d0f977 fix(sync-F-3-P1 follow-up): reconcile fail-once sentinels with old contract-violation pin
+90c9c0ee5 feat(pos-loyalty-redeem-V1): backend service + sentinel + permission (LOCK §3 Option B)
+521bc7fcc test(i18n-F-7-D1): sentinel pinning no-empty-key invariant in fr/en/ar.json
+5452e556d fix(sync-F-3-P1): PayloadMismatchException fail-once + sentinel (V1.0.1)
+5695fe59f fix(sync-F-3-P1): Stripe webhook replay tolerance 300s + sentinel (V1.0.1)
+269617720 fix(obs-F-9-RED1): drop customer name from ActionLog.details + sentinel (V1.0.1 quick win)
+f210ab7e3 fix(auth-F-2-R1): password reset min:6 -> min:12 + sentinel (V1.0.1 quick win)
+933af3d2e fix(loyalty-P1): wire idempotency middleware on /loyalty/redeem (LCS-S-002)
+18a53c488 fix(loyalty-P0 followup): HTTP-level tests + isCustomerActive helper (LCS-S-001)
+59a5dc84f fix(loyalty-P0): sign QR scan with JWT-like HMAC + nonce + TTL (LCS-S-001)
+bb21e4f3b fix(admin-authz-P0): close MyOrderDetailsController IDOR — alternation permission gate (Admin S-1)
+c6436d596 docs(brain): 13-Zone Massive Parallel Audit + Heal session converged
+1b501b818 docs+heal(wave-B+C 6 masters): Kiosk+Livreur+Admin+KDS-deeper+OSS-deeper+Loyalty-cross-surface
+b789e769e docs(lock-plan): POS Loyalty Redeem UI — 3 options A/B/C + recommended B
+4ad1adba8 docs+heal(wave-A 4 POS intersections): POS×OSS+Stock+Fiscal+Loyalty CONVERGED parallel
+13982f8cc docs(intersection-pos-kds): CONVERGENCE_FINAL + 4 master STATUS.md + 17 specialist JSONs
+1eebd208c fix(idempotency-propagation-followup): patch 3 Kiosk Vue callsites + refactor posOrder.js to shared helper
+aa7b6021e fix(idempotency-propagation): wire X-Idempotency-Key on 7 sibling Vue store callsites (PK-2 P0)
+d6b20eef1 fix(kds): expose allergens_snapshot on items-board resource (PK-3 / Z-1)
+9df4809b5 docs(pos-couche-1 + kds-v1.0.x): POS Couche 1 convergence + 10 KDS failures root-cause + V1.0.X backlog
+56d40fdc0 heal(pos-lifecycle-PS2): Idempotency-Key wire-up on 4 Vue mutations + queue_number i18n
+a9500bcbd heal(receipts-PS4): surface NF525 audit-chain failure to operator (UX-PS4-002 / RED-PS4-005)
+b0bc75987 docs(foundation-couche-0): COUCHE_0_CONVERGENCE_FINAL + 4 failure root-causes + audit reports
+d3dc4c2c6 fix(receipt-foundation): accept BroadcastableOrder in buildForOrderModel (closes F1+F2+F3)
+d0437d391 test(sentinel-foundation): update KioskDineInDisabledV1Sentinel for FR error message
+36089973d chore(cleanup): remove one-shot FixIdentityCommand (Foundation F-X dead-files audit)
+5469e82ba chore(cleanup): remove dead SetLocale middleware (Foundation F-X dead-files audit)
+a64d2f523 chore(cleanup): remove dead CheckoutController (Foundation F-X dead-files audit)
+2949e92ed fix(cors-foundation): refuse boot in production if APP_URL is empty
+dafb6b3c4 fix(idempotency-foundation): refuse boot in production if IDEMPOTENCY_MIDDLEWARE_ENABLED!=true
+f0cafc3b8 fix(notif-foundation): scope PushNotification fan-out by branch_id (tenant isolation)
+0ca67a9b3 docs(i18n-cleanup): STATUS — 3 of 6 phases executed (187 dead keys + 3 fr empty-trailing + dead listener pair)
+86656f1d1 chore(i18n-cleanup): empty-trailing-dot-keys-phase3 — 3 fr.json keys fixed
+9a93df89c docs(receipt-nf525): tighten sentinel-guarantee prose in WIREIN_STATUS
+0a1a01a16 chore(i18n-cleanup): dead-keys-phase1 — 187 verified dead i18n keys removed
+80fb27c48 feat(receipt-nf525): wire ReceiptDataService into POS receipt builder for fiscal_sequence_no + siret on printed ticket
+2c0b7e606 chore(i18n-cleanup): dead-listener-pair — 2 files removed
+ccc95e862 fix(stock-foundation): add stock_movements BEFORE DELETE/UPDATE triggers (DB-level append-only)
+5bb8c48f9 fix(stock-foundation): correct StockUnavailableException import path
+0fba7bee1 docs(goal-final-validation-2026-05-18): correct test-count to +10 NEW
+49dd00872 docs(goal-final-validation-2026-05-18): MASTER + 5 evidence bundles + BRAIN
+a5779586c docs(locks): 3 LOCK plans for V1.0.2 owner gates (T-1.3.1/5.1.2/5.1.3)
+9d632cbc6 test(admin): IngredientController authz sentinel (T-9.1.1 MGMT-RESIDUAL)
+affb034b2 test(auth): EnsureUserStatusActive cross-user isolation (T-9.4.1 R-3)
+ccee45f3a fix(csrf): bare webhook route exception (T-6.3.1 SYNC-ADV4-N1)
+01d2b25f6 feat(outbox): PersistBranchStatusChangedToOutbox listener (T-6.4 Z7-V1.0.2-P2-01)
+626d5a389 docs(goal-cms-2026-05-18): FINAL_CONVERGENCE + 2 substitute /ultrareview reports
+1e7c65ecc fix(mgmt-heal-2026-05-18 M-R3-P0-C): APP_DEBUG production boot guard
+139ce01aa fix(sync-heal-2026-05-18 S-R3-P0-G+H): Pusher channel-auth wildcard + Guest-Echo-Bypass
+27063129f docs(goal-complement-2026-05-18): convergence + 8 zones VALIDATED max-parallel
+162b179cf docs(brain): Heal Wave A+B+C summary — 9 P0 closed, 6 CI sentinels, NF525 criminal patch
+65f59e82f fix(sync-heal-2026-05-18 S-P0-A): write ws:heartbeat after successful broadcast
+d397511a5 docs(zone3): CONVERGENCE_FINAL — Wave 3c GO + V1.0.2 backlog
+f840c3ef5 fix(central-heal-2026-05-18 CVP0-1): NF525 fiscal-table TRUNCATE/DROP REVOKE Ansible task
+72e45fe59 test(zone3): E2E kiosk→KDS chronological + TZ smoke (Wave 3c convergence)
+00b1010b8 docs(web-z7): add heal-diff.patch + soften dual-agent framing in STATUS
+f225e63b5 fix(sync-heal-2026-05-18 S-P0-J): add webhook_events.order_id FK to orders
+935eaca25 fix(mgmt-heal-2026-05-18): close 3 RBAC privilege-escalation paths (M-R3-P0-{C,D,E})
+00b9651a3 fix(web-z7): close 4 P1 coverage gaps + 2 axe P0 + 2 ARIA P2 (Z-7 VALIDATED)
+0c824ddbd fix(formrequest-authz-v1-0-2-followup): heal 3 NEW DeliveryBoyCashSession requests + sentinel 69→66
+e755772ae docs(build-4-evidence): clarify BUILD-4 commit attribution merged into c86fabb7a
+a8bbdd27c test(v1-prep): WAVE 9 — visual smoke for session deliverables (Waves 1-8)
+8346b7b22 fix(routes-livreur-v1-0-2): reconcile BUILD-5 routes with BUILD-1 canonical contract
+c86fabb7a fix(formrequest-authz-v1-0-2): unified authz on 7 critical FormRequests + sentinel baseline 74 -> 69
+d86eb9e74 feat(livreur-v1-0-2-sub6-3-build1): cash session controllers + admin Vue UI + 18 feature tests across 5 actions
+ab04839ec docs(livreur-z4): STATUS.md VALIDATED + visual capture round-1+2 — Z-4
+189db206b docs(brain): Heal Wave A status — 3 P0 healed on heal/cms-pr1-quickwins branch
+32395b625 test(central-heal-2026-05-18 C-P0-E): BranchScope coverage sentinel — baseline-lock
+6a01c71bf fix(mgmt-heal-2026-05-18 M-R3-P0-A): gate PermissionController index with permission:settings
+9493723ad docs(zone-1): correct branch header + integration note + side-effect verification
+04a9454f6 fix(livreur-z4): branch-aware delivery fee wire-up + status whitelist + RBAC split — LIVREUR-Z4-{ARCH-01..04,SEC-01}
+a27721d21 feat(stock-z3): E2E spec + reports + STATUS.md for Z-3 validation gate
+b837237c5 docs(build-5-evidence): clarify BUILD-5 commit attribution merged into 40c683f63
+ff308fe5d docs(zone-1): CONVERGENCE_FINAL + e2e spec for NF525 fiscal Wave 2d
+4b12f678a fix(central-heal-2026-05-18 C-P0-H): close idempotency header-omission bypass
+40c683f63 feat(fiscal-v1-0-2-zreport-enrichment): NEW service composes ZReportService + 5 sentinels
+fe73fdbb1 fix(stock-z3): i18n integrity + raw reason chip — Z3-UX-01/02 P0 + Z3-RED-08 P1
+8365a0ea5 fix(sync): cadence upper cap 60s on PosSync + OssSync (Wave 3c P1)
+4905138fa fix(kds+admin): TZ-aware boundaries Dashboard/OrderService/OSS/Avail/Cron (Wave 3c P0+P1)
+97d5b2efd docs(goal-cms-2026-05-18 reconciliation): map 47 P0s vs ~20 parallel-mission heal commits
+c07acb16a fix(fiscal): --branch=0 rejected + --all sweep flag (Wave 2d FISCAL-ADV3C-03)
+575a04652 docs(goal-cms-2026-05-18 Round 3 + FINAL_1_2_3): 15 agents + 20 NEW P0 + 47 P0 total
+7da06d641 fix(fiscal): activeBranchIds() honors Status::ACTIVE drift (Wave 2d FISCAL-ADV3C-01)
+fe595a4d6 fix(outbox): bump lock TTL 300s + batch cap 500 (Wave 3c P1)
+9269f9830 fix(security): TrustHosts IPv6 loopback must whitelist [::1] bracket form
+7eeb8a04b fix(fiscal): loop all z_reports errors in verify-chain output (Wave 2d FISCAL-ADV3C-02)
+68b63c090 test(v1-prep): WAVE 8 — FormRequest authz drift sentinel
+3d5ca01f6 feat(livreur-v1-0-2-sub6-3): NF525 cash session foundation — schema + model + service + 4 sentinels
+b1c50311d fix(security): TrustHosts anchor regex CRITICAL P0 (Wave 3c SYNC-ADV3C-01)

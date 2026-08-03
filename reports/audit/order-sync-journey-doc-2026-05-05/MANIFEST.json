@@ -1,0 +1,164 @@
+{
+  "generated_at": "2026-05-06T04:05:04.693Z",
+  "fixture_run": "5AB7F60A",
+  "branch_id": 1,
+  "pos_order_id": 182,
+  "kiosk_order_id": 183,
+  "artifacts": [
+    {
+      "path": "RAPPORT_AUDIT_SYNC_COMPLET_CONSOLIDE.md",
+      "bytes": 29531,
+      "sha256": "fc145053d36a4df2b57b9b144081a24a97a9890b2302742365069d65bf871f64"
+    },
+    {
+      "path": "RAPPORT_PARCOURS_CAISSE_KDS_BORNE_KDS.md",
+      "bytes": 14387,
+      "sha256": "412431c52638c06e7f1aca444750b7d2f61df676deb33d0f3801cacc82e5456a"
+    },
+    {
+      "path": "raw-trace.json",
+      "bytes": 4179,
+      "sha256": "ec6db7a9cfa3db32b7fb780bfe835d3743d7b42c0b49f9ce73745df7bc473a48"
+    },
+    {
+      "path": "README.md",
+      "bytes": 660,
+      "sha256": "a5c8d1932d7eb3b558475cd31844fa9195755914a8c9050bbb8ab9eb2067c4f8"
+    },
+    {
+      "path": "screenshots/01-admin-dashboard-prelude.png",
+      "bytes": 187390,
+      "sha256": "5774829102ac13eef96735cb35c02b7a0a835617200b4c99874c136e490aaf1f"
+    },
+    {
+      "path": "screenshots/02-pos-home-menu-loaded.png",
+      "bytes": 155086,
+      "sha256": "1f75ca7eb17e6e64a0480588d3a8189113164dbdd99e13ffdece1c90189ecb45"
+    },
+    {
+      "path": "screenshots/03-pos-category-selected.png",
+      "bytes": 119073,
+      "sha256": "91da2614bc7bbc37a32280087eeb94b1ffa70adb31aacb0518c1a42f38dca3e5"
+    },
+    {
+      "path": "screenshots/04-pos-wizard-open-after-item-click.png",
+      "bytes": 106672,
+      "sha256": "db0bd676d9c0eed7f07e1ffbe589f6653d2474afb489e1070155c6c1d4b0ed41"
+    },
+    {
+      "path": "screenshots/05-pos-after-wizard-cancel.png",
+      "bytes": 118977,
+      "sha256": "683e343bc7ff597108b265896832204a1700bcb02ccc57fabf8e308d36f0b337"
+    },
+    {
+      "path": "screenshots/06-pos-cart-panel-open.png",
+      "bytes": 130008,
+      "sha256": "60d1057eb08f850e8bffa22c827a7999c746bee526a6c0338bdf747ff4754861"
+    },
+    {
+      "path": "screenshots/07-pos-after-order-api-success.png",
+      "bytes": 130977,
+      "sha256": "b05d912304d9b2b23a11f7da5def01d840d2e3d282ea589b15de6cc0a88060b8"
+    },
+    {
+      "path": "screenshots/08-pos-integrated-tracker.png",
+      "bytes": 107893,
+      "sha256": "f3a8abf787510a2be1eca7dfb70ab6becbe491badfee73c893e9299884372776"
+    },
+    {
+      "path": "screenshots/09-pos-backoffice-order-list.png",
+      "bytes": 168436,
+      "sha256": "7b9b42bbe4a64a4dd6fdafef8f0fbc0b9afef5f30847f6f345acfb592daef141"
+    },
+    {
+      "path": "screenshots/10-pos-backoffice-queue-number-visible.png",
+      "bytes": 179857,
+      "sha256": "d04fe7bff812e72e3bcdf23505a3636ecb12801ca13af4c862d7ec56670438be"
+    },
+    {
+      "path": "screenshots/11-pos-oss-order-status-screen.png",
+      "bytes": 95458,
+      "sha256": "397b3b11cccc92961fcfb58a18b9b073f9016a20a9aecc4bc887ce9881f862d9"
+    },
+    {
+      "path": "screenshots/20-kiosk-after-machine-auth.png",
+      "bytes": 444083,
+      "sha256": "0fd014f461f13e263b1ae561500358e3e87ae64bf889e5688c3f9bb33349972f"
+    },
+    {
+      "path": "screenshots/21-kiosk-idle-order-type.png",
+      "bytes": 453511,
+      "sha256": "483a41b771b617a45d97f63f099595a037b0578473973b1c489e7606dcba8927"
+    },
+    {
+      "path": "screenshots/22-kiosk-categories-root.png",
+      "bytes": 238453,
+      "sha256": "03c2d14ffaa854fbdb906c0a096b5d95503f90042c38ac6bf2f2a290a33a00c0"
+    },
+    {
+      "path": "screenshots/23-kiosk-category-grid-target.png",
+      "bytes": 246009,
+      "sha256": "46712b06cf5528a2bc17cfd6f6a33a21bebb11453fd5027766aab5f273c0f877"
+    },
+    {
+      "path": "screenshots/24-kiosk-product-card-visible.png",
+      "bytes": 278729,
+      "sha256": "84123cd6b78bbea53daa1f83a6d36c7a9c409d10dae1c64a6f69b8f214076afc"
+    },
+    {
+      "path": "screenshots/25-kiosk-wizard-after-add.png",
+      "bytes": 98152,
+      "sha256": "07a27feb49d629c3c0c1af5af1309e3de5d142a5f651e19f9727247b30226664"
+    },
+    {
+      "path": "screenshots/26-kiosk-wizard-step-1.png",
+      "bytes": 89151,
+      "sha256": "0e1bc47eba7c3bde825d816540a72921092e8d88884f76871a162affb0dc8363"
+    },
+    {
+      "path": "screenshots/27-kiosk-after-api-order-and-confirm.png",
+      "bytes": 325833,
+      "sha256": "9682a522aa4e422c28376a152c7c997bfa47af213c25d491828ec334573cf4b8"
+    },
+    {
+      "path": "screenshots/30-kds-initial-load.png",
+      "bytes": 130055,
+      "sha256": "ed3f27e0d16e958874855ad476cdc173ad3f0f5c39bcb203bdf83914ac657c36"
+    },
+    {
+      "path": "screenshots/31-kds-pos-line-visible.png",
+      "bytes": 144431,
+      "sha256": "313a5a5ccfd52d66b8ac3b139a1a22de18b728847c9f663d30038bc04dd09501"
+    },
+    {
+      "path": "screenshots/32-kds-kiosk-queue-visible.png",
+      "bytes": 140679,
+      "sha256": "aa4cbbdeb6b2300c9c750cdb64b0f2272b871193021d5eb113f27a715a2245c9"
+    },
+    {
+      "path": "screenshots/33-kds-addon-name-visible.png",
+      "bytes": 143972,
+      "sha256": "8470598587396a22b272e7a77de037268da221f3da0489883b92a9e0058b96f6"
+    },
+    {
+      "path": "screenshots/34-kds-pos-order-preparing.png",
+      "bytes": 144582,
+      "sha256": "ca6d6a7cbf8e691aee6a4b9b7766cc97133319b9b99dd1cd4e077168f251a2d9"
+    },
+    {
+      "path": "screenshots/35-kds-pos-order-prepared.png",
+      "bytes": 106324,
+      "sha256": "f944ee3f68f090a107eaedc3833ecca67b707c7367546f43ca0ede90af9d59df"
+    },
+    {
+      "path": "screenshots/36-kds-kiosk-order-preparing.png",
+      "bytes": 106203,
+      "sha256": "bd5597461cab23f7bdd0277b6d0769ce1781c5f2953a7291f5656d5611a75c6f"
+    },
+    {
+      "path": "screenshots/37-kds-both-orders-prepared-final.png",
+      "bytes": 78951,
+      "sha256": "69460d9850c5d92cb28f5cef099bda51bbba5ef82acc57e928005b379cd31b51"
+    }
+  ]
+}

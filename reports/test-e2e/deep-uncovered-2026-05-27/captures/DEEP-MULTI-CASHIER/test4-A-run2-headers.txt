@@ -1,0 +1,18 @@
+HTTP/1.1 200 OK
+Host: 127.0.0.1:8000
+Connection: close
+X-Powered-By: PHP/8.2.30
+Cache-Control: no-cache, private
+Content-Type: application/json
+Date: Wed, 27 May 2026 13:54:03 GMT
+Idempotency-Replayed: true
+Idempotency-Stored-At: 2026-05-27T15:54:03+02:00
+X-Correlation-ID: 76dfe4cb-694c-4253-8d98-53dbb47925bc
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+X-RateLimit-Limit: 120
+X-RateLimit-Remaining: 118
+Vary: Origin
+

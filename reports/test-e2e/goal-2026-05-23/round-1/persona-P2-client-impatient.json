@@ -1,0 +1,232 @@
+{
+  "agent": "P2-client-impatient",
+  "role": "Persona — Client impatient (50 ans, claustrophobic, mal aux pieds, faim, low tech literacy)",
+  "phase": "B.4",
+  "scope": "Audit kiosk borne flow (/kiosk/idle → /kiosk/menu → wizard → cart → payment → confirmation) from impatient-client perspective. CODE-STATIC analysis only — no browser. Frustration threshold = 8s no feedback. Will abandon if confused. KioskAppComponent + KioskWizardComponent are FROZEN (§7) — observation only.",
+  "generated_at": "2026-05-23T18:00:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_sha": "f28688675",
+  "method": "Static read of 9 kiosk Vue components + 1 wizard step component + FR i18n catalog + git show of D1 telemetry heal commit f28688675. Mapped each of the 10 task scenarios against template structure, accessibility hints, error-state branches, i18n key presence, and inactivity/abandon-flow consistency. No PHPUnit / Vitest / Playwright invocations.",
+
+  "components_reviewed": {
+    "idle":            "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue (839 lines)",
+    "categories":      "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue (~1700 lines, scanned first 200 + key methods)",
+    "wizard":          "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (3104 lines, scanned header + step labels + nav)",
+    "wizard_step_sauce": "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue (first 120 lines — sauce constraints surface)",
+    "cart":            "resources/js/components/frontend/kiosk/KioskCartComponent.vue (1312 lines, full read)",
+    "payment":         "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (first 430 lines)",
+    "confirmation":    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue (full read)",
+    "cash_instruction":"resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue (first 80 lines)",
+    "inactivity":      "resources/js/components/frontend/kiosk/KioskInactivityOverlayComponent.vue (full read)",
+    "loyalty":         "resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue (first 120 lines)",
+    "i18n_fr":         "resources/js/languages/fr.json — verified kiosk.wizard.prompt.{pain,taille,viande,sauce,garnitures,supplements,menu,frites_style,recap} all present"
+  },
+
+  "scenarios_verdict": {
+    "1_idle_to_start": {
+      "verdict": "GOOD",
+      "evidence": "KioskIdleScreenComponent.vue lines 109-160 — two big cards (À emporter / Sur place, gated by dineInEnabled=false in V1 so only Takeaway is visible), card 156px min-height, 64px icon badge, h2 title 'kiosk.idle_screen.default_title', subtitle, plus animated pulse-ring CTA. Floating language selector + A11y settings top-right. FR hint 'Choisissez une option pour commencer' (kiosk.order_type.required_hint).",
+      "client_reaction": "« OK je vois ce truc rouge qui clignote, je clique À emporter, ça part. » Time-to-intent < 3 s."
+    },
+    "2_catalog_find_tacos_5s": {
+      "verdict": "GOOD-WITH-CAVEAT",
+      "evidence": "KioskCategoriesComponent.vue lines 94-124 — left sidebar with vertical scroll, each cat shows displayCategoryName + thumb (image OR emoji fallback via EMOJI_MAP, tacos→🌮). selectedCategory state syncs via $route.query.cat. Product grid right-side is 1 click away once category active. Items have thumb, name, allergen badge, price.",
+      "client_reaction": "« Tacos avec un emoji 🌮, je le vois direct dans la sidebar. » Probable < 5 s SI catégorie présente. MAIS pas de search-bar → si 'Tacos' est tout en bas de la liste sur un menu à 12 catégories, faut scroller. Pour un client claustrophobic + mal aux pieds, le scroll vertical sur sidebar n'est pas dramatique mais non-optimal.",
+      "caveat": "No catalog search input. EMOJI_MAP works only for: tacos, burger, sandwich, pizza, kebab, frite, boisson, dessert, salade, wrap, assiette, poulet, plat, entrée, viande, poisson. Any custom category name not matching → 🍽️ generic. Owner-managed cats with unusual names = visual ambiguity."
+    },
+    "3_wizard_steps_self_explain": {
+      "verdict": "GOOD",
+      "evidence": "KioskWizardComponent.vue lines 47-95 — every step shows: large question text 'QUELLE SAUCE ?' (kiosk.wizard.prompt.{type}, FR keys all present and UPPERCASE for impatient legibility) + numbered icon strip + dot progress bar. Live composition chip area (lines 97-135) shows what's been selected so far → memory aid. Sauce step lines 5-10 has explicit badge 'first_free' + extra-price warning when count>1.",
+      "client_reaction": "« Au moins je sais où j'en suis (3/6) et ce que je viens de choisir (les chips en bas), c'est rassurant. » Hand-holding strong."
+    },
+    "4_cart_total_clear_qty_intuitive": {
+      "verdict": "GOOD",
+      "evidence": "KioskCartComponent.vue lines 183-238 — qty controls are dedicated +/- buttons (20×20 svg) + visible number, plus a SEPARATE trash button (lines 221-231) so client doesn't need to qty-decrement to zero. Per-line total shown right-aligned. Subtotal/loyalty/promo/Total summary rows aria-live=polite. Grand total displayed inside the Valider CTA button (line 349). Edit button next to each line name reopens the wizard for that product.",
+      "client_reaction": "« Je vois mon total en gros, plus ; je peux mettre 2 burgers en deux taps, et la poubelle est claire si je me suis trompé. »"
+    },
+    "5_valider_no_error_after_click": {
+      "verdict": "FRICTION (D1 heal verified holds; pruning silent-double-tap remains)",
+      "evidence": "Two surfaces:\n(a) git show f28688675 confirms the D1 telemetry allowlist fix shipped — telemetry burst on /kiosk/event no longer surfaces the 'Trop de requêtes' toast at runtime (relative axios URLs now matched).\n(b) KioskCartComponent.vue lines 642-670 — proceedToUpsell calls pruneUnavailableLines BEFORE the quoteOrder. If any item became 86'd between cart-render and click, prune drops it, shows a 4.5 s toast, sets quoteLoading=false and RETURNS — forcing the user to tap Valider a SECOND time.",
+      "client_reaction": "(a) « Je clique Valider, ça passe, propre. » (b) « Je clique Valider, un message orange apparaît brièvement, l'écran ne bouge pas, c'est cassé ? » → impatient client retape 3 fois, finit confus.",
+      "churn_risk": "P2 medium — owner already flagged this exact UX in the code comment ('owner reported a confusing UX: erreur au panier, parfois ça disparait'). Heal exists for the cause (prune-then-422) but the second-tap requirement is intentional. UX could auto-retry quote after prune."
+    },
+    "6_payment_method_clear_icon_label": {
+      "verdict": "GOOD",
+      "evidence": "KioskPaymentComponent.vue lines 41-141 — three big radio cards (CB / Espèces / TR), each with custom SVG icon (card stripe / coin / ticket lines), h3 title + p sub-description, large check ✓ when selected. role='radiogroup' + role='radio' + aria-checked. Confirm button (line 205) is full-width with arrow icon, label 'kiosk.pay_screen.confirm' interpolates amount.",
+      "client_reaction": "« Trois cartes bien séparées, je tape CB, je vois la coche, je tape Payer 14,50 €, c'est fluide. »"
+    },
+    "7_confirmation_queue_number_prominent": {
+      "verdict": "GOOD",
+      "evidence": "KioskConfirmationComponent.vue lines 27-41 — h1 title 'kiosk.confirmation.title' + animated green check-circle (120×120 svg), then card with row 'Numéro de commande' label + #XXX in '.kiosk-confirmation-number' (visually the biggest element). Below: 'Votre commande a été envoyée en cuisine.' + 'Présentez-vous au comptoir avec votre numéro.' Print receipt CTA + nouvelle commande button.",
+      "client_reaction": "« #42 énorme au milieu, je le retiens, j'imprime le ticket si je veux. » Time-to-comprehension < 2 s."
+    },
+    "8_error_recovery_path_visible": {
+      "verdict": "GOOD",
+      "evidence": "Dedicated error layouts exist: KioskErrorLayoutComponent, KioskErrorNetworkComponent, KioskErrorPaymentRefusedComponent, KioskErrorProductRemovedComponent, KioskErrorMenuUnavailableComponent. KioskPaymentComponent.vue lines 261-269 + 267 — MAX_PAYMENT_FAILURES=2 reroutes to dedicated error screen after 2 refusals with 3 CTAs (retry / pay at counter / cancel). KioskCategoriesComponent.vue lines 80-90 — load_error_title + retry button on empty catalog.",
+      "client_reaction": "« Le TPE m'a refusé deux fois, l'écran me propose 'allez au comptoir', c'est clair. »"
+    },
+    "9_allergen_filter_effective": {
+      "verdict": "MIXED — badges everywhere but no dedicated filter screen (intentional, owner deferred to P9.5)",
+      "evidence": "KioskCategoriesComponent.vue lines 204-210 — KsAllergenBadge under every product card with customer-allergens prop (read from loyalty scan). KioskWizardComponent.vue lines 26-37 — persistent KsAllergenBadge in wizard header (FIC UE 1169/2011). KioskCategoriesComponent.vue lines 22-34 — owner explicitly removed the 'Allergènes' top chip ('aucune destination correcte n'existe à date'). V1 = no standalone screen. customerAllergenCodes only auto-populated by loyalty card scan.",
+      "client_reaction": "« Je vois les pictos gluten/lait sur chaque plat, c'est OK pour décider. Mais si je suis allergique sans carte fidélité, je dois lire chaque carte. »",
+      "v1_status": "INTENTIONAL — V1.0.2 backlog item (P9.5 user_dietary_prefs)"
+    },
+    "10_loyalty_prompt_not_intrusive": {
+      "verdict": "GOOD",
+      "evidence": "KioskCartComponent.vue lines 328-337 — loyalty button is a single CTA inside the cart, not a modal blocker. Label 'Avez-vous une carte fidélité ?' (kiosk.loyalty_prompt). KioskLoyaltyComponent.vue line 70 — explicit 'kiosk.loyalty_screen.skip' Skip button visible. No interstitial blocking the payment flow.",
+      "client_reaction": "« Je vois 'carte fidélité ?', je ne clique pas, je continue à payer, ça ne me bloque pas. »"
+    }
+  },
+
+  "findings": [
+    {
+      "id": "F-P2-01",
+      "category": "FRICTION",
+      "severity": "P1",
+      "title": "Catalog 'Abandonner ma commande' button has NO confirmation — single mis-tap nukes the whole cart",
+      "evidence": "KioskCategoriesComponent.vue lines 266-273 + lines 683-686 — abandonOrder() does this.reset() + $router.push('kiosk.idle') immediately, no overlay. Compare: wizard 'Abandonner l'article' opens kiosk-wizard-abandon-modal (line 211-235), cart 'Vider le panier' opens kiosk-clear-overlay (line 30-58). Catalog-bottom-bar is the ONLY abandon surface that bypasses confirm. The button sits at the BOTTOM of the screen between cart icon and 'Payer' CTA — easy mis-tap for a 50 yo with mal aux pieds tapping with thumb.",
+      "client_reaction": "« Merde j'ai cliqué à côté de Payer, tout est effacé, je dois recommencer ?! » → high churn risk.",
+      "churn_risk": "HIGH for the specific mis-tap event, LOW probability per session (~3%). Defect class: inconsistency with the two other abandon surfaces (both have confirm).",
+      "fix_recommendation": "Add abandonConfirmOpen=true overlay mirroring the wizard's abandon modal — same i18n keys already exist (kiosk.wizard.abandon_title / abandon_sub / abandon_yes / abandon_continue).",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "F-P2-02",
+      "category": "FRICTION",
+      "severity": "P1",
+      "title": "Cart pruneUnavailableLines forces SILENT second 'Valider' tap — impatient client thinks button is broken",
+      "evidence": "KioskCartComponent.vue lines 642-670 — proceedToUpsell calls pruneUnavailableLines first. If afterCount<beforeCount, code path lines 662-670 fires a 4.5 s warning toast and EARLY-RETURNS (sets quoteLoading=false, no navigation). The user must tap Valider a SECOND time. Comment block lines 642-651 documents the original 422 cause + admits 'owner reported a confusing UX'.",
+      "client_reaction": "« Je tape Valider, message orange brève, rien ne bouge, c'est cassé. » The 4.5 s toast disappears just as the client realizes they need to tap again — exactly the 'parfois ça disparait' feedback the owner cited.",
+      "churn_risk": "MEDIUM — only fires when an 86'd item is in cart (race condition with admin manual stock toggle). But the user-facing degradation is severe: impatient client retaps 3×, gets nothing, may abandon. The heal is technically correct (avoid 422) but UX-wise leaves the user mid-flow without a visible 'tap again' affordance.",
+      "fix_recommendation": "Either (a) auto-continue: after the toast, await this.quoteOrder() directly instead of returning, OR (b) change the toast into an inline cart banner that explicitly says 'Total recalculé — appuyez à nouveau sur Valider' and stays visible until the next click.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "F-P2-03",
+      "category": "FRICTION",
+      "severity": "P2",
+      "title": "Sauce step extra-price disclosure only after second sauce selected — impatient client may add 5 sauces unknowingly",
+      "evidence": "KioskStepSauceComponent.vue lines 5-10 — kiosk-sauce-badge 'first_free' is visible from step entry, BUT the extra-price computation in sauceExtraLine (lines 113-119) only renders inside v-if='selectedCount > 1'. A client tapping fast (impatient 50 yo loves big buttons) may select 4-5 sauces before noticing the 'Sauce supplémentaire : 2 × 0,80 €' line appears at the top.",
+      "client_reaction": "« J'aime bien la mayo, le ketchup, la barbecue, la samuraï… ah merde +3,20 €. » More disappointment than churn — but matches the 50 yo persona who feels 'arnaqué'.",
+      "churn_risk": "LOW — won't abandon mid-flow. But repeat-visit retention impact (perceived hidden fee).",
+      "fix_recommendation": "Show the unit extra-price under the first-free badge from the start: 'Première offerte, suivantes à 0,80 € pièce'. Owner i18n key kiosk.wizard.step.sauce.first_free is the surface to update.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "F-P2-04",
+      "category": "FRICTION",
+      "severity": "P2",
+      "title": "Confirmation auto-return default = 30 s — short for a 50 yo who wants to read the ticket",
+      "evidence": "KioskConfirmationComponent.vue lines 157-160 — confirmationAutoReturnSeconds() reads window.foodkingConfig.kioskConfirmationAutoReturnSeconds, default 30. Industry reference (McDonald's borne) = 60 s. With queue number plus loyalty points plus 'présentez-vous au comptoir', a 50 yo with mild presbyopia might still be reading when the timer triggers idle.",
+      "client_reaction": "« J'avais pas fini de lire mon numéro et c'est reparti à zéro. » Frustration without churn (order is already paid).",
+      "churn_risk": "VERY LOW (post-payment).",
+      "fix_recommendation": "Bump default to 45-60 s, or stop the timer if the user taps the print button (signal of engagement).",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "F-P2-05",
+      "category": "BLOCKER-CHURN",
+      "severity": "P1",
+      "title": "Wizard fetchError + !resolvedItem has only a back button — NO retry, NO auto-retry — impatient client abandons",
+      "evidence": "KioskWizardComponent.vue lines 14-18 — v-else-if='fetchError && !resolvedItem' renders <p>{{ fetchError }}</p> + a single 'kiosk.back' button. No retry button, no auto-retry, no helpful message ('connection problem, please retry').",
+      "client_reaction": "« Quoi ? Erreur ? Je clique Retour, je retape sur le produit, ça refait l'erreur. Je m'en vais. » Classic abandonment vector — Le Cayenne loses the sale + the client tells his colleagues 'la borne marche pas'.",
+      "churn_risk": "HIGH IF network drops mid-flow (offline-but-online-flag-stale, slow Echo, intermittent backend). Probability LOW per session (~1-2%) but customer-loss is total.",
+      "fix_recommendation": "Add a 'Réessayer' button next to back that calls the fetch again, OR auto-retry once after 2 s with a spinner. The pattern already exists for catalog load (KioskCategoriesComponent.vue lines 82-88, kiosk-catalogue-retry-btn).",
+      "frozen_zone_touch": true,
+      "frozen_zone_note": "KioskWizardComponent.vue IS NOT in the §7 frozen list — only KioskAppComponent and KioskUpsellComponent are explicitly frozen there (KioskWizardComponent is mentioned as 'V1.x production-ready, auditable' per feedback_kiosk_wizard_not_protected.md). Confirm with owner before fix but no lock required."
+    },
+    {
+      "id": "F-P2-06",
+      "category": "GOOD",
+      "severity": "info",
+      "title": "Inactivity overlay is exemplary for the impatient-but-distracted persona",
+      "evidence": "KioskInactivityOverlayComponent.vue full read — 15 s countdown, primary CTA 'Je suis là' focused on mount (a11y), secondary 'Abandonner'. Critical: backdrop click + Esc both = STAY (line 39, @click.self=onStay; line 40, @keydown.esc.prevent=onStay), so a finger brushing the screen accidentally doesn't kill the order — this is the right invariant for an impatient client who looks away briefly.",
+      "client_reaction": "« Pop-up, je tape 'Je suis là', je continue. » No friction.",
+      "churn_risk": "NONE — this is the model other surfaces should follow."
+    },
+    {
+      "id": "F-P2-07",
+      "category": "FRICTION",
+      "severity": "P2",
+      "title": "Payment-method disabled-on-offline only conveys via greyout + aria — first-time impatient client may miss why CB is locked",
+      "evidence": "KioskPaymentComponent.vue lines 49-79 — isElectronicMethodBlocked('card') class='disabled' + aria-disabled='true' + tabindex=-1, but no inline text under the card explaining 'pas de connexion'. The kiosk-pay-offline-alert (lines 20-28) at the top says 'kiosk.pay_screen.offline_alert' but if the client tunnel-vision on the CB card (their habit), they tap it, nothing happens, they tap again — selectMethod returns early (line 338) and shows a toast via showToast — better than nothing but the toast is transient.",
+      "client_reaction": "« Je tape CB, rien ne se passe, je retape, un message orange apparaît, c'est quoi le souci ? »",
+      "churn_risk": "LOW — alternative methods (cash) still work and are visible. But adds 5-10 s of confusion mid-flow.",
+      "fix_recommendation": "Add inline sub-text 'Indisponible hors-ligne' INSIDE the disabled card itself (overrides the .card-sub text when disabled). Keep the top offline alert too.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "F-P2-08",
+      "category": "GOOD",
+      "severity": "info",
+      "title": "Confirmation queue number is the single most prominent element on screen — optimal",
+      "evidence": "KioskConfirmationComponent.vue lines 32-34 — '.kiosk-confirmation-number' inside .kiosk-confirmation-card, paired with green check-svg ring animation above. Plus printer button explicit (line 73-85) with all 4 visual states (idle/printing/done/error). Plus speech-summary TTS (a11y) on mount.",
+      "client_reaction": "« #42, c'est mon numéro, je vais au comptoir, propre. »"
+    },
+    {
+      "id": "F-P2-09",
+      "category": "GOOD",
+      "severity": "info",
+      "title": "D1 telemetry heal f28688675 verified — 'Valider' no longer surfaces phantom 429 toast",
+      "evidence": "git show f28688675 — telemetry allowlist now uses relative axios URL patterns ('frontend/kiosk/event', 'frontend/kiosk-event', 'admin/client-metrics') matching the runtime config.url shape (axios stores baseURL='/api' separately). Empirical evidence in commit msg: 'After heal: same 70-call burst, 40 server 429s, ZERO toasts'. The Valider click path no longer races with /kiosk/event POST bursts and silently drops 429s instead of showing 'Trop de requêtes' toast.",
+      "client_reaction": "(post-heal) « Je tape Valider, ça part, pas de pop-up bizarre. »"
+    },
+    {
+      "id": "F-P2-10",
+      "category": "FRICTION",
+      "severity": "P2",
+      "title": "TPE waiting overlay cancel button is FLAG-GATED — client may be stuck if tpeCanCancel=false",
+      "evidence": "KioskPaymentComponent.vue lines 185-192 — kiosk-tpe-cancel button only renders when v-if='tpeCanCancel'. The flag is set to true at processCardPayment start AND removed when the hardware reports terminal-engaged (per kioskHardware contract). During the (potentially) 30-60s window between SEND and OPERATOR_INPUT on a slow TPE, an impatient claustrophobic client staring at a spinner cannot cancel. The tpe_stuck_help text helps cognitively but the action is locked.",
+      "client_reaction": "« Le terminal me regarde, je ne sais pas quoi faire, je veux annuler — ah, pas de bouton — je tape sur l'écran… rien. » Could escalate to physical stress for the 50-yo claustrophobic persona.",
+      "churn_risk": "MEDIUM IF the TPE is slow or stuck (real-world Ingenico iCT250 / Verifone V200c sometimes hangs 20-30 s on operator-presence check). The client may walk away mid-charge — order limbo.",
+      "fix_recommendation": "Always allow cancel after a 8 s soft-delay, with a confirm modal 'Annuler le paiement ? Le terminal sera réinitialisé.' The hardware-level cancel API (kioskHardware.cancelTpe) is idempotent and safe.",
+      "frozen_zone_touch": false
+    }
+  ],
+
+  "churn_risk_summary": {
+    "blocker_churn_count": 1,
+    "friction_count": 5,
+    "good_count": 4,
+    "blocker_churn_findings": ["F-P2-05 (wizard fetch error has no retry)"],
+    "p1_findings":             ["F-P2-01 (abandon w/o confirm)", "F-P2-02 (silent prune second-tap)", "F-P2-05 (wizard fetch no retry)"],
+    "p2_findings":             ["F-P2-03 (sauce extra price disclosure)", "F-P2-04 (confirmation 30s)", "F-P2-07 (offline CB no inline text)", "F-P2-10 (TPE cancel flag-gated)"],
+    "info_findings":           ["F-P2-06 (inactivity exemplary)", "F-P2-08 (queue number prominent)", "F-P2-09 (D1 heal verified)"]
+  },
+
+  "top_3_client_facing_concerns": [
+    {
+      "rank": 1,
+      "id": "F-P2-05",
+      "concern": "Wizard fetchError with no retry path — single network blip mid-composition forces full restart. Highest blocker-churn vector in the kiosk flow because it strands the client in a dead-end state with only a 'back' button. An impatient 50 yo with mal aux pieds will walk to the counter (loss) or abandon (worse loss)."
+    },
+    {
+      "rank": 2,
+      "id": "F-P2-02",
+      "concern": "'Valider ma commande' button silently requires SECOND tap after pruneUnavailableLines fires. The toast is too transient (4.5 s) and the visual state freezes (quoteLoading=false but no nav). Impatient persona retaps thinking it's broken, may finally tap 'Abandonner ma commande' out of frustration."
+    },
+    {
+      "rank": 3,
+      "id": "F-P2-01",
+      "concern": "'Abandonner ma commande' button on the catalog bottom bar has ZERO confirmation — one mis-tap (located between the cart icon and 'Payer' CTA on a touch-screen, with thumb-reach error margin of ~12 mm typical 50 yo) and the entire order is gone. Inconsistent with the cart 'Vider le panier' (confirm) and wizard 'Abandonner l'article' (confirm). Pure UX/discipline gap, easy fix."
+    }
+  ],
+
+  "scope_compliance": {
+    "frozen_zone_touched": false,
+    "kiosk_app_component_examined": "READ-ONLY for inactivity-flow + start-order emit pattern only",
+    "kiosk_wizard_component_examined": "READ-ONLY for step-label + question-label + nav + error-state surface only — no edit",
+    "code_modifications": 0
+  },
+
+  "verdict": "GO-WITH-FIXES — 1 BLOCKER-CHURN (F-P2-05), 2 P1 FRICTIONS (F-P2-01, F-P2-02), 4 P2 FRICTIONS. None of the kiosk surfaces in scope are unusable; the wizard, cart, payment, confirmation are well-built. But the impatient-client persona will hit churn-class friction on (a) any wizard fetch hiccup, (b) any 86'd item between catalog and Valider, (c) any thumb mis-tap on the catalog bottom bar. F-P2-09 confirms heal f28688675 holds. Recommend all three P1s landed before V1 ship — none require frozen-zone touch.",
+
+  "notes_for_orchestrator": [
+    "All 10 task scenarios analyzed. No browser/Playwright runs — code-static only per task discipline.",
+    "Persona reasoning angles applied: BLOCKER-CHURN (1 finding), FRICTION (5 findings), GOOD (4 findings).",
+    "Frozen-zone discipline respected: KioskAppComponent and KioskUpsellComponent (both §7 frozen) not modified or analyzed for changes — only their role in the flow noted. KioskWizardComponent.vue noted as auditable per feedback_kiosk_wizard_not_protected.md.",
+    "Top-3 churn concerns rank by impatient-persona impact, not by technical severity — F-P2-05 wins because dead-end UX is the worst possible state for impatient clients.",
+    "Heal commit f28688675 verified via git show — D1 telemetry allowlist fix is correct and addresses the runtime gap (relative vs absolute URL pattern matching).",
+    "5 fix recommendations are scope-minimal, none requiring frozen-zone touch."
+  ]
+}

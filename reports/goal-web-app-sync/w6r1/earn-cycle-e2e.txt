@@ -1,0 +1,9 @@
+EARN e2e — client 194 (token 6630|…), Coca-Cola 33cl id52
+1. config: points_per_euro=1
+2. mint loyalty_code AC2F6FB5 (POST /loyalty/qr) — no points awarded (0)
+3. POST /api/frontend/order {branch_id:1,order_type:10,source:5,payment_method:1,is_advance_order:0,loyalty_code:AC2F6FB5,items:[{item_id:52,quantity:1}]}
+   -> id=5570 queue=A0041 total=1.90 (server-recalc) status=1 loyalty_customer_code=AC2F6FB5 awarded=NULL
+4. client change-status ->PREPARED(8) DENIED (kiosk:order token: OrderStatusRequest.php:31 only CANCELED). By-design.
+5. earn triggered via OrderStatusChanged(->PREPARED) faithful replay: awarded=1, points 0->1 = floor(1.90*1)
+6. GET /profile points=1 ; /loyalty/history: {type:earn,points:1,balance_after:1,surface:web,desc:Commande #0807265570}
+7. idempotency: re-dispatch PREPARED + DELIVERED -> points stay 1, exactly 1 earn txn (id56), sentinel=1

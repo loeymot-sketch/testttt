@@ -1,0 +1,137 @@
+{
+  "micro_system": "S14-kds",
+  "files_examined": [
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+    "resources/js/store/modules/kds.js",
+    "resources/js/store/modules/kitchenDisplaySystemOrder.js",
+    "resources/js/helpers/kdsDisplay.js",
+    "resources/js/helpers/kdsCustomization.js",
+    "resources/js/services/WebSocketService.js",
+    "resources/js/services/kdsSyncService.js",
+    "resources/js/bootstrap.js",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Services/KdsSyncService.php",
+    "app/Domain/Kds/KitchenReleaseRule.php",
+    "app/Listeners/DispatchKdsTicket.php",
+    "app/Listeners/PersistOrderCreatedToOutbox.php",
+    "app/Providers/EventServiceProvider.php",
+    "routes/api.php",
+    "routes/channels.php",
+    "database/seeders/UserTableSeeder.php",
+    "resources/js/languages/fr.json",
+    "resources/js/languages/en.json"
+  ],
+  "findings": [
+    {
+      "id": "S14-KDS-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "KDS sous compte admin (branch_id=0) n'a AUCUN push temps-reel : nouvelle commande visible jusqu'a 60s plus tard, sans aucun indicateur",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1911-1914 + :1889-1896 + resources/js/services/kdsSyncService.js:301-302 + resources/js/services/WebSocketService.js:79-111",
+      "evidence": "subscribeEcho() (KitchenDisplaySystemComponent.vue:1913-1914) fait `const branchId = this.authBranchId(); if (branchId <= 0) return;` -> un admin (branch_id=0) ne s'abonne JAMAIS au canal Echo `branch.{id}`, donc ne recoit ni OrderCreated ni OrderStatusChanged en push. Par ailleurs WebSocketService.js:83-86/108-111 met _state=CONNECTED des que le SOCKET Pusher brut est 'connected' (niveau socket, PAS abonnement canal) -> wsConnected devient true (component _bindWsService:1871-1872). Consequence: (a) _pollingInterval() (:1896) renvoie 60000ms quand wsConnected, (b) le poller adaptatif kdsSyncService renvoie interval:Infinity quand WS_CONNECTED (kdsSyncService.js:301-302) donc s'ARRETE. Resultat net pour un admin: pas d'Echo + poll passif 60s + sync adaptatif stoppe. La banniere 'compte central en polling' qui pourrait avertir est explicitement MASQUEE en mono-branche (kdsIsCentralAdmin:1351-1361 renvoie false si branchCount<=1). admin@lecayenne.fr est seede avec branch_id=0 (UserTableSeeder.php:34-44).",
+      "why_it_matters": "Sur le box V1 Le Cayenne mono-poste, si la cuisine est ouverte avec le compte admin (le compte 'tout-en-un' du proprietaire, branch_id=0, defaut), une commande borne/POS peut rester invisible jusqu'a 60 secondes en plein rush, sans aucun signal visuel ni sonore pendant ce delai. Le systeme assimile 'socket connecte' a 'push temps-reel actif', ce qui est FAUX pour branch_id=0. Le carillon ne se declenche qu'a l'arrivee reelle de la commande (watcher orders:1432-1443), donc pas de perte permanente, mais une latence de service inacceptable pour de la restauration rapide (cible prep < 5 min). NOTE: si la cuisine se logue avec chef@lecayenne.fr (branch_id=1, seede UserTableSeeder.php:101-115), Echo fonctionne et le bug ne se produit PAS. Le defaut est donc CONDITIONNEL au modele de login.",
+      "reproduction": "1) Se loguer KDS avec admin@lecayenne.fr (branch_id=0). 2) Verifier console: aucun abonnement `branch.0` (subscribeEcho retourne tot). 3) Confirmer window._wsService.state === 'connected'. 4) Passer une commande borne payee. 5) Observer: la carte n'apparait qu'au prochain tick de poll (jusqu'a 60s), pas instantanement. Comparatif: meme test logue chef@lecayenne.fr (branch_id=1) -> apparition sub-seconde.",
+      "recommended_correction": "Pour un admin mono-branche, soit (a) s'abonner au canal Echo de la branche reelle (resoudre la branche unique cote front via foodkingConfig.branchCount===1 -> branch.1) au lieu du early-return, soit (b) ne PAS basculer le polling a 60s / ne PAS stopper kdsSyncService tant qu'aucun abonnement Echo KDS actif n'existe (garder 5s). Idealement: decoupler wsConnected (socket) de 'pushKdsActif' (abonnement au canal de la commande). A minima documenter que la cuisine DOIT utiliser chef@lecayenne.fr (branch_id=1) et afficher la banniere polling meme en mono-branche.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S14-KDS-02",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Conflit 409 sur le board V2 (defaut prod) affiche une cle i18n inexistante au lieu du message d'avertissement",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1646",
+      "evidence": "Le chemin V2 onV2ChangeStatus (chemin de PRODUCTION par defaut depuis 2026-05-16, computed useV2Layout:1247-1264) gere le 409 ainsi: `this.kdsErrorBanner.message = this.$t('label.kds_status_conflict')` (ligne 1646). Or la cle n'existe QUE sous le namespace `message`: verifie via node -> `label.kds_status_conflict => undefined`, `message.kds_status_conflict => 'Cette commande a ete modifiee ailleurs...'`. Le chemin legacy (ligne 2280) utilise correctement `message.kds_status_conflict`. Donc en V2 la banniere d'erreur affiche soit la chaine brute 'label.kds_status_conflict' soit du vide selon le fallback i18n.",
+      "why_it_matters": "Quand deux postes/onglets bumpent la meme commande (ou apres un refresh decale), le backend renvoie 409 (changeStatus optimistic-lock, KitchenDisplaySystemOrderService.php:405-418). Le chef doit comprendre 'la commande a ete modifiee ailleurs, verifie l'etat'. A la place il voit une cle technique brute ou une banniere vide -> confusion, risque de re-clic. Faible frequence (mono-chef la plupart du temps) d'ou P2, mais c'est un raw-label expose au personnel en exploitation, exactement le type de 'flou' a corriger.",
+      "reproduction": "Ouvrir 2 onglets KDS sur la meme commande PREPARING, cliquer Pret dans les deux. Le 2e POST renvoie 409. Observer la banniere d'erreur: 'label.kds_status_conflict' (cle brute) au lieu du texte FR.",
+      "recommended_correction": "Ligne 1646: remplacer `this.$t('label.kds_status_conflict')` par `this.$t('message.kds_status_conflict')` (cle existante, deja utilisee par le chemin legacy 2280).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S14-KDS-03",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Pastille '⚠ ALLERGIE' declenchee par allergenes CONTENUS dans le plat (gluten/lait...) et non par une allergie/exclusion client -> fatigue d'alerte (pastille sur presque toutes les cartes)",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:64-72 + :275-277 + app/Services/Orders/OrderItemAllergenSnapshot.php:45-71",
+      "evidence": "hasAllergen (KdsOrderCard.vue:275-277) = orderHasAnyAllergen(order_items) qui renvoie true des qu'un order_item a un allergens_snapshot non vide (kdsCustomization.js:252-263). Or allergens_snapshot est hydrate cote serveur depuis les allergenes que le PLAT CONTIENT: Item->allergens (pivot) + allergenes des extras (OrderItemAllergenSnapshot.php:45-71, resolveSnapshot:181-203). Ce n'est PAS l'allergie declaree du client ni une exclusion. La pastille orange + bordure orange + accent stripe orange (KdsOrderCard.vue:301-314) s'allument donc pour quasiment tout sandwich/burger/taco (qui contiennent gluten, lait, oeuf...).",
+      "why_it_matters": "Si presque chaque carte affiche '⚠ ALLERGIE', le signal devient bruit (alert fatigue) et le chef cesse d'y preter attention -> le jour ou un VRAI client allergique commande 'sans cacahuetes', l'avertissement ne ressort plus. C'est precisement le 'flou / chose pas bonne' du mandat owner. L'info reellement utile a la cuisine (l'exclusion client 'sans X') est rendue separement comme ligne instruction (renderItem instruction:228-235), donc le bandeau allergene global est surtout du bruit. A confirmer en live: l'ampleur depend de si les items Le Cayenne ont reellement leurs pivots allergens peuples (sinon la fatigue ne se materialise pas).",
+      "reproduction": "Verifier en DB si les items du menu ont des lignes item_allergens. Charger /kds avec des commandes de sandwichs standards. Observer combien de cartes affichent la pastille '⚠ ALLERGIE' alors qu'aucun client n'a declare d'allergie.",
+      "recommended_correction": "Distinguer 'plat contient des allergenes' (info passive, discrete) de 'client a declare une allergie/exclusion' (alerte forte). Ne declencher la pastille rouge/orange + bordure QUE sur exclusion/instruction allergene client, et reduire les allergenes-contenus a une ligne discrete. Sinon, si owner veut garder l'affichage des allergenes contenus, le rendre neutre (pas orange alarmant) pour preserver le signal d'alerte aux vraies exclusions.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    },
+    {
+      "id": "S14-KDS-04",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Board V2 limite a 8 cartes (slice 0,8) + raccourcis clavier A-H seulement : commandes 9+ visibles uniquement via une puce de comptage, non actionnables tant qu'une des 8 ne sort pas",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:55-56 + :247-249 + :291-307",
+      "evidence": "Le grid rend `activeOrders.slice(0, 8)` (KdsV2Grid.vue:56). overflowActiveCount (:247-249) = max(0, activeOrders.length-8) alimente une puce d'alerte (:82-90) mais AUCUNE carte n'est rendue pour les commandes 9+. Les raccourcis clavier ne couvrent que SHORTCUTS=['A'..'H'] (:140) et onKey teste `idx < this.activeOrders.length` mais l'index max reste 7 (:296-298). Pas de scroll/pagination du grid. Le tri est FIFO (plus ancienne d'abord, visibleOrders:190-201) donc la #9 finit par remonter quand le chef bumpe les 8 plus anciennes — ce n'est PAS une perte permanente.",
+      "why_it_matters": "En rush (>8 commandes actives simultanees), le chef voit '+N en attente' mais ne peut ni lire le detail ni bumper les commandes 9+ avant d'avoir traite des plus anciennes. Risque de priorisation/visibilite en heure de pointe (une commande urgente coincee derriere 8 cartes), pas une commande silencieusement oubliee. La puce overflow est une vraie mitigation deja en place (commentaire Wave N M-KDS-6 F1). Reste un plafond ergonomique a >8 commandes.",
+      "reproduction": "Injecter 10+ commandes ACCEPT/PREPARING actives sur une branche. Observer le grid: 8 cartes + puce '+2 en attente'. Confirmer qu'aucune interaction n'est possible sur la 9e/10e tant que les 8 visibles ne sont pas bumpees.",
+      "recommended_correction": "Permettre l'acces aux commandes 9+ : soit scroll vertical du grid avec densite reduite, soit pagination/'voir plus' depliant les cartes suivantes, soit etendre les raccourcis au-dela de H. La puce overflow peut rester comme filet de securite mais ne doit pas etre le seul acces aux commandes en surplus.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S14-KDS-05",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Timer 'ATTENTE' et escalade d'age calcules depuis created_at (placement commande), pas depuis la mise en cuisine; fallback Date.now() masque une carte sans timestamp",
+      "file_line": "resources/js/helpers/kdsDisplay.js:66-75 + :88-111 + resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:278-291",
+      "evidence": "elapsedSeconds (KdsOrderCard.vue:281-283) et bucket (getKdsAgeBucket:66-75, seuils 3min warning / 6min critical) sont calcules a partir de createdMs = parseOrderCreatedMs(order) qui lit created_at_iso / created_at / order_datetime (kdsDisplay.js:88-110). C'est le moment de PLACEMENT, pas le moment de release-cuisine. Pour une commande POS PENDING_COUNTER qui reste un moment avant encaissement, ou une commande advance, le compteur tourne depuis la creation. De plus si TOUS les timestamps sont absents/non-parsables, parseOrderCreatedMs retourne Date.now() (ligne 110) -> la carte affiche 00:00 fige et n'escalade jamais (vert permanent).",
+      "why_it_matters": "Le chef juge l'urgence sur 'ATTENTE mm:ss'; si ce timer compte depuis le placement et non depuis l'entree en cuisine, une commande qui vient d'arriver en cuisine peut deja apparaitre 'critique' (rouge) ou inversement une carte sans timestamp reste verte indefiniment. Impact reel limite car la plupart des commandes arrivent en cuisine quasi-immediatement apres paiement (P3), mais le fallback Date.now() peut masquer une commande reellement ancienne.",
+      "reproduction": "Creer une commande advance ou laisser une commande PENDING_COUNTER. Observer ATTENTE = age depuis placement. Pour le fallback: forcer une commande sans created_at/order_datetime -> 00:00 fige, jamais d'escalade.",
+      "recommended_correction": "Mesurer l'age depuis l'entree reelle en cuisine (statut ACCEPT/release-kitchen) plutot que created_at, via une colonne dediee (cf TODO status_changed_at deja note dans KdsSyncService.php:165-172). Et pour le fallback, si aucun timestamp valide, afficher un etat indetermine (ex '—:—') plutot que 00:00 vert, pour ne pas masquer une commande ancienne.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S14-KDS-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "CTA toujours libelle 'Pret' meme sur une carte CONFIRMEE ou un 1er tap n'avance qu'a 'En preparation' (flux 2-taps voulu par l'owner mais bouton non explicite a l'etape 1)",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:163-174 + resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:342-364",
+      "evidence": "Le bouton de carte affiche toujours `kds_card_cta_ready` ('Pret') quel que soit le statut (KdsOrderCard.vue:167-173, aucune condition sur kdsState). Or onCtaTap (KdsV2Grid.vue:347-350) avance ACCEPT->PREPARING au 1er tap puis PREPARING->PREPARED au 2e. La pastille d'etat indique bien CONFIRMEE/EN PREPARATION (stateLabel) donc l'info existe, mais le bouton lui-meme dit 'Pret' des l'etape 1. IMPORTANT: le flux 2-taps 'Pret' est une DECISION OWNER explicite et documentee (commentaire Wave Q-2, KitchenDisplaySystemComponent.vue:1212-1219 'le chef tape Pret deux fois... single-step ladder').",
+      "why_it_matters": "Decision owner assumee, donc ce n'est PAS un bug logique. Reste un micro-flou: un chef pourrait croire qu'un seul tap 'Pret' termine la commande alors qu'il faut deux taps sur une carte fraiche. Le libelle du bouton a l'etape 1 ('Commencer' / 'En preparation') serait plus clair que 'Pret'. P3 cosmetique, a ne traiter QUE si l'owner le souhaite (contredire la decision Wave Q-2 sans gate serait du drift).",
+      "reproduction": "Charger une commande ACCEPT (CONFIRMEE) en V2. Le bouton dit 'Pret'. Un tap -> EN PREPARATION (carte reste). Deuxieme tap -> PRET (carte part vers 'Recemment servies').",
+      "recommended_correction": "Optionnel, owner-gate (touche une decision Wave Q-2): libeller le CTA selon l'etape — 'Commencer' (ou 'En preparation') quand status===ACCEPT, 'Pret' quand status===PREPARING. Ne pas modifier la logique 2-taps elle-meme.",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Optimistic-lock + verrou DB sur le bump (changeStatus), 409 propre, append-only NF525",
+      "file_line": "app/Services/KitchenDisplaySystemOrderService.php:392-444",
+      "note": "changeStatus s'execute dans DB::transaction avec lockForUpdate, compare expected_status (envoye par le front via kdsStatusPayload, kds.js:3-9) au statut verrouille et abort 409 si divergence -> pas de double-transition en course concurrente. La transition est journalisee via OrderStateMachine::recordTransition (append-only), conforme NF525. Re-check isolation branche sous verrou (:399-401). Solide et bien pense."
+    },
+    {
+      "title": "Recall 'Annuler bump' 60s en action compensatoire append-only (orders.status jamais mute)",
+      "file_line": "app/Services/KitchenDisplaySystemOrderService.php:285-381",
+      "note": "Le recall NF525-safe: au lieu de muter orders.status (interdit par OrderStateMachine frozen), il APPEND une ligne order_status_transitions reason='kitchen_recall', avec garde d'etat (PREPARED only), garde TTL 60s, cap N=1 (409 si deja rappele), isolation branche sous verrou, et assertion d'invariant verifiant que status reste PREPARED apres commit (:354-357). Diffuse KdsOrderRecalled apres commit pour re-injecter la carte sur les autres postes. Tres bonne maitrise de la contrainte fiscale."
+    },
+    {
+      "title": "Filtre JS-side des OrderStatusChanged + debounce evitant les refresh inutiles",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1576-1587 + :1925-1929",
+      "note": "_statusChangeAffectsKds ne declenche un refresh que si l'ancien OU le nouveau statut est dans l'ensemble KDS-visible (ACCEPT/PREPARING/PREPARED), miroir de KitchenReleaseRule::visibleStatuses. Les transitions hors-board (DELIVERED->REFUNDED, CANCELED...) ne provoquent plus de refresh + flicker. Couple a _debouncedRefresh 300ms qui absorbe la rafale Echo+manuel+interceptor. Bonne hygiene reseau."
+    },
+    {
+      "title": "Puce d'alerte overflow (>8) comme filet de securite chef-visibility",
+      "file_line": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:82-90 + :242-249",
+      "note": "Meme si les commandes 9+ ne sont pas actionnables (cf S14-KDS-04), la puce '+N en attente' pulse en rouge Cayenne (avec respect de prefers-reduced-motion) pour signaler au chef que la file depasse les 8 slots visibles. Compte uniquement les actives (ACCEPT|PREPARING), pas les PREPARED du bandeau servies. Mitigation honnete d'une limitation structurelle."
+    },
+    {
+      "title": "Split KDS par allergens_snapshot (securite alimentaire) lors du merge d'items identiques",
+      "file_line": "app/Services/KitchenDisplaySystemOrderService.php:514-543",
+      "note": "orderItems() merge les lignes identiques pour le board 'items' mais inclut un allergensHash dans la cle de groupement -> deux items meme produit/variations/instruction mais avec des snapshots d'allergenes differents restent 2 lignes KDS distinctes. Evite que le chef voie 'Burger x2' avec les allergenes du premier seulement et masque la declaration du second client. Detail de securite alimentaire bien pris."
+    }
+  ]
+}

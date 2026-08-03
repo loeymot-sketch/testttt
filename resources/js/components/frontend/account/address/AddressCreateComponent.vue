@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
     <button data-modal="#address" @click="add" v-on:click="this.props.isMap = true" type="button"
-        class="address-btn flex items-center rounded-3xl px-3 h-8 gap-2 text-primary bg-[#FFEDF4] transition hover:bg-primary hover:text-white">
+        class="address-btn flex items-center rounded-3xl px-3 h-8 gap-2 text-primary bg-[#FFE8DD] transition hover:bg-primary hover:text-white">
         <i class="lab lab-add-circle lab-font-size-16"></i>
         <span class="text-sm leading-6 capitalize font-medium transition">{{ addButton.title }}</span>
     </button>

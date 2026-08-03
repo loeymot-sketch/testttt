@@ -1,0 +1,54 @@
+{
+  "round": 3,
+  "verdict_aggregate": "GREEN",
+  "rationale": "Post C6+C7+C8 fixes — all P0 + all critical-path P1 closed. axe critical=0, axe serious=0 across all 11 captures.",
+  "waves": {
+    "wizard": { "verdict": "GREEN", "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 7 },
+    "fluidity": { "verdict": "AMBER (partial F-003)", "open_P0": 0, "open_P1": 1, "open_P2": 5, "open_P3": 5, "notes": "F-003 partial — 5 critical sites closed, 6 secondary deferred to round-4 (kept lc-tap CSS only)" },
+    "surfaces": { "verdict": "GREEN", "open_P0": 0, "open_P1": 0, "open_P2": 7, "open_P3": 6 },
+    "a11y": { "verdict": "GREEN", "open_P0": 0, "open_P1": 1, "open_P2": 8, "open_P3": 2, "notes": "A11-004 partial (subsumed by F-003 — same 5/6 sites)" }
+  },
+  "p0_closures": [
+    "ADV-A11-016 meta-viewport (closed via mobile/index.html remove maximum-scale=1)",
+    "S-001 RGPD POINTS card not gated (closed via screens-main.jsx wrap + dev-helpers consent erase)",
+    "ADV-A11-018 aria-allowed-attr regression (closed via aria-pressed → aria-selected on role=tab)"
+  ],
+  "p1_closures": [
+    "A11-001 / F-004 / S-004 TabBar div→button (3 sources cross-validated)",
+    "A11-002 / A11-010 / S-003 IconBtn aria-label (2 sources)",
+    "A11-005 OTP + phone aria-label",
+    "A11-006 modals dialog + ESC + focus management",
+    "A11-009 cart trash aria-label",
+    "ADV-A11-017 color-contrast 5 nodes (white-on-orange → ink-on-orange)",
+    "F-003 partial — 5/11 critical sites keyboard nav (home cat tiles, menu rows, order card, loyalty card, profile rows)"
+  ],
+  "p1_remaining_to_p2_acceptable": [
+    "F-003 / A11-004 — 6 secondary sites (featured Tacos, envies, nouveautés, cart upsell, history orders, item-detail) keep CSS lc-tap visual feedback only ; full keyboard nav scoped round-4 P2"
+  ],
+  "primary_source_evidence": {
+    "axe_critical": 0,
+    "axe_serious": 0,
+    "rgpd_balance_card_visible_after_optout": false,
+    "tabbar_all_button_role": true,
+    "tabbar_all_aria_labelled": true,
+    "iconbtn_aria_label_propagated": true,
+    "otp_4_inputs_aria_labelled": true,
+    "phone_aria_labelled": true,
+    "modal_optout_role_dialog": true,
+    "modal_optout_aria_modal_true": true,
+    "modal_optout_esc_closes": true,
+    "filter_chips_aria_pressed": true,
+    "cart_stepper_aria_live": "polite",
+    "cart_trash_aria_label": "Retirer ... du panier"
+  },
+  "perf_measurements_emulator_directional": {
+    "menu_scroll_fps": 120.2,
+    "cart_scroll_fps": 120.7,
+    "modal_pay_open_ms": 56.7,
+    "cta_thumb_reach_px": 24,
+    "back_nav_recap_to_fritessauce_ms": 24.8,
+    "reduced_motion_animation_duration": "1e-05s"
+  },
+  "frozen_zone_modifications": 0,
+  "loyalty_smoke_4_specs_status": "PASS 4/4 stable round-1, round-2, round-3"
+}

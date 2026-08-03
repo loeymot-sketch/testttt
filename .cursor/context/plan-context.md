@@ -3,7 +3,7 @@
 ## Load — in this order only
 1. `.cursor/ACTIVE_CYCLE.md` — confirm PHASE is PLAN, TASK_ID is set
 2. `tasks/[TASK_ID].md` — full task file
-3. `.cursor/routing.md` — PRIMARY_MODEL assignment
+3. `.cursor/routing.md` — PRIMARY_EXECUTION_MODEL assignment and mandatory review checkpoints
 
 Do not load previous plans, reports, or gate files.
 alwaysApply rules are expected to already be in context. Do not manually reload them unless the active Cursor session clearly did not load them.
@@ -21,7 +21,7 @@ If Graphiti is unavailable or returns nothing: proceed without it. Never block P
 Write `plans/PLAN_[TASK_ID]_[DATE].md` from `plans/PLAN_TEMPLATE.md`.
 
 Plan is invalid without:
-- TASK_ID, PRIMARY_MODEL, SUBSYSTEMS_TOUCHED, SUBSYSTEMS_OFF_LIMITS
+- TASK_ID, PRIMARY_EXECUTION_MODEL, REASONING_EFFORT, PLAN_REVIEW, SUBSYSTEMS_TOUCHED, SUBSYSTEMS_OFF_LIMITS
 - INVARIANTS_AT_RISK, GATE_CONDITIONS, Execution Steps
 - SYMMETRY_NOTE (required if OrderService or FrontendOrderService is in scope)
 
@@ -46,12 +46,13 @@ Le Planner-Orchestrator décide — jamais auto-déclenché.
 ## Before marking PLAN complete
 - [ ] Scope is unambiguous — if not, write clarification in task file and stop
 - [ ] Frozen zone in scope → gate brief written to docs/gates/ before proceeding
-- [ ] PRIMARY_MODEL assigned per routing.md
+- [ ] PRIMARY_EXECUTION_MODEL assigned per routing.md (`gpt-5.5-pro`, `REASONING_EFFORT: xhigh`)
+- [ ] PLAN_REVIEW block initialized; `run-cycle.md` Step 1 must obtain `PLAN_REVIEW_VERDICT: PASS` before EXECUTE
 
 ## Update ACTIVE_CYCLE.md
 Set PHASE → EXECUTE
 Set PLAN_FILE → path to plan just written
-Set PRIMARY_MODEL → as declared in plan
+Set PRIMARY_EXECUTION_MODEL → as declared in plan
 Check PLAN row in Phase Completion
 
 ## Handoff

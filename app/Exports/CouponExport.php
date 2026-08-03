@@ -6,26 +6,27 @@ use App\Enums\DiscountType;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\AppLibrary;
 use App\Services\CouponService;
-use App\Services\DeliveryBoyService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class CouponExport implements FromCollection, WithHeadings
 {
-
     public CouponService $couponService;
+
     public PaginateRequest $request;
 
     public function __construct(CouponService $couponService, $request)
     {
         $this->couponService = $couponService;
-        $this->request            = $request;
+        $this->request = $request;
     }
 
-    public function collection() : \Illuminate\Support\Collection
+    public function collection(): \Illuminate\Support\Collection
     {
+        // [SELF-AUDIT R4 P1 2026-07-05 — export tronqué à 10 lignes] Full fetch (voir SalesReportExport).
+        $this->request->merge(['paginate' => 0]);
         $couponArray = [];
-        $couponsArray     = $this->couponService->list($this->request);
+        $couponsArray = $this->couponService->list($this->request);
 
         foreach ($couponsArray as $coupon) {
             $couponArray[] = [
@@ -37,10 +38,11 @@ class CouponExport implements FromCollection, WithHeadings
                 AppLibrary::datetime($coupon->end_date),
             ];
         }
+
         return collect($couponArray);
     }
 
-    public function headings() : array
+    public function headings(): array
     {
         return [
             trans('all.label.name'),

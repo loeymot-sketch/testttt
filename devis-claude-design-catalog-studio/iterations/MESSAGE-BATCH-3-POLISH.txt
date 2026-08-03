@@ -1,0 +1,50 @@
+Polish final — 6 points pour passer de 8/10 à 10/10 :
+
+13) KEYBOARD SHORTCUTS — Crée un artboard "Raccourcis clavier" qui montre
+    une petite popup d'aide (Cmd+/) avec :
+    - global : Cmd+S = publier, Cmd+P = aperçu plein écran, Cmd+/ = aide,
+      Esc = fermer modal
+    - liste catégories : ↑↓ navigate, Enter sélectionne, N = nouvelle
+    - grille produits : ↑↓←→ navigate, Enter ouvre inspecteur, Space =
+      toggle disponibilité
+    - wizard editor : J/K = step suivant/précédent, D = dupliquer step,
+      Backspace = supprimer step (avec confirm)
+    Affiche aussi un hint discret "Cmd+/" en bas à droite de chaque écran
+    principal.
+
+14) RESPONSIVE 1280px — Une variante de Screen 1 à 1280px :
+    - rail catégories collapsible (icônes seules) avec un toggle
+    - inspecteur droite collapsible (overlay quand ouvert)
+    - grille produits 3 colonnes au lieu de 4
+
+15) RTL ARABE — Une variante de Screen 1 en RTL :
+    - direction inversée, icônes flippées (chevrons, drag, etc.)
+    - validation que les chips POS/Kiosk gardent leur ordre logique
+    - police arabe (Noto Sans Arabic)
+
+16) ONBOARDING TOUR — Un artboard montrant la 1re visite :
+    - tooltip 1 : "Bienvenue. Voici tes catégories. Crée la première."
+    - tooltip 2 : "Ajoute un produit dans la catégorie."
+    - tooltip 3 : "Configure le wizard avec un template."
+    - tooltip 4 : "Publie. Le POS et la borne se mettront à jour
+      automatiquement."
+    - checklist sticky en bas-gauche, dismissible.
+
+17) REAL PHOTOS GUIDANCE — Spec dans le README :
+    - ratio recommandé : 4:3
+    - taille min : 800x600
+    - taille max upload : 4Mo
+    - formats : PNG, JPG, WebP
+    - fallback ladder : photo > placeholder SVG par catégorie > initiale du
+      nom sur surface neutre
+    - lazy load : intersection observer, decode async
+
+18) MICRO-INTERACTIONS — Un artboard "Interactions à conserver vs. neutraliser
+    en reduced-motion" :
+    - hover ProductCard : translate Y -1px, ombre +1 (neutralisé en
+      reduced-motion)
+    - publish CTA : scale 0.98 sur :active (neutralisé)
+    - drag drop : pas d'easing sur drop final pour précision (gardé)
+
+Renvoie le tout consolidé dans une dernière itération du canvas, avec une
+section README mise à jour qui liste les 18 améliorations + n° artboard.

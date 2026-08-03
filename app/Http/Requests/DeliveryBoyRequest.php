@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\ValidPhone;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeliveryBoyRequest extends FormRequest
@@ -11,11 +12,20 @@ class DeliveryBoyRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — DeliveryBoyController middleware enforces
+     * `permission:delivery-boys_create` on store and `permission:delivery-boys_edit`
+     * on update; FormRequest accepts either since the same class is injected on both
+     * verbs. Any future route bypass still authz-checks against the family.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('delivery-boys_create') || $user->can('delivery-boys_edit');
     }
 
     /**
@@ -33,12 +43,13 @@ class DeliveryBoyRequest extends FormRequest
                 'max:190',
                 Rule::unique("users", "email")->ignore($this->route('deliveryBoy.id'))
             ],
+            // [2026-05-18 PR-D T5 heal] V1 GO-LIVE staff password policy.
             'password'              => [
                 $this->route('deliveryBoy.id') ? 'nullable' : 'required',
                 'string',
-                'min:6'
+                Password::min(12)->letters()->numbers(),
             ],
-            'password_confirmation' => [$this->route('deliveryBoy.id') ? 'nullable' : 'required', 'string', 'min:6'],
+            'password_confirmation' => [$this->route('deliveryBoy.id') ? 'nullable' : 'required', 'string', 'min:12'],
             'username'              => [
                 'nullable',
                 'max:190',
@@ -63,7 +74,7 @@ class DeliveryBoyRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if ($this->password !== $this->password_confirmation) {
-                $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
+                $validator->errors()->add('password_confirmation', __('auth.password_confirmation_mismatch'));
             }
         });
     }

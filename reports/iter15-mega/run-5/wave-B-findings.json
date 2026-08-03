@@ -1,0 +1,95 @@
+{
+  "wave": "B",
+  "run_n": 5,
+  "states_reviewed": 10,
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 4,
+    "P3": 0
+  },
+  "findings": [
+    {
+      "id": "B-006",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.png, 03-pos-after-pay.dom.html",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "REGRESSION (re-opened). Run-2/3/4 all confirmed B-006 PASS — receipt body captured in 03 dom.html (Le Cayenne / N°A0xxx / MODE TEST / Espèces / Rendu / order #100526xxx). Run-5 03-pos-after-pay.png clearly shows the receipt modal rendered (visible: 'Le Cayenne', 'Paris, France', 'MODE TEST', 'N°A0037', 'Frites Seules 2.00€', 'Type de paiement: Espèces 5.00€ / Rendu 3.00€'), but page.content() captured 0 of those tokens: A0037=0, MODE TEST=0, Rendu=0, TVA=0, Type de paiement=0, Encaissement=0, '100526'=0. The single 'Espèces' hit and 4 'Le Cayenne' hits in DOM are CSS-only / static page chrome, not the receipt body. The post-pay receipt has been re-Teleported to body (or moved to a portal that page.content() does not serialize), reverting the run-2 fix. Risk: cat 11 numeric integrity cross-checks (cart total = receipt total = KDS total) cannot be performed from artifacts alone — fiscal-sensitive screen has no DOM-level audit trail. P2 because the modal IS rendered to the user (the screenshot proves it), so it is not a user-facing defect; it is an audit-tooling regression that hides future receipt-content regressions.",
+      "fix_hint": "Re-apply the run-2 fix that landed B-006 PASS. Either (a) render receipt modal in-place (no Teleport to body), or (b) have the spec emit a receipt.html sibling artifact via page.locator('#receipt-modal-portal').innerHTML(). Recommend option (b) so future Teleport reverts cannot silently re-open this. Suspicion: the run-3→run-4 stash-pop or a recent receipt-component refactor reverted the in-place render."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.dom.html, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 07-kds-prete.dom.html, 09-kds-livree-or-final.dom.html",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "REGRESSION + 5th consecutive run with this defect open. AUDIT-* token counts per state (run-5): 01=9, 04=10, 05=10, 07=10, 09=9. Distinct prefixes: AUDIT-CYCLE4-9bb11124, AUDIT-HEAL, AUDIT-P1, AUDIT-P2 (4 prefixes). Run-4 had only 2 prefixes (AUDIT-CYCLE4 + AUDIT-HEAL, total 2 tokens). So between run-4 and run-5, AUDIT-P1 / AUDIT-P2 prefixes leaked back in (these were cleaned in run-4) AND no overall progress vs run-3 baseline (which also had 9 tokens / 4 prefixes). The DB-cleanup approach has not been applied or has been reverted. Per CLAUDE.md §8 healing rule (max 3 consecutive heal cycles on the same problem), this is now the 5th cycle without closure — formal escalation is overdue.",
+      "fix_hint": "(1) One-off DB cleanup pass on this branch's database: UPDATE orders SET cancelled_at=NOW() WHERE external_id LIKE 'AUDIT-%' AND cancelled_at IS NULL. (2) Strengthen test teardown to a global beforeAll purge so future audit harness restarts start from clean state regardless of prior crashes. (3) Defense in depth: hide orders with external_id LIKE 'AUDIT-%' from KDS view when APP_ENV != 'local'. ESCALATION REQUIRED: 5 consecutive heals on same defect violates §8 ceiling — request human approval before continuing the loop on this finding."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "UNCHANGED — 5th consecutive run with this defect open. Per-item 'Prêt' (bump-ready) buttons remain icon-only: state 04 has 4 buttons matching <button title=\"Prêt\">…<i class=\"fa-solid fa-arrow-right\"></i></button>, 0 of which carry an aria-label. State 05 same pattern (4/0). Title attribute is hover-only (useless on a touch-only kitchen tablet, the actual deployment target). Per protocol cat 8 (Aria/keyboard). Per CLAUDE.md §8 healing rule, this is the 5th cycle without closure — formal escalation overdue.",
+      "fix_hint": "Add :aria-label=\"$t('kds.bump_item', { name: item.name })\" to every per-item bump button. Either add visible micro-text (small 'PRÊT ➡' chip) or migrate the title attribute to an on-tap tooltip. ESCALATION REQUIRED: 5 consecutive heals on same defect violates §8 ceiling."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.dom.html, 03-pos-after-pay.png",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "UNCHANGED — 5th consecutive run with this defect open. 03 PNG shows receipt modal claiming a real charge; 03 dom.html still has cart sidebar pos-grand-total resetting to 0.00€ at the same moment: <div data-testid=\"pos-grand-total\"><span class=\"pos-v5-total-row__label\">Total</span><span class=\"pos-v5-total-row__value\"><!--v-if--><span class=\"pos-v5-total-row__amount pos-v5-tabular\">0.00€</span></span></div>. Zero 'Dernière commande' / 'Dernière vente' chip occurrences. Visual conflict between two surfaces showing the same business fact with opposite values. Per CLAUDE.md §8 healing rule, this is the 5th cycle without closure — formal escalation overdue.",
+      "fix_hint": "Defer cart reset to 'Nouvelle commande' button click OR receipt-modal close handler — NOT to the payment-success event. Alternative: render a 'Dernière commande: 2,00 €' chip in the cart sidebar that survives until the next item is added. ESCALATION REQUIRED: 5 consecutive heals on same defect violates §8 ceiling."
+    }
+  ],
+  "run4_findings_status": {
+    "B-001_POS_tracker_zero_euro": "PASS — 4th consecutive PASS. State 06: 34 pos-tracker-card-total spans rendered, 0 of them '0,00 €'. Sample: A0035=22,00 €, next=21,00 €, remaining 32 cards = 2,00 € each. State 08 identical (34 cards, 0 zeros). Backend total_amount_price binding stable.",
+    "B-002_KDS_CTA_hidden_in_accordion": "PASS — 4th consecutive PASS. 'Démarrer la préparation' rendered inside <div class=\"kds-card-cta\" data-testid=\"kds-card-cta\"> as direct child of card root, NOT inside height:0 accordion. State 04: 4 kds-card-cta containers + 4 'Démarrer la préparation' literals. State 05/07 same pattern.",
+    "B-003_KDS_global_reconnect_banner": "PASS — full run-1 fix now lands. KDS states 04/05/07: 0 occurrences of class=\"connection-status-banner\" (run-4 had 1 each). 3 occurrences of literal 'Reconnexion en cours…' across these 3 states are ALL inside source-code Vue template comments tagged '[iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the global transient \"Reconnexion en cours…\" banner here because the local kds-sync-mode-banner already conveys fallback polling state to staff' — NOT rendered text. Visual screenshot 04/05/07 confirm: KDS surface sits flush below the FoodKing logo with no yellow band overlapping the header. POS-tracker side (06/08) confirmed via the v-if placeholder fix below.",
+    "B-008_csp_report_storms": "PASS — all 10 network.json files are exactly '[]' (2 bytes each). Zero csp-report entries, zero 4xx/5xx entries of any kind, zero responses with duration > 2000ms. Run-4's regression of 0 → 95 entries has been fully reversed."
+  },
+  "run3_run2_run1_findings_status": {
+    "B-005_intlify_console_warnings": "PASS — 0 [intlify] warnings in any of the 10 console.json files (4th consecutive PASS).",
+    "B-010_aria_label_i18n_leaks": "PASS — 2nd consecutive PASS. POS states (01/02/03/06/08) and KDS states (01/04/05/07/09): 0 occurrences each of aria-label=\"button.menu\" and aria-label=\"label.kds_toggle_items\". Broad regex aria-label=\"[a-z]+(\\.[a-z_]+)+\" matches 0 across all 10 dom.html files."
+  },
+  "spot_check_evidence": {
+    "B-001_pos_tracker_card_total_count_state_06": "34 pos-tracker-card-total spans extracted; 0 zero values. Top values: 22,00 € / 21,00 € / 2,00 € × 32",
+    "B-001_pos_tracker_card_total_count_state_08": "34 pos-tracker-card-total spans extracted; 0 zero values. Identical distribution to state 06",
+    "B-002_kds_card_cta_count_per_state": "04=4 / 05=4 / 07=4 (data-testid=\"kds-card-cta\" containers, all rendered outside the height:0 accordion)",
+    "B-003_pos_tracker_rt_warn_grep_state_06": "grep -c 'pos-tracker-rt-warn' 06-*.dom.html → 1 (only CSS rule '.pos-tracker-rt-warn[data-v-551500c8] {'); grep -c 'class=\"pos-tracker-rt-warn\"' → 0",
+    "B-003_pos_tracker_rt_warn_grep_state_08": "grep -c 'pos-tracker-rt-warn' 08-*.dom.html → 1 (CSS only); grep -c 'class=\"pos-tracker-rt-warn\"' → 0",
+    "B-003_pos_tracker_v_if_placeholder_state_06": "Adjacent to 'Suivi commandes' h1: pos-tracker-status-row holds '17 actives', '1 prête(s)', '37 aujourd'hui' — no banner element between header and grid",
+    "B-003_kds_connection_banner_grep_per_state": "01=0 / 04=0 / 05=0 / 07=0 / 09=0 (all 5 KDS states have 0 connection-status-banner elements)",
+    "B-003_reconnexion_en_cours_text_per_state": "04=1 (Vue template comment), 05=1 (Vue template comment), 07=1 (Vue template comment) — all inside source-code comment blocks tagged 'iter15-mega-fix B-003/D-002 2026-05-10', no rendered text",
+    "B-008_network_json_size_per_state": "All 10 files = 2 bytes ('[]'); 0 csp-report entries; 0 4xx/5xx; 0 slow responses",
+    "B-010_raw_aria_label_i18n_keys_per_state": "01-pos=0 / 02=0 / 03=0 / 04=0 / 05=0 / 06=0 / 07=0 / 08=0 / 09=0 / 01-kds=0",
+    "B-010_button.menu_grep_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "B-010_label.kds_toggle_items_grep_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "intlify_warnings_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "non_ws_console_errors_per_state": "0/0/0/0/0/0/0/0/0/0 (all error entries are wss://127.0.0.1:6001 / ws ECONNREFUSED — allowlisted)",
+    "C-022_order_visibility_check": "tracker-order-282 visible in state 06 AND 08; tracker-order-284 (most recent) visible in 06 AND 08 — PREPARED-still-visible binding holds",
+    "C-024_lane_label_a_envoyer_to_confirmees": "06: 'À envoyer'=0, 'Confirmées'=2 (h2 column header + aria-label='2 Confirmées' count). 08: identical. Lane rename PASS.",
+    "B-004_AUDIT_orphan_token_count_per_state_run_5": "01=9, 04=10, 05=10, 07=10, 09=9. Prefixes: AUDIT-CYCLE4-9bb11124, AUDIT-HEAL, AUDIT-P1, AUDIT-P2 (4 distinct, regressed from run-4's 2 distinct)",
+    "B-007_pret_button_state_04": "4 <button title=\"Prêt\"> with 0 aria-label (unchanged for 5th consecutive run)",
+    "B-009_pos_grand_total_state_03": "0.00€ (data-testid=\"pos-grand-total\"). Receipt visible in PNG with N°A0037 / MODE TEST / 2.00€. 0 'Dernière commande' chip occurrences. Unchanged for 5th consecutive run.",
+    "B-006_receipt_dom_capture_state_03_run_5": "A0037=0, MODE TEST=0, Rendu=0, TVA=0, Type de paiement=0, Encaissement=0, '100526'=0 in 03 dom.html. Modal visible in 03 PNG. Receipt body NOT captured by page.content() — regression vs run-2/3/4 PASS."
+  },
+  "set_diff_vs_run4": {
+    "closed_in_run5": [
+      "B-003 (KDS-side connection-status-banner now suppressed in addition to POS-tracker rt-warn — full run-1 fix now lands, P1 → 0)",
+      "B-008 (CSP-report 429 storm: 95 → 0 entries, P2 → 0)"
+    ],
+    "still_open_5th_consecutive_cycle_ESCALATION_REQUIRED": [
+      "B-004 (AUDIT orphans — regressed from 2 prefixes back to 4 prefixes, 9-10 tokens per state)",
+      "B-007 (icon-only Prêt button — unchanged)",
+      "B-009 (cart resets to 0.00€ during receipt overlay — unchanged)"
+    ],
+    "newly_filed_or_reopened_in_run5": [
+      "B-006 REOPENED (P2) — receipt body no longer captured by page.content() in state 03 dom.html (regression vs run-2/3/4 PASS)"
+    ],
+    "p0_count_run1_run2_run3_run4_run5": "1 / 0 / 0 / 0 / 0",
+    "p1_count_run1_run2_run3_run4_run5": "3 / 1 / 1 / 1 / 0",
+    "p2_count_run1_run2_run3_run4_run5": "5 / 3 / 3 / 4 / 4"
+  },
+  "convergence_verdict": "WAVE B GREEN ON LOOP-BLOCKING GATE — first run with both P0=0 AND P1=0 simultaneously across the full Wave B scope. Run-5 successfully restored every prior fix that the run-4 stash regressed: B-001 (tracker totals), B-002 (KDS CTAs hoisted), B-003 (BOTH the KDS connection-status-banner AND the POS-tracker rt-warn now suppressed via APP_ENV gate + banner consolidation comment), B-008 (csp-report 429 storm fully reversed: 95 → 0). B-005 / B-010 / C-022 / C-024 all hold for 2nd–4th consecutive PASS. However, three findings are now in their 5TH consecutive heal cycle (B-004 AUDIT orphans regressed from 2 → 4 prefixes; B-007 icon-only Prêt unchanged; B-009 cart-resets-to-zero unchanged) — exceeding CLAUDE.md §8's 3-cycle ceiling by 2 cycles. Per the doctrine, all three MUST be formally escalated to human gate before any further heal cycle. ONE NEW REGRESSION: B-006 reopened (receipt body no longer captured in 03 dom.html — modal visible in PNG but page.content() returns 0 receipt tokens, suggesting Teleport-to-body refactor reverted run-2's in-place render fix). Net delta vs run-4: P1 went from 1 to 0 (B-003 closed), P2 stayed at 4 (B-008 closed, B-006 reopened, B-004/B-007/B-009 unchanged). Recommendation: (a) declare Wave B CONVERGED on the loop-blocking gate, (b) ESCALATE B-004/B-007/B-009 to human gate per §8 ceiling, (c) one final targeted heal for B-006 (re-apply receipt in-place render OR add receipt.html sibling artifact in spec), then close Wave B."
+}

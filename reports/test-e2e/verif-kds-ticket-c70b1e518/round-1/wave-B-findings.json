@@ -1,0 +1,28 @@
+{
+  "wave": "B",
+  "head": "c70b1e518",
+  "findings": [
+    {
+      "id": "B-1",
+      "severity": "P2",
+      "category": "test-suite-red",
+      "summary": "Test stale non mis à jour par c70b1e518 : BorneClientTicketLongFeedTest::borne_client_ticket_est_long_et_coupe_partielle FAIL — le test (commit 9af9c7056, ère 'queue longue 30') set config kiosk_client_feed_lines=30 et assert >=20 lignes, mais HEAD c70b1e518 a ajouté un clamp min(12,...) dans EscPosTicketBytesService.php:81 → 12 lignes rendues < 20 attendues. Le comportement produit est le NOUVEAU voulu (queue courte) ; c'est le test qui contredit la décision produit. Le commit c70b1e518 n'a lancé que les tests KDS ('199 tests KDS verts'), pas les tests Hardware.",
+      "evidence": "php artisan test tests/Feature/Hardware ... → '1 failed, 44 passed' ; assertion tests/Feature/Hardware/BorneClientTicketLongFeedTest.php:80 'Failed asserting that 12 is equal to 20 or is greater than 20' ; clamp app/Services/Hardware/EscPosTicketBytesService.php:81 max(1, min(12, config(...,8))) ; git log du test = 9af9c7056 (avant HEAD)."
+    },
+    {
+      "id": "B-2",
+      "severity": "P3",
+      "category": "doc-stale",
+      "summary": "Commentaires d'en-tête stale dans tools/borne/bridge.js : lignes 17-19 documentent encore 'avance LONGUE (ESC d 30 ≈ 12 cm)' alors que le défaut effectif est 8 (ligne 48, DEFAULT_FEED_LINES=8, commentaire COMPACT lignes 46-47 correct). De même clampFeed (ligne 51) retombe sur 30 si NaN. Cosmétique — le comportement runtime est correct (8, prouvé par bridge.test.js 'avance COURTE par défaut ESC d 8').",
+      "evidence": "tools/borne/bridge.js:17 vs :48 ; node bridge.test.js → '✓ avance COURTE par défaut (ESC d 8 — plus de grand vide)'."
+    },
+    {
+      "id": "B-3",
+      "severity": "P3",
+      "category": "config-default",
+      "summary": "DEFAULT_ADDRESS='' dans bridge.js (ligne 45) : l'adresse restaurant n'apparaît sur le ticket pont-rendu QUE si le payload serveur (ou env BORNE_ADDRESS) la fournit — contrairement au téléphone qui a un défaut sûr. Chemin /raw (rendu serveur) inclut l'adresse de toute façon (vérifié rendu réel). Impact limité au fallback vieux-bundle POST / JSON.",
+      "evidence": "tools/borne/bridge.js:45 DEFAULT_ADDRESS = process.env.BORNE_ADDRESS || '' ; bridge.js:102 if (address) text(address) ; rendu serveur réel commande #5474 inclut '437 Rue Élie Gruyelle, 62110 / Hénin-Beaumont'."
+    }
+  ],
+  "pass_summary": "1) SERVEUR : défaut queue = 8 lignes confirmé — EscPosTicketBytesService.php:81 (config('printing.cut.kiosk_client_feed_lines', 8), clamp min 12), config/printing.php:125 (feed_lines_before_cut défaut 8) et :134 (kiosk_client_feed_lines défaut 8), OrderReceiptEscPosRenderer.php:359-361 (feedLinesBeforeCut défaut 8). 2) TESTS : TicketWidthSafe filter = 12/12 verts ; suite ticket/print complète (tests/Feature/Hardware + Unit/Hardware + PosTicketBytesEndpointTest + PosReceiptPrintFlowTest) = 44 passed / 1 failed (finding B-1, test stale, pas un bug produit). 3) RENDU RÉEL : commande DB #5474 (A0013, branch 1) rendue via EscPosTicketBytesService — décodage GS!/GSV : borne = 45 lignes, largeur max effective 32, 0 ligne >32 col, 0 prix coupé ('4,00 €' atomique, splitPrice=0), tailFeed=8 (≈27 mm, pas de marge 10 cm), coupe PARTIELLE (GS V 1) ; caisse identique sauf coupe TOTALE (GS V 0), tailFeed=8. 4) BRIDGE : md5 tools/borne/bridge.js = a70b4233fb34b775520f37f0fe47eb0e (== attendu) ; code confirme titre GRAS 2×2 (l.100), adresse (l.102, payload/env), tél défaut '03 65 67 82 91' (l.44/103), coupe partielle défaut (l.49/129), feed défaut 8 clampé (l.48/51), défauts sûrs si payload minimal ; node bridge.test.js = 12/12 assertions vertes ; rendu node d'un payload exemple décodé = titre/produit/total en GRAS, compo normale, ESC d 8, cut PARTIAL. 5) PARITÉ VPS : domaine = vps-418872ac.vps.ovh.net (IP 51.210.111.124, ssh HOST dans tools/deploy-vps.sh:171) ; curl https://vps-418872ac.vps.ovh.net/dl/bridge.js → 200, 11195 octets, md5 a70b4233fb34b775520f37f0fe47eb0e MATCH ; mix-manifest.json VPS : /js/admin-kds.js?id=35ff5098d1d5ef579e8c3af751bae25a et md5 du fichier téléchargé = 35ff5098d1d5ef579e8c3af751bae25a MATCH. Note : https://lecayenne.fr/dl/bridge.js → 404 (le /dl n'est publié que sur le domaine OVH — limitation, pas un finding). Aucun P0/P1. Aucun code produit modifié, aucun frozen touché, aucun SSH."
+}

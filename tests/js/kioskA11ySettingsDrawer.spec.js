@@ -4,11 +4,13 @@
  * Vérifie :
  *  - Rendu conditionnel (v-model)
  *  - A11y : role=dialog, aria-modal, aria-labelledby, radiogroups, switches
- *  - Sélection langue FR/EN/AR dispatche kioskSettings/setLocale
+ *  - [ADR-007 / Sprint 3D 2026-05-16] AUCUN sélecteur de langue rendu :
+ *      le drawer n'expose plus FR/EN/AR — kiosk runtime FR-immutable.
  *  - Sélection contraste AA/AAA dispatche kioskSettings/setContrast
  *  - Toggle PMR/Audio dispatche + met à jour aria-checked du switch
  *  - Bouton "done" émet update:modelValue=false
- *  - Bouton "reset" dispatche kioskSettings/reset
+ *  - Bouton "reset" dispatche kioskSettings/reset (la locale du store reste 'fr'
+ *    sans passer par un dispatch UI setLocale)
  *  - data-testid stables pour E2E
  */
 import { describe, it, expect } from 'vitest';
@@ -52,22 +54,33 @@ describe('KsA11ySettings drawer', () => {
         expect(drawer.attributes('aria-labelledby')).toBeTruthy();
     });
 
-    it('expose 3 options de langue avec aria-checked', () => {
+    // [ADR-007 / Sprint 3D 2026-05-16] FR-lock restore — le drawer ne propose
+    // plus de sélecteur FR/EN/AR. Aucun radiogroup `kiosk-a11y-lang-*` ne doit
+    // être rendu, et aucun bouton de switch locale ne doit exister.
+    it('[ADR-007] AUCUN radiogroup de langue rendu (FR-lock kiosk immutable)', () => {
         const { w } = mountDrawer();
+        // Le wrapper "lang-group" ne doit plus exister
+        expect(w.find('[data-testid="kiosk-a11y-lang-group"]').exists()).toBe(false);
+        // Aucun bouton lang-fr / lang-en / lang-ar
         ['fr', 'en', 'ar'].forEach((code) => {
-            const opt = w.find(`[data-testid="kiosk-a11y-lang-${code}"]`);
-            expect(opt.exists()).toBe(true);
-            expect(opt.attributes('role')).toBe('radio');
+            expect(w.find(`[data-testid="kiosk-a11y-lang-${code}"]`).exists()).toBe(false);
         });
-        // fr sélectionné par défaut
-        expect(w.find('[data-testid="kiosk-a11y-lang-fr"]').attributes('aria-checked')).toBe('true');
+        // Heuristique défensive : aucun élément data-testid commençant par
+        // "kiosk-a11y-lang-" (au cas où un futur dev réintroduirait un id).
+        const langCandidates = w.findAll('[data-testid^="kiosk-a11y-lang-"]');
+        expect(langCandidates.length).toBe(0);
     });
 
-    it('changer la langue dispatche setLocale', async () => {
+    it('[ADR-007] aucun click ne dispatche setLocale depuis le drawer', async () => {
         const { w, store } = mountDrawer();
-        await w.find('[data-testid="kiosk-a11y-lang-ar"]').trigger('click');
-        expect(store.state.kioskSettings.locale).toBe('ar');
-        expect(w.find('[data-testid="kiosk-a11y-lang-ar"]').attributes('aria-checked')).toBe('true');
+        // Cliquer sur tous les boutons exposés du drawer ne doit jamais muter
+        // `kioskSettings.locale` (defense-in-depth : si un futur radio fr/en/ar
+        // était rendu par erreur, ce test l'attraperait dès le 1er click).
+        const buttons = w.findAll('button');
+        for (const btn of buttons) {
+            await btn.trigger('click');
+        }
+        expect(store.state.kioskSettings.locale).toBe('fr');
     });
 
     it('changer le contraste dispatche setContrast', async () => {
@@ -102,7 +115,9 @@ describe('KsA11ySettings drawer', () => {
 
     it('bouton Reset dispatche reset (restaure les defaults)', async () => {
         const { w, store } = mountDrawer();
-        await store.dispatch('kioskSettings/setLocale', 'ar');
+        // [ADR-007] Pas de dispatch UI `setLocale` ici — on mute directement
+        // via setContrast/setPmr (chemins UI restants), et reset doit ramener
+        // la locale à 'fr' (déjà la valeur par défaut, vérifié par invariant).
         await store.dispatch('kioskSettings/setContrast', 'aaa');
         await store.dispatch('kioskSettings/setPmr', true);
         await w.find('[data-testid="kiosk-a11y-reset"]').trigger('click');

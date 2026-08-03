@@ -1,0 +1,239 @@
+{
+  "auditor": "Bad-mood AUDIT-3 visual",
+  "timestamp": "2026-05-25T10:36:32.115Z",
+  "surfaces_audited": 7,
+  "all_render": true,
+  "per_surface": {
+    "kiosk_idle": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "kiosk_idle.png",
+      "console_errors": 1,
+      "console_error_samples": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "console_errors_resolved_urls": [
+        {
+          "status": 401,
+          "url": "http://localhost:8000/api/login",
+          "method": "GET",
+          "interpretation": "Anonymous auth probe (SPA bootstrap checks if user is logged in). Expected behavior — endpoint is `/api/login` GET = login page hint; returns 401 when no session. Not a regression."
+        }
+      ],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [],
+      "issues_found": [],
+      "issues_resolved": [
+        {
+          "issue": "Branding 'Le Cayenne' not visible on idle",
+          "resolution": "FALSE POSITIVE — branding is rendered as LOGO IMAGE (top-center: 'LE CAYENNE TACOS·BURGERS·SANDWICHES·BOWLS'). Visible in screenshot. Text-only check missed the <img>."
+        }
+      ],
+      "visual_analysis": {
+        "hero_text": "Bienvenue ! Commandez en quelques touches",
+        "cta": "À emporter (Je récupère ma commande)",
+        "branding_logo_visible": true,
+        "carousel_dots_visible": true,
+        "layout_intact": true
+      },
+      "verdict": "AMBER",
+      "verdict_rationale": "1 console 401 on /api/login (benign — anonymous /api/me-style probe). Otherwise clean render with branded hero + CTA. AMBER kept per mandate ('Console errors = automatic AMBER minimum')."
+    },
+    "login": {
+      "url": "http://127.0.0.1:8000/login",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "login.png",
+      "post_submit_screenshot": "login-post-submit.png",
+      "console_errors": 0,
+      "console_error_samples": [],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [],
+      "issues_found": [],
+      "visual_analysis": {
+        "form_fields_present": ["Email (#formEmail)", "Mot De Passe (#formPassword)", "Se Souvenir De Moi", "Mot De Passe Oublié"],
+        "submit_button": "Connexion",
+        "branding_logo_visible": true,
+        "post_login_toast": "Connexion réussie."
+      },
+      "verdict": "GREEN",
+      "login_ok": true,
+      "login_redirect_url": "http://127.0.0.1:8000/admin/dashboard"
+    },
+    "pos": {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "pos.png",
+      "console_errors": 0,
+      "console_error_samples": [],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [],
+      "issues_found": [],
+      "visual_analysis": {
+        "left_panel_actions": ["Encaisser", "Suivre commandes", "Écran client", "Appliquer une réduction fidélité"],
+        "categories_visible": ["Sandwichs", "Goûters", "Burgers", "Tacos", "Bols", "Snacks", "Frites", "Boissons", "Desserts"],
+        "items_visible_with_prices_images": ["Menu 2Frites + Boisson 2.50€", "Frites Sauce 2.50€", "Boisson Seule", "Coca-Cola", "Sandwich Cayenne 7.40€"],
+        "cart_panel_right": "Commande en cours / À encaisser borne 00 — N°0001",
+        "branding_top_left": "LE CAYENNE logo + 'Bonjour Admin' top-right",
+        "layout_intact": true
+      },
+      "verdict": "GREEN"
+    },
+    "kds": {
+      "url": "http://127.0.0.1:8000/admin/kitchen-display-system",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "kds.png",
+      "console_errors": 1,
+      "console_error_samples": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "console_errors_resolved_urls": [
+        {
+          "status": 403,
+          "url": "http://127.0.0.1:8000/api/admin/kds-order/sync?since=2026-05-25T10:41:01.394Z&branch_id=1&include_deleted=true",
+          "method": "GET",
+          "interpretation": "KDS realtime sync polling endpoint forbidden. Direct curl with admin Bearer + X-API-KEY returned 200 OK with full payload, so the 403 is request-specific (SPA may be sending wrong token scope, missing X-API-KEY, or block_kiosk_token_admin tripped). UI still renders existing order via initial /api/admin/kds-order GET; impact = realtime auto-refresh DEGRADED for this admin session — chef must reload page to see new orders. Not a hard failure but a regression vs. previous expected behavior. RECOMMEND: SPA HTTP client config audit (Authorization header propagation on polling fallback)."
+        }
+      ],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [],
+      "issues_found": [
+        "KDS realtime sync 403 — auto-refresh degraded for admin@lecayenne.fr session. Existing orders still render via initial fetch; new orders won't appear without manual reload."
+      ],
+      "visual_analysis": {
+        "order_card_visible": "N°A0001 — 1× Cheddar + 1× Tacos — 12:43 attente",
+        "card_status_badge": "[A] NOUVELLE / BORNE",
+        "card_cta": "EN ATTENTE ENCAISSEMENT",
+        "header_actions": ["Tableau De Bord", "Historique"],
+        "info_banner": "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.",
+        "grid_layout": "4 columns × N rows (dashed empty placeholders for 7 slots, 1 occupied)",
+        "tag_LOCAL": "visible top-right",
+        "branding_top_left": "LE CAYENNE logo + 'Bonjour Admin' top-right",
+        "pending_chip_visible": false,
+        "pending_chip_visibility_reason": "Only 1 order present — chip suppressed by design when count <= board capacity"
+      },
+      "verdict": "AMBER",
+      "verdict_rationale": "Console 403 on KDS sync polling = realtime degradation for admin session. Initial board renders correctly with order card. Recommend dev investigation of SPA Auth header on /api/admin/kds-order/sync (verified backend works via curl)."
+    },
+    "oss": {
+      "url": "http://127.0.0.1:8000/admin/order-status-screen",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "oss.png",
+      "console_errors": 0,
+      "console_error_samples": [],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [],
+      "issues_found": [
+        "Empty state at snapshot — no orders in 'En préparation' nor 'Prêt' columns at audit time. Legitimate: the only test order is at status [A] NOUVELLE on the KDS (not yet ACCEPTED/PREPARED so not in OSS pipeline). Empty state itself is coherent.",
+        "FR/EN/AR rotation cannot be visually validated — no 'Prêt' order in queue to observe text rotating across locales. NOT GREEN-confirmed; only render-confirmed."
+      ],
+      "visual_analysis": {
+        "column_left": "En préparation (magenta header)",
+        "column_right": "Prêt (green header)",
+        "branding_top_left": "LE CAYENNE logo + 'Bonjour Admin' top-right",
+        "fullscreen_button_visible": true,
+        "layout_intact": true,
+        "fr_en_ar_rotation_visible_in_snapshot": false,
+        "fr_en_ar_rotation_assessment": "Snapshot is single-locale. Empty board means no per-order text to rotate. Rotation can only be visually verified with at least 1 'Prêt' order — not blocking but unvalidated."
+      },
+      "verdict": "AMBER",
+      "verdict_rationale": "Render passes + empty state coherent + branding intact + columns clean. BUT FR/EN/AR rotation requirement from audit prompt is NOT VALIDATED (empty queue → nothing to rotate). Per hostile mandate: cannot claim GREEN on an unverified prompt requirement. Downgrade to AMBER until at least 1 'Prêt' order in queue allows rotation observation."
+    },
+    "healthz": {
+      "url": "http://127.0.0.1:8000/api/healthz",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "healthz.png",
+      "console_errors": 0,
+      "console_error_samples": [],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [],
+      "issues_found": [],
+      "visual_analysis": {
+        "json_payload_observed": {
+          "status": "ok",
+          "checks": {
+            "db": "ok",
+            "redis": "ok",
+            "websocket": "ok",
+            "fiscal_chain": "ok",
+            "queue_pending": 0
+          },
+          "timestamp": "2026-05-25T12:37:05+02:00"
+        },
+        "all_checks_ok": true
+      },
+      "verdict": "GREEN"
+    },
+    "gap_decisions": {
+      "url": "http://127.0.0.1:8000/gap-decisions-2026-05-25.html",
+      "http_status": 200,
+      "renders": true,
+      "screenshot": "gap_decisions.png",
+      "console_errors": 0,
+      "console_error_samples": [],
+      "network_errors": 0,
+      "network_error_samples": [],
+      "raw_labels": [
+        "label.audit_fingerprint",
+        "label.kds_card_cta_ready",
+        "kiosk.rush_windows."
+      ],
+      "raw_labels_resolution": "FALSE POSITIVE — these are TEXTUAL REFERENCES inside the documented gap descriptions (MASTER-GAP-018 mentions 'i18n key label.audit_fingerprint orphan'; MASTER-GAP-044 mentions 'label.kds_card_cta_ready static label'; MASTER-GAP-068 mentions 'config kiosk.rush_windows'). They are NOT unresolved i18n placeholders in the UI — they are intentional code-style mentions inside the JSON GAPS data array (verified by grep of source HTML).",
+      "issues_found": [],
+      "visual_analysis": {
+        "header": "Le Cayenne — Decisions Gap-Hunt V1 — Top 30 gaps J0 — Phase E Owner-validation — branche=heal/cms-pr1-quickwins-2026-05-25",
+        "counters_visible": ["13 BLOCKER", "17 IMPORTANT", "0 NICE-TO-HAVE", "0 APPROUVÉE", "0 REJETÉE", "0 IGNORÉE"],
+        "filter_row_tags": ["B7 Admin Inspecteur", "B8 Cash Closure", "B9 Cross-System", "B10 P0 Locks", "B2 POS Coffret", "B3 P1 KDS Cuisine", "B4 P1 Stock", "B5 P1 Admin", "B6 Kiosk", "B11 Kiosk_Borne", "B12 Frozen-Zone"],
+        "search_input_visible": true,
+        "cards_in_dom_by_selector": { ".card": 30, "article": 0 },
+        "interactive_count_60plus": true,
+        "localStorage_ok": true,
+        "card_sample_titles": [
+          "MASTER-GAP-002 — KDS recall/undo after wrong bump",
+          "MASTER-GAP-001 — Refund UI button — backend NF525-ready, NO cashier-facing trigger",
+          "MASTER-GAP-005 — Owner export PDF/Excel cloture du soir — 1 click from dashboard"
+        ],
+        "color_theme": "dark (orange-red Cayenne accent + yellow + green/red severity chips)",
+        "layout_intact": true
+      },
+      "verdict": "AMBER",
+      "verdict_rationale": "AMBER kept ONLY because the surface-level raw-label scan triggered (false positives inside documentation text). Underlying page is functionally GREEN: 30 cards rendered, filters present, localStorage works, no console errors, no network failures, color theme clean."
+    }
+  },
+  "raw_labels_found": [
+    {
+      "surface": "gap_decisions",
+      "labels": ["label.audit_fingerprint", "label.kds_card_cta_ready", "kiosk.rush_windows."],
+      "verdict": "FALSE_POSITIVE — documentation references, not unresolved i18n"
+    }
+  ],
+  "console_errors_total": 2,
+  "console_errors_breakdown": {
+    "kiosk_idle": "1× 401 GET /api/login — anonymous SPA bootstrap probe, expected, not regression",
+    "kds": "1× 403 GET /api/admin/kds-order/sync?branch_id=1 — realtime polling endpoint forbidden for admin session. Curl with bearer+X-API-KEY returns 200 so backend works; SPA HTTP client appears to omit header on polling fallback. Recommend dev audit."
+  },
+  "broken_layouts": [],
+  "missing_features_visible": [
+    "OSS FR/EN/AR rotation could not be visually validated (empty queue at snapshot). Render + columns + branding OK, rotation behavior UNVERIFIED."
+  ],
+  "all_critical_surfaces_render": true,
+  "branding_consistent_across_authed_surfaces": true,
+  "overall_verdict": "UI-REGRESSIONS",
+  "overall_verdict_rationale": "Per audit mandate strict reading: 3 of 7 surfaces AMBER (kiosk_idle, kds, oss) + 1 AMBER from false-positive raw-label scan (gap_decisions). Not CRITICAL-FAIL (everything renders, login works, POS+healthz GREEN). Not PRODUCTION-VISUAL-OK (KDS realtime polling 403 is a real regression worth investigating; OSS rotation unverified). Verdict: UI-REGRESSIONS — minor, scoped, no blockers on render or critical flows.",
+  "auditor_judgment_summary": "ALL 7 SURFACES RENDER + login works + POS catalog visible + KDS board + OSS columns + healthz all-OK + gap-decisions 30 cards. Two real findings: (1) KDS realtime sync 403 = degraded auto-refresh for admin session (recommend SPA HTTP client investigation); (2) OSS FR/EN/AR rotation could not be observed (empty queue). Two false-positive AMBERs: kiosk_idle 401 = anonymous probe (benign); gap_decisions raw-label hits = doc text matches. No broken layouts, no missing critical CTAs, no NF525-visible regressions.",
+  "recommendations": [
+    "Investigate SPA Auth header on /api/admin/kds-order/sync polling fallback (KdsSyncController:29 enforces permission:kitchen-display-system; admin has it per tinker check; curl with Bearer+API key works → smells like SPA HTTP client interceptor drop).",
+    "Re-run OSS visual audit with at least 1 'Prêt' order in queue to validate FR/EN/AR rotation behavior."
+  ]
+}

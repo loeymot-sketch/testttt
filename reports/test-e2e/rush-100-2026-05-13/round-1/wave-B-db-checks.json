@@ -1,0 +1,97 @@
+[
+  {
+    "scenario": "S6",
+    "label": "Big Tacos + menu",
+    "target_item_id": 479,
+    "target_item_name": "Big Tacos",
+    "paid_response_status": 200,
+    "read_grand_total": 11.5,
+    "db": {
+      "ok": true,
+      "id": 1324,
+      "fiscal_sequence_no": 294,
+      "total": 11.5,
+      "payment_status": 5,
+      "status": 4,
+      "lines_count": 1,
+      "composition_snapshot_lines": 2
+    },
+    "ts": "2026-05-13T07:47:21.762Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "Bol Gratiné full",
+    "target_item_id": 484,
+    "target_item_name": "Bol Gratiné",
+    "paid_response_status": 200,
+    "read_grand_total": 12.5,
+    "db": {
+      "ok": true,
+      "id": 1324,
+      "fiscal_sequence_no": 294,
+      "total": 11.5,
+      "payment_status": 5,
+      "status": 4,
+      "lines_count": 1,
+      "composition_snapshot_lines": 2
+    },
+    "ts": "2026-05-13T07:47:43.750Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "Galette Cayenne",
+    "target_item_id": 476,
+    "target_item_name": "Galette Cayenne",
+    "paid_response_status": 200,
+    "read_grand_total": 7,
+    "db": {
+      "ok": true,
+      "id": 1324,
+      "fiscal_sequence_no": 294,
+      "total": 11.5,
+      "payment_status": 5,
+      "status": 4,
+      "lines_count": 1,
+      "composition_snapshot_lines": 2
+    },
+    "ts": "2026-05-13T07:48:05.679Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "Sandwich Classique + supp",
+    "target_item_id": 477,
+    "target_item_name": "Sandwich Classique",
+    "paid_response_status": 200,
+    "read_grand_total": 7,
+    "db": {
+      "ok": true,
+      "id": 1324,
+      "fiscal_sequence_no": 294,
+      "total": 11.5,
+      "payment_status": 5,
+      "status": 4,
+      "lines_count": 1,
+      "composition_snapshot_lines": 2
+    },
+    "ts": "2026-05-13T07:48:27.500Z"
+  },
+  {
+    "scenario": "S10",
+    "label": "Multi-cart 3 items",
+    "target_item_id": 474,
+    "target_item_name": "Sandwich Cayenne",
+    "paid_response_status": 200,
+    "read_grand_total": 21,
+    "db": {
+      "ok": true,
+      "id": 1325,
+      "fiscal_sequence_no": null,
+      "total": 2.5,
+      "payment_status": 15,
+      "status": 4,
+      "lines_count": 1,
+      "composition_snapshot_lines": 1
+    },
+    "ts": "2026-05-13T07:48:58.203Z"
+  }
+]

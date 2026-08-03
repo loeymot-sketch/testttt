@@ -1,0 +1,121 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-pos-kds-sync-A/14-pos-parked-orders.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round 2: zero 4xx/5xx in any of the 15 network.json files (verified via jq scan). Cluster-1 fix (commit 95c2fd799) eliminated the 429 storm at source via interceptor + debounce + bucket throttling. Vue-Toastification CSS classes present in DOM (122 matches) — pipeline wired even though no toast needed to fire this round.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Round 2 visual: most pink → orange swept across CTAs, badges, links, pagination, status pills. CSS token swap landed (commit c08575207). REMAINING: FoodKing logo top-left STILL pink across all 15 states (raster asset public/images/theme/theme-logo.png not regenerated). Connexion CTA top-right (header) still pink in some states (inline Tailwind hex bg-[#B0004D] missed by sweep).",
+      "fix_hint": "(partial — see new findings A-008 logo PNG, A-009 inline Tailwind hex)",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-pos-kds-sync-A/15-post-logout-login.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Round 2: state 15 first-paint French confirmed visually. Text reads 'Bon Retour', 'Email', 'Mot De Passe', 'Se Souvenir De Moi', 'Mot De Passe Oublié', 'Connexion'. No English flash. isAuthPath() FR-lock in i18n.js (commit c08575207) eliminated the FOUC.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-pos-kds-sync-A/13-pos-receipt-baseline.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 2: state 13 still captures /admin/pos-orders table, NOT PosOrderReceiptComponent. Spec selector for pos-tracker-history link falls through silently. Artifact filename 'pos-receipt-baseline' is misleading.",
+      "fix_hint": "Spec must pre-seed an order then drive PosOrderReceiptComponent open; OR rename slug to '13-pos-orders-history' and defer receipt audit explicitly.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-A.spec.js",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round 2: silent .catch() callsites reduced from 10 to 3 (critical paths now log). Non-blocking.",
+      "fix_hint": "Audit remaining 3 .catch() sites for silent failure risk.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-pos-kds-sync-A/10-pos-tracker-cards.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round 2 reproducibility WORSE: tracker shows card_count=74 vs round-1's 19/37 — DB pollution growing. Pre-existing AUDIT-/E2E- orders accumulating.",
+      "fix_hint": "Run `php artisan iter15:cleanup-test-orders --apply` in beforeAll OR before each round-N capture.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-pos-kds-sync-A/14-pos-parked-orders.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Round 2: parked-orders empty state still plain text only, no icon/CTA. Unchanged.",
+      "fix_hint": "Add empty-state illustration + CTA in ParkedOrdersComponent.vue.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "NEW round 2: raster logo PNG public/images/theme/theme-logo.png contains legacy pink in the 'Food' wordmark bitmap. Visible across all 15 states top-left. CSS token sweep cannot reach embedded PNG asset.",
+      "fix_hint": "Replace public/images/theme/theme-logo.png with Cayenne (#F4501E) wordmark variant. If SVG source exists, re-export with V2 palette and use fill='currentColor' so future palette changes are free. Add a CI assertion on dominant non-transparent pixel hue.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "NEW round 2: inline Tailwind arbitrary hex `bg-[#B0004D]` / `bg-[#8E003E]` / `text-[#B0004D]` survives in resources/views and resources/js (likely layouts/header.blade.php + pos-shell 'Bonjour Caissier' chip). Cluster-2 sweep targeted CSS variables and named Tailwind utilities, missed inline hex.",
+      "fix_hint": "grep -rE 'bg-\\[#B0004D\\]|bg-\\[#8E003E\\]|text-\\[#B0004D\\]' resources/views resources/js — rewrite each to bg-primary / hover:bg-primary-dark / text-primary using the Tailwind token (Cayenne).",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 4, "P2": 1, "P3": 3,
+    "open_P0": 0, "open_P1": 3, "open_P2": 1, "open_P3": 3
+  },
+  "round_to_round_closures": {
+    "A-001": "PASS",
+    "A-002": "PARTIAL_PASS",
+    "A-003": "PASS",
+    "A-004": "FAIL",
+    "A-005": "PARTIAL_PASS",
+    "A-006": "FAIL",
+    "A-007": "FAIL"
+  },
+  "verdict": "AMBER",
+  "notes": "Round-1 P0 + 1 of 2 P1 closed. Cluster-2 sweep missed raster logo asset (A-008) and inline Tailwind hex (A-009). Both new P1s. R3 fix scope: replace logo asset + sweep inline Tailwind hex."
+}

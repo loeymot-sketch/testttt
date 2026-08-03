@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>🏧 Activation TPE — Le Cayenne</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --primary: #d62828;
+      --primary-dark: #9d1f1f;
+      --accent: #f4a261;
+      --green: #2a9d8f;
+      --red: #e63946;
+      --gray: #6c757d;
+      --border: #e0e4e8;
+      --text: #1d3557;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 32px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 15px;
+    }
+    .container {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border-left: 4px solid var(--primary);
+    }
+    .card.green { border-left-color: var(--green); }
+    .card.gray { border-left-color: var(--gray); }
+    .card.accent { border-left-color: var(--accent); }
+    .card h2 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card.green h2 { color: #1f6b62; }
+    .step-num {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .card.green .step-num { background: var(--green); }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="date"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      background: white;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 140px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .field { margin-bottom: 14px; }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover { background: var(--primary-dark); }
+    button:active { transform: scale(0.98); }
+    button.secondary { background: var(--gray); }
+    button.green { background: var(--green); }
+    button.green:hover { background: #1f6b62; }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .checklist li {
+      padding: 10px 12px;
+      background: var(--bg);
+      margin-bottom: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .checklist li:hover { background: #eaeef1; }
+    .checklist li.done {
+      background: #d1f0ec;
+      text-decoration: line-through;
+      color: var(--gray);
+    }
+    .checklist input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    .link-btn:hover { background: #e6913e; }
+    .link-btn.primary { background: var(--primary); }
+    .link-btn.primary:hover { background: var(--primary-dark); }
+    .contact-box {
+      background: var(--bg);
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .contact-box div { margin: 4px 0; }
+    .contact-box strong { color: var(--primary-dark); }
+    .status-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-waiting { background: #fff3cd; color: #856404; }
+    .status-ok { background: #d1f0ec; color: #1f6b62; }
+    .status-refused { background: #f8d7da; color: #842029; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    th { background: var(--bg); font-weight: 600; }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--green);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 14px;
+      border-radius: 6px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    .info-box {
+      background: #d1ecf1;
+      border-left: 4px solid #0dcaf0;
+      padding: 14px;
+      border-radius: 6px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    .footer-note {
+      text-align: center;
+      color: var(--gray);
+      font-size: 13px;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🏧 Activation TPE — Le Cayenne</h1>
+    <p>Cockpit one-page : tout ce qu'il te faut pour activer le Valina, en solo</p>
+  </header>
+
+  <div class="container">
+
+    <!-- WARNING HONNÊTETÉ -->
+    <div class="card accent">
+      <h2><span class="step-num" style="background: var(--accent)">!</span> À lire en premier</h2>
+      <p style="margin: 0 0 8px 0;"><strong>Le Valina ne peut PAS être activé sans accord d'un acquéreur.</strong> Aucune doc, aucun code, aucune manip technique seul ne contourne ça (PCI DSS + EMV L2 + secure element verrouille).</p>
+      <p style="margin: 0;">Cette page t'aide à <strong>demander l'accord en ligne</strong> à Worldline FR + Splash 360 en parallèle, en 30 minutes max, sans appeler personne.</p>
+    </div>
+
+    <!-- STEP 0 — Tes infos -->
+    <div class="card">
+      <h2><span class="step-num">0</span> Tes infos Le Cayenne (remplis 1 fois, sauvegardé)</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label>Nom dirigeant (Président)</label>
+          <input type="text" id="ownerName" placeholder="Nom Prénom" value="Ben Ghiline Mourad" />
+        </div>
+        <div class="field">
+          <label>Raison sociale</label>
+          <input type="text" id="company" placeholder="Société SAS" value="E.DELICE (SAS)" />
+        </div>
+        <div class="field">
+          <label>Enseigne commerciale</label>
+          <input type="text" id="brand" placeholder="Le Cayenne" value="Le Cayenne" />
+        </div>
+        <div class="field">
+          <label>Forme juridique</label>
+          <input type="text" id="legalForm" value="SAS (Société par Actions Simplifiée)" />
+        </div>
+        <div class="field">
+          <label>SIRET (14 chiffres)</label>
+          <input type="text" id="siret" placeholder="XXX XXX XXX XXXXX" value="104 170 501 00019" />
+        </div>
+        <div class="field">
+          <label>SIREN (9 chiffres)</label>
+          <input type="text" id="siren" value="104 170 501" />
+        </div>
+        <div class="field">
+          <label>N° TVA intracom</label>
+          <input type="text" id="tva" placeholder="FR XX XXXXXXXXX" value="FR19104170501" />
+        </div>
+        <div class="field">
+          <label>Code APE / NAF</label>
+          <input type="text" id="ape" value="56.10C (Restauration de type rapide)" />
+        </div>
+        <div class="field">
+          <label>Capital social</label>
+          <input type="text" id="capital" value="1 000,00 €" />
+        </div>
+        <div class="field">
+          <label>Date de création société</label>
+          <input type="text" id="creationDate" value="27/04/2026" />
+        </div>
+        <div class="field">
+          <label>IBAN Shine (à compléter — récupère depuis app Shine)</label>
+          <input type="text" id="iban" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" />
+        </div>
+        <div class="field">
+          <label>Adresse restaurant</label>
+          <input type="text" id="address" placeholder="Rue, code postal, ville" value="437 Rue Elie Gruyelle, 62110 Hénin-Beaumont" />
+        </div>
+        <div class="field">
+          <label>Email pro</label>
+          <input type="email" id="ownerEmail" placeholder="contact@lecayenne.fr" value="kossaybusiness@gmail.com" />
+        </div>
+        <div class="field">
+          <label>Téléphone restaurant</label>
+          <input type="tel" id="ownerPhone" placeholder="+33 X XX XX XX XX" value="03.52.56.03.56" />
+        </div>
+        <div class="field">
+          <label>Site web</label>
+          <input type="text" id="website" value="https://lecayenne.fr" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="green" onclick="saveData()">💾 Sauvegarder mes infos</button>
+        <button class="secondary" onclick="generateEmails()">🔄 Régénérer les messages</button>
+      </div>
+    </div>
+
+    <!-- STEP 1 — Identifier le Valina -->
+    <div class="card">
+      <h2><span class="step-num">1</span> Identifier le Valina (5 min, devant la borne)</h2>
+      <p style="margin-top: 0;">Tourne le Valina, regarde le sticker au dos :</p>
+      <div class="grid-2">
+        <div class="field">
+          <label>Modèle exact</label>
+          <input type="text" id="valinaModel" placeholder="VAL501 / VAL512 / Valina+" />
+        </div>
+        <div class="field">
+          <label>Numéro de série (S/N)</label>
+          <input type="text" id="valinaSN" placeholder="10-15 caractères alphanumériques" />
+        </div>
+        <div class="field">
+          <label>Adresse MAC (si visible)</label>
+          <input type="text" id="valinaMAC" placeholder="00:1A:2B:3C:4D:5E" />
+        </div>
+        <div class="field">
+          <label>État écran allumé</label>
+          <input type="text" id="valinaScreen" placeholder="Ex: code ERR_8009, écran noir, logo Splash..." />
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>📸 Photos à prendre :</strong>
+        <ul style="margin: 8px 0 0 0;">
+          <li>Recto Valina (face avec écran)</li>
+          <li>Verso (sticker S/N bien lisible)</li>
+          <li>Écran allumé (état actuel)</li>
+        </ul>
+        <p style="margin: 8px 0 0 0;">Joindre en pièces jointes aux 2 formulaires Étape 3.</p>
+      </div>
+    </div>
+
+    <!-- STEP 2 — Documents -->
+    <div class="card">
+      <h2><span class="step-num">2</span> Préparer les documents (10 min)</h2>
+      <p style="margin-top: 0;">Coche au fur et à mesure :</p>
+      <ul class="checklist" id="docsList">
+        <li><input type="checkbox" data-key="doc1"><span>K-bis Le Cayenne &lt; 3 mois (PDF, gratuit sur infogreffe.fr)</span></li>
+        <li><input type="checkbox" data-key="doc2"><span>CNI dirigeant recto-verso scannée (PDF couleur)</span></li>
+        <li><input type="checkbox" data-key="doc3"><span>RIB Shine FR (PDF, depuis app Shine)</span></li>
+        <li><input type="checkbox" data-key="doc4"><span>Justificatif domicile pro (bail commercial, EDF, internet)</span></li>
+        <li><input type="checkbox" data-key="doc5"><span>Statuts société Le Cayenne</span></li>
+        <li><input type="checkbox" data-key="doc6"><span>Attestation INSEE (gratuit sur avis-situation-sirene.insee.fr)</span></li>
+        <li><input type="checkbox" data-key="doc7"><span>Photos Valina (recto + verso + écran)</span></li>
+        <li><input type="checkbox" data-key="doc8"><span>Facture/attestation cession du Valina (preuve d'origine si vente d'occasion)</span></li>
+      </ul>
+    </div>
+
+    <!-- STEP 3A — Worldline -->
+    <div class="card">
+      <h2><span class="step-num">3</span> Envoyer à Worldline France (priorité 1)</h2>
+
+      <a href="https://worldline.com/fr-fr/home/contact-us" target="_blank" class="link-btn primary">
+        🔗 Ouvrir le formulaire Worldline France
+      </a>
+
+      <div class="contact-box">
+        <div><strong>Téléphone (si besoin) :</strong> +33 (0)1 73 26 00 00</div>
+        <div><strong>Email :</strong> infoWL@worldline.com</div>
+        <div><strong>Type de demande à sélectionner :</strong> "Commercial / Vente — Solutions Self-Service"</div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <label>Message à coller dans le formulaire :</label>
+        <textarea id="msgWorldline" readonly></textarea>
+        <div class="btn-row">
+          <button onclick="copyText('msgWorldline')">📋 Copier le message</button>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        <strong>⚠️ Pièces jointes obligatoires :</strong> K-bis + CNI + RIB Shine + 3 photos Valina + photo écran d'état actuel
+      </div>
+    </div>
+
+    <!-- STEP 3B — Splash 360 -->
+    <div class="card">
+      <h2><span class="step-num">3'</span> En parallèle — Splash 360 (web form)</h2>
+
+      <a href="https://splash360.fr/contactez-nous/" target="_blank" class="link-btn">
+        🔗 Ouvrir le formulaire Splash 360
+      </a>
+
+      <div class="contact-box">
+        <div><strong>Email direct :</strong> contact@splash360.fr</div>
+        <div><strong>Téléphone (si tu changes d'avis) :</strong> 01 83 62 50 02</div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <label>Message à coller dans le formulaire (ou envoyer par email) :</label>
+        <textarea id="msgSplash" readonly></textarea>
+        <div class="btn-row">
+          <button onclick="copyText('msgSplash')">📋 Copier le message</button>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        Splash 360 reste propriétaire technique du Valina (verrouillage TMS). Demande explicite : <strong>déprovisionnement</strong> pour que tu puisses le faire reprovisioner ailleurs (Worldline direct).
+      </div>
+    </div>
+
+    <!-- STEP 3C — Plan B acquéreurs -->
+    <div class="card">
+      <h2><span class="step-num">3''</span> Plan B (si refus Worldline + Splash sous 7 jours)</h2>
+      <p style="margin-top: 0;">Si les 2 ne répondent pas favorablement, tu écris aux acquéreurs alternatifs avec le <strong>même message Worldline</strong> :</p>
+
+      <div class="grid-2" style="margin-top: 12px;">
+        <div class="contact-box">
+          <strong>Société Générale Sogemonétique</strong>
+          <div>📞 0810 105 305</div>
+          <div>🔗 <a href="https://professionnels.sg.fr/encaissement-paiement" target="_blank">Site SG Pro</a></div>
+          <div style="margin-top: 6px; font-size: 12px;">Avantage : Shine = filiale SG → KYC déjà partagé</div>
+        </div>
+        <div class="contact-box">
+          <strong>BNP Paribas Mercanet</strong>
+          <div>📞 0820 222 522</div>
+          <div>🔗 <a href="https://www.axepta.bnpparibas/fr/" target="_blank">Site Mercanet</a></div>
+        </div>
+        <div class="contact-box">
+          <strong>Crédit Agricole Up2pay</strong>
+          <div>📞 01 43 23 52 02</div>
+          <div>🔗 <a href="https://www.ca-moncommerce.com/" target="_blank">CA mon commerce</a></div>
+        </div>
+        <div class="contact-box">
+          <strong>Yavin (French startup)</strong>
+          <div>📞 09 71 07 11 00</div>
+          <div>🔗 <a href="https://yavin.com/contact" target="_blank">Yavin contact</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 — Tracker -->
+    <div class="card green">
+      <h2><span class="step-num">4</span> Tracker tes envois</h2>
+      <table>
+        <tr>
+          <th>Provider</th>
+          <th>Envoyé le</th>
+          <th>Statut</th>
+          <th>Notes</th>
+        </tr>
+        <tr>
+          <td><strong>Worldline FR</strong></td>
+          <td><input type="date" id="dateWorldline"></td>
+          <td>
+            <select id="statusWorldline">
+              <option value="todo">⏳ À envoyer</option>
+              <option value="sent">📤 Envoyé</option>
+              <option value="waiting">🕐 Attente réponse</option>
+              <option value="ok">✅ OK reprovisioning</option>
+              <option value="refused">❌ Refusé</option>
+            </select>
+          </td>
+          <td><input type="text" id="notesWorldline" placeholder="Réponse, contact reçu..."></td>
+        </tr>
+        <tr>
+          <td><strong>Splash 360</strong></td>
+          <td><input type="date" id="dateSplash"></td>
+          <td>
+            <select id="statusSplash">
+              <option value="todo">⏳ À envoyer</option>
+              <option value="sent">📤 Envoyé</option>
+              <option value="waiting">🕐 Attente réponse</option>
+              <option value="ok">✅ OK déblocage</option>
+              <option value="refused">❌ Refusé</option>
+            </select>
+          </td>
+          <td><input type="text" id="notesSplash" placeholder=""></td>
+        </tr>
+        <tr>
+          <td>SG Sogemonétique</td>
+          <td><input type="date" id="dateSG"></td>
+          <td>
+            <select id="statusSG">
+              <option value="todo">⏳</option>
+              <option value="sent">📤</option>
+              <option value="waiting">🕐</option>
+              <option value="ok">✅</option>
+              <option value="refused">❌</option>
+            </select>
+          </td>
+          <td><input type="text" id="notesSG"></td>
+        </tr>
+        <tr>
+          <td>BNP Mercanet</td>
+          <td><input type="date" id="dateBNP"></td>
+          <td>
+            <select id="statusBNP">
+              <option value="todo">⏳</option>
+              <option value="sent">📤</option>
+              <option value="waiting">🕐</option>
+              <option value="ok">✅</option>
+              <option value="refused">❌</option>
+            </select>
+          </td>
+          <td><input type="text" id="notesBNP"></td>
+        </tr>
+      </table>
+      <div class="btn-row">
+        <button class="green" onclick="saveData()">💾 Sauvegarder le tracker</button>
+      </div>
+    </div>
+
+    <!-- STEP 5 — Quand tu reçois la réponse -->
+    <div class="card gray">
+      <h2><span class="step-num" style="background: var(--gray)">5</span> Quand un acquéreur dit OUI</h2>
+      <p style="margin-top: 0;">L'acquéreur t'envoie ces 5 éléments à me transmettre :</p>
+      <ul>
+        <li><strong>Terminal ID (TID)</strong> — 8 chiffres</li>
+        <li><strong>Merchant ID (MID)</strong> — 15 chiffres</li>
+        <li><strong>URL TIM-Server</strong> à configurer dans le terminal</li>
+        <li><strong>Certificat client mTLS</strong> (.pem + .key) pour auth mutuelle</li>
+        <li><strong>Date prévue du push OTA</strong> des clés crypto DUKPT dans ton Valina</li>
+      </ul>
+      <div class="info-box">
+        Je code l'intégration FoodKing en <strong>3-5 jours dev</strong>. Tu encaisses sur la borne directement après le push OTA.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    Page locale, données sauvegardées dans ton navigateur (localStorage). Aucune donnée envoyée à un serveur.
+  </div>
+
+  <div class="toast" id="toast">Copié !</div>
+
+  <script>
+    // === Save / Load to localStorage ===
+    const STORAGE_KEY = 'lecayenne_tpe_activation_v1';
+    const FIELDS = [
+      'ownerName','company','brand','legalForm','siret','siren','tva','ape','capital','creationDate',
+      'iban','address','ownerEmail','ownerPhone','website',
+      'valinaModel','valinaSN','valinaMAC','valinaScreen',
+      'dateWorldline','statusWorldline','notesWorldline',
+      'dateSplash','statusSplash','notesSplash',
+      'dateSG','statusSG','notesSG',
+      'dateBNP','statusBNP','notesBNP'
+    ];
+
+    function loadData() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        FIELDS.forEach(f => {
+          const el = document.getElementById(f);
+          if (el && data[f] !== undefined) el.value = data[f];
+        });
+        // checkboxes
+        document.querySelectorAll('.checklist input[type="checkbox"]').forEach(cb => {
+          const key = cb.dataset.key;
+          if (data['cb_' + key]) {
+            cb.checked = true;
+            cb.parentElement.classList.add('done');
+          }
+        });
+      } catch (e) { console.warn('Load failed:', e); }
+      generateEmails();
+    }
+
+    function saveData() {
+      const data = {};
+      FIELDS.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) data[f] = el.value;
+      });
+      document.querySelectorAll('.checklist input[type="checkbox"]').forEach(cb => {
+        data['cb_' + cb.dataset.key] = cb.checked;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      showToast('💾 Sauvegardé !');
+      generateEmails();
+    }
+
+    // === Generate emails based on filled info ===
+    function generateEmails() {
+      const name = document.getElementById('ownerName').value || '[TON NOM]';
+      const company = document.getElementById('company').value || 'E.DELICE (SAS)';
+      const brand = document.getElementById('brand').value || 'Le Cayenne';
+      const legalForm = document.getElementById('legalForm').value || 'SAS';
+      const siret = document.getElementById('siret').value || '[SIRET]';
+      const siren = document.getElementById('siren').value || '[SIREN]';
+      const tva = document.getElementById('tva').value || '[TVA]';
+      const ape = document.getElementById('ape').value || '56.10C';
+      const capital = document.getElementById('capital').value || '[Capital]';
+      const creationDate = document.getElementById('creationDate').value || '[Date création]';
+      const iban = document.getElementById('iban').value || 'FR76 XXXX XXXX XXXX XXXX XXXX XXX (à compléter)';
+      const address = document.getElementById('address').value || '[Adresse restaurant]';
+      const email = document.getElementById('ownerEmail').value || '[email]';
+      const phone = document.getElementById('ownerPhone').value || '[téléphone]';
+      const website = document.getElementById('website').value || '[site web]';
+      const model = document.getElementById('valinaModel').value || '[modèle à compléter Étape 1]';
+      const sn = document.getElementById('valinaSN').value || '[S/N à compléter Étape 1]';
+      const mac = document.getElementById('valinaMAC').value || '[MAC si applicable]';
+      const screen = document.getElementById('valinaScreen').value || '[état écran actuel]';
+
+      document.getElementById('msgWorldline').value =
+`Bonjour,
+
+Je suis ${name}, Président de la société ${company}, exploitant
+le restaurant "${brand}" en France.
+
+Identification société :
+- Raison sociale : ${company}
+- Forme juridique : ${legalForm}
+- Enseigne commerciale : ${brand}
+- SIRET : ${siret}
+- SIREN : ${siren}
+- N° TVA intracommunautaire : ${tva}
+- Code APE/NAF : ${ape}
+- Capital social : ${capital}
+- Date de création : ${creationDate}
+- Siège / Restaurant : ${address}
+- Site web : ${website}
+- Email pro : ${email}
+- Téléphone : ${phone}
+
+OBJET : Demande de reprovisioning d'un terminal Worldline VALINA
+existant sous mon SIRET, avec settlement vers mon IBAN Shine FR.
+
+J'ai installé physiquement dans ma borne self-service un terminal
+Worldline VALINA aux caractéristiques suivantes :
+- Modèle : ${model}
+- Numéro de série (S/N) : ${sn}
+- Adresse MAC : ${mac}
+- État actuel écran : ${screen}
+
+Ce terminal provient d'un autre commerçant (restaurateur précédent
+qui exploitait via l'intégrateur Splash 360). Il est aujourd'hui
+physiquement opérationnel mais non provisionné pour ma société.
+
+Profil technique : je suis développeur intégrateur monétique. Je
+dispose des documents Worldline VALINA Integration Guide FR et TIM
+Integration Manual. Mon logiciel de caisse est une solution
+maison Laravel + Vue, conforme NF525 (chaîne audit_logs HMAC +
+Z-reports + archive 6 ans). Je peux donc intégrer le terminal moi-
+même via le protocole TIM. Il ne me manque que le provisioning
+acquéreur côté Worldline.
+
+JE VOUS PRIE DE M'INDIQUER :
+
+1. La procédure pour faire reprovisionner ce VALINA sous mon SIRET
+   ${siret}, avec settlement vers mon IBAN bancaire :
+   ${iban}
+   Compte ouvert chez Shine (filiale Société Générale, IBAN FR).
+
+2. Confirmation que le S/N ${sn} est éligible à un nouveau
+   merchant — c'est-à-dire que le secure-element du terminal
+   accepte un nouveau provisioning, ou qu'un déprovisioning
+   préalable par Splash 360 est requis.
+
+3. Liste exhaustive des documents à fournir pour ouvrir le contrat
+   acquéreur Worldline Merchant Services France. J'ai déjà préparé :
+   • K-bis ${company} < 3 mois
+   • CNI Président (${name})
+   • RIB Shine FR
+   • Attestation INSEE
+   • Statuts ${legalForm}
+   • Justificatif domicile pro (bail / EDF)
+
+4. Tarification :
+   • Frais d'ouverture du contrat
+   • Abonnement mensuel par terminal
+   • Commission par transaction CB EEE (Visa/Mastercard/CB)
+   • Commission CB hors-EEE (Amex, cartes étrangères)
+   • Acceptation titres-restaurant CONECS (Edenred, Pluxee,
+     UpDéjeuner, Bimpli) et commission associée
+
+5. Délai estimé entre dossier complet réceptionné et première
+   transaction OK en production.
+
+6. Si Worldline Merchant Services France ne couvre pas
+   directement ce cas d'usage (terminal d'occasion ex-Splash 360),
+   merci de m'orienter vers le partenaire bancaire le plus
+   approprié (Société Générale Sogemonétique, BNP Paribas Mercanet,
+   Crédit Agricole Up2pay, etc.) qui accepterait ce hardware
+   spécifique.
+
+PIÈCES JOINTES AU PRÉSENT MESSAGE :
+- Photo recto VALINA (écran allumé)
+- Photo verso (sticker S/N + MAC + date fab lisible)
+- Photo écran d'état actuel (non provisionné)
+- K-bis ${company} < 3 mois (PDF)
+- CNI Président recto-verso (PDF)
+- RIB Shine FR (PDF)
+- Attestation INSEE (PDF)
+- Statuts ${legalForm} (PDF)
+
+Je reste à votre disposition pour toute information complémentaire,
+et préfère un retour par email à ${email} pour traçabilité.
+
+Cordialement,
+
+${name}
+Président de ${company} — Enseigne "${brand}"
+Tél. : ${phone}
+Email : ${email}
+Web : ${website}`;
+
+      document.getElementById('msgSplash').value =
+`Bonjour,
+
+Je suis ${name}, Président de la société ${company}
+(SIRET ${siret}, TVA ${tva}), exploitant le restaurant
+"${brand}" au ${address}.
+
+OBJET : Terminal Worldline VALINA précédemment provisionné via
+votre plateforme — demande de clarification statut
+
+J'ai acquis un terminal Worldline VALINA qui était précédemment
+en exploitation chez un de vos anciens clients (un restaurateur
+qui utilisait votre solution Splash 360).
+
+Caractéristiques du terminal en ma possession :
+- Modèle : ${model}
+- Numéro de série : ${sn}
+- MAC : ${mac}
+- État actuel écran : ${screen}
+
+Je souhaite des réponses claires sur les 3 points suivants, par
+ordre de priorité :
+
+QUESTION 1 — Reprovisioning sous notre SIRET
+Pouvez-vous réaffecter techniquement ce terminal à mon SIRET
+${siret} sans m'imposer votre logiciel de caisse Splash 360 ?
+J'utilise ma propre solution POS développée en interne (Laravel
++ Vue, conforme NF525). Si oui :
+   a) Quel est le tarif d'une telle prestation ?
+   b) Quel est le délai d'activation ?
+   c) Quels sont les documents à fournir ?
+
+QUESTION 2 — Déprovisionnement si reprovisioning impossible
+Si vous ne proposez pas de prestation "hardware-only" (sans
+votre logiciel POS), pouvez-vous CONFIRMER PAR ÉCRIT que ce
+terminal peut être déprovisionné de votre parc TMS, afin que
+je puisse le faire reprovisionner par un autre acquéreur
+(Worldline Merchant Services direct ou autre partenaire bancaire) ?
+
+QUESTION 3 — Statut contractuel actuel du matériel
+Pouvez-vous confirmer si ce terminal est actuellement :
+   a) Encore sous contrat de location active dans votre parc ?
+   b) Déclaré perdu / volé / impayé ?
+   c) Définitivement sorti de votre système ?
+   d) Propriété de Splash 360 ou propriété du précédent
+      restaurateur (ce qui détermine ma situation juridique
+      vis-à-vis de l'acquisition d'occasion) ?
+
+IDENTIFICATION COMPLÈTE :
+- Raison sociale : ${company}
+- Forme juridique : ${legalForm}
+- Enseigne commerciale : ${brand}
+- SIRET : ${siret} | SIREN : ${siren}
+- TVA : ${tva}
+- Code APE : ${ape}
+- Capital social : ${capital}
+- Date création : ${creationDate}
+- Siège / Restaurant : ${address}
+- Site web : ${website}
+- Email pro : ${email}
+- Téléphone : ${phone}
+
+PIÈCES JOINTES :
+- Photos du VALINA (recto, verso S/N, écran d'état)
+- K-bis ${company} < 3 mois
+- RIB Shine FR (IBAN ${iban})
+- CNI Président
+- Statuts ${legalForm}
+- Déclaration d'origine du matériel (cession ancien exploitant)
+
+Merci pour une réponse écrite sous 7 jours ouvrés. Cette
+clarification me permettra soit de devenir client Splash 360
+si la formule "hardware seul" existe, soit d'orienter mes
+démarches vers un autre acquéreur sans bloquer l'ouverture de
+mon établissement.
+
+Cordialement,
+
+${name}
+Président de ${company} — Enseigne "${brand}"
+${address}
+Tél. : ${phone}
+Email : ${email}
+Web : ${website}`;
+    }
+
+    // === Copy to clipboard ===
+    function copyText(id) {
+      const el = document.getElementById(id);
+      el.select();
+      navigator.clipboard.writeText(el.value).then(() => {
+        showToast('📋 Copié dans le presse-papier !');
+      }).catch(() => {
+        document.execCommand('copy');
+        showToast('📋 Copié !');
+      });
+    }
+
+    // === Toast ===
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    // === Checklist toggle ===
+    document.querySelectorAll('.checklist input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const li = cb.parentElement;
+        if (cb.checked) li.classList.add('done');
+        else li.classList.remove('done');
+        saveData();
+      });
+    });
+
+    // Auto-save on input change
+    FIELDS.forEach(f => {
+      const el = document.getElementById(f);
+      if (el) {
+        el.addEventListener('change', () => {
+          saveData();
+        });
+        el.addEventListener('input', () => {
+          if (['ownerName','company','siret','iban','address','ownerEmail','ownerPhone',
+               'valinaModel','valinaSN','valinaMAC','valinaScreen'].includes(f)) {
+            generateEmails();
+          }
+        });
+      }
+    });
+
+    // Init
+    loadData();
+  </script>
+
+</body>
+</html>

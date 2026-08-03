@@ -1,0 +1,161 @@
+{
+  "micro_system": "S8-settings-payments",
+  "files_examined": [
+    "resources/js/components/admin/settings/PaymentTerminals/PaymentTerminalsComponent.vue",
+    "resources/js/components/admin/settings/PaymentGateway/PaymentGatewayComponent.vue",
+    "resources/js/components/admin/settings/KioskMachine/KioskMachineCreateComponent.vue",
+    "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue",
+    "resources/js/components/admin/settings/KioskMachine/KioskMachineComponent.vue",
+    "resources/js/components/admin/settings/KioskSetup/KioskSetupComponent.vue",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/store/modules/paymentTerminal.js",
+    "resources/js/store/modules/kioskMachine.js",
+    "resources/js/router/modules/settingRoutes.js",
+    "app/Http/Controllers/Admin/PaymentTerminalController.php",
+    "app/Http/Controllers/Admin/PaymentGatewayController.php",
+    "app/Http/Controllers/Admin/KioskMachineController.php",
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php",
+    "app/Services/KioskMachineService.php",
+    "app/Services/KioskSetupService.php",
+    "app/Http/Requests/Admin/PaymentTerminalRequest.php",
+    "app/Http/Requests/KioskMachineRequest.php",
+    "app/Http/Requests/PosOrderRequest.php",
+    "app/Http/Resources/PaymentTerminalResource.php",
+    "app/Http/Resources/KioskMachineResource.php",
+    "app/Http/Resources/PaymentGatewayResource.php",
+    "app/Http/Resources/GatewayOptionsResource.php",
+    "app/Models/PaymentTerminal.php",
+    "app/Models/Scopes/BranchScope.php",
+    "app/Services/Payments/SplitPaymentService.php",
+    "database/migrations/2026_05_16_120000_create_payment_terminals_table.php",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "id": "S8-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "TPE créé via Settings prend branch_id=0 (admin) → invisible/refusé à la caisse de la branche → impossible d'encaisser par carte",
+      "file_line": "resources/js/components/admin/settings/PaymentTerminals/PaymentTerminalsComponent.vue:202-211 (defaultForm sans branch_id) + app/Http/Controllers/Admin/PaymentTerminalController.php:108-117 (resolveBranchId)",
+      "evidence": "Le modal de création/édition (PaymentTerminalsComponent.vue, defaultForm L202-211 et openEdit L228-239) ne contient AUCUN champ branch_id — le formulaire n'envoie jamais branch_id. Côté backend resolveBranchId() (PaymentTerminalController.php:108) retourne `$request->validated('branch_id')` SEULEMENT si l'utilisateur a branch_id>0 ; pour l'admin (branch_id=0, cas normal en V1 mono-poste Le Cayenne) il retourne validated('branch_id') qui est absent ⇒ (int)null = 0. Le terminal est donc créé avec branch_id=0. Or PosOrderRequest.php:235-242 et SplitPaymentService.php:129-138 exigent pour chaque tranche CARD un terminal où `->where('branch_id', $orderBranchId)` avec orderBranchId = branch_id de la commande (=1 pour Le Cayenne). De plus PaymentComponent.vue:510 charge `admin/payment-terminals` filtré par BranchScope : un caissier staff (branch_id=1) ne verra JAMAIS le terminal branch_id=0 (BranchScope.php:43 `where(field, userBranch)`), et même un admin caissier qui le voit verra la tranche CARD refusée car branch_id 0 != 1.",
+      "why_it_matters": "C'est exactement la douleur owner « re-associer les TPE ». Un TPE configuré dans l'écran Paramètres → Terminaux de paiement par l'admin est inutilisable en caisse : toute tranche CARTE est rejetée avec « The selected payment terminal is not available for this branch » et le caissier ne peut pas encaisser par carte. Blocage du flux d'encaissement principal du fast-food.",
+      "reproduction": "1) Login admin. 2) Paramètres → Terminaux de paiement → Ajouter → remplir nom/gateway → Enregistrer. 3) SELECT branch_id FROM payment_terminals → 0. 4) En caisse, choisir paiement CARTE : POST /admin/pos-order rejeté 422 sur payment_breakdown.0.terminal_id car branch_id(0) != order branch_id(1).",
+      "recommended_correction": "Ajouter un sélecteur de branche dans le modal (visible/obligatoire quand l'utilisateur courant est admin branch_id=0, comme le fait KioskMachineCreateComponent.vue:67-78), OU faire que resolveBranchId() retombe sur la branche par défaut V1 (config branche unique) au lieu de 0 quand aucune branche n'est fournie, OU valider 'branch_id' required pour l'admin. Cohérent avec le module Kiosk Machine qui, lui, expose bien branch_id.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-02",
+      "severity": "P1",
+      "category": "security",
+      "title": "Logout / Désactivation / Suppression d'une borne kiosk côté Admin ne révoque PAS le token Sanctum kiosk:order — la borne peut continuer à commander",
+      "file_line": "app/Services/KioskMachineService.php:179-191 (logout) + 108-124 (destroy) + 145-167 (changeStatus)",
+      "evidence": "KioskMachineLoginController.php:97-103 crée un token Sanctum `kiosk-token` avec l'ability ['kiosk:order'] et TTL config('sanctum.expiration',480)=8h. Côté admin, KioskMachineService::logout() (L179-191) fait UNIQUEMENT `$kioskMachine->update(['is_login' => Ask::NO])` + un push FCM ; il n'appelle jamais `$user->tokens()->...->delete()`. destroy() (L108-124) fait `$kioskMachine->delete()` sans révoquer le token. changeStatus() vers INACTIVE (L145-167) ne révoque pas le token non plus. Seul le re-login (KioskMachineLoginController.php:95) révoque les anciens tokens.",
+      "why_it_matters": "L'owner re-associe activement ses bornes. Quand il clique « Logout » sur une borne, ou la désactive/supprime, il croit couper son accès — mais le token kiosk:order reste valide jusqu'à 8h et la borne peut continuer à POSTer des commandes (fiscalisées) au nom de l'ancien user. Contrôle de sécurité illusoire : un kiosk débranché/réaffecté garde l'autorité de commander. Risque NF525/cash-trail (commandes attribuées au mauvais opérateur).",
+      "reproduction": "1) Borne se logue → reçoit token T. 2) Admin → Bornes → Logout (ou toggle inactif, ou supprimer). 3) Avec le token T encore en mémoire, POST /api/... kiosk order → toujours 2xx (token non révoqué, ability kiosk:order intacte). is_login=NO en base mais aucune vérification runtime du flag.",
+      "recommended_correction": "Dans logout()/destroy()/changeStatus(INACTIVE), révoquer les tokens kiosk de l'user lié : `User::find($kioskMachine->user_id)?->tokens()->where('name','kiosk-token')->delete()` dans la même transaction, en miroir de KioskMachineLoginController.php:95. Pour changeStatus INACTIVE, ne révoquer que si on passe ACTIVE→INACTIVE.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Pré-remplissage du mot de passe à l'édition d'une borne référence un champ inexistant (kioskMachine.password non retourné par la resource)",
+      "file_line": "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue:206 (password: kioskMachine.password) vs app/Http/Resources/KioskMachineResource.php:18-28",
+      "evidence": "edit() (KioskMachineListComponent.vue:198-208) fait `this.props.form = { ... password: kioskMachine.password ... }`. Mais KioskMachineResource::toArray (L18-28) NE retourne PAS de clé `password`. Donc kioskMachine.password === undefined ⇒ form.password = undefined. Le champ password du modal (KioskMachineCreateComponent.vue:55-60, type=password required pour création, nullable en édition via KioskMachineRequest.php:rules password) apparaît vide. C'est correct côté sécurité (pas de hash exposé) mais le pré-remplissage est un code mort trompeur.",
+      "why_it_matters": "Bien que sécurisé par accident, c'est un flou logique : le code prétend pré-charger le mot de passe alors qu'il charge undefined. Un dev qui maintient ce code peut croire que le password est éditable/pré-rempli et introduire un bug (ex: réafficher un hash). Source de confusion lors des re-associations de bornes de l'owner (il peut penser que le champ vide va effacer le mot de passe — il ne l'efface pas car nullable, mais le comportement n'est pas signalé à l'écran).",
+      "reproduction": "1) Bornes → Éditer une borne. 2) Le champ Mot de passe est vide (pas d'astérisques). 3) Vérifier KioskMachineResource : aucune clé password ⇒ la ligne `password: kioskMachine.password` est inopérante.",
+      "recommended_correction": "Retirer `password: kioskMachine.password` du form d'édition (mettre password:\"\") et afficher un libellé d'aide « Laisser vide pour conserver le mot de passe actuel » sous le champ en mode édition, pour lever l'ambiguïté.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-04",
+      "severity": "P2",
+      "category": "functional",
+      "title": "PaymentTerminalRequest::authorize() retourne true — la validation/écriture des TPE n'est gardée que par le middleware contrôleur ; index/show non gardés exposent fees + serial",
+      "file_line": "app/Http/Requests/Admin/PaymentTerminalRequest.php:13-16 (authorize return true) + app/Http/Controllers/Admin/PaymentTerminalController.php:27 (middleware only store/update/destroy) + routes/api.php:954-959",
+      "evidence": "PaymentTerminalRequest.php:13 `authorize(): bool { return true; }` — contrairement à KioskMachineRequest.php:authorize qui fait `$this->user()?->can('settings')`. La seule barrière est PaymentTerminalController.__construct (L27) `middleware(['permission:settings'])->only(['store','update','destroy'])`. Donc index (L955) et show (L957) ne sont PAS gardés par permission:settings : tout user authentifié (ex: POS Operator sans 'settings') peut GET /admin/payment-terminals et lire name/gateway_type/fee_percent/fee_fixed/serial_number (PaymentTerminalResource.php:10-22).",
+      "why_it_matters": "Incohérence avec la doctrine FormRequest authz du projet (CLAUDE.md §9 — sentinel FormRequestAuthzDriftSentinelTest cible justement les `return true;`) et avec PaymentGatewayController qui a explicitement gaté son index en SET-01 (heal 2026-06-01) car il expose des secrets. Ici les taux négociés par TPE et numéros de série fuient à tout staff connecté. Note: PaymentComponent.vue (caisse) a légitimement besoin de lire index — donc gater index casserait la caisse pour les caissiers sans 'settings' ; la correction doit donc être nuancée (voir reco).",
+      "reproduction": "1) Login user avec rôle sans permission 'settings' (ex: POS Operator). 2) GET /api/admin/payment-terminals → 200 avec fee_percent/fee_fixed/serial_number. 3) Comparer : POST/PUT renvoient 403 (gardés), mais la lecture passe.",
+      "recommended_correction": "Aligner authorize() sur KioskMachineRequest (`return $this->user()?->can('settings') ?? false`) pour les mutations. Pour la lecture index par la caisse, NE PAS gater index sur 'settings' (la caisse en dépend) mais restreindre PaymentTerminalResource au strict nécessaire pour le POS (id, name, gateway_type, status) et omettre fee_percent/fee_fixed/serial pour les appelants non-'settings', ou créer une resource caisse séparée. Vérifier le sentinel authz drift.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-05",
+      "severity": "P2",
+      "category": "functional",
+      "title": "KioskMachine changeStatus passe par Request brut (pas KioskMachineRequest) — status non borné/non typé peut être écrit",
+      "file_line": "app/Http/Controllers/Admin/KioskMachineController.php:82-92 (changeStatus(KioskMachine, Request)) + app/Services/KioskMachineService.php:145-167",
+      "evidence": "changeStatus() du contrôleur (L82) reçoit un Illuminate\\Http\\Request brut, pas KioskMachineRequest. Le service (KioskMachineService.php:148-150) fait `if ($request->filled('status')) { $kioskMachine->update(['status' => $request->input('status')]); }` sans validation de plage. KioskMachineRequest.php:rules borne status à `numeric|max:24` mais ce FormRequest n'est PAS appliqué sur la route change-status (routes/api.php:531 utilise le contrôleur, le contrôleur prend Request). Le toggle UI (KioskMachineListComponent.vue:268-271) n'envoie que ACTIVE/INACTIVE, donc bénin en pratique, mais l'endpoint accepte n'importe quelle valeur.",
+      "why_it_matters": "Le permission:settings protège l'accès (L23), donc pas un trou de sécurité externe, mais c'est un flou de validation : un status arbitraire écrit casserait la logique de login borne (KioskMachineLoginController.php:64 compare `status !== Status::ACTIVE` pour bloquer). Une valeur de status corrompue pourrait verrouiller une borne ou la laisser active de façon incohérente — gênant pendant les ré-associations.",
+      "reproduction": "1) POST /api/admin/setting/kiosk-machine/change-status/{id} body {status: 99}. 2) status=99 écrit en base (aucune validation Rule::in). 3) La borne n'est plus jamais 'active' au sens login.",
+      "recommended_correction": "Valider status dans changeStatus via un FormRequest dédié ou un Rule::in([Status::ACTIVE, Status::INACTIVE]) inline avant update. Symétrique au reste du module.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-06",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Liste des bornes kiosk sans état vide (pas de v-else / no_data) — table fantôme si aucune borne",
+      "file_line": "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue:31 (tbody v-if kioskMachines.length>0 sans v-else)",
+      "evidence": "Le tbody est rendu `v-if=\"kioskMachines.length > 0\"` (L31) mais AUCUN bloc `v-else` ni ligne « no_data » n'existe (grep confirme : seul match kioskMachines.length, aucun v-else/no_data dans le fichier). Par contraste PaymentTerminalsComponent.vue:58-64 a un tbody v-else avec {{ $t('label.no_data') }}.",
+      "why_it_matters": "Quand l'owner part d'une installation neuve ou supprime toutes ses bornes pour re-associer (scénario actuel décrit par l'owner), l'écran affiche un tableau avec seulement les en-têtes et un vide silencieux — pas de message « aucune borne ». Confusion : l'owner peut croire que la page est cassée ou que ses bornes ont disparu par bug, alors que c'est juste l'état vide.",
+      "reproduction": "1) Supprimer toutes les bornes. 2) Paramètres → Bornes → Liste : en-têtes de tableau visibles, corps vide, aucun message. Comparer avec Terminaux de paiement qui affiche « Aucune donnée ».",
+      "recommended_correction": "Ajouter un `<tbody v-else>` avec une ligne colspan=6 affichant {{ $t('label.no_data') }}, en miroir de PaymentTerminalsComponent.vue:57-64.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Un TPE archivé ne peut pas être réactivé par un parcours évident (bouton supprimer caché si status!=1, réactivation seulement via Éditer → radio)",
+      "file_line": "resources/js/components/admin/settings/PaymentTerminals/PaymentTerminalsComponent.vue:50-52 (destroy v-if status===1) + 228-239 (openEdit)",
+      "evidence": "Le bouton supprimer/archiver est `v-if=\"terminal.status === 1\"` (L51) : invisible sur une ligne archivée. Le bouton Éditer (L47) reste visible et openEdit (L228) pré-remplit status=Number(terminal.status), et le modal expose un radio Active/Archivé (L127-136), donc on PEUT réactiver via Éditer. Mais aucun bouton « réactiver » explicite ; le seul moyen est d'ouvrir Éditer puis cocher Active. destroy() (L253-269) appelle DELETE qui côté backend (PaymentTerminalController.php:96) fait update status=ARCHIVED (soft-archive correct, pas de hard delete — bon point).",
+      "why_it_matters": "Flou UX mineur pendant les re-associations : si l'owner archive par erreur un TPE, le chemin de réactivation n'est pas découvrable (il doit deviner qu'Éditer permet de repasser Active). Faible impact car contournable.",
+      "reproduction": "1) Archiver un TPE (bouton corbeille). 2) Le bouton corbeille disparaît, aucun bouton « réactiver ». 3) Cliquer Éditer → radio Statut → Active → Enregistrer pour le réactiver.",
+      "recommended_correction": "Ajouter un bouton « Réactiver » (v-if status===5) appelant un save avec status=1, ou un libellé/tooltip indiquant que l'édition permet de réactiver. Optionnel — le contournement existe.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S8-08",
+      "severity": "P3",
+      "category": "security",
+      "title": "Champs secrets de gateway (stripe_secret, *_client_secret) rendus en clair à l'écran (input type=text) dans la config Paiement",
+      "file_line": "resources/js/components/admin/settings/PaymentGateway/PaymentGatewayComponent.vue:47-48 + app/Http/Resources/GatewayOptionsResource.php:22 (value brut)",
+      "evidence": "PaymentGatewayComponent.vue:47-48 rend chaque option en `<input type=\"text\" :value=\"paymentGatewayOption.value\">` sans distinction pour les secrets. GatewayOptionsResource.php:22 retourne `'value' => $this->value` (valeur brute, incluant les options secrètes). L'accès en lecture EST gaté (PaymentGatewayController.php:25 SET-01 a gaté index sur permission:settings 2026-06-01), donc seul un admin autorisé voit la page — mais une fois la page ouverte, les secrets s'affichent en clair (pas de masque, pas de type=password).",
+      "why_it_matters": "Risque modéré de shoulder-surfing dans un back-office de restaurant (écran partagé, capture). Pas un P0 car le contrôle d'accès route existe et qu'en V1 Le Cayenne mono-poste l'exposition réseau est nulle. Reste une hygiène de secret à corriger avant cloud (cf. dossier cloud-readiness).",
+      "reproduction": "1) Admin → Paramètres → Passerelles de paiement → Stripe. 2) Le champ secret affiche la valeur en clair (type=text). Inspecter DOM : value=sk_... lisible.",
+      "recommended_correction": "Rendre les champs marqués secret en type=password avec bouton afficher/masquer, et idéalement masquer la valeur côté API (renvoyer un placeholder type ●●●●1234 et n'écrire que si l'admin saisit une nouvelle valeur). Aligner avec la pratique de masquage des credentials.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Garde anti-vol 'phantom CARD' à double couche (HTTP + service) sur terminal_id",
+      "file_line": "app/Http/Requests/PosOrderRequest.php:206-247 + app/Services/Payments/SplitPaymentService.php:111-139",
+      "note": "Chaque tranche CARTE doit porter un terminal_id ACTIF appartenant à la branche de la commande, vérifié à la fois en FormRequest (HTTP) et en service (callers non-HTTP), avec BranchScope explicitement bypassé puis branch_id re-vérifié à la main pour empêcher toute fuite cross-branch. Excellente défense en profondeur contre le vecteur 'tranche carte fantôme + empochage cash'. (C'est la rigueur de cette garde qui rend S8-01 bloquant — la garde est correcte, c'est l'écran de config qui produit le mauvais branch_id.)"
+    },
+    {
+      "title": "Archivage soft des TPE pour préserver la traçabilité fiscale",
+      "file_line": "app/Http/Controllers/Admin/PaymentTerminalController.php:92-99",
+      "note": "destroy() ne fait jamais de hard delete : il passe status=ARCHIVED pour préserver order_payments.terminal_id des Z-reports clôturés. Cohérent NF525 (rétention/traçabilité) et bien commenté."
+    },
+    {
+      "title": "Mots de passe borne hashés (bcrypt/Hash::make), jamais renvoyés par l'API",
+      "file_line": "app/Services/KioskMachineService.php:67 (bcrypt) + :96-98 (Hash::make on update if filled) + app/Http/Resources/KioskMachineResource.php:18-28 (no password key)",
+      "note": "Le password de pairing borne est hashé à la création et seulement re-hashé en update si fourni (préserve l'ancien sinon), et la resource n'expose jamais le hash. Bonne hygiène d'auth — le seul reproche est le pré-remplissage trompeur côté front (S8-03)."
+    },
+    {
+      "title": "Lookup de pairing borne pré-auth avec BranchScope explicitement bypassé + verrou lockForUpdate",
+      "file_line": "app/Http/Controllers/Auth/KioskMachineLoginController.php:52-56 + 85-101",
+      "note": "La résolution du username se fait withoutGlobalScope(BranchScope) avec un commentaire clair sur la récursion Sanctum évitée, et la création du token se fait sous lockForUpdate dans une transaction qui révoque d'abord les anciens kiosk-tokens (anti token-sprawl). Token limité à l'ability kiosk:order. Solide — le seul manque est la non-révocation côté admin-logout (S8-02)."
+    }
+  ]
+}

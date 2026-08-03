@@ -86,6 +86,14 @@ final class PricingPreviewService
             );
             if ($kioskPromo) {
                 $kioskDiscount = $kioskPromo->computeDiscount((float) $draft->subtotal);
+                // [AUDIT 2026-07-13 P3] Mirror PricingService::calculateOrder total formula.
+                // En mode TTC (`pricing.tax_inclusive_prices=true`, défaut FR), `subtotal` est
+                // DÉJÀ la somme des lignes TTC (tax INCLUSE) → ré-ajouter `totalTax` double-compte
+                // la TVA et surfacture l'aperçu vs le devis réel. En mode HT (legacy) on garde
+                // le +tax sur le total.
+                $promoTotal = ((bool) config('pricing.tax_inclusive_prices', false))
+                    ? round(max(0.0, (float) $draft->subtotal - $kioskDiscount), 2)
+                    : round(max(0.0, (float) $draft->subtotal + (float) $draft->totalTax - $kioskDiscount), 2);
                 return $this->envelope(
                     lines: $this->projectLines($draft->lines),
                     subtotal: (float) $draft->subtotal,
@@ -93,7 +101,7 @@ final class PricingPreviewService
                     discount: $kioskDiscount,
                     discountSource: 'kiosk_promo',
                     // recompute total with discount applied (PricingService skipped it)
-                    total: round(max(0.0, (float) $draft->subtotal + (float) $draft->totalTax - $kioskDiscount), 2),
+                    total: $promoTotal,
                 );
             }
         }
@@ -131,16 +139,29 @@ final class PricingPreviewService
      */
     private function projectLines(array $lines): array
     {
-        return array_map(fn ($line) => [
-            'item_id'          => $line->itemId,
-            'quantity'         => $line->quantity,
-            'unit_price'       => (float) $line->unitItemPrice,
-            'variations_total' => (float) $line->variationTotal,
-            'extras_total'     => (float) $line->extraTotal,
-            'line_subtotal'    => (float) $line->lineSubtotalExTax,
-            'tax'              => (float) $line->taxAmount,
-            'line_total'       => round((float) $line->lineSubtotalExTax + (float) $line->taxAmount, 2),
-        ], $lines);
+        // [AUDIT 2026-07-13 P3] Mirror PricingService line semantics. En mode TTC (défaut),
+        // `lineSubtotalExTax` porte en réalité le total de ligne TTC (`$verifiedTotalPrice`,
+        // tax INCLUSE) → ré-ajouter `taxAmount` double-compte la TVA. En mode HT (legacy),
+        // la ligne est ex-tax et on ajoute la TVA.
+        $taxInclusive = (bool) config('pricing.tax_inclusive_prices', false);
+
+        return array_map(function ($line) use ($taxInclusive) {
+            $lineTotal = $taxInclusive
+                ? round((float) $line->lineSubtotalExTax, 2)
+                : round((float) $line->lineSubtotalExTax + (float) $line->taxAmount, 2);
+
+            return [
+                'item_id'          => $line->itemId,
+                'quantity'         => $line->quantity,
+                'unit_price'       => (float) $line->unitItemPrice,
+                'variations_total' => (float) $line->variationTotal,
+                'extras_total'     => (float) $line->extraTotal,
+                'addons_total'     => (float) $line->addonTotal,
+                'line_subtotal'    => (float) $line->lineSubtotalExTax,
+                'tax'              => (float) $line->taxAmount,
+                'line_total'       => $lineTotal,
+            ];
+        }, $lines);
     }
 
     private function toObject(array $line): object
@@ -150,12 +171,32 @@ final class PricingPreviewService
             'quantity'        => max(1, (int) ($line['quantity'] ?? 1)),
             'instruction'     => $line['instruction'] ?? null,
             'item_variations' => array_map(
-                fn ($v) => (object) ['id' => (int) ($v['id'] ?? 0)],
+                fn ($v) => (object) [
+                    'id' => (int) ($v['id'] ?? 0),
+                    'quantity' => max(1, (int) ($v['quantity'] ?? 1)),
+                ],
                 (array) ($line['item_variations'] ?? [])
             ),
             'item_extras'     => array_map(
-                fn ($e) => (object) ['id' => (int) ($e['id'] ?? 0)],
+                fn ($e) => (object) [
+                    'id' => (int) ($e['id'] ?? 0),
+                    'quantity' => max(1, (int) ($e['quantity'] ?? 1)),
+                ],
                 (array) ($line['item_extras'] ?? [])
+            ),
+            'item_addons'     => array_map(
+                fn ($a) => (object) [
+                    'id' => (int) ($a['id'] ?? 0),
+                    'quantity' => max(1, (int) ($a['quantity'] ?? 1)),
+                    // [test-e2e/borne E-001 fix 2026-05-10] Forward optional
+                    // role hint to PricingService for kiosk menu-formula
+                    // ratio resolution. PricingPreviewRequest already
+                    // whitelists this field (rules at line 47).
+                    'role' => isset($a['role']) && is_string($a['role'])
+                        ? substr($a['role'], 0, 32)
+                        : null,
+                ],
+                (array) ($line['item_addons'] ?? [])
             ),
         ];
         return $obj;

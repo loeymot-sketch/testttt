@@ -1,0 +1,126 @@
+{
+  "micro_system": "M12-tracker-zx",
+  "files_examined": [
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+    "resources/js/store/modules/posOrder.js",
+    "app/Http/Controllers/Admin/PosOrderController.php",
+    "app/Services/OrderService.php (list())",
+    "app/Http/Resources/SimpleOrderResource.php",
+    "app/Http/Controllers/Admin/Fiscal/ZReportController.php",
+    "app/Http/Controllers/Admin/Fiscal/XReportController.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/XReportService.php",
+    "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+    "app/Models/ZReport.php",
+    "app/Domain/Order/OrderStateMachine.php",
+    "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+    "routes/api.php (z-report / x-report group)"
+  ],
+  "findings": [
+    {
+      "id": "M12-001",
+      "severity": "P1",
+      "category": "functional",
+      "title": "Tracker time badges blank + sort inverted + name-search dead - SimpleOrderResource never ships created_at/updated_at/user",
+      "file_line": "app/Http/Resources/SimpleOrderResource.php:33-112 (no created_at/updated_at/user key) vs resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:157,553-556,500,742-746,981-992",
+      "evidence": "SimpleOrderResource::toArray() returns NO created_at, NO updated_at, and NO nested user object - only a flattened customer_name => $this->user?->name (line 70). The tracker is the ONLY consumer via posOrder/lists and reads exactly those missing keys: elapsedShort(order.created_at)/formatTime(order.created_at) (tracker:157,156) -> created_at undefined -> both early-return '' (tracker:982-984,977) so EVERY card elapsed-time badge renders blank. _tsOf(o)=o.created_at||o.updated_at (tracker:742) -> undefined -> returns 0 for every order, so the oldest-first sorts on accept/preparing/prepared/onTheWay (tracker:553-556) are no-ops; cards fall back to OrderService::list() orderBy('id','desc')=newest-first, the OPPOSITE of the documented kitchen-queue intent. filteredOrders search hay uses o.user?.name + o.user?.first_name (tracker:500) -> both undefined -> name-search matches nothing.",
+      "why_it_matters": "On a kitchen/caisse tracker the per-card waiting time is the single most important operational signal for triage; it is dead on every card. The queue is rendered newest-first instead of oldest-first, so the order to make NEXT is at the bottom - causes wrong prioritisation during a rush. Customer-name search silently returns nothing.",
+      "reproduction": "Open /admin/pos-orders-tracker with several active orders. (a) time pill next to each card is empty; (b) EN PREPARATION cards are newest-at-top not oldest-at-top; (c) typing a known customer name matches no card though the name is visible. DevTools: GET admin/pos-order response has no created_at / user keys.",
+      "recommended_correction": "Add raw fields to SimpleOrderResource (unfrozen): 'created_at' => $this->created_at?->toIso8601String() (and optionally updated_at). Cheapest correct fix. Alternative: repoint the tracker to order_datetime which the resource ALREADY sends. For name-search, ship a minimal user:{name,first_name} subset or add o.customer_name to the search hay.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M12-002",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Tracker re-pulls the ENTIRE day every poll - paginate never sent so per_page:100 is silently ignored",
+      "file_line": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:751-756 vs app/Services/OrderService.php:129-130 (list())",
+      "evidence": "fetchOrders() dispatches posOrder/lists with { per_page:100, from_date, to_date, vuex:false } but NEVER sets paginate. In OrderService::list() the method is chosen by $request->get('paginate',0)==1 - when absent it defaults to 0, so $method='get' and $methodValue='*' (OrderService:129-130). per_page:100 is a dead parameter and the query returns ALL of today's orders with ->with(['transaction','orderItems.orderItem.media','orderItems.orderItem.category','branch','user']) eager-loaded, including every DELIVERED order. Fetched on mount, on every Echo event, and every 8s (no-WS)/60s (WS) poll (tracker:425-426,720).",
+      "why_it_matters": "On a busy day (hundreds of orders) the tracker silently downloads the full day order graph + media relations every few seconds on the single box, growing unbounded through the day and degrading responsiveness when the caisse is busiest. per_page:100 reads as a safety cap but enforces nothing - a flou hiding real behaviour.",
+      "reproduction": "Seed >100 orders for today. Open tracker, watch DevTools: GET admin/pos-order returns >100 rows (per_page ignored). Re-poll repeats the full pull. Adding paginate:1 caps at 100.",
+      "recommended_correction": "Either (a) send paginate:1 so per_page:100 actually caps, or (b) drop per_page and add a backend status filter so the tracker pulls only active statuses (ACCEPT/PREPARING/PREPARED/OUT_FOR_DELIVERY) + a small DELIVERED tail. Also drop media eager-loads for this path (tracker shows only item_name/quantity). All edits in unfrozen files.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M12-003",
+      "severity": "P2",
+      "category": "logic",
+      "title": "'Livre' button on tracker lets a DELIVERY order skip OUT_FOR_DELIVERY - state machine permits PREPARED->DELIVERED for any order type",
+      "file_line": "app/Domain/Order/OrderStateMachine.php:65-71 + resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:270-280,772-790",
+      "evidence": "OrderStateMachine::allows() case PREPARED returns in_array($to,[OUT_FOR_DELIVERY,DELIVERED],true) UNCONDITIONALLY - no order_type guard (OrderStateMachine:71). The tracker renders the green 'Livre' CTA on EVERY prepared card (v-if=col.id==='prepared', tracker:271) and markDelivered() POSTs changeStatus(DELIVERED) (tracker:780-783). For DELIVERY the legitimate path is PREPARED -> OUT_FOR_DELIVERY (driver pickup) -> DELIVERED (OrderStateMachine:73-74, and the tracker EN LIVRAISON lane comment tracker:610-616). The PREPARED->DELIVERED edge is correct for takeaway/pickup but for delivery it lets the cashier mark delivered before driver pickup, bypassing the OUT_FOR_DELIVERY lane.",
+      "why_it_matters": "A delivery order marked DELIVERED from the caisse never enters EN LIVRAISON, vanishing from the driver in-flight view and the cashier delivery visibility - the exact 30-min window the onTheWay lane preserves (tracker:542-548). Corrupts delivery KPIs (delivered before it left the kitchen) and breaks the driver cash-session reconciliation expectation that delivery cash is collected at handoff.",
+      "reproduction": "Create a DELIVERY order, advance to PREPARED. Click the green check (Livre) on its tracker card -> backend accepts PREPARED->DELIVERED and the order jumps to LIVRES, never appearing in EN LIVRAISON. No driver pickup recorded.",
+      "recommended_correction": "Scope the tracker 'Livre' CTA: show on prepared cards only when order_type is NOT delivery; for delivery show 'Depart livraison' transitioning to OUT_FOR_DELIVERY. Defense-in-depth: gate the state machine PREPARED->DELIVERED edge to non-delivery types. OrderStateMachine is domain-critical - confirm with owner before tightening; the tracker-side button guard is a safe scope-minimal first fix.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M12-004",
+      "severity": "P2",
+      "category": "nf525",
+      "title": "Z close has no open-cash-drawer gate - an unreconciled drawer at close pushes its cash_variance into the NEXT Z window",
+      "file_line": "app/Services/Fiscal/ZReportService.php:180-286 (close, no drawer check) + app/Services/Fiscal/ZReportCashEnrichmentService.php:53-91 (RECONCILED-only window)",
+      "evidence": "ZReportService::close() acquires the branch lock, verifies the chain, then closes the open Z purely from order aggregates - NO check that the branch CashDrawerSession is reconciled/closed (grep for drawer/CashDrawerSession in ZReportService returns nothing). Separately ZReportCashEnrichmentService::aggregateForWindow() only counts sessions with status===STATUS_RECONCILED whose closed_at in (from,to] (enrichment:64-69). So closing a Z while a drawer session is OPEN (or closed-but-not-reconciled) excludes that session opening/closing/variance from this Z cash_* fields; it lands in a later Z whose window contains its eventual reconcile time.",
+      "why_it_matters": "Signed order totals (total_ttc/ht/tva, HMAC chain) are NOT affected - the fiscal chain stays intact. But cash reconciliation is: a day Z can report cash_variance/cash_closing omitting a drawer the operator forgot to reconcile before close, so the physical-vs-declared cash check for that day is wrong and the discrepancy silently migrates to another day. For a cash-heavy single-box fast-food this is a genuine end-of-day reconciliation gap.",
+      "reproduction": "Open a cash drawer session, ring cash sales, then run close (artisan fiscal:close-all-active-branches or POST z-report/close) WITHOUT reconciling the drawer. The z_reports row cash_opening/closing/variance excludes the still-open session; reconcile later and it surfaces in the next Z.",
+      "recommended_correction": "FROZEN file (ZReportService) - owner-gated. Before close, query open/non-reconciled CashDrawerSession for the branch and either (a) block close with an operator warning (reconcile drawer #N first), or (b) at minimum emit a fiscal-log warning (mirroring warnOnOrphanedPaidOrders) so the omission is observable. Do NOT add cash fields to the signed payload. Any behavior change requires a LOCK doc + owner sign-off per CLAUDE.md section 7.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M12-005",
+      "severity": "P3",
+      "category": "ux",
+      "title": "No cashier UI to open/close a Z or pull an X report - only the cron safety-net and direct API can drive fiscal close",
+      "file_line": "resources/js/components/admin/dashboard/LastZReportWidget.vue:1-113 (display only) + routes/api.php:1230-1240 + app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php",
+      "evidence": "The only Z-report Vue surface, LastZReportWidget, is read-only: GETs admin/fiscal/z-report and renders last sequence_no/status/closed_at with a single link to transactions list (widget:24-27) - no open/close button, no X view. Grep across resources/js for z-report/close, z-report/open, /x-report returns ZERO matches; no client POSTs close/open or reads X. Close/open run only via the scheduled command fiscal:close-all-active-branches (Kernel.php:401) + the open command + raw API. The endpoints exist, permission-gated (pos-manage-fiscal), but are UI-unreachable.",
+      "why_it_matters": "For V1 Le Cayenne automated EOD close is intentional, so not a defect per se - but a cashier has no way to (a) take an intraday X reading before a shift change or (b) force/verify a manual Z close when the cron has not fired. The View-last-Z widget can give a false sense the day is closed when only the previous day is. Worth surfacing to owner as an explicit product decision.",
+      "reproduction": "Log in as admin, open /admin/dashboard -> LastZReportWidget shows the last Z but offers no close/open/X action. Search the SPA for a fiscal close button -> none. Close happens only via scheduled command.",
+      "recommended_correction": "Owner decision: if manual/X access is wanted, add a read-only X-snapshot view (GET admin/fiscal/x-report, already built) and an optional permission-gated Cloturer-Z button wired to POST z-report/close. If automated-only close is the intended V1 envelope, label the widget (Cloture automatique en fin de journee) so the absence is explained, not mistaken for a missing feature.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M12-006",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Tracker 'Encaisser' confirm refreshes via fetchOrders but the just-paid card can briefly persist if the backend write lags the local refetch",
+      "file_line": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:909-936 (openEncaissement/onEncaisseConfirmed) + PosCounterCollectModal @confirmed",
+      "evidence": "onEncaisseConfirmed() (tracker:933-936) clears encaisseOrder and immediately calls fetchOrders(). Cash-pending lane membership is recomputed from is_cash_pending (SimpleOrderResource:79). The modal POSTs counter-collect/{id}/confirm itself; if fetchOrders() resolves before the payment_status/pos_payment_method flip is committed, the order can still satisfy isCashPending (tracker:896-901: ps===15 && ppm===6 fallback) and re-render in A ENCAISSER for one poll cycle. The OrderPaidAtCounter broadcast triggers a second fetch (tracker:705) which self-heals - transient flicker, not a stuck state.",
+      "why_it_matters": "Minor: on the single-box V1 the write is synchronous with no replica, so in practice the refetch sees committed PAID and the card leaves cleanly. Flagged for completeness as a timing-dependent UX flicker rather than a correctness bug; it self-corrects on the next event/poll.",
+      "reproduction": "Encaisser a cash-pending kiosk order; in the rare race the card blinks once in A ENCAISSER before disappearing on the OrderPaidAtCounter-driven refetch. Not reliably reproducible on single-box synchronous DB.",
+      "recommended_correction": "Optional: optimistically remove the just-confirmed order from this.orders in onEncaisseConfirmed (filter out order.id) before fetchOrders, so the card disappears instantly regardless of refetch timing. Pure client UX polish, unfrozen file.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Half-open (from, to] window + withTrashed + terminal-status whitelist keep Z aggregation gap-free and double-count-free",
+      "file_line": "app/Services/Fiscal/ZReportService.php:297-460",
+      "note": "aggregate() is carefully reasoned: strict lower / inclusive upper bound prevents boundary double-count, withTrashed() keeps soft-deleted post-allocation orders in the signed total (NF525 continuity), counter-entry refund mirrors are netted in-window, and total_tva is derived from total_by_tax_rate as the single source of truth so total_ttc == total_ht + total_tva holds exactly in the signed payload. Strong fiscal logic with invariants spelled out inline."
+    },
+    {
+      "title": "Concurrency-safe close: Cache::lock + lockForUpdate + single-OPEN guard prevents duplicate sequence / double-close",
+      "file_line": "app/Services/Fiscal/ZReportService.php:191-247, 100-133",
+      "note": "open() and close() run under Cache::lock('z_report_b{n}') with a bounded block(), and close() additionally lockForUpdate()s the open Z row inside a transaction. open() rejects a second OPEN; close() throws if there is no open Z. Two cashiers cannot create a duplicate sequence_no or double-count - the right triple defense for the fiscal sequence."
+    },
+    {
+      "title": "Cash enrichment as an additive decorator that never touches the signed HMAC payload",
+      "file_line": "app/Services/Fiscal/ZReportCashEnrichmentService.php:17-40,228-270",
+      "note": "Cash/terminal/fee fields are computed at runtime (or persisted into NON-signed additive columns post-close) so the HMAC chain over already-signed Z reports can never be invalidated by adding cash observability. The persist path updates only the additive columns via a direct query - a clean separation of fiscal-signed vs accounting-observability data."
+    },
+    {
+      "title": "Tracker ACCEPT-lane continuity fix correctly surfaces paid-but-not-promoted cash orders instead of dropping them",
+      "file_line": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:521-538",
+      "note": "ordersByStatus routes a paid order still at ACCEPT (the CASH counter-collect carve-out where AutoPrepareOnPaidPolicy does not auto-promote) into the preparing bucket rather than silently dropping it, keeping the tracker consistent with the KDS. Good cross-surface reasoning preventing an order vanishing while the kitchen is still cooking it."
+    },
+    {
+      "title": "X snapshot delegates to ZReportService::aggregate so intraday X always matches the eventual Z for the same window",
+      "file_line": "app/Services/Fiscal/XReportService.php:36-56",
+      "note": "XReportService reuses the exact aggregate() algorithm with from = last close / open, guaranteeing the NF525 coherence-intraday invariant - an X reading and the Z that later closes the same window cannot drift. No duplicated aggregation logic to fall out of sync."
+    }
+  ]
+}

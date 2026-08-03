@@ -1,0 +1,57 @@
+{
+  "wave": "P",
+  "round": 2,
+  "states_reviewed": 4,
+  "states": [
+    "P-01-before-double-submit",
+    "P-01-after-double-submit",
+    "P-02-before-conflict",
+    "P-02-after-conflict"
+  ],
+  "findings": [
+    {
+      "id": "P-001",
+      "state_artifact": "round-1/wave-P-idempotency/P-01-after-double-submit.console.json:2-12 + .network.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "The load-bearing dedup evidence is NEVER persisted to any artifact. The mega-audit recorder (tests/e2e/helpers/mega-audit-snap.js:70-88) captures network metadata STATUS-ONLY (no response headers, no bodies). The order ids (r1.orderId vs r2.orderId), the 'Idempotency-Replayed:true' header (middleware line 240), and the DB before/after counts all live only in the spec's in-memory expect()s (test-e2e-abuse-P-idempotency.spec.js:317-351). From the quartet ALONE, the two POST /api/frontend/order both-201 (P-01-after.network.json) are equally consistent with a genuine replay AND a hypothetical broken-replay path that the DB-count assertion happened to catch. The very invariant Wave P exists to prove (same id replay, +1 only) is UNAUDITABLE from the captured artifacts. The pass is real at the spec-code level but the artifact trail does not independently corroborate it.",
+      "fix_hint": "Persist the decisive values into the network.json or a sidecar JSON: r1.orderId, r2.orderId, r2.replayed (Idempotency-Replayed header), before/after countOrdersByPrefix, and the 409 conflict body code. Optionally widen mega-audit-snap.js onResponse to record select response headers for idempotency-protected routes so an external reviewer can verify the replay without re-running the spec.",
+      "status": "open"
+    },
+    {
+      "id": "P-002",
+      "state_artifact": "round-1/wave-P-idempotency/P-01-after-double-submit.console.json:2-12 + .network.json (quote 401)",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "P-01-after.console.json contains a level=error '401 (Unauthorized)' on POST /api/frontend/order/quote (ts 1780503684914). Network shows the recovery chain: kiosk-login 201 -> kiosk-event 200 -> kiosk-login 201 -> quote 401 -> kiosk-login 201 -> quote 200 -> order 201 -> order 201. This is the kiosk:order Sanctum token being stale-by-one on first quote attempt (the helper's known token-refresh path). It is NOT a silent_error (cat-6): P-01-after.png renders a visible 'Session rafraichie automatiquement' toast = visible recovery, and the flow recovered to quote 200 + order 201. KNOWN SIGNALS (AUDIT_PLAN.md:107-114) classifies kiosk auth-bootstrap 401s that do not break the core flow as 'at most P2'. Cited rather than dropped so the reviewer is on record having read the console.json. Not a dedup defect.",
+      "fix_hint": "Test-infra: pre-warm/refresh the kiosk:order bearer before the first quote in storeReplayProbe (or call getKioskApiToken with a forced refresh) so the transient 401 never reaches the console capture. Product side: the proactive token refresh already handles it (toast shown), so no runtime fix required for V1.",
+      "status": "open"
+    },
+    {
+      "id": "P-003",
+      "state_artifact": "tests/e2e/test-e2e-abuse-P-idempotency.spec.js:204-235 (storeReplayProbe sequential for-loop)",
+      "category": "coverage_gap",
+      "severity": "P2",
+      "evidence": "The probe posts the two submits SEQUENTIALLY (await window.axios.post inside a for-of loop, spec line 206-224) — the second POST only fires after the first fully returns. The IdempotencyKeyMiddleware's true TOCTOU defense (Phase-2 atomic acquire SET-NX + waitForCompletion + 425 IDEMPOTENCY_IN_FLIGHT, middleware lines 98-124) is therefore NEVER exercised by this spec. The campaign explicitly flagged concurrent double-PAID (F2 lockForUpdate) as a known risk class elsewhere. Sequential dedup PASSING does not prove the concurrent double-submit race is closed. Code review of the middleware shows the concurrent path is correctly implemented (acquire-or-wait), but it is unproven empirically by Wave P.",
+      "fix_hint": "Add a P-03 state firing the two byte-identical POSTs concurrently (Promise.all of two window.axios.post under the same key) and assert: exactly one 201 + one {201-replay OR 425 in-flight}, never two distinct order ids, DB +1 only. This drives the SET-NX/waitForCompletion path the current spec skips.",
+      "status": "open"
+    },
+    {
+      "id": "P-004",
+      "state_artifact": "tests/e2e/test-e2e-abuse-P-idempotency.spec.js:346-351, 406-409, 421-423",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "The HARD DB-count assertion (after - before === 1) is CONDITIONAL on countOrdersByPrefix() returning a finite number (Number.isFinite guards at lines 346, 406, 421). If the tinker subprocess fails (returns NaN, spec line 127-131), the spec SILENTLY DEGRADES to the soft id-equality check (line 350: expect(r2.orderId).toBe(r1.orderId)) which trusts the HTTP response body rather than the DB. Verified interactively that tinker + the orders count query work on this dev server (cache.default=redis, idempotency.enabled=true), and the app-layer UNIQUE backstop exists (orders_branch_user_idempotency_unique on (branch_id,user_id,idempotency_key), migration 2026_05_24_023000; key persisted at FrontendOrderService.php:252) — so risk is low. But NO run-stdout artifact confirms the DB-count branch (not the NaN fallback) actually executed this run. The +1 witness is asserted in-spec, not in the quartet.",
+      "fix_hint": "Persist the before/after counts (and a NaN flag) into the artifact sidecar (see P-001) so a reviewer can confirm the hard DB branch executed rather than the soft fallback. Optionally fail the test if tinker returns NaN on a server where idempotency.enabled=true (turn the silent degrade into an explicit gate).",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 1
+  },
+  "verdict": "GREEN",
+  "notes": "No double-charge defect. P-01: same key + same payload -> two POST /api/frontend/order both 201 (replay; cached status is the original 201, expected); spec hard-asserts r2.orderId===r1.orderId AND after-before===1 (DB witness via real tinker count). P-02: same key + different payload (qty1 then qty2) -> network shows 201 then genuine HTTP 409 (P-02-after.network.json ts 1780503687886; console logs the 409), middleware returns IDEMPOTENCY_KEY_CONFLICT (middleware lines 88-93) and spec asserts after-before===1 (no second order). Defense is dual-layer: cache replay (redis) + DB UNIQUE orders_branch_user_idempotency_unique. DOM clean (no i18n leak; regex scan empty). Cleanup runs ONLY in beforeAll/afterAll (spec lines 256-270), never between the two POSTs, so it CANNOT mask the +1 delta within a test. Screenshots are decorative idle-screen captures (probe runs via page.evaluate/axios, UI never navigates) and prove nothing about dedup — the proof is the network trace + spec DB assertions. Verdict GREEN; the four P2/P3 are audit-trail/coverage caveats (decisive evidence not persisted to artifacts; transient recovered kiosk-token 401; concurrent TOCTOU path unexercised; DB-count assertion silently degrades on tinker-NaN), not correctness defects."
+}

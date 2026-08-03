@@ -1,0 +1,30 @@
+01-splash: LE CAYENNE PASSER BIENVENUE EST. 2024 01 — BIENVENUE SALUT, C'EST LE CAYENNE San
+02-onb1: LE CAYENNE // ÉTAPE 1 SUR 2 TON NUMÉRO, CHEF. Pas de spam, promis. On t'envoie j
+02-onb2: LE CAYENNE // ÉTAPE 2 SUR 2 ENTRE TON CODE. Code envoyé au +33 6 12 34 56 78 · M
+02-onb3: LE CAYENNE // ÉTAPE 2 SUR 2 ENTRE TON CODE. Code envoyé au +33 6 12 34 56 78 · M
+02-onb4: LE CAYENNE // ÉTAPE 2 SUR 2 ENTRE TON CODE. Code envoyé au +33 6 12 34 56 78 · M
+03-after-onb: LE CAYENNE // ÉTAPE 2 SUR 2 ENTRE TON CODE. Code envoyé au +33 6 12 34 56 78 · M
+04-login: LE CAYENNE // ÉTAPE 1 SUR 2 TON NUMÉRO, CHEF. Pas de spam, promis. On t'envoie j
+05-login-filled: LE CAYENNE // ÉTAPE 1 SUR 2 TON NUMÉRO, CHEF. Pas de spam, promis. On t'envoie j
+06-otp: LE CAYENNE // ÉTAPE 2 SUR 2 ENTRE TON CODE. Code envoyé au +33 6 12 34 56 78 · M
+07-otp-filled: LE CAYENNE // ÉTAPE 2 SUR 2 ENTRE TON CODE. Code envoyé au +33 6 12 34 56 78 · M
+10-home-authed: IB LE CAYENNE OUVERT BONSOIR, IKYES ! Qu'est-ce qui te fait envie ce soir ? 🌶 S
+11-profile: PROFIL IB Ikyes B. +33 6 42 79 98 84 MODIFIER CARTE FIDÉLITÉ 347 PTS Plus que 15
+11b-profile-bottom: PROFIL IB Ikyes B. +33 6 42 79 98 84 MODIFIER CARTE FIDÉLITÉ 347 PTS Plus que 15
+12-loyalty: PROFIL IB Ikyes B. +33 6 42 79 98 84 MODIFIER CARTE FIDÉLITÉ 347 PTS Plus que 15
+13-orders: COMMANDES EN COURS 1 HISTORIQUE 5 EN PRÉPARATION #C-1234 ~12 MIN Big Cayenne · T
+
+--- pass2 ---
+20-splash: LE CAYENNE PASSER BIENVENUE EST. 2024 01 — BIENVENUE SALUT, C'EST LE CAYENNE Sandwichs Cay
+20-step1: LE CAYENNE PASSER 30s // SPEEDRUN 3 TAPS 02 — VITESSE COMMANDE EN 30 SEC Choisis ton plat,
+20-step2: LE CAYENNE PASSER VIENS RÉCUPÉRER LE CAYENNE #1234 LE CAYENNE #1235 LE CAYENNE #1236 PRÊT 
+20-step3: LE CAYENNE PASSER LE CAYENNE · CLUB #FK-12345 347 PTS ★ PEPPER CLUB 153 PTS → BURGER CARTE
+20-step4: LE CAYENNE // ÉTAPE 1 SUR 2 TON NUMÉRO, CHEF. Pas de spam, promis. On t'envoie juste un co
+21-loyalty-top: CARTE FIDÉLITÉ III Code QR fidélité chargé, valable 5 minutes. LE CAYENNE FIDÉLITÉ #FK-123
+21-loyalty-mid: CARTE FIDÉLITÉ III Code QR fidélité chargé, valable 5 minutes. LE CAYENNE FIDÉLITÉ #FK-123
+21-loyalty-bottom: CARTE FIDÉLITÉ III Code QR fidélité chargé, valable 5 minutes. LE CAYENNE FIDÉLITÉ #FK-123
+22-redeem-modal: CARTE FIDÉLITÉ III Code QR fidélité chargé, valable 5 minutes. LE CAYENNE FIDÉLITÉ #FK-123
+30-cart-injected: PANIER TA COMMANDE 1 article · prêt dans ~12 min Coca-Cola 33cl − 1 + 1,50 € +2 pts gagnés
+31-pay-choice: PANIER TA COMMANDE 1 article · prêt dans ~12 min Coca-Cola 33cl − 1 + 1,50 € +2 pts gagnés
+32-confirm: LE CAYENNE C'EST PARTI ! Commande #C-4227 envoyée TICKET RETRAIT HÉNIN-BEAUMONT · 62210 C-
+33-points-gain: LE CAYENNE C'EST PARTI ! Commande #C-4227 envoyée TICKET RETRAIT HÉNIN-BEAUMONT · 62210 C-

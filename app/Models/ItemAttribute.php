@@ -10,10 +10,15 @@ class ItemAttribute extends Model
     use HasFactory;
 
     protected $table = "item_attributes";
-    protected $fillable = ['name', 'status'];
+    protected $fillable = ['name', 'status', 'min_select', 'max_select', 'allow_repeat', 'is_available', 'unavailable_reason'];
     protected $casts = [
-        'id'     => 'integer',
-        'name'   => 'string',
-        'status' => 'integer',
+        'id'                 => 'integer',
+        'name'               => 'string',
+        'status'             => 'integer',
+        'min_select'         => 'integer',
+        'max_select'         => 'integer',
+        'allow_repeat'       => 'boolean',
+        'is_available'       => 'boolean',
+        'unavailable_reason' => 'string',
     ];
 }

@@ -1,0 +1,12 @@
+{
+  "task": "VAL-MODEL-GPT55",
+  "objective": "Prouver que gpt-5.5 (proxy OpenAI-compatible) delivre un document structure et coherent sur un sujet transversal (pas un ping).",
+  "output_spec": "Redige en francais un document technique court (800 a 1200 mots) au format Markdown avec: titre H1, 4 sections H2 (1. Pourquoi le Fediverse, 2. Cartographie ActivityPub, 3. Contraintes securite et moderation pour un SaaS restauration, 4. Feuille de route d integration hypothetique sans code).",
+  "constraints": [
+    "Aucun code source exige (uniquement prose + listes a puces).",
+    "Citer explicitement les termes ActivityPub, Fediverse, acteur, inbox au moins une fois chacun.",
+    "Terminer par un bloc de 5 bullets \"Risques a anticiper\" (SaaS multi-tenant, RGPD, homomorphisme des identites).",
+    "Aucun pretendu engagement juridique - ton informatif."
+  ],
+  "note": "RAW_PROMPT: ce JSON est le prompt utilisateur; le runner ajoute seulement les aux files mission si presents."
+}

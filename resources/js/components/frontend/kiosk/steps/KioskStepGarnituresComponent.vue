@@ -16,11 +16,18 @@
         v-for="garniture in garnitureList"
         :key="garniture.id"
         class="kiosk-garniture-row"
-        :class="{ selected: localSelections[garniture.id], removed: !localSelections[garniture.id] }"
+        :class="{
+          selected: localSelections[garniture.id],
+          removed: !localSelections[garniture.id],
+          'kiosk-variation--disabled': !garnitureFilterAllowed(garniture) || isGarnitureOos(garniture),
+          'is-out-of-stock': isGarnitureOos(garniture),
+        }"
         role="checkbox"
-        tabindex="0"
+        :tabindex="(garnitureFilterAllowed(garniture) && !isGarnitureOos(garniture)) ? 0 : -1"
         :aria-checked="!!localSelections[garniture.id]"
+        :aria-disabled="(garnitureFilterAllowed(garniture) && !isGarnitureOos(garniture)) ? 'false' : 'true'"
         :aria-label="garniture.name"
+        :title="garnitureOosTooltip(garniture) || garnitureFilterTooltip(garniture)"
         @click="toggleGarniture(garniture.id)"
         @keydown.enter.prevent="toggleGarniture(garniture.id)"
         @keydown.space.prevent="toggleGarniture(garniture.id)"
@@ -39,6 +46,12 @@
         </div>
         <span class="kiosk-garniture-name">{{ garniture.name }}</span>
         <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}</span>
+        <span
+          v-if="isGarnitureOos(garniture)"
+          class="kiosk-extra-oos-badge"
+          data-testid="kiosk-extra-oos-badge"
+          :aria-label="$t('pos.item_86_d')"
+        >{{ $t('pos.item_86_d') }}</span>
         <span v-if="localSelections[garniture.id]" class="kiosk-garniture-action active">✓</span>
         <span v-else class="kiosk-garniture-action">+</span>
       </div>
@@ -53,13 +66,15 @@
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
+import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
 
 export default {
   name: 'KioskStepGarnitures',
   props: {
     step: Object,
     item: Object,
-    selections: Object
+    selections: Object,
+    activeFilters: { type: Array, default: () => [] },
   },
   emits: ['update'],
   data() {
@@ -108,7 +123,11 @@ export default {
         id: g.id,
         name: g.name,
         displayThumb: kioskResolveImageSrc(g.raw),
-        emoji: this.getEmojiForGarniture(g.name)
+        emoji: this.getEmojiForGarniture(g.name),
+        raw: g.raw,
+        // [HEAL-A 2026-05-08] OOS state propagated from partitionKioskExtras
+        is_available: g.is_available !== false,
+        unavailable_reason: g.unavailable_reason || null,
       }));
     }
   },
@@ -132,10 +151,43 @@ export default {
       if (lower.includes('fromage') || lower.includes('cheddar') || lower.includes('cheese')) return '🧀';
       return '🥗';
     },
+    garnitureFilterAllowed(garniture) {
+      return isVariationAllowedByFilters(garniture?.raw || garniture, this.activeFilters || []);
+    },
+    garnitureFilterTooltip(garniture) {
+      if (this.garnitureFilterAllowed(garniture)) return '';
+      return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
+    },
+    // [HEAL-A 2026-05-08] OOS read on garniture extra (free).
+    isGarnitureOos(garniture) {
+      if (!garniture) return false;
+      if (garniture.is_available === false) return true;
+      return garniture?.raw?.is_available === false;
+    },
+    garnitureOosTooltip(garniture) {
+      if (!this.isGarnitureOos(garniture)) return '';
+      return garniture?.unavailable_reason || garniture?.raw?.unavailable_reason || this.$t('pos.item_86_d');
+    },
     toggleGarniture(id) {
+      const g = this.garnitureList.find((x) => x.id === id);
+      if (g && !this.garnitureFilterAllowed(g)) return;
+      // OOS lock: allow remove (toggle off if currently on), block adding
+      if (g && this.isGarnitureOos(g) && !this.localSelections[id]) return;
       this.userInteracted = true;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
+      // [OWNER8 2026-07-06] Exclusivité oignon cru↔cuit (miroir du parent frozen
+      // KioskWizardComponent.applyOnionCruCuitExclusivity) : cocher l'un décoche
+      // l'autre — appliqué localement pour que l'UI du step reflète tout de suite.
+      if (newSelections[id] && g && String(g.name || '').toLowerCase().includes('oignon')) {
+        const cuit = String(g.name || '').toLowerCase().includes('cuit');
+        this.garnitureList.forEach((o) => {
+          const on = String(o.name || '').toLowerCase();
+          if (o.id !== id && on.includes('oignon') && on.includes('cuit') !== cuit) {
+            newSelections[o.id] = false;
+          }
+        });
+      }
       this.localSelections = newSelections;
       this.$emit('update', 'garnitures', newSelections);
     }
@@ -146,7 +198,7 @@ export default {
 <style scoped>
 .kiosk-step-garnitures {
   padding: 6px 18px 26px;
-  background: #fff;
+  background: transparent;
   min-height: 100%;
 }
 
@@ -155,7 +207,7 @@ export default {
   font-weight: 600;
   text-align: center;
   margin: 0 0 12px;
-  color: #333;
+  color: var(--kiosk-text, #333);
 }
 
 .kiosk-garnitures-info {
@@ -167,18 +219,21 @@ export default {
 }
 
 .kiosk-info-badge {
-  background: transparent;
-  border: none;
-  color: #7d7d7d;
-  padding: 0;
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.12));
+  border: 1px solid var(--kiosk-primary, #f4501e);
+  color: var(--kiosk-primary, #f4501e);
+  padding: 5px 16px;
   border-radius: 50px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .kiosk-info-text {
-  font-size: 11px;
-  color: #999;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--kiosk-text, #444);
 }
 
 .kiosk-garnitures-list {
@@ -199,31 +254,82 @@ export default {
   padding: 10px 10px 14px;
   border-radius: 20px;
   border: 1px solid transparent;
-  background: #fff;
+  background: var(--kiosk-surface, #fff);
   cursor: pointer;
   touch-action: manipulation;
-  transition: all 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
   position: relative;
 }
 
 .kiosk-garniture-row:active { transform: scale(0.99); }
 
 .kiosk-garniture-row:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
 .kiosk-step-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #666;
+  color: var(--kiosk-text-muted, #666);
   font-size: 14px;
 }
 
+/* [B2 2026-07-21] État INCLUS incontestablement « ON » : le client doit voir
+   d'un coup d'œil que la crudité est déjà dans le produit (design = tout inclus,
+   toucher pour RETIRER). Auparavant le fond à 2,5% d'opacité rendait l'état
+   sélectionné quasi invisible → confusion « barré = choisi ? ». */
 .kiosk-garniture-row.selected {
-  border-color: rgba(232,0,28,0.14);
-  background: rgba(232,0,28,0.025);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+  border-color: var(--kiosk-primary, #f4501e);
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.12));
+  box-shadow:
+    0 0 0 2px var(--kiosk-primary, #f4501e) inset,
+    0 4px 12px rgba(244, 80, 30, 0.18);
+}
+
+/* État RETIRÉ : nettement « OFF » — grisé + désaturé, en plus du trait barré.
+   Le contraste vif(inclus) vs terne(retiré) lève toute ambiguïté. */
+.kiosk-garniture-row.removed {
+  background: var(--kiosk-surface-muted, #f4f4f5);
+  border-color: var(--kiosk-border, #e5e5e5);
+}
+.kiosk-garniture-row.removed .kiosk-garniture-visual {
+  opacity: 0.5;
+  filter: grayscale(0.85);
+}
+.kiosk-garniture-row.removed .kiosk-garniture-name {
+  color: var(--kiosk-text-muted, #9a9a9a);
+}
+
+.kiosk-garniture-row.kiosk-variation--disabled {
+  opacity: 0.42;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
+}
+
+/* [HEAL-A 2026-05-08] OOS marker — garniture in rupture stock */
+.kiosk-garniture-row.is-out-of-stock {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+
+.kiosk-extra-oos-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.1));
+  color: var(--kiosk-primary, #F4501E);
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.25));
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .kiosk-garniture-visual {
@@ -248,23 +354,24 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f7f7f8;
+  background: var(--kiosk-product-media-bg, #f7f7f8);
   border-radius: 50%;
 }
 
 .kiosk-garniture-strike {
   position: absolute;
   width: 130px;
-  height: 2px;
-  background: rgba(199, 62, 79, 0.7);
+  height: 5px;
+  background: var(--kiosk-error, #c1121f);
   transform: rotate(-38deg);
-  border-radius: 2px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px var(--kiosk-surface, #fff);
 }
 
 .kiosk-garniture-name {
   font-size: 12px;
   font-weight: 700;
-  color: #444;
+  color: var(--kiosk-text, #444);
   text-align: center;
   text-transform: uppercase;
   line-height: 1.2;
@@ -280,30 +387,30 @@ export default {
   padding: 2px 0;
   border-radius: 50px;
   background: transparent;
-  color: #999;
+  color: var(--kiosk-text-muted, #999);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .kiosk-garniture-row.selected .kiosk-garniture-status {
-  color: #d7263d;
+  color: var(--kiosk-primary, #d7263d);
 }
 
 .kiosk-garniture-action {
   position: absolute;
   top: 12px;
-  right: 22px;
+  inset-inline-end: 22px;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #d7263d;
-  color: white;
+  background: var(--kiosk-primary, #d7263d);
+  color: var(--kiosk-text-on-red, white);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   line-height: 1;
-  box-shadow: 0 3px 10px rgba(215,38,61,0.2);
+  box-shadow: var(--kiosk-shadow-card, 0 3px 10px rgba(215,38,61,0.2));
   outline: 2px solid rgba(255,255,255,0.85);
 }
 
@@ -316,7 +423,7 @@ export default {
   text-align: center;
   margin-top: 16px;
   font-size: 13px;
-  color: #999;
+  color: var(--kiosk-text-muted, #999);
   font-weight: 500;
 }
 </style>

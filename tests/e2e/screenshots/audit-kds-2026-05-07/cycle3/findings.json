@@ -1,0 +1,47 @@
+[
+  {
+    "step": "D3-01",
+    "slug": "broadcast-subscriptions",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "Souscriptions broadcast détectées : {\"OrderCreated\":true,\"OrderStatusChanged\":true,\"OrderPaidAtCounter\":true,\"ItemAvailabilityChanged\":true,\"OrderTableChanged\":true}",
+    "screenshot": null,
+    "ts": "2026-05-16T17:00:59.627Z"
+  },
+  {
+    "step": "D3-02",
+    "slug": "kds-sync-service",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "import=true, start()=true, on('sync')=true, stop()=true",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:00.096Z"
+  },
+  {
+    "step": "D3-03",
+    "slug": "kds-sync-route",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "controller-import=true, sync-route=true, kds-order-prefix=true",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:00.579Z"
+  },
+  {
+    "step": "D3-04",
+    "slug": "kds-sync-controller-file",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "namespace=true, sync()-method=true",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:01.043Z"
+  },
+  {
+    "step": "D3-05",
+    "slug": "mount-smoke",
+    "state": "runtime",
+    "severity": "OK",
+    "note": "Page errors total=0, critical=0. Sample: ",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle3/05-mount-smoke-loaded.png",
+    "ts": "2026-05-16T17:01:10.965Z"
+  }
+]

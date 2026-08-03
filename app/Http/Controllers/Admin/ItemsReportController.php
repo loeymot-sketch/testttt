@@ -52,11 +52,28 @@ class ItemsReportController extends AdminController
     public function pdf(PaginateRequest $request):mixed
     {
         try {
+           // [ULTRA-LOOP R1 P2 2026-07-07 — PDF articles tronqué à 10 items] L'UI envoie
+           // paginate=1&per_page=10 ; itemReport voit paginate==1 → ->paginate(10), donc le
+           // PDF n'affichait que 10 des 45 items du catalogue et le "Total" (agrégé dans la
+           // boucle @foreach) sous-comptait les unités vendues. On force un fetch complet —
+           // miroir exact de ItemsReportExport:27.
+           $request->merge(['paginate' => 0]);
            $company = $this->companyService->list();
            $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
            $copyright   = Settings::group('site')->get('site_copyright');
            $items = $this->itemService->itemReport($request);
 
+           // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] Cohérence avec les 2 autres PDF :
+           // au-delà d'un plafond raisonnable on refuse proprement (422) plutôt qu'un 500 dompdf.
+           // Le catalogue V1 (~55 items) ne l'atteint jamais ; garde de défense en profondeur.
+           $maxRows = (int) config('report.pdf_max_rows', 2000);
+           if ($items->count() > $maxRows) {
+               return response([
+                   'status' => false,
+                   'message' => 'Trop de lignes pour un export PDF ('.$items->count().' lignes). '
+                       .'Affinez la période avec un filtre de date.',
+               ], 422);
+           }
 
            $pdf = Pdf::loadView('pdf.items_report', compact('company', 'theme_logo', 'items', 'copyright') )
            ->setPaper('a4');

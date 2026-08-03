@@ -1,0 +1,74 @@
+{
+ "spec": "mobile:modals+onboarding",
+ "scope": "MAP mobile — modales (screens-modals.jsx), onboarding/auth OTP (screens-onboarding.jsx), stockage téléphone (api/storage.js setAuth), point de branchement du vrai guest-signup OTP backend à la manière du web api.js",
+ "summary": "L'app mobile (prototype navigateur JSX chargé par mobile/index.html) a un flux auth 100% SIMULÉ : ScreenLogin capture un téléphone dans un state local jamais transmis, ScreenOTP accepte n'importe quel code de 4 chiffres et navigue au bout de 400 ms, puis index.html onLogin() écrit un token hardcodé 'mock-v0-token' + téléphone hardcodé '+33642799884' via LC.storage.setAuth. screens-modals.jsx ne contient NI modale allergènes NI modale upsell — les modales sont : PayChoice, PointsGain (+25 confetti), Redeem, CardLink, WalletV0Notice, OptOutConfirm, plus ScreenStripe (placeholder statique 4242…) et ScreenOrderDetail. Les allergènes existent seulement comme badge inline (AllergenBadge, screens-main.jsx:56) et l'upsell comme section inline du panier (screens-main.jsx:675). Le branchement du vrai OTP est trivial et localisé : remplacer les onNext de ScreenLogin/ScreenOTP (index.html:190-191) par des appels à /api/auth/guest-signup/otp puis /verify (routes/api.php:196-205, token Sanctum kiosk:order 30 j), exactement le pattern guestOtp/guestVerify du web (/Users/1millnonstop/Downloads/web/api.js:143-149). Risques : le phone saisi n'est pas propagé de ScreenLogin vers ScreenOTP (props absents), et ScreenOTP affiche un numéro hardcodé.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Auth entièrement simulée : token mock + téléphone hardcodé écrits à la validation OTP",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/index.html",
+   "line": 176,
+   "evidence": "const onLogin = () => { storage.setAuth({ token: 'mock-v0-token', phone: '+33642799884', user_id: 12345 }); storage.markOnboardingSeen(); }; — appelé par case 'otp': <ScreenOTP onNext={() => { onLogin(); ... }} (index.html:191)",
+   "recommendation": "Point de branchement W4 : remplacer onLogin par guestVerify(phone, otp) → POST /api/auth/guest-signup/verify, puis setAuth({ token: r.token, phone, user_id: r.user?.id }) avec le vrai plainTextToken Sanctum kiosk:order 30 j"
+  },
+  {
+   "severity": "P1",
+   "title": "Le téléphone saisi dans ScreenLogin n'est JAMAIS transmis (state local perdu, OTP affiche un numéro hardcodé)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-onboarding.jsx",
+   "line": 200,
+   "evidence": "ScreenLogin: const [phone, setPhone] = useState_o('06 '); ... <button onClick={onNext}> (ligne 236) — onNext() sans argument ; ScreenOTP ligne 263 affiche en dur : Code envoyé au <b>+33 6 12 34 56 78</b>",
+   "recommendation": "Pour le wireup réel : lever le phone dans App (index.html) — onNext={(phone)=>...} depuis ScreenLogin, appeler guestOtp(phone) avant go('otp'), passer phone en prop à ScreenOTP pour affichage + verify"
+  },
+  {
+   "severity": "P2",
+   "title": "ScreenOTP accepte n'importe quel code 4 chiffres (auto-next après 400 ms, aucune vérification)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-onboarding.jsx",
+   "line": 254,
+   "evidence": "if (next.join('').length === 4) setTimeout(onNext, 400); — pas de comparaison au code ; hint dev ligne 296-297 : window.LC.isDev ? 'Code de démo : 1234'",
+   "recommendation": "Brancher verify backend : le contrôleur renvoie 422 'code_is_invalid' si faux (GuestSignupController.php:85-88) ; gérer l'erreur (throttle 3/5min sur /verify) avec message + état shake"
+  },
+  {
+   "severity": "P2",
+   "title": "Bouton 'Recevoir le code' ignore la validation du numéro (variable valid calculée mais non utilisée)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-onboarding.jsx",
+   "line": 201,
+   "evidence": "const valid = phone.replace(/\\s/g, '').length >= 10; — 'valid' n'apparaît nulle part ailleurs dans le composant ; le bouton ligne 236 est toujours cliquable",
+   "recommendation": "Désactiver le CTA tant que !valid avant d'appeler le vrai /otp (throttle 5/min côté backend, un spam de numéros invalides consomme le quota)"
+  },
+  {
+   "severity": "P3",
+   "title": "Bouton 'Renvoyer (29s)' décoratif — aucun onClick, aucun timer",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-onboarding.jsx",
+   "line": 299,
+   "evidence": "<button style={{...}}>Renvoyer (29s)</button> — pas de handler onClick, le '29s' est statique",
+   "recommendation": "Au wireup : re-POST /api/auth/guest-signup/otp avec vrai countdown (respecter throttle:5,1)"
+  },
+  {
+   "severity": "INFO",
+   "title": "Aucune modale allergènes ni upsell dans screens-modals.jsx — inventaire réel des 6 modales + 2 écrans",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-modals.jsx",
+   "line": 359,
+   "evidence": "Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ModalOptOutConfirm, ModalShell, ScreenOrderDetail, Toast }); — grep 'allerg|upsell' sur *.jsx : allergènes = AllergenBadge inline (screens-main.jsx:56, EU FIC 1169/2011), upsell = section inline panier (screens-main.jsx:675)",
+   "recommendation": "Ne pas chercher de modale allergènes/upsell à synchroniser : la parité borne↔mobile sur ces sujets passe par AllergenBadge et la section upsell du cart dans screens-main.jsx"
+  },
+  {
+   "severity": "INFO",
+   "title": "ScreenStripe = placeholder statique (carte 4242 hardcodée, aucun input, 'Payer' → go('confirm') direct)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-modals.jsx",
+   "line": 68,
+   "evidence": "ligne 84 : <span>4242 4242 4242 4242</span> (div statique, pas d'input) ; ligne 103 : <button onClick={() => go('confirm')}>Payer...",
+   "recommendation": "Compatible mandat Stripe flag OFF (W4) : garder le routing 'payer à la caisse' (ModalPayChoice onPickCounter) comme voie par défaut, à l'image du kiosk payment_route_all_to_counter"
+  }
+ ],
+ "facts": [
+  "FLUX AUTH ACTUEL EXACT : boot → index.html:112-114 (isAuthenticated→'home', hasSeenOnboarding→'login', sinon 'splash') → splash → onb1..onb4 → login → otp ; index.html:190 'login': <ScreenLogin onNext={() => go('otp')}> (rien envoyé au backend) ; index.html:191 'otp': <ScreenOTP onNext={() => { onLogin(); setHistory(['home']); setScreen('home'); }}>",
+  "setAuth : défini UNIQUEMENT dans mobile/api/storage.js:29-31 (function setAuth(payload){ set('auth', payload); } → localStorage clé 'lecayenne.auth' JSON) ; UNIQUE appelant dans tout mobile/ = index.html:176 onLogin() avec { token: 'mock-v0-token', phone: '+33642799884', user_id: 12345 } (grep -rn setAuth mobile/ ne retourne que storage.js:29,194 et index.html:176)",
+  "isAuthenticated (storage.js:52-55) = !!(getAuth() && getAuth().token) — n'importe quel token truthy suffit, donc remplacer 'mock-v0-token' par le vrai plainTextToken Sanctum est transparent pour le boot ; clearAuth (storage.js:35-51) purge aussi cart + tout l'état loyalty (idempotency, consent, pending_redemption, wallet flags)",
+  "SAISIE TÉLÉPHONE : screens-onboarding.jsx:200 useState_o('06 ') + input ligne 216 (inputMode tel, autoComplete tel-national, préfixe +33 statique lignes 211-214) — state LOCAL au composant, onNext ne le remonte pas ; ScreenOTP (screens-onboarding.jsx:246-314) ne reçoit aucun prop phone et affiche '+33 6 12 34 56 78' hardcodé ligne 263 ; code 4 digits, auto-submit ligne 254",
+  "BACKEND GUEST-SIGNUP : routes/api.php:196-205 sous prefix — POST /api/auth/guest-signup/otp (throttle:5,1) et /verify (throttle:3,5) → app/Http/Controllers/Auth/GuestSignupController.php ; verify payload = { phone, code (indicatif pays ex '+33'), token (l'OTP saisi) } cf. GuestSignupController.php:69 ; si site_phone_verification DISABLE le code est bypassé (ligne 65-72) ; register crée le token ligne 146 : $user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))->plainTextToken, réponse JSON contient 'token' ligne 161",
+  "PATTERN WEB À RÉPLIQUER (/Users/1millnonstop/Downloads/web/api.js) : guestOtp lignes 143-145 = POST /api/auth/guest-signup/otp {phone, code:'+33'} ; guestVerify lignes 146-149 = POST /verify {phone, code:'+33', token:String(otp)} puis if(r.token){ setToken(r.token); setPhone(phone); } ; stockage localStorage clés 'lecayenne.authToken'/'lecayenne.authPhone' (lignes 97-98) ; CFG lignes 19-24 : base via meta api-base-url (défaut http://127.0.0.1:8766), apiKey via meta api-key, branchId=1, countryCode '+33' ; Bearer injecté ligne 119 quand opts.auth",
+  "BRANCHEMENT RECOMMANDÉ MOBILE (scope-minimal, 3 fichiers) : (1) créer mobile/api/api.js sur le modèle web guestOtp/guestVerify ; (2) index.html — hoister le phone dans App, ScreenLogin onNext=async(phone)=>{await guestOtp(phone); setPhone(phone); go('otp')}, ScreenOTP onNext=async(otp)=>{const r=await guestVerify(phone,otp); storage.setAuth({token:r.token, phone, user_id:r.user?.id}); ...} ; (3) screens-onboarding.jsx — ScreenLogin remonte phone via onNext(phone), ScreenOTP reçoit prop phone (affichage ligne 263) et propage le code réel au lieu du setTimeout ligne 254 ; storage.js setAuth inchangé (le shape {token, phone, user_id} reste valide)",
+  "Le hint 'Code de démo : 1234' (screens-onboarding.jsx:296-297) est déjà gaté derrière window.LC.isDev ; mobile/CONNECTION_PLAN.md §3 documente déjà le plan Phase 6 'API + Sanctum bearer' (référencé par storage.js:4)",
+  "Modales screens-modals.jsx (inventaire exhaustif, ligne 359) : ModalPayChoice (l.40, caisse recommandé vs 'Payer maintenant' CB), ScreenStripe (l.68, statique), ModalPointsGain (l.112, +25 confetti), ModalRedeem (l.145), ModalCardLink (l.178, QR carte plastique), ScreenOrderDetail (l.202, lit window.LC.orders.findById, earn_ratio 10 pt/€ l.219, gate reçu NF525 sur payment_status==='paid' l.218), Toast (l.286), ModalWalletV0Notice (l.303), ModalOptOutConfirm (l.334, RGPD art.17) — zéro modale allergènes, zéro modale upsell"
+ ]
+}

@@ -1,0 +1,16 @@
+app/Http/Requests/OrderRequest.php
+resources/js/helpers/deliveryCharge.js
+tests/js/deliveryCharge.spec.js
+tests/js/kioskRouterLockdown.spec.js
+tests/Feature/Frontend/OrderRequestDeliveryFeeAuthorityTest.php
+tests/Feature/KioskBundleLockdownTest.php
+public/js/kiosk-admin.js
+public/js/kiosk-admin.js.LICENSE.txt
+resources/js/components/frontend/kiosk/KioskAdminComponent.vue
+tools/lint/forbidden_bundles.sh
+missions/PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX/input.json
+missions/PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX/report.md
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX.md
+reports/post_execute_latest.log

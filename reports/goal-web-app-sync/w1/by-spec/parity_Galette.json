@@ -1,0 +1,88 @@
+{
+ "spec": "parity:Galette",
+ "scope": "Parity catégorie \"Galette\" (id=2, 2 items : Galette Normale 6,50€ / Galette Cayenne 7,00€) — fixture canonique borne reports/goal-web-app-sync/catalog-canonical.json VS mirror WEB /Users/1millnonstop/Downloads/web/data/menu.js VS mirror MOBILE /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js. Read-only, aucun fichier modifié.",
+ "summary": "Les 2 items Galette existent dans les 3 sources avec les BONS prix (6,50€ / 7,00€), le bon viande_count (1), les 7 mêmes viandes et les 12 mêmes sauces — aucun P0. Les divergences sont structurelles (P1) : les 2 mirrors n'offrent que 3 crudités au lieu de 5 canoniques (Cornichon et Oignons cuits manquent), le supplément payant \"Boule gratinée\" 1,00€ manque dans les 2 mirrors, et les 2 mirrors vendent un supplément \"Boursin\" +0,90€ qui n'existe PAS dans les extras canoniques de la Galette. Le mobile n'a en plus AUCUN mécanisme \"Viande supplémentaire\" +2,50€ (présent côté web via has_extra_meat/EXTRA_MEAT_PRICE et côté canonique en extra 2,50€). Descriptions et images divergent (P2/P3). Formule menu +2,50€ cohérente partout.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "MOBILE — \"Viande supplémentaire\" +2,50€ inexistante sur les Galettes (aucun mécanisme extra-meat)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 346,
+   "evidence": "Canonique : extras Galette Normale/Cayenne contiennent {\"name\":\"Viande supplémentaire\",\"price\":2.5,\"group_label\":\"supplement\"}. WEB l'a (menu.js:180 `const EXTRA_MEAT_PRICE = 2.50;` + :344/:347 `has_extra_meat: true` sur les 2 galettes). MOBILE : grep EXTRA_MEAT/has_extra_meat = 0 hit dans le code (seulement des commentaires lignes 12/30) ; mkItem mobile (lignes 246-284) n'expose aucun champ extra-meat ; items 201/202 (lignes 346-352) sans option.",
+   "recommendation": "Porter le mécanisme web (EXTRA_MEAT_PRICE 2.50 + has_extra_meat + prise en compte dans priceFor) dans mobile/data/menu.js et l'activer sur les items 201/202."
+  },
+  {
+   "severity": "P1",
+   "title": "WEB+MOBILE — crudités 3/5 : \"Cornichon\" et \"Oignons cuits\" absents des mirrors",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 135,
+   "evidence": "Canonique (extras cat 2, group_label=crudite, tous 0€, is_available:true) : Salade, Tomate, Oignon, Cornichon (id 66/80), Oignons cuits (dernier extra des 2 items). Mirrors : `const CRUDITES = [` Salade/Tomate/Oignon uniquement — web menu.js:135-139 (commentaire :134 « Cornichon supprimé »), mobile menu.js:150-154 (même commentaire :149). La borne (source de vérité) expose bien Cornichon et Oignons cuits disponibles.",
+   "recommendation": "Ajouter Cornichon et Oignons cuits (0€, default:false à confirmer) au pool CRUDITES des deux mirrors, ou faire trancher l'owner si la suppression du Cornichon est un mandat plus récent que la fixture."
+  },
+  {
+   "severity": "P1",
+   "title": "WEB+MOBILE — supplément payant \"Boule gratinée\" 1,00€ manquant",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 143,
+   "evidence": "Canonique : les 2 galettes ont l'extra {\"name\":\"Boule gratinée\",\"price\":1,\"group_label\":\"supplement\"}. Web SUPPLEMENTS (menu.js:143-153) = 9 entrées à 0,90€ sans Boule gratinée ; mobile SUPPLEMENTS (menu.js:158-168) idem. Une option payante commandable sur borne est invendable sur web/mobile.",
+   "recommendation": "Ajouter { name: 'Boule gratinée', price: 1.00 } au pool SUPPLEMENTS des deux mirrors (exposé sur les catégories sandwich-template)."
+  },
+  {
+   "severity": "P1",
+   "title": "WEB+MOBILE — supplément \"Boursin\" +0,90€ vendu alors qu'il n'existe pas dans les extras canoniques Galette",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 150,
+   "evidence": "Canonique extras Galette (11 suppléments) : Cheddar, Raclette, Emmental, Œuf, Légumes sautés, Jambon, Oignons frits, Champignons (0,90€), Boule gratinée (1,00€), Viande supplémentaire (2,50€) — PAS de Boursin. Web menu.js:150 `{ id: 'sup-boursin', name: 'Boursin', price: 0.90 ... }` ; mobile menu.js:165 idem. Option encaissable sur web/mobile sans équivalent borne/caisse → commande non mappable.",
+   "recommendation": "Retirer Boursin du pool SUPPLEMENTS des deux mirrors (ou vérifier si la DB l'a ajouté depuis la fixture avant de trancher)."
+  },
+  {
+   "severity": "P2",
+   "title": "WEB+MOBILE — descriptions des 2 items divergentes du canonique",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 342,
+   "evidence": "Canonique item 23 : « Galette dorée et croustillante, garnie à votre goût et sauce maison au choix. » / item 24 : « Galette croustillante, sauce Cayenne maison incluse et crudités fraîches. ». Mirrors (web :342-347, mobile :346-352) : « Galette traditionnelle · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels » et « Galette signature · 1 viande au choix · ... ».",
+   "recommendation": "Aligner les descriptions marketing des mirrors sur le texte canonique borne, ou acter la variante « composition-style » comme choix délibéré."
+  },
+  {
+   "severity": "P2",
+   "title": "MOBILE — images viandes génériques réutilisées (≠ web corrigé, ≠ thumbs backend)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 124,
+   "evidence": "Mobile MEATS :124-130 : Mexicanos→viande-marine.png, Cordon Bleu→viande-crispy.png, Viande Hachée→viande-tandoori.png, Nuggets→viande-crispy.png, Tenders→viande-marine.png, Fricadelle→viande-curry.png. Web déjà corrigé ([IMG-SYNC-CAISSE 2026-06-27], menu.js:108-116, 1 image distincte par viande alignée backend). Canonique : thumbs distincts (ex. viande-poulet.webp).",
+   "recommendation": "Porter le fix IMG-SYNC-CAISSE du web vers mobile (7 images distinctes)."
+  },
+  {
+   "severity": "P3",
+   "title": "WEB+MOBILE — image item galette.png vs canonique galette.webp + héro cayenne mirror-only",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 60,
+   "evidence": "Canonique : image/thumb = images/menu/thumbs/galette.webp pour les 2 items (cover générique cover.png). Web :60-61 et mobile :65-66 mappent galette-normale/cayenne → 'galette.png' ; en plus web :93 / mobile :106 ajoutent un héro 'signature/cayenne-hero.png' pour galette-cayenne qui n'existe pas côté borne.",
+   "recommendation": "Cosmétique — vérifier seulement que galette.png rend le même visuel que le webp borne."
+  },
+  {
+   "severity": "INFO",
+   "title": "Parité CONFIRMÉE : prix, disponibilité, nb viandes, pools viandes/sauces, formule menu",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 341,
+   "evidence": "2 items canoniques (id 23 Galette Normale 6,50€ / id 24 Galette Cayenne 7,00€, is_available:true, viande_count:1) = web :342/:345 (201/202, 6.50/7.00, viandes:1) = mobile :346/:349 idem. 7 viandes identiques par nom (Poulet mariné, Mexicanos, Cordon Bleu, Viande Hachée, Nuggets, Tenders, Fricadelle) et 12 sauces identiques par nom (Mayonnaise…Spicy maison, toutes 0€) dans les 3 sources. Formule menu +2,50€ (FORMULES f-menu, web :183/mobile :180) cohérente avec l'addon canonique role=menu_component « Menu (Frites + Boisson) » présent sur les 2 items. Aucun item manquant ni en trop dans la catégorie.",
+   "recommendation": "Rien à faire sur ces champs."
+  },
+  {
+   "severity": "INFO",
+   "title": "Ids items divergents par convention (23/24 canonique vs 201/202 mirrors)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 346,
+   "evidence": "Canonique id 23/24 ; mirrors id 201/202 avec slugs identiques (galette-normale/galette-cayenne). Le mapping futur API devra se faire par slug, pas par id.",
+   "recommendation": "Documenter le slug comme clé de réconciliation lors du wireup."
+  }
+ ],
+ "facts": [
+  "Fixture canonique : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json — data.items filtrés category_id=2 → exactement 2 items : id 23 'Galette Normale' flat_price 6.50, id 24 'Galette Cayenne' flat_price 7.00, tous deux is_available:true, viande_count:1, composer_profile:null (le wizard vit dans variations attr 1=7 viandes 0€ + attr 5=12 sauces 0€, plus extras group_label crudite/supplement, plus addons roles menu_component/side/drink)",
+  "Extras canoniques identiques sur les 2 galettes : crudités 0€ = Salade, Tomate, Oignon, Cornichon, Oignons cuits (5) ; suppléments = 8 × 0,90€ (Cheddar, Raclette, Emmental, Œuf, Légumes sautés, Jambon, Oignons frits, Champignons) + Boule gratinée 1,00€ + Viande supplémentaire 2,50€ — PAS de Boursin",
+  "Les addon items 1/2/3 (Menu Frites+Boisson / Frites Seules / Boisson Seule) sont référencés par addon_item_id dans les 2 galettes mais N'APPARAISSENT PAS dans data.items[42] de la fixture — leur prix (+2,50€ formule) n'est donc pas vérifiable depuis la fixture, seulement depuis les mirrors/seeder",
+  "Mirror WEB /Users/1millnonstop/Downloads/web/data/menu.js : GALETTE :341-348 (items 201/202), MEATS :108 (7, images distinctes post IMG-SYNC-CAISSE 2026-06-27), SAUCES :119 (12), CRUDITES :135 (3 seulement), SUPPLEMENTS :143 (9 dont Boursin :150, sans Boule gratinée), EXTRA_MEAT_PRICE 2.50 :180 + has_extra_meat sur les 2 galettes :344/:347, FORMULES :183 (f-menu 2.50)",
+  "Mirror MOBILE /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js : GALETTE :345-353 (items 201/202 mêmes prix/flags que web SAUF has_extra_meat absent), MEATS :123-131 (7 mais images génériques réutilisées), SAUCES :134 (12), CRUDITES :150 (3), SUPPLEMENTS :158-168 (9 dont Boursin :165, sans Boule gratinée), FORMULES :180-184 (identiques web) — aucun EXTRA_MEAT_PRICE/has_extra_meat dans le code (mentions uniquement en commentaires :12 et :30)",
+  "Catégorie 2 : nom 'Galette' identique dans les 3 sources (fixture data.categories ; web menu.js:226 ; mobile menu.js:219, wizard_template 'sandwich', has_menu:true)",
+  "Aucune modification de fichier effectuée (mission read-only respectée)"
+ ]
+}

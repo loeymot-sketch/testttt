@@ -1,0 +1,74 @@
+{
+  "specialist": "DBA",
+  "zone": "Z-3-STOCK",
+  "round": 1,
+  "scope": "Schema constraints + indexes + N+1 + append-only enforcement + CHECK validation",
+  "evidence_method": "MySQL information_schema introspection + migration Read + Eloquent boot/booted handlers",
+  "findings": [
+    {
+      "id": "Z3-DBA-01",
+      "severity": "P2",
+      "title": "stock_movements_idempotency_unique UNIQUE constraint EXISTS on idempotency_key",
+      "anchor": "database/migrations/2026_04_27_143130_create_stock_movements_table.php:19",
+      "evidence": "SHOW INDEX FROM stock_movements returns 'stock_movements_idempotency_unique non-unique=0'. Verified MySQL prod schema. tests/Feature/Stock/StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present asserts QueryException on duplicate insert (passing).",
+      "verdict": "PASS — UNIQUE indexed."
+    },
+    {
+      "id": "Z3-DBA-02",
+      "severity": "P2",
+      "title": "stock_levels_branch_stockable_unique UNIQUE constraint exists",
+      "anchor": "database/migrations/2026_04_27_143120_create_stock_levels_table.php:22",
+      "evidence": "Composite UNIQUE (branch_id, stockable_type, stockable_id) confirmed via SHOW INDEX. Prevents duplicate per-branch stock-of-thing rows.",
+      "verdict": "PASS."
+    },
+    {
+      "id": "Z3-DBA-03",
+      "severity": "P2",
+      "title": "stock_levels CHECK constraints (on_hand>=0, reserved>=0, reserved<=on_hand) ACTIVE on MySQL prod",
+      "anchor": "database/migrations/2026_04_27_143120_create_stock_levels_table.php:26-30",
+      "evidence": "TABLE_CONSTRAINTS query returns CHECK: stock_levels_on_hand_non_negative, stock_levels_reserved_lte_on_hand, stock_levels_reserved_non_negative. App-level guard at StockLevel.php:66-74 mirrors. Triple defense: app + DB CHECK + atomic transaction.",
+      "verdict": "PASS — strong invariant."
+    },
+    {
+      "id": "Z3-DBA-04",
+      "severity": "P1",
+      "title": "stock_movements append-only enforced at Eloquent level only (no DB BEFORE UPDATE/DELETE trigger)",
+      "anchor": "app/Models/StockMovement.php:46-55",
+      "evidence": "static::updating and static::deleting throw LogicException. NO MySQL trigger. Direct UPDATE/DELETE via DB::statement bypasses Eloquent. Compared to audit_logs (fiscal frozen) which has DB triggers per CLAUDE.md §8. Stock is NOT NF525-critical and append-only is best-effort — this is intentional design difference.",
+      "verdict": "ACCEPTABLE — stock_movements append-only is operational invariant, not legal. App-level guard adequate.",
+      "scope_minimal_heal": "Defer DB trigger to V1.0.2 hardening."
+    },
+    {
+      "id": "Z3-DBA-05",
+      "severity": "P1",
+      "title": "lowAlerts query — index coverage on (branch_id, on_hand, threshold_low) NOT present",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:69-76 + migration",
+      "evidence": "whereIn('branch_id', $branchIds)->whereNotNull('threshold_low')->whereColumn('on_hand','<=','threshold_low')->orderBy('branch_id')->orderBy('on_hand')->limit(200). Indexes available: stock_levels_branch_stockable_unique (composite) + stock_levels_stockable_idx. No index on threshold_low. With low row count (one row per stockable_type/id/branch, capped at thousands), query plan via PRIMARY+filesort acceptable for limit 200. N+1 absent (single query).",
+      "verdict": "ACCEPTABLE — low volume, limit 200 bound, no perf hot path.",
+      "scope_minimal_heal": "Defer composite index (branch_id, threshold_low, on_hand) to V1.0.2 if rupture row count grows."
+    },
+    {
+      "id": "Z3-DBA-06",
+      "severity": "P2",
+      "title": "lastSummary potential N+1 via item:id,name + branch:id,name eager load",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:33",
+      "evidence": "with(['item:id,name', 'branch:id,name']) explicit selective eager load. Limit 100. Single query + 2 IN-list resolved relations. NOT N+1.",
+      "verdict": "PASS — correct eager load pattern."
+    },
+    {
+      "id": "Z3-DBA-07",
+      "severity": "P3",
+      "title": "StockMovementIdempotencyKeyUniqueTest contains 4 skipped tests redundant with passing tests in StockMovementsAppendOnlyTest",
+      "anchor": "tests/Feature/Stock/StockMovementIdempotencyKeyUniqueTest.php:42-60",
+      "evidence": "All 4 cases markTestSkipped('Pending plan task 2.6'). The contract they guarded is now covered by: (1) StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present (passes), (2) migration L19 UNIQUE constraint verified via DB introspection, (3) StockConcurrentDecrementTest still passes.",
+      "verdict": "STALE — coverage migrated to canonical test. Skip msg misleading.",
+      "scope_minimal_heal": "Replace markTestSkipped messages to point to canonical test path, OR delete file. Scope-minimal: keep file, update skip reasons to 'Consolidated into StockMovementsAppendOnlyTest + migration unique constraint verified DB-level.'"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 5,
+    "P3": 1
+  }
+}

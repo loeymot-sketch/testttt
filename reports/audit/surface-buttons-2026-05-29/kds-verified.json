@@ -1,0 +1,23 @@
+{
+  "surface": "KDS Cuisine (kds) — KitchenDisplaySystemComponent.vue + KdsV2Grid.vue + KdsHistoryDrawer.vue + KdsStatusBanner.vue + KdsOrderCard.vue",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "elements_checked": 31,
+  "confirmed_count": 1,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P3",
+      "type": "dead_button",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+      "line": "134-139",
+      "element": "Legacy mobile tab buttons (db-tab-btn, data-tab=#item-order / #today-order) — 'Items Board' / \"Today's Orders\"",
+      "title": "Legacy mobile tab buttons get no click listener (bound before SPA mounts them)",
+      "confirmed": true,
+      "grep_evidence": "CONFIRMED. (1) KitchenDisplaySystemComponent.vue:134-139 — both buttons carry data-tab but NO @click handler (Read-verified). (2) public/themes/default/js/tabs.js (32 LOC, Read-verified): line 3 `document?.querySelectorAll('.db-tab-btn')` is a STATIC NodeList captured at module-eval; lines 6-16 attach click listeners via forEach. grep for DOMContentLoaded|MutationObserver|delegation in tabs.js = ZERO matches (only two addEventListener('click') at :7 and :22, both bound to the static NodeList). (3) tabs.js loaded at master.blade.php:255 — the SPA shell (`<div id=\"app\">` :81, `<router-view/>` :83). (4) KDS is a lazily-imported routed component: kitchenDisplaySystemRoutes.js:5-10 (path /admin/kitchen-display-system), so its db-tab-btn elements do not exist when tabs.js runs at initial load → absent from the static NodeList → never receive a listener. (5) Component does NOT re-bind: only window.addEventListener in the component is :1475 ('realtime-order-update'); querySelectorAll at :1709 is for print content. grep db-tab-btn|initTab|bindTab in component = no rebind logic. (6) DOUBLE-GATED: useV2Layout() (computed :1268-1300) returns true by default (:1295 + fail-safe :1298) unless ?v2=0 / localStorage kds.v2_enabled='0' / env FK_KDS_V2_DEFAULT_ENABLED=false; the legacy tab row sits in the v-else legacy branch so it does NOT render in the production V2 default. (7) Both panes carry lg:block hidden (id=item-order :141 'active lg:block hidden', id=today-order :196 'lg:block hidden') → at >=lg both render regardless of tab state, so the dead tabs are MOOT on real KDS hardware. Bug only bites legacy layout (?v2=0) at <lg viewport, where #today-order is hidden with no .active and the only reveal control is dead.",
+      "recommendation": "Either re-init tab listeners inside the component's mounted() scoped to its own root els, or replace tabs.js global static binding with a document-level delegated listener (document.addEventListener('click', e => { const b = e.target.closest('.db-tab-btn'); ... })) so SPA-rendered tabs are covered. Near-nil impact on actual KDS hardware (>=lg) and zero in the default V2 layout; cheap insurance for the legacy <lg fallback.",
+      "frozen": false
+    }
+  ],
+  "summary": "Verified the single RAW finding at HEAD 04603fa87. CONFIRMED true: the legacy mobile tab buttons (Items Board / Today's Orders, KitchenDisplaySystemComponent.vue:134-139) are dead in the legacy <lg fallback because tabs.js (public/themes/default/js/tabs.js, loaded master.blade.php:255 in the SPA shell) binds click listeners via a STATIC querySelectorAll at initial page load — before the lazily-routed KDS component (kitchenDisplaySystemRoutes.js:5-10) mounts those buttons. No DOMContentLoaded/MutationObserver/delegation in tabs.js; component never re-binds. Correctly scoped P3: double-gated to legacy layout (?v2=0 — useV2Layout :1268 returns true by default) AND <lg viewport (both panes carry lg:block, lines 141/196, so >=lg renders both regardless of tab state), making it moot on real KDS hardware. The summary's supporting evidence also checks out: realtime-order-update (the V2 status-change CustomEvent) HAS 4 real listeners (KDS :1475, OSS PreparingAndReady :112, OnlineOrderList :294, TableOrderList :292), so the production V2 grid is NOT dead. Not a frozen-zone file (neither KitchenDisplaySystemComponent.vue nor tabs.js appears in CLAUDE.md §7). 0 findings dropped, 1 confirmed.",
+  "disk_path": "reports/audit/surface-buttons-2026-05-29/kds-verified.json"
+}

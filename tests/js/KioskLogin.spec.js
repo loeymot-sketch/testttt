@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createStore } from 'vuex';
 import { createI18n } from 'vue-i18n';
 import KioskLoginComponent from '../../resources/js/components/frontend/kiosk/KioskLoginComponent.vue';
@@ -27,7 +27,7 @@ describe('KioskLoginComponent', () => {
     sessionStorage.clear();
   });
 
-  it('does not auto-login while kiosk maintenance mode is enabled', async () => {
+  it('ignores stale kiosk maintenance mode and still auto-logins', async () => {
     sessionStorage.setItem('kiosk_maintenance_mode', '1');
     const kioskLogin = vi.fn().mockResolvedValue({});
     const replace = vi.fn();
@@ -49,9 +49,13 @@ describe('KioskLoginComponent', () => {
       },
     });
 
-    await Promise.resolve();
-    expect(kioskLogin).not.toHaveBeenCalled();
-    expect(replace).not.toHaveBeenCalled();
-    expect(wrapper.vm.error).toBe(frMessages.kiosk.login_screen.err_maintenance);
+    await flushPromises();
+
+    expect(kioskLogin.mock.calls[0][1]).toEqual({
+      username: 'kiosk-state',
+      password: 'kiosk123',
+    });
+    expect(replace).toHaveBeenCalledWith({ name: 'kiosk.idle' });
+    expect(wrapper.vm.error).not.toBe(frMessages.kiosk.login_screen.err_maintenance);
   });
 });

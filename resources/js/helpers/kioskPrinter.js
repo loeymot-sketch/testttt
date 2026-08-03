@@ -16,7 +16,54 @@
  *
  * [PHASE-6.2] Plus d'import direct de `window.borne.*` — tout passe par `kioskHardware`.
  */
+import { KIOSK_HARDWARE } from '../config/kioskHardware';
 import kioskHardware from '../services/kioskHardware';
+import { printEscPosViaCaisseBridge } from './posLocalPrinter';
+
+/**
+ * [TICKET-BORNE-SERVEUR 2026-07-06] Helper PARTAGÉ borne : imprime le(s) ticket(s)
+ * d'une commande via le RENDERER SERVEUR (GET frontend/order/show/{id}/escpos →
+ * octets ESC/POS SSOT NF525 = design caisse : accents/€ réels, width-safe,
+ * « ** A REGLER EN CAISSE ** » tant que non encaissée) POSTés au pont local /raw.
+ *
+ * Extrait de KioskConfirmationComponent.printServerUnifiedTicket pour être réutilisé
+ * par KioskCashInstructionComponent (flux Plan B réel) — déduplication.
+ *
+ * @param {string|number} orderId  id backend (les ids `local-`/`offline_` sont ignorés)
+ * @param {{tickets?: string[], axios?: object}} opts
+ *   tickets : ordre d'impression. Défaut ['kitchen','client'] — la CUISINE d'abord :
+ *   le ticket client sort en coupe PARTIELLE (reste accroché, ne tombe pas) ; imprimé
+ *   avant la cuisine, la coupe TOTALE de celle-ci détacherait tout.
+ * @returns {Promise<boolean>} true si le ticket CLIENT a été imprimé.
+ */
+export async function printServerTicketsViaBridge(orderId, opts = {}) {
+  try {
+    if (orderId == null || orderId === '') return false;
+    const id = String(orderId);
+    if (id.startsWith('local-') || id.startsWith('offline_')) return false;
+    const ax = opts.axios || ((typeof window !== 'undefined' && window.axios) ? window.axios : null);
+    if (!ax) return false;
+    const tickets = Array.isArray(opts.tickets) && opts.tickets.length ? opts.tickets : ['kitchen', 'client'];
+    let clientPrinted = false;
+    for (const ticket of tickets) {
+      let b64 = null;
+      try {
+        const res = await ax.get(`frontend/order/show/${id}/escpos`, { params: { ticket } });
+        b64 = res?.data?.escpos_b64 || null;
+      } catch (_) { b64 = null; }
+      if (!b64) continue;
+      const r = await printEscPosViaCaisseBridge(b64);
+      if (r?.ok && ticket === 'client') clientPrinted = true;
+    }
+    return clientPrinted;
+  } catch (_) {
+    return false;
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const ESC = '\x1B';
 const GS  = '\x1D';
@@ -190,7 +237,12 @@ export function buildEscPosReceipt(receipt) {
  * @param {string} [printElementId='kiosk-print-receipt']  — DOM id for web fallback
  * @returns {Promise<{method: 'electron'|'electron-escpos'|'browser'|'none', error?: string}>}
  */
-export async function printReceipt(receipt, printElementId = 'kiosk-print-receipt') {
+export async function printReceipt(receipt, printElementId = 'kiosk-print-receipt', opts = {}) {
+  // [G5] allowBrowserPrint : en AUTO (false) on ne retombe PAS sur window.print() —
+  // sinon faux « Imprimé » (method:'browser' traité comme succès), dialogue OS bloquant
+  // sur écran tactile, et 2ᵉ ticket possible si le pont imprime puis répond après l'abort.
+  // window.print() reste réservé au BOUTON MANUEL (allowBrowserPrint défaut true).
+  const allowBrowserPrint = opts.allowBrowserPrint !== false;
   // [PHASE-6.2] Électron bridge — via kioskHardware (pas d'accès direct window.borne).
   //
   // `kioskHardware.printReceipt` et `printEscPos` retournent le contrat {ok, error?}
@@ -215,42 +267,72 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
       loyalty_points_earned: receipt.loyaltyPointsEarned || 0,
       loyalty_customer_name: receipt.loyaltyCustomerName || '',
     };
-    const r = await kioskHardware.printReceipt(orderData);
-    if (r?.ok) {
-      // Certains firmwares bridge renvoient `{ok: true, data: {success|skipped}}`.
-      const raw = r.data || r;
-      if (raw?.success || raw?.skipped || r.ok) {
-        return { method: 'electron' };
-      }
-      console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
-    } else {
-      // printer_unavailable → on tente le fallback ESC/POS direct.
-      if (r?.error && r.error !== 'printer_unavailable') {
+    const maxAttempts = Math.max(1, KIOSK_HARDWARE.PRINTER_RETRY_MAX || 1);
+    const retryDelayMs = KIOSK_HARDWARE.PRINTER_RETRY_MS || 0;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const r = await kioskHardware.printReceipt(orderData);
+      if (r?.ok) {
+        const raw = r.data || r;
+        // [BORNE-PRINT 2026-06-27] Traiter `ok` comme imprimé SAUF si le main Electron
+        // signale explicitement success:false (job échoué mais IPC transporté). L'ancien
+        // `|| r.ok` court-circuitait TOUJOURS en succès (la branche warn + fallback ESC/POS
+        // était du code mort → un échec d'impression était rapporté comme imprimé).
+        if (raw?.success === false) {
+          console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
+          // → ne PAS retourner electron ; tenter le fallback ESC/POS ci-dessous.
+        } else {
+          return { method: 'electron' };
+        }
+      } else if (r?.error && r.error !== 'printer_unavailable') {
         console.warn('[kioskPrinter] printReceipt failed:', r.error);
       }
-    }
 
-    // Fallback ESC/POS via kioskHardware (même service, méthode alternative).
-    const lines = buildEscPosReceipt(receipt);
-    const rEsc = await kioskHardware.printEscPos(lines);
-    if (rEsc?.ok) return { method: 'electron-escpos' };
-    if (rEsc?.error && rEsc.error !== 'printer_unavailable') {
-      console.warn('[kioskPrinter] printEscPos failed:', rEsc.error);
-    }
-  }
+      const lines = buildEscPosReceipt(receipt);
+      const rEsc = await kioskHardware.printEscPos(lines);
+      if (rEsc?.ok) return { method: 'electron-escpos' };
+      if (rEsc?.error && rEsc.error !== 'printer_unavailable') {
+        console.warn('[kioskPrinter] printEscPos failed:', rEsc.error);
+      }
 
-  // ── Browser window.print() fallback (dev / navigateur) ───────────────────
-  const el = document.getElementById(printElementId);
-  if (el && typeof window.print === 'function') {
-    try {
-      window.print();
-      return { method: 'browser' };
-    } catch (err) {
-      return { method: 'none', error: err.message };
+      if (attempt < maxAttempts && retryDelayMs > 0) {
+        await sleep(retryDelayMs);
+      }
     }
   }
 
-  return { method: 'none', error: 'No print method available' };
+  // ── Browser window.print() fallback — UNIQUEMENT hors bridge (dev / navigateur /
+  // Chrome-kiosk). [BORNE-PRINT 2026-06-27] Sur la VRAIE borne Electron, un échec
+  // bridge ne doit PAS retomber sur window.print() : #kiosk-print-receipt existe
+  // toujours, donc l'ancien code masquait l'échec en { method:'browser' } (faux
+  // « Imprimé », filet on-screen jamais montré, reportPrinterFailure jamais appelé,
+  // et window.print() pouvait ouvrir un dialogue OS bloquant sur écran tactile).
+  // On laisse l'échec remonter pour déclencher printFailed + reportPrinterFailure.
+  if (!isBridge) {
+    // [BORNE-LOCAL-BRIDGE 2026-06-28] Pont WinUSB local d'abord : impression
+    // thermique SILENCIEUSE sur le SK1-31 (POST 127.0.0.1:9100), sans dialogue
+    // navigateur. Fall-through vers window.print() si le pont est absent/échoue.
+    const bridge = await printViaLocalBridge(receipt);
+    if (bridge) return bridge;
+
+    // [G5] En AUTO (allowBrowserPrint=false), ne pas masquer l'échec du pont en
+    // window.print() → on remonte 'none' pour déclencher printFailed + reportPrinterFailure.
+    if (!allowBrowserPrint) {
+      return { method: 'none', error: 'local_bridge_failed' };
+    }
+
+    const el = document.getElementById(printElementId);
+    if (el && typeof window.print === 'function') {
+      try {
+        window.print();
+        return { method: 'browser' };
+      } catch (err) {
+        return { method: 'none', error: err.message };
+      }
+    }
+  }
+
+  return { method: 'none', error: isBridge ? 'kiosk_printer_failed' : 'No print method available' };
 }
 
 /**
@@ -273,6 +355,93 @@ export function reportPrinterFailure(orderId, errorMessage) {
  */
 function formatEur(amount) {
   return (parseFloat(amount) || 0).toFixed(2) + ' EUR';
+}
+
+// [BORNE-TICKET-COMPO 2026-06-28] Le wizard frozen (buildInstruction) n'émet que
+// la formule + sauces EXTRA + viandes — il OMET la sauce principale, les crudités
+// et les suppléments → le ticket borne ne décrivait presque rien (cf. photo owner
+// A0009 « 1x Cheese Burger > Formule … » sans sauce ni crudités).
+//
+// On reconstruit ici la composition COMPLÈTE depuis les champs STRUCTURÉS du
+// cartItem (déjà présents, prêts-serveur), une SEULE source par élément (zéro
+// doublage), sans toucher au wizard frozen :
+//   - item_variations  → pain, sauce (1ère), viandes               (variation_name=GROUPE, name=VALEUR)
+//   - item_extras      → crudités gratuites + suppléments payants    ({name})
+//   - item_addons      → formule (role menu_*)
+//   - _wizardSelections → taille (_tailleMeta), boisson (_boissonMeta), note libre
+// Renvoie '' si rien de structuré (l'appelant retombe sur item.instruction).
+
+/** Nettoie un libellé de groupe pour le ticket : "Viande 1"→"Viande", "Sauce (1ère Gratuite)"→"Sauce". */
+function cleanCompoGroup(label) {
+  return String(label == null ? '' : label)
+    .replace(/\([^)]*\)/g, '')   // parenthèses ("1ère Gratuite")
+    .replace(/\s*\d+\s*$/, '')   // index final ("Viande 1" → "Viande")
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+const KIOSK_MENU_ROLE_LABEL = {
+  menu_full: 'Formule (frites + boisson)',
+  menu_frites: 'Formule (frites)',
+  menu_boisson: 'Formule (boisson)',
+};
+
+export function kioskItemCompositionText(item) {
+  if (!item || typeof item !== 'object') return '';
+  const parts = [];
+  const sel = (item._wizardSelections && typeof item._wizardSelections === 'object')
+    ? item._wizardSelections : {};
+
+  // Taille (n'est pas dans item_variations) — en tête.
+  const taille = sel._tailleMeta && sel._tailleMeta.label;
+  if (taille) parts.push(String(taille).trim());
+
+  // Variations groupées (pain, viandes, sauce 1ère). "Viande 1"+"Viande 2" → une
+  // seule ligne "Viande: Nuggets, Tenders".
+  const order = [];
+  const byGroup = {};
+  (item.item_variations || []).forEach((v) => {
+    const value = String((v && (v.name ?? v.variation_value)) || '').trim();
+    if (!value) return;
+    const group = cleanCompoGroup(v && v.variation_name);
+    const q = v && v.quantity > 1 ? ` x${v.quantity}` : '';
+    const key = group || '_';
+    if (!(key in byGroup)) { byGroup[key] = []; order.push(key); }
+    byGroup[key].push(value + q);
+  });
+  order.forEach((key) => {
+    const vals = byGroup[key].join(', ');
+    parts.push(key === '_' ? vals : `${key}: ${vals}`);
+  });
+
+  // Extras : crudités gratuites + suppléments (tous décrits ; pas de prix sur le cartItem).
+  const extras = (item.item_extras || [])
+    .map((e) => {
+      const n = String((e && e.name) || '').trim();
+      if (!n) return '';
+      return n + (e && e.quantity > 1 ? ` x${e.quantity}` : '');
+    })
+    .filter(Boolean);
+  if (extras.length) parts.push(extras.join(', '));
+
+  // Formule (addons role menu_*) + nom de la boisson (porté par _boissonMeta côté kiosk).
+  let hasFormula = false;
+  (item.item_addons || []).forEach((a) => {
+    const role = String((a && a.role) || '');
+    const label = KIOSK_MENU_ROLE_LABEL[role] || String((a && a.name) || '').trim();
+    if (label) { parts.push(label); hasFormula = true; }
+  });
+  const drink = sel._boissonMeta && sel._boissonMeta.boissonName;
+  if (drink) parts.push(`(${String(drink).trim()})`);
+  // Sauce frites (séparée du menu) si capturée.
+  const frySauce = sel._fritesSauceMeta && sel._fritesSauceMeta.fritesSauceName;
+  if (frySauce) parts.push(`Sauce frites: ${String(frySauce).trim()}`);
+
+  // Note libre du client.
+  const note = String(sel.instruction || '').trim();
+  if (note) parts.push(`Note: ${note}`);
+
+  return parts.join('. ');
 }
 
 /**
@@ -300,6 +469,7 @@ export function buildReceiptData({
   paymentMethod,
   loyaltyPointsEarned = 0,
   loyaltyCustomerName = '',
+  thankYou = '',
   labels = {},
 }) {
   const now = new Date();
@@ -312,7 +482,10 @@ export function buildReceiptData({
     unitPrice: (parseFloat(item.convert_price) || 0)
                + (parseFloat(item.item_variation_total) || 0)
                + (parseFloat(item.item_extra_total) || 0),
-    instruction: item.instruction || null,
+    // [BORNE-TICKET-COMPO 2026-06-28] Compo COMPLÈTE depuis les champs structurés
+    // (sauce + crudités + viandes + suppléments + formule), fallback sur l'ancienne
+    // instruction si l'item n'a pas de compo structurée (produit simple, snapshot F5).
+    instruction: kioskItemCompositionText(item) || item.instruction || null,
   }));
 
   return {
@@ -326,6 +499,220 @@ export function buildReceiptData({
     paymentMethod:  paymentMethod || '',
     loyaltyPointsEarned: parseInt(loyaltyPointsEarned, 10) || 0,
     loyaltyCustomerName: loyaltyCustomerName || '',
+    thankYou: thankYou || '', // [G8] propagé jusqu'au footer du pont (était droppé)
     labels,
   };
+}
+
+// ── [BORNE-LOCAL-BRIDGE 2026-06-28] Pont d'impression WinUSB local ───────────
+// Sur la VRAIE borne (Chrome plein écran, PAS Electron), le SK1-31 n'a aucune file
+// d'impression Windows (driver WinUSB only). Un petit pont local (bridge.js / node-usb)
+// écoute sur http://127.0.0.1:9100 et écrit l'ESC/POS directement au SK1-31. La borne
+// POSTe le ticket au pont au lieu de window.print(). `http://127.0.0.1` est un secure
+// context → fetch autorisé depuis une page HTTPS (exempté du blocage mixed-content).
+export const LOCAL_BRIDGE_URL = 'http://127.0.0.1:9100';
+
+// [BORNE-PRINT-ONCE 2026-06-28] Garde anti-double-impression : un re-montage de
+// composant OU un hard-reload (F5 / watchdog kiosque) ne doit JAMAIS sortir un 2ᵉ
+// ticket thermique pour la même commande. [G3] Persistée en localStorage (survit au
+// reload — la garde mémoire seule était ré-initialisée au reload → 2ᵉ ticket). Clé =
+// fournie par l'appelant ; préférer l'order id backend (unique) ou queue+date pour
+// éviter la collision au rollover quotidien des numéros (A0001 réinitialisé/jour).
+const PRINTED_LS_KEY = 'kiosk_printed_orders_v1';
+let _printedOrders = null;
+function _loadPrinted() {
+  if (_printedOrders) return _printedOrders;
+  _printedOrders = new Set();
+  try {
+    const raw = window.localStorage.getItem(PRINTED_LS_KEY);
+    if (raw) JSON.parse(raw).forEach(k => _printedOrders.add(k));
+  } catch (_) { /* localStorage indispo → garde mémoire seule */ }
+  return _printedOrders;
+}
+export function markPrintedOnce(orderRef) {
+  const k = String(orderRef == null ? '' : orderRef).trim();
+  if (k === '') return false;
+  const set = _loadPrinted();
+  if (set.has(k)) return false;
+  set.add(k);
+  try {
+    const arr = Array.from(set).slice(-200); // cap mémoire/LS
+    window.localStorage.setItem(PRINTED_LS_KEY, JSON.stringify(arr));
+  } catch (_) { /* best-effort */ }
+  return true;
+}
+/** Test-only : réinitialise la garde (le localStorage réel n'est pas purgé en prod). */
+export function _resetPrintedOnce() { _printedOrders = null; }
+
+// Le pont envoie ses octets en 'binary' (Latin-1) et le codepage du SK1-31 est
+// imprévisible → on ASCII-fold (accents retirés, € → EUR) pour garantir un ticket
+// LISIBLE quel que soit le codepage (V1 pragmatique : « Méga » → « Mega »).
+function asciiFold(s) {
+  return String(s == null ? '' : s)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // diacritiques
+    .replace(/€/g, 'EUR').replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+function frEur(amount) {
+  return (parseFloat(amount) || 0).toFixed(2).replace('.', ',') + ' EUR';
+}
+
+// [FIX P2 audit 2026-06-28] Word-wrap : coupe sur les espaces à `width` (jamais en
+// plein mot), conserve TOUT le texte de compo (plus de troncature de la 2e viande).
+function wrapText(s, width) {
+  const w = Math.max(8, width | 0);
+  const words = String(s == null ? '' : s).split(/\s+/).filter(Boolean);
+  const out = [];
+  let line = '';
+  for (const word of words) {
+    if (line && (line.length + 1 + word.length) > w) { out.push(line); line = word; }
+    else line = line ? line + ' ' + word : word;
+    while (line.length > w) { out.push(line.slice(0, w)); line = line.slice(w); } // mot unique trop long
+  }
+  if (line) out.push(line);
+  return out.length ? out : [''];
+}
+
+/**
+ * Mappe un reçu (buildReceiptData) vers le payload JSON du pont :
+ * {title, subtitle, order, lines:[], total, footer}. ASCII codepage-safe.
+ */
+// [BORNE-TICKET-SIZE 2026-06-28] Taille de police pilotée serveur (config injectée
+// dans window.foodkingConfig.borneTicket). Le pont bridge.js applique GS ! bodySize.
+// Défaut « grand » = double hauteur (0x01) ; 0x11 = ÉNORME (2×2).
+export function borneTicketSize() {
+  const def = { bodySize: 0x01, titleSize: 0x11 };
+  try {
+    const c = window.foodkingConfig && window.foodkingConfig.borneTicket;
+    if (c && typeof c === 'object') {
+      return {
+        bodySize: Number.isFinite(c.bodySize) ? c.bodySize : def.bodySize,
+        titleSize: Number.isFinite(c.titleSize) ? c.titleSize : def.titleSize,
+      };
+    }
+  } catch (_) { /* défaut ci-dessous */ }
+  return def;
+}
+
+// Largeur effective en caractères selon le multiplicateur de LARGEUR de la taille
+// (octet GS ! : nibble haut = largeur 0–7 → 1×–8×). Double largeur ⇒ 2× moins de
+// caractères tiennent sur le papier → on wrappe en conséquence (rien n'est coupé).
+function effectiveWidthFor(sizeByte) {
+  const widthMult = ((Number(sizeByte) >> 4) & 0x07) + 1;
+  return Math.max(8, Math.floor(RECEIPT_WIDTH / widthMult));
+}
+
+// [TICKET-BORNE 2026-07-03] Options ticket borne pilotées serveur (injectées dans
+// window.foodkingConfig.borneTicket) : téléphone + avance papier + mode de coupe.
+// Défauts sûrs si la config n'est pas injectée (vieux bundle) — le pont bridge.js a
+// LUI AUSSI ses propres défauts (30 lignes + coupe partielle), donc un ticket correct
+// sort même avant redéploiement du bundle.
+export function borneTicketExtras() {
+  const def = { phone: '', address: '', feedLines: 8, cutPartial: true };
+  try {
+    const c = window.foodkingConfig && window.foodkingConfig.borneTicket;
+    if (c && typeof c === 'object') {
+      return {
+        phone: typeof c.phone === 'string' ? c.phone : def.phone,
+        address: typeof c.address === 'string' ? c.address : def.address,
+        feedLines: Number.isFinite(c.feedLines) ? c.feedLines : def.feedLines,
+        cutPartial: typeof c.cutPartial === 'boolean' ? c.cutPartial : def.cutPartial,
+      };
+    }
+  } catch (_) { /* défaut ci-dessous */ }
+  return def;
+}
+
+export function buildBridgePayload(receipt) {
+  receipt = receipt || {};
+  const sz = borneTicketSize();
+  const extras = borneTicketExtras();
+  const bodyWidth = effectiveWidthFor(sz.bodySize);
+  const lines = [];
+  (receipt.items || []).forEach(item => {
+    const qty = item.quantity || 1;
+    const price = frEur((parseFloat(item.unitPrice) || 0) * qty);
+    const label = `${qty}x ${asciiFold(item.name)}`;
+    // À largeur normale (double hauteur) le prix tient sur la ligne du nom ; à
+    // double largeur (peu de place) on met le prix sur sa propre ligne à droite.
+    if ((label.length + 1 + price.length) <= bodyWidth) {
+      lines.push(padLine(label, price, bodyWidth));
+    } else {
+      lines.push(label);
+      lines.push(padLine('', price, bodyWidth));
+    }
+    if (item.instruction) {
+      // [FIX P2 audit 2026-06-28] WORD-WRAP (jamais de troncature) ; largeur adaptée
+      // à la taille de police pour que « 2 viandes + suppléments » reste entier.
+      String(item.instruction).split('. ').forEach(l => {
+        const t = asciiFold(l);
+        if (t) wrapText(t, bodyWidth - 4).forEach(w => lines.push('  > ' + w));
+      });
+    }
+  });
+  if (receipt.discount && receipt.discount > 0) {
+    lines.push(padLine('Remise', '-' + frEur(receipt.discount), bodyWidth));
+  }
+  if (receipt.paymentMethod) {
+    lines.push(padLine('Paiement', asciiFold(receipt.paymentMethod), bodyWidth));
+  }
+  // [G11] Bloc fidélité (était imprimé par buildEscPosReceipt mais absent du payload pont).
+  if (receipt.loyaltyPointsEarned && receipt.loyaltyPointsEarned > 0) {
+    const name = asciiFold(receipt.loyaltyCustomerName).slice(0, 16);
+    lines.push(`+${receipt.loyaltyPointsEarned} pts${name ? ' - ' + name : ''}`);
+  }
+  return {
+    title: asciiFold(receipt.restaurantName) || 'LE CAYENNE',
+    subtitle: asciiFold(receipt.orderDate),
+    order: asciiFold(receipt.queueNumber),
+    lines,
+    total: frEur(receipt.total),
+    footer: asciiFold(receipt.thankYou) || 'Merci et bon appetit !',
+    // [BORNE-TICKET-SIZE 2026-06-28] Tailles ESC/POS (GS ! n) à appliquer par le pont :
+    // bodySize = corps (compo), titleSize = en-tête + n° commande + total.
+    bodySize: sz.bodySize,
+    titleSize: sz.titleSize,
+    // [TICKET-PHONE 2026-07-03] Téléphone + adresse imprimés en en-tête par le pont (design pro).
+    phone: asciiFold(extras.phone),
+    address: asciiFold(extras.address),
+    // [TICKET-BORNE-LONG 2026-07-02] Avance papier (lignes) + coupe PARTIELLE : ticket
+    // LONG attrapable qui NE TOMBE PAS (reste accroché, le client le détache).
+    feedLines: extras.feedLines,
+    cutPartial: extras.cutPartial,
+  };
+}
+
+function fetchWithTimeout(url, opts, timeoutMs) {
+  if (typeof fetch !== 'function') return Promise.reject(new Error('no fetch'));
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  const t = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+  const o = Object.assign({}, opts);
+  if (ctrl) o.signal = ctrl.signal;
+  return fetch(url, o).finally(() => { if (t) clearTimeout(t); });
+}
+
+/** True si le pont local répond /health → "UP". Timeout court, jamais throw. */
+export async function isLocalBridgeAvailable(timeoutMs = 800) {
+  try {
+    const res = await fetchWithTimeout(LOCAL_BRIDGE_URL + '/health', {}, timeoutMs);
+    if (!res || !res.ok) return false;
+    const txt = await res.text();
+    return /UP/i.test(txt);
+  } catch (_) { return false; }
+}
+
+/**
+ * POSTe le ticket au pont local (ESC/POS → SK1-31). Renvoie {method:'local-bridge'}
+ * sur succès, sinon null (fall-through vers window.print). Jamais throw.
+ */
+export async function printViaLocalBridge(receipt, timeoutMs = 4000) {
+  try {
+    const res = await fetchWithTimeout(LOCAL_BRIDGE_URL + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBridgePayload(receipt)),
+    }, timeoutMs);
+    return res && res.ok ? { method: 'local-bridge' } : null;
+  } catch (_) { return null; }
 }

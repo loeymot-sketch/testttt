@@ -1,0 +1,58 @@
+{
+  "task_id": "CV1-V1-CLOSEOUT-001-T-CENT-POS-PROJ-01",
+  "parent_cycle": "CV1-V1-CLOSEOUT-001",
+  "execution_tier": "complex",
+  "primary_execution_model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "plan_file": "plans/PLAN_CV1-V1-ULTRA-DEEP-CATALOG-WIZARD-STOCK-2026-05-02.md",
+  "plan_section": "Famille E T-CENT-POS-PROJ-01 + plans/PLAN_CV1-CATALOG-CONVERGENCE-001_2026-05-02.md tasks 2.1-2.5",
+  "audit_source": "reports/audit/CV1_AUDIT_AXE1_CATALOG_CENTRALIZATION_2026-05-02.md §2 #1-2 + §6 P0 #1",
+  "delegated_by": "Claude in-session orchestrator (CV1-V1-CLOSEOUT-001 master synthesis verdict GO_WITH_CONSTRAINT P0 #3)",
+  "delegation_reason": "Complex L: branchement controller HTTP critique sur projection unifiée, implémentation adapter shape legacy + shadow diff, sentinel parité. Touche path POS production. Tier-routing complex per .cursor/routing.md.",
+
+  "instruction": "Implement T-CENT-POS-PROJ-01 strictly. The audit Axe 1 (reports/audit/CV1_AUDIT_AXE1_CATALOG_CENTRALIZATION_2026-05-02.md) discovered that PosMenuProjection (app/Services/Menu/PosMenuProjection.php) is NOT used by any controller — config('catalog_v15.unified_projection.enabled') is therefore a dead flag in runtime. The legacy PosCategoryController::index (app/Http/Controllers/Admin/PosCategoryController.php lines 35-138) must be migrated behind this projection.\n\n**SCOPE & FILES:**\n\n1. **MODIFY** `app/Services/Menu/PosMenuProjection.php` — implement the 2 stub methods:\n   - `adaptUnifiedToLegacyShape(array $unified, callable $legacyBuilder): array` — currently returns `$legacyBuilder()` as safety fallback (line 154). Replace with REAL adaptation logic per the docblock spec (lines 96-105):\n     - Map `unified.categories[i].id` -> `legacy.id`\n     - Map `unified.categories[i].name` -> `legacy.name` (kiosk_label NOT applied on POS surface)\n     - Map `unified.categories[i].sort` -> `legacy.sort` (pos_sort fallback honored by service)\n     - DO NOT include items in legacy POS categories response (items are served separately via /api/admin/item?surface=pos)\n     - INJECT virtual id:0 'all_items' header at index 0 (legacy parity — see PosCategoryController lines 113-119)\n     - Preserve all legacy keys: `id`, `name`, `slug`, `description` (default ''), `status`, `thumb`, `cover` (see lines 121-129)\n     - For thumb/cover, if MenuProjectionService doesn't expose them, accept that the unified mode may need a small enrichment query (load ItemCategory::with('media') for the IDs returned by MenuProjectionService) OR fallback to legacy assets — DOCUMENT the choice in NOTES.\n\n   - `structuralDiff(array $legacy, array $adapted): array` — currently returns `['todo' => ...]` (lines 165-167). Replace with real diff:\n     - `categories_count_legacy` vs `categories_count_adapted`\n     - `category_ids_only_in_legacy` (set diff)\n     - `category_ids_only_in_adapted` (set diff)\n     - `ordering_mismatch_at_index` (first index where IDs differ — null if order identical)\n     - Return empty array `[]` if NO meaningful diff (so the existing `if ($diff !== [])` check at line 125 doesn't log false positives)\n\n2. **MODIFY** `app/Http/Controllers/Admin/PosCategoryController.php::index` (lines 35-138) — wrap the existing payload construction in a closure passed to PosMenuProjection. Pseudo-pattern:\n```php\npublic function index(PaginateRequest $request)\n{\n    try {\n        // [keep all auth + validation logic lines 37-52 INCHANGÉ]\n        \n        $legacyBuilder = function () use (...) {\n            // [move existing block lines 54-134 here verbatim — NE PAS MODIFIER la logique legacy]\n            // returns ['data' => $newObj];\n        };\n        \n        // For runtime POS user, branch is required (already enforced lines 49-51)\n        $effectiveBranchId = $posRuntimeBranchId ?? 0;\n        \n        return app(\\App\\Services\\Menu\\PosMenuProjection::class)\n            ->forBranch($effectiveBranchId, $legacyBuilder);\n    } catch (Exception $exception) {\n        return response(['status' => false, 'message' => $exception->getMessage()], 422);\n    }\n}\n```\n   - **PROBLÈME**: when no posRuntimeBranchId (admin user), the legacy code still runs without branch filtering. PosMenuProjection::forBranch needs a branchId. Solution: pass 0 as effectiveBranchId AND in shadow/unified modes, DETECT branchId=0 and FALLBACK to legacyBuilder() inside PosMenuProjection (a small early-return). Add this safety in PosMenuProjection::forBranch: `if ($branchId < 1) { return $legacyBuilder(); }` BEFORE the mode dispatch. Ensures admin (non-POS-runtime) requests stay on legacy without changes.\n   - The response shape must be identical: `['data' => [...]]` array literal.\n\n3. **WRITE** `tests/Feature/Menu/PosCategoryProjectionParityTest.php` — sentinel with at minimum 4 cases:\n   - `test_legacy_mode_returns_legacy_shape_unchanged` (default flag values).\n   - `test_kill_switch_forces_legacy_even_with_enabled_true` (config kill_switch=true overrides enabled=true).\n   - `test_unified_mode_produces_equivalent_categories_set` (config enabled=true → adaptUnifiedToLegacyShape called → set of category IDs returned == legacy set + virtual id:0 header at index 0).\n   - `test_shadow_compare_logs_zero_diff_when_paths_aligned` (config shadow_compare=true → no warning logged when adapted matches legacy).\n   - `test_shadow_compare_logs_diff_when_misaligned` (force a mismatch e.g. by mocking, assert Log::warning was called with key '[catalog.shadow-diff]').\n\n   Use Laravel's `Log::spy()` for the shadow diff assertions. Use `config(['catalog_v15.unified_projection.enabled' => true])` to flip flags per test.\n\n4. **DO NOT** activate the flag by default in config/catalog_v15.php. The flag stays env-driven. The sentinel proves correctness; ops decides when to flip prod via `FK_CATALOG_UNIFIED_PROJECTION_SHADOW_COMPARE=true` first.\n\n**STRICT INVARIANTS:**\n- branch_id (#3): all queries in unified mode go through MenuProjectionService::forChannel which already filters branch.\n- Dispatch-after-commit (#4): not in scope (read-only projection).\n- OrderService symmetry (#5): not touched.\n- Frozen zones (#6): no touch to Pricing/Payments/etc.\n\n**Validation locale (mandatory before commit):**\n```\nphp -l app/Services/Menu/PosMenuProjection.php\nphp -l app/Http/Controllers/Admin/PosCategoryController.php\nphp artisan test --filter=PosCategoryProjectionParityTest\nphp artisan test --filter='Pos|Menu|Catalog' 2>&1 | tail -10\n```\nAll PASS, no regression on existing PosKioskProjectionParityTest, PosMenuRuntimeAccessTest, etc.\n\n**Trace block** (append to `reports/post_execute_latest.log`):\n```\n=== EXECUTE — CV1-V1-CLOSEOUT-001 / T-CENT-POS-PROJ-01 ===\nDATE: <ISO>\nEXECUTION_TIER: complex\nEXECUTE_DELEGATION: codex-extension\nFILES_TOUCHED: <list>\nNEW_SENTINELS: PosCategoryProjectionParityTest <count>\nLOCAL_VALIDATE: <verdicts>\nGAP_FERMÉ: P0 Axe 1 — PosMenuProjection branchée en runtime (flag unified_projection.enabled now effectif)\nNOTES: <plan-drift discoveries>\n```\n\n**Commit ONCE** with message:\n`[CV1-V1-CLOSEOUT-001 T-CENT-POS-PROJ-01] Branch PosCategoryController on PosMenuProjection + adaptUnifiedToLegacyShape + structuralDiff + sentinel`\n\nNo amend, no force-push.",
+
+  "subsystems": [
+    "app/Services/Menu/PosMenuProjection.php (write — 2 method bodies)",
+    "app/Http/Controllers/Admin/PosCategoryController.php (write — wrap existing logic in closure + delegate to PosMenuProjection)",
+    "tests/Feature/Menu/PosCategoryProjectionParityTest.php (write — new sentinel, 4-5 cases)"
+  ],
+
+  "subsystems_off_limits": [
+    "app/Services/Menu/MenuProjectionService.php (read-only — consume forChannel('pos', $branchId))",
+    "app/Services/Menu/AvailabilityService.php (read-only)",
+    "app/Services/Pricing/PricingService.php (frozen)",
+    "app/Services/Payments/* (frozen)",
+    "config/catalog_v15.php (read-only — do NOT change defaults)",
+    "any other catalog/menu service",
+    "any frozen file listed in reports/handoff/HANDOFF_CODEX_CV1_FOUNDATIONS_2026-05-02.md §2"
+  ],
+
+  "invariants_at_risk": [
+    "branch_id (#3): MenuProjectionService::forChannel must enforce branch_id scope (verify by reading the service before relying on it).",
+    "Response shape preservation: PosCategoryController response is consumed by POS frontend (resources/js/components/admin/pos/PosComponent.vue + posCategory store). Shape break = production incident."
+  ],
+
+  "acceptance": [
+    "PosMenuProjection::adaptUnifiedToLegacyShape returns the SAME array shape as legacy (data => [{id:0,name,slug,thumb,cover}, ...{id,name,slug,description,status,thumb,cover}, ...]).",
+    "PosMenuProjection::structuralDiff returns [] when paths aligned, structured diff otherwise.",
+    "PosCategoryController::index delegates to PosMenuProjection::forBranch when branchId>=1 (POS runtime users), keeps legacy unchanged for admin users (branchId<1).",
+    "Kill switch forces legacy even when enabled=true.",
+    "Default behavior (all flags false) = legacy passthrough.",
+    "PosCategoryProjectionParityTest 4-5/4-5 PASS.",
+    "Existing tests Pos|Menu|Catalog pass without regression.",
+    "Trace block appended to reports/post_execute_latest.log with EXECUTE_DELEGATION: codex-extension and EXECUTION_TIER: complex.",
+    "Single commit with conventional message."
+  ],
+
+  "halt_conditions": [
+    "MenuProjectionService::forChannel('pos', $branchId) returns a shape incompatible with legacy mapping (missing id/name/sort) → halt with structural dump.",
+    "Existing tests on PosCategoryController response shape break → halt and revert to safer adapter.",
+    "Any frozen file modification appears necessary → write reports/handoff/blocks/NEEDS_CLAUDE_T_CENT_POS_PROJ_01.md and stop.",
+    "More than 2 attempts to make sentinel pass without clear hypothesis → halt with state dump."
+  ],
+
+  "trace_template": "=== CV1-V1-CLOSEOUT-001 / T-CENT-POS-PROJ-01 ===\nEXECUTE_DELEGATION: codex-extension\nEXECUTION_TIER: complex\nDATE: 2026-05-02\nFILES_TOUCHED:\n  - app/Services/Menu/PosMenuProjection.php\n  - app/Http/Controllers/Admin/PosCategoryController.php\n  - tests/Feature/Menu/PosCategoryProjectionParityTest.php\nNEW_SENTINELS: PosCategoryProjectionParityTest (4-5 cases)\nLOCAL_VALIDATE: php artisan test --filter=PosCategoryProjectionParityTest -> <verdict> ; --filter=Pos|Menu|Catalog -> <count, no-regression>\nLINT: php -l <files> -> all OK\nGAP_FERMÉ: P0 Axe 1 — PosMenuProjection branchée en runtime\nHALT: <none | reason>\n",
+
+  "commit_message_template": "[CV1-V1-CLOSEOUT-001 T-CENT-POS-PROJ-01] Branch PosCategoryController on PosMenuProjection + adaptUnifiedToLegacyShape + structuralDiff + sentinel\n\n- PosMenuProjection::adaptUnifiedToLegacyShape mappe categories shape unifiée → legacy POS array literal.\n- PosMenuProjection::structuralDiff produit diff structuré pour shadow_compare.\n- PosMenuProjection::forBranch early-return legacy if branchId<1 (admin non-POS-runtime).\n- PosCategoryController::index délègue à PosMenuProjection (closure legacy preservée).\n- Sentinel PosCategoryProjectionParityTest (4-5 cases) verrouille parité shape.\n- Default behavior = legacy passthrough (flag enabled=false par défaut).\n- Audit: reports/audit/CV1_AUDIT_AXE1_CATALOG_CENTRALIZATION_2026-05-02.md §2 #1-2 + §6 P0 #1\n"
+}

@@ -1,0 +1,96 @@
+{
+  "wave": "C",
+  "run_n": 2,
+  "findings": [
+    {
+      "id": "C-007",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "CSP-Report-Only meta tag STILL emits the disallowed-via-meta error on kiosk-idle (URL http://127.0.0.1:8000/kiosk/login, line 22) and again on 03-kiosk-wizard. The report endpoint relocation (run-1 fix) stopped the 400/429 storm to /api/frontend/csp-report, but the <meta http-equiv=\"Content-Security-Policy-Report-Only\"> element itself was not removed from the kiosk login Blade. Any owner opening DevTools on the kiosk sees a recurring red error at boot.",
+      "fix_hint": "Remove the <meta http-equiv=\"Content-Security-Policy-Report-Only\"> tag from resources/views/kiosk/*.blade.php (and any Vite-injected layout). The CSP must only be delivered as an HTTP header by the security middleware. Verify by reloading 127.0.0.1:8000/kiosk/login with DevTools open."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "iter15-mega-kiosk/01-pos-supervisor-baseline.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "POS Suivi commandes still renders the yellow banner 'Connexion temps réel perdue — actualisation automatique en cours...' on baseline (state 01) AND after the kiosk POST (state 08). KDS shows the blue banner 'Mode secours actif — actualisation automatique toutes les 5s' on states 01, 07, 09. Run-1 fix said WS banner gated on customer surface — confirmed for state 10 (no banner), but POS+KDS surfaces still show the persistent banner across the entire Wave C journey, which an owner would read as 'system broken'.",
+      "fix_hint": "Extend the WS banner gating to POS Suivi + KDS in dev/CI (when WS server is intentionally absent). Either hide entirely when ENABLE_REALTIME=false or downgrade to a discrete tooltip; never show a permanent top-banner. Confirm laravel-websockets/soketi service is part of the CI runner setup if banner is supposed to be transient."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "iter15-mega-kiosk/07-kds-receives-kiosk-order.png",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Kiosk order #100526256 / N°A0017 lands in 'À emporter' lane while the dedicated 'Borne' lane displays 'Aucune commande borne en cours'. Card text reads 'N° Commande: En Ligne' (a third, contradictory label) for a borne-source order. Three labels in conflict: source=kiosk/borne, lane=À emporter, displayed-order_type=En Ligne. Kitchen staff cannot filter borne-vs-takeaway and the card content disagrees with its column.",
+      "fix_hint": "Decide whether the Borne column is filtered on source=kiosk OR order_type=borne. Currently the four lanes are order_type-driven but 'Borne' is not an order_type. Either route source=kiosk into Borne lane regardless of order_type, or remove the lane and surface source as a badge. Also fix the 'N° Commande' label so it does not say 'En Ligne' for a kiosk-initiated order."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Kiosk idle screen still defaults to DARK MODE (deep brown background, white text, dim Cayenne accent). Catalog state 02 onward is light mode. Owner directive 'kiosk-design-refresh-2026-05-10' requires LIGHT MODE + Cayenne palette uniformly. The dark→light flash on first tap is brand-inconsistent.",
+      "fix_hint": "Set kiosk store init theme=light (or remove the dark/light toggle for V1). Ensure --kiosk-bg defaults match the catalog/payment surfaces."
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "iter15-mega-kiosk/05-kiosk-payment-screen.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Primary CTA 'Confirmer — €2,00' still rendered in pale-pink/peach with white text. Contrast ratio fails WCAG AA 4.5:1; the button visually reads as DISABLED while it is the proceed action. Older customers will not click it.",
+      "fix_hint": "Use full Cayenne #F4501E (--kiosk-primary) for the primary 'Confirmer' button on the payment screen. Reserve --kiosk-primary-soft for disabled state only and add aria-disabled when no payment method is selected."
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "iter15-mega-kiosk/04-kiosk-cart-bottom-sheet.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "State 04 still labelled 'cart-bottom-sheet' but PNG shows the catalog with cart counter '0 article — €0,00' and the bottom-sheet not visible. DOM contains data-testid='kiosk-cart-bottom-sheet' nodes (cart-bottom-sheet-count/-item-0/-decrement-0/-qty-0/-increment-0) but the screenshot was taken before the slide-up animation completed (or before any item was added to cart). Reviewer cannot verify the bottom-sheet UX from this artifact.",
+      "fix_hint": "Spec author: assert page.locator('[data-testid=kiosk-cart-bottom-sheet]').isVisible() AND a non-empty .cart-bottom-sheet-item-0 BEFORE snapping state 04. Add a product to the cart first; await the slide-up transition end."
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "iter15-mega-kiosk/03-kiosk-wizard.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "State 03 still labelled 'kiosk-wizard' but renders the Frites & Accompagnements catalog (no wizard step) — Frites Seules is a simple item so no wizard is exercised. Identical to run-1 finding; no fix applied. Misleading state name.",
+      "fix_hint": "Spec author: rename to '03-kiosk-catalog-frites' or pick a composite item (Tacos M with viande wizard) so the wizard step is actually exercised in iter15 Wave C."
+    },
+    {
+      "id": "C-016",
+      "state_artifact": "iter15-mega-kiosk/10-customer-screen-shows-ready-or-blocked.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Customer screen renders the OSS columns (En préparation / Prêt) — login-form regression is fixed — but the screen issues 3 GET requests to /api/admin/oss-order/popular-items and /api/admin/oss-order which return 401 Unauthorized. Console mirrors the same 3 errors ('Failed to load resource: 401'). The columns render with em-dash placeholders (no data) so a customer waiting for their order sees an empty Prêt column even after the kitchen marks it ready. Silent data-fetch failure with no user-facing error.",
+      "fix_hint": "Customer screen should target a public OSS route, not /api/admin/oss-order. Either (a) move the customer-facing endpoint to /api/frontend/oss-order with public throttle, or (b) inject a service-account bearer token at boot for the customer-screen UA. Add an axios interceptor that surfaces 401 as a friendly retry banner instead of silently swallowing."
+    },
+    {
+      "id": "C-017",
+      "state_artifact": "iter15-mega-kiosk/09-kds-prete.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "After the spec's ACCEPT→PREPARING→PREPARED transitions (all reportedly returning 202), the KDS overview at state 09-kds-prete still shows order #100526256 (N°A0017) under 'Confirmées' with the 'Démarrer la préparation' CTA — identical to state 07. The order never moved to En Préparation or Prêts à servir. Counter 'Toutes Les Commandes' shows nothing in 'En Préparation' or 'Terminées'. Either the change-status responses were a no-op (UI did not refresh after 202) or the spec's polling interval beat the screenshot. Either way: from a kitchen-staff POV the prête bump is invisible. Pairs with C-016: customer screen never sees a Prêt entry because KDS card never advances.",
+      "fix_hint": "(1) After change-status 202, force a Vuex action to refresh the order list (or update local state from the response body). (2) In the spec, await page.locator('text=En Préparation').locator('..').locator('text=A0017') before snapping state 09. (3) Verify the backend transition actually persists status_id changes by re-querying GET /api/admin/kds-order/show/256."
+    },
+    {
+      "id": "C-018",
+      "state_artifact": "iter15-mega-kiosk/02-kiosk-catalog.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "Sidebar category icons (TACOS, SANDWICHS, BURGERS, ASSIETTES, SALADES, POULET CROUSTILLANT, BOISSONS) still all show the SAME generic burger/tacos thumbnail. Run-1 fix C-004 only addressed product-card images on the right pane; the per-category icon mapping was not done. From a brand POV the kiosk sidebar still looks broken.",
+      "fix_hint": "Add a per-category icon field to the Category model (or upload distinct thumbnails) and update the kiosk sidebar template to map category->icon instead of falling back to the first product's image."
+    },
+    {
+      "id": "C-019",
+      "state_artifact": "iter15-mega-kiosk/01-kiosk-idle.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Idle screen still renders the 'Sur place' (dine_in) tile alongside 'À emporter'. Owner directive feedback_v1_dine_in_disabled_2026-05-06 sets V1 dine_in_enabled=false; the kiosk should not present dine-in as an option. (Note: run-1's intlify warnings for kiosk.order_type.dine_in_* keys are gone from console — keys exist now — but the tile itself should be hidden in V1, not just translated.)",
+      "fix_hint": "Gate the 'Sur place' tile in KioskOrderTypeChooser behind feature flag pos.dine_in_enabled (which is already false in V1). Confirm by reloading kiosk-idle: only 'À emporter' should appear."
+    }
+  ],
+  "summary": { "P0": 1, "P1": 4, "P2": 5, "P3": 1 },
+  "states_reviewed": 12
+}

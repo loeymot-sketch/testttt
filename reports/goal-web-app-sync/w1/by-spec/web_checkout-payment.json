@@ -1,0 +1,67 @@
+{
+ "spec": "web:checkout-payment",
+ "scope": "Flux de paiement checkout web standalone (/Users/1millnonstop/Downloads/web : funnel.jsx, api.js, index.html, flows.jsx, screens-v3.jsx) + traitement backend FrontendOrderService — cartographie READ-ONLY pour insertion future d'une option « payer en ligne par carte » derrière feature flag OFF.",
+ "summary": "Le checkout web propose 4 méthodes (counter/card/apple/google) dans funnel.jsx:408-413, mais AUCUN paiement en ligne réel n'existe : card/apple/google sont des mocks démo (formulaire carte pré-rempli 4242, sentinelle de refus 4000...0002) qui envoient quand même payment_method=4 au backend via api.placeOrder — la commande arrive UNPAID côté caisse exactement comme le counter. La config du web se lit via meta tags dans index.html (metaContent() api.js:15-24), c'est le point d'insertion naturel d'un flag `feature-online-card` OFF par défaut ; le gating se fait en filtrant le tableau `methods` (funnel.jsx:408-413) + le mapping pm (funnel.jsx:340). Risques principaux : copy UI contradictoire (« 100% sécurisé Stripe 3D-Secure » + « Débit à la préparation » alors que rien n'est débité, badge « Paiement au comptoir » à côté), et payment_method=4 persisté en DB pour des commandes jamais payées en ligne (pollution des rapports par méthode de paiement).",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Méthodes card/apple/google = mock pur mais payment_method=4 envoyé et persisté au backend (commande UNPAID étiquetée carte)",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 340,
+   "evidence": "funnel.jsx:340 `const pm = (ctx.method === 'card' || ctx.method === 'apple' || ctx.method === 'google') ? 4 : 1;` → api.js:422 `payment_method: o.paymentMethod || 1` → POST /api/frontend/order. Aucun débit en ligne n'a lieu (formulaire carte purement décoratif, funnel.jsx:321 état local jamais envoyé). Backend FrontendOrderService.php:290 : web (pas de KioskMachine) → `payment_status = PaymentStatus::UNPAID` quel que soit pm ; la commande est dispatchée au KDS (ligne 250 `!$isKioskOrderType` → TRUE) et payée au comptoir — mais la DB enregistre payment_method=4 (CARD), faussant les rapports par méthode d'encaissement.",
+   "recommendation": "Tant que le paiement en ligne n'existe pas, forcer pm=1 pour toutes les méthodes web OU masquer card/apple/google. Le futur flag online-card doit être la SEULE voie qui envoie pm=4 (et seulement après confirmation Stripe réelle)."
+  },
+  {
+   "severity": "P2",
+   "title": "Copy UI contradictoire et mensongère : « CB sécurisée Stripe · 3D Secure » + « Débit à la préparation · réservé sur ta carte » alors qu'aucun débit n'existe, avec badge « Paiement au comptoir » sur le même écran",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 410,
+   "evidence": "funnel.jsx:410 `meta: 'CB sécurisée Stripe · 3D Secure'` ; funnel.jsx:484 `Paiement <b>100% sécurisé</b> · Stripe · 3D-Secure · RGPD` ; funnel.jsx:509 `Débit à la préparation · réservé sur ta carte jusqu'au retrait` (affiché si method !== 'counter') ; simultanément funnel.jsx:487 badge `Paiement au comptoir` avec commentaire ligne 486 « pas de débit en ligne en V1 ». Le client qui choisit « Carte bancaire » et clique « Payer » (funnel.jsx:566) croit avoir payé en ligne — il devra payer au comptoir.",
+   "recommendation": "Retirer les mentions Stripe/3D-Secure/débit tant que le flag est OFF ; ne les réintroduire que dans la branche flag ON."
+  },
+  {
+   "severity": "P2",
+   "title": "Formulaire carte pré-rempli avec numéro de test et un nom réel en dur",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 321,
+   "evidence": "funnel.jsx:321 `wfvS({ num: '4242 4242 4242 4242', exp: '12/28', cvc: '123', name: 'IKYES BENZAID' })` — données démo (dont un nom de personne) pré-remplies en production ; sentinelle de refus locale funnel.jsx:371 `startsWith('4000000000000002')`.",
+   "recommendation": "Vider les valeurs par défaut ; supprimer le formulaire mock quand le flag est OFF (Stripe Elements le remplacera flag ON)."
+  },
+  {
+   "severity": "P3",
+   "title": "payment_method 5 (ticket resto) documenté dans api.js mais aucune méthode UI correspondante",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 409,
+   "evidence": "api.js:409 `// paymentMethod: 1=cash on pickup (counter), 4=card, 5=ticket resto.` — le tableau `methods` (funnel.jsx:408-413) ne propose que counter/card/apple/google ; 5 n'est jamais envoyé depuis le web.",
+   "recommendation": "Documenter comme réservé (le backend l'accepte : FrontendOrderService.php:201 TICKET_RESTAURANT) ou le retirer du commentaire."
+  },
+  {
+   "severity": "P3",
+   "title": "Bouton libellé « Payer » pour les méthodes mock alors que rien n'est encaissé",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 566,
+   "evidence": "funnel.jsx:563-566 : CTA `{ctx.method === 'counter' ? 'Confirmer la commande' : 'Payer'}` + état busy `'Paiement…'` (ligne 565) — pour card/apple/google le clic déclenche placeRealOrder() sans transaction.",
+   "recommendation": "Flag OFF : libeller « Confirmer la commande » pour toutes les méthodes ; réserver « Payer » à la branche flag ON."
+  },
+  {
+   "severity": "INFO",
+   "title": "apple/google mappés indistinctement sur pm=4 (carte) — pas de distinction wallet côté DB",
+   "file": "/Users/1millnonstop/Downloads/web/funnel.jsx",
+   "line": 340,
+   "evidence": "funnel.jsx:340 : les trois méthodes non-counter → même valeur 4. Aucune trace du choix wallet du client.",
+   "recommendation": "Acceptable en V1 ; si le flag ON garde Apple/Google Pay via Stripe, garder pm=4 est cohérent (le PSP distingue)."
+  }
+ ],
+ "facts": [
+  "Flux checkout web : cart → CheckoutPage (créneau retrait/livraison) → PaymentPage → ConfirmationPage → TrackingPage — routing dans index.html:135-144 (route 'payment' → PaymentPage, onNext vide le panier et route 'confirm')",
+  "Méthodes proposées au client (funnel.jsx:408-413) : {id:'counter', name:'Payer en caisse', meta:'Cash ou CB sur place · Ton plat t'attend', recommended:true}, {id:'card', name:'Carte bancaire', meta:'CB sécurisée Stripe · 3D Secure'}, {id:'apple', name:'Apple Pay'}, {id:'google', name:'Google Pay'} ; méthode par défaut ctx.method='counter' (index.html:95)",
+  "Valeur payment_method envoyée : funnel.jsx:340 card|apple|google→4, sinon(counter)→1 ; api.js:422 `payment_method: o.paymentMethod || 1` dans body POST /api/frontend/order (api.js:435) avec order_type 10 TAKEAWAY / 5 DELIVERY, source:5 (WEB, api.js:420), items JSON, X-Idempotency-Key auto ('web'+uuid24, api.js:435)",
+  "Config du web = meta tags HTML lus par metaContent() (api.js:15-18) : CFG = {base: meta 'api-base-url' (défaut http://127.0.0.1:8766), apiKey: meta 'api-key', branchId: meta 'api-branch-id', countryCode:'+33'} (api.js:19-24) ; meta tags actuels dans index.html:11-14 (api-base-url, api-branch-id, menu-image-base) ; PAS d'endpoint config backend (seuls loyaltyConfig api.js:451 et coupon-checking api.js:465 existent)",
+  "INSERTION FLAG 'payer en ligne par carte' OFF par défaut — pattern propre existant : (1) nouveau meta `<meta name=\"feature-online-card\" content=\"0\">` dans index.html:11-14 ; (2) lecture dans CFG via metaContent('feature-online-card','0') api.js:19-24, exposé via `window.LC.api.config` (api.js:473) ; (3) gating UI : filtrer le tableau `methods` funnel.jsx:408-413 (flag OFF → seul 'counter', éventuellement card en mode 'paiement au comptoir') ; (4) gating envoi : mapping pm funnel.jsx:340 ne produit 4 que flag ON après confirmation PSP ; le pattern DELIVERY (api.js:33-41, metas delivery-* avec fallbacks) est le précédent exact à imiter",
+  "PaymentPage soumission (funnel.jsx:366-383) : exige ctx.method + api authed ; visiteur anonyme → gate OTP inline (authStep phone→otp, funnel.jsx:385-407, api.guestOtp/guestVerify api.js:144-147, token Sanctum kiosk:order en localStorage) ; puis placeRealOrder (funnel.jsx:339-364) qui snapshot orderId/orderTotal/queue depuis la réponse backend",
+  "Backend (FrontendOrderService.php:284-291) : commande web (user sans KioskMachine, ligne 198/204) créée status=PENDING + payment_status=UNPAID quel que soit payment_method ; signaux OrderCreated dispatchés immédiatement pour le web (ligne 250 : `!$isKioskOrderType` = TRUE) — le gate paiement-différé (PENDING+UNPAID jusqu'au TPE) ne s'applique QU'AUX kiosk machines ; un futur paiement en ligne web devra donc soit réutiliser finalizePaidKioskOrder (ligne ~1213 vérifie PaymentStatus::PAID), soit un flux webhook dédié",
+  "Prix jamais envoyés par le client : api.js:8 + FrontendOrderService.php:268-271 unset(total/subtotal/discount) — PricingService backend SSOT ; delivery_charge forcé à 0 si non-DELIVERY (ligne 280-282)",
+  "Textes UI FR actuels du paiement : titre « Comment tu paies ? » (funnel.jsx:427), section « // Mode de paiement » (432), CTA « Confirmer la commande »/« Payer » + total format '12,34 €' (funnel.jsx:563-567), erreurs « Paiement refusé — réessaie ou paie en caisse. » (476), « La commande a échoué. Réessaie ou paie en caisse. » (381), badge « Paiement au comptoir » (487), OTP « Pour envoyer ta commande à la caisse, confirme ton téléphone » (525)",
+  "flows.jsx ne contient AUCUNE logique de paiement (seulement promo/panier, refs paiement = commentaires lignes 42/113-114) ; screens-v3.jsx : zéro occurrence payment/paiement/carte — tout le flux paiement vit dans funnel.jsx (PaymentPage, exporté via Object.assign(window,...) ligne 754) + api.js"
+ ]
+}

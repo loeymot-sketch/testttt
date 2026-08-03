@@ -1,0 +1,151 @@
+{
+  "scenario": "R9 NF525 chain stress",
+  "phase": "B.6",
+  "agent": "R9-nf525-chain-stress",
+  "generated_at": "2026-05-23T17:25:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
+  "method": "empirical",
+
+  "scope_note": "R9 extends C8 (kiosk-creation chain bit-identical) by ACTUALLY emitting Z-report closes to prove the chain extends LEGITIMATELY with correct prev_hash linkage. C8 already verified the creation path is side-effect-free on the chain. R9 verifies the EMIT path (Z-close) produces a valid HMAC chain.",
+
+  "pre": {
+    "audit_count": 64,
+    "audit_count_branch1": 64,
+    "audit_last_id": 64,
+    "audit_last_hash": "8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592",
+    "z_count": 0,
+    "z_last_id": null,
+    "z_last_signature": null,
+    "orders_count": 76,
+    "fiscal_max": 38
+  },
+
+  "stress_run": {
+    "command": "php artisan foodking:e2e:stress --orders=10 --concurrency=2 --branches=1 --type=kiosk --output=storage/logs/r9-nf525-chain-stress.md",
+    "exit_code": 0,
+    "verdict": "PASS",
+    "total_orders": 10,
+    "ok_count": 10,
+    "failed_count": 0,
+    "status_breakdown": {"201": 10},
+    "total_duration_s": 3.787,
+    "batch_duration_s": 3.011,
+    "avg_latency_ms": 301.14,
+    "throughput_rps": 3.32,
+    "duplicate_fiscal_sequence_no": 0,
+    "duplicate_queue_number": 0,
+    "cross_branch_leak": 0,
+    "outbox_stale_30s": 750,
+    "outbox_stale_note": "Pre-existing accumulated outbox backlog from prior dev sessions — not produced by this run (C8 saw same baseline)."
+  },
+
+  "post_stress_intermediate": {
+    "audit_count": 64,
+    "audit_count_branch1": 64,
+    "audit_last_id": 64,
+    "audit_last_hash": "8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592",
+    "z_count": 0,
+    "orders_count": 86,
+    "fiscal_max": 38,
+    "chain_verify": "CHAIN OK (audit_logs + z_reports) (branch=1) — SWEEP COMPLETE",
+    "explanation": "Identical to C8 finding — kiosk POST creates orders at payment_status=PENDING; fiscal allocation requires payment confirmation per CLAUDE.md §8. audit_logs bit-identical pre+post, orders +10. Chain integrity proven by clean verify-chain re-walk."
+  },
+
+  "z_close_real_run": {
+    "method": "ZReportService::open(1) + close(1) executed via artisan tinker",
+    "z1": {
+      "id": 1,
+      "sequence_no": 1,
+      "status": "closed",
+      "prev_hash": null,
+      "signature": "fb2f767d0d5675802ae80c77a8e8f48da57ff47ada94c924466803962e090b9a",
+      "interpretation": "Genesis Z-report for branch 1 — prev_hash=NULL is expected (first Z, no chain ancestor). Signature is HMAC SHA-256 of (seq, branch, aggregates, closed_at, prev_hash) per ZReportService::sign + computeSignature paths."
+    },
+    "z2": {
+      "id": 2,
+      "sequence_no": 2,
+      "status": "closed",
+      "prev_hash": "fb2f767d0d5675802ae80c77a8e8f48da57ff47ada94c924466803962e090b9a",
+      "signature": "68c2983cdd84ed70661e539ba370b631e33fec9a9ba85971afcd2d92a71eae56",
+      "interpretation": "Z2.prev_hash === Z1.signature (BIT-IDENTICAL). This is the chain link — ZReportService.php:237 reads prev_signature from the previous Z and writes it as prev_hash of the new Z. The HMAC chain is therefore PROVEN extensible legitimately."
+    },
+    "chain_link_proof": {
+      "z1_signature": "fb2f767d0d5675802ae80c77a8e8f48da57ff47ada94c924466803962e090b9a",
+      "z2_prev_hash": "fb2f767d0d5675802ae80c77a8e8f48da57ff47ada94c924466803962e090b9a",
+      "match": true,
+      "note": "Identical 64-char hex strings. ZReportCloseTest::test_signature_chains_between_consecutive_closes (line 141-152) is the regression sentinel that enforces this property."
+    },
+    "code_static_supporting_evidence": {
+      "verifyChain_called_before_sign": "ZReportService.php:201 — close() invokes verifyChain($branchId) BEFORE computing a new signature. If chain is broken, close() throws and refuses to extend.",
+      "prev_hash_source": "ZReportService.php:237 — $prevHash := previous Z signature for same branch (orderByDesc id, value 'signature').",
+      "sign_uses_prev_hash": "ZReportService.php:239 — sign($branchId, $prevHash, $seq, $aggregates, $closedAt). The signature input includes prev_hash, so any tamper of prev_hash invalidates downstream signatures.",
+      "verifyChain_recomputes": "ZReportService.php:529-540 — verifyChain walks every Z, recomputes computeSignature(zReport, actualPrevHash), and hash_equals against stored signature. Accumulates 'signature_mismatch' / 'prev_hash_break' / 'genesis_break' errors.",
+      "regression_test": "tests/Feature/Fiscal/ZReportCloseTest.php — covers signature chain, tampering detection, double-close rejection."
+    }
+  },
+
+  "post": {
+    "audit_count": 64,
+    "audit_count_branch1": 64,
+    "audit_last_id": 64,
+    "audit_last_hash": "8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592",
+    "z_count": 2,
+    "z_last_id": 2,
+    "z_last_signature": "68c2983cdd84ed70661e539ba370b631e33fec9a9ba85971afcd2d92a71eae56",
+    "orders_count": 86,
+    "fiscal_max": 38
+  },
+
+  "chain_verify_post": "CHAIN OK (audit_logs + z_reports) (branch=1) — SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+  "chain_verify_runs_count": 3,
+  "chain_verify_runs": [
+    {"phase": "pre-stress", "result": "CHAIN OK", "z_count": 0},
+    {"phase": "post-stress-before-z-close", "result": "CHAIN OK", "z_count": 0},
+    {"phase": "post-z-close (Z1 + Z2)", "result": "CHAIN OK", "z_count": 2}
+  ],
+
+  "delta_legitimate": true,
+  "delta_breakdown": {
+    "audit_logs_count_delta": 0,
+    "audit_logs_count_delta_expected": "0 — stress is kiosk-creation, no payment confirmation, no fiscal_sequence allocation, no audit_log emission. Consistent with C8 finding and CLAUDE.md §8 'Allocation à création d'order (kiosk paid) ou close (POS cash)'.",
+    "audit_logs_last_hash_changed": false,
+    "audit_logs_last_hash_changed_expected": "false — same explanation. audit_logs.count=64 / last_hash=8daed68a... bit-identical before AND after the 10-order stress. Strongest possible NF525 evidence: zero side-effect from 10 concurrent kiosk POSTs.",
+    "z_reports_count_delta": 2,
+    "z_reports_count_delta_expected": "2 — we explicitly opened+closed two Z-reports to PROVE the chain extension path works. Z1 is genesis (prev_hash=NULL), Z2 chains on Z1.signature.",
+    "orders_count_delta": 10,
+    "orders_count_delta_expected": "10 — exactly the 10 stress orders persisted (kiosk creation path)."
+  },
+
+  "verifications": {
+    "V_R9_1_stress_completed_clean": {
+      "status": "PASS",
+      "evidence": "stress_run.exit_code=0, ok=10/10, 0 failures, 0 duplicates, 0 leaks."
+    },
+    "V_R9_2_audit_chain_untouched_by_stress": {
+      "status": "PASS",
+      "evidence": "audit_logs.count=64 and last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592 bit-identical pre+intermediate. fiscal:verify-chain returns CHAIN OK after stress."
+    },
+    "V_R9_3_z_close_extends_chain_legitimately": {
+      "status": "PASS",
+      "evidence": "Z1 closed with signature fb2f767d.... Z2 closed with prev_hash=fb2f767d... (identical to Z1.signature) and new signature 68c2983c.... HMAC chain link proven. fiscal:verify-chain re-walks both Z reports and returns CHAIN OK."
+    },
+    "V_R9_4_verify_chain_command_green_all_phases": {
+      "status": "PASS",
+      "evidence": "3 fiscal:verify-chain --all runs (pre-stress, post-stress-pre-z, post-z). All returned 'CHAIN OK (audit_logs + z_reports) (branch=1) — SWEEP COMPLETE'. Zero TAMPER, zero gap, zero hash mismatch."
+    },
+    "V_R9_5_code_static_close_path_robust": {
+      "status": "PASS",
+      "evidence": "ZReportService.php lines 180-275 (close), 237-239 (prev_hash source + sign), 463-544 (verifyChain). verifyChain called BEFORE every close (line 201) — refuses to extend a broken chain. ZReportCloseTest::test_signature_chains_between_consecutive_closes is the regression sentinel."
+    }
+  },
+
+  "caveats": [
+    "Smaller stress batch than R9 brief (10 vs 50) — per brief instruction 'smaller batch to respect disk'. C8 already validated 15-order kiosk concurrency=3 stress; R9 confirms the same property at concurrency=2 AND adds the Z-close empirical extension proof which C8 lacked.",
+    "Z-reports Z1 + Z2 created in dev DB are real fiscal records. They will appear in subsequent verify-chain sweeps and in PROJECT_BRAIN audit-chain pointers. Not a frozen-zone touch (z_reports table writes are NF525-compliant via the legitimate ZReportService close path).",
+    "outbox_stale_30s=750 is a pre-existing accumulated backlog (also seen in C8) — not a regression introduced by R9."
+  ],
+
+  "verdict": "GREEN",
+  "verdict_reasoning": "R9 strictly exceeds the C8 baseline. C8 proved the kiosk-creation path is bit-identical-safe for the chain (no audit_log emission, no chain tamper). R9 confirms that AND empirically proves the Z-close emit path produces a legitimate HMAC chain extension: Z1 (genesis, prev_hash=NULL, sig=fb2f767d...) → Z2 (prev_hash=fb2f767d... === Z1.sig, sig=68c2983c...). Three independent fiscal:verify-chain --all runs return CHAIN OK at every phase. The chain HMAC linkage code (ZReportService.php:201, 237, 239, 463-544) is robust and gated by verifyChain-before-sign — a broken chain cannot be extended. NF525 audit chain stress: GREEN."
+}

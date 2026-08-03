@@ -1,0 +1,65 @@
+{
+  "surface": "synchro",
+  "cycle": 1,
+  "wave": "convergence-golive W2",
+  "head": "16ee95d11 (W1 pre-flight baseline on top of fd6193215)",
+  "baseline_frozen_ref": "24e8a09c3",
+  "operator": "S-SYNC E2E Operator (id=70, branch_id=1, role=POS Operator)",
+  "servers": { "app": "http://127.0.0.1:8766 (APP_URL, canonical)", "secondary": "http://127.0.0.1:8000", "reverb": ":8766 ws", "broadcast_driver": "pusher/reverb", "queue": "redis (queue:work --queue=high,default RUNNING)" },
+  "gates": {
+    "vitest": { "cmd": "npx vitest run --reporter=dot", "passed": 2273, "failed": 0, "skipped": 3, "test_files": 323, "note": "1 post-teardown Uncaught Exception (leaked setTimeout focus timer at KioskWizardComponent.vue:2277 firing after env teardown) — teardown-timing artifact, 0 test failures, matches expected baseline", "verdict": "GREEN" },
+    "phpunit": { "cmd": "php artisan test", "passed": 3182, "failed": 0, "incomplete": 2, "skipped": 30, "note": "2 incomplete + 30 skipped are pre-existing Owner-finalize markers (S7.2 HTTP-route fixture)", "verdict": "GREEN" },
+    "frozen": { "cmd": "git diff --stat 24e8a09c3..HEAD (14 §7 files)", "changed_files": ["public/js/pos-wizard.js (+299/-)", "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (+34/-21)"], "unexpected_frozen_lines": 0, "note": "ONLY the 2 LOCK owner8 files changed; other 12 frozen files untouched; re-verified identical after e2e (e2e created DB rows, not code)", "verdict": "GREEN" },
+    "chain": { "cmd": "php artisan fiscal:verify-chain --all", "result": "CHAIN OK x4 (branches 1,7,8,9)", "reverified_after_e2e": "CHAIN OK x4 (still intact after creating 4 PAID POS orders)", "verdict": "GREEN" },
+    "audit_logs": { "baseline_w1": 4912, "before_e2e": 4912, "after_e2e": 4915, "delta": 3, "append_only_ok": true, "note": ">= 4912 baseline holds; grew +3 from e2e POS orders (append-only, never decreased)", "verdict": "GREEN" }
+  },
+  "s5_validations": {
+    "1_realtime_staff_kds": {
+      "method": "Created real POS orders via authenticated SSOT handshake (POST admin/pos/quote -> POST admin/pos with X-Idempotency-Key + quote_token/quote_signature), Echo probe on private branch.1 + XHR refetch instrumentation on the /kds tab",
+      "order_created": "id=5548 (201), plus 5549/5551; item Coca-Cola 33cl id=52, order_type POS(15), pos_payment_method COUNTER_DEFERRED(6)->payment_status PAID(5), status PREPARING(7)",
+      "echo_broadcast_latency_ms": 364,
+      "echo_event": ".OrderCreated on branch.1 (type order.created, aggregate_id 5548, status 7)",
+      "kds_ui_board_refetch_latency_ms": 3152,
+      "kds_ui_refetch_evidence": "KDS UI auto-issued GET /api/admin/kds-order/items (3152ms) + GET /api/admin/kds-order?paginate=0 (3229ms), both 200; poll interval is 60000ms when WS up, so this fast refetch is the Echo push -> _debouncedRefresh path, not a coincidental poll",
+      "kds_board_data": "GET /api/admin/kds-order returns 42 orders and INCLUDES new orders 5548 & 5549 (status 7, payment_status 5 PAID) — board-release filter (PAID|PENDING_COUNTER|POS-cash) admits them",
+      "kds_ui_badge": "'+N en attente' backlog badge visibly incremented 6 -> 9 reflecting 3 new status-7 orders; 3 full-screen cards correctly stay FIFO-oldest (A0012/13/14)",
+      "captures": ["reports/test-e2e/convergence-golive/w2-synchro/01-kds-baseline.png", "reports/test-e2e/convergence-golive/w2-synchro/03-kds-after-order.png", "reports/test-e2e/convergence-golive/w2-synchro/04-kds-board-updated-badge9.png"],
+      "architecture_note": "KDS live Echo push (OrderCreated->_debouncedRefresh) is gated to branch_id>0 staff (KitchenDisplaySystemComponent.vue:1937 'if (branchId <= 0) return; // Admin: polling fallback'); admin(branch_id=0) intentionally relies on polling (5s WS-down / 60s WS-up). Test operator is branch_id=1 staff -> gets the sub-second push. This is documented intentional design, verified working.",
+      "verdict": "GREEN — order reaches KDS board well under 5s (echo 0.36s, UI refetch 3.15s, badge 6->9)"
+    },
+    "2_echo_refcount": {
+      "file": "resources/js/services/eventContract.js",
+      "retain_at_onEvents": "retainChannel(channelName) at line 401 inside onEvents()",
+      "release_at_unsubscribe": "releaseChannel(channelName) at line 460 inside unsubscribe()",
+      "leave_only_at_refcount_0": "window.Echo.leave(channelName) only when releaseChannel() returns true (current<=1) at line 460-463",
+      "idempotent": "'released' flag (line 442) guards double-unsubscribe (line 447 early return) so refcount is not decremented twice",
+      "per_subscriber_stopListening": "each unsubscribe removes only ITS OWN bindings via channel.stopListening(line 453-457), shared channel stays alive for co-subscribers",
+      "spec": { "cmd": "npx vitest run tests/js/eventContractChannelRefcount.spec.js", "passed": 8, "failed": 0 },
+      "verdict": "GREEN"
+    },
+    "3_web_polling": {
+      "file": "resources/js/components/frontend/account/myOrder/OrderDetailsComponent.vue",
+      "interval_15s": "pollIntervalMs: 15000 (line 281)",
+      "starts_after_first_fetch": "mounted() dispatches frontendOrder/show then .then(startStatusPolling) (line 307-310)",
+      "clearInterval_beforeUnmount": "beforeUnmount() -> stopStatusPolling() -> clearInterval (line 316-318, 354-358)",
+      "terminal_stop": "isTerminalStatus [DELIVERED,CANCELED,REJECTED,RETURNED] — polling not started if already terminal (line 340) and stops on reaching terminal (line 345-346)",
+      "no_double_interval": "guard pollIntervalId !== null (line 335)",
+      "spec": { "cmd": "npx vitest run tests/js/orderDetailsClientPolling.spec.js", "passed": 5, "failed": 0 },
+      "verdict": "GREEN"
+    }
+  },
+  "findings": [
+    {
+      "id": "W2-SYNCHRO-OBS-1",
+      "severity": "info",
+      "type": "test-teardown-artifact",
+      "file": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:2277",
+      "desc": "Full Vitest run emits 1 post-teardown 'Uncaught Exception: document is not defined' from a leaked setTimeout focus timer (root.focus after document.contains) firing after the KioskWizard.spec.js env was torn down. 0 test failures (2273 pass). Non-blocking; matches expected baseline. Timer is in a LOCK/frozen file — no fix attempted this session.",
+      "blocking": false,
+      "verified": true
+    }
+  ],
+  "counts_summary": { "vitest": "2273/0 (3 skipped)", "phpunit": "3182/0 (2 incomplete, 30 skipped)", "frozen_unexpected": 0, "chain": "OK x4", "audit_logs": 4915 },
+  "code_modifications_this_session": 0,
+  "verdict": "GREEN"
+}

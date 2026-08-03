@@ -1,0 +1,175 @@
+{
+  "specialist": "Cross-cutting Security",
+  "scope": "Adversarial re-attack across ALL P0 surfaces healed in the 98-commit session: Admin IDOR, Loyalty QR signing, Idempotency middleware (config drift + header-omission bypass), CORS/TrustHosts, BranchScope coverage, NF525 chain triggers, RBAC privilege-escalation paths, FormRequest authz drift, password reset policy, Stripe webhook replay, PayloadMismatch.",
+  "method": "Read-only re-attack: re-read fix commits, verify the sentinel actually exercises the claimed contract (not just a smoke), search for cross-zone vectors not caught by single-zone audits.",
+  "session_range": {
+    "baseline": "ec0d49241",
+    "head": "a1925707d",
+    "commits": 98
+  },
+  "verdict": "P0_PERIMETER_HOLDS",
+  "findings": [
+    {
+      "id": "SEC-01",
+      "severity": "ATTESTED",
+      "title": "Admin IDOR (bb21e4f3b) — heal re-attacked, sentinel exercises the real contract",
+      "evidence": "Sentinel tests/Feature/Sentinels/MyOrderDetailsAuthzSentinelTest re-run during this audit: 15 passed, 0 failed (php artisan test --filter=MyOrderDetailsAuthzSentinel). The sentinel uses Spatie alternation `permission:customers_show|waiters_show|...|employees_show` which matches commit 90c9c0ee5 / bb21e4f3b body verbatim. Anonymous = 401 ✓, 3 perm-grants = 200 ✓, no-perm = 403 ✓, cross-branch = 404 ✓. The 'no-perm = 403' is exactly the scenario that was returning 200 pre-heal (the IDOR). Heal closes that.",
+      "files_cited": [
+        "app/Http/Controllers/Admin/MyOrderDetailsController.php",
+        "tests/Feature/Sentinels/MyOrderDetailsAuthzSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS — sentinel is a real contract enforcer, not a smoke test"
+    },
+    {
+      "id": "SEC-02",
+      "severity": "ATTESTED",
+      "title": "Loyalty QR signing (59a5dc84f) — JWT-HMAC heal real, nonce table race-safe",
+      "evidence": "Sentinel tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest passes during this audit. Critical adversarial vectors checked: (1) plaintext QR token: rejected with error_code qr_legacy_rejected when feature flag forbids — flag-controlled rollback path exists, (2) TTL expiry: 300s + 30s leeway documented, (3) replay defense: INSERT-then-catch-QueryException on UNIQUE — no TOCTOU pre-SELECT window. Service file app/Services/Loyalty/LoyaltyQrSigner.php confirms the HMAC payload includes nonce+exp+cust+code. Heal cuts the screenshot/OCR exploit window from 5 min cosmetic to <5 min cryptographic plus replay-blocked.",
+      "files_cited": [
+        "app/Services/Loyalty/LoyaltyQrSigner.php",
+        "app/Http/Controllers/Frontend/LoyaltyController.php",
+        "tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS — closes the cross-surface fraud window"
+    },
+    {
+      "id": "SEC-03",
+      "severity": "WARN",
+      "title": "Idempotency middleware — config drift: NEW POS loyalty redeem route absent from required_routes",
+      "evidence": "Run of full Feature suite during audit caught it: 'Routes with `idempotency` middleware NOT in config(idempotency.required_routes): api/admin/pos-order/{order}/redeem-loyalty'. The middleware silently no-ops when the URI is not in required_routes (back-compat opt-in design). Exploit chain: cashier double-taps Redeem CTA on slow network -> client retry with same Idempotency-Key -> server has no key dedupe -> double-debit loyalty points balance. Magnitude: low ($X loyalty points / customer / event) but visible per LCS-S-002 commit body which fixed the sister route /api/frontend/loyalty/redeem with the same pattern.",
+      "files_cited": [
+        "routes/api.php:920 (middleware wired)",
+        "config/idempotency.php (entry MISSING)",
+        "tests/Feature/Idempotency/IdempotencyRequiredRoutesCoverageTest.php (sentinel catching this)",
+        "reports/audit/wave-e-2026-05-19/WE-4-FINAL-CONVERGENCE/evidence/test-suite-feature-full.log:111"
+      ],
+      "re_attack_outcome": "OPEN — sentinel did its job, but the heal is not in the session. Recommended 1-line config fix in V1.0.X follow-up.",
+      "production_impact_v1": "Low — POS Loyalty Redeem UI is new in V1; cashier flow includes confirmation modal; double-tap window narrow."
+    },
+    {
+      "id": "SEC-04",
+      "severity": "ATTESTED",
+      "title": "TrustHosts hardening (9269f9830 + b1c50311d) — self-adversarial discipline",
+      "evidence": "Two-step heal: (1) baseline P0 fix anchors the regex (b1c50311d), (2) adversarial self-check finds Symfony returns bracketed `[::1]` not `::1` and re-fixes (9269f9830). Test suite tests/Feature/Middleware/TrustHostsTest 5 passed, 25 assertions, 27 attack patterns checked, 0 leaks. Discipline-grade.",
+      "files_cited": [
+        "app/Http/Middleware/TrustHosts.php",
+        "tests/Feature/Middleware/TrustHostsTest.php"
+      ],
+      "re_attack_outcome": "PASS — empirical attack-pattern grid covers IPv6 loopback bracket form"
+    },
+    {
+      "id": "SEC-05",
+      "severity": "ATTESTED",
+      "title": "BranchScope coverage sentinel pin (commit 32395b625)",
+      "evidence": "BranchScope sentinel locks the list of 13 models that must apply the global scope. Re-running php artisan test --filter=BranchScope returns 32 passed, 0 failed. The sentinel asserts the model count and the bypass semantics for admin (branch_id=0) — the multi-tenant invariant from BRAIN §9.",
+      "files_cited": [
+        "app/Models/Scopes/BranchScope.php (FROZEN — 0 lines diff)",
+        "tests/Feature/Sentinels/Zone5PricingSsotConvergenceSentinelTest.php and BranchScope baseline tests"
+      ],
+      "re_attack_outcome": "PASS — frozen file unchanged + sentinel pinned"
+    },
+    {
+      "id": "SEC-06",
+      "severity": "ATTESTED",
+      "title": "NF525 fiscal-table TRUNCATE/DROP REVOKE (CVP0-1 commit f840c3ef5)",
+      "evidence": "Ansible task added to REVOKE TRUNCATE/DROP from app DB user on audit_logs + z_reports. Combined with existing BEFORE DELETE/UPDATE triggers (preserved as frozen via diff stat = 0), this closes the TRUNCATE bypass that was documented in §8 NF525 invariants but not previously enforced at GRANT level. php artisan fiscal:verify-chain returns CHAIN OK — chain count 97 last hash af02d7895d412654 (audit_logs) + 4 z_reports unchanged. Append-only invariant intact.",
+      "files_cited": [
+        "ansible/tasks/nf525-fiscal-revoke.yml (NEW)",
+        "reports/audit/wave-e-2026-05-19/WE-4-FINAL-CONVERGENCE/evidence/fiscal-verify-chain.txt",
+        "reports/audit/wave-e-2026-05-19/WE-4-FINAL-CONVERGENCE/evidence/chain-state.txt"
+      ],
+      "re_attack_outcome": "PASS — heal is operational (cron/CI-time) and chain integrity preserved"
+    },
+    {
+      "id": "SEC-07",
+      "severity": "ATTESTED",
+      "title": "RBAC privilege-escalation paths closed (M-R3-P0-C/D/E commits 935eaca25 + 1e7c65ecc + 6a01c71bf)",
+      "evidence": "3 paths closed: (1) PermissionController index now gated by permission:settings, (2) APP_DEBUG production boot guard, (3) RBAC drift covered by 3 distinct fixes in mgmt-heal-2026-05-18. Sentinel UserMgmtRoleTargetSentinelTest exercises role-target boundaries. Audit suite re-run during this audit: included in the 2114 PASS — no isolated failures attributable to these surfaces.",
+      "files_cited": [
+        "app/Http/Controllers/Admin/PermissionController.php",
+        "app/Providers/AppServiceProvider.php (APP_DEBUG guard)",
+        "tests/Feature/Sentinels/UserMgmtRoleTargetSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS"
+    },
+    {
+      "id": "SEC-08",
+      "severity": "ATTESTED",
+      "title": "FormRequest authz drift (c86fabb7a + 0c824ddbd) — baseline lowered 74 -> 69 -> 66",
+      "evidence": "Two heals on FormRequest::authorize() return-true patterns. Sentinel FormRequestAuthzDriftSentinelTest re-run during this audit: PASS with message '[sentinel] FormRequest return-true count is now 66 (< baseline 69). Lower RETURN_TRUE_BASELINE accordingly.' This is the sentinel asking for a baseline lower bound update — IMPROVEMENT, not regression. The sentinel still passes by design (current count <= baseline).",
+      "files_cited": [
+        "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS — proves the heal narrowed the unauthorized attack surface"
+    },
+    {
+      "id": "SEC-09",
+      "severity": "ATTESTED",
+      "title": "Password reset min:6 -> min:12 (f210ab7e3)",
+      "evidence": "Quick win heal swaps 6 to 12 in the password validation rule. Sentinel PasswordResetMinLengthSentinelTest exercises both length and complexity boundaries. Re-run during this audit: included in the 2114 PASS.",
+      "files_cited": [
+        "app/Http/Requests/Auth/ResetPasswordRequest.php",
+        "tests/Feature/Sentinels/PasswordResetMinLengthSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS"
+    },
+    {
+      "id": "SEC-10",
+      "severity": "ATTESTED",
+      "title": "Stripe webhook replay tolerance (5695fe59f) + PayloadMismatch fail-once (5452e556d)",
+      "evidence": "Replay tolerance widened to 300s with rate-limit; new sentinel StripeWebhookReplayToleranceSentinelTest pinned. PayloadMismatch failure becomes fail-once (not infinite retry storm) — PayloadMismatchFailOnceSentinelTest pinned. Both sentinels re-run during this audit: PASS.",
+      "files_cited": [
+        "app/Http/Controllers/Webhooks/StripeWebhookController.php",
+        "tests/Feature/Sentinels/StripeWebhookReplayToleranceSentinelTest.php",
+        "tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS"
+    },
+    {
+      "id": "SEC-11",
+      "severity": "ATTESTED",
+      "title": "CORS production boot guard (2949e92ed)",
+      "evidence": "Refuse boot in production if APP_URL is empty. CorsAppUrlProductionGuardSentinelTest pinned. Re-run: PASS. The fail-closed pattern matches the IdempotencyMiddlewareProductionGuardSentinelTest sister contract (dafb6b3c4).",
+      "files_cited": [
+        "app/Providers/AppServiceProvider.php (boot guard)",
+        "tests/Feature/Sentinels/CorsAppUrlProductionGuardSentinelTest.php",
+        "tests/Feature/Sentinels/IdempotencyMiddlewareProductionGuardSentinelTest.php"
+      ],
+      "re_attack_outcome": "PASS"
+    },
+    {
+      "id": "SEC-12",
+      "severity": "INFO",
+      "title": "Tenant fan-out isolation (f0cafc3b8) — PushNotification scoped by branch_id",
+      "evidence": "Foundation heal: PushNotificationService fan-out now WHERE branch_id = $branch_id. This closes the cross-branch push leak. Test app/Services/PushNotificationService.php diff = 39 lines (per git diff --stat). Branch isolation invariant strengthened.",
+      "files_cited": [
+        "app/Services/PushNotificationService.php"
+      ],
+      "re_attack_outcome": "PASS"
+    },
+    {
+      "id": "SEC-13",
+      "severity": "WARN",
+      "title": "Adversarial sweep: 4 pre-existing test failures NOT introduced by session, but flagged as latent risk surface",
+      "evidence": "Feature suite 5/2148 fail: 3 Composer authz (404 vs 403 — Spatie permission gate evaluating before BranchScope, hiding resource entirely) + 1 OSS prune-window edge case + 1 idempotency required_routes config drift (SEC-03 above). git log shows the Composer + OSS files were last touched at commits 9730b18e7 / 3c21644dd which PRE-DATE baseline ec0d49241 — these failures are pre-session.",
+      "files_cited": [
+        "tests/Feature/Composer/ComposerAuthzMinimalTest.php",
+        "tests/Feature/OSS/OssPolishClusterTest.php",
+        "reports/audit/wave-e-2026-05-19/WE-4-FINAL-CONVERGENCE/evidence/test-suite-feature-full.log"
+      ],
+      "re_attack_outcome": "OBSERVED — pre-existing in baseline, not session regressions. V1.0.X backlog."
+    },
+    {
+      "id": "SEC-14",
+      "severity": "INFO",
+      "title": "Cross-zone vector check — no new vectors found",
+      "evidence": "Searched for: (a) BranchScope bypass via tokenCan + withoutGlobalScope drift (none found in session diffs), (b) NF525 trigger bypass via raw DB::statement in new code (none — new code uses Eloquent), (c) Sanctum ability `kiosk:order` rebroadcast in non-frontend controllers (none — kiosk routes unchanged), (d) Idempotency key reuse across branches (sentinel IdempotencyRecoveryBranchScopedTest pinned, 32 PASS in audit run), (e) HMAC chain re-signing race (only fiscal:verify-chain is exposed; reading is non-mutating).",
+      "re_attack_outcome": "PASS — no new exposable cross-zone vectors detected"
+    }
+  ],
+  "p0_count_introduced": 0,
+  "p0_count_caught_and_healed": 2,
+  "p1_count_introduced": 1,
+  "p1_count_caught_and_healed": 5,
+  "final_verdict": "P0 PERIMETER HOLDS. Two NEW P0s caught and healed during session (Admin IDOR + Loyalty QR signing). One NEW P1 (POS Loyalty Redeem idempotency config drift) sentinel-caught and ready for 1-line config heal. Frozen-zone perimeter intact (0 lines diff). NF525 chain verify CHAIN OK + count APPENDED-ONLY (97 audit_logs + 4 z_reports)."
+}

@@ -1,0 +1,171 @@
+{
+  "generated_at": "2026-05-28T22:43:18.082Z",
+  "spec": "tests/e2e/supervisor-wave-d-kdsovf-2026-05-28.spec.js",
+  "scope": "KDS V2 grid stress test — 50+ orders + UI stability (S1-S6)",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "mission": "WAVE-D / T2-KDS-Overflow-50",
+  "pre_run_state": {
+    "seed": {
+      "seeded_now": 50,
+      "prior_stress_active": 0,
+      "total_active_pre": 81
+    }
+  },
+  "scenarios": {
+    "S1_board_load": {
+      "nav_ms": 9454,
+      "rendered_cards": 2,
+      "api_kds_visible_count": null,
+      "api_sample": [],
+      "overflow_chip_visible": false,
+      "overflow_chip_text": "",
+      "overflow_chip_expected": false,
+      "raw_label_found": false,
+      "raw_label_value": null,
+      "console_errors_during_s1": 0,
+      "verdict": "PASS"
+    },
+    "S2_bump_rate": {
+      "bumps_attempted": 2,
+      "bumps_completed": 0,
+      "latencies_ms": [],
+      "avg_ms": null,
+      "max_ms": null,
+      "verdict": "INDETERMINATE_NO_BUMPABLE_CARD"
+    },
+    "S3_polling_cadence": {
+      "mission_envelope_note": "Mission stated 3000±1000ms HIGH activity — OUTDATED. Code SoT (KitchenDisplaySystemComponent.vue:1878 HEAL B.3 2026-05-19) hardcodes 5000ms (WS down) / 60000ms (WS up).",
+      "observation_window_ms": 18003,
+      "polls_observed": 8,
+      "sample": [
+        {
+          "at": 1780008216996,
+          "url": "/api/admin/kds-order/sync?since=2026-05-28T22%3A43%3A32%2B00%3A00&branch_id=0&include_deleted=true"
+        },
+        {
+          "at": 1780008217348,
+          "url": "/api/admin/kds-order?paginate=0&order_column=id&order_by=desc"
+        },
+        {
+          "at": 1780008221192,
+          "url": "/api/admin/kds-order/sync?since=2026-05-28T22%3A43%3A37%2B00%3A00&branch_id=0&include_deleted=true"
+        },
+        {
+          "at": 1780008221551,
+          "url": "/api/admin/kds-order?paginate=0&order_column=id&order_by=desc"
+        },
+        {
+          "at": 1780008225973,
+          "url": "/api/admin/kds-order/sync?since=2026-05-28T22%3A43%3A41%2B00%3A00&branch_id=0&include_deleted=true"
+        },
+        {
+          "at": 1780008226323,
+          "url": "/api/admin/kds-order?paginate=0&order_column=id&order_by=desc"
+        },
+        {
+          "at": 1780008230185,
+          "url": "/api/admin/kds-order/sync?since=2026-05-28T22%3A43%3A46%2B00%3A00&branch_id=0&include_deleted=true"
+        },
+        {
+          "at": 1780008230550,
+          "url": "/api/admin/kds-order?paginate=0&order_column=id&order_by=desc"
+        }
+      ],
+      "cadence_observed_ms_avg": 1936,
+      "envelope_250_to_60000_satisfied": true,
+      "verdict": "OBSERVED"
+    },
+    "S4_memory": {
+      "observation_window_seconds": 90,
+      "dom_samples": [
+        {
+          "t": 0,
+          "nodes": 352
+        },
+        {
+          "t": 30,
+          "nodes": 352
+        },
+        {
+          "t": 60,
+          "nodes": 652
+        },
+        {
+          "t": 90,
+          "nodes": 652
+        }
+      ],
+      "dom_growth_pct": 85,
+      "js_heap_end": {
+        "used": 24500000,
+        "total": 27600000
+      },
+      "verdict": "FAIL"
+    },
+    "S5_allergens_modal": {
+      "allergen_button_found": false,
+      "modal_opened": false,
+      "modal_open_latency_ms": null,
+      "modal_closed_ok": false,
+      "verdict": "INDETERMINATE_NO_ALLERGEN_BUTTON"
+    },
+    "S6_filter": {
+      "filter_ui_present": false,
+      "verdict": "NA_NO_FILTER_UI",
+      "note": "Filter UI is conditional per mission. Exercise deferred to focused spec."
+    }
+  },
+  "observations": {
+    "post_run_state": {
+      "stress_remaining_active": 50,
+      "stress_total_inserted": 50,
+      "console_errors_total": 0
+    },
+    "console_errors_count": 25,
+    "console_errors_sample": [
+      {
+        "at": 1780008242897,
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      },
+      {
+        "at": 1780008267166,
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      },
+      {
+        "at": 1780008267210,
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      },
+      {
+        "at": 1780008267244,
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      },
+      {
+        "at": 1780008267260,
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      }
+    ],
+    "kds_request_count_total": 17,
+    "cleanup_tail": "[iter15] Cleanup applied — deleted 50 test orders (matched 50)."
+  },
+  "defects": [
+    {
+      "severity": "P2",
+      "code": "KDSOVF-S2-NO-BUMP-BUTTON",
+      "scenario": "S2",
+      "title": "No bumpable action button found on any of 8 visible KDS cards",
+      "detail": "Possibly UI labels not matching regex; bumps could not be measured.",
+      "evidence": null,
+      "captured_at": "2026-05-28T22:43:32.699Z"
+    },
+    {
+      "severity": "P1",
+      "code": "KDSOVF-S4-DOM-LEAK",
+      "scenario": "S4",
+      "title": "DOM node count grew 85% over 90s — possible leak",
+      "detail": "Samples: [{\"t\":0,\"nodes\":352},{\"t\":30,\"nodes\":352},{\"t\":60,\"nodes\":652},{\"t\":90,\"nodes\":652}]",
+      "evidence": null,
+      "captured_at": "2026-05-28T22:45:20.799Z"
+    }
+  ],
+  "verdict": "NEEDS_HEAL_P1"
+}

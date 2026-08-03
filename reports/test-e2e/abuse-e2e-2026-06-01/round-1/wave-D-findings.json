@@ -1,0 +1,135 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 7,
+  "spec_exit": "PASS. test-results/.last-run.json = {\"status\":\"passed\",\"failedTests\":[]} (mtime 2026-06-03 04:17:24 == all Wave-D artifact mtimes 04:17). The DEFERRED hard WS assertion (spec lines 515-521) PASSED for THIS capture. This findings file is re-derived ENTIRELY against the CURRENT 04:17 artifacts (order 4117 / queue A0007 / total 7 / wsPushMs 399). The prior wave-D-findings.json on disk was keyed to a STALE earlier run (order 4111 / queue A0004 / wsPushMs 1852) and has been REPLACED — that staleness is itself logged as D-000 audit_integrity (now CLOSED by this regeneration).",
+  "coverage_attestation": "All 7 plan states captured with full quartet (png+dom+console+network): 00 oss-initial-mount, 01 oss-preparing-column-with-seeded-order, 02 kds-board-populated-PREPARING, 03 pos-orders-tracker, 04 kds-after-bump-to-PREPARED, 05 oss-ready-column-with-seeded-order, 06 four-surface-fact-check-overlay. NON-VACUOUS: OSS EN PRÉPARATION holds real seeded rows (N°A0003, N°A0006, then N°A0007 added in 01); KDS board renders 6 real cards (A0006 Menu Frites+Boisson, A0007 Sandwich Cayenne + others); POS tracker shows 3 live columns (À ENCAISSER 3 / EN PRÉPARATION 3 / PRÊTS À SERVIR 1) with real money. No silent .catch on a primary assertion: every .catch(()=>{}) guards only scrollIntoViewIfNeeded / isVisible probes feeding DOCUMENTED branches; the HARD expect() for identity (467-468), POS money (323-326), and WS-received (515-521) are all UNGUARDED and PASSED.",
+  "cross_surface_proof_current_run": {
+    "seededOrderId": 4117,
+    "seededQueueNumber": "A0007",
+    "seededTotal": 7,
+    "ossLabel": "N°A0007",
+    "ossBackendQueuePreparing": "A0007",
+    "ossBackendQueuePrepared": "A0007",
+    "kdsFeedRowCount": 15,
+    "kdsFeedQueueMatch": true,
+    "kdsRenderedCardCount": 6,
+    "kdsOurCardRendered": true,
+    "kdsQueueText": "N°A0007",
+    "posTrackerAmount": "7,00 €",
+    "wsPushMs": 399,
+    "wsSubscribed": true,
+    "wsEventPayloadOrderId": 4117,
+    "verdict": "IDENTITY chain (queue A0007) and MONEY chain (7,00 € == total 7) hold EXACT across OSS backend row, OSS DOM label, KDS feed, KDS card text, POS tracker amount, and the real WS event payload. KDS/OSS carry NO money BY DESIGN (kdsRow.total absent line 266; OSS li innerText == 'N°A0007' no euro)."
+  },
+  "findings": [
+    {
+      "id": "D-000",
+      "state_artifact": "reports/test-e2e/abuse-e2e-2026-06-01/round-1/wave-D-findings.json (prior on-disk copy)",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "On entry, the on-disk wave-D-findings.json was keyed to a STALE run (seededOrderId 4111, queue A0004, wsPushMs 1852) while the CURRENT screenshot quartet (mtime 04:17:24) is a DIFFERENT run (4117 / A0007 / wsPushMs 399). A reviewer trusting the stale file would have reported the wrong order number, queue, and latency. CLOSED: this file is fully re-derived against the 04:17 artifacts (cross_surface_proof_current_run block above; fact-check overlay 06 DOM id=wave-d-fact-check parsed and validated). The capture-to-findings binding is now consistent.",
+      "fix_hint": "Workflow hygiene only: the per-wave findings file MUST be regenerated against the artifacts produced by the SAME capture run (key off fact-check overlay seededOrderId). No product code involved.",
+      "status": "closed"
+    },
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-D/03-pos-orders-tracker.png + 06-four-surface-fact-check-overlay.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "PASS (disclosure, NO defect). MONEY chain EXACT for the seeded order: order.total=7 (item_id 22 Sandwich Cayenne) == POS tracker amount '7,00 EUR' (03 DOM data-testid=tracker-amount-4117 literal '7,00\\u00a0EUR', inside data-testid=tracker-order-4117 / N°A0007; 03 PNG renders 'N°A0007 · Sandwich Cayenne 1x · 7,00 EUR' in EN PRÉPARATION) == fact-check overlay posTrackerAmount '7,00 EUR'. Cross-check: A0004 (PRÊTS À SERVIR, same Sandwich Cayenne item) also shows 7,00 EUR — internally consistent, no per-row drift. IDENTITY chain EXACT: queue 'A0007' identical on ossBackendQueuePreparing == ossBackendQueuePrepared == kdsFeedQueueMatch:true == OSS DOM label 'N°A0007' (01 then 05) == KDS card kdsQueueText 'N°A0007' (02 PNG) == WS payload order_id 4117. KDS/OSS carry NO money BY DESIGN: 01 OSS li innerText == 'N°A0007' exactly (no euro); KDS feed row hasOwnProperty('total')==false (asserted line 266).",
+      "fix_hint": "No fix. Cross-surface numeric + identity integrity holds end-to-end on the current capture (4117/A0007/7,00 EUR).",
+      "status": "closed"
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-D/02-kds-board-populated-PREPARING.network.json + 04-kds-after-bump-to-PREPARED.network.json + 06-four-surface-fact-check-overlay.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "PASS (disclosure). Real-WS live-sync PROVEN on the CHEF/KDS channel, not faked: chef context subscribed to private-branch.1 (broadcasting/auth -> 200 in 02 network.json; wsSubscribed=true), chef fired PREPARING(7)->PREPARED(8) via admin/kds-order/change-status/4117 -> HTTP 202 (04 network.json), and .OrderStatusChanged was DELIVERED over real soketi to the subscribed chef with measured latency wsPushMs=399 ms and matching payload order_id=4117 (== seededOrderId 4117). The cascade is independently corroborated VISUALLY: 04 PNG shows A0007 REMOVED from the active KDS board after PREPARED; 05 PNG shows A0007 MOVED to OSS PRÊT (green) column.",
+      "fix_hint": "No fix. The realtime kitchen push path (chef KDS) is proven UP and delivering at 399 ms.",
+      "status": "closed"
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-D/00/01/05/06-*.network.json (OSS admin context) vs 02-kds-board-populated-PREPARING.network.json (chef context)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "DISCLOSURE — the OSS surface did NOT receive a WS push; the preparing->ready DOM transition (01 -> 05, N°A0007 moves EN PRÉPARATION -> PRÊT) was driven by the spec's forced refetch (ossPage.dispatchEvent('realtime-order-update'), lines 194/424) plus a data-layer checkpoint (admin/oss-order status flips 7->8). PROOF: the OSS-context network.json for states 00/01/05/06 contain NO 'broadcasting/auth' entry (admin OSS never subscribes the private channel — matches plan 'admin polls 60s'); broadcasting/auth->200 appears ONLY in the chef KDS context (02). So the genuine WS push latency (399 ms) is measured on the chef channel; OSS live-update is poll/refetch-driven. Backend status flip is independently proven at the data layer (admin/oss-order row status PREPARED). NOT a defect — by-design admin-OSS behaviour — but the report must NOT claim 'OSS live WS sync'.",
+      "fix_hint": "No code fix. Report-wording guard: states 04/05 = 'OSS reflects PREPARED after refetch; backend flip proven at data-layer; WS push measured on the subscribed chef/KDS channel only (399 ms).' A true OSS WS push would need the public customer wall to subscribe a public/presence channel — out of Wave-D scope; tracked as resilience backlog.",
+      "status": "open"
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-D/04-kds-after-bump-to-PREPARED.network.json (WS latency = status-transition push)",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "DISCLOSURE — the measured WS latency (399 ms) is on a PREPARING->PREPARED status-transition push (.OrderStatusChanged), NOT the plan's state-03 'POS-pay->KDS NEW-ORDER push'. Same broadcast mechanism (OUTBOX -> DispatchDomainEventsJob onQueue('high') -> soketi -> private-branch.1) so it is representative, but the literal new-order-arrival push latency is UNMEASURED this wave. Non-blocking.",
+      "fix_hint": "Optional: add a state that seeds a NEW order while the chef is already subscribed and measures the new-order push latency to literally satisfy plan state-03 wording. Disclose-only.",
+      "status": "open"
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-D/02-kds-board-populated-PREPARING.png + 04-kds-after-bump-to-PREPARED.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "OBSERVED on the KDS surface (Wave-C-owned; cross-references C-001). KDS card A0006 shows the elapsed-timer block clipped at the card's right edge: 02 PNG renders the minute timer cut ('38:40' truncated, 04 PNG '38:42' truncated) and the 'ATTENTE' caption renders 'ATTENT' — both cut. A0007's '00:0...' is likewise clipped. Cause: .kds-card__main is a flex row with .kds-card__queue at font-size clamp(36px,4.2vw,52px); on a ~300px 4-col card the large queue digits + the timer overflow horizontally and push .kds-card__elapsed-wrap past the card boundary. The seeded A0007 (low minutes) is the same root. NOTE: I did NOT measure scrollWidth>clientWidth on the timer node, so by the MEASURED-P1 rule this stays P2. Honest caveat vs C-001 'stale-seeds-only' dismissal: a real order CAN sit 30-100+ min (forgotten ticket) — exactly when the elapsed timer is the operative signal — so the clip is not purely a test artefact.",
+      "fix_hint": "Wave-C fix (KDS = Wave C surface), NOT a Wave-D edit. resources/js/components/admin/kitchenDisplaySystem/v2/KdsOrderCard.vue (.kds-card__main / .kds-card__elapsed-wrap): reduce the queue font clamp upper bound, allow elapsed-wrap to wrap below the queue at narrow widths, or cap displayed minutes to a 2-digit '99+:SS' badge so the 'ATTENTE' caption + timer never clip. Disclose here, fix under Wave C.",
+      "status": "open"
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-D/00-oss-initial-mount.png + 01-oss-preparing-column-with-seeded-order.png (PreparingAndReadyComponent.vue)",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "OSS columns when sparse render no empty-state affordance — in 00 the PRÊT column holds only N°A0004 with the rest of the column blank whitespace; a fully-empty column would show no illustration, no copy >=20 chars, no CTA. Contrast with the POS tracker (03) which uses an honest empty-state 'Aucune commande prête.' for its PRÊTS À SERVIR column. Weak empty-state by protocol rule 5 (zero of: illustration / copy>=20 / CTA). Non-blocking. The OSS wall is a passive customer display so a CTA is arguably N/A; a short copy line would still improve a fully-empty column.",
+      "fix_hint": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue empty-column branch: render the same 'Aucune commande prête' / 'Aucune commande en préparation' copy the POS tracker already ships. Cosmetic, disclose-only.",
+      "status": "open"
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-D/03-pos-orders-tracker.console.json",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "DISCLOSURE (resilience note). POS tracker console (03) logs level=info '[PosSyncService] fallback polling disabled.' => the POS orders tracker relies on the real WS as a single point of failure for live updates (no 60s poll backstop active). Not a defect this run (WS proven UP, chef-channel latency 399 ms), but if the high-lane worker / soketi dies the POS tracker silently stops updating with no poll backstop and no visible 'realtime lost' banner. Matches the known O-1 worker-death silent-degrade backlog. This is level=info (not error) so NOT a protocol-rule-9 console-error finding.",
+      "fix_hint": "Disclose-only. Consider a poll backstop OR a visible 'realtime lost' banner on the POS tracker when the WS drops (parity with the KDS sync-mode banner). Tracked as resilience backlog O-1.",
+      "status": "open"
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-D/01-oss-preparing-column-with-seeded-order.dom.html (admin-authed OSS route)",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "DISCLOSURE — the captured OSS surface is the ADMIN-authed /admin/order-status-screen (OSS context logged in as admin@lecayenne.fr, 00 network.json: /api/auth/login 201 + /api/auth/authcheck 200), NOT the UNAUTHENTICATED public customer wall (frontend/oss-order -> CDSOrderDetailsResource). Both render the SAME Vue component (OrderStatusScreenComponent mounts PreparingAndReadyComponent) and the public-path resource OMITS total at the resource layer (OrderStatusScreenController.php:71, cited in spec header), so the 'no money on OSS' contract holds A FORTIORI on the public path. The admin path is a safe proxy for the wall DOM but the literal public route was not directly captured. CLAUDE.md §6 explicitly names /admin/order-status-screen as THE OSS surface, so this is the sanctioned subject. The captured board is IDENTICAL to the public customer wall MINUS the admin top-chrome (the nav 'Tableau De Bord' / branch-picker / 'Bonjour Admin Le Cayenne' visible in the 00/01/05 PNGs that a customer never sees) — that chrome does NOT touch the two-column board and therefore does NOT affect the column-placement, money-omission, or queue-identity assertions, all of which live inside PreparingAndReadyComponent. SECONDARY NOTE: the admin-OSS DOM contains a customer info card with '0,00 EUR' (a phone/loyalty field for an unrelated customer +330600000000) — it is NOT on an order-number line and NOT the seeded order, so it does not break the OSS order-line money-omission contract.",
+      "fix_hint": "Optional next round: also capture the unauthenticated frontend/oss-order wall (needs SPA-injected x-api-key) to close the proxy gap. Contract holds either way; disclose-only.",
+      "status": "open"
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "test-e2e-D/06-four-surface-fact-check-overlay.png (wsPushMs)",
+      "category": "performance",
+      "severity": "P3",
+      "evidence": "DISCLOSURE (no SLA defined). Measured WS push latency wsPushMs=399 ms this run — WITHIN the project's historical chef-channel baseline (137-512 ms, MEMORY 2026-05-29), a clean improvement over the prior stale run's 1852 ms. The spec only asserts latency != null (line 521), so 399 ms PASSES comfortably. No regression. Disclosed for completeness.",
+      "fix_hint": "No fix. If a latency SLA is later defined (e.g. <2 s p95), 399 ms is well inside it. Re-confirm with the high-lane worker not backlogged.",
+      "status": "closed"
+    }
+  ],
+  "non_blocking_disclosures": [
+    "Network across all 7 states is CLEAN: only allowlisted entries — csp-report 204 (report-only), broadcasting/auth 200 (chef WS subscribe, 02/03), login 201 / authcheck 200 (00/02/03), change-status 202 (async-accepted, 04). NO non-allowlisted 4xx/5xx (python sweep = NONE); every DOM that could need a [role=alert] had none because nothing failed.",
+    "Console across all 7 states: only level=info — CSP report-only notices (allowlisted) + '[PosSyncService] fallback polling disabled.' (D-007). NO level=error excluding vendor/pusher/wss noise (python sweep = NONE).",
+    "Palette: OSS is LIGHT-MODE (white board) — no dark-mode drift; En préparation header white-on-magenta #B0004D, Prêt header dark-on-green; Le Cayenne logo + Cayenne chrome intact. No #F4501E primary drift on the OSS surface itself.",
+    "Bump cascade proven VISUALLY end-to-end for the seeded order: 01 PNG (N°A0007 arrives in EN PRÉPARATION, magenta) -> 04 PNG (KDS card A0007 removed from active board after PREPARED) -> 05 PNG (N°A0007 in PRÊT, green). The status transition is real end-to-end, independent of the WS-channel wording in D-003.",
+    "Fact-check overlay (06 DOM id=wave-d-fact-check) parsed programmatically: seededOrderId==wsEventPayloadOrderId (4117), wsSubscribed==true, kdsFeedQueueMatch==true, posTrackerAmount starts '7,00', seededTotal==7. All invariants validated by script, not eyeballed."
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 7,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 3
+  },
+  "verdict": "GREEN"
+}

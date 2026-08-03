@@ -1,0 +1,13 @@
+- generic [ref=f4e1]:
+  - link "Aller au contenu" [ref=f4e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f4e4]:
+    - banner [ref=f4e5]:
+      - generic [ref=f4e6]
+    - main [ref=f4e22]:
+      - generic [ref=f4e446]
+    - contentinfo [ref=f4e387]:
+      - generic [ref=f4e388]
+    - dialog "Panier" [ref=f4e434]:
+      - generic [ref=f4e435]
+      - generic [ref=f4e441]

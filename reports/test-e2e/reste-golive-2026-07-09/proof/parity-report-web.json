@@ -1,0 +1,29 @@
+{
+  "gate": "parity-B3",
+  "version": 1,
+  "generated_at": "2026-07-09T11:14:50.333Z",
+  "surface": "web",
+  "fixture": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json",
+  "mirror": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/reste-golive-2026-07-09/proof/menu-mutated.js",
+  "canonical": {
+    "categories": 9,
+    "items": 42
+  },
+  "mirror_stats": {
+    "items": 38,
+    "categories": 9
+  },
+  "divergence_count": 1,
+  "divergences_par_check": {
+    "supplements": 1
+  },
+  "divergences": [
+    {
+      "check": "supplements",
+      "sujet": "Oignons frits",
+      "attendu": "0,90 €",
+      "constate": "9,99 €"
+    }
+  ],
+  "ok": false
+}

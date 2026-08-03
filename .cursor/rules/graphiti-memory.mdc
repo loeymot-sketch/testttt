@@ -1,0 +1,31 @@
+---
+description: Graphiti MCP — présence obligatoire en session quand le serveur est chargé ; requêtes automatiques au début et fin des tâches non triviales.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Graphiti — mémoire projet (toutes sessions, tous modèles)
+
+## Prérequis humain (une fois par machine Cursor)
+
+Le dépôt **ne peut pas** enregistrer automatiquement un MCP dans Cursor : le serveur Graphiti doit être déclaré dans **`~/.cursor/mcp.json`** (ou équivalent Settings → MCP). Modèle recommandé : copier le bloc `graphiti` depuis **`.cursor/mcp/graphiti.json.example`** et fusionner avec les autres serveurs MCP déjà présents. Dépannage : **`.cursor/mcp/GRAPHITI_TROUBLESHOOTING.md`**.
+
+**Group ID obligatoire** : `foodking` sur toutes les requêtes d’écriture et de lecture.
+
+## Comportement agent (automatique dès que Graphiti est disponible)
+
+1. **Au début de toute tâche non triviale** (plan, audit, sync, fiscal, pricing, multi-surface) : appeler **au moins une** requête Graphiti avant d’écrire du code ou un plan long :
+   - `search_memory_facts` avec une requête en langage naturel ciblant le domaine (ex. sync, NF525, kiosk, POS).
+   - Optionnel : `search_memory_nodes` pour invariants / frozen zones.
+2. **Après une décision durable** (ADR, gate résolu, invariant clarifié, fin de cycle AUDIT/CLOSE) : si l’outil `add_memory` est disponible, enregistrer un épisode court (nom + `episode_body` + `group_id="foodking"`). **Ne pas omettre** : une mémoire non écrite = prochain agent **aveugle** sur la décision.
+3. **Évolution du projet (nombreux cycles / nouveaux exécuteurs)** : toute vérité nouvelle qui doit survivre aux sessions doit finir soit dans **`memory/episodes/*.jsonl`** + `bash bin/graphiti-ingest.sh` (fichier ciblé), soit dans `add_memory` immédiat. Voir **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md` §4.2** (checklist « ne pas oublier »).
+4. **Si Graphiti n’est pas dans la liste des MCPs de la session** : ne pas bloquer — indiquer une seule ligne « Graphiti non chargé : activer `~/.cursor/mcp.json` » puis continuer avec README / `memory/INDEX.md` en secours.
+
+## Index local (secours sans MCP)
+
+`memory/INDEX.md` décrit les 14 fichiers JSONL sous `memory/episodes/`. En absence de MCP, lire au moins les épisodes du domaine concerné avant d’implémenter.
+
+## Outils MCP attendus (noms stables)
+
+- `search_memory_facts`, `search_memory_nodes`, `get_episodes`, `add_memory` (lecture/écriture selon politique AGENTS.md)
+- `clear_graph` : **uniquement** sur instruction humaine explicite (jamais autonome)

@@ -18,7 +18,7 @@
                             {{ offerItem.offer_item_name }}
                         </td>
                         <td class="db-table-body-td">
-                            {{ offerItem.offer_item_flat_price }}
+                            {{ offerItem.offer_item_currency_price }}
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(offerItem.offer_item_status)">

@@ -1,0 +1,232 @@
+{
+  "wave": "D",
+  "run_n": 6,
+  "scope": "admin-driven rupture cascade — Sprite 33cl (item id 410) — final convergence confirmation. Run-6 captured 2026-05-10 at 05:27 (8 fresh artifacts). Run-5 verdict was AMBER→green-leaning with P0=0, P1=1 (D5-003 spec instrumentation gap — kiosk only reached /kiosk/idle, catalog never rendered). Run-6 includes a spec patch in tests/e2e/iter15-mega-admin-rupture-cascade.spec.js lines 228-245: idle-bypass click on takeaway tile + waitFor on [class*='kiosk-product'] before scanning. This re-score verifies whether the patch resolves D5-003.",
+  "run5_verification": [
+    {
+      "run5_id": "D-001",
+      "run5_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "05-kiosk-after-rupture.network.json is `[]` (zero 4xx). 05-kiosk-after-rupture.dom.html: 0 matches for `Request failed with status`, `axios`, `429`. 05-kiosk-after-rupture.console.json: 0 matches for `429`/`too many requests`. Kiosk reaches /kiosk/idle cleanly (`kiosk-idle-root` testid + `Bienvenue !` rendered). The kiosk-login limiter regression is not back."
+    },
+    {
+      "run5_id": "D-002",
+      "run5_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PARTIAL — UNCHANGED",
+      "evidence": "Spec still uses `posPage.goto('/admin/pos', { waitUntil: 'domcontentloaded' })` to capture rupture/restore states. WebSocket to ws://127.0.0.1:6001/app/app-key + wss://127.0.0.1:6001/app/app-key still ERR_CONNECTION_REFUSED on every captured console (17 total occurrences across 8 captures). AvailabilityChannel push still unverified end-to-end; cascade only proven via reload."
+    },
+    {
+      "run5_id": "D-003",
+      "run5_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html contains the full hero banner: `<div data-v-7a8fd462=\"\" role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\" style=\"…background: rgb(255, 244, 244); border: 1px solid rgb(245, 191, 191); color: rgb(153, 27, 27)…\"><i class=\"fa-solid fa-circle-exclamation\" aria-hidden=\"true\"></i><span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span>…</div>`. State 01 baseline: 0 banner matches. State 07 restore: 0 banner matches (banner unmounts cleanly). PNG visually confirms a red rupture banner at top of POS shell. Cycle mount→unmount durable."
+    },
+    {
+      "run5_id": "D-004",
+      "run5_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "grep `Affichering` across 4 admin DOMs (01, 02, 03, 06) → 0/0/0/0. grep `Affichage de` → 1/1/1/1. State 01-admin-items-list renders `Affichage de 1 à 10 sur 63 entrées`; state 03 footer renders `Affichage de 1 à 1 sur 1 entrées`. FR DataTables locale fix durable."
+    },
+    {
+      "run5_id": "D-005",
+      "run5_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "01-pos-with-sprite-available.network.json is `[]`. All 8 network.json files are `[]`. Zero 403 on /api/admin/stock/low-alerts or /api/admin/fiscal/z-report. Cashier widget perm gates working."
+    },
+    {
+      "run5_id": "D-006",
+      "run5_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "All 8 network.json `[]`. Zero csp-report 4xx (no 400, no 429). CSP-report endpoint relocation durable."
+    },
+    {
+      "run5_id": "D-007",
+      "run5_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "05-kiosk-after-rupture.dom.html zero matches for `Request failed with status`, `axios`, `too many requests`, `429`. Raw English error no longer leaks to kiosk surface."
+    },
+    {
+      "run5_id": "D-008",
+      "run5_severity": "P1",
+      "category": "console_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "01-pos-with-sprite-available.console.json contains no untraced 400 entries. Only allowlisted WS-refused noise + Vue feature-flag warnings (D5-001 carry-over) + Vue itemsRaw warnings (D5-002 carry-over)."
+    },
+    {
+      "run5_id": "D-009",
+      "run5_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED (D5-001 carry-over)",
+      "evidence": "Vue `Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined` warning persists in run-6: 7 occurrences across 5 console.json (01-admin ×2, 01-pos ×2, 04-pos ×1, 05-kiosk ×1, 07-pos ×1). Identical count to run-5. The vite.config.js define-injection commit was NOT reapplied between run-5 and run-6."
+    },
+    {
+      "run5_id": "D-010",
+      "run5_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html: `<button … class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" disabled=\"\" aria-label=\"Ajouter Sprite 33cl, 1.50€\" data-pos-item-id=\"410\">`. aria-label still says 'Ajouter' on a disabled tile. role=alert banner partially compensates globally but tile-level a11y label still misleading on focus."
+    },
+    {
+      "run5_id": "D-011",
+      "run5_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "PARTIAL — UNCHANGED",
+      "evidence": "03-admin-toggle-clicked-now-unavailable.dom.html: `<span class=\"sr-only\" data-testid=\"admin-availability-status-410\">false</span>` + visible `Rupture` pill present. State 06 same testid renders `true`. Cycle correct but no rendered swal2-toast / aria-live region in captured DOM."
+    },
+    {
+      "run5_id": "D-012",
+      "run5_severity": "P3",
+      "category": "visual_hash_drift",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "Restore path verified clean. State 07 Sprite tile: `class=\"pos-v5-tile pos-item-tile\" aria-disabled=\"false\"` (no `is-unavailable`), 0 matches for `pos-availability-banner`. State 06 admin row: 0 `Rupture`, sr-only status `true`."
+    },
+    {
+      "run5_id": "D-013",
+      "run5_severity": "P2",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Network capture filter (status>=400 OR duration>2000ms) still hides the 200-OK toggle XHR. No /availability/snapshot or broadcast-id evidence."
+    },
+    {
+      "run5_id": "D2-001",
+      "run5_severity": "P1",
+      "category": "console_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "05-kiosk-after-rupture.dom.html: 0 matches for `Content-Security-Policy-Report-Only`. 05-kiosk-after-rupture.console.json: 0 matches for `report-only Content Security Policy`. Kiosk meta CSP still removed."
+    },
+    {
+      "run5_id": "D2-002",
+      "run5_severity": "P1",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED (NOW D5-003 in run-6, see findings[])",
+      "evidence": "Despite the run-6 spec patch (lines 228-245: takeaway click + 8s waitFor on `[class*='kiosk-product']`), kiosk surface in run-6 still does NOT reach catalog. State 05 DOM: zero rendered `<button>` or `<div>` element with class `kiosk-product-card` (all 45 matches are CSS rule selectors at lines 5452, 5782, 6095…). Visible text in 05 DOM body: 'Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande Choisissez une option pour commencer'. State 05 PNG visually confirms order-type chooser screen, NOT catalog. data-testids in body: `kiosk-idle-root, kiosk-idle-touch-btn, kiosk-order-type-chooser, kiosk-order-type-takeaway`. The patch reached order-type chooser (vs run-5's bare idle) but never clicked through to catalog. The waitFor's silent `.catch(() => {})` masked the failure."
+    },
+    {
+      "run5_id": "D2-003",
+      "run5_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Same root cause as D-010. Tile aria-label still 'Ajouter Sprite 33cl, 1.50€' while aria-disabled=true."
+    },
+    {
+      "run5_id": "D2-004",
+      "run5_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Both ws://127.0.0.1:6001/app/app-key and wss://127.0.0.1:6001/app/app-key ERR_CONNECTION_REFUSED entries persist (17 total occurrences across 8 captures). WS server still down."
+    },
+    {
+      "run5_id": "D2-005",
+      "run5_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "Same as D-004 — DataTables FR locale durable."
+    },
+    {
+      "run5_id": "D3-001",
+      "run5_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "grep `button.menu` across all 8 dom.html and all 8 console.json → 0/0. POS hamburger raw-key leak still resolved."
+    },
+    {
+      "run5_id": "D3-002",
+      "run5_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "grep `kiosk.order_type` across all 8 dom.html and all 8 console.json → 0/0. grep `intlify.*Not found` across all 8 console.json → 0. No raw-key leaks."
+    },
+    {
+      "run5_id": "D3-003",
+      "run5_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED (D5-002 carry-over)",
+      "evidence": "Vue `[Vue warn]: Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent…>` persists in run-6: 3 occurrences across all 3 POS states (01-pos, 04-pos, 07-pos). Identical count to run-5. PosComponent.vue itemsRaw declaration still NOT reapplied between run-5 and run-6."
+    },
+    {
+      "run5_id": "D3-004",
+      "run5_severity": "P3",
+      "category": "silent_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "Same 8-state shape as run-3/4/5. Informational only."
+    },
+    {
+      "run5_id": "D5-001",
+      "run5_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Vue `Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined` warning still firing 7 occurrences across 5 console.json (01-admin-items-list ×2, 01-pos-with-sprite-available ×2, 04-pos-sprite-shows-rupture ×1, 05-kiosk-after-rupture ×1, 07-pos-sprite-clean-after-restore ×1). vite.config.js define-injection NOT applied since run-5."
+    },
+    {
+      "run5_id": "D5-002",
+      "run5_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Vue `[Vue warn]: Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent…>` still firing 3 occurrences across all 3 POS states (01-pos, 04-pos, 07-pos). PosComponent.vue itemsRaw declaration NOT applied since run-5."
+    },
+    {
+      "run5_id": "D5-003",
+      "run5_severity": "P1",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED (spec patch insufficient)",
+      "evidence": "Run-6 spec patch landed at tests/e2e/iter15-mega-admin-rupture-cascade.spec.js lines 228-245 (idle-bypass click on takeaway tile + 8s waitFor on `[class*='kiosk-product']`). Patch DID advance the surface from bare idle to order-type-chooser (`kiosk-order-type-chooser` + `kiosk-order-type-takeaway` testids now present in 05 DOM, were absent in run-5). However the surface STILL does not reach catalog: 05-kiosk-after-rupture.dom.html visible body text = 'Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande Choisissez une option pour commencer' (417 chars total); zero rendered `<button>` or `<div>` matching `kiosk-product-card` (all 45 matches are CSS rule selectors at lines 5452, 5782, 6095, …); zero matches for `Sprite` substring; zero matches for `data-pos-item-id=\"410\"`. PNG visually confirms order-type chooser screen, not catalog. The waitFor's `.catch(() => {})` swallowed the timeout silently and the spec proceeded to scan a non-existent catalog (`totalMatches=0` because catalog never rendered, NOT because cascade hid Sprite). The cascade contract on borne therefore remains structurally untested in this artifact set."
+    }
+  ],
+  "findings": [
+    {
+      "id": "D6-001",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Carry-over of D5-003 / D2-002. Run-6 spec patch (lines 228-245 of tests/e2e/iter15-mega-admin-rupture-cascade.spec.js) landed but is insufficient to reach catalog. State 05 DOM: visible body text = 'Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande Choisissez une option pour commencer'; data-testids = [kiosk-theme-toggle, kiosk-idle-root, kiosk-idle-a11y-btn, kiosk-idle-logo, kiosk-idle-title, kiosk-idle-touch-btn, kiosk-order-type-chooser, kiosk-order-type-takeaway]. Zero rendered kiosk-product-card buttons/divs (all 45 grep hits on `kiosk-product-card` are CSS rule selectors at lines 5452, 5782, 6095, …, NOT element instances). Zero matches for `Sprite` substring. State 05 PNG visually confirms order-type chooser screen with 'À emporter' tile + 'Choisissez une option pour commencer' caption — not catalog. The takeaway-tile click on line 241 either failed to fire (tile click race vs Vue mount), failed to navigate the kiosk router from order-type chooser to catalog, or the catalog mount took >8s and the waitFor (line 244-245) timed out. The waitFor's `.catch(() => {})` swallowed the timeout silently; the spec continued to scan a non-existent catalog and reported `totalMatches=0`. This means the run-6 'Sprite cascade visually verified on borne' claim is FALSE — Sprite is hidden from the scan because the catalog never mounted, NOT because cascade hid it. Convergence on this contract requires either (a) a more deterministic kiosk navigation (hard-coded route or redux-store dispatch to skip order-type chooser), (b) a longer waitFor with a non-silent assertion that fails the spec when catalog does not mount, or (c) a documented architecture decision that the cascade contract on borne is NOT in iter15 V1 scope.",
+      "fix_hint": "Spec hardening: replace the silent `.catch(() => {})` on the catalog waitFor with `await expect(kioskPage.locator('[class*=\"kiosk-product-card\"]:visible, [data-testid*=\"kiosk-product-card\"]:visible').first()).toBeVisible({ timeout: 15_000 })` so a non-mount FAILS the spec instead of silently emitting a misleading totalMatches=0 result. If the kiosk catalog route is /kiosk/categories and order-type click should redirect there, also add `await kioskPage.waitForURL(/\\/kiosk\\/(categories|catalog|menu)/, { timeout: 8_000 })` between the takeaway click and the catalog waitFor. Investigate whether Vue router transition is genuinely blocked (cf. note in DOM script comment: `sur le router-view : en prod Playwright a montré des états où le DOM sous .kiosk-app ne contenait plus que le bouton thème (vue routée jamais montée / transition Vue bloquée) alors que l'URL était /kiosk/categories`). This native comment in the kiosk shell admits the transition-blocking issue is a known production class. Cascade contract on borne is structurally untested until this is closed."
+    },
+    {
+      "id": "D6-002",
+      "state_artifact": "iter15-mega-rupture/01-admin-items-list.console.json (+01-pos, +04-pos, +05-kiosk, +07-pos)",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Vue `Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined. You are running the esm-bundler build of Vue, which expects these compile-time feature flags to be globally injected via the bundler config in order to get better tree-shaking…` still firing in run-6: 7 total occurrences across 5 console.json files (01-admin-items-list ×2, 01-pos-with-sprite-available ×2, 04-pos-sprite-shows-rupture ×1, 05-kiosk-after-rupture ×1, 07-pos-sprite-clean-after-restore ×1). Identical to run-5 — D5-001 unhealed between run-5 and run-6.",
+      "fix_hint": "Apply the vite.config.js `define:` block injecting `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false`, `__VUE_OPTIONS_API__: true`, `__VUE_PROD_DEVTOOLS__: false`. Verify the change is committed (not just stash-popped) so it does not regress on the next stash cycle. See https://link.vuejs.org/feature-flags."
+    },
+    {
+      "id": "D6-003",
+      "state_artifact": "iter15-mega-rupture/01-pos-with-sprite-available.console.json (+04-pos, +07-pos)",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Vue `[Vue warn]: Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< undefined > > at <RouterView> at <DefaultComponent> at <App>` still firing in run-6: 3 occurrences across all 3 POS states (01-pos, 04-pos, 07-pos). Identical to run-5 — D5-002 unhealed between run-5 and run-6. Render-time access to undefined data; symptom of a template binding referencing a missing data property or a race vs the async catalog fetch.",
+      "fix_hint": "Apply the PosComponent.vue itemsRaw fix: declare `itemsRaw: []` (or its equivalent computed/setup ref) so the template binding has a sane default before the catalog resolves. Verify the change is committed, not just stash-popped. Add a Playwright assertion that POS console contains zero Vue warns matching `/itemsRaw/` so the fix does not silently regress."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 1, "P2": 2, "P3": 0 },
+  "states_reviewed": 8,
+  "set_diff_vs_run5": {
+    "fixed_in_run6": [],
+    "regressed_in_run6": [],
+    "unchanged_open": [
+      "D-002 (P0 partial: spec still goto-reloads POS at line 189/292; WS still refused on every state; realtime cascade unverified end-to-end)",
+      "D-009 / D5-001 (P2: Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ feature-flag warning still 7 occurrences across 5 consoles; vite.config.js define-block not committed since run-5)",
+      "D-010 / D2-003 (P2: rupture tile aria-label still 'Ajouter Sprite 33cl, 1.50€' on disabled tile; overlay span still no role=status)",
+      "D-011 (P2 partial: admin toggle has visual RUPTURE pill + sr-only false but no rendered swal2-toast / aria-live region for the confirmation cue)",
+      "D-013 (P2: 200-OK toggle XHR still invisible to network capture; no /availability/snapshot evidence)",
+      "D2-002 / D5-003 (P1: kiosk surface STILL does not reach catalog; run-6 spec patch advanced from bare idle to order-type chooser but takeaway click + waitFor on kiosk-product locator timed out silently; cascade observability on borne remains structurally untested)",
+      "D2-004 (P2: ws:// + wss:// 6001 ERR_CONNECTION_REFUSED on every state; WS server not started)",
+      "D3-003 / D5-002 (P2: Vue warn 'itemsRaw' undefined on POS render still 3 occurrences across all 3 POS states; PosComponent.vue fix not committed since run-5)",
+      "D3-004 (P3: 8-state shape inserted in run-3 still undocumented in spec docstring)"
+    ],
+    "new_in_run6": [
+      "D6-001 (P1: kiosk catalog still unreachable in run-6 despite spec patch — order-type chooser reached but takeaway click did not navigate to catalog; same severity as D5-003 / D2-002, re-issued because it is the binding blocker on convergence)",
+      "D6-002 (P2: Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ feature-flag warning unhealed since run-5 — D5-001 carry-over)",
+      "D6-003 (P2: Vue itemsRaw undefined warning unhealed since run-5 — D5-002 carry-over)"
+    ]
+  },
+  "verdict": "AMBER → NOT GREEN. Run-6 maintains run-5's strong recovery posture (P0=0, all 8 network.json `[]`, hero fix D-003 banner durable with role=alert + Sprite copy, D-001 kiosk 429 limiter holding, D-004/D2-005 Affichage holding, D-005 cashier perm gates holding, D-006 csp-report clean, D2-001 kiosk meta CSP removed, D4-002 img-src clean, D3-001 button.menu clean, D3-002 kiosk.order_type clean, intlify Not found = 0). HOWEVER D5-003 is NOT resolved by the run-6 spec patch — the patch advanced the kiosk DOM from bare idle to order-type chooser (kiosk-order-type-takeaway testid now present) but failed to advance further into the catalog. State 05 DOM body shows ONLY 'Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande Choisissez une option pour commencer' (417 chars); zero rendered kiosk-product-card elements (45 grep hits all CSS rule selectors); zero Sprite matches; PNG confirms order-type chooser screen, not catalog. The waitFor on line 244-245 silently timed out via .catch(() => {}) and the spec continued to scan a non-existent catalog, returning a misleading totalMatches=0 that is hidden-by-design rather than hidden-by-cascade. The 'Sprite cascade visually verified on borne' contract therefore remains structurally untested. P1 count: 1 (D6-001 = D5-003 / D2-002 carry-over). P2 count: 2 (D6-002 / D6-003 = D5-001 / D5-002 carry-overs — vite.config.js + PosComponent.vue fixes still not reapplied since run-5). Convergence verdict: NOT GREEN per protocol §38 (P0+P1 must be 0). The path to green requires a sturdier spec on the kiosk leg (replace silent .catch with a hard expect; add waitForURL between takeaway click and catalog waitFor; or short-circuit via direct router navigation to /kiosk/categories), AND committing the vite.config.js + PosComponent.vue fixes that have been pending since run-2/3.",
+  "answer_to_owner_question": "PARTIAL. The POS user-visibility cascade contract (cashier sees rupture banner) is verified GREEN — 04-pos-sprite-shows-rupture.dom.html contains the durable hero banner `<div role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\">…<span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span>…</div>`, the Sprite tile flips to is-unavailable + disabled, and the unmount in state 07 (clean restore) is also verified. A real cashier WILL see and a screen-reader user WILL hear the rupture event when the page is reloaded. The borne (kiosk) user-visibility cascade contract remains UNVERIFIED — run-6 spec patch reached order-type chooser screen but failed to reach catalog, so we still cannot prove Sprite is rendered as épuisé on the kiosk catalog. The native HTML comment in the kiosk shell admits the underlying production class: `sur le router-view : en prod Playwright a montré des états où le DOM sous .kiosk-app ne contenait plus que le bouton thème (vue routée jamais montée / transition Vue bloquée) alors que l'URL était /kiosk/categories`. The structural D-002 caveat (WS server down, cascade only proven via reload) also remains. Convergence verdict on Wave D: NOT GREEN until D6-001 closes (kiosk catalog reachable in spec) and the run-5 stash-pop misses (D6-002 / D6-003) are committed. HOLD iter15 final sign-off until WS broadcast is asserted on a non-reloading POS context AND kiosk catalog cascade is proven visually."
+}

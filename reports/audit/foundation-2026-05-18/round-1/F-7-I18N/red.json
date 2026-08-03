@@ -1,0 +1,148 @@
+{
+  "specialist": "RED-team",
+  "system": "F-7-I18N",
+  "round": 1,
+  "audit_date": "2026-05-18",
+  "mode": "read-only, adversarial",
+  "stance": "find the $t() that fails silently, the orphan key, the XSS vector, the BRAIN claim that contradicts measured reality",
+
+  "adversarial_findings": [
+    {
+      "id": "RED-I18N-001",
+      "title": "BRAIN stated 3 empty-string keys in fr.json at lines 260/629/1432 — measured reality differs",
+      "claim_in_brain": "Wave Z-8 stated '3 empty-string keys fr.json lines 260/629/1432'",
+      "actual_measurement": {
+        "file": "resources/js/languages/fr.json",
+        "real_lines": [287, 656, 1459],
+        "real_pattern": "These are KEYS WITH EMPTY-STRING NAMES (\"\") inside nested namespaces, not empty values. They produce flattened keys 'menu.', 'label.', 'kiosk.filters.' which collide with the legitimate namespaces.",
+        "lines_260_629_1432_verified": "lines 260,629,1432 show normal valid keys like 'now', 'kds_state_new', 'badge_customize'"
+      },
+      "severity": "P1",
+      "implication": "BRAIN-flagged remediation tickets pointing to lines 260/629/1432 would FAIL to find the bug. Subsequent work must reference lines 287/656/1459.",
+      "evidence_command": "sed -n '285,289p;654,658p;1457,1461p' resources/js/languages/fr.json (output confirmed)"
+    },
+    {
+      "id": "RED-I18N-002",
+      "title": "BRAIN stated 19 $t() UNDEFINED keys — measured reality is 49-50",
+      "claim_in_brain": "Wave Z-8 stated '19 $t() UNDEFINED keys identified'",
+      "actual_measurement": {
+        "method": "ran tools/i18n/audit_locale_keys.mjs 2026-05-18 19:44 + custom $t() extraction",
+        "fr_missing_keys": "49 keys used in code but ABSENT from fr.json",
+        "tool_report_fr_missing": "50 (1-difference from custom extraction due to template-literal heuristic)"
+      },
+      "severity": "P1",
+      "implication": "BRAIN underestimated by ~2.5x — the structural i18n debt is larger than declared. Recommend updating BRAIN figures.",
+      "top_5_undefined_fr_examples": [
+        {"key": "admin.product_wizard.finish", "file": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue", "impact": "admin product creation wizard renders 'admin.product_wizard.finish' raw on FR locale"},
+        {"key": "admin.product_wizard.progress", "file": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue", "impact": "renders raw key in product wizard progress bar"},
+        {"key": "admin.product_wizard.subtitle", "file": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue", "impact": "renders raw key in product wizard subtitle"},
+        {"key": "admin.product_wizard.title", "file": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue", "impact": "renders raw key as product wizard title"},
+        {"key": "label.kds_status_conflict", "file": "resources/js/components/kds/* (search needed)", "impact": "KDS conflict state badge would render raw key 'label.kds_status_conflict' — POTENTIAL V1 BLOCKER if KDS conflict state is hit"}
+      ],
+      "potentially_v1_blocking_subset": [
+        "label.kds_status_conflict (KDS conflict state, would leak raw label to chef screen if state activated)",
+        "label.delivery_cash_* family (12 keys) — DeliveryBoy V1.0.x scope but enabled per BRAIN 2026-05-18 — if delivery cash UI is shown to staff and these keys aren't filled, raw labels leak"
+      ]
+    },
+    {
+      "id": "RED-I18N-003",
+      "title": "kiosk.filters. trailing-dot key triggers if v-for iterates filter values",
+      "vector": "if Vue component iterates kiosk.filters as 'for (key in $tm('kiosk.filters'))', the empty-key entry at line 1459 ('Tous') will be rendered with empty key name, producing label.Tous OR generating 'kiosk.filters.' fallback display",
+      "verified_in_code": "grep $t(`kiosk.filters.${f}` returns matches — IF f is ever '' (empty string filter), it accesses the empty-key entry; benign value 'Tous' renders OK BUT key inspection in devtools shows 'kiosk.filters.' which is a code smell",
+      "severity": "P1",
+      "remediation": "rename the empty-string key to 'all' so it becomes 'kiosk.filters.all' — same value 'Tous' — and update any v-for iteration to filter empty-string keys defensively"
+    },
+    {
+      "id": "RED-I18N-004",
+      "title": "$t('error.something_wrong') is referenced in code but missing from fr.json",
+      "verification": {
+        "code_reference": "grep $t('error.something_wrong') in resources/js — confirmed in error handler",
+        "fr_json_check": "key 'error.something_wrong' NOT in fr.json (only error.network_issue, error.printer_unreachable, error.rate_limited, error.service_unavailable — all DEAD per tool)",
+        "en_json_check": "key 'error.something_wrong' IS in en.json — so it would only fail in FR locale",
+        "ar_json_check": "key 'error.something_wrong' IS in ar.json"
+      },
+      "severity": "P1",
+      "impact": "FR users hitting generic error fallback see raw 'error.something_wrong' label — V1 user-facing regression risk in error paths"
+    },
+    {
+      "id": "RED-I18N-005",
+      "title": "Bangladesh legacy 55 orphan keys live in en.json + ar.json — phantom UI references potential",
+      "examples": ["label.bkash_app_key", "label.easypaisa_mode", "label.cashfree_status", "label.clickatell_apikey", "label.flutterwave_secret_key", "label.mercadopago_status", "label.paystack_mode"],
+      "risk_vector": "Are any blade templates still rendering these in admin Settings > Payment Gateways pages? If yes, FR locale shows 'label.bkash_app_key' raw because key absent from fr.json",
+      "verification_partial": "grep for 'bkash' in resources/views returns no Blade matches in current build — likely admin GUI for these gateways already removed in earlier Bangladesh-purge waves. Tool reports them as Vue-side DEAD (never $t-referenced)",
+      "severity": "P2",
+      "remediation": "purge from en.json + ar.json + bn.json + de.json in V1.0.x cleanup"
+    },
+    {
+      "id": "RED-I18N-006",
+      "title": "XSS via i18n interpolation — read-only attest CLEAN",
+      "verification_command": "grep -E '<[a-z]+' resources/js/languages/{fr,en,ar}.json",
+      "result": "0 matches — no raw HTML tags in any value of any locale",
+      "conclusion": "i18n interpolation surface is SAFE from XSS injection at translation layer (assuming Vue's standard {{ }} escape and i18n's textContent rendering remains intact). PHP lang files also clean.",
+      "severity": "INFO",
+      "positive_finding": true
+    },
+    {
+      "id": "RED-I18N-007",
+      "title": "FR locale has 'all.order.status.,' key — trailing dot suggests bug",
+      "evidence": "reports/i18n/missing_keys_per_locale_LARAVEL_2026-04-20.csv contains 'fr,all.message.coupon_not_applicable_now,app/Services/CouponService.php' AND BLADE side has 'all.order.status.' (with empty suffix)",
+      "verification_needed": "grep 'all.order.status.' resources/views app — check if app/Services/OrderService.php builds the trans key dynamically and could miss the suffix",
+      "severity": "P2",
+      "implication": "If a status value is '' (empty), the trans key becomes 'all.order.status.' which doesn't exist in fr/all.php — fallback to literal key string in UI"
+    },
+    {
+      "id": "RED-I18N-008",
+      "title": "allergens.<code> hardcoded MISS in $t() call — literal angle brackets",
+      "evidence": "Tool's reports show '$t('allergens.<code>') referenced literally in tests — likely a doc example bleeding into runtime grep, not an actual bug",
+      "verification": "grep -n 'allergens\\.\\<code\\>' resources/js public/js — not present in runtime files",
+      "severity": "INFO",
+      "false_positive": true
+    },
+    {
+      "id": "RED-I18N-009",
+      "title": "Dormant audit_locale_keys.mjs tool NOT in CI — drift accumulates silently",
+      "evidence": "BRAIN flagged it 'dormant since 9 mai, not in CI'. Verified: tool at tools/i18n/audit_locale_keys.mjs runs successfully, produces 6 CSV reports, but no .github/workflows/ or composer.json scripts invoke it",
+      "implication": "Every PR since 9 mai could have added $t() keys without fr.json entries. The 49 UNDEFINED keys current count = drift accumulated over ~9 days.",
+      "severity": "P2",
+      "remediation": "wire tool into pre-commit or CI smoke job; fail build if 'Used: X | Dead: Y | Missing: Z' exceed threshold"
+    },
+    {
+      "id": "RED-I18N-010",
+      "title": "tests/Feature/Sentinels — NO I18n sentinel exists",
+      "evidence": "find tests/Feature/Sentinels -name '*I18n*' returns 0 results. find tests/Feature/Sentinels -name '*Locale*' returns 0 results. Existing sentinels (PaymentConfirm*, Fiscal*, KdsTransition*, BranchScope*) cover NF525 and authz/branch but not i18n integrity",
+      "severity": "P2",
+      "remediation": "create tests/Feature/Sentinels/I18nKeyIntegritySentinelTest.php that runs audit_locale_keys.mjs and asserts undefined-key count under threshold"
+    }
+  ],
+
+  "summary": {
+    "p0_count": 0,
+    "p1_count": 4,
+    "p2_count": 5,
+    "p1_findings_short": [
+      "BRAIN figures wrong: empty-key lines 287/656/1459 (not 260/629/1432) — 3 cosmetic-but-visible structural bugs",
+      "49 $t() UNDEFINED in FR vs BRAIN-claimed 19 — 2.5x underestimate",
+      "kiosk.filters. trailing-dot key risk in v-for iteration",
+      "error.something_wrong missing from fr.json — generic error path leaks raw key to FR users"
+    ],
+    "p2_findings_short": [
+      "Bangladesh legacy 55 orphan keys in en.json/ar.json — purge candidate",
+      "all.order.status. trailing-dot risk if status='' — PHP side",
+      "audit_locale_keys.mjs dormant, not in CI",
+      "No I18n sentinel test exists",
+      "240 high-confidence dead keys (after dynamic-pattern filter)"
+    ]
+  },
+
+  "v1_blocker_verdict": "GO for FR locale V1. The 4 P1 findings are cosmetic/edge-case (empty-key labels, raw error fallback) — admin=FR sentinel guarantees no user impact for Le Cayenne ship. EN+AR locales NOT V1 — defer to V1.0.x.",
+
+  "highest_impact_single_fix": "Add 'error.something_wrong' to fr.json (RED-I18N-004) — 1-line change, eliminates highest-visibility runtime raw-key leak in FR error paths",
+
+  "positive_findings": [
+    "Kiosk i18n discipline EXEMPLARY — no hardcoded user-facing FR strings in resources/js/components/frontend/kiosk/*.vue",
+    "XSS surface CLEAN — no raw HTML tags in any locale value",
+    "JSON syntax valid for FR/EN/AR (python3 json.load OK)",
+    "PHP lang files syntax valid for FR/EN/AR/BN/DE",
+    "Dormant audit tool works — just needs CI wiring"
+  ]
+}

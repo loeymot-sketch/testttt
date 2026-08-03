@@ -1,0 +1,19 @@
+{
+  "report": {
+    "methodCount": 1,
+    "dom": {
+      "methods": [
+        "Payer sur place"
+      ],
+      "stripe": false,
+      "applePay": false,
+      "googlePay": false,
+      "threeDS": false,
+      "preauth": false,
+      "payerSurPlace": true,
+      "comptoir": true,
+      "onlineCardEnabled": false
+    }
+  },
+  "errors": []
+}

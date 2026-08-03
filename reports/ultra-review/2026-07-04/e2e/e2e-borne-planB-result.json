@@ -1,0 +1,28 @@
+{
+  "fixture": {
+    "ok": true,
+    "branch_id": 1,
+    "category_id": 36,
+    "item_id": 114,
+    "item_name": "ULTRA-E2E-BORNE Burger E47DE4",
+    "price": 8.5
+  },
+  "order_id": 5475,
+  "before": {
+    "id": 5475,
+    "source_surface": "kiosk",
+    "order_type": 10,
+    "status": 4,
+    "payment_status": 15,
+    "pos_payment_method": 6,
+    "total": 8.5,
+    "fiscal_sequence_no": null,
+    "released_for_board": true
+  },
+  "after_encaissement": {
+    "ok": true,
+    "payment_status": 5,
+    "fiscal_sequence_no": 2624
+  },
+  "pageerrors": []
+}

@@ -1,0 +1,222 @@
+{
+  "agent": "L.8.1 — 3-WAY CONCURRENT CASCADE (customer borne + admin toggle + cashier encaisse)",
+  "phase": "L — Ultra-final pre-cloud Wave L-A (16 agents parallel)",
+  "mission": "Real rush-hour scenario at 19:30. Within a 1.2s window: (B) customer at borne validates Tacos+Algérienne cart; (A) admin toggles Algérienne sauce OFF; (C) cashier encaisses a different prior kiosk-cash order on the Q10 panel. Code-static cascade trace of every concurrency primitive that fires, with per-question verdict, race-window analysis, and NF525 chain attestation. Disk-constrained → no Guzzle Pool; relies on static + sentinel re-attestation + K.3 / K.4 baseline measurements.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_sha": "32bb13730",
+  "scope": "Read-only static cascade trace. Verifies prior K.3 + K.4 + F.5 + H.3 + K.7 + Q9-S1 + F.10 NF525 chain HMAC + I2-HEAL-02 + 6f226ef67 (pruneUnavailableLines) + K2-HEAL-01 (PaymentAlreadyCollectedException 409) + J2-HEAL-06 (composition_snapshot trigger).",
+  "method": "Walk the 3 events left-to-right through the relevant services. For each question Q1-Q7: cite file:line + commit + concurrency primitive that wins (or loses). Pin Echo broadcast latency math against K.3.1 1015ms baseline to determine whether the customer-side prune fires in time.",
+  "files_examined": [
+    "app/Services/Menu/AvailabilityService.php (toggle + toggleExtra + assertItemsOrderableForBranch + dispatchStockableEvent)",
+    "app/Services/Pricing/PricingService.php (calculateOrder + assertOptionsOrderable callsite)",
+    "app/Services/Stock/ChoiceAvailabilityResolver.php (assertSelectionsOrderable line 168-173)",
+    "app/Services/FrontendOrderService.php (myOrderStore SSOT + legacy paths, DB::transaction wrapper)",
+    "app/Services/PaymentService.php (confirmCounterPayment lines 219-447 + recordCashOrderMovement 472-545)",
+    "app/Services/Fiscal/FiscalSequenceService.php (next() lock + lockForUpdate full body 57-114)",
+    "app/Services/Fiscal/AuditLogService.php (write() Cache::lock + UNIQUE backstop + retry, lines 70-189)",
+    "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php (Cache::forget on commit)",
+    "app/Listeners/PersistItemAvailabilityChangedToOutbox.php (broadcast outbox + DispatchDomainEventsJob)",
+    "app/Providers/EventServiceProvider.php (ItemExtraAvailabilityChanged → InvalidateKioskMenuCacheOnCatalogChange wiring, Q9-S1 fix)",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue lines 636-694 (proceedToUpsell pre-flight prune, commit 6f226ef67)",
+    "resources/js/store/modules/kioskCart.js lines 664-679 (pruneUnavailableLines filter — ITEM-level only, NOT extras)",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue lines 540-770 (Echo subscriber + _handleItemAvailabilityChanged + _handleCatalogChanged)"
+  ],
+
+  "environment": {
+    "deployment": "V1 LOCAL Le Cayenne single-box (Hetzner-target)",
+    "broadcast_driver": "pusher (Soketi self-hosted, .env.example L172 BROADCAST_DRIVER=pusher)",
+    "cache_driver": "file (local dev) / redis (prod-forced by deploy.sh)",
+    "menu_cache_ttl_seconds": 60,
+    "kiosk_branch_id_under_test": 1,
+    "audit_chain_lock_key": "audit_chain_b1",
+    "fiscal_sequence_lock_key": "fiscal_seq_b1",
+    "echo_broadcast_latency_baseline_ms": 1015,
+    "echo_baseline_source": "K.3.1 round-1/C4-stock-borne-q9s1.json L60+L181 + S6-mega-findings.json L61 — empirical mesuré 2026-05-21 at a68acb20f + cba372066",
+    "scenario_timeline": {
+      "t_0_0_s": "Customer B at borne starts composing Tacos with Algérienne sauce selected at wizard step (composer choice)",
+      "t_0_3_s": "Admin A toggleExtra(extraId=Algérienne, branchId=1, available=false, reason=out_of_stock) → DB tx commits ~t=0.32s",
+      "t_0_5_s": "Cashier C clicks Encaisser on Q10 row for prior order (different order_id) → POST /admin/pos/counter-collect/{order}/confirm starts",
+      "t_1_0_s": "Customer B clicks Valider on cart → proceedToUpsell() invoked",
+      "t_1_2_s": "Cashier C clicks Confirm on PosCounterCollectModal (assumed = onConfirm method axios.post body sent)",
+      "t_1_315_s_inferred": "Echo broadcast ItemExtraAvailabilityChanged → CatalogChanged would arrive at kiosk B (admin commit t=0.32s + 1015ms Q9-S1 baseline = ~1.335s) — AFTER customer B's Valider at t=1.0s by ~315ms"
+    }
+  },
+
+  "edge_cases_audited": [
+    {
+      "id": "L8.1-Q1",
+      "name": "Does customer B's Valider reject Algérienne (per K.3 + pruneUnavailableLines 6f226ef67)?",
+      "verdict": "PARTIAL — backend rejects (NEW P2 UX finding: client prune does NOT cover extras)",
+      "evidence": "Sequence: at t=1.0s KioskCartComponent.vue:636-694 proceedToUpsell() fires. Line 652 calls `this.pruneUnavailableLines()` (commit 6f226ef67). HOWEVER, the prune action at resources/js/store/modules/kioskCart.js lines 664-679 filters ONLY on `line.item_id` against `rootState.kioskMenu.items[].is_available` + `status ∈ {0,2}`. It DOES NOT walk `line.item_extras[]` or `line.item_variations[]`. Algérienne is an `ItemExtra` (a sauce option), so a stale cart line with Tacos + extra_id=Algérienne passes the client prune unchanged (cartCount unchanged → no toast → quoteOrder() proceeds). Backend defense fires at t=1.0s+RTT: FrontendOrderService.php:278 routes to PricingService::calculateOrder (config('pricing.use_ssot_service', true) default = true). PricingService.php:546-553 calls ChoiceAvailabilityResolver::assertSelectionsOrderable(branchId=1, dbVariations, dbExtras (includes Algérienne id), dbAddons, surface='kiosk', useRowLock=true). assertSelectionsOrderable line 156-162 reads StockLevel rows under lockForUpdate for the requested extras; line 163-174 throws \\InvalidArgumentException(\"Supplément ID {algerienne_id} indisponible pour cette branche (out_of_stock).\", 422). Kiosk surfaces 422 via KioskCartComponent.vue:685-690 catch → `this.quoteError = message; this.showToast(message, 'error', 6000)`. So order IS rejected, but: (a) user sees an ERROR toast (not the friendly `kiosk.unavailable_items_pruned` notice), (b) the cart line is NOT removed (still shows Algérienne), forcing the user to manually re-edit Tacos. The 6f226ef67 fix solved the ITEM-level analog of this exact same UX problem, but the EXTRAS-level analog was not co-shipped. NF525-safe (order rejected before DB commit, no fiscal_sequence_no allocated, no audit_log row) but UX-defective at rush hour.",
+      "severity": "P2",
+      "severity_uplift_note": "P1-class if owner weighs rush-hour cashier-needs-to-help-confused-customer cost. The original 6f226ef67 bug report from owner used the same wording ('parfois ça disparait', error toast at panier) that would re-surface here when the unavailable item is an EXTRA instead of a top-level item.",
+      "remediation_recommended": "Extend pruneUnavailableLines (kioskCart.js:664-679) to ALSO walk each line.item_extras[] / line.item_variations[] and drop the extras whose StockLevel-derived `is_available === false` (data must be projected onto rootState.kioskMenu.items[].item_extras[].is_available — verify projection coverage via KioskMenuService.php:371). When an extra is dropped from a line, the user should be warned to re-select; safer default: drop the whole line (cohérence wizard step) + toast `kiosk.unavailable_items_pruned`. ~25-40 LOC; not in CLAUDE.md §7 frozen zone (KioskCartComponent.vue + kioskCart.js are auditable per `feedback_kiosk_wizard_frozen_tests_allowed.md` — but the WIZARD components themselves are frozen, kioskCart store is not). Owner-gate not required; ship behind feature flag for soak.",
+      "follow_up_from": "K.3.2 + 6f226ef67"
+    },
+    {
+      "id": "L8.1-Q2",
+      "name": "Does cashier C's encaisser succeed (independent path)?",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Cashier C's path is fully decoupled from customer B's order. PaymentService.php:219-447 confirmCounterPayment runs in its own DB::transaction (line 219) for the OLDER order_id. The transaction acquires Order::lockForUpdate at line 220-223 — this lock is on a DIFFERENT row than customer B's new order would touch (customer B is INSERT-ing a new Order row, not UPDATE-ing the cashier's). No row-level conflict possible. PaymentService.php:321-322 calls FiscalSequenceService::next(branchId=1) inside the transaction → acquires Cache::lock('fiscal_seq_b1', 5s) at FiscalSequenceService.php:66, blocks up to 3s, then runs `Order::withTrashed()->where('branch_id', 1)->lockForUpdate()->max('fiscal_sequence_no') + 1` under DB row-lock. No contention from customer B because customer B's kiosk-CASH order does NOT allocate a fiscal_sequence_no at creation (see K.4.8 evidence — FrontendOrderService.php:266-267 creates the order with payment_status=PENDING_COUNTER, no fiscal_sequence_no payload). So cashier C is the SOLE fiscal_sequence_no allocator in the 0-2s window. Cache::lock acquired immediately, lockForUpdate returns last_max + 1, allocation succeeds. AuditLog write line 389-401 with Cache::lock('audit_chain_b1', 5s) at AuditLogService.php:100-101: no other writer for branch 1 in this window (admin A toggleExtra does NOT write audit_log — grep confirms zero AuditLogService::write call in app/Services/Menu/AvailabilityService.php or app/Http/Controllers/Admin/AvailabilityController.php; customer B's FrontendOrderService::myOrderStore also does NOT write audit_log on create — grep confirms zero call). So audit_chain_b1 lock is uncontested → write succeeds in single attempt (no QueryException retry path at lines 187-188 triggered). recordCashOrderMovement at PaymentService.php:442-444 runs OUTSIDE the DB::transaction (after `if ($paid)` gate at line 408), so its CashDrawerSession::findOpenSessionForUser + recordMovement INSERT cannot race the customer B order INSERT. Event fan-out OrderPaidAtCounter::dispatch at line 409 + OrderStatusChanged conditional at line 421-433 all happen post-commit on the cashier path independently. Cashier C succeeds.",
+      "severity": "INFO"
+    },
+    {
+      "id": "L8.1-Q3",
+      "name": "Does admin A's toggle persist + Echo broadcast?",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Admin A's toggleExtra path: app/Http/Controllers/Admin/AvailabilityController.php:170 toggleExtra() endpoint → AvailabilityService::toggleExtra at AvailabilityService.php:409-411 delegates to toggleStockable (line 511 shared core). The toggleStockable runs in DB::transaction with StockLevel lockForUpdate (line 530); idempotent re-toggle short-circuit (line 547-548). Event dispatched via dispatchStockableEvent at line 567 inside DB::afterCommit (lines 607-630): `event(new ItemExtraAvailabilityChanged(extraId, branchId, isAvailable, reason))` at line 611-616. $listen mapping at EventServiceProvider.php:214-228 wires ItemExtraAvailabilityChanged → [PersistItemExtraAvailabilityChangedToOutbox, PersistCatalogChangedToOutbox, InvalidateKioskMenuCacheOnCatalogChange]. The InvalidateKioskMenuCacheOnCatalogChange listener (Q9-S1 fix, commit a68acb20f) — InvalidateKioskMenuCacheOnCatalogChange.php:20-47 handle() — forgets `kiosk.menu.branch.{branchId}` cache key (line 72) + bumps MenuSnapshot version. PersistCatalogChangedToOutbox writes domain_events row → DispatchDomainEventsJob → BroadcastManager fires on `private-branch.{branchId}` channel with broadcast_as='CatalogChanged'. Kiosk B's Echo subscription at KioskAppComponent.vue:554-559 onEvents binding handles 'CatalogChanged' → _handleCatalogChanged at lines 745-770 → dispatches kioskMenu/fetchMenu({force:true}) at line 765-767. The full chain works mechanically — but at SOKETI+1015ms baseline, the broadcast arrives at the kiosk at t≈1.335s, ~315ms AFTER customer B's Valider click at t=1.0s. So the persist + broadcast SUCCEED, but customer B's Valider happens BEFORE the kiosk has consumed the broadcast → kioskMenu still has stale `Algérienne is_available=true` at t=1.0s.",
+      "severity": "INFO with timing-window note",
+      "timing_window_note": "Per Q1 above: backend ChoiceAvailabilityResolver is the ONLY defense in this exact 315ms window. If Soketi is degraded (Pusher protocol fallback to long-poll, or Echo TLS handshake stall), the window stretches further; backend remains the sole guarantor. K.3.1 baseline 1015ms is BEST CASE; PHP-FPM cold-start + queue backlog can extend it to 3-5s under load."
+    },
+    {
+      "id": "L8.1-Q4",
+      "name": "NF525 chain stays CHAIN OK throughout?",
+      "verdict": "VERIFIED CITED — chain has effectively ONE writer in scenario",
+      "evidence": "audit_logs writers in the 0-2s window for branch_id=1: (a) Admin A toggleExtra → ZERO write (AvailabilityService + AvailabilityController grep returns 0 AuditLogService::write call); (b) Customer B FrontendOrderService::myOrderStore on success → ZERO write (FrontendOrderService.php grep returns 0 AuditLogService or audit_log reference); (c) Cashier C confirmCounterPayment → ONE write (PaymentService.php:389-401 with action='order.counter_payment_confirmed'). So only Cashier C contests audit_chain_b1 in this scenario. AuditLogService::write at AuditLogService.php:100 acquires `Cache::lock('audit_chain_b1', 5s)`, blocks up to 5s (CHAIN_LOCK_WAIT) at line 103. Uncontested → acquires immediately. performInsert at line 134 reads $prevHash = $this->lastHashFor(1) at line 144 then computes $currentHash at line 145, INSERT line 148-160 succeeds first attempt. UNIQUE(branch_id, prev_hash) DB constraint never trips (line 187-188 retry path not entered). Chain proceeds last_hash → cashier_C_audit.current_hash with monotonic order, prev_hash linkage intact. F.10 chain validator at app/Services/Fiscal/FiscalChainValidator.php would re-attest CHAIN OK at any time. No customer-B or admin-A writes interleave, so even an HMAC reordering bug would not manifest in this scenario.",
+      "severity": "INFO",
+      "post_scenario_chain_attestation": "Run `php artisan fiscal:verify-chain --branch=1` (if exposed) OR `SELECT COUNT(*), MAX(id), MAX(current_hash) FROM audit_logs WHERE branch_id=1` snapshot pre+post window — expect count = pre+1, current_hash advanced by exactly cashier_C row."
+    },
+    {
+      "id": "L8.1-Q5",
+      "name": "fiscal_sequence_no allocation race (cashier C + customer B both may allocate)?",
+      "verdict": "NO RACE EXISTS IN THIS SCENARIO — only cashier C allocates",
+      "evidence": "Customer B's kiosk-CASH order at CREATION does NOT allocate fiscal_sequence_no. Grep on FrontendOrderService.php for `fiscal_sequence_no` returns only the kiosk-CARD/TICKET finalizePaidKioskOrder path (lines 1153-1159, `if (...config('fiscal.kiosk_auto_allocate_sequence', true))` — auto-allocate for online-paid kiosk). Counter-deferred CASH path (FrontendOrderService.php:266-267) writes the FrontendOrder with payment_status=PENDING_COUNTER + pos_payment_method=COUNTER_DEFERRED but NO fiscal_sequence_no — deferred to PaymentService::confirmCounterPayment at PaymentService.php:321-322 which fires only AT counter-collect, which doesn't happen for customer B in this scenario (B's order stays PENDING_COUNTER through t=2s+). So cashier C is the SOLE allocator. FiscalSequenceService::next at line 66 acquires Cache::lock('fiscal_seq_b1', 5s) uncontested. Per K.4.8 verified at HEAD: confirmCounterPayment allocates 1:1 with money received, so allocation timing 1-second-class instead of seconds-class. WERE there ever a hypothetical second concurrent counter-collect for the SAME branch at the SAME instant, FiscalSequenceService.php:66 + 100 (Cache::lock + lockForUpdate withTrashed) provides triple defense (cache lock + DB row lock + UNIQUE(branch, seq) DB constraint via orders_branch_fiscal_seq_unique migration f1bff8bfd). Z6-P1 LOCK 2026-05-19 hardening (withTrashed at line 98) prevents sequence_no re-use on soft-deleted orders — guaranteed gap-free per branch.",
+      "severity": "INFO",
+      "design_note": "If owner ever changes config('fiscal.kiosk_auto_allocate_sequence') to allocate at counter-deferred order CREATION (V1.0.X reconsideration), then customer B + cashier C WOULD contest fiscal_seq_b1 in this window. Current design (defer to confirmCounterPayment) avoids the race entirely AND prevents sequence-gap risk when customers walk away. Recommend keeping current behavior."
+    },
+    {
+      "id": "L8.1-Q6",
+      "name": "cash_movements race (cashier C records cash)?",
+      "verdict": "NO RACE EXISTS — cashier C is sole writer + non-blocking design",
+      "evidence": "cash_movements writers in scenario: (a) Admin A toggleExtra → never touches cash_movements; (b) Customer B FrontendOrderService::myOrderStore → never touches cash_movements (kiosk path is payment-deferred); (c) Cashier C → PaymentService::recordCashOrderMovement at line 472-545 fires at line 442-444 AFTER the DB::transaction commit gate (line 408 `if ($paid)`). The write is single-writer, single-row INSERT (CashDrawerService::recordMovement at PaymentService.php:524-532). recordCashOrderMovement runs in DEFAULT $strict=false mode for kiosk counter-collect (line 442 invocation has no $strict arg → default false). If no open CashDrawerSession exists for cashier C, line 503-517 silent-fail return — no cash_movements row but Order remains PAID + audit_log written + Transaction row written. This is K.4.4 AMBER (V1.0.X backlog). No race with customer B because B never invokes cash_movements. No race with admin A. No conflict from secondary cashier opening drawer simultaneously (CashDrawerService::recordMovement uses straightforward INSERT, no shared lock). Single-writer, conflict-free.",
+      "severity": "INFO with K.4.4 AMBER carry-forward",
+      "follow_up_from": "K.4.4 (V1.0.X strict-mode flip for kiosk counter-collect)"
+    },
+    {
+      "id": "L8.1-Q7",
+      "name": "KDS receives BOTH events (customer B's pruned order + cashier C's encaissed order)?",
+      "verdict": "PARTIAL — backend rejects B before KDS sees it; cashier C's prior order surfaces on KDS",
+      "evidence": "Customer B: if Q1 backend rejects with 422 (ChoiceAvailabilityResolver), NO Order row is committed → NO OrderCreated event dispatched → KDS sees NOTHING for customer B's attempt. Customer B retries (post error toast) → either re-edits cart (drops Algérienne) or selects a different sauce → fresh Valider succeeds at t=2s+ once kiosk has consumed CatalogChanged broadcast and fetchMenu refreshed. THEN KDS receives OrderCreated for the corrected order. Cashier C: confirmCounterPayment success at PaymentService.php:329 dispatches OrderPaidAtCounter for the EARLIER order. Mode is CASH → Wave S-1 S-5 carve-out skips auto-promote ACCEPT→PREPARING (PaymentService.php:332-360 comment block + AutoPrepareOnPaidPolicy::shouldPromote returns false for mode=CASH). So OrderStatusChanged is NOT dispatched (line 421 gate `if ((int) $order->status === OrderStatus::PREPARING)` false). KDS handler KitchenDisplaySystemComponent.vue:1855-1875 OrderPaidAtCounter binding fires _debouncedRefresh → KDS payment_pending_counter badge flips off; ticket stays at status=ACCEPT, waiting for chef to accept. PreparingAndReadyComponent.vue (OSS) does NOT receive event because cashier C's mode=CASH suppresses OrderStatusChanged dispatch — by design per K.4.6 design_note. So KDS sees Cashier C's collection (badge update only). KDS does NOT see Customer B's rejected attempt (good — no phantom ticket). When customer B's corrected order succeeds at t=2s+, KDS receives a fresh OrderCreated normally.",
+      "severity": "INFO with K.4.6 design_note carry-forward",
+      "follow_up_from": "K.4.6 design_note (OSS kiosk-CASH late-appearance by design)"
+    }
+  ],
+
+  "race_window_analysis": {
+    "echo_broadcast_window_ms": 1015,
+    "echo_baseline_source": "K.3.1 round-1/C4-stock-borne-q9s1.json + S6-mega-findings.json mesuré 2026-05-21",
+    "scenario_critical_window_ms": 700,
+    "scenario_critical_window_description": "From admin A's DB commit at t≈0.32s to customer B's Valider at t=1.0s = ~680ms. The Echo broadcast for ItemExtraAvailabilityChanged (admin toggleExtra) requires ~1015ms to reach the kiosk per Q9-S1 baseline. Therefore the broadcast arrives ~335ms AFTER customer B clicks Valider. Kiosk-side `_handleCatalogChanged` fires fetchMenu({force:true}) at ~t=1.335s — too late for B's pre-flight prune. Backend (PricingService → ChoiceAvailabilityResolver) is the SOLE active defense in the 680ms window where the race opens.",
+    "backend_only_defense_attestation": "ChoiceAvailabilityResolver::assertSelectionsOrderable (app/Services/Stock/ChoiceAvailabilityResolver.php:156-174) uses `useRowLock=true` when `orderId > 0`, taking StockLevel lockForUpdate. This means even if admin A's toggleExtra DB::transaction has not yet visibility-propagated to a separate read connection at the exact instant PricingService runs (sub-100ms read-after-write skew on MySQL InnoDB SERIALIZABLE not in use — default REPEATABLE READ + READ COMMITTED for other connections), the lockForUpdate in ChoiceAvailabilityResolver forces serialization at the storage engine layer. Customer B's quote either (a) sees admin A's UPDATE if committed before B's SELECT FOR UPDATE acquires, OR (b) waits for B's lockForUpdate as admin A's tx is still uncommitted. Either way, customer B reads the FINAL is_available state, not a torn read. Race-free at DB layer.",
+    "soketi_degradation_resilience": "If Soketi (Pusher self-host) is degraded — Echo client falls back to long-polling or reconnects mid-broadcast — the broadcast window can stretch 2-5s+. Customer B's prune would be even MORE behind, but backend rejection STILL fires. Same outcome (error toast + 422). NF525 + financial correctness UNAFFECTED by Soketi degradation. Only UX cosmetic friendliness suffers. NEW FINDING: monitoring on Soketi latency would surface degraded UX before customers complain (V1.0.X observability backlog).",
+    "concurrency_primitives_in_play": [
+      {
+        "primitive": "Cache::lock('audit_chain_b1', 5s)",
+        "ttl_s": 5,
+        "wait_s": 5,
+        "contestants_in_scenario": 1,
+        "winner": "Cashier C (only writer)",
+        "source": "AuditLogService.php:100-101"
+      },
+      {
+        "primitive": "Cache::lock('fiscal_seq_b1', 5s)",
+        "ttl_s": 5,
+        "wait_s": 3,
+        "contestants_in_scenario": 1,
+        "winner": "Cashier C (only allocator)",
+        "source": "FiscalSequenceService.php:66 + 69"
+      },
+      {
+        "primitive": "Order::lockForUpdate (cashier C row)",
+        "contestants_in_scenario": 1,
+        "winner": "Cashier C transaction",
+        "source": "PaymentService.php:220-223"
+      },
+      {
+        "primitive": "StockLevel::lockForUpdate (extra=Algérienne, branch=1)",
+        "contestants_in_scenario": 2,
+        "winner_first_committer": "Admin A's toggleExtra (started at t=0.3s, commits t≈0.32s) WINS row-lock against customer B's PricingService at t≈1.0s+RTT — A is long-committed by then",
+        "race_window_overlap": "0 ms (A commits BEFORE B's tx starts)",
+        "source": "AvailabilityService.php:530 (toggleExtra) + ChoiceAvailabilityResolver.php:156-162 (assertSelections)"
+      },
+      {
+        "primitive": "UNIQUE(branch_id, prev_hash) on audit_logs (DB backstop)",
+        "contestants_in_scenario": 1,
+        "winner": "Cashier C single INSERT (UNIQUE never trips)",
+        "source": "AuditLogService.php:182-188 + migration referenced at AuditLogService.php:60-62"
+      },
+      {
+        "primitive": "UNIQUE(branch_id, fiscal_sequence_no) on orders (DB backstop)",
+        "contestants_in_scenario": 1,
+        "winner": "Cashier C single allocation (UNIQUE never trips)",
+        "source": "FiscalSequenceService.php:21-22 + migration f1bff8bfd"
+      },
+      {
+        "primitive": "DB::transaction (Cashier C confirmCounterPayment outer tx)",
+        "contestants_in_scenario": "1 isolated cashier C tx + 1 isolated customer B tx + 1 isolated admin A tx",
+        "winner_per_row": "all three commit independently — no shared row contention (different order rows, different StockLevel rows-by-id-and-stockable_type, customer B INSERTs new Order)",
+        "source": "PaymentService.php:219 + FrontendOrderService.php:177 + AvailabilityService.php:46/525"
+      }
+    ]
+  },
+
+  "nf525_attestation": {
+    "audit_chain_writers_in_window": 1,
+    "audit_chain_writer_identity": "Cashier C order.counter_payment_confirmed (PaymentService.php:389-401)",
+    "audit_chain_uncontested_serialization": true,
+    "fiscal_sequence_allocators_in_window": 1,
+    "fiscal_sequence_allocator_identity": "Cashier C via PaymentService.php:321-322 → FiscalSequenceService::next(branchId=1)",
+    "composition_snapshot_immutability_trigger_status": "ACTIVE at HEAD per K.4.7 evidence — migration 2026_05_24_040211_add_composition_snapshot_immutability_trigger.php (J2-HEAL-06 commit fe7dacaa2). Trigger order_items_composition_snapshot_no_update raises SQLSTATE 45000 on any UPDATE that mutates composition_snapshot OR NULLs a non-NULL snapshot. None of the 3 actors in scenario writes order_items, but trigger remains the DB-level invariant guard.",
+    "branch_scope_global_scope_intact": "BranchScope global scope applies to Order on all 3 paths (admin A is branch_id=0 super-admin, customer B sanctum kiosk:order token is branch-scoped, cashier C is branch-scoped). withoutGlobalScope explicit at FiscalSequenceService.php:97 ensures cross-branch isolation. branch_id=1 contestants only.",
+    "chain_validation_pre_scenario": "Last empirical attestation: project memory `count=26 | last_hash=ca4ac1fdc208dae1` per Wave 5F V2-label heal report. Re-attest with `SELECT COUNT(*), MAX(id), substr(MAX(current_hash),1,16) FROM audit_logs WHERE branch_id=1` snapshot pre-scenario + post-scenario.",
+    "chain_validation_post_scenario_expected": "count_pre + 1 (cashier C only). current_hash advanced by exactly one HMAC step. NF525 invariant 'monotonic gap-free chain' preserved.",
+    "fiscal_sequence_post_scenario_expected": "max(fiscal_sequence_no for branch=1) advanced by exactly 1 (cashier C only). No gaps. orders_branch_fiscal_seq_unique never violated.",
+    "verdict": "CHAIN OK throughout scenario. Single-writer monoculture in this window means NF525 chain primitives are trivially safe regardless of admin A / customer B activity."
+  },
+
+  "concurrent_3way_verdict": {
+    "data_integrity": "GREEN — no double-charge, no duplicate fiscal_sequence_no, no chain fork, no torn read on StockLevel (lockForUpdate forces serialization), no cross-cashier order leak (H2-HEAL-01 user-scoped idempotency holds since cashier C uses different cashier session than B's kiosk Sanctum token)",
+    "business_correctness": "GREEN — admin A toggle persists, cashier C collects, customer B order rejected with 422 (no phantom commitment), KDS receives only legitimate events",
+    "ux_correctness": "PARTIAL — customer B sees an ERROR toast (not the friendly `kiosk.unavailable_items_pruned` prune notice) because the client-side pruneUnavailableLines (commit 6f226ef67) does NOT cover ItemExtras. This is the NEW P2 finding L8.1-Q1.",
+    "nf525_correctness": "GREEN — single writer to audit_chain_b1 + single allocator on fiscal_seq_b1 in scenario window; chain mathematically uncontested",
+    "rush_hour_resilience": "GREEN for data/financial; AMBER for UX-friendliness when an Algérienne-class sauce is 86'd mid-cart. With Q9-S1 Echo baseline 1015ms versus the 680ms scenario window, backend is the SOLE active defense — design intent is met (defense-in-depth: backend + client prune + Echo cache flush), but client prune is missing the extras coverage to make the third layer effective in this exact scenario.",
+    "ship_decision": "GO for V1 LOCAL Le Cayenne. The data + financial + NF525 guarantees are intact. The UX gap (L8.1-Q1) is a defer-to-V1.0.X-Wave-M item — owner-decision whether to extend prune coverage now or after first 30-day soak. Recommended: ship one-line lang/fr.json hardening of `kiosk.pay_screen.invalid_order_response` to be more helpful when error_code matches a `Supplément` indispo pattern, while planning the full extras-prune extension."
+  },
+
+  "remediation_summary": {
+    "blocking_v1_ship": [],
+    "v1_polish_recommended_30_min_each": [
+      {
+        "id": "L8.1-R1",
+        "title": "Extend pruneUnavailableLines to walk line.item_extras[] / line.item_variations[]",
+        "scope": "resources/js/store/modules/kioskCart.js lines 664-679 + ensure rootState.kioskMenu.items[].item_extras[].is_available is projected by KioskMenuService.php:371",
+        "loc_estimate": "25-40 LOC + 1 sentinel test",
+        "owner_gate": false,
+        "frozen_zone": false,
+        "depends_on": "Echo broadcast wiring (already shipped via Q9-S1 a68acb20f)",
+        "ship_target": "V1.0.X Wave M"
+      },
+      {
+        "id": "L8.1-R2",
+        "title": "Soketi latency observability metric",
+        "scope": "Add Echo round-trip latency histogram exporter (PROM) so degraded broadcasts surface before customers experience extended stale-cart windows",
+        "loc_estimate": "~30 LOC PHP + Grafana dashboard",
+        "owner_gate": false,
+        "frozen_zone": false,
+        "ship_target": "V1.0.X observability backlog"
+      }
+    ],
+    "follow_ups_carried_forward": [
+      "K.4.4 (cash_movements strict=true flip for kiosk counter-collect — V1.0.X)",
+      "K.4.6 design_note (OSS kiosk-CASH late-appearance by design — keep S-5 carve-out)"
+    ]
+  },
+
+  "return": {
+    "path": "reports/test-e2e/goal-2026-05-23/phase-l/L8.1-3way-concurrent-findings.json",
+    "verdict_summary": "GREEN data/financial/NF525; AMBER UX (NEW P2 L8.1-Q1 = client prune missing extras coverage). Ship V1, defer prune-extension to V1.0.X Wave M. NF525 chain attestation: single writer in window, uncontested serialization, CHAIN OK invariant trivially preserved.",
+    "race_window_analysis": "680ms window between admin A's DB commit (t≈0.32s) and customer B's Valider (t=1.0s); Echo broadcast latency ~1015ms means client-side prune is BLIND in this window. Backend ChoiceAvailabilityResolver::assertSelectionsOrderable with useRowLock=true is sole defense — proven race-free at DB layer.",
+    "nf525_attestation": "Cashier C is single writer to audit_chain_b1 + single allocator on fiscal_seq_b1 in scenario window. Cache::lock + lockForUpdate + UNIQUE backstops uncontested. composition_snapshot trigger active. CHAIN OK preserved."
+  }
+}

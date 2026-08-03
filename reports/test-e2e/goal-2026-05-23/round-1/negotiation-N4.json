@@ -1,0 +1,270 @@
+{
+  "negotiation_id": "N4",
+  "agent": "NEGOTIATION META-AGENT N4 (Production-real scenarios vs System specialist conflicts)",
+  "wave": "GOAL ULTRA-DEEP 2026-05-23",
+  "phase": "B.7",
+  "round": 1,
+  "date": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
+  "scope": "Arbitrate findings between B.1 mega-system specialists (S1-S7), B.6 production-real scenarios (R6-R10), B.4 persona-P1-chef-rush cross-validation, and B.5 proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md.",
+  "method": "Read all referenced finding/scenario/proposal artifacts. Resolve self-contradictions (notably R10 claim about KioskWizardComponent frozen-zone status — verified false via direct grep on CLAUDE.md §7 line 217). Classify each conflict into one of {CLOSED-GREEN, OWNER-GATE, BLOCKER-IF-RUSH, BLOCKER-PEACE}. No code modified — pure arbitration.",
+  "inputs": {
+    "B1_mega_findings": [
+      "reports/test-e2e/goal-2026-05-23/round-1/S1-mega-findings.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/S2-mega-findings.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/S3-mega-findings.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/S4-mega-findings.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/S5-mega-findings.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/S6-mega-findings.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/S7-mega-findings.json"
+    ],
+    "B6_scenarios": [
+      "reports/test-e2e/goal-2026-05-23/round-1/scenario-R6-payment-failed.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/scenario-R7-cashier-fatigue.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/scenario-R8-owner-night-anomaly.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/scenario-R9-nf525-chain-stress.json",
+      "reports/test-e2e/goal-2026-05-23/round-1/scenario-R10-8-sauces.json"
+    ],
+    "B4_persona": [
+      "reports/test-e2e/goal-2026-05-23/round-1/persona-P1-chef-rush.json"
+    ],
+    "B5_proposal": [
+      "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md"
+    ]
+  },
+  "conflicts": [
+    {
+      "id": "N4-C1",
+      "topic": "KDS layout for 5+ active orders (S3-CHEF-001/002/003 vs S3 specialist vs P1 chef-rush persona)",
+      "sources": {
+        "S3_mega": "R1 (6-8 orders BLOCKER-IF-RUSH due to viewport overflow 56px below fold) + R1 9+ (BLOCKER silent slice(0,8) drop) + R2 (long-order 15+ items BLOCKER inside-card scroll requirement)",
+        "P1_persona": "CONFIRMED all 3 S3-CHEF-00{1,2,3} via independent code + visual re-verification — added 3 secondary FRICTIONs (stock 86 marker, allergen pill granularity, kitchen printer banner)",
+        "B5_proposal": "PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md written, 3 options (A/B/C), Option A recommended (1-row ≤5, 2-row 6-10, overflow chip beyond)"
+      },
+      "evidence_alignment": "AGREE — three independent agents (S3 mega code+DOM measurements, P1 persona code re-verification, S3 owner-mandate verbatim citation) converge on the same 3 P0 BLOCKERs with bit-identical numeric evidence (grid_bottom=1136px, viewport=1080px, overflow=56px).",
+      "files_at_stake": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (NOT in CLAUDE.md §7 frozen list, but architectural — owner gate required per MEGA mandate)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (NOT frozen — scroll behavior change is architectural)"
+      ],
+      "frozen_zone_touch_required": false,
+      "lock_doc_required": false,
+      "verdict": "OWNER-GATE",
+      "verdict_rationale": "PROPOSAL doc already exists (proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md, 9 sections, options A/B/C with code sketches, files-to-touch list, rollback plan, owner sign-off block). No frozen-zone file is touched by any of the 3 options. The decision is a product-UX architecture call — owner must sign Option A/B/C in §9 of the proposal before implementation. Severity remains BLOCKER-IF-RUSH for production usage at 6+ simultaneous active orders.",
+      "blocker_classification": "BLOCKER-IF-RUSH",
+      "remediation_path": "Owner countersigns PROPOSAL §9 → executor implements selected option → vitest KdsV2GridLayout.spec.js + Playwright kds-layout-overflow.spec.js → visual re-capture at 5/6/10/11 orders → ship as part of next V1 polish wave.",
+      "v1_local_ship_impact": "NO LOCAL Le Cayenne ship today on the canonical seed at low-traffic baseline (Le Cayenne single restaurant typically ≤5 simultaneous active orders 90% of the time). Risk materializes at dinner rush 19h-21h when 6-8 concurrent orders become probable."
+    },
+    {
+      "id": "N4-C2",
+      "topic": "R10 — 8 sauces on Tacos surfaces a NF525 composition_snapshot integrity gap",
+      "sources": {
+        "R10_scenario": "5/5 verifications carry findings. v5 (composition_snapshot integrity): HARD FAIL — only 1 sauce variation_id persisted in snapshot.lines for an 8-sauce order; 7 sauce ids are lost structurally (stored only as free-text in OrderItem.instruction). Snapshot.lines.line_total sum is 7×extraSaucePrice LESS than OrderItem.total_price. NF525 reprint cannot reconstitute the 7 sauces by variation_id. CLAUDE.md §8 SSOT invariant violated (frontend computes surcharge client-side, PricingService cannot recompute).",
+        "R10_proposed_fix_path": "KioskWizardComponent.vue:1786-1794 — push ALL sauces in sauceOrder as item_variations entries (not just sauceOrder[0]). Backend CompositionSnapshotBuilder would then write 8 lines naturally with zero backend change.",
+        "R10_self_contradiction": "R10 finding R10-P1-01 claims 'KioskWizardComponent.vue IS NOT in CLAUDE.md §7 frozen list (only KioskAppComponent, KioskUpsellComponent, KioskWizardComponent are listed)' — the parenthetical lists KioskWizardComponent in the same breath, self-contradicting. VERIFICATION: direct grep on CLAUDE.md §7 line 217 confirms `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` IS frozen-zone listed alongside the other two kiosk components.",
+        "B5_KioskWizardComponent_proposals": "Per task brief: 10 PROPOSALs written for KioskWizardComponent, none captured the R10 8-sauce structural defect specifically.",
+        "R10_reachability_caveat": "R10-CAVEAT-CURRENT-STATE: canonical MenuResetLeCayenneCommand seeds Tacos with 0 sauce variations (seedSaucesForItem not called for tacos block at lines 519-544 of MenuResetLeCayenneCommand.php). The 8-sauce scenario on Tacos is unreachable on a fresh canonical Le Cayenne install. The same defect IS reproducible today on Sandwich Cayenne, Galette Normale, and Burger items which DO call seedSaucesForItem and expose ≥10 selectable sauces."
+      },
+      "evidence_alignment": "PARTIAL CONFLICT — R10 correctly identified the defect but mis-classified the frozen-zone status of the fix file. The defect is real (multi-sauce ⇒ snapshot.lines under-count by N-1 entries) and structurally violates NF525 composition_snapshot immutability INTENT (CLAUDE.md §8: 'composition_snapshot JSON frozen à création d'order — NEVER overwritten' — the snapshot today is technically immutable but is incomplete to begin with, which is a different but related integrity issue).",
+      "files_at_stake": [
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1786-1794 (single-sauce push — FROZEN §7, LOCK doc REQUIRED)",
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1971-1973 (client-side surcharge computation — FROZEN §7, LOCK doc REQUIRED)",
+        "resources/js/components/frontend/kiosk/KioskCartComponent.vue:956-963 (CSS truncation — NOT frozen, separate ~5 LOC CSS fix)",
+        "app/Services/Composer/ComposerTemplateService.php:71-94 (declared max_select hygiene — NOT frozen)",
+        "app/Services/Pricing/CompositionSnapshotBuilder.php (NOT frozen, but lives in NF525 protection ring — exists to handle N variations correctly already, no change required if KioskWizardComponent pushes all N)"
+      ],
+      "frozen_zone_touch_required": true,
+      "lock_doc_required": true,
+      "verdict": "OWNER-GATE-WITH-LOCK",
+      "verdict_rationale": "R10's recommended primary fix touches KioskWizardComponent.vue:1786-1794 which is in CLAUDE.md §7 frozen-zone (line 217, direct grep verified). Per §7 and §10 Decision Framework, frozen-zone touches REQUIRE explicit human gate via LOCK_*.md doc with: scope, files, justification, rollback plan, safety-check.sh override config, sub-agent instructions, human-gate sign-off. R10 mis-classified the frozen status — the scope-minimal client patch claim is incorrect. Reclassify the structural NF525 integrity gap from R10's stated YELLOW verdict to BLOCKER-PEACE because (a) NF525 reprint reconstruction cannot reproduce snapshot.lines arithmetic for multi-sauce orders, (b) the defect is reproducible TODAY on Sandwich Cayenne / Galette Normale / Burger items (NOT Tacos on canonical seed, but Tacos was just the named test item). The cart CSS truncation (R10-P1-02) is non-frozen and can ship without LOCK. ComposerTemplateService.php max_select hygiene (R10-P1-03) is non-frozen.",
+      "blocker_classification": "BLOCKER-PEACE",
+      "remediation_path": "1) Write LOCK_KIOSK_WIZARD_MULTI_SAUCE_2026-05-23.md per CLAUDE.md §10 + project skill `lock-plan`: scope = KioskWizardComponent.vue:1786-1794 + 1971-1973, justification = NF525 composition_snapshot reprint integrity for multi-sauce items, rollback = revert single commit. 2) Owner countersigns LOCK §human-gate. 3) Implement: push all sauceOrder entries as item_variations (mirror existing N-entry handling at lines 1799-1812) + remove client-side surcharge (let backend PricingService bill each variation per its DB unit_price). 4) Add PHPUnit CompositionSnapshotBuilderTest::test_8_sauces_yields_8_lines + Vitest KioskWizardComponent.spec.js::test_8_sauce_payload_emits_8_item_variations. 5) Run fiscal:verify-chain --all before/after to confirm zero chain regression. 6) Separately ship KioskCartComponent.vue:956-963 CSS-truncation relax (no LOCK). 7) Separately ship ComposerTemplateService.php max_select=10 hygiene (no LOCK).",
+      "v1_local_ship_impact": "Canonical seed Tacos = 0 sauces ⇒ Tacos surface impossible to reach. Sandwich Cayenne / Galette Normale / Burger with ≥8 sauces selectable IS reachable today ⇒ multi-sauce orders on these items already produce snapshot.lines under-count. NOT a V1 SHIP BLOCKER because (a) no observed actual customer complaint on snapshot reprint for V1 LOCAL Le Cayenne, (b) PROD reprint requirement is from NF525 § V audit/reprint, not from daily kitchen use. IS a V1.0.X audit-readiness blocker for any inspector who pulls a multi-sauce order's snapshot and attempts arithmetic reconciliation. Recommend addressing before any external NF525 audit ceremony — peace-of-mind, not rush."
+    },
+    {
+      "id": "N4-C3",
+      "topic": "R8 — Owner night anomaly review surfaces zero composition_snapshot mismatch cues",
+      "sources": {
+        "R8_scenario": "Verdict RED. Owner at 23h reviewing /admin + /admin/cash-overview + /admin/transactions has ZERO visual surface for: composition_snapshot mismatch, NF525 chain-integrity break, cash-écart math drift. 6 gaps documented (R8-GAP-1 through R8-GAP-6). Detection deferred to next Z-close ceremony (T+8h to T+24h) on cashier's flow, not owner's.",
+        "P4_persona": "Task brief notes 'P4 owner-night: BLOCKER-PEACE matches' — owner-night persona independently confirmed the R8 finding.",
+        "B3_6_fiscal_specialist": "Task brief notes 'B3.6 Fiscal: chain verify catches at next Z-close (T+8-12h)' — confirms detection path exists, just on wrong actor/timing.",
+        "R8_solution_proposed": "NEW Vue widget (CompositionSnapshotAnomalyWidget + FiscalChainStatusWidget) on /admin landing dashboard with cached FiscalChainValidator::assertChainIntegrity() + chain_status field on ZReport API response. No frozen-zone touch required for the dashboard widget addition path."
+      },
+      "evidence_alignment": "AGREE — R8 + P4 persona + B3.6 Fiscal specialist all converge: detection capability EXISTS in code (FiscalChainValidator, ZReportCashEnrichmentService, audit_logs HMAC chain) but the OWNER SURFACE on /admin dashboard does NOT expose it. The chain validator runs at Z-close (cashier flow), not on dashboard mount. The Wave X4 mandate verbatim included 'détecter écarts (cash manquant)' but the diff cell that would satisfy this is V1.0.2 backlog (intentionally — C-013 fix removed the misleading algebraically-locked-to-negative cell).",
+      "files_at_stake": [
+        "resources/js/components/admin/dashboard/DashboardComponent.vue (NEW widget import — NOT frozen)",
+        "resources/js/components/admin/dashboard/FiscalChainStatusWidget.vue (NEW file — NOT frozen)",
+        "resources/js/components/admin/dashboard/CompositionSnapshotAnomalyWidget.vue (NEW file — NOT frozen)",
+        "app/Services/Fiscal/FiscalChainValidator.php (READ-ONLY usage from new dashboard route — NOT modified)",
+        "app/Http/Controllers/Admin/DashboardController.php (NEW endpoint /api/admin/dashboard/fiscal-status — NOT frozen, but reads FiscalChainValidator)",
+        "app/Services/Fiscal/ZReportService.php (FROZEN §7 — NOT modified; reads only)",
+        "Optional: extend ZReport API response with chain_status field (TO-DETERMINE if this requires touching ZReportService::verifyChain or a wrapper service)"
+      ],
+      "frozen_zone_touch_required": false,
+      "lock_doc_required": false,
+      "verdict": "OWNER-GATE",
+      "verdict_rationale": "Solution is widget-additive (new Vue components + new read-only Laravel endpoint). FiscalChainValidator + ZReportService are READ-ONLY consumers — no modification to frozen-zone fiscal services. Cash-overview diff cell (R8-GAP-2) is already V1.0.2 backlog per in-source comment at CashOverviewComponent.vue:110-119 ('Fix C-013 — until V1.0.2 ships a cashier count-input feature the page displays 3 honest values without a misleading diff'). Owner has already triaged that one — keep it on V1.0.2 backlog. The new widget surface for composition_snapshot + chain-integrity warrants owner sign-off on widget placement, refresh cadence (60s cached vs realtime push), and notification escalation level (badge vs persistent red banner vs WebSocket broadcast).",
+      "blocker_classification": "BLOCKER-PEACE",
+      "remediation_path": "1) Owner decides between (a) minimal dashboard widget showing FiscalChainValidator status (cached 60s, green/red badge) on /admin landing OR (b) full realtime push via fiscal_alert.created Echo channel with persistent red banner OR (c) defer to V1.0.X cloud cutover (when audit frequency increases). 2) If (a) or (b) selected, implement as additive widget (no frozen-zone touch). 3) Re-render LastZReportWidget with chain_status field. 4) Surface the existing audit_logs signature_mismatch / sum_mismatch / count_mismatch entries via either an expanded AuditTrailComponent OR a dedicated FiscalAnomalyInbox widget. 5) Sentinel: integration test that owner journey /admin → 23h review surfaces a red badge within 1 second of a seeded composition_snapshot mismatch.",
+      "v1_local_ship_impact": "NOT a V1 SHIP BLOCKER for V1 LOCAL Le Cayenne single-restaurant baseline. Owner physically reviews paper Z-report and walks the cashier's flow daily — anomaly detection IS happening, just on the cashier's surface at Z-close, not on the owner's 23h dashboard review. BECOMES a blocker when: (a) owner runs multiple branches and cannot walk each one daily, (b) external NF525 audit ceremony requires evidence the owner had real-time visibility into chain integrity, (c) the cashier and owner are distinct roles with no daily walk-through. Recommend addressing as V1.0.X polish — peace-of-mind enhancement, not production-rush."
+    },
+    {
+      "id": "N4-C4",
+      "topic": "R7 — Cashier 8h shift fatigue / memory leak hunt",
+      "sources": {
+        "R7_scenario": "GREEN verdict. Listener-cleanup audit shows: 1 P2_LOW (ItemComponent.vue:1485 anonymous wizard:add-to-cart listener, bounded by modal DOM lifetime, GC-friendly) + 2 P3_INFO (appService.js dead code never invoked, MapComponent click handler DOM-bound). 9 setInterval timers in PosComponent ALL cleared symmetrically. All Echo subscriptions via canonical eventContract.onEvents helper with unsubscribe(). _destroyed flag pattern at PosComponent (WT-R1-F2 2026-05-20) prevents late-callback reactive mutations on torn-down instances. Vuex modules audited — no unbounded event accumulators.",
+        "P3_persona": "Task brief notes 'P3 cashier: AMBER inherits C2-T-001 sync (now healed by H-SYNC-001)' — the only AMBER on P3 was a sync-related concern that has since been healed by H-SYNC-001 (separate audit cycle commit). Memory leak vector itself is GREEN."
+      },
+      "evidence_alignment": "AGREE — R7 specialist (code-level grep across 60+ files) + P3 persona converge on GREEN-with-3-hygiene-items. The 3 hygiene items are P2_LOW/P3_INFO, all DOM-bound and GC-eligible, none constitute an 8h-shift session-long accumulator.",
+      "files_at_stake": [
+        "resources/js/components/admin/pos/ItemComponent.vue:1485 (hygiene — V1.0.2 backlog)",
+        "resources/js/services/appService.js:279,300 (dead code — V1.0.2 cleanup)",
+        "resources/js/components/{admin,frontend}/components/MapComponent.vue:108 (defensive cleanup — V1.0.2 backlog)"
+      ],
+      "frozen_zone_touch_required": false,
+      "lock_doc_required": false,
+      "verdict": "CLOSED-GREEN",
+      "verdict_rationale": "POS layer is structurally robust for an 8h cashier shift. Three minor hygiene findings tracked to V1.0.2 backlog. Empirical Playwright stress-mount/unmount verification (100 cycles + performance.memory.usedJSHeapSize sampling) recommended for follow-up confidence but not blocking — code-static evidence is sufficient at this stage. H-SYNC-001 separately closed the P3 AMBER sync inheritance.",
+      "blocker_classification": "NOT-A-BLOCKER",
+      "remediation_path": "V1.0.2 cleanup wave: add 3 hygiene fixes to backlog (already documented in R7 scenario file v1_0_2_backlog_additions array). Optional empirical Playwright stress verification post V1 ship.",
+      "v1_local_ship_impact": "NONE."
+    },
+    {
+      "id": "N4-C5",
+      "topic": "R9 — NF525 audit-chain stress",
+      "sources": {
+        "R9_scenario": "GREEN verdict. Empirical evidence: 10-order kiosk stress (concurrency=2, 3.787s, 3.32 rps, 0 failures, 0 duplicate fiscal_sequence_no, 0 cross-branch leak). audit_logs.count + last_hash bit-identical pre+post stress (count=64, last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592). Z-close empirical extension: Z1 (genesis prev_hash=NULL, sig=fb2f767d...) → Z2 (prev_hash=fb2f767d... === Z1.sig, sig=68c2983c...) — HMAC chain link proven via bit-identical hex match. 3 independent fiscal:verify-chain --all runs returned CHAIN OK at every phase. ZReportService.php:201 verifyChain-before-sign refuses to extend a broken chain.",
+        "B3_6_fiscal_specialist": "Task brief notes 'B3.6 Fiscal: GREEN attest'."
+      },
+      "evidence_alignment": "AGREE — R9 empirical proof + B3.6 specialist code-static review converge on GREEN. R9 strictly exceeds the C8 baseline (kiosk-creation chain bit-identical) by ADDING empirical Z-close chain-extension proof which C8 did not provide.",
+      "files_at_stake": [
+        "app/Services/Fiscal/FiscalSequenceService.php (FROZEN §7 — verified untouched)",
+        "app/Services/Fiscal/ZReportService.php (FROZEN §7 — verified untouched)",
+        "app/Services/Fiscal/AuditLogService.php (FROZEN §7 — verified untouched)"
+      ],
+      "frozen_zone_touch_required": false,
+      "lock_doc_required": false,
+      "verdict": "CLOSED-GREEN",
+      "verdict_rationale": "NF525 audit chain is bit-identical-safe under kiosk-creation stress AND empirically extensible-legitimate under Z-close. Code-static + empirical alignment is the strongest evidence form. No frozen-zone touch. fiscal:verify-chain regression sentinels (ZReportCloseTest::test_signature_chains_between_consecutive_closes) catch any future regression.",
+      "blocker_classification": "NOT-A-BLOCKER",
+      "remediation_path": "None required. V1.0.X polish optional: larger stress batch (50 orders concurrency=3) per original R9 brief — deferred this round per disk constraint, not a regression.",
+      "v1_local_ship_impact": "NONE."
+    },
+    {
+      "id": "N4-C6",
+      "topic": "R6 — Payment failed mid-flow (TPE decline / network drop / cashier abort)",
+      "sources": {
+        "R6_scenario": "GREEN verdict. 6/6 code-static verifications pass: (1) order NOT marked paid on failure (DB::transaction atomic envelope at PaymentService.php:219, any throw rolls back PAID flip + fiscal allocation + audit + Transaction insert), (2) error visible to cashier (toast via alertService.error in 3 surfaces: PosCounterCollectModal, PaymentComponent, KioskPaymentComponent), (3) retry path available (submitting=false re-enables Confirm button, preserves selectedMode + cashReceivedRaw + below MAX_PAYMENT_FAILURES stays on /payment screen), (4) audit_logs truthful (AuditLogService::write order.counter_payment_confirmed at PaymentService.php:309 INSIDE the rollback envelope — no false-positive payment event on failure), (5) composition_snapshot preserved (NEVER touched by confirmCounterPayment or cancelCounterPayment — set once at order creation), (6) NF525 chain OK throughout (FiscalSequenceService allocation inside same DB::transaction, rollback releases slot via MySQL FOR UPDATE semantics).",
+        "C7_network_drop": "Task brief notes 'C7 network drop 30s: GREEN' — separate sync-resilience test confirmed."
+      },
+      "evidence_alignment": "AGREE — R6 6/6 verifications + C7 network-drop test converge on GREEN. Payment surface is atomically safe for all 3 failure modes (TPE decline / network drop / cashier explicit cancel).",
+      "files_at_stake": [
+        "app/Services/PaymentService.php:193-368 (NOT frozen but in NF525 protection ring — verified atomic)",
+        "routes/api.php:791-814 (NOT frozen — generic exception → 422 handler)",
+        "resources/js/components/admin/pos/PaymentComponent.vue (FROZEN §7 — verified untouched, error handler symmetric)",
+        "resources/js/components/admin/pos/PosCounterCollectModal.vue (NOT frozen — verified)",
+        "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (NOT frozen — verified atomic decline path)"
+      ],
+      "frozen_zone_touch_required": false,
+      "lock_doc_required": false,
+      "verdict": "CLOSED-GREEN",
+      "verdict_rationale": "All payment failure modes are atomic-safe. Auxiliary findings (simulation copy on success toast, idempotency 60s replay window, kiosk void POST fire-and-forget) are V1 LOCAL non-blockers covered by RUNBOOK_TPE_FAILURE_2026-04-25.md and AppServiceProvider production boot guard (refuses POS_SIMULATION_HARDWARE=true in prod). Composition_snapshot preserved bit-identical on success AND failure paths.",
+      "blocker_classification": "NOT-A-BLOCKER",
+      "remediation_path": "None required for V1 LOCAL ship. V1.0.X when real TPE hardware bridge is wired: replace simulation-flavored success toast copy with neutral text.",
+      "v1_local_ship_impact": "NONE."
+    }
+  ],
+  "verdict_counts": {
+    "CLOSED-GREEN": 3,
+    "OWNER-GATE": 2,
+    "OWNER-GATE-WITH-LOCK": 1,
+    "BLOCKER-IF-RUSH": 1,
+    "BLOCKER-PEACE": 2,
+    "NOT-A-BLOCKER": 3,
+    "total_conflicts_arbitrated": 6
+  },
+  "top_3_production_real_items": [
+    {
+      "rank": 1,
+      "id": "N4-C1 (S3-CHEF-001/002/003 + P1 persona)",
+      "classification": "BLOCKER-IF-RUSH",
+      "title": "KDS V2 grid layout fails owner mandate at ≥6 simultaneous active orders — bottom-row Prêt buttons clipped 56px below 1080p fold + silent slice(0,8) drop of orders 9+ + long-order (15+ items) inside-card scroll",
+      "verdict": "OWNER-GATE — owner countersign on Option A/B/C of proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md",
+      "production_real_impact": "Dinner rush 19h-21h chef glancing at KDS at 60-90cm distance under high stress: either (a) misses 9th+ orders entirely (no visual cue), (b) ships incomplete order from a long-order card without scrolling, or (c) page-scrolls to reach bottom-row Prêt buttons and loses 1-3 seconds per bump. Owner verbatim: 'le chef sous stress va sortir une commande incomplète' — directly violated.",
+      "files_to_touch_at_implement": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (template + CSS + computed)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (optional — long-order display pattern)",
+        "resources/lang/fr/label.php (kds_overflow_chip_n_pending key)"
+      ],
+      "frozen_zone_touch": false,
+      "lock_required": false
+    },
+    {
+      "rank": 2,
+      "id": "N4-C2 (R10 8-sauce composition_snapshot)",
+      "classification": "BLOCKER-PEACE",
+      "title": "NF525 composition_snapshot under-counts multi-sauce orders by N-1 entries — snapshot.lines arithmetic fails to reproduce OrderItem.total_price; CLAUDE.md §8 'frontend envoie option_ids UNIQUEMENT' SSOT invariant violated for the surcharge channel",
+      "verdict": "OWNER-GATE-WITH-LOCK — KioskWizardComponent.vue is in CLAUDE.md §7 frozen-zone (line 217 grep-verified); LOCK doc REQUIRED before fix per §10 Decision Framework",
+      "production_real_impact": "Multi-sauce orders on Sandwich Cayenne / Galette Normale / Burger items (≥10 sauces selectable on canonical seed) produce snapshot.lines with only 1 sauce row. NF525 reprint from snapshot cannot reconstitute the other N-1 sauces by variation_id. snapshot.lines.line_total sum is (N-1)×extraSaucePrice LESS than OrderItem.total_price — audit-chain reconciliation arithmetic fails. Reachable TODAY on V1 canonical seed for any non-Tacos item with sauce variations.",
+      "files_to_touch_at_implement": [
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1786-1794 (multi-sauce push — FROZEN §7, LOCK REQUIRED)",
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1971-1973 (remove client-side surcharge — FROZEN §7, same LOCK)",
+        "resources/js/components/frontend/kiosk/KioskCartComponent.vue:956-963 (CSS truncation relax — NOT FROZEN, ships independently)",
+        "app/Services/Composer/ComposerTemplateService.php:71-94 (max_select hygiene — NOT FROZEN, ships independently)"
+      ],
+      "frozen_zone_touch": true,
+      "lock_required": true,
+      "lock_doc_to_write": "plans/LOCK_KIOSK_WIZARD_MULTI_SAUCE_2026-05-23.md (use project skill `lock-plan`)"
+    },
+    {
+      "rank": 3,
+      "id": "N4-C3 (R8 owner night anomaly surfacing)",
+      "classification": "BLOCKER-PEACE",
+      "title": "Owner 23h dashboard review surfaces ZERO composition_snapshot mismatch / NF525 chain-integrity / cash-écart math drift cues — detection deferred up to T+24h via Z-close on cashier's flow",
+      "verdict": "OWNER-GATE — additive widget approach (new Vue + new read-only Laravel endpoint); no frozen-zone touch",
+      "production_real_impact": "Owner reviewing /admin + /admin/cash-overview + /admin/transactions at 23h with 50 orders processed during the day and 1 simulated composition_snapshot mismatch sees no visual anomaly cue. SlaAlertsComponent covers kitchen-timing only. AuditTrailComponent surfaces ActionLog user actions only, NOT audit_logs NF525 chain. LastZReportWidget renders status string without chain-integrity column. CashOverview reconciliation diff cell removed (V1.0.2 backlog). Detection only at next Z-close ceremony — different actor, different timing.",
+      "files_to_touch_at_implement": [
+        "resources/js/components/admin/dashboard/DashboardComponent.vue (NEW widget import — NOT FROZEN)",
+        "resources/js/components/admin/dashboard/FiscalChainStatusWidget.vue (NEW file — NOT FROZEN)",
+        "resources/js/components/admin/dashboard/CompositionSnapshotAnomalyWidget.vue (NEW file — NOT FROZEN)",
+        "app/Http/Controllers/Admin/DashboardController.php (NEW read-only endpoint — NOT FROZEN; consumes FiscalChainValidator READ-ONLY)"
+      ],
+      "frozen_zone_touch": false,
+      "lock_required": false
+    }
+  ],
+  "r10_sauces_reclassification": {
+    "original_R10_verdict_in_scenario_file": "YELLOW",
+    "original_R10_severity_assigned": "P1 (R10-P1-01 + R10-P1-02 + R10-P1-03)",
+    "negotiation_N4_reclassification": "BLOCKER-PEACE",
+    "rationale": "R10 author classified the multi-sauce composition_snapshot defect as YELLOW + P1 with non-blocking-for-V1 stance because (a) canonical Tacos seed has 0 sauce variations, (b) PROPOSED fix is 'scope-minimal 6-line client patch' with claimed 'zero frozen-zone touch'. Both reasons are UNDERWEIGHTED: (a) the defect IS reproducible TODAY on Sandwich Cayenne / Galette Normale / Burger items with ≥10 sauces selectable on canonical seed — Tacos was just the named test item, not a uniqueness gate — and (b) KioskWizardComponent.vue IS in CLAUDE.md §7 frozen-zone (direct grep on line 217 verified). The fix path therefore requires LOCK doc + owner-gate per CLAUDE.md §7 and §10. R10's self-description as 'zero frozen-zone touch' is a self-contradicting error (the same finding parenthetical lists KioskWizardComponent in the frozen list while claiming it is not in the frozen list). Reclassifying upward to BLOCKER-PEACE because: NF525 reprint arithmetic reconciliation IS impossible from the under-count snapshot.lines, regardless of whether it blocks V1 daily kitchen operations. Reclassifying as PEACE not RUSH because: no daily customer impact (kiosks process orders normally, customers pay normally, kitchen receives the order via instruction text fallback), the harm is at NF525 audit ceremony or reprint-from-snapshot scenarios which are infrequent in V1 LOCAL Le Cayenne.",
+    "blocker_classification": "BLOCKER-PEACE",
+    "owner_action_required": [
+      "Decide whether multi-sauce items are V1 (then fix-now via LOCK) or V1.0.X-deferred (then add backlog item + INFO banner to NF525 audit-readiness doc)",
+      "If fix-now: sign LOCK_KIOSK_WIZARD_MULTI_SAUCE_2026-05-23.md before implementation",
+      "Separately: ship KioskCartComponent.vue CSS truncation relax + ComposerTemplateService.php max_select hygiene (both non-frozen, no LOCK)"
+    ]
+  },
+  "owner_actions_required_total": [
+    "1) N4-C1 KDS layout: sign PROPOSAL §9 Option A/B/C in proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md",
+    "2) N4-C2 multi-sauce snapshot: decide V1-fix-now vs V1.0.X-defer; if fix-now, sign LOCK_KIOSK_WIZARD_MULTI_SAUCE_2026-05-23.md",
+    "3) N4-C3 dashboard anomaly widget: decide between (a) minimal cached widget, (b) realtime push banner, (c) defer to V1.0.X"
+  ],
+  "v1_local_le_cayenne_ship_verdict": {
+    "verdict": "GO with 3 OWNER-GATEs pending",
+    "rationale": "Of the 6 conflicts arbitrated: 3 are CLOSED-GREEN (R6 payment failure / R7 cashier fatigue / R9 NF525 chain stress — all production-real safe). 3 require owner-gate (N4-C1 KDS layout, N4-C2 multi-sauce snapshot, N4-C3 dashboard anomaly widget). Only N4-C1 is BLOCKER-IF-RUSH and only when ≥6 simultaneous active orders during dinner rush — Le Cayenne single-restaurant baseline is typically ≤5 orders 90% of the time so the BLOCKER-IF-RUSH does not invalidate V1 daily operation. N4-C2 + N4-C3 are BLOCKER-PEACE (NF525 audit readiness + owner observability) — relevant at audit ceremony or owner multi-branch growth, not at daily kitchen operation. NO BLOCKER-IF-RUSH is in the critical path for V1 daily operation; NO BLOCKER-PEACE invalidates V1 LOCAL ship today. Owner countersign on the 3 OWNER-GATE items should occur within the V1.0.X polish window."
+  },
+  "files_inspected": [
+    "reports/test-e2e/goal-2026-05-23/round-1/scenario-R6-payment-failed.json (55 LOC, full read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/scenario-R7-cashier-fatigue.json (130 LOC, full read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/scenario-R8-owner-night-anomaly.json (183 LOC, full read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/scenario-R9-nf525-chain-stress.json (151 LOC, full read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/scenario-R10-8-sauces.json (256 LOC, full read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/persona-P1-chef-rush.json (151 LOC, full read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/S3-mega-findings.json (165 LOC, full read)",
+    "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md (189 LOC, full read)",
+    "CLAUDE.md §7 line 217 (grep-verified KioskWizardComponent.vue frozen-zone status)"
+  ],
+  "frozen_zone_touched_by_this_negotiation": false,
+  "next_step": "Hand off the 3 OWNER-GATE items to the owner for countersign. Continue Phase B.7 with remaining 4 negotiation meta-agents (N1, N2, N3, N5) addressing other conflict clusters. Phase E synthesis to consolidate all 5 negotiation outputs into a single owner-action-required list."
+}

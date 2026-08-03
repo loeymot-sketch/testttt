@@ -23,6 +23,7 @@ class KioskSecurityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        \Smartisan\Settings\Facades\Settings::group('pos')->set(['pos_dine_in_enabled' => true]); // [2026-07-27] garde V1 sur-place (47f3ad545) : OFF par défaut — ce test exerce un flux sur-place/table derrière son flag
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
         config(['app.api_key' => 'test-api-key']);
@@ -122,7 +123,7 @@ class KioskSecurityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
-        $response = $this->postJson('/api/frontend/order', [
+        $payload = [
             'branch_id' => $branch->id,
             'subtotal' => $item->price,
             'total' => $item->price,
@@ -132,7 +133,9 @@ class KioskSecurityTest extends TestCase
             'items' => json_encode([
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
             ]),
-        ]);
+        ];
+
+        $response = $this->postJson('/api/frontend/order', $this->withQuote($payload));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('orders', [
@@ -203,7 +206,7 @@ class KioskSecurityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
-        $response = $this->postJson('/api/frontend/order', [
+        $payload = [
             'branch_id' => $branchOther->id,
             'subtotal' => $item->price,
             'total' => $item->price,
@@ -213,7 +216,9 @@ class KioskSecurityTest extends TestCase
             'items' => json_encode([
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
             ]),
-        ]);
+        ];
+
+        $response = $this->postJson('/api/frontend/order', $this->withQuote($payload));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('orders', [
@@ -224,5 +229,122 @@ class KioskSecurityTest extends TestCase
             'branch_id' => $branchOther->id,
             'user_id' => $user->id,
         ]);
+    }
+
+    public function test_kiosk_order_rejects_token_without_registered_machine(): void
+    {
+        $branch = Branch::forceCreate([
+            'name' => 'Branch No Machine',
+            'city' => 'Paris',
+            'state' => 'IDF',
+            'zip_code' => '75002',
+            'address' => '3 rue No Machine',
+            'status' => 1,
+        ]);
+        $user = User::forceCreate([
+            'name' => 'Test User 004',
+            'email' => 'test004@example.com',
+            'username' => 'testuser004',
+            'password' => bcrypt('password'),
+            'status' => 5,
+            'branch_id' => $branch->id,
+        ]);
+        Sanctum::actingAs($user, ['kiosk:order']);
+
+        $category = ItemCategory::forceCreate([
+            'name' => 'Cat 4',
+            'slug' => 'cat-4',
+            'status' => Status::ACTIVE,
+        ]);
+        $item = Item::forceCreate([
+            'name' => 'Item 4',
+            'slug' => 'item-4',
+            'price' => 5.00,
+            'status' => Status::ACTIVE,
+            'item_category_id' => $category->id,
+        ]);
+
+        $this->postJson('/api/frontend/order', [
+            'branch_id' => $branch->id,
+            'subtotal' => $item->price,
+            'total' => $item->price,
+            'order_type' => OrderType::KIOSK,
+            'is_advance_order' => 0,
+            'source' => Source::WEB,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
+            ]),
+        ])->assertStatus(422);
+    }
+
+    public function test_kiosk_order_rejects_inactive_machine(): void
+    {
+        $branch = Branch::forceCreate([
+            'name' => 'Branch Inactive Machine',
+            'city' => 'Paris',
+            'state' => 'IDF',
+            'zip_code' => '75003',
+            'address' => '4 rue Inactive',
+            'status' => 1,
+        ]);
+        $user = User::forceCreate([
+            'name' => 'Test User 005',
+            'email' => 'test005@example.com',
+            'username' => 'testuser005',
+            'password' => bcrypt('password'),
+            'status' => 5,
+            'branch_id' => $branch->id,
+        ]);
+        KioskMachine::forceCreate([
+            'machine_id' => 'MACHINE_005',
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'username' => 'kiosk_test_005',
+            'password' => bcrypt('password123'),
+            'status' => Status::INACTIVE,
+            'is_login' => Ask::NO,
+        ]);
+        Sanctum::actingAs($user, ['kiosk:order']);
+
+        $category = ItemCategory::forceCreate([
+            'name' => 'Cat 5',
+            'slug' => 'cat-5',
+            'status' => Status::ACTIVE,
+        ]);
+        $item = Item::forceCreate([
+            'name' => 'Item 5',
+            'slug' => 'item-5',
+            'price' => 5.00,
+            'status' => Status::ACTIVE,
+            'item_category_id' => $category->id,
+        ]);
+
+        $this->postJson('/api/frontend/order', [
+            'branch_id' => $branch->id,
+            'subtotal' => $item->price,
+            'total' => $item->price,
+            'order_type' => OrderType::KIOSK,
+            'is_advance_order' => 0,
+            'source' => Source::WEB,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
+            ]),
+        ])->assertStatus(422);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function withQuote(array $payload): array
+    {
+        $quote = $this->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return $payload + [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+        ];
     }
 }

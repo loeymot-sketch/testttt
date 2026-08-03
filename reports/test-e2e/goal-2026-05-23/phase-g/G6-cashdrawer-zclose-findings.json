@@ -1,0 +1,268 @@
+{
+  "agent": "G.6 Cash drawer + Z-close FULL flow",
+  "scope": "G.6.1 cash drawer session lifecycle, G.6.2 Z-close end-of-day, G.6.3 reconciliation, G.6.4 multi-cashier handover, G.6.5 operational runbook status",
+  "timestamp": "2026-05-23T22:35:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "def15979b2991fd5ef9028fb861c6a593f9a1586",
+  "execution_mode": "code-static read-only audit + cross-reference with F.10 service-layer empirical results",
+  "frozen_zone_touch": false,
+
+  "verdict": "AMBER",
+
+  "verdict_rationale": "Code paths all correct (cash lifecycle / Z aggregation / multi-cashier UNIQUE-partial / enrichment service). UI gaps and operational runbook gaps remain blocking for V1 LIVE. F.10 had graded the Z-close UI gap as P2; G.6 re-grades it P1 because cumulative evidence shows it is manual-only with no cron, no button, no cashier runbook. NF525 still GREEN because the data layer + chain are bit-correct; the gap is operational completeness.",
+
+  "scenarios": [
+    {
+      "id": "G6-S1",
+      "name": "Cash drawer lifecycle (G.6.1) — open → record → close → reconcile",
+      "ui_path_traced": "PosComponent.vue:242 button [data-testid=pos-cash-session-open] → openCashSessionDialog() → showCashSessionDialog=true → PosCashDrawerSessionDialog.vue (4 modes: open/active/close/movements) → Vuex cashDrawer module → CashDrawerService.js → POST /api/admin/pos/cash-drawer/sessions/{open,close,reconcile} → CashDrawerSessionController → CashDrawerService → AuditLogService::write",
+      "audit_log_event_chain": "cash.session.opened → cash.movement.recorded (N times) → cash.session.closed → cash.session.reconciled (4 events per shift typically)",
+      "invariants_verified_by_code_read": [
+        "I1 openSession refuses double-open via (a) Cache::lock 5s, (b) DB::transaction lockForUpdate, (c) UNIQUE partial (branch_id, opened_by_user_id) WHERE status='open' — see migration 2026_05_10_020000",
+        "I2 closeSession idempotent on already-closed (no-op + skip audit)",
+        "I3 reconcile computes expected = opening + Σ signed movements, variance = closing - expected",
+        "I4 recordMovement refuses if session not OPEN (race-resistant via lockForUpdate)",
+        "I5 type/direction whitelist enforced",
+        "I6 variance > config('cash.variance_threshold_eur',2.00€) requires variance_reason + cash.reconcile.variance.override permission",
+        "audit_logs write best-effort wrapped in try/catch — never blocks cash op (F.10 verified chain still works)",
+        "POS-RED-04 ownership: same-branch users must own session OR hold variance.override permission to act on someone else's drawer (incl. close)"
+      ],
+      "verdict": "GREEN code, GREEN UI happy-path"
+    },
+    {
+      "id": "G6-S2",
+      "name": "Z-close end-of-day (G.6.2) — admin trigger surface",
+      "endpoint_exists": "POST /api/admin/fiscal/z-report/close — routes/api.php:1152 — auth:sanctum + permission pos-manage-fiscal — verified F.10 13/13 invariants pass",
+      "ui_trigger_today": {
+        "vue_button_or_component_that_posts_close": "NONE — no resources/js/* component issues POST to /admin/fiscal/z-report/close (verified by grep)",
+        "LastZReportWidget_role": "READ-ONLY display of last Z (sequence_no, status, closed_at). Used on /admin/dashboard. Does NOT trigger close.",
+        "cron_today": "NONE — Kernel.php has 16 scheduled lanes (verified against CRONTAB_PROD.md cross-reference table line 55-72) and ZERO of them call ZReportService::close. The two daily fiscal lanes are: lane #15 fiscal-chain-monitor-all-branches 03:30 (READ-ONLY chain verify) + lane #16 foodking-fiscal-archive-daily 02:00 (signed ZIP+JSON archive of yesterday). Neither closes a Z.",
+        "manual_only_path": "Today the owner has to either (a) POST via curl / Postman with a session token + pos-manage-fiscal permission, (b) run a one-off php tinker -> ZReportService::close($branchId), or (c) write a custom artisan command. None of these are documented cashier workflow."
+      },
+      "verdict": "P1 OPERATIONAL GAP — no cashier trigger exists for end-of-day Z close"
+    },
+    {
+      "id": "G6-S3",
+      "name": "Z-close cash reconciliation (G.6.3)",
+      "z_aggregates_window": "(previousClose, thisClose] half-open per branch_id, on orders.created_at where fiscal_sequence_no IS NOT NULL AND payment_status != UNPAID",
+      "cash_aggregation_path": [
+        "ZReportService::aggregate aggregates orders → total_by_method (per pos_payment_method). For CASH mode, this is the gross cash collected for the day.",
+        "ZReportCashEnrichmentService::aggregateForWindow walks CashDrawerSession reconciled rows in same window → sums opening_amount / closing_amount / variance + counts movements. Stored in z_reports columns post-close (hors signature HMAC).",
+        "ZReportCashEnrichmentService::aggregateByTerminal groups OrderPayment by terminal_id → breakdown CASH vs CARD + fees → net_after_fees. RUNTIME only (never persisted, never signed).",
+        "ZReportCashEnrichmentService::enrichClose (V1.0.2 Wave 6b-1.5) ALSO aggregates DeliveryBoyCashSession + DeliveryBoyCashMovement for the same window — runtime only, NOT persisted, NOT signed."
+      ],
+      "reconciliation_NOT_a_hard_gate": "Z-close DOES NOT require all CashDrawerSession to be reconciled. It aggregates order_payments regardless of session state. This is by design — cashier may forget to reconcile, but the fiscal Z still must be signable. The cash_variance column on z_reports surfaces the sum of all reconciled-session variances in the window for ops review (NOT for fiscal integrity which depends on order_payments only).",
+      "soft_delete_handling": "Z aggregate uses withTrashed() so soft-deleted post-allocation orders ARE counted (P0-FIX-1/2 iter15 owner G0-A). Logical exclusion via $terminalStatuses whitelist (CANCELED/REJECTED/RETURNED) only.",
+      "orphan_warning": "warnOnOrphanedPaidOrders writes a fiscal-channel WARN when kiosk-paid orders in window still miss fiscal_sequence_no (retry cron in flight). Excludes them from aggregate (correct), but surfaces the gap so ops can delay close until alloc retry catches up.",
+      "consistency_probe": "ZReportCashEnrichmentService::verifyConsistencyVsAuditLog (delivery side) — sums audit_logs cash.delivery.movement.recorded vs delivery_boy_cash_movements rows in window → discrepancy list. NO equivalent probe exists for POS cash_movements (gap — V1.0.X).",
+      "verdict": "GREEN code, well-decorated, append-only chain preserved"
+    },
+    {
+      "id": "G6-S4",
+      "name": "Multi-cashier handover (G.6.4)",
+      "scenario_described": "Cashier A opens session 09:00 → close+reconcile 13:00 → Cashier B opens 13:00 → close+reconcile 18:00 → Owner closes Z 23:00 → aggregates BOTH sessions' day data",
+      "code_supports_this": true,
+      "evidence": [
+        "UNIQUE partial index keyed on (branch_id, opened_by_user_id) WHERE status='open' — verified migration 2026_05_10_020000 — allows multiple distinct cashiers to each hold an OPEN session simultaneously on the same branch (the legacy 'one drawer per branch' assumption is NOT in the code).",
+        "openSession ownership scoped per (branch_id, user_id) — Cashier A and Cashier B don't contend for the same lock key (cash_drawer_open_b{branch}_u{user}).",
+        "CashDrawerSessionController::assertSessionVisibleToUser (POS-RED-04 hardening) requires Cashier B to either own his session or hold cash.reconcile.variance.override to close someone else's drawer — owner trains owner the manager pattern OR the standard A-closes-A / B-closes-B pattern (recommended).",
+        "ZReportCashEnrichmentService::aggregateForWindow walks ALL CashDrawerSession rows for the branch in (from, to] regardless of opened_by_user_id — multi-cashier sessions are naturally summed in the Z enrichment.",
+        "audit_logs append-only HMAC chain records every transition with branch_id + user_id payload — 8+ audit rows expected for the scenario above (4 events per cashier × 2 cashiers, plus Z-open/close adds 2 more)."
+      ],
+      "test_coverage_gap": "CashDrawerConcurrentSessionTest covers SINGLE-USER TOCTOU race only (1 branch, 1 user, simultaneous open). NO test asserts the full A → B handover scenario with the 3 transitions + Z aggregation across two distinct opened_by_user_id. Code is correct by construction but unobserved.",
+      "v1_recommendation": "Add a Feature test tests/Feature/Cash/MultiCashierHandoverTest.php asserting: (1) A and B can both have OPEN sessions simultaneously, (2) sessionA closes+reconciles + sessionB closes+reconciles → both reconciled state, (3) Z-close aggregates both via ZReportCashEnrichmentService::aggregateForWindow (sum of variances = expected), (4) audit_logs receives 8 cash.session.* events before any Z event. Effort: ≤2h.",
+      "verdict": "GREEN code path, AMBER test coverage"
+    },
+    {
+      "id": "G6-S5",
+      "name": "Operational documentation (G.6.5)",
+      "documents_found": {
+        "scripts/db/RESTORE_DRILL_2026-05-21.md": "EXISTS — NF525 restore drill verdict PASS, source row counts captured, gunzip + mysql restore + count verify procedure documented. Quarterly drill schedule referenced in CRONTAB_PROD.md §6.",
+        "scripts/deploy/CRONTAB_PROD.md": "EXISTS — 16-lane Kernel.php cron map, OS-level lanes (logrotate, certbot, health probe, restore drill), retention strategy (NF525 6y daily/monthly/quarterly), no cloud until owner initiates flag respected.",
+        "docs/runbooks/AUDIT_FERMETURE_CAISSE_V1.md": "EXISTS BUT misnamed — content is git-status / release closure checklist for Caisse V1 Wave 1/2 (CI gates, mission allowlist, frozen-zone diff). NOT a cashier daily-shift Z-close runbook.",
+        "docs/runbooks/BACKUP_RESTORE_NF525.md": "EXISTS — backup/restore NF525 6y retention policy (sibling of RESTORE_DRILL_2026-05-21.md).",
+        "docs/runbooks/MIGRATIONS_CAISSE_V1.md": "EXISTS — migration runbook for caisse-related schema, not operational shift close."
+      },
+      "operational_runbook_status": "MISSING — no cashier-facing daily ops runbook covering (a) open cash drawer at shift start, (b) end-of-day Z-close trigger (since there is no button), (c) what to do if Z-close fails / variance > threshold / orphan_paid_orders warn fires. The technical fiscal/backup runbooks exist; the cashier ops runbook does not.",
+      "recommended_creation": "docs/runbooks/CASHIER_DAILY_OPERATIONS_V1.md — covers: open session at shift start (Caisse button in POS header), recording sales (automatic via PaymentService hooks), end-of-shift close+reconcile (Caisse button → Clôturer → enter physical count → variance reason if needed), end-of-day Z-close trigger (TODAY: owner manual API or scheduled artisan command; V1.0.1 button), monthly review of z_reports + audit_logs counts. Effort ≤4h owner-collaborative.",
+      "verdict": "P1 documentation gap"
+    }
+  ],
+
+  "ui_gaps": [
+    {
+      "id": "G6-UIG-1",
+      "severity": "P1",
+      "title": "No admin UI button to trigger Z-close",
+      "evidence": "routes/api.php:1152 endpoint exists with pos-manage-fiscal permission. grep over resources/js/ finds NO Vue component posting to /admin/fiscal/z-report/close. LastZReportWidget on dashboard is read-only.",
+      "F10_severity_was": "P2 (graded UI nicety)",
+      "G6_severity_raised_to": "P1 because cumulative evidence (no UI + no cron + no runbook) makes it manual-only blocking V1 LIVE operational completeness",
+      "v1_options": [
+        "A) Owner trains a daily routine 'curl POST /admin/fiscal/z-report/close' with stored session token — feasible but fragile",
+        "B) Ship a 'Clôture journée' Vue button in admin shell (mounted in DashboardComponent next to LastZReportWidget OR in PosComponent header) → modal confirm → POST → display signed Z receipt — ≤3h effort",
+        "C) Ship a console command 'php artisan fiscal:z-close --branch=N' + Kernel.php schedule lane #17 dailyAt('23:55') + onOneServer + withoutOverlapping — ≤2h effort, but loses owner control (auto-close every night even if owner wants to delay for orphan retry)"
+      ],
+      "recommended": "B + C combined : button for owner-discretionary close (audit-trail attributed user_id=owner), cron as safety net only if no manual close happened by 23:55 (verify open Z exists + age > 12h)"
+    },
+    {
+      "id": "G6-UIG-2",
+      "severity": "P2",
+      "title": "No manual cash-movement UI",
+      "evidence": "PosCashDrawerSessionDialog.vue has 4 modes: open/active/close/movements. The 'movements' mode is READ-ONLY (lists existing cash_movements rows). The only way to record a new movement today is internal calls from PaymentService hook (order payment → TYPE_ORDER_PAYMENT) and from CashDrawerController::open (hardware drawer pop → TYPE_DRAWER_OPEN). TYPE_ADJUSTMENT exists in the enum but no UI surface emits it.",
+      "impact": "Cashier cannot record a change-fund top-up (e.g. manager hands €50 cash to cashier mid-shift), a withdrawal (e.g. cashier puts excess €100 into safe), or a discrepancy adjustment via UI. Such events become invisible to the cash reconciliation math → variance shows up at close but operator cannot explain it from the movements list.",
+      "v1_owner_decision_needed": "Owner Q: does the daily ops flow require manual cash adjustments (top-up / withdrawal / void) ? If YES, add a 5th dialog mode 'adjust' wired to CashDrawerService::recordMovement(type='adjustment'). If NO (every cash flow is order-payment or hardware-pop only), document this decision in the V1 SCOPE and move on.",
+      "effort_if_yes": "≤2h add modal + i18n + backend whitelist validation already in service"
+    },
+    {
+      "id": "G6-UIG-3",
+      "severity": "P3",
+      "title": "Variance reason captured by UI but no admin review screen for past Z reconciliations",
+      "evidence": "PosCashDrawerSessionDialog captures variance_reason on close (max 255 char). Backend persists it on cash_drawer_sessions.variance_reason. CashSessionReportListComponent.vue + CashOverviewComponent.vue exist (Wave O / Wave X4) and list sessions. Verified F10-OG-1 surfaces variance breakdown in Z drilldown.",
+      "impact": "Low. Admin can already query the variance_reason via the cash overview screens. Cross-check vs Z drill-down is the missing piece (verify variance_reason is shown in CashSessionReportListComponent — already YES per code).",
+      "verdict": "Likely no action needed — leave"
+    }
+  ],
+
+  "code_paths_audited": [
+    "app/Services/Cash/CashDrawerService.php (549 lines)",
+    "app/Models/CashDrawerSession.php (90 lines)",
+    "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php (339 lines)",
+    "app/Http/Controllers/Admin/Pos/CashDrawerController.php (78 lines — hardware pop)",
+    "app/Services/Fiscal/ZReportService.php (lines 1-668)",
+    "app/Services/Fiscal/ZReportCashEnrichmentService.php (587 lines — decorator pattern verified)",
+    "app/Http/Controllers/Admin/Fiscal/ZReportController.php (132 lines)",
+    "app/Console/Kernel.php (313 lines — 16 schedule lanes cross-checked against CRONTAB_PROD.md)",
+    "database/migrations/2026_05_10_020000_add_unique_partial_cash_drawer_open.php (UNIQUE partial keyed on branch+user, supports multi-cashier)",
+    "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (931 lines)",
+    "resources/js/components/admin/pos/PosComponent.vue (lines 220-248, 1080-1130, 2260-2325 — mount + handlers)",
+    "resources/js/store/modules/cashDrawer.js (180 lines)",
+    "resources/js/services/CashDrawerService.js (200 lines)",
+    "resources/js/components/admin/dashboard/LastZReportWidget.vue (read-only)",
+    "routes/api.php lines 865-878 + 1144-1156 (cash drawer + z-report endpoints)",
+    "scripts/deploy/CRONTAB_PROD.md (453 lines — V1 deploy crontab + restore-drill + cross-reference matrix)",
+    "scripts/db/RESTORE_DRILL_2026-05-21.md (NF525 restore drill verdict PASS, procedure documented)",
+    "docs/runbooks/AUDIT_FERMETURE_CAISSE_V1.md (release closure checklist — NOT a cashier ops runbook despite name)"
+  ],
+
+  "operational_runbook_status": "Technical runbooks PRESENT (CRONTAB_PROD.md V1 cron map, RESTORE_DRILL_2026-05-21.md NF525 drill, BACKUP_RESTORE_NF525.md, MIGRATIONS_CAISSE_V1.md). Cashier daily-ops runbook MISSING — no document covers the actual sequence open-session / record-sales / close-session / end-of-day Z-close from the cashier's POV. Recommended deliverable: docs/runbooks/CASHIER_DAILY_OPERATIONS_V1.md ≤4h owner-collaborative.",
+
+  "findings": [
+    {
+      "id": "G6-FIND-1",
+      "severity": "P1",
+      "category": "operational completeness",
+      "title": "Z-close has NO trigger surface — manual API only",
+      "evidence_path": "routes/api.php:1152 + grep resources/js + Kernel.php cron map + CRONTAB_PROD.md section 1 table",
+      "recommendation": "Combination: ship 'Clôture journée' Vue button (owner-discretionary, audit-trail-attributed) AND schedule a safety-net cron lane at 23:55 that only fires if (open Z exists for the branch AND opened_at age > 12h). Effort ≤4h combined."
+    },
+    {
+      "id": "G6-FIND-2",
+      "severity": "P1",
+      "category": "operational documentation",
+      "title": "No cashier daily-ops runbook",
+      "evidence_path": "docs/runbooks/ inventory — fiscal/backup/migration runbooks exist; no CASHIER_DAILY_OPERATIONS_V1.md",
+      "recommendation": "Create docs/runbooks/CASHIER_DAILY_OPERATIONS_V1.md covering shift open, sales, shift close + variance reason path, end-of-day Z trigger, error recovery. ≤4h owner-collaborative."
+    },
+    {
+      "id": "G6-FIND-3",
+      "severity": "P2",
+      "category": "UI completeness",
+      "title": "No manual cash-movement (adjustment) UI surface",
+      "evidence_path": "PosCashDrawerSessionDialog.vue 4 modes — movements is read-only — TYPE_ADJUSTMENT exists in enum but has no Vue emitter",
+      "recommendation": "Owner Q decision: does V1 daily ops require manual cash adjustments ? If yes ≤2h add 'adjust' modal mode. If no document this as scope decision."
+    },
+    {
+      "id": "G6-FIND-4",
+      "severity": "P2",
+      "category": "test coverage",
+      "title": "Multi-cashier handover scenario uncovered by tests",
+      "evidence_path": "CashDrawerConcurrentSessionTest = single-user. No tests/Feature/Cash/MultiCashierHandoverTest.php exists.",
+      "recommendation": "Add Feature test asserting A+B parallel OPEN sessions allowed, both close+reconcile independently, Z aggregates both via enrichment service, 8+ audit_logs cash.session.* events recorded. ≤2h effort."
+    },
+    {
+      "id": "G6-FIND-5",
+      "severity": "P3",
+      "category": "documentation drift",
+      "title": "F.10 task brief misattributes 'cron daily 03:30' as Z-close trigger",
+      "evidence_path": "F.10 task brief line referenced 'cron daily 03:30 (per Kernel.php) OR API client manual' — Kernel.php lane #15 at 03:30 is `fiscal-chain-monitor-all-branches` (READ-ONLY chain verify), NOT z-close. CRONTAB_PROD.md cross-reference table confirms 0/16 lanes call ZReportService::close.",
+      "recommendation": "Update F.10 follow-up to clarify the cron at 03:30 is chain MONITOR not Z-close. The phrase 'OR cron daily 03:30' in F.10 introduced a phantom Z-close cron that does not exist. G.6 corrects this inline."
+    },
+    {
+      "id": "G6-FIND-6",
+      "severity": "P3",
+      "category": "consistency probe gap",
+      "title": "POS cash_movements has no audit_log consistency probe (delivery side has one)",
+      "evidence_path": "ZReportCashEnrichmentService::verifyConsistencyVsAuditLog exists for DeliveryBoyCashMovement vs cash.delivery.movement.recorded audit rows. No equivalent for POS CashMovement vs cash.movement.recorded.",
+      "recommendation": "V1.0.X — add mirror method ZReportCashEnrichmentService::verifyPosConsistencyVsAuditLog. ≤2h effort, parallels existing delivery probe."
+    }
+  ],
+
+  "factual_corrections_to_prior_phase": [
+    {
+      "claim_in_F10": "'Currently: cron daily 03:30 (per Kernel.php) OR API client manual'",
+      "corrected_by_G6": "There is NO scheduled cron that calls ZReportService::close. Kernel.php lane #15 at 03:30 is `fiscal-chain-monitor-all-branches` (read-only verifyChain call against active branches). Lane #16 at 02:00 is `foodking-fiscal-archive-daily` (signed ZIP+JSON archive). Z-close is API-only AND nobody on the FE issues that POST today.",
+      "impact_on_F10_verdict": "F.10's 13/13 Z-invariants PASS is unchanged — the empirical service-layer close did work. But F.10's UI-gap grade P2 was based on the assumption that cron daily ran as a fallback. With no cron and no UI, the gap is P1 operational blocker."
+    }
+  ],
+
+  "frozen_zone_compliance": {
+    "ZReportService_php": "READ-ONLY",
+    "CashDrawerService_php": "READ-ONLY",
+    "AuditLogService_php": "READ-ONLY (referenced via writeAuditLog wrapper in CashDrawerService)",
+    "PaymentComponent_vue": "NOT TOUCHED",
+    "PosV5TrancheRow_vue": "NOT TOUCHED",
+    "pos_wizard_js": "NOT TOUCHED",
+    "frozen_zone_diff_lines": 0
+  },
+
+  "owner_gate_items_surfaced": [
+    {
+      "id": "G6-OG-1",
+      "title": "Ship 'Clôture journée' Vue button + safety-net cron at 23:55",
+      "rationale": "Combined approach gives owner discretionary control (manual button) with a safety net for nights forgotten (cron fires only if open Z + age > 12h). Closes the P1 operational gap.",
+      "estimated_effort": "≤4h combined",
+      "frozen_zone_impact": "NONE — additive UI + additive cron lane"
+    },
+    {
+      "id": "G6-OG-2",
+      "title": "Create CASHIER_DAILY_OPERATIONS_V1.md runbook",
+      "rationale": "Closes the P1 doc gap. Cashier-facing step-by-step daily ops.",
+      "estimated_effort": "≤4h owner-collaborative",
+      "frozen_zone_impact": "NONE — docs only"
+    },
+    {
+      "id": "G6-OG-3",
+      "title": "Owner decision on manual cash adjustment UI",
+      "rationale": "If V1 ops requires top-up / withdrawal / void via UI, ≤2h modal add. If not, document scope decision.",
+      "estimated_effort": "Owner decision first, then 0-2h",
+      "frozen_zone_impact": "NONE"
+    },
+    {
+      "id": "G6-OG-4",
+      "title": "Add MultiCashierHandoverTest + verifyPosConsistencyVsAuditLog probe",
+      "rationale": "Closes the P2/P3 test + probe coverage gaps. Parallel patterns already exist (concurrent test + delivery probe).",
+      "estimated_effort": "≤4h combined",
+      "frozen_zone_impact": "NONE — additive tests + service method"
+    }
+  ],
+
+  "top_3_operational_concerns": [
+    "(P1) Z-close has NO trigger today — no button, no cron, no documented manual procedure. Owner must run a custom curl or php tinker every night to close, otherwise the Z stays open and the next day's orders accumulate into a multi-day Z with broken (from, to] semantics relative to operator expectation.",
+    "(P1) No cashier-facing daily ops runbook — fiscal/backup/migration runbooks exist but the actual shift open/close/Z procedure from the cashier's POV is undocumented. Risk: cashier improvises, variance reasons go unrecorded, manager doesn't know when to gate variance > threshold.",
+    "(P2) Multi-cashier handover supported by code (UNIQUE partial keyed on branch+user, ownership gate POS-RED-04, Z enrichment walks all sessions in window) but NO test asserts the full A→B handover + Z aggregation. Risk is silent regression if a future refactor narrows the UNIQUE key to (branch_id) only."
+  ],
+
+  "ui_gaps_summary": [
+    "G6-UIG-1 P1 — 'Clôture journée' Z-close trigger missing",
+    "G6-UIG-2 P2 — Manual cash adjustment recording missing",
+    "G6-UIG-3 P3 — Past Z reconciliation drill-down for variance_reason mostly fine (CashSessionReportListComponent + CashOverviewComponent cover it)"
+  ],
+
+  "notes": [
+    "Multi-cashier handover code path is CORRECT BY CONSTRUCTION — UNIQUE partial allows A+B parallel OPEN sessions, lock keys distinct per user, enrichment service walks all sessions in window. Untested but provably correct from code read.",
+    "ZReportCashEnrichmentService is a textbook decorator pattern preserving the frozen ZReportService HMAC signature — cash_variance / cash_opening_amount / cash_closing_amount / cash_movements_count are persisted on z_reports POST-signature so the HMAC stays intact across legacy + new reports.",
+    "Delivery cash enrichment (V1.0.2 Wave 6b-1.5) added the same window semantics for DeliveryBoyCashSession — runtime only, never persisted (no z_reports column added), keeps chain bit-identical.",
+    "F.10's empirical service-layer test (orders 484/485/486, Z6 close) proved the Z aggregates compute correctly — G.6 did NOT re-run empirically. G.6 is the code-static + UI-trace counterpart that surfaces the trigger gap.",
+    "Owner decision needed before V1 LIVE: (a) ship button + cron safety-net, or (b) accept manual curl procedure with explicit runbook training. Either path closes G6-FIND-1 + G6-FIND-2."
+  ]
+}

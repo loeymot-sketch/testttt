@@ -1,0 +1,391 @@
+<template>
+  <div v-if="modelValue" class="split-payment-overlay" @click.self="handleCancel">
+    <div class="split-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="split-payment-title">
+      <div class="split-payment-header">
+        <h2 id="split-payment-title">Paiement partagé</h2>
+        <button type="button" class="icon-button" @click="handleCancel" aria-label="Fermer">
+          ×
+        </button>
+      </div>
+
+      <div class="split-payment-body">
+        <div class="summary-card">
+          <div class="summary-row">
+            <span>Commande</span>
+            <strong>#{{ orderId }}</strong>
+          </div>
+          <div class="summary-row total-row">
+            <span>Total à régler</span>
+            <strong>{{ formattedTotal }}</strong>
+          </div>
+        </div>
+
+        <div class="inputs-grid">
+          <div class="field-group">
+            <label for="cash-amount">Espèces</label>
+            <input
+              id="cash-amount"
+              v-model="cashInput"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              class="amount-input"
+              placeholder="0.00"
+              @input="onCashInput"
+            />
+            <small class="field-help">{{ formattedCash }}</small>
+          </div>
+
+          <div class="field-group">
+            <label for="card-amount">Carte</label>
+            <input
+              id="card-amount"
+              v-model="cardInput"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              class="amount-input"
+              placeholder="0.00"
+              @input="onCardInput"
+            />
+            <small class="field-help">{{ formattedCard }}</small>
+          </div>
+        </div>
+
+        <div class="status-card" :class="{ valid: isValid, invalid: !isValid }">
+          <div class="summary-row">
+            <span>Total saisi</span>
+            <strong>{{ formattedEnteredTotal }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Écart</span>
+            <strong>{{ formattedDifference }}</strong>
+          </div>
+        </div>
+
+        <p v-if="!isValid" class="error-text">
+          Les montants espèces + carte doivent être égaux au total exact.
+        </p>
+      </div>
+
+      <div class="split-payment-footer">
+        <button type="button" class="secondary-button" @click="handleCancel">
+          Annuler
+        </button>
+        <button type="button" class="primary-button" :disabled="!isValid" @click="handleConfirm">
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false,
+  },
+  total: {
+    type: Number,
+    required: true,
+  },
+  currency: {
+    type: String,
+    required: true,
+  },
+  orderId: {
+    type: Number,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
+
+const cashInput = ref('')
+const cardInput = ref('')
+
+const sanitizeAmountInput = (value) => {
+  let sanitized = String(value ?? '').replace(',', '.').replace(/[^\d.]/g, '')
+  const firstDotIndex = sanitized.indexOf('.')
+
+  if (firstDotIndex !== -1) {
+    const integerPart = sanitized.slice(0, firstDotIndex + 1)
+    const decimalPart = sanitized.slice(firstDotIndex + 1).replace(/\./g, '')
+    sanitized = integerPart + decimalPart
+  }
+
+  return sanitized
+}
+
+const parseToCents = (value) => {
+  const sanitized = sanitizeAmountInput(value)
+
+  if (!sanitized) return 0
+  if (sanitized === '.') return 0
+
+  const [integerPartRaw, decimalPartRaw = ''] = sanitized.split('.')
+  const integerPart = integerPartRaw === '' ? '0' : integerPartRaw
+  const decimalPart = decimalPartRaw.slice(0, 2).padEnd(2, '0')
+
+  const euros = Number.parseInt(integerPart, 10)
+  const cents = Number.parseInt(decimalPart || '0', 10)
+
+  if (Number.isNaN(euros) || Number.isNaN(cents)) return 0
+
+  return euros * 100 + cents
+}
+
+const formatMoney = (cents) => {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: props.currency,
+  }).format((cents || 0) / 100)
+}
+
+const generateTxnUuid = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return `txn_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+}
+
+const cashCents = computed(() => parseToCents(cashInput.value))
+const cardCents = computed(() => parseToCents(cardInput.value))
+const enteredTotal = computed(() => cashCents.value + cardCents.value)
+const difference = computed(() => props.total - enteredTotal.value)
+const isValid = computed(() => enteredTotal.value === props.total)
+
+const formattedTotal = computed(() => formatMoney(props.total))
+const formattedCash = computed(() => formatMoney(cashCents.value))
+const formattedCard = computed(() => formatMoney(cardCents.value))
+const formattedEnteredTotal = computed(() => formatMoney(enteredTotal.value))
+const formattedDifference = computed(() => formatMoney(difference.value))
+
+const resetForm = () => {
+  cashInput.value = ''
+  cardInput.value = ''
+}
+
+const onCashInput = (event) => {
+  cashInput.value = sanitizeAmountInput(event.target.value)
+}
+
+const onCardInput = (event) => {
+  cardInput.value = sanitizeAmountInput(event.target.value)
+}
+
+const handleCancel = () => {
+  emit('update:modelValue', false)
+  emit('cancel')
+  resetForm()
+}
+
+const handleConfirm = () => {
+  if (!isValid.value) return
+
+  emit('confirm', {
+    cash: cashCents.value,
+    card: cardCents.value,
+    txn_uuid: generateTxnUuid(),
+  })
+
+  emit('update:modelValue', false)
+  resetForm()
+}
+
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
+      resetForm()
+    }
+  }
+)
+</script>
+
+<style scoped>
+.split-payment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.split-payment-dialog {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+}
+
+.split-payment-header,
+.split-payment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.split-payment-header {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.split-payment-body {
+  padding: 20px;
+}
+
+.split-payment-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.icon-button {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.summary-card,
+.status-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.status-card {
+  margin-top: 16px;
+  border: 1px solid transparent;
+}
+
+.status-card.valid {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.status-card.invalid {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.summary-row + .summary-row {
+  margin-top: 8px;
+}
+
+.total-row {
+  font-size: 1.05rem;
+}
+
+.inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-group label {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.amount-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.amount-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.field-help {
+  margin-top: 6px;
+  color: #6b7280;
+}
+
+.error-text {
+  margin: 14px 0 0;
+  color: #dc2626;
+  font-size: 0.92rem;
+}
+
+.split-payment-footer {
+  border-top: 1px solid #e5e7eb;
+  gap: 12px;
+}
+
+.secondary-button,
+.primary-button {
+  min-width: 120px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+}
+
+.secondary-button {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.primary-button {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.primary-button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .inputs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .split-payment-footer {
+    flex-direction: column-reverse;
+  }
+
+  .secondary-button,
+  .primary-button {
+    width: 100%;
+  }
+}
+</style>

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../services/appService";
+import { buildIdempotencyHeaders } from "../../helpers/idempotencyHeaders";
 
 
 export const onlineOrder = {
@@ -98,7 +99,9 @@ export const onlineOrder = {
         },
         changeStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/online-order/change-status/${payload.id}`,payload).then((res) => {
+                axios.post(`admin/online-order/change-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -108,7 +111,9 @@ export const onlineOrder = {
         },
         changePaymentStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/online-order/change-payment-status/${payload.id}`,payload).then((res) => {
+                axios.post(`admin/online-order/change-payment-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -118,7 +123,9 @@ export const onlineOrder = {
         },
         selectDeliveryBoy: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/online-order/select-delivery-boy/${payload.id}`,payload).then((res) => {
+                axios.post(`admin/online-order/select-delivery-boy/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {

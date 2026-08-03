@@ -1,0 +1,83 @@
+{
+ "spec": "advisor:plan-critic",
+ "scope": "Critique advisor du plan W0→W7 (sync web/mobile sur catalogue borne + fidélité réelle + Stripe OFF) — vérification read-only de 6 hypothèses risquées dans le backend Laravel (testttt), le web standalone (/Users/1millnonstop/Downloads/web) et le prototype mobile (testttt/mobile), plus la fixture catalog-canonical.json.",
+ "summary": "Le plan est globalement viable mais repose sur 3 prémisses fausses ou fragiles. (1) « Régén mécanique zéro-divergence de data/menu.js » est impossible telle quelle : seuls 2/42 items de la fixture ont un composer_profile (les Bols) ; menu.js est une couche de données ARTISANALE (pools MEATS/SAUCES/CRUDITES à ids slugs locaux, wizard_template par catégorie, résolution PAR NOM) — il faut un transform sémantique + gate de parité, pas une régénération. (2) « Fidélité réelle » côté clients suppose des endpoints rewards qui N'EXISTENT PAS (aucune route /loyalty/rewards ; le backend modélise points→€ de remise, pas un catalogue de récompenses) → W5 est CERTAIN, pas conditionnel, et doit passer AVANT W3/W4. (3) « QR signé rendu offline » se heurte au TTL 300s du token signé + legacy plaintext refusé par défaut : un QR wallet persistant hors-ligne sera invalide au scan ; il faut un mint-on-display. Bonus positifs vérifiés : qrcode.js est déjà vendored dans les DEUX fronts (zéro CDN), web/api.js a déjà l'auth OTP guest-signup→Sanctum, et le guard Stripe backend (gate non clearée) valide l'approche flag OFF. Risque W4 : la délivrance d'OTP SMS no-op silencieusement si aucune gateway SMS n'est configurée en V1 local.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "W3 prémisse fausse — data/menu.js n'est PAS régénérable mécaniquement depuis la fixture (schémas incompatibles, 2/42 composer_profile)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 109,
+   "evidence": "Fixture (vérifiée par script) : 42 items mais SEULS 'Bol Frites' et 'Bol Riz' ont composer_profile ; la composition des 40 autres vit dans itemAttributes/variations/extras/addons à ids NUMÉRIQUES (ex. item Cayenne : itemAttributes=[{id:5,name:'Sauce (1ère Gratuite)',min_select:1,max_select:1},{id:6,name:'Type de Pain'...}], extras=[{id:49,name:'Salade',group_label:'crudite'...}]). menu.js est artisanal : pools à ids SLUGS locaux « const MEATS = [{ id: 'm-mexicanos', ... }] », « const SAUCES = [{ id: 's-mayo', ... }] », wizard_template par catégorie, et le commentaire BOL_SAUCES dit explicitement « Noms alignés exactement sur le backend pour que la résolution par nom matche (sinon le choix client s'effondrait sur la 1ère via min_select) » — le code app (priceFor/wizard) consomme ces ids locaux.",
+   "recommendation": "Remplacer « régén zéro-divergence » par : (a) script de TRANSFORM/PARITY-GATE qui diffe noms+prix+pools fixture↔menu.js (matching par nom, comme le fait déjà le wireup web), (b) patchs chirurgicaux de menu.js sur les divergences détectées en préservant les ids slugs existants, (c) le gate de parité devient un test W6 rejouable. Une régénération complète casserait wizard-v2.jsx/priceFor."
+  },
+  {
+   "severity": "P1",
+   "title": "« Fidélité réelle » impossible sans W5 : aucune route /loyalty/rewards n'existe et le modèle backend (points→€ remise) ≠ catalogue de récompenses des clients — W5 doit passer AVANT W3/W4",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 102,
+   "evidence": "mobile/data/loyalty.js:102-103 : « ⚠️ NO `loyalty_rewards` TABLE OR `/loyalty/rewards` ROUTE EXISTS BACKEND. Mobile rewards array is 100% mock. » — confirmé : grep 'rewards' dans routes/*.php = 0 résultat. Le backend expose un modèle points→euros : LoyaltyController::config() (LoyaltyController.php:480-517) renvoie points_per_euro / points_for_1_euro_discount / min_redeem_points / tiers, et pointsToDiscount() (ligne 957). loyalty-v2.jsx web est 100% hardcodé (profil « Ikyes Benzaid », email en dur, lignes 1-35) sans aucun appel API.",
+   "recommendation": "Réordonner : W5 (décision + éventuel endpoint) AVANT W3/W4. Deux options à trancher au GOAL doc : (A) reshaper l'UI clients sur le modèle backend points→€ (zéro backend, recommandé V1 — consomme GET /loyalty/config + /balance + POST /qr) ; (B) ajouter table+route rewards (plus lourd, hors « si gaps »). Ne PAS câbler les REWARDS mock actuels sur /redeem : redeem débite des points contre remise €, pas contre un produit."
+  },
+  {
+   "severity": "P1",
+   "title": "W4 Chemin B OTP : la délivrance SMS no-op SILENCIEUSEMENT si aucune gateway SMS n'est active — flow OTP mobile/web dead-end en V1 local sans fallback dev",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Listeners/SendSmsCodeNotification.php",
+   "line": 34,
+   "evidence": "SendSmsCodeNotification::handle() : « if ($this->smsManagerService->gateway($this->gateway)->status()) { ... send(...) } » — si la gateway est inactive, RIEN n'est envoyé et aucune erreur ne remonte (catch → Log::info). OtpManagerService.php:57 dispatch SendSmsCode. Les routes existent bien : /api/auth/signup/otp (routes/api.php:187, throttle 5/min) et /api/auth/guest-signup/otp (:198), verify 3/5min.",
+   "recommendation": "Avant W4, vérifier l'état de la gateway SMS en V1 local et documenter le chemin de récupération du code OTP en dev (DB/log). Prévoir explicitement dans W4 un mode simulé assumé (comme le TPE) : e2e W6 doit lire l'OTP côté serveur, pas attendre un SMS. Sinon chaque e2e fidélité échouera en silence."
+  },
+  {
+   "severity": "P2",
+   "title": "« QR signé rendu offline » contredit le TTL 300s du token signé + refus du plaintext legacy — un QR wallet persistant sera invalide au scan",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/loyalty.php",
+   "line": 40,
+   "evidence": "config/loyalty.php : 'ttl_seconds' => env('LOYALTY_QR_TTL_SECONDS', 300) (5 min, + leeway 30s) ; legacy plaintext acceptance flippé à FALSE par défaut (bloc GOAL-J2-HEAL-03 : « Flipped to FALSE for security-by-default »). generateQr (LoyaltyController.php:850-897) mint un token « lqr.<payload>.<hmac> » via LoyaltyQrSigner, route POST /qr throttle:30,1 (routes/api.php:1474-1476).",
+   "recommendation": "Redéfinir le livrable : « rendu LOCAL sans CDN » (vrai — vendor/qrcode.js présent dans les 2 fronts) ≠ « offline ». UX cible : mint-on-display (POST /qr à l'ouverture de l'écran wallet, re-mint auto toutes les <5 min, fallback affichage loyalty_code texte si réseau KO). Ne PAS élargir le TTL ni réactiver le plaintext (régression sécurité déjà colmatée)."
+  },
+  {
+   "severity": "P2",
+   "title": "GET /loyalty/balance exige un paramètre `code` + gate de propriété stricte — les clients doivent persister leur loyalty_code/phone, et un mismatch de normalisation téléphone rend son propre compte introuvable (404)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 411,
+   "evidence": "balance() = « return $this->check($request); » (ligne 411-414). check() valide 'code' => required (validateCode, lignes 26-31), lookup par loyalty_code PUIS phone (normalisation preg_replace('/[\\s\\-]/','')), et le gate P2-IDOR : « if (! $isKiosk && ! $isStaff && ((int)$caller->id !== (int)$user->id)) → 404 » (bloc lignes ~89-97). Donc un token client ne peut lire QUE son propre compte, et seulement s'il fournit son code/téléphone sous une forme qui matche la DB.",
+   "recommendation": "W3/W4 : stocker loyalty_code retourné par /register ou /qr (la réponse generateQr inclut loyalty_code) et l'utiliser pour /balance et /history — ne pas reconstruire le téléphone côté client. Ajouter un cas de test W6 : phone saisi avec espaces/+33 vs format stocké par guest-signup (api.js stocke PHONE_KEY) → doit retourner 200, pas 404."
+  },
+  {
+   "severity": "P3",
+   "title": "Les tokens guest-signup (web) portent l'ability kiosk:order — pas d'escalade loyalty (garde KioskMachine) mais passe les routes gated `abilities:kiosk:order`",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Auth/GuestSignupController.php",
+   "line": 146,
+   "evidence": "« $this->token = $user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))->plainTextToken; ». Les checks loyalty exigent en plus KioskMachine::where('user_id',...)->exists() (LoyaltyController.php:90-93, 325, 649) donc pas d'escalade fidélité ; mais /kiosk-event et /kiosk/event (routes/api.php:1479-1482, 1526-1528) n'exigent que l'ability → un client web authentifié peut spammer le log événements kiosk (throttle 30/min).",
+   "recommendation": "Pas un blocker du plan. À inscrire comme cas adversarial W6 (agents sécurité) : vérifier qu'aucun NOUVEL endpoint W5 ne se gate uniquement sur `abilities:kiosk:order`, et envisager une ability distincte `customer:order` en backlog V1.0.x."
+  },
+  {
+   "severity": "INFO",
+   "title": "Stripe flag OFF validé par le backend : activation_guard actif, gate non clearée — W3/W4 ne doivent ajouter AUCUN chemin serveur Stripe",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/payment.php",
+   "line": 49,
+   "evidence": "config/payment.php:49-56 : 'stripe' => ['activation_guard' => ['enabled' => true, 'activation_gate_cleared' => false, 'gate' => 'GATE_STRIPE_CENTS_ACTIVE_2026-04-25', 'decision' => 'Option B - Stripe inactive prod V1']].",
+   "recommendation": "Le « flag OFF » côté client est cohérent. Clearer la gate = décision owner explicite, hors scope de ce goal. W6 doit asserter que le flag client OFF ne laisse aucun bouton Stripe cliquable (funnel.jsx et screens-v3.jsx mentionnent déjà Stripe)."
+  },
+  {
+   "severity": "INFO",
+   "title": "Point fort non exploité par le plan : web/api.js a DÉJÀ toute la plomberie auth+idempotency — le câblage loyalty web est plus petit que prévu, mais loyalty-v2.jsx part de zéro (100% hardcodé)",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 142,
+   "evidence": "api.js:6-7 « Auth : guest-signup OTP → token Sanctum kiosk:order (30 j) stocké en localStorage. Headers : X-API-Key + Authorization: Bearer + X-Idempotency-Key » ; guestOtp/guestVerify (lignes 142-148), req({auth:true}) (ligne 119). En face, loyalty-v2.jsx n'a AUCUN appel API/fetch/localStorage (grep vide) et affiche un profil fictif en dur.",
+   "recommendation": "W3 : étendre api.js avec loyaltyBalance/loyaltyHistory/loyaltyQr/loyaltyConfig (mêmes patterns req) plutôt que créer un client séparé ; puis remplacer les données hardcodées de loyalty-v2.jsx. L'écart réel est dans la VUE, pas dans la couche réseau."
+  }
+ ],
+ "facts": [
+  "ORDRE À CHANGER : W5 (couche backend loyalty) n'est pas « seulement si gaps » — le gap rewards est CERTAIN (aucune route /loyalty/rewards, grep routes/*.php = 0 ; mobile/data/loyalty.js:102 le documente). Trancher option A (UI points→€) ou B (endpoint rewards) AVANT de lancer W3/W4.",
+  "Endpoints loyalty réellement disponibles pour un token client Sanctum (routes/api.php:1444-1477) : POST /loyalty/check (auth+throttle 10/1), POST /loyalty/register (public, 5/1), GET /loyalty/config (public), GET /loyalty/balance + /history + POST /qr (throttle 30/1) + /add-points + /redeem (idempotency) dans le groupe auth:sanctum:1451. POST /loyalty/scan (routes/api.php:1521) est borne-only (tokenCan('kiosk:order') + row KioskMachine, LoyaltyController.php:649) — web/mobile AFFICHENT le QR, le scan/redeem se fait à la borne/caisse.",
+  "balance() == check() (LoyaltyController.php:411-414) : exige param `code` (loyalty_code OU téléphone) et ne répond que pour le compte du caller (gate IDOR lignes ~89-97). Les clients doivent persister leur loyalty_code (retourné par /register et par generateQr) — pas le reconstruire.",
+  "QR : rendu local sans CDN déjà possible — /Users/1millnonstop/Downloads/web/vendor/qrcode.js et testttt/mobile/vendor/qrcode.js existent tous les deux. Token signé lqr.* TTL 300s + leeway 30s (config/loyalty.php), legacy plaintext refusé par défaut → UX = mint-on-display avec re-mint <5 min, PAS de QR wallet persistant offline.",
+  "Auth web déjà en place : /Users/1millnonstop/Downloads/web/api.js:142-148 guestOtp/guestVerify → POST /api/auth/guest-signup/{otp,verify} → token Sanctum ability kiosk:order 30j (GuestSignupController.php:146), stocké localStorage 'lecayenne.authToken' (api.js:97). W3 réutilise ça tel quel.",
+  "OTP SMS : OtpManagerService.php:57 dispatch SendSmsCode ; SendSmsCodeNotification.php:34 n'envoie QUE si la gateway SMS est active, sinon no-op silencieux — prévoir récupération du code côté serveur (DB/log) pour les e2e W6 et documenter le mode simulé V1.",
+  "Fixture catalog-canonical.json : data.items[42], data.categories[9], MAIS composer_profile présent sur 2 items seulement (Bol Frites, Bol Riz) ; la composition des sandwichs/tacos/burgers est dans itemAttributes (ids 5,6...) + variations (ids numériques 281...) + extras (group_label 'crudite') + addons (role 'menu_component'). Tout script de parité doit matcher PAR NOM (pattern déjà utilisé par le wireup web, cf. commentaire BOL_SAUCES de menu.js).",
+  "menu.js web (527 lignes) et mobile (551 lignes) sont des couches artisanales aux ids slugs consommés par le code app — livrable W3/W4 correct = script de parité fixture↔menu.js (noms+prix+pools) + patchs chirurgicaux, PAS une régénération totale.",
+  "Stripe : guard backend actif et gate non clearée (config/payment.php:49-56, 'Option B - Stripe inactive prod V1') — le flag OFF client est la seule approche compatible ; aucun code serveur Stripe à ajouter en W3/W4/W5.",
+  "Frozen zones du plan confirmées exactes (CLAUDE.md §7) ; routes/api.php et app/Http/Controllers/Frontend/LoyaltyController.php ne sont PAS frozen — les ajouts W5 y sont autorisés (garder les patterns existants : throttle + idempotency middleware sur tout POST mutateur)."
+ ]
+}

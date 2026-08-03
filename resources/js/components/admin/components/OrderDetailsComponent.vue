@@ -51,7 +51,7 @@
                         <li class="flex items-center gap-2">
                             <span class="capitalize text-sm leading-6">{{ $t("label.method") }}:</span>
                             <span v-if="order.transaction" class="capitalize text-sm leading-6 text-heading">
-                                {{ order.transaction.payment_method }} ({{ order.transaction.transaction_no }})
+                                {{ paymentMethodLabel(order.transaction.payment_method) }} ({{ order.transaction.transaction_no }})
                             </span>
                             <span v-else class="capitalize text-sm leading-6 text-heading">
                                 {{ enums.paymentTypeEnumArray[order.payment_method] }}
@@ -158,9 +158,11 @@ import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import paymentTypeEnum from "../../../enums/modules/paymentTypeEnum";
 import OrderStatusComponent from "./OrderStatusComponent";
+import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "OrderDetailsComponent",
+    mixins: [paymentMethodLabelMixin],
     components: { LoadingComponent, OrderStatusComponent },
     props: {
         order: Object,

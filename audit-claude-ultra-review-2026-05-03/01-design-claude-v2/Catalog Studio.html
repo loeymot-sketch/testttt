@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>FoodKing — Catalog Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  html, body { margin: 0; background: #eef0f4; font-family: 'Inter', system-ui, sans-serif; color: var(--studio-ink); }
+  code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="studio-data.jsx"></script>
+<script type="text/babel" src="studio-screen1.jsx"></script>
+<script type="text/babel" src="studio-screen2.jsx"></script>
+<script type="text/babel" src="studio-screen3.jsx"></script>
+<script type="text/babel" src="studio-extras.jsx"></script>
+<script type="text/babel" src="studio-iter1.jsx"></script>
+<script type="text/babel" src="studio-iter2.jsx"></script>
+<script type="text/babel" src="studio-iter3.jsx"></script>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { DesignCanvas, DCSection, DCArtboard } = window;
+
+const Readme = () => (
+  <div className="studio" style={{
+    width: 1240, height: 1100, background: "var(--studio-canvas)",
+    padding: 32, fontFamily: "var(--studio-font)", overflow: "auto",
+  }}>
+    <div style={{ marginBottom: 18 }}>
+      <span className="studio-eyebrow">Handoff</span>
+      <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 800, letterSpacing: -0.4 }}>
+        Catalog Studio — README
+      </h1>
+      <p style={{ margin: "6px 0 0", color: "var(--studio-ink-soft)", fontSize: 13.5, maxWidth: 820 }}>
+        Mapping écran → composant Vue + notes a11y. Le design étend strictement les tokens
+        <code> cv1-tokens.css</code> et la marque kiosk (<code>#E8001C</code>). Aucune
+        couleur inventée. Aucun token redéfini — uniquement des additions dans <code>tokens.css</code>.
+      </p>
+    </div>
+
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      {[
+        { n: 1, title: "Catalog Studio Home",
+          file: "resources/js/components/admin/items/CatalogStudioComponent.vue",
+          notes: ["Layout 3 zones (rail catégories 280px · grille produits flex · inspecteur 360px collapsible).",
+                  "Branch scope visible en permanence dans la TopBar (data boundary stricte).",
+                  "Sticky CTA \"Publier les modifications\" quand draft_count > 0."] },
+        { n: 2, title: "Quick Create (inline)",
+          file: "Inline dans CatalogStudioComponent.vue — composant <CatalogQuickCreate />",
+          notes: ["Jamais en modal. 2 étapes inline · création en brouillon → ouvre l'inspecteur Wizard.",
+                  "Prix TTC seulement — TVA est un preset (pas de calcul client).",
+                  "Templates pré-câblés sur ComposerTemplateService::resolve($templateId)."] },
+        { n: 3, title: "Wizard Editor",
+          file: "ProductComposerEditorComponent.vue + ComposerStepListSidebar.vue + StepEditorComponent.vue",
+          notes: ["3 colonnes : steps list · step editor · live preview (POS top, Kiosk bottom).",
+                  "Source-type segmenté → swap du picker (jamais de saisie JSON libre).",
+                  "Preview synchronisée 500ms après dernière édition · version badge Draft/Published.",
+                  "Drag-reorder ARIA grid · Home/End/PageUp/PageDown supportés."] },
+        { n: 4, title: "Publish Diff Modal",
+          file: "ComposerPublishDiffModal.vue (nouveau)",
+          notes: ["Side-by-side v3 vs v4. Couleurs : add (--studio-diff-add-*), rem, mod.",
+                  "Checkbox \"J'ai vérifié le diff\" obligatoire pour activer Publier.",
+                  "Dispatch ComposerProfileChanged après succès serveur uniquement.",
+                  "AAA contrast sur le bouton Publier — chemin critique."] },
+        { n: 5, title: "Stock Health (side panel)",
+          file: "StockRuptureDashboardComponent.vue (réutilisé en side-panel) + AvailabilityToggleComponent.vue",
+          notes: ["Inline sur ProductCard : toggle + chip raison (out_of_stock / paused / scheduled_off).",
+                  "Side panel : KPIs · Auto-86 résolvables · Stock bas · Dernier scan.",
+                  "Aucune édition de mouvements de stock ici — view + 1-clic resolve seulement."] },
+        { n: 6, title: "States (empty / loading / error)",
+          file: "Sous-composants partagés dans tous les écrans ci-dessus",
+          notes: ["Empty : icône + 1 ligne d'aide + 1 CTA primaire (60s onboarding).",
+                  "Loading : skeletons shimmer (animation neutralisée par prefers-reduced-motion).",
+                  "Error : action de recovery explicite (Réessayer · Changer de filiale · Ticket)."] },
+      ].map(s => (
+        <div key={s.n} className="studio-card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{
+              width: 28, height: 28, borderRadius: 8, background: "var(--cv1-surface-strong)",
+              color: "#fff", fontSize: 13, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>{s.n}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{s.title}</div>
+              <code style={{ color: "var(--studio-ink-mute)" }}>{s.file}</code>
+            </div>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: "var(--studio-ink-soft)", display: "flex", flexDirection: "column", gap: 4 }}>
+            {s.notes.map((n, i) => <li key={i}>{n}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+
+    <div className="studio-card" style={{ padding: 16, marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <span className="studio-eyebrow">Tokens delta — additions seules</span>
+      <p style={{ margin: 0, fontSize: 12.5, color: "var(--studio-ink-soft)" }}>
+        À ajouter dans <code>resources/css/foundations/cv1-tokens.css</code> (préfixe <code>--studio-*</code>).
+        Aucun token CV1 existant n'est touché.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        {[
+          ["--studio-canvas",        "#f6f7f9"],
+          ["--studio-line",          "#e6eaf0"],
+          ["--studio-pill-active-*", "#ecfdf5 / #047857"],
+          ["--studio-pill-draft-*",  "#fef3c7 / #92400e"],
+          ["--studio-pill-86-*",     "#fff1f2 / #9f1239"],
+          ["--studio-src-attr-*",    "#eef2ff / #3730a3"],
+          ["--studio-src-extra-*",   "#ecfeff / #155e75"],
+          ["--studio-src-addon-*",   "#fdf4ff / #86198f"],
+          ["--studio-ch-pos-*",      "#0f172a / #fff"],
+          ["--studio-ch-kiosk-*",    "var(--fk-red) / #fff"],
+          ["--studio-diff-add/rem/mod-*", "tonal pairs"],
+          ["--studio-elev-1/2",      "shadows discrets"],
+        ].map(([k, v]) => (
+          <div key={k} style={{ padding: 8, border: "1px solid var(--studio-line)", borderRadius: 8 }}>
+            <code style={{ fontSize: 10.5, color: "var(--studio-ink)" }}>{k}</code>
+            <div style={{ fontSize: 10.5, color: "var(--studio-ink-mute)", marginTop: 2 }}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="studio-card" style={{ padding: 16, marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+      <span className="studio-eyebrow">Accessibilité — rappels par écran</span>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: "var(--studio-ink-soft)", display: "flex", flexDirection: "column", gap: 4 }}>
+        <li><strong>Focus ring</strong> 3px var(--cv1-focus-ring-color) sur tout élément interactif · offset 2px.</li>
+        <li><strong>Landmarks</strong> : <code>&lt;header&gt;</code> top · <code>&lt;nav&gt;</code> rail catégories · <code>&lt;main&gt;</code> grille · <code>&lt;aside&gt;</code> inspector / stock health.</li>
+        <li><strong>Keyboard</strong> : Tab traverse rail → toolbar → cards → inspector. Drag-reorder accessible via Space + ArrowUp/ArrowDown (ARIA grid).</li>
+        <li><strong>Reduced-motion</strong> : <code>prefers-reduced-motion: reduce</code> coupe shimmer + transitions (cf. tokens.css).</li>
+        <li><strong>Contraste AAA</strong> sur Publier · Supprimer · Toggle disponibilité (chemins critiques).</li>
+        <li><strong>Toasts</strong> mappés aux tokens cv1-status-info / warning / blocker · live region <code>aria-live="polite"</code>.</li>
+      </ul>
+    </div>
+  </div>
+);
+
+const App = () => (
+  <DesignCanvas title="FoodKing · Catalog Studio" subtitle="Hi-fi · CV1 + brand kiosk · 6 écrans + composants">
+    <DCSection id="overview" title="Overview" subtitle="Handoff README + tokens + a11y">
+      <DCArtboard id="readme" label="Mapping écran → fichier .vue" width={1240} height={1100}>
+        <Readme />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="screen1" title="Screen 1 · Catalog Studio Home" subtitle="CatalogStudioComponent.vue · default state">
+      <DCArtboard id="s1-default" label="Default · catégorie sélectionnée" width={1440} height={900}>
+        <Studio1 state="default" />
+      </DCArtboard>
+      <DCArtboard id="s1-selected" label="Produit sélectionné · inspecteur Wizard" width={1440} height={900}>
+        <Studio1 state="selected" />
+      </DCArtboard>
+      <DCArtboard id="s1-quickcreate" label="Quick-create inline (tile dans la grille)" width={1440} height={900}>
+        <Studio1 state="quickcreate" />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="screen2" title="Screen 2 · Quick Create (expanded)" subtitle="Inline dans CatalogStudioComponent — jamais en modal">
+      <DCArtboard id="s2-step1" label="Étape 1 · Identité" width={1180} height={760}>
+        <Studio2 step={1} />
+      </DCArtboard>
+      <DCArtboard id="s2-step2" label="Étape 2 · Tarif & template" width={1180} height={760}>
+        <Studio2 step={2} />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="screen3" title="Screen 3 · Wizard Editor" subtitle="Tacos profile · 6 étapes préremplies · POS + Kiosk previews">
+      <DCArtboard id="s3-viande" label="Étape ‘viande’ focus · POS dense + Kiosk multi-pages" width={1440} height={900}>
+        <Studio3 focusedStepId={2} />
+      </DCArtboard>
+      <DCArtboard id="s3-sauce" label="Étape ‘sauce’ focus · min 1 max 2" width={1440} height={900}>
+        <Studio3 focusedStepId={3} />
+      </DCArtboard>
+      <DCArtboard id="s3-boisson" label="Étape ‘boisson’ focus · addon · stockable" width={1440} height={900}>
+        <Studio3 focusedStepId={6} />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="screen4" title="Screen 4 · Publish Diff Modal" subtitle="ComposerPublishDiffModal.vue (nouveau)">
+      <DCArtboard id="s4-diff" label="Diff v3 → v4 · 2 ajouts · 1 modif" width={1200} height={760}>
+        <Studio4 />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="screen5" title="Screen 5 · Stock Health" subtitle="Inline toggle + side-panel détaillé">
+      <DCArtboard id="s5-panel" label="Side-panel ‘Santé du stock’" width={420} height={900}>
+        <Studio5 />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="screen6" title="Screen 6 · States" subtitle="Empty · Loading · Error — partagés inter-écrans">
+      <DCArtboard id="s6-states" label="Trois états canoniques" width={1180} height={600}>
+        <Studio6 />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="iter1" title="Iter 1 · Edge cases (1–5)" subtitle="Drag-reorder · Branch overrides · Image upload · Diff cases · Conflict banner">
+      <DCArtboard id="i1-drag" label="① Drag & drop reorder · keyboard + ARIA + toast undo" width={1180} height={720}>
+        <Iter1Drag />
+      </DCArtboard>
+      <DCArtboard id="i1-branch" label="② Inspecteur · onglet Disponibilité par filiale" width={420} height={760}>
+        <Iter2Branch />
+      </DCArtboard>
+      <DCArtboard id="i1-upload" label="③ Image upload — idle / drag / uploading / success / error / fallback" width={1180} height={580}>
+        <Iter3Upload />
+      </DCArtboard>
+      <DCArtboard id="i1-diff" label="④ Diff modal — cas couverts + cas concret + état conflict" width={1180} height={760}>
+        <Iter4DiffCases />
+      </DCArtboard>
+      <DCArtboard id="i1-conflict" label="⑤ Conflict banner — TopBar Wizard avec Publier désactivé" width={1440} height={200}>
+        <Iter5Conflict />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="iter2" title="Iter 2 · Robustness (6–12)" subtitle="Source picker · Auto-save · States · Toasts · Perms · Resolve · Search">
+      <DCArtboard id="i2-source-picker" label="⑥ Source picker · create-on-the-fly side-sheet" width={1180} height={700}>
+        <Iter6SourcePicker />
+      </DCArtboard>
+      <DCArtboard id="i2-autosave" label="⑦ Auto-save · 5 états (idle · saving · saved · error · offline)" width={1180} height={320}>
+        <Iter7AutoSave />
+      </DCArtboard>
+      <DCArtboard id="i2-states" label="⑧ Empty / Loading / Error · per écran + no-permission" width={1180} height={920}>
+        <Iter8States />
+      </DCArtboard>
+      <DCArtboard id="i2-toasts" label="⑨ Toast micro-system · stack bottom-right" width={1180} height={620}>
+        <Iter9Toasts />
+      </DCArtboard>
+      <DCArtboard id="i2-perms" label="⑩ Permission matrix · 3 rôles × 9 actions" width={1180} height={460}>
+        <Iter10Perms />
+      </DCArtboard>
+      <DCArtboard id="i2-resolve" label="⑪ Stock resolve · inline confirm + undo toast" width={420} height={760}>
+        <Iter11Resolve />
+      </DCArtboard>
+      <DCArtboard id="i2-search" label="⑫ Search · live results highlighted + no-results" width={1180} height={480}>
+        <Iter12Search />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="iter3" title="Iter 3 · Polish (13–18)" subtitle="Shortcuts · 1280 · RTL · Onboarding · Photos · Micro-motion + README v2">
+      <DCArtboard id="i3-shortcuts" label="⑬ Cmd+/ cheatsheet · 4 contextes" width={1180} height={720}>
+        <Iter13Shortcuts />
+      </DCArtboard>
+      <DCArtboard id="i3-1280" label="⑭ Responsive 1280px · rail collapsed + inspector overlay" width={1280} height={800}>
+        <Iter14Responsive1280 />
+      </DCArtboard>
+      <DCArtboard id="i3-rtl" label="⑮ RTL Arabe · chevrons flippés · POS/Kiosk LTR" width={1280} height={800}>
+        <Iter15RTL />
+      </DCArtboard>
+      <DCArtboard id="i3-onboarding" label="⑯ Onboarding tour · 4 tooltips + checklist sticky" width={1280} height={800}>
+        <Iter16Onboarding />
+      </DCArtboard>
+      <DCArtboard id="i3-photos" label="⑰ Photos guidance · spec + fallback ladder" width={1180} height={560}>
+        <Iter17Photos />
+      </DCArtboard>
+      <DCArtboard id="i3-micro" label="⑱ Micro-interactions × reduced-motion" width={1180} height={540}>
+        <Iter18Micro />
+      </DCArtboard>
+      <DCArtboard id="i3-readme" label="README v2 · récap des 18 améliorations" width={1240} height={1100}>
+        <Iter3Readme />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="components" title="Component sheet" subtitle="Atomes du Studio · tous les états">
+      <DCArtboard id="comp-sheet" label="ProductCard · StockToggle · WizardStepRow · Pill / Chip · Btn · DiffStat · VisibleOnSelector · HealthCard" width={1240} height={1340}>
+        <ComponentSheet />
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

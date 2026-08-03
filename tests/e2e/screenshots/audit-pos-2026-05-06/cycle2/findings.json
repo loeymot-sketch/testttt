@@ -1,0 +1,200 @@
+[
+  {
+    "step": "C2-01",
+    "slug": "categories-total",
+    "state": "detected",
+    "severity": "INFO",
+    "note": "15 catégories détectées",
+    "screenshot": "",
+    "ts": "2026-05-06T14:39:17.548Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-0",
+    "state": "cat-0",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 64 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-0-cat-0-filtered.png",
+    "ts": "2026-05-06T14:39:18.366Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-1",
+    "state": "cat-1",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 4 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-1-cat-1-filtered.png",
+    "ts": "2026-05-06T14:39:19.152Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-2",
+    "state": "cat-2",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 8 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-2-cat-2-filtered.png",
+    "ts": "2026-05-06T14:39:19.932Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-3",
+    "state": "cat-3",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 6 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-3-cat-3-filtered.png",
+    "ts": "2026-05-06T14:39:20.713Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-4",
+    "state": "cat-4",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 4 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-4-cat-4-filtered.png",
+    "ts": "2026-05-06T14:39:21.493Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-5",
+    "state": "cat-5",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 4 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-5-cat-5-filtered.png",
+    "ts": "2026-05-06T14:39:22.269Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-6",
+    "state": "cat-6",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 3 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-6-cat-6-filtered.png",
+    "ts": "2026-05-06T14:39:23.050Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-7",
+    "state": "cat-7",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 4 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-7-cat-7-filtered.png",
+    "ts": "2026-05-06T14:39:23.844Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-8",
+    "state": "cat-8",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 4 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-8-cat-8-filtered.png",
+    "ts": "2026-05-06T14:39:24.629Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-9",
+    "state": "cat-9",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 2 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-9-cat-9-filtered.png",
+    "ts": "2026-05-06T14:39:25.400Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-10",
+    "state": "cat-10",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 5 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-10-cat-10-filtered.png",
+    "ts": "2026-05-06T14:39:26.191Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-11",
+    "state": "cat-11",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 3 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-11-cat-11-filtered.png",
+    "ts": "2026-05-06T14:39:26.974Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-12",
+    "state": "cat-12",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 8 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-12-cat-12-filtered.png",
+    "ts": "2026-05-06T14:39:27.783Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-13",
+    "state": "cat-13",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 8 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-13-cat-13-filtered.png",
+    "ts": "2026-05-06T14:39:28.554Z"
+  },
+  {
+    "step": "C2-01",
+    "slug": "cat-14",
+    "state": "cat-14",
+    "severity": "OK",
+    "note": "Catégorie \"\" → 1 produits",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-01-cat-14-cat-14-filtered.png",
+    "ts": "2026-05-06T14:39:29.321Z"
+  },
+  {
+    "step": "C2-02",
+    "slug": "simple-item",
+    "state": "wizard-opened-unexpected",
+    "severity": "P2",
+    "note": "Item \"Frites Seules\" a déclenché un wizard — n'était pas vraiment simple. Fermer et passer suite",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-02-simple-item-wizard-opened-unexpected.png",
+    "ts": "2026-05-06T14:39:39.465Z"
+  },
+  {
+    "step": "C2-03",
+    "slug": "cart-after-add",
+    "state": "state",
+    "severity": "P2",
+    "note": "Cart chip=\"Articles\n0\", bouton paiement visible=false",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-03-cart-state-after-add.png",
+    "ts": "2026-05-06T14:39:50.539Z"
+  },
+  {
+    "step": "C2-03",
+    "slug": "pos-api-calls",
+    "state": "count",
+    "severity": "INFO",
+    "note": "0 appel(s) POS API capturés",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-03-cart-state-after-add.png",
+    "ts": "2026-05-06T14:39:50.540Z"
+  },
+  {
+    "step": "C2-04",
+    "slug": "parked-fr",
+    "state": "visible",
+    "severity": "OK",
+    "note": "2 bouton(s) park (FR + EN) trouvé(s)",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-04-parked-fr-visible.png",
+    "ts": "2026-05-06T14:39:59.169Z"
+  },
+  {
+    "step": "C2-04",
+    "slug": "parked-list",
+    "state": "opened",
+    "severity": "OK",
+    "note": "Liste commandes en attente ouverte",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-04-parked-list-opened.png",
+    "ts": "2026-05-06T14:40:00.324Z"
+  },
+  {
+    "step": "C2-05",
+    "slug": "tracker",
+    "state": "opened",
+    "severity": "OK",
+    "note": "Vue tracker ouverte",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle2/C2-05-tracker-opened.png",
+    "ts": "2026-05-06T14:40:10.117Z"
+  }
+]

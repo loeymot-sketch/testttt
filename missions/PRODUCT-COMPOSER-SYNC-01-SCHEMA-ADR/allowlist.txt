@@ -1,0 +1,17 @@
+docs/decisions/D-PRODUCT-COMPOSER-SCHEMA-2026-04-27.md
+docs/gates/GATE_PRODUCT_COMPOSER_SCHEMA_2026-04-27.md
+docs/gates/GATE_STOCK_STOCKABLE_SCOPE_2026-04-27.md
+database/migrations/*create_item_wizard_profiles_table.php
+database/migrations/*create_item_wizard_steps_table.php
+database/migrations/*create_stock_levels_table.php
+database/migrations/*create_stock_movements_table.php
+app/Models/ItemWizardProfile.php
+app/Models/ItemWizardStep.php
+app/Models/StockLevel.php
+app/Models/StockMovement.php
+tests/Feature/Catalog/ProductComposerSchemaSentinelTest.php
+tests/Feature/Stock/StockableStockSchemaSentinelTest.php
+missions/PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR/input.json
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR.md

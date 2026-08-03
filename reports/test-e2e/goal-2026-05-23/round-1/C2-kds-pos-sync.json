@@ -1,0 +1,230 @@
+{
+  "agent": "SYNC CHAIN AGENT C2",
+  "scope": "KDS → POS sync chain (Prêt-à-livrer panel Q10)",
+  "url_from": "/kds (bump source)",
+  "url_to": "/admin/pos (Prêt-à-livrer panel)",
+  "round": 1,
+  "phase": "B.2",
+  "goal": "goal-2026-05-23",
+  "audit_session": "C2 empirical sync-chain ΔT measurement post Wave Polish Final 2026-05-21",
+  "auditor_environment": {
+    "playwright_viewport": "1280x800 css px (default)",
+    "browser": "chromium via mcp__playwright",
+    "auth": "admin@lecayenne.fr session via Vue SPA login (Sanctum cookie-based)",
+    "server": "127.0.0.1:8000 (php artisan serve)",
+    "queue_driver": "redis (worker PID 94551 active, single worker)",
+    "broadcast_driver": "pusher → soketi 127.0.0.1:6001 (running, HTTP 200)",
+    "test_order": "id=425 type=10 (TAKEAWAY) status=7→8 source=2 (KIOSK) queue=833 is_advance=10 (Ask::NO)",
+    "branch_id": 1
+  },
+  "captures": [
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/C2-pos-ready-panel-with-order-425.jpeg",
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/C2-pos-ready-panel-final-state.jpeg"
+  ],
+  "verifications": {
+    "V2.1_happy_path_empirical_dT": {
+      "method": "Seed order PREPARING (status=7) via tinker → arm DOM-poll watcher every 100ms on [data-testid=pos-shortcut-ready-425] → bump to PREPARED (status=8) + event(OrderStatusChanged) → measure ms from bump_wall to first DOM appearance",
+      "target_max_ms": 5000,
+      "wave_polish_reference": "4916ms (Wave B s2_kds_bump_to_pos_shortcut_ms, 2026-05-21)",
+      "run1_dT_ms": 16771,
+      "run2_dT_ms": 32036,
+      "verdict": "FAIL",
+      "pass": false,
+      "regression_vs_wave_polish_factor_x": 3.4,
+      "raw_evidence": {
+        "run1_watcher_arm_wall": 1779547267171,
+        "run1_bump_wall": 1779547274402,
+        "run1_event_dispatch_wall": 1779547274432,
+        "run1_watcher_caught_at_wall": 1779547291173,
+        "run1_caught_text": "N°8332,50 €✓ Livré",
+        "run2_watcher_arm_wall": 1779547493631,
+        "run2_bump_wall": 1779547499196,
+        "run2_event_dispatch_wall": 1779547499235,
+        "run2_watcher_caught_at_wall": 1779547531232,
+        "run2_caught_text": "N°8332,50 €✓ Livré"
+      },
+      "root_cause_analysis": "POS panel NEVER receives Echo OrderStatusChanged broadcast — manual subscription to private-branch.1 from Playwright context also received 0 events post-bump despite queue worker draining the DispatchDomainEventsJob and Soketi being HTTP-reachable. Panel relies SOLELY on polling fallback (60 s cadence when _kioskPollingInterval() reports Echo connected). Run 1 caught the bump mid-poll-cycle (~17 s into a 60 s window); Run 2 caught it 32 s into the next window. Average ~24 s. Manual probe `_eventSub` on PosComponent at runtime returned undefined (Vue 3 internals partially scoped), but DOM-level evidence + zero echo events received on private-branch.1 + post-mount console warning `WebSocket connection to ws://127.0.0.1:6001/app/app-key failed: WebSocket is closed before the connection is established` + CSP report-only warning `Connecting to 'http://localhost:8000/api/broadcasting/auth' violates connect-src directive` confirms the Echo path is non-functional from /admin/pos despite pusher.connection.state==='connected'."
+    },
+    "V2.2_last_refresh_ticker_alive": {
+      "method": "Read [data-testid=pos-shortcuts-ready-refresh] textContent over multiple intervals; verify monotone-incrementing or 'à l'instant' transitions",
+      "target": "ticker re-renders every ≤6s",
+      "code_static": {
+        "ticker_interval_ms": 5000,
+        "ticker_setInterval_at": "resources/js/components/admin/pos/PosComponent.vue:2142",
+        "ticker_var": "_shortcutsRefreshTicker",
+        "label_computed": "readyLastRefreshLabel (resources/js/components/admin/pos/PosComponent.vue:1686)",
+        "label_template_anchor": "resources/js/components/admin/pos/PosComponent.vue:331 (v-if='readyLastRefreshLabel')",
+        "note_vs_brief": "Brief says 6s — actual ticker is 5s. Within tolerance, but documented for accuracy."
+      },
+      "empirical_evidence": [
+        "Mis à jour il y a 24s (t+24s after first arm)",
+        "Mis à jour il y a 29s (t+29s after first arm — +5s tick)",
+        "Mis à jour à l'instant (post-bump-refresh, after panel filled)",
+        "Mis à jour à l'instant (run2 post-refresh)"
+      ],
+      "verdict": "GREEN",
+      "pass": true
+    },
+    "V2.3_empty_state_honest_Q10": {
+      "method": "Probe DOM at empty state: panel rendered? italic empty copy visible? data-testid stable?",
+      "target": "panel always rendered even when 0 orders PREPARED; italic empty copy + last-refresh label visible",
+      "code_static": {
+        "always_render_anchor": "resources/js/components/admin/pos/PosComponent.vue:272-333 — section.pos-shortcuts__panel--ready with :class='{ pos-shortcuts__panel--empty: readyOrders.length === 0 }' (always renders)",
+        "empty_state_anchor": "PosComponent.vue:309-315 <p v-else class='pos-shortcuts__empty' data-testid='pos-shortcuts-ready-empty'>{{ $t('label.pos_shortcut_ready_empty') }}</p>",
+        "wave_polish_commit": "08c3faaee — feat(pos-shortcuts Q10): always-render panels with empty-state + last-refresh timestamp"
+      },
+      "empirical_evidence": {
+        "panel_exists_at_empty": true,
+        "empty_text_at_empty": "Aucune commande prête à livrer pour le moment.",
+        "panel_class_at_empty": "pos-shortcuts__panel pos-shortcuts__panel--ready pos-shortcuts__panel--empty",
+        "refresh_label_at_empty": "Mis à jour il y a 24s",
+        "panel_class_when_filled": "pos-shortcuts__panel pos-shortcuts__panel--ready",
+        "transition_post_deliver": "panel reverts to --empty + 'Aucune commande prête à livrer pour le moment.' instantly"
+      },
+      "verdict": "GREEN",
+      "pass": true
+    },
+    "V2.4_echo_channel_plus_polling_fallback": {
+      "method": "Inspect window.Echo.connector.channels at runtime; manual private(`branch.${branchId}`).listen('.OrderStatusChanged') + bump 1 order; observe whether listener fires",
+      "target": "KDS bump broadcasts via OrderStatusChanged → POS subscribes on private-branch.{id}; polling fallback ≤5s if Echo down",
+      "code_static": {
+        "echo_subscribe_anchor": "PosComponent.vue:2625-2684 _subscribeEcho() with onEvents(branchId, [{ broadcastAs: 'OrderStatusChanged', handler: () => loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders }, ...])",
+        "channel_name_pattern": "private-branch.{branchId} (resources/js/services/eventContract.js:337-338)",
+        "broadcast_map": "BROADCAST_MAP['OrderStatusChanged'] => EventType::ORDER_STATUS_CHANGED (app/Domain/Events/EventContract.php:36)",
+        "polling_cadence_anchor": "PosComponent.vue:2602-2604 _kioskPollingInterval() returns 60000 ms when window._wsService?.isConnected() else 5000 ms",
+        "outbox_chain": "OrderStatusChanged plain event → PersistOrderStatusChangedToOutbox listener writes DomainEvent row + afterCommit hook → DispatchDomainEventsJob queued (redis) → broadcasts to private-branch.{id} via Soketi"
+      },
+      "empirical_evidence": {
+        "echo_present": true,
+        "pusher_state": "connected",
+        "ws_isConnected": true,
+        "channels_pos_subscribed_to_at_observation": [],
+        "channels_pos_subscribed_to_after_manual_test_subscribe": ["private-branch.1"],
+        "events_received_on_manual_subscription_after_2_bumps": 0,
+        "console_warning_1": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established. @ vendor.js:1661",
+        "console_warning_2": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken. @ pos-wizard.js",
+        "console_info": "[PosSyncService] fallback polling disabled. @ pos-shell.js:17081",
+        "polling_fallback_actual_dT_avg_ms": 24403,
+        "polling_fallback_target_max_ms": 5000
+      },
+      "verdict": "FAIL",
+      "pass": false,
+      "summary": "Echo path is broken from /admin/pos despite pusher.connection.state='connected'. POS does not auto-subscribe to private-branch.{id} (channels_pos_subscribed_to_at_observation === []). Manual subscription also receives 0 events post-bump. Polling fallback runs at the 60 s slow cadence (Echo declared connected per _wsService.isConnected() so the 5 s burst cadence is disabled). Empirical ΔT 16.7 s and 32.0 s confirm polling-only path with average ~24 s, far above the 5 s target."
+    },
+    "V2.5_order_cleared_on_pos_livré_click": {
+      "method": "Click [data-testid=pos-shortcut-deliver-{id}] → measure ms until row disappears from POS DOM",
+      "target": "row vanishes immediately on POS (<500 ms); KDS Historique drawer reflects DELIVERED",
+      "code_static": {
+        "deliver_handler_anchor": "PosComponent.vue:3095-3119 markDelivered(order) → $store.dispatch('posOrder/changeStatus', { id, status: DELIVERED }) → await loadReadyOrders() → await loadActiveOrdersStats() → success toast",
+        "idempotency": "Idempotency-Key built per (orderId, status) per CLAUDE.md §9; double-tap within minute replays cached 2xx"
+      },
+      "empirical_evidence": {
+        "dt_row_cleared_ms": 166,
+        "panel_state_after_click": "pos-shortcuts__panel pos-shortcuts__panel--ready pos-shortcuts__panel--empty",
+        "empty_state_visible_after_click": true,
+        "post_deliver_status_in_db": 13
+      },
+      "verdict": "GREEN",
+      "pass": true,
+      "note": "KDS Historique drawer side not empirically verified (single tab session) — DB post-state confirms status=13 (DELIVERED). KDS surface impact is V2.5 sister concern but is owned by Wave T (caisse-to-delivered) and KDS Historique commit 93fd8e797."
+    }
+  },
+  "findings": [
+    {
+      "id": "C2-T-001",
+      "lens": "T",
+      "severity": "P1",
+      "category": "technical_sync",
+      "title": "KDS→POS sync ΔT degraded — 16.7-32.0 s vs Wave Polish 4.9 s target (3-7x regression)",
+      "evidence_file_line": "resources/js/components/admin/pos/PosComponent.vue:2602-2604 _kioskPollingInterval() returns 60000 ms when window._wsService?.isConnected() is true. POS-side Echo subscription not effective: window.Echo.connector.channels === [] at /admin/pos runtime observation, indicating PosComponent._subscribeEcho() either failed silently or _eventSub never bound. Manual subscription to private-branch.1 from Playwright context also received 0 events post-bump despite queue worker draining and Soketi reachable.",
+      "evidence_runtime_burst": {
+        "run1_dT_ms": 16771,
+        "run2_dT_ms": 32036,
+        "average_dT_ms": 24403,
+        "target_max_ms": 5000,
+        "wave_polish_reference_ms": 4916
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/round-1/captures/C2-pos-ready-panel-with-order-425.jpeg",
+      "personas_impacted": ["cashier-multitask", "client-impatient"],
+      "persona_impact_detail": "Cashier-multitask: an order bumped to PREPARED on KDS takes up to 60 s to appear in the POS Prêt-à-livrer shortcut (worst case = poll-cycle align). Customer at counter receives no early signal that their order just became ready; cashier instead refreshes manually or relies on the kitchen runner shout. Erodes the 'always-render + ticker' Q10 promise: the panel is always-rendered but the data inside it lags. Client-impatient: same delay reflects on the counter wait time.",
+      "adversarial_dispute_outcome": "kept-and-escalated — Wave Polish Final B-002 caveated multi-tab Echo race but single-tab S2 reported 4.9 s as proof. This C2 audit is single-tab POS (no KDS or OSS open simultaneously) and still measures 16.7-32.0 s. The published 4.9 s figure does not hold on a fresh dev-server + freshly-logged-in admin session. Either Wave Polish B was measured under a different Echo configuration or a transient warm-cache effect that does not replicate here.",
+      "frozen_zone_touch_required": false,
+      "proposal_doc_path": null,
+      "scope_minimal_fix_applied": false,
+      "commit_sha_if_fixed": null,
+      "fix_recommendation": "Three layered fixes, ranked by impact: (1) Make _kioskPollingInterval() return 5000 ms unconditionally when readyOrders.length === 0 OR last successful loadReadyOrders > 30 s ago — so a 'dead Echo' state doesn't penalize the cashier. (2) Investigate why _subscribeEcho()/_eventSub does not show subscribed channel — likely the initial ws-connect failure at vendor.js:1661 puts WsService into an early-failure state but _wsService.isConnected() still returns true after auto-reconnect, leading POS to skip Echo binding while polling at 60 s. (3) Audit the CSP report 'localhost vs 127.0.0.1' broadcasting-auth host mismatch (pos-wizard.js source line says 'localhost'); if the channel auth POST is going to a different origin from the parent page, Sanctum/CSRF token may not attach and channel auth silently 401s.",
+      "defer_decision": "OPEN — V1 ship-blocker if owner reads Wave Polish convergence and expects 4.9 s. Either re-measure Wave Polish proof under same conditions or revise the 4.9 s number in CONVERGENCE_FINAL.md §5 Proof 2 to honest ~24 s polling-fallback figure (which is still acceptable for fast-food per CLAUDE.md but should not be advertised as 'real-time Echo')."
+    },
+    {
+      "id": "C2-T-002",
+      "lens": "T",
+      "severity": "P2",
+      "category": "technical_observability",
+      "title": "Silent Echo subscription failure on POS — no console error, no toast, no health signal",
+      "evidence_file_line": "resources/js/components/admin/pos/PosComponent.vue:2625-2684 _subscribeEcho() — try/catch swallows the error and the comment line 2682 'Echo auth failed or Soketi not running — polling fallback handles it' explicitly accepts silent degradation. resources/js/services/eventContract.js:330-336 onEvents() returns a no-op stub if !window.Echo || branchId<=0 without logging.",
+      "evidence_runtime_burst": {
+        "echo_present": true,
+        "pusher_state": "connected",
+        "pos_subscribed_channels_at_observation": [],
+        "console_warnings_present_but_subtle": [
+          "WebSocket connection to ws://127.0.0.1:6001/app/app-key failed (transient on initial connect)",
+          "Connecting to http://localhost:8000/api/broadcasting/auth violates CSP directive (report-only)"
+        ],
+        "_eventSub_state": "could not introspect via Playwright (Vue 3 internals) — proxy chain inaccessible"
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/round-1/captures/C2-pos-ready-panel-with-order-425.jpeg",
+      "personas_impacted": ["sysadmin"],
+      "persona_impact_detail": "Operator running V1 has no visible indicator that Echo subscription failed. The 'Mis à jour il y a Xs' ticker still increments (5 s ticker runs independently of Echo), giving the cashier false confidence that real-time sync is alive. Q10 was specifically intended to make the calm-period-vs-broken-WebSocket distinction visible — this distinction is broken if Echo is silently degraded.",
+      "adversarial_dispute_outcome": "kept — designed-for-degradation pattern (polling fallback) without an observable signal IS the bug. Q10 last-refresh ticker is data-source-agnostic; it ticks even when Echo died — masking the failure.",
+      "frozen_zone_touch_required": false,
+      "proposal_doc_path": null,
+      "scope_minimal_fix_applied": false,
+      "commit_sha_if_fixed": null,
+      "fix_recommendation": "Add a health-state computed flag to PosComponent: `echoChannelHealthy = !!this._eventSub && window.Echo?.connector?.channels?.[`private-branch.${this.authBranchId()}`]`. Show a discrete badge `WS` (green when healthy, amber when polling-only) near the refresh ticker. Telemetry: emit one client-metric `pos_echo_health` per minute with the flag, so production analytics can detect site-wide Echo regressions before owner notices.",
+      "defer_decision": "V1.0.2 — non-blocking but masks an operational degradation. Should ship before SaaS multi-restaurant rollout."
+    },
+    {
+      "id": "C2-T-003",
+      "lens": "T",
+      "severity": "P3",
+      "category": "documentation_accuracy",
+      "title": "Brief says ticker fires every 6s — actual is 5s (off-by-one, no functional impact)",
+      "evidence_file_line": "resources/js/components/admin/pos/PosComponent.vue:2141-2146 — setInterval cadence is 5000 ms (`this._shortcutsRefreshTicker = setInterval(() => { ... }, 5000)`).",
+      "screenshot": null,
+      "personas_impacted": [],
+      "adversarial_dispute_outcome": "kept as INFO — pure doc drift, not a defect.",
+      "frozen_zone_touch_required": false,
+      "scope_minimal_fix_applied": false,
+      "fix_recommendation": "Update C2 brief / future audit specs to '5s ticker' or 'every ≤6s' wording.",
+      "defer_decision": "INFO — track in audit doc updates, no code change."
+    }
+  ],
+  "summary": {
+    "verifications_total": 5,
+    "verifications_pass": 3,
+    "verifications_fail": 2,
+    "P0": 0,
+    "P1": 1,
+    "P2": 1,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 1,
+    "verdict": "AMBER",
+    "verdict_rationale": "V2.2 (ticker), V2.3 (empty-state honest), V2.5 (Livré click clears row) are GREEN. V2.1 (happy path ΔT) and V2.4 (Echo+polling fallback target) FAIL — measured 16.7-32.0 s vs 4.9 s Wave Polish reference / 5 s target. Root cause: POS Echo subscription does not bind to private-branch.{id} in current dev-server state — relies on 60 s polling. The functionality WORKS (order does appear, Livré clears it, empty-state is honest) — only the LATENCY is off-spec. Acceptable for V1 fast-food per CLAUDE.md (sub-minute is humane) but the Wave Polish CONVERGENCE_FINAL.md 4.9 s proof should be re-measured or revised."
+  },
+  "next_actions_for_main_agent": [
+    "Decide: re-measure Wave Polish §5 Proof 2 (4.9 s) under same Playwright + dev-server conditions, OR revise CONVERGENCE_FINAL.md to honest ~24 s polling figure.",
+    "Investigate why PosComponent _eventSub is not effective — likely WsService isConnected() returns true despite the initial WS-connect failure logged at vendor.js:1661.",
+    "Audit the CSP-flagged 'http://localhost:8000/api/broadcasting/auth' host — should be 127.0.0.1 to match VITE_PUSHER_HOST=127.0.0.1 + the parent page origin.",
+    "Add health-signal badge to /admin/pos near refresh ticker (C2-T-002 fix recommendation)."
+  ],
+  "return_path": "reports/test-e2e/goal-2026-05-23/round-1/C2-kds-pos-sync.json",
+  "return_verdict": "AMBER",
+  "return_delta_t_ms_avg": 24403,
+  "return_delta_t_ms_run1": 16771,
+  "return_delta_t_ms_run2": 32036,
+  "return_target_ms": 5000,
+  "return_wave_polish_reference_ms": 4916
+}

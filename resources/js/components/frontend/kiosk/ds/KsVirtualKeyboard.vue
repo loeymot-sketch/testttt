@@ -22,10 +22,9 @@
       :key="'row-' + rIdx"
       class="ks-vkeyb__row"
     >
-      <button
+      <button type="button"
         v-for="(key, kIdx) in row"
         :key="'k-' + rIdx + '-' + kIdx"
-        type="button"
         class="ks-vkeyb__key"
         :class="[
           key.wide ? 'ks-vkeyb__key--wide' : '',
@@ -34,40 +33,42 @@
         ]"
         :aria-label="key.ariaLabel || key.label"
         :data-testid="'kiosk-vkeyb-key-' + (key.testid || key.label.toLowerCase())"
-        @click="pressKey(key)"
-      >{{ displayLabel(key) }}</button>
+        @click="pressKey(key)">{{ displayLabel(key) }}</button>
     </div>
 
     <!-- Actions globales -->
     <div class="ks-vkeyb__row ks-vkeyb__row--actions">
-      <button
-        type="button"
+      <!-- [F5 heal 2026-06-09] Shift/Maj key. Without it `shift` was permanently
+           false (the rows computed never emits a toggle key), so uppercase + the
+           AR tashkeel layer were unreachable. All other machinery (shift data,
+           ROW_DEFS.*.shift, toggleShift, --active styling, auto-off) already exists. -->
+      <button type="button"
+        class="ks-vkeyb__key ks-vkeyb__key--action"
+        :class="{ 'ks-vkeyb__key--active': shift }"
+        :aria-pressed="shift ? 'true' : 'false'"
+        :aria-label="$t('kiosk.a11y.vkeyb_shift')"
+        data-testid="kiosk-vkeyb-shift"
+        @click="toggleShift">⇧</button>
+      <button type="button"
         class="ks-vkeyb__key ks-vkeyb__key--action"
         :aria-label="$t('kiosk.a11y.vkeyb_clear')"
         data-testid="kiosk-vkeyb-clear"
-        @click="clearAll"
-      >{{ $t('kiosk.a11y.vkeyb_clear_short') }}</button>
-      <button
-        type="button"
+        @click="clearAll">{{ $t('kiosk.a11y.vkeyb_clear_short') }}</button>
+      <button type="button"
         class="ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--wide"
         :aria-label="$t('kiosk.a11y.vkeyb_space')"
         data-testid="kiosk-vkeyb-space"
-        @click="pressChar(' ')"
-      >{{ $t('kiosk.a11y.vkeyb_space_short') }}</button>
-      <button
-        type="button"
+        @click="pressChar(' ')">{{ $t('kiosk.a11y.vkeyb_space_short') }}</button>
+      <button type="button"
         class="ks-vkeyb__key ks-vkeyb__key--action"
         :aria-label="$t('kiosk.a11y.vkeyb_backspace')"
         data-testid="kiosk-vkeyb-backspace"
-        @click="backspace"
-      >⌫</button>
-      <button
-        type="button"
+        @click="backspace">⌫</button>
+      <button type="button"
         class="ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--submit"
         :aria-label="$t('kiosk.a11y.vkeyb_submit')"
         data-testid="kiosk-vkeyb-submit"
-        @click="submit"
-      >{{ $t('kiosk.a11y.vkeyb_submit_short') }}</button>
+        @click="submit">{{ $t('kiosk.a11y.vkeyb_submit_short') }}</button>
     </div>
   </div>
 </template>
@@ -98,7 +99,7 @@
  *
  * A11y :
  *  - role="group" + aria-label
- *  - Chaque touche = <button> natif : focus + Enter/Space OK d'office.
+ *  - Chaque touche : élément HTML `button` natif — focus + Enter/Space OK d'office.
  *  - aria-label custom pour ⌫ / ✓ / espace (lecteurs d'écran).
  *
  * Invariants :
@@ -256,8 +257,7 @@ export default {
 <style scoped>
 .ks-vkeyb {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   z-index: 150;
   background: var(--kiosk-surface);
@@ -302,7 +302,9 @@ export default {
 }
 
 .ks-vkeyb__row--actions {
-  grid-template-columns: 1fr 4fr 1fr 2fr;
+  /* [F5 heal 2026-06-09] +1 column for the Shift key (was 1fr 4fr 1fr 2fr):
+     shift · clear · space · backspace · submit */
+  grid-template-columns: 1fr 1fr 4fr 1fr 2fr;
 }
 
 .ks-vkeyb__key {

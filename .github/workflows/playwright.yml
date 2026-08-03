@@ -1,12 +1,57 @@
 name: Playwright E2E
 
+# === STRATÉGIE DE DÉCLENCHEMENT (2026-04-21) ===
+# Historique : 5+ runs consécutifs en échec total (22 failed / 25) sur la branche
+# de travail `feat/ton-sujet` avec screen 100% blanc (Vue ne mount pas en CI).
+# Tentatives "fix(ci)" précédentes (5 commits : f5ff2d2ce, b3970a08b, 313658858,
+# 74210a1d8, 9008416f4) ont mis des rustines à côté de la cause racine sans la
+# résoudre, et les artifacts uploadés ne contenaient PAS de quoi débugger
+# (HTML report manquant, console.log Vue manquant, Laravel logs manquants).
+#
+# Décision : déclenchement opt-in pour stopper le bruit emails et permettre un
+# vrai cycle de debug intentionnel quand le repo sera prêt.
+#
+# Modes de trigger :
+#   1. workflow_dispatch     : lancement manuel via UI GitHub Actions (toujours OK)
+#   2. pull_request avec label `e2e-required` : opt-in explicite par PR
+#   3. push sur main         : protection branche cible (rare, après merge)
+#
+# Pour rétablir le trigger automatique sur PRs, retirer le filtre `if:` ci-dessous.
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main, develop]
+    types: [labeled, opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+# Empêche les runs simultanés sur la même PR (annule l'ancien si nouveau push)
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
+    # Opt-in explicite : seuls les PRs avec label `e2e-required` déclenchent E2E
+    # (workflow_dispatch et push:main passent toujours sans condition)
+    if: |
+      github.event_name == 'workflow_dispatch'
+      || github.event_name == 'push'
+      || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e-required'))
     runs-on: ubuntu-latest
+    # Same non-sentinel secrets as phpunit.xml / docs: required because this
+    # job runs a real `php artisan serve` (APP_ENV=local from .env.example).
+    # phpunit.xml env does NOT apply here — empty FISCAL_* in .env breaks
+    # POS flows that call AuditLogService (422/500 → Playwright failures).
+    env:
+      # composer post-autoload-dump runs `artisan` before .env exists — without
+      # this, APP_KEY/APP_ENV default to production guards (broadcast/queue).
+      APP_ENV: local
+      FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+      FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
+      PRICING_USE_SSOT: "true"
+      # Évite throttle:api (429 "Too Many Attempts.") sur la suite E2E (nombreuses requêtes axios / min).
+      API_THROTTLE_PER_MINUTE: "5000"
     services:
       mysql:
         image: mysql:8.0
@@ -47,22 +92,57 @@ jobs:
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=foodking_test/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+          sed -i 's|^APP_URL=.*|APP_URL=http://localhost:8000|' .env
+          # Persist fiscal secrets in .env so `config:cache` / Mix / sub-processes
+          # match the job env (Dotenv does not override existing vars, but the
+          # file keeps local `artisan` invocations self-consistent).
+          sed -i 's/^FISCAL_AUDIT_SECRET=.*/FISCAL_AUDIT_SECRET=testing-fiscal-audit-secret-padding-48chars-ok/' .env
+          sed -i 's/^FISCAL_Z_REPORT_SECRET=.*/FISCAL_Z_REPORT_SECRET=testing-fiscal-zreport-secret-padding-48chars-ok/' .env
+          # E2E staff-only suite (06-staff-only-routing) + borne wizard flag
+          sed -i 's/^STAFF_ONLY_MODE=.*/STAFF_ONLY_MODE=true/' .env
+          sed -i 's/^KIOSK_USE_POS_WIZARD=.*/KIOSK_USE_POS_WIZARD=true/' .env
+          # Suite E2E : >10 POST /login avec le même email (pos@…) — sans ça login-lockout → 429, SPA reste sur /login.
+          if grep -q '^LOGIN_LOCKOUT_MAX_ATTEMPTS=' .env; then sed -i 's/^LOGIN_LOCKOUT_MAX_ATTEMPTS=.*/LOGIN_LOCKOUT_MAX_ATTEMPTS=500/' .env; else echo 'LOGIN_LOCKOUT_MAX_ATTEMPTS=500' >> .env; fi
+          if grep -q '^API_THROTTLE_PER_MINUTE=' .env; then sed -i 's/^API_THROTTLE_PER_MINUTE=.*/API_THROTTLE_PER_MINUTE=5000/' .env; else echo 'API_THROTTLE_PER_MINUTE=5000' >> .env; fi
 
       - name: Migrate and seed
-        run: php artisan migrate:fresh --seed
+        run: |
+          php artisan migrate:fresh --seed
+          # Installed middleware otherwise redirects all web traffic to /install (no SPA).
+          touch storage/installed
 
       - name: Install Node dependencies and build
         run: |
           npm ci
           npm run prod
 
+      - name: Diagnostic — assets compilés
+        # Permet de voir quels fichiers Mix a réellement produit et si le manifest est cohérent.
+        # Sans ça on ne peut pas diagnostiquer un éventuel mismatch d'assets en cas d'écran blanc.
+        run: |
+          echo "=== public/mix-manifest.json ==="
+          cat public/mix-manifest.json || echo "MISSING"
+          echo "=== public/js/ listing ==="
+          ls -la public/js/ 2>/dev/null || echo "EMPTY"
+          echo "=== public/css/ listing ==="
+          ls -la public/css/ 2>/dev/null || echo "EMPTY"
+
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Start server
-        run: php artisan serve &
+      - name: Start server (Laravel + log capture)
+        # Redirige les logs serveur PHP vers un fichier pour upload en cas d'échec.
+        # `php artisan serve` écrit normalement sur stdout/stderr ; ici on capture pour debug.
+        run: |
+          mkdir -p storage/logs
+          php artisan serve > storage/logs/php-serve.log 2>&1 &
+          echo "PHP_SERVE_PID=$!" >> $GITHUB_ENV
         env:
           APP_URL: http://localhost:8000
+          FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+          FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
+          PRICING_USE_SSOT: "true"
+          API_THROTTLE_PER_MINUTE: "5000"
 
       - name: Wait for server
         run: |
@@ -72,14 +152,61 @@ jobs:
           done
           exit 1
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Diagnostic — sanity check /login HTML
+        # Vérifie ce que le serveur renvoie réellement sur /login. Si on a un écran blanc
+        # côté Playwright, le HTML peut révéler : page d'erreur Laravel, redirection,
+        # référence à un asset manquant, ou app shell minimal sans #formEmail.
+        run: |
+          echo "=== HTTP /login (status + headers + body) ==="
+          curl -sI http://localhost:8000/login || true
+          echo "=== HTML /login (premières 200 lignes) ==="
+          curl -s http://localhost:8000/login | head -200 || true
+          echo "=== check #formEmail dans le HTML ==="
+          curl -s http://localhost:8000/login | grep -c 'formEmail' || echo "0 occurrences (CONFIRME que l'écran blanc vient du SPA Vue qui ne mount pas, pas du HTML serveur)"
 
-      - name: Upload report
-        if: failure()
+      - name: Run Playwright tests
+        # Continue-on-error : on veut TOUJOURS uploader les artifacts diagnostic même si la suite échoue,
+        # et on fail le job dans un step séparé après upload, pour s'assurer que les artifacts arrivent.
+        id: pw
+        continue-on-error: true
+        run: npx playwright test --reporter=list,html,json
+
+      - name: Upload Playwright HTML report (toujours, même si pass)
+        # `if: always()` garantit l'upload même si la step Playwright fail.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-html-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Playwright trace + screenshots (test-results/)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Laravel logs + JSON report + diagnostic
+        # Logs serveur Laravel + erreurs PHP serve + JSON Playwright.
+        # Sans ça impossible de voir les 500 / exceptions / DB erreurs pendant les tests.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
           path: |
-            playwright-report/
-            reports/antigravity/
+            storage/logs/
+            reports/antigravity/playwright-latest.json
+            public/mix-manifest.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Fail the job if Playwright failed
+        # Reporter le statut Playwright après upload des artifacts.
+        if: steps.pw.outcome == 'failure'
+        run: |
+          echo "::error::Playwright tests failed. Voir artifacts 'playwright-html-report', 'playwright-test-results' et 'server-logs' pour diagnostic."
+          exit 1

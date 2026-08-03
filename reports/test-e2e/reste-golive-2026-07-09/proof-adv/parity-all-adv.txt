@@ -1,0 +1,10 @@
+
+[parity] WEB — VERT ✅ — 0 divergence(s)
+[parity]   mirror  : /Users/1millnonstop/Downloads/web/data/menu.js
+[parity]   rapport : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/parity-report-web.json
+
+[parity] MOBILE — VERT ✅ — 0 divergence(s)
+[parity]   mirror  : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js
+[parity]   rapport : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/parity-report-mobile.json
+
+[parity] TOTAL : 0 divergence(s) sur 2 surface(s) — GATE VERT (exit 0)

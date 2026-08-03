@@ -1,3 +1,5 @@
+> **2026-05-05 — Mega plan V1 finition POS / borne / KDS / admin** : document courant [`MEGA_PLAN_AUDIT_CURSOR_CODEX_V1_FINITION_2026-05-05.md`](./MEGA_PLAN_AUDIT_CURSOR_CODEX_V1_FINITION_2026-05-05.md) (consolidation Cursor + Codex, ecarts captures, vagues de correction page par page, matrice de validation).
+
 > **2026-03-31 — Audit profond global + plan massif + diagrammes** : document canonique [`AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md`](./AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md) (architecture, synchro, inventaire tests, backlog Phases A–E, Mermaid). Le reste de ce fichier conserve l’historique handoff Kimi du 2026-03-27.
 
 ---

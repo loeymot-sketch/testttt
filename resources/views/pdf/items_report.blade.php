@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
         rel="stylesheet">
-    <title>Online Orders</title>
+    <title>{{ trans('all.label.items_report') }}</title>
     <style>
         body {
             font-family: "Urbanist", sans-serif;
@@ -93,33 +93,36 @@
     @endphp 
     <div class="container">
         <div class="report">
-            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'], 60) }}</p>
-            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'],60) }}</p>
-            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.items_report', [], 'en') }}</p>
+            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
+            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
+            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.items_report') }}</p>
             <table>
                 <thead>
                     <tr>
-                        <th>{{ trans('all.label.name', [], 'en') }}</th>
-                        <th>{{ trans('all.label.item_category_id', [], 'en') }}</th>
-                        <th>{{ trans('all.label.item_type', [], 'en') }}</th>
-                        <th>{{ trans('all.label.quantity', [], 'en') }}</th>
+                        <th>{{ trans('all.label.name') }}</th>
+                        <th>{{ trans('all.label.item_category_id') }}</th>
+                        <th>{{ trans('all.label.item_type') }}</th>
+                        <th>{{ trans('all.label.quantity') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($items as $item)
                         @php
-                            $total_quantity+= $item->orders->count();
+                            // [ITEMS-SEM-02 heal] units sold (SUM quantity, realized, date-scoped),
+                            // not COUNT of order lines.
+                            $units = (int) ($item->units_sold ?? 0);
+                            $total_quantity += $units;
                          @endphp
                         <tr>
                             <td>{{$item->name}}</td>
                             <td>{{  optional($item->category)->name }}</td>
-                            <td>{{ trans( 'itemType.' . $item->item_type , [] , 'en') }}</td>
-                            <td>{{    $item->orders->count() }}</td>
+                            <td>{{ trans( 'itemType.' . $item->item_type) }}</td>
+                            <td>{{ $units }}</td>
 
                         </tr>
                     @endforeach
                     <tr class="total">
-                        <td colspan="3">{{ trans('all.label.total', [], 'en') }}</td>
+                        <td colspan="3">{{ trans('all.label.total') }}</td>
                         <td>{{ $total_quantity }}</td>
                     </tr>
                 </tbody>

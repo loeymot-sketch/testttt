@@ -1,0 +1,275 @@
+{
+  "summary": "Ultra-plan adversaire — logique composition/prix unifiée borne+web (viande N incluses+extra 2,50 ; sauce 1ère gratuite+0,50 ; menu inclus)",
+  "agentCount": 7,
+  "logs": [
+    "Design: 3 approches"
+  ],
+  "result": {
+    "designs": 3,
+    "plan": {
+      "strategy": "Fix le plus sûr = \"DATA + payload, PricingService 0 ligne\". Le SSOT (PricingService, frozen §7) price DÉJÀ correctement viande-extra (@2,50 via ItemExtra #392, prouvé tinker: Tacos M 6,90→9,40 q1→11,90 q2) et le menu (addon #37 role menu_full/frites/boisson ratios 1.0/0.6/0.4 = 2,50/1,50/1,00, prouvé 9,40). Il n'a AUCUNE notion \"inclus/1ère gratuite\": la gratuité vient de ce que les incluses sont des variations price=0 et que SEUL le surplus est envoyé en ligne payante. Le SEUL vrai manque = la SAUCE-en-plus n'a aucun chemin de facturation (attr#5 \"Sauce (1ère Gratuite)\" min1/max1 → 2e sauce = 422 prouvé ; 0 ligne \"Sauce supplémentaire\" en DB). Donc: (1) AJOUT DE DONNÉE — un ItemExtra \"Sauce supplémentaire\" @0,50 en miroir EXACT du pattern viande, MAIS avec group_label='sauce' (PAS 'supplement'/'supplement_bol') ; (2) les DEUX wizards envoient sauceOrder.slice(1) comme N× cet extra @0,50, la 1ère sauce restant en variation attr#5 gratuite ; (3) viande = pure fusion UX (payload déjà correct). NEUTRALISATION CRITIQUE DES ATTAQUES: le group_label='sauce' est le pivot de sûreté — il est AUTO-exclu de la partition suppléments borne (kioskIsSauceExtra vérifié l.30-35: ne bucketise en 'supplement' QUE si group_label≠'sauce') ET non-énuméré par la projection composer (ComposerProfileProjection filtre le step suppléments par son propre group_label supplement_bol) → supprime le double-path/double-charge P1 des 2 approches. Livraison ATOMIQUE wizard-v2.jsx(max sauce)+api.js(routage extra) sinon 422 bloque le client. Borne KioskWizardComponent (frozen, déblocage owner+LOCK) reroute le surcoût sauce affichage-seul vers une vraie ligne normalizedExtras — ce qui CORRIGE en plus un bug latent affiché≠facturé de la borne. Frites-sauce: règle unique \"1 sauce frites incluse gratuite\" sur les 2 surfaces + suppression du terme d'affichage borne fritesSauceSurcharge → display==backend==0. Bols composer (41/45): SCOPE hors périmètre initial (pas de sauce-extra) jusqu'à câblage step composer dédié, pour éviter le blocage 422/appartenance-profil. Constantes d'affichage web (0,50/2,50/ratios) verrouillées = valeurs backend.",
+      "web_steps": [
+        {
+          "file_line": "data/menu.js (près extraMeatPrice ~548)",
+          "change": "Ajouter `const SUPPLEMENT_SAUCE_PRICE = 0.50;` (miroir EXACT config/menu.php:155) et l'exporter `supplementSaucePrice: SUPPLEMENT_SAUCE_PRICE` dans window.LC.menu. Documenter en commentaire le couplage à 3 sources (config/menu.php=0,50, ItemExtra.price DB, cette constante) = doivent rester égaux, sinon affiché≠facturé."
+        },
+        {
+          "file_line": "data/menu.js priceFor (~503-512)",
+          "change": "Ajouter la surcharge extra-sauce SCOPÉE à la sauce PRINCIPALE uniquement: `if (item.has_sauce && Array.isArray(opts.sauceIds) && opts.sauceIds.length > 1) total += (opts.sauceIds.length - 1) * SUPPLEMENT_SAUCE_PRICE;`. NE JAMAIS l'appliquer à cascade_frites_sauce (sauce frites du menu = incluse gratuite)."
+        },
+        {
+          "file_line": "wizard-v2.jsx étape sauce (~104-108)",
+          "change": "min:1 (garder), max:1 → max:(item.sauce_max||4). sub → '1ʳᵉ sauce incluse · sauce en plus +0,50 €'. Ajouter champ `banner:'Sauce en plus : +0,50 € chacune'` rendu NON-bloquant (fond orange info, PAS role=alert). Réintroduit la cascade +0,50 que menu.js avait supprimée."
+        },
+        {
+          "file_line": "wizard-v2.jsx étape viandes (~92-100) + suppression viande_extra (~127-134,186-190)",
+          "change": "Fusion UX: étape viandes min:n, max:n+(item.extra_meat_max||2), sub `${n} incluse(s) · viande en plus +2,50 €`, banner 'Viande en plus : +2,50 € chacune' NON-bloquant. SUPPRIMER l'étape séparée viande_extra pour sandwich/tacos/burger (et bol si owner). Cap max explicite pour éviter surqty non plafonnée backend."
+        },
+        {
+          "file_line": "wizard-v2.jsx rendu step.kind==='multi' (~519)",
+          "change": "Sous le header d'étape: petit bandeau HAUT non-bloquant `step.banner && (state[step.id]||[]).length > step.min` (div info orange clair), DISTINCT de la zone role='alert' (réservée au dépassement max)."
+        },
+        {
+          "file_line": "wizard-v2.jsx computeWizardTotal (~292-319)",
+          "change": "Passer sauceIds à priceFor. Pour viandes fusionnées: extraMeatCount=max(0,(state.viandes||[]).length-(item.viande_count||0)), construire extraMeatIds=slice(N). Supprimer toute lecture de state.viande_extra. Frites-sauce reste price:0 (single incluse)."
+        },
+        {
+          "file_line": "api.js mapping sauce (~307-319) — LIVRAISON ATOMIQUE avec le max sauce du wizard",
+          "change": "1ère sauce → variation attr5 (gratuite, INCHANGÉ). Sauces suivantes → NE PAS pousser d'autres variations attr5 (sinon 422 max1 prouvé). À la place: `var n=Array.isArray(st.sauce)?st.sauce.length:(st.sauce?1:0); if(n>1){var ssId=findExtraId(dIdx,['sauce'],'Sauce supplémentaire'); if(ssId!=null) item_extras.push({id:ssId, quantity:n-1, name:'Sauce supplémentaire ('+st.sauce.slice(1).join(', ')+')'});}` — group ciblé 'sauce', et NOM de sauce transporté pour le snapshot/ticket."
+        },
+        {
+          "file_line": "api.js mapping viande (~293-298,342-348)",
+          "change": "Après fusion: N 1ères viandes → variations attr1/attr2 (INCHANGÉ, price 0). Dépassement → ItemExtra 'Viande supplémentaire' quantity=(nbViandes-N) au lieu de lire st.viande_extra. Réutiliser findExtraId(['supplement','supplement_bol'],'Viande supplémentaire') (déjà existant)."
+        },
+        {
+          "file_line": "wizard-v2.jsx cascade_frites_sauce (~278) — PARITÉ frites",
+          "change": "GARDER min:1/max:1 (1 sauce frites incluse gratuite). Règle unique sur les 2 surfaces: pas de sauce frites payante. Aucun envoi backend (reste instruction)."
+        }
+      ],
+      "borne_backend_steps": [
+        {
+          "file_line": "database/seeders/SauceSupplementSeeder.php (NOUVEAU, NON frozen)",
+          "change": "AJOUT DE DONNÉE idempotent (updateOrCreate/withTrashed, miroir du bloc 'Viande supplémentaire'). Pour CHAQUE item has_sauce SANS profil composer (sandwichs, galettes, burgers, tacos 26/97, Cayenne 22...): créer ItemExtra name='Sauce supplémentaire' price=0.50 group_label='sauce' status=ACTIVE visible_on=[kiosk,web,pos]. group_label='sauce' est OBLIGATOIRE (neutralise le double-path P1: auto-exclu par kioskIsSauceExtra l.30-35 + non-énuméré par composer). NE PAS créer pour bols 41/45 (composer profile — hors périmètre v1). Aucun code PricingService touché.",
+          "frozen": false
+        },
+        {
+          "file_line": "app/Services/Pricing/PricingService.php",
+          "change": "AUCUN CHANGEMENT. Frozen §7 respecté 100%. Prouvé inutile: price déjà item_extras générique ×quantity (viande @2,50 CASE A=11,90) ; la sauce-extra @0,50 emprunte le MÊME chemin (rollback tinker: extra 0,50 ×2 → 7,90). Chaîne NF525/composition_snapshot intacte.",
+          "frozen": true
+        },
+        {
+          "file_line": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:2033-2044 (frozen §7 — déblocage owner + LOCK doc obligatoire)",
+          "change": "Rerouter le surcoût sauce affichage-seul (sauceVariationSurcharge, aujourd'hui ajouté à itemVariationTotal, JAMAIS envoyé → bug affiché≠facturé) vers un push RÉEL dans normalizedExtras. Pour chaque sauce au-delà de la 1ère: push {id:<id extra group 'sauce' 'Sauce supplémentaire'>, name:'Sauce supplémentaire ('+sauceName+')', quantity:1} EXACTEMENT comme la boucle viandeMeta extra l.1929-1942, et déplacer le montant de item_variation_total vers item_extra_total. 1ère sauce reste variation attr5 gratuite (l.1847-1854 inchangé). Résout la parité MONÉTAIRE réelle borne↔web (sans ce câblage: web=7,40 vs borne=6,90).",
+          "frozen": true
+        },
+        {
+          "file_line": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue fritesSauceSurcharge (~2037-2039, frozen — même LOCK)",
+          "change": "SUPPRIMER le terme d'affichage fritesSauceSurcharge (sauce frites en plus). Règle unifiée: 1 sauce frites incluse gratuite sur borne ET web. display==backend==0. Neutralise la divergence P3 sauce-frites."
+        },
+        {
+          "file_line": "resources/js/components/frontend/kiosk/steps/KioskStepViandeComponent.vue + KioskStepSauceComponent.vue (NON frozen) — OPTIONNEL",
+          "change": "Cosmétique: bandeau haut 'Viande en plus : +2,50 €' / 'Sauce en plus : +0,50 €' non-bloquant. Fonctionnellement déjà correct (quota N/N + cartes extra). Payload inchangé."
+        }
+      ],
+      "pricing_ssot_verdict": "DÉJÀ BON pour viande + menu — AUCUN changement PricingService requis (frozen §7 intact 0 ligne). Prouvé RÉEL via tinker (forWeb, branch 1, item 26 Tacos M base 6,90): (A) 1 viande incluse + 2× ItemExtra #392 'Viande supplémentaire' @2,50 → subtotal 11,90 (=6,90+2×2,50) → viande au-delà de N facturée correctement, incluses=0. (C) addon #37 role menu_full → 9,40 (=6,90+2,50), boisson/frites incluses non re-facturées → menu OK. PricingService price item_extras par prix_DB×quantity, generic, aucune notion inclus/gratuit. POUR LA SAUCE @0,50: le backend NE la facture PAS aujourd'hui (attr#5 min1/max1 → 2e sauce = EXCEPTION 422 'maximum 1 sélection, reçu 2' prouvé ; 0 ligne 'Sauce supplémentaire' en DB). MAIS le fix ne nécessite AUCUN code PricingService: il suffit d'AJOUTER LA DONNÉE (ItemExtra @0,50 group_label='sauce') qui passe par le chemin extras déjà prouvé — vérifié en transaction rollback: extra 0,50 créé sur item 26 + 2 sauces → subtotal 7,90 (=6,90+2×0,50), 0 mutation réelle. CONCLUSION: le SEUL frozen réellement touché = KioskWizardComponent.vue (déblocage owner + LOCK + triple-vert), et c'est un changement MINIMAL/mécanique qui va DANS le sens NF525 (corrige un affiché≠facturé). git diff --stat sur les 13 fichiers §7 doit montrer UNIQUEMENT KioskWizardComponent.vue.",
+      "e2e_checklist": [
+        "Tacos M (1 viande incluse) 1 sauce → subtotal 6,90 exact (aucun surcoût sur l'inclus)",
+        "Tacos M + 3e viande (2 au-delà de N=1) → +5,00 = 11,90 ; les 2 viandes incluses restent 0",
+        "Tacos M + 2e sauce → +0,50 = 7,40 ; POST /api/frontend/order réel = 200 (PAS 422), 1ère sauce en variation attr5, 2e en ItemExtra group 'sauce'",
+        "Tacos M + 3 sauces → +1,00 = 7,90 (2 sauces au-delà de la 1ère × 0,50)",
+        "Menu (addon menu_full) + choix boisson formule + choix frites → +2,50 SEULEMENT ; boisson/frites du menu n'ajoutent RIEN (pas de double)",
+        "Boisson seule hors menu (item 3 / addon 'Boisson Seule' #39) → prix boisson exact une fois, aucune ligne menu",
+        "Frites seule hors menu → prix frites exact une fois",
+        "Menu avec 2 sauces frites → aucune facturation frites-sauce (1 incluse gratuite), display borne==0 (fritesSauceSurcharge supprimé)",
+        "Sélection unique 'case supplément' inexistante pour la sauce: vérifier partitionKioskExtras ne rend AUCUNE case 'Sauce supplémentaire' (group 'sauce' auto-exclu) — pas de 2e chemin +0,50",
+        "Dépassement max sauce/viande = bandeau info non-bloquant, le client peut CONFIRMER et payer (jamais un blocage dur), et ne peut jamais choisir < N viandes incluses",
+        "composition_snapshot scellé contient la ligne extra sauce AVEC le nom de la sauce choisie (ticket cuisine + NF525 lisibles)",
+        "fiscal:verify-chain --all vert après une commande réelle avec extra sauce"
+      ],
+      "parity_checklist": [
+        "Même commande (Tacos M + 2 sauces) → borne facturée backend == web facturé backend == 7,40 au centime (exige le câblage KioskWizardComponent normalizedExtras, sinon divergence 6,90 vs 7,40 — NE PAS prétendre parité sans ce câblage)",
+        "Viande extra: borne (viandeMeta source='extra' → ItemExtra 'Viande supplémentaire') == web (api.js findExtraId 'Viande supplémentaire') → même ligne DB @2,50",
+        "Sauce extra: borne push normalizedExtras 'Sauce supplémentaire' == web api.js item_extras 'Sauce supplémentaire' → MÊME ItemExtra group_label='sauce' @0,50",
+        "Menu: borne addon #37 role menu_full/frites/boisson == web data/menu.js formules 2,50/1,50/1,00 (ratios config kiosk.menu_pricing 1.0/0.6/0.4)",
+        "1ère sauce = variation attr5 gratuite des DEUX côtés ; attr5 garde max_select=1 (jamais 2 variations → jamais 422)",
+        "Constantes d'affichage web (SUPPLEMENT_SAUCE_PRICE=0,50, extraMeatPrice=2,50, ratios menu) == valeurs backend (config/menu.php:155 + ItemExtra.price DB) — vérifier l'égalité à 3 sources",
+        "Frites-sauce: règle identique (1 incluse gratuite) borne ET web, aucun surcoût affiché ni facturé des 2 côtés",
+        "UX viande fusionnée (bandeau haut, dépassement payant non-bloquant) présente identiquement borne ET web ; aucune étape séparée 'Viande supplémentaire ?' résiduelle"
+      ],
+      "residual_risks": [
+        "FROZEN GATE: KioskWizardComponent.vue est frozen §7 — LOCK doc + gate owner + régression triple-vert (Vitest kioskWizard*.spec + PHPUnit pricing + fiscal:verify-chain) OBLIGATOIRES avant merge. Sans le câblage borne, la parité MONÉTAIRE de la 2e sauce ne tient pas — le signaler honnêtement plutôt que prétendre parité.",
+        "BOLS COMPOSER (items 41 Bol Frites, 45 Bol Riz): scoppés HORS périmètre v1 (pas de sauce-extra). Leur sauce est un step composer max_select=1 visible_on pos/kiosk. Ajouter la sauce-extra sur ces items exigerait de câbler un step composer dédié + inclure 'web' dans visible_on ; sinon 422 'n'appartient pas au profil publié' (prouvé approche 2). À traiter en follow-up gated. Vérifier aussi que le web PEUT commander un bol aujourd'hui (visible_on sans 'web' = blocage web pré-existant à confirmer).",
+        "QUANTITÉ EXTRA NON PLAFONNÉE BACKEND: PricingService price extra ×quantity sans cap (viande ×5 = +12,50 accepté, prouvé). Le rempart est le cap UI wizard (max sauce/viande). Documenter que la borne/web est le seul plafond ; ajouter un cap explicite dans les 2 wizards + test.",
+        "COUPLAGE 3 SOURCES DE PRIX (config/menu.php=0,50, ItemExtra.price DB, constante data/menu.js): si un admin change le prix DB sans MAJ la constante web → affiché≠facturé. Documenter le couplage ; idéalement exposer le prix via window.LC.menu depuis une source unique. Même fragilité pré-existante sur extraMeatPrice=2,50.",
+        "MODÈLE web standalone: CLAUDE.md §3bis dit 'web STANDALONE sans wireup API V1', or l'état réel montre le web postant de vraies commandes (source=5, KDS contient des cmd web). Si le web NE poste PAS au backend, seul l'affichage compte → verrouiller les constantes suffit ; s'il POSTe, le backend price et le mapping id-extra doit être valide. Lever l'ambiguïté avant impl (le fix couvre les 2 cas via constantes verrouillées + envoi extra).",
+        "IDENTITÉ SAUCE dans snapshot: l'extra générique 'Sauce supplémentaire' doit transporter le NOM de la sauce (name enrichi) sur les 2 surfaces, sinon la cuisine ne sait pas quelle sauce servir et le snapshot NF525 est sémantiquement incomplet (comme 'Viande supplémentaire' #392). Vérifier que le nom atteint composition_snapshot, pas seulement la note cuisine free-text."
+      ]
+    }
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Design"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Attack"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Synthesize"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "design:web",
+      "phaseIndex": 1,
+      "phaseTitle": "Design",
+      "agentId": "abeacea2b7f75f8b3",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784141023500,
+      "queuedAt": 1784141018191,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Unification composition/prix BORNE (kiosk) ↔ SITE WEB — via…",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784141475396,
+      "tokens": 130909,
+      "toolCalls": 24,
+      "durationMs": 451896,
+      "resultPreview": "{\"area\":\"Unification composition/prix BORNE (kiosk) ↔ SITE WEB — viandes incluses/extra (+2,50), sauce 1ère gratuite/extra (+0,50), menu inclus non re-facturé\",\"summary\":\"Le web place de VRAIES commandes au backend (api.js → POST /api/frontend/order, source=5) et le PricingService (SSOT NF525) RE-CALCULE 100% du prix : le web/borne n'envoient que item_id + item_variations/item_extras/item_addons. …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "design:borne",
+      "phaseIndex": 1,
+      "phaseTitle": "Design",
+      "agentId": "a564206daa0ea649f",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784141020298,
+      "queuedAt": 1784141018191,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "BORNE (kiosk) — unification composition/prix VIANDE + SAUCE…",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784141573816,
+      "tokens": 102785,
+      "toolCalls": 36,
+      "durationMs": 553517,
+      "resultPreview": "{\"area\":\"BORNE (kiosk) — unification composition/prix VIANDE + SAUCE + MENU, parité avec le web standalone. Fichiers pivots : KioskWizardComponent.vue (frozen §7, déblocage autorisé), KioskStepViandeComponent.vue + KioskStepSauceComponent.vue (non-frozen), config/menu.php, seeder catalogue, PricingService.php (frozen §7, NON touché).\",\"summary\":\"VÉRIFIÉ EN RÉEL sur le backend :8766 (tinker + lectu…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "design:pricing",
+      "phaseIndex": 1,
+      "phaseTitle": "Design",
+      "agentId": "a7c58bf5b33675bf5",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784141019805,
+      "queuedAt": 1784141018191,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Unification logique COMPOSITION/PRIX borne (kiosk) ↔ site w…",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784141494103,
+      "tokens": 102604,
+      "toolCalls": 29,
+      "durationMs": 474298,
+      "resultPreview": "{\"area\":\"Unification logique COMPOSITION/PRIX borne (kiosk) ↔ site web — règles viandes incluses/+2,50 & sauce 1ère gratuite/+0,50 & menu inclus, avec preuve backend PricingService (SSOT NF525)\",\"summary\":\"Le fix LE PLUS SÛR = ZÉRO changement de logique frozen. PricingService (frozen §7) facture DÉJÀ correctement TOUT via la somme itemPrice + Σ(variation.price) + Σ(extra.price×qty) + Σ(addon ajust…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "attack:Unification composition/prix BORNE (kiosk) ↔ SITE WEB — viandes incluses/extra (+2,50), sauce 1ère gratuite/extra (+0,50), menu inclus non re-facturé",
+      "phaseIndex": 2,
+      "phaseTitle": "Attack",
+      "agentId": "a0ba4910b11adec18",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784141585922,
+      "queuedAt": 1784141580423,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Unification composition/prix BORNE (kiosk) ↔ SITE WEB — via…",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784142202739,
+      "tokens": 97262,
+      "toolCalls": 33,
+      "durationMs": 616817,
+      "resultPreview": "{\"area\":\"Unification composition/prix BORNE (kiosk) ↔ SITE WEB — viandes incluses/extra (+2,50), sauce 1ère gratuite/extra (+0,50), menu inclus non re-facturé\",\"verdict\":\"NEEDS_GUARD\",\"summary\":\"La THÈSE centrale est VÉRIFIÉE en réel et saine sur l'axe NF525/backend : PricingService (SSOT) price les item_extras génériquement × quantity — PROUVÉ via calculateOrder(forWeb, branch 1, item 26 Tacos M)…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "attack:BORNE (kiosk) — unification composition/prix VIANDE + SAUCE + MENU, parité avec le web standalone. Fichiers pivots : KioskWizardComponent.vue (frozen §7, déblocage autorisé), KioskStepViandeComponent.vue + KioskStepSauceComponent.vue (non-frozen), config/menu.php, seeder catalogue, PricingService.php (frozen §7, NON touché).",
+      "phaseIndex": 2,
+      "phaseTitle": "Attack",
+      "agentId": "af013ecaa5753c5d4",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784141583601,
+      "queuedAt": 1784141580423,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "BORNE↔WEB unification composition/prix (VIANDE+SAUCE+MENU) …",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784142282156,
+      "tokens": 105034,
+      "toolCalls": 38,
+      "durationMs": 698554,
+      "resultPreview": "{\"area\":\"BORNE↔WEB unification composition/prix (VIANDE+SAUCE+MENU) — attaque adversaire de l'approche « sauce-extra + push item_extras », vérifiée en réel sur PricingService :8766 (tinker + lecture code frozen).\",\"verdict\":\"UNSAFE\",\"vulnerabilities\":[{\"scenario\":\"BLOCAGE client (rule #4 violée dans l'autre sens) — L'approche ignore TOTALEMENT la couche composer-profile. Bol Frites (item 41) et Bo…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "attack:Unification logique COMPOSITION/PRIX borne (kiosk) ↔ site web — règles viandes incluses/+2,50 & sauce 1ère gratuite/+0,50 & menu inclus, avec preuve backend PricingService (SSOT NF525)",
+      "phaseIndex": 2,
+      "phaseTitle": "Attack",
+      "agentId": "a25fffbb10f4e26cf",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784141585543,
+      "queuedAt": 1784141580423,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Unification COMPOSITION/PRIX borne↔web — adversarial verifi…",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784142001938,
+      "tokens": 89736,
+      "toolCalls": 22,
+      "durationMs": 416394,
+      "resultPreview": "{\"area\":\"Unification COMPOSITION/PRIX borne↔web — adversarial verification of the \\\"add ItemExtra 'Sauce supplémentaire' @0.50, PricingService untouched\\\" approach (SSOT NF525)\",\"verdict\":\"NEEDS_GUARD\",\"vulnerabilities\":[{\"scenario\":\"DOUBLE-PATH / DOUBLE-CHARGE of the extra sauce on the borne. The approach's exact_changes create the new 'Sauce supplémentaire' @0.50 with group_label='supplement' (a…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 7,
+      "label": "synthesize",
+      "phaseIndex": 3,
+      "phaseTitle": "Synthesize",
+      "agentId": "a6910c2af8a138f0f",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1784142292114,
+      "queuedAt": 1784142288612,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Fix le plus sûr = \"DATA + payload, PricingService 0 ligne\".…",
+      "promptPreview": "MISSION : concevoir le fix LE PLUS SÛR pour unifier la logique COMPOSITION/PRIX entre la BORNE (kiosk) et le SITE WEB, à implémenter ensuite en boucle test-e2e. Env local RÉEL : backend http://127.0.0.1:8766 (X-API-Key: b6d68vy2-m7g5-20r0-5275-h103w73453q120), DB via 'php artisan tinker --execute'. cwd = repo backend testttt. Web standalone = /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site…",
+      "lastProgressAt": 1784142444451,
+      "tokens": 72747,
+      "toolCalls": 3,
+      "durationMs": 152337,
+      "resultPreview": "{\"strategy\":\"Fix le plus sûr = \\\"DATA + payload, PricingService 0 ligne\\\". Le SSOT (PricingService, frozen §7) price DÉJÀ correctement viande-extra (@2,50 via ItemExtra #392, prouvé tinker: Tacos M 6,90→9,40 q1→11,90 q2) et le menu (addon #37 role menu_full/frites/boisson ratios 1.0/0.6/0.4 = 2,50/1,50/1,00, prouvé 9,40). Il n'a AUCUNE notion \\\"inclus/1ère gratuite\\\": la gratuité vient de ce que l…"
+    }
+  ],
+  "totalTokens": 701077,
+  "totalToolCalls": 185
+}

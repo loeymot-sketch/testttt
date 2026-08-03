@@ -1,9 +1,12 @@
-import DeliveryBoyComponent from "../../components/admin/deliveryBoys/DeliveryBoyComponent";
-import DeliveryBoyListComponent from "../../components/admin/deliveryBoys/DeliveryBoyListComponent";
-import DeliveryBoyShowComponent from "../../components/admin/deliveryBoys/DeliveryBoyShowComponent";
-import DeliveryBoyOrderDetailsComponent from "../../components/admin/deliveryBoys/DeliveryBoyOrderDetailsComponent";
-import DeliveredOrderShowComponent from "../../components/admin/deliveryBoys/deliveredOrder/DeliveredOrderShowComponent";
-
+// [POS-V4 W1-C 2026-04-26] Lazy-load all SFC imports into webpack chunk "admin-shell".
+// Pattern identical to posRoutes.js (W1-A) and kioskRoutes.js. Converted by
+// tools/refactor/lazy_router_modules.mjs. Goal: reduce app.js first-paint
+// (see reports/baseline/POS_V4_PERF_HISTORY.md — cross-cycle SSOT).
+const DeliveryBoyComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/deliveryBoys/DeliveryBoyComponent");
+const DeliveryBoyListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/deliveryBoys/DeliveryBoyListComponent");
+const DeliveryBoyShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/deliveryBoys/DeliveryBoyShowComponent");
+const DeliveryBoyOrderDetailsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/deliveryBoys/DeliveryBoyOrderDetailsComponent");
+const DeliveredOrderShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/deliveryBoys/deliveredOrder/DeliveredOrderShowComponent");
 export default [
     {
         path: "/admin/delivery-boys",

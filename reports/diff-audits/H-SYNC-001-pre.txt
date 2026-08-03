@@ -1,0 +1,26 @@
+        },
+        _unbindWsService() {
+            const ws = window._wsService;
+            if (!ws) return;
+            if (this._onWsConnected) ws.off('connected', this._onWsConnected);
+            if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
+        },
+        _kioskPollingInterval() {
+            return window._wsService?.isConnected() ? 60000 : 5000;
+        },
+        _startKioskPolling() {
+            this._kioskPollTimer = setInterval(() => {
+                // [WT-R1-F2 2026-05-20] No-op when teardown already started —
+                // prevents the trailing tick (queued before clearInterval) from
+                // mutating reactive state on an unmounting component.
+                if (this._destroyed) return;
+                this.loadKioskCashOrders();
+                // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
+                this.loadActiveOrdersStats();
+                // [Wave X X2 P-OWNER 2026-05-21] Same polling tick refreshes
+                // the "Prêt à livrer" shortcut so a freshly bumped order
+                // surfaces within ~15s even if the Echo subscription is down.
+                this.loadReadyOrders();
+            }, this._kioskPollingInterval());
+        },
+        _restartKioskPolling() {

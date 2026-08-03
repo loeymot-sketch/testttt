@@ -1,0 +1,98 @@
+{
+  "specialist": "Architect",
+  "lens": "Cascade integrity, listener ordering doctrine, error isolation per listener, DispatchableAfterCommit semantics, transactional boundary correctness",
+  "scope": "READ-ONLY analytical pass over the 9 cascade points; structural correctness only; no implementation suggestion past V1.x guardrails",
+  "verdict": "PASS — structurally sound; one architectural risk noted as RECOMMENDATION-1",
+  "executive_summary": "The POS → KDS cascade is built on three architectural primitives that interlock cleanly: (1) DispatchableAfterCommit trait that drops events on rollback, (2) the EventServiceProvider declaring listeners in Outbox-FIRST order with a strong inline rationale comment (lines 128-137 + 146-151), and (3) the Outbox-pattern split between PersistOrderCreatedToOutbox (synchronous, SSOT write) and DispatchDomainEventsJob (queued, broadcast). The architectural keystone — 'PersistOrderCreatedToOutbox MUST run first because synchronous queue connections propagate listener exceptions through the dispatcher loop' — is correctly enforced, documented in code, and protected by passing tests (KdsSyncControllerTest, KDSFlowTest, EventContractTest, OutboxConcurrentWorkerDedupeTest — 49 cascade tests green).",
+  "findings": [
+    {
+      "id": "ARCH-1",
+      "severity": "INFO",
+      "title": "Listener order is correct and documented",
+      "evidence": {
+        "file": "app/Providers/EventServiceProvider.php",
+        "lines": "145-151",
+        "snippet": "OrderCreated::class => [\n    // [F-002 round-3] Outbox SSOT first — see comment block above.\n    PersistOrderCreatedToOutbox::class,\n    DecrementItemAvailabilityOnOrder::class,\n    DecrementStockOnOrderCreated::class,\n    SendFcmOnOrderCreated::class,\n]"
+      },
+      "analysis": "The doctrine 'Outbox-FIRST' is upheld with an explicit comment block (lines 128-137) citing the F-002 round-3 evidence (87 outbox rows pre-id-733, zero post-id-596 when FCM started failing under sync queue). This is a textbook case of architectural intent surviving multiple refactors because the *reason* is in the code, not just a tribal memory."
+    },
+    {
+      "id": "ARCH-2",
+      "severity": "INFO",
+      "title": "DispatchableAfterCommit guarantees rollback-safety",
+      "evidence": {
+        "file": "app/Events/Concerns/DispatchableAfterCommit.php",
+        "lines": "27-42",
+        "snippet": "if ($connection->transactionLevel() > 0) {\n    $connection->afterCommit(function () use ($arguments): void {\n        event(new static(...$arguments));\n    });\n    return null;\n}"
+      },
+      "analysis": "Behavior matrix is explicit in the trait header (lines 18-22): outside tx → immediate; inside tx → dispatch after commit; inside tx rollback → dispatch dropped. Order::dispatch() in OrderService::posOrderStore (line 1067) and OrderService::store (line 564) is called *inside* a DB::transaction closure, so the trait engages and prevents the classic 'ghost KDS order on rollback' defect. The pre-existing inline comment '[BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback' (OrderService:555) confirms this bug class was historically observed and is now structurally prevented."
+    },
+    {
+      "id": "ARCH-3",
+      "severity": "INFO",
+      "title": "Outbox row write is atomic and idempotency-keyed BEFORE afterCommit dispatch",
+      "evidence": {
+        "file": "app/Listeners/PersistOrderCreatedToOutbox.php",
+        "lines": "22-79",
+        "snippet": "$idempotencyKey = sha1(EventType::ORDER_CREATED . '|' . $order->id);\n$domainEvent = DomainEvent::query()->firstOrCreate([...]);\nif (! $domainEvent->wasRecentlyCreated) {\n    return;\n}\nDB::afterCommit(function () use ($domainEvent): void {\n    DispatchDomainEventsJob::dispatch($domainEvent->id);\n});"
+      },
+      "analysis": "Two-layer idempotency: (1) sha1(event_type|aggregate_id) on a UNIQUE-indexed column (migration 2026_05_09_180000), so concurrent listener firings collapse at the DB level, not just in firstOrCreate logic; (2) wasRecentlyCreated short-circuit so a replay does not re-dispatch the job. The DispatchDomainEventsJob::dispatch is itself wrapped in try/catch (lines 67-78) per the cluster-8 test-e2e fix — a Pusher push failure no longer 500s the HTTP order create."
+    },
+    {
+      "id": "ARCH-4",
+      "severity": "RECOMMENDATION-V1.x",
+      "title": "DecrementStockOnOrderCreated re-throws on Throwable — risk of cascade abort if a downstream listener crashes after Outbox write succeeds",
+      "evidence": {
+        "file": "app/Listeners/DecrementStockOnOrderCreated.php",
+        "lines": "29-37",
+        "snippet": "Log::error('DecrementStockOnOrderCreated failed', [...]);\nthrow $e;"
+      },
+      "analysis": "Architecturally, this is *deliberate* (iter12 P1 STOCK 2026-05-09 comment): hard-failing the transaction surfaces orphan rather than silently leaking stock. Since DispatchableAfterCommit fires *after* the surrounding transaction commits, the order row is already durable when this listener runs — a re-throw here will NOT roll back the order, only bubble up to the HTTP response. That means: (a) order is created, (b) outbox row is written (because Outbox runs FIRST), (c) decrement crashes, (d) HTTP 5xx returned to POS cashier. The user-facing UX is: cashier sees error toast, retries, gets idempotency-key 200 OK (existing order). Stock counters DRIFT once by one decrement. This is a *known and accepted* trade-off per the inline rationale, but it should be tracked as a candidate for V1.x: wrap StockUnavailableException only and silently log Throwable, OR add a stock reconciliation job. Status quo is acceptable for V1 single-restaurant.",
+      "recommendation": "V1.x: introduce a `stock_reconciliation_job` cron that walks orders created in the last hour and reconciles stock_level vs. sum(order_items.qty). Not blocking V1 ship."
+    },
+    {
+      "id": "ARCH-5",
+      "severity": "INFO",
+      "title": "Three dispatch points for OrderCreated are consistent (all inside transaction commit envelope)",
+      "evidence": {
+        "files": [
+          "app/Services/OrderService.php:564 (web store)",
+          "app/Services/OrderService.php:1067 (POS posOrderStore)",
+          "app/Services/OrderService.php:1377 (dine-in tableOrderStore)",
+          "app/Services/FrontendOrderService.php:1226 (kiosk myOrderStore)"
+        ]
+      },
+      "analysis": "All four dispatch sites call `\\App\\Events\\OrderCreated::dispatch($order)` inside their respective transaction success branch with the standard try/catch wrapping non-critical Notification dispatches. The trait routes each call through DB::afterCommit. Per-surface cascade is identical: same listener chain, same outbox row, same broadcast channel. Multi-surface consistency — important for V1 single-restaurant where chef KDS is the unifying display — holds."
+    },
+    {
+      "id": "ARCH-6",
+      "severity": "INFO",
+      "title": "Channel name format is consistent across all 12 Persist*ToOutbox listeners",
+      "evidence": {
+        "grep_result": "12 listeners all use `'channel' => json_encode(['private-branch.' . $branchId])`"
+      },
+      "analysis": "Pusher / Laravel-Echo convention: client subscribes via `Echo.private('branch.{id}')` (resources/js/services/eventContract.js:338), server-side broadcast channel name is `private-branch.{id}` (Echo adds the `private-` prefix on the client; broadcaster compares the resolved name in routes/channels.php which declares `branch.{id}`). The 12 listeners and the Echo subscriber match on this contract. EventContract::buildEnvelope and assertEnvelopeValid (last guard before broadcast in DispatchDomainEventsJob:107-110) further enforce the V1 envelope shape, so a malformed payload fails fast as PayloadMismatchException (now fail-once per F-3 SYNC P1 quick-win on lines 174-185)."
+    }
+  ],
+  "cascade_verification_matrix": {
+    "1_pos_submit_order": "PosController::store → OrderService::posOrderStore. PASS (PosController.php:54-75, OrderService.php:579+).",
+    "2_after_commit_event_fires": "OrderCreated trait DispatchableAfterCommit engages because dispatch is inside DB::transaction. PASS (OrderService.php:1067 inside transaction at 1031+).",
+    "3_persist_outbox_first": "EventServiceProvider lines 145-151 places Outbox FIRST. PASS (verified line-by-line).",
+    "4_decrement_listeners_fire": "DecrementItemAvailabilityOnOrder → DecrementStockOnOrderCreated. Listener order ARCH-1 confirms ordering. PASS.",
+    "5_dispatch_job_broadcasts": "DispatchDomainEventsJob::handle uses lockForUpdate + commit-before-dispatch pattern. PASS (lines 50-94).",
+    "6_kds_receives_via_echo_or_polling": "KitchenDisplaySystemComponent.vue:1794 subscribes via onEvents → Echo.private('branch.{id}'). Polling fallback via KdsSyncService.js when WS not connected. PASS.",
+    "7_kds_sync_service_resolves": "KdsSyncService::sync uses Carbon::today($appTz)->setTimezone('UTC') TZ-aware bounds (lines 77-94). PASS (commit 148dbebce ancestor of HEAD verified).",
+    "8_resource_serializes_snapshot": "KDSOrderDetailsResource returns composition_snapshot via orderItems relation + allergens via OrderItemResource collection. PASS.",
+    "9_vue_renders_card": "KdsOrderCard.vue / KdsV2Grid.vue render — verified visually in Playwright captures (Zone-3 spec)."
+  },
+  "potentially_dead_code": [],
+  "duplication_concerns": [
+    "OrderCreated::dispatch is repeated 4 times across OrderService + FrontendOrderService; each call carries the same try/catch wrapper and Log::warning fallback. Could be refactored to OrderService::dispatchKdsBroadcast() but is INTENTIONAL repetition for surface-specific log messages. Keep as-is for V1."
+  ],
+  "keep_as_is": [
+    "Outbox-FIRST listener order with inline rationale comment (lines 128-137 EventServiceProvider).",
+    "DispatchableAfterCommit trait pattern (clean, well-documented, test-covered).",
+    "Two-layer idempotency (sha1 key + UNIQUE index)."
+  ],
+  "word_count": 1109
+}

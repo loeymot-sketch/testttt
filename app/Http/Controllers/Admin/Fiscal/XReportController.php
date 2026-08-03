@@ -29,8 +29,15 @@ class XReportController extends Controller
         abort_if($branchId <= 0, Response::HTTP_UNPROCESSABLE_ENTITY,
             'Fiscal operation requires the authenticated user to be pinned to a branch.');
 
-        $from = $request->filled('from') ? Carbon::parse((string) $request->query('from')) : null;
-        $to   = $request->filled('to')   ? Carbon::parse((string) $request->query('to'))   : null;
+        // [ULTRA-AUDIT 2026-07-02] Valider from/to avant Carbon::parse — sinon une date
+        // malformée levait InvalidFormatException non catchée → HTTP 500 (fuite de trace si
+        // APP_DEBUG). Cohérent avec DashboardController::eodPdf qui renvoie 422 sur input invalide.
+        try {
+            $from = $request->filled('from') ? Carbon::parse((string) $request->query('from')) : null;
+            $to   = $request->filled('to')   ? Carbon::parse((string) $request->query('to'))   : null;
+        } catch (\Carbon\Exceptions\InvalidFormatException $e) {
+            abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Format de date invalide (paramètres from/to).');
+        }
 
         return response()->json([
             'data' => $this->service->snapshot($branchId, $from, $to),

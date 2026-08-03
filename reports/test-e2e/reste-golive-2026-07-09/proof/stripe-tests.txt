@@ -1,0 +1,66 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Payment\StripeCentsCastTest[39m
+  [32;1m✓[39;22m[39m [2mmath formula produces correct cents for x99 amounts[22m[39m
+  [32;1m✓[39;22m[39m [2mbuggy formula demonstrably truncates[22m[39m
+  [32;1m✓[39;22m[39m [2mstripe gateway uses round cast pattern at callsite[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Payment\StripeChargeMetadataTest[39m
+  [32;1m✓[39;22m[39m [2mstripe payment call includes metadata order id[22m[39m
+  [32;1m✓[39;22m[39m [2mstripe payment metadata is inside charges create payload[22m[39m
+  [32;1m✓[39;22m[39m [2mwebhook handler still reads metadata order id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\PaymentGateways\StripeCentsAmountTest[39m
+  [32;1m✓[39;22m[39m [2mround before cast preserves cents with data set "whole euros"[22m[39m
+  [32;1m✓[39;22m[39m [2mround before cast preserves cents with data set "classic xx.99"[22m[39m
+  [32;1m✓[39;22m[39m [2mround before cast preserves cents with data set "penny"[22m[39m
+  [32;1m✓[39;22m[39m [2mround before cast preserves cents with data set "half cent rounds up"[22m[39m
+  [32;1m✓[39;22m[39m [2mround before cast preserves cents with data set "large"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy truncation pattern is wrong[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Boot\ProductionBootGuardsCompletenessSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook secret boot guard active[22m[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook secret boot guard skipped when stripe disabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Middleware\TrustProxiesThrottleIsolationTest[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook throttle isolates per forwarded ip[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\StripeActivationGuardTest[39m
+  [32;1m✓[39;22m[39m [2mstripe public payment activation is blocked without gate clearance[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\StripeWebhookReplayToleranceSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook construct event passes explicit replay tolerance[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\Zone5PricingSsotConvergenceSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpr07 stripe cents round before cast[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stripe\StripeWebhookUnconfiguredTest[39m
+  [32;1m✓[39;22m[39m [2mwebhook with empty stripe secret returns 503 json not 500[22m[39m
+  [32;1m✓[39;22m[39m [2mwebhook with missing stripe secret option returns 503 json[22m[39m
+  [32;1m✓[39;22m[39m [2mwebhook with non empty secret does not hit unconfigured guard[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Webhooks\StripeChargeRefundedCascadeSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mcharge refunded dispatches cascade writes audit and marks event processed[22m[39m
+  [32;1m✓[39;22m[39m [2mduplicate event id is idempotent via webhook event layer[22m[39m
+  [32;1m✓[39;22m[39m [2mdistinct event for already refunded order skips cascade[22m[39m
+  [32;1m✓[39;22m[39m [2mcharge refunded for unknown order logs and skips cascade[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Webhooks\StripeWebhookIdempotencyTest[39m
+  [32;1m✓[39;22m[39m [2mfirst webhook creates event and returns 200[22m[39m
+  [32;1m✓[39;22m[39m [2mduplicate event id returns 200 duplicate ignored and no new row[22m[39m
+  [32;1m✓[39;22m[39m [2mdifferent event ids create independent rows[22m[39m
+  [32;1m✓[39;22m[39m [2minvalid signature returns 400 and no row created[22m[39m
+  [32;1m✓[39;22m[39m [2mmissing webhook secret returns 500[22m[39m
+  [32;1m✓[39;22m[39m [2mnon capture event records row but skips payment bridge[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Webhooks\WebhookCsrfBareRouteExceptionTest[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook bare route is csrf excepted[22m[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook wildcard route is csrf excepted[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Webhooks\WebhookRouteHardeningTest[39m
+  [32;1m✓[39;22m[39m [2mstripe webhook throttles at 60 per minute[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m34 passed[39;22m
+  [37;1mTime:   [39;22m[39m3.76s[39m
+
+

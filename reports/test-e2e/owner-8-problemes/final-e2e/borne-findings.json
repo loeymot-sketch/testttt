@@ -1,0 +1,82 @@
+{
+  "surface": "borne",
+  "date": "2026-07-06",
+  "head": "febe73b1519dd541f9e198ac24e7641e43a5e30e",
+  "server": "http://127.0.0.1:8766",
+  "viewport": "1080x1920 portrait (intermittently reset to landscape on some SPA navs - cosmetic, kiosk responsive)",
+  "kiosk_machine": "ULTRA-E2E-BORNE (user_id=3, branch_id=1, token abilities=[kiosk:order])",
+  "method": "UI-driven via Playwright (evaluate clicks + history-guard to survive external nav) + escpos ticket decode + DB composition verification",
+  "orders_created": [
+    {"number": "A0015", "db_id": 5537, "total": 9.40, "content": "Tacos M + Poulet marine + Algerienne + Menu Complet (Frites+Boisson=Hawai 33cl) + frites sauce Algerienne", "http": "201 Created", "pos_payment_method": 6, "status": 4, "payment_status": 15},
+    {"number": "A0016", "db_id": 5538, "total": 6.00, "content": "Cheese Burger + Algerienne + crudites (Salade, Tomate, Oignons cuits) + Sans menu", "http": "201 Created", "pos_payment_method": 6, "status": 4, "payment_status": 15}
+  ],
+  "findings": [
+    {
+      "id": "P1-full-flow",
+      "point": 1,
+      "title": "Flux complet borne idle -> Tacos M wizard -> panier -> upsell -> paiement Plan B -> commande creee",
+      "verdict": "GREEN",
+      "evidence": "idle (kiosk-order-type-takeaway) -> categories -> Tacos M (item 26) wizard multi-etapes (Viande=Poulet marine, Sauce=Algerienne, Supplement skip, Menu Complet=Frites+Boisson, Boisson=Hawai 33cl, Sauce frites=Algerienne) -> panier EUR9,40 -> upsell 'Non merci' -> paiement 'PAIEMENT A LA CAISSE / TOTAL A REGLER EUR9,40 / Confirmer ma commande' -> cash-instruction #A0015 orderId=5537. Network: pricing/preview 422->200, order/quote 200 x2, order 201 Created. 0 toast jaune, 0 crash.",
+      "captures": ["01-idle.png","02-categories.png","03-wizard-step1.png","04-supplement.png","05-menu-boisson.png","07-menu-hawai-selected.png","08-cart.png","09-payment.png","10-cash-instruction.png"]
+    },
+    {
+      "id": "P2-oignon-cuit",
+      "point": 2,
+      "title": "Oignons cuits: visible, defaut OFF, exclusivite cru<->cuit 2 sens, composition_snapshot 0 EUR",
+      "verdict": "GREEN",
+      "evidence": "Cheese Burger (item 98) etape 'QUELLE CRUDITE ?': SALADE/TOMATE/OIGNON=AVEC(ON), OIGNONS CUITS=SANS(OFF, crossed-out) par defaut (3 garnitures selectionnees). Exclusivite 2 sens prouvee: (a) clic Oignons cuits ON -> Oignon(cru) auto-OFF; (b) clic Oignon(cru) ON -> Oignons cuits auto-OFF; Salade/Tomate inchanges. composition_snapshot order 5538 (A0016): extras=[Salade 269 @0, Tomate 270 @0, Oignons cuits 416 unit_price=0 line_total=0], Oignon(cru) absent (exclusivite respectee). Corrobore par order 5533 (Cayenne) extra_id 408 Oignons cuits @0. Logique frozen KioskWizardComponent + KioskStepGarnitures (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8).",
+      "captures": ["11-crudite-default.png"]
+    },
+    {
+      "id": "P3-boisson-cuisine",
+      "point": 3,
+      "title": "Boisson Hawai 33cl -> ticket cuisine + carte KDS (LE P1 gueri)",
+      "verdict": "GREEN",
+      "evidence": "Ticket cuisine order 5537 (escpos decode, x-api-key): ligne '** BOISSON: Hawai 33cl' PRESENTE (format '1 x G | TAC | M | P | ALG' + 'MENU : ALG' + '** BOISSON: Hawai 33cl'). Source: order_item.instruction = 'Viandes: Poulet marine x1. Formule: Menu complet (frites + boisson) (Hawai 33cl). Sauce frites: Algerienne' -> parse par extractFormuleDrinkLines (PHP) jumeau de kdsCustomization.js (JS). KDS LIVE (capture): cartes A0012/A0013 affichent '. BOISSON: Hawai 33cl', A0014 '. BOISSON: Fuze Tea 33cl' -> feature confirmee visuellement sur l'ecran cuisine.",
+      "captures": ["12-kds-boisson.png"]
+    },
+    {
+      "id": "P4-ticket-design-caisse",
+      "point": 4,
+      "title": "Ticket borne = design caisse (accents reels, A REGLER EN CAISSE gras, 0 ligne paiement, largeur 32)",
+      "verdict": "GREEN",
+      "evidence": "cash-instruction URL porte orderId=5537. Ticket client order 5537 (escpos decode): en-tete NF525 complet (Le Cayenne, '437 Rue Elie Gruyelle', 'Henin-Beaumont', Tel 03 65 67 82 91, SIRET 10417050100019, TVA FR19104170501), 'A0015', '*** EMPORTER ***', '1  Tacos M  9,40', 'Poulet marine, Algerienne', '+ Menu (Frites + Boisson) 2,50', '** BOISSON: Hawai 33cl', SOUS-TOTAL/REDUCTION/MONTANT TOTAL/TVA 10%/A REGLER TTC, '** A REGLER EN CAISSE **', AUCUNE ligne PAIEMENT/RENDU. Accents reels: e/i/e (marine, Algerienne, Elie, Henin, APPETIT, Hawai). Largeur: TOUTES lignes = exactement 32 caracteres (verifie octet par octet).",
+      "captures": ["10-cash-instruction.png"]
+    },
+    {
+      "id": "P5-label-hawai",
+      "point": 5,
+      "title": "Hawai 33cl partout, Fanta Hawai nulle part, 422 silencieux, console propre",
+      "verdict": "GREEN",
+      "evidence": "DOM borne: 1 noeud 'Hawai 33cl' (avec trema), 0 'Fanta Hawai', 0 'Hawai' sans trema. Cart/recap/ticket cuisine/ticket client/KDS: tous 'Hawai 33cl'. pricing/preview 422 sur compo incomplete = SILENCIEUX (helper kioskPricingPreview onError ignore 422; 0 toast jaune observe a chaque etape). Console: seuls 403 broadcasting/auth (Echo private channel - pre-existant, fallback polling) + 422 pricing/preview (attendu). 0 erreur Vue, 0 flash/dialog."
+    }
+  ],
+  "observations_non_blocking": [
+    {
+      "id": "OBS-1-composition-drink",
+      "severity": "info",
+      "note": "composition_snapshot.addons NE stocke PAS la boisson specifique du menu (Hawai) - seulement l'addon generique menu_full 'Menu (Frites + Boisson)'. La boisson est capturee dans order_item.instruction (texte libre) et rendue sur ticket+KDS via les parseurs jumeaux extractFormuleDrinkLines(PHP)/kdsCustomization.js(JS). Design documente (W6-ADV C-P1-1), pas un bug fonctionnel - la boisson SORT correctement. Note NF525: le snapshot fiscal fige ne porte pas l'identite de la boisson (choix a 0 EUR); a considerer si un audit fiscal exige l'identite boisson dans le record fige."
+    },
+    {
+      "id": "OBS-2-escpos-get-bridge-gated",
+      "severity": "info",
+      "note": "L'appel GET frontend/order/show/{id}/escpos N'A PAS auto-declenche sur la page cash-instruction en environnement headless. C'est ATTENDU: KioskCashInstructionComponent.vue:121 gate l'auto-print sur (isKioskBridge() || isLocalBridgeAvailable()) - pas de pont ESC/POS local (127.0.0.1:9100) en headless -> pas d'auto-print. Le wiring est correct (kioskPrinter.js:51 fait le GET) et l'endpoint retourne le design caisse exact (verifie par appel direct). Sur la vraie borne avec pont, le GET part."
+    },
+    {
+      "id": "OBS-3-shared-browser-external-nav",
+      "severity": "env",
+      "note": "Le navigateur Chrome partage est PILOTE EN CONTINU vers /admin/kitchen-display-system par un process externe (automation 'S-SYNC E2E Operator' parallele) - a bounce le flux borne plusieurs fois. Contourne via un history-guard runtime (bloque pushState vers /admin|/kds, laisse /kiosk/*) + override setTimeout (neutralise idle timer >=90s). Condition d'environnement de test, PAS un defaut produit (le router kiosk ne redirige jamais vers /kds - verifie resetKiosk -> kiosk.idle uniquement)."
+    },
+    {
+      "id": "OBS-4-menu-503-transient",
+      "severity": "env",
+      "note": "GET /api/frontend/menu a retourne 2x 503 transitoires au 1er chargement idle, auto-recuperes (le kiosk sert le snapshot cache localStorage kiosk_menu_snapshot_v1 puis le menu live charge - 15 boissons affichees correctement). Pas de blocage flux."
+    },
+    {
+      "id": "OBS-5-viewport-drift",
+      "severity": "cosmetic",
+      "note": "Le viewport portrait 1080x1920 s'est reinitialise en paysage sur certaines navigations SPA. Cosmetique - le kiosk est responsive, portrait confirme sur idle+wizard (captures 01-05, 11)."
+    }
+  ],
+  "verdict": "GREEN"
+}

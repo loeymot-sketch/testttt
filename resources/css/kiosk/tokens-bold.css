@@ -1,0 +1,284 @@
+/* =============================================================================
+   FoodKing Kiosk — "Bold Appétissant" tokens layer (V1.1)
+   -----------------------------------------------------------------------------
+   Plan         : plans/PLAN_CV1-KIOSK-VISUAL-REDESIGN-001_2026-05-02.md §1.4
+   Maquette     : reports/design/KIOSK_REDESIGN_BOLD_PREVIEW_2026-05-02.html
+   Cible        : borne 1080×1920 portrait, identité bold appétissant
+   Modes        : light (default) + dark (via [data-kiosk-theme='dark'] sur <html>)
+
+   Discipline d'empilement (cf. bootstrap-kiosk.js) :
+     1. tokens.css            ← base AA (--kiosk-*)
+     2. tokens-aaa.css        ← escalation contraste
+     3. tokens-pmr.css        ← mobilité réduite
+     4. tokens-bold.css (ICI) ← nouvelle palette warm + dark + atoms variants
+     5. typography-bold.css   ← stack Fraunces + scale display
+     6. cv1-tokens.css        ← tokens CV1 sémantiques admin/kiosk
+
+   ⚠ ADDITIF UNIQUEMENT — n'override aucun `--kiosk-*` existant.
+   Les écrans actuels continuent de consommer la palette base (light) ; les
+   atoms ds/ avec NEW variants (hero, composition, total-hero…) consomment
+   `--kiosk-bold-*` et héritent automatiquement du switch light/dark.
+
+   Discipline a11y :
+     - Chaque combinaison texte/fond ≥ 4.5:1 AA (et ≥ 7:1 AAA via
+       [data-kiosk-contrast='aaa']).
+     - Reduced motion neutralise les nouvelles `--kiosk-duration-*` à 1ms.
+     - Touch targets ≥ 44px (V1 spec) consommés via `--kiosk-touch-*` existants.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   LIGHT MODE — palette warm appétissante (default)
+   ----------------------------------------------------------------------------- */
+:root {
+    /* FoodKing brand palette V2 (2026-05-10) — aligné mobile app Cayenne
+       Hiérarchie owner : NOIR primaire → ROUGE Cayenne accent → JAUNE highlight → BLANC bg */
+    --kiosk-bold-bg:                #FFFFFF; /* blanc pur — pas de teinte warm */
+    --kiosk-bold-surface:           #FFFFFF; /* cards / modals */
+    --kiosk-bold-surface-subtle:    #F7F7F7; /* sections secondaires (sidebar) — gris très clair neutre */
+    --kiosk-bold-surface-strong:    #0F0F0F; /* noir primaire — footer, ribbons, CTAs */
+    --kiosk-bold-surface-overlay:   rgba(15, 15, 15, 0.65);
+
+    /* Texte — noir primaire, gris neutres (pas de warm taupe) */
+    --kiosk-bold-text-primary:      #0F0F0F;
+    --kiosk-bold-text-secondary:    #5A5A5A;
+    --kiosk-bold-text-tertiary:     #8A8A8A;
+    --kiosk-bold-text-inverse:      #FFFFFF;
+    --kiosk-bold-text-on-primary:   #FFFFFF;
+    --kiosk-bold-text-on-accent:    #0F0F0F;
+
+    /* Bordures neutres */
+    --kiosk-bold-border:            #E5E5E5;
+    --kiosk-bold-border-strong:     #0F0F0F;
+    --kiosk-bold-border-emphasis:   #F4501E;
+
+    /* Brand — Rouge Cayenne orange-red saturé (mobile app match) */
+    --kiosk-bold-primary:           #F4501E;
+    --kiosk-bold-primary-hover:     #DC4517;
+    --kiosk-bold-primary-active:    #B83A12;
+    --kiosk-bold-primary-soft:      #FFE8DD;
+    --kiosk-bold-primary-glow:      rgba(244, 80, 30, 0.32);
+
+    /* Accent — Jaune gold mobile app (highlights, fidélité, badges promo) */
+    --kiosk-bold-accent:            #F5C518;
+    --kiosk-bold-accent-hover:      #E0B214;
+    --kiosk-bold-accent-soft:       #FFF7D6;
+    --kiosk-bold-accent-glow:       rgba(245, 197, 24, 0.28);
+
+    /* Sémantiques — warm-aligned */
+    --kiosk-bold-success:           #2D6A4F;
+    --kiosk-bold-success-soft:      #D4F0E0;
+    --kiosk-bold-success-text:      #1A4A36;
+    --kiosk-bold-warning:           #F59E0B;
+    --kiosk-bold-warning-soft:      #FEF3C7;
+    --kiosk-bold-warning-text:      #92400E;
+    --kiosk-bold-danger:            #9A0E2A;
+    --kiosk-bold-danger-soft:       #FFE5E8;
+    --kiosk-bold-danger-text:       #6B0820;
+
+    /* Élévation — ombres neutres aligned mobile app (subtiles, pas warm) */
+    --kiosk-shadow-card-bold:       0 4px 16px rgba(15, 15, 15, 0.08), 0 1px 4px rgba(15, 15, 15, 0.04);
+    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.06);
+    --kiosk-shadow-cta-bold:        0 12px 32px rgba(244, 80, 30, 0.32), 0 4px 12px rgba(244, 80, 30, 0.16);
+    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(244, 80, 30, 0.42), 0 6px 16px rgba(244, 80, 30, 0.20);
+    --kiosk-shadow-hero:            0 24px 64px rgba(15, 15, 15, 0.18), 0 8px 24px rgba(15, 15, 15, 0.10);
+    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(15, 15, 15, 0.06);
+    --kiosk-shadow-pop:             0 8px 24px rgba(15, 15, 15, 0.12);
+    --kiosk-shadow-modal-bold:      0 32px 80px rgba(15, 15, 15, 0.28), 0 12px 32px rgba(15, 15, 15, 0.12);
+
+    /* Backdrop blur — pour modals premium */
+    --kiosk-backdrop-blur-bold:     blur(16px) saturate(180%);
+    --kiosk-backdrop-overlay-bold:  rgba(15, 15, 15, 0.55);
+}
+
+/* -----------------------------------------------------------------------------
+   DARK MODE — DISABLED per owner instruction 2026-05-21
+   -----------------------------------------------------------------------------
+   Owner: "je veux plus l'icône de changer de thème... laisse en mode Light c'est tout".
+   Owner re-instruction: "page d'accueil et page principale moitié Dark moitié Light".
+
+   ROOT CAUSE: les sous-composants Vue (KioskCategoriesComponent header/sidebar,
+   bottom bar Abandonner/Payer) consument les tokens `--kiosk-bold-*` qui
+   avaient leur PROPRE dark mode déclaré ici via `[data-kiosk-theme='dark']`.
+   Mes overrides précédents sur les vars `--kiosk-*` (kiosk-fallback.css) ne
+   touchent PAS les `--kiosk-bold-*` → moitié des surfaces restait sombre.
+
+   FIX: réécrire le bloc dark mode avec les valeurs LIGHT exactes du :root
+   light defaults (lignes 35-90 ci-dessus). `!important` sur chaque var pour
+   battre n'importe quel scoped Vue override.
+   ----------------------------------------------------------------------------- */
+[data-kiosk-theme='dark'] {
+    --kiosk-bold-bg:                #FFFFFF !important;
+    --kiosk-bold-surface:           #FFFFFF !important;
+    --kiosk-bold-surface-subtle:    #F7F7F7 !important;
+    --kiosk-bold-surface-strong:    #0F0F0F !important;
+    --kiosk-bold-surface-overlay:   rgba(15, 15, 15, 0.65) !important;
+
+    --kiosk-bold-text-primary:      #0F0F0F !important;
+    --kiosk-bold-text-secondary:    #5A5A5A !important;
+    --kiosk-bold-text-tertiary:     #8A8A8A !important;
+    --kiosk-bold-text-inverse:      #FFFFFF !important;
+    --kiosk-bold-text-on-primary:   #FFFFFF !important;
+    --kiosk-bold-text-on-accent:    #0F0F0F !important;
+
+    --kiosk-bold-border:            #E5E5E5 !important;
+    --kiosk-bold-border-strong:     #0F0F0F !important;
+    --kiosk-bold-border-emphasis:   #F4501E !important;
+
+    --kiosk-bold-primary:           #F4501E !important;
+    --kiosk-bold-primary-hover:     #DC4517 !important;
+    --kiosk-bold-primary-active:    #B83A12 !important;
+    --kiosk-bold-primary-soft:      #FFE8DD !important;
+    --kiosk-bold-primary-glow:      rgba(244, 80, 30, 0.32) !important;
+
+    --kiosk-bold-accent:            #F5C518 !important;
+    --kiosk-bold-accent-hover:      #E0B214 !important;
+    --kiosk-bold-accent-soft:       #FFF7D6 !important;
+    --kiosk-bold-accent-glow:       rgba(245, 197, 24, 0.28) !important;
+
+    --kiosk-bold-success:           #2D6A4F !important;
+    --kiosk-bold-success-soft:      #D4F0E0 !important;
+    --kiosk-bold-success-text:      #1A4A36 !important;
+    --kiosk-bold-warning:           #F59E0B !important;
+    --kiosk-bold-warning-soft:      #FEF3C7 !important;
+    --kiosk-bold-warning-text:      #92400E !important;
+    --kiosk-bold-danger:            #9A0E2A !important;
+    --kiosk-bold-danger-soft:       #FFE5E8 !important;
+    --kiosk-bold-danger-text:       #6B0820 !important;
+
+    --kiosk-shadow-card-bold:       0 4px 16px rgba(15, 15, 15, 0.08), 0 1px 4px rgba(15, 15, 15, 0.04) !important;
+    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.06) !important;
+    --kiosk-shadow-cta-bold:        0 12px 32px rgba(244, 80, 30, 0.32), 0 4px 12px rgba(244, 80, 30, 0.16) !important;
+    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(244, 80, 30, 0.42), 0 6px 16px rgba(244, 80, 30, 0.20) !important;
+    --kiosk-shadow-hero:            0 24px 64px rgba(15, 15, 15, 0.18), 0 8px 24px rgba(15, 15, 15, 0.10) !important;
+    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(15, 15, 15, 0.06) !important;
+    --kiosk-shadow-pop:             0 8px 24px rgba(15, 15, 15, 0.12) !important;
+    --kiosk-shadow-modal-bold:      0 32px 80px rgba(15, 15, 15, 0.28), 0 12px 32px rgba(15, 15, 15, 0.12) !important;
+
+    --kiosk-backdrop-overlay-bold:  rgba(15, 15, 15, 0.55) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   AAA escalation pour le mode bold (combinaison [data-kiosk-contrast='aaa'])
+   ----------------------------------------------------------------------------- */
+[data-kiosk-contrast='aaa'] {
+    --kiosk-bold-text-secondary:    #4A3E36; /* warmer dark pour ratio ≥ 7:1 */
+    --kiosk-bold-text-tertiary:     #6B5D52;
+    --kiosk-bold-border:            #C4B6A8;
+    --kiosk-bold-border-strong:     #1A1410;
+}
+[data-kiosk-theme='dark'][data-kiosk-contrast='aaa'] {
+    --kiosk-bold-text-secondary:    #E0D2C2;
+    --kiosk-bold-text-tertiary:     #C4B6A8;
+    --kiosk-bold-border:            #4A3E36;
+    --kiosk-bold-border-strong:     #FFF5E8;
+}
+
+/* -----------------------------------------------------------------------------
+   MOTION LIBRARY — durées sémantiques + spring confiant
+   ----------------------------------------------------------------------------- */
+:root {
+    /* Durées sémantiques — utilisées par les NEW variants atoms (V1.5+) et
+       par les écrans refondus (V2-V4). Distinctes des --kiosk-duration-*
+       existantes (fast/base/slow) pour ne pas casser les transitions actuelles. */
+    --kiosk-duration-tap:        120ms;  /* micro-interaction tap */
+    --kiosk-duration-card:       240ms;  /* card hover, selection */
+    --kiosk-duration-step:       320ms;  /* step transition wizard */
+    --kiosk-duration-ceremony:   480ms;  /* confirmation finale (max — uniquement V4.7) */
+
+    /* Easings sémantiques — alias clairs sur les easings existants */
+    --kiosk-motion-spring:       cubic-bezier(0.34, 1.56, 0.64, 1); /* alias --kiosk-ease-bounce */
+    --kiosk-motion-smooth:       cubic-bezier(0.4, 0, 0.2, 1);       /* alias --kiosk-ease-standard */
+    --kiosk-motion-emphasis:     cubic-bezier(0.2, 0, 0, 1);         /* alias CV1 cv1-motion-easing */
+    --kiosk-motion-decelerate:   cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* -----------------------------------------------------------------------------
+   RADII étendus — generous rounding pour identité bold
+   ----------------------------------------------------------------------------- */
+:root {
+    --kiosk-radius-3xl:          48px;   /* hero CTA, total panel */
+    /* --kiosk-radius-2xl déjà défini à 32px dans tokens.css — réutilisé tel quel */
+}
+
+/* -----------------------------------------------------------------------------
+   REDUCED MOTION — neutralise les NOUVELLES durées (les anciennes sont déjà
+   gérées par tokens.css @media + tokens-aaa.css). Double protection :
+   - système : prefers-reduced-motion
+   - utilisateur : data-kiosk-reduced-motion='true' (toggle KsA11ySettings)
+   ----------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --kiosk-duration-tap:        1ms;
+        --kiosk-duration-card:       1ms;
+        --kiosk-duration-step:       1ms;
+        --kiosk-duration-ceremony:   1ms;
+    }
+}
+
+[data-kiosk-reduced-motion='true'] {
+    --kiosk-duration-tap:        1ms;
+    --kiosk-duration-card:       1ms;
+    --kiosk-duration-step:       1ms;
+    --kiosk-duration-ceremony:   1ms;
+}
+
+/* =============================================================================
+   FoodKing brand V2 (2026-05-10) — Cayenne globalization
+   -----------------------------------------------------------------------------
+   Override les tokens legacy `--kiosk-*` (red legacy) vers Cayenne #F4501E
+   pour cohérence avec mobile app. KioskAppComponent.vue est FROZEN et
+   définit ces tokens avec scoped-CSS (specificity [data-v-XXX]) — on utilise
+   !important pour battre cette specificity sans toucher le frozen file.
+
+   Owner gate (2026-05-10) : "tu n'as pas corrigé les couleurs, il faut
+   noir + orange + jaune + blanc partout".
+   ============================================================================= */
+
+.kiosk-app.kiosk-theme--light,
+.kiosk-app:not(.kiosk-theme--dark) {
+    --kiosk-primary:        #F4501E !important;
+    --kiosk-primary-dark:   #DC4517 !important;
+    --kiosk-primary-soft:   #FFE8DD !important;
+    --kiosk-primary-light:  rgba(244, 80, 30, 0.08) !important;
+    --kiosk-text-on-red:    #FFFFFF !important;
+    --kiosk-shadow-cta:     0 10px 24px rgba(244, 80, 30, 0.28) !important;
+    --kiosk-bg:             #FFFFFF !important;
+    --kiosk-bg-2:           #FFFFFF !important;
+    --kiosk-surface:        #FFFFFF !important;
+    --kiosk-surface-alt:    #F7F7F7 !important;
+    --kiosk-surface-strong: #FFFFFF !important;
+    --kiosk-border:         #E5E5E5 !important;
+    --kiosk-text:           #0F0F0F !important;
+    --kiosk-text-muted:     #5A5A5A !important;
+
+    /* V3.1 (2026-05-10) : override les gradients legacy --kiosk-page-bg /
+       --kiosk-idle-bg / --kiosk-idle-card-text définis dans le frozen
+       KioskAppComponent (lignes 1088-1095) qui contiennent encore
+       le pink legacy et le red legacy — owner gate : 0 rouge legacy. */
+    --kiosk-page-bg:        #FFFFFF !important;
+    --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
+    --kiosk-idle-card-text: #FFFFFF !important;
+    --kiosk-product-media-bg: #FAFAFA !important;
+}
+
+/* [iter15-mega-fix C-042 round-8 2026-05-10] Light-mode neutralization of the
+   warm-dark layered backgrounds inside KioskIdleScreenComponent. The
+   `.kiosk-idle--bold` base now consumes `var(--kiosk-idle-bg)` (round-8 fix in
+   the .vue file), but two absolute-positioned siblings stack on top with
+   hardcoded dark tones :
+     - `.kiosk-idle-fallback` :  linear-gradient #1A1410 → #0E0A07 (z=0)
+     - `.kiosk-idle-overlay`  :  rgba(26,20,16, .20–.85) (z=1)
+   These were intentional for the original dark warm aesthetic. Owner V2
+   palette mandate (black/red Cayenne/yellow/white only) requires a clean
+   light surface, so we neutralize them in light mode while preserving the
+   dark variant. We use !important to beat the scoped `[data-v-672293fc]`
+   selector specificity from the Vue SFC, matching the existing pattern in
+   the block above. */
+.kiosk-app.kiosk-theme--light .kiosk-idle-fallback,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-fallback {
+    background: var(--kiosk-idle-bg, #FFFFFF) !important;
+}
+.kiosk-app.kiosk-theme--light .kiosk-idle-overlay,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-overlay {
+    background: transparent !important;
+}

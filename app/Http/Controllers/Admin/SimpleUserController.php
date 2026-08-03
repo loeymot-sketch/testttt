@@ -34,6 +34,18 @@ class SimpleUserController extends AdminController
         $this->customerService    = $customerService;
         $this->userAddressService = $userAddressService;
         $this->middleware(['permission:pos'])->only('store', 'addresses', 'storeAddress', 'updateAddress');
+        // [C09 heal 2026-07-06] GET /admin/users (index) renvoyait nom + email de
+        // TOUS les utilisateurs (staff + clients ; User n'est pas branch-scopé) pour
+        // n'importe quel token authentifié — aucune garde middleware ni inline. Un
+        // rôle faible-privilège (ex. Chef, avec seulement kitchen-display-system)
+        // pouvait ainsi énumérer les PII de tout le monde. Deny-by-default : la liste
+        // sert de sélecteur client/staff dans exactement 6 surfaces SPA — POS caisse
+        // (pos), pos-order (pos-orders), table-order (table-orders), online-order
+        // (online-orders), push-notification (push-notifications), kiosk-machine
+        // (settings). OR-gate Spatie couvrant précisément ces permissions ; le rôle
+        // admin bypass via Gate::before (AuthServiceProvider). Le flux caisse (pos)
+        // reste intact. Sentinelle : tests/Feature/Security/AdminRoutePermissionFloorTest.php
+        $this->middleware(['permission:pos|pos-orders|table-orders|online-orders|push-notifications|settings'])->only('index');
     }
 
     public function index(PaginateRequest $request)

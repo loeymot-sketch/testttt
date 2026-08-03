@@ -10,7 +10,9 @@ alwaysApply: true
 Claude must write a plan file containing all of the following before any execution begins:
 
 - `TASK_ID`
-- `PRIMARY_MODEL`
+- `PRIMARY_EXECUTION_MODEL`
+- `REASONING_EFFORT`
+- `PLAN_REVIEW` block initialized for GPT-5.5-pro / xhigh challenge before EXECUTE
 - `SUBSYSTEMS_TOUCHED` — explicit list with read/write intent per subsystem
 - `SUBSYSTEMS_OFF_LIMITS` — explicit list of adjacent systems excluded from this cycle
 - `GATE_CONDITIONS` — anticipated gate triggers, or: None anticipated

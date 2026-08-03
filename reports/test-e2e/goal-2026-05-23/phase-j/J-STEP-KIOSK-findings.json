@@ -1,0 +1,272 @@
+{
+  "agent": "J-STEP-KIOSK client journey decomposition",
+  "scope": "Kiosk borne — 12-step atomic decomposition (S1 idle → S12 confirmation+queue ticket), each step audited as hostile 50yo claustro mal-aux-pieds faim persona, dimensions: visual / accessibility / works / understandable / fluid / responds-to-needs / complete / each-path (happy + edge)",
+  "evidence_sources": [
+    "reports/test-e2e/goal-2026-05-23/phase-h/H7-fullflow-captures/W1-state1..7 (7 kiosk JPGs, 1280x830 viewport)",
+    "reports/test-e2e/wave-final-2026-05-23/round-1/S1-kiosk-findings.json (10-state Wave Final S1 audit)",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue (Vider confirm modal verified L22+L30-L53)",
+    "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue (Mon compte chip wired to kiosk.loyalty route — Phase 9.1.13)",
+    "resources/js/bootstrap.js:182-200 (global 429 axios interceptor — surfaces telemetry 429 toast on S12)",
+    "routes/api.php:1394 (frontend/kiosk/event throttle:30,1)"
+  ],
+  "method": "Multimodal Read of 7 kiosk-flow PNGs + DOM/source grep for behavioral verification. No new browser session spawned (disk 5.6Gi avail constrained). Hostile critique angle: customer 50yo, presbyopia + arthritic touch + queue pressure + claustrophobic standing in line + hungry.",
+  "steps_audited": [
+    {
+      "step": "S1 idle (/kiosk/idle)",
+      "evidence_artifact": "W1-state1-kiosk-idle.jpg + Wave Final S1-01",
+      "visual_critique": "Hero 'Bienvenue !' serif italic display font is BEAUTIFUL but presbyopic 50yo customer's first eye-target should be the RED CTA button (visually present, animated, central). Cream-to-orange gradient background reads as Cayenne brand. Two food illustration ghosts (tacos top-left, burger top-right, frites center-right) at low opacity = decorative, NOT distracting. Logo 'LE CAYENNE — Tacos · Burgers · Sandwichs · Bowls' compact + centered. CTA = orange circle with white play-icon (▶) — INSTANTLY 'tap-to-start' read. Below CTA: 'À emporter / Je récupère ma commande' card with shopping-bag pictogram. Carousel page dots (3 dots, middle highlighted) bottom-center hint at multi-slide content. Top-right small clock icon — purpose unclear (countdown? attract loop? — INVESTIGATE).",
+      "accessibility_critique": "Touch target on CTA = ~80×80px circle = WELL above 44px minimum. 'À emporter' card is ~390×100px = enormous tap zone, GOOD. Color contrast: 'Bienvenue !' cream serif on white-cream background — VERY LOW contrast (estimate <3:1 WCAG fails for large text marginal pass at 18pt+ bold). Subtitle 'Commandez en quelques touches' light grey on cream — fails. CHOISISSEZ UNE OPTION POUR COMMENCER label very small ALL CAPS letter-spaced bottom area = under 14pt likely. NO obvious language switcher (V1 FR-only per owner mandate — acceptable). NO accessibility chip (no 'PMR' wheelchair icon / 'zoom' button) — gap for PMR customer.",
+      "fluidity_critique": "S1-02 evidence: tap on idle body did NOT navigate — only the central CTA + À emporter card consume taps. This is INTENTIONAL guard (prevents accidental brush-touch), BUT a frustrated 50yo who taps the 'Bienvenue' text expecting it to advance gets ZERO feedback. UX gap: full-screen tap-to-anywhere would be more forgiving; current design is too conservative.",
+      "works_critique": "CTA tap → catalog ≤1s confirmed via Wave Final S1-03. À emporter card tap → catalog (same destination). Both paths converge — GOOD.",
+      "understandable_critique": "50yo 1-second glance test: SEE Le Cayenne logo (brand recognition) → SEE 'Bienvenue' (greeting) → SEE red pulsing button (action) → tap. PASSES the 1-second test. EDGE: customer who doesn't see the play-▶ icon as 'tap me' (small symbol against red disc) might wait for prompt. SUGGEST adding subtle 'Appuyer pour commencer' label inside or below CTA.",
+      "responds_to_needs_critique": "Customer NEED = start ordering quickly. PASSES. EDGE: a customer who wants to browse menu BEFORE deciding to order has NO way to do that here (no 'Voir la carte' preview tile). MINOR.",
+      "complete_critique": "MISSING: (a) order-type selection — dine-in disabled per V1 mandate, only 'À emporter' = correct V1 behavior. (b) NO 'allergens question' upfront — relegated to in-product or absent entirely. (c) NO 'group order' chip — single-customer kiosk = correct V1 scope.",
+      "edge_paths_critique": "Idle timeout? Probably auto-attract-loop animation after Xs — unverified in captures. Carousel dots imply 3 slides cycle — UNVERIFIED whether the slides advance hands-off or only on swipe. If hands-off auto-advance, a 50yo might be confused by changing copy mid-read.",
+      "issues_found": [
+        {"id": "S1-01", "severity": "P2", "type": "a11y_contrast", "evidence": "Cream serif 'Bienvenue !' on cream-orange gradient background fails WCAG AA contrast 4.5:1 (display font, ~96px) — large-text rule allows 3:1, but visual estimate <3:1 for the lightest cream pixels."},
+        {"id": "S1-02", "severity": "P3", "type": "interaction_gap", "evidence": "Body tap outside CTA + card returns no feedback (Wave Final S1-02 observation). Consider full-screen tap-to-advance OR subtle visual pulse on body-touch to acknowledge."},
+        {"id": "S1-03", "severity": "P3", "type": "icon_clarity", "evidence": "Top-right clock icon purpose unclear to 50yo. Could be opening hours / countdown / cycle indicator. SUGGEST hover-tooltip or remove."}
+      ],
+      "verdict_per_dimension": {"visual": "AMBER", "accessibility": "AMBER", "works": "GREEN", "understandable": "GREEN", "fluid": "GREEN", "responds_to_needs": "GREEN", "complete": "GREEN", "edge_paths": "AMBER"}
+    },
+    {
+      "step": "S2 catalog browse (/kiosk/products)",
+      "evidence_artifact": "W1-state2-catalog.jpg",
+      "visual_critique": "Catalog page shows 'NOS BOISSONS' header (top-left, with logo + serif italic 'Boissons') + 'BOISSONS / 8 produits' subhead + 2x2 product grid (Eau Plate 50cl + Capri-Sun visible above fold, 2 more partially visible below). Left rail: vertical scrolling category nav (Sandwich Cayenne / Galette / Sandwich Classique / Burgers / Tacos visible) with photo + ALL CAPS name. Bottom bar: cart pill '🛒 0 article' + price '€0,00' + 2 CTAs (Abandonner ma commande / Payer GREYED). Top-right: orange 'Mon compte' pill (loyalty link per Phase 9.1.13 wire). Cards have orange '+' add-button bottom-right inside the photo area = INSTANTLY recognizable add affordance.",
+      "accessibility_critique": "Touch targets EXCELLENT: each product card ~395×400px (huge), '+' button ~55×55px ≥ 44px. Category nav photos ~95×95px tiles — could be slightly larger for arthritic touch. Price '€1,00' bold-orange on white = high contrast PASS. HALAL + VÉGÉTARIEN chips green pill = visible. Bottom CTAs: 'Abandonner' white-on-white border greyed = LOW contrast (acceptable since cart is empty, but visual confusing — looks DISABLED but is actually clickable). 'Payer' visibly greyed-disabled = correct (cart empty).",
+      "fluidity_critique": "Scrolling: left rail and right grid scroll independently (typical pattern). Category switch — UNVERIFIED whether the page jumps or animates. Photo lazy-load — appears to render quickly per S2 capture. Sticky bottom-bar = OK.",
+      "works_critique": "Mon compte tap → kiosk.loyalty route (verified Phase 9.1.13 wire). '+' on product = direct-add for simple items / wizard for composer items (confirmed via Wave Final S1-05/S1-06).",
+      "understandable_critique": "Customer 50yo 1-second glance: 'BOISSONS / 8 produits' header tells them WHERE they are. Photos of bottle/Capri-Sun = visual recognition. '€1,00' = price upfront. '+' = 'add this'. PASSES. CONCERN: the left-rail category list contains 'Sandwich Cayenne / Galette / Sandwich Classique / Burgers / Tacos' — but the active header says 'NOS BOISSONS' = visually no indicator of which category is CURRENTLY selected in the left rail. A 50yo may not realize they're already on a category and need to scroll the LEFT rail to switch.",
+      "responds_to_needs_critique": "Customer NEED = browse menu, find what they want, add to cart. PASSES happy path. EDGE: customer who wants to SEARCH ('I want a poulet tikka') has NO search bar visible. EDGE: customer with allergies has 'HALAL / VÉGÉTARIEN' chips but NO allergen filter ('NO GLUTEN / NO LACTOSE') — a 50yo with celiac would have to manually inspect each product.",
+      "complete_critique": "MISSING: (a) global search bar — for a 11-category catalog this is significant; even a magnifying-glass icon top-right would help. (b) NO 'mes favoris' shortcut for returning customers (loyalty users via Mon compte). (c) NO 'commandé la dernière fois' suggestion. (d) FR canonical prices €1,00 confirmed = CORRECT. (e) ÉPUISÉ badge — not visible on this capture (all items in stock), per S1-006 it appears as a chip; PHASE F verified pruneUnavailableLines runs at Valider, but the catalog itself does NOT visually distinguish OOS items at-browse time (UNVERIFIED — needs OOS-state capture).",
+      "edge_paths_critique": "Cart empty + 'Payer' greyed = correct disabled state. Cart with 1+ items + 'Payer' active — UNVERIFIED. Photo broken / 404 — UNVERIFIED. Long product name overflow — UNVERIFIED.",
+      "issues_found": [
+        {"id": "S2-01", "severity": "P1", "type": "missing_feature", "evidence": "No global search bar on a 11-category catalog. 50yo who wants 'tacos curry' has to find the Tacos category in the left rail then scroll. Adding a top-right search icon → modal would cut friction significantly. Owner-gate (V1 scope decision)."},
+        {"id": "S2-02", "severity": "P2", "type": "visual_state_indicator", "evidence": "Left-rail category list shows no visual highlight on the currently-active category. The 'NOS BOISSONS' header is the only cue."},
+        {"id": "S2-03", "severity": "P2", "type": "a11y_filter", "evidence": "HALAL/VÉGÉTARIEN chips present but no SANS GLUTEN / SANS LACTOSE / ALLERGÈNES filter. AllergenCoverageSentinel known-red on 2 methods (per MEMORY V1.0.2 backlog) — corroborates."},
+        {"id": "S2-04", "severity": "P3", "type": "ambiguous_disabled", "evidence": "'Abandonner ma commande' button styled identically to 'Payer' greyed state when cart is empty. Visually reads as both disabled, but 'Abandonner' IS clickable."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "AMBER", "works": "GREEN", "understandable": "AMBER", "fluid": "GREEN", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "AMBER"}
+    },
+    {
+      "step": "S3 wizard step 1 — Quelle viande (Tacos composer)",
+      "evidence_artifact": "W1-state3-wizard-step1.jpg",
+      "visual_critique": "Modal full-screen overlay: top progress strip orange THIN bar (~25% filled = step 1 of 4). Top header: 'VOUS COMPOSEZ / TACOS' (small + large serif) + X close button top-right (~50×50). 4-step indicator carousel: viande-photo / sauce-bowl-photo / menu-photo / récap-photo each with label below ('QUELLE VIANDE ?' active orange, others grey 'QUELLE SAUCE ?' / 'QUEL MENU ?' / 'RÉCAP'). ‹ › arrow chevrons left+right of indicator carousel. 4-segment progress bar BELOW indicator (1/4 filled orange). Section 'VOTRE COMPOSITION / Vos choix s'ajoutent ici au fur et à mesure.' — bilingual cue. Main heading 'QUELLE VIANDE ?' centered + '0 / 1' count chip + 'Choisissez 1 viande : touchez celle que vous voulez.' instruction banner orange-tinted. 2x2 viande grid: POULET MARINÉ / POULET CURRY / POULET TANDOORI / POULET CRISPY each with photo + 'CHOISIR' orange-outline CTA. Bottom bar: ABANDONNER L'ARTICLE / PRÉCÉDENT / SUIVANT / Total €6,90 (4-button layout).",
+      "accessibility_critique": "Touch targets: 'CHOISIR' buttons ~110×40 — BORDERLINE, height 40px < 44px AA minimum. Step indicator photos 80×80 — OK. X-close 50×50 — OK. ‹ › chevrons ~50×50 — OK. Progress bar segments visible but THIN (~4px) — purely decorative, OK. Footer buttons ABANDONNER/PRÉCÉDENT/SUIVANT — 'PRÉCÉDENT' and 'SUIVANT' here both shown ENABLED but logic shows SUIVANT must be DISABLED until selection (verified via instruction banner '0/1' and Wave Final S1-06). The capture shows ALL three buttons in the SAME visual treatment (grey-outline) = ambiguous disabled-vs-enabled state. Total €6,90 in orange box right-bottom = highly visible.",
+      "fluidity_critique": "Step transition (carousel + progress bar) — UNVERIFIED smoothness. Selection feedback on CHOISIR tap — UNVERIFIED (does the card scale-up / glow / checkmark? Not visible mid-state).",
+      "works_critique": "Step indicator clickable for navigation? — UNVERIFIED (the ‹ › chevrons imply yes). CHOISIR button changes card state — UNVERIFIED. Instruction banner '0/1' updates to '1/1' on tap — UNVERIFIED.",
+      "understandable_critique": "50yo 1-second glance: 'VOUS COMPOSEZ TACOS' = context. 'QUELLE VIANDE ?' = the question. '0/1' = need to pick one. 4 photos = options. CHOISIR = action. PASSES. CONCERN: 'CHOISIR' is a VERB but reads as a tertiary action; many e-commerce patterns use the photo card itself as the tap-target (whole-card click = select). The dual-element pattern (card + CHOISIR button) is REDUNDANT and may confuse a 50yo who taps the photo expecting selection and gets nothing.",
+      "responds_to_needs_critique": "Customer NEED = compose tacos with desired meat. PASSES. EDGE: vegetarian customer ordering Tacos has NO meat-free option in the viande step — the entire wizard is meat-centric. If 'POULET' is the only protein, a vegetarian sees 4 chicken options and quits. (Could be V1 menu reality at Le Cayenne — UNVERIFIED but flag as edge).",
+      "complete_critique": "MISSING: (a) 'NO viande' option for veggie tacos. (b) photo alt-text for screen-reader (UNVERIFIED but kiosk typically lacks AT). (c) running total update animation — Total €6,90 is the BASE price; no visual signal that supplements will change it.",
+      "edge_paths_critique": "Customer changes mind: PRÉCÉDENT button visible. ABANDONNER L'ARTICLE bottom-left = explicit escape. X close top-right = duplicate escape. THREE escape paths — GOOD redundancy but could confuse a 50yo who doesn't know which to use ('do I lose my cart if I X-close?'). UNVERIFIED whether X confirms before discarding.",
+      "issues_found": [
+        {"id": "S3-01", "severity": "P2", "type": "a11y_touch", "evidence": "'CHOISIR' button ~40px tall < 44px WCAG AA target. Suggest 48-56px for arthritic touch."},
+        {"id": "S3-02", "severity": "P2", "type": "redundant_tap_target", "evidence": "Card + CHOISIR button both required to select. Whole-card tap pattern is more intuitive. Adds friction for 50yo who tap the photo and wait."},
+        {"id": "S3-03", "severity": "P3", "type": "disabled_state_ambiguity", "evidence": "PRÉCÉDENT button on step 1 — should be DISABLED or HIDDEN (nothing to go back to). Capture shows it visually identical to SUIVANT = enabled."},
+        {"id": "S3-04", "severity": "P3", "type": "triple_escape_path", "evidence": "ABANDONNER L'ARTICLE / PRÉCÉDENT / X close — three exit routes with different semantics. 50yo may confuse 'PRÉCÉDENT' (=back step) with 'ABANDONNER' (=cancel item)."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "AMBER", "works": "GREEN", "understandable": "AMBER", "fluid": "AMBER", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "AMBER"}
+    },
+    {
+      "step": "S4 wizard step 2 — Quelle sauce (multi-select, '1re sauce gratuite')",
+      "evidence_artifact": "W1-state4-wizard-sauces.jpg",
+      "visual_critique": "Same modal layout, step indicator advances: viande-photo grey + sauce-bowl ORANGE-active + menu-photo grey + récap grey. Progress bar 2/4 segments filled. 'VOTRE COMPOSITION' chip-row now shows 'VIANDES / Poulet mariné' = selected meat persisting = EXCELLENT visual continuity. Main heading 'QUELLE SAUCE ?' + subtitle '1re sauce gratuite' (small grey text). 4x2 grid of 8 sauces: ALGÉRIENNE (with ÉPUISÉ pill below = OOS badge present!) / ANDALOUSE / BLANCHE / CURRY (top row) + 4 more (bottom row partially visible — names cut). Each card has orange '+' button top-right (multi-select chip-add pattern). ALGÉRIENNE card has NO '+' button (because ÉPUISÉ — disabled). Bottom bar identical to S3.",
+      "accessibility_critique": "ÉPUISÉ pill = small orange-cream chip below name = visible but SUBTLE (could be more prominent — bright red 'INDISPONIBLE' would be more 50yo-friendly). Touch targets on '+' buttons ~50×50 = PASS. Sauce cards full-width-half ~270×220 = huge tap zone (whole card tappable? UNVERIFIED). Sauce photos clear (bowls of different colors = visual differentiation). Color blindness: orange '+' on white = OK; but if a customer is red-green color-blind they may not distinguish 'gratuite' green from 'paid' orange (no such cue present — needs verification of how second+ sauce is communicated).",
+      "fluidity_critique": "Multi-select tap → '+' becomes '✓' or chip animates? UNVERIFIED. Per S5 spec: NO max limit on sauces. So if customer taps + 8 times they get all 8 sauces. Per audit S1-002 finding + brief mention 'First free, +0.50€ each' — UNVERIFIED whether this surcharge is VISIBLE before commit.",
+      "works_critique": "Multi-select pattern presumed working. ÉPUISÉ blocks add. Per LOCK_FISCAL doc the backend enforces pricing SSOT, so even if multi-select front-end allows 8 sauces, the backend will charge for 7 paid sauces correctly. But FRONT-END must signal '+€0,50' per extra sauce — otherwise customer surprised at total.",
+      "understandable_critique": "50yo 1-second glance: 'QUELLE SAUCE ?' + '1re sauce gratuite' = FREE first sauce. PASSES the headline. CONCERN: the '1re sauce gratuite' is SMALL GREY text below the heading — easy to miss. A 50yo taps 3 sauces, sees TOTAL jump from €6,90 to €7,90 (+€1,00 for 2 extras) and is CONFUSED. The pricing rule should be PROMINENT (e.g. inline beneath each '+': 'Gratuite' on first selected, '+ €0,50' label appearing on subsequent).",
+      "responds_to_needs_critique": "Customer NEED = pick sauces. EDGE 1: customer wants NO sauce — is there a 'Sans sauce' option? NOT VISIBLE in capture (4 visible options all are sauces). EDGE 2: customer wants to know WHAT each sauce tastes like — sauce photos look similar (white/cream/orange), names 'BLANCHE' / 'CURRY' / 'ANDALOUSE' may not be familiar to all customers. NO description text per sauce.",
+      "complete_critique": "MISSING: (a) 'Sans sauce' opt-out chip (if business permits). (b) sauce descriptions on tap (small popover). (c) prominent free-vs-paid indicator. (d) max sauce limit (R10 finding noted no max — risk of customer adding 13 sauces, real-cost impact for restaurant).",
+      "edge_paths_critique": "OOS sauce (ÉPUISÉ ALGÉRIENNE) = correctly disabled. Customer goes back via PRÉCÉDENT — does their meat selection persist? Per chip-row YES. GOOD. Customer taps SUIVANT without selecting any sauce — does it proceed (sauces multi-select 0 allowed)? UNVERIFIED but '1re gratuite' wording implies 0 is allowed.",
+      "issues_found": [
+        {"id": "S4-01", "severity": "P1", "type": "pricing_clarity", "evidence": "'1re sauce gratuite' small grey text below heading — easy to miss by 50yo presbyopic customer. Surcharge €0,50 per extra sauce is NOT visually surfaced before tap. Risk: surprise total at récap."},
+        {"id": "S4-02", "severity": "P2", "type": "OOS_visibility", "evidence": "ÉPUISÉ pill is subtle orange-cream chip. A red 'INDISPONIBLE' or photo-greyout would be more 50yo-friendly."},
+        {"id": "S4-03", "severity": "P2", "type": "missing_no_sauce_opt", "evidence": "No visible 'Sans sauce' chip. Customer who wants plain tacos has no signal to proceed without selecting."},
+        {"id": "S4-04", "severity": "P3", "type": "missing_description", "evidence": "No sauce description/tooltip on tap. Customer unfamiliar with 'ANDALOUSE' has no help."},
+        {"id": "S4-05", "severity": "P2", "type": "no_max_limit", "evidence": "Per R10 finding: no max-limit enforcement on sauce multi-select. Backend SSOT charges +€0,50 each, but customer can technically add all 13 sauces. Risk: malicious or accidental cost inflation. Owner-gate."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "GREEN", "works": "GREEN", "understandable": "AMBER", "fluid": "GREEN", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "GREEN"}
+    },
+    {
+      "step": "S5 wizard step 3 — Quel menu (formule choice)",
+      "evidence_artifact": "W1-state5-wizard-menu.jpg",
+      "visual_critique": "Step indicator now MENU-active (orange). Chip-row shows VIANDES Poulet mariné + SAUCES Andalouse — TWO selections persist visually = EXCELLENT recap. Main 'QUEL MENU ?' + instruction banner orange-tinted 'Touchez une option pour continuer — y compris « Sans menu » si vous ne voulez pas de formule.' (long but explicit). 2x2 grid: MENU COMPLET (Frites + Boisson) photo of frites+coke, +FRITES (Seulement les frites) photo of frites alone, 2 more rows partially visible (likely '+ BOISSON' and 'SANS MENU'). Each card with photo + name + small subtitle + orange '+'.",
+      "accessibility_critique": "Touch targets and contrast same as S3/S4 — PASS overall. Photos are CLEAR (visible distinction frites+coke vs frites alone). Instruction banner is LONG (3-line wrap) — readable but cognitive load high.",
+      "fluidity_critique": "Single-select formule (not multi) — tap one card and SUIVANT becomes active. UNVERIFIED visual feedback.",
+      "works_critique": "Backend pricing SSOT handles formule upcharge correctly (per F-001 / V1 closed). Frontend displays formule price delta — UNVERIFIED on this capture.",
+      "understandable_critique": "50yo 1-second glance: 'QUEL MENU ?' + 4 options with photos = PASS. CONCERN: 'MENU COMPLET / +FRITES / + BOISSON / SANS MENU' — the '+' prefix on 'FRITES' and 'BOISSON' is potentially confusing (does the '+' mean 'add' or is it part of the name?). The naming convention should be 'AVEC FRITES' / 'AVEC BOISSON' / 'SANS MENU' for absolute clarity. Per Wave Y / catalog refresh this is V2-canonical naming so may be design-locked.",
+      "responds_to_needs_critique": "Customer NEED = pick formule. PASSES. EDGE: SANS MENU exists per banner text — GOOD (customer who wants pure tacos can skip). EDGE: customer with allergies needs to know what's in the menu (e.g. nuggets in 'MENU COMPLET'?) — UNVERIFIED.",
+      "complete_critique": "PRICE DELTA per option NOT visible on cards. Customer doesn't know if MENU COMPLET adds €2,50 or €4,00 over base Tacos. Critical for trust.",
+      "edge_paths_critique": "All 4 options should be selectable. ÉPUISÉ on FRITES (if frites OOS) — UNVERIFIED behavior. PRÉCÉDENT returns to sauces, sauce selection persists per chip row pattern = GOOD.",
+      "issues_found": [
+        {"id": "S5-01", "severity": "P1", "type": "missing_price_delta", "evidence": "MENU COMPLET / +FRITES / + BOISSON cards show NO price delta. Customer can't compare cost of upgrades. Industry standard is 'MENU COMPLET +€2,50' on the card."},
+        {"id": "S5-02", "severity": "P3", "type": "naming_ambiguity", "evidence": "'+FRITES' / '+ BOISSON' prefix '+' ambiguous — could read as 'add frites' button label rather than option name. 'AVEC FRITES' clearer."},
+        {"id": "S5-03", "severity": "P2", "type": "missing_formule_contents", "evidence": "'MENU COMPLET (Frites + Boisson)' OK but customer doesn't know WHICH boisson (default Coke?) or size of frites. No tooltip."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "GREEN", "works": "GREEN", "understandable": "AMBER", "fluid": "GREEN", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "GREEN"}
+    },
+    {
+      "step": "S6 wizard step 4 — Garnitures / Suppléments (Include/Exclude toggle)",
+      "evidence_artifact": "Inferred from KioskWizardComponent.vue + Wave Final S1-006 reference to QUELLE GARNITURE step",
+      "visual_critique": "UNVERIFIED — no Garnitures capture in W1 set. Per code review, garnitures step uses 'Inclus par défaut' badge with '✓ Avec' green pill toggleable to '✕ Sans' red pill. Pattern is binary include/exclude.",
+      "accessibility_critique": "INFERRED — same wizard pattern as S3/S4/S5, touch targets per layout consistent. Color-only signal (green ✓ vs red ✕) is a P2 a11y concern for color-blind users; should be paired with text label 'INCLUS' / 'EXCLU'.",
+      "fluidity_critique": "UNVERIFIED.",
+      "works_critique": "Per F-001 SSOT pricing fix, garnitures exclusion does NOT change price (always included base price). Per backend tests this is invariant.",
+      "understandable_critique": "EDGE: customer who DOESN'T want crudités needs to find toggle and tap. The '✓ Avec' default + '✕ Sans' tap is intuitive ONLY if the toggle behavior is visually obvious. UNVERIFIED.",
+      "responds_to_needs_critique": "EDGE: customer with lactose allergy needs to exclude cheese — pattern works.",
+      "complete_critique": "MISSING capture for this audit cycle. Future re-capture recommended.",
+      "edge_paths_critique": "Customer who excludes ALL garnitures — does the wizard warn 'tacos sans crudités ni viande?' UNVERIFIED.",
+      "issues_found": [
+        {"id": "S6-01", "severity": "P3", "type": "missing_capture", "evidence": "No Garnitures step capture in W1 set. Re-capture in next cycle to verify toggle clarity."},
+        {"id": "S6-02", "severity": "P2", "type": "color_only_signal", "evidence": "If ✓/✕ green/red is sole differentiator, color-blind 50yo at risk. Pair with 'AVEC' / 'SANS' label always."}
+      ],
+      "verdict_per_dimension": {"visual": "UNVERIFIED", "accessibility": "AMBER", "works": "GREEN", "understandable": "UNVERIFIED", "fluid": "UNVERIFIED", "responds_to_needs": "UNVERIFIED", "complete": "UNVERIFIED", "edge_paths": "UNVERIFIED"}
+    },
+    {
+      "step": "S7 wizard final récap → Ajouter au panier",
+      "evidence_artifact": "Wave Final S1-05 reference + W1 implied",
+      "visual_critique": "Per Wave Final S1-05: 'RÉCAPITULATIF DE VOTRE COMMANDE' block showing item name + price line + Total €X,XX + Quantité 1 with +/- numpad. 'Instructions spéciales' textarea with placeholder 'Ajouter une note (extra mayo, fromage...)' max 190 chars. Footer: ABANDONNER L'ARTICLE / PRÉCÉDENT / AJOUTER AU PANIER (orange CTA).",
+      "accessibility_critique": "AJOUTER AU PANIER orange CTA = primary action, full-width — GOOD. Quantité +/- buttons ≥44px — PASS. Textarea placeholder grey may have contrast issue (UNVERIFIED). Composition summary should show ALL choices (viande + sauce + menu + garnitures) — UNVERIFIED full list on récap.",
+      "fluidity_critique": "Tap AJOUTER AU PANIER → toast 'Ajouté au panier' + auto-close wizard + back to catalog — UNVERIFIED exact UX.",
+      "works_critique": "Pricing line shows resolved total including supplements per backend SSOT.",
+      "understandable_critique": "Customer 50yo sees TOTAL prominent before tap = GOOD trust. Quantité numpad clear. Instructions placeholder helpful.",
+      "responds_to_needs_critique": "Customer NEED = confirm and add. PASSES.",
+      "complete_critique": "MISSING: explicit 'modifier ma composition' link to jump back to a specific step (vs forced sequential PRÉCÉDENT taps). For a 4-step wizard with 1 error, customer must tap PRÉCÉDENT 3x.",
+      "edge_paths_critique": "Customer changes Quantité from 1 to 3 — does Total update reactively? UNVERIFIED. Customer empties instructions textarea — placeholder reappears? UNVERIFIED.",
+      "issues_found": [
+        {"id": "S7-01", "severity": "P2", "type": "missing_jump_to_step", "evidence": "No way to jump from récap to step 2 to change sauce. Must PRÉCÉDENT 3x. For 50yo this is friction."},
+        {"id": "S7-02", "severity": "P3", "type": "quantity_unverified", "evidence": "Quantity +/- numpad reactive total update — needs visual verification on next capture cycle."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "GREEN", "works": "GREEN", "understandable": "GREEN", "fluid": "UNVERIFIED", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "UNVERIFIED"}
+    },
+    {
+      "step": "S8 cart review (/kiosk/cart)",
+      "evidence_artifact": "W1-state6-cart.jpg",
+      "visual_critique": "Top: serif italic ALL CAPS 'VOTRE PANIER' + '1 article' subtitle + back-arrow circle button top-left + 'Vider le panier' orange-outline button top-right. Center: BIG orange pill banner '🍔 À emporter' (order type confirmation). Item line: thumbnail photo + name 'Eau Plate 50cl' + pencil-edit icon + '€1,00 par unité' + qty stepper (- 1 +) + delete-trash icon right + price '€1,00' bold orange. Below: Sous-total €1,00 + Total €1,00 (Total LARGE bold orange). 'Code promo' input with grey 'SAISIR UN CODE PROMO...' placeholder + 'Appliquer' button (orange-tinted-disabled until input). 'Avez-vous une carte fidélité ?' yellow-tinted banner with star + chevron-right. Bottom: orange CTA 'Valider ma commande' with right pill '€1,00' + 'Ajouter des articles' ghost CTA.",
+      "accessibility_critique": "Touch targets: qty stepper -/+ each ~40×40 — BORDERLINE under 44px. Trash icon ~40×40 — BORDERLINE. 'Valider ma commande' full-width ~70px tall = EXCELLENT. Pencil-edit icon ~24×24 NEXT TO ITEM NAME — way too small for arthritic touch, AND its purpose (edit item composition? edit qty?) unclear from icon alone. 'Vider le panier' top-right white-on-white border — could be missed.",
+      "fluidity_critique": "Vider le panier tap → confirm modal (VERIFIED code: KioskCartComponent.vue L22+L30-L53 showClearConfirm + clear_cart_confirm + clear_cart_confirm_yes/no). EXCELLENT — destructive action protected. Qty - tap on '1' should disable (can't go below 1) or convert to trash. UNVERIFIED. Code promo apply — toast on success/fail UNVERIFIED.",
+      "works_critique": "Per Wave Final S1-07 numeric integrity verified down to centime through cart → upsell → payment → cash-instruction. SSOT pricing holds.",
+      "understandable_critique": "50yo 1-second glance: 'VOTRE PANIER' + photo + name + price + total = PASS. CONCERN: 'À emporter' BIG orange banner CONFIRMS order type — but a 50yo who tapped wrong on idle sees no way to CHANGE order type here (no 'Sur place' alternative in V1 = correct).",
+      "responds_to_needs_critique": "Customer NEED = review, modify qty, remove item, apply promo, validate. ALL PRESENT. EDGE: customer wants to EDIT item composition (e.g. change sauce on a Tacos) — pencil-edit icon implies this, but action unverified. EDGE: customer wants to SEE detailed composition (which sauces are on the Tacos line) — not visible in cart capture (only Eau Plate which has no composition).",
+      "complete_critique": "MISSING: (a) per-line composition details visible (e.g. 'Poulet mariné · Andalouse · Menu complet'). (b) sum count not shown in qty pill (only number, no 'unités' label).",
+      "edge_paths_critique": "Cart 0 articles — capture shows 1 article. 0 articles state should show empty illustration + 'Votre panier est vide' + 'Voir le menu' CTA. UNVERIFIED. Cart with 10+ articles — scroll behavior UNVERIFIED. Promo code rejected — toast UNVERIFIED.",
+      "issues_found": [
+        {"id": "S8-01", "severity": "P2", "type": "a11y_touch", "evidence": "Qty stepper -/+ and trash icon ~40×40 < 44px WCAG AA target. Pencil-edit icon ~24×24 = severe miss."},
+        {"id": "S8-02", "severity": "P2", "type": "icon_meaning", "evidence": "Pencil-edit icon next to 'Eau Plate' name — purpose unclear (edit composition? edit qty?). For a non-composer item like Eau Plate, what would 'edit' do?"},
+        {"id": "S8-03", "severity": "P1", "type": "missing_composition_detail", "evidence": "Cart line shows only product name and unit price. No composition breakdown (sauces, menu, supplements). Customer who chose 3 sauces can't verify them in cart without going back to wizard."},
+        {"id": "S8-04", "severity": "P3", "type": "0_state_unverified", "evidence": "Empty cart state UI unverified."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "AMBER", "works": "GREEN", "understandable": "GREEN", "fluid": "GREEN", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "UNVERIFIED"}
+    },
+    {
+      "step": "S9 Valider → quote validation (post Wave F pre-flight prune)",
+      "evidence_artifact": "Wave Final S1-07 → S1-08 transition",
+      "visual_critique": "UNVERIFIED loading state. Per Wave Final S1-08 the post-click destination is /kiosk/upsell (rendered correctly).",
+      "accessibility_critique": "Loading spinner / skeleton — UNVERIFIED. Should have aria-live polite for 'Validation en cours'.",
+      "fluidity_critique": "Per Wave Final: navigation appears smooth. Post commit 6f226ef67 the pre-flight pruneUnavailableLines runs BEFORE the quote POST.",
+      "works_critique": "Per Wave Final S1-08 capture: clean cart passes through Valider → /kiosk/upsell with no 422 or toast. PASS. EDGE: cart with OOS line — per fix commit 6f226ef67 pruneUnavailableLines surfaces a toast (good). EDGE: rate-limit 429 — per Wave Final S1-002 the global axios interceptor surfaces telemetry-source 429 as user toast on S1-10 = leak (P1 deferred).",
+      "understandable_critique": "Loading message during validation — UNVERIFIED.",
+      "responds_to_needs_critique": "Customer wants instant feedback. If <2s, perceived as instant. UNVERIFIED actual latency.",
+      "complete_critique": "MISSING: visible 'validation en cours' progress indicator (assumed minimal latency means none needed).",
+      "edge_paths_critique": "OOS line: pruneUnavailableLines toast — pattern verified in code. Network error: UNVERIFIED retry UX. 429 telemetry leak: KNOWN P1 (S1-002 in Wave Final).",
+      "issues_found": [
+        {"id": "S9-01", "severity": "P1", "type": "telemetry_429_leak", "evidence": "Wave Final S1-002 already raised. Global axios interceptor surfaces telemetry 429 as user-facing toast. Owner-gate architectural fix."},
+        {"id": "S9-02", "severity": "P3", "type": "loading_indicator_unverified", "evidence": "No visible loading skeleton during Valider — assumed <2s, but UNVERIFIED."}
+      ],
+      "verdict_per_dimension": {"visual": "UNVERIFIED", "accessibility": "UNVERIFIED", "works": "GREEN", "understandable": "UNVERIFIED", "fluid": "GREEN", "responds_to_needs": "GREEN", "complete": "UNVERIFIED", "edge_paths": "AMBER"}
+    },
+    {
+      "step": "S10 payment method selection (/kiosk/payment)",
+      "evidence_artifact": "W1-state7-payment.jpg",
+      "visual_critique": "Top: serif italic ALL CAPS 'CHOISISSEZ VOTRE PAIEMENT' + 'Total à régler : €1,00' subtitle + back-arrow top-left. Hero: BIG orange pill 'TOTAL À RÉGLER : / €1,00' (massive display font ~140px) = customer 2m away can read it. 3-tile grid: Carte bancaire (blue card icon, Visa·Mastercard·Carte bleue subtitle) / Espèces (green euro-coin icon, Paiement à la caisse) / Titre restaurant (orange ticket icon, Edenred·Swile·Sodexo). Bottom: 'Confirmer — €1,00' button GREYED (correctly disabled until tile selected) with right-arrow.",
+      "accessibility_critique": "TOTAL hero readable from 2-3m = EXCELLENT. Tiles ~330×140 each = huge tap zone (way >>44px). Icons high contrast (blue/green/orange disc on white). Subtitle text light grey small (~12-13px) — borderline for presbyopic. 3 tiles HORIZONTAL = good visual scan. Confirmer button greyed visibly DISABLED = correct UX. ONLY 3 modes visible — brief mentions 'MOBILE' as a 4th but capture shows only 3 (Carte/Espèces/Titre). MOBILE/contactless payment ABSENT (Apple Pay / Google Pay) — V1 scope decision, presumably acceptable for V1 LOCAL.",
+      "fluidity_critique": "Tap tile → tile becomes selected (border or shade highlight) + Confirmer button enables. UNVERIFIED selected-state visual.",
+      "works_critique": "Per Wave Final S1-09 / S1-10: Espèces tap → /kiosk/cash-instruction = WORKS. Carte / Titre tap → terminal handler — UNVERIFIED in this capture set.",
+      "understandable_critique": "50yo 1-second glance: TOTAL big = how much. 3 icons = 3 ways to pay. ALL FR = clear. PASSES. CONCERN: 'Titre restaurant' may be unfamiliar to non-French-workforce customers; but for Le Cayenne LOCAL clientele likely well understood.",
+      "responds_to_needs_critique": "Customer NEED = pay. PASSES. EDGE: customer without compatible Titre — no option to abort to Carte. Easy UX: tap Carte instead. EDGE: contactless/mobile payment customer — NO Apple Pay / Google Pay tile = V1 gap, acceptable.",
+      "complete_critique": "MISSING: (a) Apple Pay / Google Pay (V1 scope decision). (b) 'split payment' option (Titre + complement card) — V1 scope, single mode only.",
+      "edge_paths_critique": "Hardware unavail: per code, disabled tiles for unreachable modes — UNVERIFIED in this capture (all 3 enabled). Customer goes back via back-arrow → cart preserved? UNVERIFIED.",
+      "issues_found": [
+        {"id": "S10-01", "severity": "P3", "type": "subtitle_contrast", "evidence": "Tile subtitles 'Visa·Mastercard...' light grey small ~12-13px borderline contrast for presbyopic. Suggest darker grey or 14-16px."},
+        {"id": "S10-02", "severity": "P3", "type": "no_mobile_payment", "evidence": "No Apple Pay / Google Pay tile. V1 scope decision — acceptable but flag for V1.0.2 backlog."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "GREEN", "works": "GREEN", "understandable": "GREEN", "fluid": "GREEN", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "UNVERIFIED"}
+    },
+    {
+      "step": "S11 payment execution (in-flight)",
+      "evidence_artifact": "UNVERIFIED — no capture of in-flight terminal state (CARD wait / CASH confirmation page is S12)",
+      "visual_critique": "Per code/docs: CARD selection should show 'Présentez votre carte sur le TPE' with terminal-icon visual cue. Cash selection redirects to /kiosk/cash-instruction (= S12 actually). UNVERIFIED CARD wait screen UX.",
+      "accessibility_critique": "INFERRED — should have aria-live for terminal status updates.",
+      "fluidity_critique": "CASH path: instant redirect to cash-instruction = GOOD. CARD path: depends on TPE handshake latency (typically 5-15s for chip read).",
+      "works_critique": "PER POS_SIMULATION_HARDWARE config: in production simulation must be OFF (boot guard verified). Real TPE integration scope.",
+      "understandable_critique": "Customer 50yo NEED clear 'please tap your card' instruction with visual carte-tap-tpe pictogram. UNVERIFIED.",
+      "responds_to_needs_critique": "UNVERIFIED screen exists.",
+      "complete_critique": "UNVERIFIED. Re-capture in next cycle with CARD path simulation.",
+      "edge_paths_critique": "TPE timeout, card declined, payment failure — retry UX UNVERIFIED.",
+      "issues_found": [
+        {"id": "S11-01", "severity": "P2", "type": "missing_capture", "evidence": "No CARD payment in-flight capture. Critical state for production validation. Re-capture priority."}
+      ],
+      "verdict_per_dimension": {"visual": "UNVERIFIED", "accessibility": "UNVERIFIED", "works": "UNVERIFIED", "understandable": "UNVERIFIED", "fluid": "UNVERIFIED", "responds_to_needs": "UNVERIFIED", "complete": "UNVERIFIED", "edge_paths": "UNVERIFIED"}
+    },
+    {
+      "step": "S12 confirmation + queue ticket (/kiosk/cash-instruction or /kiosk/confirmation)",
+      "evidence_artifact": "Wave Final S1-10 description",
+      "visual_critique": "Per Wave Final S1-10: 'Rendez-vous en caisse' BIG bold header + 'Présentez votre numéro à un membre de l'équipe' subtitle + euro emoji icon in red disk. Order card: 'Numéro de commande #A0001' (visible from 2m? 'BIG' implies yes) + 'Montant à régler 7,80 €'. Subtitle 'Paiement en espèces uniquement à la caisse.'. 'Retour à l'accueil dans 40 s' countdown + 'J'AI COMPRIS' orange CTA. TRANSIENT TOAST top-right: '⚠ Trop de requêtes — patientez 22s avant de réessayer.' (Wave Final S1-002 P1 deferred).",
+      "accessibility_critique": "Queue number #A0001 size — Wave Final S1-10 implies prominent, but exact pixel size UNVERIFIED. 'J'AI COMPRIS' orange CTA = primary acknowledge. 40s countdown — sufficient for 50yo to read+understand+walk to caisse. Toast at top-right is RED-warning style = distracting on a calm 'thank you' screen.",
+      "fluidity_critique": "Auto-redirect after 40s = good. Manual J'AI COMPRIS — UNVERIFIED if it returns to idle or just dismisses toast.",
+      "works_critique": "Per Wave Final S1-10: order #A0001 + 7,80 € identical to cart total = numeric integrity. NF525 fiscal_sequence_no allocated at counter-close (cash mode), so #A0001 is kiosk display number not yet fiscal — CORRECT per V1.",
+      "understandable_critique": "50yo 1-second glance: 'Rendez-vous en caisse' = where to go. '#A0001' = my ticket. '7,80 €' = how much. PASSES. CONCERN: the rate-limit toast '⚠ Trop de requêtes — patientez 22s' (S1-002) appears ON the final screen at multi-terminal lunchtime cadence — CONFUSING because customer thinks something failed.",
+      "responds_to_needs_critique": "Customer NEED = know what to do next + remember their number. PASSES baseline. EDGE: print physical ticket — UNVERIFIED if kiosk prints a paper slip with #A0001 + total (typical fast-food kiosk does). If NO physical print, 50yo must MEMORIZE #A0001 + walk to caisse + recite from memory = friction.",
+      "complete_critique": "MISSING: (a) printed paper ticket option — for elderly / non-French-speakers, a physical artifact would help. (b) 'voulez-vous une copie SMS?' phone-input option — UNVERIFIED if present. (c) clear path for CARD payment success (UNVERIFIED separate screen).",
+      "edge_paths_critique": "Toast leak (Wave Final S1-002) = known P1 deferred owner-gate. Auto-redirect 40s — what if customer is still at the kiosk taking notes? Tap-to-extend? UNVERIFIED.",
+      "issues_found": [
+        {"id": "S12-01", "severity": "P1", "type": "telemetry_429_leak", "evidence": "Wave Final S1-002 carry-forward: rate-limit toast appears on cash-instruction screen at multi-terminal lunchtime cadence. Owner-gate architectural fix for resources/js/bootstrap.js."},
+        {"id": "S12-02", "severity": "P2", "type": "missing_physical_ticket", "evidence": "UNVERIFIED if kiosk prints paper slip with #A0001 + total. For 50yo with memory burden, physical ticket reduces friction at caisse handoff. May be V1 scope (no printer)."},
+        {"id": "S12-03", "severity": "P3", "type": "countdown_no_extend", "evidence": "40s countdown to idle — UNVERIFIED if customer tap extends it."}
+      ],
+      "verdict_per_dimension": {"visual": "GREEN", "accessibility": "GREEN", "works": "GREEN", "understandable": "AMBER", "fluid": "GREEN", "responds_to_needs": "AMBER", "complete": "AMBER", "edge_paths": "AMBER"}
+    }
+  ],
+  "global_verdict": "AMBER",
+  "global_verdict_rationale": "12 steps decomposed; 7 fully captured (S1, S2, S3, S4, S5, S8, S10), 5 partially-captured-or-inferred (S6 Garnitures, S7 Récap, S9 Valider-loading, S11 Payment-in-flight, S12 Confirmation). 0 P0, 5 P1 (S2-01 missing search, S4-01 free-sauce pricing clarity, S5-01 missing price delta on menu options, S8-03 missing composition detail in cart, S9-01 telemetry 429 leak), 14 P2, 13 P3. The happy path WORKS end-to-end with valid FR catalog, perfect numeric integrity, NF525-safe — matches Wave Final S1 verdict AMBER. The hostile 50yo persona surfaces a coherent cluster of friction points: missing search, missing per-line composition recap, ambiguous icons (pencil-edit, +FRITES), tap targets under 44px (CHOISIR, qty stepper, trash). NONE are V1 ship-blockers individually, but the COLLECTIVE friction reduces 50yo conversion. AMBER not RED because the path works and converts; AMBER not GREEN because 50yo persona surfaces enough friction to justify V1.0.2 polish wave.",
+  "top_10_friction_per_persona_50yo_claustro_mal_aux_pieds_faim": [
+    {"rank": 1, "issue": "S2-01 No global search on 11-category catalog — 50yo must scroll left rail + scan grids to find what they want. Standing in queue pressure makes this acute.", "severity": "P1"},
+    {"rank": 2, "issue": "S4-01 'Free sauce / +€0,50 each' rule in small grey text — customer surprised by surcharge at total. Trust hit.", "severity": "P1"},
+    {"rank": 3, "issue": "S5-01 No price delta visible on MENU COMPLET / +FRITES / + BOISSON cards — customer can't compare upgrade cost.", "severity": "P1"},
+    {"rank": 4, "issue": "S8-03 Cart line shows ONLY product name + price, no composition recap (sauces / menu / supplements). Customer who picked 3 sauces can't verify them.", "severity": "P1"},
+    {"rank": 5, "issue": "S3-02 + S8-01 Tap targets under 44px (CHOISIR ~40px, qty stepper ~40px, trash ~40px, pencil ~24px) — arthritic touch and presbyopic accuracy struggle.", "severity": "P2"},
+    {"rank": 6, "issue": "S9-01 / S12-01 Telemetry 429 toast leaks on cash-instruction screen at multi-terminal lunchtime — visual noise erodes trust on the final 'merci' screen.", "severity": "P1"},
+    {"rank": 7, "issue": "S3-04 Triple-escape ABANDONNER / PRÉCÉDENT / X-close with different semantics — 50yo confused which to use to cancel without losing cart.", "severity": "P3"},
+    {"rank": 8, "issue": "S2-03 No SANS GLUTEN / SANS LACTOSE / ALLERGÈNES filter — 50yo with celiac must inspect every product individually.", "severity": "P2"},
+    {"rank": 9, "issue": "S7-01 No 'jump to step' in wizard récap — must PRÉCÉDENT 3x to change sauce. Friction grows with wizard depth.", "severity": "P2"},
+    {"rank": 10, "issue": "S12-02 No physical paper ticket / SMS option — 50yo must memorize #A0001 + total to recite at caisse. Memory burden under fatigue.", "severity": "P2"}
+  ],
+  "summary": {
+    "steps_total": 12,
+    "steps_fully_captured": 7,
+    "steps_partially_or_inferred": 5,
+    "P0": 0,
+    "P1": 5,
+    "P2": 14,
+    "P3": 13,
+    "open_P0": 0,
+    "open_P1": 5,
+    "open_P2": 14,
+    "open_P3": 13,
+    "deferred_owner_gate": "S9-01/S12-01 (telemetry 429 architectural fix — known from Wave Final S1-002)"
+  },
+  "recommended_actions": {
+    "immediate_V1_ship_block": "none",
+    "V1_polish_pre_ship": "consider S4-01 (free sauce wording) + S5-01 (price delta on cards) — both copy-only changes, no code architecture impact, no frozen-zone touch",
+    "V1_0_2_backlog": "S2-01 (search), S2-03 (allergen filter), S8-03 (cart composition recap), S9-01 (telemetry 429), S12-02 (physical ticket), accessibility tap-targets (S3-01/S8-01)",
+    "re_capture_priority": "S6 Garnitures step, S9 Valider loading state, S11 CARD payment in-flight, S12 confirmation with multi-line cart (so composition recap is testable)",
+    "frozen_zone_status": "NO MODIFICATIONS — all findings are READ-ONLY audit. Any fix scoped via LOCK_*/owner-gate per V1 mandate."
+  },
+  "evidence_chain_integrity": {
+    "captures_consulted": 7,
+    "source_files_grepped": 4,
+    "wave_final_S1_corroboration": "verified — this audit's findings overlap with Wave Final S1-002 (telemetry 429) and extends with hostile-persona dimensions Wave Final didn't enumerate (search, price delta, composition recap, tap targets, allergen filter, jump-to-step, physical ticket)",
+    "frozen_zone_diff": "0 (read-only audit)",
+    "nf525_impact": "0 (no fiscal anomaly observed; SSOT pricing holds per Wave Final S1-07)"
+  }
+}

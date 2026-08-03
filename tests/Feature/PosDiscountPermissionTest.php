@@ -38,12 +38,23 @@ class PosDiscountPermissionTest extends TestCase
         parent::setUp();
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
+        config([
+            'app.api_key' => 'test-api-key',
+            'broadcasting.default' => 'log',
+            'fiscal.audit_secret' => str_repeat('a', 48),
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] This suite tests the
+            // discount permission ladder (preserved code); enable the flag so
+            // the ladder runs rather than the V1 manual-discount-off gate.
+            'pos.manual_discount_enabled' => true,
+        ]);
 
         $this->branch = Branch::factory()->create();
 
         $this->customer = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->customer->assignRole('Customer');
 
@@ -80,8 +91,17 @@ class PosDiscountPermissionTest extends TestCase
         $user = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $user->syncPermissions(array_merge(['pos', 'pos-orders'], $permissions));
+
+        // [Sprint 1B 2026-05-16] POS CASH path now requires an open cash
+        // drawer session — open one for the operator so the discount tests
+        // can focus on discount semantics, not the cash gate.
+        app(\App\Services\Cash\CashDrawerService::class)
+            ->openSession($this->branch->id, $user->id, 100.00);
+
         return $user;
     }
 
@@ -115,6 +135,21 @@ class PosDiscountPermissionTest extends TestCase
         ];
     }
 
+    private function withSealedQuote(User $operator, array $payload): array
+    {
+        $quote = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return array_merge($payload, [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+            'total' => $quote['total_ttc'],
+            'pos_received_amount' => $quote['total_ttc'],
+        ]);
+    }
+
     public function test_discount_without_motif_is_rejected(): void
     {
         $operator = $this->makeOperatorWith(['pos-discount-unlimited']);
@@ -144,8 +179,10 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith(['pos-discount-up-to-10']);
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(0.5, 'Geste commercial'));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(0.5, 'Geste commercial'));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }
@@ -170,8 +207,10 @@ class PosDiscountPermissionTest extends TestCase
         ]);
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(2.5, 'Validé manager'));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(2.5, 'Validé manager'));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }
@@ -196,8 +235,10 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith(['pos-discount-unlimited']);
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(7.5, 'Validé owner'));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(7.5, 'Validé owner'));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }
@@ -207,8 +248,10 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith([]); // no discount permission
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(0.0, null));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(0.0, null));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }

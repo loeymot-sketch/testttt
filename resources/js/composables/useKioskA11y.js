@@ -27,6 +27,7 @@
  */
 
 import { watch, onMounted, onBeforeUnmount, effectScope } from 'vue';
+import { setLocale } from '../i18n.js';
 
 const HTML_ATTR = {
     CONTRAST: 'data-kiosk-contrast',
@@ -82,8 +83,7 @@ export function applyKioskA11yFromStore(store) {
     applyAttr(HTML_ATTR.AUDIO, s.audio ? 'true' : 'false');
     applyAttr(HTML_ATTR.AUDIO_DESCRIPTION, s.audioDescription ? 'true' : 'false');
     applyAttr(HTML_ATTR.REDUCED_MOTION, s.reducedMotion ? 'true' : 'false');
-    applyAttr(HTML_ATTR.LANG, s.locale || 'fr');
-    applyAttr(HTML_ATTR.DIR, s.locale === 'ar' ? 'rtl' : 'ltr');
+    setLocale(s.locale || 'fr');
 }
 
 /**
@@ -157,8 +157,7 @@ export function useKioskA11y({ store, i18n } = {}) {
             () => store.state.kioskSettings?.locale,
             (value) => {
                 const lang = value || 'fr';
-                applyAttr(HTML_ATTR.LANG, lang);
-                applyAttr(HTML_ATTR.DIR, lang === 'ar' ? 'rtl' : 'ltr');
+                setLocale(lang);
                 if (i18n?.locale) i18n.locale.value = lang;
             },
             { immediate: false }

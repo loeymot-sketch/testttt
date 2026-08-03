@@ -1,0 +1,67 @@
+{
+  "round": 5,
+  "role": "adversarial-supervisor-final-seal",
+  "head": "bc028d191fbb47cbb11cdc4191115826ca24e2f4",
+  "baseline_frozen": "24e8a09c3",
+  "generated_at": "2026-07-07",
+  "r4_hold": [
+    {
+      "id": "R4-1-exports-non-tronques",
+      "commit": "5aa4d6cd9",
+      "verdict": "HOLD",
+      "evidence": {
+        "code": "All 11 entity exports carry request->merge(['paginate'=>0]): Administrator/Chef/DeliveryBoy/Waiter/Employee/DiningTable/ItemCategory/Item/Offer/PushNotification/Subscriber. 7 pre-existing (Customer/Order/Transaction/Coupon/CreditBalanceReport/ItemsReport/SalesReport) retain their merge. 18/18 Export files covered, 0 missing.",
+        "empirical_tinker": "ItemExport=81/81 total items, ItemCategoryExport=28/28, DiningTableExport=1/1 with UI payload paginate=1&per_page=10 (no truncation to 10). Pre-existing exports not broken.",
+        "test": "tests/Feature/Export/EntityExportNoTruncationTest.php green in full suite"
+      }
+    },
+    {
+      "id": "R4-2-labels-recu-partages",
+      "commit": "7a0448c7f",
+      "verdict": "HOLD",
+      "evidence": {
+        "code": "resources/js/helpers/paymentMethodLabel.js maps COUNTER_CASH->'Espèces (Caisse)', CREDIT/CARD->'Carte', SPLIT/MIXED->'Multi-paiement', humanised fallback. paymentMethodLabelMixin wired into 8 vues (admin/frontend/table receipt+detail) + TransactionListComponent (R2) refactored to consume same helper (DRY).",
+        "test": "tests/js/receiptPaymentMethodLabel.spec.js green in vitest full run",
+        "note": "Fix is correct for the 8 vues it touched, but balayage surfaced 1 uncovered sibling (see NEW-1) — the completeness claim 'no raw slug residual' is slightly overstated, not a regression."
+      }
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "NEW-1",
+      "severity": "P3",
+      "seal_breaking": false,
+      "title": "Résidu de slug payment_method brut sur le reçu client (frontend account) non couvert par le fix R4",
+      "file": "resources/js/components/frontend/account/myOrder/FrontendOrderReceiptComponent.vue:146",
+      "detail": "Rend {{ order.transaction.payment_method }} SANS wrapper — construct jumeau EXACT de OnlineOrderReceiptComponent.vue:140 et table/order/OrderReceiptComponent.vue:128 que le fix R4 (7a0448c7f) a bien wrappés, mais ce sibling frontend a été manqué (non touché par le commit, confirmé git show --stat).",
+      "raw_slug_confirmed": "TransactionResource.php:25 fait strtoupper($this->payment_method); OrderResource.php:42 sert transaction via TransactionResource au reçu compte client -> le client voit 'CREDIT'/'COUNTER_CASH'/'CASH_ON_DELIVERY' verbatim.",
+      "reachable": "Routé via frontend/account/myOrder/OrderDetailsComponent.vue (composant enfant du reçu). Branche v-else (ligne 144) atteinte pour commande non-POS avec transaction.",
+      "impact": "Cosmétique — libellé anglais brut sur un reçu client au lieu du libellé FR. Aucun impact fiscal/fonctionnel/montant. Même classe que le P3 que R4 corrigeait ailleurs.",
+      "fix_suggested": "Câbler paymentMethodLabelMixin + wrapper {{ paymentMethodLabel(order.transaction.payment_method) }} (miroir des siblings déjà corrigés). NON corrigé ici (mandat superviseur = attaque, pas de fix).",
+      "note": "Sous le seuil de rupture de sceau (P3 < P2). Ne casse PAS le SEALED."
+    }
+  ],
+  "balayage_final": {
+    "residual_raw_slug_sweep": "Un SEUL résidu (NEW-1). Aucun autre payment_method/status/order_type brut non wrappé dans les vues reçu/détail (grep exhaustif). order_type/status rendus via enum arrays humanisés.",
+    "export_report_truncation_sweep": "18/18 Export files paginate=0. PDF: SalesReportController.pdf / ItemsReportController.pdf / OnlineOrderController.pdf = paginate=0 + garde anti-OOM (R2) intacts. CashSessionReportController = liste paginée (pas d'export), 'total'=paginator->total() (full count, pas d'agrégation page-scoped fausse).",
+    "intersections": {
+      "refund_x_Z_miroir": "HOLD — services fiscaux (ZReportService/FiscalSequenceService) 0 diff depuis 24e8a09c3 (byte-identiques à la réfutation R2/R3).",
+      "cancel_x_stock_release": "HOLD — logique stock/cancel backend 0 diff depuis baseline.",
+      "split_x_fiscal_1seq": "HOLD — OrderStateMachine/FiscalSequenceService 0 diff. Aucun service fiscal/refund/stock/statemachine modifié dans 24e8a09c3..HEAD (seuls: verify-command, helper label, kiosk payment UI, tests)."
+    },
+    "coherence_historique": {
+      "audit_logs": "append-only, CHAIN OK x4, count=4917 (>=4912).",
+      "order_status_transitions": "append-only, count=4370.",
+      "fiscal_sequence_gap_note": "branch1: seq 2506-2508 absents (3 rows). VERIFIE = artefact dev-DB (fiscal_alloc_error_at=0 -> aucune vraie panne d'allocation ; rows hard-deleted, inexistants toutes branches ; DB dev 2026-05-28..07-07, 274 soft-deletes). PAS un défaut code, PAS introduit cette session (code fiscal frozen 0 diff). Autorité NF525 = fiscal:verify-chain -> CHAIN OK."
+    }
+  },
+  "gates": {
+    "vitest": {"result": "2298 passed | 3 skipped", "exit": 0, "expected": "2298/0", "pass": true},
+    "phpunit": {"result": "3213 passed | 32 skipped | 2 incomplete", "exit": 0, "expected": "3213/0", "pass": true},
+    "frozen_diff_24e8a09c3_HEAD": {"files": ["public/js/pos-wizard.js", "resources/js/components/frontend/kiosk/KioskWizardComponent.vue"], "expected": "pos-wizard.js + KioskWizardComponent.vue only", "pass": true},
+    "fiscal_verify_chain": {"result": "CHAIN OK on 4 active branches (1,7,8,9)", "pass": true},
+    "audit_logs_count": {"value": 4917, "min": 4912, "pass": true}
+  },
+  "verdict": "SEALED",
+  "verdict_rationale": "R4 les 2 fixes TIENNENT (exports non tronqués prouvés empiriquement 81/81+28/28+1/1 ; labels FR wirés+testés). Balayage final = 0 nouveau P0/P1/P2 (1 seul P3 cosmétique NEW-1, sous le seuil). Intersections refund×Z / cancel×stock / split×fiscal byte-identiques depuis R3 -> tiennent. Chaîne fiscale CHAIN OK ×4, audit_logs append-only 4917. Tous les gates verts. Bloc gérance/DB/historique/intersections/UI SCELLÉ."
+}

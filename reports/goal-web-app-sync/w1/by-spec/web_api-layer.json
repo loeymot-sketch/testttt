@@ -1,0 +1,75 @@
+{
+ "spec": "web:api-layer",
+ "scope": "Cartographie READ-ONLY de /Users/1millnonstop/Downloads/web/api.js (490 l.) + apiContract.js (108 l.) : auth guest OTP, résolution nom-canonique→ids DB, placement commande, delivery, erreurs, config — plus points d'ancrage vérifiés côté backend (routes loyalty, enums payment) pour ajouter fidélité et checkout Stripe flag-gated.",
+ "summary": "api.js est une IIFE vanilla qui expose window.LC.api : couche réseau réelle et fonctionnelle vers le backend (base http://127.0.0.1:8766, X-API-Key + Bearer Sanctum kiosk:order 30 j en localStorage). Elle résout les choix du wizard web (slugs miroir) vers les vrais ids DB via GET /api/frontend/item + /item/details/{id} (index par nom normalisé), et place des commandes POST /api/frontend/order avec items JSON.stringify + X-Idempotency-Key ; payment_method suit PaymentGateway (1=cash comptoir, 4=carte, 5=ticket resto), vérifié contre l'enum backend. apiContract.js est un miroir documentaire NON câblé (ACTIVATED:false) désormais partiellement périmé vis-à-vis d'api.js. Le pattern d'extension est propre : ajouter fidélité (register/balance/history/qr — routes backend vérifiées) et Stripe flag-gated revient à ajouter des fonctions req() + exports. Risques principaux : clé API en dur, dépendance Nominatim externe pour le géocodage, attribute-ids codés en dur ('1','2','5','6','8'), et drift doc apiContract.js.",
+ "findings": [
+  {
+   "severity": "INFO",
+   "title": "Clé API front en dur dans le source",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 21,
+   "evidence": "apiKey:  metaContent('api-key', 'b6d68vy2-m7g5-20r0-5275-h103w73453q120')",
+   "recommendation": "Fallback hardcodé = clé app-wide publique par design (front). Overridable via <meta name=\"api-key\">. Garder tel quel en V1 ; ne pas refondre."
+  },
+  {
+   "severity": "INFO",
+   "title": "Géocodage dépend de Nominatim (service externe, hors CSP potentielle)",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 66,
+   "evidence": "var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=' + q;",
+   "recommendation": "Point de fragilité delivery : rate-limit Nominatim (pas de User-Agent custom possible en browser), panne = deliveryQuoteForAddress throw {kind:'geocode'}. Le fee facturé reste recalculé backend (SSOT), donc impact = UX seulement."
+  },
+  {
+   "severity": "INFO",
+   "title": "Attribute-ids backend codés en dur dans resolveLine ('1','2','5','6','8')",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 278,
+   "evidence": "var meatAttrs = ['1', '2']; // Viande 1 / Viande 2 … pickVariation(dIdx, ['6'], pn, {}) (pain, l.291) … var sauceAttrs = ['5', '8']; (l.296)",
+   "recommendation": "Couplage aux ids d'attributs DB du seeder OwnerMenuUpdate20260623Seeder. Si les attribute_ids changent (reseed), le mapping casse silencieusement (variations non trouvées → top-up min_select l.365-374 choisit la 1re option). À documenter, pas à refondre en V1."
+  },
+  {
+   "severity": "INFO",
+   "title": "apiContract.js périmé vs api.js réel (routes signup vs guest-signup, ACTIVATED:false alors que le wireup est actif)",
+   "file": "/Users/1millnonstop/Downloads/web/apiContract.js",
+   "line": 27,
+   "evidence": "signupOtp:   'POST /api/auth/signup/otp' … window.LC.apiContract = { …, ACTIVATED: false } (l.107) — alors qu'api.js utilise /api/auth/guest-signup/otp (api.js:144) et est câblé depuis 2026-06-26",
+   "recommendation": "Drift documentaire pur (apiContract.js ne fait aucun fetch). Lors de W3, mettre à jour le miroir ou le marquer SUPERSEDED-by-api.js pour éviter qu'un implémenteur suive les mauvaises routes signup."
+  },
+  {
+   "severity": "INFO",
+   "title": "history() passe ?limit= mais le param n'est pas garanti côté backend index",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 446,
+   "evidence": "var r = await req('GET', '/api/frontend/order' + (limit ? ('?limit=' + limit) : ''), { auth: true });",
+   "recommendation": "Vérifier au wireup fidélité/historique que FrontendOrderController::index honore limit ; sinon la liste complète est retournée (perf seulement)."
+  },
+  {
+   "severity": "INFO",
+   "title": "guestVerify stocke le token seulement si r.token à la racine — sensible au shape de réponse",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 148,
+   "evidence": "if (r && r.token) { setToken(r.token); setPhone(phone); }",
+   "recommendation": "Si le backend enveloppe un jour la réponse dans data:{token}, l'auth casse silencieusement (isAuthed()=false). Point de vigilance test e2e W6, pas de changement requis."
+  }
+ ],
+ "facts": [
+  "BASE URL/PORT : api.js:19-24 — CFG.base = meta 'api-base-url' fallback 'http://127.0.0.1:8766' ; CFG.apiKey = meta 'api-key' fallback clé hardcodée ; CFG.branchId = meta 'api-branch-id' fallback 1 ; countryCode '+33'. Overrides runtime : LC.api.setBaseUrl(u) / setBranchId(b) (api.js:474-475).",
+  "HTTP WRAPPER : api.js:112-140 req(method, path, opts) — headers Accept:application/json + X-API-Key toujours ; Content-Type:application/json si body ; Authorization: Bearer <token> si opts.auth ; X-Idempotency-Key si opts.idempotencyKey. Toute nouvelle fonction (fidélité, Stripe) DOIT passer par req().",
+  "ERREURS : api.js:129-138 — throw objets typés {kind:'network'|'http'|'auth'|'empty'|'resolve'|'geocode', message, status?, body?, cause?}. Erreur HTTP : message = json.message || json.error || 'Erreur <status>'. Les nouveaux appels doivent respecter ce contrat kind/message.",
+  "AUTH GUEST OTP : api.js:143-152 — guestOtp(phone) → POST /api/auth/guest-signup/otp body {phone, code:'+33'} ; guestVerify(phone, otp) → POST /api/auth/guest-signup/verify body {phone, code:'+33', token:String(otp)} ; si r.token → localStorage 'lecayenne.authToken' + 'lecayenne.authPhone' (api.js:97-102). isAuthed()=!!token ; logout() purge les deux clés.",
+  "TOKEN backend vérifié : GuestSignupController.php:146 — $user->createToken('auth_token', ['kiosk:order'], now()->addDays(30)) → ability kiosk:order, TTL 30 jours (PAS le 480 min du config sanctum). Throttles routes/api.php:196-205 : otp 5/min, verify 3/5min.",
+  "MAPPING NOM→ID : api.js:154-191 — buildItemIndex() GET /api/frontend/item → index {bySlug, byName} (norm() api.js:158-162 : lowercase+NFD sans accents, strip préfixe 'sauce ', collapse espaces) ; itemDetails(id) GET /api/frontend/item/details/{id} caché dans _detailsCache ; resolveItemId({slug,name}) essaie slug puis nom normalisé, retourne null sinon.",
+  "RESOLVE LINE : api.js:256-383 resolveLine(line) — viandes→attrs ['1','2'] (pickVariation préfère attr non utilisé pour Viande1 puis Viande2, api.js:222-236) ; pain→attr '6' ; sauces→attrs ['5','8'] (pools 'sauces' ou 'bolSauces') + sauce_locked fallback (l.304-307) ; crudites→extras group 'crudite' ; supplements→'supplement' ; bol_supplements→'supplement_bol' ; viande_extra→extra 'Viande supplémentaire' quantity=count (l.332-336) ; menu formule→item_addons par role addonByRole (menu_component/side/drink) avec role envoyé menu_full/menu_frites/menu_boisson (l.340-346) ; frites STYLE standalone = SKU séparé résolu par nom '<item> <style>' (l.258-269) ; top-up min_select automatique des attributs requis manquants avec les premières options (l.365-374, évite 422) ; note+détails formule → out.instruction slice 500 (l.380-381).",
+  "BOL DRINK : api.js:387-406 — bol_drink ('d-coca'…) → ligne de commande SÉPARÉE via table DRINK_ID_TO_SLUG (8 boissons : coca, coca-zero, fanta, sprite, oasis, orangina, eau-plate, capri-sun) résolue par window.LC.menu.findItem(slug).",
+  "PLACE ORDER : api.js:410-437 placeOrder(o) — exige isAuthed() ; POST /api/frontend/order avec X-Idempotency-Key ('web'+uuid 24 chars ou o.idempotencyKey) ; body : branch_id, order_type (10=TAKEAWAY défaut, 5=DELIVERY), source:5 (=Source::WEB, enum vérifié app/Enums/Source.php:8), is_advance_order 0/1, payment_method (défaut 1), items:JSON.stringify(lines). Si delivery : address_id, delivery_distance_km, delivery_time ('ASAP' défaut), delivery_charge (indicatif — backend recalcule, SSOT). Optionnels : coupon_id, loyalty_code. Retour r.data||r.",
+  "PAYMENT_METHOD suit l'enum PaymentGateway (app/Enums/PaymentGateway.php:6-10) : 1=CASH_ON_DELIVERY (payer au comptoir), 4=CARD, 5=TICKET_RESTAURANT — PAS PosPaymentMethod (où CARD=2). Backend OrderRequest.php:182 valide payment_method 'nullable numeric' (pas de Rule::in au POST order) ; PaymentConfirmRequest.php:33-37 restreint à CARD|TICKET_RESTAURANT sur /payment-confirm.",
+  "ORDER READ : api.js:439-448 — getOrder(id) GET /api/frontend/order/show/{id} (auth) ; history(limit) GET /api/frontend/order?limit= (auth) → r.data||[].",
+  "DELIVERY : api.js:33-51 — barème meta-configurable base 4€/≤5km, +1€/km entamé, offerte ≥30€ ; origine 14 rue de la République Hénin-Beaumont (lat 50.4215667, lng 2.9549060) ; deliveryEstimate() = affichage seulement, DeliveryFeeService backend = SSOT du débit. haversineFromOrigin (l.54-60) même formule que backend. deliveryQuoteForAddress (l.77-81) = geocode Nominatim + distance + estimate. saveAddress (l.84-95) POST /api/frontend/address (auth) body {label unique + uuid6, latitude/longitude en String, address ≤500, apartment ≤200} → {id,…} à passer en o.addressId.",
+  "FIDÉLITÉ déjà présente dans api.js : loyaltyConfig() GET /api/frontend/loyalty/config public (api.js:451-454) ; profile() GET /api/profile auth → UserResource avec loyalty_points/loyalty_code (api.js:457-460) ; placeOrder accepte loyalty_code (api.js:434).",
+  "FIDÉLITÉ à AJOUTER — routes backend vérifiées routes/api.php:1444-1477 (préfixe /api/frontend/loyalty) : POST /register public throttle 5/min ; POST /check auth throttle 10/min ; auth:sanctum group : POST /add-points (idempotency middleware requis), POST /redeem (idempotency requis), GET /balance, GET /history, POST /qr throttle 30/min → mint token signé 'lqr.<payload>.<hmac>' TTL 5 min anti-replay. Aussi POST /loyalty/opt-in throttle 5/min (l.1514) et POST /loyalty/scan auth throttle 20/min (l.1521). Implémentation = fonctions req('POST','/api/frontend/loyalty/qr',{auth:true, idempotencyKey:…}) + export dans window.LC.api (pattern api.js:471-489).",
+  "STRIPE flag-gated — le backend a une gateway Stripe existante : app/Http/PaymentGateways/Gateways/Stripe.php ; flow web routes/web.php:47-54 : GET/POST /payment/{order}/pay, /{paymentGateway:slug}/{order}/success|fail|cancel, GET /payment/successful/{order}. Côté web standalone : ajouter un flag (meta ex. 'stripe-enabled', pattern metaContent api.js:15-18, défaut OFF) ; checkout = placeOrder(payment_method:4) puis redirection vers /payment/{orderId}/pay sur CFG.base, ou confirm via POST /api/frontend/order/{frontendOrder}/payment-confirm (routes/api.php:1360, middleware idempotency ; body PaymentConfirmRequest : transaction_id required, payment_method in [4,5], amount_cents required = order.total ±1 cent — vérif écho anti-TPE-compromis PaymentConfirmRequest.php:33-44).",
+  "COUPON : api.js:464-469 checkCoupon(code,total) POST /api/frontend/coupon/coupon-checking body {code trim, total, branch_id, surface:'web'} sans auth → {id, code, discount} ou throw http.",
+  "EXPORT PATTERN : api.js:471-489 — window.LC.api = {config, setBaseUrl, setBranchId, guestOtp, guestVerify, isAuthed, logout, getPhone, buildItemIndex, itemDetails, resolveItemId, resolveLine, resolveOrderItems, _norm, placeOrder, getOrder, history, uuid, loyaltyConfig, profile, checkCoupon, deliveryConfig, deliveryEstimate, geocode, deliveryQuoteForAddress, saveAddress, haversineFromOrigin}. api.js DOIT être chargé APRÈS data/menu.js (dépend de window.LC.menu, api.js:10).",
+  "apiContract.js = doc pure, 0 fetch (apiContract.js:8-9), ACTIVATED:false (l.107) ; expose window.LC.apiContract {API, ORDER_BODY_SHAPE, ORDER_LINE, COMPOSITION_MAP, toBackendLine}. COMPOSITION_MAP (l.94-104) documente state-wizard→cible backend. Ses routes signup (l.27-29 /api/auth/signup/*) sont l'ancien flow NON-guest — le flow réel actif est guest-signup (api.js:144-147)."
+ ]
+}

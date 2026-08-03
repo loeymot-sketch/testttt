@@ -14,12 +14,37 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class KDSAllergenVisibilityTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] Pin Carbon::setTestNow to a
+        // fixed UTC instant inside the Paris business day so the fixture
+        // `order_datetime` = now() and the KitchenDisplaySystemOrderService
+        // Paris→UTC bound conversion (Wave 3b heal c2613cab0) resolve
+        // deterministically. Without the pin, this test fails in the [22:00,
+        // 23:59:59] Paris evening window. See
+        // reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md.
+        Carbon::setTestNow(Carbon::create(2026, 5, 18, 12, 0, 0, 'UTC'));
+        CarbonImmutable::setTestNow(CarbonImmutable::create(2026, 5, 18, 12, 0, 0, 'UTC'));
+    }
+
+    protected function tearDown(): void
+    {
+        // [WG-4] Carbon::setTestNow() leaks across tests if not cleared.
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
+    }
 
     public function test_kds_endpoint_exposes_per_item_allergens_snapshot(): void
     {
@@ -42,7 +67,10 @@ class KDSAllergenVisibilityTest extends TestCase
             'phone' => '0600000040',
             'password' => bcrypt('password123'),
             'branch_id' => $branch->id,
-            'status' => 1,
+            // [Sprint H1 Z6-06 2026-05-17] Was `1`; canonical user-status
+            // ACTIVE = 5 (App\Enums\Status). EnsureUserStatusActive rejects
+            // any non-ACTIVE user — pre-existing test-fixture data bug.
+            'status' => Status::ACTIVE,
         ]);
         $chef->assignRole('Chef');
 

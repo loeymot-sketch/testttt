@@ -1,0 +1,62 @@
+{
+  "task_id": "CV1-M15-ROLLOUT-CANARY",
+  "mission_id": "M-15",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Livrer le drill rollout/canary Caisse V1: flags, phases pilote/10/50/100, rollback predicates et runbook raccorde.",
+  "instruction": "Applique uniquement M-15. Ne lance pas de vrai rollout et ne modifie pas les flux produit; livrer outillage/readiness fail-closed. Les preuves M14 preflight restent obligatoires avant GO. JSON unique.",
+  "allowlist": [
+    "config/caisse_v1_rollout.php",
+    "scripts/rollout-canary-drill.sh",
+    "reports/runbooks/RUNBOOK_ROLLBACK_CANARY_2026-04-25.md",
+    "tests/Feature/RolloutCanaryDrillTest.php"
+  ],
+  "off_limits": [
+    "database/**",
+    "app/Services/**",
+    "resources/**",
+    "routes/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "dependencies_closed": [
+    "CV1-M04B-PAYMENT-PILOT-RESTRICT",
+    "CV1-M08-FISCAL-Z-NF525",
+    "CV1-M14-OPS-PREFLIGHT"
+  ],
+  "invariants_at_risk": [
+    "pricing_ssot",
+    "branch_id",
+    "frozen_zones"
+  ],
+  "gate_conditions": [
+    "M-04B selected and CLOSED",
+    "M-08 CLOSED",
+    "M-14 CLOSED"
+  ],
+  "mandatory_tests": [
+    "php artisan test --filter=RolloutCanaryDrillTest",
+    "bash scripts/rollout-canary-drill.sh --help"
+  ],
+  "self_audit_checklist": [
+    "script is read-only/fail-closed and never flips real flags",
+    "all six Caisse V1 flags are named",
+    "canary phases are pilot branch, 10%, 50%, 100%",
+    "rollback predicates match payment_success_rate < 95/5m, fiscal_anomaly > 0, kds_error_rate > 5%",
+    "M14 preflight evidence remains required for GO"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 0,
+    "predicates": [
+      "payment_success_rate < 95 / 5min",
+      "fiscal_anomaly > 0",
+      "kds_error_rate > 5"
+    ]
+  },
+  "graphiti_query": "Caisse V1 rollout canary rollback predicates feature flags",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_rollout_canary_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

@@ -1,0 +1,61 @@
+{
+  "micro_system": "S14-kds",
+  "verdicts": [
+    {
+      "id": "S14-KDS-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. subscribeEcho early-returns for branch_id<=0 (KitchenDisplaySystemComponent.vue:1913-1914), admin@lecayenne.fr is branch_id=0 (UserTableSeeder.php:34-44), chef@lecayenne.fr branch_id=1 (UserTableSeeder.php:101-115). _pollingInterval returns 60000ms when wsConnected (line ~1896 _pollingInterval), kdsSyncService _baseCadence returns interval:Infinity on WS_CONNECTED (kdsSyncService.js:301-303), wsConnected becomes true on raw socket 'connected' (WebSocketService.js:80-86, not channel subscription). BROADCAST_DRIVER=pusher -> 127.0.0.1:6001 local Reverb IS part of box, so socket CAN connect and wsConnected CAN become true for admin -> bug is reachable, NOT dormant. central-admin polling banner hidden mono-branch (kdsIsCentralAdmin:1351-1361 returns false when branchCount<=1). HOWEVER downgraded P1->P2: TWO conditions must both hold (kitchen logged in as admin branch_id=0 AND WS socket up) and chef@lecayenne.fr (branch_id=1, 'toujours cree') is the intended kitchen account for which Echo works correctly. Chime watcher (orders:1432-1443) still fires on actual arrival so NO permanent loss, only up-to-60s latency conditional on login model. Real latency defect, conditional, well-mitigated -> P2."
+    },
+    {
+      "id": "S14-KDS-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "PARTIALLY MISDESCRIBED. Line 1646 confirmed: this.$t('label.kds_status_conflict'). Verified via node: message.kds_status_conflict EXISTS (fr.json:1464), label.kds_status_conflict is UNDEFINED -> vue-i18n renders raw key string. Line 2280 legacy correctly uses message namespace. BUT the finding's 409 trigger is FALSE: onV2ChangeStatus catch block (1640-1647) does `if (err.response.status===409){ this._debouncedRefresh(); return; }` BEFORE reaching line 1646 -> on 409 the banner is intentionally SILENT, never hits 1646. Line 1646 only fires on NON-409 errors (500/network). For those errors, 'kds_status_conflict' (=\"modified elsewhere\") is the WRONG message regardless of namespace. So the title/why_it_matters/reproduction (all '409 -> raw label') will NOT reproduce. The underlying raw-label/undefined-namespace bug at 1646 is real but rare (only non-409 errors) and the surfaced text is semantically wrong anyway. Downgraded P2->P3: real raw-label exposure but misframed trigger + low frequency + wrong-message-regardless. Fix: use a generic error i18n key on the non-409 branch, not message.kds_status_conflict."
+    },
+    {
+      "id": "S14-KDS-03",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "CODE READ CORRECT but HARM REFUTED LIVE. hasAllergen (KdsOrderCard.vue:275-277)=orderHasAnyAllergen which is true on any non-empty allergens_snapshot (kdsCustomization.js:252-263); snapshot hydrated from Item->allergens pivot + extras (OrderItemAllergenSnapshot.php:45-71), i.e. dish-CONTAINS not client-declared-exclusion. So the auditor's reading of WHAT triggers the pill is correct. BUT the claimed harm ('pastille sur presque toutes les cartes / alert fatigue') does NOT materialize: LeCayenneAllergenSeeder.php is now a documented NOOP (Wave Q-4 2026-05-20: allergen_flags reset to [], item_allergen pivot truncated per owner). Live DB confirms: Item::count()=45, items with non-empty allergen_flags=0, item_allergen rows=0. The pill NEVER fires on current V1 menu items. The auditor itself flagged evidence_type:needs-live-verify, confidence:medium, and 'A confirmer en live ... sinon la fatigue ne se materialise pas'. My live check refutes it. Currently dormant design-philosophy note, no exploitable defect -> DROP (would resurface only if/when chef-confirmed allergens are seeded, at which point it is a design choice to revisit)."
+    },
+    {
+      "id": "S14-KDS-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED. KdsV2Grid.vue:56 renders activeOrders.slice(0,8); overflowActiveCount (lines ~245-249)=max(0,len-8) feeds an informational chip only, no card rendered for 9+. SHORTCUTS=['A'..'H'] (8 letters), onKey indexes activeOrders[idx] but idx capped at 7. Confirmed kdsOverflowSeeMore (KitchenDisplaySystemComponent.vue:2160-2164) is UNRELATED: it clears search filters and re-lists for the backend 50-order cap (kdsOrderListAtCap banner line 116), NOT the V2 8-card ceiling -> no mitigation path to actionable 9+. FIFO sort means #9 surfaces once 8 oldest bumped -> NOT silently forgotten, ergonomic ceiling only. Wave N M-KDS-6 overflow chip is a genuine partial mitigation. Real >8-active rush-hour visibility/prioritization concern but no order loss -> downgraded P2->P3 (auditor's own framing 'pas une commande silencieusement oubliee' supports P3)."
+    },
+    {
+      "id": "S14-KDS-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED but split. createdMs=parseOrderCreatedMs (kdsDisplay.js:88-110) reads created_at_iso/created_at/order_datetime, returns Date.now() if all absent. bucket thresholds 3min/6min (getKdsAgeBucket:66-75). Timer-from-placement (created_at) not kitchen-entry is real BUT works-as-intended for fast-food: orders hit kitchen near-instantly after payment, and the auditor itself rates it P3 'impact reel limite'. The Date.now() FALLBACK sub-claim ('masks an old card, stays green forever') is effectively UNREACHABLE: KDSOrderDetailsResource.php:33 emits created_at_iso = created_at?->toIso8601String() and created_at is a non-nullable Eloquent timestamp on every persisted order -> created_at_iso is always present and parseable, fallback never taken for real orders. is_necessary:false: the timer-source is an accepted V1 design tradeoff (status_changed_at column is a known future TODO, KdsSyncService.php:165-172) and the fallback hazard is theoretical. Kept at P3 as a documented minor improvement, not a defect to fix now."
+    },
+    {
+      "id": "S14-KDS-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "VERIFIED as accurate description but explicitly NOT a defect. KdsOrderCard.vue:167-173 CTA always renders label.kds_card_cta_ready ('Pret') with no kdsState condition (confirmed line 64-72 region + node: fr.label.kds_card_cta_ready='Pret'). onCtaTap (KdsV2Grid.vue:347-350) advances ACCEPT->PREPARING then PREPARING->PREPARED (2-tap ladder). stateLabel pill already shows CONFIRMEE/EN PREPARATION so state IS visible. The 2-tap 'Pret' flow is an EXPLICIT documented OWNER DECISION (Wave Q-2, KitchenDisplaySystemComponent.vue:1212-1219 / KdsV2Grid onCtaTap comment GOAL-2026-05-30). Auditor itself states 'Decision owner assumee, donc ce n'est PAS un bug logique' and 'contredire la decision Wave Q-2 sans gate serait du drift'. is_necessary:false, owner-gated cosmetic relabel only -> DROP from the defect queue (track as optional owner-gated UX nicety, not a finding)."
+    }
+  ],
+  "coverage_gaps": [
+    "Recall/undo flow NOT examined: KdsHistoryDrawer.vue recall(order) (line 191) + KdsUndoToast.vue onUndo (line 47) + kdsRecall handlers (KitchenDisplaySystemComponent.vue:433/617/791) — the RAPPELE compensating-action path (NF525-adjacent: re-opening a served/closed ticket) was not audited for state-machine correctness or 409 handling.",
+    "printKitchenTicket(order) (lines 439/623) NOT examined — local print path with escapeHtml XSS guard (line 2165); ESC/POS/print correctness and failure UX unaudited.",
+    "kdsOverflowSeeMore (line 2160) and the 50-order backend cap banners (kdsOrderApproachingCap 45-49, kdsOrderListAtCap) NOT examined — behavior when board hits the hard backend ceiling of 50 active orders is untested in this finding set.",
+    "openAllergensModal (lines 310/500/672) legacy 4-column allergen modal path NOT examined for the same contains-vs-exclusion semantics flagged in KDS-03.",
+    "onV2AutoPromote / auto-transition watcher (KdsV2Grid activeOrders handler) NOT examined — auto ACCEPT->PREPARING promotion could race with manual bumps; no audit of double-PATCH/idempotency on the auto path.",
+    "WebSocketService heartbeat/reconnect degradation (WS_RECONNECTING/WS_DEGRADED cadence in kdsSyncService _baseCadence) NOT examined — behavior when socket flaps mid-service is unverified."
+  ]
+}

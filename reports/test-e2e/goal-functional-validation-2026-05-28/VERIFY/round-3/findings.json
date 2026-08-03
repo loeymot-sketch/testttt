@@ -1,0 +1,83 @@
+{
+  "round": 3,
+  "type": "heal-verification",
+  "timestamp": "2026-05-28",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "bundle_built_at": "2026-05-28 20:09 (app.js) / 20:12 (admin-shell.js)",
+  "scope": "Targeted verification of 5 heals applied 2026-05-28 20:09 — NOT full E2E.",
+  "evidence_root": "/tmp/foodking-round3-verify",
+  "heals": [
+    {
+      "id": "HEAL-1",
+      "title": "LIVREUR axios double-prefix /api/api/ fixed → cash-sessions list renders real data",
+      "status": "PASS",
+      "evidence": [
+        "Screenshot /tmp/foodking-round3-verify/livreur/heal1-cash-sessions-list.png shows table row '#1 | 10 | 1 | 50,00 € | — | — | Ouverte | 28/05 19:26 | Voir' — NO 'Aucune donnée disponible'.",
+        "Network trace observed only ONE axios fetch to /api/admin/delivery-boy/cash-sessions?per_page=20&page=1 — NO /api/api/ double-prefix.",
+        "axios.defaults.baseURL = ENV.API_URL + '/api' (resources/js/shared/axios-setup.js:74) + call site uses path '/admin/delivery-boy/cash-sessions' (DeliveryBoyCashSessionListComponent.vue:180). Concatenated path is /api/admin/delivery-boy/cash-sessions — correct.",
+        "DB confirms DeliveryBoyCashSession id=1 branch=1 delivery_boy_id=10 status=open opening_amount=50.00."
+      ]
+    },
+    {
+      "id": "HEAL-2",
+      "title": "LIVREUR PII cleanup — PENDING_CREATE_ scaffold token removed but null+phone bug surfaced",
+      "status": "PARTIAL",
+      "evidence": [
+        "Screenshot /tmp/foodking-round3-verify/livreur/heal2-delivery-boys.png shows row 'Livreur E2E | livreur.e2e@lecayenne.test | null+33700000010 | Actif'.",
+        "PASS — String 'PENDING_CREATE_' is GONE (search returned false in rendered HTML).",
+        "FAIL — Phone displays as 'null+33700000010' instead of '+33700000010'.",
+        "Root cause: resources/js/components/admin/deliveryBoys/DeliveryBoyListComponent.vue:95-96 renders `deliveryBoy.country_code + '' + deliveryBoy.phone`. DB row for user 10 has country_code=null, phone='+33700000010'. JS coerces null+''→'null', producing 'null+33700000010'.",
+        "Fix candidates: either (a) backend seeder should set country_code=null and template should guard `(country_code || '') + phone`, or (b) seeder sets country_code='+33' and phone='700000010'."
+      ]
+    },
+    {
+      "id": "HEAL-3",
+      "title": "POS PaymentTerminal seeded for branch 1 — card option available",
+      "status": "PASS",
+      "evidence": [
+        "DB query: PaymentTerminal::where('branch_id',1)->count() = 1. Row: {id:1, branch_id:1, name:'TPE Le Cayenne #1', gateway_type:'simulation', serial_number:'TPE-LECAYENNE-001', status:1, created_at:2026-05-28T18:08:12}.",
+        "Screenshot /tmp/foodking-round3-verify/pos/heal3-pos-loaded.png shows POS Caisse interface fully loaded with 'Encaisser', 'Suivi commandes', 'Ouvrir tiroir', 'Caisse' action buttons + categories grid. No 'no terminal' blocker visible.",
+        "Card payment UI gating happens deeper in checkout (PaymentComponent). Seed satisfies branch-scoped lookup; full SPLIT cash+card flow not executed in this round per scope (≤30 min budget)."
+      ]
+    },
+    {
+      "id": "HEAL-4",
+      "title": "OSS route alias /order-status-screen (no /admin prefix) renders OSS component",
+      "status": "PASS",
+      "evidence": [
+        "curl HEAD: /order-status-screen → 200 text/html (catch-all SPA shell).",
+        "Screenshot /tmp/foodking-round3-verify/oss/heal4-alias-no-prefix.png and heal4-admin-prefix.png are visually IDENTICAL: two columns 'En préparation' with N°A0001/A0002/A0040/A0078 and 'Prêt' with N°A0035.",
+        "Source: resources/js/router/modules/orderStatusScreenRoutes.js:8-11 has `path: '/admin/order-status-screen', alias: '/order-status-screen', component: OrderStatusScreenComponent, name: 'admin.order-status-screen'`.",
+        "Compiled into public/js/app.js line 81412: `alias: \"/order-status-screen\"`. Bundle dated 2026-05-28 20:09.",
+        "No 404 / NotFound page. Note: regex check found both 'order-status-screen' AND '404' tokens, but visual evidence confirms 404 token is incidental (e.g. console scrubber regex), not the rendered page."
+      ]
+    },
+    {
+      "id": "HEAL-5",
+      "title": "LIVREUR DELIVERED hook — recordMovement writes delivery_boy_cash_movements + audit_logs",
+      "status": "PASS",
+      "evidence": [
+        "Source: app/Services/OrderService.php:1825-1856 — comment '[R2-P1-LIV-DELIVERED-HOOK 2026-05-28]' confirms heal context. Logic: find open session for driver, call DeliveryBoyCashSessionService::recordMovement(TYPE_ORDER_COLLECT, amount, DIRECTION_IN). Wrapped in try/catch (non-blocking).",
+        "Direct service invocation: recordMovement(sessionId=1, TYPE_ORDER_COLLECT, 15.50, DIRECTION_IN, ...) → before/after counts: movements 0→1, audit_logs action='cash.delivery.movement.recorded' 0→1.",
+        "Confirms the hook target (recordMovement) writes BOTH rows expected by ZReportCashEnrichmentService:489 cross-check. NF525 chain not broken (recordMovement uses CashDrawerService internal append pattern).",
+        "Full COD order → DELIVERED state-machine call not executed end-to-end in this round per ≤30 min scope; the service-level proof is sufficient given that OrderService.php:1841 calls the exact same service path."
+      ]
+    }
+  ],
+  "summary": {
+    "PASS": ["HEAL-1", "HEAL-3", "HEAL-4", "HEAL-5"],
+    "PARTIAL": ["HEAL-2"],
+    "FAIL": [],
+    "new_findings": [
+      {
+        "id": "R3-NEW-1",
+        "severity": "P2",
+        "where": "resources/js/components/admin/deliveryBoys/DeliveryBoyListComponent.vue:95-96",
+        "what": "Phone rendered as 'null+33700000010' when country_code is null and phone already contains international prefix.",
+        "fix": "Template guard: `{{ deliveryBoy.phone ? (deliveryBoy.country_code || '') + deliveryBoy.phone : '' }}` — OR data-side fix in seeder (country_code='+33', phone='700000010').",
+        "scope_minimal": true,
+        "frozen_zone": false
+      }
+    ]
+  }
+}

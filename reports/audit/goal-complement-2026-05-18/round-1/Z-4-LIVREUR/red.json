@@ -1,0 +1,61 @@
+{
+  "role": "RED-team",
+  "zone": "Z-4-LIVREUR",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "mode": "adversarial pre-implementation dispute",
+  "challenges": [
+    {
+      "severity": "P0",
+      "id": "LIVREUR-Z4-RED-01",
+      "claim": "Architect+Security findings missed: branch-aware fee heal MUST NOT touch the SAVED-ADDRESS path differently than the LEGACY-FALLBACK path — they share the same root cause",
+      "file": "app/Http/Requests/OrderRequest.php",
+      "line": 106,
+      "description": "OrderRequest.php:106-114 (saved-address path) delegates to DeliveryQuoteService → which now passes branch correctly (after LIVREUR-Z4-ARCH-01 heal). OrderRequest.php:115-120 (elseif legacy fallback) calls fromDistanceKm directly. Both must be fixed together OR the saved-address heal + the elseif heal must be tested together to prevent regression. Risk: fixing only ARCH-01 leaves the elseif legacy fallback broken — DEL-5 still half-dead.",
+      "dispute": "Architect rated this as P0 but listed ARCH-01+02+03 as separate findings. They are ONE root cause across 3 sites and must heal in a single commit with a single sentinel that exercises all three entry points (or at least one customer + one POS).",
+      "recommendation": "Bundle ARCH-01/02/03 into a single commit `fix(livreur-z4): branch-aware fee on customer+POS quote paths — DEL-5 wire-up`. One sentinel `tests/Feature/Delivery/DeliveryFeeBranchWireupSentinelTest.php` that creates a configured branch and asserts the customer quote (postJson via OrderRequest path) returns the per-branch fee, NOT the legacy fallback."
+    },
+    {
+      "severity": "P1",
+      "id": "LIVREUR-Z4-RED-02",
+      "claim": "DeliveryStatusTransitionWhitelistTest must verify back-jump is BLOCKED, not just forward whitelist",
+      "file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "line": 58,
+      "description": "Naive impl of the whitelist test would only assert valid forward transitions pass. RED requires: (1) forward valid passes ; (2) back-jump (DELIVERED → OUT_FOR_DELIVERY) is REJECTED 422 ; (3) skip-jump (PREPARED → DELIVERED) is REJECTED 422 ; (4) out-of-enum integer (status=99) is REJECTED 422.",
+      "dispute": "Without all 4 cases the test is theatre.",
+      "recommendation": "Write the sentinel with 4 assertions. Implementer must include all 4."
+    },
+    {
+      "severity": "P1",
+      "id": "LIVREUR-Z4-RED-03",
+      "claim": "Address controller permission split: Security flagged the permission inconsistency but did NOT specify that this is a privilege ESCALATION on an existing role",
+      "file": "app/Http/Controllers/Admin/DeliveryBoyAddressController.php",
+      "line": 22,
+      "description": "A user/role with `delivery-boys_show` but WITHOUT `delivery-boys_edit` (which the permission grid would naturally allow) can today CREATE/UPDATE/DELETE addresses. If the only role with that combination is Admin (which has all permissions anyway) the issue is theoretical. If any branch role has read-only delivery boy access, this is a privilege escalation in production.",
+      "dispute": "Severity bump from P1 to P0 IF a real-world role has show-without-edit. Run a DB check: any Role with permission delivery-boys_show but NOT delivery-boys_edit?",
+      "recommendation": "Apply the permission split heal unconditionally (RBAC consistency principle). Treat as P1 heal."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-RED-04",
+      "claim": "F1 heal must preserve mixed-case branch (some configured, some legacy)",
+      "file": "app/Services/Delivery/DeliveryFeeService.php",
+      "line": 26,
+      "description": "Existing service correctly falls back to legacy when any of the three columns is NULL (verified line 38). However the heal must not introduce a regression: a branch with delivery_fee_base=3 and delivery_fee_per_km=null must still hit the legacy formula, NOT crash with TypeError on null arithmetic.",
+      "dispute": "Verify the existing all-or-nothing fence still works after wireup.",
+      "recommendation": "DeliveryFeeConfigurableTest::test_partial_config_falls_back_to_legacy already covers this (line 89-103). Re-run that test in the sentinel suite to attest no regression."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-RED-05",
+      "claim": "No specialist asked about FOREIGN attempt: what if request body has branch_id=999 (non-existent)?",
+      "file": "app/Http/Requests/OrderRequest.php",
+      "line": 117,
+      "description": "After heal: if Branch::find(999) returns null, fromDistanceKm($d, null) — must gracefully fall back to legacy. Verified service signature accepts ?Branch (nullable) at line 26.",
+      "dispute": "Confirm null-safety is explicit, not implicit.",
+      "recommendation": "Implementer: `$branch = $this->input('branch_id') ? Branch::find((int)$this->input('branch_id')) : null;` — graceful null."
+    }
+  ],
+  "verdict": "Architect+Security+DBA+UX/A11y findings are sound but partially-fragmented. Heal must bundle ARCH-01/02/03 into one commit + one comprehensive sentinel. Address permission split is a real P1 (privilege escalation risk). Status whitelist sentinel must cover 4 cases.",
+  "summary": "Promote ARCH-01/02/03 to bundled P0 heal. Apply SEC-01 P1 heal unconditionally. Implementer must write 2 sentinels (DeliveryFeeBranchWireupSentinelTest + DeliveryStatusTransitionWhitelistTest)."
+}

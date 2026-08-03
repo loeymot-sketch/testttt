@@ -1,0 +1,110 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-A/A10-panier-nuggets-490.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Tokens kiosk invalidés en <60-90s en continu pendant le run, avec échecs de resynchronisation menu avalés sans aucune alerte. Preuves exactes : A10 GET http://127.0.0.1:8766/api/frontend/menu -> 401 à ts=1784320955631 PUIS RE-401 à ts=1784320955984 (aucun menu 200 de récupération dans toute la fenêtre A10) ; kiosk-event POST -> 401 à A06 ts=1784320694806, A09 ts=1784320808554 et ts=1784320898530 (période exacte ~90s : tokens morts avant chaque heartbeat), A10 ts=1784320955698. DOM A10 : zéro role=alert / .toast / état offline pendant ces 401 — la grille affiche le menu stale en cache (PNG A10 net, produits visibles) sans signal. Code : KioskAppComponent.vue:392 et :523 `fetchMenu(...).catch(() => {})` avale l'échec ; le setInterval 15s (ligne 347 offlineCheckTimer) ne resynchronise QUE les commandes offline, PAS le menu ; le refetch menu sur reconnexion WS (ligne ~388 _onWsReconnect) est un vecteur mort car le WS ne s'abonne jamais (voir A-002). Conséquence : fenêtres où une rupture 86 déclenchée caisse/KDS n'atteint pas la borne et où un produit épuisé reste commandable — précisément le scénario 86 du GOAL. Atténuation partielle observée dans le code seulement : toast 'Session rafraîchie automatiquement' (2500ms) sur kiosk-auth-retried, absent de tous les DOM capturés, et il signale le re-login, pas l'échec menu.",
+      "fix_hint": "1) Identifier la cause de la mort des tokens (<90s vs TTL 480min) — suspicion : kiosk-login concurrent (autre contexte/surface) qui révoque le token actif ('old tokens revoked at relogin') ; 2) sur 401 de fetchMenu, chaîner re-login puis re-fetch immédiat au lieu de .catch(() => {}) ; 3) exposer un indicateur d'état 'menu possiblement obsolète' si le dernier fetch réussi date de > N minutes.",
+      "status": "open"
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-A/A03-grille-menu-enfant.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P1",
+      "evidence": "La borne ne réussit JAMAIS l'autorisation broadcast sur les 10 états : POST http://127.0.0.1:8766/api/broadcasting/auth -> 403 (A03 ts=1784320600613, A06 ts=1784320711498, A08 ts=1784320716912, A09 ts=1784320906873) et -> 302 au boot (A01 ts=1784320567056, A06 ts=1784320604974, A09 ts=1784320718692, A10 ts=1784320913964 et 1784320955971), chaque 302 cascadant en GET /api/auth... /api/login -> 401 loggé en console error (A01/A06/A09/A10 console.json : 'Failed to load resource: 401' url=http://127.0.0.1:8766/api/login). Deux défauts distincts : (a) race au boot — subscribe Echo tenté avant pose du token (302 redirect), (b) le channel authorization REFUSE le token kiosk (403 durable après auth OK). Résultat : zéro abonnement push pendant tout le run, console errors récurrents à chaque navigation, sync temps-réel rupture 86 -> borne réduite aux refetch de navigation (eux-mêmes fragiles, cf. A-001). Aucune alerte DOM. Classé P1 et non P0 car des refetch menu à la navigation existent et le 403 n'affecte pas le funnel commande direct.",
+      "fix_hint": "Vérifier le gate d'autorisation des canaux privés kiosk (routes/channels.php) face à un PersonalAccessToken kiosk:order — probable rejet du guard ; différer l'abonnement Echo jusqu'à token présent pour éliminer le 302/401 de boot.",
+      "status": "open"
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-A/A03-grille-menu-enfant.png",
+      "category": "loading_state",
+      "severity": "P1",
+      "evidence": "Reproduit 2 fois sur 3 grilles capturées après un changement de catégorie : A03-grille-menu-enfant.png et A08-grille-bols.png montrent TOUT le contenu central FLOU et délavé (titre 'MENU ENFANT'/'BOLS', compteur produits, photos, noms, descriptions, prix €4,90/€7,90, badges) pendant que sidebar/header/footer sont parfaitement nets — les prix y sont à peine lisibles. A02 (première grille) et A10 (même grille menu enfant revisitée) sont nets, et les dom.html d'A03/A08 ne contiennent ni classe *-enter-active/leave-active ni style inline filter/blur : c'est donc une transition blur de changement de catégorie encore en cours au moment du screenshot, terminée avant la sérialisation du DOM. Double lecture, les deux à traiter : (a) défaut produit — la transition blur traîne assez longtemps pour être figée par 2 captures posées (sur le CPU d'une borne réelle ce sera pire) ; (b) défaut de preuve — l'équipe GStack a validé A03/A08 sur des images où prix et libellés sont illisibles : ces états ne sont PAS vérifiés visuellement.",
+      "fix_hint": "Raccourcir/supprimer le blur de transition de catégorie (ou le remplacer par un skeleton avec aria-busy), ET faire attendre la fin des animations par le spec de capture (page.waitForFunction sur la fin de transition ou screenshot animations:disabled) puis re-capturer A03/A08.",
+      "status": "open"
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-A/A09-bolfrites-quel-supplement-gratine-200.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "POST http://127.0.0.1:8766/api/frontend/pricing/preview -> 422 à ts=1784320909179 (console error 'Failed to load resource: 422 (Unprocessable Content)'), suivi d'un preview 200 à ts=1784320910118 (~940ms après). Le wizard Bol Frites émet donc de lui-même un payload de preview invalide en cours de sélection (bug de séquencement client : preview déclenché sur un état incomplet/transitoire), pas une soumission utilisateur — l'allowlist '422 form validation' ne s'applique pas. Impact : console error non-vendor (règle 9 = P1), requête gaspillée, et fenêtre ~1s où le total affiché repose sur l'état précédent ; si le retry 200 n'arrivait pas, le prix serveur SSOT ne serait pas reflété. Le PNG A09 montre le total footer correct (€7,90) après recovery.",
+      "fix_hint": "Gater l'appel pricing/preview sur un payload complet/validé côté client (debounce + garde d'état d'étape) ; logguer le corps du 422 en dev pour identifier le champ manquant.",
+      "status": "open"
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-A/A10-panier-nuggets-490.png",
+      "category": "truncation",
+      "severity": "P2",
+      "evidence": "Drawer panier 'VOTRE COMMANDE' : le nom d'article est tronqué à ~8 caractères visibles — 'Menu Enf...' — alors que la ligne dispose de large espace horizontal (écran 1080px). DOM A10 : <div class=\"kiosk-cart-strip-name\">Menu Enfant Nuggets</div> sans attribut title (ellipsis CSS), sur borne tactile aucun hover possible. Les DEUX produits de la catégorie ('Menu Enfant Nuggets' et 'Menu Enfant Chicken Burger') commencent par 'Menu Enf...' : avec les deux au panier, le texte ne permet plus de savoir lequel on supprime via le bouton poubelle. Atténué (d'où P2, pas P1) par la vignette produit (alt='Menu Enfant Nuggets') et des aria-labels complets ('Supprimer Menu Enfant Nuggets du panier').",
+      "fix_hint": "Élargir kiosk-cart-strip-name (flex-grow) ou autoriser 2 lignes de nom ; à défaut tronquer en milieu de chaîne pour préserver le discriminant final ('Menu...Nuggets').",
+      "status": "open"
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-A/A02-categories.dom.html",
+      "category": "truncation",
+      "severity": "P2",
+      "evidence": "Descriptions produits tronquées EN DUR côté code, pas en CSS : le DOM A02 contient littéralement '<p class=\"kiosk-product-desc\">2 viandes au choix, cheddar, œuf, oignons rouges, tomates, salade, s...</p>' (idem 'Steak haché, ... salade, ...' SUPRÊME, 'oignons rouges...' TERMINATOR, 'sau...' CAYENNE) — le texte complet est ABSENT du DOM, la coupe tombe en plein mot ('s...'), les cards portent title=\"\" vide (data-testid kiosk-product-card-106). L'utilisateur borne n'a AUCUN moyen de lire la fin de la composition depuis la grille (visible aussi sur A03/A08/A10). ",
+      "fix_hint": "Livrer la description complète dans le DOM et tronquer via CSS line-clamp (le wizard/detail restant le fallback), ou couper à la frontière de mot avec limite plus généreuse.",
+      "status": "open"
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-A/A10-panier-nuggets-490.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Pluralisation cassée dans l'aria-label du bouton panier : DOM A10 <button class=\"kiosk-bottom-cart\" aria-label=\"Ouvrir le panier — 1 articles\"> alors que le compteur visible affiche correctement '1 article' (kiosk-cart-bottom-sheet-count). Le lecteur d'écran annonce '1 articles'. Incohérence singulier/pluriel entre canal visuel et canal accessible.",
+      "fix_hint": "Utiliser la même fonction de pluralisation i18n pour l'aria-label que pour le compteur visible.",
+      "status": "open"
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-A/A01-idle.network.json",
+      "category": "config",
+      "severity": "P2",
+      "evidence": "Base URL API divergente de l'origine de page (page localhost:8000, API/images 127.0.0.1:8766) — compté UNE fois conformément à la consigne (bruit connu, déjà tracké). Ampleur constatée dans ce run : rafales POST /api/frontend/csp-report 204 sur les 10 états (ex. A09 : ~60 requêtes), et console A09 confirme que la CSP (Report-Only) est violée par TOUTES les ressources 8766 — 'Connecting to http://127.0.0.1:8766/api/frontend/kiosk-event violates...', 'Loading the image http://127.0.0.1:8766/images/menu/thumbs/... violates...' (x30+ images). Si cette CSP passait un jour en enforce avec cette config croisée, images + API + auth kiosk seraient bloquées (borne morte). À neutraliser par l'alignement base URL prévu au deploy.",
+      "fix_hint": "Aligner VITE/api-base-url sur l'origine servie (ou connect-src/img-src incluant l'origine API) avant tout passage CSP enforce.",
+      "status": "open"
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-A/A02-categories.png",
+      "category": "i18n_format",
+      "severity": "P3",
+      "evidence": "Format monétaire hybride sur toute la borne : symbole AVANT le montant avec virgule française — '€7,00', '€4,90', '€0,90', '€2,00', '€7,90', footer '€0,00'/'€4,90' (A02/A03/A04/A05/A07/A09/A10). La convention FR (locale ADR-007) est '7,00 €' (symbole après, espace insécable). Cohérent partout en interne (aucun mismatch numérique), donc cosmétique — mais visible par chaque client sur chaque prix.",
+      "fix_hint": "Formatter via Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}) au point unique de formatage prix kiosk.",
+      "status": "open"
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "test-e2e-A/A09-bolfrites-quel-supplement-gratine-200.png",
+      "category": "naming_consistency",
+      "severity": "P3",
+      "evidence": "Micro-incohérence de libellés du même condiment entre cartes : item 40 (Nuggets) propose 'Fromagère maison' / 'Spicy maison' (attr 5 'Sauce (1ère Gratuite)') tandis que item 41 (Bol Frites) propose 'Sauce fromagère maison' / 'Sauce spicy' (attr 8). Visible UI : A04 tuile 'FROMAGÈRE MAISON' vs A09 chip composition 'Sauce fromagère maison'. Aucun impact prix/logique.",
+      "fix_hint": "Harmoniser les libellés des variations sauce cross-items en admin catalogue (purement éditorial).",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 3,
+    "P2": 4,
+    "P3": 2,
+    "open_P0": 1,
+    "open_P1": 3,
+    "open_P2": 4,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "OBSERVATION BOL FRITES TRANCHÉE (pas un défaut) : DB vérifiée en tinker read-only — item 41 'Bol Frites' possède bien en base les 9 sauces classiques (attr 8) mais TOUTES soft-deleted le 2026-05-28 19:33:10 (status=10), plus 'Spicy' soft-deleted le 2026-06-24 03:12:21, remplacées par 2 variations actives dédiées 'Sauce fromagère maison' et 'Sauce spicy' (status=5, deleted_at NULL) ; item 40 'Menu Enfant Nuggets' garde 12 sauces actives (attr 5 'Sauce (1ère Gratuite)') qui matchent exactement l'écran A04. Curation de carte délibérée en deux temps = les 2 sauces du bol sont VOULUES. Reste la micro-incohérence de nommage (A-010 P3). INTÉGRITÉ NUMÉRIQUE : PASS — 4,90 € identique grille A03/A10, wizard A04, récap A05, panier A10 (1×4,90=4,90 footer) ; suppléments 0,90 € (A07 8 tuiles, A09) ; Option Gratiné 2,00 € (A09) ; bol 7,90 € grille A08 = total wizard A09 ; viande supplémentaire 2,50 € plausible carte. Aucun mismatch cross-surface détecté. IMAGES PNGQUANT : aucun banding/halo/flou de compression visible sur les états nets (A02/A04/A06/A07/A09/A10) — le flou d'A03/A08 est un filtre de rendu transitionnel (uniforme sur le texte HTML), pas une dégradation d'assets. I18N LEAKS : scan regex des 10 DOM = zéro clé apparente. A11Y : boutons + de grille avec aria-label complets, groupe quantité panier labellisé, bouton idle takeaway porte un nom accessible ('Touchez l'écran pour commander') — seul A-007 relevé. Palette brand Cayenne conforme, light mode respecté. Verdict RED porté par A-001 (P0) et 3×P1 : la borne du run vit avec un push temps-réel jamais abonné, des tokens qui meurent en <90s et des échecs de refetch menu avalés en silence — l'exact angle mort qu'un audit 'vert en apparence' aurait manqué."
+}

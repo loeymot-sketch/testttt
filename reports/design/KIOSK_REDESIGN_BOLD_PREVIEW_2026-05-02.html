@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="fr" data-kiosk-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FoodKing — Maquette refonte borne « Bold Appétissant » — 2026-05-02</title>
+
+  <!-- Plan associé : plans/PLAN_CV1-KIOSK-VISUAL-REDESIGN-001_2026-05-02.md
+       Direction : Bold appétissant + Light/Dark + 4 vagues
+       Auteur    : Claude (Opus 4.7, xhigh) — orchestrator FoodKing -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ============================================================
+       FOUNDATIONS — TOKENS BOLD APPETISSANT (light + dark)
+       Mirror exact des --kiosk-bold-* du plan §1.4 + extensions.
+       Cette feuille est isolée à la maquette ; le repo recevra
+       resources/css/kiosk/tokens-bold.css en V1.
+       ============================================================ */
+    :root {
+      /* Light mode — palette warm */
+      --bg:                #FFF8F1;
+      --surface:           #FFFFFF;
+      --surface-subtle:    #FBF2E6;
+      --surface-strong:    #1A1410;
+      --text-primary:      #1A1410;
+      --text-secondary:    #6B5D52;
+      --text-inverse:      #FFF5E8;
+      --border:            #E8DDD4;
+      --border-strong:     #1A1410;
+
+      --primary:           #E63946;
+      --primary-hover:     #C82333;
+      --primary-soft:      #FFE5E8;
+      --accent:            #FFB627;
+      --accent-soft:       #FFF3D6;
+      --success:           #2D6A4F;
+      --warning:           #F59E0B;
+      --danger:            #9A0E2A;
+
+      --shadow-card:       0 4px 16px rgba(26, 20, 16, 0.08), 0 1px 4px rgba(26, 20, 16, 0.04);
+      --shadow-cta:        0 12px 32px rgba(230, 57, 70, 0.32), 0 4px 12px rgba(230, 57, 70, 0.16);
+      --shadow-hero:       0 24px 64px rgba(26, 20, 16, 0.18), 0 8px 24px rgba(26, 20, 16, 0.10);
+      --shadow-sticky:     0 -8px 24px rgba(26, 20, 16, 0.06);
+      --shadow-pop:        0 8px 24px rgba(26, 20, 16, 0.12);
+
+      --radius-sm:         8px;
+      --radius-md:         16px;
+      --radius-lg:         24px;
+      --radius-xl:         32px;
+      --radius-2xl:        40px;
+      --radius-pill:       9999px;
+
+      --font-display:      'Fraunces', 'Recoleta', 'DM Serif Display', Georgia, serif;
+      --font-body:         'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono:         'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+      --duration-tap:      120ms;
+      --duration-card:     240ms;
+      --duration-step:     320ms;
+      --duration-ceremony: 480ms;
+      --easing-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+      --easing-smooth:     cubic-bezier(0.4, 0, 0.2, 1);
+
+      /* Touch */
+      --touch-min:    44px;
+      --touch-comfy:  56px;
+      --touch-hero:   72px;
+    }
+
+    [data-kiosk-theme='dark'] {
+      --bg:                #0E0A07;
+      --surface:           #1F1611;
+      --surface-subtle:    #150F0B;
+      --surface-strong:    #FFF5E8;
+      --text-primary:      #FFF5E8;
+      --text-secondary:    #B8A99A;
+      --text-inverse:      #1A1410;
+      --border:            #2A1F18;
+      --border-strong:     #FFF5E8;
+
+      --primary:           #FF6B6B;
+      --primary-hover:     #FF8585;
+      --primary-soft:      #2D1518;
+      --accent:            #FFC857;
+      --accent-soft:       #2D2418;
+      --success:           #4ADE80;
+      --warning:           #FBBF24;
+      --danger:            #F87171;
+
+      --shadow-card:       0 4px 16px rgba(0, 0, 0, 0.50), 0 1px 4px rgba(0, 0, 0, 0.30);
+      --shadow-cta:        0 12px 32px rgba(255, 107, 107, 0.40), 0 4px 12px rgba(255, 107, 107, 0.20);
+      --shadow-hero:       0 24px 64px rgba(0, 0, 0, 0.60), 0 8px 24px rgba(0, 0, 0, 0.40);
+      --shadow-sticky:     0 -8px 24px rgba(0, 0, 0, 0.40);
+      --shadow-pop:        0 8px 24px rgba(0, 0, 0, 0.50);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --duration-tap:      1ms;
+        --duration-card:     1ms;
+        --duration-step:     1ms;
+        --duration-ceremony: 1ms;
+      }
+    }
+
+    /* ============================================================
+       RESET + GLOBAL
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background: linear-gradient(135deg, #18120D 0%, #0a0807 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      color: inherit;
+    }
+    img { display: block; max-width: 100%; }
+
+    /* ============================================================
+       MAQUETTE — TOOLBAR + STAGE
+       ============================================================ */
+    .mockup-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: rgba(14, 10, 7, 0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid rgba(255, 245, 232, 0.08);
+      color: #FFF5E8;
+      font-size: 13px;
+    }
+    .mockup-toolbar .brand {
+      display: flex;
+      gap: 16px;
+      align-items: baseline;
+    }
+    .mockup-toolbar .brand strong {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+      color: #FFB627;
+    }
+    .mockup-toolbar .brand span { opacity: 0.65; }
+    .mockup-toolbar .controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .screen-selector {
+      display: flex;
+      background: rgba(255, 245, 232, 0.08);
+      border-radius: var(--radius-pill);
+      padding: 4px;
+      gap: 2px;
+    }
+    .screen-selector button {
+      padding: 8px 18px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 245, 232, 0.7);
+      transition: all var(--duration-tap) var(--easing-smooth);
+    }
+    .screen-selector button:hover { color: #FFF5E8; }
+    .screen-selector button.active {
+      background: #FFB627;
+      color: #1A1410;
+    }
+    .theme-toggle {
+      padding: 10px 18px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 245, 232, 0.08);
+      color: #FFF5E8;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background var(--duration-tap) var(--easing-smooth);
+    }
+    .theme-toggle:hover { background: rgba(255, 245, 232, 0.15); }
+
+    .mockup-stage {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 24px 80px;
+    }
+
+    /* Kiosk frame — aspect 9:16 portrait (target hardware 1080x1920) */
+    .kiosk-frame {
+      width: min(540px, 95vw);
+      aspect-ratio: 9 / 16;
+      background: var(--bg);
+      border-radius: 36px;
+      box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.50),
+        0 12px 32px rgba(0, 0, 0, 0.30),
+        inset 0 0 0 12px #1A1410;
+      overflow: hidden;
+      position: relative;
+      transition: background var(--duration-card) var(--easing-smooth);
+    }
+    .kiosk-content {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      border-radius: 26px;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-step) var(--easing-smooth);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .screen::-webkit-scrollbar { width: 6px; }
+    .screen::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+    /* Toolbar floating (langue + a11y) — partagée idle/wizard/cart */
+    .floating-controls {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+    .floating-controls button {
+      min-width: var(--touch-min);
+      min-height: var(--touch-min);
+      padding: 0 12px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 248, 241, 0.92);
+      backdrop-filter: blur(8px);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(26, 20, 16, 0.06);
+      transition: transform var(--duration-tap) var(--easing-spring);
+    }
+    [data-kiosk-theme='dark'] .floating-controls button {
+      background: rgba(31, 22, 17, 0.92);
+      color: var(--text-primary);
+      border-color: rgba(255, 245, 232, 0.10);
+    }
+    .floating-controls button:hover { transform: scale(1.05); }
+
+    /* ============================================================
+       SCREEN 1 — IDLE / ATTRACTOR
+       ============================================================ */
+    .idle-screen {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+    }
+    .idle-hero {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .idle-hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(1.1);
+      transform: scale(1.05);
+      transition: transform 8s linear;
+    }
+    .idle-screen.active .idle-hero img { transform: scale(1.15); }
+    .idle-hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(26, 20, 16, 0.10) 0%,
+        rgba(26, 20, 16, 0.30) 40%,
+        rgba(26, 20, 16, 0.85) 75%,
+        rgba(26, 20, 16, 0.95) 100%
+      );
+    }
+    [data-kiosk-theme='dark'] .idle-hero::after {
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.30) 0%,
+        rgba(0, 0, 0, 0.55) 40%,
+        rgba(0, 0, 0, 0.92) 75%,
+        rgba(0, 0, 0, 1) 100%
+      );
+    }
+    .idle-content {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 32px 28px 28px;
+      color: #FFF5E8;
+    }
+    .idle-brand {
+      align-self: center;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeUp 800ms var(--easing-smooth) both;
+    }
+    .idle-brand .crown {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+    }
+    .idle-brand .wordmark {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 88px;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      text-align: center;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+    }
+    .idle-brand .wordmark .accent { color: #FFB627; }
+    .idle-tagline {
+      text-align: center;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 22px;
+      line-height: 1.2;
+      margin-bottom: 36px;
+      opacity: 0.95;
+      animation: fadeUp 800ms 200ms var(--easing-smooth) both;
+    }
+    .idle-cta-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      animation: fadeUp 800ms 400ms var(--easing-smooth) both;
+    }
+    .idle-cta-card {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      border-radius: var(--radius-2xl);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-hero);
+      cursor: pointer;
+      transition: transform var(--duration-card) var(--easing-spring),
+                  box-shadow var(--duration-card) var(--easing-smooth);
+    }
+    .idle-cta-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow:
+        0 32px 80px rgba(26, 20, 16, 0.30),
+        0 12px 28px rgba(26, 20, 16, 0.16);
+    }
+    .idle-cta-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .idle-cta-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(26, 20, 16, 0.85) 100%);
+    }
+    .idle-cta-content {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #FFF5E8;
+    }
+    .idle-cta-content .icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 248, 241, 0.95);
+      color: #1A1410;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      backdrop-filter: blur(8px);
+    }
+    .idle-cta-content .label {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 32px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+    .idle-cta-content .hint {
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.9;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .idle-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+    .idle-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-pill);
+      background: #FFB627;
+      animation: pulse 1.6s var(--easing-smooth) infinite;
+    }
+    .idle-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .idle-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================================
+       SCREEN 2 — WIZARD STEP "VIANDE"
+       ============================================================ */
+    .wizard-screen {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+    .wizard-stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 16px 20px 8px;
+      background: var(--bg);
+    }
+    .wizard-step-dot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+    .wizard-step-dot .dot {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-subtle);
+      color: var(--text-secondary);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: all var(--duration-card) var(--easing-spring);
+    }
+    .wizard-step-dot.completed .dot {
+      background: var(--success);
+      color: #FFF5E8;
+    }
+    .wizard-step-dot.active .dot {
+      background: var(--primary);
+      color: #FFF5E8;
+      transform: scale(1.15);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+    .wizard-step-dot .bar {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--surface-subtle);
+      transition: background var(--duration-card) var(--easing-smooth);
+    }
+    .wizard-step-dot.completed .bar { background: var(--success); }
+
+    /* Hero strip */
+    .wizard-hero {
+      display: flex;
+      gap: 12px;
+      padding: 12px 20px 16px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .wizard-hero .photo {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-card);
+    }
+    .wizard-hero .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .wizard-hero .info { flex: 1; min-width: 0; }
+    .wizard-hero .label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+    }
+    .wizard-hero .name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.1;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .wizard-hero .price {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary);
+    }
+
+    /* Composition live (chips stack) */
+    .wizard-composition {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      padding: 8px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .wizard-composition .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      background: var(--surface-subtle);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .wizard-composition .chip .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .wizard-composition .empty {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .wizard-question {
+      padding: 20px 20px 4px;
+      text-align: center;
+    }
+    .wizard-question h2 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 30px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .wizard-question .helper {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .wizard-question .helper strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Quota badge */
+    .wizard-quota {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--accent-soft);
+      color: var(--text-primary);
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 auto 8px;
+    }
+    [data-kiosk-theme='dark'] .wizard-quota { color: var(--accent); }
+
+    .wizard-quota-row {
+      display: flex;
+      justify-content: center;
+      padding: 0 20px 8px;
+    }
+
+    /* Grid options */
+    .wizard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px 20px 20px;
+    }
+    .meat-card {
+      position: relative;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all var(--duration-card) var(--easing-spring);
+      cursor: pointer;
+      box-shadow: var(--shadow-card);
+    }
+    .meat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-pop);
+    }
+    .meat-card.selected {
+      border-color: var(--primary);
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(230, 57, 70, 0.20);
+    }
+    .meat-card .photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: var(--surface-subtle);
+    }
+    .meat-card .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform var(--duration-card) var(--easing-smooth);
+    }
+    .meat-card:hover .photo img { transform: scale(1.05); }
+    .meat-card .content { padding: 10px 12px; }
+    .meat-card .name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1.1;
+      color: var(--text-primary);
+    }
+    .meat-card .meta {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .meat-card .badge {
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge.included { background: var(--accent-soft); color: var(--text-primary); }
+    [data-kiosk-theme='dark'] .badge.included { color: var(--accent); }
+    .badge.allergen { background: var(--surface-subtle); color: var(--text-secondary); }
+    .badge.price-impact { background: var(--primary-soft); color: var(--primary); }
+
+    .meat-card .counter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      margin: 0 12px 12px;
+      background: var(--surface-subtle);
+      border-radius: var(--radius-md);
+    }
+    .meat-card .counter button {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 16px;
+      display: grid;
+      place-items: center;
+      transition: all var(--duration-tap) var(--easing-spring);
+    }
+    .meat-card .counter button:hover {
+      background: var(--primary);
+      color: #FFF5E8;
+      transform: scale(1.1);
+    }
+    .meat-card .counter button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .meat-card .counter .count {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .meat-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-pill);
+      background: var(--primary);
+      color: #FFF5E8;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 900;
+      z-index: 2;
+      animation: popIn var(--duration-tap) var(--easing-spring);
+    }
+    @keyframes popIn {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+
+    /* Wizard nav bar */
+    .wizard-navbar {
+      position: sticky;
+      bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      box-shadow: var(--shadow-sticky);
+      padding: 14px 20px 16px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      z-index: 5;
+    }
+    .wizard-navbar .btn-prev {
+      padding: 12px 16px;
+      border: 2px solid var(--border-strong);
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      transition: all var(--duration-tap) var(--easing-smooth);
+    }
+    .wizard-navbar .btn-prev:hover {
+      background: var(--text-primary);
+      color: var(--text-inverse);
+    }
+    .wizard-navbar .total {
+      text-align: center;
+    }
+    .wizard-navbar .total .label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      color: var(--text-secondary);
+    }
+    .wizard-navbar .total .amount {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 26px;
+      line-height: 1;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+    .wizard-navbar .btn-next {
+      padding: 14px 24px;
+      background: var(--primary);
+      color: #FFF5E8;
+      border-radius: var(--radius-pill);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      box-shadow: var(--shadow-cta);
+      transition: all var(--duration-tap) var(--easing-spring);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .wizard-navbar .btn-next:hover {
+      transform: translateY(-2px) scale(1.03);
+      background: var(--primary-hover);
+    }
+    .wizard-navbar .btn-next .arrow {
+      font-size: 16px;
+      transition: transform var(--duration-tap) var(--easing-spring);
+    }
+    .wizard-navbar .btn-next:hover .arrow { transform: translateX(2px); }
+
+    /* ============================================================
+       SCREEN 3 — CART
+       ============================================================ */
+    .cart-screen {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+    .cart-header {
+      padding: 24px 24px 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .cart-header .title {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 32px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .cart-header .count {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--surface-subtle);
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+    }
+
+    .cart-lines {
+      flex: 1;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    .cart-line {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 12px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 10px;
+      box-shadow: var(--shadow-card);
+      transition: transform var(--duration-card) var(--easing-spring);
+    }
+    .cart-line:hover { transform: translateY(-1px); }
+    .cart-line .photo {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .cart-line .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .cart-line .info {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    .cart-line .name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.1;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .cart-line .composition {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.3;
+      margin-top: 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .cart-line .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+    .cart-line .qty {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-subtle);
+      border-radius: var(--radius-pill);
+      padding: 3px;
+    }
+    .cart-line .qty button {
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      display: grid;
+      place-items: center;
+      transition: all var(--duration-tap) var(--easing-spring);
+    }
+    .cart-line .qty button:hover {
+      background: var(--primary);
+      color: #FFF5E8;
+    }
+    .cart-line .qty .count {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      min-width: 16px;
+      text-align: center;
+    }
+    .cart-line .price {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary);
+      letter-spacing: -0.01em;
+    }
+
+    /* Type commande toggle + promo */
+    .cart-extras {
+      padding: 12px 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .order-type-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      background: var(--surface-subtle);
+      border-radius: var(--radius-pill);
+    }
+    .order-type-toggle button {
+      padding: 12px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      transition: all var(--duration-tap) var(--easing-smooth);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .order-type-toggle button.active {
+      background: var(--text-primary);
+      color: var(--text-inverse);
+      box-shadow: var(--shadow-card);
+    }
+
+    .promo-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: border-color var(--duration-tap) var(--easing-smooth);
+    }
+    .promo-input:hover { border-color: var(--primary); }
+    .promo-input .icon {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-pill);
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+    .promo-input .text {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .promo-input .text small {
+      display: block;
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin-top: 1px;
+      font-size: 10px;
+    }
+
+    /* Totals + CTA */
+    .cart-totals {
+      padding: 16px 16px 8px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+    .cart-totals .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .cart-totals .row .amount {
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .cart-totals .row.total {
+      padding-top: 12px;
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .cart-totals .row.total .label {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+    .cart-totals .row.total .amount {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 36px;
+      color: var(--primary);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .cart-cta {
+      padding: 12px 16px 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow-sticky);
+    }
+    .cart-cta-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      color: #FFF5E8;
+      border-radius: var(--radius-xl);
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      box-shadow: var(--shadow-cta);
+      transition: all var(--duration-tap) var(--easing-spring);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-transform: uppercase;
+    }
+    .cart-cta-btn:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 16px 40px rgba(230, 57, 70, 0.45);
+    }
+    .cart-cta-btn .arrow {
+      font-size: 20px;
+      transition: transform var(--duration-tap) var(--easing-spring);
+    }
+    .cart-cta-btn:hover .arrow { transform: translateX(4px); }
+
+    /* ============================================================
+       INFO PANEL (footer maquette)
+       ============================================================ */
+    .mockup-info {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 24px;
+      color: rgba(255, 245, 232, 0.55);
+      font-size: 11px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .mockup-info code {
+      font-family: var(--font-mono);
+      background: rgba(255, 245, 232, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #FFB627;
+    }
+    .mockup-info .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .mockup-info .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .mockup-info .legend .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <header class="mockup-toolbar">
+    <div class="brand">
+      <strong>FOODKING</strong>
+      <span>Maquette « Bold Appétissant » — CV1-KIOSK-VISUAL-REDESIGN-001 — 2026-05-02</span>
+    </div>
+    <div class="controls">
+      <div class="screen-selector" role="tablist" aria-label="Sélecteur d'écran de la maquette">
+        <button data-screen="idle" class="active" role="tab" aria-selected="true">Idle</button>
+        <button data-screen="wizard" role="tab" aria-selected="false">Wizard · Viande</button>
+        <button data-screen="cart" role="tab" aria-selected="false">Panier</button>
+      </div>
+      <button class="theme-toggle" aria-label="Basculer thème clair / sombre">
+        <span class="theme-icon">🌙</span> <span class="theme-label">Passer en sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="mockup-stage">
+    <div class="kiosk-frame" role="region" aria-label="Aperçu borne FoodKing">
+      <div class="kiosk-content">
+
+        <!-- =============================================================
+             SCREEN 1 — IDLE / ATTRACTOR
+             ============================================================= -->
+        <section class="screen idle-screen active" data-screen-id="idle" aria-label="Écran d'accueil borne">
+          <div class="idle-hero" aria-hidden="true">
+            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1080&q=80&auto=format&fit=crop" alt="" loading="lazy" />
+          </div>
+
+          <div class="floating-controls">
+            <button aria-label="Changer de langue">FR</button>
+            <button aria-label="Réglages d'accessibilité">♿</button>
+          </div>
+
+          <div class="idle-content">
+            <div class="idle-brand">
+              <svg class="crown" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                <path d="M8 50 L12 24 L24 36 L32 16 L40 36 L52 24 L56 50 Z" fill="#FFB627" stroke="#1A1410" stroke-width="2.5" stroke-linejoin="round"/>
+                <rect x="6" y="50" width="52" height="6" rx="2" fill="#FFB627" stroke="#1A1410" stroke-width="2"/>
+                <circle cx="14" cy="22" r="3" fill="#E63946" stroke="#1A1410" stroke-width="1.5"/>
+                <circle cx="32" cy="14" r="3" fill="#E63946" stroke="#1A1410" stroke-width="1.5"/>
+                <circle cx="50" cy="22" r="3" fill="#E63946" stroke="#1A1410" stroke-width="1.5"/>
+              </svg>
+              <div class="wordmark">Food<span class="accent">King</span></div>
+            </div>
+
+            <p class="idle-tagline">Compose, savoure, recommence.</p>
+
+            <div class="idle-cta-row">
+              <button class="idle-cta-card" aria-label="Commander sur place">
+                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80&auto=format&fit=crop" alt="" />
+                <div class="idle-cta-content">
+                  <div class="icon" aria-hidden="true">🍽</div>
+                  <div>
+                    <div class="label">SUR PLACE</div>
+                    <div class="hint">Toucher pour commencer</div>
+                  </div>
+                </div>
+              </button>
+              <button class="idle-cta-card" aria-label="Commander à emporter">
+                <img src="https://images.unsplash.com/photo-1607330289024-1535c6b4e1c1?w=600&q=80&auto=format&fit=crop" alt="" />
+                <div class="idle-cta-content">
+                  <div class="icon" aria-hidden="true">🛍</div>
+                  <div>
+                    <div class="label">À EMPORTER</div>
+                    <div class="hint">Toucher pour commencer</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <div class="idle-dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- =============================================================
+             SCREEN 2 — WIZARD STEP "VIANDE"
+             ============================================================= -->
+        <section class="screen wizard-screen" data-screen-id="wizard" aria-label="Wizard étape choix viande">
+          <div class="floating-controls">
+            <button aria-label="Quitter le wizard">✕</button>
+          </div>
+
+          <!-- Stepper -->
+          <nav class="wizard-stepper" aria-label="Étapes du wizard">
+            <div class="wizard-step-dot completed"><div class="dot">✓</div><div class="bar"></div></div>
+            <div class="wizard-step-dot completed"><div class="dot">✓</div><div class="bar"></div></div>
+            <div class="wizard-step-dot active"><div class="dot">3</div><div class="bar"></div></div>
+            <div class="wizard-step-dot"><div class="dot">4</div><div class="bar"></div></div>
+            <div class="wizard-step-dot"><div class="dot">5</div><div class="bar"></div></div>
+            <div class="wizard-step-dot"><div class="dot">6</div><div class="bar"></div></div>
+            <div class="wizard-step-dot"><div class="dot">7</div></div>
+          </nav>
+
+          <!-- Hero strip -->
+          <div class="wizard-hero">
+            <div class="photo">
+              <img src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=240&q=80&auto=format&fit=crop" alt="" />
+            </div>
+            <div class="info">
+              <div class="label">Tu construis</div>
+              <div class="name">Tacos · Taille L</div>
+            </div>
+            <div class="price">9,90 €</div>
+          </div>
+
+          <!-- Composition live -->
+          <div class="wizard-composition" aria-label="Composition en cours">
+            <span class="chip"><span class="dot"></span>Galette blé</span>
+            <span class="chip"><span class="dot"></span>Bœuf haché</span>
+            <span class="chip"><span class="dot"></span>Poulet grillé</span>
+          </div>
+
+          <!-- Question -->
+          <div class="wizard-question">
+            <h2>Choisis tes viandes</h2>
+            <p class="helper">Inclus : <strong>2 viandes</strong> · Au-delà : +1,50 €/viande</p>
+          </div>
+
+          <div class="wizard-quota-row">
+            <span class="wizard-quota">2/2 sélectionnées</span>
+          </div>
+
+          <!-- Grid options -->
+          <div class="wizard-grid" role="group" aria-label="Liste des viandes disponibles">
+            <article class="meat-card selected" tabindex="0" aria-pressed="true">
+              <div class="photo">
+                <img src="https://images.unsplash.com/photo-1546964124-0cce460f38ef?w=400&q=80&auto=format&fit=crop" alt="Bœuf haché" />
+              </div>
+              <div class="content">
+                <div class="name">Bœuf haché</div>
+                <div class="meta">
+                  <span class="badge included">Inclus</span>
+                </div>
+              </div>
+              <div class="counter">
+                <button aria-label="Retirer">−</button>
+                <span class="count">1</span>
+                <button aria-label="Ajouter">+</button>
+              </div>
+            </article>
+
+            <article class="meat-card selected" tabindex="0" aria-pressed="true">
+              <div class="photo">
+                <img src="https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&q=80&auto=format&fit=crop" alt="Poulet grillé" />
+              </div>
+              <div class="content">
+                <div class="name">Poulet grillé</div>
+                <div class="meta">
+                  <span class="badge included">Inclus</span>
+                </div>
+              </div>
+              <div class="counter">
+                <button aria-label="Retirer">−</button>
+                <span class="count">1</span>
+                <button aria-label="Ajouter">+</button>
+              </div>
+            </article>
+
+            <article class="meat-card" tabindex="0" aria-pressed="false">
+              <div class="photo">
+                <img src="https://images.unsplash.com/photo-1620945875562-6ae3b71b06ed?w=400&q=80&auto=format&fit=crop" alt="Agneau confit" />
+              </div>
+              <div class="content">
+                <div class="name">Agneau confit</div>
+                <div class="meta">
+                  <span class="badge price-impact">+1,50 €</span>
+                </div>
+              </div>
+              <div class="counter">
+                <button disabled aria-label="Retirer">−</button>
+                <span class="count">0</span>
+                <button aria-label="Ajouter">+</button>
+              </div>
+            </article>
+
+            <article class="meat-card" tabindex="0" aria-pressed="false">
+              <div class="photo">
+                <img src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&auto=format&fit=crop" alt="Falafel veggie" />
+              </div>
+              <div class="content">
+                <div class="name">Falafel veggie</div>
+                <div class="meta">
+                  <span class="badge price-impact">+1,50 €</span>
+                  <span class="badge allergen">V</span>
+                </div>
+              </div>
+              <div class="counter">
+                <button disabled aria-label="Retirer">−</button>
+                <span class="count">0</span>
+                <button aria-label="Ajouter">+</button>
+              </div>
+            </article>
+          </div>
+
+          <!-- Nav bar -->
+          <div class="wizard-navbar">
+            <button class="btn-prev" aria-label="Étape précédente">← Précédent</button>
+            <div class="total">
+              <div class="label">Total</div>
+              <div class="amount">9,90 €</div>
+            </div>
+            <button class="btn-next" aria-label="Étape suivante">
+              Continuer
+              <span class="arrow">→</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- =============================================================
+             SCREEN 3 — CART
+             ============================================================= -->
+        <section class="screen cart-screen" data-screen-id="cart" aria-label="Récapitulatif panier">
+          <div class="floating-controls">
+            <button aria-label="Retour">←</button>
+          </div>
+
+          <header class="cart-header">
+            <h1 class="title">Votre commande</h1>
+            <span class="count">2 articles</span>
+          </header>
+
+          <div class="cart-lines">
+            <article class="cart-line">
+              <div class="photo">
+                <img src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=200&q=80&auto=format&fit=crop" alt="" />
+              </div>
+              <div class="info">
+                <div>
+                  <div class="name">Tacos L · Bœuf, Poulet</div>
+                  <div class="composition">Galette blé · Sauce algérienne, Samouraï · Salade, Tomate, Oignon · Frites + Coca</div>
+                </div>
+                <div class="footer">
+                  <div class="qty">
+                    <button aria-label="Diminuer quantité">−</button>
+                    <span class="count">1</span>
+                    <button aria-label="Augmenter quantité">+</button>
+                  </div>
+                  <div class="price">12,90 €</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="cart-line">
+              <div class="photo">
+                <img src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=200&q=80&auto=format&fit=crop" alt="" />
+              </div>
+              <div class="info">
+                <div>
+                  <div class="name">Burger Maison · Cheddar</div>
+                  <div class="composition">Pain brioché · Steak haché bœuf · Cheddar fondu, oignons confits · Frites + Sprite</div>
+                </div>
+                <div class="footer">
+                  <div class="qty">
+                    <button aria-label="Diminuer quantité">−</button>
+                    <span class="count">1</span>
+                    <button aria-label="Augmenter quantité">+</button>
+                  </div>
+                  <div class="price">11,90 €</div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="cart-extras">
+            <div class="order-type-toggle" role="group" aria-label="Type de commande">
+              <button class="active" aria-pressed="true">🍽 Sur place</button>
+              <button aria-pressed="false">🛍 À emporter</button>
+            </div>
+
+            <button class="promo-input" aria-label="Saisir un code promo">
+              <span class="icon" aria-hidden="true">%</span>
+              <span class="text">
+                Code promo
+                <small>Réductions, fidélité, bons d'achat</small>
+              </span>
+            </button>
+          </div>
+
+          <div class="cart-totals">
+            <div class="row">
+              <span>Sous-total</span>
+              <span class="amount">24,80 €</span>
+            </div>
+            <div class="row">
+              <span>TVA 10%</span>
+              <span class="amount">2,25 €</span>
+            </div>
+            <div class="row total">
+              <span class="label">Total</span>
+              <span class="amount">24,80 €</span>
+            </div>
+          </div>
+
+          <div class="cart-cta">
+            <button class="cart-cta-btn" aria-label="Procéder au paiement">
+              Payer maintenant
+              <span class="arrow">→</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="mockup-info">
+    Maquette ratio <strong>9:16 portrait</strong> (cible matériel kiosk <code>1080×1920</code>) à 50% pour aperçu desktop.
+    <br />Direction <strong>Bold Appétissant</strong> — typo <code>Fraunces + Inter</code> — palette <code>warm rouge + or</code> — light/dark prêts.
+    <div class="legend">
+      <span><span class="dot" style="background:#E63946"></span>Primary</span>
+      <span><span class="dot" style="background:#FFB627"></span>Accent</span>
+      <span><span class="dot" style="background:#FFF8F1; border:1px solid #E8DDD4"></span>Surface light</span>
+      <span><span class="dot" style="background:#0E0A07"></span>Surface dark</span>
+      <span><span class="dot" style="background:#2D6A4F"></span>Success</span>
+    </div>
+    <div style="margin-top: 14px; opacity: 0.5;">
+      Plan : <code>plans/PLAN_CV1-KIOSK-VISUAL-REDESIGN-001_2026-05-02.md</code>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle
+    const themeBtn = document.querySelector('.theme-toggle');
+    const themeIcon = themeBtn.querySelector('.theme-icon');
+    const themeLabel = themeBtn.querySelector('.theme-label');
+    let dark = false;
+    themeBtn.addEventListener('click', () => {
+      dark = !dark;
+      document.documentElement.setAttribute('data-kiosk-theme', dark ? 'dark' : 'light');
+      themeIcon.textContent = dark ? '☀' : '🌙';
+      themeLabel.textContent = dark ? 'Passer en clair' : 'Passer en sombre';
+    });
+
+    // Screen selector
+    const buttons = document.querySelectorAll('.screen-selector button');
+    const screens = document.querySelectorAll('.screen');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.screen;
+        buttons.forEach(b => {
+          b.classList.toggle('active', b === btn);
+          b.setAttribute('aria-selected', b === btn);
+        });
+        screens.forEach(s => {
+          s.classList.toggle('active', s.dataset.screenId === target);
+        });
+      });
+    });
+
+    // Demo: meat card toggle (cosmetic only)
+    document.querySelectorAll('.meat-card').forEach(card => {
+      card.addEventListener('click', e => {
+        if (e.target.closest('.counter')) return;
+        const wasSelected = card.classList.contains('selected');
+        card.classList.toggle('selected');
+        card.setAttribute('aria-pressed', !wasSelected);
+      });
+    });
+
+    // Counter buttons (cosmetic only)
+    document.querySelectorAll('.counter').forEach(counter => {
+      const minus = counter.querySelector('button:first-child');
+      const plus = counter.querySelector('button:last-child');
+      const count = counter.querySelector('.count');
+      plus.addEventListener('click', e => {
+        e.stopPropagation();
+        const n = parseInt(count.textContent) + 1;
+        count.textContent = n;
+        minus.disabled = false;
+        const card = counter.closest('.meat-card');
+        if (card && n > 0) {
+          card.classList.add('selected');
+          card.setAttribute('aria-pressed', 'true');
+        }
+      });
+      minus.addEventListener('click', e => {
+        e.stopPropagation();
+        const n = Math.max(0, parseInt(count.textContent) - 1);
+        count.textContent = n;
+        if (n === 0) {
+          minus.disabled = true;
+          const card = counter.closest('.meat-card');
+          if (card) {
+            card.classList.remove('selected');
+            card.setAttribute('aria-pressed', 'false');
+          }
+        }
+      });
+    });
+
+    // Cart qty (cosmetic only)
+    document.querySelectorAll('.cart-line .qty').forEach(qty => {
+      const minus = qty.querySelector('button:first-child');
+      const plus = qty.querySelector('button:last-child');
+      const count = qty.querySelector('.count');
+      plus.addEventListener('click', () => { count.textContent = parseInt(count.textContent) + 1; });
+      minus.addEventListener('click', () => {
+        const n = Math.max(1, parseInt(count.textContent) - 1);
+        count.textContent = n;
+      });
+    });
+
+    // Order type toggle
+    document.querySelectorAll('.order-type-toggle button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.order-type-toggle button').forEach(b => {
+          b.classList.toggle('active', b === btn);
+          b.setAttribute('aria-pressed', b === btn);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

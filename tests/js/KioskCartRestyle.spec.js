@@ -75,6 +75,19 @@ function mountOpts(store) {
 }
 
 describe('KioskCartComponent restyle', () => {
+    beforeEach(() => {
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] These specs assert the cart UI
+        // STRUCTURE (loyalty button + promo form testids), which now render only when
+        // discretionary discounts are enabled (window.foodkingConfig.discountsEnabled).
+        // Set the flag so the structural assertions hold; the OFF (hidden) behaviour is
+        // the V1 dormancy default verified at the backend gate level.
+        // [W2 audit heal 2026-06-26] The promo/loyalty entries are now ALSO behind a
+        // dedicated kiosk gate (window.foodkingConfig.kioskPromoEnabled, default FALSE).
+        // Enable it here so the structural assertions still find the elements; the
+        // default-hidden behaviour is covered by tests/js/kioskCartPromoGate.spec.js.
+        global.window.foodkingConfig = { discountsEnabled: true, kioskPromoEnabled: true };
+    });
+
     it('empty state : testid + role=status + CTA present', () => {
         const store = makeStore({ items: [] });
         const wrapper = mount(KioskCartComponent, mountOpts(store));
@@ -119,7 +132,10 @@ describe('KioskCartComponent restyle', () => {
         expect(group.attributes('role')).toBe('radiogroup');
         const dinein = wrapper.find('[data-testid="kiosk-cart-order-type-dinein"]');
         const tak = wrapper.find('[data-testid="kiosk-cart-order-type-takeaway"]');
-        expect(dinein.attributes('aria-checked')).toBe('false');
+        // [GOAL-2026-05-29] V1: dine-in is disabled (pos.dine_in_enabled=false owner
+        // mandate) so the dine-in tile is NOT rendered; takeaway is the only option
+        // and is checked. (Was written assuming both tiles present.)
+        expect(dinein.exists()).toBe(false);
         expect(tak.attributes('aria-checked')).toBe('true');
     });
 

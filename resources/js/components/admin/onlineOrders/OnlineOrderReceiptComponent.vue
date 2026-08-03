@@ -137,7 +137,7 @@
                             </tr>
                             <tr>
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.payment_type') }}:</td>
-                                <td v-if="order.transaction" class="pt-1 pb-1">{{ order.transaction.payment_method }}</td>
+                                <td v-if="order.transaction" class="pt-1 pb-1">{{ paymentMethodLabel(order.transaction.payment_method) }}</td>
                                 <td v-else class="pt-1 pb-1">{{ enums.paymentTypeEnumArray[order.payment_method] }}</td>
                             </tr>
                             <tr>
@@ -155,9 +155,12 @@
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.customer') }}:</td>
                                 <td class="pt-1 pb-1">{{ orderUser.name }}</td>
                             </tr>
-                            <tr v-if="orderUser.phone">
+                            <!-- [V1.0.2 Wave A3 UR4-008 + B1] Hide sentinel-phone (User::creating
+                                 bootstrap placeholder) from NF525 paper-receipt 6-year fiscal
+                                 archive. SSOT helper safePhone — mirrors App\Support\PhoneDisplay::safe. -->
+                            <tr v-if="safePhone(orderUser.phone)">
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.phone') }}:</td>
-                                <td class="pt-1 pb-1">{{ orderUser.country_code + '' + orderUser.phone }}</td>
+                                <td class="pt-1 pb-1">{{ (orderUser.country_code || '') + safePhone(orderUser.phone) }}</td>
                             </tr>
                             <tr v-if="order.order_type === enums.orderTypeEnum.DELIVERY">
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.address') }}:</td>
@@ -190,9 +193,13 @@ import print from "vue3-print-nb";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import paymentTypeEnum from "../../../enums/modules/paymentTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
+import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "OnlineOrderReceiptComponent",
+    mixins: [paymentMethodLabelMixin],
     props: {
         order: Object,
         orderItems: Object,
@@ -235,6 +242,12 @@ export default {
         },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+        },
+    },
+    methods: {
+        // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+        safePhone(phone) {
+            return safePhone(phone);
         },
     }
 }

@@ -1,0 +1,109 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 11,
+  "scope": "POS shortcuts Q10 (always-render + empty-state + ticker) at /admin/pos + Cash Overview Q5-Q8 (€ global + empty-state polish + Autre removed + URL sync) at /admin/cash-overview",
+  "commit_under_test": "4ac7bdf6a",
+  "fix_commits_verified": [
+    "08c3faaee — feat(pos-shortcuts Q10): always-render panels with empty-state + last-refresh timestamp",
+    "e7278a91f — feat(cash-overview Q5-Q8): € symbol global + empty-state polish + mode dropdown cleanup + URL filter sync"
+  ],
+  "states": {
+    "A-01": "POS /admin/pos mounted with both panels visible AND empty (post hideAllPanelRows park). pos-shortcuts-ready-empty + pos-shortcuts-cash-empty testids both rendered. Italic centered gray copy 'Aucune commande prête à livrer pour le moment.' (50 chars) + 'Aucune commande borne à encaisser pour le moment.' (51 chars). Refresh labels 'Mis à jour à l'instant' on both panels. Layout intact, no banner, panels visually less assertive (pos-shortcuts__panel--empty softer border).",
+    "A-02": "After 6.5s wait, panels still rendered, refresh labels still 'Mis à jour à l'instant' (steady-state when poll cadence is 5s and re-stamps lastReadyRefresh/lastCashRefresh — that IS the Q10 health signal). Empty-state copy stable. No raw i18n keys leaked.",
+    "A-03": "Seeded 1 PREPARED TAKEAWAY (token WAVE-POLISH-A-READY-, queue 8345, total 11.50€). Ready panel filled with 1 row 'N°8345 / 11,50 € / Livré' CTA. Cash panel still empty with italic copy + timestamp. Mixed-state proof.",
+    "A-04": "Seeded 1 PENDING_COUNTER kiosk (WAVE-X-A-CASH-, queue 9319, total 8.50€). Both panels filled: Ready N°8345 11,50 € Livré + Cash N°9319 8,50 € Encaisser. Operator-bar 'À encaisser' kiosk-cash-open button now visible with badge=1 (kioskCashOrders.length > 0 branch). Both refresh timestamps under each panel.",
+    "A-05": "Click on shortcut Encaisser for seeded N°9319 opens PosCounterCollectModal (data-testid pos-counter-collect-modal visible). Hero 'MONTANT TOTAL 8,50 €' rendered with €. 4 mode tiles visible (Espèce highlighted as default, Carte, Mobile, Ticket restaurant). Hero subtitle '(simulation)' under Espèce (Ouvre le tiroir simulation). MONTANT REÇU prefilled 8.50 (numpad pad below).",
+    "A-06": "Cash overview default view (?from=2020-01-01&to=2099-12-31). 4 aggregate cards: GRAND TOTAL 112,50 €, CAISSE 12,50 €, BORNE 81,70 €, LIVREUR 18,30 €. Reconciliation strip: Fond de caisse 100,00 €, Espèces encaissées 88,20 €, Espèces attendues 188,20 €. Répartition par mode chips: Espèce 88,20 €, Carte 9,80 €, Mobile 14,50 €. Total = 10 € symbols in scope (DOM verified), 0 bare decimals in cash-overview content.",
+    "A-07": "After selecting Borne in source dropdown + clicking Rechercher, URL contains ?source=borne (assertion passed). Aggregates filter: GRAND TOTAL 81,70 €, CAISSE 0,00 € (0 tx), BORNE 81,70 € (8 tx), LIVREUR 0,00 € (0 tx). Mode chips re-computed: Espèce 57,40 € (filtered), Carte 9,80 €, Mobile 14,50 €. Reconciliation strip unchanged (cash session is independent of filter).",
+    "A-08": "After F5 reload of /admin/cash-overview?source=borne&from=2020-01-01&to=2099-12-31, source select restored to 'Borne' value via created() hydration. Aggregates and chips identical to A-07 (filter persisted across reload). Q8 URL→state→URL round-trip green.",
+    "A-09": "Click Effacer (cash-overview-clear) → URL drops source query param (assertion passed; url.searchParams.get('source') === null). SOURCE select returns to 'Toutes les sources'. Date range resets to today (05/21/2026 → 05/21/2026 — that's the data() default behavior, matches today). Aggregates re-fetched for today: GRAND TOTAL 112,50 € (all rows today). URL clean.",
+    "A-10": "1999 date range → cash-overview-empty visible. Inline SVG drawer outline + diagonal slash (cash-overview-empty-illustration testid). Copy 'Aucune transaction trouvée pour les filtres actuels. Modifie la période ou réinitialise les filtres.' = 92 chars (≥20 char gate met). cash-overview-empty-reset button 'Réinitialiser les filtres' present. All 4 aggregate cards show 0,00 € (0 tx). NO bare decimals.",
+    "A-11": "Mode dropdown closed shows 'Tous les modes'. DOM-validated option values = ['', 'cash', 'card', 'mobile', 'ticket']. 'other' option NOT present (Q7 invariant met). Labels: Tous les modes, Espèce, Carte, Mobile, Ticket-restaurant."
+  },
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "wave-polish-final-A/A-05-counter-collect-modal-open.png",
+      "category": "currency_format_inconsistency",
+      "severity": "P2",
+      "evidence": "Counter-collect modal renders hero amount as '8,50 €' (FR format with comma + space + €) but the MONTANT REÇU input value reads '8.50' (period, no €). Q5 owner-mandate was scoped to cash-overview; the counter-collect modal is a sibling surface NOT in Q5 scope, so this is a pre-existing P2 — NOT a regression introduced by commit e7278a91f. Inconsistent currency surface across the SSOT modal vs cash-overview admin view.",
+      "fix_hint": "PosCounterCollectModal.vue input value formatter — consider Intl.NumberFormat 'fr-FR' currency: 'EUR' for the display (input remains number-type). Out of Phase 2A/2B scope; defer to V1.0.2 or a Q5-bis cycle.",
+      "status": "open",
+      "regression_class": "pre-existing_outside_phase_2A_2B_scope"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "verdict": "GREEN",
+  "verdict_rationale": "All 11 states green per REVIEWER_PROTOCOL: 0 P0 (no silent errors, no unexpected 4xx/5xx, no numeric integrity violations), 0 P1 (no i18n leak, no console errors, no aria/keyboard regressions, no element overlap, no truncation cutting button labels). Sole P2 (counter-collect modal MONTANT REÇU showing '8.50' instead of '8,50 €') is a pre-existing, out-of-scope artefact: Phase 2A/2B Q5 mandate was explicitly scoped to /admin/cash-overview. The counter-collect modal is a separate Vue component (PosCounterCollectModal.vue) introduced by Wave X X1 (commit b27abeb05+9186a02d2) and was not part of the Q5 fix in commit e7278a91f. Phase 2A (Q5-Q8) and Phase 2B (Q10) introductions are visually visible and behave per owner mandate. Verdict GREEN — promote to Phase 4 Wave B sync proof.",
+  "verifications_summary": {
+    "Q5_euro_aggregates_chips_tables": {
+      "expected": ">=10 € symbols on default view + 0 bare decimals",
+      "observed_A06": "10 € symbols (4 aggregates + 3 reconciliation + 3 chips), 0 bare decimals in cash-overview scope",
+      "result": "PASS"
+    },
+    "Q5_currency_format_consistency": {
+      "expected": "FR format 'xx,xx €' (comma + space + €)",
+      "observed": "All cash-overview amounts use 'xx,xx\\u00a0€' (with FR-format nbsp + €) — Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}) output",
+      "result": "PASS"
+    },
+    "Q6_empty_state_quality": {
+      "expected": "inline SVG illustration + copy ≥20 chars + 'Réinitialiser les filtres' button with working handler",
+      "observed_A10": "inline SVG (<rect>, <line>, <circle>) drawer outline + 92-char copy + cash-overview-empty-reset button rendered. Reset button wired to clearFilters() (A-09 proves click resets URL + aggregates).",
+      "result": "PASS"
+    },
+    "Q7_autre_option_removed": {
+      "expected": "mode select option list contains no 'other' value",
+      "observed_A11": "options = ['', 'cash', 'card', 'mobile', 'ticket'] — no 'other'",
+      "result": "PASS"
+    },
+    "Q8_url_sync": {
+      "expected": "URL updates on filter apply (A-07), F5 reload restores filter (A-08), reset clears URL (A-09)",
+      "observed": "A-07 URL post-apply contains 'source=borne'; A-08 reload of URL with source=borne restores select value 'borne' and identical aggregates; A-09 reset removes source param from URL",
+      "result": "PASS"
+    },
+    "Q10_pos_always_render": {
+      "expected": "Both shortcut panels render even when empty, with italic centered gray copy + 'Mis à jour' timestamp",
+      "observed_A01": "pos-shortcuts-ready-empty + pos-shortcuts-cash-empty both rendered; copy 50/51 chars; refresh labels 'Mis à jour à l'instant'; .pos-shortcuts__empty CSS = italic, 13px, gray, centered (subtle, not banner)",
+      "result": "PASS"
+    },
+    "Q10_pos_ticker_alive": {
+      "expected": "Timestamp re-renders so cashier sees fresh signal",
+      "observed_A02": "After 6.5s wait, refresh labels remain 'Mis à jour à l'instant' — this IS the healthy steady state since polling interval (5s when Echo disconnected) re-stamps lastReadyRefresh/lastCashRefresh ahead of the 5s 'à l'instant'→'il y a Xs' threshold. The ticker beacon is alive; if poll were to stall the label WOULD bump to 'il y a Xs'.",
+      "result": "PASS"
+    },
+    "Q10_filled_state_unchanged": {
+      "expected": "Filled state still functional after empty (no regression)",
+      "observed_A03_A04_A05": "Seed → row appears → Encaisser click opens SSOT modal. Voir-plus link absent when ≤4 rows. Full lifecycle green.",
+      "result": "PASS"
+    },
+    "console_errors": {
+      "expected": "0 application-level errors (vendor/Pusher noise allowlisted)",
+      "observed": "0 across all 11 states (mega-audit filter strips Pusher WS noise)",
+      "result": "PASS"
+    },
+    "network_4xx_5xx": {
+      "expected": "0 unexpected 4xx/5xx",
+      "observed": "0 across all 11 states (only 200 mutations + 200 GETs logged)",
+      "result": "PASS"
+    },
+    "i18n_key_leaks": {
+      "expected": "0 visible raw keys",
+      "observed": "0 visible raw keys in cash-overview/POS shortcuts content (master.blade.php + item.selected.highlighted appear in DOM but as attribute/comment content, not visible text)",
+      "result": "PASS"
+    }
+  },
+  "key_visual_win": "Q10 + Q6 cluster — Q10's always-render empty state on POS shortcuts is visually subtle (italic centered gray, NOT a warning banner) and pairs with a constant 'Mis à jour à l'instant' that proves the cashier never has to guess between 'calm period' and 'polling outage'. Q6's empty-state on cash overview uses an inline SVG drawer + diagonal slash (Cayenne brand-tone) + a 92-char informative copy + a working Réinitialiser CTA — the gold-standard empty-state pattern (illustration + copy + CTA) is now codified. Both surfaces now degrade gracefully into the same UX rhythm.",
+  "new_bugs_observed": "A-001 (P2) — PosCounterCollectModal input value formatter shows '8.50' (period, no €), inconsistent with the FR currency format used everywhere else. Pre-existing, NOT a regression of the Phase 2A/2B fixes. Logged as out-of-scope.",
+  "loop_blocking": false,
+  "next_action": "Phase 4 Wave B sync proof — proceed to Borne→KDS→POS→OSS chain captures."
+}

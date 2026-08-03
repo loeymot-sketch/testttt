@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Le Cayenne — App mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFD93D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Le Cayenne">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="redesigns-styles.css">
+
+<style>
+  /* Production mobile entry — single full-viewport device frame, no prototype UI. */
+  html, body { margin: 0; height: 100%; width: 100%; background: #0A0A0A; overflow: hidden; }
+  body { font-family: 'Inter', sans-serif; color: var(--ink); }
+  #root { width: 100%; height: 100%; }
+
+  /* Device viewport — full mobile when on phone, framed iOS device on desktop preview */
+  .lc-device {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    overflow: hidden;
+  }
+  @media (min-width: 480px) {
+    /* Desktop preview : show iPhone frame centered */
+    body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .lc-device {
+      width: 390px;
+      height: 844px;
+      max-height: calc(100vh - 40px);
+      border-radius: 48px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45), 0 0 0 12px #0a0a0a, 0 0 0 13px #2a2a2a;
+    }
+    .lc-device::before {
+      content: '';
+      position: absolute;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      width: 124px;
+      height: 36px;
+      border-radius: 999px;
+      background: #0a0a0a;
+      z-index: 100;
+      pointer-events: none;
+    }
+  }
+  @media (max-width: 479px) {
+    /* Phone : full bleed */
+    .lc-device { border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- [GOAL-SYNC 2026-07-08] Config runtime — DOIT être définie AVANT tout autre script (contrat §4).
+     Consommée par api/client.js (base API, clé, branche) et par les écrans (flag Stripe).
+     onlineCardEnabled=false ⇒ AUCUNE option carte-en-ligne dans le DOM (verrou final = serveur config/payment.php). -->
+<script>
+  window.LC = window.LC || {};
+  window.LC.config = {
+    apiBase: 'http://127.0.0.1:8766',
+    apiKey: 'b6d68vy2-m7g5-20r0-5275-h103w73453q120',
+    branchId: 1,
+    onlineCardEnabled: false
+  };
+</script>
+
+<!-- Data layer (vanilla JS, attaches to window.LC.*) -->
+<!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->
+<script src="api/storage.js"></script>
+<!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
+     par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
+<script src="api/client.js"></script>
+<script src="data/menu.js"></script>
+<script src="data/loyalty.js"></script>
+<script src="data/loyaltyRewardState.js"></script>
+<script src="data/orders.js"></script>
+<script src="data/user.js"></script>
+<script src="data/wallet-spec.js"></script>
+<!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
+<script src="data/dev-helpers.js"></script>
+
+<!-- React + Babel runtime (prototype-grade ; en prod = build Vite/esbuild) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Shared atoms + icons -->
+<script src="image-slot.js"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+
+<!-- [GOAL-SYNC 2026-07-08] Lib QR vendorisée LOCALE (globale `qrcode`, contrat §3) — AVANT les composants. -->
+<script src="vendor/qrcode.js"></script>
+
+<!-- Hooks & components (must load BEFORE screens that consume them) -->
+<script src="hooks/useCountdown.js"></script>
+<script type="text/babel" src="hooks/useLoyaltyQR.js"></script>
+<script type="text/babel" src="components/BarcodeMock.jsx"></script>
+<script type="text/babel" src="components/LoyaltyQR.jsx"></script>
+<script type="text/babel" src="components/WizardRedeem.jsx"></script>
+
+<!-- Screens -->
+<script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-item-steps.jsx"></script>
+<script type="text/babel" src="screens-main.jsx"></script>
+<script type="text/babel" src="screens-modals.jsx"></script>
+
+<!-- App root -->
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Tabs that should hide bottom navigation
+const TAB_FOR = { home: 'home', menu: 'menu', orders: 'orders', orderDetail: 'orders', profile: 'profile', loyalty: 'profile' };
+const NO_TAB_SCREENS = ['splash','onb1','onb2','onb3','onb4','login','otp','item','cart','stripe','confirm','loyalty'];
+
+function App() {
+  const storage = window.LC.storage;
+
+  // Boot screen depends on auth + onboarding state
+  const initialScreen = (() => {
+    if (storage.isAuthenticated()) return 'home';
+    if (storage.hasSeenOnboarding()) return 'login';
+    return 'splash';
+  })();
+
+  const [screen, setScreen] = useState(initialScreen);
+  const [history, setHistory] = useState([initialScreen]);
+  const [itemId, setItemId] = useState(null);
+  const [cart, setCart] = useState(storage.getCart() || []);
+  const [modal, setModal] = useState(null);
+  const [modalCtx, setModalCtx] = useState(null);
+  const [toast, setToast] = useState(null);
+  // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — last placed order snapshot
+  const [lastOrder, setLastOrder] = useState(null);
+  // [GOAL-SYNC 2026-07-08] AUTH RÉELLE — téléphone hoisté dans App : saisi sur ScreenLogin,
+  // affiché sur ScreenOTP, envoyé à guest-signup /otp puis /verify (plus de mock).
+  const [authPhone, setAuthPhone] = useState('');
+
+  // Persist cart on change
+  useEffect(() => { storage.setCart(cart); }, [cart]);
+
+  // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — snapshot cart at pay time
+  const snapshotOrder = () => {
+    const id = 'C-' + Math.floor(1000 + Math.random() * 9000);
+    const total = cart.reduce((s, i) => s + (i.lineTotal || i.price * i.qty), 0);
+    const eta = new Date(Date.now() + 12 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+    const order = { id, total, eta, items: cart };
+    setLastOrder(order);
+    return order;
+  };
+
+  const go = (s, ext) => {
+    if (s === 'back') {
+      const h = [...history]; h.pop();
+      const prev = h[h.length-1] || 'home';
+      setHistory(h); setScreen(prev);
+      return;
+    }
+    if (s === 'pay')    { snapshotOrder(); setModal('pay'); return; }
+    if (s === 'gain')   { setModal('gain');   return; }
+    if (s === 'redeem') { setModal('redeem'); setModalCtx(ext || null); return; }
+    if (s === 'link')   { setModal('link');   return; }
+    if (s === 'walletApple')  { setModal('walletApple');  return; }
+    if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
+    if (s === 'optOut') { setModal('optOut'); return; }
+    if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
+    // [GOAL-SYNC 2026-07-08] Flag Stripe OFF ⇒ 'stripe' inaccessible : redirection vers le choix de paiement.
+    if (s === 'stripe' && !window.LC.config.onlineCardEnabled) { setModal('pay'); return; }
+    if (s === 'logout') {
+      // [GOAL-SYNC 2026-07-08] Déconnexion réelle (révocation token côté client.js) puis purge locale.
+      try { if (window.LC.mobileApi && window.LC.mobileApi.logout) window.LC.mobileApi.logout(); } catch (e) { /* purge locale quand même */ }
+      storage.clearAuth();
+      setAuthPhone('');
+      setCart([]);
+      setHistory(['login']);
+      setScreen('login');
+      return;
+    }
+    if (s === 'orderDetail' && ext) {
+      // ext = order id
+      setItemId(ext);
+    }
+    if (s === 'item' && ext) setItemId(ext);
+    setHistory(h => [...h, s]);
+    setScreen(s);
+  };
+
+  const addToCart = (it) => {
+    setCart(c => [...c, { ...it, sups: it.sups || it.extraIds || [], qty: it.qty || 1 }]);
+  };
+
+  // [GOAL-SYNC 2026-07-08] onLogin mock SUPPRIMÉ (token 'mock-v0-token' + téléphone hardcodé).
+  // L'auth réelle passe par window.LC.mobileApi.guestOtp/guestVerify (api/client.js, contrat §1/§7) ;
+  // guestVerify fait le storage.setAuth({token réel Sanctum kiosk:order, phone, user_id}).
+
+  // [GOAL-SYNC 2026-07-08] COMMANDE RÉELLE au choix « Payer à la caisse » (contrat §4/§7) :
+  // résolution des lignes du panier PAR NOM canonique puis POST commande (payment_method=1,
+  // loyalty_code du profil si connecté). Échec RÉSEAU ⇒ dégradation douce : on garde le
+  // snapshot local V0 (id 'C-XXXX' déjà posé par snapshotOrder) + bandeau « Hors ligne ».
+  const placeCounterOrder = async () => {
+    const api = window.LC.mobileApi;
+    if (!(api && api.isAuthed && api.isAuthed() && api.resolveOrderItems && api.placeOrder)) {
+      // Couche API absente ou non connecté ⇒ mode local V0 (dégradation douce contrat §7)
+      // [GOAL-SYNC-HEAL 2026-07-08] Honnêteté hors-ligne : on marque l'order local offline:true
+      // (jamais de queue_number réel) pour que ScreenConfirm PUISSE afficher un bandeau clair
+      // « commande NON transmise ». Le snapshot garde son id 'C-XXXX' démo (aucun faux 'A####').
+      setLastOrder(o => o ? { ...o, offline: true, queue_number: null } : o);
+      setToast({ m: 'Hors ligne — commande NON transmise. À repasser sur place.', k: 'error' });
+      return 'offline'; // truthy (l'appelant enchaîne) mais distinct de true → PAS de modale « points gagnés » fictifs
+    }
+    try {
+      // loyalty_code du profil (fidélité optionnelle : un échec ici ne bloque PAS la commande)
+      let loyaltyCode = null;
+      try {
+        const prof = await api.profile();
+        loyaltyCode = (prof && prof.loyalty_code) || null;
+      } catch (e) { /* profil indisponible — on commande sans code fidélité */ }
+      const items = await api.resolveOrderItems(cart);
+      const r = await api.placeOrder({
+        cart: cart, items: items, paymentMethod: 1,
+        loyaltyCode: loyaltyCode, loyalty_code: loyaltyCode,
+      });
+      const placed = r || {};
+      const eta = new Date(Date.now() + 12 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+      const realTotal = (typeof placed.total === 'number') ? placed.total
+        : cart.reduce((s, i) => s + (i.lineTotal || i.price * i.qty), 0);
+      setLastOrder({
+        id: String(placed.queue_number || placed.order_serial_no || placed.id || 'C-0000'),
+        orderDbId: placed.id || placed.orderDbId || null,
+        queue_number: placed.queue_number || null,
+        total: realTotal, eta, items: cart,
+      });
+      return true;
+    } catch (e) {
+      if (e && e.kind === 'network') {
+        // API injoignable ⇒ fallback local V0 (lastOrder démo déjà snapshotté au go('pay'))
+        // [GOAL-SYNC-HEAL 2026-07-08] Idem : order marqué offline:true, aucun faux n° d'appel réel.
+        setLastOrder(o => o ? { ...o, offline: true, queue_number: null } : o);
+        setToast({ m: 'Hors ligne — commande NON transmise. À repasser sur place.', k: 'error' });
+        return 'offline'; // idem : distinct de true → pas de modale « points gagnés » fictifs
+      }
+      // Erreur métier (résolution produit, 4xx…) ⇒ message FR, panier intact, on reste là.
+      setToast({ m: (e && e.message) || 'Commande refusée par le serveur. Réessaie.', k: 'error' });
+      return false;
+    }
+  };
+
+  const showTab = !NO_TAB_SCREENS.includes(screen);
+  const activeTab = TAB_FOR[screen] || 'home';
+
+  let body;
+  switch (screen) {
+    case 'splash':  body = <ScreenSplash onNext={() => go('onb1')}/>; break;
+    case 'onb1':    body = <ScreenOnb1 onNext={() => go('onb2')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb2':    body = <ScreenOnb2 onNext={() => go('onb3')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb3':    body = <ScreenOnb3 onNext={() => go('onb4')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb4':    body = <ScreenOnb4 onNext={() => { storage.markOnboardingSeen(); go('login'); }} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    // [GOAL-SYNC 2026-07-08] AUTH RÉELLE guest-signup OTP (contrat §1). Erreur réseau ⇒ toast FR + on RESTE sur l'écran.
+    case 'login':   body = <ScreenLogin onNext={async (phone) => {
+                      // Signature cible : onNext(phone:string) (ScreenLogin remonte la saisie).
+                      // Repli défensif si l'écran appelle encore onNext(event) : on lit l'input tel du DOM.
+                      let p = (typeof phone === 'string' && phone.trim()) ? phone.trim() : '';
+                      if (!p) { const el = document.querySelector('.lc-device input[inputmode="tel"]'); p = (el && el.value || '').trim(); }
+                      if (!p) p = authPhone;
+                      p = p.replace(/\s/g, '');
+                      if (!p) { setToast({ m: 'Saisis ton numéro pour recevoir le code.', k: 'error' }); return; }
+                      setAuthPhone(p);
+                      const api = window.LC.mobileApi;
+                      if (!(api && api.guestOtp)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
+                      try {
+                        await api.guestOtp(p);
+                        go('otp');
+                      } catch (e) {
+                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — impossible d’envoyer le code. Réessaie.' : ((e && e.message) || 'Envoi du code impossible. Réessaie.'), k: 'error' });
+                      }
+                    }} onBack={() => go('back')}/>; break;
+    case 'otp':     body = <ScreenOTP phone={authPhone} onNext={async (otp) => {
+                      const api = window.LC.mobileApi;
+                      if (!(api && api.guestVerify)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
+                      try {
+                        // guestVerify fait storage.setAuth({token, phone, user_id}) — client.js (contrat §7)
+                        await api.guestVerify(authPhone, (typeof otp === 'string') ? otp : (otp == null ? '' : String(otp)));
+                        storage.markOnboardingSeen();
+                        setHistory(['home']); setScreen('home');
+                      } catch (e) {
+                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — vérification impossible. Réessaie.' : ((e && e.message) || 'Code invalide. Réessaie.'), k: 'error' });
+                      }
+                    }} onBack={() => go('back')}/>; break;
+    case 'home':    body = <ScreenHome go={go} name={(window.LC.user.current.first_name)}/>; break;
+    case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart}/>; break;
+    case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
+    case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
+    // [GOAL-SYNC 2026-07-08] Flag OFF ⇒ ScreenStripe JAMAIS rendu (défense en profondeur : go() redirige déjà vers 'pay').
+    case 'stripe':  body = window.LC.config.onlineCardEnabled
+                      ? <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>
+                      : <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
+    case 'confirm': body = <ScreenConfirm go={go} order={lastOrder}/>; break;
+    case 'orders':  body = <ScreenOrders go={go}/>; break;
+    case 'orderDetail': body = <ScreenOrderDetail go={go} orderId={itemId || 'C-1234'}/>; break;
+    case 'profile': body = <ScreenProfile go={go}/>; break;
+    case 'loyalty': body = <ScreenLoyalty go={go}/>; break;
+    default: body = <ScreenHome go={go}/>;
+  }
+
+  const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+
+  return (
+    <div className="lc-device">
+      {body}
+      {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
+      {/* [GOAL-SYNC 2026-07-08] flag={onlineCardEnabled} : la modale masque « Payer maintenant » quand OFF (contrat §4).
+          onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
+      {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+      {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted order total.
+          [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : 1 pt/€ FLOOR du total TTC
+          (Math.floor(total × points_per_euro=1)) — l'EARN réel est crédité par le backend au statut
+          PREPARED/DELIVERED, le client n'ajoute jamais de points. Fallback 25 conservé (story standalone). */}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
+      {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
+        setModal(null);
+        // [test-e2e fix D-002 round-2 2026-05-11] RGPD opt-out clears balance
+        // (article 17 right-to-erasure) — matches updated modal copy.
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceAccount) {
+          window.LC.loyalty._replaceAccount({ balance: 0, lifetime_earned: 0, lifetime_redeemed: 0 });
+        }
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceHistory) {
+          window.LC.loyalty._replaceHistory([]);
+        }
+        if (window.LC && window.LC.dev) window.LC.dev.setConsent('opted_out');
+        setToast({m:'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.', k:'info'});
+      }}/>}
+      {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
+      {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'walletGoogle' && <ModalWalletV0Notice kind="google" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {toast && <Toast message={toast.m} kind={toast.k} onClose={()=>setToast(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 
+use Carbon\Carbon;
 use Exception;
 use App\Models\Tax;
 use App\Models\Item;
@@ -23,9 +24,13 @@ use App\Models\FrontendOrder;
 use App\Events\SendOrderGotSms;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
+use App\Events\OrderCanceled; // allow: domain event class import — release listener writes its own audit trail via Log warnings on mismatch.
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Enums\PaymentGateway;
+use App\Enums\PosPaymentMethod;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\OrderRequest;
@@ -35,11 +40,15 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
+use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Services\CouponService;
 use App\Services\Pricing\DiscountCalculator;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingService;
+use App\Services\Menu\AvailabilityService;
+use App\Services\Order\OrderQuoteService;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class FrontendOrderService
 {
@@ -93,6 +102,8 @@ class FrontendOrderService
                     if (in_array($key, $this->frontendOrderFilter)) {
                         if ($key === "status") {
                             $query->where($key, (int) $request);
+                        } elseif ($key === 'branch_id') {
+                            $query->where('branch_id', '=', (int) $request);
                         } else {
                             $query->where($key, 'like', '%' . $request . '%');
                         }
@@ -122,8 +133,36 @@ class FrontendOrderService
     {
         $this->loyaltyApplied = false;
         $idempotencyLock = null;
-        $lockBranchId = (int) (\App\Models\KioskMachine::where('user_id', Auth::id())->value('branch_id')
-            ?? (Auth::user()?->branch_id ?? 0));
+        // [AUDIT-F-007] Resolve branch context for idempotency lock namespace.
+        // Decision orchestrateur 2026-05-08: route /api/frontend/order is dual-purpose
+        // (kiosk + web/mobile users). Plan F-007 littéral (hard-fail 403 si KioskMachine
+        // absent) casserait web/mobile users régression P0. Option (b) refinée:
+        //   1. Préférer KioskMachine.branch_id si présent (kiosk flow)
+        //   2. Sinon Auth user.branch_id (web/mobile users)
+        //   3. Si toujours 0 → HttpException 422 (ferme leak idempotency cross-branch
+        //      identifié comme bug original — 2 keys identiques sur branches différentes
+        //      collisionnaient via fallback `?? 0`).
+        $kioskMachine = \App\Models\KioskMachine::where('user_id', Auth::id())->first();
+        $lockBranchId = (int) ($kioskMachine?->branch_id ?? Auth::user()?->branch_id ?? 0);
+        if ($lockBranchId <= 0) {
+            // [WEB-WIREUP 2026-06-26] Web/app guest tokens carry the kiosk:order ability but
+            // have no KioskMachine and a guest branch_id of 0. Fall back to the validated
+            // request branch_id (OrderRequest requires + validates it for non-kiosk orders).
+            // Must reference a real branch so the idempotency namespace stays branch-scoped
+            // and we never create against a bogus/cross-branch context.
+            $requestBranchId = (int) ($request->input('branch_id') ?? 0);
+            // Raw existence check — bypass Eloquent global scopes (Branch carries active/
+            // soft-delete scopes whose columns may not exist in every deployment schema).
+            if ($requestBranchId > 0 && DB::table('branches')->where('id', $requestBranchId)->exists()) {
+                $lockBranchId = $requestBranchId;
+            }
+        }
+        if ($lockBranchId <= 0) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                422,
+                'Order request has no resolvable branch context (kiosk machine missing or user has no branch).'
+            );
+        }
         // [SPLASH SECURITY] Idempotency: if the kiosk sends the same key twice (network retry,
         // double-tap), return the existing order instead of creating a duplicate.
         $idempotencyKey = $request->header('X-Idempotency-Key');
@@ -133,7 +172,8 @@ class FrontendOrderService
                 10
             );
             $idempotencyLock->block(5);
-            $existing = FrontendOrder::where('idempotency_key', $idempotencyKey)->first();
+            // [SIM-MP] Read must match DB unique (branch_id, idempotency_key) — not key alone.
+            $existing = $this->findExistingFrontendOrderForIdempotencyRecovery($idempotencyKey, $lockBranchId, auth()->id());
             if ($existing) {
                 $this->frontendOrder = $existing;
                 // [AUDIT-P47-BUG10] Restore loyaltyApplied based on existing order's discount
@@ -176,10 +216,49 @@ class FrontendOrderService
                     [OrderType::KIOSK, OrderType::TAKEAWAY],
                     true
                 );
-                $isImmediatePaidKioskCash = $isKioskOrderType
+                $isCounterDeferredKioskCash = $isKioskOrderType
                     && (int) ($validatedRequest['payment_method'] ?? 0) === PaymentGateway::CASH_ON_DELIVERY;
-                $shouldAutoAcceptAfterCreate = $isImmediatePaidKioskCash;
-                $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isImmediatePaidKioskCash || !$isKioskPaymentMethod;
+                $shouldAutoAcceptAfterCreate = $isCounterDeferredKioskCash;
+
+                // [F-002 round-3 2026-05-10] OrderCreated dispatch gate.
+                //
+                // Truth table — when does dispatchNewOrderSignals fire from this
+                // method (versus being deferred to finalizePaidKioskOrder)?
+                //
+                //   Surface             | order_type | pm    | gate | dispatched here?
+                //   ------------------- | ---------- | ----- | ---- | ----------------
+                //   Web/mobile (no km)  | DELIVERY   | any   | TRUE | YES
+                //   Kiosk + cash        | KIOSK      | CASH  | TRUE | YES (auto-accept,
+                //                                                       order goes
+                //                                                       PENDING_COUNTER
+                //                                                       — KDS query
+                //                                                       includes that
+                //                                                       status so
+                //                                                       kitchen starts
+                //                                                       prepping while
+                //                                                       customer queues
+                //                                                       at counter)
+                //   Kiosk + card        | KIOSK      | CARD  | FALSE| NO — deferred to
+                //                                                    finalizePaidKioskOrder
+                //                                                    after TPE confirms
+                //   Kiosk + ticket-resto| KIOSK      | TR    | FALSE| NO — same as card
+                //
+                // The gate is intentional: kiosk card/TR orders sit at PENDING +
+                // UNPAID until the TPE callback flips ps=PAID, then OrderCreated
+                // fires from finalizePaidKioskOrder line 1151. Firing earlier would
+                // expose ghost orders to KDS that may never be paid.
+                $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod;
+
+                Log::debug('[FrontendOrderService] dispatch gate decision', [
+                    'is_kiosk_machine_order'             => $isKioskMachineOrder,
+                    'is_kiosk_order_type'                => $isKioskOrderType,
+                    'is_kiosk_payment_method'            => $isKioskPaymentMethod,
+                    'is_counter_deferred_kiosk_cash'     => $isCounterDeferredKioskCash,
+                    'should_auto_accept_after_create'    => $shouldAutoAcceptAfterCreate,
+                    'should_dispatch_new_order_signals'  => $shouldDispatchNewOrderSignals,
+                    'payment_method'                     => (int) ($validatedRequest['payment_method'] ?? 0),
+                    'order_type'                         => (int) ($validatedRequest['order_type'] ?? 0),
+                ]);
 
                 // Attach idempotency key if provided by client
                 if ($idempotencyKey) {
@@ -191,13 +270,25 @@ class FrontendOrderService
                 // Prevents any client-manipulated value from persisting even transiently.
                 unset($validatedRequest['total'], $validatedRequest['subtotal'], $validatedRequest['discount']);
 
+                // [DELIVERY hardening 2026-06-27] Non-DELIVERY orders MUST carry no delivery
+                // charge. delivery_charge is `nullable` for non-delivery in OrderRequest, so a
+                // crafted payload (e.g. order_type=TAKEAWAY + delivery_charge=99) would otherwise
+                // mass-assign a phantom charge into the total (over-billing / report pollution).
+                // For DELIVERY the value is the server-recomputed SSOT (OrderRequest merges the
+                // signed quote) and is preserved. This also makes the free-above invariant below
+                // ("delivery_charge=0 sinon") actually hold.
+                if ((int) ($validatedRequest['order_type'] ?? 0) !== OrderType::DELIVERY) {
+                    $validatedRequest['delivery_charge'] = 0;
+                }
+
                 $this->frontendOrder = FrontendOrder::create(
                     $validatedRequest + [
                         'user_id'          => Auth::user()->id,
                         'status'           => OrderStatus::PENDING,
                         'order_datetime'   => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
-                        'payment_status'   => $isImmediatePaidKioskCash ? PaymentStatus::PAID : PaymentStatus::UNPAID,
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
+                        'payment_status'   => $isCounterDeferredKioskCash ? PaymentStatus::PENDING_COUNTER : PaymentStatus::UNPAID,
+                        'pos_payment_method' => $isCounterDeferredKioskCash ? PosPaymentMethod::COUNTER_DEFERRED : null,
                         'total'            => 0,
                         'subtotal'         => 0,
                         'discount'         => 0,
@@ -268,7 +359,17 @@ class FrontendOrderService
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
-                    
+
+                    // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
+                    // (addon_item_id) dans la garde : un composant en rupture (boisson d'un
+                    // menu) restait commandable car seuls les item_id de 1er niveau étaient testés.
+                    $availabilityService = app(AvailabilityService::class);
+                    $availabilityService->assertItemsOrderableForBranch(
+                        (int) $this->frontendOrder->branch_id,
+                        array_merge($requestedItemIds, $availabilityService->componentItemIdsFor($requestItems)),
+                        true
+                    );
+
                     if (!blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
@@ -282,6 +383,7 @@ class FrontendOrderService
                             $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
                             // [PERF-02] Calculer prix variations depuis collection pre-chargée
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $calcVariationTotal = 0;
                             if (!empty($item->item_variations)) {
                                 foreach ($item->item_variations as $var) {
@@ -302,11 +404,13 @@ class FrontendOrderService
                                             422
                                         );
                                     }
-                                    $calcVariationTotal += $dbVar->price;
+                                    $varQuantity = max(1, (int) ($var->quantity ?? 1));
+                                    $calcVariationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
                             
                             // [PERF-02] Calculer prix extras depuis collection pre-chargée
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $calcExtraTotal = 0;
                             if (!empty($item->item_extras)) {
                                 foreach ($item->item_extras as $ext) {
@@ -326,7 +430,8 @@ class FrontendOrderService
                                             422
                                         );
                                     }
-                                    $calcExtraTotal += $dbExt->price;
+                                    $extraQuantity = max(1, (int) ($ext->quantity ?? 1));
+                                    $calcExtraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
 
@@ -338,7 +443,17 @@ class FrontendOrderService
                             $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
+                            if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                    ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
+                            } else {
+                                $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            }
+
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id' => $this->frontendOrder->id,
                                 'branch_id' => $this->frontendOrder->branch_id,
@@ -352,10 +467,13 @@ class FrontendOrderService
                                 'price' => $itemPrice,
                                 'item_variations' => json_encode($item->item_variations ?? []),
                                 'item_extras' => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction' => $item->instruction ?? null,
                                 'item_variation_total' => $calcVariationTotal,
                                 'item_extra_total' => $calcExtraTotal,
                                 'total_price' => $verifiedTotalPrice,
+                                'created_at' => now(),
+                                'updated_at' => now(),
                             ];
                             $totalTax = $totalTax + $taxPrice;
                             $i++;
@@ -369,39 +487,6 @@ class FrontendOrderService
                     }
                 }
 
-                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
-                // lockForUpdate() is weak when no rows exist yet (first order of the day) — two concurrent
-                // transactions both read NULL and both compute A001. Cache::lock() provides a named mutex
-                // that serializes the allocation even on empty result sets.
-                $today = date('Y-m-d');
-                $lockKey = 'queue_lock_' . $this->frontendOrder->branch_id . '_' . $today;
-                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10); // 10s max hold
-
-                try {
-                    $lock->block(5); // wait up to 5s to acquire
-
-                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
-                    // Both models use the same 'orders' table — use direct DB query with MAX() for true atomicity
-                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
-                        ->where('branch_id', $this->frontendOrder->branch_id)
-                        ->whereDate('created_at', $today)
-                        ->whereNotNull('queue_number')
-                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
-                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
-                        ->value('max_num');
-
-                    $nextQueueNum = $maxQueueNum + 1;
-                    // [AUDIT-P2-F] 4 digits = up to A9999 (was 3 digits limited to 999)
-                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT);
-
-                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
-                    // Fallback: use timestamp-based suffix to avoid collision if lock times out
-                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
-                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->frontendOrder->branch_id . ' — fallback queue number used.');
-                } finally {
-                    $lock->release();
-                }
-
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT (legacy path recalc; SSOT keeps totals from PricingService)
                 $validatedCoupon = null;
                 if (!config('pricing.use_ssot_service', true)) {
@@ -410,7 +495,14 @@ class FrontendOrderService
                         $validatedCoupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) Auth::id()
+                            (int) Auth::id(),
+                            // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                            // Pass the order's REAL branch + surface so an admin-set
+                            // surface/branch restriction is enforced at COMMIT (accept on
+                            // match, reject on mismatch), not only at the pre-check. Null
+                            // defaults leave isUsableNow()'s surface/branch filters wrong.
+                            (int) $this->frontendOrder->branch_id,
+                            $isKioskMachineOrder ? 'kiosk' : 'web'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount(
                             $validatedCoupon,
@@ -421,128 +513,149 @@ class FrontendOrderService
                     $validatedCoupon = $this->couponService->resolveCouponById(
                         (int) $request->coupon_id,
                         (float) $realSubtotal,
-                        (int) Auth::id()
+                        (int) Auth::id(),
+                        // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                        // Real branch + surface (kiosk vs web) so surface/branch-
+                        // restricted coupons are enforced at COMMIT, not only pre-check.
+                        (int) $this->frontendOrder->branch_id,
+                        $isKioskMachineOrder ? 'kiosk' : 'web'
                     );
                 }
 
-                // [AUDIT-P47-BUG5] AVERTISSEMENT ARCHITECTURE — Double déduction possible.
-                // Si le kiosk appelle LoyaltyController::redeem() AVANT de soumettre la commande,
-                // ET que la commande arrive ici avec discount > 0 + loyalty_code,
-                // les points sont déduits DEUX FOIS (une fois dans redeem, une fois ici).
-                // RÈGLE : Le kiosk NE DOIT PAS appeler redeem() si la déduction se fait ici.
-                // Le flow kiosk actuel passe par ici uniquement (pas par redeem()).
-                // redeem() est réservé au POS/web qui n'ont pas ce bloc.
-                // [SPLASH LOYALTY] Validate and apply loyalty discount server-side.
-                // The kiosk sends loyalty_code + discount amount. We verify:
-                //   1. The loyalty_code belongs to a real active user
-                //   2. The user has enough points to cover the requested discount
-                //   3. The discount does not exceed the subtotal
-                // If valid, deduct the points atomically and add the discount.
-                $loyaltyUser = null;
-                if ($validatedCoupon && $request->loyalty_code && $request->discount > 0) {
-                    Log::info('[Loyalty] Loyalty discount skipped because coupon takes priority on frontend order.');
-                } elseif ($request->loyalty_code && $request->discount > 0) {
-                    try {
-                        $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
-                        if ($rate <= 0) $rate = 100;
-                        $requestedDiscount = (float) $request->discount;
-                        $maxDiscount = min($requestedDiscount, $realSubtotal);
-                        $pointsRequired = (int) ceil($maxDiscount * $rate);
-                        $minRedeemPoints = (int) Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
-                        if ($minRedeemPoints < 0) {
-                            $minRedeemPoints = 0;
-                        }
+                $this->applyKioskLoyaltyDiscount(
+                    $request,
+                    $validatedCoupon,
+                    (float) $realSubtotal,
+                    $calculatedDiscount
+                );
 
-                        if ($pointsRequired > 0) {
-                            if ($pointsRequired < $minRedeemPoints) {
-                                Log::warning("[Loyalty] Requested redemption below minimum threshold: {$pointsRequired} < {$minRedeemPoints}");
-                            } else {
-                            // [BUG-11-6 FIX] Use lockForUpdate() to prevent race condition:
-                            // two simultaneous kiosk orders with the same loyalty_code could
-                            // both read the same point balance and both succeed, overdrawing points.
-                            $loyaltyUser = \App\Models\User::where('loyalty_code', $request->loyalty_code)
-                                ->where('status', 1)
-                                ->lockForUpdate()
-                                ->first();
+                // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Single fiscal gate
+                // for the customer-facing kiosk/web path. After coupon (SSOT or
+                // legacy) + kiosk loyalty redeem, $calculatedDiscount holds the
+                // total discretionary discount. At a non-zero VAT rate the frozen
+                // PricingService/ZReportService compute per-line TVA on the
+                // PRE-discount base → a discounted order signs a fiscally-incorrect
+                // NF525 Z (the F1 defect). Loyalty AUTO-accrues, so this path is
+                // reachable with zero admin action — it MUST be gated by code, not
+                // data. Refuse any non-zero discount until F1 is fixed under a
+                // lock-plan (same master flag as POS/admin: pos.manual_discount_enabled).
+                $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
 
-                            if ($loyaltyUser && $loyaltyUser->loyalty_points >= $pointsRequired) {
-                                Log::info('[Loyalty] Lock acquired, deducting points', [
-                                    'user_id' => $loyaltyUser->id,
-                                    'order_id' => $this->frontendOrder->id,
-                                    'requested' => $pointsRequired,
-                                    'available' => $loyaltyUser->loyalty_points,
-                                ]);
-                                $calculatedDiscount += $maxDiscount;
-                                \Illuminate\Support\Facades\DB::table('users')
-                                    ->where('id', $loyaltyUser->id)
-                                    ->decrement('loyalty_points', $pointsRequired);
-                                $this->loyaltyApplied = true;
-                                // [AUDIT-P49-BUG8] Write redemption to loyalty_transactions ledger for complete audit trail.
-                                // This ensures the customer's history shows the redeem event even when inline (not via LoyaltyController).
-                                $balanceAfter = $loyaltyUser->loyalty_points - $pointsRequired;
-                                \App\Models\LoyaltyTransaction::create([
-                                    'user_id'        => $loyaltyUser->id,
-                                    'loyalty_code'   => $loyaltyUser->loyalty_code,
-                                    'order_id'       => $this->frontendOrder->id,
-                                    'type'           => 'redeem',
-                                    'points'         => -$pointsRequired,
-                                    'balance_after'  => $balanceAfter,
-                                    'source_surface' => 'kiosk',
-                                    'description'    => 'Réduction fidélité appliquée sur commande kiosk',
-                                ]);
-                                Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount}€)");
-                            } elseif ($loyaltyUser) {
-                                Log::warning('[Loyalty] Insufficient points after lock', [
-                                    'user_id' => $loyaltyUser->id,
-                                    'order_id' => $this->frontendOrder->id,
-                                    'requested' => $pointsRequired,
-                                    'available' => $loyaltyUser->loyalty_points,
-                                ]);
-                            }
-                            }
-                        }
-                    } catch (\Throwable $e) {
-                        Log::warning("[Loyalty] Discount calculation failed: " . $e->getMessage());
+                $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey): void {
+                    $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
+                    $this->frontendOrder->total_tax = round($totalTax, 2);
+                    $this->frontendOrder->subtotal = round($realSubtotal, 2);
+                    $this->frontendOrder->discount = $calculatedDiscount;
+                    // [DELIVERY 2026-06-27] Livraison OFFERTE au-dessus du seuil (owner : ≥30€).
+                    // Appliqué ICI — hors PricingService (frozen) — où le sous-total SSOT
+                    // ($realSubtotal, recalculé serveur) est connu, donc non-falsifiable client.
+                    // N'affecte que les commandes DELIVERY (delivery_charge=0 sinon). Seuil
+                    // configurable via Settings delivery.free_delivery_above (défaut 30€).
+                    $freeAbove = (float) (Settings::group('delivery')->get('free_delivery_above', 30) ?? 30);
+                    if ($freeAbove > 0
+                        && (float) $realSubtotal >= $freeAbove
+                        && (float) $this->frontendOrder->delivery_charge > 0) {
+                        $this->frontendOrder->delivery_charge = 0;
                     }
-                }
+                    // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
+                    if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                        $this->frontendOrder->total = round(max(0, $realSubtotal + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
+                    } else {
+                        $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
+                    }
 
-                $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
-                $this->frontendOrder->queue_number = $queueNumber;
-                $this->frontendOrder->total_tax = round($totalTax, 2);
-                $this->frontendOrder->subtotal = round($realSubtotal, 2);
-                $this->frontendOrder->discount = $calculatedDiscount;
-                $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
-                // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
-                // listener can credit the right customer even on kiosk orders (user_id = machine, not customer)
-                if ($request->loyalty_code) {
-                    $this->frontendOrder->loyalty_customer_code = $request->loyalty_code;
-                }
-                // Track which surface generated this order for loyalty analytics
-                if (!$this->frontendOrder->source_surface) {
-                    $orderType = (int) ($this->frontendOrder->order_type ?? 0);
-                    $isKiosk = in_array($orderType, [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY], true);
-                    $this->frontendOrder->source_surface = $isKiosk ? 'kiosk' : 'web';
-                }
-                $this->frontendOrder->save();
+                    // [WEB-TOTAL-GUARD 2026-07-19] Défense-en-profondeur non-frozen contre le
+                    // « drop de prix » web (racine : reports/goal-drop-prix-2026-07-19/DIAG_WEB_BORNE.md).
+                    // Le front web standalone chiffre des options côté client puis en OMET
+                    // silencieusement au submit (api.js resolveLine skip) → le payload arrive
+                    // incomplet → PricingService (SSOT) scelle un total INFÉRIEUR à ce que le
+                    // client croyait payer, sans aucune erreur (vu 12€, facturé 10€). Contrairement
+                    // à la borne, le web n'a PAS de seal (OrderQuoteService::sealForCommit, kiosk-only).
+                    // Garde : si le client déclare un total attendu (expected_total, OPTIONNEL), on
+                    // REFUSE de sceller quand le total serveur diverge de plus d'un centime. Le total
+                    // ci-dessus reste 100% SSOT (PricingService) — expected_total ne SERT JAMAIS à
+                    // facturer, uniquement de témoin. Rétro-compat : champ absent → aucun rejet.
+                    // N'affecte pas le sealing borne ci-dessous (inchangé) ; sur borne le seal 409
+                    // demeure la défense de référence.
+                    if ($request->filled('expected_total')) {
+                        $expectedTotal = round((float) $request->input('expected_total'), 2);
+                        $serverTotal = (float) $this->frontendOrder->total;
+                        if (abs($serverTotal - $expectedTotal) > 0.01) {
+                            throw new HttpException(
+                                422,
+                                'Le total ne correspond pas au montant attendu — certaines options sont peut-être indisponibles. Merci de recommencer votre commande.'
+                            );
+                        }
+                    }
+
+                    if ($isKioskMachineOrder) {
+                        app(OrderQuoteService::class)->sealForCommit(
+                            $request,
+                            'kiosk',
+                            (int) $this->frontendOrder->id,
+                            (float) $this->frontendOrder->total
+                        );
+                    }
+
+                    app(\App\Services\Stock\StockService::class)->decrementForOrder($this->frontendOrder, $idempotencyKey);
+
+                    // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
+                    // listener can credit the right customer even on kiosk orders (user_id = machine, not customer)
+                    if ($request->loyalty_code) {
+                        $this->frontendOrder->loyalty_customer_code = $request->loyalty_code;
+                    }
+                    // Track which surface generated this order for loyalty analytics.
+                    // [SOURCE-SURFACE-FIX 2026-06-27] Distinguer borne vs web par la
+                    // présence d'une KioskMachine liée au token ($isKioskMachineOrder),
+                    // PAS par order_type : le site web envoie order_type=TAKEAWAY(10),
+                    // donc l'ancien dérivé classait TOUTE commande web-à-emporter en
+                    // 'kiosk' → analytics fidélité + Dashboard + CashOverview faussés
+                    // (comptées borne) depuis le wireup web. La machine = vraie borne.
+                    if (!$this->frontendOrder->source_surface) {
+                        $this->frontendOrder->source_surface = $isKioskMachineOrder ? 'kiosk' : 'web';
+                    }
+                }, $isKioskMachineOrder ? 'kiosk' : 'frontend');
 
                 if ($request->address_id) {
-                    // [SECURITY-IDOR] Ensure the address belongs to the authenticated user.
-                    // Without this check, any user could reference another user's address_id
-                    // and snapshot their private address data onto an order.
+                    // [SECURITY-IDOR / Sprint 2B DEL-2] Ensure the address belongs to the
+                    // authenticated user. Without this check, any user could reference
+                    // another user's address_id and snapshot their private address data
+                    // onto an order.
+                    //
+                    // Prior implementation silently skipped OrderAddress::create when the
+                    // ownership check failed — leaving DELIVERY orders persisted in the
+                    // database with no attached shipping address. Wave E audit flagged
+                    // this as P0: a forged address_id would be rejected (no snapshot
+                    // written) but the order itself was still created, leaving the
+                    // kitchen / delivery boy with no destination AND no audit trail of
+                    // the IDOR attempt.
+                    //
+                    // The fix throws OrderAddressOwnershipException (HTTP 403) which
+                    // bubbles through catch (HttpException) at line 590 to Laravel's
+                    // exception handler, and exits this DB::transaction closure WITHOUT
+                    // a commit, so the FrontendOrder + OrderItem + OrderCoupon rows and
+                    // the StockService decrement that share the same transaction all
+                    // roll back atomically.
                     $address = Address::where('id', $request->address_id)
                         ->where('user_id', Auth::user()->id)
                         ->first();
-                    if ($address) {
-                        OrderAddress::create([
-                            'order_id' => $this->frontendOrder->id,
-                            'user_id' => Auth::user()->id,
-                            'label' => $address->label,
-                            'address' => $address->address,
-                            'apartment' => $address->apartment,
-                            'latitude' => $address->latitude,
-                            'longitude' => $address->longitude
+                    if (! $address) {
+                        Log::warning('[FrontendOrder] OrderAddress IDOR refused', [
+                            'address_id' => (int) $request->address_id,
+                            'user_id'    => (int) Auth::id(),
+                            'order_id'   => (int) ($this->frontendOrder->id ?? 0),
                         ]);
+                        throw new \App\Exceptions\OrderAddressOwnershipException();
                     }
+                    OrderAddress::create([
+                        'order_id'  => $this->frontendOrder->id,
+                        'user_id'   => Auth::user()->id,
+                        'label'     => $address->label,
+                        'address'   => $address->address,
+                        'apartment' => $address->apartment,
+                        'latitude'  => $address->latitude,
+                        'longitude' => $address->longitude,
+                    ]);
                 }
 
                 if ($validatedCoupon instanceof Coupon) {
@@ -558,6 +671,20 @@ class FrontendOrderService
                     $this->frontendOrder->status = OrderStatus::ACCEPT;
                     $this->frontendOrder->save();
                     $statusChangedAfterCreate = true;
+                }
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch
+                // moved INSIDE the closure (was previously fired via helper
+                // `dispatchNewOrderSignals` AFTER `});` at line ~605). With
+                // transactionLevel()>0 the DispatchableAfterCommit trait
+                // (`app/Events/Concerns/DispatchableAfterCommit.php:31-39`)
+                // registers via afterCommit() — broadcast fires after
+                // outermost commit, is DROPPED on rollback. Mail/SMS/Push
+                // queue jobs remain post-`});` via control flow (their own
+                // queue dedupe story is sufficient). Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                if ($shouldDispatchNewOrderSignals) {
+                    OrderCreated::dispatch($this->frontendOrder);
                 }
             });
 
@@ -589,11 +716,13 @@ class FrontendOrderService
             }
 
             return $this->frontendOrder;
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (\Illuminate\Database\QueryException $qe) {
             // [FIX-54-6] Catch MySQL duplicate key on idempotency_key UNIQUE constraint.
             // Same recovery logic as OrderService::posOrderStore() for consistency.
             if ($qe->getCode() === '23000' && $idempotencyKey) {
-                $existing = FrontendOrder::where('idempotency_key', $idempotencyKey)->first();
+                $existing = $this->findExistingFrontendOrderForIdempotencyRecovery($idempotencyKey, $lockBranchId, auth()->id());
                 if ($existing) {
                     Log::info('[Kiosk Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
                     return $existing;
@@ -618,15 +747,35 @@ class FrontendOrderService
      */
     public function show(FrontendOrder $frontendOrder): FrontendOrder|array
     {
-        try {
-            if ((int) $frontendOrder->user_id === (int) Auth::id()) {
-                return $frontendOrder;
-            }
+        // [TERRAIN-HEAL 2026-07-16 · FRONT-SHOW-403-422] L'abort(403) était DANS un try/catch qui
+        // convertissait toute Exception en 422 → un refus d'accès (IDOR) renvoyait 422 au lieu de 403
+        // (le refus fonctionnait, mais le code HTTP était trompeur). Aucune requête DB ici → try/catch
+        // inutile. On garde la garde de propriété avec le bon code 403.
+        if ((int) $frontendOrder->user_id !== (int) Auth::id()) {
             abort(403, 'Access denied: you do not own this order.');
-        } catch (Exception $exception) {
-            Log::info($exception->getMessage());
-            throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+        return $frontendOrder;
+    }
+
+    protected function findExistingFrontendOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId = null): ?FrontendOrder
+    {
+        if (blank($idempotencyKey) || $branchId <= 0) {
+            return null;
+        }
+
+        return FrontendOrder::query()
+            ->where('idempotency_key', $idempotencyKey)
+            ->where('branch_id', $branchId)
+            // [IDEMPOTENCY-USER-SCOPE 2026-06-27] Scoper par user_id (miroir du
+            // jumeau POS OrderService:3066, déjà durci). Aligne la couche service
+            // sur le scope du middleware idempotency (branch_id, user_id, hash(key))
+            // — depuis le wireup WEB l'endpoint est multi-utilisateur (tokens guest
+            // web, même branch_id), donc sans ce scope un client B réutilisant la
+            // clé d'un client A récupérait SA commande (fuite PII/total/items).
+            // Miroir EXACT du jumeau POS : défaut null (tests branch-only) saute le
+            // scope ; les vrais appels myOrderStore passent auth()->id().
+            ->when($userId !== null, fn ($q) => $q->where('user_id', $userId))
+            ->first();
     }
 
     /**
@@ -639,56 +788,95 @@ class FrontendOrderService
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
             if ((int) $frontendOrder->user_id === (int) Auth::id()) {
-                if ((int) $request->status !== (int) OrderStatus::CANCELED) {
+                $targetStatus = (int) $request->status;
+
+                if ((int) $frontendOrder->status === $targetStatus) {
+                    return $frontendOrder;
+                }
+
+                if ($targetStatus !== (int) OrderStatus::CANCELED) {
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 
-                if ((int) $request->status === (int) OrderStatus::CANCELED) {
-                    // [FIX] Both KIOSK (25) and TAKEAWAY (10) from kiosk machine follow the same
-                    // cancel threshold: allow cancel until PREPARING starts.
-                    $isKioskOrder = in_array(
-                        (int) $frontendOrder->order_type,
-                        [OrderType::KIOSK, OrderType::TAKEAWAY],
-                        true
-                    );
-                    $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+                if ($targetStatus === (int) OrderStatus::CANCELED) {
+                    // [TERRAIN-HEAL 2026-07-16 · FRONT-CANCEL-RACE] L'auto-annulation client (web/borne)
+                    // faisait cashBack + refundPoints + release stock SANS transaction ni verrou, en lisant
+                    // le status du modèle route-bound (STALE) → deux annulations concurrentes (double-clic /
+                    // retry réseau) passaient toutes deux le seuil et RE-remboursaient (double avoir + double
+                    // clawback points + double libération stock ; le middleware idempotency ne dédup que les
+                    // clés IDENTIQUES). On sérialise via DB::transaction + re-fetch lockForUpdate + early-return
+                    // idempotent sur le status FRAIS verrouillé (miroir du durcissement OrderService::changeStatus).
+                    return DB::transaction(function () use ($frontendOrder, $request) {
+                        $locked = FrontendOrder::query()->whereKey($frontendOrder->id)->lockForUpdate()->firstOrFail();
 
-                    if ($frontendOrder->status >= $cancelableThreshold) {
-                        throw new Exception(trans('all.message.order_accept'), 422);
-                    }
-
-                    if ($frontendOrder->transaction) {
-                        app(PaymentService::class)->cashBack(
-                            $frontendOrder,
-                            'credit',
-                            'TXN-' . \Illuminate\Support\Str::random(12)
+                        // Idempotent : déjà annulée par une requête concurrente → aucun re-remboursement.
+                        if ((int) $locked->status === (int) OrderStatus::CANCELED) {
+                            return $locked;
+                        }
+                        // Re-valide transition + seuil sur le status FRAIS (pas le stale route-bound).
+                        if (!(new \App\Rules\ValidStatusTransition($locked->status))->passes('status', $request->status)) {
+                            throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                        }
+                        // [FIX] KIOSK (25) et TAKEAWAY (10) borne : même seuil (annulable jusqu'à PREPARING).
+                        $isKioskOrder = in_array(
+                            (int) $locked->order_type,
+                            [OrderType::KIOSK, OrderType::TAKEAWAY],
+                            true
                         );
-                    }
-                    app(LoyaltyService::class)->refundPoints($frontendOrder, 'kiosk');
-                    $oldStatus = $frontendOrder->status;
-                    $frontendOrder->status = $request->status;
-                    $frontendOrder->save();
-                    OrderStateMachine::recordTransition(
-                        FrontendOrder::class,
-                        (int) $frontendOrder->id,
-                        (int) $oldStatus,
-                        (int) $request->status,
-                        Auth::check() ? (int) Auth::id() : null,
-                        null
-                    );
-                    // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens
-                    try {
-                        event(new \App\Events\OrderStatusChanged(
-                            $frontendOrder,
-                            $oldStatus,
-                            $request->status
-                        ));
-                    } catch (\Exception $e) {
-                        Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
-                    }
-                    SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                        $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+                        if ($locked->status >= $cancelableThreshold) {
+                            throw new Exception(trans('all.message.order_accept'), 422);
+                        }
+
+                        if ($locked->transaction) {
+                            // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
+                            $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
+                            app(PaymentService::class)->cashBack(
+                                $locked,
+                                $refundGateway,
+                                'TXN-' . \Illuminate\Support\Str::random(12)
+                            );
+                        }
+                        app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
+                        $oldStatus = $locked->status;
+                        // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
+                        $cancelReason = $request->input('reason');
+                        if (is_string($cancelReason)) {
+                            $cancelReason = trim($cancelReason);
+                            if ($cancelReason === '') {
+                                $cancelReason = null;
+                            }
+                        }
+                        if ($cancelReason !== null && $locked->isFillable('reason')) {
+                            $locked->reason = $cancelReason;
+                        }
+                        $locked->status = $request->status;
+                        $locked->save();
+                        OrderStateMachine::recordTransition(
+                            FrontendOrder::class,
+                            (int) $locked->id,
+                            (int) $oldStatus,
+                            (int) $request->status,
+                            Auth::check() ? (int) Auth::id() : null,
+                            $cancelReason
+                        );
+                        // Events DispatchableAfterCommit → déférés au commit de la tx (KDS/OSS retirent la tuile).
+                        try {
+                            OrderStatusChanged::dispatch($locked, $oldStatus, (int) $request->status);
+                        } catch (\Exception $e) {
+                            Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
+                        }
+                        SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
+                        SendOrderSms::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
+                        SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
+                        // [F-01] Libération stock compensatoire (idempotent via released_qty).
+                        try {
+                            OrderCanceled::dispatch($locked); // allow: stock-release dispatch; recordTransition wrote the canonical audit row.
+                        } catch (\Exception $e) {
+                            Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+                        }
+                        return $locked;
+                    });
                 }
             } else {
                 abort(403, 'Access denied: you do not own this order.');
@@ -697,6 +885,209 @@ class FrontendOrderService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Customer-facing (kiosk/web) discount gate.
+     *
+     * La fidélité est désormais découplée des remises discrétionnaires. Sur ce
+     * chemin, coupon et redeem fidélité sont MUTUELLEMENT EXCLUSIFs
+     * (applyKioskLoyaltyDiscount early-return si un coupon est présent, sans
+     * poser $this->loyaltyApplied) → $discount provient soit du coupon SOIT de la
+     * fidélité, jamais des deux. On route donc :
+     *
+     *   - remise fidélité ($this->loyaltyApplied) → flag DÉDIÉ `pos.loyalty_enabled`
+     *     (défaut true). F1 (netting TVA du Z sur base remisée) est FIXÉ + prouvé
+     *     (ZReportDiscountNettingTest, incl. close()+sign()+verifyChain() sur un Z
+     *     remisé) → un ordre remisé fidélité signe un Z fiscalement CORRECT.
+     *   - remise coupon (discrétionnaire) → kill-switch `pos.manual_discount_enabled`
+     *     (défaut false) — INCHANGÉ : les remises restent coupées.
+     *
+     * Mirrors OrderService::assertDiscretionaryDiscountAllowed pour le coupon.
+     */
+    private function assertDiscretionaryDiscountAllowed(float $discount): void
+    {
+        if ($discount <= 0.0) {
+            return;
+        }
+
+        if ($this->loyaltyApplied) {
+            if (config('pos.loyalty_enabled') !== true) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'discount' => "La fidélité est temporairement désactivée.",
+                ]);
+            }
+            return;
+        }
+
+        if (config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises (coupon) sont désactivées en V1.",
+            ]);
+        }
+    }
+
+    /**
+     * Apply kiosk loyalty redemption exactly once inside the order transaction.
+     */
+    private function applyKioskLoyaltyDiscount(
+        OrderRequest $request,
+        ?Coupon $validatedCoupon,
+        float $realSubtotal,
+        float &$calculatedDiscount
+    ): void {
+        $loyaltyCode = trim((string) $request->input('loyalty_code', ''));
+        $requestedDiscount = (float) $request->input('discount', 0);
+
+        if ($loyaltyCode === '' || $requestedDiscount <= 0.0) {
+            return;
+        }
+
+        if ($validatedCoupon instanceof Coupon || (int) $request->input('coupon_id', 0) > 0) {
+            Log::info('[Loyalty] Loyalty discount skipped because coupon takes priority on frontend order.');
+            return;
+        }
+
+        // Lock the customer row before deciding whether to consume a pending kiosk redemption
+        // or create a new ledger entry. This keeps points and ledger in the same DB transaction.
+        $loyaltyUser = \App\Models\User::where('loyalty_code', $loyaltyCode)
+            ->where('status', 1)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$loyaltyUser) {
+            return;
+        }
+
+        $redemption = $this->discountCalculator->kioskLoyaltyRedemption(
+            $validatedCoupon,
+            $loyaltyCode,
+            $requestedDiscount,
+            $realSubtotal,
+            $loyaltyUser
+        );
+        $maxDiscount = (float) $redemption['discount'];
+        $pointsRequired = (int) $redemption['points'];
+
+        if ($pointsRequired <= 0 || $maxDiscount <= 0.0) {
+            Log::warning('[Loyalty] Redemption skipped after locked balance check', [
+                'user_id' => $loyaltyUser->id,
+                'order_id' => $this->frontendOrder->id,
+                'requested_discount' => $requestedDiscount,
+                'available' => $loyaltyUser->loyalty_points,
+            ]);
+            return;
+        }
+
+        $pendingRedeem = \App\Models\LoyaltyTransaction::query()
+            ->where('user_id', $loyaltyUser->id)
+            ->where('loyalty_code', $loyaltyUser->loyalty_code)
+            ->where('type', 'redeem')
+            ->where('source_surface', 'kiosk')
+            ->whereNull('order_id')
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->lockForUpdate()
+            ->latest('id')
+            ->first();
+
+        if ($pendingRedeem) {
+            if (abs((int) $pendingRedeem->points) !== $pointsRequired) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'loyalty_code' => 'A pending loyalty redemption exists for a different discount amount.',
+                ]);
+            }
+
+            $pendingRedeem->order_id = $this->frontendOrder->id;
+            $pendingRedeem->description = 'Reduction fidelite kiosk rattachee a la commande';
+            $pendingRedeem->save();
+
+            $calculatedDiscount += $maxDiscount;
+            $this->loyaltyApplied = true;
+
+            Log::info('[Loyalty] Pending kiosk redeem attached without second deduction', [
+                'user_id' => $loyaltyUser->id,
+                'order_id' => $this->frontendOrder->id,
+                'transaction_id' => $pendingRedeem->id,
+            ]);
+            return;
+        }
+
+        // [SEC MISSION-28/30 2026-07-31] Anti-vol de points (IDOR). Le débit FRAIS ci-dessous débite le
+        // compte porteur du `loyalty_code` fourni par l'APPELANT. Sans garde, un attaquant connaissant le
+        // code d'une victime (imprimé sur reçus/QR) la débite (points=argent, remise NF525). C'est l'IDOR
+        // DÉJÀ fermé sur /api/frontend/loyalty/redeem (KioskMachine OU propriétaire OU staff) mais JAMAIS
+        // miroité ici. On applique le MÊME discriminateur ; sinon aucune remise (return, plein tarif).
+        // La borne (compte machine) passe par isKiosk ; le propriétaire redeem son propre code ; le staff POS.
+        $callerId = (int) (Auth::id() ?? 0);
+        $isKioskCaller = $callerId > 0 && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('user_id', $callerId)->exists();
+        $isOwnerCaller = $callerId > 0 && (int) $loyaltyUser->id === $callerId;
+        $isStaffCaller = Auth::user()?->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']) ?? false;
+        if (! $isKioskCaller && ! $isOwnerCaller && ! $isStaffCaller) {
+            Log::warning('[Loyalty] Débit code étranger REFUSÉ (chemin création commande) — IDOR bloqué (Mission-28)', [
+                'caller_id' => $callerId,
+                'loyalty_user_id' => $loyaltyUser->id,
+            ]);
+
+            // Rejet DUR (422) + rollback de la commande : l'appelant ne peut pas utiliser un code
+            // fidélité dont il n'est ni le propriétaire, ni la borne, ni le staff. Aucun point brûlé.
+            throw new \InvalidArgumentException(
+                'Ce code fidélité ne peut pas être utilisé sur cette commande.',
+                422
+            );
+        }
+
+        $balanceAfter = (int) $loyaltyUser->loyalty_points - $pointsRequired;
+
+        DB::table('users')
+            ->where('id', $loyaltyUser->id)
+            ->update([
+                'loyalty_points' => $balanceAfter,
+                'updated_at' => now(),
+            ]);
+
+        $this->createKioskLoyaltyRedeemLedger($loyaltyUser, $pointsRequired, $balanceAfter);
+
+        $calculatedDiscount += $maxDiscount;
+        $this->loyaltyApplied = true;
+
+        Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount} EUR)");
+    }
+
+    private function createKioskLoyaltyRedeemLedger(
+        \App\Models\User $loyaltyUser,
+        int $pointsRequired,
+        int $balanceAfter
+    ): \App\Models\LoyaltyTransaction {
+        try {
+            return \App\Models\LoyaltyTransaction::create([
+                'user_id'        => $loyaltyUser->id,
+                'loyalty_code'   => $loyaltyUser->loyalty_code,
+                'order_id'       => $this->frontendOrder->id,
+                'type'           => 'redeem',
+                'points'         => -$pointsRequired,
+                'balance_after'  => $balanceAfter,
+                'source_surface' => 'kiosk',
+                'description'    => 'Reduction fidelite appliquee sur commande kiosk',
+            ]);
+        } catch (\Illuminate\Database\QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) !== '23000') {
+                throw $exception;
+            }
+
+            $existing = \App\Models\LoyaltyTransaction::query()
+                ->where('user_id', $loyaltyUser->id)
+                ->where('order_id', $this->frontendOrder->id)
+                ->where('type', 'redeem')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $existing) {
+                throw $exception;
+            }
+
+            return $existing;
         }
     }
 
@@ -718,27 +1109,124 @@ class FrontendOrderService
      */
     private function hydrateAllergenSnapshots(array $itemsArray): array
     {
-        if ($itemsArray === []) {
-            return $itemsArray;
-        }
+        // [W3.A — gate "tout vert"] Delegates to the shared helper so the
+        // Kiosk path (FrontendOrderService) and the POS path (OrderService)
+        // emit the SAME allergen snapshot — including allergens carried by
+        // item_extras (resolves OrderAllergenSnapshotComposedTest sentinel).
+        // Helper is idempotent and falls back gracefully when the
+        // item_extra_allergens pivot is absent.
+        return \App\Services\Orders\OrderItemAllergenSnapshot::hydrate($itemsArray);
+    }
 
-        $itemsById = Item::query()
-            ->select('id', 'allergen_flags')
-            ->with(['allergens' => function ($query): void {
-                $query->select('allergens.id', 'code')->orderBy('sort');
-            }])
-            ->whereIn('id', collect($itemsArray)->pluck('item_id')->filter()->unique()->all())
-            ->get()
-            ->keyBy('id');
+    private function saveFrontendOrderWithQueueNumber(callable $applyFields, string $context): void
+    {
+        $maxAttempts = 5;
 
-        foreach ($itemsArray as $index => $row) {
-            $itemsArray[$index]['allergens_snapshot'] = json_encode(
-                $this->resolveAllergenSnapshot($itemsById->get((int) ($row['item_id'] ?? 0))),
-                JSON_UNESCAPED_UNICODE
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $businessDate = $this->resolveBusinessDate($this->frontendOrder->order_datetime ?? null);
+            $this->frontendOrder->business_date = $businessDate;
+            $this->frontendOrder->queue_number = $this->allocateQueueNumber(
+                (int) $this->frontendOrder->branch_id,
+                $businessDate,
+                $context
             );
+            $applyFields();
+            $this->frontendOrder->business_date = $businessDate;
+
+            try {
+                $this->frontendOrder->save();
+                return;
+            } catch (QueryException $exception) {
+                if (!$this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
+                    throw $exception;
+                }
+
+                Log::warning(sprintf(
+                    '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
+                    (string) $this->frontendOrder->queue_number,
+                    (string) $this->frontendOrder->branch_id,
+                    (string) $this->frontendOrder->business_date,
+                    $context
+                ));
+            }
+        }
+    }
+
+    private function allocateQueueNumber(int $branchId, string $businessDate, string $context): string
+    {
+        $lockKey = 'queue_lock_' . $branchId . '_' . $businessDate;
+        $lock = Cache::lock($lockKey, 30);
+        $acquired = false;
+
+        try {
+            $lock->block(15);
+            $acquired = true;
+
+            $queueNumbers = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->where('business_date', $businessDate)
+                ->whereNotNull('queue_number')
+                ->where('queue_number', 'like', 'A%')
+                ->pluck('queue_number');
+
+            $maxQueueNum = (int) $queueNumbers
+                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
+                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
+                ->max();
+
+            // [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number
+            // (32 par défaut) : 1er ordre du jour = A0032, puis suit le max existant.
+            $startNumber = max(1, (int) config('kiosk.queue_start_number', 1));
+
+            return 'A' . str_pad(max($maxQueueNum + 1, $startNumber), 4, '0', STR_PAD_LEFT);
+        } catch (LockTimeoutException $exception) {
+            Log::warning(sprintf(
+                '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',
+                $branchId,
+                $businessDate,
+                $context
+            ));
+
+            throw new HttpException(409, 'Queue number allocation is busy. Please retry.', $exception);
+        } finally {
+            if ($acquired) {
+                $lock->release();
+            }
+        }
+    }
+
+    private function resolveBusinessDate(mixed $orderDatetime): string
+    {
+        if ($orderDatetime instanceof \DateTimeInterface) {
+            return Carbon::instance($orderDatetime)->toDateString();
         }
 
-        return $itemsArray;
+        if (blank($orderDatetime)) {
+            return Carbon::now()->toDateString();
+        }
+
+        return Carbon::parse((string) $orderDatetime)->toDateString();
+    }
+
+    private function isQueueNumberUniqueViolation(QueryException $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return ($exception->getCode() === '23000' || str_contains($message, 'UNIQUE constraint failed'))
+            && (
+                str_contains($message, 'orders_branch_business_date_queue_unique')
+                || str_contains($message, 'orders_branch_queue_number_unique')
+                || (
+                    str_contains($message, 'orders.branch_id')
+                    && str_contains($message, 'orders.business_date')
+                    && str_contains($message, 'orders.queue_number')
+                )
+                || (
+                    str_contains($message, 'branch_id')
+                    && str_contains($message, 'business_date')
+                    && str_contains($message, 'queue_number')
+                )
+            );
     }
 
     /**
@@ -788,20 +1276,237 @@ class FrontendOrderService
         }
 
         $promoted = false;
+        // [Wave M / Heal Z5 P1-C — 2026-05-19] Captures state required by
+        // the post-transaction flag write. The flag MUST be persisted
+        // OUTSIDE the parent DB::transaction (see comment at the raw
+        // DB::table('orders') call below) — so we collect the intent
+        // inside the closure and act on it once the transaction has
+        // settled. Audit reference: RED-Z5 §B F-Z5-P1-C.
+        $allocFailed = false;
+        $allocFailureError = null;
 
-        DB::transaction(function () use ($frontendOrder, &$promoted) {
+        DB::transaction(function () use ($frontendOrder, &$promoted, &$allocFailed, &$allocFailureError) {
             $locked = FrontendOrder::where('id', $frontendOrder->id)
                 ->lockForUpdate()
                 ->first();
 
-            if ((int) $locked->status >= OrderStatus::ACCEPT) {
+            // [AUDIT-F-013] Whitelist explicit PENDING — only PENDING (1) may be
+            // promoted to ACCEPT here. The previous `>= ACCEPT` check was
+            // numerically equivalent today (PENDING=1 is the only status < 4) but
+            // would silently break if a future intermediate status (e.g. fraud
+            // hold) were inserted between PENDING and ACCEPT. Whitelist makes
+            // intent explicit and forces a deliberate state-machine review for
+            // any new intermediate status. See plan
+            // .claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md
+            if (! in_array((int) $locked->status, [OrderStatus::PENDING], true)) {
                 return;
+            }
+
+            // [F-21] Defense in depth — never advance to ACCEPT without confirmed payment.
+            // Re-check inside the lock to prevent race / misuse from any caller path
+            // (controller already pre-checks, but service must guarantee invariant on
+            // its own — see tasks/gates/GATE_FROZEN_F21_FINALIZE_PAID_KIOSK_2026-04-23.md).
+            if ((int) $locked->payment_status !== PaymentStatus::PAID) {
+                Log::warning('finalizePaidKioskOrder called without confirmed payment', [
+                    'order_id'       => $locked->id,
+                    'payment_status' => $locked->payment_status,
+                    'order_type'     => $locked->order_type,
+                ]);
+                return;
+            }
+
+            // [P-K11-FZH / KR1] M-08 OPTION B SUPERSEDED — auto-allocate
+            // fiscal_sequence_no for kiosk direct TPE so orders enter Z
+            // aggregation immediately, not only when manually POS-collected.
+            // Without this, a kiosk-paid card order could remain unsealed
+            // indefinitely (NF525 fiscal gap).
+            //
+            // Feature flag `fiscal.kiosk_auto_allocate_sequence` (default true)
+            // gates the auto-allocation. Override via
+            // FISCAL_KIOSK_AUTO_ALLOCATE_SEQUENCE=false for emergency rollback
+            // to legacy M-08 Option B behaviour.
+            //
+            // Allocation runs INSIDE the same DB::transaction so any failure
+            // rolls back the status promotion as well — order stays PENDING
+            // until a future retry or manual POS collection.
+            if ($locked->fiscal_sequence_no === null
+                && config('fiscal.kiosk_auto_allocate_sequence', true)
+            ) {
+                try {
+                    $newSeq = app(\App\Services\Fiscal\FiscalSequenceService::class)
+                        ->next((int) $locked->branch_id);
+                    $locked->fiscal_sequence_no = $newSeq;
+
+                    // [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07 · NF-01]
+                    // Chemin kiosk-payé (y compris ALLOCATION DIFFÉRÉE via RetryFiscalAllocCommand
+                    // / PaymentReconcile) : si l'alloc a échoué à T0 puis est rattrapée dans un Z
+                    // ULTÉRIEUR, sans ce stamp aggregate() fenêtre par created_at (=T0, Z déjà clos)
+                    // → reçu numéroté hors de TOUT Z signé (le P1 exact, oublié au 1er fix). Stamper
+                    // l'instant d'allocation réel → la commande appartient au Z d'allocation.
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'fiscal_dated_at')) {
+                        $locked->fiscal_dated_at = now();
+                    }
+
+                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+                    // Clear the error flag — a previous failed attempt may
+                    // have set it, and a successful retry brings the row
+                    // back to the happy invariant.
+                    if (!is_null($locked->fiscal_alloc_error_at)) {
+                        $locked->fiscal_alloc_error_at = null;
+                    }
+
+                    Log::channel('fiscal')->info('kiosk.fiscal_sequence_auto_allocated', [
+                        'event'              => 'kiosk.fiscal_sequence_auto_allocated',
+                        'order_id'           => $locked->id,
+                        'branch_id'          => $locked->branch_id,
+                        'fiscal_sequence_no' => $newSeq,
+                        'payment_method'     => $locked->payment_method,
+                        'source_surface'     => $locked->source_surface ?? null,
+                    ]);
+                } catch (\Throwable $e) {
+                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] +
+                    // [Wave M / Heal Z5 P1-C — 2026-05-19 deferred flag write]
+                    //
+                    // History:
+                    //   - iter13 ORDER-PATH P1 (pre-iter14): catch re-threw,
+                    //     entire tx rolled back, row stayed PAID+PENDING+seq=NULL
+                    //     with NO marker — unrecoverable orphan if the caller
+                    //     also crashed.
+                    //   - iter14 (commit 3150992a7): catch set
+                    //     `$locked->fiscal_alloc_error_at = now(); $locked->save();`
+                    //     INSIDE this tx. Fixed the dominant case but if the
+                    //     save() itself threw (trigger, FK, DB hiccup) the
+                    //     throw bubbled out of the closure, the parent tx
+                    //     rolled back, flag lost — pre-iter14 orphan
+                    //     reproduced for a narrow nested-failure edge case
+                    //     (RED-Z5 §B F-Z5-P1-C).
+                    //   - Wave M: capture failure intent here (no in-tx save)
+                    //     and persist the flag via a raw DB::table()->update()
+                    //     OUTSIDE this transaction so the flag write cannot
+                    //     be rolled back together with the failed alloc tx.
+                    //     The raw update has its own try/catch so even a DB
+                    //     hiccup at flag-write time degrades to a log + no
+                    //     orphan (the row is in the same observable state
+                    //     as iter13-pre-fix, but the audit trail is intact).
+                    $allocFailed = true;
+                    $allocFailureError = $e;
+
+                    // promoted stays false — caller sees no exception, KDS
+                    // does not pick the order up (status still PENDING),
+                    // retry cron will retry once the flag is set (below).
+                    return;
+                }
             }
 
             $locked->status = OrderStatus::ACCEPT;
             $locked->save();
             $promoted = true;
+
+            // [Wave S-1 — P-OWNER 2026-05-20] Auto-transition ACCEPT → PREPARING
+            // for kiosk orders settled online via TPE (CARD / TICKET_RESTAURANT)
+            // — the kitchen receives the ticket already "en cours" without a
+            // second tap. Kiosk cash-at-counter never reaches this path
+            // (it stays UNPAID at creation and is collected via
+            // PaymentService::confirmCounterPayment), so no S-5 exception
+            // needed here.
+            //
+            // The transition lives INSIDE the same DB::transaction so an
+            // outer rollback (e.g. broadcast registration glitch) discards
+            // both the ACCEPT promotion and the PREPARING flip atomically —
+            // status never observed half-applied. OrderCreated::dispatch
+            // below picks up the fresh `$locked->status` (PREPARING when the
+            // policy fires) so PersistOrderCreatedToOutbox encodes the
+            // correct payload for KDS.
+            //
+            // OrderStateMachine::allows(ACCEPT, PREPARING) is true (line 45
+            // of OrderStateMachine.php). We use the historical
+            // `$locked->status = NEXT; ->save();` pattern per CLAUDE.md §7
+            // frozen-zone rule for FrontendOrderService — recordTransition
+            // is best-effort and called after save() to keep the audit
+            // chain consistent.
+            $sourceSurface = (string) ($locked->source_surface ?? 'kiosk');
+            if (AutoPrepareOnPaidPolicy::shouldPromote(
+                surface: $sourceSurface,
+                posPaymentMethod: $locked->pos_payment_method !== null
+                    ? (int) $locked->pos_payment_method
+                    : null,
+                isCounterCollect: false,
+            )) {
+                $locked->status = AutoPrepareOnPaidPolicy::nextStatus();
+                $locked->save();
+
+                OrderStateMachine::recordTransition(
+                    FrontendOrder::class,
+                    (int) $locked->id,
+                    OrderStatus::ACCEPT,
+                    OrderStatus::PREPARING,
+                    null,
+                    'auto_prepare_on_paid (Wave S-1 kiosk paid TPE)',
+                );
+            }
+
+            // [Wave M / Heal Z2 P1 — 2026-05-19 + advisor pivot 2026-05-19]
+            // OrderCreated::dispatch moved INSIDE the closure so
+            // DispatchableAfterCommit engages (transactionLevel()>0 →
+            // afterCommit). On rollback the broadcast is dropped — KDS
+            // never observes a ghost ACCEPT'd kiosk order.
+            //
+            // IMPORTANT — pass `$locked`, NOT the caller's `$frontendOrder`.
+            // Pre-Wave-M, the dispatch happened outside the closure AFTER
+            // `$frontendOrder->refresh()` (see line ~1275 below) so the
+            // event captured the fresh ACCEPT status + cleared
+            // fiscal_alloc_error_at. Inside the closure we hold the lock
+            // on `$locked`; that is the instance whose in-memory state
+            // mirrors the freshly-committed row. `$frontendOrder` (caller
+            // parameter) is NOT mutated by this method and would broadcast
+            // status=PENDING, which is exactly the symptom this heal is
+            // supposed to prevent. PersistOrderCreatedToOutbox reads
+            // `$order->status` into the payload (line 39 of that file) —
+            // so passing the stale instance would mark the broadcast
+            // ACCEPT-promotion event as still PENDING.
+            //
+            // The mail/SMS/push queue jobs at the bottom of this method
+            // continue to fire after the closure via control flow.
+            // Sentinel:
+            // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+            OrderCreated::dispatch($locked);
         });
+
+        if ($allocFailed) {
+            // [Wave M / Heal Z5 P1-C — 2026-05-19] Persist the
+            // `fiscal_alloc_error_at` marker via a raw query OUTSIDE the
+            // closed-out parent transaction. Reasons:
+            //   1. Raw DB::table()->update() does not engage Eloquent
+            //      events, observers, or model boots — minimal failure
+            //      surface vs. $locked->save().
+            //   2. We are after `DB::transaction(...)` returned, so any
+            //      throw here cannot roll back the previously-attempted
+            //      (and rolled-back) alloc tx — they are independent.
+            //   3. Wrapped in its own try/catch so a flag-write hiccup
+            //      logs but does not propagate to the controller / kiosk
+            //      caller (mirroring iter14's "catch and degrade" pattern).
+            // Sentinel:
+            // `tests/Feature/Fiscal/FiscalAllocErrorFlagOutsideTxSentinelTest`.
+            try {
+                DB::table('orders')
+                    ->where('id', $frontendOrder->id)
+                    ->update(['fiscal_alloc_error_at' => now()]);
+            } catch (\Throwable $flagWriteError) {
+                Log::channel('fiscal')->error('kiosk.fiscal_alloc_error_flag_write_failed', [
+                    'event'    => 'kiosk.fiscal_alloc_error_flag_write_failed',
+                    'order_id' => $frontendOrder->id,
+                    'error'    => $flagWriteError->getMessage(),
+                ]);
+            }
+
+            Log::channel('fiscal')->error('kiosk.fiscal_sequence_alloc_failed', [
+                'event'    => 'kiosk.fiscal_sequence_alloc_failed',
+                'order_id' => $frontendOrder->id,
+                'branch_id'=> $frontendOrder->branch_id,
+                'error'    => $allocFailureError !== null ? $allocFailureError->getMessage() : 'unknown',
+                'flagged'  => true,
+            ]);
+        }
 
         if (!$promoted) {
             return false;
@@ -824,15 +1529,44 @@ class FrontendOrderService
         SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => OrderStatus::ACCEPT]);
         $this->dispatchOrderStatusSignals($frontendOrder, OrderStatus::PENDING, OrderStatus::ACCEPT);
 
+        // [Wave S-1 — P-OWNER 2026-05-20] When the auto-prepare policy fires,
+        // the order ended up in PREPARING (not ACCEPT) at the close of the
+        // transaction above. Fire a second OrderStatusChanged ACCEPT→PREPARING
+        // broadcast so PersistOrderStatusChangedToOutbox encodes both legs of
+        // the transition for the realtime KDS / Suivi UIs — passing the
+        // pre-`refresh()` ACCEPT alone (the legacy line) would leave KDS
+        // subscribers without an explicit "now en préparation" signal and
+        // they would only converge via the next poll. Dual-broadcast pattern
+        // matches OrderService::changeStatus' multi-leg historical contract.
+        if ((int) $frontendOrder->status === OrderStatus::PREPARING) {
+            $this->dispatchOrderStatusSignals(
+                $frontendOrder,
+                OrderStatus::ACCEPT,
+                OrderStatus::PREPARING
+            );
+        }
+
         return true;
     }
 
+    /**
+     * Helper for post-commit "new-order" queue jobs (mail / SMS / push).
+     *
+     * [Wave M / Heal Z2 P1 — 2026-05-19] The `OrderCreated::dispatch` call
+     * that used to live here has been hoisted into the wrapping
+     * `DB::transaction(...)` closure of each caller (`myOrderStore` +
+     * `finalizePaidKioskOrder`) so that the DispatchableAfterCommit trait
+     * engages via `transactionLevel()>0 → afterCommit()`. Queue-mode
+     * notifications below remain post-commit via control flow — they have
+     * their own queue-level dedupe story and do not need rollback safety.
+     * Sentinel:
+     * `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+     */
     private function dispatchNewOrderSignals(FrontendOrder $frontendOrder): void
     {
         SendOrderGotMail::dispatch(['order_id' => $frontendOrder->id]);
         SendOrderGotSms::dispatch(['order_id' => $frontendOrder->id]);
         SendOrderGotPush::dispatch(['order_id' => $frontendOrder->id]);
-        OrderCreated::dispatch($frontendOrder);
     }
 
     private function dispatchOrderStatusSignals(FrontendOrder $frontendOrder, int $oldStatus, int $newStatus): void

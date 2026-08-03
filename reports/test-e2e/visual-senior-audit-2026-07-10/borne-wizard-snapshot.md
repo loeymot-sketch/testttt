@@ -1,0 +1,212 @@
+- generic [ref=f15e1]:
+  - generic [ref=f15e5]:
+    - generic [ref=f15e6]:
+      - generic [ref=f15e7]:
+        - img [ref=f15e19]
+        - generic [ref=f15e10]:
+          - generic [ref=f15e11]: Nos
+          - generic [ref=f15e12]: Burgers
+      - button "Mon compte" [ref=f15e14] [cursor=pointer]:
+        - generic [ref=f15e15]: 👤
+        - text: Mon compte
+    - generic [ref=f15e20]:
+      - navigation "Navigation catégories" [ref=f15e21]:
+        - button "Sandwichs" [ref=f15e22] [cursor=pointer]:
+          - generic [ref=f15e23]: Sandwichs
+        - button "Galette" [ref=f15e25] [cursor=pointer]:
+          - generic [ref=f15e26]: Galette
+        - button "Burgers" [ref=f15e28] [cursor=pointer]:
+          - generic [ref=f15e29]: Burgers
+        - button "Tacos" [ref=f15e31] [cursor=pointer]:
+          - generic [ref=f15e32]: Tacos
+        - button "Bols" [ref=f15e34] [cursor=pointer]:
+          - generic [ref=f15e35]: Bols
+        - button "Menu enfant" [ref=f15e37] [cursor=pointer]:
+          - generic [ref=f15e38]: Menu enfant
+        - button "Frites" [ref=f15e40] [cursor=pointer]:
+          - generic [ref=f15e41]: Frites
+        - button "Desserts" [ref=f15e43] [cursor=pointer]:
+          - generic [ref=f15e44]: Desserts
+        - button "Boissons" [ref=f15e46] [cursor=pointer]:
+          - generic [ref=f15e47]: Boissons
+      - main [ref=f15e49]:
+        - generic [ref=f15e50]:
+          - generic [ref=f15e51]:
+            - heading "Burgers" [level=1] [ref=f15e52]
+            - paragraph [ref=f15e53]: 6 produits
+          - list [ref=f15e54]:
+            - listitem [ref=f15e55] [cursor=pointer]:
+              - generic [ref=f15e56]:
+                - img [ref=f15e57]
+                - generic [ref=f15e58]: Nouveau
+                - button "Ajouter Cheese Burger" [ref=f15e59]:
+                  - generic [ref=f15e128]: +
+              - generic [ref=f15e61]:
+                - heading "Cheese Burger" [level=2] [ref=f15e62]
+                - paragraph [ref=f15e63]: Steak, cheddar, salade, tomate, oignon, sauce.
+                - generic [ref=f15e64]: €6,00
+            - listitem [ref=f15e65] [cursor=pointer]:
+              - generic [ref=f15e66]:
+                - img [ref=f15e67]
+                - generic [ref=f15e68]: Nouveau
+                - button "Ajouter Fish Burger" [ref=f15e69]:
+                  - generic [ref=f15e70]: +
+              - generic [ref=f15e71]:
+                - heading "Fish Burger" [level=2] [ref=f15e72]
+                - paragraph [ref=f15e73]: Poisson pané, cheddar, salade, tomate, oignon, sauce.
+                - generic [ref=f15e74]: €6,00
+            - listitem [ref=f15e75] [cursor=pointer]:
+              - generic [ref=f15e76]:
+                - img [ref=f15e77]
+                - generic [ref=f15e78]: Nouveau
+                - button "Ajouter Double Cheese" [ref=f15e79]:
+                  - generic [ref=f15e80]: +
+              - generic [ref=f15e81]:
+                - heading "Double Cheese" [level=2] [ref=f15e82]
+                - paragraph [ref=f15e83]: 2 steaks, 2 cheddars, salade, tomate, oignon, sauce.
+                - generic [ref=f15e84]: €7,00
+            - listitem [ref=f15e85] [cursor=pointer]:
+              - generic [ref=f15e86]:
+                - img [ref=f15e87]
+                - generic [ref=f15e88]: Nouveau
+                - button "Ajouter Grill Burger" [ref=f15e89]:
+                  - generic [ref=f15e90]: +
+              - generic [ref=f15e91]:
+                - heading "Grill Burger" [level=2] [ref=f15e92]
+                - paragraph [ref=f15e93]: 2 steaks, 2 cheddars, jambon de dinde, salade, tomate, oignon, sauce...
+                - generic [ref=f15e94]: €8,00
+            - listitem [ref=f15e95] [cursor=pointer]:
+              - generic [ref=f15e96]:
+                - img [ref=f15e97]
+                - generic [ref=f15e98]: Nouveau
+                - button "Ajouter Big Burger" [ref=f15e99]:
+                  - generic [ref=f15e100]: +
+              - generic [ref=f15e101]:
+                - heading "Big Burger" [level=2] [ref=f15e102]
+                - paragraph [ref=f15e103]: 3 steaks, 3 cheddars, 2 jambons de dinde, salade, tomate, oignon, sa...
+                - generic [ref=f15e104]: €9,00
+            - listitem [ref=f15e105] [cursor=pointer]:
+              - generic [ref=f15e106]:
+                - img [ref=f15e107]
+                - generic [ref=f15e108]: Personnaliser
+                - button "Ajouter Chicken Burger" [ref=f15e109]:
+                  - generic [ref=f15e110]: +
+              - generic [ref=f15e111]:
+                - heading "Chicken Burger" [level=2] [ref=f15e112]
+                - paragraph [ref=f15e113]: Salade, tomate, oignon, sauce.
+                - generic [ref=f15e114]: €4,90
+    - region "Panier et paiement" [ref=f15e115]:
+      - generic [ref=f15e116]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=f15e117]:
+          - img [ref=f15e119]
+          - generic [ref=f15e123]: 0 article
+        - generic [ref=f15e124]: €0,00
+      - generic [ref=f15e125]:
+        - button "Abandonner ma commande" [ref=f15e126] [cursor=pointer]
+        - button "Payer" [disabled] [ref=f15e127]
+    - dialog "Cheese Burger" [active] [ref=f15e130]:
+      - heading "Cheese Burger" [level=1] [ref=f15e131]
+      - generic [ref=f15e132]:
+        - generic [ref=f15e133]:
+          - text: Vous composez
+          - heading "Cheese Burger" [level=2] [ref=f15e134]
+        - button "Fermer la personnalisation" [ref=f15e135] [cursor=pointer]: ×
+      - generic [ref=f15e136]:
+        - generic [ref=f15e137]:
+          - generic [ref=f15e138]:
+            - img "QUELLE SAUCE ?" [ref=f15e139]
+            - text: ✓
+          - generic [ref=f15e140]: QUELLE SAUCE ?
+        - generic [ref=f15e141]:
+          - generic [ref=f15e142]:
+            - img "QUELLE CRUDITÉ ?" [ref=f15e143]
+            - text: ✓
+          - generic [ref=f15e144]: QUELLE CRUDITÉ ?
+        - generic [ref=f15e145]:
+          - generic [ref=f15e146]:
+            - img "QUEL SUPPLÉMENT ?" [ref=f15e147]
+            - text: ✓
+          - generic [ref=f15e148]: QUEL SUPPLÉMENT ?
+        - generic [ref=f15e149]:
+          - generic [ref=f15e150]:
+            - img "QUEL MENU ?" [ref=f15e151]
+            - text: ✓
+          - generic [ref=f15e152]: QUEL MENU ?
+        - generic [ref=f15e153]:
+          - generic [ref=f15e154]:
+            - img "RÉCAP" [ref=f15e155]
+            - text: ✓
+          - generic [ref=f15e156]: RÉCAP
+      - generic [ref=f15e157]:
+        - button "PRÉCÉDENT" [disabled] [ref=f15e158] [cursor=pointer]: ‹
+        - generic [ref=f15e159]:
+          - generic [ref=f15e161]: "1"
+          - generic [ref=f15e163]: "2"
+          - generic [ref=f15e165]: "3"
+          - generic [ref=f15e167]: "4"
+          - generic [ref=f15e169]: "5"
+        - button "SUIVANT" [disabled] [ref=f15e170] [cursor=pointer]: ›
+      - region "Composition en direct" [ref=f15e171]:
+        - generic [ref=f15e172]: Votre composition
+        - generic [ref=f15e174]: Vos choix s'ajoutent ici au fur et à mesure.
+      - generic [ref=f15e175]: QUELLE SAUCE ?
+      - generic [ref=f15e177]:
+        - generic [ref=f15e179]: 1re sauce gratuite
+        - generic [ref=f15e180]:
+          - checkbox "Mayonnaise" [ref=f15e181] [cursor=pointer]:
+            - img "Mayonnaise" [ref=f15e183]
+            - generic [ref=f15e184]: Mayonnaise
+            - generic [ref=f15e185]: +
+          - checkbox "Ketchup" [ref=f15e186] [cursor=pointer]:
+            - img "Ketchup" [ref=f15e188]
+            - generic [ref=f15e189]: Ketchup
+            - generic [ref=f15e190]: +
+          - checkbox "Blanche" [ref=f15e191] [cursor=pointer]:
+            - img "Blanche" [ref=f15e193]
+            - generic [ref=f15e194]: Blanche
+            - generic [ref=f15e195]: +
+          - checkbox "Hannibal" [ref=f15e196] [cursor=pointer]:
+            - img "Hannibal" [ref=f15e198]
+            - generic [ref=f15e199]: Hannibal
+            - generic [ref=f15e200]: +
+          - checkbox "Samouraï" [ref=f15e201] [cursor=pointer]:
+            - img "Samouraï" [ref=f15e203]
+            - generic [ref=f15e204]: Samouraï
+            - generic [ref=f15e205]: +
+          - checkbox "Algérienne" [ref=f15e206] [cursor=pointer]:
+            - img "Algérienne" [ref=f15e208]
+            - generic [ref=f15e209]: Algérienne
+            - generic [ref=f15e210]: +
+          - checkbox "Andalouse" [ref=f15e211] [cursor=pointer]:
+            - img "Andalouse" [ref=f15e213]
+            - generic [ref=f15e214]: Andalouse
+            - generic [ref=f15e215]: +
+          - checkbox "Curry" [ref=f15e216] [cursor=pointer]:
+            - img "Curry" [ref=f15e218]
+            - generic [ref=f15e219]: Curry
+            - generic [ref=f15e220]: +
+          - checkbox "Barbecue" [ref=f15e221] [cursor=pointer]:
+            - img "Barbecue" [ref=f15e223]
+            - generic [ref=f15e224]: Barbecue
+            - generic [ref=f15e225]: +
+          - checkbox "Harissa" [ref=f15e226] [cursor=pointer]:
+            - img "Harissa" [ref=f15e228]
+            - generic [ref=f15e229]: Harissa
+            - generic [ref=f15e230]: +
+          - checkbox "Fromagère maison" [ref=f15e231] [cursor=pointer]:
+            - img "Fromagère maison" [ref=f15e233]
+            - generic [ref=f15e234]: Fromagère maison
+            - generic [ref=f15e235]: +
+          - checkbox "Spicy maison" [ref=f15e236] [cursor=pointer]:
+            - img "Spicy maison" [ref=f15e238]
+            - generic [ref=f15e239]: Spicy maison
+            - generic [ref=f15e240]: +
+        - status [ref=f15e241]: Sélectionnez au moins une sauce
+      - generic [ref=f15e242]:
+        - generic [ref=f15e243]:
+          - button "ABANDONNER L'ARTICLE" [ref=f15e244] [cursor=pointer]
+          - button "PRÉCÉDENT" [disabled] [ref=f15e245]
+          - button "SUIVANT" [disabled] [ref=f15e246]:
+            - generic [ref=f15e247]: SUIVANT
+        - generic [ref=f15e248]: Total €6,00
+  - status

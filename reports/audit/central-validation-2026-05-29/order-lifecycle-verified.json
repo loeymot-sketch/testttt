@@ -1,0 +1,82 @@
+{
+  "system": "order-lifecycle",
+  "head": "525946ec155d6665c8e38ef9b58b20f37f664623",
+  "verified_at": "2026-05-29",
+  "confirmed_count": 6,
+  "dropped_count": 0,
+  "note": "All raw findings verified true at HEAD; none dropped. Three corrections applied during verification per verify-before-report discipline: (1) the security raw finding's cited method 'updateStatus' does NOT exist — lines 1642-1789 are OrderService::deliveryBoyOrderChangeStatus; corrected. (2) the 'stale pre-lock $oldStatus in recordTransition' sub-claim is true ONLY for deliveryBoyOrderChangeStatus (oldStatus captured 1661, used 1783); it is FALSE for both changeStatus paths which use the FRESH locked status (self-cancel previousStatus:1918, POS oldStatusForBroadcast:2059). (3) the self-cancel path (1913) is NOT vulnerable — single owner, only terminal targets, concurrent second request hits same target and is caught by the idempotency-equality check (1915); dropped from the finding scope. Severity capped at P2: recordTransition writes to the OPERATIONAL OrderStatusTransition log (OrderStateMachine.php:145), NOT the NF525 audit_logs/z_reports HMAC chain — this is an integrity race, not a fiscal violation. Cross-lens dedupe: the kitchen-release dead-predicate cluster reported by BOTH architect and security lenses is consolidated into findings #2/#3/#4.",
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "app/Services/OrderService.php",
+      "line": "1657, 1896, 1989-2068 (changeStatus POS/online/table) + 1642-1789 (deliveryBoyOrderChangeStatus)",
+      "title": "Status-change hot paths validate transition legality on the PRE-LOCK status and never re-run OrderStateMachine::allows() against the freshly-locked row — concurrent different-key requests can persist an ILLEGAL transition (asymmetric with the KDS service which DOES re-check in-lock)",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD 525946ec1. OrderService.php:1896 (changeStatus) and :1657 (deliveryBoyOrderChangeStatus) both construct `new ValidStatusTransition($order->status)` — ValidStatusTransition.php:18-20,35 binds the PRE-LOCK in-memory status and OrderStateMachine::allows() runs against it. Inside the locked transactions the ONLY guards are branch-isolation + idempotency-equality (`if ((int)$locked->status === $targetStatus) return;` at 1688 / 1915 / 2001); there is NO second OrderStateMachine::allows($locked->status,...) call. CONTRAST — the correct shape exists in the SAME codebase: KitchenDisplaySystemOrderService.php:405 (expected_from optimistic-lock 409) + :424-426 re-runs BOTH KitchenReleaseRule::canTransition($fromLocked,...) AND OrderStateMachine::allows($fromLocked,...) INSIDE the lock. Reachability: routes/api.php:949/980/993 (POS/online/table change-status → OrderService::changeStatus) and :1364 (delivery-boy → deliveryBoyOrderChangeStatus); ALL are in config/idempotency.php required_routes (lines 60-62,72) so a key IS required — but two requests with DIFFERENT keys (two cashier devices, or a malicious owning driver) produce different scopedKeys (IdempotencyKeyMiddleware.php:76-82) and BOTH proceed. Race: R1 PREPARED→DELIVERED lands; R2 PREPARED→OUT_FOR_DELIVERY passes pre-lock validation (legal from PREPARED), acquires lock, reads locked=DELIVERED, idempotency-equality false (DELIVERED!=OFD), proceeds to write the illegal DELIVERED→OUT_FOR_DELIVERY (OSM::allows only permits DELIVERED→RETURNED, OrderStateMachine.php:60-61). recordTransition writes to OrderStatusTransition (OrderStateMachine.php:145) — operational log, not NF525 chain. ADDITIONAL on deliveryBoyOrderChangeStatus ONLY: recordTransition (1780-1787) uses the STALE pre-lock $oldStatus captured at 1661, masking the real movement as from=PREPARED (the two changeStatus paths correctly use the FRESH locked status — previousStatus:1918, oldStatusForBroadcast:2059).",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "Inside each locked transaction, after reading $locked, re-run OrderStateMachine::assertAllows((int)$locked->status, $targetStatus, $actor) (or migrate these call sites to OrderStateMachine::apply() which already does this), and for deliveryBoyOrderChangeStatus use $locked->status (not the pre-lock $oldStatus) as the recordTransition `from`. This mirrors KitchenDisplaySystemOrderService.php:405-429 and the apply() guard that tests/Feature/OrderStateMachineLockForUpdateTest.php:232 already locks for apply() but for NO other path (verified: that test covers only apply(); no test asserts in-lock re-check on changeStatus / deliveryBoyOrderChangeStatus). Non-frozen file. P2 not P1: operational transition-log integrity only — no money, no auth bypass, no fiscal HMAC-chain corruption.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Domain/Kds/KitchenReleaseRule.php",
+      "line": "56-72 (twin at app/Domain/Order/OrderStateMachine.php:111-127); test tests/Feature/KitchenReleaseRuleTest.php:60-106",
+      "title": "Dead kitchen-release predicate (isReleasedToKitchen/orderIsReleased) encodes a rule (PAID OR POS+CASH) that CONTRADICTS the authoritative live KDS SQL — and a green test pins the stale rule (false SSOT confidence). [Consolidates architect + security lens]",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. `grep -rn 'isReleasedToKitchen|orderIsReleased' app/ routes/` returns ONLY the two definition sites (KitchenReleaseRule.php:56,74 and OrderStateMachine.php:111) — ZERO production callers; the predicate gates nothing. The authoritative live board query KitchenDisplaySystemOrderService.php:73-82 is whereIn(visibleStatuses) AND (payment_status=PAID OR payment_status=PENDING_COUNTER OR (order_type=POS AND pos_payment_method=CASH)). The dead predicate (KitchenReleaseRule.php:62-71) returns FALSE for a kiosk PENDING_COUNTER order (not PAID, not POS+CASH) — i.e. it would HIDE orders the live SQL SHOWS. The Plan-B flow is intentional and authoritative: FrontendOrderService.php:206-208 sets isCounterDeferredKioskCash → shouldAutoAcceptAfterCreate; :266 creates with payment_status=PENDING_COUNTER; :578-580 auto-accepts status=ACCEPT; the inline truth-table comment :217-227 states verbatim the order goes 'PENDING_COUNTER — KDS query includes that status so kitchen starts prepping while customer queues at counter'. tests/Feature/KitchenReleaseRuleTest.php:60-106 asserts exactly the stale (PAID OR POS+CASH) behavior with NO PENDING_COUNTER case, manufacturing false confidence that the dead predicate is the kitchen-release SSOT.",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "Treat the live KDS SQL as authoritative. Either (a) delete the dead isReleasedToKitchen/orderIsReleased cluster from the non-frozen KitchenReleaseRule and retarget/delete the KitchenReleaseRuleTest cases asserting the stale rule; OR (b) for a single consulted SSOT predicate, rewrite isReleasedToKitchen to ALSO return true for PENDING_COUNTER and have KitchenDisplaySystemOrderService::list() build its where-clause FROM that predicate so SQL and predicate cannot drift, plus add a PENDING_COUNTER test case. Do NOT leave three divergent definitions of 'released to kitchen'.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Domain/Kds/KitchenReleaseRule.php",
+      "line": "1-83",
+      "title": "Baseline correction: the prior-audit claim 'KitchenReleaseRule is dead / zero callers' is materially WRONG — the class has 5 live production callers and is load-bearing for the KDS surface",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. `grep -rn 'KitchenReleaseRule' app/ routes/ | grep -v app/Domain/Kds/KitchenReleaseRule.php` returns 5 live call sites: app/Listeners/DispatchKdsTicket.php:13 (shouldDispatchStatusChanged gates the OrderStatusChanged broadcast), app/Services/KitchenDisplaySystemOrderService.php:74 (visibleStatuses on the active board query), :425 (canTransition on the in-lock KDS guard), :481 (itemBoardStatuses on the items board). Only the narrower isReleasedToKitchen/orderIsReleased methods are dead (see finding above).",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "Correct the baseline record: KitchenReleaseRule is the live KDS-visibility/transition SSOT and must NOT be deleted. Scope any cleanup to the dead predicate cluster only so a future pass does not delete a load-bearing class.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Domain/Order/OrderStateMachine.php",
+      "line": "111-127 (twin at app/Domain/Kds/KitchenReleaseRule.php:56-72)",
+      "title": "DEDUP: isReleasedToKitchen duplicated byte-identically across two domain classes; the OSM copy lives in a FROZEN §7 file",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. OrderStateMachine.php:111-127 and KitchenReleaseRule.php:56-72 are identical in signature and body (status<ACCEPT→false; PAID→true; POS+CASH→true). Both have zero production callers (grep above). The OSM copy belongs to a frozen §7 file (OrderStateMachine.php); the KitchenReleaseRule copy is non-frozen.",
+      "is_new": true,
+      "frozen": true,
+      "recommendation": "When resolving the kitchen-release SSOT (finding #2), collapse to ONE predicate location. Removing the OSM copy touches a frozen file → requires a LOCK; the non-frozen KitchenReleaseRule copy can be cleaned without one. Prefer keeping a single canonical predicate in the non-frozen domain class.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": "424-427",
+      "title": "Redundant double-gate: KitchenReleaseRule::canTransition strictly subsumes OrderStateMachine::allows for KDS transitions (harmless defense-in-depth, coupling micro-note)",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. Lines 424-427 require BOTH KitchenReleaseRule::canTransition($fromLocked,$newStatus) AND OrderStateMachine::allows($fromLocked,$newStatus,user). canTransition (KitchenReleaseRule.php:41-49) only permits ACCEPT→PREPARING and PREPARING→PREPARED; OrderStateMachine::allows (OrderStateMachine.php:40-52) permits those plus more (CANCELED, PREPARED→OFD/DELIVERED, POS-perm DELIVERED shortcut). For the KDS path the narrower predicate always decides; the allows() term cannot independently reject a transition the first already accepted.",
+      "is_new": true,
+      "frozen": false,
+      "recommendation": "Optional cleanup: drop the redundant OrderStateMachine::allows term at line 426 (canTransition is the binding constraint), or add a one-line comment stating the double-gate is intentional belt-and-suspenders. No behavior change either way. Low priority.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/OrderService.php",
+      "line": "1683-1789, 1913-1943, 1988-2068 (and KitchenDisplaySystemOrderService.php:392-441, PaymentService.php confirmCounterPayment, FrontendOrderService.php finalizePaidKioskOrder)",
+      "title": "DEDUP: hand-rolled lockForUpdate + idempotent-early-return + save + recordTransition skeleton duplicated 5+ times instead of the OrderStateMachine::apply() SSOT (which has exactly 1 production caller)",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD. OrderStateMachine::apply() (OrderStateMachine.php:179) is documented as 'the preferred entry point for NEW code' (lines 168-170) but `grep -rn 'OrderStateMachine::apply' app/` shows only ONE production caller: app/Jobs/CleanupStalePendingKioskOrders.php:64. Every hot path re-implements the same lock+read+idempotent-bail+status=+save+recordTransition skeleton inline. The non-adoption is DOCUMENTED deliberate frozen-zone debt (OrderStateMachine.php:20-23: 'Existing OrderService / FrontendOrderService call sites keep their historical pattern ... to honour the frozen zone V1 rule. The apply() method is the path forward'). The copies are individually correct (each carries lockForUpdate + from==target early-return) EXCEPT for the in-lock allows() re-check gap captured in finding #1.",
+      "is_new": false,
+      "frozen": false,
+      "recommendation": "No V1 action on the dedup itself — non-adoption is a documented frozen-zone consequence, not a regression. For the SaaS base only: schedule a future LOCK-gated migration of the legacy call sites onto apply() so the lock/guard/audit invariant lives in exactly one place. NOTE: finding #1 (missing in-lock allows() re-check) IS a correctness gap in these copies and should be fixed regardless, either inline or by adopting apply().",
+      "drop_reason": ""
+    }
+  ]
+}

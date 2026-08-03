@@ -1,0 +1,16 @@
+DEFECT: POS DELIVERY order >= free-delivery threshold (30 EUR) is rejected 409 and cannot be created.
+
+Reproduction (sqlite in-memory, php artisan test):
+  [REPRO] quote total_ttc=36 delivery_charge=4 subtotal=32   <- quote KEEPS the 4 EUR delivery (no free-delivery)
+  [REPRO] commit status=409 body={"status":false,"message":"Order total does not match sealed quote total."}
+  [REPRO] orders created=0
+
+Root cause chain:
+  - app/Services/OrderService.php:860-878  posOrderStore applies free-delivery: zeroes delivery_charge + recomputes total WITHOUT delivery (order.total=32).
+  - app/Services/Order/OrderQuoteService.php:304-315  calculatePricing() passes raw request.delivery_charge (4) to PricingService; NEVER applies free-delivery -> quote.total_ttc=36.
+  - app/Services/Order/OrderQuoteService.php:122-124  sealForCommit() compares order.total (32) vs quote.total_ttc (36) -> throws HttpException(409).
+  - app/Services/OrderService.php:1112  posOrderStore calls sealForCommit UNCONDITIONALLY -> 409 propagates, whole DB::transaction rolls back, no order.
+
+Secondary effect: even before commit, the /quote response shows total_ttc=36 (delivery charged) when the owner rule (Settings delivery.free_delivery_above=30) says delivery must be FREE -> customer quoted the wrong, higher total.
+
+PricingService (frozen) does NOT own the free-delivery rule (line 346 just uses req->deliveryCharge); FrontendOrderService:538-543 and OrderService:860 each re-implement it, but OrderQuoteService does not -> divergence.

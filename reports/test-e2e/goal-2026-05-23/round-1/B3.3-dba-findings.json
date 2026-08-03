@@ -1,0 +1,222 @@
+{
+  "role": "DBA",
+  "agent_id": "B3.3",
+  "audit_date": "2026-05-23",
+  "audit_mode": "read-only",
+  "schema_findings": [
+    {
+      "id": "DBA-F1",
+      "severity": "INFO",
+      "domain": "D1 schema integrity",
+      "title": "All 172 migrations applied, 0 pending",
+      "evidence": "php artisan migrate:status — 172/172 Ran, no Pending; last applied 2026_05_20_120000_clear_fake_allergen_data_wave_q4 (batch 2)",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F2",
+      "severity": "INFO",
+      "domain": "D1 schema integrity",
+      "title": "composition_snapshot JSON column present on order_items",
+      "evidence": "DESCRIBE order_items shows `composition_snapshot json` + sibling `allergens_snapshot json` + soft-deletes (deleted_at); NF525 immutable payload column verified at app/Services/Pricing/PricingService.php:291 (insert-on-create) + app/Services/Order/RefundWithCounterEntryService.php:146 (copy on refund counter-entry, never UPDATE in place). grep across app/ confirms zero bare UPDATE on this column.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F3",
+      "severity": "INFO",
+      "domain": "D1 schema integrity",
+      "title": "28 tables carry branch_id (multi-tenant isolation surface)",
+      "evidence": "information_schema.COLUMNS: action_logs, audit_logs, cash_drawer_sessions, cash_movements, delivery_boy_cash_movements, delivery_boy_cash_sessions, dining_table_audit_logs, dining_tables, domain_events, item_branch_availability, kiosk_machines, kiosk_promos, messages, order_items, order_payments, order_quotes, orders, payment_terminals, pending_payment_confirmations, pos_parked_orders, printers, push_notifications, stock_levels, stock_movements, sync_metrics, upsell_rules, users, z_reports.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F4",
+      "severity": "INFO",
+      "domain": "D8 branch isolation drift",
+      "title": "BranchScopeCoverageSentinelTest PASS — every model with branch_id either declares BranchScope OR sits in EXEMPTED_MODELS",
+      "evidence": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php — 1 passed (0.31s). EXEMPTED_MODELS = 12 entries: 2 architectural (Branch self-ref, Customer Sanctum recursion) + 10 V1.0.2 BACKLOG baseline (FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog, Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog, DomainEvent). Matches CLAUDE.md §9 baseline of 20 covered models.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F5",
+      "severity": "INFO",
+      "domain": "D2 triggers / NF525 immutability",
+      "title": "All 8 critical immutability triggers ACTIVE on MySQL prod schema",
+      "evidence": "information_schema.TRIGGERS: audit_logs_no_update + audit_logs_no_delete (BEFORE), z_reports_no_delete (BEFORE), cash_movements_no_delete (BEFORE), order_payments_no_delete (BEFORE), cash_drawer_sessions_no_delete (BEFORE), stock_movements_no_update + stock_movements_no_delete (BEFORE). All raise SIGNAL SQLSTATE '45000' with NF525/POS-9.4.x message.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F6",
+      "severity": "INFO",
+      "domain": "D1 schema / FK delete rules",
+      "title": "FK delete rules defense-in-depth on fiscal/payment surface",
+      "evidence": "71 distinct FK constraints — 25 CASCADE (item_allergen, item_branch_availability, junction tables — safe), 26 NO ACTION (orders.branch_id, order_items.order_id — protects against accidental parent delete), 5 RESTRICT (order_payments.order_id, cash_movements.cash_drawer_session_id — hard fail on parent delete), 15 SET NULL (orders.parent_order_id, terminal_id — nullable parent refs). audit_logs & z_reports carry NO FK by design (fiscal isolation, deletes blocked by trigger).",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F7",
+      "severity": "INFO",
+      "domain": "D3 index hygiene",
+      "title": "Critical query patterns served by composite indexes",
+      "evidence": "EXPLAIN orders WHERE branch_id=1 AND status='paid' ORDER BY order_datetime → 'Index lookup on orders using idx_orders_branch_status'. EXPLAIN stock_levels WHERE branch_id=1 AND stockable_type=X AND stockable_id=Y → 'Zero rows (no matching row in const table)' via stock_levels_branch_stockable_unique. orders has 9 indexes including 3 UNIQUEs (branch+idempotency_key, branch+fiscal_seq_no, branch+business_date+queue_number, parent_order_id) — strong concurrent-write protection. audit_logs has composite (branch_id, created_at) + UNIQUE (branch_id, prev_hash) chain integrity.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F8",
+      "severity": "INFO",
+      "domain": "D3 index hygiene — observed-but-not-a-risk",
+      "title": "audit_logs EXPLAIN shows table scan at 62 rows — expected MySQL behavior below ~100 rows threshold",
+      "evidence": "EXPLAIN SELECT * FROM audit_logs WHERE branch_id=1 ORDER BY created_at DESC LIMIT 50 → 'Table scan on audit_logs (cost=7.2 rows=62)'. MySQL planner ignores the audit_logs_branch_id_created_at_index because the full scan + sort is cheaper than index seek for tiny tables. At production scale (>1k rows) the composite index will be used. NO ACTION REQUIRED — observation for synthesis context.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F9",
+      "severity": "INFO",
+      "domain": "D5 soft-delete coherence",
+      "title": "Soft-deletes correctly handled at fiscal-critical query sites",
+      "evidence": "Order uses SoftDeletes trait. FiscalSequenceService.php:97-98 explicit `Order::withoutGlobalScope(BranchScope::class)->withTrashed()->where('branch_id', $branchId)->lockForUpdate()->max('fiscal_sequence_no')` — soft-deleted post-allocation orders included so fiscal sequence remains gap-free (LOCK_FISCAL_WGS_Z6_P1_2026-05-19 invariant). Sister pattern at ZReportService.php:317-338. Sentinel: Order::restoring throws — soft-delete is one-way audit.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F10",
+      "severity": "INFO",
+      "domain": "D6 Pricing SSOT data flow",
+      "title": "composition_snapshot write-paths verified INSERT-only",
+      "evidence": "Two write sites only — (1) app/Services/Pricing/PricingService.php:291 — `'composition_snapshot' => json_encode($compositionSnapshot)` inside calculateOrder transactional create. (2) app/Services/Order/RefundWithCounterEntryService.php:146 — `'composition_snapshot' => $item->composition_snapshot` — copy from original to counter-entry row (new insert, preserves immutability). Zero bare UPDATE statements found in app/ via grep. CompositionSnapshotBuilder confirms NF525 fiscal SSOT discipline.",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "DBA-F11",
+      "severity": "AMBER",
+      "domain": "D8 branch isolation drift — adjacent CLAUDE.md §8 cache guard",
+      "title": "audit_logs.branch_id is NULLABLE — chain integrity carried by UNIQUE (branch_id, prev_hash)",
+      "evidence": "audit_logs.branch_id `bigint unsigned DEFAULT NULL` (system-level / cross-branch admin actions allowed). Chain integrity guaranteed by UNIQUE KEY audit_logs_branch_prev_unique (branch_id, prev_hash) + audit_logs_no_update trigger + audit_logs_no_delete trigger. NOT a bug — design intent. Flag as AMBER for synthesis awareness: if a future feature wires NULL branch_id rows into a branch-scoped reporting path, BranchScope cannot filter (no column to filter on) — manual whereNull/where required.",
+      "verdict": "AMBER"
+    }
+  ],
+  "n_plus_1_risks": [
+    {
+      "id": "NPLUS1-OK-1",
+      "severity": "INFO",
+      "location": "app/Services/OrderService.php:126",
+      "title": "Order list eager-loads transaction + orderItems.orderItem.media + orderItems.orderItem.category + branch + user",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "NPLUS1-OK-2",
+      "severity": "INFO",
+      "location": "app/Http/Controllers/Admin/CashOverviewController.php:117-135",
+      "title": "Transaction list eager-loads order + deliveryBoy with SELECT column projection (id, branch_id, queue_number, order_serial_no, source_surface, order_type, delivery_boy_id) — minimizes payload",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "NPLUS1-OK-3",
+      "severity": "INFO",
+      "location": "app/Services/KdsSyncService.php:96 + app/Services/KitchenDisplaySystemOrderService.php:70,226,345",
+      "title": "KDS hot endpoints eager-load orderItems + address + user — verified absence of N+1 on KDS poll/sync hot path",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "NPLUS1-OK-4",
+      "severity": "INFO",
+      "location": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:56,320,434",
+      "title": "Stock rupture dashboard eager-loads with('item:id,name','branch:id,name') + items closure + itemAttribute — column-projection used to keep payload tight",
+      "verdict": "GREEN"
+    },
+    {
+      "id": "NPLUS1-OK-5",
+      "severity": "INFO",
+      "location": "app/Http/Controllers/Admin/DashboardController.php",
+      "title": "DashboardController has 0 direct Order queries (delegates to service or is aggregation-only) — no N+1 surface in this controller",
+      "verdict": "GREEN"
+    }
+  ],
+  "trigger_status": {
+    "audit_logs_before_delete": "active",
+    "audit_logs_before_update": "active",
+    "z_reports_before_delete": "active",
+    "cash_movements_before_delete": "active",
+    "cash_drawer_sessions_before_delete": "active",
+    "order_payments_before_delete": "active",
+    "stock_movements_before_delete": "active",
+    "stock_movements_before_update": "active",
+    "total_active": 8,
+    "missing": []
+  },
+  "migration_status": "in_sync",
+  "migration_details": {
+    "total_files": 172,
+    "ran_count": 172,
+    "pending_count": 0,
+    "last_applied": "2026_05_20_120000_clear_fake_allergen_data_wave_q4"
+  },
+  "branchscope_coverage_match": true,
+  "branchscope_details": {
+    "sentinel_test": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php",
+    "sentinel_status": "PASS",
+    "exempted_count": 12,
+    "exempted_architectural": ["Branch", "Customer"],
+    "exempted_v102_backlog": [
+      "FrontendDiningTable",
+      "ZReport",
+      "AuditLog",
+      "OrderDiscountLog",
+      "Message",
+      "DiningTableAuditLog",
+      "KioskPromo",
+      "UpsellRule",
+      "ActionLog",
+      "DomainEvent"
+    ],
+    "wizard_variant": "ItemWizardProfile uses WizardProfileBranchScope (nullable branch_id_scope, global-or-branch published)"
+  },
+  "fk_summary": {
+    "total_constraints": 71,
+    "cascade": 25,
+    "no_action_restrict_default": 26,
+    "restrict_explicit": 5,
+    "set_null": 15,
+    "fiscal_tables_no_fk_by_design": ["audit_logs", "z_reports"]
+  },
+  "verdict": "GREEN",
+  "verdict_rationale": "All 8 NF525 immutability triggers active. 172/172 migrations in sync. BranchScopeCoverageSentinelTest passes with 12 documented exemptions (2 architectural + 10 V1.0.2 BACKLOG, all CLAUDE.md §9 compliant). composition_snapshot write-paths are INSERT-only (PricingService:291 + RefundService:146 counter-entry copy). FK delete rules layered defense-in-depth: RESTRICT on order_payments→orders & cash_movements→drawer_session; NO ACTION on orders.branch_id (no accidental branch wipe); audit_logs+z_reports carry no FK by design + trigger guards DELETE. Soft-delete + withTrashed pattern verified at FiscalSequenceService:97-98 (LOCK_FISCAL_WGS_Z6_P1_2026-05-19 invariant). N+1 surface clean on sampled hot endpoints (OrderService, CashOverview, KDS, StockRupture, Dashboard). Index hygiene strong — composite indexes on branch_id+status, branch_id+created_at, branch_id+fiscal_seq_no, branch_id+business_date+queue_number all present. AMBER tag on audit_logs.branch_id nullable is intentional design (system-level admin actions), flagged for synthesis awareness only.",
+  "top_3_concerns": [
+    {
+      "rank": 1,
+      "id": "AMBER-F11",
+      "title": "audit_logs.branch_id is NULLABLE",
+      "impact": "Design-intent (cross-branch admin actions) but BranchScope cannot filter rows with NULL branch_id; UNIQUE (branch_id, prev_hash) carries chain integrity. Future branch-scoped reporting paths must manually whereNull/where.",
+      "blocking": false,
+      "owner_action": "AWARE — no V1 ship blocker"
+    },
+    {
+      "rank": 2,
+      "id": "BACKLOG-V102",
+      "title": "10 BranchScope exemptions in EXEMPTED_MODELS baseline",
+      "impact": "V1 single-tenant low-risk (Le Cayenne LOCAL one branch). V2 SaaS hard fail. Documented in BranchScopeCoverageSentinelTest::EXEMPTED_MODELS with BASELINE_V1_2026-05-18 tag.",
+      "blocking": false,
+      "owner_action": "V1.0.2 backlog item C-P0-D — heal each one with per-model regression test"
+    },
+    {
+      "rank": 3,
+      "id": "ADJACENT-UNI03",
+      "title": "Cache-driver production boot guard scope narrower than stated intent",
+      "impact": "AppServiceProvider.php:215 forbidden list = ['array','null']; 'file' and 'database' PASS the guard. CLAUDE.md §8 says intent is 'redis or memcached'. V1 LOCAL single-box file driver is safe; ALB multi-instance cloud cutover needs widening.",
+      "blocking": false,
+      "owner_action": "V1.0.X cloud-prep backlog UNI-03 — adjacent to DBA scope, surfaced for completeness"
+    }
+  ],
+  "evidence_files": {
+    "schema_inspection": "mysql information_schema.TRIGGERS / KEY_COLUMN_USAGE / REFERENTIAL_CONSTRAINTS / STATISTICS / COLUMNS",
+    "sentinel_test": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php (PASS 0.31s)",
+    "migration_status_command": "php artisan migrate:status — 172 Ran 0 Pending",
+    "scope_files": [
+      "app/Models/Scopes/BranchScope.php",
+      "app/Models/Scopes/WizardProfileBranchScope.php"
+    ],
+    "fiscal_lock_doc": "plans/LOCK_FISCAL_WGS_Z6_P1_2026-05-19.md (FiscalSequenceService:88 withTrashed exception)",
+    "composition_snapshot_write_sites": [
+      "app/Services/Pricing/PricingService.php:291",
+      "app/Services/Order/RefundWithCounterEntryService.php:146"
+    ]
+  }
+}

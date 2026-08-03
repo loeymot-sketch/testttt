@@ -72,6 +72,13 @@ final class KioskPromoService
         if ((float) ($coupon->minimum_order ?? 0) > $cartTotal) {
             return $this->fail('Montant minimum non atteint.');
         }
+        // [CAISSE-LOGIC-HEAL 2026-07-11 P1-B] Le fallback ne vérifiait que dates + minimum_order —
+        // jamais status / usage-limits (per-user, global) / surface / branche. Un coupon INACTIVE
+        // ou épuisé était annoncé « valide » sur la borne puis rejeté au checkout. `isUsableNow()`
+        // couvre ces dimensions (SSOT partagé avec le checkout).
+        if (!$coupon->isUsableNow($branchId, 'kiosk', $at)) {
+            return $this->fail('Code invalide ou expiré.');
+        }
 
         $discount = $this->computeCouponDiscount($coupon, $cartTotal);
 
@@ -79,7 +86,10 @@ final class KioskPromoService
             'valid'           => true,
             'code'            => $coupon->code,
             'source'          => self::SOURCE_COUPON,
-            'type'            => $coupon->discount_type == 1 ? 'percent' : 'amount',
+            // [CAISSE-LOGIC-HEAL 2026-07-11 P1-A] L'enum réel est DiscountType::PERCENTAGE=10
+            // (pas 1). Tester `==1` ne matchait JAMAIS un coupon % → tout coupon prévisualisé
+            // comme montant fixe sur la borne (ex : 15 % sur 40 € annoncé -6 € au lieu de -15 %).
+            'type'            => (int) $coupon->discount_type === \App\Enums\DiscountType::PERCENTAGE ? 'percent' : 'amount',
             'value'           => (float) $coupon->discount,
             'discount_amount' => $discount,
             'message'         => null,
@@ -94,8 +104,9 @@ final class KioskPromoService
     {
         if ($cartTotal <= 0) return 0.0;
 
+        // [CAISSE-LOGIC-HEAL 2026-07-11 P1-A] DiscountType::PERCENTAGE=10 (pas 1).
         $value = (float) ($coupon->discount ?? 0);
-        $discount = ((int) ($coupon->discount_type ?? 0) == 1)
+        $discount = ((int) ($coupon->discount_type ?? 0) === \App\Enums\DiscountType::PERCENTAGE)
             ? $cartTotal * ($value / 100.0)
             : $value;
 

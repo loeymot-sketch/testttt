@@ -1,0 +1,69 @@
+{
+  "micro_system": "S5-reports-fiscal",
+  "verdicts": [
+    {
+      "id": "S5-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED but severity LOWERED P1->P2. ItemsReportListComponent.vue:120-126 tfoot renders label.total with subTotal(itemsReports); subTotal :316-320 reduces parseInt(ele.order). itemsReports :269-270 = store getter = paginated page (default per_page:10, paginate:1 at :234-236). ItemReportResource:38 maps order=units_sold so per-row values equal the export (no semantic divergence). ItemsReportExport.php:27 forces merge(paginate=0) over full set, so the EXPORT total is correct. Defect is real: a footer labelled Total shows sum of 10 of 45 rows. But it is a table footer, not a headlined KPI, and the owner can obtain the true total from the (correct) Excel — so P2, not P1. The genuine P1 in this cluster is S5-06 (the export itself is truncated)."
+    },
+    {
+      "id": "S5-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. OrderService.php:2797 total_orders=orders->count() ALL placed; :2798-2800 money cards=paidOrders->sum (realized-net, paidOrders filtered :2796). SalesReportListComponent.vue:127/140/153/167 render generic labels with NO sub-text distinguishing placed count from encaisse-net money. Real reachable UX blur: count and money use different populations unmarked, the owner flou complaint made concrete. Owner-heal SALES-NET-01 (:2792-2795) signed the sums so the correct fix is labelling not re-summing. P2 correct."
+    },
+    {
+      "id": "S5-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED but severity LOWERED P2->P3 (dormant in V1 envelope). CashSessionReportListComponent.vue:165-187 groupedByDay iterates this.sessions (current page); CashSessionReportController.php:64 paginate(perPage) orders by opened_at DESC (rows not days), per_page default 50 (:70). The bug requires >50 cash sessions in ONE business day so the day straddles a page boundary. V1 Le Cayenne is single-branch single-box single-POS (CLAUDE.md): a handful of drawer opens/day -> the >50-sessions/day trigger is effectively unreachable in V1 scope. Real code defect kept (is_real true) but for V1 it is dormant -> P3."
+    },
+    {
+      "id": "S5-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED, reachable. CashSessionReportListComponent.vue:183 totalClosing += Number(s.closing_amount||0); controller:136 emits closing_amount=null for open sessions; Number(null||0)=0 so an OPEN drawer folds into Total cloture header (:64-66) as 0. Triggers with just one open + one closed session on the SAME day = the normal live trading day (reachable, unlike S5-03). Category is UX/labelling-class (sum of recorded closings is not mathematically wrong; the label Total cloture implies a complete day-close it is not) more than pure logic, but the misleading reconciliation figure is real and daily. P2 stands."
+    },
+    {
+      "id": "S5-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. OutboxOverviewComponent.vue:60 disabled gated on pending.count, enabled when pending>0 even if failedJobs===0. pending=data.pending (:364) = SyncOverviewController.php:318-319 whereNull(dispatched_at) ALL undispatched, last_error-agnostic. outboxRetryFailed :404-405 requires whereNotNull(last_error), so healthy-backlog rows are never requeued; click returns requeued=0 (:413-421) with no visible change. failedJobs (:367) is the separate failed_jobs queue table. Real button/backend contract mismatch on the one screen meant to un-stick events. P2 holds."
+    },
+    {
+      "id": "S5-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED and severity RAISED P3->P1: this is a LIVE export-truncation bug, NOT latent. The auditor wrote today safe (default paginate=0) but that is FALSE. SalesReportListComponent.vue:376-378 data().search defaults paginate:1, per_page:10; xls()/pdf() (:495-496,:510) dispatch this.props.search; store actions append appService.requestHandler(payload) which serializes EVERY non-null key incl paginate=1&per_page=10 (appService.js:243-262). So export URL carries paginate=1 -> SalesReportExport.php:27/ SalesReportController.php:67 pdf call orderService->list(request) with NO merge(paginate=0) -> OrderService.php:129 method=paginate==1?paginate:get returns ONLY 10 rows. The ITEMS-SEM-04 heal forcing merge(paginate=0) on ItemsReportExport.php:27 exists precisely because items sends paginate=1 too; someone fixed items but NOT sales. Sales Excel AND PDF currently export only the first 10 orders = owner-facing fiscal data loss. P1."
+    },
+    {
+      "id": "S5-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED, split. CreditBalanceReportComponent.vue:18-20 dropdown PrintComponent+ExcelComponent only, no PdfComponent; routes/api.php:1104-1107 only / and /export (no /pdf); controller has index+export no pdf method. The no-PDF-parity half is COSMETIC (Excel+Print is already a complete export set) and on its own would DROP. The substantive half stands: balance column :91 raw with NO tfoot/total row unlike items tfoot, so total outstanding store-credit liability (the single most useful number on a liability register) is absent. Necessary for the total-row half; P3 correct."
+    }
+  ],
+  "coverage_gaps": [
+    "Items PDF export path (ItemsReportController::pdf :51-67 calls itemReport(request) without merge paginate=0) - given S5-06 proved the export request DOES carry paginate=1, the items PDF likely truncates to 10 rows too (the merge override exists only in ItemsReportExport for Excel, NOT in the pdf() path). Auditor flagged only sales PDF; items PDF un-checked and probably equally broken.",
+    "Sales report data TABLE (OrderService::list rows) lists ALL orders with NO PAID/realized status column and no per-row reconciliation to the realized-net cards - noted in S5-02 prose but deserves its own finding; summing the table Total will not match total_earnings.",
+    "presetDateRange(range) @click on sales (:56) and items (:66) date filters not examined - preset boundary correctness (timezone, exclusive to_date) drives every total; itemReport uses addDay->startOfDay exclusive (ItemService:617) but sales date scoping was not checked for the same discipline.",
+    "drainFailed @click (OutboxOverviewComponent.vue:72) -> outboxDrainFailed deletes failed_jobs older than cutoff (SyncOverviewController:442-448), a destructive delete audited only for retry (S5-05) not drain; the older_than_hours>=1 guard and absence of a confirm dialog were not examined.",
+    "Cash session variance / expected_closing_amount emitted (controller:137) but day-header has no total variance (over/short) - the reconciliation surface lacks a day-level variance total, analogous omission to S5-04, not flagged.",
+    "Credit balance EXPORT (CreditBalanceReportController::export) not opened to confirm it forces a full dataset - same paginate=1 truncation risk now proven for sales (S5-06); the credit export almost certainly truncates too and was not checked."
+  ]
+}

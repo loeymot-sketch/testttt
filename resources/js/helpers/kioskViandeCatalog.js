@@ -91,6 +91,10 @@ export function kioskViandeCatalogForItem(item) {
         thumb: kioskResolveImageSrc(v),
         emoji: pickEmojiForViande(name),
         attrId: viandeAttr?.id ?? null,
+        // [HEAL-A 2026-05-08] Surface availability for OOS badge — backend may
+        // not inject it on variations today (defensive default = available).
+        is_available: v?.is_available !== false,
+        unavailable_reason: v?.unavailable_reason || null,
       });
     }
   }
@@ -112,6 +116,10 @@ export function kioskViandeCatalogForItem(item) {
       thumb: kioskResolveImageSrc(e),
       emoji: pickEmojiForViande(name),
       attrId: null,
+      // [HEAL-A 2026-05-08] Surface availability for OOS badge — paid viandes
+      // are extras and ChoiceAvailabilityResolver injects is_available here.
+      is_available: e?.is_available !== false,
+      unavailable_reason: e?.unavailable_reason || null,
     });
   }
 

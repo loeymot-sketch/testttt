@@ -1,0 +1,122 @@
+{
+  "role": "Architect",
+  "zone": "Z-6-MOBILE",
+  "mode": "AUDIT-ONLY",
+  "round": 1,
+  "date": "2026-05-18",
+  "branch": "pr/mobile-app-real-e2e-heal-2026-05-18",
+  "head": "ec0d4924114af7d4a90c0c9d66db6865236a10cc",
+  "reference_commit": "cfa9ec679ef2631195dc7cb5284c7d283364a351",
+  "scope": "Data alignment with central SSOT pattern + wizard 4-template parity + fictional-product leak hunt",
+
+  "anchors_verified": [
+    {"path": "mobile/data/menu.js", "lines": 627, "verdict": "GREEN"},
+    {"path": "mobile/data/orders.js", "lines": 166, "verdict": "GREEN"},
+    {"path": "mobile/screens-item-steps.jsx", "lines": 1205, "verdict": "GREEN"},
+    {"path": "mobile/screens-modals.jsx", "lines": 336, "verdict": "AMBER (1 dead-code fictional fallback)"},
+    {"path": "mobile/screens-onboarding.jsx", "lines": 316, "verdict": "GREEN (post cfa9ec679 onb1 wording heal)"},
+    {"path": "mobile/components/WizardRedeem.jsx", "lines": 265, "verdict": "GREEN"},
+    {"path": "mobile/components/LoyaltyQR.jsx", "lines": 131, "verdict": "GREEN"}
+  ],
+
+  "ssot_alignment_findings": [
+    {
+      "id": "ARCH-Z6-01",
+      "severity": "INFO",
+      "title": "Menu SSOT alignment is well-documented and mirrors DB shape",
+      "file_line": "mobile/data/menu.js:1-26",
+      "evidence": "Header comment explicitly names central SSOT (MenuResetLeCayenneCommand + MenuHealLightV2Command + item_wizard_profiles/steps tables). composer_profile (line 281-288) hardcoded but mirrors DB shape exactly so future API wireup = just swap data source.",
+      "status": "PASS"
+    },
+    {
+      "id": "ARCH-Z6-02",
+      "severity": "INFO",
+      "title": "11 categories + 41 items match owner-validated heal-light v2 spec",
+      "file_line": "mobile/data/menu.js:217-229 (CATEGORIES) + 520-523 (ITEMS aggregation)",
+      "evidence": "11 cats: Sandwich Cayenne / Galette / Sandwich Classique / Burgers / Tacos / Bols / Frites / Suppléments / Desserts / Boissons / Menu enfant. ITEMS aggregates SANDWICH_CAYENNE+GALETTE+SANDWICH_CLASSIQUE+BURGERS+TACOS+BOLS+FRITES+SUPPLEMENTS_ITEMS+DESSERTS+DRINKS+MENU_ENFANT. Aligns with cycle commit fe4cb3c1d (mobile-web-mirror-v1).",
+      "status": "PASS"
+    },
+    {
+      "id": "ARCH-Z6-03",
+      "severity": "INFO",
+      "title": "4 viandes / 11 sauces / 9 supplements / 4 supp_bols match kiosk catalogue",
+      "file_line": "mobile/data/menu.js:130-150 (MEATS+SAUCES), 162-180 (SUPPLEMENTS+SUPPLEMENTS_BOLS)",
+      "evidence": "MEATS=[Poulet mariné/curry/tandoori/crispy]. SAUCES=11 with is_spicy flag on Harissa/Hannibal/Spicy. SUPPLEMENTS=9 @ 0.90€ all with allergens[] per FIC 1169/2011 (cheddar/raclette/emmental/oeuf/boursin → lactose|oeuf). SUPPLEMENTS_BOLS=4 (oignon/jambon/champignons/boule-gratinee @ 2.00€).",
+      "status": "PASS"
+    },
+    {
+      "id": "ARCH-Z6-04",
+      "severity": "INFO",
+      "title": "Wizard 4-template parity matches kiosk KW.vue state machine",
+      "file_line": "mobile/screens-item-steps.jsx:60-152 (computeActiveSteps)",
+      "evidence": "Template switch covers: tacos, sandwich, burger, assiette, omelette, salade, snacking, custom (bol+frites composer), simple. Item-level wizard_template override (line 65) preserves kiosk parity. Bol composer 3 steps (sauce + bol_supplements + bol_drink) added 2026-05-16. Cascade formule menu (full/frites/boisson) injected after MENU step.",
+      "status": "PASS"
+    },
+    {
+      "id": "ARCH-Z6-05",
+      "severity": "INFO",
+      "title": "composer_profile shape mirrors item_wizard_profiles DB table",
+      "file_line": "mobile/data/menu.js:296-388 (buildBolComposerProfile + buildFritesComposerProfile)",
+      "evidence": "Shape: {template, version, is_published, steps:[{step_key, label, source_type, position, min_select, max_select, allow_repeat, addon_role, default_choice_id, choices[]}]}. Mirrors DB column names exactly — wireup will = just swap source.",
+      "status": "PASS"
+    }
+  ],
+
+  "fictional_leak_findings": [
+    {
+      "id": "ARCH-Z6-06",
+      "severity": "P2",
+      "title": "Dead-code fictional fallback in ScreenOrderDetail (Box Nashville / Bowl Gratiné / Frite XXL)",
+      "file_line": "mobile/screens-modals.jsx:201-207",
+      "evidence": "When `window.LC.orders.findById(orderId)` returns null, the component renders a hardcoded fictional 3-item list: [Box Nashville 17€, Bowl Gratiné 12€, Frite XXL 4€]. All three names violate the canonical Le Cayenne catalogue (post MENU-RESET 2026-05-13 + heal-light v2 2026-05-14).",
+      "reachability_analysis": "Le Cayenne - Prototype.html:135 mounts ScreenOrderDetail with NO orderId param. Default param orderId='C-1234' (screens-modals.jsx:198). LC.orders.findById('C-1234') returns ORDERS_ACTIVE[0] (orders.js:25-43). Fallback path is therefore UNREACHABLE via normal navigation. Only triggerable if (a) someone manually passes a non-existent id via go('orderDetail', 'C-XXXX') or (b) LC.orders is undefined at render time.",
+      "real_world_risk": "Low — but principle violation (anti-fiction discipline §13 evidence rules + project_massive_logic_image_cycle 2026-05-17 fictional-purge mandate).",
+      "recommendation": "Replace fallback with role='status' empty-state: 'Détails de cette commande indisponibles. Reviens à la liste pour relancer la requête.' + back-button. Scope ~5 LOC. V1.0.2 backlog.",
+      "status": "DEFERRED-HEAL"
+    },
+    {
+      "id": "ARCH-Z6-07",
+      "severity": "INFO",
+      "title": "All other fictional tokens verified PURGED from production code",
+      "file_line": "mobile/data/orders.js:13-19 (header purge audit) + grep production code",
+      "evidence": "grep -E 'Smash burger|Cuban|Wraps|Bahn mi|Burger Royal|Doner|kebab|Crispy chicken|California' in mobile/*.jsx + mobile/data/menu.js = 0 hits. Box Nashville/Bowl Cheesy/Cheese Smash references remain only in: (a) screens-modals.jsx:204-206 fallback (P2 above), (b) test fixtures (loyalty-10 seedHistory L11, dev-helpers.js L212 — non-production), (c) historic comments documenting purge (orders.js:15-18 + loyalty.js:147-148).",
+      "status": "PASS"
+    }
+  ],
+
+  "wizard_parity_findings": [
+    {
+      "id": "ARCH-Z6-08",
+      "severity": "INFO",
+      "title": "Step keys vocabulary matches kiosk KW.vue STEP_KEY_REGISTRY",
+      "file_line": "mobile/screens-item-steps.jsx:29-41 (STEP) + 43-55 (STEP_LABELS)",
+      "evidence": "STEP enum mirrors kiosk: VIANDES/SAUCE/CRUDITES/SUPPLEMENTS/MENU/DRINK/FRITES_STYLE/FRITES_SAUCE/RECAP + mobile-specific BOL_SUPPLEMENTS+BOL_DRINK for composer (2026-05-16 realignment).",
+      "status": "PASS"
+    },
+    {
+      "id": "ARCH-Z6-09",
+      "severity": "INFO",
+      "title": "Per-step validation (canAdvance) gates CTA correctly",
+      "file_line": "mobile/screens-item-steps.jsx:157-184 (canAdvance)",
+      "evidence": "VIANDES requires exact viande_count match. SAUCE/FRITES_SAUCE require >=1. MENU requires explicit choice (including 'none'). FRITES_STYLE allows null (Nature) but rejects undefined. BOL_SUPPLEMENTS/BOL_DRINK optional. Coherent with kiosk gating logic.",
+      "status": "PASS"
+    },
+    {
+      "id": "ARCH-Z6-10",
+      "severity": "INFO",
+      "title": "Price calculator (computeTotal/priceFor) matches central pricing rules",
+      "file_line": "mobile/data/menu.js:528-564 (priceFor) + mobile/screens-item-steps.jsx:190-204 (computeTotal)",
+      "evidence": "Rules: 1st sauce free + 0.50€ each extra. Supplements 0.90€ each. Bol supplements (gratiné 2.00€). Bol drink addon priced via priceForDrinkAddon (1.50€/1.00€). Formule menu via FORMULES table. Frites style upgrade via FRITES_STYLES table. Frites sauce cascade. Qty multiplier final.",
+      "status": "PASS"
+    }
+  ],
+
+  "summary": {
+    "total_findings": 10,
+    "p0": 0,
+    "p1": 0,
+    "p2": 1,
+    "info": 9,
+    "verdict": "AMBER (1 P2 dead-code fictional fallback) — overall data SSOT alignment + wizard parity GREEN"
+  }
+}

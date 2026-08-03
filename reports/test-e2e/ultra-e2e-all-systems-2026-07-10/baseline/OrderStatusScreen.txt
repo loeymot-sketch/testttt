@@ -1,0 +1,9 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderStatusScreen\OssPublicNoPiiTest[39m
+  [32;1m✓[39;22m[39m [2mpublic oss feed exposes no customer pii[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m1 passed[39;22m
+  [37;1mTime:   [39;22m[39m0.39s[39m
+
+

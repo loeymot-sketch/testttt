@@ -1,0 +1,59 @@
+{
+  "micro_system": "S3-items-catalog",
+  "verdicts": [
+    {
+      "id": "S3-L1",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED ItemService.php:338 `if ($variationIdsArray)` gates the stale-delete loop; an all-new variations payload (no 'id') leaves $variationIdsArray=[] so old rows survive. Extras path (376-382) unconditionally whereNotIn-deletes -> real asymmetry/defect. BUT reachability is latent: ItemCreateComponent.vue posts NO 'variations' blob (grep empty), live edits go through dedicated ItemVariationController (routes/api.php:734-739) one-by-one, store() uses createMany and destroy() deletes all -> only the update-blob path is buggy and only a direct-API/future-bulk caller reaches it. DOWNGRADE P2->P3: identical reachability gate as X1; on a V1 LOCAL single-box where the live editor never hits this path there is no current mischarge. Worth fixing for SSOT robustness."
+    },
+    {
+      "id": "S3-L2",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED. onStepsReordered (ProductComposerEditorComponent.vue:737-746) fires per-step axios.patch(admin/composer/steps/{id}) via Promise.all, never re-hydrates, never updates this.version (sole setters lines 622/653 are hydrateProfile only; no Echo listener exists - grep empty). Backend dispatchProfileChanged (ComposerStepService.php:109-118) bumps version+1 per patched step WHEN published (guard 111 `!$profile->is_published`). saveDraft sends version:this.version (803); assertVersionMatches (ComposerProfileService.php:266-274) aborts 409 on mismatch. So an N-step reorder on a PUBLISHED profile -> stale editor version -> guaranteed 409 + lost unsaved edits on next save. Genuinely live-reachable on the exact profiles serving POS/kiosk. Strongest finding; keep P2."
+    },
+    {
+      "id": "S3-L3",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED ComposerProfileProjection.php:29-30 filters steps only by stepVisibleOn and copies is_active at line 44 without filtering it. All 3 live callers pre-filter is_active=true: PricingService.php:565, app/Services/Kiosk/KioskMenuService.php:434, app/Services/Menu/MenuProjectionService.php:295 (finding's paths omitted the Kiosk/ and Menu/ subdirs but line numbers + content match exactly). So no live leak today - defense-in-depth only. Correct P3: a future consumer loading $profile->steps unfiltered would render deactivated steps while PricingService drops them. Self-consistency fix (reject inactive in project()) is sound but non-urgent."
+    },
+    {
+      "id": "S3-F1",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED CatalogStudioComponent.vue:488 hardcodes item_type=VEG(5) for every quick-created product; ItemType.php:6-7 VEG=5/NON_VEG=10. Veg filter is LIVE and wired, not dead: MenuComponent.vue:10-20 has real VEG/NON_VEG toggle buttons calling itemTypeSet/itemTypeReset, also present in OffersItemComponent:81-84 and SearchItemComponent:86-89; ItemComponent.vue:3 v-show=type===item.item_type filters with prop type:Number (299). So a quick-created Chicken Burger (VEG=5) DOES surface under the 'Végétarien' menu filter -> real misclassification (advisor's DROP hypothesis refuted by this binding evidence). Stays P3: full editor shares same VEG default (ItemCreateComponent.vue:337), dietary truth carried by is_vegetarian/is_halal/allergen booleans, low V1 blast radius, pre-existing convention not a regression."
+    },
+    {
+      "id": "S3-D1",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED ItemController.php:135-141: both arms of `if (env('DEMO'))` call the identical `new ItemResource($this->itemService->store($request))`. Inert dead conditional + runtime env() read (CLAUDE.md anti-pattern, bypasses config cache). Zero functional impact -> P3 cosmetic/cleanup, correctly rated. Worth the one-line simplification."
+    },
+    {
+      "id": "S3-X1",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED ItemService.php:326-329: id-bearing variation update applies only name+price; create path (334) persists the full row. ItemVariation fillable (model lines 19-26) includes item_attribute_id + visible_on (cast array, used by visibleOn() line 45) -> resubmitting an existing variation with a changed visible_on/item_attribute_id silently drops those fields with no error. Real silent partial-save. Same latent reachability as L1 (live UI uses ItemVariationController, not the blob) so P3 correctly stands; confidence was medium but evidence is solid. is_necessary true for SSOT correctness; low V1 urgency."
+    }
+  ],
+  "coverage_gaps": [
+    "ItemVariationController::update/store/destroy (routes/api.php:734-739) is the ACTUALLY-reachable live variation CRUD path used by the admin editor, yet NOT audited - two findings (L1,X1) excuse themselves as latent because the live path is this controller, but no finding inspects it for the same orphan/partial-save/branch-isolation bugs where a real regression would live.",
+    "Destructive @click handlers in CatalogStudioComponent.vue unaudited: destroyItem (line 158) and destroyCategory (line 71) - no check of soft-vs-force delete semantics, branch isolation on delete, or cascade behavior on items with live composer profiles/variations.",
+    "ItemService::store variations path (line 269 createMany) and destroy path (457-468) not adversarially examined for branch_id assignment / BranchScope leakage on multi-branch (V2-relevant; V1 single-branch low-risk).",
+    "ComposerStepController::store/destroy (routes/api.php:783,785) dispatch dispatchProfileChanged too (ComposerStepService.php:18,27,36) - the same version-bump-on-published applies to add/remove step, not just reorder; L2 only covers the reorder path, leaving add/delete-step 409 traps unaudited."
+  ]
+}

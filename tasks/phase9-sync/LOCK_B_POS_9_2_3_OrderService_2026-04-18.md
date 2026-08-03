@@ -47,3 +47,5 @@
 ## Status
 
 **ACTIVE** depuis 2026-04-18 création branche `feat/pos-phase-9-2-3`.
+
+**PARTIAL RELEASE 2026-04-20** — édition POS-9.4.BL livrée via SHA `2d4d2c846` / `a7036f6ec` / `c3c0593e6` (cf. `reports/audit-orchestration/REPORT_TASK19_LOCKS_FROZEN_ZONES_2026-04-20.md`). Le lock reste **ACTIVE** (zone frozen toujours sous garde ; traçabilité d’une livraison autorisée passée).

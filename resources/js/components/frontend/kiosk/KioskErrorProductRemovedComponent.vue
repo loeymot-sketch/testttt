@@ -30,8 +30,8 @@
 </template>
 
 <script>
-import axios from 'axios';
 import KioskErrorLayoutComponent from './KioskErrorLayoutComponent.vue';
+import { trackKioskErrorEvent } from '../../../helpers/kioskAnalytics';
 
 /**
  * KioskErrorProductRemovedComponent — Kiosk Design V1 Phase 3.4
@@ -49,23 +49,22 @@ export default {
     emits: ['back-to-menu', 'back-home'],
     mounted() {
         this.logEvent('error_shown', {
-            subtype: 'product_removed',
             context: this.itemId ? { item_id: Number(this.itemId) } : null,
         });
     },
     methods: {
         backToMenu() {
-            this.logEvent('error_back_to_menu', { subtype: 'product_removed' });
+            this.logEvent('error_back_to_menu');
             this.$emit('back-to-menu');
             this.$router?.push({ name: 'kiosk.categories' }).catch(() => {});
         },
         backHome() {
-            this.logEvent('error_back_home', { subtype: 'product_removed' });
+            this.logEvent('error_back_home');
             this.$emit('back-home');
             this.$router?.push({ name: 'kiosk.idle' }).catch(() => {});
         },
         logEvent(type, meta = {}) {
-            axios.post('/frontend/kiosk/event', { type, ...meta }).catch(() => {});
+            trackKioskErrorEvent(type, 'product_removed', meta);
         },
     },
 };

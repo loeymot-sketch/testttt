@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.orcai.cc",
+    "ANTHROPIC_AUTH_TOKEN": "REPLACE_ME",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0"
+  },
+  "provider": {
+    "anthropic": {
+      "options": {
+        "baseURL": "https://api.orcai.cc/v1",
+        "apiKey": "REPLACE_ME"
+      },
+      "npm": "@ai-sdk/anthropic"
+    }
+  }
+}

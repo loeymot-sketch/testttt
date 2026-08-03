@@ -51,7 +51,12 @@ class EventContractUnitTest extends TestCase
             'branch_id'      => 1,
             'occurred_at'    => '2026-04-16T10:00:00+00:00',
             'correlation_id' => (string) Str::uuid(),
-            'payload'        => ['order_id' => 10],
+            'payload'        => [
+                'order_id' => 10,
+                'queue_number' => 'A0010',
+                '_origin' => 'kiosk',
+                'payment_method' => 4,
+            ],
         ]);
 
         $this->assertTrue(true);
@@ -151,6 +156,9 @@ class EventContractUnitTest extends TestCase
 
     public function test_payload_validation_allows_extra_keys(): void
     {
+        // [AGENT-CONTRACT C1 hardening 2026-05-08] Le contract MENU_ITEM_AVAILABILITY_CHANGED
+        // a été durci aux 7 keys que tous les producers émettent. Test vérifie qu'un payload
+        // avec les 7 keys + un extra key passe (extra autorisé, manquantes refusées).
         EventContract::assertEnvelopeValid([
             'version'        => 1,
             'type'           => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
@@ -158,7 +166,16 @@ class EventContractUnitTest extends TestCase
             'branch_id'      => null,
             'occurred_at'    => '2026-04-16T10:00:00+00:00',
             'correlation_id' => (string) Str::uuid(),
-            'payload'        => ['item_id' => 7, 'status' => 1, 'price' => 12.5, 'type' => 'status'],
+            'payload'        => [
+                'item_id'      => 7,
+                'status'       => 1,
+                'is_available' => false,
+                'branch_id'    => 1,
+                'reason'       => 'manual_admin',
+                'price'        => 12.5,
+                'type'         => 'status',
+                'extra_field'  => 'should_not_break_validation',
+            ],
         ]);
 
         $this->assertTrue(true);

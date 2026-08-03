@@ -15,7 +15,11 @@ class NotificationController extends AdminController
     {
         parent::__construct();
         $this->notificationService = $notificationService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [ULTRA-AUDIT V4-DEPLOY 2026-07-02] `index` DOIT être gaté comme `update` : NotificationResource
+        // expose notification_fcm_api_key + notification_fcm_json_file (service-account). Sans le gate,
+        // un rôle non-admin (POS Operator/Chef, can_settings=N) lit les credentials FCM. Miroir des
+        // siblings healés Mail (SET-02) / PaymentGateway (SET-01) / KioskSetup / LoyaltySetup.
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index(

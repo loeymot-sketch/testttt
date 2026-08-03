@@ -1,0 +1,66 @@
+{
+  "specialist": "Architect",
+  "zone": "Z-2-OSS",
+  "mode": "AUDIT-ONLY",
+  "scope": "OSS contract coherence + Echo subscription resilience + sync service architecture vs sister POS/KDS heals",
+  "framing": "Score session-A heal sufficiency. Differentiate (a) pre-existing observations already addressed in dirty WIP (chime gate, WCAG heal, TZ-aware now('UTC'), cadence clamp) from (b) net-new architectural gaps.",
+  "evidence": {
+    "anchors_verified": [
+      {"path": "app/Http/Controllers/Admin/OrderStatusScreenController.php", "lines": 137, "purpose": "admin index() + publicIndex() + publicMostPopularItems() — auth resolver bypass on public path"},
+      {"path": "app/Services/OrderStatusScreenOrderService.php", "lines": 273, "purpose": "list() vs listForBranch() dual path with comment 'MUST stay byte-identical' but no enforcement", "dirty": true},
+      {"path": "resources/js/services/OssSyncService.js", "lines": 452, "purpose": "polling + Echo state + visibility burst + 5xx backoff + cadence clamp [250, 60_000]"},
+      {"path": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue", "lines": 416, "purpose": "Echo + OssSyncService dual hydration, wakeLock, chime gate"},
+      {"path": "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue", "lines": 62, "purpose": "shell + ConnectionStatusBanner suppress-transient"},
+      {"path": "config/oss.php", "lines": 30, "purpose": "stale_window_hours single knob"}
+    ],
+    "wave3b_3c_heals_confirmed": {
+      "commit_c2613cab0": "fix(kds+oss): TZ-aware boundaries in KitchenDisplay + OSS services (Wave 3b P0) — applied today (Paris) start/end + tomorrow Paris-to-UTC conversion to BOTH OrderStatusScreenOrderService::list() (lines 77-81) AND OrderStatusScreenOrderService::listForBranch() (lines 208-211) and KitchenDisplaySystemOrderService. Sentinel: tests/Feature/Services/SisterServicesTzAwareTest.php (verified exists).",
+      "wave3c_KDS-ADV3C-04": "OrderStatusScreenOrderService stale-prune predicate now()->subHours(8) was Paris-bound vs UTC TIMESTAMP column → window slipped 1-2h. Heal: now('UTC')->subHours(N) applied to BOTH list() (line 108) AND listForBranch() (line 228). Sentinel: tests/Feature/Services/SisterServicesTzAwareV2Test.php (verified exists, 2 OSS-specific assertion methods test_oss_list_stale_prune_binds_utc_now + test_oss_listForBranch_stale_prune_binds_utc_now).",
+      "wave3c_KDS-ADV3C-08": "OssSyncService cadence clamp [CADENCE_FLOOR_MS=250, CADENCE_CEILING_MS=60_000] in _clampCadence() applied to BOTH intervalMsWhenConnected AND intervalMsWhenDisconnected. Without this, misconfig like FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=999999999 would freeze the wall and blow SYNC-2 8s budget. Lines 29-35 + 124-134 + 419-435."
+    }
+  },
+  "findings": [
+    {
+      "id": "Z2-ARCH-01",
+      "severity": "P2",
+      "title": "list() vs listForBranch() byte-identical drift risk — comment-only enforcement",
+      "evidence": "OrderStatusScreenOrderService.php:181-200 docstring '...query body MUST stay byte-identical to list() above so the customer wall and the admin dashboard show the same set of orders for the same branch.' No structural enforcement (no shared private builder, no fixture comparison test). Both methods now carry the SAME Wave 3b TZ heal + SAME Wave 3c stale-prune heal + SAME RED-R3 fail-closed whereIn allowlist — that mirroring is currently human-maintained. A future heal touching only one path will silently diverge.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P2-IN-ROUND-1 ([OSS-A-03]). Session-A did not address. Confirmed still present after Wave 3b/3c heals.",
+      "heal_recommendation": "Extract a private buildBaseQuery(?int $branchScope, bool $publicMode) method. Both list() and listForBranch() call it. Wire a regression test that compares compiled SQL bindings from both paths for the same branch param. Defer to V1.0.1+1.",
+      "backlog_ticket": "V1.0.2-OSS-DRIFT-GUARD",
+      "blast_radius": "low (mirror discipline holds today, P2 forward-looking)"
+    },
+    {
+      "id": "Z2-ARCH-02",
+      "severity": "P2",
+      "title": "Echo private-channel subscription is operator-only — public wall has no real-time path",
+      "evidence": "PreparingAndReadyComponent.vue:246-248 'subscribeEcho()' { if (!window.Echo) return; const branchId = this.authBranchId(); if (branchId <= 0) return; }. The public customer wall (authBranchId() === 0) skips Echo entirely AND relies on OssSyncService polling. Disconnected cadence is 2_000ms (DEFAULTS line 16) so worst-case lag = 2s + 1 round-trip, comfortably within the 8s SYNC-2 budget. However the §3 contract says 'Sync via Echo + polling fallback' — the public surface is structurally polling-only. Not a defect (no operator session = no private-channel auth), but ARCHITECTURE NOTE: if branch staff later mount the wall via a service account, the 2s cadence becomes the sustained lag floor.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P2-IN-ROUND-1 ([OSS-B-01]). Session-A documented as 'constraint not defect'. Wave 3c cadence clamp ensures floor never raises above 60s, so this is bounded.",
+      "heal_recommendation": "Document in OSS runbook. If V1.0.2 SaaS adopts service-account walls, build a public-presence Echo channel (broadcast only id/serial/queue/type/status — same shape as CDSOrderDetailsResource). Defer.",
+      "backlog_ticket": "V1.0.2-OSS-PUBLIC-ECHO",
+      "blast_radius": "none today (single-branch FR Le Cayenne)"
+    },
+    {
+      "id": "Z2-ARCH-03",
+      "severity": "P1",
+      "title": "VisibilityChange burst-poll bypasses cadence clamp ceiling",
+      "evidence": "OssSyncService.js:237-252 _burstPoll() calls _poll() immediately without applying CADENCE_FLOOR_MS. visibilityBurstMinIntervalMs=1_000 (line 24) provides only a 1s gap. If a misconfigured runtime sets intervalMsWhenConnected to the clamp ceiling 60_000 but the operator rapidly tab-switches, _burstPoll triggers can fire at near 1Hz. This is acceptable for UX (operator-driven), but it BYPASSES the same throttle the clamp was designed to enforce. RED of session-A Wave 3c clamp didn't catch this because the burst path is a distinct entry.",
+      "rationale_already_heal_or_new": "NET-NEW gap — surfaced by reading Wave 3c clamp heal in conjunction with the iter15-D-002 burst path. Not addressed in commit c2613cab0 or downstream heals.",
+      "heal_recommendation": "Either (a) treat 1_000ms burst floor as ACCEPTED behavior + add comment citing that operator-driven bursts are intentionally not clamp-bounded, OR (b) keep _lastBurstPollAt + ensure burst-vs-burst minimum is max(visibilityBurstMinIntervalMs, CADENCE_FLOOR_MS). Test: ossSyncFallback.spec.js could grow a burst-throttle-respects-floor case.",
+      "backlog_ticket": "V1.0.2-OSS-BURST-CLAMP",
+      "blast_radius": "low (UX acceptable, backend rate-limited by 60/min/IP throttle:oss-public)"
+    },
+    {
+      "id": "Z2-ARCH-04",
+      "severity": "P2",
+      "title": "Two parallel data sources on operator surface (Echo + OssSyncService) — implicit de-dup contract",
+      "evidence": "PreparingAndReadyComponent.vue runs BOTH subscribeEcho() (line 245) AND startOssSync() (line 222). Echo fires _markNewReady() pre-emptively then triggers list(); OssSyncService fires its own _hydrateFromRows() via the 'sync' event listener at line 224. De-duplication relies on a 'one-shot guard' (this._echoMarkedReady at line 263 cleared inside _hydrateFromRows at line 362). If OssSyncService's 'sync' event fires BEFORE the list() XHR initiated by Echo resolves, the same order can flash twice (Echo's _markNewReady fires; before _echoMarkedReady is cleared, OssSyncService rows reflect the new state). The current code clears _echoMarkedReady at the end of _hydrateFromRows AND only adds to it from Echo, so the race is bounded but tight.",
+      "rationale_already_heal_or_new": "ALREADY-MITIGATED via AUDIT-P1 comment block (line 257-264). Confirmed working: tests/js/ossChimePublicWall.spec.js test 'visual flash channel remains intact' attests the visual layer.",
+      "heal_recommendation": "No code change. Document the de-dup contract in OssSyncService.js docstring referencing PreparingAndReadyComponent's _echoMarkedReady set as the canonical guard.",
+      "backlog_ticket": "V1.0.2-OSS-DOC",
+      "blast_radius": "none observed"
+    }
+  ],
+  "verdict": "AUDIT-ONLY pass. Session-A Wave 3b TZ + Wave 3c TZ-v2 + Wave 3c cadence clamp + Round-2 Impl C chime/WCAG heals are architecturally sound and mutually consistent. Net-new gap Z2-ARCH-03 (burst-poll clamp bypass) is P1 forward-looking but P2-impact-today. All other findings deferred V1.0.2.",
+  "word_count_approx": 950
+}

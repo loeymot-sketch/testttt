@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <div class="db-card db-tab-div active">
+    <div class="db-card db-tab-div active" data-testid="admin-category-list">
         <div class="db-card-header border-none">
             <h3 class="db-card-title">{{ $t('menu.item_categories') }}</h3>
             <div class="db-card-filter">
@@ -21,7 +21,9 @@
                         <UploadFileComponent :dataModal="'categoryUpload'" @click="uploadModal('#categoryUpload')" />
                     </div>
                 </div>
-                <ItemCategoryCreateComponent :props="props" />
+                <div data-testid="admin-category-create-open">
+                    <ItemCategoryCreateComponent :props="props" />
+                </div>
                 <CategoryUploadComponent v-on:list="list" />
             </div>
         </div>
@@ -38,7 +40,7 @@
                 </thead>
                 <draggable tag="tbody" class="db-table-body" v-if="categories.length > 0" v-model="categories"
                     @end="sortCategory" :handle="'.drag-handle'">
-                    <tr class="db-table-body-tr" v-for="itemCategory in categories" :key="itemCategory">
+                    <tr class="db-table-body-tr" v-for="itemCategory in categories" :key="itemCategory" :data-testid="`admin-category-row-${itemCategory.id}`">
                         <td class="db-table-body-td"><i class="lab lab-move cursor-move drag-handle"></i></td>
                         <td class="db-table-body-td">{{ itemCategory.name }}</td>
                         <td class="db-table-body-td">
@@ -48,9 +50,15 @@
                         </td>
                         <td class="db-table-body-td">
                             <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
-                                <SmViewComponent :link="'admin.settings.itemCategory.show'" :id="itemCategory.id" />
-                                <SmModalEditComponent @click="edit(itemCategory)" />
-                                <SmDeleteComponent @click="destroy(itemCategory.id)" />
+                                <span :data-testid="`admin-category-view-${itemCategory.id}`">
+                                    <SmViewComponent :link="'admin.settings.itemCategory.show'" :id="itemCategory.id" />
+                                </span>
+                                <span :data-testid="`admin-category-edit-${itemCategory.id}`">
+                                    <SmModalEditComponent @click="edit(itemCategory)" />
+                                </span>
+                                <span :data-testid="`admin-category-delete-${itemCategory.id}`">
+                                    <SmDeleteComponent @click="destroy(itemCategory.id)" />
+                                </span>
                             </div>
                         </td>
                     </tr>
@@ -150,7 +158,7 @@ export default {
                 search: {
                     paginate: 1,
                     page: 1,
-                    per_page: 10,
+                    per_page: 50,
                     order_column: 'sort',
                     order_type: 'asc',
                 }

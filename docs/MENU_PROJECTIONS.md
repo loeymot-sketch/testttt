@@ -1,6 +1,9 @@
 # Menu Projections — Dual-channel SSOT (section 5)
 
-**Status** : V1 foundation shipped (backend only). V1.5 migrates POS / Kiosk read paths.
+**Status** : legacy projection foundation doc. VA-SYS-06 moved POS/Kiosk runtime
+projection further: published composer profiles and branch choice availability are
+now exposed to POS/Kiosk paths. Canonical Version A sync docs live under
+`docs/sync/`.
 **Related** : MENU_86 (`docs/MENU_AVAILABILITY.md`), section 5 of `reports/execution/AUDIT_MASSIF_FR_2026-04-16.md`.
 
 ---

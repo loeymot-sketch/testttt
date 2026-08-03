@@ -1,0 +1,81 @@
+{
+  "micro_system": "S1-dashboard",
+  "verifier": "HOSTILE-RED",
+  "verified_at": "2026-06-04",
+  "root": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+  "method": "Opened every cited file:line; reproduced Carbon parse via real PHP+vendor; queried live MySQL for order_datetime storage tz and source/source_surface partition; read all 11 rendered widgets in DashboardComponent.vue.",
+  "verdicts": [
+    {
+      "id": "S1-DASH-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED REAL P1. Frontend cites are EXACT: SalesSummaryComponent.vue:88-89 (this.first_date=e[0], picker utc=false), OrderSummaryComponent.vue:106-109, OrderStatisticsComponent.vue:186-188, CustomerStatsComponent.vue:76-79 all push the raw JS Date object into the Vuex payload. appService.js:243-263 requestHandler does naive concat (response += request + '=' + requests[request]) with ZERO url-encoding — so 'Fri May 01 2026 00:00:00 GMT+0200 (heure...)' is sent raw. Reproduced node String(new Date) -> exact string. Reproduced php Carbon::parse(decoded,'Europe/Paris') -> THROWS InvalidFormatException 'Double timezone specification' on BOTH realistic decode paths (+ -> space). salesSummary() at DashboardService.php:204-277 has NO try/catch around the Carbon::parse at :211, so it propagates to DashboardController.php:116-117 catch -> HTTP 422. Components' .catch (SalesSummary:126-128 etc) only flips loading=false, does NOT reset displayed KPIs -> stale numbers remain with no error. CAVEAT: the finding's backend cite 'DashboardService.php:135-137 (Carbon::parse($request->first_date))' is IMPRECISE — :135-137 is resolveDayBoundaryParis (used by orderStatistics path); the actual unguarded salesSummary parse is :211 (also :286 customerStates), and the call signature is Carbon::parse($x,$appTz) not bare. Mechanism and 422 outcome fully confirmed regardless. Real owner-facing flou: period filter looks like it works but silently keeps default-month numbers.",
+      "my_cite": "resources/js/services/appService.js:253; SalesSummaryComponent.vue:88-89,126-128; app/Services/DashboardService.php:211; app/Http/Controllers/Admin/DashboardController.php:116-117"
+    },
+    {
+      "id": "S1-DASH-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED. OverviewComponent.vue:12 renders {{ $t('label.total_sales') }} bound to total_sales fed by DashboardService::totalSales() = orderQuery()->realizedRevenue()->sum('total') at :347-356 with NO date bound (lifetime CA). SalesSummaryComponent.vue:26 renders the SAME i18n key label.total_sales bound to salesSummary() total_sales which IS date-bounded (DashboardService.php:228-234, default current month). Identical label, two scopes, large magnitude gap. Real UX trust defect; one-word qualifier fixes it. Cosmetic/copy fix, no backend change.",
+      "my_cite": "resources/js/components/admin/dashboard/OverviewComponent.vue:12; SalesSummaryComponent.vue:26; app/Services/DashboardService.php:351,228"
+    },
+    {
+      "id": "S1-DASH-03",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "DROP — REAL-IN-THEORY but DORMANT/FALSE in actual V1 single-box config; a hostile verifier must not accept the self-incriminating comment as proof. The comment at DashboardService.php:304-308 claims whereTime surfaces time 'in MySQL session UTC' -> 2h offset. VERIFIED LIVE: app.timezone=Europe/Paris; DB connection timezone=null (not set); order_datetime is a MySQL TIMESTAMP column (2022_11_17_110810_create_orders_table.php:31); @@session.time_zone=SYSTEM (consistent for both write and read). Live query of 5 recent orders: order_datetime EQUALS created_at and HOUR(order_datetime) returns the Paris wall-clock hour (15:46->15, 12:20->12, 06:02->6). Because the session tz is identical on write and read, the TIMESTAMP round-trips to the same wall-clock value Laravel wrote (Paris-local), so whereTime hour == Paris axis label hour == correct. No 2h offset is observable on this single-box deployment. The claimed staffing-misread does NOT occur. (It would only bite if write-tz != read-tz, e.g. a multi-instance/cloud cutover — that is the V1.0.2/cloud backlog scenario, not V1 LOCAL.) is_real=false for the V1 deployment.",
+      "my_cite": "app/Services/DashboardService.php:304-314; database/migrations/2022_11_17_110810_create_orders_table.php:31; live: @@session.time_zone=SYSTEM, HOUR(order_datetime)=Paris wall clock"
+    },
+    {
+      "id": "S1-DASH-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED REAL and PROMOTED P2->P1. Code cite exact: channelStatistics buckets are computed INDEPENDENTLY against $total — kioskCount (DashboardService.php:520-526), webCount excludes kiosk (528-536), but posCount=$orders->where('source',Source::POS)->count() (538) with Source::POS=15 and NO legacy-int handling. LIVE GROUP BY source,source_surface DISPROVES the partition: only 54 rows have source=15, but there are 1343 rows source='1' surface='pos' (legacy POS int) + 30 source='1' surface=NULL + 3 source=NULL surface='pos' + source='3','4','mobile','POS'(string) etc. ALL of these ~1400 real POS/other orders fall into NO bucket (source not in {5,10,15} and surface!=kiosk) -> the three percentages sum FAR below 100 (POS shows 54/total instead of ~1400/total). This is not a rare theoretical edge: it is the dominant real data shape — channel mix is grossly wrong TODAY, materially misleading borne-vs-comptoir share. The correct single-pass partition already exists in eodSynthesis bucketChannels (DashboardService.php:716-737, classifies each order once via continue). Promote: live data proves it is actively wrong, not dormant.",
+      "my_cite": "app/Services/DashboardService.php:538 (posCount no legacy-int / no partition) vs :716-737 correct bucketChannels; live GROUP BY: source='1'+surface='pos' count=1343 land in NO bucket"
+    },
+    {
+      "id": "S1-DASH-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED, and UNDER-SCOPED by the original finding. All four date widgets' .catch only flips loading.isActive=false with no error/empty state and no reset of displayed values: SalesSummaryComponent.vue:126-128, OrderSummaryComponent.vue:155-157, OrderStatisticsComponent.vue:205-207 & 230-232, CustomerStatsComponent.vue:128-130. RealtimeReportComponent.vue:45-49 fetchData has NO .catch and polls every 30s (setInterval :39) -> unhandled rejection loop. ADDITIONAL (verifier-found, finding missed it): SlaAlertsComponent.vue fetchData ALSO has NO .catch and polls every 15s (setInterval) -> same unhandled-rejection bug. This is the mechanism that makes DASH-01 invisible. Real degraded-vs-wrong defect.",
+      "my_cite": "SalesSummaryComponent.vue:126-128; OrderSummaryComponent.vue:155-157; OrderStatisticsComponent.vue:205-207,230-232; CustomerStatsComponent.vue:128-130; RealtimeReportComponent.vue:45-48 (no catch); SlaAlertsComponent.vue fetchData (no catch, 15s poll) — NOT in original finding"
+    },
+    {
+      "id": "S1-DASH-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. customerStates loops 18 times (timeArray :295 has 18 hour labels) and each iteration runs (clone $order)->where(...)->whereTime(...)->whereTime(...)->get()->count() at DashboardService.php:309-314. ->get()->count() hydrates every matching Order into memory then counts the collection instead of a single COUNT(*). Real waste (18 full hydrations per dashboard load AND per datepicker change), grows linearly with volume. Trivial fix (->count() or single GROUP BY HOUR). P3 correct — bounded on V1 single box but genuine.",
+      "my_cite": "app/Services/DashboardService.php:300-314 (loop x18, ->get()->count())"
+    },
+    {
+      "id": "S1-DASH-07",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "DROP — backend cite accurate but the claimed OWNER-FACING harm cannot occur: the widget is DEAD CODE. topCustomers() at DashboardService.php:324-345 is indeed lifetime-scoped (no date bound) as claimed. BUT VERIFIED: TopCustomersComponent.vue is imported/mounted in ZERO .vue templates (grep across resources/js found no usage outside the component's own file); DashboardComponent.vue mounts FeaturedItemsComponent + MostPopularItemsComponent instead. The store action dashboard/topCustomers (dashboard.js:212) and route admin/dashboard/top-customers exist but are never dispatched. The finding's reproduction ('TopCustomers does not change because it is lifetime') is impossible — the card is not on the dashboard the owner sees. No user-facing scope blur. is_real=false (no live defect surfaced). Dead-code cleanup is a separate, non-defect concern.",
+      "my_cite": "app/Services/DashboardService.php:329-340 (lifetime, real); grep resources/js — TopCustomersComponent imported nowhere; DashboardComponent.vue:63-64 mounts FeaturedItems/MostPopularItems, NOT TopCustomers"
+    }
+  ],
+  "coverage_gaps": [
+    "AuditTrailComponent — mounted in DashboardComponent.vue:55 but NOT in files_examined and zero findings/solids. Unaudited; pulls fiscal AuditLog (EXEMPTED_MODELS) and the audit notes hand-branch-filtering at DashboardService.php:809-815 was never independently reviewed.",
+    "FeaturedItemsComponent + MostPopularItemsComponent — both mounted (DashboardComponent.vue:63-64) but never examined; 'most popular' ranking likely shares the lifetime-vs-period scope blur of DASH-07 and was not checked for date scoping.",
+    "SlaAlertsComponent — examined for one error-handling line only; its SLA threshold logic ('Cuisine > 15min', 15s poll) and the slaAlerts backend endpoint were NOT audited. Verifier additionally found it shares RealtimeReport's missing-.catch bug (folded into DASH-05).",
+    "RealtimeReportComponent KPI semantics — only its missing .catch was assessed; the actual realtime figures (what counts as 'realtime', netting alignment) were not verified.",
+    "Overview tiles total_orders + total_customers (DashboardComponent / OverviewComponent.vue:22-30) — only total_sales was audited (DASH-02); the other two Overview KPIs were not checked for scope/netting correctness.",
+    "ChannelStatsComponent front-end empty/zero rendering — grep found no v-if/empty-state handling in the component; backend returns zero-value array on empty but the component's rendering of a sub-100 (non-partition) set was not visually verified.",
+    "No live browser/Playwright repro was run for DASH-01's 422 (PHP+code proof only, per scope); the exact browser percent-encoding of the JS Date was reasoned, not captured on the wire."
+  ]
+}

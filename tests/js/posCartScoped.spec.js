@@ -71,15 +71,18 @@ describe('posCart scoped localStorage [POS-9.1.9]', () => {
         const restored = JSON.parse(localStorageMock.getItem('pos_cart_v3:b7:u42') || 'null');
         expect(restored).toBeTruthy(); // A's cart still on disk
 
-        // setScope for B should hydrate an empty state (B has no saved cart)
+        // setScope for B should hydrate an empty state (B has no saved cart).
+        // [W5-PERF B1 2026-07-06] setScope commits hydrateFromScope PUIS
+        // subtotal (recompute des totaux de lignes restaurées) — le mock
+        // vérifie l'ordre et le payload null du restore.
+        const commits = [];
         const fakeContext = {
-            commit: (mutation, payload) => {
-                expect(mutation).toBe('hydrateFromScope');
-                // payload is null because b7:u99 key does not exist
-                expect(payload).toBeNull();
-            },
+            commit: (mutation, payload) => { commits.push({ mutation, payload }); },
         };
         posCart.actions.setScope(fakeContext, { branchId: 7, userId: 99 });
+        expect(commits.map((c) => c.mutation)).toEqual(['hydrateFromScope', 'subtotal']);
+        // payload is null because b7:u99 key does not exist
+        expect(commits[0].payload).toBeNull();
     });
 
     it('cross-scope tampering: a saved cart with a different branchId is rejected', () => {
@@ -93,14 +96,15 @@ describe('posCart scoped localStorage [POS-9.1.9]', () => {
             userId: 42,
         }));
         _applyPosCartScope(7, 42);
-        // setScope must hydrate empty (refused due to mismatch)
+        // setScope must hydrate empty (refused due to mismatch).
+        // [W5-PERF B1] hydrateFromScope(null) puis recompute subtotal.
+        const commits = [];
         const fakeContext = {
-            commit: (mutation, payload) => {
-                expect(mutation).toBe('hydrateFromScope');
-                expect(payload).toBeNull();
-            },
+            commit: (mutation, payload) => { commits.push({ mutation, payload }); },
         };
         posCart.actions.setScope(fakeContext, { branchId: 7, userId: 42 });
+        expect(commits.map((c) => c.mutation)).toEqual(['hydrateFromScope', 'subtotal']);
+        expect(commits[0].payload).toBeNull();
     });
 
     it('purges the legacy unscoped key on every setScope', () => {

@@ -1,0 +1,79 @@
+{
+  "specialist": "Security",
+  "zone": "PK-2 Status Sync — authz, branch isolation, undo bypass",
+  "mode": "read-only",
+  "scope": [
+    "app/Http/Requests/Kds/KdsOrderStatusRequest.php (authorize + Rule::in whitelist)",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php (permission middleware)",
+    "app/Services/KitchenDisplaySystemOrderService.php (branch check inside lock)",
+    "app/Http/Requests/OrderStatusRequest.php (cross-surface: kiosk:order ability check)",
+    "routes/api.php:1048-1059 (kds-order group)"
+  ],
+  "findings": [
+    {
+      "id": "PK-2-SEC-01",
+      "severity": "INFO_ATTEST",
+      "title": "KDS change-status guarded by triple-layer authz: route middleware + FormRequest::authorize + service-level branch check",
+      "file": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:22, app/Http/Requests/Kds/KdsOrderStatusRequest.php:11-21, app/Services/KitchenDisplaySystemOrderService.php:182-185",
+      "evidence": "Layer 1 (controller __construct): permission:kitchen-display-system Spatie middleware. Layer 2 (FormRequest::authorize): hasAnyRole(['Admin','Branch Manager','Chef','POS Operator','Cashier']). Layer 3 (service inside lockForUpdate): if userBranchId>0 && locked.branch_id != userBranchId -> abort(403). Branch isolation is enforced after the row is locked — so a TOCTOU between read & write is impossible.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-SEC-02",
+      "severity": "INFO_ATTEST",
+      "title": "kiosk:order Sanctum ability cannot reach KDS endpoints",
+      "file": "app/Http/Requests/Kds/KdsOrderStatusRequest.php:11-21",
+      "evidence": "KdsOrderStatusRequest::authorize() requires hasAnyRole(['Admin','Branch Manager','Chef','POS Operator','Cashier']). Kiosk machine tokens have NO Spatie role — they only carry the 'kiosk:order' Sanctum ability. authorize() returns false -> 403. Confirmed by inspection: kiosk tokenCan() check exists only in OrderStatusRequest.php:31 (online-order path), NOT in KdsOrderStatusRequest.",
+      "verdict": "PASS — no cross-surface privilege escalation from kiosk to KDS"
+    },
+    {
+      "id": "PK-2-SEC-03",
+      "severity": "INFO_ATTEST",
+      "title": "Undo toast cannot be exploited to bypass the 3s grace window",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:181-208",
+      "evidence": "Client-side only — the PATCH is fired AFTER the 3s timeout (setTimeout). An attacker who controls the client could just NOT honor the undo button (i.e. send the PATCH immediately), but the server cannot tell the difference: the server only sees an authenticated chef sending a legal forward transition with a valid expected_status. There's no 'undo authorization' to bypass because the server has no concept of pending bumps.",
+      "verdict": "PASS — undo is purely UX; no security boundary to defend"
+    },
+    {
+      "id": "PK-2-SEC-04",
+      "severity": "INFO_ATTEST",
+      "title": "kds/recallItem (60s localStorage marker) holds no server authority",
+      "file": "resources/js/store/modules/kds.js:66-86",
+      "evidence": "recallItem returns {ok, reason} from in-memory map. No axios call. localStorage tampering would only let a user fake the visual 'recalled' state on their own browser — the server-side row stays PREPARED.",
+      "verdict": "PASS — defense-in-depth: client cannot override server state via recall"
+    },
+    {
+      "id": "PK-2-SEC-05",
+      "severity": "P2",
+      "title": "Idempotency middleware bypasses controller authorization on REPLAYED responses",
+      "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php:86-96, 105-117",
+      "evidence": "Lines 86-96 + 105-117: when the same X-Idempotency-Key is sent a second time with the same payload, the middleware returns the cached response BEFORE delegating to the route's authorization (controller/FormRequest). Scope is (branch_id, user_id, hash(key)) per line 78, so user_id IS in scope — but if user_id ever evolves (e.g. user role revoked between calls), the second call would replay a now-unauthorized success.",
+      "impact": "Low risk in practice: idempotency TTL = 86400s, role changes are infrequent. However, if a chef is fired and their role removed within 24h of issuing a bump, a replay would still echo the original 202. Worth a sentinel; not worth blocking.",
+      "recommendation": "V1.0.2 — add a sentinel that asserts role-revoked replay returns 403, not cached 202. Out of PK-2 scope.",
+      "verdict": "REVIEW"
+    },
+    {
+      "id": "PK-2-SEC-06",
+      "severity": "INFO_ATTEST",
+      "title": "OrderStatusChanged broadcast channel scoped to private-branch.{branch_id} — no cross-branch leakage",
+      "file": "app/Listeners/PersistOrderStatusChangedToOutbox.php:52",
+      "evidence": "channel = ['private-branch.' . $order->branch_id]. Pusher private channel auth flows through BroadcastingController. A chef on branch=2 cannot subscribe to branch=3's channel.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-SEC-07",
+      "severity": "P3",
+      "title": "expected_status field is integer-cast but not bound to actor's last-seen status",
+      "file": "app/Http/Requests/Kds/KdsOrderStatusRequest.php:25-26",
+      "evidence": "expected_status must be in {ACCEPT, PREPARING, PREPARED} (Rule::in). The actor MAY send any of those three regardless of what they actually saw — but a malicious chef sending an invalid (from,to) pair just gets a 409 (KdsExpectedStatusConflictTest) or 422 (invalid transition). No data corruption possible.",
+      "impact": "None — the server's lockForUpdate read is authoritative. expected_status is only used to detect optimistic conflict, not as a privilege grant.",
+      "verdict": "PASS"
+    }
+  ],
+  "attestations": [
+    "Authz: 3 layers (Spatie permission, role-based FormRequest, branch-scoped row check) — defense-in-depth holds",
+    "Branch isolation: enforced AFTER lockForUpdate — TOCTOU impossible",
+    "Undo / recall: no server authority bypassed because no recall endpoint exists",
+    "Broadcast: private-branch.{id} channel auth prevents cross-tenant leakage"
+  ]
+}

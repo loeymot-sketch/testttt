@@ -1,0 +1,13 @@
+{
+    "supplier": "Metro",
+    "doc_date": "2026-07-24",
+    "source": "facture",
+    "total_ht": 44.09,
+    "total_ttc": 48.00,
+    "lines": [
+        { "raw_label": "Poulet frais 3kg", "qty": 3, "unit": "kg", "unit_price": 6.00, "tva_rate": 5.5 },
+        { "raw_label": "Cheddar 100 tranches", "qty": 100, "unit": "tranche", "unit_price": 0.12, "tva_rate": 5.5 },
+        { "raw_label": "Coca cola 24 canettes", "qty": 24, "unit": "piece", "unit_price": 0.5833, "tva_rate": 20 },
+        { "raw_label": "Sac papier kraft 500", "qty": 500, "unit": "piece", "unit_price": 0.008, "tva_rate": 20 }
+    ]
+}

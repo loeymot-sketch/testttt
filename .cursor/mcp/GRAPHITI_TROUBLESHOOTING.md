@@ -1,5 +1,9 @@
 # Graphiti MCP — dépannage (FoodKing)
 
+## Où mettre les clés (depuis 2026-04)
+
+Les secrets **ne sont plus** dans `~/.cursor/mcp.json`. Ils vivent dans **`~/.cursor/mcp-graphiti.env`** (une ligne `KEY=value` par variable, `chmod 600`). Modèle vide : `.cursor/mcp/mcp-graphiti.env.example` dans le dépôt.
+
 ## Symptôme : le serveur MCP « graphiti » ne démarre pas ou reste rouge dans Cursor
 
 ### 0. `MOONSHOT_API_BASE` (Chine vs international)
@@ -88,3 +92,62 @@ curl -s http://127.0.0.1:4000/health | python3 -c "import json,sys; d=json.load(
 ```
 
 `healthy_count` doit être **> 0** avant que Graphiti MCP soit utilisable.
+
+---
+
+## 10. Matrice API — quoi utilise quoi (sans te forcer à deviner)
+
+Graphiti = **trois briques indépendantes**. Ce n’est **pas** « tout OpenAI ou rien ».
+
+| Brique | Rôle | API / compte typique aujourd’hui (FoodKing) | Obligatoire ? |
+|--------|------|-----------------------------------------------|----------------|
+| **Neo4j** | Stockage graphe + index vectoriel | Aura / self-host (`NEO4J_*`) | **Oui** |
+| **LLM (chat)** | Extraction d’entités, raisonnement sur les épisodes | Souvent **Moonshot/Kimi** via LiteLLM (`MOONSHOT_API_KEY`) **ou** endpoint OpenAI-compatible (ex. Willow) via `OPENAI_API_URL` + clé associée | **Oui** |
+| **Embedder** | Vecteurs pour recherche sémantique (`add_memory`, `search_*`) | Aujourd’hui : **OpenAI** `text-embedding-3-small` via `OPENAI_EMBEDDING_API_KEY` (routé par LiteLLM vers `api.openai.com`) | **Oui** — mais le **fournisseur** peut changer |
+
+**Ce que LiteLLM fait chez toi** (`litellm_config.yaml`) :
+
+- **Chat** : alias type `gpt-4o-mini` → **Moonshot** (`moonshot/...`) — OK si `MOONSHOT_API_KEY` est valide.
+- **Embeddings** : alias `text-embedding-3-small` → **OpenAI** — chez toi **429 `insufficient_quota`** sur la clé embeddings : la mémoire vectorielle **casse** même si le chat marche.
+
+**Ce que Kimi / Grok / Anthropic ne remplacent pas « gratuitement »** :
+
+- **Moonshot (doc LiteLLM)** : opération supportée typiquement **`/chat/completions`** — pas une piste embeddings fiable comme OpenAI.
+- **Grok (xAI)** : chat / reasoning — **pas d’API embeddings** équivalente OpenAI dans l’offre habituelle.
+- **Anthropic** : messages / tools — **pas** d’endpoint `/v1/embeddings` style OpenAI pour brancher Graphiti tel quel.
+
+Donc tu n’es **pas** obligé de mettre **tout** sur OpenAI : seul l’**embedder** a besoin d’un service qui expose de **vrais vecteurs** numériques stables. Aujourd’hui ta stack est calée sur **OpenAI pour ça** — d’où la sensation « on m’oblige à OpenAI ».
+
+### Piste A — La plus simple (garder la config actuelle)
+
+1. Recharge le **quota** du compte OpenAI lié à **`OPENAI_EMBEDDING_API_KEY`** (clé **projet** dédiée aux embeddings, pas besoin du gros modèle chat).
+2. `bash .cursor/mcp/stop-litellm.sh` puis recharge le MCP Graphiti (ou relance Cursor).
+3. Vérifie : `curl -s http://127.0.0.1:4000/health | python3 -c "import json,sys; d=json.load(sys.stdin); print('unhealthy', len(d.get('unhealthy_endpoints') or []))"` — les lignes `openai/text-embedding-3-small` ne doivent plus être en erreur.
+
+### Piste B — Sans payer OpenAI (changement d’architecture)
+
+1. Choisir un **embedder supporté nativement par Graphiti** : **`voyage`** ou **`gemini`** (voir `graphiti/mcp_server/config/config.yaml` : `embedder.provider` peut être `openai` | `azure_openai` | `gemini` | `voyage`).
+2. **LiteLLM** : ajouter une entrée `model_list` avec `model_info.mode: embedding` pour ce fournisseur (ex. `voyage/voyage-3-lite` + `VOYAGE_API_KEY`), et faire pointer `text-embedding-3-small` **ou** le modèle configuré dans Graphiti vers cette route.
+3. **Aligner `dimensions`** dans `config.yaml` Graphiti avec le modèle (ex. Voyage souvent **1024** par défaut dans le code Graphiti pour `voyage-3`).
+4. **Important** : si tu as déjà des vecteurs **1536** dans Neo4j, changer de dimension = **nouveau graphe / purge / réindex** — sinon incohérences. Pour un graphe vide ou de test, pas de souci.
+
+### Ce que tu dois « fournir » intelligemment (checklist)
+
+| Variable / secret | Pour quoi |
+|-------------------|-----------|
+| `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE` | Base graphe |
+| `MOONSHOT_API_KEY` (+ `MOONSHOT_API_BASE` .ai vs .cn) | Chat via LiteLLM (déjà OK chez toi) |
+| **`OPENAI_EMBEDDING_API_KEY`** avec **quota** | Embeddings **actuels** (sinon 429) |
+| *Si piste B Voyage* | `VOYAGE_API_KEY` + mise à jour `embedder` Graphiti + LiteLLM + éventuellement reset Neo4j |
+| *Si piste B Gemini* | `GOOGLE_API_KEY` + idem |
+
+**Test rapide embeddings** (après correctif) :
+
+```bash
+curl -sS http://127.0.0.1:4000/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer litellm-proxy" \
+  -d '{"model":"text-embedding-3-small","input":"ping"}' | python3 -c "import json,sys; d=json.load(sys.stdin); print('keys', list(d.keys())); print('err', d.get('error'))"
+```
+
+Attendu : réponse avec `data[0].embedding` (liste de floats), **pas** de champ `error`.

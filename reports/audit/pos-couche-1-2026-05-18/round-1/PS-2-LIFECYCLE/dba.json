@@ -1,0 +1,68 @@
+{
+  "role": "dba",
+  "zone": "PS-2 POS order tables — orders, order_items, pos_parked_orders, order_status_transitions",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "b0bc75987f0a117b150c829b6e34e9d6bd2ccf41",
+  "timestamp": "2026-05-18T22:22:29+0200",
+  "scope": "N+1 risk, eager-load correctness, indexes on hot queries, FK + cascade integrity, multi-tenant scope.",
+  "findings": [
+    {
+      "id": "DBA-PS2-01",
+      "severity": "P1",
+      "title": "OrderService::list eager-loads chain 'orderItems.orderItem.media' + 'orderItems.orderItem.category' that SimpleOrderResource never exposes.",
+      "evidence": "app/Services/OrderService.php:125-130 — `Order::with(['transaction','orderItems.orderItem.media','orderItems.orderItem.category','branch','user'])`. app/Http/Resources/SimpleOrderResource.php:18-60 reads: id, order_serial_no, queue_number, order_datetime, total/discount/delivery_charge formatted, payment_method, payment_status, transaction.payment_method, order_type, source, source_surface, pos_payment_method, status, user.name, user.phone (DELIVERY only), address (whenLoaded). Nothing reads orderItems → orderItem → media / category. The list is admin-only and serves both PosOrderListComponent (per_page=10) and PosOrdersTrackerComponent (per_page=100). For 100 orders × 3 items × (media+category) eager-load = ~600 additional rows loaded per page refresh + the polymorphic media table hit. Symptoms: slow first paint on cold cache + extra memory pressure on PHP-FPM workers. Sister `userOrder()` and `deliveredOrder()` at lines 209, 245 correctly load only 'transaction, orderItems, branch, user' — the heavier chain is an artifact specific to list().",
+      "verdict": "HEAL — drop the heavy chain from list(). Keep `transaction, orderItems, branch, user` to mirror the sister methods. Show() (line 1387) keeps the full chain via OrderDetailsResource."
+    },
+    {
+      "id": "DBA-PS2-02",
+      "severity": "P3",
+      "title": "PosParkedOrder lookups are tightly scoped: (user_id, branch_id) on list + (id, user_id, branch_id) on recall.",
+      "evidence": "app/Services/PosParkedOrderService.php:62-70 (listForOperator) chains `where user_id` + `where branch_id` + orderByDesc(created_at) + limit(50). recall line 75-80 adds `lockForUpdate()`. discard at line 197-200 same triplet. For a typical V1 single-restaurant install (≤2 cashiers × ≤50 parked tickets), this is bounded scan — no N+1. Idempotency key uniqueness is enforced by DB unique index `pos_parked_user_idem_uniq` (see line 236 of the service for the exception detection).",
+      "verdict": "KEEP — schema-level uniqueness is well-aligned to the access pattern."
+    },
+    {
+      "id": "DBA-PS2-03",
+      "severity": "P3",
+      "title": "OrderStatusTransition table is append-only audit; OrderStateMachine::recordTransition is best-effort + non-blocking.",
+      "evidence": "app/Domain/Order/OrderStateMachine.php:132-159 — recordTransition wraps the insert in try/catch + Log::warning on failure. Failure mode: even if the audit insert fails (e.g. table-level lock contention), the status mutation isn't rolled back. This is intentional — fiscal/business correctness is the source-of-truth in `orders.status`; transitions table is a denormalized convenience for analytics + RED-team trace. The fiscal audit chain (audit_logs) carries the strict version.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "DBA-PS2-04",
+      "severity": "P2",
+      "title": "OrderService::list status filter uses `where('status', (int) $request)` — explicit cast, but no enum validation; same path admits arbitrary integers.",
+      "evidence": "app/Services/OrderService.php:154 — `if ($key === 'status') { $query->where($key, (int) $request); }`. The OrderStatusRequest validates outbound mutation but the inbound GET (PaginateRequest) does not whitelist status against OrderStatus::* constants. Worst-case: an attacker with `pos` permission can probe non-existing status integers — server returns empty pages. Not a security issue (read-only), but a defensive gap. Recommend: validate against OrderStatus::values() in PaginateRequest::rules() or via a value-object resolver.",
+      "verdict": "KEEP for V1 (no exploitable surface); HEAL deferred V1.0.2."
+    },
+    {
+      "id": "DBA-PS2-05",
+      "severity": "P3",
+      "title": "BranchScope global scope correctly applied on Order + PosParkedOrder + 9 other models — but reads from Eloquent only.",
+      "evidence": "app/Models/Order.php:91, app/Models/PosParkedOrder.php:40. The scope is bypassed for explicit show() lookups via Order::withoutGlobalScope(BranchScope::class) (PosOrderController::show line 113) — INTENTIONAL because branch-isolation is then re-checked manually at line 117-121. Raw queries (DB::table('orders')) would bypass the scope; grep for those in OrderService.php shows none on `orders` outside this controlled path. Strong invariant.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "DBA-PS2-06",
+      "severity": "P2",
+      "title": "OrderService::destroy hard-deletes `address` and `coupon` child rows but soft-deletes `orders` — forensic asymmetry.",
+      "evidence": "app/Services/OrderService.php:2233-2237 — `$order->address()?->delete(); $order->coupon()?->delete(); $order->orderItems()?->delete(); $order->delete();`. orderItems also hard-deleted (OrderItem doesn't use SoftDeletes per existing tests). The Order model boot hook at line 108 blocks restore() so the asymmetry is documented and intentional. NF525 invariant: the AuditLogService::write at line 2260 captures order_serial_no + order_type + status_at_destroy + payment_status + total + fiscal_sequence_no + reason BEFORE the deletes happen (snapshot semantics).",
+      "verdict": "KEEP — by design + documented + audit-protected. V1.0.2 enhancement: add SoftDeletes to OrderAddress + OrderItem so a forensic restore is possible at the price of slightly bigger queries. Not P0/P1 — current path is auditable."
+    },
+    {
+      "id": "DBA-PS2-07",
+      "severity": "P3",
+      "title": "TZ-aware date boundary in list() — Paris-local → UTC range, sargable on idx_order_datetime.",
+      "evidence": "app/Services/OrderService.php:140-150 — Carbon::parse($from, 'Europe/Paris')->startOfDay()->setTimezone('UTC') ; whereBetween/< on order_datetime. Mirrors the heal in salesReportOverview (line 2294 — TZ-aware boundary V2). Index-friendly: a range scan on order_datetime (BTREE) is used. No DATE() function around the column.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "DBA-PS2-08",
+      "severity": "P3",
+      "title": "Order::fillable + casts are aligned + idempotency_key + parent_order_id + fiscal_alloc_error_at all present.",
+      "evidence": "app/Models/Order.php:20-58 — explicit fillable list incl. idempotency_key (P50-BUG1), parent_order_id (P11-FZH), fiscal_alloc_error_at (iter14). Casts at line 60-87 cover money fields as decimal:6 and dates as datetime. No mass-assignment risk on the lifecycle columns.",
+      "verdict": "KEEP"
+    }
+  ],
+  "summary": "Schema layer is clean — BranchScope global + soft-delete one-way + audit-log snapshots + TZ-aware queries + idempotency + bounded parked queries. Single P1 (DBA-PS2-01 = ARCH-PS2-07 mirror): OrderService::list over-fetches via eager-load of media+category chain that SimpleOrderResource never exposes. Quick scope-minimal heal: drop the chain, keep sister-method pattern. Two P2s deferred V1.0.2: status filter whitelist + child-row SoftDeletes parity.",
+  "produced_by": "PS-2 dba specialist, autonomous"
+}

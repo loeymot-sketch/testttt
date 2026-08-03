@@ -16,17 +16,34 @@ class BranchTableSeeder extends Seeder
      */
     public function run()
     {
+        // [GOAL_SECOND_DEGREE_INDIRECT 2026-06-01 — DEL-ORIGIN-01 + DEL-FEE-01]
+        // Real restaurant: 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
+        // (geocoded rooftop lat 50.4215667 / lng 2.9549060). The previous Paris
+        // coords made every delivery distance compute from the wrong city.
+        // Delivery fee config encodes the owner rule (updated 2026-06-27):
+        // "4€ ≤5km, +1€/km beyond, livraison OFFERTE dès 30€ de sous-total"
+        // ≡ max(minimum, base + per_km*ceil(max(0,d-free_km))) with base=4 /
+        // per_km=1 / minimum=4 / free_km=5. Le seuil de gratuité (≥30€) vit dans
+        // Settings delivery.free_delivery_above (voir DeliveryConfigSeeder), appliqué
+        // par FrontendOrderService (hors PricingService frozen).
         Branch::create([
             'name'      => 'Le Cayenne (principal)',
             'email'     => 'contact@lecayenne.fr',
             'phone'     => '+33600000000',
-            'latitude'  => 48.8566,
-            'longitude' => 2.3522,
-            'zone'      => json_encode('[{"lat":48.86,"lng":2.33},{"lat":48.87,"lng":2.36},{"lat":48.85,"lng":2.37},{"lat":48.84,"lng":2.34}]'),
-            'city'      => 'Paris',
-            'state'     => 'Île-de-France',
-            'zip_code'  => '75000',
-            'address'   => 'Paris, France',
+            'latitude'  => 50.4215667,
+            'longitude' => 2.9549060,
+            'zone'      => json_encode('[{"lat":50.45,"lng":2.92},{"lat":50.45,"lng":2.99},{"lat":50.39,"lng":2.99},{"lat":50.39,"lng":2.92}]'),
+            'city'      => 'Hénin-Beaumont',
+            'state'     => 'Hauts-de-France',
+            'zip_code'  => '62110',
+            'address'   => '437 Rue Élie Gruyelle, 62110 Hénin-Beaumont',
+            // Owner rule (whole-km, 2026-07-27 — remplace 2026-06-27) : 4€ fixe ≤ 3 km,
+            // puis +2€ par km entamé. Grille owner : 3→4€, 4→5€, 5→7€, 6→9€ via
+            // max(minimum, base + per_km * ceil(max(0, d - free_km))) = max(4, 3+2·ceil(d-3)).
+            'delivery_fee_base'    => 3,
+            'delivery_fee_per_km'  => 2,
+            'delivery_fee_minimum' => 4,
+            'delivery_fee_free_km' => 3,
             'status'    => Status::ACTIVE,
         ]);
 
@@ -36,13 +53,17 @@ class BranchTableSeeder extends Seeder
                 'name'      => 'Le Cayenne (démo)',
                 'email'     => 'demo@lecayenne.fr',
                 'phone'     => '+33600000001',
-                'latitude'  => 48.8606,
-                'longitude' => 2.3376,
-                'zone'      => json_encode('[{"lat":48.86,"lng":2.33},{"lat":48.87,"lng":2.35},{"lat":48.85,"lng":2.36},{"lat":48.84,"lng":2.33}]'),
-                'city'      => 'Paris',
-                'state'     => 'Île-de-France',
-                'zip_code'  => '75001',
-                'address'   => 'Paris, France',
+                'latitude'  => 50.4250000,
+                'longitude' => 2.9450000,
+                'zone'      => json_encode('[{"lat":50.45,"lng":2.92},{"lat":50.45,"lng":2.98},{"lat":50.39,"lng":2.98},{"lat":50.39,"lng":2.92}]'),
+                'city'      => 'Hénin-Beaumont',
+                'state'     => 'Hauts-de-France',
+                'zip_code'  => '62110',
+                'address'   => 'Hénin-Beaumont (démo)',
+                'delivery_fee_base'    => 3,
+                'delivery_fee_per_km'  => 2,
+                'delivery_fee_minimum' => 4,
+                'delivery_fee_free_km' => 3,
                 'status'    => Status::ACTIVE,
             ]);
         }

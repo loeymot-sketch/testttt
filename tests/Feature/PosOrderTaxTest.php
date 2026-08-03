@@ -17,10 +17,14 @@ use App\Enums\PosPaymentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 class PosOrderTaxTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -66,24 +70,27 @@ class PosOrderTaxTest extends TestCase
         // Créer un admin
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
 
         // Passer une commande POS
+        $payload = [
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 11.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
+            ]),
+        ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 11.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
-                ]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $response->assertStatus(201);
         $data = $response->json();
@@ -134,24 +141,27 @@ class PosOrderTaxTest extends TestCase
         // Créer un admin pour créer la commande
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
 
         // Créer une commande POS
+        $payload = [
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 11.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
+            ]),
+        ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 11.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
-                ]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
         $response->assertStatus(201);
         $orderId = $response->json('data.id');
 

@@ -1,0 +1,719 @@
+{
+  "agent": "M-POS-1 PaymentComponent.vue MAXIMUM DEPTH",
+  "phase": "M",
+  "title": "PaymentComponent.vue deep audit — interaction-state matrix + hostile critique + 19 prior PROPOSAL re-verify + NEW concerns + LOCK consolidation",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "date": "2026-05-24",
+  "scope": "Read PaymentComponent.vue integrally (1478 LOC current — note brief said 1625, that was pre-V5 design refactor on this branch per LOCK_PAY currency doc baseline). Verify every PROP-PAY-002..020 against current file. Map every interaction state. Hostile critique race / a11y / idempotency / NF525. Bundle 19 PROPOSALs into LOCK candidates with effort estimates.",
+
+  "verdict": "GREEN-FROZEN-WITH-BACKLOG",
+  "verdict_rationale": "ZERO V1 ship blocker. 0 P0 self-introduced from this audit. The file is FROZEN §7 and currently has 1 LOCK_PAY in flight (currency D3 lock-fix, awaiting countersign). The 19 prior PROPOSALs from B.5 are ALL still relevant against the current 1478-line file (line numbers verified — see prior_proposals_verified[].current_line_actual). NEW concerns found by this M-POS-1 deep pass: 5 (none P0, 1 P1 quote-staleness-asymmetry, 3 P2, 1 INFO defense-in-depth). Total backlog after de-dup: 19 + 5 = 24 actionable items consolidating into 5 LOCK bundles (PAY_INPUTS / PAY_A11Y / PAY_I18N / PAY_TELEMETRY / PAY_LAYOUT) + 1 V2 deferral bundle (REFACTOR_V2) + 2 N/A close-outs (Echo, Vue warnings). H2-HEAL-01 PaymentAlreadyCollectedException + K2-HEAL-02 lockForUpdate VERIFIED NOT in PaymentComponent's hot path (they apply to PosCounterCollectModal via PaymentService::confirmCounterPayment; PaymentComponent uses posOrder/save → admin/pos which creates new Order rows, NOT collect-on-existing). L5.3 keyboard gaps (F-01, F-05) consolidate cleanly into LOCK_PAY_A11Y bundle.",
+
+  "scope_audited": {
+    "frozen_read_only_target": [
+      "resources/js/components/admin/pos/PaymentComponent.vue (CLAUDE.md §7 FROZEN, 1478 LOC, ZERO diff produced by this agent)"
+    ],
+    "related_files_read_for_context_zero_diff": [
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue (FROZEN §7, read for multi-tranche TPE-gap verification)",
+      "resources/js/components/admin/pos/v5/PosV5Numpad.vue (referenced child — not opened, behavior asserted via emits contract)",
+      "resources/js/store/modules/posOrder.js (admin/pos POST + 409 idempotency-key-conflict handler — NEW-04 verification)",
+      "resources/js/helpers/posSplitPayment.js (cents math helpers referenced by computed props — implicitly trusted)",
+      "resources/js/services/appService.js (currencyFormat delegate — referenced by LOCK_PAY D3)",
+      "app/Services/PaymentService.php (confirmCounterPayment + PaymentAlreadyCollectedException — H2-HEAL-01 / K2-HEAL-02 scope confirm)",
+      "app/Exceptions/Payment/PaymentAlreadyCollectedException.php (read-only)",
+      "app/Exceptions/Handler.php (409 mapping)",
+      "config/quote.php (TTL 300s — NEW-03 quote-staleness-asymmetry)",
+      "plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md (D3 in flight)",
+      "proposals/PROPOSAL_PaymentComponent_002..020.md (19 files)",
+      "reports/test-e2e/goal-2026-05-23/phase-l/L5.3-keyboard-nav-findings.json (L5.3-F-01 + L5.3-F-05 bundle into LOCK_PAY_A11Y)",
+      "reports/test-e2e/goal-2026-05-23/phase-j/J-STEP-POS-findings.json (P7-FRICTION-1..4 superseded by L5.3 + this report)",
+      "reports/test-e2e/goal-2026-05-23/phase-j/J-ADV-1-security-findings.json (scenarios A1-A12 — PaymentComponent surface: A3+A6 CLEAN)"
+    ],
+    "method": "Source-grep + integral read + cross-reference. ZERO Playwright runs (presentation-layer audit). ZERO mutation. ZERO sentinel added by this agent. ZERO frozen-zone diff."
+  },
+
+  "interaction_state_enumeration": {
+    "modal_open_modes": {
+      "_clarification_brief_was_wrong": "Mission brief said '4 modes : CASH / CARD / MOBILE / TICKET / MULTI'. WRONG for PaymentComponent. This component has THREE segmented modes (cash / card / multi). MOBILE / TICKET_RESTAURANT / OTHER live as per-tranche `mode` options INSIDE multi, never as top-level segmented tabs. The 4-mode (CASH/CARD/MOBILE/TICKET) modal is PosCounterCollectModal (M-POS-2 scope). Verified by reading template line 38-78 (3 buttons only).",
+      "modes_actual": [
+        {
+          "mode": "cash",
+          "id": "cash",
+          "label_template_line": 50,
+          "input_id": "cashInput",
+          "input_type_actual": "text + v-on:keypress=floatNumber (line 89-90)",
+          "computed_hint": "cashChange (line 411-415) shown when received > total"
+        },
+        {
+          "mode": "card",
+          "id": "card",
+          "label_template_line": 63,
+          "input_id": "cardInput",
+          "input_type_actual": "number (line 146) — PROP-002 LEADING-ZERO bug + PROP-006 inverse symmetry",
+          "extra_widget": "terminalSelect dropdown (line 121-136) with hint banner line 137-139 when paymentTerminals.length===0",
+          "confirm_gate": "canConfirmCard (line 449-452) refuses submit if !selectedTerminalId"
+        },
+        {
+          "mode": "multi",
+          "id": "multi",
+          "label_template_line": 76,
+          "input_id": "(per-tranche inputs inside PosV5TrancheRow children)",
+          "summary_rows": [
+            "Couvert (line 184-189)",
+            "Reste dû (line 198-206) with --remaining + --ok class flip at <=0.01€",
+            "Monnaie totale (line 209-223) only if totalChangeEur > 0"
+          ],
+          "extra_widgets": [
+            "splitCount input (line 232-242, type=number min=2 max=20)",
+            "splitEqually button (line 243-251)",
+            "auto-balance button (line 254-263, only if tranches.length>=2)",
+            "suggest-tendered button (line 264-272, only if tranches.length>=2)",
+            "add-tranche button (line 296-304)"
+          ],
+          "confirm_gate": "canConfirmMulti via splitCanConfirm (line 439-441)",
+          "quote_refresh": "setInterval(60s) refreshQuote — multi-only (line 474 early-return for non-multi) — see NEW-03"
+        }
+      ]
+    },
+    "lifecycle_states_per_mode": [
+      {
+        "state": "modal_mount",
+        "trigger": "appService.modalShow('#orderpayment')",
+        "actions": [
+          "syncPaymentModeFromForm (line 459) — reads props.form.pos_payment_method, sets paymentMode + inputIdName, NEVER promotes to multi (line 605)",
+          "fetchPaymentTerminals (line 465) — axios.get('admin/payment-terminals') → list filter status=1 → default-pick first if selectedTerminalId===null (line 525-527 — PROP-009 stale-id bug)",
+          "_quoteRefreshTimer setInterval(60s) starts (line 472-480, multi-only firing — NEW-03 asymmetry)"
+        ]
+      },
+      {
+        "state": "input_active",
+        "trigger": "user types in cashInput / cardInput / per-tranche amount, or taps numpad",
+        "actions": [
+          "cashInput @input → onCashInput → cashReceivedRaw mutated → cashChange computed recalculates (float math, PROP-007)",
+          "cardInput plain (no @input listener) — value read at submit via $refs.cardInput.value (PROP-010 mix of getElementById + $refs)",
+          "numpadInput/numpadBack/numpadClear → document.getElementById(inputIdName) → manual el.value mutation + el.dispatchEvent(new Event('input')) (PROP-010)",
+          "Multi tranche amount → @update(patch) → updateTranche(idx, patch) (line 650-666) — auto-attaches terminal_id when patch flips mode→CARD (line 660-664)"
+        ]
+      },
+      {
+        "state": "mode_switch",
+        "trigger": "user taps method tab (cash / card / multi)",
+        "actions": [
+          "setPaymentMode(mode) (line 620-629)",
+          "If cash → paymentMethod(CASH, 'cashInput') → resetPaymentInputs + emit payment-form:patch (POS_PAYMENT_METHOD + clear pos_payment_note + pos_received_amount=null)",
+          "If card → paymentMethod(CARD, 'cardInput') — same",
+          "If multi → no patch emit (multi is local-only; props.form untouched)"
+        ],
+        "bug_inherited": "Mode switch wipes input via resetPaymentInputs — J-STEP-POS P7-FRICTION-2 (cashier who typed in card then realises CASH must retype). Documented INFO, not actionable in V1."
+      },
+      {
+        "state": "confirm_submit_in_flight",
+        "trigger": "click @click=confirmOrder (line 309)",
+        "actions": [
+          "Single-flight guard line 968 (this.loading.isActive return early)",
+          "CARD gate line 973-979 (alertService.error + return if !canConfirmCard)",
+          "MULTI gate line 980-986 (alertService.error + return if !canConfirmMulti)",
+          "this.loading.isActive = true (line 987)",
+          "confirmOrderWithAuthRetry (line 800-819) — runConfirmOrderAttempt + 401 retry once after authcheck",
+          "runConfirmOrderAttempt (line 820-881): collectPaymentInputPatch → defaultAccess/show → buildSplitPayload (if multi) → terminalPatch (if card) → refreshQuote → alignCashReceivedWithQuotedTotal → strip {total/subtotal/discount} per SSOT H5 POS-A6 → posOrder/save (POST admin/pos with X-Idempotency-Key from posOrder.js)",
+          "On success: handleOrderSuccess → openDrawer (CASH only, fire-and-forget) → modalHide → emit payment-form:reset + order:confirmed → defer cart reset to ReceiptComponent close",
+          "Defensive double modalHide line 1010 (post-success belt-and-suspenders)",
+          "showReceiptModalFromDom after 2× $nextTick + 2× rAF + 50ms setTimeout (line 1011-1017)"
+        ]
+      },
+      {
+        "state": "confirm_error",
+        "trigger": "throw from confirmOrderWithAuthRetry",
+        "actions": [
+          "handlePaymentError (line 926-962)",
+          "_paymentTimeout → toast (30s AbortController in posOrder/save)",
+          "_idempotencyConflict → toast 'Commande déjà enregistrée — vérifier le ticker'",
+          "429 → silent (global axios interceptor handles)",
+          "errors{} validation → per-field toast loop",
+          "fallback toast"
+        ]
+      },
+      {
+        "state": "modal_close",
+        "trigger": "✕ button @click=reset OR appService.modalHide outside",
+        "actions": [
+          "reset (line 573-590) → resetPaymentInputs + tranches=[] + splitCount=2 + paymentMode='cash' + emit payment-form:patch{pos_payment_note:''} + clearInterval _quoteRefreshTimer + appService.modalHide('#orderpayment')",
+          "beforeUnmount (line 482-489) → only clearInterval (defensive — reset() handles primary case)"
+        ],
+        "NEW_BUG": "reset() does NOT cancel an in-flight confirmOrderWithAuthRetry promise. See NEW-01."
+      }
+    ]
+  },
+
+  "hostile_critique_per_state": {
+    "race_conditions": [
+      {
+        "id": "RACE-1",
+        "concern": "Cashier double-click on Confirm button while submit in flight",
+        "verdict": "MITIGATED",
+        "defense": "1st layer: :disabled (line 311) refuses pointer events while loading.isActive. 2nd layer: this.loading.isActive guard at confirmOrder line 968 (strict single-flight). aria-busy + aria-disabled mirror the disabled state for AT users."
+      },
+      {
+        "id": "RACE-2",
+        "concern": "Modal closed (cashier clicks ✕) while confirmOrderWithAuthRetry is awaiting POST admin/pos",
+        "verdict": "PARTIALLY-MITIGATED — see NEW-01 below",
+        "defense": "reset() clears the quote-refresh timer (line 585) AND emits modalHide. But there is NO AbortController on the order POST. The promise resolves in background, handleOrderSuccess runs, $emit('order:confirmed') fires, defensive modalHide runs (already hidden), showReceiptModalFromDom opens the receipt. Cashier sees a receipt for an order they 'cancelled'.",
+        "severity": "P2"
+      },
+      {
+        "id": "RACE-3",
+        "concern": "Two cashiers on same POS station try to confirm orders simultaneously (same browser session)",
+        "verdict": "IMPOSSIBLE in V1 architecture",
+        "defense": "Single Vue instance per browser tab. modalShow is exclusive (Bootstrap data-bs). Two browsers + same cashier = covered by backend Idempotency-Key (X-Idempotency-Key fresh UUID per submit attempt → no dedup with prior, but server PricingService::calculateOrder ensures consistency)."
+      },
+      {
+        "id": "RACE-4",
+        "concern": "Quote expires mid-modal (cashier leaves modal open >300s in CASH or CARD mode)",
+        "verdict": "NEW-03 P1 — see NEW concerns below",
+        "defense": "setInterval(60s) refreshQuote installed line 472-480, BUT early-returns for non-multi (line 474). CASH/CARD mode left open >300s → next confirm POST → server rejects 'Order quote expired' → cashier sees 422 toast (handlePaymentError fallback path). Multi mode is the ONLY mode with active polling."
+      },
+      {
+        "id": "RACE-5",
+        "concern": "Two cashiers attempt to encaisser the SAME kiosk-paid pending order from POS",
+        "verdict": "OUT-OF-SCOPE for PaymentComponent",
+        "defense": "This is the H2-HEAL-01 / K2-HEAL-02 scenario covered by PosCounterCollectModal + PaymentService::confirmCounterPayment + PaymentAlreadyCollectedException (409). PaymentComponent's confirmOrder calls posOrder/save → POST admin/pos which CREATES a new Order row, not collects on existing one. The race window does not exist in this surface."
+      },
+      {
+        "id": "RACE-6",
+        "concern": "Admin deletes a TPE while cashier has it pre-selected in card mode",
+        "verdict": "PROP-009 P1 documented — stale selectedTerminalId never re-validated against new fetch",
+        "defense": "Currently NONE: a deleted TPE's id stays in selectedTerminalId across modal close/re-open, dropdown shows empty disabled placeholder, confirm allows submit (canConfirmCard returns true if id>0), server returns 422 'Invalid terminal_id'."
+      },
+      {
+        "id": "RACE-7",
+        "concern": "Multi tranche flipped to CARD mode but no TPE configured for branch",
+        "verdict": "NEW-02 P2 — see NEW concerns below",
+        "defense": "card sub-tab has the hint banner line 137-139. Multi-block has NO equivalent. Cashier picks CARD on a tranche → updateTranche auto-attaches selectedTerminalId (which is null if no TPE) → at submit, buildSplitPayload emits tranches with terminal_id=null → server 422 'A valid payment terminal is required for every CARD tranche.' → handlePaymentError shows the raw server toast. No in-modal UI hint anticipates this."
+      },
+      {
+        "id": "RACE-8",
+        "concern": "Idempotency-Key collision (same POS, same payload, same key)",
+        "verdict": "MITIGATED by server + reject handler",
+        "defense": "posOrder.js save() generates fresh crypto.randomUUID() per attempt (line 4 of save). 409 with idempotency-key-conflict header → rejection → handlePaymentError → _idempotencyConflict branch → cashier toast 'Commande déjà enregistrée — vérifier le ticker'."
+      }
+    ],
+    "edge_inputs": [
+      {
+        "id": "EDGE-1",
+        "concern": "qty=0 or amount<0 in tranche",
+        "verdict": "Backend validates (splitCanConfirm + PosOrderRequest server-side). Client gate via canConfirmMulti (line 439-441)."
+      },
+      {
+        "id": "EDGE-2",
+        "concern": "Decimal precision in cashChange",
+        "verdict": "PROP-007 P3 — float math (Math.round * 100 / 100). Edge case 0.1+0.2 hazard. Single-tender path inconsistent with split path (cents math). LOW V1 risk because fast-food amounts < 100€."
+      },
+      {
+        "id": "EDGE-3",
+        "concern": "cardInput leading-zero strip ('0123' → 123)",
+        "verdict": "PROP-002 P0 — type='number' (line 146). Note 4 last-4 digit cards starting with 0 → corrupted pos_payment_note. STILL VALID against current file."
+      },
+      {
+        "id": "EDGE-4",
+        "concern": "splitCount > 20 or < 2 or non-integer",
+        "verdict": "Clamped server-side via splitEquallyHandler (line 668: Math.max(2, Math.min(20, ...))). Native input min=2 max=20 step=1 (line 235-237)."
+      },
+      {
+        "id": "EDGE-5",
+        "concern": "Empty cashInput on CASH submit",
+        "verdict": "collectPaymentInputPatch (line 698-711): pos_received_amount = null if no value. Backend PosOrderRequest validates required_if. Cashier sees server 422 if empty."
+      },
+      {
+        "id": "EDGE-6",
+        "concern": "received < total in single-tender CASH",
+        "verdict": "Server PosOrderRequest enforces (received >= total). Cashier sees server 422. No client gate — could be added (POS-V1.0.X polish)."
+      },
+      {
+        "id": "EDGE-7",
+        "concern": "Multi tranche tendered < amount (cashier shorts the till)",
+        "verdict": "PosV5TrancheRow validation handles per-row. Aggregate enforced by splitCanConfirm."
+      }
+    ],
+    "keyboard_nav": [
+      {
+        "id": "KB-1",
+        "concern": "Enter on cashInput / cardInput does NOT confirm",
+        "verdict": "L5.3-F-01 + PROP-016 both flag this. Bundle into LOCK_PAY_A11Y. No @keyup.enter binding on inputs OR confirm button."
+      },
+      {
+        "id": "KB-2",
+        "concern": "Escape does NOT close modal (only ✕ button click)",
+        "verdict": "L5.3-F-05 + PROP-016 + PROP-004 modal-a11y all flag this. May be Bootstrap-handled (needs Playwright verify) — currently INFO until disproved. Bundle into LOCK_PAY_A11Y."
+      },
+      {
+        "id": "KB-3",
+        "concern": "Tab order traverses split-block buttons correctly",
+        "verdict": "L5.3 PASS — verified DOM linear order matches visual. No CSS reorder."
+      },
+      {
+        "id": "KB-4",
+        "concern": "No focus trap inside modal",
+        "verdict": "PROP-004 documents — Tab can escape modal to background page elements. Bundle into LOCK_PAY_A11Y."
+      },
+      {
+        "id": "KB-5",
+        "concern": "Auto-focus cashInput on modal mount",
+        "verdict": "Not implemented. Bundle into LOCK_PAY_A11Y (PROP-004 mounted() patch)."
+      }
+    ],
+    "visual_feedback": [
+      {
+        "id": "VF-1",
+        "concern": "Loading spinner",
+        "verdict": "LoadingComponent (line 10) + aria-busy on confirm button. OK."
+      },
+      {
+        "id": "VF-2",
+        "concern": "Disabled microcopy on confirm button",
+        "verdict": "PROP-012 P2 — :disabled fires for 3 reasons (loading / !canConfirmMulti / !canConfirmCard) but the BUTTON LABEL never explains why. Screen reader hears 'Confirmer et imprimer, indisponible' with no aria-describedby. Bundle into LOCK_PAY_A11Y."
+      },
+      {
+        "id": "VF-3",
+        "concern": "Currency format `4.90€` vs canonical FR `4,90 €`",
+        "verdict": "D3 LOCK_PAY_currency in flight per plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md — separate concern, owner-approved path. Not bundled here."
+      },
+      {
+        "id": "VF-4",
+        "concern": "Empty state when 0 TPE configured",
+        "verdict": "card sub-tab line 137-139 hint banner OK. multi-block has NO equivalent — see NEW-02."
+      },
+      {
+        "id": "VF-5",
+        "concern": "Error state on terminals fetch fail",
+        "verdict": "Soft-fail line 528-530 — list silently empty. Same hint banner surfaces (looks like 'no TPE' but actually 'fetch failed'). PROP-014 P2 — telemetry gap. Bundle into LOCK_PAY_TELEMETRY."
+      },
+      {
+        "id": "VF-6",
+        "concern": "Receipt print success/fail telemetry",
+        "verdict": "ReceiptComponent handles. openDrawer (line 889) Promise.resolve().catch(()=>{}) — silent on no-hardware-bridge. PROP-015 P3 telemetry gap. Bundle into LOCK_PAY_TELEMETRY."
+      }
+    ],
+    "idempotency": [
+      {
+        "id": "IDM-1",
+        "concern": "X-Idempotency-Key per submit",
+        "verdict": "MITIGATED — posOrder.js save() generates fresh crypto.randomUUID per attempt. H2-HEAL-01 user-scoped key is on the SERVER side (PaymentService::confirmCounterPayment scope) — NOT applicable here because admin/pos creates new Order rows, not re-collects on existing."
+      },
+      {
+        "id": "IDM-2",
+        "concern": "Same payload + duplicate submit",
+        "verdict": "Different X-Idempotency-Key per attempt means server treats as new request. The single-flight client guard (loading.isActive) is the ONLY duplicate-submit gate. If cashier somehow bypasses client guard (DevTools), two Orders could be created. LOW risk in production (no DevTools opening)."
+      },
+      {
+        "id": "IDM-3",
+        "concern": "409 PaymentAlreadyCollectedException catch path",
+        "verdict": "VERIFIED NOT APPLICABLE — H2-HEAL-01 ships PaymentAlreadyCollectedException only in PaymentService::confirmCounterPayment (PosCounterCollectModal flow). PaymentComponent's posOrder/save → POST admin/pos creates new Orders; that exception is never thrown on this path. Documented as defense-in-depth INFO — see NEW-04."
+      }
+    ],
+    "nf525_invariants": [
+      {
+        "id": "NF-1",
+        "concern": "Client-side total/subtotal/discount tampering",
+        "verdict": "MITIGATED — H5 POS-A6 (line 868-878) strips {total, subtotal, discount} from POST payload. Server PricingService::calculateOrder is single source of truth. PosOrderRequest made these nullable (POS-9.1.8 / POS-GA-F-47). composition_snapshot frozen at order creation. J-ADV-1 A3 CLEAN."
+      },
+      {
+        "id": "NF-2",
+        "concern": "Cashier crafts fraudulent payment_breakdown",
+        "verdict": "MITIGATED — backend validates payment_breakdown when paymentMode=multi. Server re-checks sum equals server-recomputed total."
+      }
+    ]
+  },
+
+  "prior_proposals_verified": [
+    {
+      "id": "PROP-PAY-002",
+      "severity": "P0",
+      "title": "cardInput type='number' strips leading-zero from card last-4",
+      "current_line_actual": "146",
+      "still_valid": true,
+      "verification": "Read line 143-150: type='number' confirmed. collectPaymentInputPatch line 706-708 reads $refs.cardInput.value into pos_payment_note. Server stores corrupted '123' instead of '0123'.",
+      "bundle_target": "LOCK_PAY_INPUTS"
+    },
+    {
+      "id": "PROP-PAY-003",
+      "severity": "P1",
+      "title": "$t('key') || 'fallback' pattern broken under default vue-i18n",
+      "current_line_actual": "76, 98, 119, 126, 131, 138, 184, 198, 216, 229, 240, 250, 260, 269, 271, 292, 303, 783, 906, 976, 983",
+      "still_valid": true,
+      "verification": "Grep -n \"|| '\" PaymentComponent.vue → 17+ matches in template AND script. Default vue-i18n returns key on miss (truthy), || never fires. Fix requires either missingHandler config OR change pattern to $t('key', { default: 'fallback' }) — i18n.js:114-120 baseline.",
+      "bundle_target": "LOCK_PAY_I18N"
+    },
+    {
+      "id": "PROP-PAY-004",
+      "severity": "P1",
+      "title": "Modal lacks role='dialog' aria-modal focus-trap Escape-handler focus-restore",
+      "current_line_actual": "12-13",
+      "still_valid": true,
+      "verification": "Template root: <div id=\"orderpayment\" class=\"modal pos-v4-payment-modal pos-v5-payment-modal\"> — no role, no aria-modal, no aria-labelledby. No focus trap, no document keydown for Escape, no return-focus restorer.",
+      "bundle_target": "LOCK_PAY_A11Y"
+    },
+    {
+      "id": "PROP-PAY-005",
+      "severity": "P1",
+      "title": "Tab pattern incomplete — missing aria-controls aria-labelledby tabpanel role arrow-key nav",
+      "current_line_actual": "38-78, 82, 109, 176",
+      "still_valid": true,
+      "verification": "role='tablist' on <nav> line 38, role='tab' + aria-selected on buttons. BUT no aria-controls bound to panel ids (#cash #card #multi). Panels lack role='tabpanel' + aria-labelledby. No @keydown.left/right for ARIA tab arrow navigation.",
+      "bundle_target": "LOCK_PAY_A11Y"
+    },
+    {
+      "id": "PROP-PAY-006",
+      "severity": "P2",
+      "title": "cashInput type='text' lacks inputmode='decimal' — tablet keyboard not optimal",
+      "current_line_actual": "89",
+      "still_valid": true,
+      "verification": "Line 86-93 confirmed type='text', no inputmode attribute. iPad/Android tablet shows full QWERTY instead of decimal keypad.",
+      "bundle_target": "LOCK_PAY_INPUTS"
+    },
+    {
+      "id": "PROP-PAY-007",
+      "severity": "P3",
+      "title": "cashChange uses float math while split path uses integer cents",
+      "current_line_actual": "411-415",
+      "still_valid": true,
+      "verification": "Read computed cashChange line 411-415: parseFloat() + Math.round*100/100. Confirmed. Split-payment path lines 419-441 use splitToCents/splitFromCents helpers (cents-math).",
+      "bundle_target": "LOCK_PAY_REFACTOR_V2"
+    },
+    {
+      "id": "PROP-PAY-008",
+      "severity": "P2",
+      "title": "English fallback string in FR-only V1 product (alertService.info line 779-781)",
+      "current_line_actual": "778-781",
+      "still_valid": true,
+      "verification": "alertService.info(this.$t('pos.cash_received_auto_bumped') || 'The server total changed at checkout; the received amount was increased to cover it.'). Confirmed. Note: PROP-003 makes this dead code today (|| never fires), but it becomes live after PROP-003 i18n fix.",
+      "bundle_target": "LOCK_PAY_I18N"
+    },
+    {
+      "id": "PROP-PAY-009",
+      "severity": "P1",
+      "title": "selectedTerminalId never re-validated; deleted-terminal stays selected → 422",
+      "current_line_actual": "525-527",
+      "still_valid": true,
+      "verification": "if (this.selectedTerminalId === null && this.paymentTerminals.length > 0) — only auto-picks if null. After fetch with deleted terminal, condition false → stays stale.",
+      "bundle_target": "LOCK_PAY_TELEMETRY"
+    },
+    {
+      "id": "PROP-PAY-010",
+      "severity": "P2",
+      "title": "5× document.getElementById direct DOM manipulation (anti-Vue)",
+      "current_line_actual": "545, 549, 553, 701, 770",
+      "still_valid": true,
+      "verification": "numpadInput/numpadBack/numpadClear (lines 544-555) all use getElementById(inputIdName). collectPaymentInputPatch line 701 uses getElementById('cashInput'). alignCashReceivedWithQuotedTotal line 770 uses getElementById('cashInput'). MIX of $refs (lines 88, 145, 706) and getElementById is the design smell.",
+      "bundle_target": "LOCK_PAY_REFACTOR_V2"
+    },
+    {
+      "id": "PROP-PAY-011",
+      "severity": "P3",
+      "title": "Prop named 'props' shadows Vue reserved name; lacks required:true + validator",
+      "current_line_actual": "379-381",
+      "still_valid": true,
+      "verification": "props: { props: Object } confirmed. Throughout component this.props.form access patterns. Renaming would break parent + every internal reference — V2 cleanup only.",
+      "bundle_target": "LOCK_PAY_REFACTOR_V2"
+    },
+    {
+      "id": "PROP-PAY-012",
+      "severity": "P2",
+      "title": "Disabled confirm button: no aria-live explanation of WHY disabled",
+      "current_line_actual": "307-319",
+      "still_valid": true,
+      "verification": "Button disabled by 3 conditions but no aria-describedby pointing to a live region explaining state. Cashier on screen-reader hears 'indisponible' with no reason.",
+      "bundle_target": "LOCK_PAY_A11Y"
+    },
+    {
+      "id": "PROP-PAY-013",
+      "severity": "P3",
+      "title": "splitCountInput type='number' lacks inputmode='numeric'",
+      "current_line_actual": "232-242",
+      "still_valid": true,
+      "verification": "Native type='number' has implicit numeric inputmode in most browsers, but explicit attribute is best-practice + ensures decimal-pad on Android Chrome quirks.",
+      "bundle_target": "LOCK_PAY_INPUTS"
+    },
+    {
+      "id": "PROP-PAY-014",
+      "severity": "P2",
+      "title": "fetchPaymentTerminals catch is silent — no telemetry differentiating network vs auth vs 500",
+      "current_line_actual": "528-531",
+      "still_valid": true,
+      "verification": "catch (_e) { this.paymentTerminals = []; } — three error classes (network, 401, 500) all collapse to same silent state. Hint banner says 'Aucun TPE configuré' (looks like config gap, not fetch failure).",
+      "bundle_target": "LOCK_PAY_TELEMETRY"
+    },
+    {
+      "id": "PROP-PAY-015",
+      "severity": "P3",
+      "title": "openDrawer silent fail — no telemetry on hardware-bridge result",
+      "current_line_actual": "887-890",
+      "still_valid": true,
+      "verification": "Promise.resolve(openDrawer()).catch(()=>{}) wrapped in try {} catch (e) {/* defensive */}. NO console.warn, no audit_log, no alertService. POS_SIMULATION_HARDWARE production-flip would silently mask hardware failures.",
+      "bundle_target": "LOCK_PAY_TELEMETRY"
+    },
+    {
+      "id": "PROP-PAY-016",
+      "severity": "P2",
+      "title": "No keyboard shortcuts — Enter to confirm, Escape to cancel",
+      "current_line_actual": "(absence — no @keyup.enter @keydown.escape across file)",
+      "still_valid": true,
+      "verification": "Grep -n '@keyup\\|@keydown' PaymentComponent.vue → 0 hits. Confirmed by L5.3-F-01 (FROZEN-LOCK path) + L5.3-F-05 (Escape may be Bootstrap-handled). Duplicate concern with PROP-004 + L5.3 — bundle into single LOCK_PAY_A11Y to deduplicate effort.",
+      "bundle_target": "LOCK_PAY_A11Y"
+    },
+    {
+      "id": "PROP-PAY-017",
+      "severity": "P3",
+      "title": "Numpad hidden in multi mode — cashier loses on-screen pad for multi-tranche entry",
+      "current_line_actual": "158-168",
+      "still_valid": true,
+      "verification": "v-if=\"paymentMode === 'cash' || paymentMode === 'card'\" — multi mode hides PosV5Numpad. Per-tranche inputs in PosV5TrancheRow rely on OS keypad via inputmode='decimal'. On desktop POS (no touch), cashier types on real keyboard — irrelevant. On iPad POS, OS keypad surfaces per-input — also OK. Layout decision, not bug.",
+      "bundle_target": "LOCK_PAY_LAYOUT"
+    },
+    {
+      "id": "PROP-PAY-018",
+      "severity": "P3",
+      "title": "3-col nav narrow viewport — 'Multi-paiement' label may wrap",
+      "current_line_actual": "13, 38, 76",
+      "still_valid": true,
+      "verification": "max-w-[480px] modal + 3-col grid. Computed label width ~119px per tab. 'Multi-paiement' ≈110px at body font-size — tight margin. CSS line 1149-1165 sets min-height:64px + flex-direction:row, so wrap breaks alignment.",
+      "bundle_target": "LOCK_PAY_LAYOUT"
+    },
+    {
+      "id": "PROP-PAY-019",
+      "severity": "INFO",
+      "title": "Echo subscription resilience — N/A (no Echo usage)",
+      "current_line_actual": "(absence)",
+      "still_valid": true,
+      "verification": "Grep confirms no Echo / window.Echo / pusher import. Only real-time-ish behavior is 60s setInterval quote-refresh (multi-only). Cleaned up at beforeUnmount AND reset() — no leak.",
+      "bundle_target": "CLOSE_OUT (mark resolved)"
+    },
+    {
+      "id": "PROP-PAY-020",
+      "severity": "INFO",
+      "title": "Vue console warnings — static read clean; runtime verify requires dev:watch",
+      "current_line_actual": "(broad)",
+      "still_valid": true,
+      "verification": "Static read clean. Live-verify out of scope for read-only audit. Recommend integrating with G15 broad-smoke browser console capture.",
+      "bundle_target": "CLOSE_OUT (mark resolved)"
+    }
+  ],
+
+  "new_concerns_this_audit": [
+    {
+      "id": "M-POS-1-NEW-01",
+      "severity": "P2",
+      "category": "RACE_CONDITION",
+      "title": "reset() does NOT cancel in-flight confirmOrderWithAuthRetry — order completes in background after cashier 'cancels'",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PaymentComponent.vue",
+        "lines_verified": "573-590 (reset), 800-819 (confirmOrderWithAuthRetry), 820-881 (runConfirmOrderAttempt), 968 (single-flight guard)",
+        "details": "reset() clears _quoteRefreshTimer (line 585-588) and emits modalHide. But confirmOrderWithAuthRetry uses no AbortController. The posOrder/save action (posOrder.js:save) has its own internal AbortController with 30s timeout for network — but it's bound to network, NOT to the modal lifecycle. If a cashier clicks ✕ at second 5 of a 10s server roundtrip, the modal hides but the Promise resolves, handleOrderSuccess runs, $emit('order:confirmed') fires, defensive modalHide does nothing (already hidden), then showReceiptModalFromDom opens the receipt unexpectedly."
+      },
+      "exploit_path": "1. Cashier clicks Confirmer → loading=true, POST in flight. 2. Cashier realises wrong order, clicks ✕ → reset() → modal closes, paymentMode='cash', tranches=[]. 3. Server returns 201 → handleOrderSuccess runs → openDrawer fires (CASH order created in DB) → emit order:confirmed → receipt opens. 4. Cashier sees a printed receipt for an order they thought they cancelled. No undo path. NF525 chain advanced.",
+      "owner_path": "FROZEN §7 — bundle into LOCK_PAY_TELEMETRY (or a new LOCK_PAY_RACE_CANCEL). Add AbortController stored on `this._submitAbort`; reset() calls `this._submitAbort?.abort()`. catch path in confirmOrder detects ERR_CANCELED and silently ignores. ~12 LOC.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Option A (preferred): Stash AbortController in data(), pass via posOrder/save payload, abort() in reset(). posOrder.js already supports signal — extend save() to honor payload.signal.",
+        "Option B: Defer reset() if loading.isActive (refuse to close mid-submit, show alertService.warning). Simpler but UX-hostile — cashier feels modal is frozen.",
+        "Option C (V2): Wrap modal close in a 2-step: 'Cancel in-flight payment?' confirm dialog. Heavyweight."
+      ],
+      "bundle_target": "LOCK_PAY_TELEMETRY (or NEW LOCK_PAY_RACE_CANCEL bundle)"
+    },
+    {
+      "id": "M-POS-1-NEW-02",
+      "severity": "P2",
+      "category": "UX_FEEDBACK_GAP",
+      "title": "Multi-block has NO 'Aucun TPE configuré' hint when cashier picks CARD on a tranche but branch has no active TPE",
+      "evidence": {
+        "file_payment": "resources/js/components/admin/pos/PaymentComponent.vue lines 117-140 (card sub-tab has the hint banner line 137-139)",
+        "file_tranche": "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue (no v-if='isCard' hint banner anywhere; only isCash conditional rendering at line 55)",
+        "details": "When paymentMode='card' and paymentTerminals.length===0, the card sub-tab surfaces a red hint 'Aucun TPE actif sur cette filiale...'. When the cashier flips to multi mode and adds a tranche with mode=CARD, NO equivalent UI hint exists. updateTranche line 660-664 auto-attaches terminal_id from selectedTerminalId, but selectedTerminalId is null when no TPE. buildSplitPayload emits the tranche with terminal_id=null. Server PosOrderRequest rejects 422 'A valid payment terminal is required for every CARD tranche.' handlePaymentError shows raw server message — cashier has no in-modal hint anticipating the failure."
+      },
+      "exploit_path": "1. New branch deployed with 0 active TPEs. 2. Cashier opens payment modal in multi mode (split among 2 customers). 3. Adds tranche A (CASH) + tranche B (CARD). 4. canConfirmMulti returns true (sum matches total). 5. Confirm → POST → 422 → toast: 'A valid payment terminal is required for every CARD tranche.' 6. Cashier doesn't know what to do — never saw the hint banner that exists in the card sub-tab.",
+      "owner_path": "Two routes: (a) Surface the hint banner in the multi-block summary row when ANY tranche has mode=CARD AND paymentTerminals.length===0 (PaymentComponent §7 FROZEN — LOCK_PAY_TELEMETRY bundle), OR (b) Add a per-tranche red sub-line in PosV5TrancheRow when isCard && !terminal_id (PosV5TrancheRow also §7 FROZEN, same LOCK).",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Bundle with PROP-009 (stale terminal_id) + PROP-014 (telemetry) into LOCK_PAY_TELEMETRY. Add a `noTerminalsAvailable` computed (returns paymentTerminals.length===0). Template line 181 conditional banner if (noTerminalsAvailable && tranches.some(t => Number(t.mode) === this.posPaymentMethodEnum.CARD)).",
+        "Or: per-tranche, more granular — emit a `needsTerminal` flag from updateTranche, render in PosV5TrancheRow via prop drilling. More LOC but more precise."
+      ],
+      "bundle_target": "LOCK_PAY_TELEMETRY"
+    },
+    {
+      "id": "M-POS-1-NEW-03",
+      "severity": "P1",
+      "category": "QUOTE_STALENESS_ASYMMETRY",
+      "title": "setInterval(60s) refreshQuote is multi-only — CASH/CARD mode left open >300s expires server-side quote",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PaymentComponent.vue",
+        "lines_verified": "472-480 (mounted setInterval), 474 (if paymentMode !== 'multi' return), 866 (confirmOrder always refreshQuote before save)",
+        "config": "config/quote.php:20 → 'ttl_seconds' => (int) env('QUOTE_TTL_SECONDS', 300)",
+        "details": "The polling early-returns for non-multi modes (line 474). A cashier who opens payment modal in CASH mode, gets distracted (chef rush, phone call), comes back >300s later → quote expired server-side. confirmOrder calls refreshQuote at line 866 which DOES re-fetch — so the cashier WILL get a fresh quote at submit-time. BUT: alignCashReceivedWithQuotedTotal (line 753-783) only handles CASH and only bumps received UP if server total > received. If server total CHANGED in the meantime (price refresh, promo expiry), the cashier sees the auto-bump toast — but in CARD mode there is NO such alignment logic, and the cashier may have visually committed to a wrong total they saw 5 minutes ago.",
+        "ux_friction": "PROP-019 verified Echo is N/A but missed this polling asymmetry. The multi-mode polling exists precisely because multi is slower to enter (tranche editing) — but CARD mode (selecting TPE + typing last-4 digits) can also take >300s on a chatty customer."
+      },
+      "owner_path": "FROZEN §7. Two options: (a) Always poll regardless of mode (cheap — drop line 474 early-return). (b) Visible 'quote expires in N seconds' countdown chip on the hero card. (a) is minimum-viable.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Bundle into LOCK_PAY_TELEMETRY. Remove the `if (this.paymentMode !== 'multi') return;` guard at line 474. The refresh cost is one POST every 60s (negligible). Keep the existing loading-guard + try/catch so silent fail.",
+        "Optional UX upgrade: add a v-if='quoteAge > 240' chip 'Quote expire bientôt — rafraîchir maintenant' near the hero amount. Visual telemetry."
+      ],
+      "bundle_target": "LOCK_PAY_TELEMETRY"
+    },
+    {
+      "id": "M-POS-1-NEW-04",
+      "severity": "INFO",
+      "category": "DEFENSE_IN_DEPTH",
+      "title": "posOrder/save reject handler ONLY catches 409 with idempotency-key-conflict header — typed PaymentAlreadyCollectedException 409 would fall through to generic handlePaymentError",
+      "evidence": {
+        "file_store": "resources/js/store/modules/posOrder.js (save action) line 21",
+        "details": "Reject branch: `else if (err?.response?.status === 409 && err?.response?.headers?.['idempotency-key-conflict'])`. PaymentAlreadyCollectedException (Handler.php:80-92) ships 409 with `error_code: payment_already_collected` in BODY, no special header. If admin/pos ever throws this exception (today it does NOT — confirmCounterPayment is the only thrower), the reject would fall through to `reject(err)` and handlePaymentError shows the generic error message. THIS IS VERIFIED NOT EXPLOITABLE TODAY because admin/pos creates new Orders via OrderService — PaymentService::confirmCounterPayment is never invoked from this controller path.",
+        "future_proofing": "If a future heal moves PaymentAlreadyCollectedException to admin/pos (unlikely — different domain), the cashier UX would lose the structured 409 → ticker-redirect hint."
+      },
+      "owner_path": "INFO — no action needed today. Document as a future-proofing tripwire in the H2-HEAL-01 follow-up doc if anyone considers throwing PaymentAlreadyCollectedException from non-confirmCounterPayment paths.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "OPTIONAL: Add a `err.response.data?.error_code === 'payment_already_collected'` branch in posOrder.js save reject handler, mapping to a dedicated `_paymentAlreadyCollected: true` rejection (mirror _idempotencyConflict pattern). ~6 LOC. Defensive only.",
+        "OPTIONAL: handlePaymentError in PaymentComponent could match on error_code in error.response.data — same effect. Mirror pattern from PosCounterCollectModal.vue onConfirm error branch."
+      ],
+      "bundle_target": "NOT_IN_BUNDLE — INFO defense-in-depth, defer V1.0.X"
+    },
+    {
+      "id": "M-POS-1-NEW-05",
+      "severity": "P3",
+      "category": "FOCUS_MGMT",
+      "title": "Mode-switch wipes input without preserving cashier intent — typed value lost cross-mode",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PaymentComponent.vue",
+        "lines_verified": "591-602 (paymentMethod), 620-629 (setPaymentMode), 596 (resetPaymentInputs always called)",
+        "details": "Cashier types 50.00 in cash mode, realises they should encaisser by card → taps CARD tab → setPaymentMode('card') → paymentMethod(CARD, 'cardInput') → resetPaymentInputs wipes BOTH cashInput AND cardInput. The 50.00 is lost. This is the J-STEP-POS P7-FRICTION-2 finding. The fix is to preserve the typed value cross-mode if the new mode's input is empty."
+      },
+      "owner_path": "FROZEN §7 — LOCK_PAY_INPUTS bundle. ~10 LOC patch in setPaymentMode: read current input value, set destination input value after mode flip if destination is empty.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Bundle into LOCK_PAY_INPUTS. Modify resetPaymentInputs OR setPaymentMode to preserve typed amount. Watch out: paymentMethod() emits payment-form:patch which resets pos_received_amount=null — that's the source of truth for the cash backend. Need careful re-emit if amount preserved."
+      ],
+      "bundle_target": "LOCK_PAY_INPUTS"
+    }
+  ],
+
+  "h2_heal_01_k2_heal_02_l53_status_check": {
+    "H2-HEAL-01_PaymentAlreadyCollectedException": {
+      "scope_in_PaymentComponent": "NOT APPLICABLE",
+      "evidence": "PaymentAlreadyCollectedException is thrown ONLY by app/Services/PaymentService.php:305 inside confirmCounterPayment. That service is called by PosCounterCollectModal flow (M-POS-2 scope). PaymentComponent.vue's confirmOrder → posOrder/save → POST admin/pos (Vuex action posOrder.js:save) which calls OrderService::create-new-order — different domain entirely. PaymentComponent CREATES new Orders, it does NOT collect on existing pending orders.",
+      "verification_method": "Read PaymentAlreadyCollectedException.php (74 LOC) + Handler.php:80-92 + PaymentService::confirmCounterPayment + posOrder.js:save",
+      "future_proofing_NEW-04": "If exception is ever thrown from non-confirmCounterPayment paths, the posOrder/save reject handler does NOT specially catch it. Documented as INFO."
+    },
+    "K2-HEAL-02_lockForUpdate": {
+      "scope_in_PaymentComponent": "NOT APPLICABLE — UX regression check",
+      "evidence": "K2-HEAL-02 added lockForUpdate to PaymentService::confirmCounterPayment (line 220-223 grep verified) + PaymentReconcileController + OrderController etc. PaymentComponent.vue calls posOrder/save which targets admin/pos POST → OrderService::create — a CREATE path, not a UPDATE/COLLECT path. lockForUpdate is not in the PaymentComponent's request lifecycle.",
+      "verification_method": "Grep -rn lockForUpdate in app/ → 25+ hits, all on COLLECT/UPDATE paths. None in OrderService create flow."
+    },
+    "L5.3_keyboard_gaps": {
+      "scope_in_PaymentComponent": "PROP-016 + L5.3-F-01 + L5.3-F-05 ALL BUNDLE INTO LOCK_PAY_A11Y",
+      "evidence": "L5.3 explicitly recommends LOCK_PAY route for PaymentComponent inputs (F-01) and Escape handler (F-05). Mission asked: 'bundle into single LOCK?' → YES, bundle with PROP-004 + PROP-005 + PROP-012 + PROP-016 into LOCK_PAY_A11Y. ~40-60 LOC total a11y patch (1 owner countersign instead of 3-5)."
+    }
+  },
+
+  "owner_gate_lock_consolidation": {
+    "recommendation_summary": "Consolidate 19 PROPOSAL docs into 5 LOCK bundles + 1 V2 deferral + 2 close-outs. Reduces owner gate count from 19 individual countersigns to 5 batched countersigns (or 6 if V2 bundle ever lands). Each bundle is single-file LOCK_PAY_*.md with batched diff + scope-minimal patch + sentinel updates.",
+    "bundles": [
+      {
+        "name": "LOCK_PAY_INPUTS",
+        "priority": "P0/P1",
+        "proposals_included": ["PROP-PAY-002 (cardInput leading-zero P0)", "PROP-PAY-006 (cashInput inputmode P2)", "PROP-PAY-013 (splitCount inputmode P3)", "M-POS-1-NEW-05 (cross-mode value preserve P3)"],
+        "estimated_loc": "~10 net LOC across template + setPaymentMode method",
+        "owner_gate": "REQUIRED — single LOCK_PAY_INPUTS.md countersign",
+        "rationale": "Smallest LOCK, highest UX ROI. PROP-002 P0 is the highest-priority bug in the entire backlog (corrupted card last-4 in audit-log payment_note). 4 items batched = 4× value per countersign."
+      },
+      {
+        "name": "LOCK_PAY_A11Y",
+        "priority": "P1",
+        "proposals_included": ["PROP-PAY-004 (modal a11y P1)", "PROP-PAY-005 (tablist incomplete P1)", "PROP-PAY-012 (disabled confirm aria-describedby P2)", "PROP-PAY-016 (no Enter/Escape shortcuts P2)", "L5.3-F-01 (cashInput/cardInput Enter-to-confirm P2)", "L5.3-F-05 (modal Escape-close P3)"],
+        "estimated_loc": "~40-60 LOC across template (role+aria attrs) + script (Escape document listener + focus trap + return-focus restore + auto-focus on mount) + 4-6 Vitest sentinel cases",
+        "owner_gate": "REQUIRED — single LOCK_PAY_A11Y.md countersign",
+        "rationale": "Six related a11y items batched. ARIA tab pattern + dialog pattern + keyboard shortcuts all interact — fixing them in one pass avoids half-fix regressions. Includes L5.3 keyboard backlog the mission asked to bundle."
+      },
+      {
+        "name": "LOCK_PAY_I18N",
+        "priority": "P1",
+        "proposals_included": ["PROP-PAY-003 (||fallback pattern broken P1)", "PROP-PAY-008 (English string in FR-only V1 P2)"],
+        "estimated_loc": "Component: ~3 LOC (alternative pattern — $t('key', 'fallback') signature or migrate to $te check). i18n.js: 1 missingHandler config addition. resources/lang/fr/all.php: ~17 new keys to back the existing || fallbacks (one-time string sweep).",
+        "owner_gate": "REQUIRED — but cross-surface impact (every $t() || fallback throughout the app, not just PaymentComponent). Owner must sign off on the i18n contract change. Recommend a separate i18n CONTRACT_LOCK first, then chip PaymentComponent under it.",
+        "rationale": "PROP-003 is a CONTRACT bug (whole-app pattern broken). PROP-008 is a single string. Bundling them surfaces the contract concern; otherwise PROP-008 alone is meaningless (the fallback never fires today)."
+      },
+      {
+        "name": "LOCK_PAY_TELEMETRY",
+        "priority": "P1/P2",
+        "proposals_included": ["PROP-PAY-009 (stale selectedTerminalId P1)", "PROP-PAY-014 (fetchTerminals silent fail P2)", "PROP-PAY-015 (openDrawer silent fail P3)", "M-POS-1-NEW-01 (in-flight cancel P2)", "M-POS-1-NEW-02 (multi-block TPE hint gap P2)", "M-POS-1-NEW-03 (quote staleness asymmetry P1)"],
+        "estimated_loc": "~40 LOC across fetchPaymentTerminals (re-validate selectedTerminalId post-fetch + telemetry differentiation) + openDrawer wrapper (alertService.warning on hardware fail) + setInterval drop the multi-only guard + AbortController for cancel + multi-block hint banner",
+        "owner_gate": "REQUIRED — single LOCK_PAY_TELEMETRY.md countersign",
+        "rationale": "All six items relate to observability + silent-failure ergonomics. Cashier-visible UX correctness items. Highest practical owner ROI after LOCK_PAY_INPUTS."
+      },
+      {
+        "name": "LOCK_PAY_LAYOUT",
+        "priority": "P3",
+        "proposals_included": ["PROP-PAY-017 (numpad hidden in multi P3)", "PROP-PAY-018 (3-col nav narrow viewport wrap P3)"],
+        "estimated_loc": "~20 LOC CSS + ~5 LOC template (responsive label or icon-only at narrow)",
+        "owner_gate": "REQUIRED — but low priority; defer V1.0.X polish wave",
+        "rationale": "Visual polish only. PROP-017 might be a no-op (OS keypad on tablet works fine for tranche inputs). PROP-018 has empirical Playwright verify path — measure actual label width at 480px viewport, only patch if wrap observed."
+      },
+      {
+        "name": "LOCK_PAY_REFACTOR_V2",
+        "priority": "DEFER V2",
+        "proposals_included": ["PROP-PAY-007 (cents math consolidation P3)", "PROP-PAY-010 (getElementById → $refs P2)", "PROP-PAY-011 (props named props rename P3)"],
+        "estimated_loc": "~120 LOC sweep — touches collectPaymentInputPatch + numpad methods + alignCashReceivedWithQuotedTotal + every internal this.props.x access + parent template renaming",
+        "owner_gate": "NOT REQUIRED V1 — defer to V2 architectural refresh",
+        "rationale": "These are architectural cleanups, not user-visible bugs. PROP-007 cents math is theoretically the only one with arithmetic risk, but verified LOW for fast-food <100€ amounts. Defer to V2 cycle when frozen-zone discipline could be relaxed for a planned refactor."
+      }
+    ],
+    "close_outs": [
+      {
+        "id": "PROP-PAY-019",
+        "action": "Mark RESOLVED — Echo subscription concerns N/A (no Echo usage in PaymentComponent)",
+        "owner_gate": "NONE"
+      },
+      {
+        "id": "PROP-PAY-020",
+        "action": "Mark RESOLVED — static read clean. Integrate with G15 broad-smoke browser console capture if needed for runtime verify",
+        "owner_gate": "NONE"
+      }
+    ],
+    "v1_ship_blocker_count": 0,
+    "lock_bundle_count_with_owner_gate": 5,
+    "lock_bundle_count_deferred_v2": 1,
+    "close_out_count": 2,
+    "total_actionable_items": 24,
+    "items_per_lock_avg": 4.8
+  },
+
+  "scoring": {
+    "vue_correctness_static": "PASS — no dead code, computed contracts hold, emits list whitelisted (line 378), single-flight guard active, sentinel paymentComponentEmitsJsdocList exists",
+    "vue_correctness_a11y": "PARTIAL — modal/tab a11y gaps documented (LOCK_PAY_A11Y bundle)",
+    "vue_correctness_i18n": "PARTIAL — || fallback pattern broken globally (LOCK_PAY_I18N bundle, cross-surface)",
+    "vue_correctness_inputs": "PARTIAL — type=number on cardInput strips leading-zero (LOCK_PAY_INPUTS P0)",
+    "race_conditions": "MOSTLY-MITIGATED — single-flight + Idempotency-Key OK. Mid-submit cancel gap (NEW-01 P2). Quote staleness asymmetry (NEW-03 P1).",
+    "nf525_invariants": "PASS — SSOT enforced (H5 POS-A6 strip line 868-878), PricingService server-side, no client tamper surface",
+    "frozen_zone_diff": "0 LOC produced by this agent. Read-only audit confirmed by ZERO Edit/Write calls on PaymentComponent.vue or PosV5TrancheRow.vue.",
+    "v1_ship_blocker_count": 0,
+    "lock_required_count": 5,
+    "v2_deferred_count": 1,
+    "close_out_count": 2,
+    "audit_duration_inferred": "~45 min wall-clock"
+  },
+
+  "constraints_respected": {
+    "frozen_zone_diff": "0 LOC across §7 files (PaymentComponent.vue + PosV5TrancheRow.vue both READ-ONLY)",
+    "nf525_chain": "Not touched — presentation-layer audit only",
+    "tests_run": "0 — this is a deep-read audit, no new sentinel added. Existing sentinels (paymentComponentEmitsJsdocList.spec.js + paymentComponentPropMutation.spec.js + paymentComponent401Retry.spec.js + posPaymentComponentContract.spec.js + PaymentComponentPropMutationSentinelTest.spec.js) all remain valid baseline.",
+    "playwright_live": "Not run — source-grep + cross-reference with prior Phase J/L captures",
+    "mission_brief_correction_logged": "Brief claimed 4-modes CASH/CARD/MOBILE/TICKET/MULTI — that's PosCounterCollectModal scope (M-POS-2). PaymentComponent has 3 modes (cash/card/multi), MOBILE/TICKET live as per-tranche options inside multi. Logged in interaction_state_enumeration._clarification_brief_was_wrong."
+  },
+
+  "return_summary_for_orchestrator": {
+    "path_produced": "reports/test-e2e/goal-2026-05-23/phase-m/M-POS-1-paymentcomponent-deep.json",
+    "verdict": "GREEN-FROZEN-WITH-BACKLOG (0 V1 ship blockers, 19 prior PROPOSALs verified still relevant against current 1478-line file + 5 NEW concerns + 2 N/A close-outs)",
+    "top_5_NEW_concerns": [
+      "M-POS-1-NEW-03 P1 — Quote staleness asymmetry (60s polling multi-only; CASH/CARD >300s expires)",
+      "M-POS-1-NEW-01 P2 — reset() doesn't cancel in-flight confirmOrderWithAuthRetry → ghost receipt after 'cancel'",
+      "M-POS-1-NEW-02 P2 — Multi-block has no 'Aucun TPE' hint when cashier picks CARD tranche on 0-TPE branch",
+      "M-POS-1-NEW-05 P3 — Mode-switch wipes typed value across cash↔card tabs (J-STEP-POS P7-FRICTION-2 re-verified)",
+      "M-POS-1-NEW-04 INFO — posOrder/save reject ignores typed-409 PaymentAlreadyCollectedException body (defense-in-depth gap; N/A today)"
+    ],
+    "owner_gate_lock_consolidation_recommendation": "Bundle 19 PROPOSALs + 5 NEW into 5 LOCK candidates (PAY_INPUTS / PAY_A11Y / PAY_I18N / PAY_TELEMETRY / PAY_LAYOUT) + 1 V2 deferral bundle (REFACTOR_V2: 007+010+011) + 2 close-outs (019 Echo + 020 Vue-warnings). Reduces owner countersign count from 19 to 5. LOCK_PAY_INPUTS is highest priority (contains PROP-002 P0 cardInput leading-zero). LOCK_PAY_TELEMETRY contains highest count of items (3 PROPOSALs + 3 NEW). LOCK_PAY_I18N has cross-surface impact and may need a separate i18n CONTRACT_LOCK first."
+  }
+}

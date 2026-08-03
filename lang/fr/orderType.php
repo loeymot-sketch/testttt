@@ -3,9 +3,10 @@
 use App\Enums\OrderType;
 
 return [
-    OrderType::DELIVERY     => 'Delivery',
-    OrderType::TAKEAWAY     => 'Takeaway',
-    OrderType::POS          => 'Pos',
-    OrderType::DINING_TABLE => 'Dining Table',
+    OrderType::DELIVERY     => 'Livraison',
+    OrderType::TAKEAWAY     => 'À emporter',
+    OrderType::POS          => 'Caisse',
+    OrderType::DINING_TABLE => 'Sur place',
+    ''                      => '',
 
 ];

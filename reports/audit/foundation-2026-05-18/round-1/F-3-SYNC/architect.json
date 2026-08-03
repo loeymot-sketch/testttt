@@ -1,0 +1,101 @@
+{
+  "zone": "F-3-SYNC",
+  "role": "Architect",
+  "mode": "read-only",
+  "scope": "Outbox + Pusher + Polling + Webhooks + Idempotency",
+  "session_a_heals_acknowledged": [
+    "Wave 2c-5 Outbox Cache::lock (commit 9ff26e12b)",
+    "Wave 3 SYNC-ADV3-04 write-then-dispatch ordering (audit row IFF dispatch attempted)",
+    "Wave 3b cadence cap CADENCE_CEILING_MS=60000 + jitter 30000 (KDS+POS+OSS)",
+    "Wave 3c SYNC-ADV3C-04 LOCK_TTL 60s -> 300s + BATCH_CAP=500",
+    "Wave 3c TrustHosts P0",
+    "GOAL-CMS S-P0-A heartbeat cache write on successful broadcast (DispatchDomainEventsJob:128)"
+  ],
+  "summary": "Outbox -> DispatchDomainEventsJob -> broadcaster cascade is structurally sound. Idempotency-key SSOT lives in DomainEvent.idempotency_key (UNIQUE). 12 active Persist*ToOutbox listeners + 6 cache/availability/loyalty listeners. EventServiceProvider::shouldDiscoverEvents() returns false (EventServiceProvider:271) -> listen array is authoritative. Two-phase claim+dispatch pattern in DispatchDomainEventsJob is correct (lockForUpdate -> commit -> broadcast outside tx). CatalogChanged.fromMenuMutation is a clean adapter for 9 source event types. ComposerProfilePublished is paired-fired with ComposerProfileChanged in ComposerProfileService:168-169 but ONLY the Changed sibling has a listener mapping - the Published event is silently absorbed (dead event).",
+  "findings": [
+    {
+      "id": "ARCH-1",
+      "severity": "P2",
+      "category": "DEAD-EVENT",
+      "title": "ComposerProfilePublished dispatched but has no listener mapping",
+      "evidence": {
+        "file": "app/Providers/EventServiceProvider.php",
+        "lines": "90-251 (listen array)",
+        "detail": "ComposerProfilePublished class exists at app/Events/ComposerProfilePublished.php:10. NOT present as a key in $listen. EventServiceProvider::shouldDiscoverEvents() returns false -> no auto-discovery. Dispatched at app/Services/Composer/ComposerProfileService.php:168 followed by ComposerProfileChanged::dispatch on line 169 (which IS mapped to InvalidateKioskMenuCacheOnCatalogChange + PersistCatalogChangedToOutbox).",
+        "impact": "Event fires into the void. Removal safe because the Changed sibling carries the real signal."
+      },
+      "recommendation": "Either map ComposerProfilePublished to a domain-explicit listener (analytics hook for first-publish?) or remove the dispatch + the Event class. Safe to delete - no production behavior depends on it.",
+      "owner_question": "Should publication-vs-update be observable separately (e.g. for first-publish analytics or a notify-on-launch hook)? If no, we can drop ComposerProfilePublished entirely."
+    },
+    {
+      "id": "ARCH-2",
+      "severity": "P3",
+      "category": "DUPLICATE-LISTENER",
+      "title": "PersistCatalogChangedToOutbox bound to 11 events; some pass through CatalogChanged.fromMenuMutation, others directly",
+      "evidence": {
+        "file": "app/Providers/EventServiceProvider.php",
+        "lines": "179, 187-190, 192-195, 200, 205, 209, 213, 217, 221, 225, 229",
+        "detail": "Listener subscribes via 11 event keys. handle() at app/Listeners/PersistCatalogChangedToOutbox.php:23 calls CatalogChanged::fromMenuMutation($event) which returns null for already-CatalogChanged events (line 22) and adapter result for 9 others. For ItemAvailabilityChanged it shares the same parent event as PersistItemAvailabilityChangedToOutbox -> both listeners write rows for the same domain mutation (one CATALOG_CHANGED, one ITEM_AVAILABILITY_CHANGED). This is intentional fan-out per WAVE5-DATA-004 (kiosk needs CATALOG_CHANGED, KDS/POS need ITEM_AVAILABILITY_CHANGED) but increases DomainEvent row count 2x for every rupture toggle.",
+        "impact": "Operational only - 2 rows + 2 broadcasts per rupture. UNIQUE index on idempotency_key prevents true dup but doubles broadcast cost."
+      },
+      "recommendation": "KEEP-AS-IS for V1.0.1 - the fan-out is by design. V1.0.2 backlog: consolidate to single broadcaster envelope + client-side filtering by event_type. Document the intentional duplication near the listen-array comment block.",
+      "owner_question": null
+    },
+    {
+      "id": "ARCH-3",
+      "severity": "P1",
+      "category": "CONTRACT-CONSISTENCY",
+      "title": "PersistOrderCreatedToOutbox uses sha1(EventType|aggregate_id) - no discriminator; PersistCatalogChangedToOutbox uses sha1 including correlation_id + change_type",
+      "evidence": {
+        "file": "app/Listeners/PersistOrderCreatedToOutbox.php:22 vs app/Listeners/PersistCatalogChangedToOutbox.php:59-66",
+        "detail": "OrderCreated: idempotency_key = sha1(EventType::ORDER_CREATED|order.id) - relies on one-shot semantics. CatalogChanged: idempotency_key = sha1(EventType|entityType|entityId|branchId|changeType|correlationId). The OrderCreated approach absorbs any second listener fire silently (queue retry, replay) - documented at line 19-23. CatalogChanged includes correlationId so the same item flipping twice in different requests creates distinct rows. Asymmetry is correct for the domain (order create == one-shot; catalog can churn) but uncommented for new contributors.",
+        "impact": "None operationally. Pattern divergence may confuse maintainers."
+      },
+      "recommendation": "Document the listener-idempotency-key convention in a single place (e.g. inline comment on the DomainEvent.idempotency_key column or a `docs/sync-listener-keys.md`). Note that correlation_id inclusion is the discriminator for replayable events.",
+      "owner_question": null
+    },
+    {
+      "id": "ARCH-4",
+      "severity": "P2",
+      "category": "LISTENER-ORDERING-FRAGILITY",
+      "title": "OrderCreated listener order: PersistOrderCreatedToOutbox first, then DecrementItemAvailabilityOnOrder, DecrementStockOnOrderCreated, SendFcmOnOrderCreated. Documented but enforced only by array order.",
+      "evidence": {
+        "file": "app/Providers/EventServiceProvider.php:128-150",
+        "detail": "F-002 round-3 comment block (lines 128-137) explains: 'Persist*ToOutbox MUST run BEFORE side-effect listeners (FCM, loyalty) because outbox is SSOT for KDS/Kiosk/POS sync. With QUEUE_CONNECTION=sync, exception thrown by ShouldQueue listeners would prevent downstream listeners from running.' Order enforced solely by declaration order in PHP array. No runtime guard.",
+        "impact": "Refactor that re-orders the array (e.g. alphabetical sort) would silently regress KDS visibility on FCM failure. F-002 evidence: 87 order.created rows before, then ZERO once FCM started failing."
+      },
+      "recommendation": "Add a phpstan/lint rule or a sentinel test (tests/Feature/Sync/OrderCreatedListenerOrderTest) that asserts PersistOrderCreatedToOutbox is at index 0. Same for OrderStatusChanged.",
+      "owner_question": null
+    },
+    {
+      "id": "ARCH-5",
+      "severity": "P3",
+      "category": "PAYLOAD-CONTRACT",
+      "title": "PersistOrderCreatedToOutbox payload includes 'payment_pending_counter' computed via (int) $order->payment_status === PaymentStatus::PENDING_COUNTER",
+      "evidence": {
+        "file": "app/Listeners/PersistOrderCreatedToOutbox.php:37",
+        "detail": "Expression is `(int) $order->payment_status === \\App\\Enums\\PaymentStatus::PENDING_COUNTER`. If PaymentStatus is an int-backed enum and $order->payment_status is already cast, the (int) cast may collapse to 1/0 unexpectedly. PaymentStatus::PENDING_COUNTER would need to be 1 for the expression to flip booleanly. Verify the enum case value at app/Enums/PaymentStatus.php.",
+        "impact": "If enum value !=1, the boolean always false -> client never sees pending_counter signal. Likely currently correct but fragile."
+      },
+      "recommendation": "Replace with `$order->payment_status?->value === PaymentStatus::PENDING_COUNTER->value` or `PaymentStatus::PENDING_COUNTER === $order->payment_status` (enum equality) to avoid the (int) trap.",
+      "owner_question": null
+    }
+  ],
+  "consolidation_opportunities": [
+    "Remove ComposerProfilePublished if no first-publish observability is needed (ARCH-1).",
+    "Consolidate the OutboxRescue / OutboxRetryFailed / OutboxWebhookRetryFailed trio into a single base class with three queries (DRY) - DEFER to V1.0.2 because the 3 commands are DIRTY in session-A.",
+    "CatalogChanged.fromMenuMutation has 9 type-checks (CatalogChanged:42-114) - a Match expression or registry pattern would shrink it. Not a defect; cosmetic."
+  ],
+  "keep_as_is": [
+    "Two-phase claim+dispatch in DispatchDomainEventsJob (NEW-01)",
+    "EventServiceProvider::shouldDiscoverEvents() = false (explicit registry)",
+    "EventContract::buildEnvelope + assertEnvelopeValid before broadcast (DispatchDomainEventsJob:107-110)",
+    "PersistOrderCreatedToOutbox `wasRecentlyCreated` guard (line 57-59) - Sprint 3B P1-SYNC-03 parity",
+    "DispatchDomainEventsJob::dispatch wrapped in try/catch in 12 Persist listeners (test-e2e fix E-001 round-3)"
+  ],
+  "dirty_files_cited_no_change": [
+    "app/Console/Commands/OutboxRetryFailedCommand.php",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php",
+    "tests/Feature/Outbox/OutboxReplayAuditTest.php"
+  ]
+}

@@ -1,21 +1,24 @@
 {
   "_meta": {
-    "status": "READY — ajouter dans Cursor Settings > MCP",
+    "status": "READY — copier dans ~/.cursor/mcp.json",
     "package": "@playwright/mcp@latest",
     "version_at_setup": "0.0.70",
     "installed_at": "2026-04-14",
     "base_url": "http://localhost:8000",
     "browser": "chromium",
-    "note": "npx télécharge le package au premier lancement — pas d'install global nécessaire"
+    "note": "Utiliser le chemin absolu de npx (NVM) pour éviter l'erreur npm ENOENT sous Cursor.app"
   },
   "mcpServers": {
     "playwright": {
-      "command": "npx",
+      "command": "/Users/1millnonstop/.nvm/versions/node/v18.20.7/bin/npx",
       "args": [
+        "-y",
         "@playwright/mcp@latest",
-        "--browser", "chromium"
+        "--browser",
+        "chromium"
       ],
       "env": {
+        "PATH": "/Users/1millnonstop/.nvm/versions/node/v18.20.7/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
         "PLAYWRIGHT_BASE_URL": "http://localhost:8000"
       }
     }

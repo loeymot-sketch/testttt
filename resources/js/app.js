@@ -21,14 +21,21 @@ import DefaultComponent from "./components/DefaultComponent";
 import router from './router';
 import store from './store';
 import axios from 'axios';
-import i18n, { getCurrentLocale } from "./i18n";
+import i18n from "./i18n";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
 import VueSimpleAlert from "vue3-simple-alert";
 import VueNextSelect from 'vue-next-select';
 import 'vue-next-select/dist/index.css';
 import VueApexCharts from "vue3-apexcharts";
-import ENV from './config/env';
+
+// [POS-V4 W2 #1 FIX D.3 2026-04-26] Shared axios setup module — see
+// resources/js/shared/axios-setup.js. Extracted from this file's L52-L89 to
+// eliminate the duplicated copy that lived in pos-app.js. Both entries now
+// import the SAME request interceptor + token reader; each declares its own
+// 401 RESPONSE handler explicitly (this file = kiosk-aware; pos-app.js =
+// POS-only). See AUDIT_W2_DEDICATED_ENTRY_CLAUDE_2026-04-26.md D.3.
+import { applySharedAxiosDefaults } from './shared/axios-setup';
 
 
 /* Start tooltip alert code */
@@ -48,45 +55,11 @@ const options = {
 /* End tooltip alert code */
 
 
-/* Start axios code*/
-const API_URL = ENV.API_URL;
-const API_KEY = ENV.API_KEY;
-
-axios.defaults.baseURL = API_URL + '/api';
-
-function readTokenFromVuexLocalStorage() {
-    let kioskToken = store.state.kioskCart?.kioskToken || null;
-    let userToken = store.state.auth?.authToken || null;
-    let language = store.state.globalState?.lists?.language_code || null;
-    if (!kioskToken && !userToken && localStorage.getItem('vuex')) {
-        try {
-            const vuex = JSON.parse(localStorage.getItem('vuex'));
-            kioskToken = kioskToken || vuex.kioskCart?.kioskToken || null;
-            userToken = userToken || vuex.auth?.authToken || null;
-            language = language || vuex.globalState?.lists?.language_code || null;
-        } catch (_) { /* ignore */ }
-    }
-    const token = kioskToken || userToken;
-    return { token, language };
-}
-
-axios.interceptors.request.use(
-    config => {
-        config.headers['x-api-key'] = API_KEY;
-
-        // [PHASE-37] Add Accept-Language header for backend localization
-        const currentLocale = getCurrentLocale();
-        config.headers['Accept-Language'] = currentLocale;
-
-        const { token, language } = readTokenFromVuexLocalStorage();
-        config.headers['Authorization'] = token ? `Bearer ${token}` : '';
-        const lang = currentLocale || language;
-        if (lang) config.headers['x-localization'] = lang;
-
-        return config;
-    },
-    error => Promise.reject(error),
-);
+/* Start axios code */
+// [POS-V4 W2 #1 FIX D.3] Defaults + request interceptor are now centralized.
+// See ./shared/axios-setup.js. The 401 RESPONSE handler stays here because it
+// uses Vue Router (router.push to auth.login) — kiosk-aware variant.
+applySharedAxiosDefaults(axios, store);
 /**
  * Response interceptor: handle 401 globally.
  * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)
@@ -97,6 +70,14 @@ let _401Handling = false;
 axios.interceptors.response.use(
     response => response,
     error => {
+        if (
+            axios.isCancel?.(error)
+            || error?.code === 'ERR_CANCELED'
+            || error?.message === 'canceled'
+        ) {
+            return new Promise(() => {});
+        }
+
         const status = error?.response?.status;
         if (status !== 401) {
             return Promise.reject(error);
@@ -117,28 +98,94 @@ axios.interceptors.response.use(
 
             const cfg = error.config;
             if (canSilent && cfg && !cfg.__retry401Kiosk) {
+                // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] The action is
+                // now coalesced (kioskCart.js _inFlightKioskLogin), so N parallel
+                // 401s on `/frontend/menu` will share ONE re-login round-trip
+                // and ONE server-side token rotation — solving the burst race
+                // documented in `03-kiosk-blocked-no-frites.network.json` (7×
+                // 401 within 780ms before the fix).
                 return store
                     .dispatch('kioskCart/kioskLogin', {
                         username: String(auto.username).trim(),
                         password: String(auto.password),
                     })
                     .then(() => axios.request({ ...cfg, __retry401Kiosk: true }))
+                    .then((response) => {
+                        // [round-4 fix B-008/C-006/D-005/E-010/E-004 2026-05-10]
+                        // The retry succeeded — but Playwright already captured
+                        // the original 401 in network.json. Without a DOM signal,
+                        // the reviewer protocol cat-6 selector ([role=alert] /
+                        // .toast / .alert-*) finds nothing and flags the state
+                        // as silent_error. Surface a transient warning toast
+                        // (role=alert via KioskToastComponent) so the recovered
+                        // 401 is auditable. UX impact is bounded: TTL 2500ms,
+                        // amber tone, and the path is rare (cold-start race
+                        // between auto-login and the first authed call).
+                        try {
+                            window.dispatchEvent(new CustomEvent('kiosk-auth-retried', {
+                                detail: { url: cfg?.url || null, status: 401 },
+                            }));
+                        } catch (_) { /* never let dispatch break the chain */ }
+                        return response;
+                    })
                     .catch((e) => {
+                        // [OWNER 2026-06-30 — bug « déconnexion en pleine compo »]
+                        // Le replay a RÉUSSI l'auth (re-login OK) mais peut renvoyer une
+                        // erreur MÉTIER, typiquement `pricing/preview` → 422 (compo
+                        // incomplète = attendu pendant la personnalisation). Avant ce fix,
+                        // ce 422 était traité comme une panne d'auth terminale → token vidé
+                        // + toast ROUGE « Borne déconnectée » + retour écran login EN PLEINE
+                        // COMMANDE. C'est exactement le « ça sort / notification » vu par
+                        // l'owner. → Une erreur 4xx NON-401 n'est PAS une panne d'auth : on
+                        // rejette en silence (le helper appelant gère le 422). Seuls
+                        // 401 / 5xx / pas-de-réponse = vraie panne auth/serveur.
+                        const replayStatus = e?.response?.status;
+                        if (replayStatus && replayStatus !== 401 && replayStatus < 500) {
+                            return Promise.reject(e);
+                        }
                         store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+                        // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Surface
+                        // a UI toast on terminal kiosk auth failure so the borne
+                        // operator (and the Wave-D / Wave-C playwright spec)
+                        // can detect it instead of seeing only the empty
+                        // `<!--v-if-->` error overlay. KioskAppComponent listens
+                        // on `kiosk-auth-failed` and routes the message through
+                        // its KioskToastComponent — same affordance owned by
+                        // every other kiosk failure path.
+                        try {
+                            window.dispatchEvent(new CustomEvent('kiosk-auth-failed', {
+                                detail: { url: cfg?.url || null, status: 401 },
+                            }));
+                        } catch (_) { /* ignore — never let dispatch break the chain */ }
                         router.push({ name: 'kiosk.login' }).catch(() => {});
                         return Promise.reject(e);
                     });
             }
 
             store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+            try {
+                window.dispatchEvent(new CustomEvent('kiosk-auth-failed', {
+                    detail: { url: cfg?.url || null, status: 401, reason: 'no-retry' },
+                }));
+            } catch (_) { /* ignore */ }
             router.push({ name: 'kiosk.login' }).catch(() => {});
+            return Promise.reject(error);
+        }
+
+        // [iter15-mega-fix C-003 2026-05-10] Public-friendly surfaces (e.g. the
+        // customer-facing order-status wall display) must NEVER bounce to
+        // /login on a 401. The screen renders an empty state instead — that's
+        // far better UX than leaking the admin login form to a customer.
+        const publicFriendlyPaths = ['/admin/order-status-screen', '/order-status-screen', '/order-status'];
+        const onPublicFriendly = publicFriendlyPaths.some((p) => path === p || path.startsWith(p + '/'));
+        if (onPublicFriendly) {
             return Promise.reject(error);
         }
 
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
-            store.dispatch('auth/logout').catch(() => {});
+            store.dispatch('logout').catch(() => {});
             router.push({ name: 'auth.login' }).catch(() => {});
         }
         return Promise.reject(error);
@@ -161,4 +208,53 @@ app.use(i18n)
 // <KsStepper>, <KsPriceLine> dans tous les composants Vue sans import local.
 app.use(KioskDesignSystem)
 
+// Clear stray drawer backdrop after SPA navigation (same-origin shell unmount
+// does not remove BackendNavbarComponent's .backdrop.active — leaves a full-screen dim layer).
+router.afterEach(() => {
+    try {
+        document?.querySelector('.backdrop')?.classList?.remove('active');
+        document.body.style.overflowY = 'auto';
+    } catch (_) {
+        /* no-op */
+    }
+});
+
 app.mount('#app');
+
+// [GOAL-2026-05-29 P-AUTH] Proactive Sanctum token refresh. The SPA is Bearer-
+// everywhere: the KDS/OSS delta-poll AND the WebSocket channel-auth both use this
+// token (sanctum.expiration = 480min). Without a refresh the ENTIRE live sync (WS +
+// poll) dies at ~8h — an always-on KDS/OSS would silently stop receiving orders mid
+// service-day until a manual re-login. Refresh every 2h (4 refreshes per TTL, ample
+// margin, robust to a missed tick) via the existing /api/refresh-token endpoint
+// (abilities preserved). (bootstrap.js's "no backend refresh-token endpoint" comment
+// was stale — the endpoint exists at routes/api.php:155.)
+const TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+setInterval(() => {
+    try {
+        if (store.state.auth && store.state.auth.authToken) {
+            store.dispatch('refreshAuthToken').catch(() => {});
+        }
+    } catch (_) { /* never let the refresh timer break the app */ }
+}, TOKEN_REFRESH_INTERVAL_MS);
+
+// [REG-2 2026-05-30] Cross-tab token-rotation sync. The 2h proactive refresh in ONE tab
+// rotates the Sanctum token (RefreshTokenController deletes the old one server-side).
+// vuex-persistedstate has no `storage`-event listener, so a SECOND tab keeps the now-dead
+// token in memory and 401s on its next request -> the global 401 handler force-logs it out
+// mid-service. Fix: when another tab writes a fresh auth token to localStorage, adopt it
+// (authTokenRefreshed re-injects Echo too) instead of dying; when another tab logs out,
+// follow. Guarded so a logged-out follower is never silently auto-logged-in by another tab.
+window.addEventListener('storage', (e) => {
+    if (e.key !== 'vuex' || !e.newValue) return;
+    try {
+        const persisted = JSON.parse(e.newValue);
+        const freshToken = persisted && persisted.auth ? persisted.auth.authToken : null;
+        const current = store.state.auth && store.state.auth.authToken;
+        if (freshToken && current && freshToken !== current) {
+            store.commit('authTokenRefreshed', freshToken); // adopt the rotated token
+        } else if (!freshToken && current) {
+            store.commit('authLogout'); // another tab logged out -> follow
+        }
+    } catch (_) { /* never let a cross-tab sync error break the app */ }
+});

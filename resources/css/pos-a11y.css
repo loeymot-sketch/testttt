@@ -1,0 +1,49 @@
+/* Synced from resources/sass/admin/_pos_a11y.scss — imported by resources/css/app.css */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.sr-only.focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    padding: 0.5rem 1rem;
+    background: #1d4ed8;
+    color: #fff;
+    z-index: 9999;
+}
+
+.pos-focus-ring:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+/*
+ * [A11Y-KB-P1 heal 2026-05-29] Wave E A11Y-KB agent caught :
+ * - POS search input.pos-v5-search-input__field had outline:none / no ring
+ * - Admin items vue-select div#vs__-combobox > input had no visible focus
+ * Extend focus-visible to interactive inputs + custom combobox.
+ * Mirror the button ring (#1d4ed8 3px solid + 2px offset).
+ */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="combobox"]:focus-visible,
+[role="combobox"] input:focus-visible,
+.vs__search:focus-visible,
+.pos-v5-search-input__field:focus-visible {
+    outline: 3px solid #1d4ed8 !important;
+    outline-offset: 2px !important;
+}

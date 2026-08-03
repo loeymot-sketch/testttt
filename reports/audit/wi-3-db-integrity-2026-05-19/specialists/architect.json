@@ -1,0 +1,125 @@
+{
+  "specialist": "Architect",
+  "scope": "Model layer + Eloquent relationship integrity, soft-delete cascade hygiene, dual-model parity (Order vs FrontendOrder on same table)",
+  "method": "Read-only inspection of 79 models. Spot-check on critical NF525-adjacent models + dual-model orders pair + stock/loyalty/cash hierarchy.",
+  "findings": [
+    {
+      "id": "ARCH-001",
+      "severity": "P1",
+      "title": "FrontendOrder::items() missing withTrashed() — Order::items() has it",
+      "evidence_path": "app/Models/FrontendOrder.php vs app/Models/Order.php",
+      "evidence_line": "FrontendOrder line 108-111 / Order line 137-140",
+      "evidence_excerpt": "// Order.php:137 (CORRECT)\npublic function items(): BelongsToMany { return $this->belongsToMany(Item::class, 'order_items')->withTrashed(); }\n\n// FrontendOrder.php:108 (BUG)\npublic function items(): BelongsToMany { return $this->belongsToMany(Item::class, 'order_items'); }",
+      "impact": "Both models target the SAME `orders` table (FrontendOrder.php:19 `protected $table = 'orders'`). When a kiosk/web order references an Item that is later soft-deleted (e.g. menu reorganization, item removal), `$frontendOrder->items` returns an INCOMPLETE collection (soft-deleted items filtered out). This breaks: (a) historical receipt rendering, (b) refund/cancellation flows that need to know what was ordered, (c) any analytics joining FrontendOrder via items(). NF525 evidence loss potential — the receipt may show wrong line counts.",
+      "mitigation_present": "Many code paths use `$order->orderItems` (HasMany to OrderItem) instead of `$order->items` (BelongsToMany via pivot to Item), which is unaffected. The bug only fires when `->items` is used on FrontendOrder + Item is soft-deleted post-order.",
+      "recommendation": "1-line fix: append `->withTrashed()` to FrontendOrder.php:110. Restores dual-model parity with Order.php:139. Add a regression test ensuring `FrontendOrder::find($id)->items->count() === Order::find($id)->items->count()` after Item soft-delete."
+    },
+    {
+      "id": "ARCH-002",
+      "severity": "P2",
+      "title": "Order::user() and FrontendOrder::user() use withTrashed() but no other models do",
+      "evidence_path": "app/Models/Order.php:142 + app/Models/FrontendOrder.php:113",
+      "evidence_line": "Order.php:142-144 / FrontendOrder.php:113-115",
+      "evidence_excerpt": "public function user(): BelongsTo { return $this->belongsTo(User::class)->withTrashed(); }",
+      "impact": "Good practice on Order — but no other model that references users does this. AuditLog, ZReport (via opened_by/closed_by getters if implemented), LoyaltyTransaction, ActionLog all silently lose user data when a user is soft-deleted. NF525 retention 6y requires audit trail to render even after staff turnover.",
+      "mitigation_present": "User soft-delete is rare event; admin UI typically shows the user_id integer fallback.",
+      "recommendation": "Audit all `belongsTo(User::class)` declarations and add `->withTrashed()` where the parent is a fiscal/audit/long-retention row: AuditLog (if relation added), ZReport, LoyaltyTransaction, CashDrawerSession, OrderPayment."
+    },
+    {
+      "id": "ARCH-003",
+      "severity": "P2",
+      "title": "Order::orderItems() does NOT cascade soft-delete to OrderItem rows",
+      "evidence_path": "app/Models/Order.php:132 + app/Models/OrderItem.php (no boot::deleting hook chaining)",
+      "evidence_line": "Order.php:132-135",
+      "evidence_excerpt": "public function orderItems(): HasMany { return $this->hasMany(OrderItem::class); }",
+      "impact": "When `$order->delete()` runs (SoftDelete), Order.deleted_at is set but OrderItem rows remain active (deleted_at=NULL). The `static::restoring` block at Order.php:108 explicitly forbids restore — so soft-deleted Order's items linger forever as orphan-looking rows scoped only by BranchScope. KDS/OSS list queries do `Order::with('orderItems')` which respects Order's soft-delete, so the orphan items are not user-visible but they DO inflate OrderItem aggregate counts (e.g. ItemService::destroy at line 365 per BranchScope comment on OrderItem).",
+      "mitigation_present": "OrderItem also uses SoftDeletes trait (line 12-13). BranchScope on OrderItem isolates per tenant. The orphan inflation is bounded per-branch.",
+      "recommendation": "Add a `static::deleting` hook on Order that cascades soft-delete to its orderItems: `static::deleting(fn($o) => $o->orderItems()->delete())`. Mirror with `static::forceDeleting` for completeness. Idempotent if items already deleted. Single-LOC addition."
+    },
+    {
+      "id": "ARCH-004",
+      "severity": "P2",
+      "title": "OrderAddress + OrderCoupon hard-deleted by OrderService::destroy() while Order soft-deletes",
+      "evidence_path": "app/Models/Order.php:96-116 (boot::restoring guard comment)",
+      "evidence_line": "Order.php:96-116",
+      "evidence_excerpt": "// OrderService::destroy() soft-deletes the Order itself but\n// HARD-deletes its related OrderAddress and OrderCoupon (those\n// models don't use the SoftDeletes trait). Re-hydrating the\n// Order via $order->restore() would leave the aggregate in a\n// permanently inconsistent state...",
+      "impact": "Documented architectural debt: aggregate is inconsistent across soft/hard-delete boundary. Restore is explicitly blocked, so the inconsistency is contained — but the underlying delete-cascade asymmetry is fragile. If a future engineer removes the restore-guard, the bug returns.",
+      "mitigation_present": "Restore explicitly disabled via RuntimeException (line 108-116).",
+      "recommendation": "V1.0.2: add SoftDeletes trait to OrderAddress + OrderCoupon. Migration adds deleted_at column on both tables. Backfill not needed (existing rows untouched). Then remove the restore-disable guard. Aligns soft-delete semantics across the aggregate."
+    },
+    {
+      "id": "ARCH-005",
+      "severity": "P1",
+      "title": "AuditLog model has NO branch() or user() relationship declared",
+      "evidence_path": "app/Models/AuditLog.php (entire file 60 lines)",
+      "evidence_line": "lines 1-60",
+      "evidence_excerpt": "// Model declares: branch_id, user_id columns in $fillable; NO ->belongsTo(Branch) or ->belongsTo(User)",
+      "impact": "Cross-table audit queries require manual joins. Forensic NF525 review (\"show me all audit_logs for branch X with user Y in date range\") falls back to raw integer comparisons with no Eloquent type-safety. Combined with DBA-001 (no FK), this means a typo'd column read in a controller surfaces no error.",
+      "mitigation_present": "AuditLogService is sole writer; reports likely use raw DB::table queries.",
+      "recommendation": "Add `public function branch() { return $this->belongsTo(Branch::class)->withTrashed(); }` and `public function user() { return $this->belongsTo(User::class)->withTrashed(); }` to AuditLog model. Defence-in-depth for forensic queries. No DB change."
+    },
+    {
+      "id": "ARCH-006",
+      "severity": "P3",
+      "title": "BranchScope is correctly NOT applied to AuditLog, but reasoning is implicit",
+      "evidence_path": "app/Models/Scopes/BranchScope.php:21-23 + app/Models/AuditLog.php",
+      "evidence_line": "BranchScope.php:21 (User exemption) / AuditLog has no addGlobalScope",
+      "evidence_excerpt": "// AuditLog has NO `static::addGlobalScope(new BranchScope())` call.\n// Implicit reasoning: NF525 forensic review must cross-branch search.",
+      "impact": "Correct behaviour but undocumented. A future engineer adding BranchScope to AuditLog \"for consistency\" would break forensic queries (admin sees own branch only, not all branches' audit chain). Same applies to ZReport (which also has no BranchScope) — Z reports are per-branch but forensic-review queries cross branches.",
+      "mitigation_present": "Current behaviour correct.",
+      "recommendation": "Add explicit code comment to AuditLog and ZReport: `// NF525: deliberately NOT branch-scoped — forensic chain verification spans all branches`. Documentation-only, zero risk."
+    },
+    {
+      "id": "ARCH-007",
+      "severity": "P3",
+      "title": "User model NOT in BranchScope (correct — Sanctum recursion) — but rationale only in BranchScope code, not User model",
+      "evidence_path": "app/Models/Scopes/BranchScope.php:20-23 (the 'never branch-filter User' guard)",
+      "evidence_line": "BranchScope.php:20-23",
+      "evidence_excerpt": "// Never branch-filter the authenticatable model: Sanctum resolves the user via User queries.\n// Calling Auth::check() here would re-enter the guard → infinite recursion (see stack: BranchScope ↔ Sanctum).\nif ($model instanceof User) { return; }",
+      "impact": "Robust guard implementation. But it relies on User-class-specific isinstance check; if another authenticatable model is added (e.g. DeliveryBoy as separate Authenticatable), the same recursion risk silently re-emerges.",
+      "mitigation_present": "Single User authenticatable in V1.",
+      "recommendation": "V1.0.2: Replace `instanceof User` check with `$model instanceof \\Illuminate\\Contracts\\Auth\\Authenticatable`. More forward-compatible. Or document the constraint loudly on User model."
+    },
+    {
+      "id": "ARCH-008",
+      "severity": "P2",
+      "title": "Eloquent restrictions on stock_movements + audit_logs use different exception types",
+      "evidence_path": "app/Models/StockMovement.php:48-54 + app/Models/AuditLog.php:43-58",
+      "evidence_line": "StockMovement.php:48-54 (LogicException) / AuditLog.php:43-58 (RuntimeException)",
+      "evidence_excerpt": "// StockMovement throws \\LogicException\n// AuditLog throws \\RuntimeException",
+      "impact": "Inconsistent error-handling contract. Catch sites can't share handler; tests may not match the right exception. Minor but ugly.",
+      "mitigation_present": "Both block the mutation effectively.",
+      "recommendation": "Standardize on one (LogicException is closer to 'this should never happen at runtime'). Documentation-only or 2-line model edit."
+    },
+    {
+      "id": "ARCH-009",
+      "severity": "P3",
+      "title": "22 BranchScope-applied models confirmed in scan, 1 documented gap (User correctly exempt)",
+      "evidence_path": "grep BranchScope::class | new BranchScope across app/Models/",
+      "evidence_line": "20 model files use BranchScope; matches BRAIN §9 list (22 listed, minor count drift = MultiTenantModelTrait abstraction)",
+      "evidence_excerpt": "DeliveryBoyCashSession, CashDrawerSession, FrontendOrder, Order, KioskMachine, DeliveryBoyCashMovement, ItemWizardProfile, OrderPayment, PaymentTerminal, PendingPaymentConfirmation, StockLevel, OrderQuote, OrderItem, User (via trait), ItemBranchAvailability, PushNotification, DiningTable, StockMovement, PosParkedOrder, WebhookEvent, Printer, CashMovement",
+      "impact": "Coverage looks complete. Note: User has BranchScope via trait but the apply() short-circuits — so functionally it's NOT scoped (correct).",
+      "mitigation_present": "BRAIN §9 invariants confirmed.",
+      "recommendation": "No action. Documentation match."
+    },
+    {
+      "id": "ARCH-010",
+      "severity": "P3",
+      "title": "PaymentTerminal model exists post-2026-05-16 migration — verify BranchScope applied",
+      "evidence_path": "app/Models/PaymentTerminal.php + database/migrations/2026_05_16_120000_create_payment_terminals_table.php",
+      "evidence_line": "PaymentTerminal.php (model present, BranchScope::class import present)",
+      "evidence_excerpt": "BranchScope present in model imports (per grep result)",
+      "impact": "New table from H3 sprint — properly added to BranchScope coverage. Confirms BRAIN multi-tenant invariant extension to the new model.",
+      "mitigation_present": "Correct.",
+      "recommendation": "No action."
+    }
+  ],
+  "summary": {
+    "p0_count": 0,
+    "p1_count": 2,
+    "p2_count": 4,
+    "p3_count": 4,
+    "highest_impact_finding": "ARCH-001 (FrontendOrder::items missing withTrashed — dual-model parity break)",
+    "next_class_of_finding": "ARCH-005 + ARCH-006 — fiscal/audit models lack ergonomic relationships. AuditLog and ZReport are forensically dense but Eloquent-poor; defence-in-depth would add documented relationships and explicit branch-scope-exempt comments."
+  }
+}

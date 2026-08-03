@@ -108,7 +108,7 @@
                 </div>
                 <span class="w-full mb-4 text-center text-black">{{ $t('message.no_orders_found') }}</span>
                 <router-link :to="{ name: 'frontend.home' }"
-                    class="block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white">
+                    class="block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700">
                     {{ $t('button.go_home') }}
                 </router-link>
             </div>
@@ -150,12 +150,12 @@
                     </div>
                     <div class="flex gap-4">
                         <router-link @click.prevent="closeModal"
-                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]"
+                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]"
                             :to="{ name: 'frontend.chat', query: { id: order.branch.id } }">
                             <i class="lab lab-messages-2 font-fill-primary lab-font-size-16"></i>
                         </router-link>
                         <a @click="closeModal" :href="'tel:' + order.branch.phone"
-                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]">
+                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]">
                             <i class="lab lab-call-calling font-fill-primary lab-font-size-16"></i>
                         </a>
                     </div>

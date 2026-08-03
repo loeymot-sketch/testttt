@@ -1,0 +1,210 @@
+<?php
+
+/**
+ * [BYPASS-P1 / GATE_BYPASS_PRINTING_2026-05-08] Printing configuration —
+ * NF525 receipts (POS + kiosk) + cash drawer + duplicata marker.
+ *
+ * Le mode bypass court-circuite l'envoi TCP/IP vers l'imprimante thermique
+ * tout en préservant : audit log (`pos.receipt.print` / `pos.receipt.reprint`),
+ * receipt print count atomic increment, duplicata marker (count >= 2),
+ * rendering Vue ReceiptComponent à l'écran.
+ *
+ * GARDE-FOU PROD : voir AppServiceProvider qui abort 500 si APP_ENV=production
+ * et bypass actif. Voir aussi BYPASS_MODE_OPERATIONAL.md runbook.
+ */
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Real-mode transport driver
+    |--------------------------------------------------------------------------
+    |
+    | Which PrinterTransport to use when bypass is OFF (production / real mode):
+    |   'tcp'         → network ESC/POS (TcpPrinterTransport, port 9100) [default]
+    |   'windows_raw' → USB thermal printer on a Windows caisse (winspool RAW;
+    |                    requires Laravel running ON that Windows box, single-box V1).
+    |                    Set the Windows printer queue name in Printer.host.
+    |
+    | [PRINT-SAGA 2026-06-24] The counter SAGA is USB on Windows → 'windows_raw'.
+    |
+    */
+    'driver' => env('PRINT_DRIVER', 'tcp'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Caisse : impression SILENCIEUSE uniquement (jamais window.print)
+    |--------------------------------------------------------------------------
+    |
+    | [1000%-NO-POPUP 2026-07-03] Owner : « le ticket sort avec un popup gris + en
+    | paragraphe, différent de l'écran ». Cause = window.print() du navigateur (imprime
+    | la PAGE web = URL/zéros/paragraphe) quand le pont RAW n'est pas joignable. Sur la
+    | VRAIE caisse, mettre `POS_PRINT_SILENT_ONLY=true` : le front NE retombe JAMAIS sur
+    | window.print — il n'imprime QUE via le pont local (octets ESC/POS serveur = ticket
+    | == écran) ; si le pont est absent → message d'erreur clair, PAS de popup gris.
+    | [PRINT-INSTANT 2026-07-06] Défaut FLIPPÉ à TRUE : window.print n'est plus
+    | JAMAIS automatique côté front (le fallback navigateur est un BOUTON manuel
+    | explicite dans ReceiptComponent). Mettre `POS_PRINT_SILENT_ONLY=false`
+    | uniquement si un environnement legacy en dépend encore.
+    |
+    */
+    'pos_silent_only' => (bool) env('POS_PRINT_SILENT_ONLY', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reçu CLIENT : impression automatique — OPT-IN (défaut OFF)
+    |--------------------------------------------------------------------------
+    |
+    | [RECEIPT-NO-AUTO 2026-07-24] Spec owner : le REÇU CLIENT ne doit JAMAIS
+    | s'imprimer automatiquement (ni à l'encaissement caisse, ni à la confirmation
+    | borne). Il reste imprimable À LA DEMANDE via les boutons déjà présents
+    | (ReceiptComponent « Ticket client », modale encaissement, bouton borne
+    | « Imprimer le ticket ») + réimpression depuis le suivi. Défaut FALSE.
+    |
+    | Ce flag NE concerne QUE le reçu client. Le TICKET CUISINE (KDS auto-print)
+    | est INCHANGÉ. Le BON « à régler en caisse » de la borne (KioskCashInstruction)
+    | est un bon de commande fonctionnel (n° de file) — non piloté par ce flag.
+    |
+    | Exposé au front via master.blade.php → window.foodkingConfig.printing
+    | .autoPrintClientReceipt. Mettre POS_AUTO_PRINT_CLIENT_RECEIPT=true pour
+    | restaurer l'auto-impression historique (rétro-compat).
+    |
+    */
+    'auto_print_client_receipt' => (bool) env('POS_AUTO_PRINT_CLIENT_RECEIPT', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Receipt header extras (single-restaurant V1 — no per-branch column)
+    |--------------------------------------------------------------------------
+    |
+    | Affichés en en-tête du ticket client. Le téléphone et l'e-mail viennent
+    | de la branche ; le site web n'a pas de colonne dédiée en V1 → ici.
+    |
+    */
+    'receipt' => [
+        'website' => env('RECEIPT_WEBSITE', 'lecayenne.fr'),
+        // [TICKET-WIDTH 2026-07-04] Owner (photo IMG_1709) : chaque ligne « retournait »
+        // (adresse coupée « …Beaumon\nt », en-tête « M\nONTANT », prix rejeté sur la ligne
+        // suivante) + marge blanche. CAUSE : le renderer composait des lignes de 48 col alors
+        // que l'imprimante SAGA n'imprime physiquement que ~42 col → l'imprimante ré-enroulait
+        // les 6 derniers caractères. La largeur de rendu est désormais PILOTÉE PAR CONFIG :
+        // on cale RECEIPT_WIDTH_CHARS sur la largeur PHYSIQUE réelle (SAGA=42) → chaque ligne
+        // tient, le prix reste sur la ligne de l'article, aucune marge. Ajustable en .env sans
+        // redéploiement (config:clear) si une autre imprimante a une autre largeur.
+        // 0 = « non défini » → on retombe sur Printer.width_chars puis 48. Mettre 42 pour la SAGA.
+        'width_chars' => (int) env('RECEIPT_WIDTH_CHARS', 0),
+        // [BORNE 2026-07-05 → HEAL 2026-07-09] Largeur PROPRE à la borne (SK1-31). 0 = non défini
+        // → largeur CAISSE (RECEIPT_WIDTH_CHARS) puis Printer.width_chars puis 48. (Avant : 48 en
+        // dur, ce qui ré-enroulait « 15,\n00 € » sur la SK1-31 58 mm — photo owner IMG_1729.)
+        // Ne mettre une valeur ici QUE si la borne doit imprimer PLUS LARGE que la caisse.
+        'borne_width_chars' => (int) env('RECEIPT_BORNE_WIDTH_CHARS', 0),
+        // [BORNE-EURO 2026-07-09] Page de code ESC/POS PROPRE à la borne (SK1-31). 0 = non défini
+        // → défaut renderer 19 (CP858, € = 0xD5, comme la caisse). Si la SK1-31 imprime « ⌐ » au
+        // lieu de « € », caler ici la page qui affiche € (test : tools/borne/test-euro-codepages.js).
+        // Repères : 16 = WPC1252 (€ = 0x80), 19 = CP858 (€ = 0xD5).
+        'borne_code_page' => (int) env('RECEIPT_BORNE_CODE_PAGE', 0),
+        // [TICKET-PHONE 2026-07-03] Owner : le n° de téléphone n'apparaissait pas sur
+        // les tickets. Source primaire = `branch->phone` ; ce défaut config est le
+        // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).
+        // Utilisé par la CAISSE (OrderReceiptEscPosRenderer) et injecté à la BORNE
+        // (master.blade → window.foodkingConfig.borneTicket.phone → bridge.js).
+        'phone' => env('RECEIPT_PHONE', '03 65 67 82 91'),
+        // [TICKET-ADRESSE 2026-07-03] Owner veut l'adresse en en-tête (design pro).
+        // Source primaire = `branch->address` ; ce défaut config est le fallback.
+        // ⚠️ À REMPLACER par la VRAIE adresse Le Cayenne (env RECEIPT_ADDRESS ou branche).
+        'address' => env('RECEIPT_ADDRESS', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ticket BORNE — taille de police (pilotée serveur)
+    |--------------------------------------------------------------------------
+    |
+    | Le ticket borne est imprimé par le pont local `bridge.js` (PC borne). La
+    | taille de police est désormais envoyée par le serveur dans le payload
+    | (`bodySize` / `titleSize`) : le pont applique `GS ! n` (ESC/POS). Octet n =
+    | (largeur×16) | hauteur, multiplicateurs 0–7 (1×–8×).
+    |   0x00 = normal | 0x01 = double HAUTEUR | 0x11 = double largeur+hauteur (2×2)
+    | Owner: « bien grande » → défaut 2×2. `wrap_width` = caractères par ligne à
+    | cette taille (32 normal → 16 en double largeur) pour que la compo ne déborde
+    | pas. Modifiable sans toucher la borne (config serveur → redeploy bundle).
+    |
+    */
+    'borne_ticket' => [
+        // 0x01 = double HAUTEUR (grand & propre, garde 32 car/ligne). Pour ÉNORME
+        // (double largeur+hauteur) passer à 0x11 — le front réduit alors la largeur
+        // automatiquement (16 car/ligne) pour ne rien couper.
+        'body_size' => (int) env('BORNE_TICKET_BODY_SIZE', 0x01),
+        'title_size' => (int) env('BORNE_TICKET_TITLE_SIZE', 0x11), // n° commande 2×2 (ressort)
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Coupe & avance papier (ticket qui « tombe par terre »)
+    |--------------------------------------------------------------------------
+    |
+    | Owner 2026-06-30 : « ~3 cm sortent puis ça coupe → le ticket tombe ». Cause :
+    | la queue (feed avant coupe) ne dégageait pas la barre de coupe (~15-20 mm
+    | au-dessus de la tête d'impression). On avance désormais `feed_lines_before_cut`
+    | lignes vierges à HAUTEUR NORMALE (8 ≈ 28 mm) pour que le ticket soit assez long
+    | à attraper avant la coupe. Réglable sur la VRAIE SAGA sans redéployer le code.
+    |   mode = 'full'    → GS V 0 : coupe totale (le ticket se détache).
+    |   mode = 'partial' → GS V 1 : coupe partielle (le ticket reste accroché au
+    |                       rouleau, ne tombe JAMAIS ; le client le détache à la main).
+    | NB : la borne-CLIENT imprime via bridge.js (PC borne, hors repo) qui applique
+    | SA propre coupe → ce réglage agit sur la CAISSE (chemin RAW) et la borne-CUISINE.
+    |
+    */
+    'cut' => [
+        'feed_lines_before_cut' => (int) env('PRINT_FEED_LINES_BEFORE_CUT', 8),
+        'mode' => env('PRINT_CUT_MODE', 'full'), // 'full' | 'partial'
+
+        // [TICKET-BORNE-COMPACT 2026-07-03] Owner : « le ticket ne tombe plus (coupe partielle
+        // OK) mais il y a BEAUCOUP d'espace blanc en dessous → supprime-le ». La coupe PARTIELLE
+        // (GS V 1) garde le ticket accroché au rouleau → il ne tombe JAMAIS, donc plus besoin
+        // d'une longue queue. On réduit à ~8 lignes : juste de quoi dégager la barre de coupe
+        // (~15-20 mm au-dessus de la tête) sans rogner le pied → ticket PROPRE, compact, sans
+        // grand vide. (Avant : 30 lignes ≈ 12 cm de blanc = « nul ».)
+        'kiosk_client_feed_lines' => (int) env('BORNE_CLIENT_FEED_LINES', 8),
+        'kiosk_client_mode' => env('BORNE_CLIENT_CUT_MODE', 'partial'), // 'partial' | 'full'
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Customer pole display (SAGA 2x20 VFD, CD5220 over serial)
+    |--------------------------------------------------------------------------
+    |
+    | Affiche le TOTAL au client à chaque ajout produit, et un message d'accueil
+    | en veille. USB→série sur la caisse Windows (driver 'windows_serial').
+    |
+    */
+    'customer_display' => [
+        'enabled' => env('CUSTOMER_DISPLAY_ENABLED', false),
+        'driver' => env('CUSTOMER_DISPLAY_DRIVER', 'windows_serial'), // windows_serial | none (dev/no-hardware)
+        'port' => env('CUSTOMER_DISPLAY_PORT', 'COM3'),
+        'baud' => (int) env('CUSTOMER_DISPLAY_BAUD', 9600),
+        'code_page' => (int) env('CUSTOMER_DISPLAY_CODE_PAGE', 19), // 19 = CP858
+        'welcome_line1' => env('CUSTOMER_DISPLAY_WELCOME1', 'LE CAYENNE'),
+        'welcome_line2' => env('CUSTOMER_DISPLAY_WELCOME2', 'Soyez le bienvenu !'),
+        'total_label' => env('CUSTOMER_DISPLAY_TOTAL_LABEL', 'TOTAL'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bypass Mode — TCP/IP transport short-circuit
+    |--------------------------------------------------------------------------
+    |
+    | Quand activé, AppServiceProvider bind PrinterTransportInterface vers
+    | NullPrinterTransport (au lieu de TcpPrinterTransport). Aucun fsockopen,
+    | aucun byte envoyé sur le réseau. Le rendu Vue ReceiptComponent reste
+    | visible à l'écran (avec marqueur "MODE TEST — IMPRESSION BYPASSÉE")
+    | pour validation visuelle E2E.
+    |
+    */
+    'bypass' => [
+        'enabled' => env('PRINTING_BYPASS_MODE', false),
+        'gate' => 'GATE_BYPASS_PRINTING_2026-05-08',
+        'forbidden_environments' => ['production', 'prod', 'live'],
+        'keep_screen_render' => true,
+        'screen_marker_text' => env('PRINTING_BYPASS_SCREEN_MARKER', '🔧 MODE TEST — IMPRESSION BYPASSÉE'),
+        'log_channel' => env('PRINTING_BYPASS_LOG_CHANNEL', 'stack'),
+    ],
+];

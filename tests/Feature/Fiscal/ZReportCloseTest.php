@@ -77,7 +77,12 @@ class ZReportCloseTest extends TestCase
             'fiscal_sequence_no' => 2,
         ]);
 
-        // PAID but before the window — must NOT count
+        // [C33 / LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT — 2026-07-07] PAID before open().
+        // This is the FIRST Z for the branch → the aggregation lower bound is null (no
+        // previous close), so it absorbs the WHOLE history up to close, INCLUDING sales
+        // made before open. Pre-C33 the window was (opened_at, closed_at] and this sale
+        // fell into NO signed Z (a dead-window orphan). Post-C33 the continuous partition
+        // captures it here — it must count. (A payment-status UNPAID row is still excluded.)
         Carbon::setTestNow($start->copy()->subHour());
         Order::factory()->create([
             'branch_id'          => $this->branch->id,
@@ -91,8 +96,10 @@ class ZReportCloseTest extends TestCase
         $closed = $this->service->close($this->branch->id);
 
         $this->assertSame(ZReport::STATUS_CLOSED, $closed->status);
-        $this->assertSame(1,     $closed->order_count);
-        $this->assertEqualsWithDelta(42.50, (float) $closed->total_ttc, 0.001);
+        // 42,50 (in-window PAID) + 999,00 (pre-open PAID, now absorbed by the first Z);
+        // UNPAID excluded by payment_status.
+        $this->assertSame(2,     $closed->order_count);
+        $this->assertEqualsWithDelta(1041.50, (float) $closed->total_ttc, 0.001);
 
         Carbon::setTestNow(null);
     }

@@ -1,0 +1,112 @@
+{
+  "micro_system": "S10-customers — Customers/CRM + subscribers + admin own-profile",
+  "files_examined": [
+    "app/Http/Controllers/Admin/CustomerController.php",
+    "app/Http/Controllers/Admin/CustomerAddressController.php",
+    "app/Http/Controllers/Admin/SubscriberController.php",
+    "app/Http/Controllers/Frontend/ProfileController.php",
+    "app/Services/CustomerService.php",
+    "app/Services/UserAddressService.php",
+    "app/Services/SubscriberService.php",
+    "app/Services/ProfileService.php",
+    "app/Services/OrderService.php (userOrder)",
+    "app/Http/Requests/CustomerRequest.php",
+    "app/Http/Requests/CustomerAddressRequest.php",
+    "app/Http/Requests/UserChangePasswordRequest.php",
+    "app/Http/Requests/ChangePasswordRequest.php",
+    "app/Http/Requests/ChangeImageRequest.php",
+    "app/Http/Requests/ProfileRequest.php",
+    "app/Http/Requests/SubscriberEmailRequest.php",
+    "app/Http/Resources/CustomerResource.php",
+    "app/Models/Scopes/BranchScope.php",
+    "routes/api.php (profile/subscriber/customer blocks)",
+    "resources/js/components/admin/customers/CustomerListComponent.vue",
+    "resources/js/components/admin/customers/CustomerCreateComponent.vue",
+    "resources/js/components/admin/customers/CustomerShowComponent.vue",
+    "resources/js/components/admin/subscribers/SubscriberMailComponent.vue",
+    "resources/js/components/admin/profile/ProfileChangePasswordComponent.vue",
+    "resources/js/components/admin/profile/ProfileEditProfileComponent.vue",
+    "database/seeders/PermissionTableSeeder.php"
+  ],
+  "findings": [
+    {
+      "id": "S10-01",
+      "severity": "P1",
+      "category": "security",
+      "title": "CustomerService::show() missing target-role guard — read-side privilege escalation (any User id leaks PII)",
+      "file_line": "app/Services/CustomerService.php:128-140 ; route routes/api.php:547 ; gate CustomerController.php:39",
+      "evidence": "The WAVE5-SEC-001 heal added assertTargetRole() to update() (CustomerService.php:98), changePassword() (:196) and changeImage() (:218) to block mutating non-Customer Users. But show() (:128-140) was NOT given the same guard: it only checks `!in_array(EnumRole::CUSTOMER, $this->blockRoles)` which is a constant tautology (blockRoles=[ADMIN], so CUSTOMER is never in it → always true) and returns the route-bound User as-is. Route GET /customer/show/{customer} (routes/api.php:547) implicit-binds ANY User (no Route::bind role scoping — grep confirmed none) and is gated only by `permission:customers_show` (CustomerController.php:39). CustomerResource (CustomerResource.php:20-31) then returns name/email/phone/username. So a Branch-Manager/partial staffer holding customers_show can pass an Admin or staff user id and read their PII. The same read-side asymmetry exists on myOrder (OrderService::userOrder filters only `where('user_id',$user->id)`, OrderService.php:253-254, gated by permission:customers) and on address index (CustomerAddressController.php:25).",
+      "why_it_matters": "Direct read-side of the exact horizontal/vertical escalation that WAVE5-SEC-001 patched on the write side. The mutator/reader asymmetry is strong code evidence this is an oversight, not intent. Leaks staff/admin email+phone (PII / GDPR-relevant) to any operator with the read permission.",
+      "reproduction": "As a user with role granting only `customers_show` (e.g. Branch Manager), call GET /api/admin/customer/show/{id} with an Admin or Chef user id. Code path returns that user's CustomerResource (PII). Live-verify needs a non-admin role actually holding customers_show.",
+      "recommended_correction": "Add `$this->assertTargetRole($customer);` at the top of CustomerService::show() (mirror update/changePassword/changeImage). Apply equivalently before OrderService::userOrder() use in CustomerController::myOrder and before address index, OR scope the {customer} route binding to the Customer role via Route::bind / a scoped implicit binding.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S10-02",
+      "severity": "P2",
+      "category": "security",
+      "title": "Customer address write ops (store/update/destroy) gated by a READ permission (customers_show)",
+      "file_line": "app/Http/Controllers/Admin/CustomerAddressController.php:22",
+      "evidence": "Constructor middleware: `$this->middleware(['permission:customers_show'])->only('index','store','update','destroy','show');`. The mutating endpoints POST /customer/address/{customer}, PUT/PATCH /customer/address/{customer}/{address}, DELETE /customer/address/{customer}/{address} (routes/api.php:559-561) are therefore authorised by the *read* permission customers_show — not customers_create/customers_edit/customers_delete, which exist as distinct, separately-assignable permissions (PermissionTableSeeder.php:475-499; CustomerController.php:36-38 uses the granular trio for its own CRUD).",
+      "why_it_matters": "Least-privilege violation / inconsistency: an operator granted only view access to customers can create, modify and delete their delivery addresses (affecting delivery routing / DeliveryQuoteService geocode). The sibling CustomerController already models the correct granular gating, so this is an internal inconsistency.",
+      "reproduction": "Assign a role only `customers_show`. POST /api/admin/customer/address/{customer} succeeds (address created) though the role lacks any *_create/_edit/_delete customer permission.",
+      "recommended_correction": "Split the gates: keep customers_show on index/show; gate store with customers_create (or a new customers_edit), update with customers_edit, destroy with customers_delete — matching CustomerController.php:36-38.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S10-03",
+      "severity": "P3",
+      "category": "logic",
+      "title": "ProfileChangePasswordComponent success toast: dead `?? 0` and boolean passed where flip-index expected",
+      "file_line": "resources/js/components/admin/profile/ProfileChangePasswordComponent.vue:95-96",
+      "evidence": "`alertService.successFlip(res.config.method === \"put\" ?? 0, this.$t(\"menu.password\"))`. `res.config.method === \"put\"` is always a boolean (true/false), so the `?? 0` nullish-coalescing branch is unreachable dead code (a boolean is never null/undefined). successFlip(status=null,...) (alertService.js:48) expects status to select created-vs-updated wording; it receives `true`/`false` instead of an id/0. Operator-precedence: `===` binds tighter than `??`, so this parses as `(method==='put') ?? 0`.",
+      "why_it_matters": "Minor: the change-password confirmation toast may show the wrong created/updated variant, and the code carries a misleading dead operand. Cosmetic only; password change itself works.",
+      "reproduction": "Admin > Profile > Change Password, submit valid form; inspect the toast wording / pass a boolean into successFlip.",
+      "recommended_correction": "Drop the `?? 0` and pass an explicit flip value, e.g. `alertService.successFlip(1, this.$t('menu.password'))` (a password change is always an update), consistent with ProfileEditProfileComponent.vue:142 which uses `successFlip(1, ...)`.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S10-04",
+      "severity": "P3",
+      "category": "perf",
+      "title": "Subscriber broadcast email sent synchronously to all subscribers in one BCC, no queue/chunk",
+      "file_line": "app/Services/SubscriberService.php:110-123",
+      "evidence": "sendEmail() does `$subscribers = Subscriber::pluck('email');` then `Mail::bcc($subscribers->toArray())->send(new SubscriberMail(...))` — a single synchronous send over the whole subscriber base, inside the HTTP request (SubscriberController::sendEmail:57-61). No ShouldQueue, no chunking, no per-recipient send.",
+      "why_it_matters": "As the subscriber list grows the request blocks until the SMTP transaction completes (or times out → 422). A single BCC to many recipients also raises deliverability/spam-filtering risk and exposes the whole list to one transport failure (all-or-nothing). For V1 Le Cayenne single-resto the list is small so impact is low today, hence P3.",
+      "reproduction": "POST /api/admin/subscriber/send-email with a large Subscriber table; the request latency scales with the mail transaction and can hit the request timeout.",
+      "recommended_correction": "Queue the mail (implement ShouldQueue on SubscriberMail or dispatch a job) and chunk recipients (e.g. Subscriber::chunk(200) → queued Mail::to() per recipient), so the controller returns immediately and one bad address doesn't fail the whole batch.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Customer = branch_id=0 User, exempt from BranchScope intentionally (task hint satisfied)",
+      "file_line": "app/Models/Scopes/BranchScope.php:21-23 ; CustomerService.php:71 (store branch_id=0)",
+      "note": "BranchScope::apply early-returns for `$model instanceof User` to avoid Sanctum guard re-entry/recursion (documented at :19-20). Customers are User rows seeded with branch_id=0, so they are deliberately not branch-filtered. The sentinel's `App\\Models\\Customer` exemption (BranchScopeCoverageSentinelTest:51) is a separate model; the User exemption is the relevant one here. Intentional and documented — not a defect."
+    },
+    {
+      "title": "WAVE5-SEC-001 target-role guard correctly protects the three customer mutators",
+      "file_line": "app/Services/CustomerService.php:180-188 (assertTargetRole), :98 update, :196 changePassword, :218 changeImage",
+      "note": "assertTargetRole() throws HttpException(403) if the route-bound User is not a Customer, placed BEFORE the try/catch so the 403 survives QueryExceptionLibrary rewrap. Blocks a customers_edit holder from rotating an Admin's password via PUT /customer/{anyUserId}. Correct (the read-side gap in S10-01 is the remaining hole)."
+    },
+    {
+      "title": "Admin self-service password change verifies the old password; admin reset path correctly omits it",
+      "file_line": "app/Http/Requests/ChangePasswordRequest.php:44-58 ; app/Http/Requests/UserChangePasswordRequest.php:33-36",
+      "note": "ProfileController self-change uses ChangePasswordRequest whose withValidator/checkOldPassword (Hash::check against auth user) enforces old_password — so ProfileService::changePassword not re-checking it is fine (enforced at the FormRequest layer). The admin-reset-a-customer path (UserChangePasswordRequest) intentionally omits old_password (admin doesn't know it) and requires min:12 letters+numbers + confirmed. Both correct."
+    },
+    {
+      "title": "Address IDOR protection: ownership asserted on update/destroy/show",
+      "file_line": "app/Services/UserAddressService.php:79, :101, :118",
+      "note": "update/destroy/show all guard `if ($user->id == $address->user_id)` else throw, so a mismatched {customer}/{address} pair in the route cannot mutate or read another user's address. Prevents the cross-record IDOR the nested route shape would otherwise allow."
+    },
+    {
+      "title": "route('X.id') dot-notation in FormRequests resolves correctly (NOT a bug — verified)",
+      "file_line": "app/Http/Requests/CustomerRequest.php:34,37,44,48,54 ; CustomerAddressRequest.php:28",
+      "note": "Verified via tinker: Route::parameter -> Arr::get supports dot notation and the bound User implements ArrayAccess, so Arr::get(['customer'=>$user],'customer.id') returns the user's id (printed int(1)), and null on create (store, no param). Thus Rule::unique()->ignore(id) excludes the current row on update and password becomes nullable on update / required on create — exactly as intended. Same pattern across all sibling *Request classes. Recorded as a SOLID to pre-empt a false-positive."
+    }
+  ]
+}

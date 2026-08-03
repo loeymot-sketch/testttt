@@ -1,0 +1,22 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport:{width:390,height:844} });
+  const p = await ctx.newPage();
+  const fails=[];
+  p.on('response', r => { if (r.status()>=400) fails.push(r.status()+' '+r.request().method()+' '+r.url()); });
+  await p.goto('http://127.0.0.1:8087/index.html',{waitUntil:'networkidle'});
+  await p.evaluate(()=>{const s=window.LC.storage;s.setAuth({token:'6625|U2sYzBULk802OTteFA6IkmYtWA6Z5OSKYcF8Jvz3fac5b35e',phone:'0697222388',user_id:189});s.setCart([{id:101,slug:'cayenne',name:'Cayenne',cat:'sandwichs',price:7.4,unitPrice:7.4,qty:1,lineTotal:7.4,sups:[],painId:'pain-classique',painLabel:'Pain'}]);});
+  await p.reload({waitUntil:'networkidle'});
+  await p.waitForTimeout(400);
+  await p.evaluate(()=>{const t=[...document.querySelectorAll('button,a,div')].find(x=>(x.textContent||'').trim()==='Menu');if(t)t.click();});
+  await p.waitForTimeout(400);
+  await p.evaluate(()=>{const bb=[...document.querySelectorAll('button')].find(x=>/Voir le panier/i.test(x.textContent||''));if(bb)bb.click();});
+  await p.waitForTimeout(400);
+  await p.evaluate(()=>{const bb=[...document.querySelectorAll('button')].find(x=>/Valider ma commande/i.test(x.textContent||''));if(bb)bb.click();});
+  await p.waitForTimeout(500);
+  await p.evaluate(()=>{const bb=document.querySelector('[data-testid=pay-counter]');if(bb)bb.click();});
+  await p.waitForTimeout(1800);
+  console.log(fails.length?fails.join('\n'):'NO 4xx/5xx');
+  await b.close();
+})();

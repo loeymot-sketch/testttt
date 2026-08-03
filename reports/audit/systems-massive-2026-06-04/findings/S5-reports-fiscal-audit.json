@@ -1,0 +1,144 @@
+{
+  "micro_system": "S5-reports-fiscal",
+  "files_examined": [
+    "resources/js/components/admin/salesReport/SalesReportListComponent.vue",
+    "resources/js/components/admin/itemsReport/ItemsReportListComponent.vue",
+    "resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue",
+    "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue",
+    "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+    "app/Http/Controllers/Admin/SalesReportController.php",
+    "app/Http/Controllers/Admin/ItemsReportController.php",
+    "app/Http/Controllers/Admin/CreditBalanceReportController.php",
+    "app/Http/Controllers/Admin/CashSessionReportController.php",
+    "app/Http/Controllers/Admin/Fiscal/ZReportController.php",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php",
+    "app/Services/OrderService.php",
+    "app/Services/ItemService.php",
+    "app/Http/Resources/SimpleOrderResource.php",
+    "app/Http/Resources/ItemReportResource.php",
+    "app/Http/Resources/SalesReportOverviewResource.php",
+    "app/Exports/SalesReportExport.php",
+    "app/Exports/ItemsReportExport.php",
+    "app/Models/Order.php",
+    "routes/api.php",
+    "resources/js/store/modules/salesReport.js",
+    "resources/js/bootstrap.js",
+    "resources/js/shared/axios-setup.js",
+    "resources/js/languages/fr.json"
+  ],
+  "findings": [
+    {
+      "id": "S5-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Items report on-screen 'Total' footer sums only the current page (10 of 45 items), contradicting the Excel export's true total",
+      "file_line": "resources/js/components/admin/itemsReport/ItemsReportListComponent.vue:316-320 (subTotal) + :120-127 (tfoot) + :234-236 (paginate:1, per_page:10)",
+      "evidence": "subTotal(items){ return items.reduce((acc,ele)=> acc + parseInt(ele.order), 0); } is called as subTotal(itemsReports) where itemsReports = $store.getters['itemsReport/lists'] — i.e. the current paginated page only (default props.search.paginate:1, per_page:10). The <tfoot> row is literally labelled {{ $t('label.total') }}. Meanwhile app/Exports/ItemsReportExport.php:collection() forces $this->request->merge(['paginate'=>0]) and accumulates $total over the FULL set, emitting a correct grand total. So the screen 'Total' and the Excel 'Total' disagree by construction whenever there are >10 items — and V1 Le Cayenne has 45 items.",
+      "why_it_matters": "A figure explicitly labelled 'Total' that shows the sum of 10 items instead of all 45 is a wrong result the owner will read as units-sold truth. On the very first page load with the canonical 45-item menu it under-reports total units sold, and it silently disagrees with the Excel export the owner would cross-check against — exactly the 'flou' (blur) the owner is complaining about.",
+      "reproduction": "Open /admin/items-report with the 45-item menu. The footer 'Total' equals the sum of the 10 visible rows' quantity column. Click Excel export → the .xlsx 'Total' row equals the sum over all 45 items. The two totals differ.",
+      "recommended_correction": "Compute the footer total from a server-provided grand total (add a summed 'total_units' to the index response meta, mirroring ItemsReportExport's paginate=0 accumulation) instead of reducing over the current page. Do NOT just paginate=0 the screen list (defeats pagination). Render the page-independent total in the tfoot.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S5-02",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Sales report mixes a placed-orders count card next to three realized-net money cards with no label distinguishing the two definitions",
+      "file_line": "app/Services/OrderService.php:2796-2800 + resources/js/components/admin/salesReport/SalesReportListComponent.vue:127-170",
+      "evidence": "salesReportOverview() computes $paidOrders = $orders->filter(isRealizedRevenueRow) then total_earnings/total_discounts/total_delivery_charges = $paidOrders->sum(...) (realized-net only, owner-healed 2026-06-01 'net, agree with the Z'), but total_orders = $orders->count() (ALL placed orders incl. UNPAID/PENDING_COUNTER/cancelled). The four overview cards render side by side with generic labels (label.total_orders, label.total_earnings, label.total_discounts, label.total_delivery_charges) and no sub-text clarifying that the count is 'placed' while the money is 'encaissé net'. Separately, the table below (OrderService::list) lists ALL orders with no PAID/realized column, so a reader summing the table's Total column will NOT match the total_earnings card.",
+      "why_it_matters": "This is the owner's 'flou' complaint made concrete: the count says e.g. 40 commandes but the earnings reflect only the ~30 realized-paid ones, and the table rows don't visually reconcile to the cards. The underlying numbers are each correct for their (owner-signed) definition — the defect is purely that nothing on screen tells the operator the count and the money use different populations. Reopening the sums would reverse an owner decision; the fix is labelling.",
+      "reproduction": "Open /admin/sales-report with a mix of PAID and UNPAID/PENDING_COUNTER orders. total_orders counts all; total_earnings sums only realized-net. Manually add the table's Total column → it exceeds total_earnings (table includes unpaid rows).",
+      "recommended_correction": "Add a clarifying sub-label/tooltip: total_orders = 'commandes passées', and group the three money cards under an 'Encaissé net (concorde avec le Z)' heading. Optionally add a PAID/status badge column to the table so it visually reconciles to the cards. Do NOT change the sums (owner-healed SALES-NET-01).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S5-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Cash session report daily totals (opening/closing/transactions) are computed per-page, so a day split across pages shows partial daily totals",
+      "file_line": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue:166-188 (groupedByDay) + :194-201 (per_page:50, server pagination)",
+      "evidence": "groupedByDay() builds the day buckets and their totalOpening/totalClosing/totalTransactions by iterating this.sessions, which is the current page only (loadSessions sets per_page = this.meta.per_page = 50 and paginates server-side via CashSessionReportController::index $query->paginate($perPage)). The per-day header (:62-66) renders these as 'Total ouverture' / 'Total clôture' / 'Transactions'. If a single business day's sessions straddle a page boundary, the header totals reflect only the sessions on the visible page, not the day.",
+      "why_it_matters": "The cash sessions report is the owner's daily reconciliation surface ('voir les caisses chaque jour, début + fin'). A daily 'Total clôture' that is actually a per-page partial silently mis-states the day's cash position. Likelihood is low for single-branch V1 (few sessions/day, page size 50), which is why it's P2 not P1 — but when it triggers it is a money figure the owner trusts for reconciliation.",
+      "reproduction": "Seed >50 cash sessions where day D's sessions land on both page 1 and page 2. Open /admin/cash-sessions-report → day D's header totals on page 1 omit the page-2 sessions of the same day.",
+      "recommended_correction": "Either return server-computed per-day aggregates in the response meta (grouped server-side, page-independent), or page by whole days rather than by row count. Until then, label the per-day header totals as 'sur cette page' to avoid implying a true daily total.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S5-04",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Cash session 'Total clôture' counts still-open sessions as 0, understating the day's closing total",
+      "file_line": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue:182-183 (reducer) + :247-250 (formatMoney) + :64-66 (closing_total render)",
+      "evidence": "In groupedByDay the reducer does bucket.totalClosing += Number(s.closing_amount || 0). Open sessions return closing_amount = null from CashSessionReportController::index (:136 closing_amount => $s->closing_amount===null ? null : ...). Number(null || 0) = 0, so every OPEN session contributes 0 to a header labelled 'Total clôture' (label.closing_total). The per-row cell correctly shows '—' for null (:99), but the day header silently folds nulls into the sum as zeros.",
+      "why_it_matters": "On any day with an open (not-yet-closed) drawer — i.e. the current trading day, the most-viewed one — 'Total clôture' reads as if those drawers closed at 0,00, mixing closed and not-yet-closed sessions into one misleading number. It blurs the reconciliation the owner specifically wants (début + fin per day).",
+      "reproduction": "Open /admin/cash-sessions-report during a live shift with one open session and one closed session on the same day. The day header 'Total clôture' equals only the closed session's closing_amount, but presents as the day total including the open drawer (counted as 0).",
+      "recommended_correction": "Exclude null closing_amount from the totalClosing reducer and show a 'n sessions ouvertes' note, OR sum expected_closing_amount for open sessions. Make the header label distinguish 'clôtures enregistrées' from 'sessions ouvertes en cours'.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S5-05",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Outbox 'Retry failed' button is enabled by pending count, but the backend only retries rows that already errored — healthy pending events are silently ignored",
+      "file_line": "resources/js/components/admin/observability/OutboxOverviewComponent.vue:60-66 (:disabled) + app/Http/Controllers/Admin/Observability/SyncOverviewController.php:403-409 (outboxRetryFailed query)",
+      "evidence": "The button is :disabled=\"retrying || (failedJobs.count === 0 && pending.count === 0)\" — so it becomes clickable when pending.count > 0 even if failedJobs.count == 0. But outboxRetryFailed() selects DomainEvent::whereNull('dispatched_at')->whereNotNull('last_error')->where('created_at','>=', now()->subDays(RETRY_FAILED_MAX_AGE_DAYS)) — i.e. ONLY events that have a recorded last_error. A pending event that is simply not-yet-dispatched (last_error NULL, the healthy backlog case) is never re-queued. The operator clicks 'Retry failed', the call returns requeued=0, and nothing visibly changes.",
+      "why_it_matters": "This is observability for a SILENT-failure pipeline — the dashboard's whole purpose is to let an operator un-stick events. A button that lights up on a healthy backlog but then does nothing teaches the operator the tool is unreliable, undermining trust in the one screen that surfaces a crashed queue:work/websockets worker. It is a UX/contract blur, not a data-loss bug.",
+      "reproduction": "Have pending domain_events with last_error = NULL (normal backlog) and zero failed rows. The Retry failed button is enabled; clicking it POSTs /retry-failed which returns requeued=0; pending count is unchanged.",
+      "recommended_correction": "Gate the button on a count that matches the backend predicate (events with last_error set), e.g. expose pending_with_error in the overview payload and disable on (that===0 && failedJobs.count===0); or surface the requeued count in a toast so a 0-requeue click is explained.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S5-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Sales report Excel/PDF export the full filtered set with no row cap, while the screen paginates — large exports can be heavy and silently differ in size from what the user sees",
+      "file_line": "app/Services/OrderService.php:129-130 + app/Exports/SalesReportExport.php:26-41 + resources/js/components/admin/salesReport/SalesReportListComponent.vue:494-523",
+      "evidence": "OrderService::list uses $method = paginate==1 ? 'paginate' : 'get' and the export path (SalesReportExport::collection) calls $this->orderService->list($this->request) without forcing paginate, so the export request (xls/pdf actions in the Vue dispatch the same props.search which has paginate:1) — meaning the export inherits whatever paginate flag the search carries. Unlike ItemsReportExport which explicitly merge(['paginate'=>0]) to guarantee a full export, SalesReportExport/SalesReportController::pdf do NOT normalize paginate, so the export's row set depends on the in-flight search.paginate value rather than being a deterministic full export.",
+      "why_it_matters": "Inconsistent export semantics across the two reports (items forces full, sales does not) is a maintainability/correctness blur: a future change to the default search.paginate would silently truncate the sales export to one page. Low severity because today search.paginate is 1 and the backend still returns the page — but it means the sales export is not a guaranteed full-dataset export the way the items one is.",
+      "reproduction": "Compare ItemsReportExport (merge paginate=0) vs SalesReportExport (no merge). With search.paginate=1 the sales export reflects pagination state rather than a forced full set.",
+      "recommended_correction": "Mirror ItemsReportExport: $this->request->merge(['paginate'=>0]) inside SalesReportExport::collection and SalesReportController::pdf so both reports' exports are deterministically the full filtered dataset.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S5-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Credit balance report offers Print + Excel but no PDF, inconsistent with sales/items reports (which expose PDF) — and the on-screen balance has no total row",
+      "file_line": "resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue:19-21 (no PdfComponent) + app/Http/Controllers/Admin/CreditBalanceReportController.php:53-60 (export only, no pdf method)",
+      "evidence": "The credit-balance dropdown renders <PrintComponent> and <ExcelComponent> only — there is no <PdfComponent> and the controller/route (routes/api.php:1104-1107) exposes only / and /export (no /pdf), whereas SalesReport and ItemsReport both expose pdf endpoints and buttons. The balance column (:91 {{ user.balance }}) is rendered raw with no aggregate/total row, so the owner cannot see total store-credit liability at a glance.",
+      "why_it_matters": "Store-credit balance is a liability figure; the report lacks a grand-total of outstanding credit (the single most useful number on a liability register) and is export-inconsistent with the sibling reports. Minor, but it is part of the 'unnecessary/incoherent' polish the owner flagged.",
+      "reproduction": "Open /admin/credit-balance-report → export dropdown has Print + Excel, no PDF; table has no 'Total balance' footer unlike items report's tfoot.",
+      "recommended_correction": "Add a total-outstanding-credit footer row (sum of balances, ideally server-provided like S5-01) and either add a PDF export for parity or document why credit-balance is Excel-only.",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Realized-revenue SSOT kept in strict lock-step between SQL scope and collection helper",
+      "file_line": "app/Models/Order.php:267-295 (scopeRealizedRevenue + isRealizedRevenueRow)",
+      "note": "scopeRealizedRevenue (query path: items report withSum, item export) and isRealizedRevenueRow (collection path: salesReportOverview, PDF/Excel) implement the SAME paid-and-not-terminal OR refund-mirror predicate, with an explicit comment mandating they stay in lock-step. This is the right way to keep the sales report, items report and the Z agreeing on what counts as realized revenue — exactly the 'agree with the Z' owner requirement, with one definition not three."
+    },
+    {
+      "title": "Cash session report enforces branch isolation correctly via admin-only scope bypass",
+      "file_line": "app/Http/Controllers/Admin/CashSessionReportController.php:77-80 + 114-121",
+      "note": "Only branch_id=0 (global admin) gets ->withoutGlobalScope(BranchScope::class); branch staff fall through to the global BranchScope so they see only their branch. The optional branch_id filter is honoured ONLY for admin and silently ignored for staff (deliberately, to avoid leaking branch existence). Permission is checked via $user->can('cash-sessions-report') with explicit 401/403. Clean, leak-free multi-tenant read."
+    },
+    {
+      "title": "GDPR data-minimization on the sales report payload (phone shipped only for delivery)",
+      "file_line": "app/Http/Resources/SimpleOrderResource.php:97-102",
+      "note": "customer_phone is emitted only when order_type === DELIVERY; for POS/kiosk/takeaway rows it is null. The sales report and online-orders surfaces never receive customer phone over the wire even though the UI already gated rendering — defense in depth at the resource layer. Good privacy hygiene for a report screen."
+    },
+    {
+      "title": "Items export forces a true full-dataset total independent of screen pagination",
+      "file_line": "app/Exports/ItemsReportExport.php:23-49",
+      "note": "collection() explicitly $this->request->merge(['paginate'=>0]) before calling itemReport() and accumulates $total over the full set, so the Excel 'Total' row is a real grand total. This is the correct pattern (and is precisely the evidence that the on-screen tfoot total in S5-01 is the buggy one). The date-aware itemReport() (units_sold = SUM quantity, realized-only, scoped to the parent order's order_datetime) is also semantically correct, not a line-count."
+    }
+  ]
+}

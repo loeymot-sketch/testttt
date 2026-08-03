@@ -1,0 +1,20 @@
+{
+  "gate": "parity-B3",
+  "version": 1,
+  "generated_at": "2026-07-08T19:43:22.924Z",
+  "surface": "web",
+  "fixture": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json",
+  "mirror": "/Users/1millnonstop/Downloads/web/data/menu.js",
+  "canonical": {
+    "categories": 9,
+    "items": 42
+  },
+  "mirror_stats": {
+    "items": 38,
+    "categories": 9
+  },
+  "divergence_count": 0,
+  "divergences_par_check": {},
+  "divergences": [],
+  "ok": true
+}

@@ -1,0 +1,296 @@
+{
+  "agent": "S3-P1 KDS x Chef-rush",
+  "scope_audited": {
+    "frontend_components": [
+      "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (2768 LOC)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (545 LOC, production default since 2026-05-16 Sprint 3C)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (752 LOC, single canonical card)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue (454 LOC, read-only V1)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue (213 LOC, kept on disk but REMOVED from KdsV2Grid imports per Wave V 2026-05-21)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue (284 LOC)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue (204 LOC)",
+      "resources/js/store/modules/kds.js (per-item Vuex localStorage bump, legacy 4-col only)",
+      "resources/js/store/modules/kdsInflight.js (item-availability badging)"
+    ],
+    "backend_files": [
+      "app/Http/Controllers/Admin/KitchenDisplaySystemController.php (79 LOC, 4 actions: index/changeStatus/orderItems/historyToday)",
+      "app/Services/KitchenDisplaySystemOrderService.php (471 LOC)",
+      "app/Services/KdsSyncService.php (182 LOC)",
+      "app/Http/Requests/Kds/KdsOrderStatusRequest.php (43 LOC)",
+      "app/Domain/Order/OrderStateMachine.php (frozen-zone §7, lines 30-75 = transition table)",
+      "app/Domain/Kds/KitchenReleaseRule.php"
+    ],
+    "routes_audited": [
+      "routes/api.php:1131-1149 (kds-order prefix, all routes enumerated)"
+    ],
+    "chef_visible_actions_v2_default_layout": [
+      "Pret CTA (kds-card__cta) - single tap PATCHes immediately (Wave V 2026-05-21)",
+      "Keyboard [A]-[H] - bumps slot N (KdsV2Grid.vue:269-289)",
+      "Historique du jour drawer - read-only viewer (KdsHistoryDrawer.vue + GET /admin/kds-order/history-today)",
+      "Station filter dropdown - all/grill/fryer (persisted localStorage, KitchenDisplaySystemComponent.vue:198-202)",
+      "tel: link on delivery cards (KdsOrderCard.vue:103-111)"
+    ]
+  },
+
+  "owner_mandate_gap_verified": {
+    "kds_archive_undo": {
+      "owner_verbatim": "l'écran de cuisine, je peux pas y accéder aux archives parce que je peux par exemple avoir fait valider une commande par erreur avec rapidité, je vais revenir pour la corriger",
+      "status": "ABSENT_CONFIRMED",
+      "evidence_chain": [
+        {
+          "claim": "KdsHistoryDrawer.vue is read-only by design - no undo/revert button rendered",
+          "file": "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+          "lines": "1-21, 138-142",
+          "verbatim_block_comment_L8_L11": "Read-only V1: revert PREPARED -> PREPARING is intentionally NOT exposed here. OrderStateMachine (frozen §7) forbids reverse transitions, and the owner has classified this as 'secondaire' - revert is V1.0.2 backlog pending a LOCK plan + owner countersign.",
+          "verbatim_inline_comment_L138_L142": "V1.0.2 backlog: revert button (PREPARED -> PREPARING). Blocked in V1 by OrderStateMachine §7 frozen-zone (forward-only). Requires LOCK plan + owner countersign before implementation."
+        },
+        {
+          "claim": "Backend route documents the deferred revert explicitly",
+          "file": "routes/api.php",
+          "lines": "1142-1148",
+          "verbatim": "[Wave X3 2026-05-21] KDS Historique du jour - read-only V1 day-history viewer. Returns today's PREPARED/OUT_FOR_DELIVERY/DELIVERED orders for the branch (admin sees all), sorted updated_at desc, capped 50. Revert (PREPARED -> PREPARING) deferred V1.0.2 (OrderStateMachine §7 LOCK)."
+        },
+        {
+          "claim": "Controller has 4 actions only; NO undo/revert endpoint exists",
+          "file": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+          "lines": "22, 25-78",
+          "actions_enumerated": ["index", "changeStatus (forward-only)", "orderItems", "historyToday (read-only)"],
+          "verbatim_controller_L62_L70": "[Wave X3 2026-05-21] KDS 'Historique du jour' - read-only V1. Owner mandate: chef sees all PREPARED/OUT/DELIVERED orders today to verify content if a customer reports an error. Read-only - revert (PREPARED -> PREPARING) deferred to V1.0.2 because OrderStateMachine (frozen §7) forbids reverse transitions and a LOCK plan + owner countersign is required."
+        },
+        {
+          "claim": "OrderStateMachine::allows() table forbids ALL reverse transitions in PREPARING/PREPARED/OUT_FOR_DELIVERY/DELIVERED branches; only Admin role can override terminal CANCELED/REJECTED/RETURNED",
+          "file": "app/Domain/Order/OrderStateMachine.php",
+          "lines": "30-75",
+          "key_evidence": {
+            "PREPARED_branch_L54_L55": "case OrderStatus::PREPARED: return in_array($to, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED], true);",
+            "interpretation": "PREPARED has only forward transitions allowed (OUT_FOR_DELIVERY=10, DELIVERED=13). No PREPARING=7 in allowed list. assertAllows() throws IllegalTransitionException on any reverse attempt."
+          }
+        },
+        {
+          "claim": "KdsOrderStatusRequest accepts ONLY ACCEPT/PREPARING/PREPARED (4/7/8); excludes the post-bump statuses entirely",
+          "file": "app/Http/Requests/Kds/KdsOrderStatusRequest.php",
+          "lines": "34-41",
+          "verbatim_kdsStatuses_array": "[OrderStatus::ACCEPT, OrderStatus::PREPARING, OrderStatus::PREPARED]"
+        },
+        {
+          "claim": "Wave V (2026-05-21) REMOVED the 3-second undo toast entirely from the production V2 grid",
+          "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+          "lines": "108-115, 291-323",
+          "verbatim_L108_L115": "[Wave V 2026-05-21] KdsUndoToast removed - chef Pret tap now PATCHes immediately. The 3s undo window + single-slot serialization (clearTimeout(pendingTimeoutId)) caused a cross-order race: when chef chained 'Pret' on 3+ orders within 3s, the previous order's PATCH was cancelled by the next click -> only the LAST order transitioned, the rest stayed EN COURS until chef re-clicked (perceived as a 30s retry-after toast). Per owner mandate 'enleve cette securite'. Component file kept for instant rollback.",
+          "consequence": "Between Wave V (2026-05-21) and today, the chef has ZERO undo window. Tap = immediate irreversible PATCH. KdsUndoToast.vue still on disk but not imported (KdsV2Grid.vue:125-126)."
+        }
+      ],
+      "user_impact": "Owner-described scenario: chef bumps order N°45 PREPARING -> PREPARED by mistake at rush hour (immediate PATCH, no toast, no undo window). The order disappears from active grid (Wave U partition - PREPARED leaves FIFO grid - KdsV2Grid.vue:48-52, 197-202). It surfaces in 'Recemment servies' bottom strip with 'il y a Xm' for ~4 orders, but no action available there either. Drawer 'Historique du jour' lists the order but has no revert control. Net: chef MUST tell cashier orally to recreate the order or manually intervene. Tracking is lost because OrderStateMachine recordTransition (line 132-150) wrote the forward transition irreversibly to order_status_transitions table.",
+      "compound_severity": "HIGH - this gap is amplified by Wave V's removal of the 3s undo window. Pre-Wave-V the chef had 3s grace; post-Wave-V the only safety net is the kitchen-cashier verbal channel (no UI surface).",
+      "frozen_zone_constraint": "OrderStateMachine §7 (CLAUDE.md frozen list) blocks adding reverse transitions WITHOUT a LOCK plan + owner countersign. NF525 audit chain is forward-append-only by design.",
+      "implementation_proposal": {
+        "approach": "Compensating-action pattern (NOT reverse transition - preserves NF525 forward-only invariant)",
+        "steps": [
+          "1. New backend endpoint POST /api/admin/kds-order/{order}/recall-recent (audit-logged, role: Chef/Branch Manager/Admin)",
+          "2. Eligibility window: 60s grace post PREPARING->PREPARED transition (mirrors existing kds.recallItem in resources/js/store/modules/kds.js:66-72 grace_expired pattern, server-validated)",
+          "3. Action mechanic: NOT a reverse transition. Instead, emit a 'kitchen_recall' OrderStatusTransition row (new transition_type column or reason field) that flags the order as 'recalled to kitchen' WITHOUT mutating order.status. UI surfaces this with a yellow 'RAPPELE' badge in the active grid (re-injecting the card visually).",
+          "4. Alternative if owner accepts surgical state-machine extension: add PREPARED->PREPARING to OrderStateMachine::allows() gated by user->hasPermissionTo('kds-recall') AND a 60s server-side recency check on updated_at. Requires LOCK_KDS_RECALL_2026-05-25.md per CLAUDE.md §7 procedure.",
+          "5. UI surface: add 'Annuler bump' button on the LAST bumped card in 'Recemment servies' strip (KdsV2Grid.vue:96-104), enabled only while within the 60s grace window with a visible countdown.",
+          "6. Audit: append-only OrderStatusTransition row with reason='kitchen_recall_within_grace'. NF525 audit chain semantics preserved."
+        ],
+        "estimated_complexity": "Path 3 (compensating-action): MEDIUM - 2 backend endpoints + 1 migration + UI surface, no frozen-zone touch. Path 4 (state-machine extension): HIGH - frozen-zone LOCK + owner countersign + invariant impact analysis on KitchenReleaseRule + DispatchKdsTicket listener + 6-year audit retention semantics.",
+        "owner_decision_required": "Choose between (a) compensating-action with badge + audit (path 3, no frozen touch) OR (b) gated reverse transition via LOCK (path 4)."
+      }
+    }
+  },
+
+  "additional_gaps_found": [
+    {
+      "id": "GAP-S3-P1-002",
+      "title": "Pas de bump partiel par item (V2 layout production)",
+      "user_story": "Chef prepare une commande N°45 composee de 3 articles: 1 burger + 1 frites + 1 boisson. Burger pret en 4 min, frites en 5 min, boisson immediate. Chef doit attendre que les 3 soient prets pour appuyer Pret (transition PREPARING->PREPARED concerne TOUTE la commande). Pendant ce temps le client recupere son burger en avance ou attend 5 min avec son cafe froid.",
+      "evidence": {
+        "file_v2_card": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+        "lines_v2_cta": "148-160 (single button at order-level, no per-item action)",
+        "file_legacy_layout": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+        "lines_legacy_per_item": "421-431, 604-614, 777-787, 953-963 (kdsBump per-item EXISTS in legacy 4-col but uses Vuex localStorage only - kds.js:55-65 - NOT a backend transition)",
+        "interpretation": "V2 (production default since Sprint 3C 2026-05-16, see KdsV2Grid.vue:7-11) has NO per-item bump. Order-level PATCH is all-or-nothing. Legacy 4-col had local per-item 'check-off' visual aid but it never persisted server-side - the order-level PATCH only fired when ALL items were locally bumped (KitchenDisplaySystemComponent.vue:1778-1787 isReadyOrder gate)."
+      },
+      "frequency_estimate": "EVERY multi-item order = ~80% of POS+Kiosk orders (Le Cayenne menu structure: sandwich + drink + side is the default combo)",
+      "user_impact": "Chef ne peut pas servir un client en plusieurs vagues. Soit il sort un burger refroidi pour attendre les frites, soit le client attend a la borne de retrait pendant 3-4 min avec son ticket pret affiche partiellement.",
+      "blocker_daily": true
+    },
+    {
+      "id": "GAP-S3-P1-003",
+      "title": "Pas de signalement chef->caisse de manque d'ingredient",
+      "user_story": "Chef ouvre frigo: plus de cheddar. Commande N°47 contient 'Cayenne Burger avec cheddar extra'. Chef doit aller a la caisse a pied (5m), interrompre la caissiere en plein encaissement, lui dire 'plus de cheddar sur le 47'. Aucune UI: pas de bouton sur la carte KDS, pas de chat KDS<->POS, pas de marker 'OOS' qui pop-up sur la borne client.",
+      "evidence": {
+        "file_kds_actions": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+        "lines_card_actions": "148-160 (only Pret CTA, no signal button)",
+        "controller_endpoints": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:22 - only index/changeStatus/orderItems/historyToday",
+        "no_chef_to_cashier_route": "grep -rn 'kitchen.*to.*cashier|cashier.*signal|notify.*cashier' app/ = 0 hits"
+      },
+      "kdsInflight_partial_existence": "resources/js/store/modules/kdsInflight.js + KitchenDisplaySystemComponent.vue:2169-2270 handles ItemAvailabilityChanged events FROM POS->KDS (cashier marks OOS -> chef sees badge on existing ticket) but NOT the reverse direction (chef -> cashier).",
+      "user_impact": "Le rush operationnel typique perd 30-60s par incident (chef quitte poste -> caisse -> retour). Sur un rush de 12:00-13:30 avec ~3 OOS incidents/jour = ~3 min perdues + clients servis avec ingredient manquant car la caisse a deja encaisse.",
+      "frequency_estimate": "2-5 fois par service rush hour (rupture stock realiste sur 8-12 ingredients suivis)",
+      "blocker_daily": true
+    },
+    {
+      "id": "GAP-S3-P1-004",
+      "title": "Pas d'annulation/recall d'une commande active (pre-PREPARED) par le chef",
+      "user_story": "Commande N°50 ACCEPT depuis 0:30. Caissier appelle: 'le client a annule, rends-moi le ticket'. Chef voit la carte mais ne peut RIEN faire: pas de bouton 'Annuler', pas de bouton 'Retirer'. Il doit demander a la caisse de faire l'annulation via POS, attendre que le statut change cote serveur (5-60s sync), et seulement la la carte disparait.",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+        "lines": "16-161 (template du card complet - aucune action 'cancel'/'remove' visible)",
+        "kdsStatuses_allowed": "app/Http/Requests/Kds/KdsOrderStatusRequest.php:34-41 (ACCEPT/PREPARING/PREPARED only - no CANCELED transition exposed)",
+        "state_machine_constraint": "OrderStateMachine.php:40-52 - ACCEPT/PREPARING -> CANCELED IS allowed by state machine BUT no KDS UI/route exposes it"
+      },
+      "interpretation": "Backend permits ACCEPT/PREPARING -> CANCELED (OrderStateMachine.php:45 + L52). KdsOrderStatusRequest::kdsStatuses() restricts client-side rule to forward-bump only. The chef CAN'T trigger the legal cancel transition via KDS. Only POS/cashier can cancel.",
+      "user_impact": "Latence 5-60s cote chef quand client annule a la caisse. Chef continue a preparer entretemps -> gaspillage matiere.",
+      "frequency_estimate": "1-2 fois par jour (annulations clients realistes)"
+    },
+    {
+      "id": "GAP-S3-P1-005",
+      "title": "Pas de priorisation manuelle / drag-drop / promotion d'urgence",
+      "user_story": "Commande N°60 = client VIP, livreur Uber sur place taxi-meter qui tourne. Chef voit que N°60 est au slot G (7eme). Il voudrait la promouvoir au slot A. Aucun controle UI: l'ordre FIFO est rigide (KdsV2Grid.vue:182-193 sort by created_at_iso then id).",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+        "lines": "182-193 visibleOrders sort = strict FIFO by parseOrderCreatedMs",
+        "shortcuts_array": "L138 const SHORTCUTS = ['A','B','C','D','E','F','G','H'] - slot index mapped 1:1 to FIFO order, no manual override"
+      },
+      "user_impact": "Service livraison Uber/Deliveroo: chaque minute en attente coute (penalite + score restaurant). FoodKing-Le Cayenne ne distingue actuellement pas DELIVERY vs POS dans la FIFO, donc un Uber Eats arrive a 12:15 est traite identique a un POS 12:14. Pas de SLA delivery enforcement cote chef.",
+      "frequency_estimate": "1-3 fois par jour rush (Uber/Deliveroo urgent)"
+    },
+    {
+      "id": "GAP-S3-P1-006",
+      "title": "Pas de filtre 'salle vs livraison vs emporter' sur le V2 grid",
+      "user_story": "Chef en heure pointe veut voir SEULEMENT les commandes a emporter (TAKEAWAY) pour ramener-pret dans son flux d'emballage. Aucun filtre dispo dans V2.",
+      "evidence": {
+        "file_v2": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+        "lines": "53-68 (rendu activeOrders sans filtre source/type)",
+        "file_legacy_split": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:228-957 (legacy 4-col layout AVAIT 4 colonnes Dine-in/Online/Takeaway/Kiosk - mais V2 mono-grid les fusionne en un seul FIFO)",
+        "station_filter_exists": "KitchenDisplaySystemComponent.vue:198-202 station filter dropdown EXISTS (grill/fryer/all) but is station-physical, not order-type",
+        "source_chip_visible": "KdsOrderCard.vue:42-45 source chip POS/KIOSK/DELIVERY/TAKEAWAY displayed but not filtreable"
+      },
+      "interpretation": "Wave 3C 2026-05-16 V2 par defaut a fusionne le multi-colonne en mono-grid FIFO mais n'a pas re-expose le filtre order-type. La source chip affichee est visuelle seulement. Pour V1 single-resto Le Cayenne LOCAL c'est tolerable; multi-channel rush c'est mauvais.",
+      "user_impact": "Chef qui fait 'preparation par lot' (toutes les commandes a emporter ensemble) ne peut pas zoomer. Il doit scanner 8 cartes a chaque iteration pour identifier 3 TAKEAWAY.",
+      "frequency_estimate": "Continu sur tout le service midi+soir (preparation batch est un mode de travail courant)"
+    },
+    {
+      "id": "GAP-S3-P1-007",
+      "title": "Pas de marker 'en attente d'ingredient' (parking-lot status)",
+      "user_story": "Commande N°55 a 2 articles: burger + frites. Friteuse en train de remonter en temperature (3 min). Chef ne peut pas marquer la commande 'parquee' pour ne pas se la voir prioriser au prochain pic FIFO. Elle reste active, son timer monte, elle vire 'critical' visuellement (rouge) alors que c'est juste une attente operationnelle.",
+      "evidence": {
+        "file_card_card": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+        "lines_state_pill": "37-45 state-pill rendered from kdsStateFromStatus(status) - only ACCEPT/PREPARING/PREPARED/READY rendered. Pas de WAITING/PARKED state.",
+        "state_helper": "resources/js/helpers/kdsState.js - 4 etats hardcoded"
+      },
+      "user_impact": "Carte qui passe rouge a 8min (kdsDisplay.js bucket 'critical') alors que c'est attente technique pas retard chef -> faux signal d'alerte managerial. Les rapports de retard incluent ces commandes a tort.",
+      "frequency_estimate": "1-5 fois par jour (cuisson lente, attente fournisseur etc)"
+    },
+    {
+      "id": "GAP-S3-P1-008",
+      "title": "Pas de mass-bump (selection multiple + Pret en 1 clic)",
+      "user_story": "Chef finit un lot de 3 burgers simultanement (toutes presses pates a la chaine). Il doit cliquer Pret sur les 3 cartes A, B, C separement (ou [A][B][C] clavier). 3 PATCH separes, 3 dispatch SSE separes vers POS suivi.",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue",
+        "lines": "324-346 onCtaTap - une seule commande a la fois",
+        "no_multi_select": "Pas de checkbox / Shift+click / [A-H] groupe sur le code"
+      },
+      "user_impact": "Microtask overhead chef + 3 evenements SSE backend redondants. Owner verbatim (Wave V comment KdsV2Grid.vue:308-310): 'je veux valider 3 commandes en meme temps, puis 3 commandes livrees' - cette demande etait DEJA verbalisee mais resolue partiellement (Wave V a juste retire le 3s wait pour permettre les clics rapides en cascade, sans introduire de vrai multi-select).",
+      "frequency_estimate": "5-15 fois par service (cuisson par batch est la norme cuisine)"
+    },
+    {
+      "id": "GAP-S3-P1-009",
+      "title": "Pas d'estimation temps par item / SLA visible chef",
+      "user_story": "Chef voit timer ATTENTE qui compte depuis creation (KdsOrderCard.vue:258-260 elapsedSeconds). Pas d'indication 'reste 2 min avant SLA' ou 'temps estime burger = 4 min'. Pas de bucket configurable per item-type.",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+        "lines": "258-260, 305-309 - elapsed = (now - created_at) sec format mm:ss. Pas de target/SLA.",
+        "kdsDisplay_buckets": "resources/js/helpers/kdsDisplay.js buckets fresh/warning/critical hardcodes (~3min warning ~6min critical typically)"
+      },
+      "user_impact": "Chef pilote au feeling. Pas de visibilite operationnelle real-time sur l'objectif (e.g. 'cette burger doit sortir avant 12:38')."
+    },
+    {
+      "id": "GAP-S3-P1-010",
+      "title": "Recall localStorage du legacy layout NE PERSISTE PAS multi-device et bloque a 60s",
+      "user_story": "Sur legacy 4-col (rare en prod V1 mais accessible via ?v2=0 rollback URL), chef bumps un item, change de device (tablette HS, passe sur PC), localStorage perdu = recall impossible. Et apres 60s, recall expire avec message 'message.kds_recall_grace_expired'.",
+      "evidence": {
+        "file_store": "resources/js/store/modules/kds.js:1, 32, 55-72",
+        "lines_storage": "L1 const STORAGE_BUMPED = 'kds.bumped_items_v1' (localStorage per-device)",
+        "lines_grace": "L66-72 recallItem returns grace_expired apres 60_000 ms",
+        "v2_no_recall_at_all": "KdsV2Grid.vue: aucune action recall - 0 occurrences"
+      },
+      "consequence_v2_default": "Dans V2 (par defaut depuis Sprint 3C), il n'y a NI recall persistant NI recall transient. Le seul reflex 'undo' disponible etait l'ancienne KdsUndoToast (3s) et elle a ete retiree Wave V 2026-05-21 (KdsV2Grid.vue:108-115).",
+      "blocker_daily": true,
+      "user_impact": "Ce gap est LA materialisation directe de la verbatim owner mandate. Voir GAP principal owner_mandate_gap_verified ci-dessus."
+    },
+    {
+      "id": "GAP-S3-P1-011",
+      "title": "Pas de commande annulee visible (chef ne voit pas l'historique d'annulations du jour)",
+      "user_story": "Chef veut savoir si la commande N°41 qui a disparu d'un coup a ete: (a) bumped par lui sans s'en rendre compte, (b) annulee par caisse, (c) cancel automatique pour timeout. KdsHistoryDrawer ne montre QUE PREPARED/OUT/DELIVERED (KitchenDisplaySystemOrderService.php:227-231 hard-coded list). CANCELED/REJECTED filtrees out.",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "227-231",
+        "verbatim": "->whereIn('status', [OrderStatus::PREPARED, OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED])",
+        "interpretation": "Historique exclut CANCELED par design - chef perd la trace. Cashier voit les annulations mais pas la cuisine."
+      },
+      "user_impact": "Investigation client 'ou est ma commande?' devient un casse-tete operationnel."
+    },
+    {
+      "id": "GAP-S3-P1-012",
+      "title": "Pas d'annonce vocale / cuisine-vocale (TTS) pour rush hour fort",
+      "user_story": "Chef en plein flux a les mains dans la friteuse. Une commande PRIORITAIRE (livreur Uber waiting > 5min sur place) arrive. Le chef voit l'animation rouge critique seulement quand il leve les yeux. Aucune annonce audio: 'Commande 60 - livraison urgente'.",
+      "evidence": {
+        "no_tts_files": "grep -rn 'speechSynthesis\\|Web Speech\\|webkitSpeechRecognition' resources/js/components/admin/kitchenDisplaySystem/ = 0 hits",
+        "aria_live_only_visual": "KdsV2Grid.vue:118 + KdsOrderCard.vue:50-52 aria-live exists for screen readers only, no audible bell/beep"
+      },
+      "user_impact": "Rate de detection critical-card differe (chef leve les yeux toutes les ~30s). Sur livraison Uber-Eats c'est une perte d'argent (penalite SLA + downrating restaurant)."
+    },
+    {
+      "id": "GAP-S3-P1-013",
+      "title": "Pas de print kitchen ticket on-demand pour back-office (cuisine annexe)",
+      "user_story": "Le Cayenne a une preparation salade en arriere-cuisine. Chef principal voit la commande sur KDS mais le preparateur salade pas (pas d'imprimante a son poste). Actuellement le ticket auto-print se declenche a l'order creation. Chef ne peut pas reimprimer 'au cas ou' depuis le KDS.",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+        "lines_legacy_print": "1157 - 'gate kdsBump / kdsRecall / orderStatus / printKitchenTicket' (commentaire qui suggere existence mais pas visible dans card V2)",
+        "v2_card_no_print": "KdsOrderCard.vue 16-161: aucun bouton print/reprint"
+      },
+      "user_impact": "Coordination multi-poste cuisine cassee. Workaround actuel: chef principal crie 'la salade pour le 47' au preparateur. Pas scalable au-dela de 2 personnes en cuisine."
+    },
+    {
+      "id": "GAP-S3-P1-014",
+      "title": "Pas de modifications recettes / notes chef apres prise de commande",
+      "user_story": "Client a la caisse: 'oh, finalement sans oignons'. Caissier marque sur post-it papier, court le donner au chef. Aucun canal numerique. POS update notes -> KDS push notes update? Pas evident dans le code.",
+      "evidence": {
+        "file_card_body": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+        "lines": "112-122 - body iterates over order.order_items, renders KdsOrderLine.vue. Pas de listener 'order updated post-creation' qui re-anime/flash la card.",
+        "order_instruction_field": "app/Services/KitchenDisplaySystemOrderService.php:385 - instruction field is captured at order creation via composition_snapshot but mutating it later is non-trivial (composition_snapshot is frozen per CLAUDE.md §8 NF525 SSOT)"
+      },
+      "frozen_constraint": "composition_snapshot is NF525-protected (CLAUDE.md §8) - frozen at order creation. Modification post-paiement = nouveau ticket fiscalement (annulation + nouveau).",
+      "user_impact": "Workflow papier persiste pour les modifs minor. Risque que chef rate la modif si post-it deplace."
+    }
+  ],
+
+  "top_3_blocker_daily": [
+    {
+      "rank": 1,
+      "id": "kds_archive_undo (owner_mandate_gap_verified)",
+      "rationale": "Frequency estimee 2-8 fois/jour (chef errors en rush hour). Owner verbatim explicit. Compound severity HIGH parce que Wave V (2026-05-21) a aussi retire le 3s undo. NF525-tractable via compensating-action sans toucher OrderStateMachine."
+    },
+    {
+      "rank": 2,
+      "id": "GAP-S3-P1-002 Bump partiel par item",
+      "rationale": "80% des commandes sont multi-items. Compose le probleme upstream: chef n'a pas de granularite intermediaire entre 'rien fait' et 'tout pret'. Impact direct sur SAT client (cafe froid, burger qui attend frites)."
+    },
+    {
+      "rank": 3,
+      "id": "GAP-S3-P1-003 Signalement chef->caisse manque ingredient",
+      "rationale": "2-5 fois/service rush. Coute 30-60s par incident + risque client servi sans ingredient (deja encaisse). Pas de canal numerique chef->POS aujourd'hui (le reverse POS->KDS existe via ItemAvailabilityChanged mais pas l'inverse)."
+    }
+  ],
+
+  "verdict": "OWNER MANDATE GAP CONFIRMED at maximum evidence level. KDS Archive undo is INTENTIONALLY ABSENT in V1 production by explicit design decision (Wave X3 2026-05-21 + Wave V 2026-05-21 + OrderStateMachine §7 frozen-zone). The chef has ZERO undo capability on V2 default layout - the 3s toast existed pre-Wave-V but was removed per owner mandate 'enleve cette securite' to fix a chained-bump race, leaving the chef with NO safety net at all. 13 additional gaps identified spanning chef-rush ergonomics (bump partiel, mass-bump, priorisation, parking-lot status), chef-cashier communication (signal OOS, cancel propagation), and observability (history annulations, TTS, reprint). Top 3 BLOCKER-DAILY are owner-mandated undo + per-item bump + chef->cashier OOS signaling. The implementation path forward for the owner mandate is compensating-action (no frozen-zone touch, NF525-tractable) OR gated reverse transition via LOCK_KDS_RECALL plan (frozen-zone touch + owner countersign per CLAUDE.md §7 procedure).",
+
+  "discipline_attestation": {
+    "read_only_audit": "CONFIRMED - no Edit/Write to KDS production code. All findings cite file:line.",
+    "owner_mandate_first": "CONFIRMED - owner_mandate_gap_verified is field #1 in output, with 6-link evidence chain.",
+    "evidence_chain_density": "EVERY absence claim has at least one file:line citation. Several have 3-5 confirming sources (frontend comment + backend route comment + controller docblock + state machine code + request validator + Wave V removal commit).",
+    "frozen_zone_respected": "CONFIRMED - all proposals explicitly route around or LOCK-gate OrderStateMachine §7 (CLAUDE.md frozen-zone backend list)."
+  }
+}

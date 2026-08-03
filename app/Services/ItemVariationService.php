@@ -4,6 +4,7 @@ namespace App\Services;
 
 
 use Exception;
+use App\Events\ItemAvailabilityChanged;
 use App\Models\Item;
 use App\Models\ItemVariation;
 use Illuminate\Support\Facades\DB;
@@ -121,7 +122,10 @@ class ItemVariationService
     public function store(ItemVariationRequest $request, Item $item)
     {
         try {
-            return ItemVariation::create($request->validated() + ['item_id' => $item->id]);
+            $variation = ItemVariation::create($request->validated() + ['item_id' => $item->id]);
+            $this->dispatchItemCatalogRefresh($item);
+
+            return $variation;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -135,7 +139,10 @@ class ItemVariationService
     {
         try {
             if ($item->id == $itemVariation->item_id) {
-                return tap($itemVariation)->update($request->validated());
+                $itemVariation->update($request->validated());
+                $this->dispatchItemCatalogRefresh($item);
+
+                return $itemVariation->refresh();
             }
             return $itemVariation;
         } catch (Exception $exception) {
@@ -153,6 +160,7 @@ class ItemVariationService
         try {
             if ($item->id == $itemVariation->item_id) {
                 $itemVariation->delete();
+                $this->dispatchItemCatalogRefresh($item);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -183,6 +191,24 @@ class ItemVariationService
         $Variations = ItemVariation::where(['item_id' => $itemId])->get();
         foreach ($Variations as $Variation) {
             $this->recursiveDelete($Variation);
+        }
+    }
+
+    private function dispatchItemCatalogRefresh(Item $item): void
+    {
+        try {
+            $refreshed = $item->refresh();
+            ItemAvailabilityChanged::dispatch(
+                (int) $refreshed->id,
+                (int) $refreshed->status,
+                (float) $refreshed->price,
+                'full'
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[CatalogSync] item variation refresh dispatch failed', [
+                'item_id' => $item->id,
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 }
