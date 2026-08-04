@@ -109,7 +109,10 @@ class KdsSyncService
                           ->where('order_datetime', '<', $tomorrowStart)
                           ->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($s) use ($tomorrowStart) {
+                        // [SYNC-P1 2026-08-05 · parité jumelles] Plancher d'âge = MÊME que list() (F-02) :
+                        // sans lui le delta sync portait un zombie >48h absent du board autoritaire.
                         $s->where('is_advance_order', Ask::YES)
+                          ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.advance_stale_window_hours', 48)))
                           ->where('order_datetime', '<', $tomorrowStart)
                           ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     })

@@ -125,10 +125,13 @@ class OrderStatusScreenOrderService
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($sub) use ($tomorrowStart) {
-                    // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (SANS plancher 8h,
-                    // comme KDS::list L146-150) tant qu'actives (ni DELIVERED ni CANCELED). Empêche la
-                    // disparition zombie d'une précommande en retard encore en préparation.
+                    // [AUDIT-52-BUG1] Mirror KDS fix: show overdue advance orders tant qu'actives.
+                    // [SYNC-P1 2026-08-05 · parité jumelles] Plancher d'âge = MÊME que KDS::list (F-02) :
+                    // un zombie > oss.advance_stale_window_hours (48h) quittait le board cuisinier mais
+                    // RESTAIT sur le mur client OSS (divergence permanente). Le plancher, large (48h),
+                    // laisse un retard légitime (<48h) visible et n'évince que les vrais zombies.
                     $sub->where('is_advance_order', Ask::YES)
+                        ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.advance_stale_window_hours', 48)))
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 })
@@ -285,8 +288,11 @@ class OrderStatusScreenOrderService
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($sub) use ($tomorrowStart) {
-                    // Advance : SANS plancher (comme KDS) tant qu'actives — pas de disparition zombie.
+                    // Advance : plancher d'âge = MÊME que KDS::list (F-02). [SYNC-P1 2026-08-05 · parité
+                    // jumelles] Sister-of list() : sans ce plancher un zombie >48h restait sur le mur
+                    // client alors qu'il quittait le board cuisinier (divergence permanente).
                     $sub->where('is_advance_order', Ask::YES)
+                        ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.advance_stale_window_hours', 48)))
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 })

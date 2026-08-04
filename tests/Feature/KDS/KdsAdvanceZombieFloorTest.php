@@ -9,7 +9,9 @@ use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\KdsSyncService;
 use App\Services\KitchenDisplaySystemOrderService;
+use App\Services\OrderStatusScreenOrderService;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,5 +100,61 @@ class KdsAdvanceZombieFloorTest extends TestCase
 
         // Rien n'est supprimé : la commande existe toujours (historique/admin).
         $this->assertDatabaseHas('orders', ['id' => $zombie->id]);
+    }
+
+    /**
+     * [SYNC LOGIC AUDIT 2026-08-05 · P1 parité jumelles] Le plancher F-02 avait été câblé
+     * dans KDS::list() SEULEMENT ; ses 4 jumelles « parité 5 chemins » (OSS list/listForBranch,
+     * KDS orderItems, KdsSync sync) admettaient encore le zombie SANS plancher → un zombie de
+     * 9 jours DISPARAISSAIT du board cuisinier mais RESTAIT sur le mur client OSS (divergence
+     * PERMANENTE, les deux surfaces pollent). Ce test scelle le plancher sur TOUS les chemins
+     * qui retournent des commandes/delta.
+     *
+     * @test
+     */
+    public function le_plancher_zombie_est_applique_sur_tous_les_chemins_du_board(): void
+    {
+        $now = CarbonImmutable::parse('2026-03-10 12:00:00', 'Europe/Paris');
+        Carbon::setTestNow($now);
+        CarbonImmutable::setTestNow($now);
+
+        $branch = Branch::factory()->create();
+        $admin  = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin);
+
+        // Retard LÉGITIME (hier, < 48 h) : doit RESTER sur TOUS les chemins.
+        $legit  = $this->boardAdvanceOrder($branch, Carbon::parse('2026-03-09 19:00:00', 'Europe/Paris'), 'LEGIT');
+        // ZOMBIE (9 jours, > 48 h) : doit DISPARAÎTRE de TOUS les chemins.
+        $zombie = $this->boardAdvanceOrder($branch, Carbon::parse('2026-03-01 12:00:00', 'Europe/Paris'), 'ZOMB');
+
+        $since = new \DateTimeImmutable('2020-01-01 00:00:00');
+
+        $paths = [
+            'KDS.list'          => app(KitchenDisplaySystemOrderService::class)->list(new Request(['branch_id' => $branch->id]))->pluck('id')->all(),
+            'OSS.list'          => collect(app(OrderStatusScreenOrderService::class)->list())->pluck('id')->all(),
+            'OSS.listForBranch' => collect(app(OrderStatusScreenOrderService::class)->listForBranch($branch->id))->pluck('id')->all(),
+            'KdsSync.sync'      => collect(app(KdsSyncService::class)->sync($branch->id, $since)['orders'] ?? [])->pluck('id')->all(),
+        ];
+
+        foreach ($paths as $label => $ids) {
+            $ids = array_map('intval', $ids);
+            $this->assertContains((int) $legit->id, $ids, "[{$label}] la précommande en retard récent (<48 h) doit rester visible.");
+            $this->assertNotContains((int) $zombie->id, $ids, "[{$label}] le zombie (>48 h) ne doit PAS apparaître — parité 5 chemins.");
+        }
+    }
+
+    private function boardAdvanceOrder(Branch $branch, Carbon $orderDatetime, string $tag): Order
+    {
+        return Order::factory()->create([
+            'branch_id'        => $branch->id,
+            'order_type'       => OrderType::TAKEAWAY,
+            'status'           => OrderStatus::PREPARING,
+            'payment_status'   => PaymentStatus::PAID,
+            'order_datetime'   => $orderDatetime,
+            'is_advance_order' => Ask::YES,
+            'scheduled_at'     => null,
+            'queue_number'     => $tag . '-' . random_int(100, 999),
+        ]);
     }
 }

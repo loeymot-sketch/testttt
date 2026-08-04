@@ -717,7 +717,11 @@ class KitchenDisplaySystemOrderService
                              ->where('order_datetime', '<', $tomorrowStart)
                              ->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($subQuery) use ($tomorrowStart) {
+                    // [SYNC-P1 2026-08-05 · parité jumelles] Plancher d'âge = MÊME que list() (F-02) :
+                    // sans lui, les items d'un zombie >48h gonflaient l'AGRÉGAT « à préparer » alors que
+                    // sa carte avait quitté le board (incohérence cross-chemin). now(TZ) = même invariant.
                     $subQuery->where('is_advance_order', Ask::YES)
+                             ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.advance_stale_window_hours', 48)))
                              ->where('order_datetime', '<', $tomorrowStart)
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 })
