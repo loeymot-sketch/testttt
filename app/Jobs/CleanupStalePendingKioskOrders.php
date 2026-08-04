@@ -116,6 +116,13 @@ class CleanupStalePendingKioskOrders
                 $query->where('created_at', '<', $staleThreshold)
                     ->orWhere('order_datetime', '<', $staleThreshold);
             })
+            // [P2 2026-08-04 · cycle3] JAMAIS purger une commande À L'AVANCE avant son créneau
+            // (+TTL) : un repas pré-commandé pour plus tard, atteignant PREPARED tôt, serait
+            // supprimé en silence (order-loss). On exige que scheduled_at soit AUSSI périmé.
+            ->where(function ($query) use ($staleThreshold): void {
+                $query->whereNull('scheduled_at')
+                    ->orWhere('scheduled_at', '<', $staleThreshold);
+            })
             ->orderBy('id')
             ->get()
             ->each(fn (FrontendOrder $order) => $this->softDeleteStalePreparedPhantom($order, $ttlMinutes));

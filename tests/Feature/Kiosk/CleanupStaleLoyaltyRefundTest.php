@@ -312,6 +312,32 @@ class CleanupStaleLoyaltyRefundTest extends TestCase
         $this->assertSame(1, LoyaltyTransaction::where('order_id', $order->id)->where('type', 'manual_deduct')->count());
     }
 
+    /**
+     * [P2 2026-08-04 · cycle3] Une commande À L'AVANCE (scheduled_at futur) atteignant PREPARED
+     * tôt ne doit PAS être purgée avant son créneau — sinon repas pré-commandé perdu en silence.
+     */
+    public function test_advance_order_with_future_slot_is_not_purged_early(): void
+    {
+        Event::fake([SendOrderMail::class, SendOrderSms::class, SendOrderPush::class, OrderStatusChanged::class, OrderCanceled::class]);
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'status' => Status::ACTIVE, 'loyalty_code' => 'FK-ADV', 'loyalty_points' => 0]);
+        $order = FrontendOrder::withoutGlobalScopes()->create([
+            'order_serial_no' => 'ADV-'.fake()->unique()->numerify('######'),
+            'user_id' => $customer->id, 'branch_id' => $branch->id,
+            'subtotal' => 30, 'discount' => 0, 'delivery_charge' => 0, 'total_tax' => 0, 'total' => 30,
+            'order_type' => OrderType::TAKEAWAY, 'order_datetime' => now()->subMinutes(240), 'preparation_time' => 15,
+            'is_advance_order' => \App\Enums\Ask::YES, 'scheduled_at' => now()->addHours(3), // créneau FUTUR
+            'payment_method' => PaymentGateway::CASH_ON_DELIVERY, 'payment_status' => PaymentStatus::PENDING_COUNTER,
+            'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED, 'status' => OrderStatus::PREPARED,
+            'source' => Source::WEB, 'source_surface' => 'web', 'fiscal_sequence_no' => null,
+            'created_at' => now()->subMinutes(240), 'updated_at' => now()->subMinutes(240),
+        ]);
+
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        $this->assertNull(FrontendOrder::withTrashed()->find($order->id)->deleted_at, 'commande à l\'avance NON purgée avant son créneau');
+    }
+
     private function makeAbandonedKioskCounterOrder(
         int $branchId,
         int $userId,
