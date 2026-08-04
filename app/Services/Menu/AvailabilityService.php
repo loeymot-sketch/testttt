@@ -413,15 +413,21 @@ final class AvailabilityService
     }
 
     /**
-     * [SYNC cross-surface P1 2026-08-04] Garde de SYMÉTRIE pour les EXTRAS + VARIATIONS.
+     * [SYNC cross-surface 2026-08-04] Garde de SYMÉTRIE extras/variations — DÉFENSE EN PROFONDEUR,
+     * CHEMIN LEGACY UNIQUEMENT.
      *
-     * assertItemsOrderableForBranch ne valide QUE les item_id. Or la borne/caisse grisent
-     * aussi les extras (« Sauce en plus »…) et variations 86 (StockLevel : raison manuelle OU
-     * on_hand<=0). Sans cette garde, une commande WEB portant un extra/variation 86 était
-     * ACCEPTÉE alors que la cuisine ne peut pas l'honorer = divergence cross-surface permanente
-     * (borne/caisse le bloquent, le web le vend). On rejette ici via le MÊME SSOT que la borne
-     * (isExtraAvailable / isVariationAvailable → isStockableAvailable), donc parité PAR
-     * CONSTRUCTION (règle V1 : ligne StockLevel absente = disponible → aucun faux rejet).
+     * ⚠️ CORRECTION (audit LOGIQUE RED L3, 2026-08-05) : en PRODUCTION, la garde extras/variations
+     * est déjà assurée par `ChoiceAvailabilityResolver::assertSelectionsOrderable` (appelée par
+     * `PricingService::calculateOrder`, chemin SSOT `use_ssot_service=true` verrouillé en prod par
+     * `PricingSsotFlagProductionStableSentinelTest`). Cette méthode n'est appelée QUE depuis la branche
+     * LEGACY `else` de `FrontendOrderService` (use_ssot_service=false) → jamais exécutée en prod. Elle
+     * reste comme filet defense-en-profondeur SI le flag est basculé OFF au runtime (web/kiosk). La
+     * « divergence permanente » qu'un premier audit lui attribuait était en fait DÉJÀ fail-closed par
+     * le resolver SSOT. Preuve du VRAI chemin : `SubmitRevalidatesChoiceAvailabilityThroughPricingTest`
+     * (`test_calculate_order_rejects_manually_86_extra_on_ssot_path`).
+     *
+     * Même SSOT StockLevel que la borne (isExtraAvailable / isVariationAvailable → isStockableAvailable)
+     * → parité par construction (règle V1 : ligne StockLevel absente = disponible → aucun faux rejet).
      *
      * @param  array<int|mixed>  $extraIds
      * @param  array<int|mixed>  $variationIds

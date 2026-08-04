@@ -224,8 +224,12 @@ class AvailabilityServiceTest extends TestCase
     }
 
     /**
-     * [SYNC cross-surface P1 2026-08-04] Un EXTRA 86 sur la branche (« Sauce en plus » grisée
-     * borne/caisse) doit REJETER la commande web — parité borne↔web via le même SSOT StockLevel.
+     * [SYNC cross-surface 2026-08-04] Un EXTRA 86 sur la branche doit être rejeté par la garde
+     * `assertExtrasAndVariationsOrderableForBranch`. ⚠️ NB (audit RED L3, 2026-08-05) : ces 3 tests
+     * appellent la méthode LEGACY EN DIRECT — en prod c'est `ChoiceAvailabilityResolver` (chemin SSOT)
+     * qui garde, prouvé via le POINT D'ENTRÉE RÉEL par
+     * `SubmitRevalidatesChoiceAvailabilityThroughPricingTest::test_calculate_order_rejects_manually_86_extra_on_ssot_path`.
+     * On garde ces tests-ci pour verrouiller le filet defense-en-profondeur du chemin legacy.
      */
     public function test_extra_out_of_stock_blocks_order(): void
     {

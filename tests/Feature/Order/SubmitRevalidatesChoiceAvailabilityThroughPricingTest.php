@@ -53,6 +53,53 @@ class SubmitRevalidatesChoiceAvailabilityThroughPricingTest extends TestCase
     }
 
     /**
+     * [HONNÊTETÉ 2026-08-05 · audit LOGIQUE RED L3] Le chemin SSOT/PRODUCTION (calculateOrder →
+     * ChoiceAvailabilityResolver::assertSelectionsOrderable) rejette bien un EXTRA 86 MANUEL
+     * (StockLevel.manual_unavailable_reason) — c'est LUI la vraie garde extras/variations en prod,
+     * pas `AvailabilityService::assertExtrasAndVariationsOrderableForBranch` (qui vit dans la branche
+     * LEGACY `use_ssot_service=false`, verrouillée OFF en prod par PricingSsotFlagProductionStableSentinel).
+     * Ce test couvre le cas exact — un supplément 86 vendu sur le web — via le POINT D'ENTRÉE RÉEL,
+     * là où le test de AvailabilityServiceTest appelait la méthode legacy en direct (chemin jamais
+     * exécuté en prod). Ferme le « test vert qui encode un no-op ».
+     */
+    public function test_calculate_order_rejects_manually_86_extra_on_ssot_path(): void
+    {
+        $this->seedSpatieRoles();
+        $this->seedMinimalSettings();
+
+        $branch = Branch::factory()->create();
+        $item = Item::factory()->create(['status' => Status::ACTIVE]);
+        $extra = \App\Models\ItemExtra::create([
+            'item_id' => $item->id, 'name' => 'Sauce en plus', 'price' => 0.5, 'status' => Status::ACTIVE,
+        ]);
+        StockLevel::query()->create([
+            'branch_id' => $branch->id,
+            'stockable_type' => \App\Models\ItemExtra::class,
+            'stockable_id' => $extra->id,
+            'on_hand' => 0,
+            'reserved' => 0,
+            'threshold_low' => 2,
+            'manual_unavailable_reason' => 'out_of_stock',
+        ]);
+
+        $line = (object) [
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'item_variations' => [],
+            'item_extras' => [(object) ['id' => $extra->id, 'quantity' => 1]],
+            'instruction' => null,
+        ];
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionCode(422);
+
+        (new PricingService())->calculateOrder(
+            PricingRequest::forPos(0, (int) $branch->id, [$line], 0, 0, 0.0, 0.0),
+            app(CouponService::class)
+        );
+    }
+
+    /**
      * @return array{0: Branch, 1: Item, 2: ItemVariation}
      */
     private function itemWithVariation(bool $attributeAvailable): array
