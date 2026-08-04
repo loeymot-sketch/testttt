@@ -18,9 +18,13 @@ Backend `5414dae24` VPS · web `e15bb42` Vercel. Gates : Auth 50 · Loyalty 44 �
 
 Vérif prod : 0 compte staff soft-deleted sur le VPS (P0-1 non armé activement, fix déployé défensif).
 
+## VAGUE 1.5 — HEALÉ + TDD + DÉPLOYÉ (après vague 1)
+| 11 | Paiement | **P0-2** | Refund/chargeback Mollie AVALÉ (dédup tr_x:paid) → statut effectif `refunded` (clé distincte) + cascade RefundCreated (REFUNDED si non scellée / clawback+release+observabilité ; contre-écriture NF525 = geste ops). `d458bd04c` VPS. MollieStructure 18/18. |
+
 ## VAGUE 2 — RESTE CLASSÉ (passes soignées, certains sous LOCK/gate owner)
 
 ### Paiement
+- ~~P0-2 refund avalé~~ ✅ FAIT (vague 1.5).
 - **P0-1 [design]** — Deux paiements pour 1 commande : le 1er annulé TUE la commande, le 2ᵉ payé REFUSÉ → argent gardé, commande morte. Fix = garde « paiement déjà en vol » dans MolliePaymentController::checkout + refus d'annuler tant qu'un autre paiement du même order n'est pas terminal (ou résurrection honnête du order si un paiement réel arrive). Touche NF525-adjacent → prudence + test.
 - **P0-2 [cascade]** — Refund/chargeback Mollie avalé (dédup `tr_x:paid`) → commande PAID à vie, Z > payout. Fix = lire `amountRefunded/amountChargedBack` au fetch → dispatch `RefundCreated` (miroir Stripe.php:395-500 : REFUNDED + clawback + stock).
 - **P1-6** — Client annule sa PROPRE commande carte web PAYÉE (fenêtres PENDING+PAID / ACCEPT+PAID) sans refund (`transaction` relation toujours vide pour Mollie). Fix = seuil d'annulation client teste AUSSI payment_status=PAID.
