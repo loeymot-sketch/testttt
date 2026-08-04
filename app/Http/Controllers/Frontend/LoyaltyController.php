@@ -390,6 +390,16 @@ class LoyaltyController extends Controller
                     $nearestLower = (int) (floor($pointsToRedeem / $rate) * $rate);
                     return ['error' => "Les points doivent être un multiple de {$rate}. Montant valide le plus proche : {$nearestLower}.", 'status' => 400];
                 }
+                // [RED-4 SÉCU 2026-08-04] Refuser SOUS le plancher min_redeem AVANT tout débit :
+                // sinon des points sont débités mais applyKioskLoyaltyDiscount les rejette (< min)
+                // → débit non consommable (points bloqués jusqu'au reaper). SSOT = même setting.
+                $minRedeem = (int) Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+                if ($minRedeem < 0) {
+                    $minRedeem = 0;
+                }
+                if ($pointsToRedeem < $minRedeem) {
+                    return ['error' => "Minimum {$minRedeem} points requis pour utiliser tes points.", 'status' => 400];
+                }
                 if ($user->loyalty_points < $pointsToRedeem) {
                     return ['error' => 'Points insuffisants', 'status' => 400];
                 }

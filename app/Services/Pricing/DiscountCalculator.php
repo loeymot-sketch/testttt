@@ -33,7 +33,7 @@ final class DiscountCalculator
      *
      * @return  array{discount: float, points: int}
      */
-    public function kioskLoyaltyRedemption(?Coupon $validatedCoupon, string $loyaltyCode, float $requestedDiscount, float $realSubtotal, User $lockedLoyaltyUser): array
+    public function kioskLoyaltyRedemption(?Coupon $validatedCoupon, string $loyaltyCode, float $requestedDiscount, float $realSubtotal, User $lockedLoyaltyUser, bool $skipBalanceGate = false): array
     {
         if ($validatedCoupon instanceof Coupon && $loyaltyCode !== '' && $requestedDiscount > 0) {
             return ['discount' => 0.0, 'points' => 0];
@@ -63,7 +63,10 @@ final class DiscountCalculator
         if ($pointsRequired <= 0 || $pointsRequired < $minRedeemPoints) {
             return ['discount' => 0.0, 'points' => 0];
         }
-        if ($lockedLoyaltyUser->loyalty_points < $pointsRequired) {
+        // [RED-1 2026-08-04 · LOCK_FRONTENDORDER_REDEEM_REORDER] La barrière de solde ne s'applique
+        // qu'au DÉBIT FRAIS. Le RATTACHEMENT d'un pré-rachat déjà débité doit obtenir la valeur de
+        // remise SANS re-tester le solde (déjà à 0 après « j'utilise tous mes points ») → skipBalanceGate.
+        if (! $skipBalanceGate && $lockedLoyaltyUser->loyalty_points < $pointsRequired) {
             return ['discount' => 0.0, 'points' => 0];
         }
 

@@ -160,6 +160,84 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
      * @param array<string, mixed> $overrides
      * @return array<string, mixed>
      */
+    /**
+     * [RED-1 SÉCU 2026-08-04 · LOCK_FRONTENDORDER_REDEEM_REORDER] Le client rachète TOUT son
+     * solde utile. AVANT : le contrôle de solde APRÈS débit renvoyait points=0 → return avant
+     * rattachement → commande PLEIN TARIF, points partis. Le rattachement ne doit PAS re-vérifier
+     * le solde (déjà débité) → la remise DOIT s\'appliquer.
+     */
+    public function test_redeem_entire_usable_balance_still_applies_the_discount(): void
+    {
+        \App\Models\User::where('id', $this->loyaltyCustomer->id)->update(['loyalty_points' => 100]);
+        Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
+
+        $this->postJson('/api/frontend/loyalty/redeem', [
+            'code' => $this->loyaltyCustomer->loyalty_code, 'points' => 100,
+        ])->assertOk();
+        $this->assertSame(0, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'débité au endpoint');
+
+        $response = $this->postJson('/api/frontend/order', $this->orderPayload([
+            'discount' => 1.00, 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
+        ]));
+        $response->assertCreated();
+        $orderId = (int) $response->json('data.id');
+
+        // La remise EST appliquée (pas de plein tarif), 1 SEUL débit (rattachement, pas 2e).
+        $this->assertDatabaseHas('orders', ['id' => $orderId, 'discount' => 1.00]);
+        $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count(), 'un seul débit');
+        $this->assertDatabaseHas('loyalty_transactions', ['order_id' => $orderId, 'type' => 'redeem', 'points' => -100]);
+        $this->assertSame(0, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'pas de double débit');
+    }
+
+    /**
+     * [RED-3 SÉCU 2026-08-04] La garde IDOR (Mission-28) doit couvrir AUSSI le rattachement d\'un
+     * pré-rachat : un invité (kiosk:order sans machine, ni propriétaire, ni staff) ne peut pas
+     * consommer un pré-rachat posé sur le code d\'une victime. 422, aucun rattachement.
+     */
+    public function test_pending_redeem_attach_is_refused_for_a_non_owner_caller(): void
+    {
+        // Pré-rachat DÉJÀ débité sur le code de la victime (posé par un chemin privilégié).
+        \App\Models\User::where('id', $this->loyaltyCustomer->id)->update(['loyalty_points' => 400]);
+        LoyaltyTransaction::create([
+            'user_id' => $this->loyaltyCustomer->id, 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
+            'order_id' => null, 'type' => 'redeem', 'points' => -100, 'balance_after' => 400,
+            'source_surface' => 'kiosk', 'description' => 'pré-rachat', 'created_at' => now(),
+        ]);
+
+        // Attaquant : invité avec kiosk:order mais AUCUNE KioskMachine, pas le propriétaire, pas staff.
+        $attacker = User::factory()->create(['branch_id' => $this->branch->id, 'status' => Status::ACTIVE, 'is_guest' => Ask::YES]);
+        Sanctum::actingAs($attacker, ['kiosk:order']);
+
+        $this->postJson('/api/frontend/order', $this->orderPayload([
+            'discount' => 1.00, 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
+        ]))->assertStatus(422);
+
+        // Le pré-rachat n\'a PAS été rattaché.
+        $this->assertDatabaseHas('loyalty_transactions', [
+            'user_id' => $this->loyaltyCustomer->id, 'type' => 'redeem', 'order_id' => null,
+        ]);
+    }
+
+    /**
+     * [RED-4 SÉCU 2026-08-04] /loyalty/redeem doit refuser (400) un rachat SOUS le plancher
+     * loyalty_min_redeem_points AVANT tout débit — sinon points débités jamais consommables.
+     */
+    public function test_redeem_below_min_is_refused_without_debit(): void
+    {
+        // min=50 (setUp) ; rachat de 40 pts (multiple de... non, 40 n\'est pas multiple de 100).
+        // On règle le rate à 10 pour tester le min proprement (40 multiple de 10, < min 50).
+        Settings::group('loyalty_setup')->set(['loyalty_points_for_1_euro_discount' => 10, 'loyalty_min_redeem_points' => 50]);
+        \App\Models\User::where('id', $this->loyaltyCustomer->id)->update(['loyalty_points' => 100]);
+        Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
+
+        $this->postJson('/api/frontend/loyalty/redeem', [
+            'code' => $this->loyaltyCustomer->loyalty_code, 'points' => 40,
+        ])->assertStatus(400);
+
+        $this->assertSame(100, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'aucun débit sous le min');
+        $this->assertSame(0, LoyaltyTransaction::where('type', 'redeem')->count());
+    }
+
     private function orderPayload(array $overrides = []): array
     {
         return array_merge([

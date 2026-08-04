@@ -1032,31 +1032,57 @@ class FrontendOrderService
             return;
         }
 
+        // [LOCK_FRONTENDORDER_REDEEM_REORDER 2026-08-04] Ordre CORRECT : (1) valeur de remise SANS
+        // barrière de solde (le rattachement d'un pré-rachat déjà débité ne doit pas re-tester le
+        // solde — RED-1) ; (2) garde IDOR EN PREMIER (couvre rattachement ET débit — RED-3) ;
+        // (3) rattachement TOUTE surface (RED-2) sans re-check ; (4) débit FRAIS avec check solde.
         $redemption = $this->discountCalculator->kioskLoyaltyRedemption(
             $validatedCoupon,
             $loyaltyCode,
             $requestedDiscount,
             $realSubtotal,
-            $loyaltyUser
+            $loyaltyUser,
+            skipBalanceGate: true
         );
         $maxDiscount = (float) $redemption['discount'];
         $pointsRequired = (int) $redemption['points'];
 
         if ($pointsRequired <= 0 || $maxDiscount <= 0.0) {
-            Log::warning('[Loyalty] Redemption skipped after locked balance check', [
+            // Montant nul / sous le plancher min_redeem → aucune remise, aucun débit.
+            Log::warning('[Loyalty] Redemption skipped (zero/below-min points)', [
                 'user_id' => $loyaltyUser->id,
                 'order_id' => $this->frontendOrder->id,
                 'requested_discount' => $requestedDiscount,
-                'available' => $loyaltyUser->loyalty_points,
             ]);
             return;
         }
 
+        // [SEC MISSION-28/30 · RED-3 2026-08-04] Anti-vol de points (IDOR) — DÉPLACÉ EN PREMIER pour
+        // couvrir AUSSI le rattachement d'un pré-rachat (avant, la branche rattachement `return`ait
+        // AVANT cette garde → un invité consommait le pré-rachat d'autrui). Borne OU propriétaire OU
+        // staff, sinon 422 (aucun point brûlé, aucun rattachement).
+        $callerId = (int) (Auth::id() ?? 0);
+        $isKioskCaller = $callerId > 0 && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('user_id', $callerId)->exists();
+        $isOwnerCaller = $callerId > 0 && (int) $loyaltyUser->id === $callerId;
+        $isStaffCaller = Auth::user()?->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']) ?? false;
+        if (! $isKioskCaller && ! $isOwnerCaller && ! $isStaffCaller) {
+            Log::warning('[Loyalty] Débit/rattachement code étranger REFUSÉ (création commande) — IDOR bloqué (Mission-28/RED-3)', [
+                'caller_id' => $callerId,
+                'loyalty_user_id' => $loyaltyUser->id,
+            ]);
+            throw new \InvalidArgumentException(
+                'Ce code fidélité ne peut pas être utilisé sur cette commande.',
+                422
+            );
+        }
+
+        // [RED-2 2026-08-04] Rattachement d'un pré-rachat DÉJÀ débité — TOUTE surface (avant, le
+        // filtre `source_surface='kiosk'` ignorait un client web/mobile écrivant 'pos' → double débit).
         $pendingRedeem = \App\Models\LoyaltyTransaction::query()
             ->where('user_id', $loyaltyUser->id)
             ->where('loyalty_code', $loyaltyUser->loyalty_code)
             ->where('type', 'redeem')
-            ->where('source_surface', 'kiosk')
             ->whereNull('order_id')
             ->where('created_at', '>=', now()->subMinutes(10))
             ->lockForUpdate()
@@ -1070,14 +1096,15 @@ class FrontendOrderService
                 ]);
             }
 
+            // Rattacher SANS re-débiter ni re-vérifier le solde (les points sont déjà partis).
             $pendingRedeem->order_id = $this->frontendOrder->id;
-            $pendingRedeem->description = 'Reduction fidelite kiosk rattachee a la commande';
+            $pendingRedeem->description = 'Reduction fidelite rattachee a la commande';
             $pendingRedeem->save();
 
             $calculatedDiscount += $maxDiscount;
             $this->loyaltyApplied = true;
 
-            Log::info('[Loyalty] Pending kiosk redeem attached without second deduction', [
+            Log::info('[Loyalty] Pending redeem attached without second deduction', [
                 'user_id' => $loyaltyUser->id,
                 'order_id' => $this->frontendOrder->id,
                 'transaction_id' => $pendingRedeem->id,
@@ -1085,29 +1112,15 @@ class FrontendOrderService
             return;
         }
 
-        // [SEC MISSION-28/30 2026-07-31] Anti-vol de points (IDOR). Le débit FRAIS ci-dessous débite le
-        // compte porteur du `loyalty_code` fourni par l'APPELANT. Sans garde, un attaquant connaissant le
-        // code d'une victime (imprimé sur reçus/QR) la débite (points=argent, remise NF525). C'est l'IDOR
-        // DÉJÀ fermé sur /api/frontend/loyalty/redeem (KioskMachine OU propriétaire OU staff) mais JAMAIS
-        // miroité ici. On applique le MÊME discriminateur ; sinon aucune remise (return, plein tarif).
-        // La borne (compte machine) passe par isKiosk ; le propriétaire redeem son propre code ; le staff POS.
-        $callerId = (int) (Auth::id() ?? 0);
-        $isKioskCaller = $callerId > 0 && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-            ->where('user_id', $callerId)->exists();
-        $isOwnerCaller = $callerId > 0 && (int) $loyaltyUser->id === $callerId;
-        $isStaffCaller = Auth::user()?->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']) ?? false;
-        if (! $isKioskCaller && ! $isOwnerCaller && ! $isStaffCaller) {
-            Log::warning('[Loyalty] Débit code étranger REFUSÉ (chemin création commande) — IDOR bloqué (Mission-28)', [
-                'caller_id' => $callerId,
-                'loyalty_user_id' => $loyaltyUser->id,
+        // Débit FRAIS : ICI SEULEMENT on vérifie le solde (le pré-rachat, lui, a déjà payé).
+        if ((int) $loyaltyUser->loyalty_points < $pointsRequired) {
+            Log::warning('[Loyalty] Solde insuffisant pour un débit frais — aucune remise', [
+                'user_id' => $loyaltyUser->id,
+                'order_id' => $this->frontendOrder->id,
+                'available' => $loyaltyUser->loyalty_points,
+                'required' => $pointsRequired,
             ]);
-
-            // Rejet DUR (422) + rollback de la commande : l'appelant ne peut pas utiliser un code
-            // fidélité dont il n'est ni le propriétaire, ni la borne, ni le staff. Aucun point brûlé.
-            throw new \InvalidArgumentException(
-                'Ce code fidélité ne peut pas être utilisé sur cette commande.',
-                422
-            );
+            return;
         }
 
         $balanceAfter = (int) $loyaltyUser->loyalty_points - $pointsRequired;
