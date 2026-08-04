@@ -40,6 +40,12 @@ return [
         'api/admin/table-order/change-payment-status/*',
         'api/frontend/order',
         'api/frontend/order/*/payment-confirm',
+        // [P1-4 SÉCU 2026-08-04] mollie-checkout portait le middleware `idempotency` (routes/api.php)
+        // mais était ABSENT d'ici → un appelant OMETTANT X-Idempotency-Key traversait SANS dédup →
+        // avec cardToken la création DU paiement EST l'encaissement → retry sur timeout = 2ᵉ débit
+        // réel. Requis ici = la clé devient OBLIGATOIRE (422 si absente), plus de bypass silencieux.
+        // Sentinelle IdempotencyRequiredRoutesCoverageTest rouge depuis le 08-03 → verte.
+        'api/frontend/order/*/mollie-checkout',
         // [GOAL-CMS-2026-05-18 C-P0-H heal] — close header-omission bypass on
         // every route declared with `idempotency` middleware. Source: R3
         // T-1.4.2 Sec S-1 + sentinel `IdempotencyRequiredRoutesCoverageTest`

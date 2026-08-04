@@ -128,7 +128,12 @@ class GuestSignupController extends Controller
                 // verify()→loginUsingId(victime) = token sur le compte victime. Pour un NOUVEAU
                 // numéro (aucun compte) l'email fourni EST le canal légitime d'inscription. Réponse
                 // identique dans les deux cas (anti-énumération : l'appelant ne sait pas où part le code).
+                // [P0-2 SÉCU 2026-08-04] withTrashed() : un compte invité SOFT-DELETED À VALEUR
+                // (points fidélité = argent, PII) était invisible ici → le code partait vers
+                // l'email de l'APPELANT (attaquant) → verify le restaure → takeover. register()
+                // le retrouve déjà avec withTrashed() (GAP-32-3) — on aligne la garde de livraison.
                 $existing = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->withTrashed()
                     ->where('phone', $request->post('phone'))
                     ->where('is_guest', Ask::YES)
                     ->first();
@@ -226,13 +231,18 @@ class GuestSignupController extends Controller
 
         // [SECURITY] If the phone matches a non-guest account (staff, admin, manager),
         // refuse to issue a guest token. OTP alone must not grant access to privileged accounts.
-        if ($user && $user->is_guest != Ask::YES && !$user->trashed()) {
+        // [P0-1 SÉCU 2026-08-04] La clause `&& !$user->trashed()` DÉSARMAIT cette garde pour un
+        // compte staff SOFT-DELETED (offboardé) → le bloc restore ci-dessous le ressuscitait +
+        // mintait un token dessus (takeover total depuis un simple numéro de téléphone). Un
+        // compte NON-INVITÉ est refusé qu'il soit supprimé ou non — jamais de résurrection staff.
+        if ($user && $user->is_guest != Ask::YES) {
             // The phone belongs to a staff/admin account — do not allow guest login
             throw new \Exception(trans('all.message.credentials_invalid'), 422);
         }
 
-        // Restore soft-deleted guest account instead of creating a duplicate
-        if ($user && $user->trashed()) {
+        // Restore soft-deleted GUEST account instead of creating a duplicate (la garde ci-dessus
+        // garantit is_guest=YES ici — jamais un staff). Defense-in-depth : on re-teste is_guest.
+        if ($user && $user->trashed() && $user->is_guest == Ask::YES) {
             $user->restore();
             $user->status = \App\Enums\Status::ACTIVE;
             $user->save();

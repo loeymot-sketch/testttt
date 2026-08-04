@@ -2232,6 +2232,19 @@ class OrderService
             // FRESH locked status for the concurrent-move case.
             $this->assertNotResurrectingTerminalOrder((int) $order->status, $targetStatus);
 
+            // [P1-3 SÉCU 2026-08-04] Garde R1 CENTRALISÉ (chokepoint partagé) : une commande
+            // CARTE WEB dont le paiement en ligne n'a pas abouti (UNPAID) ne doit JAMAIS être
+            // acceptée en caisse — sinon annulation 3DS → zombie ACCEPT+UNPAID invisible cuisine.
+            // Le garde du contrôleur online-order était contournable par la route sœur pos-order ;
+            // ici il couvre TOUTES les routes (pos/online/table/futures). Carte web PAYÉE = déjà
+            // promue par le webhook → ne passe pas ce garde.
+            if ($targetStatus === \App\Enums\OrderStatus::ACCEPT
+                && strtolower((string) $order->source_surface) === 'web'
+                && (int) $order->payment_method === \App\Enums\PaymentGateway::CARD
+                && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID) {
+                throw new Exception('Paiement en ligne en cours : cette commande carte sera acceptée automatiquement une fois payée.', 422);
+            }
+
             if ($auth) {
                 // Customer self-cancellation path — owner check only
                 if ($order->user_id == Auth::user()->id) {

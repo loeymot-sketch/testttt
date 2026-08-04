@@ -235,7 +235,62 @@ class EmailOtpSignupTest extends TestCase
         $this->assertSame('Marie Curie', $legacy->fresh()->name);
     }
 
-    /** (3a) code faux → 422, aucun compte créé, email non persisté. */
+    /**
+     * [P0-1 SÉCU 2026-08-04] TAKEOVER d'un compte STAFF/ADMIN SOFT-DELETED. La garde
+     * anti-escalade `is_guest != YES && !trashed()` se DÉSARMAIT pour un compte staff
+     * supprimé (trashed → la garde saute) → restauré + token minté dessus. Un simple
+     * numéro de téléphone suffisait. Le verify DOIT refuser 422, ne RIEN restaurer.
+     */
+    public function test_verify_refuses_and_never_restores_a_soft_deleted_staff_account(): void
+    {
+        Mail::fake();
+        $staff = User::create([
+            'name' => 'Manager', 'username' => 'mgr-'.uniqid(), 'phone' => self::PHONE,
+            'email' => 'manager@cayenne.fr', 'branch_id' => 1, 'is_guest' => Ask::NO,
+            'status' => \App\Enums\Status::ACTIVE, 'password' => bcrypt('secret-staff'),
+        ]);
+        $staffId = $staff->id;
+        $staff->delete(); // offboardé (soft-delete)
+
+        $this->requestEmailOtp()->assertStatus(200);
+        $token = $this->dbToken();
+        $this->verify(self::PHONE, $token)->assertStatus(422);
+
+        $row = User::withTrashed()->find($staffId);
+        $this->assertNotNull($row->deleted_at, 'le compte staff supprimé NE DOIT PAS être restauré');
+        $this->assertSame((string) Ask::NO, (string) $row->is_guest, 'jamais rétrogradé en invité');
+        $this->assertSame('manager@cayenne.fr', $row->email, 'email du staff intact (pas d\'écrasement)');
+    }
+
+    /**
+     * [P0-2 SÉCU 2026-08-04] Vol d'un compte INVITÉ soft-deleted À POINTS : le lookup de
+     * livraison du code omettait withTrashed() → un invité supprimé avec des points n'était
+     * pas trouvé → code livré à l'email de l'attaquant. La garde « compte à valeur → aucun
+     * code à l'appelant » doit AUSSI couvrir les comptes soft-deleted.
+     */
+    public function test_email_otp_does_not_deliver_to_attacker_for_soft_deleted_guest_with_points(): void
+    {
+        Mail::fake();
+        $victim = User::create([
+            'name' => 'Victime', 'username' => 'vic-'.uniqid(), 'phone' => self::PHONE,
+            'email' => 'victime@example.com', 'branch_id' => 0, 'is_guest' => Ask::YES,
+            'loyalty_points' => 500, 'status' => \App\Enums\Status::ACTIVE, 'password' => bcrypt('x'),
+        ]);
+        $victim->delete(); // invité supprimé mais À POINTS
+
+        // L'attaquant demande le code avec SON email sur le téléphone de la victime.
+        $this->postJson('/api/auth/guest-signup/email-otp', [
+            'phone' => self::PHONE, 'email' => 'attacker@evil.com', 'code' => '+33',
+            'first_name' => 'Eve', 'last_name' => 'Hacker',
+        ])->assertStatus(200); // réponse générique (anti-énumération)
+
+        // Le code ne part JAMAIS vers l'email de l'attaquant.
+        Mail::assertNotSent(SignupOtpMail::class, function ($mail) {
+            return collect($mail->to)->contains(fn ($a) => ($a['address'] ?? null) === 'attacker@evil.com');
+        });
+    }
+
+        /** (3a) code faux → 422, aucun compte créé, email non persisté. */
     public function test_verify_with_wrong_code_fails(): void
     {
         Mail::fake();

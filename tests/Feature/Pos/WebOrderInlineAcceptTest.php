@@ -122,6 +122,27 @@ class WebOrderInlineAcceptTest extends TestCase
         $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
     }
 
+    /**
+     * [P1-3 SÉCU 2026-08-04] Le garde R1 doit être CENTRALISÉ (OrderService) : la route SŒUR
+     * pos-order/change-status contournait le garde posé seulement sur online-order → HTTP 200,
+     * zombie ACCEPT+UNPAID recréé. Toutes les routes d'accept passent par OrderService.
+     */
+    public function test_cashier_cannot_accept_unpaid_web_card_via_pos_order_sibling_route(): void
+    {
+        Queue::fake();
+        $order = $this->webCardOrder();
+        $op = $this->operator();
+        $op->givePermissionTo(\Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'pos', 'guard_name' => 'sanctum']));
+
+        $this->actingAs($op->fresh(), 'sanctum')
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::ACCEPT,
+            ])
+            ->assertStatus(422);
+
+        $this->assertSame(OrderStatus::PENDING, (int) $order->fresh()->status, 'route sœur bloquée aussi');
+    }
+
     /** Une fois PAYÉE en ligne (webhook), la commande est déjà promue en cuisine — le
      *  caissier n'a rien à accepter ; ce test garantit qu'une web carte PAID passe le garde. */
     public function test_paid_web_card_order_is_not_blocked_by_the_guard(): void
