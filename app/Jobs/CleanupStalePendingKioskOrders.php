@@ -107,7 +107,10 @@ class CleanupStalePendingKioskOrders
             ->whereNull('fiscal_sequence_no')
             ->where('status', OrderStatus::PREPARED)
             ->whereIn('payment_status', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])
-            ->where('source_surface', 'kiosk')
+            // [P1-3 CUMUL 2026-08-04 · cycle1] Étendu web+phone : le fantôme PREPARED impayé qui
+            // conserve les points GAGNÉS existait AUSSI hors borne (award traite TAKEAWAY web comme
+            // kiosk mais la purge était kiosk-only). Même garde NF525 (fiscal_sequence_no null).
+            ->whereIn('source_surface', ['kiosk', 'web', 'phone'])
             ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
             ->where(function ($query) use ($staleThreshold): void {
                 $query->where('created_at', '<', $staleThreshold)

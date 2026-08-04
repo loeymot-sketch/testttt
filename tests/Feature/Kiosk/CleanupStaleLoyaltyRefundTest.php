@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
+use App\Enums\Source;
 use App\Enums\Status;
 use App\Events\OrderCanceled;
 use App\Events\OrderStatusChanged;
@@ -275,7 +276,43 @@ class CleanupStaleLoyaltyRefundTest extends TestCase
         $this->assertSame(1, LoyaltyTransaction::where('order_id', $order->id)->where('type', 'manual_deduct')->count());
     }
 
-        private function makeAbandonedKioskCounterOrder(
+        /**
+     * [P1-3 CUMUL 2026-08-04 · cycle1] Fantôme WEB PREPARED impayé : même faille que le kiosk
+     * mais sur source_surface='web' (le fix P1-2 était kiosk-only). Purge + clawback des points GAGNÉS.
+     */
+    public function test_phantom_prepared_WEB_order_claws_back_earned_points_on_purge(): void
+    {
+        Event::fake([SendOrderMail::class, SendOrderSms::class, SendOrderPush::class, OrderStatusChanged::class, OrderCanceled::class]);
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create([
+            'branch_id' => $branch->id, 'status' => Status::ACTIVE,
+            'loyalty_code' => 'FK-PHWEB', 'loyalty_points' => 300,
+        ]);
+        $order = FrontendOrder::withoutGlobalScopes()->create([
+            'order_serial_no' => 'PHWEB-'.fake()->unique()->numerify('######'),
+            'user_id' => $customer->id, 'branch_id' => $branch->id,
+            'subtotal' => 30, 'discount' => 0, 'delivery_charge' => 0, 'total_tax' => 0, 'total' => 30,
+            'order_type' => OrderType::TAKEAWAY, 'order_datetime' => now()->subMinutes(240), 'preparation_time' => 15,
+            'is_advance_order' => 0, 'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'payment_status' => PaymentStatus::PENDING_COUNTER, 'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+            'status' => OrderStatus::PREPARED, 'source' => Source::WEB, 'source_surface' => 'web',
+            'fiscal_sequence_no' => null, 'loyalty_customer_code' => 'FK-PHWEB',
+            'loyalty_points_awarded' => 300,
+            'created_at' => now()->subMinutes(240), 'updated_at' => now()->subMinutes(240),
+        ]);
+        LoyaltyTransaction::create([
+            'user_id' => $customer->id, 'loyalty_code' => 'FK-PHWEB', 'order_id' => $order->id,
+            'type' => 'earn', 'points' => 300, 'balance_after' => 300, 'source_surface' => 'web', 'description' => 'earn',
+        ]);
+
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        $this->assertNotNull(FrontendOrder::withTrashed()->find($order->id)->deleted_at, 'fantôme web purgé');
+        $this->assertSame(0, (int) $customer->fresh()->loyalty_points, 'points cumulés repris (web aussi)');
+        $this->assertSame(1, LoyaltyTransaction::where('order_id', $order->id)->where('type', 'manual_deduct')->count());
+    }
+
+    private function makeAbandonedKioskCounterOrder(
         int $branchId,
         int $userId,
         Carbon $createdAt,

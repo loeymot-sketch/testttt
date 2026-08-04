@@ -493,11 +493,11 @@ class MollieStructureTest extends TestCase
             ->assertOk()
             ->assertJsonPath('status', 'refund_recorded'); // PLUS jamais 'duplicate_ignored'
 
-        // Le remboursement est ENREGISTRÉ sous une clé de dédup DISTINCTE (tr_x:refunded),
-        // pas avalé contre le paiement original (tr_x:paid) → la cascade RefundCreated a été
-        // dispatchée (payment_status→REFUNDED via listener after-commit + clawback + release).
+        // Le remboursement est ENREGISTRÉ sous une clé de dédup DISTINCTE (tr_x:refunded).
         $this->assertDatabaseHas('webhook_events', ['provider' => WebhookEvent::PROVIDER_MOLLIE, 'webhook_id' => 'tr_REFUND01:refunded']);
-        $this->assertDatabaseMissing('webhook_events', ['webhook_id' => 'tr_REFUND01:refunded', 'status' => WebhookEvent::STATUS_DUPLICATE]);
+        // [cycle1] La commande passe RÉELLEMENT REFUNDED (le listener Persist exige un Order, pas
+        // un FrontendOrder frère — sinon no-op silencieux, Z faux). Assert DUR sur l'état final.
+        $this->assertSame(PaymentStatus::REFUNDED, (int) $order->fresh()->payment_status, 'commande REFUNDED (Z = payout)');
     }
 
     /** Rejeu du webhook remboursement → idempotent (déjà REFUNDED, pas de double cascade). */

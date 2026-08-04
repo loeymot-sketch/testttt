@@ -630,8 +630,13 @@ class Mollie extends PaymentAbstract
             return response()->json(['status' => 'refund_without_order'], 200);
         }
 
-        $order = FrontendOrder::withoutGlobalScope(BranchScope::class)->find($orderId);
-        if (! $order instanceof FrontendOrder) {
+        // [P0-2 CORRECTIF cycle1 2026-08-04] Charger un `Order` (PAS `FrontendOrder`). Le listener
+        // PersistOrderPaymentStatusChangedOnRefundCreated fait `if (!$order instanceof Order) return`
+        // → un FrontendOrder (modèle FRÈRE, même table 'orders', PAS un Order) faisait NO-OP →
+        // payment_status restait PAID, aucun broadcast (Z faux sans marqueur REFUNDED). Comme Stripe
+        // (Order::find), on passe un Order → la cascade flippe REFUNDED + broadcast + clawback + release.
+        $order = \App\Models\Order::withoutGlobalScope(BranchScope::class)->find($orderId);
+        if (! $order instanceof \App\Models\Order) {
             Log::channel('fiscal')->warning('mollie.webhook.refund_order_not_found', [
                 'event' => 'mollie_webhook_refund_order_not_found', 'payment_id' => $paymentId, 'order_id' => $orderId,
             ]);
