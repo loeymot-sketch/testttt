@@ -250,6 +250,17 @@ class Mollie extends PaymentAbstract
         $payment = (array) $fetch->json();
         $status  = (string) ($payment['status'] ?? 'unknown');
 
+        // [P0-2 SÉCU 2026-08-04] Remboursement / chargeback : chez Mollie le paiement RESTE
+        // `paid`, seul `amountRefunded` / `amountChargedBack` évolue, et le webhook est rejoué
+        // avec le MÊME id. Sans discriminant, `tr_x:paid` existe déjà → `duplicate_ignored` →
+        // la commande reste PAID à vie (Z > payout). On dérive un statut effectif `refunded`
+        // (clé de dédup DISTINCTE + routage vers la cascade RefundCreated, miroir Stripe).
+        $refundedValue = (float) ($payment['amountRefunded']['value'] ?? 0)
+            + (float) ($payment['amountChargedBack']['value'] ?? 0);
+        if ($status === 'paid' && $refundedValue > 0) {
+            $status = 'refunded';
+        }
+
         // Idempotence — UNIQUE (provider, webhook_id) au plancher DB ;
         // catch violation d'unicité = rejeu concurrent (pattern TOCTOU Uber).
         try {
@@ -304,6 +315,12 @@ class Mollie extends PaymentAbstract
     private function processFetchedPayment(string $paymentId, string $status, array $payment, WebhookEvent $event): JsonResponse
     {
         $orderId = (int) ($payment['metadata']['order_id'] ?? 0);
+
+        // [P0-2 SÉCU 2026-08-04] Remboursement/chargeback détecté en amont → cascade RefundCreated
+        // (payment_status=REFUNDED + clawback fidélité + release stock), avant le routage `paid`.
+        if ($status === 'refunded') {
+            return $this->processMollieRefund($paymentId, $orderId, $event);
+        }
 
         if ($status !== 'paid') {
             // [OWNER 2026-08-03 SÉCU] failed / canceled / expired = TERMINAL non abouti :
@@ -536,6 +553,55 @@ class Mollie extends PaymentAbstract
         } catch (Throwable $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 502);
         }
+    }
+
+    /**
+     * [P0-2 SÉCU 2026-08-04] Un remboursement/chargeback Mollie fait au dashboard doit se
+     * refléter dans le système : bridge vers la cascade RefundCreated EXISTANTE (miroir Stripe)
+     * → PersistOrderPaymentStatusChangedOnRefundCreated (payment_status=REFUNDED + broadcast)
+     * + ReleaseStock + ReleaseAvailability + ClawbackLoyaltyPointsOnRefund. Idempotent (skip si
+     * déjà REFUNDED). Conservateur NF525 : aucune allocation fiscale sous concurrence webhook —
+     * la contre-écriture miroir NF525 (RefundWithCounterEntryService) reste un geste ops V1.
+     */
+    private function processMollieRefund(string $paymentId, int $orderId, WebhookEvent $event): JsonResponse
+    {
+        if ($orderId <= 0) {
+            Log::channel('fiscal')->warning('mollie.webhook.refund_without_order', [
+                'event' => 'mollie_webhook_refund_without_order', 'payment_id' => $paymentId,
+            ]);
+            $event->markProcessed();
+
+            return response()->json(['status' => 'refund_without_order'], 200);
+        }
+
+        $order = FrontendOrder::withoutGlobalScope(BranchScope::class)->find($orderId);
+        if (! $order instanceof FrontendOrder) {
+            Log::channel('fiscal')->warning('mollie.webhook.refund_order_not_found', [
+                'event' => 'mollie_webhook_refund_order_not_found', 'payment_id' => $paymentId, 'order_id' => $orderId,
+            ]);
+            $event->markProcessed($orderId);
+
+            return response()->json(['status' => 'refund_order_not_found'], 200);
+        }
+
+        if ((int) $order->payment_status === PaymentStatus::REFUNDED) {
+            $event->markProcessed($orderId);
+
+            return response()->json(['status' => 'already_refunded'], 200);
+        }
+
+        Log::channel('fiscal')->warning('mollie.webhook.refund_recorded', [
+            'event' => 'mollie_webhook_refund_recorded', 'payment_id' => $paymentId, 'order_id' => $orderId,
+            'note' => 'Remboursement/chargeback Mollie → REFUNDED + clawback + release. Contre-écriture NF525 = geste ops (RefundWithCounterEntryService).',
+        ]);
+
+        // Cascade RefundCreated (DispatchableAfterCommit → post-commit). Le listener
+        // PersistOrderPaymentStatusChangedOnRefundCreated mute payment_status=REFUNDED.
+        \App\Events\RefundCreated::dispatch($order);
+
+        $event->markProcessed($orderId);
+
+        return response()->json(['status' => 'refund_recorded'], 200);
     }
 
     /**

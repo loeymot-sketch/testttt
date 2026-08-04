@@ -471,6 +471,51 @@ class MollieStructureTest extends TestCase
         $this->assertSame(WebhookEvent::STATUS_PROCESSED, (string) $stored->fresh()->status);
     }
 
+    /**
+     * [P0-2 SÉCU 2026-08-04] Remboursement/chargeback Mollie : le paiement reste status=paid,
+     * seul amountRefunded évolue, Mollie rejoue le webhook avec le MÊME id → avant, dédup
+     * `tr_x:paid` → AVALÉ → commande PAID à vie, Z > payout. Désormais : détecté (clé de dédup
+     * distincte) → cascade RefundCreated → payment_status=REFUNDED + clawback + release.
+     */
+    public function test_webhook_refund_marks_order_refunded_and_is_not_swallowed(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80, 'payment_status' => PaymentStatus::PAID, 'transaction_id' => 'mollie:tr_REFUND01']);
+
+        $payload = $this->molliePaymentPayload('tr_REFUND01', $order->id, 'paid', '11.80');
+        unset($payload['_links']['checkout']);
+        $payload['amountRefunded'] = ['value' => '11.80', 'currency' => 'EUR'];
+        $payload['amountRemaining'] = ['value' => '0.00', 'currency' => 'EUR'];
+
+        Http::fake(['https://api.mollie.com/v2/payments/tr_REFUND01' => Http::response($payload, 200)]);
+
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_REFUND01'])
+            ->assertOk()
+            ->assertJsonPath('status', 'refund_recorded'); // PLUS jamais 'duplicate_ignored'
+
+        // Le remboursement est ENREGISTRÉ sous une clé de dédup DISTINCTE (tr_x:refunded),
+        // pas avalé contre le paiement original (tr_x:paid) → la cascade RefundCreated a été
+        // dispatchée (payment_status→REFUNDED via listener after-commit + clawback + release).
+        $this->assertDatabaseHas('webhook_events', ['provider' => WebhookEvent::PROVIDER_MOLLIE, 'webhook_id' => 'tr_REFUND01:refunded']);
+        $this->assertDatabaseMissing('webhook_events', ['webhook_id' => 'tr_REFUND01:refunded', 'status' => WebhookEvent::STATUS_DUPLICATE]);
+    }
+
+    /** Rejeu du webhook remboursement → idempotent (déjà REFUNDED, pas de double cascade). */
+    public function test_webhook_refund_replay_is_idempotent(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80, 'payment_status' => PaymentStatus::PAID, 'transaction_id' => 'mollie:tr_REFUND02']);
+        $payload = $this->molliePaymentPayload('tr_REFUND02', $order->id, 'paid', '11.80');
+        unset($payload['_links']['checkout']);
+        $payload['amountRefunded'] = ['value' => '11.80', 'currency' => 'EUR'];
+        Http::fake(['https://api.mollie.com/v2/payments/tr_REFUND02' => Http::response($payload, 200)]);
+
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_REFUND02'])->assertOk()->assertJsonPath('status', 'refund_recorded');
+        // Rejeu : dédup sur la clé refund distincte → 'already_processing' (pas une 2ᵉ cascade).
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_REFUND02'])->assertOk()->assertJsonPath('status', 'duplicate_ignored'); // dédupliqué = idempotent
+        $this->assertSame(1, WebhookEvent::where('webhook_id', 'tr_REFUND02:refunded')->count());
+    }
+
     public function test_webhook_fails_closed_503_when_not_configured_and_rejects_malformed_id(): void
     {
         Http::fake();
