@@ -62,6 +62,24 @@ class OrphanRedeemReaperTest extends TestCase
     }
 
     /**
+     * [P2 cycle3 SÉCU 2026-08-04] Le plancher du reaper est STRICTEMENT > la fenêtre d'attach
+     * (10 min). Un `LOYALTY_ORPHAN_REDEEM_REAP_MINUTES` trop bas ne doit PAS re-créditer un
+     * pré-rachat encore rattachable (double-bénéfice). Un pré-rachat de 8 min avec un override
+     * de 5 reste INTACT (fenêtre effective clampée à 11).
+     */
+    public function test_reaper_floor_never_reaps_a_still_attachable_pending(): void
+    {
+        $customer = $this->makeCustomer(400);
+        $this->makePendingRedeem($customer, 100, 8); // 8 min < fenêtre d'attach 10 min
+
+        // Override volontairement dangereux (5 min) → clampé à 11 → le pré-rachat de 8 min survit.
+        $reaped = (new LoyaltyService)->reapOrphanRedemptions(5);
+
+        $this->assertSame(0, $reaped, 'un pré-rachat encore rattachable ne doit JAMAIS être reapé (anti double-bénéfice)');
+        $this->assertSame(400, (int) $customer->fresh()->loyalty_points, 'solde intact, pas de re-crédit prématuré');
+    }
+
+    /**
      * Core: an abandoned pending redeem older than the window is re-credited.
      */
     public function test_orphan_pending_redeem_is_recredited(): void

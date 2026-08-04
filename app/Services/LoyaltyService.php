@@ -245,6 +245,13 @@ class LoyaltyService
         if ($olderThanMinutes < 1) {
             $olderThanMinutes = 30;
         }
+        // [P2 cycle3 SÉCU 2026-08-04] Plancher DUR strictement > la fenêtre d'attach (10 min dans
+        // FrontendOrderService::applyKioskLoyaltyDiscount). Sinon un `LOYALTY_ORPHAN_REDEEM_REAP_MINUTES`
+        // trop bas re-créditerait un pré-rachat ENCORE rattachable → double-bénéfice (points rendus
+        // ET remise appliquée à la commande sans débit). Aucune valeur ≤ 10 n'est jamais utilisée.
+        if ($olderThanMinutes < 11) {
+            $olderThanMinutes = 11;
+        }
         $threshold = now()->subMinutes($olderThanMinutes);
 
         $orphans = LoyaltyTransaction::query()
