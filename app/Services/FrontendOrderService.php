@@ -828,6 +828,18 @@ class FrontendOrderService
                             throw new Exception(trans('all.message.order_accept'), 422);
                         }
 
+                        // [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande
+                        // DÉJÀ PAYÉE : le seuil ne testait que `status`. Une commande carte web PAYÉE
+                        // restée PENDING (avant auto-cuisine, ou seal en échec) était annulable → le
+                        // remboursement `cashBack` est conditionné à `$locked->transaction` (relation
+                        // hasOne toujours VIDE pour Mollie, qui n'écrit que la colonne transaction_id)
+                        // → annulation SANS remboursement = argent perdu. Le remboursement d'un
+                        // paiement en ligne = geste comptoir/ops (dashboard Mollie), jamais un
+                        // self-cancel silencieux. Refus 422.
+                        if ((int) $locked->payment_status === PaymentStatus::PAID) {
+                            throw new Exception(trans('all.message.order_accept'), 422);
+                        }
+
                         if ($locked->transaction) {
                             // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
                             $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';

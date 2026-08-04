@@ -252,6 +252,47 @@ class CancelReasonEnforceTest extends TestCase
         ]);
     }
 
+    /**
+     * [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande DÉJÀ PAYÉE : le
+     * remboursement d'un paiement en ligne Mollie ne se fait PAS ici (relation `transaction`
+     * vide → cashBack no-op → annulation SANS remboursement = argent perdu). Refus 422 ; la
+     * commande reste payée + non annulée (remboursement = geste comptoir/ops).
+     *
+     * @test
+     */
+    public function customer_cannot_self_cancel_an_already_paid_order(): void
+    {
+        $order = FrontendOrder::forceCreate([
+            'order_serial_no' => 'F004PAID-' . substr(uniqid(), -8),
+            'user_id'         => $this->kioskUser->id,
+            'branch_id'       => $this->branch->id,
+            'status'          => OrderStatus::PENDING,
+            'payment_status'  => PaymentStatus::PAID, // payée en ligne, sans ligne transaction (Mollie)
+            'payment_method'  => PaymentGateway::CARD,
+            'order_type'      => OrderType::TAKEAWAY,
+            'source'          => Source::WEB,
+            'source_surface'  => 'web',
+            'transaction_id'  => 'mollie:tr_PAIDCANCEL01',
+            'subtotal'        => 10.00, 'total' => 10.00, 'discount' => 0, 'delivery_charge' => 0,
+            'order_datetime'  => now(), 'preparation_time' => 30, 'queue_number' => 'FP' . random_int(1000, 9999),
+        ]);
+
+        $token = $this->kioskUser->createToken('web-owner', ['kiosk:order'])->plainTextToken;
+        $this->kioskUser->update(['status' => Status::ACTIVE]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson("/api/frontend/order/change-status/{$order->id}", [
+                'status' => OrderStatus::CANCELED,
+                'reason' => OrderCancelReason::TPE_CANCEL_USER,
+            ])
+            ->assertStatus(422);
+
+        $fresh = FrontendOrder::withoutGlobalScopes()->findOrFail($order->id);
+        $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status, 'reste payée');
+        $this->assertNotSame(OrderStatus::CANCELED, (int) $fresh->status, 'jamais auto-annulée sans remboursement');
+    }
+
     /* -------------------- Helpers -------------------- */
 
     private function makeKioskPendingOrder(): FrontendOrder
