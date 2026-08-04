@@ -516,6 +516,37 @@ class MollieStructureTest extends TestCase
         $this->assertSame(1, WebhookEvent::where('webhook_id', 'tr_REFUND02:refunded')->count());
     }
 
+    /**
+     * [P0-1 résidu SÉCU 2026-08-04] Un paiement `paid` qui tombe sur une commande TERMINALE
+     * (annulée pendant que le paiement était en vol) déclenche un AUTO-REMBOURSEMENT Mollie
+     * (fin du « argent gardé / geste ops manuel »). La commande reste terminale (jamais PAID).
+     */
+    public function test_paid_on_canceled_order_triggers_auto_refund(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80, 'status' => OrderStatus::CANCELED]);
+
+        Http::fake([
+            'https://api.mollie.com/v2/payments/tr_TERM001' => Http::response(
+                $this->molliePaymentPayload('tr_TERM001', $order->id, 'paid', '11.80'), 200),
+            'https://api.mollie.com/v2/payments/tr_TERM001/refunds' => Http::response(['resource' => 'refund', 'id' => 're_1', 'status' => 'pending'], 201),
+        ]);
+
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_TERM001'])
+            ->assertOk()
+            ->assertJsonPath('status', 'terminal_order_auto_refunded');
+
+        // La commande reste terminale + UNPAID (jamais scellée).
+        $fresh = $order->fresh();
+        $this->assertSame(OrderStatus::CANCELED, (int) $fresh->status);
+        $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
+        // Le remboursement Mollie a bien été appelé avec le montant scellé.
+        Http::assertSent(function (\Illuminate\Http\Client\Request $req) {
+            return str_ends_with($req->url(), '/payments/tr_TERM001/refunds')
+                && ($req->data()['amount']['value'] ?? null) === '11.80';
+        });
+    }
+
     public function test_webhook_fails_closed_503_when_not_configured_and_rejects_malformed_id(): void
     {
         Http::fake();

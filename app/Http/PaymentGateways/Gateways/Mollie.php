@@ -365,6 +365,10 @@ class Mollie extends PaymentAbstract
         $paidNow   = false;
         /** @var FrontendOrder|null $orderRef */
         $orderRef  = null;
+        // [P0-1 résidu SÉCU 2026-08-04] Auto-remboursement d'un paiement qui tombe sur une commande
+        // TERMINALE (annulée pendant que le paiement était en vol) : capturé dans la transaction,
+        // exécuté APRÈS commit (jamais d'appel HTTP dans un DB::transaction).
+        $autoRefund = null;
 
         DB::transaction(function () use (
             $paymentId,
@@ -375,7 +379,8 @@ class Mollie extends PaymentAbstract
             &$refusal,
             &$alreadyPaid,
             &$paidNow,
-            &$orderRef
+            &$orderRef,
+            &$autoRefund
         ): void {
             $locked = FrontendOrder::withoutGlobalScope(BranchScope::class)
                 ->where('id', $orderId)
@@ -442,17 +447,21 @@ class Mollie extends PaymentAbstract
             }
 
             if (in_array((int) $locked->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
-                // Argent encaissé chez Mollie pour une vente void → PAS de
-                // PAID (vente hors Z, miroir exclusions changePaymentStatus).
-                // Remboursement = geste manuel ops (dashboard Mollie) en V1.
+                // Argent encaissé chez Mollie pour une vente void → PAS de PAID (vente hors Z,
+                // miroir exclusions changePaymentStatus). [P0-1 résidu 2026-08-04] Le client a
+                // payé une commande annulée pendant que le paiement était en vol → on le
+                // REMBOURSE AUTOMATIQUEMENT (fin du « argent gardé, geste ops manuel »). Capturé
+                // ici, exécuté après commit.
                 Log::channel('fiscal')->warning('mollie.webhook.paid_on_terminal_order', [
                     'event'      => 'mollie_webhook_paid_on_terminal_order',
                     'payment_id' => $paymentId,
                     'order_id'   => $orderId,
                     'order_status' => (int) $locked->status,
+                    'note'       => 'Auto-remboursement déclenché (commande terminale).',
                 ]);
+                $autoRefund = ['payment_id' => $paymentId, 'value' => $amountValue, 'currency' => $amountCurrency ?: 'EUR', 'order_id' => $orderId];
                 $event->markProcessed($orderId);
-                $refusal = 'terminal_order_refused';
+                $refusal = 'terminal_order_auto_refunded';
 
                 return;
             }
@@ -468,6 +477,12 @@ class Mollie extends PaymentAbstract
         });
 
         if ($refusal !== null) {
+            // [P0-1 résidu 2026-08-04] Auto-remboursement APRÈS commit (appel HTTP hors transaction).
+            // Best-effort : un échec de refund est loggé (canal fiscal) pour rattrapage ops, jamais
+            // un 500 qui ferait rejouer le webhook. La commande reste terminale (jamais PAID).
+            if (is_array($autoRefund)) {
+                $this->refundMolliePayment($autoRefund);
+            }
             // 200 : condition permanente — un rejeu Mollie ne la changera pas ;
             // la ligne webhook_events (status=failed) porte l'anomalie.
             return response()->json(['status' => $refusal], 200);
@@ -552,6 +567,47 @@ class Mollie extends PaymentAbstract
             ]);
         } catch (Throwable $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * [P0-1 résidu SÉCU 2026-08-04] Rembourse AUTOMATIQUEMENT un paiement Mollie qui a été
+     * encaissé sur une commande devenue TERMINALE (annulée pendant que le paiement était en vol)
+     * → le client récupère son argent sans geste ops manuel. Best-effort : tout échec est loggé
+     * (canal fiscal) pour rattrapage, jamais propagé (le webhook a déjà répondu 200).
+     *
+     * @param array{payment_id:string,value:string,currency:string,order_id:int} $r
+     */
+    private function refundMolliePayment(array $r): void
+    {
+        try {
+            $resp = Http::withToken((string) config('payment.mollie.api_key'))
+                ->acceptJson()
+                ->timeout(15)
+                ->post(config('payment.mollie.api_base') . '/payments/' . $r['payment_id'] . '/refunds', [
+                    'amount'      => ['value' => $r['value'], 'currency' => $r['currency']],
+                    'description' => 'Auto-remboursement — commande #' . $r['order_id'] . ' annulée avant confirmation du paiement',
+                    'metadata'    => ['order_id' => (string) $r['order_id'], 'reason' => 'terminal_order_auto_refund'],
+                ]);
+
+            if ($resp->successful()) {
+                Log::channel('fiscal')->warning('mollie.webhook.auto_refund_ok', [
+                    'event' => 'mollie_webhook_auto_refund_ok', 'payment_id' => $r['payment_id'],
+                    'order_id' => $r['order_id'], 'value' => $r['value'],
+                ]);
+            } else {
+                Log::channel('fiscal')->error('mollie.webhook.auto_refund_failed', [
+                    'event' => 'mollie_webhook_auto_refund_failed', 'payment_id' => $r['payment_id'],
+                    'order_id' => $r['order_id'], 'http' => $resp->status(),
+                    'note' => 'Rembourser MANUELLEMENT au dashboard Mollie.',
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::channel('fiscal')->error('mollie.webhook.auto_refund_error', [
+                'event' => 'mollie_webhook_auto_refund_error', 'payment_id' => $r['payment_id'],
+                'order_id' => $r['order_id'], 'message' => $e->getMessage(),
+                'note' => 'Rembourser MANUELLEMENT au dashboard Mollie.',
+            ]);
         }
     }
 
