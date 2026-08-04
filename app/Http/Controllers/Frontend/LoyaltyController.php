@@ -168,7 +168,13 @@ class LoyaltyController extends Controller
                 // Création rapide d'un client via le Kiosk
                 $user = new User();
                 $user->name = $request->input('name') ?? 'Client Loyalty';
-                $user->email = $email ?: null;
+                // [P1-1 SÉCU 2026-08-04] Endpoint PUBLIC non-auth : NE JAMAIS lier un email NON
+                // VÉRIFIÉ à un compte créé sur un téléphone TIERS. Sinon un attaquant empoisonne le
+                // futur compte d'une victime (POST {phone: victime, email: attaquant} → plus tard la
+                // garde channel-confusion de l'email-OTP livre le code à l'email lié = l'attaquant).
+                // L'email n'est lié QU'via le flux email-OTP (possession prouvée du code). Ici :
+                // téléphone + nom seulement — l'enrôlement fidélité ne prouve pas la possession d'email.
+                $user->email = null;
                 $user->phone = $request->input('phone');
                 $user->username = uniqid('kiosk_');
                 $user->password = bcrypt(uniqid());
