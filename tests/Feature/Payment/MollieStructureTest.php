@@ -313,18 +313,21 @@ class MollieStructureTest extends TestCase
                 $this->molliePaymentPayload('tr_W5bad001', $order->id, 'paid', '99.99'),
                 200
             ),
+            // [P2 hardening 2026-08-04] Le montant non attribuable est AUTO-REMBOURSÉ.
+            'https://api.mollie.com/v2/payments/tr_W5bad001/refunds' => Http::response(['resource' => 'refund', 'id' => 're_mm', 'status' => 'pending'], 201),
         ]);
 
         $this->postJson('/api/webhook/mollie', ['id' => 'tr_W5bad001'])
             ->assertOk()
-            ->assertJsonPath('status', 'amount_mismatch_refused');
+            ->assertJsonPath('status', 'amount_mismatch_auto_refunded');
 
         $fresh = $order->fresh();
         $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
         $this->assertNull($fresh->transaction_id);
         $this->assertNull($fresh->fiscal_sequence_no);
-        $this->assertSame(WebhookEvent::STATUS_FAILED, WebhookEvent::query()
-            ->where('webhook_id', 'tr_W5bad001:paid')->value('status'));
+        // Le montant réellement payé (99.99) est remboursé — jamais gardé.
+        Http::assertSent(fn (\Illuminate\Http\Client\Request $r) => str_ends_with($r->url(), '/payments/tr_W5bad001/refunds')
+            && ($r->data()['amount']['value'] ?? null) === '99.99');
     }
 
     /**

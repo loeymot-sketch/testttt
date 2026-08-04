@@ -405,6 +405,11 @@ class Mollie extends PaymentAbstract
             $expectedCents = (int) round((float) $locked->total * 100);
             $paidCents     = (int) round((float) $amountValue * 100);
             if ($amountCurrency !== 'EUR' || $paidCents !== $expectedCents) {
+                // [P2 hardening 2026-08-04] Montant/devise ≠ total scellé (latent : total = SSOT
+                // backend). On REFUSE (jamais PAID) ET on AUTO-REMBOURSE le montant réellement
+                // payé — symétrie avec le paid-sur-commande-terminale : jamais d'argent gardé
+                // qu'on ne peut attribuer à une vente valide. markProcessed (pas Failed) → le
+                // DLQ ne re-refund pas ; le warning forensique reste.
                 Log::channel('fiscal')->warning('mollie.webhook.amount_mismatch', [
                     'event'          => 'mollie_webhook_amount_mismatch',
                     'payment_id'     => $paymentId,
@@ -412,9 +417,11 @@ class Mollie extends PaymentAbstract
                     'expected_cents' => $expectedCents,
                     'paid_cents'     => $paidCents,
                     'currency'       => $amountCurrency,
+                    'note'           => 'Refusé + auto-remboursé (montant non attribuable).',
                 ]);
-                $event->markFailed('Amount/currency mismatch — refused (expected ' . $expectedCents . 'c EUR).');
-                $refusal = 'amount_mismatch_refused';
+                $autoRefund = ['payment_id' => $paymentId, 'value' => $amountValue, 'currency' => $amountCurrency ?: 'EUR', 'order_id' => $orderId];
+                $event->markProcessed($orderId);
+                $refusal = 'amount_mismatch_auto_refunded';
 
                 return;
             }
