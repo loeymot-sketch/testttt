@@ -82,10 +82,19 @@ class MonitorOutboxStaleness extends Command
         // NULL — jamais alerté, puis pruné à 90j comme « livré ». Désormais : claimé (dispatched_at)
         // il y a > orphanCutoff SANS livraison (broadcast_at null) = orphelin, quelle que soit
         // l'erreur/le compteur. Un worker sain pose broadcast_at en secondes → jamais faux positif.
+        // [SYNC-P2-1 fix 2026-08-05 · audit RED L4] Exclure les POISON (contract_violation) comme le
+        // font TOUS les siblings (staleCount:53, rescue, HealthController). Le rekeying broadcast_at
+        // avait laissé tomber cette exclusion → un CV historique (dispatched_at posé, broadcast_at
+        // NULL — cf. backfill migration) devenait une ALARME ÉTERNELLE (rescue skip CV, prune ne peut
+        // pas retirer un dispatched_at-posé) = fatigue d'alerte masquant une VRAIE panne worker. Un CV
+        // est un échec DÉLIBÉRÉ non-recouvrable, pas un orphelin crash à récupérer.
         $crashClaimedCount = (int) DB::table('domain_events')
             ->whereNotNull('dispatched_at')
             ->whereNull('broadcast_at')
             ->where('dispatched_at', '<', $orphanCutoff)
+            ->where(function ($q): void {
+                $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
+            })
             ->count();
 
         // [NUIT-A 2026-07-03 / P2] DEAD-LETTER : pending + attempts >= 5. Ces rows ont épuisé la fenêtre de
@@ -122,6 +131,10 @@ class MonitorOutboxStaleness extends Command
             ->whereNotNull('dispatched_at')
             ->whereNull('broadcast_at')
             ->where('dispatched_at', '<', $orphanCutoff)
+            ->where(function ($q): void {
+                // Miroir EXACT de $crashClaimedCount (dont l'exclusion CV) → le détail reste cohérent.
+                $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
+            })
             ->orderBy('dispatched_at')
             ->first(['id', 'event_type', 'dispatched_at', 'attempts', 'last_error']);
 

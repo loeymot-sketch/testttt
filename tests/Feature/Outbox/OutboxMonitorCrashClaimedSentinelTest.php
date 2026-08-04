@@ -154,6 +154,33 @@ class OutboxMonitorCrashClaimedSentinelTest extends TestCase
     }
 
     /**
+     * [SYNC-P2-1 fix 2026-08-05 · audit RED L4] Un POISON contract_violation avec dispatched_at posé
+     * + broadcast_at null (forme legacy pré-2026-07-07, ou laissée telle quelle par le backfill de la
+     * migration broadcast_at) ne doit PAS déclencher l'alarme crash-claimed : échec DÉLIBÉRÉ
+     * non-recouvrable (rescue le skip, prune le gère). Le rekeying broadcast_at avait laissé tomber
+     * l'exclusion CV que TOUS les siblings portent → il paginait chaque minute pour toujours (fatigue
+     * d'alerte masquant une vraie panne worker). Ce test scelle l'exclusion restaurée.
+     */
+    public function test_monitor_does_not_alarm_on_contract_violation_poison_orphan(): void
+    {
+        $this->seedDomainEvent([
+            'dispatched_at' => now()->subMinutes(15),
+            'broadcast_at'  => null,
+            'last_error'    => 'contract_violation: envelope missing field order_id',
+            'attempts'      => 3,
+        ], createdMinutesAgo: 100);
+
+        $exit = Artisan::call('foodking:outbox:monitor', ['--threshold' => 10, '--stale-after' => 30]);
+
+        $this->assertSame(
+            0,
+            $exit,
+            'Un CV poison (dispatched_at posé, broadcast_at null) ne doit PAS pager comme orphelin '
+            . 'crash-claimed — c\'est un échec délibéré non-recouvrable, comme pour tous les siblings.'
+        );
+    }
+
+    /**
      * @param  array<string,mixed>  $attrs
      */
     private function seedDomainEvent(array $attrs, int $createdMinutesAgo): DomainEvent
