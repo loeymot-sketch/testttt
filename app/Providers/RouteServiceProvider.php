@@ -89,10 +89,22 @@ class RouteServiceProvider extends ServiceProvider
             $raw = $request->input('phone') ?: $request->input('email') ?: 'anon';
             $id = Str::lower(is_string($raw) ? $raw : 'anon');
 
-            return [
+            $limits = [
                 Limit::perMinute(5)->by('otp-id:'.$id),
                 Limit::perMinute(20)->by('otp-send-global'),
             ];
+
+            // [P1-2 SÉCU 2026-08-04] Plafond DÉDIÉ PAR EMAIL. Le seau par-identifiant ci-dessus
+            // retombe TOUJOURS sur le téléphone (phone ?: email, les deux requis) → un attaquant
+            // qui FIXE l'email d'une victime et FAIT TOURNER le numéro spammait sa boîte (chaque
+            // numéro = nouveau seau, ~1200/h sous le global). On plafonne l'EMAIL cible à 5/min
+            // indépendamment du numéro → le bombing par rotation est fermé.
+            $email = $request->input('email');
+            if (is_string($email) && $email !== '') {
+                $limits[] = Limit::perMinute(5)->by('otp-email:'.Str::lower($email));
+            }
+
+            return $limits;
         });
 
         RateLimiter::for('kiosk-orders', function (Request $request) {

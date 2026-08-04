@@ -218,6 +218,31 @@ class RateLimiterConfigTest extends TestCase
     }
 
     /**
+     * [P1-2 SÉCU 2026-08-04] Anti email-bombing : le throttle otp-send était indexé sur
+     * `phone ?: email` (= toujours le téléphone, les deux étant requis) → un attaquant qui
+     * FIXE l'email d'une victime et FAIT TOURNER le numéro spammait l'email (chaque numéro =
+     * nouveau seau). Il DOIT y avoir un plafond DÉDIÉ PAR EMAIL.
+     */
+    public function test_otp_send_has_a_per_email_bucket(): void
+    {
+        $resolver = RateLimiter::limiter('otp-send');
+        $request = Request::create('/api/auth/guest-signup/email-otp', 'POST', [
+            'phone' => '0699000111', 'email' => 'Victime@Example.com',
+        ]);
+        $limits = $resolver($request);
+        $limits = is_array($limits) ? $limits : [$limits];
+
+        $keys = array_map(fn ($l) => (string) $l->key, $limits);
+        $hasEmailBucket = false;
+        foreach ($keys as $k) {
+            if (str_contains($k, 'otp-email:') && str_contains(strtolower($k), 'victime@example.com')) {
+                $hasEmailBucket = true;
+            }
+        }
+        $this->assertTrue($hasEmailBucket, 'otp-send doit plafonner PAR EMAIL (anti-bombing par rotation du numéro). Seaux: '.implode(', ', $keys));
+    }
+
+    /**
      * @return array<string, array{0:string,1:int}>
      */
     public static function namedLimiterProvider(): array
