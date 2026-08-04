@@ -547,6 +547,36 @@ class MollieStructureTest extends TestCase
         });
     }
 
+    /**
+     * [P1 cycle2 SÉCU 2026-08-04] Un rejeu DLQ d'un event `paid` resté FAILED, APRÈS que la
+     * commande a été REMBOURSÉE, ne doit JAMAIS la ressusciter en PAID (fausse recette Z). Deux
+     * filets : dérivation `refunded` dans handleFromStoredEvent + garde REFUNDED du chemin paid.
+     */
+    public function test_dlq_redrive_never_resurrects_a_refunded_order_to_paid(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80, 'payment_status' => PaymentStatus::REFUNDED, 'transaction_id' => 'mollie:tr_RESUR01']);
+
+        // Event `paid` resté FAILED (échec transitoire du 1er passage).
+        $stored = WebhookEvent::create([
+            'provider' => WebhookEvent::PROVIDER_MOLLIE, 'webhook_id' => 'tr_RESUR01:paid',
+            'event_type' => 'payment.paid', 'payload' => $this->molliePaymentPayload('tr_RESUR01', $order->id, 'paid', '11.80'),
+            'received_at' => now(), 'status' => WebhookEvent::STATUS_FAILED,
+        ]);
+
+        // Le re-fetch frais montre paid + déjà remboursé (amountRefunded>0).
+        $payload = $this->molliePaymentPayload('tr_RESUR01', $order->id, 'paid', '11.80');
+        unset($payload['_links']['checkout']);
+        $payload['amountRefunded'] = ['value' => '11.80', 'currency' => 'EUR'];
+        Http::fake(['https://api.mollie.com/v2/payments/tr_RESUR01' => Http::response($payload, 200)]);
+
+        app(\App\Http\PaymentGateways\Gateways\Mollie::class)->handleFromStoredEvent($stored->fresh());
+
+        $fresh = $order->fresh();
+        $this->assertSame(PaymentStatus::REFUNDED, (int) $fresh->payment_status, 'reste REFUNDED, jamais re-payée');
+        $this->assertNull($fresh->fiscal_sequence_no, 'jamais re-scellée dans le Z');
+    }
+
     public function test_webhook_fails_closed_503_when_not_configured_and_rejects_malformed_id(): void
     {
         Http::fake();

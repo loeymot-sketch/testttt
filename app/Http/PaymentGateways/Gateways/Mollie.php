@@ -446,6 +446,23 @@ class Mollie extends PaymentAbstract
                 return;
             }
 
+            // [P1 cycle2 SÉCU 2026-08-04] Une commande REMBOURSÉE ne doit JAMAIS être re-scellée
+            // PAID. Sans cette garde, un rejeu DLQ d'un `paid` resté FAILED (puis remboursé) la
+            // RESSUSCITAIT en PAID + alloc fiscale + cuisine = fausse recette dans le Z NF525.
+            // (Le chemin webhook direct dérive déjà `refunded` ; ce filet couvre TOUTES les entrées.)
+            if ((int) $locked->payment_status === PaymentStatus::REFUNDED) {
+                Log::channel('fiscal')->warning('mollie.webhook.paid_on_refunded_order', [
+                    'event'      => 'mollie_webhook_paid_on_refunded_order',
+                    'payment_id' => $paymentId,
+                    'order_id'   => $orderId,
+                    'note'       => 'Commande déjà REMBOURSÉE — jamais re-payée (anti-résurrection Z).',
+                ]);
+                $event->markProcessed($orderId);
+                $refusal = 'refunded_order_not_repaid';
+
+                return;
+            }
+
             if (in_array((int) $locked->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
                 // Argent encaissé chez Mollie pour une vente void → PAS de PAID (vente hors Z,
                 // miroir exclusions changePaymentStatus). [P0-1 résidu 2026-08-04] Le client a
@@ -709,6 +726,15 @@ class Mollie extends PaymentAbstract
 
         $fresh  = (array) $fetch->json();
         $status = (string) ($fresh['status'] ?? 'unknown');
+        // [P1 cycle2 SÉCU 2026-08-04] MÊME dérivation `refunded` que handleWebhook — sinon un
+        // re-drive DLQ d'un `paid` échoué APRÈS un remboursement re-fetchait `paid`+amountRefunded
+        // et le routait sur le chemin `paid` (résurrection REFUNDED→PAID). On route vers la cascade
+        // refund (idempotente, déjà REFUNDED → no-op). La garde REFUNDED du chemin paid double le filet.
+        $refundedValue = (float) ($fresh['amountRefunded']['value'] ?? 0)
+            + (float) ($fresh['amountChargedBack']['value'] ?? 0);
+        if ($status === 'paid' && $refundedValue > 0) {
+            $status = 'refunded';
+        }
         // Re-joue le vrai routage (mutation PAID/annulation + allocation fiscale + side-effects).
         $this->processFetchedPayment($paymentId, $status, $fresh, $event);
     }
