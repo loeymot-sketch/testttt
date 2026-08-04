@@ -413,6 +413,65 @@ final class AvailabilityService
     }
 
     /**
+     * [SYNC cross-surface P1 2026-08-04] Garde de SYMÉTRIE pour les EXTRAS + VARIATIONS.
+     *
+     * assertItemsOrderableForBranch ne valide QUE les item_id. Or la borne/caisse grisent
+     * aussi les extras (« Sauce en plus »…) et variations 86 (StockLevel : raison manuelle OU
+     * on_hand<=0). Sans cette garde, une commande WEB portant un extra/variation 86 était
+     * ACCEPTÉE alors que la cuisine ne peut pas l'honorer = divergence cross-surface permanente
+     * (borne/caisse le bloquent, le web le vend). On rejette ici via le MÊME SSOT que la borne
+     * (isExtraAvailable / isVariationAvailable → isStockableAvailable), donc parité PAR
+     * CONSTRUCTION (règle V1 : ligne StockLevel absente = disponible → aucun faux rejet).
+     *
+     * @param  array<int|mixed>  $extraIds
+     * @param  array<int|mixed>  $variationIds
+     *
+     * @throws \InvalidArgumentException 422 si un extra/variation demandé est 86 sur la branche.
+     */
+    public function assertExtrasAndVariationsOrderableForBranch(int $branchId, array $extraIds, array $variationIds): void
+    {
+        if ($branchId < 1) {
+            return;
+        }
+
+        $extraIds = array_values(array_unique(array_filter(array_map(static fn ($id) => (int) $id, $extraIds))));
+        foreach ($extraIds as $extraId) {
+            if ($this->isExtraAvailable($extraId, $branchId)) {
+                continue;
+            }
+            throw new \InvalidArgumentException(
+                '« '.$this->stockableDisplayName(ItemExtra::class, $extraId)."\u{00A0}» n'est plus disponible — merci de le retirer de votre panier.",
+                422
+            );
+        }
+
+        $variationIds = array_values(array_unique(array_filter(array_map(static fn ($id) => (int) $id, $variationIds))));
+        foreach ($variationIds as $variationId) {
+            if ($this->isVariationAvailable($variationId, $branchId)) {
+                continue;
+            }
+            throw new \InvalidArgumentException(
+                '« '.$this->stockableDisplayName(ItemVariation::class, $variationId)."\u{00A0}» n'est plus disponible — merci de le retirer de votre panier.",
+                422
+            );
+        }
+    }
+
+    /**
+     * Nom lisible client d'un extra/variation. Bypasse le soft-delete pour un message correct
+     * même si l'option a été supprimée. Ni ItemExtra ni ItemVariation n'a de BranchScope → pas
+     * de fuite cross-branch.
+     */
+    private function stockableDisplayName(string $type, int $id): string
+    {
+        /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
+        $model = $type === ItemVariation::class ? ItemVariation::class : ItemExtra::class;
+
+        return (string) ($model::withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class)
+            ->whereKey($id)->value('name') ?? "Option {$id}");
+    }
+
+    /**
      * [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Résout les item_id des COMPOSANTS de menu
      * (addons) référencés par une liste de lignes de commande. La garde d'orderabilité
      * ne recevait que les item_id de 1er niveau (`pluck('item_id')`) : un composant en

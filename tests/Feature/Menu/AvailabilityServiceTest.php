@@ -222,4 +222,69 @@ class AvailabilityServiceTest extends TestCase
         );
         $this->assertTrue(true);
     }
+
+    /**
+     * [SYNC cross-surface P1 2026-08-04] Un EXTRA 86 sur la branche (« Sauce en plus » grisée
+     * borne/caisse) doit REJETER la commande web — parité borne↔web via le même SSOT StockLevel.
+     */
+    public function test_extra_out_of_stock_blocks_order(): void
+    {
+        $item   = Item::factory()->create();
+        $branch = Branch::factory()->create();
+        $extra  = \App\Models\ItemExtra::create([
+            'item_id' => $item->id, 'name' => 'Sauce en plus', 'price' => 0.5, 'status' => 1,
+        ]);
+
+        $service = app(AvailabilityService::class);
+        $service->toggleExtra((int) $extra->id, (int) $branch->id, false, 'out_of_stock');
+
+        // SSOT borne : l'extra est bien indisponible.
+        $this->assertFalse($service->isExtraAvailable((int) $extra->id, (int) $branch->id));
+
+        // La garde web DOIT rejeter (avant ce heal, le web l'acceptait).
+        $this->expectException(\InvalidArgumentException::class);
+        $service->assertExtrasAndVariationsOrderableForBranch((int) $branch->id, [(int) $extra->id], []);
+    }
+
+    /**
+     * [SYNC cross-surface P1] Une VARIATION 86 doit aussi rejeter la commande web.
+     */
+    public function test_variation_out_of_stock_blocks_order(): void
+    {
+        $item   = Item::factory()->create();
+        $branch = Branch::factory()->create();
+        $attr   = \App\Models\ItemAttribute::factory()->create();
+        $variation = \App\Models\ItemVariation::create([
+            'item_id' => $item->id, 'item_attribute_id' => $attr->id, 'name' => 'Grande', 'price' => 2.0, 'status' => 1,
+        ]);
+
+        $service = app(AvailabilityService::class);
+        $service->toggleVariation((int) $variation->id, (int) $branch->id, false, 'out_of_stock');
+
+        $this->assertFalse($service->isVariationAvailable((int) $variation->id, (int) $branch->id));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $service->assertExtrasAndVariationsOrderableForBranch((int) $branch->id, [], [(int) $variation->id]);
+    }
+
+    /**
+     * Contre-preuve (anti faux-blocage) : extras + variations DISPONIBLES → la garde ne throw
+     * pas. Règle V1 « ligne StockLevel absente = disponible » → aucun rejet abusif.
+     */
+    public function test_available_extras_and_variations_allow_order(): void
+    {
+        $item   = Item::factory()->create();
+        $branch = Branch::factory()->create();
+        $extra  = \App\Models\ItemExtra::create(['item_id' => $item->id, 'name' => 'Sauce dispo', 'price' => 0.5, 'status' => 1]);
+        $attr   = \App\Models\ItemAttribute::factory()->create();
+        $variation = \App\Models\ItemVariation::create(['item_id' => $item->id, 'item_attribute_id' => $attr->id, 'name' => 'Normale', 'price' => 0, 'status' => 1]);
+
+        // Aucune rupture (aucune ligne StockLevel) → ne throw pas.
+        app(AvailabilityService::class)->assertExtrasAndVariationsOrderableForBranch(
+            (int) $branch->id,
+            [(int) $extra->id],
+            [(int) $variation->id]
+        );
+        $this->assertTrue(true);
+    }
 }

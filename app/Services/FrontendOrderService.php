@@ -370,6 +370,16 @@ class FrontendOrderService
                         true
                     );
 
+                    // [SYNC cross-surface P1 2026-08-04] Symétrie borne/caisse : rejeter aussi les
+                    // EXTRAS/VARIATIONS 86. La borne les grise (isExtraAvailable/isVariationAvailable),
+                    // mais le web (UI aveugle) les vendait → supplément en rupture accepté que la
+                    // cuisine ne peut pas honorer. Même SSOT StockLevel → parité par construction.
+                    $availabilityService->assertExtrasAndVariationsOrderableForBranch(
+                        (int) $this->frontendOrder->branch_id,
+                        $extraIds,
+                        $variationIds
+                    );
+
                     if (!blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
