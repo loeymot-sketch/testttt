@@ -21,10 +21,22 @@ Vérif prod : 0 compte staff soft-deleted sur le VPS (P0-1 non armé activement,
 ## VAGUE 1.5 — HEALÉ + TDD + DÉPLOYÉ (après vague 1)
 | 11 | Paiement | **P0-2** | Refund/chargeback Mollie AVALÉ (dédup tr_x:paid) → statut effectif `refunded` (clé distincte) + cascade RefundCreated (REFUNDED si non scellée / clawback+release+observabilité ; contre-écriture NF525 = geste ops). `d458bd04c` VPS. MollieStructure 18/18. |
 
-## VAGUE 2 — RESTE CLASSÉ (passes soignées, certains sous LOCK/gate owner)
+## VAGUE 2 — HEALÉ + TDD + DÉPLOYÉ (12→18 correctifs)
+| 12 | Utilisation | **RED-1** | pré-rachat du solde utile → plein tarif (contrôle solde APRÈS débit) : `skipBalanceGate` au rattachement |
+| 13 | Utilisation | **RED-2** | rattachement TOUTE surface (fin du double débit web/mobile 'pos') |
+| 14 | Utilisation | **RED-3** [sécu] | garde IDOR Mission-28 remontée AVANT le rattachement (fin du vol de pré-rachat) |
+| 15 | Utilisation | RED-4 | `/loyalty/redeem` refuse sous `min_redeem` (fin du débit non consommable) |
+| 16 | Paiement | **P1-6** | client ne peut plus auto-annuler une commande PAYÉE sans remboursement |
+| 17 | Compte | P1-2 | anti email-bombing : plafond OTP PAR EMAIL |
+| 18 | Paiement | — | **P0-1 LARGEMENT MITIGÉ par P1-4** : idempotency requise + clé stable `web-mollie-<id>` → le front ne peut plus créer un 2ᵉ paiement (le 2ᵉ appel rejoue le 1er) ; residu = self-cancel-pendant-paiement (auto-refund, ci-dessous) |
+Cluster redeem sous LOCK_FRONTENDORDER_REDEEM_REORDER. Gates : Auth 50·Loyalty 44·Coupon 49·Payment 52·DoubleRedeem 9·CancelReason 8·RateLimiter 11·Pricing 7 · chaîne OK ×4.
+**P1-8 (fausse confirmation) SUBSTANTIELLEMENT FERMÉ** : « Paiement confirmé ✓ » ne s'affiche que via `paidOnline` (serveur, P1-B) OU `mollieReturn=paid` (poll) ; repli comptoir annoncé ; retour 3DS annulé géré. Residu = inline-pending sans poll (message honnête statique, faible sévérité).
+
+## VAGUE 3 — RESTE (design / owner-gate / migration risquée)
 
 ### Paiement
-- ~~P0-2 refund avalé~~ ✅ FAIT (vague 1.5).
+- **P0-1 résidu [design]** — self-cancel pendant paiement en vol (order UNPAID local) → paid tardif refusé → argent gardé. Fix = auto-refund Mollie API quand `paid` tombe sur une commande terminale (ou surface ops P2-11). Narrow (P1-4 ferme le vecteur front principal).
+- ~~P0-2, P1-3, P1-4~~ ✅ FAIT.
 - **P0-1 [design]** — Deux paiements pour 1 commande : le 1er annulé TUE la commande, le 2ᵉ payé REFUSÉ → argent gardé, commande morte. Fix = garde « paiement déjà en vol » dans MolliePaymentController::checkout + refus d'annuler tant qu'un autre paiement du même order n'est pas terminal (ou résurrection honnête du order si un paiement réel arrive). Touche NF525-adjacent → prudence + test.
 - **P0-2 [cascade]** — Refund/chargeback Mollie avalé (dédup `tr_x:paid`) → commande PAID à vie, Z > payout. Fix = lire `amountRefunded/amountChargedBack` au fetch → dispatch `RefundCreated` (miroir Stripe.php:395-500 : REFUNDED + clawback + stock).
 - **P1-6** — Client annule sa PROPRE commande carte web PAYÉE (fenêtres PENDING+PAID / ACCEPT+PAID) sans refund (`transaction` relation toujours vide pour Mollie). Fix = seuil d'annulation client teste AUSSI payment_status=PAID.
