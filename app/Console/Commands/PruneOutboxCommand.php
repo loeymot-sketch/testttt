@@ -60,10 +60,14 @@ class PruneOutboxCommand extends Command
         // Safe-set query — kept in a closure so dry-run + delete share one source of truth.
         $applyPredicate = function ($query) use ($cutoff) {
             return $query->where(function ($q) use ($cutoff) {
-                // (A) dispatched successfully — pure history past the window.
+                // (A) LIVRÉ avec succès — historique pur au-delà de la fenêtre.
+                // [SYNC-P2-1 2026-08-04] Clé sur `broadcast_at` (LIVRAISON réelle) et NON
+                // `dispatched_at` (CLAIM) : sinon un orphelin claimé-mais-jamais-livré (worker
+                // tué en plein broadcast, broadcast_at null) était SUPPRIMÉ à 90j comme « livré »
+                // → perte d'événement définitive. On ne prune que ce qui a réellement été diffusé.
                 $q->where(function ($inner) use ($cutoff) {
-                    $inner->whereNotNull('dispatched_at')
-                        ->where('dispatched_at', '<', $cutoff);
+                    $inner->whereNotNull('broadcast_at')
+                        ->where('broadcast_at', '<', $cutoff);
                 // (B) terminal runtime failure — retries exhausted (attempts >= 6).
                 })->orWhere(function ($inner) use ($cutoff) {
                     $inner->where('attempts', '>=', 6)

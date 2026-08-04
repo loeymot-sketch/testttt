@@ -130,6 +130,54 @@ class OutboxTest extends TestCase
 
         $this->assertNotNull($domainEvent->dispatched_at);
         $this->assertSame(1, $domainEvent->attempts);
+        // [SYNC-P2-1] Phase 3a stamps broadcast_at ONLY after the broadcast succeeds —
+        // this is the real delivery marker that rescue/monitor/prune key on.
+        $this->assertNotNull($domainEvent->broadcast_at, 'Phase 3a must stamp broadcast_at on successful delivery.');
+    }
+
+    /**
+     * [SYNC-P2-1 2026-08-04] Failure path: when the broadcast THROWS (worker would then die
+     * or Laravel retries), Phase 3b releases the claim (dispatched_at → null) and leaves
+     * broadcast_at NULL. broadcast_at NULL is the unambiguous "never delivered" signal that
+     * distinguishes a claim from a delivery — the crux of the fix.
+     */
+    public function test_dispatch_job_leaves_broadcast_at_null_when_broadcast_throws(): void
+    {
+        $domainEvent = DomainEvent::query()->create([
+            'event_type' => EventType::ORDER_CREATED,
+            'aggregate_type' => Order::class,
+            'aggregate_id' => 777,
+            'branch_id' => 1,
+            'payload' => $this->orderCreatedPayload(777),
+            'channel' => json_encode(['private-branch.1']),
+            'broadcast_as' => 'OrderCreated',
+            'correlation_id' => 'test-uuid-throw',
+            'occurred_at' => now(),
+        ]);
+
+        $connection = Mockery::mock(\Illuminate\Contracts\Broadcasting\Broadcaster::class);
+        $connection->shouldReceive('broadcast')
+            ->once()
+            ->andThrow(new \RuntimeException('Pusher unreachable: connection reset'));
+
+        $manager = Mockery::mock(BroadcastManager::class);
+        $manager->shouldReceive('connection')->once()->withNoArgs()->andReturn($connection);
+        $this->app->instance(BroadcastManager::class, $manager);
+        $this->app->instance('broadcast.manager', $manager);
+
+        try {
+            (new DispatchDomainEventsJob($domainEvent->id))->handle();
+            $this->fail('Expected the broadcast exception to propagate for the queue retry.');
+        } catch (\RuntimeException $e) {
+            // expected — Phase 3b re-throws so the queue retry curve engages.
+        }
+
+        $domainEvent->refresh();
+
+        $this->assertNull($domainEvent->broadcast_at, 'A thrown broadcast must NEVER stamp broadcast_at.');
+        $this->assertNull($domainEvent->dispatched_at, 'Phase 3b must release the claim (dispatched_at → null).');
+        $this->assertSame(1, $domainEvent->attempts, 'The claim attempt is still counted.');
+        $this->assertNotNull($domainEvent->last_error, 'The failure reason is recorded for forensics.');
     }
 
     public function test_rescue_command_requeues_stale_events(): void

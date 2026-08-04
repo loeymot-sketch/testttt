@@ -28,10 +28,14 @@ use Tests\TestCase;
  *   - rescue lane B  : attempts < 5 cap          -> excluded.
  * The heal adds a distinct alarm dimension so the operator is PAGED for it.
  *
- * Precision invariant: a legitimately succeeded-after-retries row
- * (dispatched_at SET, last_error NULL, attempts>=5) MUST NOT be counted —
- * Phase 3a clears last_error, so the `last_error IS NOT NULL` predicate gives
- * zero false-positives.
+ * Precision invariant [SYNC-P2-1 2026-08-04]: a legitimately succeeded row
+ * (Phase 3a sets broadcast_at = now()) MUST NOT be counted. The crash-claimed
+ * predicate is now `broadcast_at IS NULL` (the REAL delivery marker), replacing
+ * the old `last_error IS NOT NULL` heuristic — which was BLIND to the worst
+ * orphan: a worker killed mid-broadcast on attempt #1 leaves dispatched_at SET,
+ * last_error NULL, broadcast_at NULL and was NEVER paged nor recovered. The
+ * 10-min orphan cutoff still protects a live in-flight retry (broadcast_at NULL
+ * but claimed < 10 min ago is within the backoff curve, not an orphan).
  */
 class OutboxMonitorCrashClaimedSentinelTest extends TestCase
 {
@@ -58,9 +62,12 @@ class OutboxMonitorCrashClaimedSentinelTest extends TestCase
 
     public function test_monitor_does_not_false_positive_on_success_after_retries(): void
     {
-        // Succeeded on a late attempt: dispatched_at kept, last_error CLEARED by Phase 3a.
+        // [SYNC-P2-1] Succeeded on a late attempt: Phase 3a keeps dispatched_at, clears
+        // last_error, AND stamps broadcast_at (the delivery marker). A genuine success is
+        // now defined by broadcast_at being SET — not merely by last_error being null.
         $this->seedDomainEvent([
             'dispatched_at' => now()->subMinutes(15),
+            'broadcast_at'  => now()->subMinutes(15),
             'last_error'    => null,
             'attempts'      => 6,
         ], createdMinutesAgo: 20);
@@ -70,8 +77,35 @@ class OutboxMonitorCrashClaimedSentinelTest extends TestCase
         $this->assertSame(
             0,
             $exit,
-            'Monitor MUST NOT alarm on a succeeded-after-retries row (last_error cleared in Phase 3a) '
+            'Monitor MUST NOT alarm on a delivered row (broadcast_at SET by Phase 3a) '
             . '— zero false-positives is the precision contract of the crash-claimed dimension.'
+        );
+    }
+
+    /**
+     * [SYNC-P2-1 2026-08-04] The orphan the OLD (last_error-based) contract was BLIND to:
+     * a worker killed mid-broadcast on the FIRST attempt leaves dispatched_at SET,
+     * last_error NULL, broadcast_at NULL, attempts = 1. The old predicate
+     * (last_error IS NOT NULL AND attempts >= 5) matched NOTHING → never paged, never
+     * recovered, then pruned at 90d as "delivered". The broadcast_at-based predicate
+     * pages it regardless of attempts/last_error. Locks the fix.
+     */
+    public function test_monitor_alarms_on_first_attempt_crash_orphan(): void
+    {
+        $this->seedDomainEvent([
+            'dispatched_at' => now()->subMinutes(15),
+            'broadcast_at'  => null,
+            'last_error'    => null,
+            'attempts'      => 1,
+        ], createdMinutesAgo: 20);
+
+        $exit = Artisan::call('foodking:outbox:monitor', ['--threshold' => 10, '--stale-after' => 30]);
+
+        $this->assertSame(
+            1,
+            $exit,
+            'Monitor MUST page a first-attempt crash orphan (claimed, never broadcast) — the '
+            . 'exact class the old last_error-based predicate missed (SYNC-P2-1).'
         );
     }
 

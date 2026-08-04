@@ -104,7 +104,48 @@ class PruneOutboxContractViolationTest extends TestCase
         $this->assertSame(1, DB::table('domain_events')->count());
     }
 
-    private function makeEvent(int $attempts, ?string $lastError, ?string $dispatchedAt, int $ageDays): DomainEvent
+    /**
+     * [SYNC-P2-1 2026-08-04] Prune lane (A) now keys on `broadcast_at` (real delivery),
+     * NOT `dispatched_at` (claim). A genuinely DELIVERED row past the retention cutoff is
+     * purged as pure history.
+     */
+    public function test_prune_deletes_old_delivered_row(): void
+    {
+        $delivered = $this->makeEvent(
+            attempts: 2,
+            lastError: null,
+            dispatchedAt: now()->subDays(100)->toDateTimeString(),
+            ageDays: 100,
+            broadcastAt: now()->subDays(100)->toDateTimeString(),
+        );
+
+        Artisan::call('foodking:outbox:prune', ['--older-than-days' => 90]);
+
+        $this->assertDatabaseMissing('domain_events', ['id' => $delivered->id]);
+    }
+
+    /**
+     * [SYNC-P2-1] THE at-least-once guarantee: a crash-claimed orphan (claimed but NEVER
+     * broadcast — dispatched_at SET, broadcast_at NULL) must NOT be pruned as "delivered",
+     * even 100 days old, as long as it has not exhausted retries (attempts < 6). The old
+     * lane-A predicate (`dispatched_at NOT NULL`) would have DELETED it = silent event loss.
+     */
+    public function test_prune_preserves_crash_claimed_orphan_never_delivered(): void
+    {
+        $orphan = $this->makeEvent(
+            attempts: 3,
+            lastError: null,
+            dispatchedAt: now()->subDays(100)->toDateTimeString(),
+            ageDays: 100,
+            broadcastAt: null,
+        );
+
+        Artisan::call('foodking:outbox:prune', ['--older-than-days' => 90]);
+
+        $this->assertDatabaseHas('domain_events', ['id' => $orphan->id]);
+    }
+
+    private function makeEvent(int $attempts, ?string $lastError, ?string $dispatchedAt, int $ageDays, ?string $broadcastAt = null): DomainEvent
     {
         $ts = now()->subDays($ageDays);
         static $seq = 0;
@@ -121,6 +162,7 @@ class PruneOutboxContractViolationTest extends TestCase
             'correlation_id' => 'prune-cv-' . $seq,
             'occurred_at' => $ts,
             'dispatched_at' => $dispatchedAt,
+            'broadcast_at' => $broadcastAt,
             'attempts' => $attempts,
             'last_error' => $lastError,
             'created_at' => $ts,

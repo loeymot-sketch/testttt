@@ -76,10 +76,15 @@ class MonitorOutboxStaleness extends Command
         // success, so a healthy dispatched row never matches regardless of age.
         $orphanCutoff = now()->subSeconds(max($staleAfter, 600));
 
+        // [SYNC-P2-1 2026-08-04] Détection via `broadcast_at IS NULL` (marqueur de LIVRAISON réelle)
+        // au lieu de `last_error NOT NULL` + `attempts >= 5`. L'ancien filtre RATAIT l'orphelin le
+        // plus dangereux : un worker tué EN PLEIN broadcast laisse `dispatched_at` posé, `last_error`
+        // NULL — jamais alerté, puis pruné à 90j comme « livré ». Désormais : claimé (dispatched_at)
+        // il y a > orphanCutoff SANS livraison (broadcast_at null) = orphelin, quelle que soit
+        // l'erreur/le compteur. Un worker sain pose broadcast_at en secondes → jamais faux positif.
         $crashClaimedCount = (int) DB::table('domain_events')
             ->whereNotNull('dispatched_at')
-            ->whereNotNull('last_error')
-            ->where('attempts', '>=', 5)
+            ->whereNull('broadcast_at')
             ->where('dispatched_at', '<', $orphanCutoff)
             ->count();
 
@@ -109,12 +114,13 @@ class MonitorOutboxStaleness extends Command
             ->orderBy('created_at')
             ->first(['id', 'event_type', 'created_at', 'attempts', 'last_error']);
 
-        // [H3] Oldest crash-claimed orphan — surfaced so ops can re-drive it
-        // manually (it cannot be reached by any automatic re-queue lane).
+        // [H3] Oldest crash-claimed orphan — surfaced so ops can re-drive it manually.
+        // [SYNC-P2-1 2026-08-04] Predicate MUST mirror $crashClaimedCount (broadcast_at IS
+        // NULL) — otherwise a first-attempt crash orphan (last_error NULL) trips the count
+        // but yields a null detail in the alert payload. Consistency = actionable page.
         $oldestOrphan = DB::table('domain_events')
             ->whereNotNull('dispatched_at')
-            ->whereNotNull('last_error')
-            ->where('attempts', '>=', 5)
+            ->whereNull('broadcast_at')
             ->where('dispatched_at', '<', $orphanCutoff)
             ->orderBy('dispatched_at')
             ->first(['id', 'event_type', 'dispatched_at', 'attempts', 'last_error']);

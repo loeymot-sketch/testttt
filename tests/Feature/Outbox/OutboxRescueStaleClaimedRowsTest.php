@@ -107,17 +107,70 @@ class OutboxRescueStaleClaimedRowsTest extends TestCase
     }
 
     /**
-     * Cap — `attempts>=5` rows are out of the rescue scope; they belong to
-     * the RetryFailed lane (hourly, scope `failed(5)`). Picking them here
-     * would step on RetryFailed's audit-write contract.
+     * [SYNC-P2-1 2026-08-04] Crash-claimed orphan past the OLD attempts<5 cap is now
+     * RECOVERED. The old cap rested on a false premise ("attempts>=5 belongs to
+     * RetryFailed"): RetryFailed is `pending()` = `whereNull(dispatched_at)`, so it can
+     * NEVER reach a still-claimed row. A crash-claimed row at attempts>=5 fell through
+     * EVERY lane = permanent orphan. The crash lane now keys on `broadcast_at IS NULL`
+     * (never delivered) and relaxes the cap to <20, so a crash (which sets no last_error
+     * and is not a persistent failure) self-heals. Job-level lockForUpdate dedup makes
+     * any race with a straggler harmless.
      */
-    public function test_rescue_skips_crash_claimed_row_past_attempts_cap(): void
+    public function test_rescue_now_recovers_crash_claimed_orphan_past_old_attempts_cap(): void
+    {
+        Bus::fake();
+
+        $event = $this->seedDomainEvent([
+            'dispatched_at' => now()->subMinutes(15),
+            'broadcast_at'  => null,
+            'attempts'      => 5,
+        ], createdMinutesAgo: 20);
+
+        $exit = Artisan::call('foodking:outbox:rescue');
+
+        $this->assertSame(0, $exit);
+        Bus::assertDispatched(DispatchDomainEventsJob::class, function (DispatchDomainEventsJob $job) use ($event) {
+            return $job->domainEventId === $event->id;
+        });
+
+        $event->refresh();
+        $this->assertNull($event->dispatched_at, 'Stuck claim must be released before re-dispatch.');
+    }
+
+    /**
+     * [SYNC-P2-1] Anti-infinite-loop bound: a crash-claimed orphan that keeps re-crashing
+     * stops auto-recovering at attempts>=20 (the monitor's crash-claimed dimension pages
+     * ops instead). Keeps the relaxed cap from spinning forever on a genuinely poisoned row.
+     */
+    public function test_rescue_gives_up_on_crash_claimed_orphan_past_hard_cap(): void
     {
         Bus::fake();
 
         $this->seedDomainEvent([
             'dispatched_at' => now()->subMinutes(15),
-            'attempts' => 5,
+            'broadcast_at'  => null,
+            'attempts'      => 20,
+        ], createdMinutesAgo: 30);
+
+        $exit = Artisan::call('foodking:outbox:rescue');
+
+        $this->assertSame(0, $exit);
+        Bus::assertNotDispatched(DispatchDomainEventsJob::class);
+    }
+
+    /**
+     * [SYNC-P2-1] A genuinely DELIVERED row (broadcast_at SET) is never re-driven, even if
+     * its claim timestamp is old — delivery is done, re-broadcasting would be a duplicate.
+     * This is the guard that stops the post-deploy mass re-broadcast of historical rows.
+     */
+    public function test_rescue_ignores_delivered_row(): void
+    {
+        Bus::fake();
+
+        $this->seedDomainEvent([
+            'dispatched_at' => now()->subMinutes(15),
+            'broadcast_at'  => now()->subMinutes(15),
+            'attempts'      => 3,
         ], createdMinutesAgo: 20);
 
         $exit = Artisan::call('foodking:outbox:rescue');

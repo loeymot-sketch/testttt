@@ -150,7 +150,12 @@ class DispatchDomainEventsJob implements ShouldQueue
 
             // [NEW-01] Phase 3a — success: keep dispatched_at (set during claim),
             // clear last_error if any previous attempt left one behind.
+            // [SYNC-P2-1 2026-08-04] Poser broadcast_at = LE marqueur de LIVRAISON RÉELLE (le
+            // broadcast Phase 2 vient de réussir). C'est LUI que rescue/monitor/prune doivent
+            // lire — pas dispatched_at (marqueur de CLAIM posé avant le broadcast). Un worker
+            // tué en Phase 2 laisse broadcast_at NULL → détecté + re-diffusé, jamais pruné-perdu.
             $domainEvent->forceFill([
+                'broadcast_at' => now(),
                 'last_error' => null,
             ])->save();
         } catch (Throwable $e) {

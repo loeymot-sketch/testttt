@@ -21,6 +21,7 @@ class DomainEvent extends Model
         'idempotency_key',
         'occurred_at',
         'dispatched_at',
+        'broadcast_at',
         'attempts',
         'last_error',
     ];
@@ -29,6 +30,7 @@ class DomainEvent extends Model
         'payload' => 'array',
         'occurred_at' => 'datetime',
         'dispatched_at' => 'datetime',
+        'broadcast_at' => 'datetime',
     ];
 
     public function scopePending(Builder $query): Builder

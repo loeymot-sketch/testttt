@@ -36,15 +36,24 @@ class OutboxRescueCommand extends Command
 
         $events = DomainEvent::query()
             ->where(function ($q) use ($pendingStaleCutoff, $crashRecoveryCutoff) {
+                // Lane A — PENDING : jamais claimé, vieux → (re)dispatcher. Plafond attempts<5.
                 $q->where(function ($pending) use ($pendingStaleCutoff) {
                     $pending->whereNull('dispatched_at')
-                        ->where('created_at', '<', $pendingStaleCutoff);
+                        ->where('created_at', '<', $pendingStaleCutoff)
+                        ->where('attempts', '<', 5);
+                // Lane B — CRASH-CLAIMED : claimé mais JAMAIS LIVRÉ (broadcast_at null) = worker
+                // tué en plein broadcast. [SYNC-P2-1 2026-08-04] Clé sur `broadcast_at IS NULL`
+                // (livraison réelle) et non plus juste `dispatched_at` : un crash ne pose PAS
+                // last_error (ce n'est pas un échec persistant, qui lui libère le claim en Phase 3b)
+                // → on le re-diffuse même AU-DELÀ de attempts<5 (borne 20 anti-boucle ; le monitor
+                // alerte en parallèle). Ferme l'orphelin ≥5-crashes que l'ancien plafond laissait perdu.
                 })->orWhere(function ($crashed) use ($crashRecoveryCutoff) {
                     $crashed->whereNotNull('dispatched_at')
-                        ->where('dispatched_at', '<', $crashRecoveryCutoff);
+                        ->whereNull('broadcast_at')
+                        ->where('dispatched_at', '<', $crashRecoveryCutoff)
+                        ->where('attempts', '<', 20);
                 });
             })
-            ->where('attempts', '<', 5)
             // [SEC MISSION-27 2026-07-31] Exclure les events POISON (contract_violation) : DispatchDomainEventsJob
             // les fail() DELIBEREMENT (non-retry-recoverable). Sans ce filtre, rescue+retry les re-dispatchent
             // jusqu'a attempts=5 => ~broadcasts perdus + lignes audit-chain NF525 inutiles. Miroir exact de
