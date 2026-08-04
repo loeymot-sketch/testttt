@@ -2836,6 +2836,23 @@ class OrderService
                         Auth::check() ? (int) Auth::id() : null,
                         'auto_prepare_on_paid (SYNC-WEB-KDS-02 encaissement online)',
                     );
+
+                    // [SYNC cross-surface P2 2026-08-04] Diffuser AUSSI OrderStatusChanged pour la
+                    // transition auto-prepare ACCEPT→PREPARING. Avant : seul OrderPaymentStatusChanged
+                    // (sans abonné client) était émis → KDS/OSS/tracker ne voyaient la carte cuisine
+                    // devenir active qu'au prochain POLL (5-60 s). OrderStatusChanged pousse l'outbox
+                    // (KDS/OSS) + le FCM cuisine « en préparation », comme toute transition PREPARING
+                    // via changeStatus (OrderService:2573). DispatchableAfterCommit → diffusé au commit
+                    // (fiscal déjà scellé). Best-effort, jamais bloquant (miroir du pattern existant).
+                    try {
+                        OrderStatusChanged::dispatch(
+                            $locked,
+                            \App\Enums\OrderStatus::ACCEPT,
+                            \App\Enums\OrderStatus::PREPARING
+                        );
+                    } catch (\Throwable $e) {
+                        Log::warning('[OrderService] auto-prepare OrderStatusChanged broadcast failed: '.$e->getMessage());
+                    }
                 }
 
                 \App\Models\ActionLog::create([

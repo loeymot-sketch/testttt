@@ -111,24 +111,33 @@ class WebNonCodOrderNotBoardReleasedTest extends TestCase
             'web takeaway COD : DOIT être board-released en cuisine.');
     }
 
-    /** (B) S1 : web TAKEAWAY non-COD (carte) NE doit PAS être board-released orpheline. */
+    /**
+     * (B) web TAKEAWAY non-COD (carte) UNPAID : depuis le garde [OWNER 2026-08-04 R1 SÉCU]
+     * (OnlineOrderController + OrderService centralisé, couvert par WebOrderInlineAcceptTest),
+     * l'accept caisse est REFUSÉ (422) tant que le paiement carte en ligne n'a pas abouti —
+     * protection anti-zombie (le client annule au 3DS ; sans ce garde, un ACCEPT+UNPAID
+     * « en préparation » invisible cuisine survivait). La commande reste donc PENDING+UNPAID,
+     * jamais board-released, jamais dans la file counter-collect.
+     * (Avant R1 l'accept réussissait sans board-release ; R1 durcit en bloquant l'accept lui-même
+     * — l'invariant « pas d'orpheline préparable-jamais-encaissable » est renforcé, pas affaibli.)
+     */
     public function test_web_takeaway_non_cod_is_not_board_released_orphan(): void
     {
         $op = $this->operator();
         $order = $this->webOrder(OrderType::TAKEAWAY, PaymentGateway::CARD);
 
-        $this->accept($op, $order)->assertStatus(200);
+        // [OWNER R1 SÉCU] Accepter une carte web NON PAYÉE est refusé (anti-zombie 3DS).
+        $this->accept($op, $order)->assertStatus(422);
 
         $order->refresh();
-        // Accept réussit (statut change) mais SANS flip paiement.
-        $this->assertSame(OrderStatus::ACCEPT, (int) $order->status,
-            'l\'accept doit réussir (le filet online reste fonctionnel).');
+        $this->assertSame(OrderStatus::PENDING, (int) $order->status,
+            'R1 : l\'accept d\'une carte web UNPAID est bloqué → la commande reste PENDING.');
         $this->assertSame(PaymentStatus::UNPAID, (int) $order->payment_status,
-            'web takeaway non-COD : PAS de flip PENDING_COUNTER (attend un paiement carte en ligne).');
+            'web takeaway non-COD : aucun flip paiement (attend le paiement carte en ligne).');
         $this->assertNull($order->pos_payment_method,
             'web takeaway non-COD : aucun marqueur COUNTER_DEFERRED.');
         $this->assertFalse(KitchenReleaseRule::orderIsReleasedForBoard($order),
-            'web takeaway non-COD : NE doit PAS être board-released (sinon orpheline préparée jamais encaissable).');
+            'web takeaway non-COD non payée : NE doit PAS être board-released (orpheline évitée).');
 
         // Et absente de la file counter-collect (non encaissable au comptoir).
         $pending = $this->actingAs($op, 'sanctum')->getJson('/api/admin/pos/counter-collect/pending');

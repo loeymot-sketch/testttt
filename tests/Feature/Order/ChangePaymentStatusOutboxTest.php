@@ -82,6 +82,61 @@ class ChangePaymentStatusOutboxTest extends TestCase
         $this->assertArrayHasKey('fiscal_sequence_no', $payload, 'fiscal_sequence_no must be present (may be null).');
     }
 
+    /**
+     * [SYNC cross-surface P2 2026-08-04] Une commande WEB en ACCEPT encaissée au comptoir
+     * (UNPAID→PAID) auto-promeut ACCEPT→PREPARING. Avant le heal, CE chemin (OrderService,
+     * 4e site d'intégration) ne diffusait QUE OrderPaymentStatusChanged (sans abonné client)
+     * → KDS/OSS ne voyaient la carte cuisine devenir active qu'au prochain POLL. On exige
+     * désormais la ligne outbox ORDER_STATUS_CHANGED (ACCEPT→PREPARING) = push temps-réel.
+     */
+    public function test_web_order_counter_paid_emits_order_status_changed_outbox_on_auto_prepare(): void
+    {
+        config(['pos.auto_prepare_on_paid' => true]);
+
+        $order = Order::factory()->create([
+            'user_id'            => $this->cashier->id,
+            'branch_id'          => $this->branch->id,
+            'order_type'         => OrderType::TAKEAWAY,
+            'source_surface'     => 'web',
+            'payment_method'     => \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+            'pos_payment_method' => null,
+            'payment_status'     => PaymentStatus::UNPAID,
+            'status'             => OrderStatus::ACCEPT,
+            'total'              => 23.90,
+            'fiscal_sequence_no' => null,
+        ]);
+
+        $this->actingAs($this->cashier, 'sanctum')
+            ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
+                'payment_status' => PaymentStatus::PAID,
+            ])
+            ->assertStatus(200);
+
+        // Auto-prepare a bien flippé le statut.
+        $this->assertSame(OrderStatus::PREPARING, (int) $order->fresh()->status, 'Web order counter-paid must auto-promote to PREPARING.');
+
+        // Le heal : la transition ACCEPT→PREPARING est diffusée (outbox → KDS/OSS/tracker).
+        $statusEvent = DomainEvent::query()
+            ->where('event_type', EventType::ORDER_STATUS_CHANGED)
+            ->where('aggregate_id', $order->id)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($statusEvent, 'Auto-prepare ACCEPT→PREPARING MUST persist an ORDER_STATUS_CHANGED outbox row (SYNC-P2 heal).');
+        $this->assertSame('OrderStatusChanged', $statusEvent->broadcast_as);
+        $this->assertSame(OrderStatus::ACCEPT, (int) $statusEvent->payload['old_status']);
+        $this->assertSame(OrderStatus::PREPARING, (int) $statusEvent->payload['new_status']);
+
+        // Non-régression : l'event de paiement existe toujours.
+        $this->assertNotNull(
+            DomainEvent::query()
+                ->where('event_type', EventType::ORDER_PAYMENT_STATUS_CHANGED)
+                ->where('aggregate_id', $order->id)
+                ->first(),
+            'The payment-status event must still be emitted alongside the new status event.'
+        );
+    }
+
     public function test_event_envelope_passes_assert_envelope_valid(): void
     {
         $order = Order::factory()->create([
