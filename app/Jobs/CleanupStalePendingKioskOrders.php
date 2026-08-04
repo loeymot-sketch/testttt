@@ -374,6 +374,33 @@ class CleanupStalePendingKioskOrders
             // purge (refundPoints no-op si pas de loyalty_code / déjà remboursé).
             app(\App\Services\LoyaltyService::class)->refundPoints($locked, 'kiosk');
 
+            // [P1-2 CUMUL 2026-08-04] refundPoints ne rend que les points DÉPENSÉS. Une commande
+            // borne atteignant PREPARED a AUSSI CUMULÉ des points (award au PREPARED). Purgée sans
+            // clawback, le client garde des points gagnés sur une vente inexistante (exploit « QR +
+            // faire préparer + partir sans payer »). On reprend les points GAGNÉS, miroir exact de
+            // ClawbackLoyaltyPointsOnRefund (idempotent : NOOP si déjà repris).
+            $awarded = (int) ($locked->loyalty_points_awarded ?? 0);
+            if ($awarded > 0) {
+                $loyaltyUser = null;
+                if (! empty($locked->loyalty_customer_code)) {
+                    $loyaltyUser = \App\Models\User::where('loyalty_code', $locked->loyalty_customer_code)->first();
+                }
+                if (! $loyaltyUser && ! empty($locked->user_id)) {
+                    $cand = \App\Models\User::find($locked->user_id);
+                    if ($cand && $cand->loyalty_code) {
+                        $loyaltyUser = $cand;
+                    }
+                }
+                if ($loyaltyUser) {
+                    app(\App\Services\LoyaltyService::class)->clawbackEarnedPoints(
+                        $loyaltyUser->id,
+                        $awarded,
+                        $locked->id,
+                        'Clawback fidélité — commande borne jamais payée purgée'
+                    );
+                }
+            }
+
             // Casse du marqueur counter-deferred → un encaissement tardif ne peut plus fiscaliser
             // + PAYER une ligne qu'on vient de purger (assertCounterDeferredOrder throw 422).
             if ((int) ($locked->pos_payment_method ?? 0) === PosPaymentMethod::COUNTER_DEFERRED) {

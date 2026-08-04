@@ -235,7 +235,47 @@ class CleanupStaleLoyaltyRefundTest extends TestCase
         );
     }
 
-    private function makeAbandonedKioskCounterOrder(
+    /**
+     * [P1-2 CUMUL 2026-08-04] Une commande borne JAMAIS PAYÉE qui a atteint PREPARED (l'award
+     * crédite dès PREPARED pour la borne) puis est purgée par le janitor doit voir ses points
+     * CUMULÉS repris — sinon le client garde des points gagnés sur une vente inexistante
+     * (« scanner QR + faire préparer + repartir sans payer »). refundPoints ne rend que les
+     * points DÉPENSÉS ; il fallait AUSSI clawbackEarnedPoints.
+     */
+    public function test_phantom_prepared_kiosk_order_claws_back_earned_points_on_purge(): void
+    {
+        Event::fake([SendOrderMail::class, SendOrderSms::class, SendOrderPush::class, OrderStatusChanged::class, OrderCanceled::class]);
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create([
+            'branch_id' => $branch->id, 'status' => Status::ACTIVE,
+            'loyalty_code' => 'FK-PHANTOM', 'loyalty_points' => 300, // 300 pts crédités par l'award au PREPARED
+        ]);
+
+        $order = FrontendOrder::withoutGlobalScopes()->create([
+            'order_serial_no' => 'PHANTOM-'.fake()->unique()->numerify('######'),
+            'user_id' => $customer->id, 'branch_id' => $branch->id,
+            'subtotal' => 30, 'discount' => 0, 'delivery_charge' => 0, 'total_tax' => 0, 'total' => 30,
+            'order_type' => OrderType::KIOSK, 'order_datetime' => now()->subMinutes(240), 'preparation_time' => 15,
+            'is_advance_order' => 0, 'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'payment_status' => PaymentStatus::PENDING_COUNTER, 'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+            'status' => OrderStatus::PREPARED, 'source' => 10, 'source_surface' => 'kiosk',
+            'fiscal_sequence_no' => null, 'loyalty_customer_code' => 'FK-PHANTOM',
+            'loyalty_points_awarded' => 300, // points GAGNÉS sur cette commande jamais payée
+            'created_at' => now()->subMinutes(240), 'updated_at' => now()->subMinutes(240),
+        ]);
+        LoyaltyTransaction::create([
+            'user_id' => $customer->id, 'loyalty_code' => 'FK-PHANTOM', 'order_id' => $order->id,
+            'type' => 'earn', 'points' => 300, 'balance_after' => 300, 'source_surface' => 'kiosk', 'description' => 'earn au PREPARED',
+        ]);
+
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        $this->assertNotNull($order->fresh()->deleted_at ?? FrontendOrder::withTrashed()->find($order->id)->deleted_at, 'fantôme purgé');
+        $this->assertSame(0, (int) $customer->fresh()->loyalty_points, 'points cumulés repris (0), la maison ne paie pas une vente inexistante');
+        $this->assertSame(1, LoyaltyTransaction::where('order_id', $order->id)->where('type', 'manual_deduct')->count());
+    }
+
+        private function makeAbandonedKioskCounterOrder(
         int $branchId,
         int $userId,
         Carbon $createdAt,
