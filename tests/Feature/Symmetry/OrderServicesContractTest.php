@@ -221,12 +221,17 @@ class OrderServicesContractTest extends TestCase
     }
 
     /**
-     * [TERRAIN-HEAL 2026-07-16 · FRONT-CANCEL-RACE] Le self-cancel client (path lockForUpdate)
-     * doit rembourser EXACTEMENT une fois. Prouve que la branche transaction-wrappée fonctionne
-     * end-to-end (cashBack + refundPoints appelés 1×, status CANCELED). La sérialisation
-     * lockForUpdate + l'early-return idempotent empêchent le double-remboursement en cas de race.
+     * [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande DÉJÀ PAYÉE.
+     * Le remboursement d'un paiement carte en ligne (Mollie) ne peut PAS partir d'un self-cancel :
+     * `cashBack` est conditionné à la relation `transaction` (hasOne TOUJOURS vide pour Mollie,
+     * qui n'écrit que la colonne `transaction_id`) → annuler = argent perdu. Le refus 422 force le
+     * remboursement à passer par le comptoir/ops (dashboard Mollie, RefundBypassTwinRoutesGuardTest).
+     *
+     * Remplace l'ancien contrat « refunds exactly once » (pré-P1-6, TERRAIN-HEAL 2026-07-16) :
+     * le chemin self-cancel-of-paid n'existe plus → AUCUN remboursement ne part (donc ni simple,
+     * ni double) et la commande reste NON annulée.
      */
-    public function test_fos_self_cancel_refunds_exactly_once(): void
+    public function test_fos_self_cancel_of_paid_order_is_refused_no_refund(): void
     {
         $branch = Branch::factory()->create();
         $kioskUser = User::factory()->create(['branch_id' => $branch->id]);
@@ -238,29 +243,32 @@ class OrderServicesContractTest extends TestCase
             'order_type' => OrderType::KIOSK,
             'payment_method' => PaymentGateway::CARD,
             'payment_status' => PaymentStatus::PAID,
-            'status' => OrderStatus::PENDING, // < PREPARING → annulable
+            'status' => OrderStatus::PENDING,
             'source_surface' => 'kiosk',
             'total' => 50.00,
             'subtotal' => 50.00,
         ]);
+        // Même AVEC une transaction présente, P1-6 bloque AVANT le chemin de remboursement :
+        // la garde teste payment_status===PAID, pas la présence de la relation transaction.
         \App\Models\Transaction::create([
             'order_id' => $order->id, 'transaction_no' => 'FK-CANCEL-RACE', 'amount' => 50.00,
             'payment_method' => 'credit', 'sign' => '+', 'type' => 'payment',
         ]);
 
         $payment = Mockery::mock(PaymentService::class);
-        $payment->shouldReceive('cashBack')->once(); // EXACTEMENT une fois
+        $payment->shouldReceive('cashBack')->never(); // P1-6 : aucun remboursement via self-cancel
         $this->app->instance(PaymentService::class, $payment);
         $loyalty = Mockery::mock(LoyaltyService::class);
-        $loyalty->shouldReceive('refundPoints')->once();
+        $loyalty->shouldReceive('refundPoints')->never();
         $this->app->instance(LoyaltyService::class, $loyalty);
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
         $this->withToken($token)->postJson('/api/frontend/order/change-status/'.$order->id, [
             'status' => OrderStatus::CANCELED, 'reason' => 'customer_request',
-        ])->assertSuccessful();
+        ])->assertStatus(422);
 
-        $this->assertSame(OrderStatus::CANCELED, (int) Order::withoutGlobalScopes()->findOrFail($order->id)->status);
+        // La commande reste PENDING (non annulée) : l'argent reste attribué, remboursement = geste comptoir.
+        $this->assertSame(OrderStatus::PENDING, (int) Order::withoutGlobalScopes()->findOrFail($order->id)->status);
     }
 
     public function test_fos_deferred_payment_confirm_golden_response_is_idempotent(): void
