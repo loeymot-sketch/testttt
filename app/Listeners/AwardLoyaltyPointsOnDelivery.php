@@ -28,9 +28,12 @@ class AwardLoyaltyPointsOnDelivery
     {
         $order = $event->order;
 
-        // [AUDIT-P50-BUG10] Never award points for cancelled orders (edge case: status change event after cancel)
+        // [AUDIT-P50-BUG10 · P1 RED-CUMUL 2026-08-04] Never award points for a TERMINAL order.
+        // Étendu CANCELED → [CANCELED, REJECTED, RETURNED] : un event DELIVERED différé (bump
+        // cuisine dispatché après-commit) arrivant APRÈS un remboursement (RETURNED) ou un rejet
+        // (REJECTED) créditait quand même 300 pts sur une commande remboursée, clawback déjà passé.
         $currentStatus = (int) ($order->status ?? $event->newStatus ?? -1);
-        if ($currentStatus === OrderStatus::CANCELED) {
+        if (in_array($currentStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
             return;
         }
 
@@ -52,7 +55,7 @@ class AwardLoyaltyPointsOnDelivery
         $updated = DB::table('orders')
             ->where('id', $order->id)
             ->whereNull('loyalty_points_awarded')
-            ->where('status', '!=', OrderStatus::CANCELED)
+            ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
             ->update(['loyalty_points_awarded' => -1]);
 
         if ($updated === 0) {

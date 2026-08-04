@@ -8,6 +8,7 @@ use Exception;
 use Carbon\Carbon;
 use App\Models\Coupon;
 use App\Enums\DiscountType;
+use App\Enums\OrderStatus;
 use App\Models\OrderCoupon;
 use App\Libraries\AppLibrary;
 use Illuminate\Support\Facades\DB;
@@ -436,12 +437,23 @@ class CouponService
             throw new Exception(trans('all.message.coupon_date_expired'), 422);
         }
 
+        // [P1-D SÉCU 2026-08-04] Une commande ANNULÉE (paiement carte échoué/abandonné →
+        // auto-cancel webhook) NE DOIT PAS consommer le quota : la ligne order_coupons est
+        // posée à la création, avant paiement. Sans ce filtre, une tentative abandonnée brûlait
+        // le coupon 1-usage (client bloqué au 422) et une campagne plafonnée pouvait être épuisée
+        // par N paiements abandonnés. On ne compte QUE les commandes non-terminales-annulées.
+        $liveOrderCoupon = static function ($q) {
+            $q->whereHas('order', function ($o) {
+                $o->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+            });
+        };
+
         $limitPerUser = (int) ($coupon->limit_per_user ?? 0);
         if ($limitPerUser > 0) {
             $orderedCouponCount = OrderCoupon::where([
                 'user_id' => $userId,
                 'coupon_id' => $coupon->id,
-            ])->count();
+            ])->where($liveOrderCoupon)->count();
 
             if ($orderedCouponCount >= $limitPerUser) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
@@ -454,7 +466,7 @@ class CouponService
         // source-of-truth as limit_per_user above (single-box V1: same non-atomic semantics).
         $maxUsesGlobal = (int) ($coupon->max_uses_global ?? 0);
         if ($maxUsesGlobal > 0) {
-            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->count();
+            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->where($liveOrderCoupon)->count();
             if ($globalUsed >= $maxUsesGlobal) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
             }

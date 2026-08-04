@@ -18,4 +18,13 @@ class OrderCoupon extends Model
         'user_id'   => 'integer',
         'discount'  => 'decimal:6',
     ];
+
+    /**
+     * [P1-D 2026-08-04] La commande porteuse — sert à exclure les commandes ANNULÉES du
+     * comptage d'usage coupon (une tentative abandonnée ne doit pas brûler le coupon).
+     */
+    public function order(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'order_id');
+    }
 }

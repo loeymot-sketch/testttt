@@ -176,8 +176,12 @@ class LoyaltyService
         }
 
         DB::transaction(function () use ($userId, $amount, $orderId, $reason) {
-            $query = User::where('id', $userId)
-                ->where('status', \App\Enums\Status::ACTIVE);
+            // [P0 RED-CUMUL 2026-08-04] AUCUN filtre de statut — miroir EXACT du heal 08-01 sur
+            // refundPointsToOwner. L'award ne regarde PAS status (AwardLoyaltyPointsOnDelivery:66)
+            // → un compte legacy (status=1) ou désactivé (status=10) gagnait des points ; les
+            // filtrer ICI les laissait AU CLIENT au remboursement (« la maison paie »). On
+            // identifie par user_id seul, comme la fonction jumelle de remboursement de rachat.
+            $query = User::where('id', $userId);
             if (DB::connection()->getDriverName() !== 'sqlite') {
                 $query->lockForUpdate();
             }
