@@ -64,7 +64,9 @@ class PruneOutboxCommand extends Command
                 // [SYNC-P2-1 2026-08-04] Clé sur `broadcast_at` (LIVRAISON réelle) et NON
                 // `dispatched_at` (CLAIM) : sinon un orphelin claimé-mais-jamais-livré (worker
                 // tué en plein broadcast, broadcast_at null) était SUPPRIMÉ à 90j comme « livré »
-                // → perte d'événement définitive. On ne prune que ce qui a réellement été diffusé.
+                // → perte d'événement définitive. NB : cette lane A ne prune que ce qui a réellement
+                // été diffusé ; les échecs TERMINAUX non-livrés sont gérés séparément par (B)/(C)
+                // (attempts>=6 / contract_violation) après 90j de paging = DLQ cleanup voulu.
                 $q->where(function ($inner) use ($cutoff) {
                     $inner->whereNotNull('broadcast_at')
                         ->where('broadcast_at', '<', $cutoff);

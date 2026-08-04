@@ -34,6 +34,14 @@ use Illuminate\Support\Facades\Schema;
  * l'historique). Les lignes `dispatched_at` posé + `last_error` NON vide restent broadcast_at
  * NULL = vraies orphelines claim-sans-livraison → récupérées proprement par la nouvelle lane
  * rescue post-deploy (peu nombreuses, c'est l'intention).
+ *
+ * ── FENÊTRE DE DÉPLOIEMENT (P2 audit RED) ───────────────────────────────────────────────────
+ * Sur MySQL le DDL (ADD COLUMN) AUTO-COMMIT avant l'UPDATE de backfill → il existe une fenêtre
+ * SOUS-SECONDE où les lignes livrées ont broadcast_at NULL. Si `foodking:outbox:monitor` (chaque
+ * minute) ou `:rescue` tombe pile dans cette fenêtre il les lit comme orphelines (fausse alarme /
+ * re-broadcast transitoire). Auto-guéri dès la fin du backfill, négligeable sur mono-poste V1
+ * (table minuscule, backfill ~ms). DÉPLOIEMENT PROPRE : lancer `php artisan migrate` AVANT de
+ * ré-armer le scheduler, ou tolérer le tick transitoire (il se résorbe au tick suivant).
  */
 return new class extends Migration
 {
