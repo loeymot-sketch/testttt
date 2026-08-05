@@ -142,7 +142,11 @@ class OnlineOrderController extends AdminController
         // → zombie ACCEPT+UNPAID « en préparation » invisible en cuisine (le trap owner).
         // Une carte web PAYÉE est déjà promue en cuisine par le webhook — elle ne passe pas ici.
         if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
-            && strtolower((string) $order->source_surface) === 'web'
+            // [PROCUREUR cycle 7 — 2026-08-05 · P1 F-E] Jumelle de la garde R1 d'OrderService :
+            // elle aussi ne connaissait que 'web' et laissait passer une commande LIVRAISON
+            // carte impayée (surface 'delivery'). Les deux routes doivent porter la MÊME garde,
+            // sinon la fermer d'un côté ne fait que déplacer le trou.
+            && in_array(strtolower((string) $order->source_surface), ['web', 'delivery'], true)
             && (int) $order->payment_method === \App\Enums\PaymentGateway::CARD
             && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID) {
             return response([

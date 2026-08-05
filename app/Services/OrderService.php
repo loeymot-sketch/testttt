@@ -2238,8 +2238,15 @@ class OrderService
             // Le garde du contrôleur online-order était contournable par la route sœur pos-order ;
             // ici il couvre TOUTES les routes (pos/online/table/futures). Carte web PAYÉE = déjà
             // promue par le webhook → ne passe pas ce garde.
+            // [PROCUREUR cycle 7 — 2026-08-05 · P1 F-E] Cette garde SÉCU ne connaissait que la
+            // surface 'web' : une commande LIVRAISON (surface forcée à 'delivery' par
+            // FrontendOrder::creating) y échappait entièrement. A/B exécuté par l'agent :
+            // surface 'web' → BLOQUÉE 422 ; surface 'delivery' → ACCEPTÉE, laissant un zombie
+            // ACCEPT + UNPAID. L'équivalence web≡delivery introduite ailleurs n'avait pas été
+            // propagée ici — le motif dominant de cette campagne : un correctif appliqué à la
+            // surface regardée, pas à ses jumelles. Latent (livraison désactivée), P0 à son activation.
             if ($targetStatus === \App\Enums\OrderStatus::ACCEPT
-                && strtolower((string) $order->source_surface) === 'web'
+                && in_array(strtolower((string) $order->source_surface), ['web', 'delivery'], true)
                 && (int) $order->payment_method === \App\Enums\PaymentGateway::CARD
                 && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID) {
                 throw new Exception('Paiement en ligne en cours : cette commande carte sera acceptée automatiquement une fois payée.', 422);

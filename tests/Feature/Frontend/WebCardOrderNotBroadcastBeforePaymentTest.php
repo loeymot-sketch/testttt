@@ -113,6 +113,31 @@ class WebCardOrderNotBroadcastBeforePaymentTest extends TestCase
      * du janitor : payée, jamais en cuisine. Latent tant que la livraison est désactivée,
      * P0 le jour de son activation.
      */
+    /**
+     * [PROCUREUR cycle 7 · F-D] Les deux gardes doivent couvrir EXACTEMENT le même ensemble.
+     *
+     * Au cycle 6 je les avais « alignées » en excluant les `order_type` hors {TAKEAWAY,
+     * DELIVERY} des DEUX côtés : une commande carte web d'un autre type était alors retenue à
+     * la création et jamais libérée au paiement — reproduit en base, PAYÉE mais restée PENDING
+     * avec `fiscal_sequence_no = NULL`, donc HORS de la chaîne fiscale NF525, et son ticket
+     * cuisine sortait avant paiement. Aucune des deux gardes ne doit filtrer par `order_type`.
+     */
+    public function test_neither_guard_filters_by_order_type(): void
+    {
+        $source = file_get_contents(app_path('Services/FrontendOrderService.php'));
+
+        $this->assertStringNotContainsString(
+            "in_array((int) (\$validatedRequest['order_type'] ?? 0), [OrderType::TAKEAWAY, OrderType::DELIVERY], true)",
+            $source,
+            'La garde de CRÉATION ne doit pas filtrer par order_type : elle retiendrait des ventes que le gate de libération ne libère jamais.'
+        );
+        $this->assertStringNotContainsString(
+            "&& in_array((int) \$frontendOrder->order_type, [OrderType::TAKEAWAY, OrderType::DELIVERY], true);",
+            $source,
+            'Le gate de LIBÉRATION ne doit pas filtrer par order_type : il laisserait des ventes payées hors chaîne fiscale.'
+        );
+    }
+
     public function test_delivery_surface_is_accepted_by_both_paid_path_guards(): void
     {
         $source = file_get_contents(app_path('Services/FrontendOrderService.php'));

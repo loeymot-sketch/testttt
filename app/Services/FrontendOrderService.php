@@ -274,9 +274,20 @@ class FrontendOrderService
                 // PAYÉE (`payment_status=5`), restée `status=1`, `fiscal_sequence_no=NULL`,
                 // jamais en cuisine et HORS de la chaîne fiscale. Régression de `87bbaf6ab`.
                 // Les deux gardes portent désormais exactement le même périmètre.
+                // [PROCUREUR cycle 7 — 2026-08-05 · P1 F-D] J'ai « aligné » les deux gardes au
+                // cycle 6 en EXCLUANT les autres `order_type` des DEUX côtés — c'est l'inverse
+                // qu'il fallait faire. Résultat reproduit en base : `order_type=20` + carte →
+                // PAYÉE (`payment_status=5`), restée `status=1`, `fiscal_sequence_no=NULL`,
+                // ET le ticket cuisine sortait à la création, avant tout paiement. Soit
+                // exactement le symptôme que le commentaire de ce correctif décrivait comme
+                // fermé — en pire, puisque j'y avais ajouté la diffusion. Vente hors chaîne
+                // fiscale NF525 et non rattrapable (`retry-alloc` exige `fiscal_alloc_error_at`,
+                // resté NULL). `OrderRequest` valide `order_type` en `['required','numeric']`,
+                // sans liste blanche : n'importe quel jeton client web pouvait l'atteindre.
+                // On retient donc TOUTE intention carte web, quel que soit le type, et le gate
+                // de libération accepte symétriquement tous les types (voir ~ligne 1428).
                 $isWebCardIntentAtCreate = strtolower((string) ($validatedRequest['source_surface'] ?? ($isKioskMachineOrder ? 'kiosk' : 'web'))) === 'web'
-                    && (int) ($validatedRequest['payment_method'] ?? 0) === (int) PaymentGateway::CARD
-                    && in_array((int) ($validatedRequest['order_type'] ?? 0), [OrderType::TAKEAWAY, OrderType::DELIVERY], true);
+                    && (int) ($validatedRequest['payment_method'] ?? 0) === (int) PaymentGateway::CARD;
 
                 $shouldDispatchNewOrderSignals = (!$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod)
                     && !$isWebCardIntentAtCreate;
@@ -1425,9 +1436,13 @@ class FrontendOrderService
         // PAYÉE, JAMAIS EN CUISINE, JAMAIS ANNULÉE. Latent aujourd'hui (le drapeau
         // `feature-delivery` est absent, la livraison est renvoyée vers Uber Eats), mais P0 le
         // jour de l'activation — et c'est une régression de mon propre correctif `87bbaf6ab`.
+        // [PROCUREUR cycle 7 — 2026-08-05 · P1 F-D] La restriction d'`order_type` est RETIRÉE :
+        // c'est elle qui, combinée à la garde de création, laissait une vente carte web PAYÉE
+        // sans jamais être libérée ni scellée fiscalement. Les deux gardes couvrent désormais
+        // exactement le même ensemble — toute intention carte passée depuis le site — ce qui
+        // est la seule façon d'empêcher qu'une moitié retienne ce que l'autre ne libère pas.
         $isWebCardOrder = in_array(strtolower((string) $frontendOrder->source_surface), ['web', 'delivery'], true)
-            && (int) $frontendOrder->payment_method === (int) PaymentGateway::CARD
-            && in_array((int) $frontendOrder->order_type, [OrderType::TAKEAWAY, OrderType::DELIVERY], true);
+            && (int) $frontendOrder->payment_method === (int) PaymentGateway::CARD;
         $isKioskOrderType = $isKioskOrderType || $isWebCardOrder;
         $isDeferredPaymentMethod = in_array(
             (int) $frontendOrder->payment_method,
