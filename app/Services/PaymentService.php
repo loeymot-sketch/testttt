@@ -231,8 +231,22 @@ class PaymentService
         return $transaction;
     }
 
-    public function confirmCounterPayment(Order $order, int $mode, ?float $received = null, ?string $note = null): Order
+    /**
+     * @param  list<array{mode:int,amount:float,tendered?:float|null,terminal_id?:int|null,note?:string|null}>|null  $breakdown
+     *         [GOAL-8AXES V6 T-3.3 2026-08-05] Multi-tender à l'encaissement d'une
+     *         commande déjà passée (borne/web/téléphone). Les tranches sont validées
+     *         + persistées par SplitPaymentService (somme au centime, TPE par tranche
+     *         CARD, cash-trail) DANS la même transaction que le flip PAID — un split
+     *         invalide ne laisse AUCUN demi-état. `received`/note single-tender sont
+     *         neutralisés (portés par tranche).
+     */
+    public function confirmCounterPayment(Order $order, int $mode, ?float $received = null, ?string $note = null, ?array $breakdown = null): Order
     {
+        $breakdown = (is_array($breakdown) && $breakdown !== []) ? array_values($breakdown) : null;
+        if ($breakdown !== null) {
+            $received = null;
+            $note = 'multi-tender';
+        }
         // [BYPASS-P2] Audit-log structuré si payment.bypass.enabled — invariants
         // (sealing fiscal, Outbox OrderPaidAtCounter, audit log) restent intacts.
         \App\Services\Bypass\BypassAuditLogger::paymentBypassed([
@@ -261,7 +275,7 @@ class PaymentService
         // l'ACCEPT→PREPARING que si la transition a réellement eu lieu DANS cet appel.
         $prePaidStatus = null;
 
-        DB::transaction(function () use ($order, $mode, $received, $note, &$paid, &$prePaidStatus): void {
+        DB::transaction(function () use ($order, $mode, $received, $note, $breakdown, &$paid, &$prePaidStatus): void {
             $locked = Order::query()
                 ->whereKey($order->id)
                 ->lockForUpdate()
@@ -454,6 +468,15 @@ class PaymentService
                     'sign' => '+',
                 ]
             );
+
+            // [GOAL-8AXES V6 T-3.3.1] Tranches multi-tender persistées DANS la même
+            // transaction que le flip PAID : validateBreakdown (somme au centime,
+            // modes, TPE par tranche) jette → rollback TOTAL, la commande reste
+            // PENDING_COUNTER, zéro tranche orpheline. Réutilise le service du
+            // split caisse (SplitPaymentEndToEndTest) — aucune logique dupliquée.
+            if ($breakdown !== null) {
+                app(\App\Services\Payments\SplitPaymentService::class)->persistTranches($locked, $breakdown);
+            }
 
             app(AuditLogService::class)->write([
                 'branch_id' => (int) $locked->branch_id,

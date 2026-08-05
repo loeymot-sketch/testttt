@@ -158,7 +158,15 @@ class PosOrderRequest extends FormRequest
             'source' => ['required', 'numeric'],
             'items' => ['required', 'json', new ValidJsonOrder],
             'pos_payment_method' => ['required', 'numeric'],
-            'pos_payment_note' => $hasBreakdown ? ['nullable', 'string', 'max:200'] : (request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string']),
+            // [GOAL-8AXES V6 T-3.2.1 2026-08-05 owner] CARD = enregistrement comptable
+            // DÉCLARATIF (l'owner encaisse manuellement sur son TPE physique). Les
+            // 4 derniers chiffres deviennent OPTIONNELS : l'exigence 'required'
+            // faisait échouer chaque vente CB en 422 silencieux (le champ UI frozen
+            // n'a pas de v-model et canConfirmCard ne le vérifie pas — repro Vague 2)
+            // et le chemin multi-tender ne l'exigeait déjà pas. Si une note est
+            // fournie pour CARD, elle reste 4 chiffres exacts.
+            // Sentinelle : tests/Feature/Pos/PosCardDeclarativeNoNoteTest.php
+            'pos_payment_note' => $hasBreakdown ? ['nullable', 'string', 'max:200'] : (request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['nullable', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string']),
             'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric', 'min:0'],
             // [P1 V1 Cloud-Prep insights 2026-05-18] Single-tender CARD path
             // also requires a `terminal_id` so the Z-report TPE breakdown can

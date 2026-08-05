@@ -97,8 +97,29 @@
         <!-- [MONTANT-CARTE 2026-07-01] Saisie du montant : ESPÈCES (montant reçu + rendu) ET
              CARTE (montant carte tapé manuellement, enregistré pour la compta : X carte / X espèces).
              Le TPE est manuel — la caisse ne fait qu'enregistrer le montant en détail. -->
+        <!-- [GOAL-8AXES V6 T-3.3.2] Paiement MIXTE : mode de la tranche 1 (montant
+             saisi via le champ/numpad partagés ci-dessous) + RESTE auto en tranche 2. -->
+        <div v-if="selectedMode === 'MIXTE'" class="cc-mixte-section" data-testid="pos-counter-collect-mixte-block">
+          <div class="cc-mixte-row">
+            <span class="cc-mixte-label">{{ $t('label.mixte_tranche1') || '1ʳᵉ partie' }}</span>
+            <div class="cc-mixte-toggle" role="radiogroup">
+              <button type="button" :class="['cc-mixte-mode', { 'is-active': mixteFirstMode === 'CARD' }]"
+                data-testid="cc-mixte-first-card" @click="setMixteModes('CARD')">💳 Carte</button>
+              <button type="button" :class="['cc-mixte-mode', { 'is-active': mixteFirstMode === 'CASH' }]"
+                data-testid="cc-mixte-first-cash" @click="setMixteModes('CASH')">💶 Espèces</button>
+            </div>
+          </div>
+          <div class="cc-mixte-row cc-mixte-remainder" data-testid="cc-mixte-remainder">
+            <span class="cc-mixte-label">{{ $t('label.mixte_reste') || 'Reste' }} ({{ mixteSecondMode === 'CARD' ? '💳 Carte' : '💶 Espèces' }})</span>
+            <strong class="cc-mixte-amount">{{ formatPrice(mixteRemainder) }}</strong>
+          </div>
+          <p v-if="(mixteFirstMode === 'CARD' || mixteSecondMode === 'CARD') && !terminalId" class="cc-mixte-warn">
+            {{ $t('label.no_terminal_configured') || 'Aucun TPE actif — ajoutez-en un dans Paramètres → Terminaux.' }}
+          </p>
+        </div>
+
         <div
-          v-if="selectedMode === 'CASH' || selectedMode === 'CARD'"
+          v-if="selectedMode === 'CASH' || selectedMode === 'CARD' || selectedMode === 'MIXTE'"
           class="cc-cash-section"
           data-testid="pos-counter-collect-cash-block"
         >
@@ -286,7 +307,17 @@ export default {
         { id: 'CARD',   icon: '💳', labelKey: 'label.encaisser_mode_card',   subKey: 'label.encaisser_mode_card_sub'   },
         { id: 'MOBILE', icon: '📱', labelKey: 'label.encaisser_mode_mobile', subKey: null },
         { id: 'TICKET', icon: '🎟️', labelKey: 'label.encaisser_mode_ticket', subKey: null },
+        // [GOAL-8AXES V6 T-3.3.2 2026-08-05 owner] Paiement MIXTE à l'encaissement :
+        // « je tape 12 € en carte, il me reste 8 €, je choisis espèces pour le reste ».
+        { id: 'MIXTE',  icon: '💳💶', labelKey: 'label.encaisser_mode_mixte', subKey: 'label.encaisser_mode_mixte_sub' },
       ],
+      // [T-3.3.2] Tranche 1 : mode + montant saisi ; tranche 2 = RESTE auto.
+      mixteFirstMode: 'CARD',
+      mixteSecondMode: 'CASH',
+      // TPE actif (chargé au 1er passage en MIXTE/CARD — requis par tranche CARD,
+      // F-SPLIT-PHANTOM-CARD-001).
+      terminalId: null,
+      terminalsLoaded: false,
     };
   },
   computed: {
@@ -324,10 +355,37 @@ export default {
       if (this.selectedMode === 'CASH' || this.selectedMode === 'CARD') {
         return this.cashReceivedNumber >= this.orderTotal && this.orderTotal > 0;
       }
+      // [T-3.3.2] MIXTE : tranche 1 strictement entre 0 et le total (exclu) —
+      // le RESTE (tranche 2) est calculé, jamais saisi. TPE requis si une
+      // tranche est CARD.
+      if (this.selectedMode === 'MIXTE') {
+        return this.orderTotal > 0
+          && this.mixteFirstAmount > 0
+          && this.mixteFirstAmount < this.orderTotal
+          && this.mixteFirstMode !== this.mixteSecondMode
+          && (!(this.mixteFirstMode === 'CARD' || this.mixteSecondMode === 'CARD') || !!this.terminalId);
+      }
       // MOBILE / TICKET : validation directe (backend accepte received null).
       return this.orderTotal > 0;
     },
+    // [T-3.3.2] Montant de la tranche 1 (réutilise le champ + numpad existants).
+    mixteFirstAmount() {
+      const raw = String(this.cashReceivedRaw || '').replace(',', '.');
+      const v = parseFloat(raw);
+      return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
+    },
+    // Le RESTE, affiché en direct (demande owner : « il m'affiche combien il reste »).
+    mixteRemainder() {
+      const r = Math.round((this.orderTotal - this.mixteFirstAmount) * 100) / 100;
+      return r > 0 ? r : 0;
+    },
     amountLabel() {
+      if (this.selectedMode === 'MIXTE') {
+        return (this.mixteFirstMode === 'CARD' ? '💳 ' : '💶 ')
+          + (this.$t('label.mixte_amount_label') !== 'label.mixte_amount_label'
+            ? this.$t('label.mixte_amount_label')
+            : 'Montant de la 1ʳᵉ partie');
+      }
       if (this.selectedMode === 'CARD') {
         const t = this.$t('label.card_amount');
         return (t && t !== 'label.card_amount') ? t : 'Montant carte';
@@ -405,6 +463,34 @@ export default {
         // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
         this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
         this.cashFieldPristine = true;
+      }
+      // [T-3.3.2] MIXTE : le champ saisit la TRANCHE 1 (pas le total) → repartir
+      // vide, et charger le TPE actif (requis par tranche CARD).
+      if (modeId === 'MIXTE') {
+        this.cashReceivedRaw = '';
+        this.cashFieldPristine = true;
+        this.loadActiveTerminal();
+      }
+    },
+    // [T-3.3.2] Choisir le mode de la tranche 1 bascule automatiquement le RESTE
+    // sur l'autre mode (cas owner : carte d'abord, le reste en espèces — ou l'inverse).
+    setMixteModes(firstMode) {
+      this.mixteFirstMode = firstMode;
+      this.mixteSecondMode = firstMode === 'CARD' ? 'CASH' : 'CARD';
+    },
+    async loadActiveTerminal() {
+      if (this.terminalsLoaded) return;
+      this.terminalsLoaded = true;
+      try {
+        // Mêmes params que PaymentComponent:513 (status ACTIF = 1 pour cet
+        // endpoint, réponse paginée OU liste) — 1er TPE ACTIF de la branche.
+        const response = await axios.get('admin/payment-terminals', { params: { status: 1, per_page: 50 } });
+        const rows = response?.data?.data;
+        const list = Array.isArray(rows) ? rows : (Array.isArray(rows?.data) ? rows.data : []);
+        const active = list.filter((t) => t && (t.status === 1 || t.status === '1'));
+        this.terminalId = active.length > 0 ? Number(active[0].id) : null;
+      } catch (e) {
+        this.terminalId = null;
       }
     },
     onReceivedInput(e) {
@@ -531,7 +617,29 @@ export default {
         MOBILE: posPaymentMethodEnum.MOBILE_BANKING,
         TICKET: posPaymentMethodEnum.TICKET_RESTAURANT,
       };
-      const modeInt = modeMap[this.selectedMode];
+      // [T-3.3.2] MIXTE : mode dominant = celui de la plus grosse tranche
+      // (aligné sur le contrat du split caisse — PosOrderRequest « mode DOMINANT »).
+      const isMixte = this.selectedMode === 'MIXTE';
+      let breakdown = null;
+      let modeInt;
+      if (isMixte) {
+        const t1 = {
+          mode: modeMap[this.mixteFirstMode],
+          amount: this.mixteFirstAmount,
+        };
+        const t2 = {
+          mode: modeMap[this.mixteSecondMode],
+          amount: this.mixteRemainder,
+        };
+        for (const t of [t1, t2]) {
+          if (t.mode === posPaymentMethodEnum.CARD) t.terminal_id = this.terminalId;
+          if (t.mode === posPaymentMethodEnum.CASH) t.tendered = t.amount;
+        }
+        breakdown = [t1, t2];
+        modeInt = this.mixteFirstAmount >= this.mixteRemainder ? t1.mode : t2.mode;
+      } else {
+        modeInt = modeMap[this.selectedMode];
+      }
       if (!modeInt) return;
       const orderId = this.order.id;
       const total = this.orderTotal;
@@ -543,15 +651,23 @@ export default {
 
       this.submitting = true;
       try {
-        const idempotencyKey = this.buildIdempotencyKey(orderId, modeInt);
+        // [T-3.3.4] La clé d'idempotence porte le CONTENU du breakdown : deux
+        // splits différents sur la même commande dans la même minute ne doivent
+        // ni se rejouer l'un l'autre, ni être confondus avec un single-tender.
+        const idempotencyKey = isMixte
+          ? `${this.buildIdempotencyKey(orderId, modeInt)}-mx-${breakdown.map((t) => `${t.mode}x${t.amount}`).join('-')}`
+          : this.buildIdempotencyKey(orderId, modeInt);
         const resp = await axios.post(
           `admin/pos/counter-collect/${orderId}/confirm`,
           {
             mode: modeInt,
-            received,
-            note: this.selectedMode === 'CASH'
-              ? 'Encaissement borne au comptoir (SSOT modal)'
-              : `Encaissement borne ${this.selectedMode} (SSOT modal)`,
+            received: isMixte ? null : received,
+            note: isMixte
+              ? null
+              : (this.selectedMode === 'CASH'
+                ? 'Encaissement borne au comptoir (SSOT modal)'
+                : `Encaissement borne ${this.selectedMode} (SSOT modal)`),
+            ...(isMixte ? { payment_breakdown: breakdown } : {}),
           },
           {
             headers: { 'X-Idempotency-Key': idempotencyKey },
@@ -805,6 +921,17 @@ export default {
 
 /* Cash sub-section */
 .cc-cash-section { margin-bottom: 16px; }
+/* [GOAL-8AXES V6 T-3.3.2] Bloc paiement MIXTE. */
+.cc-mixte-section { margin-bottom: 12px; padding: 12px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FAFAFA; }
+.cc-mixte-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cc-mixte-row + .cc-mixte-row { margin-top: 10px; }
+.cc-mixte-label { font-size: 13px; font-weight: 700; color: #1A1A1A; }
+.cc-mixte-toggle { display: flex; gap: 6px; }
+.cc-mixte-mode { padding: 8px 14px; min-height: 40px; border: 2px solid #D9DBE9; border-radius: 10px; background: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+.cc-mixte-mode.is-active { border-color: #F4501E; background: #FFF3EE; color: #F4501E; }
+.cc-mixte-remainder { padding-top: 8px; border-top: 1px dashed #D9DBE9; }
+.cc-mixte-amount { font-size: 20px; font-variant-numeric: tabular-nums; color: #F4501E; }
+.cc-mixte-warn { margin-top: 8px; font-size: 12px; font-weight: 600; color: #B45309; }
 .cc-input-label {
   display: block;
   font-size: 12px;

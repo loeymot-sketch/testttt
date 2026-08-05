@@ -921,23 +921,31 @@
                      Masqué en livraison (la livraison a déjà son propre champ Nom). Imprimé sur le ticket.
                      [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone client ajouté à côté du nom — utile
                      surtout pour la « commande téléphone » (rappeler le client). -->
-                <div v-if="checkoutProps.form.order_type !== orderTypeEnums.delivery" class="mt-3 flex gap-2">
-                    <input
-                        type="text"
-                        v-model="checkoutProps.form.pos_customer_name"
-                        maxlength="60"
-                        :placeholder="$t('label.pos_customer_name_placeholder')"
-                        data-testid="pos-customer-name"
-                        class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
-                    />
-                    <input
-                        type="tel"
-                        v-model="checkoutProps.form.pos_customer_phone"
-                        maxlength="30"
-                        :placeholder="$t('label.pos_customer_phone_placeholder')"
-                        data-testid="pos-customer-phone"
-                        class="w-40 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
-                    />
+                <!-- [GOAL-8AXES V6 T-2.2.1 2026-08-05] Étiquette VISIBLE (pas seulement un
+                     placeholder gris) : la repro Vague 2 a prouvé que le champ existait mais
+                     restait indécouvrable — l'owner écrivait le nom au stylo sur le ticket. -->
+                <div v-if="checkoutProps.form.order_type !== orderTypeEnums.delivery" class="mt-3">
+                    <div class="pos-v5-cart__eyebrow mb-1">
+                        👤 {{ $t('label.pos_customer_identity_label') || 'Nom du client (imprimé sur le ticket cuisine)' }}
+                    </div>
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            v-model="checkoutProps.form.pos_customer_name"
+                            maxlength="60"
+                            :placeholder="$t('label.pos_customer_name_placeholder')"
+                            data-testid="pos-customer-name"
+                            class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                        />
+                        <input
+                            type="tel"
+                            v-model="checkoutProps.form.pos_customer_phone"
+                            maxlength="30"
+                            :placeholder="$t('label.pos_customer_phone_placeholder')"
+                            data-testid="pos-customer-phone"
+                            class="w-40 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                        />
+                    </div>
                 </div>
 
                 <!-- [W4-E5 SCHEDULED 2026-07-20] Programmer la commande (optionnel) : datetime
@@ -5966,6 +5974,14 @@ export default {
 .pos-phone-order-cta:disabled { opacity: 0.6; cursor: not-allowed; }
 .pos-phone-order-cta__label { font-size: 14px; font-weight: 800; }
 .pos-phone-order-cta__hint { font-size: 10px; font-weight: 600; opacity: 0.8; line-height: 1.2; text-align: center; }
+/* [GOAL-8AXES V6 2026-08-05] Écrans peu hauts (1366×768 constaté en repro V2) :
+   le CTA « Commande téléphone » était clippé ~50px sous la ligne de flottaison.
+   On compacte le pied d'actions pour qu'il tienne TOUJOURS à l'écran. */
+@media (max-height: 820px) {
+  .pos-phone-order-cta { padding: 5px 10px; }
+  .pos-phone-order-cta__hint { display: none; }
+  .pos-v4-action-pay { --posv5-btn-h-xl: 44px; }
+}
 .pos-shortcuts__cta {
   padding: 6px 12px;
   border: 0;

@@ -968,13 +968,25 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                     // ticket fiscal « RENDU : 5 643,00 € »).
                     'received' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
                     'note' => ['nullable', 'string', 'max:255'],
+                    // [GOAL-8AXES V6 T-3.3.1 2026-08-05] Multi-tender à l'ENCAISSEMENT
+                    // (owner : « 12 € en carte, le reste en espèces »). Les règles
+                    // monétaires fines (somme au centime, modes, TPE par tranche CARD)
+                    // sont dans SplitPaymentService::validateBreakdown — pas dupliquées.
+                    'payment_breakdown' => ['nullable', 'array', 'max:'.(int) config('split_payment.max_tranches', 12)],
+                    'payment_breakdown.*' => ['array'],
+                    'payment_breakdown.*.mode' => ['required_with:payment_breakdown', 'integer'],
+                    'payment_breakdown.*.amount' => ['required_with:payment_breakdown', 'numeric', 'min:0.01', 'max:9999.99'],
+                    'payment_breakdown.*.tendered' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+                    'payment_breakdown.*.terminal_id' => ['nullable', 'integer', 'min:1'],
+                    'payment_breakdown.*.note' => ['nullable', 'string', 'max:200'],
                 ]);
 
                 return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\PaymentService::class)->confirmCounterPayment(
                     $order,
                     (int) $validated['mode'],
                     array_key_exists('received', $validated) ? (float) $validated['received'] : null,
-                    $validated['note'] ?? null
+                    $validated['note'] ?? null,
+                    $validated['payment_breakdown'] ?? null
                 ));
             } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
                 throw $http;
