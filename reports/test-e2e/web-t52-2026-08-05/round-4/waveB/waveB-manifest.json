@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-08-05T02:35:53.559Z",
+  "base": "http://127.0.0.1:8899",
+  "readOnly": true,
+  "states": [
+    "B01-panier-ouvert",
+    "B02-checkout-infos-client",
+    "B03-paiement-options",
+    "B03b-mollie-components",
+    "B04-compte-connexion",
+    "B05-suivi-sans-id",
+    "B06-mentions-legales",
+    "B06b-cgv",
+    "B07-mobile-accueil",
+    "B08-mobile-menu",
+    "B09-mobile-panier"
+  ],
+  "allPosts": [],
+  "orderPosts": []
+}

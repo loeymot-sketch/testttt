@@ -1,0 +1,13 @@
+{
+  "state": "B03-paiement-options",
+  "url": "http://127.0.0.1:8899/#payment",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "payOptions": [
+      "★ Conseillé💵Payer sur placeEspèces ou carte au comptoir — ton plat t'attend",
+      "VISACarte bancaire (en ligne)Débit sécurisé (Mollie) — tu ne quittes pas le site"
+    ],
+    "banniereNonFinalise": false
+  }
+}

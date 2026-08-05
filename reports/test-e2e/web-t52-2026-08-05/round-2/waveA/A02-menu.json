@@ -1,0 +1,31 @@
+{
+  "state": "A02-menu",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Menu — catégories visibles listées dans .categories",
+  "categories": [
+    "✦Tout\n38",
+    "🥖Sandwichs\n4",
+    "🌯Galette\n2",
+    "🍔Burgers\n6",
+    "🌮Tacos\n2",
+    "🥣Bols\n2",
+    "🍟Frites\n2",
+    "🍰Desserts\n3",
+    "🥤Boissons\n15",
+    "🧒Menu enfant\n2",
+    "⭐ Top",
+    "🥬 Veggie",
+    "✦ Tout 38",
+    "🥖 Sandwichs 4",
+    "🌯 Galette 2",
+    "🍔 Burgers 6",
+    "🌮 Tacos 2",
+    "🥣 Bols 2",
+    "🍟 Frites 2",
+    "🍰 Desserts 3",
+    "🥤 Boissons 15",
+    "🧒 Menu enfant 2"
+  ]
+}

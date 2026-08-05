@@ -1,0 +1,10 @@
+{
+  "state": "A04-crudites-step5",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Étape 5 — titre: \"FAIRE UN MENU ?\" — bouton: \"Voir récap\"",
+  "stepTitle": "FAIRE UN MENU ?",
+  "stepText": "5 / 6 · CAYENNE· REQUIS\nFAIRE UN MENU ?\nAjoute frites et/ou boisson\n★ POPULAIRE\n🍽\nMenu complet\nFrites + Boisson\n+2,50 €\n🍟\nAjouter Frites\nFrites uniquement\n+1,90 €\n🥤\nAjouter Boisson\nBoisson uniquement\n+1,90 €\n🚫\nSans formule\nJuste le plat\n5 / 6\nVoir récap\n7,40 €\n// APERÇU LIVE\nCAYENNE\nPain ou galette ?\nPain\nSauce\nFromagère maison\nCrudités\nSalade, Tomate, Oignon\nSuppléments gourmands\nAucun\nMenu ?\n—\nInfos allergènes\nTOTAL\n7,40 €\n🎁\n+74 pts Pepper Club",
+  "isRecap": false
+}

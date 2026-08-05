@@ -1,0 +1,19 @@
+{
+  "state": "B01-panier-ouvert",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "usedWizard": true,
+    "cartLines": [
+      "Cayenne"
+    ],
+    "lineQty": [
+      "1"
+    ],
+    "linePrices": [
+      "9,90 €"
+    ],
+    "totalAffiche": "9,90 €"
+  }
+}

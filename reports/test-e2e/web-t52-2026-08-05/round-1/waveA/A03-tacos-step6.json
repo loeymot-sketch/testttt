@@ -1,0 +1,10 @@
+{
+  "state": "A03-tacos-step6",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Étape 6 — titre: \"RÉCAP\" — bouton: \"Ajouter au panier\"",
+  "stepTitle": "RÉCAP",
+  "stepText": "8 / 8 · TACOS M\nRÉCAP\nVérifie ta commande\nTACOS M\nTa personnalisation\n1 VIANDE\nMexicanos\nInclus\nMODIFIER\nSAUCE\nMayonnaise\nInclus\nMODIFIER\nCRUDITÉS\nSalade, Tomate, Oignon\nInclus\nMODIFIER\nSUPPLÉMENTS GOURMANDS\nAucun\nInclus\nMODIFIER\nFAIRE UN MENU ?\nMenu complet\n+2,50 €\nMODIFIER\nCHOIX DE LA BOISSON\nCoca-Cola 33cl\nInclus\nMODIFIER\nSAUCE POUR LES FRITES\nMayonnaise\nInclus\nMODIFIER\n8 / 8\nAjouter au panier\n9,40 €\n// APERÇU LIVE\nTACOS M\n1 viande\nMexicanos\nSauce\nMayonnaise\nCrudités\nSalade, Tomate, Oignon\nSuppléments gourmands\nAucun\nMenu ?\nMenu complet\nChoix de la boisson\nCoca-Cola 33cl\nSauce pour les frites\nMayonnaise\nInfos allergènes\nTOTAL\n9,40 €\n🎁\n+94 pts Pepper Club",
+  "isRecap": true
+}

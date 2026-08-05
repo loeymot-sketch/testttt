@@ -1,0 +1,142 @@
+[
+  {
+    "id": "ADV-01",
+    "severity": "P1",
+    "wave": "B",
+    "state": "B03b-mollie-components",
+    "categorie": "paiement/visuel",
+    "claim": "Formulaire carte Mollie visuellement cassé : les champs « Titulaire de la carte », « Numéro de carte » et « CVC » n'affichent AUCUNE zone de saisie visible (ni bordure, ni placeholder) — seuls les labels et le placeholder « MM/AA » d'Expiration apparaissent. Un client qui choisit CB en ligne voit un formulaire vide inutilisable.",
+    "preuve": "B03b-mollie-components.png : labels seuls sur fond beige, aucun input visible sous Titulaire/Numéro/CVC ; B03b-mollie-components.json note pourtant mollieIframes:5 montés (iframes présents mais contenu non rendu).",
+    "recommendation": "Round 2 : revérifier en env avec accès réseau Mollie réel ; si reproduit, styler/dimensionner les conteneurs d'iframes (hauteur min + bordure) et afficher un fallback d'erreur si l'iframe ne charge pas au lieu d'un blanc silencieux."
+  },
+  {
+    "id": "ADV-02",
+    "severity": "P2",
+    "wave": "A",
+    "state": "A03-tacos-step6 / A04-crudites-step6",
+    "categorie": "couverture capture",
+    "claim": "L'équipe de capture a RATÉ 2 étapes du wizard sur les DEUX flows : le récap affiche « 8 / 8 » alors que le manifest ne déclare que 6 étapes — les étapes dynamiques 6 (« Choix de la boisson ») et 7 (« Sauce pour les frites »), insérées par « Menu complet », n'ont AUCUN screenshot ni JSON. Elles sont pourtant money-path (boisson incluse, sauce frites — surface du bug historique sauce-frites du 2026-07-29).",
+    "preuve": "A03-tacos-step6.png et A04-crudites-step6.png : en-tête « 8 / 8 » + lignes « CHOIX DE LA BOISSON / Coca-Cola 33cl » et « SAUCE POUR LES FRITES / Mayonnaise » dans le récap ; waveA-manifest.json déclare steps 1→6 avec RÉCAP en stepNo 6.",
+    "recommendation": "Round 2 : capturer les étapes boisson et sauce-frites des deux flows (PNG + JSON), vérifier notamment qu'aucune sauce frites payante n'est facturée à tort."
+  },
+  {
+    "id": "ADV-03",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B08-mobile-menu",
+    "categorie": "intégrité numérique",
+    "claim": "Menu mobile : la page annonce « 38 résultats » mais seulement 28 cartes produit sont comptées dans le DOM — 10 références manquantes (lazy-load jamais déclenché ou rendu tronqué). Non vérifié par l'équipe.",
+    "preuve": "B08-mobile-menu.json notes.cartes = 28 ; B08-mobile-menu.png affiche « 38 résultats » et badge catégorie « Tout 38 ».",
+    "recommendation": "Round 2 : scroller jusqu'en bas du menu mobile et recompter ; si 28 persistent, bug de pagination/lazy-load à corriger (10 produits invendables sur mobile)."
+  },
+  {
+    "id": "ADV-04",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B01-panier-ouvert",
+    "categorie": "intégrité composition panier",
+    "claim": "Résumé de ligne panier ambigu et incomplet : « Cayenne + Menu complet, Coca-Cola 33cl, Sans sauce ». La sauce de base est REQUISE (Min:1 au step 2) mais n'apparaît pas dans le résumé, et « Sans sauce » est affiché sans contexte (sauce du sandwich ? sauce des frites ?). Un client — et un caissier — ne peut pas savoir si le sandwich part sans sauce. Le pain (Pain/Galette) est également absent du résumé.",
+    "preuve": "B01-panier-ouvert.png : ligne « + Menu complet, Coca-Cola 33cl, Sans sauce » ; à comparer à A04-crudites-step6.png où le récap wizard distingue explicitement « SAUCE / Fromagère maison » et « SAUCE POUR LES FRITES / Mayonnaise ». Total 9,90 € (7,40+2,50) correct.",
+    "recommendation": "Préfixer chaque attribut dans le résumé panier (« Sauce : X », « Sauce frites : Y », « Pain ») ou reprendre le format du récap wizard ; vérifier au round 2 ce qui part réellement au ticket cuisine."
+  },
+  {
+    "id": "ADV-05",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B05-suivi-sans-id",
+    "categorie": "UX navigation",
+    "claim": "Suivi de commande ouvert sans identifiant : redirection SILENCIEUSE vers l'accueil, zéro message (« commande introuvable », « saisis ton numéro »…). L'utilisateur qui revient de son email/SMS vers un lien tronqué atterrit sur la vitrine sans explication, avec l'onglet « Accueil » actif au lieu de « Commandes ».",
+    "preuve": "B05-suivi-sans-id.png : page d'accueil hero « Fait maison, chaque soir. », nav « Accueil » active ; B05-suivi-sans-id.json : routeApresColdLoad = « http://127.0.0.1:8899/ », aucun toast dans l'extrait de texte.",
+    "recommendation": "Afficher un état « suivi sans commande » avec champ de saisie du numéro/téléphone au lieu de rediriger muettement."
+  },
+  {
+    "id": "ADV-06",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B04-compte-connexion",
+    "categorie": "visuel/layout",
+    "claim": "Modale de connexion : le CTA principal « Se connecter → » est TRONQUÉ en bas de la modale (moitié inférieure du bouton coupée par le bord). Sur un viewport 1366×768 standard, l'action principale n'est pas entièrement visible ni clairement cliquable sans scroll non signalé.",
+    "preuve": "B04-compte-connexion.png : bouton noir « Se connecter → » coupé à mi-hauteur par le bord inférieur de la modale blanche.",
+    "recommendation": "Contraindre la hauteur de la modale (max-height + scroll interne) ou compacter le formulaire pour que le CTA soit toujours entièrement visible."
+  },
+  {
+    "id": "ADV-07",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B02-checkout-infos-client",
+    "categorie": "a11y/incohérence formulaire",
+    "claim": "Checkout : le champ téléphone est type=\"text\" (pas de clavier numérique mobile, pas de sémantique tel) alors que la modale compte (B04) utilise correctement type=\"tel\" avec préfixe +33 — incohérence entre les deux formulaires du même site. De plus, les 4 champs prénom/nom/téléphone/email du checkout ont ariaLabel:null (labels visuels seuls, non liés programmatiquement).",
+    "preuve": "B02-checkout-infos-client.json : {type:\"text\", placeholder:\"Ton numéro de téléphone\", ariaLabel:null} vs B04-compte-connexion.json {type:\"tel\", placeholder:\"6 12 34 56 78\"}.",
+    "recommendation": "Passer le champ en type=tel + autocomplete=tel, lier les labels (for/id ou aria-label) sur les 4 champs checkout."
+  },
+  {
+    "id": "ADV-08",
+    "severity": "P3",
+    "wave": "B",
+    "state": "B09-mobile-panier",
+    "categorie": "état vide + couverture",
+    "claim": "Double raté : (1) l'état vide du panier mobile est pauvre — page blanche non brandée, emoji caddie, texte « Faim ? Va voir le menu. » sans AUCUN lien/bouton cliquable vers le menu ; (2) l'équipe n'a JAMAIS capturé le panier mobile AVEC un article (le panier B01 existait sur desktop mais le contexte mobile est reparti vide) — le layout mobile d'une ligne panier + totaux reste non vérifié.",
+    "preuve": "B09-mobile-panier.png : drawer blanc, texte plain sans CTA ; B07/B08 headers mobiles sans badge panier alors que B01/B02 desktop affichent « Panier 1 ».",
+    "recommendation": "Ajouter un bouton « Voir le menu » dans l'état vide ; round 2 : capturer le panier mobile rempli (ligne, stepper qty, totaux, CTA)."
+  },
+  {
+    "id": "ADV-09",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-detail / A04-crudites-detail",
+    "categorie": "design/densité",
+    "claim": "Fiche produit : ~40% de la colonne droite est un vide blanc entre le bloc « Infos allergènes » et la ligne prix/CTA — la fiche paraît inachevée (aucune description longue, aucun contenu de remplacement).",
+    "preuve": "A03-tacos-detail.png et A04-crudites-detail.png : zone blanche vide massive entre l'encart allergènes (haut) et « 6,90 € / 7,40 € + Personnaliser » (bas).",
+    "recommendation": "Remonter le bloc prix/CTA ou remplir (description, badges ingrédients, temps de préparation)."
+  },
+  {
+    "id": "ADV-10",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-step1",
+    "categorie": "wording/cohérence",
+    "claim": "Étape 1 tacos : le titre crie « CHOISIS 1 VIANDE » mais le compteur affiche « Sélection : 0 / 4 » — on peut en réalité en choisir 4 (supplément +2,50 € au-delà de la 1re). Le titre contredit la capacité réelle.",
+    "preuve": "A03-tacos-step1.png : titre « CHOISIS 1 VIANDE », sous-titre « 1 viande incluse · viande en plus +2,50 € chacune », compteur « Min : 1 · Sélection : 0 / 4 ».",
+    "recommendation": "Titre « CHOISIS TA VIANDE » ou « TES VIANDES (1 incluse) » pour aligner titre/compteur."
+  },
+  {
+    "id": "ADV-11",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-detail",
+    "categorie": "wording/ambiguïté prix",
+    "claim": "La fiche Tacos M annonce « Frites maison » DANS la composition incluse (6,90 €), mais l'étape 5 propose « Ajouter Frites +1,90 € — Frites uniquement ». Sans précision (frites dedans vs portion à côté), le client peut croire qu'on lui refacture ce qui est déjà inclus.",
+    "preuve": "A03-tacos-detail.png : « Galette de blé · 1 viande au choix · Frites maison · Sauce » ; A03-tacos-step5.png : carte « Ajouter Frites +1,90 € ».",
+    "recommendation": "Libeller « Frites en accompagnement +1,90 € » sur le step 5 des tacos."
+  },
+  {
+    "id": "ADV-12",
+    "severity": "P3",
+    "wave": "A",
+    "state": "waveA-manifest",
+    "categorie": "méthodologie capture",
+    "claim": "Le « 0 erreur console / 0 réponse ≥400 » est obtenu APRÈS filtrage avoué du « bruit vendeur unpkg/fonts/babel » : les échecs réseau vers des CDN runtime (unpkg, Babel standalone) ont été masqués au lieu d'être listés. On ne peut donc pas certifier la propreté réseau, et la dépendance CDN runtime du site (SPOF déjà connu) n'est pas documentée dans les artefacts.",
+    "preuve": "waveA-manifest.json keyObservations.console_network : « (bruit vendeur unpkg/fonts/babel filtré) » — les entrées filtrées ne figurent nulle part.",
+    "recommendation": "Round 2 : joindre la liste brute des requêtes filtrées (URL + statut) pour audit, ne filtrer qu'au rapport, pas à la collecte."
+  },
+  {
+    "id": "ADV-13",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-step1..step6",
+    "categorie": "visuel/layout",
+    "claim": "Sur les 6 captures du wizard Tacos, le bloc TOTAL de l'aperçu live est coupé sous le pli (le panneau s'arrête à « Infos allergènes ») — le prix vivant n'est visible que dans le petit badge du bouton. Sur le flow Cayenne (A04), le TOTAL jaune sur noir est lui parfaitement visible : incohérence de mise en page selon la hauteur de l'image produit.",
+    "preuve": "A03-tacos-step1.png à step6.png (aucun bloc TOTAL visible) vs A04-crudites-step1.png (bloc « TOTAL 7,40 € » visible).",
+    "recommendation": "Rendre le bloc TOTAL sticky en bas du panneau aperçu, indépendamment de la hauteur de l'image."
+  },
+  {
+    "id": "ADV-14",
+    "severity": "P3",
+    "wave": "B",
+    "state": "waveB-manifest",
+    "categorie": "couverture serveur",
+    "claim": "Round 1 100% read-only assumé (allPosts:[]) : aucune commande soumise, donc zéro vérification serveur (validation 422, idempotency, totaux backend, ticket cuisine). Les totaux affichés (9,90 €) ne sont validés que côté client.",
+    "preuve": "waveB-manifest.json : allPosts:[], orderPosts:[] ; B02/B03 JSON remarks « NE PAS soumettre / AUCUN clic sur Payer ».",
+    "recommendation": "Round 2 : au moins une soumission bout-en-bout en local (payer sur place) avec assertion du total serveur et du contenu réellement persisté."
+  }
+]

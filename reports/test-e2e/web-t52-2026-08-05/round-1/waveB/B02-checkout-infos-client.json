@@ -1,0 +1,51 @@
+{
+  "state": "B02-checkout-infos-client",
+  "url": "http://127.0.0.1:8899/#payment",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "fields": [
+      {
+        "type": "text",
+        "placeholder": "Ex: CAYENNE10",
+        "ariaLabel": "Code promo"
+      },
+      {
+        "type": "textarea",
+        "placeholder": "Une précision ? Sauce à part, bien cuit, sans oignons…",
+        "ariaLabel": "Note pour la cuisine (optionnel)"
+      },
+      {
+        "type": "text",
+        "placeholder": "Ton prénom",
+        "ariaLabel": null
+      },
+      {
+        "type": "text",
+        "placeholder": "Ton nom de famille",
+        "ariaLabel": null
+      },
+      {
+        "type": "text",
+        "placeholder": "Ton numéro de téléphone",
+        "ariaLabel": null
+      },
+      {
+        "type": "email",
+        "placeholder": "ton.email@exemple.fr",
+        "ariaLabel": null
+      },
+      {
+        "type": "text",
+        "placeholder": "Ex: CAYENNE10",
+        "ariaLabel": "Code promo"
+      },
+      {
+        "type": "textarea",
+        "placeholder": "Une précision ? Sauce à part, sans oignon…",
+        "ariaLabel": "Note pour la cuisine"
+      }
+    ],
+    "remark": "NE PAS soumettre — aucun clic sur Valider mes coordonnées / Payer"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "state": "A03-tacos-step2",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Étape 2 — titre: \"SAUCE\" — bouton: \"Continuer\"",
+  "stepTitle": "SAUCE",
+  "stepText": "2 / 5 · TACOS M· REQUIS\nSAUCE\n1ʳᵉ sauce incluse · sauce en plus +0,50 €\nMin : 1 · Sélection : 0 / 4\nMayonnaise\nKetchup\nBlanche\nHannibal🌶\nSamouraï🌶\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa🌶\nFromagère maison\nSpicy maison🌶\nPoivre\nBurger\n2 / 5\nContinuer\n6,90 €\n// APERÇU LIVE\nTACOS M\n1 viande\nMexicanos\nSauce\nAucun\nSuppléments gourmands\nAucun\nMenu ?\n—\nInfos allergènes\nTOTAL\n6,90 €\n🎁\n+69 pts Pepper Club",
+  "isRecap": false
+}

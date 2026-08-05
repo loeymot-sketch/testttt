@@ -1,0 +1,195 @@
+{
+  "generated": "2026-08-05T02:34:58.451Z",
+  "base": "http://127.0.0.1:8899/",
+  "states": [
+    {
+      "state": "A01-accueil",
+      "notes": "Accueil / vitrine — route par défaut",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A02-menu",
+      "notes": "Menu — catégories visibles listées dans .categories",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A03-tacos-detail",
+      "notes": "Fiche produit ouverte (SIGNATURE)",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A03-tacos-step1",
+      "notes": "Étape 1 — titre: \"CHOISIS 1 VIANDE\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A03-tacos-step2",
+      "notes": "Étape 2 — titre: \"SAUCE\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A03-tacos-step3",
+      "notes": "Étape 3 — titre: \"SUPPLÉMENTS GOURMANDS\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A03-tacos-step4",
+      "notes": "Étape 4 — titre: \"FAIRE UN MENU ?\" — bouton: \"Voir récap\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A03-tacos-step5",
+      "notes": "Étape 5 — titre: \"RÉCAP\" — bouton: \"Ajouter au panier\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-detail",
+      "notes": "Fiche produit ouverte (SIGNATURE)",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-step1",
+      "notes": "Étape 1 — titre: \"PAIN OU GALETTE ?\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-step2",
+      "notes": "Étape 2 — titre: \"SAUCE\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-step3",
+      "notes": "Étape 3 — titre: \"CRUDITÉS\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-step4",
+      "notes": "Étape 4 — titre: \"SUPPLÉMENTS GOURMANDS\" — bouton: \"Continuer\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-step5",
+      "notes": "Étape 5 — titre: \"FAIRE UN MENU ?\" — bouton: \"Voir récap\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    },
+    {
+      "state": "A04-crudites-step6",
+      "notes": "Étape 6 — titre: \"RÉCAP\" — bouton: \"Ajouter au panier\"",
+      "consoleErrorCount": 0,
+      "badResponseCount": 0
+    }
+  ],
+  "keyObservations": {
+    "categories": [
+      "✦Tout\n38",
+      "🥖Sandwichs\n4",
+      "🌯Galette\n2",
+      "🍔Burgers\n6",
+      "🌮Tacos\n2",
+      "🥣Bols\n2",
+      "🍟Frites\n2",
+      "🍰Desserts\n3",
+      "🥤Boissons\n15",
+      "🧒Menu enfant\n2",
+      "⭐ Top",
+      "🥬 Veggie",
+      "✦ Tout 38",
+      "🥖 Sandwichs 4",
+      "🌯 Galette 2",
+      "🍔 Burgers 6",
+      "🌮 Tacos 2",
+      "🥣 Bols 2",
+      "🍟 Frites 2",
+      "🍰 Desserts 3",
+      "🥤 Boissons 15",
+      "🧒 Menu enfant 2"
+    ],
+    "tacos": {
+      "item": "SIGNATURE",
+      "steps": [
+        {
+          "stepNo": 1,
+          "title": "CHOISIS 1 VIANDE",
+          "isRecap": false
+        },
+        {
+          "stepNo": 2,
+          "title": "SAUCE",
+          "isRecap": false
+        },
+        {
+          "stepNo": 3,
+          "title": "SUPPLÉMENTS GOURMANDS",
+          "isRecap": false
+        },
+        {
+          "stepNo": 4,
+          "title": "FAIRE UN MENU ?",
+          "isRecap": false
+        },
+        {
+          "stepNo": 5,
+          "title": "RÉCAP",
+          "isRecap": true
+        }
+      ],
+      "cruditesStepPresent": false,
+      "galetteMentioned": false
+    },
+    "crudites": {
+      "item": "SIGNATURE",
+      "steps": [
+        {
+          "stepNo": 1,
+          "title": "PAIN OU GALETTE ?",
+          "isRecap": false
+        },
+        {
+          "stepNo": 2,
+          "title": "SAUCE",
+          "isRecap": false
+        },
+        {
+          "stepNo": 3,
+          "title": "CRUDITÉS",
+          "isRecap": false
+        },
+        {
+          "stepNo": 4,
+          "title": "SUPPLÉMENTS GOURMANDS",
+          "isRecap": false
+        },
+        {
+          "stepNo": 5,
+          "title": "FAIRE UN MENU ?",
+          "isRecap": false
+        },
+        {
+          "stepNo": 6,
+          "title": "RÉCAP",
+          "isRecap": true
+        }
+      ],
+      "cruditesStepTitle": "CRUDITÉS",
+      "hasPoivronsCuits": true,
+      "hasMais": true,
+      "hasOlives": true,
+      "hasSansCrudites": true,
+      "cruditesRawText": "3 / 6 · CAYENNE\nCRUDITÉS\nTu peux retirer ce que tu ne veux pas\nSalade\nTomate\nOignon\nOignons cuits\nPoivrons cuits\n+0,90 €\nMaïs\n+0,90 €\nOlives\n+0,90 €\n🚫\nSans crudités\n3 / 6\nContinuer\n7,40 €\n// APERÇU LIVE\nCAYENNE\nPain ou galette ?\nPain\nSauce\nFromagère maison\nCrudités\nSalade, Tomate, Oignon\nSuppléments gourmands\nAucun\nMenu ?\n—\nInfos allergènes\nTOTAL\n7,40 €\n🎁\n+74 pts Pepper Club"
+    }
+  }
+}

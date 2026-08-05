@@ -1,0 +1,36 @@
+{
+  "state": "B04-compte-connexion",
+  "url": "http://127.0.0.1:8899/",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "acctFields": [
+      {
+        "type": "text",
+        "placeholder": "Ton prénom",
+        "ariaLabel": null
+      },
+      {
+        "type": "text",
+        "placeholder": "Ton nom de famille",
+        "ariaLabel": null
+      },
+      {
+        "type": "email",
+        "placeholder": "prenom@exemple.fr",
+        "ariaLabel": null
+      },
+      {
+        "type": "tel",
+        "placeholder": "6 12 34 56 78",
+        "ariaLabel": null
+      },
+      {
+        "type": "text",
+        "placeholder": "Ex: CAYENNE10",
+        "ariaLabel": "Code promo"
+      }
+    ],
+    "remark": "Écran de saisie seul — aucun OTP envoyé"
+  }
+}

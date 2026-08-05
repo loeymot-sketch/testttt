@@ -1,0 +1,10 @@
+{
+  "state": "B08-mobile-menu",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "navMobileIntacte": true,
+    "cartes": 28
+  }
+}

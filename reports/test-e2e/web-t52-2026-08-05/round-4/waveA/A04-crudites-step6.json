@@ -1,0 +1,10 @@
+{
+  "state": "A04-crudites-step6",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Étape 6 — titre: \"RÉCAP\" — bouton: \"Ajouter au panier\"",
+  "stepTitle": "RÉCAP",
+  "stepText": "8 / 8 · CAYENNE\nRÉCAP\nVérifie ta commande\nCAYENNE\nTa personnalisation\nPAIN OU GALETTE ?\nPain\nInclus\nMODIFIER\nSAUCE\nFromagère maison\nInclus\nMODIFIER\nCRUDITÉS\nSalade, Tomate, Oignon\nInclus\nMODIFIER\nSUPPLÉMENTS GOURMANDS\nAucun\nInclus\nMODIFIER\nFAIRE UN MENU ?\nMenu complet\n+2,50 €\nMODIFIER\nCHOIX DE LA BOISSON\nCoca-Cola 33cl\nInclus\nMODIFIER\nSAUCE POUR LES FRITES\nMayonnaise\nInclus\nMODIFIER\n8 / 8\nAjouter au panier\n9,90 €\n// APERÇU LIVE\nCAYENNE\nPain ou galette ?\nPain\nSauce\nFromagère maison\nCrudités\nSalade, Tomate, Oignon\nSuppléments gourmands\nAucun\nMenu ?\nMenu complet\nChoix de la boisson\nCoca-Cola 33cl\nSauce pour les frites\nMayonnaise\nInfos allergènes\nTOTAL\n9,90 €\n🎁\n+99 pts Pepper Club",
+  "isRecap": true
+}

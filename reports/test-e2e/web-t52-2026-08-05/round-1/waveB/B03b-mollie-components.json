@@ -1,0 +1,10 @@
+{
+  "state": "B03b-mollie-components",
+  "url": "http://127.0.0.1:8899/#payment",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "mollieIframes": 5,
+    "remark": "Montage seul — AUCUN clic sur Payer"
+  }
+}

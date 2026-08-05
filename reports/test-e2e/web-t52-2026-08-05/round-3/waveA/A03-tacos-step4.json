@@ -1,0 +1,10 @@
+{
+  "state": "A03-tacos-step4",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Étape 4 — titre: \"FAIRE UN MENU ?\" — bouton: \"Voir récap\"",
+  "stepTitle": "FAIRE UN MENU ?",
+  "stepText": "4 / 5 · TACOS M· REQUIS\nFAIRE UN MENU ?\nAjoute frites et/ou boisson\n★ POPULAIRE\n🍽\nMenu complet\nFrites + Boisson\n+2,50 €\n🍟\nAjouter Frites\nFrites uniquement\n+1,90 €\n🥤\nAjouter Boisson\nBoisson uniquement\n+1,90 €\n🚫\nSans formule\nJuste le plat\n4 / 5\nVoir récap\n6,90 €\n// APERÇU LIVE\nTACOS M\n1 viande\nMexicanos\nSauce\nMayonnaise\nSuppléments gourmands\nAucun\nMenu ?\n—\nInfos allergènes\nTOTAL\n6,90 €\n🎁\n+69 pts Pepper Club",
+  "isRecap": false
+}

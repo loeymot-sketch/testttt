@@ -1,0 +1,155 @@
+[
+  {
+    "id": "R3-FIX-F1",
+    "severity": "OK",
+    "wave": "A",
+    "state": "A03-tacos-step1..step5",
+    "claim": "F1 CONFIRMÉ CORRIGÉ — le wizard Tacos M n'a PLUS d'étape crudités : flux = Viande, Sauce, Suppléments gourmands, Faire un menu, Récap. Total 9,40 € (6,90 + 2,50 Menu complet) arithmétiquement exact, fidélité +94 pts cohérente (×10).",
+    "preuve": "A03-tacos-step1.png à step5.png ; waveA-manifest.json tacos.cruditesStepPresent=false ; A03-tacos-step5.json récap 7/7 sans ligne crudités.",
+    "recommendation": "Aucune."
+  },
+  {
+    "id": "R3-FIX-F2-F3",
+    "severity": "OK",
+    "wave": "A",
+    "state": "A04-crudites-step3",
+    "claim": "F2/F3 CONFIRMÉS CORRIGÉS — étape Crudités Cayenne : Salade/Tomate/Oignon incluses et décochables, Poivrons cuits/Maïs/Olives affichés +0,90 € chacun, chip « Sans crudités » présent. Récap 8/8 total 9,90 € (7,40+2,50) exact, +99 pts cohérent.",
+    "preuve": "A04-crudites-step3.png ; waveA-manifest.json crudites.hasPoivronsCuits/hasMais/hasOlives/hasSansCrudites = true ; A04-crudites-step6.json total 9,90 €.",
+    "recommendation": "Aucune."
+  },
+  {
+    "id": "R3-FIX-ADV-01",
+    "severity": "OK",
+    "wave": "B",
+    "state": "B03b-mollie-components",
+    "claim": "ADV-01 (P1 round 1) CONFIRMÉ CORRIGÉ — le formulaire carte Mollie affiche désormais 4 zones de saisie blanches bordées bien visibles (Titulaire, Numéro de carte, Expiration MM/AA, CVC) + bandeau « Paiement sur cette page… champs chiffrés ».",
+    "preuve": "B03b-mollie-components.png : 4 inputs visibles sur fond beige ; B03b-mollie-components.json mollieIframes=5, 0 erreur console.",
+    "recommendation": "Aucune. Un test de saisie/tokenisation réelle reste à faire hors read-only (voir ADV-14)."
+  },
+  {
+    "id": "ADV-02",
+    "severity": "P2",
+    "wave": "A",
+    "state": "A03-tacos-step5 / A04-crudites-step6",
+    "claim": "TOUJOURS PRÉSENT round 3 — les étapes dynamiques « Choix de la boisson » et « Sauce pour les frites » (insérées par Menu complet) n'ont toujours AUCUNE capture : le compteur saute de « 4 / 5 » (tacos) à « 7 / 7 » au récap, et de « 5 / 6 » à « 8 / 8 » (Cayenne). Money-path sauce-frites (bug historique 2026-07-29) validé uniquement via le récap, pas via l'écran de sélection.",
+    "preuve": "waveA-manifest.json déclare 5 steps tacos / 6 steps Cayenne ; A03-tacos-step5.json stepText « 7 / 7 » avec lignes CHOIX DE LA BOISSON et SAUCE POUR LES FRITES sans PNG dédié.",
+    "recommendation": "Round 4 : capturer les 2 écrans dynamiques sur les 2 flows ; vérifier qu'aucune sauce frites payante n'est facturée."
+  },
+  {
+    "id": "ADV-03",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B08-mobile-menu",
+    "claim": "TOUJOURS PRÉSENT round 3 — menu mobile annonce « 38 résultats » mais seulement 28 cartes comptées dans le DOM (10 références manquantes, lazy-load jamais déclenché ou rendu tronqué).",
+    "preuve": "B08-mobile-menu.json notes.cartes = 28 ; B08-mobile-menu.png affiche « 38 résultats » et chip « Tout 38 ».",
+    "recommendation": "Scroller jusqu'en bas et recompter ; si 28 persistent, corriger la pagination/lazy-load mobile."
+  },
+  {
+    "id": "ADV-04",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B01-panier-ouvert",
+    "claim": "TOUJOURS PRÉSENT round 3 — ligne panier ambiguë : « Cayenne + Menu complet, Coca-Cola 33cl, Sans sauce ». La sauce de base (requise Min:1) n'apparaît pas, « Sans sauce » est sans contexte (sauce sandwich ? sauce frites ?), le pain est absent. Total 9,90 € correct.",
+    "preuve": "B01-panier-ouvert.png ligne « + Menu complet, Coca-Cola 33cl, Sans sauce » ; contraste avec A04-crudites-step6.png qui distingue SAUCE / SAUCE POUR LES FRITES.",
+    "recommendation": "Préfixer chaque attribut (« Sauce : X », « Sauce frites : Y », « Pain ») dans le résumé panier ; vérifier le ticket cuisine."
+  },
+  {
+    "id": "ADV-05",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B05-suivi-sans-id",
+    "claim": "TOUJOURS PRÉSENT round 3 — suivi de commande ouvert sans identifiant : redirection silencieuse vers l'accueil, aucun message « commande introuvable », onglet « Accueil » actif.",
+    "preuve": "B05-suivi-sans-id.png (hero accueil) ; B05-suivi-sans-id.json routeApresColdLoad = « http://127.0.0.1:8899/ », extrait texte sans toast.",
+    "recommendation": "Afficher un état « suivi sans commande » avec champ de saisie numéro/téléphone."
+  },
+  {
+    "id": "ADV-06",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B04-compte-connexion",
+    "claim": "TOUJOURS PRÉSENT round 3 — modale de connexion : le CTA « Se connecter → » est toujours tronqué à mi-hauteur par le bord inférieur de la modale sur viewport 1366×768.",
+    "preuve": "B04-compte-connexion.png : bouton noir coupé en bas de la modale.",
+    "recommendation": "max-height + scroll interne, ou compacter le formulaire."
+  },
+  {
+    "id": "ADV-07",
+    "severity": "P2",
+    "wave": "B",
+    "state": "B02-checkout-infos-client",
+    "claim": "TOUJOURS PRÉSENT round 3 — champ téléphone checkout en type=\"text\" sans préfixe +33 (vs type=\"tel\" + +33 dans la modale compte B04) ; les 4 champs prénom/nom/téléphone/email ont ariaLabel:null.",
+    "preuve": "B02-checkout-infos-client.json {type:\"text\", placeholder:\"Ton numéro de téléphone\", ariaLabel:null} ; B04-compte-connexion.json {type:\"tel\", placeholder:\"6 12 34 56 78\"}.",
+    "recommendation": "type=tel + autocomplete=tel + labels liés (for/id ou aria-label)."
+  },
+  {
+    "id": "ADV-08",
+    "severity": "P3",
+    "wave": "B",
+    "state": "B09-mobile-panier",
+    "claim": "TOUJOURS PRÉSENT round 3 — panier mobile vide sans CTA vers le menu (« Faim ? Va voir le menu. » non cliquable) ; le panier mobile AVEC article n'a toujours jamais été capturé (3 rounds).",
+    "preuve": "B09-mobile-panier.png : drawer blanc, emoji caddie, aucun bouton ; B09-mobile-panier.json drawerOuvert=true seul.",
+    "recommendation": "Ajouter un bouton « Voir le menu » ; round 4 : capturer le panier mobile rempli."
+  },
+  {
+    "id": "ADV-09",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-detail / A04-crudites-detail",
+    "claim": "TOUJOURS PRÉSENT round 3 — fiche produit : ~40% de vide blanc entre le bloc allergènes et la ligne prix/CTA.",
+    "preuve": "A03-tacos-detail.png et A04-crudites-detail.png : zone blanche massive entre « Infos allergènes » et « 6,90 € / 7,40 € + Personnaliser ».",
+    "recommendation": "Remonter le bloc prix/CTA ou remplir (description, badges)."
+  },
+  {
+    "id": "ADV-10",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-step1",
+    "claim": "TOUJOURS PRÉSENT round 3 — titre « CHOISIS 1 VIANDE » contredit le compteur « Sélection : 0 / 4 » (jusqu'à 4 viandes possibles, +2,50 € au-delà de la 1re).",
+    "preuve": "A03-tacos-step1.png / A03-tacos-step1.json stepText.",
+    "recommendation": "« CHOISIS TA VIANDE » ou « TES VIANDES (1 incluse) »."
+  },
+  {
+    "id": "ADV-11",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-detail / A03-tacos-step4",
+    "claim": "TOUJOURS PRÉSENT round 3 — « Frites maison » listées dans la composition incluse du Tacos M (6,90 €) alors que l'étape menu propose « Ajouter Frites +1,90 € — Frites uniquement » sans préciser qu'il s'agit d'une portion à côté.",
+    "preuve": "A03-tacos-detail.png « Galette de blé · 1 viande au choix · Frites maison · Sauce » ; A03-tacos-step4.png carte « Ajouter Frites +1,90 € ».",
+    "recommendation": "Libeller « Frites en accompagnement +1,90 € »."
+  },
+  {
+    "id": "ADV-13",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A03-tacos-step1..step5",
+    "claim": "TOUJOURS PRÉSENT round 3 — sur le flow Tacos le bloc TOTAL jaune/noir de l'aperçu live est coupé sous le pli (panneau s'arrête à « Infos allergènes »), alors qu'il est parfaitement visible sur le flow Cayenne : incohérence dépendant de la hauteur de l'image produit.",
+    "preuve": "A03-tacos-step1.png à step5.png (pas de bloc TOTAL visible) vs A04-crudites-step1.png (« TOTAL 7,40 € » visible).",
+    "recommendation": "Rendre le bloc TOTAL sticky en bas du panneau aperçu."
+  },
+  {
+    "id": "ADV-14",
+    "severity": "P3",
+    "wave": "B",
+    "state": "waveB-manifest",
+    "claim": "TOUJOURS PRÉSENT round 3 — audit 100% read-only (allPosts:[]) : 3 rounds sans aucune soumission de commande, donc zéro vérification serveur (422, idempotency, total backend, ticket cuisine). Les 9,90 € ne sont validés que côté client.",
+    "preuve": "waveB-manifest.json readOnly:true, allPosts:[], orderPosts:[] ; B02/B03b remarks « NE PAS soumettre / AUCUN clic sur Payer ».",
+    "recommendation": "Round 4 : une soumission bout-en-bout locale (payer sur place) avec assertion du total serveur persisté."
+  },
+  {
+    "id": "R3-ADV-15",
+    "severity": "P3",
+    "wave": "A",
+    "state": "A04-crudites-step3",
+    "claim": "NOUVEAU (cosmétique/config) — dans l'étape Crudités, « Oignons cuits » est proposé SANS badge de prix alors que les trois autres crudités cuites (Poivrons cuits, Maïs, Olives) sont à +0,90 € : incohérence tarifaire potentielle (gratuit voulu ? prix manquant ?).",
+    "preuve": "A04-crudites-step3.png : carte « Oignons cuits » sans badge ; cruditesRawText du manifest : « Oignons cuits\\nPoivrons cuits\\n+0,90 € ».",
+    "recommendation": "Confirmer avec l'owner si Oignons cuits est volontairement gratuit ; sinon ajouter le prix côté config."
+  },
+  {
+    "id": "R3-ADV-16",
+    "severity": "P3",
+    "wave": "A",
+    "state": "waveA-manifest",
+    "claim": "NOUVEAU (méthodologie) — ADV-12 round 1 (bruit réseau vendeur filtré non documenté) : le manifest round 3 ne mentionne plus de filtrage mais ne joint toujours pas la liste brute des requêtes ; « 0 erreur console / 0 réponse ≥400 » reste invérifiable de l'extérieur.",
+    "preuve": "waveA-manifest.json et tous les *.json : consoleErrors:[] / badResponses:[] sans log réseau brut joint.",
+    "recommendation": "Joindre le dump réseau brut (URL + statut) aux artefacts du round 4."
+  }
+]

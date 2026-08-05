@@ -1,0 +1,10 @@
+{
+  "state": "A03-tacos-step1",
+  "url": "http://127.0.0.1:8899/#menu",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": "Étape 1 — titre: \"CHOISIS 1 VIANDE\" — bouton: \"Continuer\"",
+  "stepTitle": "CHOISIS 1 VIANDE",
+  "stepText": "1 / 5 · TACOS M· REQUIS\nCHOISIS 1 VIANDE\n1 viande incluse · viande en plus +2,50 € chacune\nMin : 1 · Sélection : 0 / 4\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\n1 / 5\nContinuer\n6,90 €\n// APERÇU LIVE\nTACOS M\n1 viande\nAucun\nSauce\nAucun\nSuppléments gourmands\nAucun\nMenu ?\n—\nInfos allergènes\nTOTAL\n6,90 €\n🎁\n+69 pts Pepper Club",
+  "isRecap": false
+}

@@ -1,0 +1,11 @@
+{
+  "state": "B05-suivi-sans-id",
+  "url": "http://127.0.0.1:8899/",
+  "consoleErrors": [],
+  "badResponses": [],
+  "notes": {
+    "routeApresColdLoad": "http://127.0.0.1:8899/",
+    "extraitTexte": " Aller au contenu AccueilMenuCommandesFidélitéPanier1Se connecterTous les soirs · 18h – minuitFait maison,chaque soir.Sandwichs, tacos, bols, galettes — viande fraîche et frites maison, préparés à la commande à Hénin-Beaumont.Commander maintenant 🥩Viande fraîcheLivrée le matin, jamais surgelée.🍟Frites maisonFraîches, coupées et cuites ici.👨‍🍳Fait maisonSauces et préparations, sur place.⭐Savour",
+    "honnete": "voir screenshot — garde cold-load peut rediriger home"
+  }
+}
