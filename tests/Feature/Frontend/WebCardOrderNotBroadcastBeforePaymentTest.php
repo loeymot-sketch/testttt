@@ -87,6 +87,13 @@ class WebCardOrderNotBroadcastBeforePaymentTest extends TestCase
     /**
      * Garde-fou anti-dérive : la condition doit rester présente et lisible dans le service.
      * Si quelqu'un la retire, ce test tombe même si la règle ci-dessus est encore vraie ailleurs.
+     *
+     * ⚠️ HONNÊTETÉ SUR LA PORTÉE (relevé par l'agent A1 au cycle 5) : les cas ci-dessus
+     * RÉPLIQUENT la règle au lieu d'appeler le service — ils verrouillent l'intention, pas
+     * l'implémentation. Ce dernier cas est donc essentiel : il ancre la vérification dans le
+     * VRAI fichier. Une preuve comportementale complète exigerait de traverser la création de
+     * commande et le webhook Mollie, ce que fait le test e2e du cycle 4 (agent A1, octets
+     * ESC/POS à l'appui) — pas cette sentinelle.
      */
     public function test_the_guard_is_present_in_the_service(): void
     {
@@ -94,5 +101,31 @@ class WebCardOrderNotBroadcastBeforePaymentTest extends TestCase
 
         $this->assertStringContainsString('isWebCardIntentAtCreate', $source);
         $this->assertStringContainsString('&& !$isWebCardIntentAtCreate', $source);
+    }
+
+    /**
+     * [A1 cycle 5] La LIVRAISON ne doit pas tomber dans un trou noir.
+     *
+     * `FrontendOrder::creating` force `source_surface = 'delivery'` dès que
+     * `order_type === DELIVERY` — or les deux gates du chemin « payé » ne testaient que 'web'.
+     * Une commande livraison payée par carte était donc retenue à la création (ma garde) puis
+     * JAMAIS libérée au paiement, JAMAIS annulée en cas d'échec, et rattrapée par aucune lane
+     * du janitor : payée, jamais en cuisine. Latent tant que la livraison est désactivée,
+     * P0 le jour de son activation.
+     */
+    public function test_delivery_surface_is_accepted_by_both_paid_path_guards(): void
+    {
+        $source = file_get_contents(app_path('Services/FrontendOrderService.php'));
+
+        // Les deux gardes doivent accepter 'web' ET 'delivery'.
+        $occurrences = preg_match_all("/\['web', 'delivery'\]/", $source);
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            $occurrences,
+            "Les deux gardes du chemin payé (finalizePaidKioskOrder ET cancelForFailedOnlinePayment) "
+            . "doivent accepter la surface 'delivery', sinon une commande livraison payée par carte "
+            . "n'est ni envoyée en cuisine ni annulée."
+        );
     }
 }

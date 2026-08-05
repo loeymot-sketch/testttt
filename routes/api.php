@@ -221,9 +221,23 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     });
 
     Route::middleware('auth:sanctum')->group(function () {
+        // [A1 cycle 5 · GOAL_WEB_ADVERSARIAL 2026-08-05 · P1 SÉCURITÉ] `verify.api` (e-mail
+        // vérifié) gardait la DÉCONNEXION alors que la CONNEXION ne l'exige pas : asymétrie
+        // vérifiée sur `POST /api/auth/login`, qui n'a pas ce middleware. On pouvait donc se
+        // connecter sans jamais pouvoir se déconnecter — 401 « Please verify your email », le
+        // jeton CONSERVÉ, et le front qui avale l'échec silencieusement. Mesuré en base :
+        // 58 jetons vivants appartiennent à des comptes non vérifiés.
+        // Se déconnecter est un CONTRÔLE DE SÉCURITÉ : il doit fonctionner inconditionnellement
+        // pour quiconque présente un jeton valide — refuser la révocation d'une session, c'est
+        // refuser au client le seul moyen de reprendre la main sur son compte.
+        // Le parcours web client n'était pas touché (GuestSignupController renseigne le champ) ;
+        // le trou visait les jetons émis par LoginController (staff/admin).
+        Route::post('/logout', [LoginController::class, 'logout']);
+        Route::post('/kiosk-logout', [KioskMachineLoginController::class, 'logout']);
+
         Route::middleware('verify.api')->group(function () {
-            Route::post('/logout', [LoginController::class, 'logout']);
-            Route::post('/kiosk-logout', [KioskMachineLoginController::class, 'logout']);
+            // La SUPPRESSION de compte reste derrière la vérification d'e-mail : c'est une
+            // action destructrice et irréversible, pas un moyen de reprendre la main.
             Route::post('/delete-account', [DeactivateController::class, 'deleteAccount']);
         });
     });

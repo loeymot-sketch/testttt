@@ -961,7 +961,12 @@ class FrontendOrderService
             if ((int) $locked->status === (int) OrderStatus::CANCELED) {
                 return false; // rejeu webhook → idempotent
             }
-            $isWebCardIntent = strtolower((string) $locked->source_surface) === 'web'
+            // [A1 cycle 5 — 2026-08-05] Même angle mort que le gate de finalisation : une
+            // commande LIVRAISON porte `source_surface = 'delivery'` (forcé par
+            // FrontendOrder::creating), donc un paiement carte échoué n'était PAS annulé et la
+            // commande restait PENDING indéfiniment. Les deux surfaces désignent la même chose :
+            // une intention de paiement carte passée depuis le site.
+            $isWebCardIntent = in_array(strtolower((string) $locked->source_surface), ['web', 'delivery'], true)
                 && (int) $locked->payment_method === (int) PaymentGateway::CARD;
             if (! $isWebCardIntent
                 || (int) $locked->status !== (int) OrderStatus::PENDING
@@ -1401,7 +1406,17 @@ class FrontendOrderService
         // (Mollie) doit être scellée EXACTEMENT comme une borne-payée : sans ça, le gate
         // KioskMachine ci-dessus no-ope (user_id = client, pas une borne) → PAID sans
         // fiscal_sequence_no → hors du Z signé NF525. On unifie le chemin.
-        $isWebCardOrder = strtolower((string) $frontendOrder->source_surface) === 'web'
+        // [A1 cycle 5 — 2026-08-05 · P1 LATENT] Ce gate n'acceptait QUE la surface 'web', alors
+        // que `FrontendOrder::creating` force `source_surface = 'delivery'` dès que
+        // `order_type === DELIVERY` (le web n'envoie pas la surface, il envoie `source: 5`).
+        // Une commande LIVRAISON payée par carte tombait donc dans un trou noir : ma garde de
+        // création la retenait (intention carte), et ce gate-ci refusait ensuite de la libérer
+        // au paiement — `promoted=false`, jamais dispatchée, restée PENDING, et même pas
+        // rattrapée par `cancelForFailedOnlinePayment` ni par aucune lane du janitor.
+        // PAYÉE, JAMAIS EN CUISINE, JAMAIS ANNULÉE. Latent aujourd'hui (le drapeau
+        // `feature-delivery` est absent, la livraison est renvoyée vers Uber Eats), mais P0 le
+        // jour de l'activation — et c'est une régression de mon propre correctif `87bbaf6ab`.
+        $isWebCardOrder = in_array(strtolower((string) $frontendOrder->source_surface), ['web', 'delivery'], true)
             && (int) $frontendOrder->payment_method === (int) PaymentGateway::CARD
             && in_array((int) $frontendOrder->order_type, [OrderType::TAKEAWAY, OrderType::DELIVERY], true);
         $isKioskOrderType = $isKioskOrderType || $isWebCardOrder;

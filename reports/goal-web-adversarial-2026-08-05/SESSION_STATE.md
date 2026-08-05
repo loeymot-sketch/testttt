@@ -1,47 +1,70 @@
-# SESSION_STATE — GOAL WEB ADVERSARIAL/UX/MOBILE
+# SESSION_STATE — GOAL WEB ADVERSARIAL / UX / MOBILE
 > Fichier de reprise : une session qui reprend LIT CECI EN PREMIER.
 
 ```json
 {
   "goal": "plans/GOAL_WEB_ADVERSARIAL_UX_TOTAL_2026-08-05.md",
-  "wave": "W7 — cycle adversarial 2 en cours",
-  "cycle": 2,
+  "wave": "W7 — cycle adversarial 4 EN COURS (4 agents)",
+  "cycle": 4,
   "web_repo": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne",
-  "web_head": "0b6556f (4 commits locaux, NON poussés)",
-  "cycle2_procureur_diff_web": "RÉGRESSION DÉTECTÉE dans MES correctifs, puis CORRIGÉE (0b6556f) : (1) P1 la clé Mollie par-tentative rouvrait une fenêtre de DOUBLE DÉBIT — la clé stable faisait office de verrou « un seul paiement par commande » et le backend n'en a aucun → verrou synchrone par référence posé avant le premier await ; (2) P2 le retry après refus créait une 2e commande (purge sessionStorage) → cache mémoire par (panier, mode) ; (3) P2 la flèche « Retour au panier » ne rouvrait pas le panier",
-  "cycle2_procureur_fidelite": "AUCUNE RÉGRESSION — sentinelle 4/4, suite Loyalty 46/46, API live confirme min_redeem_points=100 avec réglage DB=50 ; 1 P2 trouvé et CORRIGÉ (repli hors-ligne data/loyalty.js encore à 50) ; restes P2/P3 backend listés ci-dessous",
-  "sauce_dry_run_local": "`php artisan menu:ensure-new-sauces --dry-run` = 56 variations MANQUANTES en local — à exécuter sur le VPS pour savoir si la substitution silencieuse de sauce est LIVE en prod",
-  "backend_note": "dépôt modifié EN PARALLÈLE par une autre session — mon correctif fidélité est dans l'historique (048aa2637), sentinelle verte au HEAD courant",
+  "web_head": "b6f1fda — commits LOCAUX, AUCUN push",
+  "backend_head_note": "b5a8922d3 (correctif coupon). ⚠️ Dépôt backend ET dépôt web modifiés EN PARALLÈLE par une autre session (travaux « 8 axes ») : mes fichiers stagés ont été absorbés par ses commits à plusieurs reprises — contenu vérifié présent dans HEAD à chaque fois. Coordination owner requise.",
   "gates": {
-    "playwright_parcours_achat": "desktop 1440 + mobile 390 — 0 erreur JS, article réellement ajouté, récap 10,80 €",
-    "champs_sous_16px_mobile": "0 (était 4 sur le compte, 1 ailleurs)",
-    "cibles_tactiles_hors_norme_mobile": "12 (était 15) — les 12 restantes = liens texte de pied de page, exemptés WCAG 2.5.5",
-    "phpunit_loyalty": "46/46 OK",
-    "sentinelle_plancher_fidelite": "4/4 OK"
+    "sentinelle_audit": "27/27 (13 invariants de source + 10 des cycles 3-4 + 4 mesurés au navigateur)",
+    "nav_smoke_depot": "13/13, 0 erreur JS",
+    "parcours_achat_reel": "desktop 1440 + mobile 390 — article ajouté, récap 10,80 €, 0 erreur JS",
+    "phpunit_loyalty": "46/46",
+    "phpunit_sentinelle_plancher": "4/4",
+    "phpunit_coupon_killswitch": "2/2",
+    "phpunit_kiosk_frontend": "10/10"
   },
-  "open_P0": [],
-  "open_P1_owner_gate": [
-    "BACKEND SANS VERROU DE PAIEMENT (mis au jour par le cycle 2) : MolliePaymentController::checkout ne teste que `payment_status`, or PAID n'est posé que par le webhook de façon ASYNCHRONE — deux requêtes concurrentes voient toutes deux UNPAID et créent chacune un paiement réel. Aujourd'hui la seule protection est côté CLIENT (clé d'idempotence + verrou synchrone). Un verrou serveur (Cache::lock sur l'order, ou refus si un paiement `open` existe déjà) est la vraie défense. NON APPLIQUÉ : chemin paiement + dépôt backend modifié en parallèle par une autre session",
-    "G-W5 : commande carte web diffusée en caisse/cuisine AVANT paiement (FrontendOrderService.php:250) — refermer le gate exige d'activer le chemin web-payé de finalizePaidKioskOrder + allocation fiscale NF525",
-    "Sauces Poivre/Burger absentes des variations backend en PROD ? exécuter `php artisan menu:ensure-new-sauces --dry-run` sur le VPS (56 manquantes en local) — sinon substitution SILENCIEUSE de sauce",
-    "Gate horaires : commande « dès que prêt ~15-20 min » possible à 14h alors que le service ouvre à 18h — décision métier"
+  "P0_sur_les_4_cycles": 0,
+  "P1_fermes": [
+    "Annuler l'inscription laissait un état connecté fantôme (3 fermetures vérifiées en base)",
+    "Cul-de-sac « carte refusée » : les deux issues proposées renvoyaient un 409",
+    "Fenêtre de DOUBLE DÉBIT rouverte par ma propre clé par-tentative → verrou synchrone (prouvé : 4 clics = 1 commande)",
+    "Retry après refus créait une 2e commande → cache mémoire de la clé",
+    "Ticket + QR délivrés pour une commande ANNULÉE (4xx avalé en repli comptoir)",
+    "?order= étranger détruisait un paiement 3DS en cours",
+    "« Se déconnecter » ne révoquait rien côté serveur (token vivant 30 j, prouvé au curl)",
+    "Toute erreur OTP maquillée en « Code incorrect », même un code JUSTE bloqué par le débit",
+    "Ticket « en attente » figé à vie sans aucune sonde serveur",
+    "Deux onglets = deux commandes réelles (32,40 € pour un panier)",
+    "Coupon promis à l'écran puis refusé au dernier clic (kill-switch backend)",
+    "Modale compte INACCESSIBLE en 1366×768 (bouton hors écran, focus piégé)",
+    "Viande surplus facturée à l'écran mais absente du payload (seul chemin fail-silent restant)",
+    "Mon correctif du délai était du CODE MORT (slotTime pré-amorcé) → ticket promettant 12 min pour 30-35 réels"
   ],
-  "open_P1_P2_a_traiter": [
-    "Ticket de confirmation délivré sur les chemins refused/pending sans sonde serveur (le polling n'existe que sur le retour ?order=)",
-    "Retour 3DS : conclusion après ~12s de sondage, écran ticket pour une commande qui peut passer CANCELED juste après",
-    "URL ?order= rejouée : vide le panier AVANT de vérifier que la commande appartient à la session",
-    "Déconnexion web ne révoque pas le token côté serveur (30 j résiduels)",
-    "Borne : /loyalty/check renvoie un discount_value NON snappé → DiscountCalculator (sans règle de multiple) accepte un redeem de 150 pts que le web et la caisse refusent. Aucune perte d'argent (débit proportionnel au centime), mais inéquité borne↔web sur la règle annoncée",
-    "LoyaltyController::redeem — message « Minimum X points requis » utilise le réglage BRUT, pas le plancher effectif (inatteignable avec la config prod, incohérent sinon)",
-    "Paliers : l'API publie tiers [100,250,500,1000,2000] (affichés par la borne) vs statuts web/CGV [500,1500,5000] — deux échelles pour un même client",
-    "Wizard : Menu complet +2,50 € sans afficher l'économie réelle de 1,30 € (1,90+1,90=3,80). NON APPLIQUÉ volontairement : ajouter le badge côté web seul romprait la parité d'affichage avec la borne — décision owner"
+  "open_owner_gate": [
+    "G-W5 : commande carte web diffusée en caisse/cuisine AVANT paiement — refermer le gate exige d'activer le chemin web-payé de finalizePaidKioskOrder + allocation fiscale NF525",
+    "VERROU DE PAIEMENT SERVEUR ABSENT : MolliePaymentController ne teste que payment_status, posé de façon ASYNCHRONE par le webhook. La seule protection anti-double-paiement est aujourd'hui du JavaScript client",
+    "Sauces Poivre/Burger : `php artisan menu:ensure-new-sauces --dry-run` = 56 variations manquantes EN LOCAL — à exécuter sur le VPS",
+    "Pré-commandes hors service : on peut commander « dès que prêt » à 14h alors que le service ouvre à 18h (décision métier ; porter isOpenNow dans le funnel créerait une jumelle de logique)",
+    "Paliers de statut : site + CGV annoncent 4 rangs [0/500/1500/5000], l'API en publie 5 [100/250/500/1000/2000] que la borne affiche",
+    "Afficher l'économie réelle du Menu complet (1,30 €) — vérifié : la borne n'affiche aucune économie, donc aucune parité à rompre"
   ],
-  "next_command": "Relire les 2 rapports de procureurs (diff web + cohérence fidélité), corriger ce qu'ils confirment, puis relancer un cycle adversarial complet 6 agents pour atteindre le critère « 2 cycles consécutifs à 0 P0/P1 »",
-  "evidence_dir": "reports/goal-web-adversarial-2026-08-05/ + captures dans le scratchpad de session",
+  "open_P2_P3": [
+    "Écran OTP annonçant un destinataire du code potentiellement faux, voire inexistant",
+    "Throttle OTP par IP → verrouillage collectif derrière un NAT",
+    "Compte créé dès la 4e touche : fermer n'annule plus rien, aucune affordance de suppression",
+    "Onglet « Connexion » exigeant prénom + nom, identique à l'inscription",
+    "Pastille d'avatar affichant les 2 derniers chiffres du téléphone (confondue avec un compteur)",
+    "Panier vide sans bouton de sortie · double croix dans la recherche · allergènes à 10px (sécurité alimentaire) · pas de page 404 de marque · format de date « 03:58, 05-08-2026 »",
+    "Dénominateur du wizard qui grandit en cours de route (1/6 → 8/8)"
+  ],
+  "pieges_de_methode_a_ne_pas_refaire": [
+    "Un banc de test qui ne sert pas EXACTEMENT le code audité produit des verdicts faux dans les deux sens : mon miroir liait tout en symlink SAUF index.html (copie) — mes modifications n'étaient pas testées. Vérifier par `diff <(curl -s <url>) <fichier>`.",
+    "`document.body.scrollWidth` MENT (le tiroir panier hors écran le gonfle) : le seul test valable est documentElement.scrollWidth vs clientWidth PLUS un scrollTo(500,0) suivi de la relecture de scrollX.",
+    "Les captures `fullPage` n'exécutent pas les révélations au scroll et écrasent les modales position:fixed.",
+    "Une assertion de texte qui ne retire pas les COMMENTAIRES échoue sur le commentaire qui cite la phrase supprimée.",
+    "Un correctif qui supprime un blocage peut supprimer une PROTECTION non documentée : le 409 gênant ÉTAIT le verrou anti-double-paiement."
+  ],
+  "next_command": "Lire les 4 rapports du cycle 4, corriger ce qu'ils confirment, puis relancer un cycle 5 : la convergence exige DEUX cycles consécutifs à 0 P0/P1.",
   "environnement_local": {
-    "site": "http://127.0.0.1:8901/ (miroir scratchpad pointant vers l'API locale)",
+    "site_miroir": "http://127.0.0.1:8901/ (scratchpad/site-local — index.html est une COPIE, à RÉGÉNÉRER après toute modification d'index.html)",
     "api": "http://127.0.0.1:8766 (header X-API-Key = MIX_API_KEY du .env)",
-    "playwright": "NODE_PATH=<testttt>/node_modules node <script>"
+    "playwright": "NODE_PATH=<testttt>/node_modules node <script>",
+    "otp": "table `otps`, colonne `token` (la colonne `code` est l'indicatif téléphonique)"
   }
 }
 ```
