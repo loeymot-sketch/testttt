@@ -181,6 +181,33 @@ class OutboxMonitorCrashClaimedSentinelTest extends TestCase
     }
 
     /**
+     * [L4 2026-08-05 · plafond attempts] Un crash orphan qui a ÉPUISÉ rescue (attempts>=20 = lane B a
+     * abandonné) ne doit PLUS pager en « crash-claimed / worker-down » (où il paginait indéfiniment)
+     * mais RESTER surfacé dans la dimension DEAD-LETTER (action manuelle). Invariant critique : il ne
+     * doit JAMAIS devenir SILENCIEUX (le plafond crashClaimedCount<20 sans le relais dead-letter le
+     * perdrait). Ce test scelle « exhausted → dead-letter, jamais silencieux ».
+     */
+    public function test_exhausted_crash_orphan_is_surfaced_as_dead_letter_not_worker_down(): void
+    {
+        \Illuminate\Support\Facades\Log::spy();
+
+        $this->seedDomainEvent([
+            'dispatched_at' => now()->subMinutes(15),
+            'broadcast_at'  => null,
+            'last_error'    => 'Pusher unreachable (persistent)',
+            'attempts'      => 25,
+        ], createdMinutesAgo: 100);
+
+        $exit = Artisan::call('foodking:outbox:monitor', ['--threshold' => 10, '--stale-after' => 30]);
+
+        $this->assertSame(1, $exit, 'Un crash orphan épuisé (attempts>=20) doit RESTER surfacé, jamais silencieux.');
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('error')->withArgs(function ($message, $context = []) {
+            return ($context['crash_claimed_count'] ?? -1) === 0   // plafonné hors « worker-down »
+                && ($context['dead_letter_count'] ?? 0) >= 1;      // relayé en dead-letter (manuel)
+        })->once();
+    }
+
+    /**
      * @param  array<string,mixed>  $attrs
      */
     private function seedDomainEvent(array $attrs, int $createdMinutesAgo): DomainEvent

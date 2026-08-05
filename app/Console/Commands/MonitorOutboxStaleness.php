@@ -88,24 +88,41 @@ class MonitorOutboxStaleness extends Command
         // NULL — cf. backfill migration) devenait une ALARME ÉTERNELLE (rescue skip CV, prune ne peut
         // pas retirer un dispatched_at-posé) = fatigue d'alerte masquant une VRAIE panne worker. Un CV
         // est un échec DÉLIBÉRÉ non-recouvrable, pas un orphelin crash à récupérer.
+        // [L4 2026-08-05 · plafond attempts] Ne compter comme « crash-claimed » (récupérable auto)
+        // QUE ce que rescue lane B peut effectivement re-diffuser (attempts < 20). Au-delà, rescue a
+        // ABANDONNÉ → c'est un DEAD-LETTER (action manuelle), surfacé dans la dimension dédiée ci-dessous
+        // et non plus en « worker-down » où il paginait indéfiniment (fatigue d'alerte, L4).
         $crashClaimedCount = (int) DB::table('domain_events')
             ->whereNotNull('dispatched_at')
             ->whereNull('broadcast_at')
             ->where('dispatched_at', '<', $orphanCutoff)
+            ->where('attempts', '<', 20)
             ->where(function ($q): void {
                 $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
             })
             ->count();
 
-        // [NUIT-A 2026-07-03 / P2] DEAD-LETTER : pending + attempts >= 5. Ces rows ont épuisé la fenêtre de
-        // re-queue (outbox:rescue ne reprend que attempts < 5) sans jamais réussir, et prune ne supprime
-        // qu'à attempts >= 6 → elles restent orphelines. Dimension distincte du « worker down » : elles
-        // exigent une action MANUELLE (re-drive), pas un redémarrage de worker. Gate d'âge (orphanCutoff)
-        // pour ne pas alerter sur un event tout juste passé à attempts=5 encore en cours de traitement.
+        // [NUIT-A 2026-07-03 / P2] DEAD-LETTER : rows orphelines qui exigent une action MANUELLE (re-drive),
+        // PAS un redémarrage de worker. Deux formes : (a) PENDING épuisé (attempts>=5, jamais claimé —
+        // rescue ne reprend que <5, prune ne supprime qu'à >=6) ; (b) [L4 2026-08-05] CRASH-CLAIMED épuisé
+        // (dispatched_at posé, jamais livré, attempts>=20 = rescue lane B a abandonné) → dimension manuelle
+        // au lieu de « worker-down » éternel. Gate d'âge (orphanCutoff). CV exclu (poison, pruné à part).
         $deadLetterCount = (int) DB::table('domain_events')
-            ->whereNull('dispatched_at')
-            ->where('attempts', '>=', 5)
-            ->where('created_at', '<', $orphanCutoff)
+            ->where(function ($outer) use ($orphanCutoff): void {
+                $outer->where(function ($p) use ($orphanCutoff): void {
+                    $p->whereNull('dispatched_at')
+                        ->where('attempts', '>=', 5)
+                        ->where('created_at', '<', $orphanCutoff);
+                })->orWhere(function ($c) use ($orphanCutoff): void {
+                    $c->whereNotNull('dispatched_at')
+                        ->whereNull('broadcast_at')
+                        ->where('attempts', '>=', 20)
+                        ->where('dispatched_at', '<', $orphanCutoff);
+                });
+            })
+            ->where(function ($q): void {
+                $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
+            })
             ->count();
 
         if ($staleCount <= $threshold && $crashClaimedCount === 0 && $deadLetterCount === 0) {
@@ -131,8 +148,9 @@ class MonitorOutboxStaleness extends Command
             ->whereNotNull('dispatched_at')
             ->whereNull('broadcast_at')
             ->where('dispatched_at', '<', $orphanCutoff)
+            ->where('attempts', '<', 20)
             ->where(function ($q): void {
-                // Miroir EXACT de $crashClaimedCount (dont l'exclusion CV) → le détail reste cohérent.
+                // Miroir EXACT de $crashClaimedCount (exclusion CV + plafond attempts<20) → détail cohérent.
                 $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
             })
             ->orderBy('dispatched_at')
