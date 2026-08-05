@@ -2163,6 +2163,7 @@
                 "garnitures": {
                     "title": "Choose toppings",
                     "all_included": "All toppings are included",
+                    "none_button": "No toppings",
                     "deselect_hint": "Tap to remove those you don’t want",
                     "with": "WITH",
                     "without": "WITHOUT",

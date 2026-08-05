@@ -110,6 +110,16 @@ export function partitionKioskExtras(item) {
 
     if (kioskIsSauceExtra(e)) continue;
 
+    // [GOAL-8AXES V3 2026-08-05 owner] Les crudités PAYANTES (Poivrons cuits /
+    // Maïs / Olives 0,90 €, group_label='crudite') s'affichent « à côté des
+    // crudités » (étape Garnitures), pas dans Gourmands. Le prix > 0 reste
+    // porté par `row.price` → l'étape affiche le badge « +0,90 € » et le
+    // total/scellé les facture (NewSupplementsBilledTest).
+    if (String(e?.group_label || '').toLowerCase() === 'crudite') {
+      out.garnitures.push(row);
+      continue;
+    }
+
     if (price === 0) {
       out.garnitures.push(row);
       continue;

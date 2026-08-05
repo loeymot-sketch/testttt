@@ -163,6 +163,21 @@ export function calculateKioskRunningTotal(item, selections = {}) {
         total += price * count;
       }
     });
+
+    // [GOAL-8AXES V3 2026-08-05] Crudités PAYANTES (Poivrons cuits / Maïs /
+    // Olives 0,90 €, group_label='crudite') : sélectionnées dans le slot
+    // `selections.garnitures` (booléen) — pas `supplements` — et poussées au
+    // payload par le wizard (KioskWizardComponent:511) donc SCELLÉES par le
+    // backend (NewSupplementsBilledTest). Sans ce bloc, le total AFFICHÉ
+    // resterait plus bas que le total facturé (même famille de divergence que
+    // la sauce frites 2026-07-29, en sens inverse).
+    item.extras.forEach((extra) => {
+      if (!selections.garnitures?.[extra.id]) return;
+      const price = parseFloat(extra.convert_price || extra.price || 0);
+      if (price > 0 && String(extra.group_label || '').toLowerCase() === 'crudite') {
+        total += price;
+      }
+    });
   }
 
   total += getKioskMenuAddonPrice(item, selections.menuChoice);

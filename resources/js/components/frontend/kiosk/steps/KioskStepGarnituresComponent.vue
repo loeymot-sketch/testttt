@@ -7,6 +7,20 @@
       <span class="kiosk-info-text">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
     </div>
 
+    <!-- [GOAL-8AXES V3 2026-08-05 owner] « Sans crudités » en UN geste : décoche
+         toutes les garnitures d'un coup (au lieu de toucher chaque crudité). -->
+    <button
+      v-if="garnitureList.length > 0"
+      type="button"
+      class="kiosk-garnitures-none-btn"
+      :class="{ 'is-active': selectedCount === 0 }"
+      data-testid="kiosk-garnitures-none"
+      :aria-pressed="selectedCount === 0 ? 'true' : 'false'"
+      @click="deselectAllGarnitures"
+    >
+      🚫 {{ $t('kiosk.wizard.step.garnitures.none_button') }}
+    </button>
+
     <div v-if="garnitureList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
       <p>{{ $t('kiosk.wizard.step.garnitures.empty_hint') }}</p>
     </div>
@@ -45,6 +59,13 @@
           <span v-if="!localSelections[garniture.id]" class="kiosk-garniture-strike"></span>
         </div>
         <span class="kiosk-garniture-name">{{ garniture.name }}</span>
+        <!-- [GOAL-8AXES V3] Crudité PAYANTE (Poivrons cuits / Maïs / Olives) :
+             badge prix — affiché == facturé (kioskPricing + NewSupplementsBilledTest). -->
+        <span
+          v-if="garniture.price > 0"
+          class="kiosk-garniture-price"
+          data-testid="kiosk-garniture-price"
+        >+{{ formatGarniturePrice(garniture.price) }}</span>
         <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}</span>
         <span
           v-if="isGarnitureOos(garniture)"
@@ -122,6 +143,9 @@ export default {
       return partitionKioskExtras(this.item).garnitures.map(g => ({
         id: g.id,
         name: g.name,
+        // [GOAL-8AXES V3] prix exposé — 0 pour les crudités classiques, 0,90 €
+        // pour Poivrons cuits / Maïs / Olives (badge + total).
+        price: g.price || 0,
         displayThumb: kioskResolveImageSrc(g.raw),
         emoji: this.getEmojiForGarniture(g.name),
         raw: g.raw,
@@ -190,6 +214,18 @@ export default {
       }
       this.localSelections = newSelections;
       this.$emit('update', 'garnitures', newSelections);
+    },
+    // [GOAL-8AXES V3 2026-08-05 owner] « Sans crudités » : tout décocher en un geste.
+    deselectAllGarnitures() {
+      this.userInteracted = true;
+      const cleared = {};
+      Object.keys(this.localSelections).forEach((id) => { cleared[id] = false; });
+      this.garnitureList.forEach((g) => { cleared[g.id] = false; });
+      this.localSelections = cleared;
+      this.$emit('update', 'garnitures', cleared);
+    },
+    formatGarniturePrice(price) {
+      return `${Number(price).toFixed(2).replace('.', ',')} €`;
     }
   }
 };
@@ -417,6 +453,36 @@ export default {
 .kiosk-garniture-action.active {
   font-size: 13px;
   font-weight: 800;
+}
+
+/* [GOAL-8AXES V3] « Sans crudités » un-geste + badge prix crudité payante. */
+.kiosk-garnitures-none-btn {
+  display: block;
+  margin: 0 0 12px;
+  padding: 10px 18px;
+  min-height: 48px; /* cible tactile */
+  border: 2px solid #D9DBE9;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A1A;
+  cursor: pointer;
+}
+.kiosk-garnitures-none-btn.is-active {
+  border-color: #F4501E;
+  background: #FFF3EE;
+  color: #F4501E;
+}
+.kiosk-garniture-price {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #FFB800;
+  color: #1A1A1A;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .kiosk-garnitures-summary {
