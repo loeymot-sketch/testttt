@@ -595,3 +595,132 @@ export function renderItemSymbolic(orderItem) {
 
     return { category: s.category, hasAllergen, lines };
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * [CUISSON 2026-08-06 owner] BANDEAU DE CUISSON — agrégation des viandes d'une commande.
+ *
+ * JUMEAU STRICT de app/Services/Kitchen/MeatPortionCalculator.php. Toute évolution d'un côté
+ * DOIT être répercutée de l'autre : l'écran cuisine et le ticket imprimé doivent annoncer la
+ * même chose au même cuisinier, et les mêmes portions alimentent la consommation de stock.
+ *
+ * Règle owner — « portion complète » = 2 pièces :
+ *   · 1 emplacement « Viande N »  → 2 pièces         (Cayenne hachée = 2K)
+ *   · N emplacements              → 1 pièce chacun   (Méga hachée+poulet = 1K 1P)
+ *   · supplément viande           → portion complète, nommée depuis l'instruction
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Nombre de pièces d'une portion complète. Miroir de MeatPortionCalculator::PORTION_COMPLETE. */
+export const PORTION_COMPLETE = 2;
+
+/** Recettes FIXES non déclarées en base : signalées « ? », jamais devinées. */
+const RECETTE_INCONNUE = [/burger/i, /supr[êe]me/i, /menu\s*enfant/i, /nugget/i];
+
+/** Un nom de viande → { symbole: part de l'emplacement }. « Mixte » partage son emplacement. */
+function meatShares(name) {
+    const rendu = String(meatSymbol(name) || '').trim();
+    if (!rendu) {
+        const court = normalize(name).replace(/[^a-z]/g, '').slice(0, 3);
+        return { [court ? court.charAt(0).toUpperCase() + court.slice(1) : '?']: 1 };
+    }
+    const syms = rendu.split(/\s+/);
+    const part = 1 / Math.max(1, syms.length);
+    const out = {};
+    for (const s of syms) out[s] = (out[s] || 0) + part;
+    return out;
+}
+
+function addPiece(acc, sym, n) {
+    acc[sym] = Math.round((acc[sym] || 0) + n);
+}
+
+/**
+ * Pièces de viande à cuire pour UN article.
+ * @returns {{pieces: Object<string, number>, inconnu: boolean}}
+ */
+export function meatPortionsForItem(orderItem) {
+    const qty = Math.max(1, Number(orderItem?.quantity) || 1);
+    const instruction = orderItem?.instruction || '';
+    const pieces = {};
+
+    const viandes = [];
+    for (const v of readVariations(orderItem)) {
+        const groupe = String(v?.attribute_name || v?.group || '');
+        if (!/viande/i.test(groupe)) continue;
+        const nom = String(v?.variation_name || v?.name || v?.value || '').trim();
+        if (nom) viandes.push(nom);
+    }
+
+    if (viandes.length) {
+        const parEmplacement = viandes.length === 1 ? PORTION_COMPLETE : 1;
+        for (const nom of viandes) {
+            const shares = meatShares(nom);
+            for (const sym of Object.keys(shares)) addPiece(pieces, sym, parEmplacement * shares[sym] * qty);
+        }
+    }
+
+    // Supplément viande : portion complète. Les wizards sont frozen et facturent un extra
+    // générique et sans nom — l'identité ne survit que dans l'instruction.
+    const noms = extraViandeNames(instruction);
+    let iSupp = 0;
+    for (const e of readExtras(orderItem)) {
+        if (!/viande\s*suppl/i.test(extraName(e))) continue;
+        const n = Math.max(1, Number(e?.quantity) || 1);
+        for (let k = 0; k < n; k++) {
+            let nom = noms[iSupp];
+            iSupp++;
+            if (!nom) {
+                // Jamais escamoté : le cuisinier doit voir qu'il y a une viande de plus à cuire,
+                // même quand le ticket ne dit pas laquelle.
+                addPiece(pieces, '?', PORTION_COMPLETE * qty);
+                continue;
+            }
+            let mult = 1;
+            const m = String(nom).trim().match(/^(\d+)\s*[x×]\s*(.+)$/i);
+            if (m) { mult = Math.max(1, parseInt(m[1], 10)); nom = m[2].trim(); }
+            const shares = meatShares(nom);
+            for (const sym of Object.keys(shares)) addPiece(pieces, sym, PORTION_COMPLETE * shares[sym] * mult * qty);
+        }
+    }
+
+    let inconnu = false;
+    if (!viandes.length) {
+        const nomItem = String(orderItem?.item_name || orderItem?.name || '');
+        inconnu = RECETTE_INCONNUE.some((re) => re.test(nomItem));
+    }
+
+    return { pieces, inconnu };
+}
+
+/**
+ * Rend la ligne lue par le cuisinier : « 9K 3P 2Cordon ».
+ * K vient en tête : c'est la viande la plus longue à cuire, donc la première sur la plancha.
+ */
+export function renderCuisson(pieces, inconnus = 0) {
+    const syms = Object.keys(pieces || {});
+    if (!syms.length && !inconnus) return '';
+
+    const rang = (s) => (s === 'K' ? 0 : s === 'P' ? 1 : s === '?' ? 3 : 2);
+    syms.sort((a, b) => rang(a) - rang(b) || a.localeCompare(b));
+
+    const parts = syms.map((s) => `${pieces[s]}${s}`);
+    if (inconnus > 0) parts.push(`${inconnus}×?`);
+    return parts.join(' ');
+}
+
+/**
+ * Agrège TOUTE la commande en une seule ligne de cuisson — le cœur de la demande owner :
+ * « on va tous les assembler et dire une seule fois qu'il y en a neuf ».
+ * @returns {{pieces: Object<string, number>, inconnus: number, texte: string}}
+ */
+export function cuissonForOrder(orderItems) {
+    const total = {};
+    let inconnus = 0;
+
+    for (const oi of Array.isArray(orderItems) ? orderItems : []) {
+        const r = meatPortionsForItem(oi);
+        for (const sym of Object.keys(r.pieces)) addPiece(total, sym, r.pieces[sym]);
+        if (r.inconnu) inconnus += Math.max(1, Number(oi?.quantity) || 1);
+    }
+
+    return { pieces: total, inconnus, texte: renderCuisson(total, inconnus) };
+}

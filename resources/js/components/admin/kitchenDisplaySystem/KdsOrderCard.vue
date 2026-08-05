@@ -72,6 +72,20 @@
         <span v-else class="kds-card__allergen-spacer"></span>
       </div>
 
+      <!-- [CUISSON 2026-08-06 owner] BANDEAU DE CUISSON — au-dessus du numéro de commande,
+           la toute première chose que le cuisinier lit. Il agrège TOUTES les viandes de la
+           commande entière en une seule ligne symbolique : sa mission est de mettre à cuire,
+           puis de préparer pains/sauces/crudités pendant la cuisson. Jumeau STRICT du ticket
+           imprimé (OrderReceiptEscPosRenderer::renderKitchenTicket). -->
+      <div
+        v-if="cuissonTexte"
+        class="kds-card__cuisson"
+        :data-testid="`kds-card-cuisson-${order.id}`"
+      >
+        <span class="kds-card__cuisson-label">CUISSON</span>
+        <span class="kds-card__cuisson-value keep-latin">{{ cuissonTexte }}</span>
+      </div>
+
       <!-- main row: queue number + elapsed -->
       <div class="kds-card__main">
         <div class="kds-card__queue keep-latin">
@@ -215,7 +229,7 @@
 <script>
 import KdsOrderLine from './KdsOrderLine.vue';
 import { orderHasAnyAllergen } from '../../../helpers/kdsCustomization.js';
-import { renderItemSymbolic } from '../../../helpers/kdsSymbolic.js';
+import { renderItemSymbolic, cuissonForOrder } from '../../../helpers/kdsSymbolic.js';
 import {
     getKdsAgeBucket,
     parseOrderCreatedMs,
@@ -400,6 +414,21 @@ export default {
                 // → le cuisinier repère immédiatement les commandes « à extra ».
                 'kds-card--has-supplements': this.hasSupplements,
             };
+        },
+        /**
+         * [CUISSON 2026-08-06 owner] Les viandes de TOUTE la commande, agrégées en une ligne
+         * (« 9K 3P 2Cordon »). Chaîne vide = aucune viande → le bandeau ne s'affiche pas.
+         * Le calcul vit dans kdsSymbolic.js, jumeau strict du moteur PHP qui alimente aussi le
+         * ticket imprimé et la consommation de stock : un seul calcul, jamais trois.
+         * Défensif : une charge utile inattendue ne doit jamais faire tomber la carte — le
+         * cuisinier perdrait la commande entière pour un bandeau.
+         */
+        cuissonTexte() {
+            try {
+                return cuissonForOrder((this.order && this.order.order_items) || []).texte;
+            } catch (e) {
+                return '';
+            }
         },
         // [K2-KDS 2026-07-05] Vrai si au moins un article de la commande porte un supplément
         // payant (ligne symbolique de type « supplement »). Pilote le fond jaune de la fiche.
@@ -668,6 +697,40 @@ export default {
    off the elapsed timer (Wave T R1 evidence: "14:26" rendering as "14:2",
    "ATTENTE" rendering as "ATTEN"). Now sized to fit inside 300px at the
    tightest breakpoint while preserving 2m-readability at ≥1600px. */
+/* [CUISSON 2026-08-06 owner] Bandeau de cuisson — lu en PREMIER, avant le numéro.
+   Fond sombre plein pour se détacher de l'en-tête (qui change de couleur avec l'âge de la
+   commande) et rester lisible à 2 m, la distance de lecture réelle d'un KDS. La valeur est
+   dimensionnée entre l'étiquette et le numéro : dominante, sans jamais lui voler la vedette —
+   le numéro reste ce qui identifie la commande au passe-plat. */
+.kds-card__cuisson {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 12px 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #111827;
+}
+.kds-card__cuisson-label {
+    flex-shrink: 0;
+    color: #F9FAFB;
+    font-size: clamp(12px, 1.3vw, 16px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+}
+.kds-card__cuisson-value {
+    color: #FFFFFF;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: clamp(22px, 2.6vw, 34px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    /* Une grosse commande peut dépasser la largeur : on enroule plutôt que de tronquer —
+       une viande coupée serait une viande non cuite. */
+    overflow-wrap: anywhere;
+}
 .kds-card__main {
     display: flex;
     align-items: flex-end;

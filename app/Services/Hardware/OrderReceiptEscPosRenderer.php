@@ -27,6 +27,7 @@ final class OrderReceiptEscPosRenderer
     public function __construct(
         private readonly ReceiptDataService $receiptData = new ReceiptDataService,
         private readonly KitchenTicketSymbolicFormatter $symbolic = new KitchenTicketSymbolicFormatter,
+        private readonly \App\Services\Kitchen\MeatPortionCalculator $portions = new \App\Services\Kitchen\MeatPortionCalculator,
     ) {}
 
     /**
@@ -259,6 +260,33 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::bold(true);
         $b .= EscPosCommandBuilder::textLine('CUISINE');
         $b .= EscPosCommandBuilder::bold(false);
+
+        // [CUISSON 2026-08-06 owner] BANDEAU DE CUISSON — la toute première chose que le
+        // cuisinier lit, AU-DESSUS du numéro de commande, comme demandé. Il agrège TOUTES les
+        // viandes de la commande entière en une seule ligne symbolique (« 9K 3P 2Cordon ») :
+        // sa mission est de mettre à cuire, puis de préparer pains/sauces/crudités pendant la
+        // cuisson — il ne doit plus lire la commande produit par produit pour cela.
+        // Les mêmes portions alimentent la consommation de stock : un seul moteur, jamais deux.
+        $cuisson = $this->portions->forOrder(array_map(static fn ($oi): array => [
+            'name' => (string) ($oi->name ?? optional($oi->orderItem)->name ?? ''),
+            'snapshot' => is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [],
+            'quantity' => max(1, (int) ($oi->quantity ?? 1)),
+            'instruction' => (string) ($oi->instruction ?? ''),
+        ], iterator_to_array($order->orderItems ?? collect())));
+
+        if ($cuisson['texte'] !== '') {
+            $b .= EscPosCommandBuilder::separator('-', $w);
+            $b .= EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine('CUISSON');
+            $b .= EscPosCommandBuilder::doubleHeight(true);
+            // textWrap et non textLine : une grosse commande peut dépasser la largeur, et une
+            // viande tronquée serait une viande non cuite.
+            $b .= EscPosCommandBuilder::textWrap($cuisson['texte'], $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false);
+            $b .= EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::separator('-', $w);
+        }
+
         // [AUDIT F1] Same call number as the client ticket (queue, not the long serial),
         // big so the cook can match it when handing the order over.
         $callNo = (string) ($order->queue_number ?: ($order->order_serial_no ?? $order->id));
