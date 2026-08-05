@@ -597,7 +597,16 @@ final class KitchenTicketSymbolicFormatter
      * frozen pos-wizard writes into `instruction`; keep only free client notes
      * and bracketed notes. PHP twin of kdsSymbolic / sanitizeKdsInstruction.
      */
-    public function cleanInstruction(?string $raw, string $itemName): string
+    /**
+     * @param  list<string>  $knownDrinks  lignes boisson déjà émises par le canal
+     *         addon (sortie de drinkLines(), ex. "1 Coca 33cl") — [D-1 GOAL-8AXES
+     *         2026-08-05] le dédoublonnage historique (W6-ADV C-P1-1) ne comparait
+     *         que les lignes « BOISSON: X » entre elles : quand l'addon
+     *         menu_boisson porte le VRAI nom (« Coca 33cl ») ET que l'instruction
+     *         contient la ligne formule, la boisson sortait DEUX FOIS (ticket ET
+     *         KDS). Jumeau STRICT : kdsCustomization.js sanitizeKdsInstruction.
+     */
+    public function cleanInstruction(?string $raw, string $itemName, array $knownDrinks = []): string
     {
         if (! is_string($raw) || $raw === '') {
             return '';
@@ -647,7 +656,11 @@ final class KitchenTicketSymbolicFormatter
             }
             // [KITCHEN-MENU 2026-06-30] Menu + sauce frites → représentés par la ligne
             // « MENU : SYM » : on les retire de l'instruction (anti double-menu / verbeux).
-            if (preg_match('/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b/iu', $t)) {
+            // [D-1 GOAL-8AXES 2026-08-05] + toute ligne « Formule : … » : c'est de la compo
+            // (conteneur + boisson), jamais une note client — sa boisson est extraite du
+            // BRUT par extractFormuleDrinkLines AVANT ce drop (W6-ADV C-P1-1), rien n'est
+            // perdu. Sans ce drop, « Formule : Menu XL (Fanta 33cl) » survivait en note.
+            if (preg_match('/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b|^formule\s*:/iu', $t)) {
                 continue;
             }
             if (preg_match('/^[+↳]/u', $t)) {
@@ -672,8 +685,16 @@ final class KitchenTicketSymbolicFormatter
 
         // [W6-ADV C-P1-1] Boisson de formule borne extraite AVANT le drop de sa ligne —
         // dédupliquée si la caisse a déjà écrit sa propre ligne « BOISSON: X ».
+        // [D-1 GOAL-8AXES 2026-08-05] + dédupliquée contre le canal ADDON ($knownDrinks) :
+        // les deux formats sont normalisés (préfixe quantité strippé, minuscules) car
+        // « 1 Coca 33cl » (addon) et « BOISSON: Coca 33cl » (instruction) ne sont jamais
+        // égaux en comparaison brute.
+        $known = array_map([self::class, 'normalizeDrinkKey'], $knownDrinks);
         $lower = array_map(static fn ($l) => mb_strtolower((string) $l), $kept);
         foreach ($this->extractFormuleDrinkLines($raw) as $d) {
+            if (in_array(self::normalizeDrinkKey($d), $known, true)) {
+                continue; // déjà émise par drinkLines() — ne pas doubler
+            }
             if (! in_array(mb_strtolower($d), $lower, true)) {
                 $kept[] = $d;
                 $lower[] = mb_strtolower($d);
@@ -681,6 +702,20 @@ final class KitchenTicketSymbolicFormatter
         }
 
         return trim(implode("\n", $kept));
+    }
+
+    /**
+     * [D-1] Clé de comparaison inter-canaux : « 1 Coca 33cl » / « 2× Fanta 33cl » /
+     * « BOISSON: Coca 33cl » → « coca 33cl ». Jumeau STRICT : kdsCustomization.js
+     * normalizeDrinkKey.
+     */
+    private static function normalizeDrinkKey(string $line): string
+    {
+        $s = trim($line);
+        $s = (string) preg_replace('/^boisson\s*:\s*/iu', '', $s);
+        $s = (string) preg_replace('/^\d+\s*[x×]?\s*/u', '', $s);
+
+        return mb_strtolower(trim($s));
     }
 
     /** @return array{0:string,1:string} [produit, taille] — only M/L/XL trailing tokens */

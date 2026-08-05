@@ -492,7 +492,14 @@ function drinkAddonLabels(orderItem) {
  * « BOISSON: Coca-Cola 33cl » du wizard caisse) et strip l'écho compo du wizard.
  */
 function instructionLine(orderItem) {
-    const note = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name);
+    // [D-1 GOAL-8AXES 2026-08-05] Les boissons du canal ADDON (menu_child) sont
+    // transmises au sanitiseur pour qu'il ne ré-émette pas la même boisson via
+    // la ligne « Formule : … (X) » de l'instruction. Jumeau PHP : Renderer:336.
+    const note = sanitizeKdsInstruction(
+        orderItem?.instruction,
+        orderItem?.item_name,
+        drinkAddonLabels(orderItem),
+    );
     if (note.length === 0) return null;
     return { type: 'instruction', label: note, visualClass: kdsInstructionVisualClass(note) };
 }

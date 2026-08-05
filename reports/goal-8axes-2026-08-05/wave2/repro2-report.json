@@ -1,0 +1,235 @@
+{
+  "network": [
+    {
+      "url": "/api/admin/pos/customer-display",
+      "status": 200,
+      "body": "{\"enabled\":false,\"sent\":false}"
+    },
+    {
+      "url": "/api/admin/pos/customer-display",
+      "status": 200,
+      "body": "{\"enabled\":false,\"sent\":false}"
+    },
+    {
+      "url": "/api/admin/pos/quote",
+      "status": 200,
+      "body": "{\"status\":true,\"data\":{\"quote_token\":\"d992dd37-6363-4261-b427-9b6f78e9da1e\",\"signature\":\"59d7afbbf7071c8c2adb51cac8bceda3d3a3f1a13da5a0f32e399c8b0049cbf7\",\"expires_at\":\"2026-08-05T02:48:18+02:00\",\"ttl_seconds\":145,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0.23,\"delivery_charge\":0,\"total_ttc\":2.5,\"currency\":\"EUR\",\"consumed_at\":null}}"
+    },
+    {
+      "url": "/api/admin/pos",
+      "status": 422,
+      "body": "{\"message\":\"Last 4 digits of card is required\",\"errors\":{\"pos_payment_note\":[\"Last 4 digits of card is required\"]}}"
+    },
+    {
+      "url": "/api/admin/pos/quote",
+      "status": 200,
+      "body": "{\"status\":true,\"data\":{\"quote_token\":\"d992dd37-6363-4261-b427-9b6f78e9da1e\",\"signature\":\"59d7afbbf7071c8c2adb51cac8bceda3d3a3f1a13da5a0f32e399c8b0049cbf7\",\"expires_at\":\"2026-08-05T02:48:18+02:00\",\"ttl_seconds\":139,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0.23,\"delivery_charge\":0,\"total_ttc\":2.5,\"currency\":\"EUR\",\"consumed_at\":null}}"
+    },
+    {
+      "url": "/api/admin/pos",
+      "status": 201,
+      "body": "{\"data\":{\"id\":6059,\"order_serial_no\":\"0508266059\",\"queue_number\":\"A0034\",\"token\":\"1\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0.23,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_price\":\"2,50\\u00a0\\u20ac\",\"subtotal_without_tax_currency_price\":\"2,27\\u00a0\\u20ac\",\"discount_currency_price\":\"0,00\\u00a0\\u20ac\",\"delivery_charge_currency_price\":\"0,00\\u00a0\\u20ac\",\"total_currency_price\":\"2,50\\u00a0\\u20ac\",\"total_tax_currency_price\":\"0,23\\u00a0\\u20ac\",\"order_type\":10,\"created_at\":\"2026-08-05T02:45:58+02:00\",\"order_datetime\":\"02:45, 05-08-2026\",\"order_date\":\"05-08-2026\",\"order_time\":\"02:45\",\"delivery_date\":\"05-08-2026\",\"delivery_time\":\"02:45 - 03:15\",\"scheduled_at\":null,\"payment_method\":null,\"payment_status\":5,\"payment_pending_counter\":false,\"cash_movement_skipped\":false,\"cash_movement_skipped_message\":null,\"is_advance_order\":10,\"preparation_time\":30,\"status\":7,\"status_name\":\"En pr\\u00e9paration\",\"reason\":null,\"user\":{\"id\":2,\"name\":\"Client passage\",\"phone\":\"0600000001\",\"loyalty_points\":0},\"order_address\":null,\"branch\":{\"id\":1,\"name\":\"Le Cayenne (principal)\",\"email\":\"contact@lecayenne.fr\",\"phone\":\"0365678291\",\"latitude\":\"50.4215667\",\"long"
+    },
+    {
+      "url": "/api/admin/pos/customer-display",
+      "status": 200,
+      "body": "{\"enabled\":false,\"sent\":false}"
+    },
+    {
+      "url": "/api/admin/pos/customer-display",
+      "status": 200,
+      "body": "{\"enabled\":false,\"sent\":false}"
+    },
+    {
+      "url": "/api/admin/pos/quote",
+      "status": 200,
+      "body": "{\"status\":true,\"data\":{\"quote_token\":\"c904bdc9-1d65-4176-a88a-d6f804a27797\",\"signature\":\"c8b94f11f51910723063f579e607b75e73ba75d290e4fa9008543d393944621f\",\"expires_at\":\"2026-08-05T02:51:17+02:00\",\"ttl_seconds\":299,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0.23,\"delivery_charge\":0,\"total_ttc\":2.5,\"currency\":\"EUR\",\"consumed_at\":null}}"
+    },
+    {
+      "url": "/api/admin/pos",
+      "status": 201,
+      "body": "{\"data\":{\"id\":6060,\"order_serial_no\":\"0508266060\",\"queue_number\":\"A0035\",\"token\":\"2\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0.23,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_price\":\"2,50\\u00a0\\u20ac\",\"subtotal_without_tax_currency_price\":\"2,27\\u00a0\\u20ac\",\"discount_currency_price\":\"0,00\\u00a0\\u20ac\",\"delivery_charge_currency_price\":\"0,00\\u00a0\\u20ac\",\"total_currency_price\":\"2,50\\u00a0\\u20ac\",\"total_tax_currency_price\":\"0,23\\u00a0\\u20ac\",\"order_type\":10,\"created_at\":\"2026-08-05T02:46:17+02:00\",\"order_datetime\":\"02:46, 05-08-2026\",\"order_date\":\"05-08-2026\",\"order_time\":\"02:46\",\"delivery_date\":\"05-08-2026\",\"delivery_time\":\"02:46 - 03:16\",\"scheduled_at\":null,\"payment_method\":null,\"payment_status\":5,\"payment_pending_counter\":false,\"cash_movement_skipped\":false,\"cash_movement_skipped_message\":null,\"is_advance_order\":10,\"preparation_time\":30,\"status\":7,\"status_name\":\"En pr\\u00e9paration\",\"reason\":null,\"user\":{\"id\":2,\"name\":\"Client passage\",\"phone\":\"0600000001\",\"loyalty_points\":0},\"order_address\":null,\"branch\":{\"id\":1,\"name\":\"Le Cayenne (principal)\",\"email\":\"contact@lecayenne.fr\",\"phone\":\"0365678291\",\"latitude\":\"50.4215667\",\"long"
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+  ],
+  "cart_lines": 1,
+  "modal_initial": {
+    "modalVisible": true,
+    "tabs": [
+      {
+        "k": "cash",
+        "present": true,
+        "text": "💵\nEspèces",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method active is-active"
+      },
+      {
+        "k": "card",
+        "present": true,
+        "text": "💳\nCarte (TPE)",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      },
+      {
+        "k": "multi",
+        "present": true,
+        "text": "🔀\nMulti-paiement",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      }
+    ],
+    "terminalSelect": {
+      "present": false
+    },
+    "confirmBtn": {
+      "present": true,
+      "disabled": false,
+      "ariaDisabled": "false",
+      "text": "✓\nConfirmer & Imprimer ticket"
+    },
+    "modalText": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n2,50 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nMONTANT REÇU\n1\n2\n3\n⌫\n4\n5\n6\n⌫\n7\n8\n9\nC\n00\n0\n.\nC\n✓\nConfirmer & Imprimer ticket"
+  },
+  "card_state": {
+    "modalVisible": true,
+    "tabs": [
+      {
+        "k": "cash",
+        "present": true,
+        "text": "💵\nEspèces",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      },
+      {
+        "k": "card",
+        "present": true,
+        "text": "💳\nCarte (TPE)",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method active is-active"
+      },
+      {
+        "k": "multi",
+        "present": true,
+        "text": "🔀\nMulti-paiement",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      }
+    ],
+    "terminalSelect": {
+      "present": true,
+      "value": "1",
+      "options": [
+        {
+          "v": "Sélectionnez un TPE",
+          "t": "Sélectionnez un TPE",
+          "disabled": true,
+          "selected": false
+        },
+        {
+          "v": "1",
+          "t": "TPE Le Cayenne #1 · simulation",
+          "disabled": false,
+          "selected": true
+        }
+      ]
+    },
+    "confirmBtn": {
+      "present": true,
+      "disabled": false,
+      "ariaDisabled": "false",
+      "text": "✓\nConfirmer & Imprimer ticket"
+    },
+    "modalText": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n2,50 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nTERMINAL DE PAIEMENT (TPE)\nSélectionnez un TPE\nTPE Le Cayenne #1 · simulation\nSAISIR LES 4 DERNIERS CHIFFRES DE LA CARTE\n1\n2\n3\n⌫\n4\n5\n6\n⌫\n7\n8\n9\nC\n00\n0\n.\nC\n✓\nConfirmer & Imprimer ticket"
+  },
+  "early_toasts": [
+    "Last 4 digits of card is required ×",
+    "Last 4 digits of card is required"
+  ],
+  "after_card_confirm": {
+    "payModalOpen": true,
+    "receiptVisible": true,
+    "receiptExcerpt": "",
+    "toasts": [],
+    "cartLines": 1
+  },
+  "card_retry_with_digits": {
+    "payModalOpen": true,
+    "receiptVisible": true,
+    "receiptExcerpt": "🔧 MODE TEST — IMPRESSION BYPASSÉE\n←\nFermer\n👨‍🍳\nTicket Cuisine\n🧾\nTicket Client\nTicket client\nSIRET: 10417050100019\nTVA intra: FR19104170501\nOpérateur: Client passage\nLe Cayenne\n437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\nTel: 0365678291\nCommande #0508266059\n05-08-2026\t02:45\nQté\t\nDésignation\nPrix\n1\n\t\nPetite Frites\n2,27 €\nSauce (1ère Gratuite): Algérienne\nVAT (10.00 %)\n0,23 €\nSOUS-TOTAL:\t2,27 €\nTOTAL TAXES:\t0,23 €\nVAT (10%)· Base HT 2,27 €\t0,23 €\nREMISE:\t0,00 €\nTOTAL:\t2,50 €\nType de commande: À emporter\nType de paiement: Carte\nN°A0034\nN° ticket NF525: 2703\nEmpreinte audit: 7a66d155fd22\nMentio",
+    "cartLines": 1
+  },
+  "cart_lines_multi": 1,
+  "multi_tab_present": 1,
+  "multi_state": {
+    "modalVisible": true,
+    "tabs": [
+      {
+        "k": "cash",
+        "present": true,
+        "text": "💵\nEspèces",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      },
+      {
+        "k": "card",
+        "present": true,
+        "text": "💳\nCarte (TPE)",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      },
+      {
+        "k": "multi",
+        "present": true,
+        "text": "🔀\nMulti-paiement",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method active is-active"
+      }
+    ],
+    "terminalSelect": {
+      "present": false
+    },
+    "confirmBtn": {
+      "present": true,
+      "disabled": true,
+      "ariaDisabled": "true",
+      "text": "✓\nConfirmer & Imprimer ticket"
+    },
+    "modalText": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n2,50 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nCOUVERT\n0,00 €\nRESTE DÛ\n2,50 €\nDIVISER ENTRE N PERSONNES\nDiviser à parts égales\nAjoutez une tranche pour commencer.\n+\nAjouter une tranche\n✓\nConfirmer & Imprimer ticket"
+  },
+  "tranches_initial": [
+    "Ajoutez une tranche pour commencer."
+  ],
+  "multi_state_ready": {
+    "modalVisible": true,
+    "tabs": [
+      {
+        "k": "cash",
+        "present": true,
+        "text": "💵\nEspèces",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      },
+      {
+        "k": "card",
+        "present": true,
+        "text": "💳\nCarte (TPE)",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+      },
+      {
+        "k": "multi",
+        "present": true,
+        "text": "🔀\nMulti-paiement",
+        "cls": "other-tabBtn pos-v4-payment-method pos-v5-payment-method active is-active"
+      }
+    ],
+    "terminalSelect": {
+      "present": false
+    },
+    "confirmBtn": {
+      "present": true,
+      "disabled": false,
+      "ariaDisabled": "false",
+      "text": "✓\nConfirmer & Imprimer ticket"
+    },
+    "modalText": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n2,50 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nCOUVERT\n2,50 €\nRESTE DÛ\n0,00 €\nDIVISER ENTRE N PERSONNES\nDiviser à parts égales\nÉquilibrer le reste\nSuggérer les rendus monnaie\n💵\nESPÈCES\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\nMONTANT REÇU\n💳\nCARTE\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\n+\nAjouter une tranche\n✓\nConfirmer & Imprimer ticket"
+  },
+  "after_multi_confirm": {
+    "payModalOpen": true,
+    "receiptVisible": true,
+    "toasts": []
+  }
+}

@@ -272,9 +272,13 @@ function extractFormuleDrinkLines(raw) {
  *
  * @param {string} raw     orderItem.instruction
  * @param {string} itemName orderItem.item_name (to strip the echoed name line)
+ * @param {string[]} knownDrinks lignes boisson déjà émises par le canal ADDON
+ *        (sortie de drinkAddonLabels, ex. « 1× Coca 33cl ») — [D-1 GOAL-8AXES
+ *        2026-08-05] sans elles, la même boisson sortait DEUX FOIS (menu_child +
+ *        « BOISSON: X »). Jumeau STRICT : KitchenTicketSymbolicFormatter::cleanInstruction.
  * @returns {string} cleaned instruction (may be empty → caller emits no line)
  */
-export function sanitizeKdsInstruction(raw, itemName) {
+export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
     if (typeof raw !== 'string') {
         return '';
     }
@@ -305,7 +309,9 @@ export function sanitizeKdsInstruction(raw, itemName) {
         }
         // [KITCHEN-MENU 2026-06-30] Menu + sauce frites sont rendus par la ligne
         // symbolique « MENU : SYM » → on les retire ici (anti double-menu / verbeux).
-        if (/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b/i.test(t)) return false;
+        // [D-1 GOAL-8AXES 2026-08-05] + « Formule : … » : compo, jamais une note client —
+        // sa boisson est extraite du BRUT avant ce drop, rien n'est perdu (parité PHP).
+        if (/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b|^formule\s*:/i.test(t)) return false;
         if (/^[+↳]/.test(t)) return true;                   // autres formule / notes → KEEP
         if (/^-\s/.test(t)) return false;                   // bare crudités-removal (structured covers it)
         if (KDS_COMPO_LINE_RE.test(t)) return false;        // compo blob "Viandes : … Sauce : …" → DROP (dup)
@@ -320,12 +326,30 @@ export function sanitizeKdsInstruction(raw, itemName) {
     );
     // [W6-ADV C-P1-1] Boisson de formule borne extraite AVANT le drop de sa ligne —
     // dédupliquée si la caisse a déjà écrit sa propre ligne « BOISSON: X ».
+    // [D-1 GOAL-8AXES 2026-08-05] + dédupliquée contre le canal ADDON (knownDrinks),
+    // formats normalisés (« 1× Coca 33cl » vs « BOISSON: Coca 33cl »). Parité PHP.
+    const known = knownDrinks.map(normalizeDrinkKey);
     for (const d of extractFormuleDrinkLines(raw)) {
+        if (known.includes(normalizeDrinkKey(d))) continue; // déjà émise par le canal addon
         if (!cleaned.some((l) => l.toLowerCase() === d.toLowerCase())) {
             cleaned.push(d);
         }
     }
     return cleaned.join('\n').trim();
+}
+
+/**
+ * [D-1] Clé de comparaison inter-canaux : « 1 Coca 33cl » / « 2× Fanta 33cl » /
+ * « BOISSON: Coca 33cl » → « coca 33cl ». Jumeau STRICT :
+ * KitchenTicketSymbolicFormatter::normalizeDrinkKey.
+ */
+function normalizeDrinkKey(line) {
+    return String(line)
+        .trim()
+        .replace(/^boisson\s*:\s*/i, '')
+        .replace(/^\d+\s*[x×]?\s*/, '')
+        .trim()
+        .toLowerCase();
 }
 
 /**
@@ -415,6 +439,9 @@ export function renderItem(orderItem) {
     }
 
     // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
+    // [D-1 GOAL-8AXES 2026-08-05] Les libellés d'addons boisson sont collectés pour
+    // que le sanitiseur ne ré-émette pas la même boisson via la ligne formule.
+    const drinkLabels = [];
     for (const a of readAddons(orderItem)) {
         const label = addonLabel(a);
         if (!label) continue;
@@ -422,6 +449,9 @@ export function renderItem(orderItem) {
         const isMenuChild = role.startsWith('menu_');
         const q = parseInt(a?.quantity, 10);
         const qtyPrefix = Number.isFinite(q) && q > 1 ? `${q}× ` : '';
+        if (role === 'drink' || role === 'menu_boisson' || role.includes('boisson')) {
+            drinkLabels.push(label);
+        }
         lines.push({
             type: isMenuChild ? 'menu_child' : 'addon',
             label: `${qtyPrefix}${label}`,
@@ -431,7 +461,7 @@ export function renderItem(orderItem) {
 
     // Free-text instruction — sanitized (strip the compo duplicate the
     // structured render already shows, keep unique extras), then keyword-classified.
-    const instruction = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name);
+    const instruction = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name, drinkLabels);
     if (instruction.length > 0) {
         lines.push({
             type: 'instruction',

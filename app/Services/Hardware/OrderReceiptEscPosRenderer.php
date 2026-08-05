@@ -333,7 +333,11 @@ final class OrderReceiptEscPosRenderer
                     $menu = $menu.' : '.$sym;
                 }
             }
-            $note = $this->symbolic->cleanInstruction($instruction, $name);
+            // [D-1 GOAL-8AXES 2026-08-05] Boissons du canal ADDON calculées AVANT la
+            // note : cleanInstruction les reçoit pour ne pas ré-émettre la même
+            // boisson via la ligne « Formule : … (X) » de l'instruction.
+            $drinks = $this->symbolic->drinkLines($snap);
+            $note = $this->symbolic->cleanInstruction($instruction, $name, $drinks);
             // [W3-FIX-C 2026-07-06] Item BOISSON (Coca standalone) → NOM COMPLET :
             // « 1 x COC » ne dit pas au cuisinier QUELLE boisson préparer. Jumeau
             // écran : kdsSymbolic.js renderItemSymbolic (categorize==='drink').
@@ -344,7 +348,7 @@ final class OrderReceiptEscPosRenderer
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
                 'supps' => $this->symbolic->supplementLines($snap, $instruction),
-                'drinks' => $this->symbolic->drinkLines($snap),
+                'drinks' => $drinks,
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
         }

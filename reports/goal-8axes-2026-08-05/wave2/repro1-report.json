@@ -1,0 +1,387 @@
+{
+  "bundles": [
+    {
+      "url": "js/manifest.js?id=47aecc323f13302a14d6a7f0f824b57a",
+      "status": 200
+    },
+    {
+      "url": "js/vendor.js?id=90c17cfae4719f2ba7203e37f6d42a41",
+      "status": 200
+    },
+    {
+      "url": "js/pos-shell.c51e6763.js",
+      "status": 200
+    }
+  ],
+  "sizes": {
+    "1366x768": {
+      "viewport": {
+        "w": 1366,
+        "h": 768
+      },
+      "nameField": {
+        "inDom": true,
+        "display": "block",
+        "visibility": "visible",
+        "rect": {
+          "x": 1011,
+          "y": 360,
+          "w": 178,
+          "h": 36
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1527,
+          "clientHeight": 768
+        },
+        "placeholder": "Nom du client (optionnel)"
+      },
+      "phoneField": {
+        "inDom": true,
+        "display": "block",
+        "visibility": "visible",
+        "rect": {
+          "x": 1196,
+          "y": 360,
+          "w": 144,
+          "h": 36
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1527,
+          "clientHeight": 768
+        },
+        "placeholder": "Téléphone (optionnel)"
+      },
+      "phoneCta": {
+        "inDom": true,
+        "display": "flex",
+        "visibility": "visible",
+        "rect": {
+          "x": 1011,
+          "y": 746,
+          "w": 329,
+          "h": 72
+        },
+        "inViewport": false,
+        "belowFold": false,
+        "partiallyBelow": true,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1527,
+          "clientHeight": 768
+        },
+        "placeholder": null
+      },
+      "payBtn": {
+        "inDom": true,
+        "display": "flex",
+        "visibility": "visible",
+        "rect": {
+          "x": 1011,
+          "y": 688,
+          "w": 329,
+          "h": 50
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1527,
+          "clientHeight": 768
+        },
+        "placeholder": null
+      },
+      "orderTypeValue": "10",
+      "phoneCtaText": "📞 Commande téléphone Enregistrée + envoyée en cuisine, encaissée à l'arrivée du client",
+      "afterScroll": {
+        "viewport": {
+          "w": 1366,
+          "h": 768
+        },
+        "nameField": {
+          "inDom": true,
+          "display": "block",
+          "visibility": "visible",
+          "rect": {
+            "x": 1011,
+            "y": 360,
+            "w": 178,
+            "h": 36
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1527,
+            "clientHeight": 768
+          },
+          "placeholder": "Nom du client (optionnel)"
+        },
+        "phoneField": {
+          "inDom": true,
+          "display": "block",
+          "visibility": "visible",
+          "rect": {
+            "x": 1196,
+            "y": 360,
+            "w": 144,
+            "h": 36
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1527,
+            "clientHeight": 768
+          },
+          "placeholder": "Téléphone (optionnel)"
+        },
+        "phoneCta": {
+          "inDom": true,
+          "display": "flex",
+          "visibility": "visible",
+          "rect": {
+            "x": 1011,
+            "y": 746,
+            "w": 329,
+            "h": 72
+          },
+          "inViewport": false,
+          "belowFold": false,
+          "partiallyBelow": true,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1527,
+            "clientHeight": 768
+          },
+          "placeholder": null
+        },
+        "payBtn": {
+          "inDom": true,
+          "display": "flex",
+          "visibility": "visible",
+          "rect": {
+            "x": 1011,
+            "y": 688,
+            "w": 329,
+            "h": 50
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1527,
+            "clientHeight": 768
+          },
+          "placeholder": null
+        },
+        "orderTypeValue": "10",
+        "phoneCtaText": "📞 Commande téléphone Enregistrée + envoyée en cuisine, encaissée à l'arrivée du client"
+      }
+    },
+    "1920x1080": {
+      "viewport": {
+        "w": 1920,
+        "h": 1080
+      },
+      "nameField": {
+        "inDom": true,
+        "display": "block",
+        "visibility": "visible",
+        "rect": {
+          "x": 1565,
+          "y": 360,
+          "w": 178,
+          "h": 36
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1116,
+          "clientHeight": 1080
+        },
+        "placeholder": "Nom du client (optionnel)"
+      },
+      "phoneField": {
+        "inDom": true,
+        "display": "block",
+        "visibility": "visible",
+        "rect": {
+          "x": 1750,
+          "y": 360,
+          "w": 144,
+          "h": 36
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1116,
+          "clientHeight": 1080
+        },
+        "placeholder": "Téléphone (optionnel)"
+      },
+      "phoneCta": {
+        "inDom": true,
+        "display": "flex",
+        "visibility": "visible",
+        "rect": {
+          "x": 1565,
+          "y": 848,
+          "w": 329,
+          "h": 72
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1116,
+          "clientHeight": 1080
+        },
+        "placeholder": null
+      },
+      "payBtn": {
+        "inDom": true,
+        "display": "flex",
+        "visibility": "visible",
+        "rect": {
+          "x": 1565,
+          "y": 791,
+          "w": 329,
+          "h": 50
+        },
+        "inViewport": true,
+        "belowFold": false,
+        "partiallyBelow": false,
+        "scroller": {
+          "cls": "db-main expand",
+          "scrollTop": 0,
+          "scrollHeight": 1116,
+          "clientHeight": 1080
+        },
+        "placeholder": null
+      },
+      "orderTypeValue": "10",
+      "phoneCtaText": "📞 Commande téléphone Enregistrée + envoyée en cuisine, encaissée à l'arrivée du client",
+      "afterScroll": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "nameField": {
+          "inDom": true,
+          "display": "block",
+          "visibility": "visible",
+          "rect": {
+            "x": 1565,
+            "y": 360,
+            "w": 178,
+            "h": 36
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1116,
+            "clientHeight": 1080
+          },
+          "placeholder": "Nom du client (optionnel)"
+        },
+        "phoneField": {
+          "inDom": true,
+          "display": "block",
+          "visibility": "visible",
+          "rect": {
+            "x": 1750,
+            "y": 360,
+            "w": 144,
+            "h": 36
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1116,
+            "clientHeight": 1080
+          },
+          "placeholder": "Téléphone (optionnel)"
+        },
+        "phoneCta": {
+          "inDom": true,
+          "display": "flex",
+          "visibility": "visible",
+          "rect": {
+            "x": 1565,
+            "y": 848,
+            "w": 329,
+            "h": 72
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1116,
+            "clientHeight": 1080
+          },
+          "placeholder": null
+        },
+        "payBtn": {
+          "inDom": true,
+          "display": "flex",
+          "visibility": "visible",
+          "rect": {
+            "x": 1565,
+            "y": 791,
+            "w": 329,
+            "h": 50
+          },
+          "inViewport": true,
+          "belowFold": false,
+          "partiallyBelow": false,
+          "scroller": {
+            "cls": "db-main expand",
+            "scrollTop": 0,
+            "scrollHeight": 1116,
+            "clientHeight": 1080
+          },
+          "placeholder": null
+        },
+        "orderTypeValue": "10",
+        "phoneCtaText": "📞 Commande téléphone Enregistrée + envoyée en cuisine, encaissée à l'arrivée du client"
+      }
+    }
+  },
+  "itemAdded": true
+}
