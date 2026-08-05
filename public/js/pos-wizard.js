@@ -3159,6 +3159,12 @@
                 h += '<h4>🥬 Crudités</h4>';
                 h += '<p class="section-hint">Cliquez pour retirer.</p>';
                 h += '<div class="garniture-toggle">';
+                // [LOCK_POSWIZARD_SANS_CRUDITES] owner /goal 2026-08-05 — un geste « sans crudités » :
+                // décoche TOUTES les crudités du bloc d'un clic (au lieu d'un clic par crudité).
+                // Styles inline volontaires : pos-wizard.css est frozen, on n'y touche pas.
+                h += '<button type="button" class="garniture-toggle-btn" data-garniture-none="1" ' +
+                    'style="border-color:#E93C3C;color:#E93C3C;background:#fff;font-weight:700;">' +
+                    '🚫 Sans crudités</button>';
                 crudites.forEach(function (c) {
                     var key = 'c_' + c.id;
                     var isIncluded = selections.garnitures && selections.garnitures[key];
@@ -3514,6 +3520,8 @@
 
         // Update garniture toggles
         wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
+            // [LOCK_POSWIZARD_SANS_CRUDITES] le chip un-geste n'est pas une crudité — ne pas le réécrire.
+            if (btn.getAttribute('data-garniture-none')) return;
             var garnId = btn.getAttribute('data-garniture');
             // Get the crudite name from lastItemData.extras using the 'c_123' key
             var displayName = garnId;
@@ -5260,6 +5268,8 @@
 
         // [NEW SPRINT 4] 6. Update garniture toggle buttons
         wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
+            // [LOCK_POSWIZARD_SANS_CRUDITES] le chip un-geste n'est pas une crudité — skip.
+            if (btn.getAttribute('data-garniture-none')) return;
             var id = parseInt(btn.getAttribute('data-id'));
             var isSelected = selections.garnitures && selections.garnitures[id];
             var name = btn.getAttribute('data-name') || '';
@@ -6056,6 +6066,16 @@
         // OFF → 1er clic COCHE) + exclusivité oignon cru↔cuit quand on vient de cocher.
         wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
+                // [LOCK_POSWIZARD_SANS_CRUDITES] owner /goal 2026-08-05 — un geste « sans crudités » :
+                // le chip data-garniture-none met TOUTES les crudités du bloc à false.
+                if (this.getAttribute('data-garniture-none')) {
+                    if (!selections.garnitures) selections.garnitures = {};
+                    wizardEl.querySelectorAll('.garniture-toggle-btn[data-garniture]').forEach(function (other) {
+                        selections.garnitures[other.getAttribute('data-garniture')] = false;
+                    });
+                    updateSinglePageUI();
+                    return;
+                }
                 var garnId = this.getAttribute('data-garniture');
                 if (!selections.garnitures) selections.garnitures = {};
                 var current = selections.garnitures[garnId];
