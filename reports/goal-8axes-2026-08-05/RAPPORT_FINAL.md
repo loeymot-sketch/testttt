@@ -27,6 +27,6 @@
 - **G-8** : **RIEN n'est déployé** (VPS ni Vercel). Les miroirs web data (`data/menu.js` : légumes 0,90 € + sans-crudités exclusif) restent à faire au moment du deploy web.
 
 ## Reste honnêtement ouvert
-1. **Audit e2e visuel page-par-page du site web complet** (T-5.2, skill test-e2e) — non exécuté dans cette session ; l'abandon-paiement et la nav sont couverts par les 55 checks agent.
-2. Miroir `data/menu.js` web pour les 3 légumes payants + chip « Sans crudités » web (wizard-v2) — à faire avec le deploy web.
+1. ~~Audit e2e visuel site complet (T-5.2)~~ **FAIT ET CONVERGÉ** (4 rounds, rounds 3+4 identiques P0+P1=0 — `reports/test-e2e/web-t52-2026-08-05/CONVERGENCE_FINAL.md`) : 4 P1 healés dont miroir web tacos/légumes/sans-crudités + boîtes carte Mollie invisibles.
+2. ~~Miroir data/menu.js web~~ **FAIT** (commits web c8d0424..c19e35c + fix Mollie CSS, locaux — gate deploy G-8).
 3. Session concurrente active sur les 2 repos (synchro backend + axes A1/A4 web) — mes commits n'incluent que mes hunks ; coordonner avant deploy.
