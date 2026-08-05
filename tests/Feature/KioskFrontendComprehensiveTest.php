@@ -283,16 +283,22 @@ class KioskFrontendComprehensiveTest extends TestCase
             'password' => bcrypt('password123'),
         ]);
 
+        // [A2 cycle 3 · 2026-08-05] Précondition rendue EXPLICITE. Ce test vérifie que la
+        // validation d'un coupon VALIDE aboutit — ce qui suppose que les remises soient
+        // activées. Sans cette ligne, il passait alors même que le kill-switch
+        // `pos.manual_discount_enabled` était à false : l'endpoint promettait une remise que
+        // `FrontendOrderService` refusait ensuite au moment de créer la commande, laissant le
+        // client sur un mur au dernier clic. Le test encodait donc ce défaut au lieu de le
+        // révéler. La garde vit maintenant dans CouponController ; sentinelle dédiée :
+        // tests/Feature/Frontend/CouponCheckRespectsDiscountKillSwitchTest.php
+        config(['pos.manual_discount_enabled' => true]);
+
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/frontend/coupon/coupon-checking', [
             'code' => 'KIOSK20',
             'total' => 50,
             'branch_id' => $this->branch->id
         ]);
-        // On autorise la 404 au cas où la route s'appelle différemment, on corrigera.
-        if ($response->status() === 422) {
-            dump($response->json());
-        }
-        $this->assertContains($response->status(), [200, 201]);
+        $this->assertContains($response->status(), [200, 201], 'Coupon valide + remises activées doit valider.');
     }
 
     // 4.9 Vérifier coupon invalide
