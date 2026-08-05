@@ -7,20 +7,15 @@ import { ORDER_STATUS } from '../../../resources/js/helpers/kdsState.js';
  * [P2-k 2026-07-18 REGISTRE_FINAL] KDS — the [A]–[H] keyboard shortcut must only
  * bump a card that is ACTUALLY ON SCREEN.
  *
- * Bug: the grid renders `visibleActiveOrders = activeOrders.slice(0, 3)` (three
- * full-height cards A/B/C, KDS-3CARDS c70b1e518) while any 4th+ active order
- * waits behind the « +N en attente » chip. But `onKey` used to index the FULL
- * `activeOrders` queue (up to 8 letters A–H) and bound on `activeOrders.length`.
- * So pressing [D]–[H] selected an order that was NOT rendered and dispatched a
- * real transition (change-status → ACCEPT→PREPARING… server-side) plus a client
- * notification on an invisible ticket.
- *
- * Fix (KdsV2Grid.onKey): index `visibleActiveOrders` and bound on its length, so
- * a key beyond the 3 visible cards is a no-op.
+ * [KDS-6CARDS GOAL-8AXES 2026-08-05] La grille rend désormais TOUTES les
+ * commandes actives (flux horizontal, 6 par écran — révocation owner du mandat
+ * 3-cartes). L'invariant P2-k demeure : un raccourci ne bumpe QUE ce qui est
+ * garanti à l'écran SANS scroll → `shortcutOrders = activeOrders.slice(0, 6)`.
+ * [G]/[H] (au-delà des 6 garanties visibles) = no-op.
  *
  * This test mounts the real component (real computeds: FIFO sort → activeOrders
- * filter → slice(0,3) → real onCtaTap emit) and dispatches real `keydown` events
- * on `window` (the component binds its listener there in mounted()).
+ * filter → shortcut slice(0,6) → real onCtaTap emit) and dispatches real
+ * `keydown` events on `window` (the component binds its listener there).
  */
 describe('KDS — [A]–[H] never bumps an off-screen order (P2-k)', () => {
     let wrapper;
@@ -63,40 +58,38 @@ describe('KDS — [A]–[H] never bumps an off-screen order (P2-k)', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
     }
 
-    it('renders exactly 3 active cards and reports the overflow (baseline)', () => {
-        wrapper = mountGrid(makeActiveOrders(5));
-        expect(wrapper.vm.activeOrders.length).toBe(5);
-        expect(wrapper.vm.visibleActiveOrders.length).toBe(3);
+    it('renders ALL active cards, 6 shortcut slots, overflow beyond 6 (baseline)', () => {
+        wrapper = mountGrid(makeActiveOrders(8));
+        expect(wrapper.vm.activeOrders.length).toBe(8);
+        // [KDS-6CARDS] toutes rendues (flux horizontal)…
+        expect(wrapper.vm.visibleActiveOrders.length).toBe(8);
+        // …mais 6 slots de raccourcis (garantis à l'écran) et +2 en pastille.
+        expect(wrapper.vm.shortcutOrders.length).toBe(6);
         expect(wrapper.vm.overflowActiveCount).toBe(2);
     });
 
-    it('pressing [A]/[B]/[C] bumps the corresponding VISIBLE order', async () => {
-        wrapper = mountGrid(makeActiveOrders(5));
+    it('pressing [A]–[F] bumps the corresponding guaranteed-visible order', async () => {
+        wrapper = mountGrid(makeActiveOrders(8));
 
-        press('A');
-        press('B');
-        press('C');
+        for (const k of ['A', 'B', 'C', 'D', 'E', 'F']) press(k);
         await wrapper.vm.$nextTick();
 
         const emitted = wrapper.emitted('change-status') || [];
-        expect(emitted.length).toBe(3);
-        // A→id100, B→id101, C→id102 (ACCEPT→PREPARING = status 7).
-        expect(emitted[0][0]).toMatchObject({ orderId: 100, status: ORDER_STATUS.PREPARING });
-        expect(emitted[1][0]).toMatchObject({ orderId: 101, status: ORDER_STATUS.PREPARING });
-        expect(emitted[2][0]).toMatchObject({ orderId: 102, status: ORDER_STATUS.PREPARING });
+        expect(emitted.length).toBe(6);
+        // A→id100 … F→id105 (ACCEPT→PREPARING).
+        emitted.forEach((e, i) => {
+            expect(e[0]).toMatchObject({ orderId: 100 + i, status: ORDER_STATUS.PREPARING });
+        });
     });
 
-    it('pressing [D]–[H] (beyond the 3 visible cards) emits NOTHING', async () => {
-        wrapper = mountGrid(makeActiveOrders(5));
+    it('pressing [G]/[H] (beyond the 6 guaranteed-visible cards) emits NOTHING', async () => {
+        wrapper = mountGrid(makeActiveOrders(8));
 
-        // Sanity: an overflow order DOES exist at activeOrders[3]/[4] — the
-        // pre-fix code would have targeted it. It must never be bumped.
-        expect(wrapper.vm.activeOrders[3]?.id).toBe(103);
-        expect(wrapper.vm.activeOrders[4]?.id).toBe(104);
+        // Sanity: overflow orders DO exist at activeOrders[6]/[7] — they must
+        // never be bumped by a shortcut (P2-k).
+        expect(wrapper.vm.activeOrders[6]?.id).toBe(106);
+        expect(wrapper.vm.activeOrders[7]?.id).toBe(107);
 
-        press('D');
-        press('E');
-        press('F');
         press('G');
         press('H');
         await wrapper.vm.$nextTick();
@@ -106,7 +99,7 @@ describe('KDS — [A]–[H] never bumps an off-screen order (P2-k)', () => {
 
     it('a key with only 1 visible card ignores [B]–[H] but honors [A]', async () => {
         wrapper = mountGrid(makeActiveOrders(1));
-        expect(wrapper.vm.visibleActiveOrders.length).toBe(1);
+        expect(wrapper.vm.shortcutOrders.length).toBe(1);
 
         press('B'); // no 2nd card
         press('C');

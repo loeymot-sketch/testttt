@@ -58,10 +58,11 @@
          (plus de plafond 8 qui cachait les 9+). Grille multi-colonnes qui DÉFILE ; chaque
          carte prend la hauteur de son contenu → tous les produits d'une commande sont
          visibles, une grosse commande prend plus de hauteur. Ordre FIFO préservé. -->
-    <!-- [KDS-3CARDS 2026-07-05] Owner : l'écran affiche 3 commandes MAX à la fois, chacune
-         prenant TOUTE la hauteur (fini les cartes du bas écrasées / l'espace vide). Les
-         commandes 4+ attendent leur tour (pastille « +N en attente » ci-dessous). -->
-    <div v-else class="kds-v2__grid" :data-count="visibleActiveOrders.length">
+    <!-- [KDS-6CARDS GOAL-8AXES 2026-08-05] Owner (/goal, révoque KDS-3CARDS c70b1e518) :
+         6 commandes par écran, TOUTES rendues dans un flux horizontal défilable (barre
+         visible + boutons ◀ ▶) — le chef voit ce qui arrive et lance les cuissons. -->
+    <!-- [KDS-6CARDS 2026-08-05] ref pour les boutons ◀ ▶ (défilement programmatique). -->
+    <div v-else ref="gridEl" class="kds-v2__grid" :data-count="visibleActiveOrders.length">
       <KdsOrderCard
         v-for="(o, idx) in visibleActiveOrders"
         :key="o.id"
@@ -73,6 +74,23 @@
         @reprint="$emit('reprint', o)"
       />
     </div>
+    <!-- [KDS-6CARDS] Boutons de défilement — visibles seulement si la file déborde. -->
+    <button
+      v-if="overflowActiveCount > 0"
+      type="button"
+      class="kds-scroll-btn kds-scroll-btn--left"
+      aria-label="Faire défiler vers la gauche"
+      data-testid="kds-scroll-left"
+      @click="scrollGrid(-1)"
+    >◀</button>
+    <button
+      v-if="overflowActiveCount > 0"
+      type="button"
+      class="kds-scroll-btn kds-scroll-btn--right"
+      aria-label="Faire défiler vers la droite"
+      data-testid="kds-scroll-right"
+      @click="scrollGrid(1)"
+    >▶</button>
     <div v-if="overflowActiveCount > 0" class="kds-overflow-chip" role="status">
       <span class="kds-overflow-chip__icon">+{{ overflowActiveCount }}</span>
       <span>en attente</span>
@@ -127,6 +145,14 @@ import {
 } from '../../../helpers/kdsState.js';
 
 const SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+// [KDS-6CARDS GOAL-8AXES 2026-08-05] Cartes par écran (révocation owner du
+// mandat 3-cartes c70b1e518 via /goal). La prochaine révision = cette ligne.
+export const KDS_VISIBLE_CARDS = 6;
+// Plafond de RENDU (4 écrans de 6) : au-delà, les cartes ne sont plus montées
+// (perf écran cuisine — la dev-DB a montré 488 actives) ; la pastille « +N en
+// attente » couvre le surplus. En service réel la file dépasse rarement 10.
+export const KDS_RENDER_MAX = 24;
 
 export default {
     name: 'KdsV2Grid',
@@ -249,15 +275,23 @@ export default {
             });
             return prepared.slice(0, 4);
         },
-        // [KDS-3CARDS 2026-07-05] Owner : 3 commandes MAX affichées à la fois, chacune plein
-        // écran (grande + lisible). Les commandes 4+ attendent (FIFO préservé) et sont
-        // signalées par la pastille « +N en attente » → le chef sait qu'il y a du backlog
-        // sans que les cartes du bas soient écrasées/illisibles.
+        // [KDS-6CARDS GOAL-8AXES 2026-08-05] RÉVOCATION owner du mandat 3-cartes
+        // (c70b1e518) par directive /goal : « je veux que ça affiche six à la fois
+        // et encore on pourra se scroller horizontalement pour voir les autres ».
+        // TOUTES les commandes actives sont rendues dans un flux HORIZONTAL
+        // défilable ; KDS_VISIBLE_CARDS cartes tiennent par écran (largeur de
+        // colonne = 1/6 du viewport). Le chef voit ce qui arrive ensuite et peut
+        // lancer toutes les viandes d'un coup. FIFO préservé.
         visibleActiveOrders() {
-            return this.activeOrders.slice(0, 3);
+            return this.activeOrders.slice(0, KDS_RENDER_MAX);
+        },
+        // Raccourcis clavier bornés aux cartes garanties à l'écran SANS scroll
+        // (régression P2-k : jamais bumper une commande hors de vue).
+        shortcutOrders() {
+            return this.activeOrders.slice(0, KDS_VISIBLE_CARDS);
         },
         overflowActiveCount() {
-            return Math.max(0, this.activeOrders.length - 3);
+            return Math.max(0, this.activeOrders.length - KDS_VISIBLE_CARDS);
         },
     },
     watch: {
@@ -300,21 +334,26 @@ export default {
         window.removeEventListener('keydown', this.onKey);
     },
     methods: {
+        // [KDS-6CARDS 2026-08-05] Défilement d'un « écran » (~3 cartes) par clic —
+        // gros boutons ◀ ▶ utilisables au doigt OU à la souris.
+        scrollGrid(dir) {
+            const el = this.$refs.gridEl;
+            if (!el) return;
+            el.scrollBy({ left: dir * Math.round(el.clientWidth / 2), behavior: 'smooth' });
+        },
         onKey(e) {
             // [A]–[H] bumps the nth slot. Enter/Esc handled by KdsOrderCard.
             // [Wave U 2026-05-21] Index against the rendered list so the shortcut
             // letter matches the on-card [A]–[H] badge after PREPARED orders are
             // partitioned out of the grid.
-            // [P2-k 2026-07-18 REGISTRE_FINAL] The rendered list is
-            // `visibleActiveOrders` (= activeOrders.slice(0, 3), KDS-3CARDS
-            // c70b1e518) — NOT the full activeOrders queue (up to 8, A–H).
-            // Binding the index against activeOrders let keys [D]–[H] bump an
-            // OVERFLOW order the chef cannot see (server ACCEPT→PREPARING… + a
-            // client notification on an invisible ticket). Bound the index to
-            // the cards actually on screen so no off-screen order is ever bumped.
+            // [P2-k 2026-07-18 REGISTRE_FINAL] Jamais bumper une commande hors de
+            // vue. [KDS-6CARDS 2026-08-05] La grille rend désormais TOUTES les
+            // actives (flux horizontal défilable) — les raccourcis restent bornés
+            // à `shortcutOrders` (les 6 premières, garanties à l'écran sans
+            // scroll) pour préserver exactement cette garantie.
             const idx = SHORTCUTS.indexOf(String(e.key || '').toUpperCase());
-            if (idx >= 0 && idx < this.visibleActiveOrders.length) {
-                const o = this.visibleActiveOrders[idx];
+            if (idx >= 0 && idx < this.shortcutOrders.length) {
+                const o = this.shortcutOrders[idx];
                 if (o) {
                     // [GOAL-2026-05-30 D1 — OWNER REVERSAL of Wave S-2] Cash-pending orders
                     // MAY now be bumped (kitchen prepares before encashment); the [A]–[H]
@@ -425,26 +464,63 @@ export default {
 }
 
 .kds-v2__grid {
-    /* [KDS-SHOW-ALL 2026-07-01] Flux multi-colonnes DÉFILABLE : plus de grille 4×2 figée.
-       grid-auto-rows:min-content + align-items:start → chaque carte prend la hauteur de son
-       contenu (tous les produits visibles), une grosse commande occupe plus de hauteur.
-       overflow-y:auto → si la file dépasse l'écran, on défile au lieu de cacher les 9+. */
+    /* [KDS-6CARDS GOAL-8AXES 2026-08-05] Owner (/goal, révoque KDS-3CARDS c70b1e518) :
+       6 commandes par écran + DÉFILEMENT HORIZONTAL vers la droite pour voir la suite
+       de la file (mettre toutes les viandes à cuire, savoir ce qui vient après).
+       grid-auto-flow:column + grid-auto-columns → toutes les cartes rendues, 6 par
+       largeur d'écran, une seule rangée pleine hauteur. La barre de défilement reste
+       VISIBLE et manipulable à la souris (secours si l'écran tactile lâche). */
     flex: 1;
     display: grid;
-    /* [KDS-3CARDS 2026-07-05] Owner : 3 commandes MAX, chacune sur TOUTE la hauteur (grande +
-       lisible). Une SEULE rangée qui remplit la hauteur (grid-template-rows:1fr + stretch) →
-       fini les cartes du bas écrasées et l'espace vide. Pas de scroll : les 4+ attendent. */
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: column;
+    /* 6 colonnes par écran (5 gaps de 10px + padding 2×10px = 70px répartis) */
+    grid-auto-columns: calc((100% - 70px) / 6);
     grid-template-rows: 1fr;
     align-items: stretch;
     gap: 10px;
     padding: 10px;
     min-height: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    /* Barre TOUJOURS visible (pas d'auto-hide) */
+    scrollbar-width: auto;
+    scrollbar-color: #F4501E #E5E7EB;
+}
+.kds-v2__grid::-webkit-scrollbar {
+    height: 16px;
+}
+.kds-v2__grid::-webkit-scrollbar-track {
+    background: #E5E7EB;
+    border-radius: 8px;
+}
+.kds-v2__grid::-webkit-scrollbar-thumb {
+    background: #F4501E;
+    border-radius: 8px;
+    border: 3px solid #E5E7EB;
 }
 /* 1 ou 2 commandes → elles remplissent la largeur (pas de colonnes vides à droite). */
-.kds-v2__grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
-.kds-v2__grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kds-v2__grid[data-count="1"] { grid-auto-columns: 100%; }
+.kds-v2__grid[data-count="2"] { grid-auto-columns: calc((100% - 30px) / 2); }
+
+/* [KDS-6CARDS] Boutons de défilement ◀ ▶ — cible tactile large (secours souris/tactile). */
+.kds-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 90;
+    width: 64px;
+    height: 96px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(26, 26, 26, 0.72);
+    color: #fff;
+    font-size: 34px;
+    cursor: pointer;
+}
+.kds-scroll-btn:hover { background: #F4501E; }
+.kds-scroll-btn--left { left: 8px; }
+.kds-scroll-btn--right { right: 8px; }
 
 .kds-v2__placeholder {
     border: 2px dashed #E5E7EB;

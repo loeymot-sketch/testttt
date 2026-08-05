@@ -3,58 +3,68 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * @FK-ID FK-WAVE-N-KDS-OVERFLOW-001 → FK-KDS-SHOW-ALL-001 (2026-07-01) → FK-KDS-3CARDS-001 (2026-07-05)
- * @source Wave M M-KDS-6 F1 P0 (safety net) → show-all 2026-07-01 → owner mandate 3 cartes (c70b1e518).
+ * @FK-ID FK-WAVE-N-KDS-OVERFLOW-001 → FK-KDS-SHOW-ALL-001 (2026-07-01) →
+ *        FK-KDS-3CARDS-001 (2026-07-05) → FK-KDS-6CARDS-001 (2026-08-05)
+ * @source Wave M M-KDS-6 F1 P0 (safety net) → show-all → 3 cartes (c70b1e518) →
+ *         GOAL-8AXES /goal owner 2026-08-05 (révocation explicite du 3-cartes :
+ *         « je veux que ça affiche six à la fois et encore on pourra se scroller
+ *         horizontalement pour voir les autres commandes »).
  *
- * HISTORIQUE. (1) Wave M : plafond `slice(0, 8)` + pastille « +N en attente ».
- * (2) KDS-SHOW-ALL 2026-07-01 : owner-gate levée, toutes les commandes rendues, grille
- * défilante, overflowActiveCount neutralisé (return 0).
- * (3) KDS-3CARDS c70b1e518 2026-07-05 : NOUVEAU mandat owner — l'écran affiche 3 commandes
- * MAX à la fois, chacune sur TOUTE la hauteur (grandes + lisibles, fini les cartes écrasées).
- * Les commandes 4+ attendent leur tour, signalées par la pastille « +N en attente ».
- *
- * INVARIANT COURANT : cap de rendu = 3 (visibleActiveOrders = activeOrders.slice(0, 3)),
- * une seule rangée pleine hauteur (grid-template-rows: 1fr + stretch, pas de scroll), ET
- * le filet de sécurité Wave M est OBLIGATOIREMENT actif : overflowActiveCount compte les
- * commandes en attente et la pastille .kds-overflow-chip est rendue dès qu'il y en a —
- * aucune commande ne peut être masquée SILENCIEUSEMENT.
- *
- * Anti-régression : si le cap change sans pastille, si overflowActiveCount repasse à 0
- * (drop silencieux des 4+), ou si la pastille disparaît du template → ce test casse.
+ * INVARIANT COURANT (KDS-6CARDS) :
+ *  1. TOUTES les commandes actives sont rendues (visibleActiveOrders = activeOrders,
+ *     aucun slice de rendu) dans un flux HORIZONTAL défilable ;
+ *  2. 6 cartes par écran (KDS_VISIBLE_CARDS = 6, grid-auto-flow: column) ;
+ *  3. la barre de défilement reste VISIBLE (pas d'auto-hide — secours souris si
+ *     l'écran tactile lâche) + boutons ◀ ▶ larges ;
+ *  4. le filet Wave M reste ACTIF : overflowActiveCount compte les commandes
+ *     au-delà de l'écran (+N en attente) — aucune commande masquée en silence ;
+ *  5. les raccourcis clavier [A]-[H] restent bornés aux cartes garanties à
+ *     l'écran SANS scroll (shortcutOrders, régression P2-k).
  */
-describe('KDS 3 cartes plein écran + pastille overflow (FK-KDS-3CARDS-001)', () => {
+describe('KDS 6 cartes + flux horizontal + pastille overflow (FK-KDS-6CARDS-001)', () => {
     const gridPath = resolve(
         process.cwd(),
         'resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue',
     );
     const gridSource = readFileSync(gridPath, 'utf8');
 
-    it('rend 3 commandes actives max (visibleActiveOrders = activeOrders.slice(0, 3))', () => {
-        // La boucle des cartes itère le cap visible, dérivé de activeOrders (jamais visibleOrders).
+    it('rend la file défilable (plafond de rendu KDS_RENDER_MAX) avec 6 par écran', () => {
         expect(gridSource).toMatch(/v-for="\(o,\s*idx\)\s+in\s+visibleActiveOrders"/);
-        expect(gridSource).toMatch(/visibleActiveOrders\s*\(\s*\)\s*\{[\s\S]*?return\s+this\.activeOrders\.slice\(\s*0\s*,\s*3\s*\)/);
+        // Toutes les cartes jusqu'au plafond perf (24 = 4 écrans de 6) — plus
+        // jamais un cap de 3 qui cachait la file au chef.
+        expect(gridSource).toMatch(/visibleActiveOrders\s*\(\s*\)\s*\{[\s\S]*?slice\(\s*0\s*,\s*KDS_RENDER_MAX\s*\)/);
+        expect(gridSource).toMatch(/KDS_VISIBLE_CARDS\s*=\s*6/);
+        expect(gridSource).toMatch(/KDS_RENDER_MAX\s*=\s*24/);
     });
 
-    it('une seule rangée pleine hauteur (3 cartes plein écran, pas de scroll)', () => {
+    it('flux horizontal défilable, une rangée pleine hauteur, barre visible', () => {
         const styleBlock = gridSource.match(/<style\s+scoped>[\s\S]*?<\/style>/);
         expect(styleBlock, 'style scoped attendu').not.toBeNull();
         const css = styleBlock[0];
         const gridCss = css.match(/\.kds-v2__grid\s*\{[^}]*\}/);
         expect(gridCss, 'bloc .kds-v2__grid attendu').not.toBeNull();
         const g = gridCss[0];
-        // Rangée unique qui remplit la hauteur → cartes plein écran, zéro vide en dessous.
+        expect(g).toMatch(/grid-auto-flow:\s*column/);
         expect(g).toMatch(/grid-template-rows:\s*1fr/);
         expect(g).toMatch(/align-items:\s*stretch/);
-        // 3 colonnes max.
-        expect(g).toMatch(/grid-template-columns:\s*repeat\(3,/);
+        expect(g).toMatch(/overflow-x:\s*auto/);
+        // Barre visible : scrollbar stylée (jamais masquée).
+        expect(css).toMatch(/::-webkit-scrollbar\s*\{/);
+        expect(g).toMatch(/scrollbar-width:\s*auto/);
+        // Boutons de défilement souris/tactile.
+        expect(gridSource).toMatch(/data-testid="kds-scroll-left"/);
+        expect(gridSource).toMatch(/data-testid="kds-scroll-right"/);
     });
 
-    it('le filet de sécurité overflow est ACTIF (compteur réel + pastille rendue)', () => {
-        // overflowActiveCount compte réellement les commandes en attente (pas de return 0 neutralisé).
-        expect(gridSource).toMatch(/overflowActiveCount\s*\(\s*\)\s*\{[\s\S]*?this\.activeOrders\.length\s*-\s*3/);
+    it('le filet overflow est ACTIF (+N au-delà de 6, jamais neutralisé)', () => {
+        expect(gridSource).toMatch(/overflowActiveCount\s*\(\s*\)\s*\{[\s\S]*?this\.activeOrders\.length\s*-\s*KDS_VISIBLE_CARDS/);
         expect(gridSource).not.toMatch(/overflowActiveCount\s*\(\s*\)\s*\{\s*(?:\/\/[^\n]*\n\s*)*return\s+0\s*;/);
-        // La pastille « +N en attente » est présente dans le template, gardée par le compteur.
         expect(gridSource).toMatch(/kds-overflow-chip/);
         expect(gridSource).toMatch(/v-if="overflowActiveCount\s*>\s*0"/);
+    });
+
+    it('raccourcis clavier bornés aux 6 cartes garanties visibles (P2-k)', () => {
+        expect(gridSource).toMatch(/shortcutOrders\s*\(\s*\)\s*\{[\s\S]*?slice\(\s*0\s*,\s*KDS_VISIBLE_CARDS\s*\)/);
+        expect(gridSource).toMatch(/idx\s*<\s*this\.shortcutOrders\.length/);
     });
 });

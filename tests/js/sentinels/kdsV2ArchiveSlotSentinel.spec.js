@@ -75,13 +75,14 @@ describe('KDS Wave U — Prêt archive partition (FK-WAVE-U-KDS-ARCHIVE-001)', (
     });
 
     it('grid template renders activeOrders (ACTIVE only) — never visibleOrders directly', () => {
-        // [KDS-3CARDS c70b1e518 2026-07-05] La grille rend visibleActiveOrders =
-        // activeOrders.slice(0, 3) (3 cartes plein écran max, les 4+ attendent derrière la
-        // pastille +N). L'invariant clé de CE sentinel reste : la source est activeOrders
-        // (ACCEPT|PREPARING), JAMAIS visibleOrders directement (qui inclurait les PREPARED archivés).
+        // [KDS-6CARDS GOAL-8AXES 2026-08-05] La grille rend visibleActiveOrders =
+        // activeOrders (TOUTES, flux horizontal, 6 par écran). L'invariant clé de CE
+        // sentinel reste inchangé : la source est activeOrders (ACCEPT|PREPARING),
+        // JAMAIS visibleOrders directement (qui inclurait les PREPARED archivés).
         expect(gridSource).toMatch(/v-for="\(o,\s*idx\)\s+in\s+visibleActiveOrders"/);
-        // visibleActiveOrders DOIT dériver de activeOrders (cap 3), pas de visibleOrders.
-        expect(gridSource).toMatch(/visibleActiveOrders\s*\(\s*\)\s*\{[^}]*this\.activeOrders\.slice\(\s*0\s*,\s*3\s*\)/);
+        // visibleActiveOrders DOIT dériver de activeOrders (plafond perf KDS_RENDER_MAX),
+        // pas de visibleOrders.
+        expect(gridSource).toMatch(/visibleActiveOrders\s*\(\s*\)\s*\{[\s\S]*?this\.activeOrders\.slice\(\s*0\s*,\s*KDS_RENDER_MAX\s*\)/);
         // Le v-for des cartes ne doit pas itérer visibleOrders (les PREPARED vont dans la bande servie).
         expect(gridSource).not.toMatch(/v-for="\(o,\s*idx\)\s+in\s+visibleOrders/);
     });
@@ -93,17 +94,15 @@ describe('KDS Wave U — Prêt archive partition (FK-WAVE-U-KDS-ARCHIVE-001)', (
         expect(gridSource).toMatch(/servedAgoLabel\s*\(\s*o\s*\)/);
     });
 
-    it('onKey shortcut handler reads visibleActiveOrders[idx], bounded to the rendered slice (P2-k)', () => {
+    it('onKey shortcut handler reads shortcutOrders[idx], bounded to guaranteed-visible cards (P2-k)', () => {
         // Defense against drift where [A]–[H] could silently target an order
-        // hidden from the rendered grid. Pre-KDS-3CARDS the grid rendered every
-        // active order, so `activeOrders[idx]` matched the on-card badge. Since
-        // c70b1e518 (2026-07-05) the grid renders only
-        // `visibleActiveOrders = activeOrders.slice(0, 3)`, so the shortcut MUST
-        // index the visible slice — otherwise keys [D]–[H] bump an OVERFLOW order
-        // the chef cannot see (P2-k, REGISTRE_FINAL 2026-07-18).
-        expect(gridSource).toMatch(/this\.visibleActiveOrders\[idx\]/);
-        expect(gridSource).toMatch(/idx\s*<\s*this\.visibleActiveOrders\.length/);
-        // And it must NOT bind against the full activeOrders queue anymore.
+        // hidden from view. [KDS-6CARDS 2026-08-05] la grille rend TOUT en flux
+        // horizontal, mais seules les KDS_VISIBLE_CARDS premières sont garanties
+        // à l'écran SANS scroll → les raccourcis restent bornés à
+        // `shortcutOrders = activeOrders.slice(0, KDS_VISIBLE_CARDS)`.
+        expect(gridSource).toMatch(/this\.shortcutOrders\[idx\]/);
+        expect(gridSource).toMatch(/idx\s*<\s*this\.shortcutOrders\.length/);
+        // And it must NOT bind against the full activeOrders queue.
         expect(gridSource).not.toMatch(/idx\s*<\s*this\.activeOrders\.length/);
     });
 
