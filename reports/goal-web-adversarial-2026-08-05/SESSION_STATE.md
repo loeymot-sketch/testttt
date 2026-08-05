@@ -4,67 +4,78 @@
 ```json
 {
   "goal": "plans/GOAL_WEB_ADVERSARIAL_UX_TOTAL_2026-08-05.md",
-  "wave": "W7 — cycle adversarial 4 EN COURS (4 agents)",
-  "cycle": 4,
+  "etat": "8 cycles menés. Cycle 8 INTERROMPU — limite d'usage hebdomadaire atteinte (réinitialisation 16h Europe/Paris).",
   "web_repo": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne",
-  "web_head": "b6f1fda — commits LOCAUX, AUCUN push",
-  "backend_head_note": "b5a8922d3 (correctif coupon). ⚠️ Dépôt backend ET dépôt web modifiés EN PARALLÈLE par une autre session (travaux « 8 axes ») : mes fichiers stagés ont été absorbés par ses commits à plusieurs reprises — contenu vérifié présent dans HEAD à chaque fois. Coordination owner requise.",
+  "web_head": "4c7262a — commits LOCAUX, AUCUN push",
+  "backend_head": "0c8adb238 — commits LOCAUX, AUCUN push",
+  "P0_sur_8_cycles": 0,
+
   "gates": {
-    "sentinelle_audit": "27/27 (13 invariants de source + 10 des cycles 3-4 + 4 mesurés au navigateur)",
+    "sentinelle_web": "35/35 — dont 2 COMPORTEMENTALES prouvées capables de rougir",
     "nav_smoke_depot": "13/13, 0 erreur JS",
-    "parcours_achat_reel": "desktop 1440 + mobile 390 — article ajouté, récap 10,80 €, 0 erreur JS",
-    "phpunit_loyalty": "46/46",
-    "phpunit_sentinelle_plancher": "4/4",
-    "phpunit_coupon_killswitch": "2/2",
-    "phpunit_kiosk_frontend": "10/10"
+    "parcours_achat": "desktop 1440 + mobile 390, 0 erreur JS",
+    "phpunit_frontend": "43/43",
+    "phpunit_auth": "50/50",
+    "phpunit_sync": "29/29"
   },
-  "P0_sur_les_4_cycles": 0,
-  "P1_fermes": [
-    "Annuler l'inscription laissait un état connecté fantôme (3 fermetures vérifiées en base)",
-    "Cul-de-sac « carte refusée » : les deux issues proposées renvoyaient un 409",
-    "Fenêtre de DOUBLE DÉBIT rouverte par ma propre clé par-tentative → verrou synchrone (prouvé : 4 clics = 1 commande)",
-    "Retry après refus créait une 2e commande → cache mémoire de la clé",
-    "Ticket + QR délivrés pour une commande ANNULÉE (4xx avalé en repli comptoir)",
-    "?order= étranger détruisait un paiement 3DS en cours",
-    "« Se déconnecter » ne révoquait rien côté serveur (token vivant 30 j, prouvé au curl)",
-    "Toute erreur OTP maquillée en « Code incorrect », même un code JUSTE bloqué par le débit",
-    "Ticket « en attente » figé à vie sans aucune sonde serveur",
-    "Deux onglets = deux commandes réelles (32,40 € pour un panier)",
-    "Coupon promis à l'écran puis refusé au dernier clic (kill-switch backend)",
-    "Modale compte INACCESSIBLE en 1366×768 (bouton hors écran, focus piégé)",
-    "Viande surplus facturée à l'écran mais absente du payload (seul chemin fail-silent restant)",
-    "Mon correctif du délai était du CODE MORT (slotTime pré-amorcé) → ticket promettant 12 min pour 30-35 réels"
+
+  "AVERTISSEMENT_CENTRAL": "Un « vert » de cette campagne ne prouve rien. Un procureur a ANNULÉ intégralement un correctif : la sentinelle est restée 35/35 VERTE. ~21 de ses 35 assertions sont des regex sur le TEXTE SOURCE. Trois correctifs ont été verts tout en étant MORTS (grep sur une URL inexistante renvoyant 405 ; règle CSS visant 3 sélecteurs absents du markup ; repli jamais exécuté car la valeur testée n'était jamais vide). NE JAMAIS CRÉDITER UN CORRECTIF SUR LA FOI D'UNE LIGNE DE CODE OU D'UN VERT.",
+
+  "VERIFICATIONS_DUES": [
+    "Les correctifs du cycle 7 n'ont PAS été exercés, sauf F-D (voir ci-dessous). Le procureur a explicitement refusé de les créditer.",
+    "F-B/F-C — carte jamais payée : observer l'écran de confirmation AU DOM jusqu'à épuisement de la sonde (~40 s). Attendu : aucun QR, aucun confetti, aucun TOTAL sous un titre de succès. Tester les 3 issues (payée / annulée / jamais finalisée).",
+    "F-A — `?order=` : URL nettoyée, panier survivant, ET filet « abandon 3DS » toujours armé après coup.",
+    "F-F — sauce fantôme : choisir « Poivre » ou « Burger » et soumettre → message clair, AUCUNE commande créée ; puis vérifier qu'un panier normal passe et que le composition_snapshot porte la sauce CHOISIE.",
+    "F-E — garde R1 livraison : commande livraison carte impayée bloquée sur les DEUX routes, et reapée par le janitor.",
+    "F-H — ticket cuisine : commande avec viande en plus ET note client contenant « Viandes en plus : Nuggets » → le ticket doit nommer la viande PAYÉE. (Le format a été vérifié contre le vrai formateur, le bout-en-bout non.)",
+    "F-I — 3 inscriptions même téléphone → 1 seule ligne personal_access_tokens vivante.",
+    "F-G — commande livraison → les 2 listeners d'impression déclenchés (octets ESC/POS)."
   ],
-  "open_owner_gate": [
-    "G-W5 : commande carte web diffusée en caisse/cuisine AVANT paiement — refermer le gate exige d'activer le chemin web-payé de finalizePaidKioskOrder + allocation fiscale NF525",
-    "VERROU DE PAIEMENT SERVEUR ABSENT : MolliePaymentController ne teste que payment_status, posé de façon ASYNCHRONE par le webhook. La seule protection anti-double-paiement est aujourd'hui du JavaScript client",
-    "Sauces Poivre/Burger : `php artisan menu:ensure-new-sauces --dry-run` = 56 variations manquantes EN LOCAL — à exécuter sur le VPS",
-    "Pré-commandes hors service : on peut commander « dès que prêt » à 14h alors que le service ouvre à 18h (décision métier ; porter isOpenNow dans le funnel créerait une jumelle de logique)",
-    "Paliers de statut : site + CGV annoncent 4 rangs [0/500/1500/5000], l'API en publie 5 [100/250/500/1000/2000] que la borne affiche",
-    "Afficher l'économie réelle du Menu complet (1,30 €) — vérifié : la borne n'affiche aucune économie, donc aucune parité à rompre"
+
+  "F_D_VERIFIE_COMPORTEMENTALEMENT": "tests/Feature/Frontend/WebCardOrderPaidPathReleasesAllOrderTypesTest.php APPELLE finalizePaidKioskOrder pour order_type 10, 5 et 20. Preuve qu'il rougit : restriction order_type réintroduite → ROUGE sur le type 20 (« Failed asserting that false is true ») ; restaurée → 3/3 verts.",
+
+  "GATE_OWNER_prioritaire": [
+    "NF525 — une fenêtre a existé entre mon correctif du cycle 6 et celui du cycle 7 où une commande carte web d'un order_type hors {TAKEAWAY, DELIVERY} pouvait être PAYÉE, rester PENDING, sans fiscal_sequence_no. UNIQUEMENT sur le dépôt local, RIEN N'EST DÉPLOYÉ. À arbitrer : vérifier si des commandes réelles sont concernées en production.",
+    "Verrou de paiement SERVEUR absent : MolliePaymentController ne teste que payment_status, posé de façon ASYNCHRONE par le webhook. La seule protection anti-double-paiement est aujourd'hui du JavaScript client.",
+    "Sauces Poivre/Burger : `php artisan menu:ensure-new-sauces --dry-run` = 56 variations manquantes EN LOCAL. À exécuter sur le VPS. Le web est désormais fail-loud, donc ces sauces sont INCOMMANDABLES tant que la donnée manque.",
+    "Pré-commandes hors service : on peut commander « dès que prêt » à 14h alors que le service ouvre à 18h (décision métier ; porter isOpenNow dans le funnel créerait une jumelle de logique).",
+    "Paliers de fidélité : site + CGV annoncent 4 rangs [0/500/1500/5000], l'API en publie 5 [100/250/500/1000/2000] que la borne affiche.",
+    "Économie réelle du Menu complet (1,30 €) non affichée — vérifié que la borne n'affiche aucune économie, donc aucune parité à rompre."
   ],
-  "open_P2_P3": [
-    "Écran OTP annonçant un destinataire du code potentiellement faux, voire inexistant",
-    "Throttle OTP par IP → verrouillage collectif derrière un NAT",
-    "Compte créé dès la 4e touche : fermer n'annule plus rien, aucune affordance de suppression",
-    "Onglet « Connexion » exigeant prénom + nom, identique à l'inscription",
-    "Pastille d'avatar affichant les 2 derniers chiffres du téléphone (confondue avec un compteur)",
-    "Panier vide sans bouton de sortie · double croix dans la recherche · allergènes à 10px (sécurité alimentaire) · pas de page 404 de marque · format de date « 03:58, 05-08-2026 »",
-    "Dénominateur du wizard qui grandit en cours de route (1/6 → 8/8)"
+
+  "P2_P3_OUVERTS": [
+    "Lane PREPARED du janitor = code mort (son propre whereIn order_type la neutralise)",
+    "Canal client absent pour la surface delivery → suivi temps réel mort",
+    "Champ carte recouvert sous clavier ANDROID (scroll-margin sur l'ancêtre, pas sur l'iframe)",
+    "Sonde comptoir tirée une seule fois → QR vivant si la caisse annule pendant la lecture",
+    "« rien n'a été débité » affirmé sur une commande réellement encaissée (status=22 + ps=5)",
+    "Sentinelle backend qui RÉPLIQUE la règle au lieu de l'appeler (et dont la réplique est périmée)",
+    "Tout styles-mobile.css est inerte en PAYSAGE (37 media queries max-width ≤800px) — seul le correctif panier est hors media query",
+    "config('order.web_stale_unpaid_ttl_minutes') et kiosk.stale_web_collect_ttl_minutes n'existent pas → env inertes",
+    "401 sur la sonde → déconnexion silencieuse · fil d'ariane « Confirmé » sur écran annulé · pas de verrouillage du scroll derrière la modale"
   ],
-  "pieges_de_methode_a_ne_pas_refaire": [
-    "Un banc de test qui ne sert pas EXACTEMENT le code audité produit des verdicts faux dans les deux sens : mon miroir liait tout en symlink SAUF index.html (copie) — mes modifications n'étaient pas testées. Vérifier par `diff <(curl -s <url>) <fichier>`.",
-    "`document.body.scrollWidth` MENT (le tiroir panier hors écran le gonfle) : le seul test valable est documentElement.scrollWidth vs clientWidth PLUS un scrollTo(500,0) suivi de la relecture de scrollX.",
-    "Les captures `fullPage` n'exécutent pas les révélations au scroll et écrasent les modales position:fixed.",
-    "Une assertion de texte qui ne retire pas les COMMENTAIRES échoue sur le commentaire qui cite la phrase supprimée.",
-    "Un correctif qui supprime un blocage peut supprimer une PROTECTION non documentée : le 409 gênant ÉTAIT le verrou anti-double-paiement."
+
+  "MOTIF_DOMINANT_A_SURVEILLER": "Un correctif appliqué à la surface REGARDÉE, sans ses JUMELLES. Exemples de la campagne : 'unknown' propagé à une liste sur quatre · 'delivery' propagé à une garde sur trois · order_type « aligné » en EXCLUANT des deux côtés au lieu d'inclure · une garde R1 fermée sur une route et pas sur sa sœur. AVANT TOUT COMMIT : grep les jumelles.",
+
+  "pieges_de_methode": [
+    "Un banc qui ne sert pas EXACTEMENT le code audité produit des verdicts faux dans les deux sens (vérifier par shasum ; :8899 sert le dépôt, :8901 est un miroir à régénérer après CHAQUE modification d'index.html).",
+    "document.body.scrollWidth MENT — mesurer documentElement + un scrollTo(500,0) puis relire scrollX.",
+    "Les captures fullPage n'exécutent pas les révélations au scroll et écrasent les modales position:fixed.",
+    "Une assertion de texte qui n'ignore pas les COMMENTAIRES échoue sur le commentaire citant la phrase supprimée.",
+    "Un commentaire // en FIN de ligne dans un in_array() PHP avale la parenthèse fermante.",
+    "Un commentaire JSX en tête d'une branche de ternaire casse la compilation.",
+    "Un correctif qui supprime un blocage peut supprimer une PROTECTION non documentée (le 409 gênant ÉTAIT le verrou anti-double-paiement)."
   ],
-  "next_command": "Lire les 4 rapports du cycle 4, corriger ce qu'ils confirment, puis relancer un cycle 5 : la convergence exige DEUX cycles consécutifs à 0 P0/P1.",
+
   "environnement_local": {
-    "site_miroir": "http://127.0.0.1:8901/ (scratchpad/site-local — index.html est une COPIE, à RÉGÉNÉRER après toute modification d'index.html)",
+    "site_depot": "http://127.0.0.1:8899/ (sert le dépôt tel quel)",
+    "site_miroir": "http://127.0.0.1:8901/ (scratchpad, index.html est une COPIE — RÉGÉNÉRER après toute modification)",
     "api": "http://127.0.0.1:8766 (header X-API-Key = MIX_API_KEY du .env)",
     "playwright": "NODE_PATH=<testttt>/node_modules node <script>",
-    "otp": "table `otps`, colonne `token` (la colonne `code` est l'indicatif téléphonique)"
-  }
+    "otp": "table `otps`, colonne `token` (la colonne `code` est l'indicatif téléphonique)",
+    "panier_de_test": "Perrier 33cl (id 125) — le Coca-Cola 33cl est ÉPUISÉ, il bloque « Passer commande »"
+  },
+
+  "next_command": "Relancer le cycle 8 avec le mandat « EXERCER, pas lire » (voir VERIFICATIONS_DUES), puis un cycle 9 complet. La convergence exige DEUX cycles consécutifs à 0 P0/P1 — jamais atteint à ce jour."
 }
 ```
