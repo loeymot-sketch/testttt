@@ -44,7 +44,9 @@ class PrintKioskOrderToCounter
             // comptoir côté serveur ('web' = valeur live, 'online' = alias futur). POS reste exclu (il
             // imprime déjà à son checkout). No-op garanti sans imprimante 'receipt' active OU transport
             // Null (PRINT_DRIVER non câblé) — cf. gardes ci-dessous.
-            if (! in_array((string) ($order->source_surface ?? ''), ['kiosk', 'web', 'online'], true)) {
+            // [PROCUREUR cycle 7 — 2026-08-05 · P2 F-G] La surface 'delivery' manquait :
+            // une commande LIVRAISON n'imprimait NI ticket cuisine NI ticket comptoir.
+            if (! in_array((string) ($order->source_surface ?? ''), ['kiosk', 'web', 'online', 'delivery'], true)) {
                 return;
             }
 

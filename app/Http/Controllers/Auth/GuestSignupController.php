@@ -338,6 +338,16 @@ class GuestSignupController extends Controller
             // `/api/frontend/order/*` which requires `tokenCan('kiosk:order')`
             // (see OrderRequest.php:46-47: both `['*']` and `['kiosk:order']`
             // satisfy that check — the narrow scope is strictly sufficient).
+            // [PROCUREUR cycle 7 — 2026-08-05 · P2 F-I] Ce chemin ne purgeait PAS les jetons
+            // précédents, contrairement à sa jumelle `LoginController` — alors que CLAUDE.md §9
+            // pose « Old tokens revoked à chaque relogin (prevent token sprawl) ». Constaté en
+            // base : 13 jetons VIVANTS pour un seul utilisateur, chacun valable 30 jours. Un
+            // client qui se reconnecte depuis un nouvel appareil laissait donc derrière lui
+            // autant de sessions actives que de connexions, et sa déconnexion n'en tuait qu'une.
+            // On purge par NOM, comme la jumelle, pour ne jamais toucher un jeton d'une autre
+            // nature.
+            $user->tokens()->where('name', 'auth_token')->delete();
+
             $this->token = $user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))->plainTextToken;
 
             // [FIX] Guard against user with no roles (should not happen, but defensive)
