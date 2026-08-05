@@ -247,7 +247,30 @@ class FrontendOrderService
                 // UNPAID until the TPE callback flips ps=PAID, then OrderCreated
                 // fires from finalizePaidKioskOrder line 1151. Firing earlier would
                 // expose ghost orders to KDS that may never be paid.
-                $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod;
+                // [A1 cycle 4 · GOAL_WEB_ADVERSARIAL 2026-08-05] LA PLAINTE OWNER : « j'annule le
+                // paiement et la commande passe quand même ». Reproduite avec les octets ESC/POS :
+                // une commande CARTE WEB était diffusée à la CRÉATION — donc AVANT que le client
+                // voie seulement l'écran 3-D Secure — et les listeners d'impression
+                // (PrintKioskKitchenTicketOnOrderCreated, PrintKioskOrderToCounter) ne testent que
+                // `source_surface`, JAMAIS `payment_status` : le ticket cuisine sortait pour une
+                // commande jamais payée, et aucun listener n'imprime d'avis d'annulation.
+                // La garde anti-« ghost order » décrite juste au-dessus ne couvrait que la BORNE.
+                //
+                // Pourquoi c'est sûr de l'étendre au web MAINTENANT : `finalizePaidKioskOrder`
+                // traite les commandes carte web depuis LOCK_WEB_CARD_FISCAL_SEAL (2026-08-04,
+                // `$isWebCardOrder` ligne ~1381) — le chemin « payé » est UNIFIÉ. Retenir la
+                // diffusion à la création ne coupe donc plus la cuisine : `OrderCreated` part au
+                // webhook PAID, avec le scellement fiscal, exactement comme pour la borne.
+                // (C'est ce qui invalidait l'escalade G-W5 : elle reposait sur une lecture périmée
+                // où ce chemin no-opait pour le web.)
+                //
+                // Ne concerne QUE l'intention carte en ligne : une commande web réglée AU COMPTOIR
+                // (cash) doit continuer de partir immédiatement en cuisine — c'est le mode normal.
+                $isWebCardIntentAtCreate = strtolower((string) ($validatedRequest['source_surface'] ?? ($isKioskMachineOrder ? 'kiosk' : 'web'))) === 'web'
+                    && (int) ($validatedRequest['payment_method'] ?? 0) === (int) PaymentGateway::CARD;
+
+                $shouldDispatchNewOrderSignals = (!$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod)
+                    && !$isWebCardIntentAtCreate;
 
                 Log::debug('[FrontendOrderService] dispatch gate decision', [
                     'is_kiosk_machine_order'             => $isKioskMachineOrder,
