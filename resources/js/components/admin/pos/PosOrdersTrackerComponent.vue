@@ -664,6 +664,14 @@ export default {
             const buckets = { accept: [], preparing: [], prepared: [], onTheWay: [], delivered: [] };
             for (const o of this.filteredOrders) {
                 const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+                // [SYNC gateway-refund coherence 2026-08-05] Une commande REMBOURSÉE par la banque
+                // (gateway Mollie/Stripe) garde souvent status=PREPARING mais payment_status=REFUNDED :
+                // le KDS/OSS la retirent (KitchenReleaseRule::applyBoardReleaseFilter exclut REFUNDED)
+                // mais ce tracker, bucketé par STATUT, la montrait « en préparation » un-bumpable =
+                // carte ORPHELINE sur la caisse. On l'exclut des voies ACTIVES (miroir exact du
+                // board-release) — elle reste en base/historique. isTerminalStatus() ne l'attrape pas
+                // (le STATUT n'est pas terminal ; c'est le PAIEMENT qui l'est).
+                if (this.isRefunded(o)) continue;
                 // [Wave S-4 P-OWNER 2026-05-20] The ACCEPT lane is now reserved
                 // for cash-pending kiosk orders ONLY. With Wave S-1 auto-PREPA
                 // active, every paid order skips ACCEPT entirely and lands in
@@ -907,6 +915,11 @@ export default {
                         },
                     },
                     { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._noteRealtimeEvent(); this._debouncedFetch(); } },
+                    // [SYNC 2026-08-05] Refund GATEWAY (Mollie/Stripe) → payment_status=REFUNDED SANS
+                    // changement de statut → aucun OrderStatusChanged n'était émis, donc le tracker ne
+                    // se rafraîchissait qu'au poll (≤60s) et gardait la carte remboursée « en préparation ».
+                    // On re-fetch sur le flip paiement → la carte sort des voies actives (isRefunded) en temps-réel.
+                    { broadcastAs: 'OrderPaymentStatusChanged', handler: () => { this._noteRealtimeEvent(); this._debouncedFetch(); } },
                 ]);
             } catch (e) {
                 /* echo auth failed — polling fallback */
@@ -1278,6 +1291,11 @@ export default {
             const ps = parseInt(o.payment_status, 10);
             const ppm = parseInt(o.pos_payment_method, 10);
             return ps === 15 && ppm === 6;
+        },
+        // [SYNC gateway-refund coherence 2026-08-05] Remboursée par la banque = PaymentStatus::REFUNDED (20).
+        // Un refund gateway (Mollie/Stripe) laisse souvent status=PREPARING mais payment_status=REFUNDED.
+        isRefunded(o) {
+            return o ? parseInt(o.payment_status, 10) === 20 : false;
         },
         // [WEB-TRACKER-VISIBILITY 2026-07-20] Commande WEB fraîchement arrivée (PENDING, pas
         // encore acceptée). Distincte de isCashPending (qui = déjà acceptée, PENDING_COUNTER).

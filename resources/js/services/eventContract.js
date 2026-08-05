@@ -1,6 +1,9 @@
 export const EVENT_TYPES = {
     ORDER_CREATED: 'order.created',
     ORDER_STATUS_CHANGED: 'order.status_changed',
+    // [SYNC 2026-08-05] Flip de payment_status (refund gateway, encaissement) — diffusé par
+    // PersistOrderPaymentStatusChangedToOutbox, jusque-là SANS abonné client (latence poll).
+    ORDER_PAYMENT_STATUS_CHANGED: 'order.payment_status_changed',
     ORDER_PAYMENT_CONFIRMED: 'order.payment_confirmed',
     ORDER_ITEM_ADDED: 'order.item_added',
     ORDER_CANCELLED: 'order.cancelled',
@@ -18,6 +21,8 @@ export const EVENT_TYPES = {
 export const BROADCAST_MAP = {
     OrderCreated: EVENT_TYPES.ORDER_CREATED,
     OrderStatusChanged: EVENT_TYPES.ORDER_STATUS_CHANGED,
+    // [SYNC 2026-08-05] Refund/flip paiement en temps-réel (avant : poll ≤60s seulement).
+    OrderPaymentStatusChanged: EVENT_TYPES.ORDER_PAYMENT_STATUS_CHANGED,
     OrderPaidAtCounter: EVENT_TYPES.ORDER_PAYMENT_CONFIRMED,
     OrderTableChanged: EVENT_TYPES.ORDER_TABLE_CHANGED,
     ItemAvailabilityChanged: EVENT_TYPES.MENU_ITEM_AVAILABILITY_CHANGED,
