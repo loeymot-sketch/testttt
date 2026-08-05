@@ -1,0 +1,10 @@
+{
+  "category": "Bonjour\nCaissier Le Cayenne",
+  "product": "Caissier Le Cayenne pos@lecayenne.fr +33",
+  "wizard": {
+    "hasWizard": false,
+    "hasViande": false,
+    "viandeRows": 0,
+    "stepText": "Bonjour\nCaissier Le Cayenne"
+  }
+}

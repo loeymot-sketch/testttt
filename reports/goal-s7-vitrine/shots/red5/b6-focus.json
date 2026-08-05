@@ -1,0 +1,277 @@
+{
+  "tabSeq": [
+    {
+      "tag": "A",
+      "cls": "lc-skip-link",
+      "label": "Aller au contenu",
+      "outline": "solid 2px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": -43
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-brand",
+      "label": "LC\nLE CAYENNE",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 19
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-link is-on",
+      "label": "Accueil",
+      "outline": "solid 0px rgb(255, 255, 255)",
+      "shadow": "none",
+      "visible": true,
+      "y": 18
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-link",
+      "label": "Menu",
+      "outline": "solid 0px rgb(92, 88, 79)",
+      "shadow": "none",
+      "visible": true,
+      "y": 18
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-link",
+      "label": "Commandes",
+      "outline": "solid 0px rgb(92, 88, 79)",
+      "shadow": "none",
+      "visible": true,
+      "y": 18
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-link",
+      "label": "Fidélité",
+      "outline": "solid 0px rgb(92, 88, 79)",
+      "shadow": "none",
+      "visible": true,
+      "y": 18
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-btn-cart",
+      "label": "Panier",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 19
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-nav-btn-account",
+      "label": "Se connecter",
+      "outline": "solid 0px rgb(10, 10, 10)",
+      "shadow": "none",
+      "visible": true,
+      "y": 19
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-btn lc-btn--orange",
+      "label": "Commander maintenant",
+      "outline": "solid 3px rgb(255, 184, 0)",
+      "shadow": "rgba(244, 80, 30, 0.75) 0px 10px 30px -8px",
+      "visible": true,
+      "y": 613
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-btn lc-btn--orange",
+      "label": "Commander le Méga",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "rgba(255, 90, 31, 0.45) 0px 8px 24px -4px, rgba(10, 10, 10, ",
+      "visible": true,
+      "y": 1961
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-btn lc-btn--ink",
+      "label": "Voir tout le menu",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 2231
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-card-item-name",
+      "label": "Voir Cayenne",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 2605
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-card-item-name",
+      "label": "Voir Suprême",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 2605
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-card-item-name",
+      "label": "Voir Méga",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 2605
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-card-item-name",
+      "label": "Voir Terminator",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 2605
+    },
+    {
+      "tag": "A",
+      "cls": "lc-btn lc-btn--ink",
+      "label": "Le Cayenne sur Facebook",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 2928
+    },
+    {
+      "tag": "A",
+      "cls": "lc-gallery-tile",
+      "label": "Sandwich Le Cayenne — voir sur",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3025
+    },
+    {
+      "tag": "A",
+      "cls": "lc-gallery-tile",
+      "label": "Cheese Burger — voir sur notre",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3025
+    },
+    {
+      "tag": "A",
+      "cls": "lc-gallery-tile",
+      "label": "Sandwich Méga — voir sur notre",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3024
+    },
+    {
+      "tag": "A",
+      "cls": "lc-gallery-tile",
+      "label": "Sandwich Terminator — voir sur",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3024
+    },
+    {
+      "tag": "A",
+      "cls": "lc-gallery-tile",
+      "label": "Chicken Burger — voir sur notr",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3024
+    },
+    {
+      "tag": "A",
+      "cls": "lc-btn lc-btn--orange",
+      "label": "Itinéraire",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "rgba(255, 90, 31, 0.45) 0px 8px 24px -4px, rgba(10, 10, 10, ",
+      "visible": true,
+      "y": 3663
+    },
+    {
+      "tag": "A",
+      "cls": "lc-btn lc-btn--ghost",
+      "label": "03 65 67 82 91",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3663
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-btn lc-btn--ink",
+      "label": "Voir tout le menu",
+      "outline": "solid 3px rgb(255, 90, 31)",
+      "shadow": "none",
+      "visible": true,
+      "y": 3937
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-v6-famille",
+      "label": "Sandwichs — ouvrir le menu com",
+      "outline": "solid 3px rgb(244, 80, 30)",
+      "shadow": "none",
+      "visible": true,
+      "y": 4034
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-v6-famille",
+      "label": "Galette — ouvrir le menu compl",
+      "outline": "solid 3px rgb(244, 80, 30)",
+      "shadow": "none",
+      "visible": true,
+      "y": 4034
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-v6-famille",
+      "label": "Burgers — ouvrir le menu compl",
+      "outline": "solid 3px rgb(244, 80, 30)",
+      "shadow": "none",
+      "visible": true,
+      "y": 4034
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-v6-famille",
+      "label": "Tacos — ouvrir le menu complet",
+      "outline": "solid 3px rgb(244, 80, 30)",
+      "shadow": "none",
+      "visible": true,
+      "y": 4541
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-v6-famille",
+      "label": "Bols — ouvrir le menu complet",
+      "outline": "solid 3px rgb(244, 80, 30)",
+      "shadow": "none",
+      "visible": true,
+      "y": 4541
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "lc-v6-famille",
+      "label": "Frites — ouvrir le menu comple",
+      "outline": "solid 3px rgb(244, 80, 30)",
+      "shadow": "none",
+      "visible": true,
+      "y": 4541
+    }
+  ],
+  "noRing": [],
+  "cartEmpty": "Panier",
+  "searchEmpty": "NO_INPUT_FOUND"
+}

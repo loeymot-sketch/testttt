@@ -4,15 +4,90 @@
     "payload": {
       "fx": {
         "branches": [
-          1
+          1,
+          7
         ],
         "item_with_extra_and_variation": null,
         "item_active_fallback": null,
-        "extra_id": 172,
-        "variation_id": 262
+        "extra_id": 1,
+        "variation_id": 5
       },
       "spaUp": true
     },
-    "ts": "2026-05-08T10:47:06.781Z"
+    "ts": "2026-07-30T04:09:02.311Z"
+  },
+  {
+    "label": "S6-02-toggle-extra-rupture-A",
+    "payload": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "extra_id": 1,
+        "branch_id": 1,
+        "is_available": false,
+        "reason": "out_of_stock_manual",
+        "manual_unavailable_since": "2026-07-30T06:09:03+02:00"
+      },
+      "ms": 413
+    },
+    "ts": "2026-07-30T04:09:03.906Z"
+  },
+  {
+    "label": "S6-02-db-extra-unavail",
+    "payload": {
+      "branchA_extra_unavail_ids": [
+        1
+      ],
+      "branchB_extra_unavail_ids": []
+    },
+    "ts": "2026-07-30T04:09:04.246Z"
+  },
+  {
+    "label": "S6-02-snapshot-A",
+    "payload": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "data": {
+          "branch_id": 1,
+          "items": [],
+          "extras": [
+            {
+              "extra_id": 1,
+              "reason": "out_of_stock_manual",
+              "since": "2026-07-30T06:09:03+02:00"
+            }
+          ],
+          "variations": []
+        }
+      }
+    },
+    "ts": "2026-07-30T04:09:04.593Z"
+  },
+  {
+    "label": "S6-03-toggle-variation-rupture-A",
+    "payload": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "variation_id": 5,
+        "branch_id": 1,
+        "is_available": false,
+        "reason": "out_of_stock_manual",
+        "manual_unavailable_since": "2026-07-30T06:09:06+02:00"
+      },
+      "ms": 407
+    },
+    "ts": "2026-07-30T04:09:06.311Z"
+  },
+  {
+    "label": "S6-03-db-variation-unavail",
+    "payload": {
+      "branchA_variation_unavail_ids": [
+        5
+      ],
+      "branchB_variation_unavail_ids": []
+    },
+    "ts": "2026-07-30T04:09:06.661Z"
   }
 ]

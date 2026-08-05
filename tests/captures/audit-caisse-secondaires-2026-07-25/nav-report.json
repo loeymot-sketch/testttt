@@ -1,0 +1,19 @@
+{
+  "encaissement": {
+    "nav": true,
+    "links": [
+      "csn-encaissement",
+      "csn-suivi",
+      "csn-historique",
+      "csn-oss",
+      "csn-back-caisse"
+    ],
+    "active": "💶Encaissement"
+  },
+  "afterSuiviClick": "/admin/pos-orders-tracker",
+  "historique": {
+    "nav": true,
+    "active": "🗂️Historique"
+  },
+  "afterEncaissementClick": "/admin/encaissement"
+}

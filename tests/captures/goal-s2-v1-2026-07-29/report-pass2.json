@@ -1,0 +1,80 @@
+{
+  "login": "/admin/pos",
+  "afterCat": {
+    "tileCount": 56,
+    "names": [
+      "Menu (Frites + Boisson)",
+      "Frites Seules",
+      "Boisson Seule",
+      "Cheddar",
+      "Raclette",
+      "Emmental",
+      "Œuf",
+      "Légumes Sautés",
+      "Jambon",
+      "Oignons Frits",
+      "Champignons",
+      "Boule Gratinée",
+      "Cayenne",
+      "Galette Normale",
+      "Galette Cayenne",
+      "Tacos M",
+      "Petite Frites",
+      "Grande Frites",
+      "Boursin",
+      "Chicken Burger"
+    ]
+  },
+  "wizardProduct": "Tacos M",
+  "wizard": {
+    "wizardRoot": false,
+    "modalActive": false,
+    "text": ""
+  },
+  "cart": {
+    "items": 7,
+    "ticket": "Total 1,90 € 💳 Commande · 1,90 € \ud83d"
+  },
+  "filterClicked": "Filtrer",
+  "filterPanel": "Filtrer N° COMMANDE ORIGINE STATUT STATUT PAIEMENT DATE Rechercher Effacer N° COMMANDE ORIGINE N° FILE CLIENT MONTANT PAIEMENT N° FISCAL DATE STATUT ACTION 2907265997 Borne N°A0039 Admin Le Cayenne 31,40 € Non payé — 05:29, 29-07-2026 En attente 2907265996 Borne N°A0038 Admin Le Cayenne 7,00 € Non p",
+  "adminLogin": "/admin/dashboard",
+  "stock": {
+    "url": "/admin/stock/rupture",
+    "rawLabels": [],
+    "undef": false,
+    "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue Attribut D’articles In",
+    "scrollHidden": false
+  },
+  "consoClicked": "Conso & Stock",
+  "conso": {
+    "url": "/admin/stock/unified",
+    "rawLabels": [],
+    "undef": false,
+    "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue Attribut D’articles In"
+  },
+  "scan": {
+    "url": "/admin/scan-facture",
+    "rawLabels": [],
+    "undef": false,
+    "first": "Français Anglais Français Compte Admin Le Cayenne admin@lecayenne.fr 2,00 € Tableau De Bord Mes Commandes Modifier Le Profil Discussion Adresse Changer Le Mot De Passe Déconnexion Page Non Trouvée ! Impossible de trouver"
+  },
+  "items": {
+    "url": "/admin/items",
+    "rawLabels": [],
+    "undef": false,
+    "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue Attribut D’articles In"
+  },
+  "itemEdit": "||db-table-action edit",
+  "itemEditor": {
+    "url": "/admin/items",
+    "rawLabels": [],
+    "undef": false,
+    "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue Attribut D’articles In"
+  },
+  "mobile": {
+    "url": "/m",
+    "rawLabels": [],
+    "undef": false,
+    "first": "🌶️ Stock Verrouiller 🛒 À ACHETER Aucune rupture — tout est en stock ✅ 🍔 PRODUITS Sandwichs 4 ▾ Cayenne EN STOCK Suprême EN STOCK Méga EN STOCK Terminator EN STOCK Galette 2 ▾ Galette Normale EN STOCK Galette Cayenne E"
+  }
+}

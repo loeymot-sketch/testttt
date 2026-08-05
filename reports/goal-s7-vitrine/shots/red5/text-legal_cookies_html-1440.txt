@@ -1,0 +1,64 @@
+LC
+LE CAYENNE
+Accueil
+Menu
+← Retour au site
+ACCUEIL
+›
+POLITIQUE DE COOKIES
+POLITIQUE DE COOKIES
+DERNIÈRE MISE À JOUR : 18 MAI 2026
+La présente politique de cookies explique l'utilisation des cookies et autres traceurs sur le site Le Cayenne, conformément à l'article 82 de la loi n° 78-17 du 6 janvier 1978 modifiée (loi Informatique et Libertés), à la directive ePrivacy 2002/58/CE, ainsi qu'aux recommandations de la Commission Nationale de l'Informatique et des Libertés (CNIL) de septembre 2020.
+1. QU'EST-CE QU'UN COOKIE ?
+Un cookie est un petit fichier texte déposé sur votre terminal (ordinateur, tablette, smartphone) lors de la visite d'un site internet. Il permet de stocker des informations relatives à votre navigation et de vous reconnaître lors de visites ultérieures.
+Sont également considérés comme des traceurs au sens de l'article 82 de la loi I&L : les pixels, le local storage, le session storage, les empreintes numériques (fingerprinting) et tout autre dispositif similaire.
+2. VOS CHOIX
+Aucun cookie soumis à consentement en V1 : Le site Le Cayenne ne dépose que des cookies et du stockage strictement nécessaires à son fonctionnement (session, sécurité). Il n'utilise aucun cookie publicitaire ni traceur et n'affiche donc pas de bandeau de consentement. Le site charge par ailleurs les polices d'écriture Google Fonts, ce qui peut transmettre votre adresse IP à Google (voir le §4 ci-dessous et la Politique de confidentialité).
+Vous conservez à tout moment la maîtrise des cookies via les réglages de votre navigateur (voir le §6 « Paramétrage via votre navigateur »). Le blocage des cookies strictement nécessaires peut toutefois altérer certaines fonctionnalités du site (consultation de la carte, passation de commande).
+3. CATÉGORIES DE COOKIES UTILISÉS
+3.1 Cookies strictement nécessaires (exemptés de consentement)
+Ces cookies sont indispensables au fonctionnement du site et permettent l'utilisation des principales fonctionnalités. Sans eux, vous ne pourriez pas naviguer normalement ni passer commande. Leur dépôt ne nécessite pas de consentement préalable (article 82 loi I&L).
+COOKIE	FINALITÉ	DURÉE	ÉMETTEUR
+lc_session	Maintien de la session utilisateur (panier, navigation, authentification)	Session navigateur	Le Cayenne
+XSRF-TOKEN	Protection contre les attaques CSRF	Session navigateur	Le Cayenne
+3.2 Cookies de mesure d'audience (soumis à consentement)
+Ces cookies permettent de produire des statistiques de fréquentation anonymisées, à des fins d'amélioration du service. Leur dépôt est soumis à votre consentement préalable explicite.
+COOKIE	FINALITÉ	DURÉE	ÉMETTEUR
+—	Aucun cookie de mesure d'audience ni de traçage publicitaire. Seul un stockage local technique (panier, code fidélité, session) est utilisé — non déposé à des fins de suivi.	—	—
+Note : la version V1 du site Le Cayenne n'embarque actuellement aucun cookie de mesure d'audience tiers. Cette section sera mise à jour si un outil est ajouté ultérieurement.
+3.3 Cookies publicitaires / réseaux sociaux
+État actuel : Le site Le Cayenne n'utilise pas de cookies publicitaires tiers ni de pixels de tracking marketing (Meta, TikTok, Google Ads, etc.). Si cela évolue, cette politique sera mise à jour et votre consentement préalable sera sollicité.
+4. COOKIES TIERS TECHNIQUES (CDN POLICES ET SCRIPTS)
+Le site charge des polices et bibliothèques JavaScript depuis des CDN tiers afin d'optimiser les performances de rendu :
+Google Fonts (fonts.googleapis.com / fonts.gstatic.com) — polices Anton, Bebas Neue, Inter, JetBrains Mono
+unpkg.com — React 18 + react-dom + Babel-standalone (CDN open-source)
+Ces requêtes peuvent entraîner une transmission de votre adresse IP aux serveurs tiers concernés. Pour davantage de garanties, ces ressources pourront être auto-hébergées dans une version ultérieure.
+5. DURÉE DE CONSERVATION
+Conformément aux recommandations de la CNIL, la durée de conservation des cookies de mesure d'audience ne dépasse pas 13 mois. Les informations collectées via ces cookies ne sont pas conservées au-delà de 25 mois.
+6. PARAMÉTRAGE VIA VOTRE NAVIGATEUR
+Vous pouvez à tout moment paramétrer le dépôt des cookies via les préférences de votre navigateur :
+Chrome : Paramètres › Confidentialité et sécurité › Cookies
+Firefox : Préférences › Vie privée et sécurité › Cookies
+Safari : Préférences › Confidentialité
+Edge : Paramètres › Cookies et autorisations de site
+Pour plus d'informations sur la gestion des cookies, vous pouvez consulter le site de la CNIL : cnil.fr — Maîtriser votre navigateur.
+7. RÉCLAMATION
+En cas de désaccord, vous avez le droit d'introduire une réclamation auprès de la CNIL (Commission Nationale de l'Informatique et des Libertés) : www.cnil.fr.
+VOIR AUSSI
+Mentions légales
+Conditions Générales de Vente (CGV)
+Politique de confidentialité
+Allergènes
+LE CAYENNE
+Sandwich Cayenne signature, tacos M & L, bols gourmands, galettes — fait maison à Hénin-Beaumont.
+NAVIGATION
+Accueil
+Menu
+Fidélité
+LÉGAL
+Mentions légales
+CGV
+Confidentialité
+Cookies
+Allergènes
+© 2026 LE CAYENNE

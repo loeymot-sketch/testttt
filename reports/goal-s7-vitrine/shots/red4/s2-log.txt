@@ -1,0 +1,28 @@
+d detail Cayenne open=true
+d detail Méga open=true
+d detail Chicken Burger open=true
+d detail Double Cheese open=true
+d detail Tacos M open=true
+d detail Bol Frites open=true
+d detail Petite Frites open=true
+d detail Coca-Cola 33cl open=true
+d soldout cards=3
+d cart open=true
+d search=true
+m detail Cayenne open=true
+m detail Méga open=true
+m detail Chicken Burger open=true
+m detail Double Cheese open=true
+m detail Tacos M open=true
+m detail Bol Frites open=true
+m detail Petite Frites open=true
+m detail Coca-Cola 33cl open=true
+m soldout cards=3
+clip fail top page.screenshot: Clipped area is either empty or outside the resulting image
+Call log:
+[2m  - taking page screenshot[22m
+[2m  - waiting for fonts to load...[22m
+[2m  - fonts loaded[22m
+
+m cart open=true
+m search=true

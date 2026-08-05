@@ -1,0 +1,37 @@
+{
+  "Fish Burger": {
+    "opened": true,
+    "modalText": "BURGERS\nFISH BURGER\n\nPoisson pané · Cheddar · Salade · Tomate · Oignon · Sauce\n\n⏱ Prêt en 10 min\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n6,00 €\nPersonnaliser",
+    "hasAllergenWord": true
+  },
+  "Double Cheese": {
+    "opened": true,
+    "modalText": "TOP\nBURGERS\nDOUBLE CHEESE\n\n2 steaks · 2 cheddars · Salade · Tomate · Oignon · Sauce\n\n⏱ Prêt en 11 min\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n7,00 €\nPersonnaliser",
+    "hasAllergenWord": true
+  },
+  "Cheese Burger": {
+    "opened": true,
+    "modalText": "BURGERS\nCHEESE BURGER\n\nSteak · Cheddar · Salade · Tomate · Oignon · Sauce\n\n⏱ Prêt en 10 min\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n6,00 €\nPersonnaliser",
+    "hasAllergenWord": true
+  },
+  "Tacos M": {
+    "opened": true,
+    "modalText": "SIGNATURE\nTACOS\nTACOS M\n\nGalette de blé · 1 viande au choix · Frites maison · Sauce\n\n⏱ Prêt en 10 min\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n6,90 €\nPersonnaliser",
+    "hasAllergenWord": true
+  },
+  "Bol Frites": {
+    "opened": true,
+    "modalText": "BOLS\nBOL FRITES\n\nFrites maison · 1 viande au choix · Sauce · Suppléments optionnels · Option gratiné\n\n⏱ Prêt en 10 min\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n7,90 €\nPersonnaliser",
+    "hasAllergenWord": true
+  },
+  "Coca-Cola 33cl": {
+    "opened": true,
+    "modalText": "BOISSONS\nCOCA-COLA 33CL\n\nCoca-Cola original\n\n⏱ Prêt immédiatement\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n1,90 €\nAjouter au panier",
+    "hasAllergenWord": true
+  },
+  "Tiramisu": {
+    "opened": true,
+    "modalText": "DESSERTS\nTIRAMISU\n\nTiramisu maison\n\n⏱ Prêt immédiatement\n📍 Retrait Hénin-Beaumont\nInfos allergènes\n3,50 €\nAjouter au panier",
+    "hasAllergenWord": true
+  }
+}

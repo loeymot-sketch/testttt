@@ -1,0 +1,502 @@
+{
+  "home": {
+    "invisibleOnWhite": 95,
+    "sample": [
+      {
+        "txt": "Aller au contenu",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Panier",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "viande fraîche",
+        "color": "rgba(255, 250, 245, 0.94)",
+        "ratio": 1.04
+      },
+      {
+        "txt": "frites maison",
+        "color": "rgba(255, 250, 245, 0.94)",
+        "ratio": 1.04
+      },
+      {
+        "txt": "Commander maintenant",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "🌶 Sauce Cayenne maison",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥖 Sandwichs faluche",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌮 Tacos M & L",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥣 Bols Frites/Riz",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍔 Burgers brioché",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍟 Frites Cheddar",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🧒 Menu enfant",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "⚡ Prêt en ~10-15 min",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌶 Sauce Cayenne maison",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥖 Sandwichs faluche",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌮 Tacos M & L",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥣 Bols Frites/Riz",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍔 Burgers brioché",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍟 Frites Cheddar",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🧒 Menu enfant",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "⚡ Prêt en ~10-15 min",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌶 Sauce Cayenne maison",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥖 Sandwichs faluche",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌮 Tacos M & L",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥣 Bols Frites/Riz",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍔 Burgers brioché",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍟 Frites Cheddar",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🧒 Menu enfant",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      }
+    ]
+  },
+  "menu": {
+    "invisibleOnWhite": 35,
+    "sample": [
+      {
+        "txt": "Aller au contenu",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Menu",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Panier",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Tout",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "38",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Tout",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "38",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "SIGNATURE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "XL",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "XL",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "SIGNATURE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "XL",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "SIGNATURE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Le",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Sandwich Cayenne signature, tacos M & L, bols Frites/Riz, ga",
+        "color": "rgba(255, 255, 255, 0.55)",
+        "ratio": 1
+      },
+      {
+        "txt": "Navigation",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Menu complet",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Programme fidélité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Contact",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "03 65 67 82 91",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "contact@lecayenne.fr",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "437 Rue Élie Gruyelle 62110 Hénin-Beaumont",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Ouvert 18h — 00h",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Légal",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Mentions légales",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "CGV",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Politique de confidentialité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Politique de cookies",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      }
+    ]
+  },
+  "cgv": {
+    "invisibleOnWhite": 14,
+    "sample": [
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Le",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Sandwich Cayenne signature, tacos M & L, bols gourmands, gal",
+        "color": "rgba(255, 255, 255, 0.55)",
+        "ratio": 1
+      },
+      {
+        "txt": "Navigation",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Menu",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Fidélité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Légal",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Mentions légales",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "CGV",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Confidentialité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Cookies",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Allergènes",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "© 2026 LE CAYENNE",
+        "color": "rgba(255, 255, 255, 0.6)",
+        "ratio": 1
+      }
+    ]
+  },
+  "cookies": {
+    "invisibleOnWhite": 22,
+    "sample": [
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Cookie",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Finalité",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Durée",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Émetteur",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Cookie",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Finalité",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Durée",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Émetteur",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Le",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Sandwich Cayenne signature, tacos M & L, bols gourmands, gal",
+        "color": "rgba(255, 255, 255, 0.55)",
+        "ratio": 1
+      },
+      {
+        "txt": "Navigation",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Menu",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Fidélité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Légal",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Mentions légales",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "CGV",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Confidentialité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Cookies",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Allergènes",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "© 2026 LE CAYENNE",
+        "color": "rgba(255, 255, 255, 0.6)",
+        "ratio": 1
+      }
+    ]
+  }
+}

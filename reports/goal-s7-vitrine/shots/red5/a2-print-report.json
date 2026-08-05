@@ -1,0 +1,646 @@
+{
+  "home": {
+    "scrollW": 717,
+    "clientW": 717,
+    "bodyBg": "rgb(250, 247, 242)",
+    "htmlBg": "rgba(0, 0, 0, 0)",
+    "darkBlocks": [
+      {
+        "cls": "lc-skip-link",
+        "bg": "rgb(10, 10, 10)",
+        "w": 157,
+        "h": 37
+      },
+      {
+        "cls": "lc-nav-btn-cart",
+        "bg": "rgb(10, 10, 10)",
+        "w": 92,
+        "h": 40
+      },
+      {
+        "cls": "lc-btn lc-btn--orange",
+        "bg": "rgb(194, 65, 12)",
+        "w": 249,
+        "h": 49
+      },
+      {
+        "cls": "lc-why-icon",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52
+      },
+      {
+        "cls": "lc-why-icon",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52
+      },
+      {
+        "cls": "lc-why-icon",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52
+      },
+      {
+        "cls": "lc-featured in",
+        "bg": "rgb(10, 10, 10)",
+        "w": 660,
+        "h": 766
+      },
+      {
+        "cls": "lc-featured-pill",
+        "bg": "rgb(194, 65, 12)",
+        "w": 121,
+        "h": 26
+      },
+      {
+        "cls": "lc-btn lc-btn--orange",
+        "bg": "rgb(194, 65, 12)",
+        "w": 224,
+        "h": 49
+      },
+      {
+        "cls": "lc-btn lc-btn--ink",
+        "bg": "rgb(10, 10, 10)",
+        "w": 197,
+        "h": 49
+      },
+      {
+        "cls": "lc-card-item-badge",
+        "bg": "rgb(194, 65, 12)",
+        "w": 94,
+        "h": 21
+      },
+      {
+        "cls": "lc-btn lc-btn--ink",
+        "bg": "rgb(10, 10, 10)",
+        "w": 258,
+        "h": 49
+      },
+      {
+        "cls": "lc-gallery-tile",
+        "bg": "rgb(10, 10, 10)",
+        "w": 153,
+        "h": 153
+      },
+      {
+        "cls": "lc-gallery-tile",
+        "bg": "rgb(10, 10, 10)",
+        "w": 153,
+        "h": 153
+      },
+      {
+        "cls": "lc-gallery-tile",
+        "bg": "rgb(10, 10, 10)",
+        "w": 153,
+        "h": 153
+      },
+      {
+        "cls": "lc-gallery-tile",
+        "bg": "rgb(10, 10, 10)",
+        "w": 153,
+        "h": 153
+      },
+      {
+        "cls": "lc-gallery-tile",
+        "bg": "rgb(10, 10, 10)",
+        "w": 153,
+        "h": 153
+      },
+      {
+        "cls": "lc-hours in",
+        "bg": "rgb(10, 10, 10)",
+        "w": 660,
+        "h": 673
+      },
+      {
+        "cls": "lc-btn lc-btn--orange",
+        "bg": "rgb(194, 65, 12)",
+        "w": 140,
+        "h": 51
+      },
+      {
+        "cls": "lc-btn lc-btn--ink",
+        "bg": "rgb(10, 10, 10)",
+        "w": 197,
+        "h": 49
+      },
+      {
+        "cls": "lc-compare",
+        "bg": "rgb(10, 10, 10)",
+        "w": 660,
+        "h": 524
+      },
+      {
+        "cls": "lc-faq-q-icon",
+        "bg": "rgb(255, 90, 31)",
+        "w": 45,
+        "h": 45
+      },
+      {
+        "cls": "lc-footer",
+        "bg": "rgb(10, 10, 10)",
+        "w": 717,
+        "h": 393
+      }
+    ],
+    "darkCount": 23,
+    "lowContrastText": [
+      {
+        "txt": "Aller au contenu",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Panier",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "viande fraîche",
+        "color": "rgba(255, 250, 245, 0.94)",
+        "ratio": 1.04
+      },
+      {
+        "txt": "frites maison",
+        "color": "rgba(255, 250, 245, 0.94)",
+        "ratio": 1.04
+      },
+      {
+        "txt": "Commander maintenant",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "🌶 Sauce Cayenne maison",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥖 Sandwichs faluche",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌮 Tacos M & L",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥣 Bols Frites/Riz",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍔 Burgers brioché",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍟 Frites Cheddar",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🧒 Menu enfant",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "⚡ Prêt en ~10-15 min",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌶 Sauce Cayenne maison",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥖 Sandwichs faluche",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌮 Tacos M & L",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥣 Bols Frites/Riz",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍔 Burgers brioché",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🍟 Frites Cheddar",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🧒 Menu enfant",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "⚡ Prêt en ~10-15 min",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🌶 Sauce Cayenne maison",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "🥖 Sandwichs faluche",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      }
+    ],
+    "lowCount": 98,
+    "pdfBytes": 10553606
+  },
+  "menu": {
+    "scrollW": 717,
+    "clientW": 717,
+    "bodyBg": "rgb(250, 247, 242)",
+    "htmlBg": "rgba(0, 0, 0, 0)",
+    "darkBlocks": [
+      {
+        "cls": "lc-skip-link",
+        "bg": "rgb(10, 10, 10)",
+        "w": 157,
+        "h": 37
+      },
+      {
+        "cls": "lc-nav-btn-cart",
+        "bg": "rgb(10, 10, 10)",
+        "w": 92,
+        "h": 40
+      },
+      {
+        "cls": "lc-cat-tab is-on",
+        "bg": "rgb(10, 10, 10)",
+        "w": 105,
+        "h": 44
+      },
+      {
+        "cls": "lc-card-item-badge",
+        "bg": "rgb(194, 65, 12)",
+        "w": 94,
+        "h": 21
+      },
+      {
+        "cls": "lc-card-item-badge",
+        "bg": "rgb(194, 65, 12)",
+        "w": 94,
+        "h": 21
+      },
+      {
+        "cls": "lc-card-item-badge",
+        "bg": "rgb(194, 65, 12)",
+        "w": 94,
+        "h": 21
+      },
+      {
+        "cls": "lc-footer",
+        "bg": "rgb(10, 10, 10)",
+        "w": 717,
+        "h": 393
+      }
+    ],
+    "darkCount": 7,
+    "lowContrastText": [
+      {
+        "txt": "Aller au contenu",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Menu",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "Panier",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "✦Tout",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "38",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "✦\nTout\n38",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "38",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "SIGNATURE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "XL",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "XL",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "SIGNATURE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "XL",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "SIGNATURE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "LE CAYENNE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "CAYENNE",
+        "color": "rgb(255, 90, 31)",
+        "ratio": 3.12
+      },
+      {
+        "txt": "Sandwich Cayenne signature, tacos M & L, bols Frit",
+        "color": "rgba(255, 255, 255, 0.55)",
+        "ratio": 1
+      },
+      {
+        "txt": "NAVIGATION",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Menu complet",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Programme fidélité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "CONTACT",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "03 65 67 82 91",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "contact@lecayenne.fr",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "437 Rue Élie Gruyelle\n62110 Hénin-Beaumont",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      }
+    ],
+    "lowCount": 36,
+    "pdfBytes": 11060831
+  },
+  "cgv": {
+    "scrollW": 717,
+    "clientW": 717,
+    "bodyBg": "rgb(250, 247, 242)",
+    "htmlBg": "rgba(0, 0, 0, 0)",
+    "darkBlocks": [
+      {
+        "cls": "lc-footer",
+        "bg": "rgb(10, 10, 10)",
+        "w": 717,
+        "h": 348
+      }
+    ],
+    "darkCount": 1,
+    "lowContrastText": [
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "LE CAYENNE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "CAYENNE",
+        "color": "rgb(255, 90, 31)",
+        "ratio": 3.12
+      },
+      {
+        "txt": "Sandwich Cayenne signature, tacos M & L, bols gour",
+        "color": "rgba(255, 255, 255, 0.55)",
+        "ratio": 1
+      },
+      {
+        "txt": "NAVIGATION",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Menu",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Fidélité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "LÉGAL",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Mentions légales",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "CGV",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Confidentialité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Cookies",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Allergènes",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "© 2026 LE CAYENNE",
+        "color": "rgba(255, 255, 255, 0.6)",
+        "ratio": 1
+      }
+    ],
+    "lowCount": 15,
+    "pdfBytes": 261205
+  },
+  "mentions": {
+    "scrollW": 717,
+    "clientW": 717,
+    "bodyBg": "rgb(250, 247, 242)",
+    "htmlBg": "rgba(0, 0, 0, 0)",
+    "darkBlocks": [
+      {
+        "cls": "lc-footer",
+        "bg": "rgb(10, 10, 10)",
+        "w": 717,
+        "h": 348
+      }
+    ],
+    "darkCount": 1,
+    "lowContrastText": [
+      {
+        "txt": "LC",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "LE CAYENNE",
+        "color": "rgb(255, 255, 255)",
+        "ratio": 1
+      },
+      {
+        "txt": "CAYENNE",
+        "color": "rgb(255, 90, 31)",
+        "ratio": 3.12
+      },
+      {
+        "txt": "Sandwich Cayenne signature, tacos M & L, bols gour",
+        "color": "rgba(255, 255, 255, 0.55)",
+        "ratio": 1
+      },
+      {
+        "txt": "NAVIGATION",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Accueil",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Menu",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Fidélité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "LÉGAL",
+        "color": "rgb(255, 217, 61)",
+        "ratio": 1.38
+      },
+      {
+        "txt": "Mentions légales",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "CGV",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Confidentialité",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Cookies",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "Allergènes",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "ratio": 1
+      },
+      {
+        "txt": "© 2026 LE CAYENNE",
+        "color": "rgba(255, 255, 255, 0.6)",
+        "ratio": 1
+      }
+    ],
+    "lowCount": 15,
+    "pdfBytes": 251174
+  }
+}

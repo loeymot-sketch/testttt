@@ -1,0 +1,419 @@
+{
+  "generatedFor": "S4 V1 audit surfaces",
+  "base": "http://127.0.0.1:8899",
+  "count": 50,
+  "surfaces": [
+    {
+      "id": "01-home-haut",
+      "viewport": "desktop",
+      "file": "desktop-01-home-haut.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "02-home-bas-footer",
+      "viewport": "desktop",
+      "file": "desktop-02-home-bas-footer.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "03-menu",
+      "viewport": "desktop",
+      "file": "desktop-03-menu.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "04-fiche-produit",
+      "viewport": "desktop",
+      "file": "desktop-04-fiche-produit.png",
+      "note": "ItemDetailModal",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "05-wizard-etape1",
+      "viewport": "desktop",
+      "file": "desktop-05-wizard-etape1.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "06-wizard-recap",
+      "viewport": "desktop",
+      "file": "desktop-06-wizard-recap.png",
+      "note": "dernière étape — libellé: Voir récap9,90 €",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "07-panier",
+      "viewport": "desktop",
+      "file": "desktop-07-panier.png",
+      "note": "CartDrawer après ajout",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "08-upsell",
+      "viewport": "desktop",
+      "file": "desktop-08-upsell.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "09-checkout",
+      "viewport": "desktop",
+      "file": "desktop-09-checkout.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "10-checkout-validation-vide",
+      "viewport": "desktop",
+      "file": "desktop-10-checkout-validation-vide.png",
+      "note": "messages d erreur FR attendus",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "11-paiement",
+      "viewport": "desktop",
+      "file": "desktop-11-paiement.png",
+      "note": "AUCUNE commande passée — capture avant règlement",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "12-compte-modale",
+      "viewport": "desktop",
+      "file": "desktop-12-compte-modale.png",
+      "note": "AccountFlow — connexion par code EMAIL",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "13-orders",
+      "viewport": "desktop",
+      "file": "desktop-13-orders.png",
+      "note": "OrdersPage — mes commandes / recommander",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "14-loyalty",
+      "viewport": "desktop",
+      "file": "desktop-14-loyalty.png",
+      "note": "WebLoyalty — fidélité (non connecté)",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "15-hash-checkout-direct",
+      "viewport": "desktop",
+      "file": "desktop-15-hash-checkout-direct.png",
+      "note": "route NON restaurable — doit retomber sur home",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "16-hash-track-direct",
+      "viewport": "desktop",
+      "file": "desktop-16-hash-track-direct.png",
+      "note": "route NON restaurable — doit retomber sur home",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "17-hash-confirm-direct",
+      "viewport": "desktop",
+      "file": "desktop-17-hash-confirm-direct.png",
+      "note": "route NON restaurable — doit retomber sur home",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "18-hash-inconnu",
+      "viewport": "desktop",
+      "file": "desktop-18-hash-inconnu.png",
+      "note": "404 applicatif / repli",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "19-legal-mentions",
+      "viewport": "desktop",
+      "file": "desktop-19-legal-mentions.png",
+      "note": "/legal/mentions.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "20-legal-cgv",
+      "viewport": "desktop",
+      "file": "desktop-20-legal-cgv.png",
+      "note": "/legal/cgv.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "21-legal-privacy",
+      "viewport": "desktop",
+      "file": "desktop-21-legal-privacy.png",
+      "note": "/legal/privacy.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "22-legal-cookies",
+      "viewport": "desktop",
+      "file": "desktop-22-legal-cookies.png",
+      "note": "/legal/cookies.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "23-legal-allergens",
+      "viewport": "desktop",
+      "file": "desktop-23-legal-allergens.png",
+      "note": "/legal/allergens.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "24-404-serveur",
+      "viewport": "desktop",
+      "file": "desktop-24-404-serveur.png",
+      "note": "",
+      "jsErrors": [
+        "[console] Failed to load resource: the server responded with a status of 404 (File not found)"
+      ],
+      "netFails": [
+        "404 http://127.0.0.1:8899/page-qui-nexiste-pas"
+      ]
+    },
+    {
+      "id": "25-offline-menu",
+      "viewport": "desktop",
+      "file": "desktop-25-offline-menu.png",
+      "note": "réseau coupé — message client attendu en FR",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "01-home-haut",
+      "viewport": "mobile",
+      "file": "mobile-01-home-haut.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "02-home-bas-footer",
+      "viewport": "mobile",
+      "file": "mobile-02-home-bas-footer.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "03-menu",
+      "viewport": "mobile",
+      "file": "mobile-03-menu.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "04-fiche-produit",
+      "viewport": "mobile",
+      "file": "mobile-04-fiche-produit.png",
+      "note": "ItemDetailModal",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "05-wizard-etape1",
+      "viewport": "mobile",
+      "file": "mobile-05-wizard-etape1.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "06-wizard-recap",
+      "viewport": "mobile",
+      "file": "mobile-06-wizard-recap.png",
+      "note": "dernière étape — libellé: Voir récap9,90 €",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "07-panier",
+      "viewport": "mobile",
+      "file": "mobile-07-panier.png",
+      "note": "CartDrawer après ajout",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "08-upsell",
+      "viewport": "mobile",
+      "file": "mobile-08-upsell.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "09-checkout",
+      "viewport": "mobile",
+      "file": "mobile-09-checkout.png",
+      "note": "",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "10-checkout-validation-vide",
+      "viewport": "mobile",
+      "file": "mobile-10-checkout-validation-vide.png",
+      "note": "messages d erreur FR attendus",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "11-paiement",
+      "viewport": "mobile",
+      "file": "mobile-11-paiement.png",
+      "note": "AUCUNE commande passée — capture avant règlement",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "12-compte-modale",
+      "viewport": "mobile",
+      "file": "mobile-12-compte-modale.png",
+      "note": "AccountFlow — connexion par code EMAIL",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "13-orders",
+      "viewport": "mobile",
+      "file": "mobile-13-orders.png",
+      "note": "OrdersPage — mes commandes / recommander",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "14-loyalty",
+      "viewport": "mobile",
+      "file": "mobile-14-loyalty.png",
+      "note": "WebLoyalty — fidélité (non connecté)",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "15-hash-checkout-direct",
+      "viewport": "mobile",
+      "file": "mobile-15-hash-checkout-direct.png",
+      "note": "route NON restaurable — doit retomber sur home",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "16-hash-track-direct",
+      "viewport": "mobile",
+      "file": "mobile-16-hash-track-direct.png",
+      "note": "route NON restaurable — doit retomber sur home",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "17-hash-confirm-direct",
+      "viewport": "mobile",
+      "file": "mobile-17-hash-confirm-direct.png",
+      "note": "route NON restaurable — doit retomber sur home",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "18-hash-inconnu",
+      "viewport": "mobile",
+      "file": "mobile-18-hash-inconnu.png",
+      "note": "404 applicatif / repli",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "19-legal-mentions",
+      "viewport": "mobile",
+      "file": "mobile-19-legal-mentions.png",
+      "note": "/legal/mentions.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "20-legal-cgv",
+      "viewport": "mobile",
+      "file": "mobile-20-legal-cgv.png",
+      "note": "/legal/cgv.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "21-legal-privacy",
+      "viewport": "mobile",
+      "file": "mobile-21-legal-privacy.png",
+      "note": "/legal/privacy.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "22-legal-cookies",
+      "viewport": "mobile",
+      "file": "mobile-22-legal-cookies.png",
+      "note": "/legal/cookies.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "23-legal-allergens",
+      "viewport": "mobile",
+      "file": "mobile-23-legal-allergens.png",
+      "note": "/legal/allergens.html",
+      "jsErrors": [],
+      "netFails": []
+    },
+    {
+      "id": "24-404-serveur",
+      "viewport": "mobile",
+      "file": "mobile-24-404-serveur.png",
+      "note": "",
+      "jsErrors": [
+        "[console] Failed to load resource: the server responded with a status of 404 (File not found)"
+      ],
+      "netFails": [
+        "404 http://127.0.0.1:8899/page-qui-nexiste-pas"
+      ]
+    },
+    {
+      "id": "25-offline-menu",
+      "viewport": "mobile",
+      "file": "mobile-25-offline-menu.png",
+      "note": "réseau coupé — message client attendu en FR",
+      "jsErrors": [
+        "[console] Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+      ],
+      "netFails": [
+        "GET https://vps-418872ac.vps.ovh.net/api/frontend/item?branch_id=1 — net::ERR_INTERNET_DISCONNECTED"
+      ]
+    }
+  ]
+}

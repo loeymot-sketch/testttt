@@ -1,0 +1,197 @@
+{
+  "login": {
+    "landedOn": "/admin/pos"
+  },
+  "pos": {
+    "url": "/admin/pos",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur",
+    "tiles": 0,
+    "categories": [
+      "Bonjour\nCaissier Le Cayenne",
+      "Déconnexion",
+      "CAISSE ET COMMANDES",
+      "💵\nOuvrir tiroir",
+      "🏦\nCaisse",
+      "🚫\nRupture",
+      "Sandwichs",
+      "Galette",
+      "Burgers",
+      "Tacos",
+      "Bols",
+      "Frites",
+      "Desserts",
+      "Boissons",
+      "Menu enfant",
+      "✕",
+      "+",
+      "⏸\nMettre en attente",
+      "📦\nEn attente\n0",
+      "_",
+      "_",
+      "0 Articles - 0,00 €"
+    ]
+  },
+  "categoryClicked": "Tacos",
+  "productClicked": null,
+  "wizard": {
+    "wizardRoot": false,
+    "modalActive": false,
+    "steps": [],
+    "text": null
+  },
+  "cart": {
+    "items": 0,
+    "text": "TICKET CAISSE Commande en cours + ⏸ Mettre en attente 📦 En attente 0 SÉLECTIONNER LE TYPE DE COMMANDE 🥡 À emporter 🛵 Livraison ⏰ Programmer 🍽️ Aucun article. Sélectionnez un produit dans la grille. Sous-total 0,00 € Total 0,00 €"
+  },
+  "05-encaissement": {
+    "url": "/admin/encaissement",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur"
+  },
+  "06-suivi-tracker": {
+    "url": "/admin/pos-orders-tracker",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur"
+  },
+  "07-historique": {
+    "url": "/admin/historique",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [
+      "Previous",
+      "Next"
+    ],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur",
+    "filterButton": "10"
+  },
+  "08-ecran-client-oss": {
+    "url": "/admin/order-status-screen",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Tableau De Bord Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion En préparation — Prêt —"
+  },
+  "stock": {
+    "url": "/admin/dashboard",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur",
+    "tabs": [
+      "Bonjour\nCaissier Le Cayenne",
+      "Modifier Le Profil",
+      "Changer Le Mot De Passe",
+      "Déconnexion",
+      "Tableau De Bord",
+      "POS",
+      "Ingrédients",
+      "Scan Facture",
+      "Commandes Caisse",
+      "Historique",
+      "Encaissement",
+      "Vue Caisse Unifiée",
+      "Caisse Livreur",
+      "CAISSE ET COMMANDES",
+      "Écran Cuisine",
+      "Suivi Client",
+      "POS",
+      "Commandes caisse",
+      "Suivi caisse (kanban)",
+      "Encaissement",
+      "Historique",
+      "Écran cuisine",
+      "Suivi client",
+      "Ingrédients",
+      "Voir toutes"
+    ],
+    "consoClicked": null,
+    "achatsClicked": "Scan Facture"
+  },
+  "items": {
+    "url": "/admin/dashboard",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur",
+    "composerClicked": "Modifier Le Profil|"
+  },
+  "itemEditor": {
+    "url": "/admin/profile/edit-profile",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur"
+  },
+  "mobilePin": {
+    "url": "/m",
+    "scrollH": 844,
+    "innerH": 844,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "🌶️ LE CAYENNE — STOCK Entrez le code 1 2 3 4 5 6 7 8 9 0 ⌫"
+  },
+  "mobileStock": {
+    "url": "/m",
+    "scrollH": 844,
+    "innerH": 844,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "🌶️ Stock Verrouiller 🛒 À ACHETER Chargement… 🍔 PRODUITS Chargement du catalogue… 🧂 INGRÉDIENTS / SAUCES Chargement des ingrédients…",
+    "unlocked": true
+  },
+  "carnetPin": {
+    "url": "/carnet",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "📒 Carnet Entrez le code d'accès 1 2 3 4 5 6 7 8 9 C 0 ⌫ Déverrouiller"
+  },
+  "carnet": {
+    "url": "/carnet",
+    "scrollH": 800,
+    "innerH": 800,
+    "scrollHidden": false,
+    "rawLabels": [],
+    "undef": false,
+    "englishHints": [],
+    "first": "📒 Carnet 🔒 Verrouiller Aujourd'hui Résumé du mois 💶 Dépense 🤝 Acompte 📝 Note 📷 Photo de la facture (optionnel) Ajouter ENTRÉES DU 29/07/2026 Aucune entrée ce jour."
+  }
+}

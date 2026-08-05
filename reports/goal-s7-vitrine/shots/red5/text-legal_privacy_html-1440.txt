@@ -1,0 +1,99 @@
+LC
+LE CAYENNE
+Accueil
+Menu
+← Retour au site
+ACCUEIL
+›
+POLITIQUE DE CONFIDENTIALITÉ
+POLITIQUE DE CONFIDENTIALITÉ
+DERNIÈRE MISE À JOUR : 18 MAI 2026
+Le Cayenne s'engage à protéger la vie privée de ses Clients et utilisateurs et à traiter leurs données personnelles dans le respect du Règlement (UE) 2016/679 du 27 avril 2016 relatif à la protection des personnes physiques (« RGPD ») et de la loi française n° 78-17 du 6 janvier 1978 modifiée dite « Informatique et Libertés ».
+1. RESPONSABLE DE TRAITEMENT
+Identité : E.DELICE SAS
+Adresse : 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont, France
+Contact RGPD : rgpd@lecayenne.fr (ou contact@lecayenne.fr)
+Délégué à la protection des données (DPO) : Aucun délégué à la protection des données désigné (traitement non soumis à l'obligation) — contact vie privée : contact@lecayenne.fr
+2. DONNÉES COLLECTÉES
+Le Cayenne collecte les catégories de données suivantes, selon le contexte d'utilisation du service :
+CATÉGORIE	DONNÉES CONCERNÉES	ORIGINE
+Identification	Nom, prénom, civilité (facultatif)	Création de compte / commande
+Contact	E-mail, téléphone mobile	Création de compte / OTP / réclamation
+Authentification	Mot de passe (haché), code OTP	Sécurisation du compte
+Commande	Articles, options, montant, créneau de retrait	Validation de commande
+Paiement	Aucune donnée bancaire n'est collectée via le site : le paiement s'effectue au comptoir (espèces, carte / sans contact sur TPE en caisse, tickets restaurant)	Sans objet — paiement au comptoir
+Fidélité	Solde de points, historique de commandes, palier	Programme Pepper Club
+Technique	Adresse IP, user-agent, journaux d'accès, cookies techniques	Sécurité et fonctionnement du site
+Préférences	Allergènes, régimes (végétarien, halal, etc.)	Compte Client (facultatif)
+3. FINALITÉS DU TRAITEMENT ET BASES LÉGALES
+FINALITÉ	BASE LÉGALE (RGPD ART. 6)	DURÉE DE CONSERVATION
+Gestion des comptes Clients	Exécution du contrat (art. 6.1.b)	Durée du compte + 3 ans après dernière activité
+Traitement des commandes	Exécution du contrat (art. 6.1.b)	5 ans (preuve commerciale, art. L110-4 C. com.)
+Facturation comptable	Obligation légale (art. 6.1.c)	10 ans (art. L123-22 C. com.)
+Pièces justificatives fiscales (NF525)	Obligation légale (art. 6.1.c)	6 ans minimum (art. L102 B LPF)
+Programme de fidélité	Exécution du contrat (art. 6.1.b)	Durée d'adhésion + 3 ans
+Prospection commerciale par e-mail	Consentement (art. 6.1.a) ou intérêt légitime (clients existants)	3 ans après dernier contact
+Cookies de mesure d'audience	Consentement (art. 6.1.a)	13 mois maximum (recommandation CNIL)
+Sécurité du site et journaux d'accès	Intérêt légitime (art. 6.1.f)	12 mois
+Gestion des réclamations	Intérêt légitime (art. 6.1.f)	3 ans après clôture
+4. DESTINATAIRES DES DONNÉES
+Les données collectées sont destinées au personnel habilité de Le Cayenne (équipe opérationnelle, support Client). Elles peuvent être transmises à des sous-traitants techniques agissant pour le compte du restaurant, dans le strict respect de leurs instructions et conformément à l'article 28 du RGPD :
+Hébergeur : Vercel Inc. — 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis (contact : privacy@vercel.com — https://vercel.com) — hébergement du site
+Prestataire de paiement : Sans objet — paiement au comptoir (aucun paiement en ligne)
+Envoi d'e-mails transactionnels : Aucun prestataire d'e-mailing externe à ce jour (aucun e-mail marketing envoyé).
+SMS / OTP : OTP géré en interne (aucun prestataire SMS externe à ce jour).
+Outils internes : Système POS (caisse enregistreuse certifiée NF525), KDS (Kitchen Display System)
+Aucune donnée n'est cédée, vendue ou louée à des tiers à des fins commerciales.
+5. TRANSFERTS HORS UE
+Le Cayenne privilégie l'hébergement et le traitement des données en France ou au sein de l'Espace Économique Européen (EEE). Si un sous-traitant nécessite un transfert hors EEE, celui-ci sera encadré par des Clauses Contractuelles Types (CCT) approuvées par la Commission européenne ou tout autre mécanisme reconnu par le RGPD (articles 44 à 49).
+État actuel des transferts hors EEE : Hébergement du site assuré par Vercel Inc. (États-Unis). Ce transfert est encadré par les Clauses Contractuelles Types (CCT) de la Commission européenne. Aucun autre transfert hors EEE à ce jour.
+6. SÉCURITÉ
+Le Cayenne met en œuvre les mesures techniques et organisationnelles appropriées pour garantir un niveau de sécurité adapté au risque, notamment :
+chiffrement TLS / HTTPS sur l'ensemble du site et de l'API ;
+mots de passe hachés (bcrypt / argon2), jamais stockés en clair ;
+codes OTP à usage unique et expiration courte ;
+aucune donnée de carte bancaire n'est collectée ni conservée par le site : le paiement s'effectue au comptoir sur un terminal de paiement (TPE) en caisse ;
+contrôle d'accès par rôle (RBAC) côté personnel ;
+journalisation des accès et audits NF525 (chaîne d'intégrité HMAC) ;
+sauvegardes chiffrées régulières et plan de reprise d'activité.
+7. VOS DROITS
+Conformément aux articles 12 à 22 du RGPD et à la loi Informatique et Libertés, vous disposez des droits suivants sur vos données personnelles :
+Droit d'accès (art. 15 RGPD) — obtenir confirmation que vos données sont traitées et en recevoir copie.
+Droit de rectification (art. 16) — corriger des données inexactes ou incomplètes.
+Droit à l'effacement / « droit à l'oubli » (art. 17) — sous réserve des obligations légales de conservation.
+Droit à la limitation (art. 18) — restreindre temporairement le traitement.
+Droit à la portabilité (art. 20) — recevoir vos données dans un format structuré, couramment utilisé et lisible par machine.
+Droit d'opposition (art. 21) — vous opposer à un traitement fondé sur l'intérêt légitime ou la prospection.
+Droit de retirer votre consentement à tout moment lorsque le traitement est fondé sur celui-ci.
+Droit de définir des directives post-mortem sur vos données (art. 85 loi I&L).
+Droit d'introduire une réclamation auprès de la CNIL.
+Exercice des droits : Pour exercer ces droits, contactez-nous par e-mail à rgpd@lecayenne.fr ou par courrier postal à Le Cayenne — 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont. Une copie d'une pièce d'identité pourra vous être demandée en cas de doute raisonnable sur l'identité du demandeur. Nous nous engageons à répondre dans un délai d'un (1) mois à compter de la réception de la demande.
+8. COOKIES
+L'usage des cookies est détaillé dans la Politique de cookies. En V1, le site ne dépose que des cookies et du stockage strictement nécessaires à son fonctionnement et n'utilise aucun traceur soumis à consentement ; aucun bandeau de consentement n'est donc requis.
+9. MINEURS
+Le service n'est pas destiné aux mineurs de moins de 15 ans. Aucun traitement de données d'un mineur de moins de 15 ans ne pourra être effectué sans le consentement préalable d'un titulaire de l'autorité parentale (article 8 RGPD, article 45 loi I&L).
+10. AUTORITÉ DE CONTRÔLE
+Si vous estimez que le traitement de vos données personnelles constitue une violation du RGPD, vous avez le droit d'introduire une réclamation auprès de la Commission Nationale de l'Informatique et des Libertés (CNIL) :
+Adresse : 3 place de Fontenoy, TSA 80715, 75334 PARIS CEDEX 07
+Téléphone : 01 53 73 22 22
+Site : www.cnil.fr
+11. MODIFICATION DE LA POLITIQUE
+Le Cayenne peut modifier la présente politique à tout moment pour l'adapter à l'évolution de la réglementation, des pratiques ou du service. Toute modification substantielle sera portée à votre connaissance par e-mail (si vous avez un compte) ou via un avis visible sur le site. La date de dernière mise à jour figure en haut de la présente page.
+VOIR AUSSI
+Mentions légales
+Conditions Générales de Vente (CGV)
+Politique de cookies
+Allergènes
+LE CAYENNE
+Sandwich Cayenne signature, tacos M & L, bols gourmands, galettes — fait maison à Hénin-Beaumont.
+NAVIGATION
+Accueil
+Menu
+Fidélité
+LÉGAL
+Mentions légales
+CGV
+Confidentialité
+Cookies
+Allergènes
+© 2026 LE CAYENNE

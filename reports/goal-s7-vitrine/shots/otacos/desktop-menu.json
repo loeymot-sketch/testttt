@@ -1,0 +1,2250 @@
+{
+  "url": "https://www.o-tacos.com/fr/nos-produits",
+  "title": "Nos Boss-Sellers | O'Tacos | O'Tacos",
+  "headings": [
+    {
+      "tag": "P",
+      "text": "Certaines des données collectées par ce fournisseur sont utilisées à des fins de personnalisation et",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "sans-serif",
+      "color": "rgb(0, 0, 0)",
+      "ls": "0.1px",
+      "lh": "24px"
+    },
+    {
+      "tag": "P",
+      "text": "Nous n'utilisons pas de cookies de ce type.",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "sans-serif",
+      "color": "rgb(0, 0, 0)",
+      "ls": "0.1px",
+      "lh": "24px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "H2",
+      "text": "EN CE MOMENT",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "H3",
+      "text": "BOX FRERO'",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "14px",
+      "weight": "700",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "19.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "CRO’USTY",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "Tu vas chargeeer sur lequel ?",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "19.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "À COMPOSER",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "+ de 40 000 combinaisons possibles",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgba(255, 255, 255, 0.9)",
+      "ls": "normal",
+      "lh": "19.25px"
+    },
+    {
+      "tag": "H2",
+      "text": "NOS BOSS-SELLERS",
+      "size": "192px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "165.12px"
+    },
+    {
+      "tag": "P",
+      "text": "Filtre",
+      "size": "13px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "19.5px"
+    },
+    {
+      "tag": "H3",
+      "text": "À composer",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "+ de 40 000 combinaisons possibles",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "2 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "PROMOS",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "2 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’Boss",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Si t’as pas d’inspo’",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "12 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "Cro’usty",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Tu vas chargeeer sur lequel ?",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "5 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "FRERO’",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Passe ton FRERO’ À TON FRÉROT",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "3 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’Fresh",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "L'offre à croquer",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "7 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’Brunch",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "La cheat Prot' des champions",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "2 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’Mini",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Y’a pas d’âge pour manger un Otacos",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "2 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O'SNACK",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Le petit kiff sans sauce fromagère",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "14 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "DESSERTS",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Au goûter, en dessert, ou juste par gourmandise",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "14 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "Boissons",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "11 Produits",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "À COMPOSER",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "+ de 40 000 combinaisons possibles",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "2 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "PROMOS",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "2 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’BOSS",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Si t’as pas d’inspo’",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "12 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "CRO’USTY",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Tu vas chargeeer sur lequel ?",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "5 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "FRERO’",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Passe ton FRERO’ À TON FRÉROT",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "3 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’FRESH",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "L'offre à croquer",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "7 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’BRUNCH",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "La cheat Prot' des champions",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "2 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’MINI",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Y’a pas d’âge pour manger un Otacos",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "2 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O'SNACK",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Le petit kiff sans sauce fromagère",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "14 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "DESSERTS",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "Au goûter, en dessert, ou juste par gourmandise",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "20.625px"
+    },
+    {
+      "tag": "P",
+      "text": "14 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "BOISSONS",
+      "size": "28px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "-1.12px",
+      "lh": "26.6px"
+    },
+    {
+      "tag": "P",
+      "text": "11 PRODUITS",
+      "size": "14px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(255, 255, 255)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H2",
+      "text": "À COMPOSER",
+      "size": "82px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-3.28px",
+      "lh": "77.9px"
+    },
+    {
+      "tag": "P",
+      "text": "40 000 possibilités",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "OTACOS À COMPOSER",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "OBOWL À COMPOSER",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H2",
+      "text": "BOX FRERO'",
+      "size": "82px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-3.28px",
+      "lh": "77.9px"
+    },
+    {
+      "tag": "P",
+      "text": "À partager ou pas...et c'est OK.",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "MENU BOX FRERO' X3",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "MENU BOX FRERO' X6",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "MENU BOX FRERO' X9",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "BOX FRERO' X3",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "BOX FRERO' X6",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "BOX FRERO' X9",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H2",
+      "text": "PROMOS",
+      "size": "82px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-3.28px",
+      "lh": "77.9px"
+    },
+    {
+      "tag": "P",
+      "text": "Nos bons plans !",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "FRENCH TACOS BOX",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "MENU À 4,90€",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H2",
+      "text": "O’BOSS",
+      "size": "82px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-3.28px",
+      "lh": "77.9px"
+    },
+    {
+      "tag": "P",
+      "text": "Si t’as pas d’inspo’",
+      "size": "15px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "21px"
+    },
+    {
+      "tag": "H3",
+      "text": "O'STREET",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’STREET OBOWL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’CLASSIC",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "Les OG savent",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "P",
+      "text": "Les OG savent",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "H3",
+      "text": "O'CLASSIC OBOWL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’CHÈVRE MIEL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "C’est le GOAT",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "P",
+      "text": "C’est le GOAT",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’CHÈVRE MIEL OBOWL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’SPICY",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "Tout le monde se l’arrache",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "P",
+      "text": "Tout le monde se l’arrache",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’SPICY OBOWL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’INDIA",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "Faut Bombay le torse comme Steph Curry",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "P",
+      "text": "Faut Bombay le torse comme Steph Curry",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’INDIA OBOWL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’FROMAGER",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "P",
+      "text": "Quand la sauce fromagère ne te suffit pas",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "P",
+      "text": "Quand la sauce fromagère ne te suffit pas",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "switzer",
+      "color": "rgb(0, 0, 0)",
+      "ls": "normal",
+      "lh": "20px"
+    },
+    {
+      "tag": "H3",
+      "text": "O’FROMAGER OBOWL",
+      "size": "35px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-1.4px",
+      "lh": "33.25px"
+    },
+    {
+      "tag": "H2",
+      "text": "CRO’USTY",
+      "size": "82px",
+      "weight": "400",
+      "tt": "uppercase",
+      "fam": "Puffin_Display_Black",
+      "color": "rgb(0, 0, 0)",
+      "ls": "-3.28px",
+      "lh": "77.9px"
+    }
+  ],
+  "sections": [
+    {
+      "tag": "HEADER",
+      "cls": "group/header hidden md:block top-0 z-50 w-full transition-colors duration-300 sticky bg-white border-b border-primitive-secondary-layer-15  hover:bg-w",
+      "h": 81,
+      "bg": "rgb(255, 255, 255)",
+      "txt": "À partager ou pas...et c'est OK. + Tout voir Trouve ton resto’ Nos Boss-Sellers À Composer BOX FRERO' PROMOS O’Boss Cro’usty FrerO' O'Fresh O'Brunch O'Mini O'Snack Desserts Boissons La famille Qui sommes-nous Devenir Franchisé Qualité et engagements Boss Club "
+    },
+    {
+      "tag": "FOOTER",
+      "cls": "bg-primitive-secondary-layer-80 text-white pt-12 md:pb-6 pb-[120px] ",
+      "h": 516,
+      "bg": "rgb(49, 42, 37)",
+      "txt": "ON SE CAPTE ? Nos produits À composer O'Boss O'Fresh O'Brunch O'Mini O'Snack O'Sucré Nos resto’ Trouve ton resto’ Qui sommes-nous ? Notre histoire Qualité et engagements Rejoins-nous Carrières Devenir franchisé O’Tacos et moi Boss Club Politique de cookies Pol"
+    }
+  ],
+  "buttons": [
+    {
+      "t": "Consentement",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 114, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "Détails",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "[#IABV2SETTINGS#]",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "À propos des cookies",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "Afficher les détails",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 114, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "Nécessaires  9",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "Cloudflare1",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "En savoir plus sur ce fournisseur",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 114, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px 0px 0px"
+    },
+    {
+      "t": "Cookiebot1",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "En savoir plus sur ce fournisseur",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 114, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px 0px 0px"
+    },
+    {
+      "t": "cdn-app.myli.io5",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "hcaptcha.comw.hcaptcha.com2",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "Préférences  1",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "assets-cdn.cerca.io1",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "Statistiques  2",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "Google2",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "En savoir plus sur ce fournisseur",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 114, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px 0px 0px"
+    },
+    {
+      "t": "Marketing  0",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "Non classés  2",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "assets-cdn.cerca.io2",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "Consentement inter-domaines[#BULK_CONSENT_DOM",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "Cookiebot",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 114, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "[#IABV2_LABEL_PURPOSES#]",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "[#IABV2_LABEL_FEATURES#]",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "[#IABV2_LABEL_PARTNERS#]",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "0px",
+      "size": "15px",
+      "weight": "700",
+      "tt": "none",
+      "pad": "0px 11.25px 0px 0px"
+    },
+    {
+      "t": "Tout autoriser",
+      "bg": "rgb(255, 114, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "3.75px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "Personnaliser",
+      "bg": "rgb(255, 114, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "3.75px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "Autoriser la sélection",
+      "bg": "rgb(255, 114, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "3.75px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "Refuser",
+      "bg": "rgb(255, 114, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "3.75px",
+      "size": "15px",
+      "weight": "600",
+      "tt": "none",
+      "pad": "15px"
+    },
+    {
+      "t": "Boss Club",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 12px"
+    },
+    {
+      "t": "J’ai faim",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "18px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 20px"
+    },
+    {
+      "t": "À partager ou pas...et c'est OK.+ Tout voir",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "0px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "+ Tout voir",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 12px"
+    },
+    {
+      "t": "Trouve ton resto’",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "24px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 32px"
+    },
+    {
+      "t": "Trouve ton resto’",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "18px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 20px"
+    },
+    {
+      "t": "Nos Boss-Sellers",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "9999px",
+      "size": "108px",
+      "weight": "400",
+      "tt": "uppercase",
+      "pad": "8px 24px"
+    },
+    {
+      "t": "À partager ou pas...et c'est OK.+ Tout voir",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "0px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "+ Tout voir",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 12px"
+    },
+    {
+      "t": "À Composer40 000 possibilités",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "BOX FRERO'À partager ou pas...et c'est OK.",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "PROMOSNos bons plans !",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "O’BossSi t’as pas d’inspo’",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "Cro’ustyTu vas chargeeer sur lequel ?",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "FrerO'Passe ton FRERO’ À TON FRÉROT",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "O'FreshL’offre à croquer",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "O'BrunchLa cheat Prot' des champions",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "O'MiniY’a pas d’âge pour manger un Otacos",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "O'SnackLe petit kiff sans sauce fromagère",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "DessertsAu goûter, en dessert ou par gourmand",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "Boissons",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "Nos Boss-Sellers",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "16px 12px"
+    },
+    {
+      "t": "La famille",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "9999px",
+      "size": "108px",
+      "weight": "400",
+      "tt": "uppercase",
+      "pad": "8px 24px"
+    },
+    {
+      "t": "À partager ou pas...et c'est OK.+ Tout voir",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "0px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "+ Tout voir",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 12px"
+    },
+    {
+      "t": "Qui sommes-nous",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "Devenir Franchisé",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "Qualité et engagements",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "o’tacos",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "9999px",
+      "size": "108px",
+      "weight": "400",
+      "tt": "uppercase",
+      "pad": "8px 24px"
+    },
+    {
+      "t": "Boss Club",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "27px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 24px"
+    },
+    {
+      "t": "J’ai faim",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "32px",
+      "size": "22px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 48px"
+    },
+    {
+      "t": "FR",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 12px"
+    },
+    {
+      "t": "À partager ou pas...et c'est OK.",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "0px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "Boss Club",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "uppercase",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "Rejoins-nous",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "32px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "uppercase",
+      "pad": "12px 16px"
+    },
+    {
+      "t": "À partager ou pas...et c'est OK.\n\n+ Tout voir",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "0px",
+      "size": "16px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px"
+    },
+    {
+      "t": "+ Tout voir",
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 12px"
+    },
+    {
+      "t": "Trouve ton resto’",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "24px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 32px"
+    },
+    {
+      "t": "Trouve ton resto’",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "18px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "0px 20px"
+    },
+    {
+      "t": "Nos Boss-Sellers",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "9999px",
+      "size": "18px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "8px 24px"
+    },
+    {
+      "t": "À Composer",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(2, 8, 23)",
+      "radius": "9999px",
+      "size": "14px",
+      "weight": "400",
+      "tt": "none",
+      "pad": "8px 24px"
+    }
+  ],
+  "prices": [
+    "4,90€"
+  ],
+  "bodyFont": "switzer, \"switzer Fallback\" 16px",
+  "bodyBg": "rgb(255, 255, 255)",
+  "imgs": [
+    {
+      "w": 424,
+      "h": 332,
+      "dw": 0,
+      "alt": "logo",
+      "src": "P+nnpQCrf62wn+f2owg/T+Na9Ti3C53q5ueLH8/0RQf6NyEE5OX/AU0POd4GcA96AAAAAElFTkSuQmCC"
+    },
+    {
+      "w": 18,
+      "h": 18,
+      "dw": 0,
+      "alt": "ouvre dans un nouvel onglet",
+      "src": "j7F1GLkySfvuqnFlShDxWesF6D76zF4jPJ/GWvum7/NRjBCegtsXQuuTY/odOJIAAAAASUVORK5CYII="
+    },
+    {
+      "w": 18,
+      "h": 18,
+      "dw": 0,
+      "alt": "ouvre dans un nouvel onglet",
+      "src": "j7F1GLkySfvuqnFlShDxWesF6D76zF4jPJ/GWvum7/NRjBCegtsXQuuTY/odOJIAAAAASUVORK5CYII="
+    },
+    {
+      "w": 18,
+      "h": 18,
+      "dw": 0,
+      "alt": "ouvre dans un nouvel onglet",
+      "src": "j7F1GLkySfvuqnFlShDxWesF6D76zF4jPJ/GWvum7/NRjBCegtsXQuuTY/odOJIAAAAASUVORK5CYII="
+    },
+    {
+      "w": 43,
+      "h": 43,
+      "dw": 0,
+      "alt": "Fidélité",
+      "src": "https://www.o-tacos.com/buttons/loyalty-program.png"
+    },
+    {
+      "w": 590,
+      "h": 1278,
+      "dw": 0,
+      "alt": "loading",
+      "src": "https://www.o-tacos.com/background/splashscreen.png"
+    },
+    {
+      "w": 300,
+      "h": 213,
+      "dw": 0,
+      "alt": "Logo",
+      "src": "-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/Otacos_BoxFrero_PremierPlan-300x213.png"
+    },
+    {
+      "w": 1593,
+      "h": 714,
+      "dw": 0,
+      "alt": "Store",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/otacos-world.png"
+    },
+    {
+      "w": 300,
+      "h": 213,
+      "dw": 0,
+      "alt": "Logo",
+      "src": "-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/Otacos_BoxFrero_PremierPlan-300x213.png"
+    },
+    {
+      "w": 300,
+      "h": 213,
+      "dw": 0,
+      "alt": "Logo",
+      "src": "-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/Otacos_BoxFrero_PremierPlan-300x213.png"
+    },
+    {
+      "w": 43,
+      "h": 43,
+      "dw": 0,
+      "alt": "Fidélité",
+      "src": "https://www.o-tacos.com/buttons/loyalty-program.png"
+    },
+    {
+      "w": 300,
+      "h": 213,
+      "dw": 0,
+      "alt": "Logo",
+      "src": "-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/Otacos_BoxFrero_PremierPlan-300x213.png"
+    },
+    {
+      "w": 300,
+      "h": 213,
+      "dw": 70,
+      "alt": "Logo",
+      "src": "-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/Otacos_BoxFrero_PremierPlan-300x213.png"
+    },
+    {
+      "w": 1593,
+      "h": 714,
+      "dw": 223,
+      "alt": "Store",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/otacos-world.png"
+    },
+    {
+      "w": 43,
+      "h": 43,
+      "dw": 16,
+      "alt": "Fidélité",
+      "src": "https://www.o-tacos.com/buttons/loyalty-program.png"
+    },
+    {
+      "w": 300,
+      "h": 213,
+      "dw": 141,
+      "alt": "Logo",
+      "src": "-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/Otacos_BoxFrero_PremierPlan-300x213.png"
+    },
+    {
+      "w": 420,
+      "h": 390,
+      "dw": 330,
+      "alt": "Cro'usty gamme",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/croustygamme-420x390.png"
+    },
+    {
+      "w": 380,
+      "h": 460,
+      "dw": 330,
+      "alt": "Otacos à composer",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/acomposer.png"
+    },
+    {
+      "w": 26,
+      "h": 29,
+      "dw": 18,
+      "alt": "",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/spicy.png"
+    },
+    {
+      "w": 27,
+      "h": 26,
+      "dw": 21,
+      "alt": "",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/veggie.png"
+    },
+    {
+      "w": 26,
+      "h": 29,
+      "dw": 18,
+      "alt": "",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/salad.png"
+    },
+    {
+      "w": 26,
+      "h": 26,
+      "dw": 20,
+      "alt": "",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/sweet.png"
+    },
+    {
+      "w": 380,
+      "h": 460,
+      "dw": 0,
+      "alt": "Otacos à composer",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/acomposer.png"
+    },
+    {
+      "w": 420,
+      "h": 325,
+      "dw": 0,
+      "alt": "",
+      "src": "ps://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/MENU-4,90_720x720-2-420x325.png"
+    },
+    {
+      "w": 380,
+      "h": 460,
+      "dw": 0,
+      "alt": "O'Boss gamme",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/oboss.png"
+    },
+    {
+      "w": 420,
+      "h": 325,
+      "dw": 0,
+      "alt": "Cro'usty gamme",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/croustygamme-420x325.png"
+    },
+    {
+      "w": 420,
+      "h": 325,
+      "dw": 0,
+      "alt": "",
+      "src": "/pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/fr%C3%A9ro'%20classique-420x325.png"
+    },
+    {
+      "w": 420,
+      "h": 325,
+      "dw": 0,
+      "alt": "",
+      "src": "9823b.r2.dev/Salade%20Poulet%20Ro%E2%95%A0%C3%A9Ti%C3%94%C3%87%C3%AF-420x325.png"
+    },
+    {
+      "w": 420,
+      "h": 325,
+      "dw": 0,
+      "alt": "",
+      "src": "https://pub-3e289d306c7a4cbe92ad05c129a9823b.r2.dev/SMOKY%20BRUNCH-420x325.png"
+    },
+    {
+      "w": 400,
+      "h": 307,
+      "dw": 0,
+      "alt": "",
+      "src": "89d306c7a4cbe92ad05c129a9823b.r2.dev/O'MINI_OTACOS%20S_CAPRISUN_YAOURT%201-1.png"
+    }
+  ]
+}

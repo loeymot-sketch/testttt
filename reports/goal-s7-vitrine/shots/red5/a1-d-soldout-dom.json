@@ -1,0 +1,30 @@
+{
+  "count": 7,
+  "total": 28,
+  "sample": [
+    {
+      "html": "<div class=\"lc-card-item-thumb\" style=\"position: relative; overflow: hidden; filter: grayscale(1);\"><img src=\"assets/menu/sandwich-cayenne.png\" alt=\"Cayenne\" loading=\"lazy\" style=\"width: 100%; height: 100%; object-fit: contain; padding: 6%; display: block;\"><span class=\"lc-card-item-thumb-emoji\" style=\"display: none; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 56px;\">🌶️</span><div class=\"lc-card-item-badge\" style=\"background: var(--ink,#1A1A1A); color: rgb(255, 255, 255); letter-spacing: 0.04em;\">ÉPUISÉ</div></div><div class=\"lc-card-item-body\"><button type=\"button\" class=\"lc-card-item-name\" aria-label=\"Cayenne — épuisé\" style=\"background: transparent; border: 0px; padding: 0px; color: inherit; cursor: pointer; font-family: inherit; text-align: left; display: block; width: 100%;\">Cayenne</button><div class=\"lc-card-item-desc\">Épuisé pour le moment",
+      "text": "ÉPUISÉ\nCayenne\nÉpuisé pour le moment\n7,40 €",
+      "footChildren": [
+        "lc-card-item-price|7,40 €"
+      ],
+      "rect": 347.390625
+    },
+    {
+      "html": "<div class=\"lc-card-item-thumb\" style=\"position: relative; overflow: hidden; filter: grayscale(1);\"><img src=\"assets/menu/sandwich-terminator.png\" alt=\"Terminator\" loading=\"lazy\" style=\"width: 100%; height: 100%; object-fit: contain; padding: 6%; display: block;\"><span class=\"lc-card-item-thumb-emoji\" style=\"display: none; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 56px;\">🥖</span><div class=\"lc-card-item-badge\" style=\"background: var(--ink,#1A1A1A); color: rgb(255, 255, 255); letter-spacing: 0.04em;\">ÉPUISÉ</div></div><div class=\"lc-card-item-body\"><button type=\"button\" class=\"lc-card-item-name\" aria-label=\"Terminator — épuisé\" style=\"background: transparent; border: 0px; padding: 0px; color: inherit; cursor: pointer; font-family: inherit; text-align: left; display: block; width: 100%;\">Terminator</button><div class=\"lc-card-item-desc\">Rupture de",
+      "text": "ÉPUISÉ\nTerminator\nRupture de stock\n9,00 €",
+      "footChildren": [
+        "lc-card-item-price|9,00 €"
+      ],
+      "rect": 347.390625
+    },
+    {
+      "html": "<div class=\"lc-card-item-thumb\" style=\"position: relative; overflow: hidden; filter: grayscale(1);\"><img src=\"assets/menu/fish-burger.png\" alt=\"Fish Burger\" loading=\"lazy\" style=\"width: 100%; height: 100%; object-fit: contain; padding: 6%; display: block;\"><span class=\"lc-card-item-thumb-emoji\" style=\"display: none; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 56px;\">🐟</span><div class=\"lc-card-item-badge\" style=\"background: var(--ink,#1A1A1A); color: rgb(255, 255, 255); letter-spacing: 0.04em;\">ÉPUISÉ</div></div><div class=\"lc-card-item-body\"><button type=\"button\" class=\"lc-card-item-name\" aria-label=\"Fish Burger — épuisé\" style=\"background: transparent; border: 0px; padding: 0px; color: inherit; cursor: pointer; font-family: inherit; text-align: left; display: block; width: 100%;\">Fish Burger</button><div class=\"lc-card-item-desc\">Épuisé pour le ",
+      "text": "ÉPUISÉ\nFish Burger\nÉpuisé pour le moment\n6,00 €",
+      "footChildren": [
+        "lc-card-item-price|6,00 €"
+      ],
+      "rect": 347.390625
+    }
+  ]
+}

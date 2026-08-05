@@ -1,0 +1,5122 @@
+{
+  "home@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 389,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 564,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 757,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 961,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1154,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1335,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1553,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1803,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2027,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2202,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2394,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2598,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2792,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2972,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 3190,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 33,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "menu@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "lc-cat-tab",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 383,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 532,
+        "vw": 320
+      },
+      {
+        "cls": "I",
+        "right": 441,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 515,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 651,
+        "vw": 320
+      },
+      {
+        "cls": "I",
+        "right": 573,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 634,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 761,
+        "vw": 320
+      },
+      {
+        "cls": "I",
+        "right": 692,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 744,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 878,
+        "vw": 320
+      },
+      {
+        "cls": "I",
+        "right": 802,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 861,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 1016,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 33,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "TOUT CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "🥤 Boissons · 15 au frais"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "loyalty@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 640,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 399,
+        "vw": 320
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 611,
+        "vw": 320
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 607,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 640,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONNECTE-TOI POUR CUMULER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "orders@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 640,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 399,
+        "vw": 320
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 611,
+        "vw": 320
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 607,
+        "vw": 320
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 640,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      },
+      {
+        "cls": "DIV",
+        "right": 622,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 2,
+        "t": "CONNECTE-TOI POUR RETROUVER"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "unknown@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 389,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 564,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 756,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 960,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1154,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1334,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1552,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 1803,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2026,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2201,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2393,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2598,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2791,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 2971,
+        "vw": 320
+      },
+      {
+        "cls": "SPAN",
+        "right": 3190,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 33,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "mentions@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "MENTIONS LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. ÉDITEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "2. HÉBERGEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "6. LIMITATION DE RESPONSABILITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. DROIT APPLICABLE ET JURIDICTION COMPÉTENTE"
+      },
+      {
+        "lvl": 2,
+        "t": "8. CONTACT"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cgv@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONDITIONS GÉNÉRALES DE VENTE (CGV)"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 1 — IDENTIFICATION DU VENDEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 2 — OBJET"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 3 — PRODUITS PROPOSÉS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 4 — COMMANDE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 5 — PRIX"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 6 — MODALITÉS DE PAIEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 7 — RETRAIT DES COMMANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 8 — DROIT DE RÉTRACTATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 9 — ANNULATION / MODIFICATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 10 — RÉCLAMATIONS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 11 — MÉDIATION DE LA CONSOMMATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 12 — PROGRAMME DE FIDÉLITÉ « PEPPER CLUB »"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 13 — PROTECTION DES DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 14 — PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 15 — FORCE MAJEURE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 16 — DROIT APPLICABLE ET JURIDICTION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 17 — ACCEPTATION ET MODIFICATION DES CGV"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "privacy@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "THEAD",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TH",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TBODY",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 42,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE CONFIDENTIALITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "1. RESPONSABLE DE TRAITEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "2. DONNÉES COLLECTÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "3. FINALITÉS DU TRAITEMENT ET BASES LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DESTINATAIRES DES DONNÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. TRANSFERTS HORS UE"
+      },
+      {
+        "lvl": 2,
+        "t": "6. SÉCURITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. VOS DROITS"
+      },
+      {
+        "lvl": 2,
+        "t": "8. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "9. MINEURS"
+      },
+      {
+        "lvl": 2,
+        "t": "10. AUTORITÉ DE CONTRÔLE"
+      },
+      {
+        "lvl": 2,
+        "t": "11. MODIFICATION DE LA POLITIQUE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cookies@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [
+      {
+        "cls": "THEAD",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TH",
+        "right": 362,
+        "vw": 320
+      },
+      {
+        "cls": "TH",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TBODY",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 362,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 362,
+        "vw": 320
+      },
+      {
+        "cls": "TD",
+        "right": 451,
+        "vw": 320
+      },
+      {
+        "cls": "THEAD",
+        "right": 351,
+        "vw": 320
+      },
+      {
+        "cls": "TR",
+        "right": 351,
+        "vw": 320
+      },
+      {
+        "cls": "TH",
+        "right": 351,
+        "vw": 320
+      },
+      {
+        "cls": "TBODY",
+        "right": 351,
+        "vw": 320
+      }
+    ],
+    "overflowCount": 17,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. QU'EST-CE QU'UN COOKIE ?"
+      },
+      {
+        "lvl": 2,
+        "t": "2. VOS CHOIX"
+      },
+      {
+        "lvl": 2,
+        "t": "3. CATÉGORIES DE COOKIES UTILISÉS"
+      },
+      {
+        "lvl": 3,
+        "t": "3.1 Cookies strictement nécessaires (exemptés de consentemen"
+      },
+      {
+        "lvl": 3,
+        "t": "3.2 Cookies de mesure d'audience (soumis à consentement)"
+      },
+      {
+        "lvl": 3,
+        "t": "3.3 Cookies publicitaires / réseaux sociaux"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COOKIES TIERS TECHNIQUES (CDN POLICES ET SCRIPTS)"
+      },
+      {
+        "lvl": 2,
+        "t": "5. DURÉE DE CONSERVATION"
+      },
+      {
+        "lvl": 2,
+        "t": "6. PARAMÉTRAGE VIA VOTRE NAVIGATEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "7. RÉCLAMATION"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "allergens@320": {
+    "scrollW": 320,
+    "clientW": 320,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "INFORMATION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. LES 14 ALLERGÈNES MAJEURS (ANNEXE II DU RÈGLEMENT INCO)"
+      },
+      {
+        "lvl": 2,
+        "t": "2. ALLERGÈNES LES PLUS FRÉQUENTS CHEZ LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. RISQUE DE TRACES ET CONTAMINATION CROISÉE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COMMENT CONNAÎTRE LES ALLERGÈNES D'UN PLAT PRÉCIS ?"
+      },
+      {
+        "lvl": 2,
+        "t": "5. RÉGIMES SPÉCIAUX"
+      },
+      {
+        "lvl": 2,
+        "t": "6. CONTACT POUR QUESTION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "7. CADRE RÉGLEMENTAIRE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "home@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 385,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 560,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 753,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 957,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1150,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1331,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1549,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1800,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2023,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2198,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2390,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2594,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2788,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2968,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 3186,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 33,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "menu@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "lc-cat-tab",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 383,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 532,
+        "vw": 360
+      },
+      {
+        "cls": "I",
+        "right": 441,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 515,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 651,
+        "vw": 360
+      },
+      {
+        "cls": "I",
+        "right": 573,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 634,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 761,
+        "vw": 360
+      },
+      {
+        "cls": "I",
+        "right": 692,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 744,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 878,
+        "vw": 360
+      },
+      {
+        "cls": "I",
+        "right": 802,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 861,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cat-tab",
+        "right": 1016,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 33,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "TOUT CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "🥤 Boissons · 15 au frais"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "loyalty@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 720,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 439,
+        "vw": 360
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 691,
+        "vw": 360
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 687,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 720,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONNECTE-TOI POUR CUMULER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "orders@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 720,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 439,
+        "vw": 360
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 691,
+        "vw": 360
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 687,
+        "vw": 360
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 720,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      },
+      {
+        "cls": "DIV",
+        "right": 702,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 2,
+        "t": "CONNECTE-TOI POUR RETROUVER"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "unknown@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 385,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 560,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 753,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 957,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1151,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1331,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1549,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 1800,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2023,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2198,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2390,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2594,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2788,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 2968,
+        "vw": 360
+      },
+      {
+        "cls": "SPAN",
+        "right": 3186,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 33,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "mentions@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "MENTIONS LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. ÉDITEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "2. HÉBERGEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "6. LIMITATION DE RESPONSABILITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. DROIT APPLICABLE ET JURIDICTION COMPÉTENTE"
+      },
+      {
+        "lvl": 2,
+        "t": "8. CONTACT"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cgv@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONDITIONS GÉNÉRALES DE VENTE (CGV)"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 1 — IDENTIFICATION DU VENDEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 2 — OBJET"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 3 — PRODUITS PROPOSÉS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 4 — COMMANDE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 5 — PRIX"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 6 — MODALITÉS DE PAIEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 7 — RETRAIT DES COMMANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 8 — DROIT DE RÉTRACTATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 9 — ANNULATION / MODIFICATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 10 — RÉCLAMATIONS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 11 — MÉDIATION DE LA CONSOMMATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 12 — PROGRAMME DE FIDÉLITÉ « PEPPER CLUB »"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 13 — PROTECTION DES DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 14 — PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 15 — FORCE MAJEURE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 16 — DROIT APPLICABLE ET JURIDICTION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 17 — ACCEPTATION ET MODIFICATION DES CGV"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "privacy@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "THEAD",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TH",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TBODY",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 400,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 400,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 42,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE CONFIDENTIALITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "1. RESPONSABLE DE TRAITEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "2. DONNÉES COLLECTÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "3. FINALITÉS DU TRAITEMENT ET BASES LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DESTINATAIRES DES DONNÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. TRANSFERTS HORS UE"
+      },
+      {
+        "lvl": 2,
+        "t": "6. SÉCURITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. VOS DROITS"
+      },
+      {
+        "lvl": 2,
+        "t": "8. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "9. MINEURS"
+      },
+      {
+        "lvl": 2,
+        "t": "10. AUTORITÉ DE CONTRÔLE"
+      },
+      {
+        "lvl": 2,
+        "t": "11. MODIFICATION DE LA POLITIQUE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cookies@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [
+      {
+        "cls": "THEAD",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TH",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TBODY",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TR",
+        "right": 451,
+        "vw": 360
+      },
+      {
+        "cls": "TD",
+        "right": 451,
+        "vw": 360
+      }
+    ],
+    "overflowCount": 8,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. QU'EST-CE QU'UN COOKIE ?"
+      },
+      {
+        "lvl": 2,
+        "t": "2. VOS CHOIX"
+      },
+      {
+        "lvl": 2,
+        "t": "3. CATÉGORIES DE COOKIES UTILISÉS"
+      },
+      {
+        "lvl": 3,
+        "t": "3.1 Cookies strictement nécessaires (exemptés de consentemen"
+      },
+      {
+        "lvl": 3,
+        "t": "3.2 Cookies de mesure d'audience (soumis à consentement)"
+      },
+      {
+        "lvl": 3,
+        "t": "3.3 Cookies publicitaires / réseaux sociaux"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COOKIES TIERS TECHNIQUES (CDN POLICES ET SCRIPTS)"
+      },
+      {
+        "lvl": 2,
+        "t": "5. DURÉE DE CONSERVATION"
+      },
+      {
+        "lvl": 2,
+        "t": "6. PARAMÉTRAGE VIA VOTRE NAVIGATEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "7. RÉCLAMATION"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "allergens@360": {
+    "scrollW": 360,
+    "clientW": 360,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "INFORMATION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. LES 14 ALLERGÈNES MAJEURS (ANNEXE II DU RÈGLEMENT INCO)"
+      },
+      {
+        "lvl": 2,
+        "t": "2. ALLERGÈNES LES PLUS FRÉQUENTS CHEZ LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. RISQUE DE TRACES ET CONTAMINATION CROISÉE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COMMENT CONNAÎTRE LES ALLERGÈNES D'UN PLAT PRÉCIS ?"
+      },
+      {
+        "lvl": 2,
+        "t": "5. RÉGIMES SPÉCIAUX"
+      },
+      {
+        "lvl": 2,
+        "t": "6. CONTACT POUR QUESTION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "7. CADRE RÉGLEMENTAIRE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "home@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 937,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1130,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1310,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1529,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1779,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2002,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2177,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2370,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2574,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2767,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2948,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3166,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3417,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3640,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3815,
+        "vw": 768
+      }
+    ],
+    "overflowCount": 30,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "menu@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1188,
+        "vw": 768
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 853,
+        "vw": 768
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1153,
+        "vw": 768
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1149,
+        "vw": 768
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1188,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "TOUT CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "🥤 Boissons · 15 au frais"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "loyalty@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1188,
+        "vw": 768
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 853,
+        "vw": 768
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1153,
+        "vw": 768
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1149,
+        "vw": 768
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1188,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONNECTE-TOI POUR CUMULER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "orders@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1188,
+        "vw": 768
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 853,
+        "vw": 768
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1153,
+        "vw": 768
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1149,
+        "vw": 768
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1188,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      },
+      {
+        "cls": "DIV",
+        "right": 1164,
+        "vw": 768
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 2,
+        "t": "CONNECTE-TOI POUR RETROUVER"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "unknown@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 937,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1130,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1311,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1529,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 1779,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2003,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2178,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2370,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2574,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2768,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 2948,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3166,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3417,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3640,
+        "vw": 768
+      },
+      {
+        "cls": "SPAN",
+        "right": 3815,
+        "vw": 768
+      }
+    ],
+    "overflowCount": 30,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "mentions@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "MENTIONS LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. ÉDITEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "2. HÉBERGEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "6. LIMITATION DE RESPONSABILITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. DROIT APPLICABLE ET JURIDICTION COMPÉTENTE"
+      },
+      {
+        "lvl": 2,
+        "t": "8. CONTACT"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cgv@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONDITIONS GÉNÉRALES DE VENTE (CGV)"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 1 — IDENTIFICATION DU VENDEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 2 — OBJET"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 3 — PRODUITS PROPOSÉS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 4 — COMMANDE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 5 — PRIX"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 6 — MODALITÉS DE PAIEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 7 — RETRAIT DES COMMANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 8 — DROIT DE RÉTRACTATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 9 — ANNULATION / MODIFICATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 10 — RÉCLAMATIONS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 11 — MÉDIATION DE LA CONSOMMATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 12 — PROGRAMME DE FIDÉLITÉ « PEPPER CLUB »"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 13 — PROTECTION DES DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 14 — PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 15 — FORCE MAJEURE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 16 — DROIT APPLICABLE ET JURIDICTION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 17 — ACCEPTATION ET MODIFICATION DES CGV"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "privacy@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE CONFIDENTIALITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "1. RESPONSABLE DE TRAITEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "2. DONNÉES COLLECTÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "3. FINALITÉS DU TRAITEMENT ET BASES LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DESTINATAIRES DES DONNÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. TRANSFERTS HORS UE"
+      },
+      {
+        "lvl": 2,
+        "t": "6. SÉCURITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. VOS DROITS"
+      },
+      {
+        "lvl": 2,
+        "t": "8. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "9. MINEURS"
+      },
+      {
+        "lvl": 2,
+        "t": "10. AUTORITÉ DE CONTRÔLE"
+      },
+      {
+        "lvl": 2,
+        "t": "11. MODIFICATION DE LA POLITIQUE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cookies@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. QU'EST-CE QU'UN COOKIE ?"
+      },
+      {
+        "lvl": 2,
+        "t": "2. VOS CHOIX"
+      },
+      {
+        "lvl": 2,
+        "t": "3. CATÉGORIES DE COOKIES UTILISÉS"
+      },
+      {
+        "lvl": 3,
+        "t": "3.1 Cookies strictement nécessaires (exemptés de consentemen"
+      },
+      {
+        "lvl": 3,
+        "t": "3.2 Cookies de mesure d'audience (soumis à consentement)"
+      },
+      {
+        "lvl": 3,
+        "t": "3.3 Cookies publicitaires / réseaux sociaux"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COOKIES TIERS TECHNIQUES (CDN POLICES ET SCRIPTS)"
+      },
+      {
+        "lvl": 2,
+        "t": "5. DURÉE DE CONSERVATION"
+      },
+      {
+        "lvl": 2,
+        "t": "6. PARAMÉTRAGE VIA VOTRE NAVIGATEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "7. RÉCLAMATION"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "allergens@768": {
+    "scrollW": 768,
+    "clientW": 768,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "INFORMATION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. LES 14 ALLERGÈNES MAJEURS (ANNEXE II DU RÈGLEMENT INCO)"
+      },
+      {
+        "lvl": 2,
+        "t": "2. ALLERGÈNES LES PLUS FRÉQUENTS CHEZ LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. RISQUE DE TRACES ET CONTAMINATION CROISÉE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COMMENT CONNAÎTRE LES ALLERGÈNES D'UN PLAT PRÉCIS ?"
+      },
+      {
+        "lvl": 2,
+        "t": "5. RÉGIMES SPÉCIAUX"
+      },
+      {
+        "lvl": 2,
+        "t": "6. CONTACT POUR QUESTION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "7. CADRE RÉGLEMENTAIRE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "home@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 1101,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 1325,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 1532,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 1788,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2085,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2347,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2547,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2769,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3007,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3231,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3438,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3694,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3991,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 4252,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 4453,
+        "vw": 1024
+      }
+    ],
+    "overflowCount": 30,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "menu@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1444,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 1109,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1409,
+        "vw": 1024
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1405,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1444,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "TOUT CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "CATÉGORIES"
+      },
+      {
+        "lvl": 2,
+        "t": "FILTRES"
+      },
+      {
+        "lvl": 2,
+        "t": "🥤 Boissons · 15 au frais"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "loyalty@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1444,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 1109,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1409,
+        "vw": 1024
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1405,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1444,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONNECTE-TOI POUR CUMULER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "orders@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1444,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 1109,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1409,
+        "vw": 1024
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1405,
+        "vw": 1024
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1444,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      },
+      {
+        "cls": "DIV",
+        "right": 1420,
+        "vw": 1024
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 2,
+        "t": "CONNECTE-TOI POUR RETROUVER"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "unknown@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 1102,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 1326,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 1532,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 1788,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2085,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2347,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2547,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 2770,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3007,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3231,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3438,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3694,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 3991,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 4253,
+        "vw": 1024
+      },
+      {
+        "cls": "SPAN",
+        "right": 4453,
+        "vw": 1024
+      }
+    ],
+    "overflowCount": 30,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "mentions@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "MENTIONS LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. ÉDITEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "2. HÉBERGEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "6. LIMITATION DE RESPONSABILITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. DROIT APPLICABLE ET JURIDICTION COMPÉTENTE"
+      },
+      {
+        "lvl": 2,
+        "t": "8. CONTACT"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cgv@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONDITIONS GÉNÉRALES DE VENTE (CGV)"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 1 — IDENTIFICATION DU VENDEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 2 — OBJET"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 3 — PRODUITS PROPOSÉS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 4 — COMMANDE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 5 — PRIX"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 6 — MODALITÉS DE PAIEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 7 — RETRAIT DES COMMANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 8 — DROIT DE RÉTRACTATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 9 — ANNULATION / MODIFICATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 10 — RÉCLAMATIONS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 11 — MÉDIATION DE LA CONSOMMATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 12 — PROGRAMME DE FIDÉLITÉ « PEPPER CLUB »"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 13 — PROTECTION DES DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 14 — PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 15 — FORCE MAJEURE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 16 — DROIT APPLICABLE ET JURIDICTION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 17 — ACCEPTATION ET MODIFICATION DES CGV"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "privacy@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE CONFIDENTIALITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "1. RESPONSABLE DE TRAITEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "2. DONNÉES COLLECTÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "3. FINALITÉS DU TRAITEMENT ET BASES LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DESTINATAIRES DES DONNÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. TRANSFERTS HORS UE"
+      },
+      {
+        "lvl": 2,
+        "t": "6. SÉCURITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. VOS DROITS"
+      },
+      {
+        "lvl": 2,
+        "t": "8. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "9. MINEURS"
+      },
+      {
+        "lvl": 2,
+        "t": "10. AUTORITÉ DE CONTRÔLE"
+      },
+      {
+        "lvl": 2,
+        "t": "11. MODIFICATION DE LA POLITIQUE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cookies@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. QU'EST-CE QU'UN COOKIE ?"
+      },
+      {
+        "lvl": 2,
+        "t": "2. VOS CHOIX"
+      },
+      {
+        "lvl": 2,
+        "t": "3. CATÉGORIES DE COOKIES UTILISÉS"
+      },
+      {
+        "lvl": 3,
+        "t": "3.1 Cookies strictement nécessaires (exemptés de consentemen"
+      },
+      {
+        "lvl": 3,
+        "t": "3.2 Cookies de mesure d'audience (soumis à consentement)"
+      },
+      {
+        "lvl": 3,
+        "t": "3.3 Cookies publicitaires / réseaux sociaux"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COOKIES TIERS TECHNIQUES (CDN POLICES ET SCRIPTS)"
+      },
+      {
+        "lvl": 2,
+        "t": "5. DURÉE DE CONSERVATION"
+      },
+      {
+        "lvl": 2,
+        "t": "6. PARAMÉTRAGE VIA VOTRE NAVIGATEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "7. RÉCLAMATION"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "allergens@1024": {
+    "scrollW": 1024,
+    "clientW": 1024,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "INFORMATION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. LES 14 ALLERGÈNES MAJEURS (ANNEXE II DU RÈGLEMENT INCO)"
+      },
+      {
+        "lvl": 2,
+        "t": "2. ALLERGÈNES LES PLUS FRÉQUENTS CHEZ LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. RISQUE DE TRACES ET CONTAMINATION CROISÉE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COMMENT CONNAÎTRE LES ALLERGÈNES D'UN PLAT PRÉCIS ?"
+      },
+      {
+        "lvl": 2,
+        "t": "5. RÉGIMES SPÉCIAUX"
+      },
+      {
+        "lvl": 2,
+        "t": "6. CONTACT POUR QUESTION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "7. CADRE RÉGLEMENTAIRE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "home@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 1594,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 1862,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2175,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2451,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2660,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2893,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3142,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3377,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3593,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3862,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4175,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4450,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4659,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4892,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 5142,
+        "vw": 1440
+      }
+    ],
+    "overflowCount": 28,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "menu@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1860,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 1525,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1825,
+        "vw": 1440
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1821,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1860,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "TOUT CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "CATÉGORIES"
+      },
+      {
+        "lvl": 2,
+        "t": "FILTRES"
+      },
+      {
+        "lvl": 2,
+        "t": "🥤 Boissons · 15 au frais"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "loyalty@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1860,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 1525,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1825,
+        "vw": 1440
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1821,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1860,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONNECTE-TOI POUR CUMULER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "orders@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [
+      {
+        "cls": "lc-cart-head",
+        "right": 1860,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-cart-title",
+        "right": 1525,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-acc-form-back",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1825,
+        "vw": 1440
+      },
+      {
+        "cls": "[object SVGAnimatedString]",
+        "right": 1821,
+        "vw": 1440
+      },
+      {
+        "cls": "lc-cart-body",
+        "right": 1860,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      },
+      {
+        "cls": "DIV",
+        "right": 1836,
+        "vw": 1440
+      }
+    ],
+    "overflowCount": 10,
+    "heads": [
+      {
+        "lvl": 2,
+        "t": "CONNECTE-TOI POUR RETROUVER"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "unknown@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [
+      {
+        "cls": "SPAN",
+        "right": 1593,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 1862,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2175,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2450,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2659,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 2892,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3142,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3376,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3593,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 3861,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4174,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4450,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4659,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 4892,
+        "vw": 1440
+      },
+      {
+        "cls": "SPAN",
+        "right": 5141,
+        "vw": 1440
+      }
+    ],
+    "overflowCount": 28,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "FAIT MAISON, CHAQUE SOIR."
+      },
+      {
+        "lvl": 2,
+        "t": "TROIS FAÇONS DE SE RÉGALER."
+      },
+      {
+        "lvl": 3,
+        "t": "LE MÉGA XL · 2 VIANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "LES ENVIES DU MOMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "SUIS-NOUS SUR LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "437 RUE ÉLIE GRUYELLE, 62110."
+      },
+      {
+        "lvl": 2,
+        "t": "CE QU'ON CUISINE."
+      },
+      {
+        "lvl": 2,
+        "t": "ON N'EST PAS COMME LES AUTRES."
+      },
+      {
+        "lvl": 4,
+        "t": "LES CHAÎNES"
+      },
+      {
+        "lvl": 4,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "TU TE POSES DES QUESTIONS ?"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "CONTACT"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [
+      {
+        "t": "Ouvert maintenant",
+        "color": "rgb(12, 107, 49)",
+        "fs": 11,
+        "r": 2.98,
+        "need": 4.5
+      }
+    ],
+    "lowContrastCount": 1,
+    "noAlt": [],
+    "errors": []
+  },
+  "mentions@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "MENTIONS LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. ÉDITEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "2. HÉBERGEUR DU SITE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "6. LIMITATION DE RESPONSABILITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. DROIT APPLICABLE ET JURIDICTION COMPÉTENTE"
+      },
+      {
+        "lvl": 2,
+        "t": "8. CONTACT"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cgv@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "CONDITIONS GÉNÉRALES DE VENTE (CGV)"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 1 — IDENTIFICATION DU VENDEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 2 — OBJET"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 3 — PRODUITS PROPOSÉS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 4 — COMMANDE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 5 — PRIX"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 6 — MODALITÉS DE PAIEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 7 — RETRAIT DES COMMANDES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 8 — DROIT DE RÉTRACTATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 9 — ANNULATION / MODIFICATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 10 — RÉCLAMATIONS"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 11 — MÉDIATION DE LA CONSOMMATION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 12 — PROGRAMME DE FIDÉLITÉ « PEPPER CLUB »"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 13 — PROTECTION DES DONNÉES PERSONNELLES"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 14 — PROPRIÉTÉ INTELLECTUELLE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 15 — FORCE MAJEURE"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 16 — DROIT APPLICABLE ET JURIDICTION"
+      },
+      {
+        "lvl": 2,
+        "t": "ARTICLE 17 — ACCEPTATION ET MODIFICATION DES CGV"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "privacy@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE CONFIDENTIALITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "1. RESPONSABLE DE TRAITEMENT"
+      },
+      {
+        "lvl": 2,
+        "t": "2. DONNÉES COLLECTÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "3. FINALITÉS DU TRAITEMENT ET BASES LÉGALES"
+      },
+      {
+        "lvl": 2,
+        "t": "4. DESTINATAIRES DES DONNÉES"
+      },
+      {
+        "lvl": 2,
+        "t": "5. TRANSFERTS HORS UE"
+      },
+      {
+        "lvl": 2,
+        "t": "6. SÉCURITÉ"
+      },
+      {
+        "lvl": 2,
+        "t": "7. VOS DROITS"
+      },
+      {
+        "lvl": 2,
+        "t": "8. COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "9. MINEURS"
+      },
+      {
+        "lvl": 2,
+        "t": "10. AUTORITÉ DE CONTRÔLE"
+      },
+      {
+        "lvl": 2,
+        "t": "11. MODIFICATION DE LA POLITIQUE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "cookies@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "POLITIQUE DE COOKIES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. QU'EST-CE QU'UN COOKIE ?"
+      },
+      {
+        "lvl": 2,
+        "t": "2. VOS CHOIX"
+      },
+      {
+        "lvl": 2,
+        "t": "3. CATÉGORIES DE COOKIES UTILISÉS"
+      },
+      {
+        "lvl": 3,
+        "t": "3.1 Cookies strictement nécessaires (exemptés de consentemen"
+      },
+      {
+        "lvl": 3,
+        "t": "3.2 Cookies de mesure d'audience (soumis à consentement)"
+      },
+      {
+        "lvl": 3,
+        "t": "3.3 Cookies publicitaires / réseaux sociaux"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COOKIES TIERS TECHNIQUES (CDN POLICES ET SCRIPTS)"
+      },
+      {
+        "lvl": 2,
+        "t": "5. DURÉE DE CONSERVATION"
+      },
+      {
+        "lvl": 2,
+        "t": "6. PARAMÉTRAGE VIA VOTRE NAVIGATEUR"
+      },
+      {
+        "lvl": 2,
+        "t": "7. RÉCLAMATION"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  },
+  "allergens@1440": {
+    "scrollW": 1440,
+    "clientW": 1440,
+    "overflow": [],
+    "overflowCount": 0,
+    "heads": [
+      {
+        "lvl": 1,
+        "t": "INFORMATION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "1. LES 14 ALLERGÈNES MAJEURS (ANNEXE II DU RÈGLEMENT INCO)"
+      },
+      {
+        "lvl": 2,
+        "t": "2. ALLERGÈNES LES PLUS FRÉQUENTS CHEZ LE CAYENNE"
+      },
+      {
+        "lvl": 2,
+        "t": "3. RISQUE DE TRACES ET CONTAMINATION CROISÉE"
+      },
+      {
+        "lvl": 2,
+        "t": "4. COMMENT CONNAÎTRE LES ALLERGÈNES D'UN PLAT PRÉCIS ?"
+      },
+      {
+        "lvl": 2,
+        "t": "5. RÉGIMES SPÉCIAUX"
+      },
+      {
+        "lvl": 2,
+        "t": "6. CONTACT POUR QUESTION ALLERGÈNES"
+      },
+      {
+        "lvl": 2,
+        "t": "7. CADRE RÉGLEMENTAIRE"
+      },
+      {
+        "lvl": 3,
+        "t": "VOIR AUSSI"
+      },
+      {
+        "lvl": 3,
+        "t": "LE CAYENNE"
+      },
+      {
+        "lvl": 4,
+        "t": "NAVIGATION"
+      },
+      {
+        "lvl": 4,
+        "t": "LÉGAL"
+      }
+    ],
+    "noName": [],
+    "noNameCount": 0,
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "noAlt": [],
+    "errors": []
+  }
+}

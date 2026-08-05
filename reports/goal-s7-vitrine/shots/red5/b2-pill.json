@@ -1,0 +1,74 @@
+{
+  "text": "OUVERT MAINTENANT",
+  "color": "rgb(12, 107, 49)",
+  "bg": "rgba(31, 166, 83, 0.18)",
+  "fontSize": "11px",
+  "weight": "700",
+  "chain": [
+    {
+      "cls": "lc-hours-status",
+      "bg": "rgba(31, 166, 83, 0.18)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "DIV",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "lc-hours-grid",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "lc-hours in",
+      "bg": "rgb(10, 10, 10)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "lc-container",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "lc-section",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "DIV",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "lc-route-anim",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "lc-app",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "DIV",
+      "bg": "rgba(0, 0, 0, 0)",
+      "bgImg": "none"
+    },
+    {
+      "cls": "BODY",
+      "bg": "rgb(250, 247, 242)",
+      "bgImg": "none"
+    }
+  ],
+  "rect": {
+    "x": 105.59375,
+    "y": 435.09375,
+    "width": 197.0625,
+    "height": 30,
+    "top": 435.09375,
+    "right": 302.65625,
+    "bottom": 465.09375,
+    "left": 105.59375
+  }
+}

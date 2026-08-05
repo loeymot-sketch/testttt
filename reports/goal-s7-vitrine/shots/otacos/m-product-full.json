@@ -1,0 +1,70 @@
+{
+  "url": "https://www.o-tacos.com/fr/products/otacos--composer",
+  "title": "Un instant…",
+  "nodes": [
+    {
+      "tag": "H1",
+      "t": "www.o-tacos.com",
+      "size": "40px",
+      "w": "600",
+      "tt": "none",
+      "fam": "system-ui",
+      "c": "rgb(49, 49, 49)"
+    },
+    {
+      "tag": "H2",
+      "t": "Vérification de sécurité en cours",
+      "size": "24px",
+      "w": "600",
+      "tt": "none",
+      "fam": "system-ui",
+      "c": "rgb(49, 49, 49)"
+    },
+    {
+      "tag": "H2",
+      "t": "Vérification réussie. En attente de la réponse de www.o-tacos.com.",
+      "size": "24px",
+      "w": "600",
+      "tt": "none",
+      "fam": "system-ui",
+      "c": "rgb(49, 49, 49)"
+    },
+    {
+      "tag": "SPAN",
+      "t": "Performances et sécurité par Cloudflare",
+      "size": "12px",
+      "w": "400",
+      "tt": "none",
+      "fam": "system-ui",
+      "c": "rgb(49, 49, 49)"
+    }
+  ],
+  "buttons": [
+    {
+      "t": "Cloudflare",
+      "bg": "rgba(0, 0, 0, 0)",
+      "c": "rgb(0, 0, 238)",
+      "r": "0px",
+      "s": "12px",
+      "pos": "static"
+    },
+    {
+      "t": "Confidentialité",
+      "bg": "rgba(0, 0, 0, 0)",
+      "c": "rgb(0, 0, 238)",
+      "r": "0px",
+      "s": "12px",
+      "pos": "static"
+    }
+  ],
+  "imgs": [
+    {
+      "nw": 48,
+      "nh": 48,
+      "dw": 32,
+      "alt": "Icône pour www.o-tacos.com",
+      "src": "https://www.o-tacos.com/favicon.ico"
+    }
+  ],
+  "text": "www.o-tacos.com Vérification de sécurité en cours Ce site utilise un service de sécurité pour se protéger contre les bots malveillants. Cette page s’affiche pendant que le site vérifie que vous n’êtes pas un bot. Ray ID: a2291656ba224fe6 Performances et sécurité par Cloudflare Confidentialité"
+}

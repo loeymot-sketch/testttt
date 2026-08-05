@@ -4,7 +4,23 @@
     "slug": "env",
     "state": "spa-up",
     "severity": "OK",
-    "note": "spaUp=true token=true branches=[1] itemId=null extraId=172 variationId=262",
-    "ts": "2026-05-08T10:47:06.781Z"
+    "note": "spaUp=true token=true branches=[1,7] itemId=null extraId=1 variationId=5",
+    "ts": "2026-07-30T04:09:02.312Z"
+  },
+  {
+    "step": "S6-02",
+    "slug": "extra-rupture-A",
+    "state": "backend-propagated",
+    "severity": "OK",
+    "note": "toggleExtra 413ms; isolation verified at AvailabilityService level",
+    "ts": "2026-07-30T04:09:04.983Z"
+  },
+  {
+    "step": "S6-03",
+    "slug": "variation-rupture-A",
+    "state": "backend-propagated",
+    "severity": "OK",
+    "note": "toggleVariation 407ms; isolation verified at AvailabilityService level",
+    "ts": "2026-07-30T04:09:07.013Z"
   }
 ]

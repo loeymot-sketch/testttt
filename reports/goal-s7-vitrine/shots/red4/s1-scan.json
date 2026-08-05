@@ -1,0 +1,41 @@
+{
+  "textIssues": {
+    "320::/index.html#orders": [
+      {
+        "tag": "DIV",
+        "cls": "lc-eyebrow",
+        "text": "// Mes commandes"
+      }
+    ],
+    "360::/index.html#orders": [
+      {
+        "tag": "DIV",
+        "cls": "lc-eyebrow",
+        "text": "// Mes commandes"
+      }
+    ],
+    "768::/index.html#orders": [
+      {
+        "tag": "DIV",
+        "cls": "lc-eyebrow",
+        "text": "// Mes commandes"
+      }
+    ],
+    "1024::/index.html#orders": [
+      {
+        "tag": "DIV",
+        "cls": "lc-eyebrow",
+        "text": "// Mes commandes"
+      }
+    ],
+    "1440::/index.html#orders": [
+      {
+        "tag": "DIV",
+        "cls": "lc-eyebrow",
+        "text": "// Mes commandes"
+      }
+    ]
+  },
+  "overflow": {},
+  "jsErrors": {}
+}

@@ -1,0 +1,52 @@
+{
+  "pos-v4": {
+    "url": "/admin/pos-v4",
+    "onLogin": false,
+    "title": "CAISSE ET COMMANDES",
+    "bodyLen": 1474,
+    "empty": false,
+    "rawLabel": false,
+    "hasError": false,
+    "firstText": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Fa"
+  },
+  "encaissement": {
+    "url": "/admin/encaissement",
+    "onLogin": false,
+    "title": "CAISSE ET COMMANDES",
+    "bodyLen": 779,
+    "empty": false,
+    "rawLabel": false,
+    "hasError": false,
+    "firstText": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Fa"
+  },
+  "suivi-tracker": {
+    "url": "/admin/pos-orders-tracker",
+    "onLogin": false,
+    "title": "CAISSE ET COMMANDES",
+    "bodyLen": 733,
+    "empty": false,
+    "rawLabel": false,
+    "hasError": false,
+    "firstText": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Fa"
+  },
+  "historique": {
+    "url": "/admin/historique",
+    "onLogin": false,
+    "title": "CAISSE ET COMMANDES",
+    "bodyLen": 1564,
+    "empty": false,
+    "rawLabel": false,
+    "hasError": false,
+    "firstText": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Fa"
+  },
+  "oss-ecran-client": {
+    "url": "/admin/order-status-screen",
+    "onLogin": false,
+    "title": "Caisse et commandes",
+    "bodyLen": 186,
+    "empty": false,
+    "rawLabel": false,
+    "hasError": false,
+    "firstText": "Tableau De Bord Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion En préparation — Prêt —"
+  }
+}

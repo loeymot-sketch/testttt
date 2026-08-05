@@ -1,0 +1,14 @@
+{
+  "login": "/admin/pos",
+  "clicked": "Tacos M",
+  "wizardAppeared": true,
+  "wizardOpenMs": 232,
+  "wizardText": "Tacos M €6.90 − 1 + 🥩 Viande 0/1 incluse 1 viande incluse — au-delà : +€2.50 / viande Poulet mariné Mexicanos Cordon Bleu Viande Hachée Nuggets Tenders Fricadelle 🥬 Crudités Cliquez pour retirer. 🥬 ✓ Salade 🍅 ✓ Tomate 🧅 ✓ Oignon 🧅 ✕ Sans Oignons cuits 🥄 Sauce 1ère gratuite Algérienne Andalouse Blanche Curry Hannibal Harissa Ketchup Mayonnaise Samouraï Barbecue Fromagère maison Spicy maison ➕ Suppléments ▼ 🍟🥤 Formule 🚫 Sans formule — 🥤 Menu (Frites + Boisson) +2,50 € 🍟 Frites Seules +",
+  "errors": [],
+  "adminLogin": "/admin/dashboard",
+  "scan": {
+    "url": "/admin/purchasing/scan",
+    "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue Attribut D’articles Ingrédients Scan Facture Commandes Caisse ",
+    "undef": false
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "url": "https://www.o-tacos.com/fr/qualite-et-engagements",
+  "title": "Un instant…",
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "www.o-tacos.com",
+      "size": "40px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "system-ui",
+      "color": "rgb(49, 49, 49)",
+      "ls": "normal"
+    },
+    {
+      "tag": "H2",
+      "text": "Vérification de sécurité en cours",
+      "size": "24px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "system-ui",
+      "color": "rgb(49, 49, 49)",
+      "ls": "normal"
+    },
+    {
+      "tag": "H2",
+      "text": "Vérification réussie. En attente de la réponse de www.o-tacos.com.",
+      "size": "24px",
+      "weight": "600",
+      "tt": "none",
+      "fam": "system-ui",
+      "color": "rgb(49, 49, 49)",
+      "ls": "normal"
+    },
+    {
+      "tag": "SPAN",
+      "text": "Performances et sécurité par Cloudflare",
+      "size": "12px",
+      "weight": "400",
+      "tt": "none",
+      "fam": "system-ui",
+      "color": "rgb(49, 49, 49)",
+      "ls": "normal"
+    }
+  ],
+  "sections": [],
+  "buttons": [
+    {
+      "t": "Cloudflare",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 238)",
+      "radius": "0px",
+      "size": "12px",
+      "weight": "400",
+      "tt": "none"
+    },
+    {
+      "t": "Confidentialité",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 238)",
+      "radius": "0px",
+      "size": "12px",
+      "weight": "400",
+      "tt": "none"
+    }
+  ],
+  "imgs": [
+    {
+      "nw": 48,
+      "nh": 48,
+      "dw": 32,
+      "alt": "Icône pour www.o-tacos.com",
+      "fit": "fill",
+      "src": "https://www.o-tacos.com/favicon.ico"
+    }
+  ]
+}
