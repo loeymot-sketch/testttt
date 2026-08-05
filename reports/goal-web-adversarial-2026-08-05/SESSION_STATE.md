@@ -21,14 +21,11 @@
 
   "AVERTISSEMENT_CENTRAL": "Un « vert » de cette campagne ne prouve rien. Un procureur a ANNULÉ intégralement un correctif : la sentinelle est restée 35/35 VERTE. ~21 de ses 35 assertions sont des regex sur le TEXTE SOURCE. Trois correctifs ont été verts tout en étant MORTS (grep sur une URL inexistante renvoyant 405 ; règle CSS visant 3 sélecteurs absents du markup ; repli jamais exécuté car la valeur testée n'était jamais vide). NE JAMAIS CRÉDITER UN CORRECTIF SUR LA FOI D'UNE LIGNE DE CODE OU D'UN VERT.",
 
+  "VERIFICATIONS_FAITES_A_LA_MAIN_cycle8": "Voir reports/goal-web-adversarial-2026-08-05/VERIFICATIONS-CYCLE-8.md — F-D (test qui APPELLE le service, prouvé capable de rougir), F-I (3 inscriptions -> 1 jeton, en base), F-F (sauce fantôme refusée + snapshot scellé correct, bout-en-bout), F-B/F-C (écran carte impayée observé au DOM : 0 QR, 0 ticket, 0 confetti, 0 total), F-A partiel (URL nettoyée + 2 vérifs comportementales de la sentinelle), F-H (format validé contre le vrai formateur).",
+
   "VERIFICATIONS_DUES": [
-    "Les correctifs du cycle 7 n'ont PAS été exercés, sauf F-D (voir ci-dessous). Le procureur a explicitement refusé de les créditer.",
-    "F-B/F-C — carte jamais payée : observer l'écran de confirmation AU DOM jusqu'à épuisement de la sonde (~40 s). Attendu : aucun QR, aucun confetti, aucun TOTAL sous un titre de succès. Tester les 3 issues (payée / annulée / jamais finalisée).",
-    "F-A — `?order=` : URL nettoyée, panier survivant, ET filet « abandon 3DS » toujours armé après coup.",
-    "F-F — sauce fantôme : choisir « Poivre » ou « Burger » et soumettre → message clair, AUCUNE commande créée ; puis vérifier qu'un panier normal passe et que le composition_snapshot porte la sauce CHOISIE.",
+    "RESTENT NON EXERCÉS : F-E (garde R1 livraison sur les DEUX routes + reap janitor) et F-G (commande livraison -> les 2 listeners d'impression, octets ESC/POS). Tout le reste a été exercé à la main au cycle 8.",
     "F-E — garde R1 livraison : commande livraison carte impayée bloquée sur les DEUX routes, et reapée par le janitor.",
-    "F-H — ticket cuisine : commande avec viande en plus ET note client contenant « Viandes en plus : Nuggets » → le ticket doit nommer la viande PAYÉE. (Le format a été vérifié contre le vrai formateur, le bout-en-bout non.)",
-    "F-I — 3 inscriptions même téléphone → 1 seule ligne personal_access_tokens vivante.",
     "F-G — commande livraison → les 2 listeners d'impression déclenchés (octets ESC/POS)."
   ],
 
