@@ -272,21 +272,32 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textWrap($callNo, $w);
             $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
+        // [AXE-7 GOAL-8AXES 2026-08-05 owner] Chaque ligne d'EN-TÊTE = GRAS + UNE SEULE
+        // LIGNE garantie (troncature « … », plus jamais de repli textWrap qui cassait la
+        // bannière ou le nom client sur 2 lignes). Le corps du ticket reste inchangé.
+        $headerLine = static function (string $text) use ($w): string {
+            if (mb_strlen($text) > $w) {
+                // '...' ASCII (l'ellipse U+2026 n'existe pas en CP858 imprimante).
+                $text = mb_substr($text, 0, max(1, $w - 3)).'...';
+            }
+
+            return EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine($text).EscPosCommandBuilder::bold(false);
+        };
         // [AUDIT F2] Order type — packaging/prep differs (sur place / à emporter / livraison).
         $orderType = $this->orderTypeLabel($order);
         if ($orderType !== '') {
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('*** '.mb_strtoupper($orderType).' ***', $w).EscPosCommandBuilder::bold(false);
+            $b .= $headerLine('*** '.mb_strtoupper($orderType).' ***');
         }
         // [C2-CAISSE 2026-07-05] Nom du client aussi en cuisine (appel de commande).
         $kClientName = trim((string) ($order->pos_customer_name ?? ''));
         if ($kClientName !== '') {
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$kClientName, $w).EscPosCommandBuilder::bold(false);
+            $b .= $headerLine('Client : '.$kClientName);
         }
         // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone client aussi en cuisine (rappel/
         // reconnaissance d'une commande téléphone). Width-safe ; absent = rien.
         $kClientPhone = trim((string) ($order->pos_customer_phone ?? ''));
         if ($kClientPhone !== '') {
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Tel : '.$kClientPhone, $w).EscPosCommandBuilder::bold(false);
+            $b .= $headerLine('Tel : '.$kClientPhone);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
