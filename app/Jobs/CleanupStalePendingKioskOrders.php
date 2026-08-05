@@ -105,7 +105,14 @@ class CleanupStalePendingKioskOrders
             ->whereNull('fiscal_sequence_no')
             ->where('status', OrderStatus::PENDING)
             ->where('payment_status', PaymentStatus::UNPAID)
-            ->where('source_surface', 'web')
+            // [PROCUREUR cycle 6 — 2026-08-05 · P1 F-2] `db9748e66` a étendu la surface
+            // 'delivery' aux 2 gardes du chemin payé, mais ces lanes de nettoyage sont restées
+            // 'web'-only : une commande LIVRAISON abandonnée n'était donc jamais annulée, et
+            // comme le stock est décrémenté INCONDITIONNELLEMENT à la création, elle le
+            // déplétait À VIE. Le web n'envoie pas la surface : `FrontendOrder::creating` la
+            // force à 'delivery' dès que `order_type === DELIVERY` — les deux valeurs
+            // désignent la même chose, une commande passée depuis le site.
+            ->whereIn('source_surface', ['web', 'delivery'])
             ->where('payment_method', \App\Enums\PaymentGateway::CARD)
             ->where('created_at', '<', $webStaleThreshold)
             ->orderBy('id')
@@ -143,7 +150,7 @@ class CleanupStalePendingKioskOrders
             // [P1-3 CUMUL 2026-08-04 · cycle1] Étendu web+phone : le fantôme PREPARED impayé qui
             // conserve les points GAGNÉS existait AUSSI hors borne (award traite TAKEAWAY web comme
             // kiosk mais la purge était kiosk-only). Même garde NF525 (fiscal_sequence_no null).
-            ->whereIn('source_surface', ['kiosk', 'web', 'phone'])
+            ->whereIn('source_surface', ['kiosk', 'web', 'phone', 'delivery'])
             ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
             ->where(function ($query) use ($staleThreshold): void {
                 $query->where('created_at', '<', $staleThreshold)
@@ -235,7 +242,14 @@ class CleanupStalePendingKioskOrders
             ->whereNull('fiscal_sequence_no')
             ->whereIn('status', [OrderStatus::PENDING, OrderStatus::ACCEPT, OrderStatus::PREPARING])
             ->whereIn('payment_status', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])
-            ->where('source_surface', 'web')
+            // [PROCUREUR cycle 6 — 2026-08-05 · P1 F-2] `db9748e66` a étendu la surface
+            // 'delivery' aux 2 gardes du chemin payé, mais ces lanes de nettoyage sont restées
+            // 'web'-only : une commande LIVRAISON abandonnée n'était donc jamais annulée, et
+            // comme le stock est décrémenté INCONDITIONNELLEMENT à la création, elle le
+            // déplétait À VIE. Le web n'envoie pas la surface : `FrontendOrder::creating` la
+            // force à 'delivery' dès que `order_type === DELIVERY` — les deux valeurs
+            // désignent la même chose, une commande passée depuis le site.
+            ->whereIn('source_surface', ['web', 'delivery'])
             ->where(function ($query) use ($webStaleThreshold): void {
                 $query->where('order_datetime', '<', $webStaleThreshold)
                     ->orWhere(function ($q) use ($webStaleThreshold): void {

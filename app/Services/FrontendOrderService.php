@@ -266,8 +266,17 @@ class FrontendOrderService
                 //
                 // Ne concerne QUE l'intention carte en ligne : une commande web réglée AU COMPTOIR
                 // (cash) doit continuer de partir immédiatement en cuisine — c'est le mode normal.
+                // [PROCUREUR cycle 6 — 2026-08-05 · P1 F-1] Cette garde n'avait AUCUNE condition
+                // d'`order_type`, alors que le gate qui LIBÈRE au paiement en exige un parmi
+                // {TAKEAWAY, DELIVERY}. Les deux moitiés du mécanisme ne testaient donc pas la
+                // même chose : avec un jeton valide, une commande carte d'un AUTRE type était
+                // retenue ici et jamais libérée là-bas — reproduit avec `order_type=20` :
+                // PAYÉE (`payment_status=5`), restée `status=1`, `fiscal_sequence_no=NULL`,
+                // jamais en cuisine et HORS de la chaîne fiscale. Régression de `87bbaf6ab`.
+                // Les deux gardes portent désormais exactement le même périmètre.
                 $isWebCardIntentAtCreate = strtolower((string) ($validatedRequest['source_surface'] ?? ($isKioskMachineOrder ? 'kiosk' : 'web'))) === 'web'
-                    && (int) ($validatedRequest['payment_method'] ?? 0) === (int) PaymentGateway::CARD;
+                    && (int) ($validatedRequest['payment_method'] ?? 0) === (int) PaymentGateway::CARD
+                    && in_array((int) ($validatedRequest['order_type'] ?? 0), [OrderType::TAKEAWAY, OrderType::DELIVERY], true);
 
                 $shouldDispatchNewOrderSignals = (!$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod)
                     && !$isWebCardIntentAtCreate;
