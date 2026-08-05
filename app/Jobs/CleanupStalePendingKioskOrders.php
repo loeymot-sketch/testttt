@@ -86,6 +86,39 @@ class CleanupStalePendingKioskOrders
                 'kiosk',
             ));
 
+        // [GOAL-8AXES V7 T-5.1.2 2026-08-05] CARTES WEB ABANDONNÉES. La commande web
+        // est créée AVANT le paiement Mollie (funnel placeOrder → mollieCheckout) : un
+        // abandon SANS webhook (onglet fermé pendant 3DS, retour navigateur, expiration
+        // Mollie) la laissait UNPAID pour toujours — historique client pollué + suivi
+        // « EN PRÉPARATION » mensonger. La garde caisse existe (R1 SÉCU 2026-08-04 :
+        // exclue de la file web) ; ici le 2e étage : l'EXPIRATION.
+        // Périmètre STRICT : web + PENDING + UNPAID + paiement CARTE en ligne. Les
+        // PENDING_COUNTER web (client qui viendra payer au comptoir) ont leur propre
+        // cycle counter-collect et ne sont PAS des abandons. TTL court dédié (60 min —
+        // un 3DS ne dure jamais 1 h) : WEB_STALE_UNPAID_TTL_MINUTES.
+        // NF525 : même garde absolue fiscal_sequence_no NULL (jamais de séquence sur
+        // une UNPAID — défense en profondeur).
+        $webTtlMinutes = (int) config('order.web_stale_unpaid_ttl_minutes', 60);
+        $webStaleThreshold = now()->subMinutes($webTtlMinutes);
+        FrontendOrder::withoutGlobalScope(BranchScope::class)
+            ->whereNull('deleted_at')
+            ->whereNull('fiscal_sequence_no')
+            ->where('status', OrderStatus::PENDING)
+            ->where('payment_status', PaymentStatus::UNPAID)
+            ->where('source_surface', 'web')
+            ->where('payment_method', \App\Enums\PaymentGateway::CARD)
+            ->where('created_at', '<', $webStaleThreshold)
+            ->orderBy('id')
+            ->get()
+            ->each(fn (FrontendOrder $order) => $this->cleanupStaleDeferredOrder(
+                $order,
+                [OrderStatus::PENDING],
+                [PaymentStatus::UNPAID],
+                'web',
+                $webTtlMinutes,
+                'web-card-abandoned',
+            ));
+
         // [CLUSTER-5-reste 2026-07-11] PHANTOMS BORNE AU STATUT PREPARED — purge par SOFT-DELETE.
         // 8/9 des commandes borne UNPAID fantômes observées sont au statut PREPARED (status=8) :
         // la borne Plan-B cash auto-accepte (ACCEPT), le KDS la fait avancer ACCEPT→PREPARING→
