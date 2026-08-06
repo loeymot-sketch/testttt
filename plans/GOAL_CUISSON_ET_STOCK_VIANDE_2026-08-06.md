@@ -56,45 +56,45 @@ Tenders · Fricadelle. Plus **« Mixte (hachée + poulet) »** sur Cayenne et Ga
 
 ---
 
-## 2. CE QUE JE NE SAIS PAS — j'ai besoin de vos réponses
+## 2. RECETTES FIXES — RÉSOLU (owner 2026-08-06, vérifié en base)
 
-Vous m'aviez demandé de vous dire ce qui n'est pas clair. Voici la liste exacte, rien d'inventé.
+L'owner a donné les 9 recettes et demandé vérification plutôt que d'être cru sur parole.
+**La colonne `description` de la table `items` confirme chacune d'elles :**
 
-### A. Les BURGERS — aucune viande n'est déclarée en base pour eux
-Aucun de ces produits n'a d'attribut viande : leur recette est fixe et **nulle part écrite**.
+| Produit | Description en base | CUISSON |
+|---|---|---|
+| Cheese Burger #98 | « Steak, cheddar… » | **1K** |
+| Double Cheese #99 | « 2 steaks, 2 cheddars… » | **2K** |
+| Grill Burger #102 | « 2 steaks, 2 cheddars, jambon de dinde… » | **2K** |
+| Big Burger #101 | « 3 steaks, 3 cheddars, 2 jambons de dinde… » | **3K** |
+| Fish Burger #100 | « Poisson pané, cheddar… » | **1 Poi** |
+| Chicken Burger #38 | (nom) | **1 Chick** |
+| Suprême #103 | « Steak haché, cordon bleu… » | **1K + 1 Cordon** |
+| Menu Enfant Nuggets #40 | « 6 nuggets, frites et Capri-Sun » | **6 Nug + 1F** |
+| Menu Enfant Chicken #106 | « Chicken burger, frites et Capri-Sun » | **1 Chick + 1F** |
 
-| Produit | Combien de steaks / quelle viande ? |
-|---|---|
-| **Chicken Burger** #38 | ❓ |
-| **Cheese Burger** #98 | ❓ |
-| **Double Cheese** #99 | ❓ (2 steaks ?) |
-| **Fish Burger** #100 | ❓ (poisson = à cuire aussi ? quel symbole ?) |
-| **Big Burger** #101 | ❓ (3 steaks ?) |
-| **Grill Burger** #102 | ❓ |
+Jambon de dinde et cheddar sont volontairement absents : ils ne passent pas à la plancha, et
+le bandeau ne doit dire que ce qu'il faut CUIRE.
 
-### B. Le SUPRÊME #103
-Vous avez dit « une cordon bleu et une viande hachée ». Est-ce **1 Cordon + 1 K**
-(deux demi-portions, comme le Méga), ou **1 Cordon + 2 K** ?
+**Confirmé par l'owner, déjà conforme à l'implémentation** : les **bols** prennent la portion
+complète (2 pièces) ; **« Mixte (hachée + poulet) »** vaut **1K + 1P** ; le **supplément
+viande** vaut une portion complète.
 
-### C. Les MENUS ENFANTS
-- **Menu Enfant Nuggets** #40 : combien de nuggets ?
-- **Menu Enfant Chicken Burger** #106 : même recette que le Chicken Burger, ou plus petit ?
+**Ajout owner — les FRITES** : « le nombre de menu tu mets 5F », « une grande frite c'est
+automatiquement 2F ». Chaque menu apporte 1F, une frite vendue seule 1F, une grande 2F, et la
+frite d'un menu enfant est déjà dans sa recette (jamais comptée deux fois).
 
-### D. Les BOLS (#41 Bol Frites, #45 Bol Riz)
-Une viande au choix : **portion complète (2)** comme un sandwich, ou **1 seule pièce** ?
+### ⚠️ Un écart mineur à trancher
+Vous avez dit que le **Big Burger** contient « une jambon » ; la base dit **2 jambons de
+dinde**. Sans effet sur la cuisson (le jambon ne va pas à la plancha), mais cela comptera le
+jour où le stock suivra le jambon.
 
-### E. « Mixte (hachée + poulet) »
-C'est UN choix dans une case « Viande 1 ». Cela vaut-il **1K + 1P** (deux demi-portions),
-ou **2K + 2P** ?
+## 2bis. CE QUI MANQUE ENCORE — mission 2 (stock)
 
-### F. Le SUPPLÉMENT VIANDE
-Portion **complète** (2 pièces) ou **1 pièce** ? Votre phrase dit « on le note un supplément
-complet », que je lis comme 2 pièces — à confirmer avant de facturer du stock dessus.
-
-### G. Les POIDS (mission 2)
-Seule la viande hachée a un poids (75 g/pièce). Il me faut, pour chaque viande :
-**Poulet mariné · Mexicanos · Cordon Bleu · Nuggets · Tenders · Fricadelle** (et le poisson) —
-poids unitaire, ou poids de portion.
+Seule la viande hachée a un poids (**75 g/pièce**). Il me faut le poids unitaire (ou de
+portion) de : **Poulet mariné · Mexicanos · Cordon Bleu · Nuggets · Tenders · Fricadelle ·
+Chicken burger · Poisson pané**, ainsi que le poids d'une **portion de frites**.
+Le moteur compte déjà les pièces : il ne manque que la conversion en grammes.
 
 ---
 

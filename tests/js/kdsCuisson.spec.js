@@ -65,18 +65,72 @@ describe('bandeau de cuisson — règle de portion owner', () => {
         expect(rendu).toContain('2P');
     });
 
-    it('une recette non déclarée en base est signalée, jamais devinée', () => {
-        for (const nom of ['Big Burger', 'Cheese Burger', 'Suprême', 'Menu Enfant Nuggets']) {
-            const r = meatPortionsForItem(item(nom, []));
-            expect(r.inconnu, `${nom} doit être signalé inconnu`).toBe(true);
-            expect(Object.keys(r.pieces), `${nom} ne doit produire aucune pièce inventée`).toEqual([]);
-        }
+    // Recettes FIXES — données owner 2026-08-06, confirmées contre la description produit.
+    // Attendus IDENTIQUES au fournisseur PHP MeatPortionCalculatorTest::recettesFixes.
+    it.each([
+        ['Cheese Burger', '1K'],
+        ['Double Cheese', '2K'],
+        ['Grill Burger', '2K'],
+        ['Big Burger', '3K'],
+        ['Fish Burger', '1Poi'],
+        ['Chicken Burger', '1Chick'],
+        ['Suprême', '1K 1Cordon'],
+        ['Menu Enfant Nuggets', '6Nug 1F'],
+        ['Menu Enfant Chicken Burger', '1Chick 1F'],
+    ])('recette fixe : %s → %s', (nom, attendu) => {
+        const r = meatPortionsForItem(item(nom, []));
+        expect(r.inconnu).toBe(false);
+        expect(renderCuisson(r.pieces, 0)).toBe(attendu);
     });
 
-    it('un produit sans viande ne produit rien', () => {
-        const r = meatPortionsForItem(item('Frites', []));
+    it('les recettes qui se chevauchent ne se volent pas', () => {
+        expect(ligne('Double Cheese', [])).toBe('2K');
+        expect(ligne('Cheese Burger', [])).toBe('1K');
+        expect(ligne('Menu Enfant Chicken Burger', [])).toBe('1Chick 1F');
+        expect(ligne('Chicken Burger', [])).toBe('1Chick');
+    });
+
+    it('un burger sans recette documentée reste signalé « ? »', () => {
+        const r = meatPortionsForItem(item('Mystery Burger', []));
+        expect(r.inconnu).toBe(true);
+        expect(Object.keys(r.pieces)).toEqual([]);
+    });
+
+    it('un produit sans cuisson ne produit rien', () => {
+        const r = meatPortionsForItem(item('Coca 33cl', []));
         expect(r.inconnu).toBe(false);
         expect(renderCuisson(r.pieces, 0)).toBe('');
+    });
+});
+
+describe('bandeau de cuisson — frites', () => {
+    const menuSnap = (viandes, qty) => ({
+        item_name: 'Tacos M', quantity: qty, instruction: '',
+        composition_snapshot: {
+            ...snap(viandes),
+            addons: [
+                { role: 'menu_frites', quantity: 1, addon_name: 'Frites' },
+                { role: 'menu_boisson', quantity: 1, addon_name: 'Coca 33cl' },
+            ],
+        },
+    });
+
+    it('compte une portion par menu — « 5 menus tu mets 5F »', () => {
+        expect(renderCuisson(meatPortionsForItem(menuSnap(['Viande Hachée'], 1)).pieces, 0)).toBe('2K 1F');
+        expect(renderCuisson(meatPortionsForItem(menuSnap(['Viande Hachée'], 5)).pieces, 0)).toBe('10K 5F');
+    });
+
+    it('une grande frite compte double', () => {
+        expect(ligne('Frites', [])).toBe('1F');
+        expect(ligne('Grande Frite', [])).toBe('2F');
+    });
+
+    it('la frite d’un menu enfant n’est jamais comptée deux fois', () => {
+        const r = meatPortionsForItem({
+            item_name: 'Menu Enfant Nuggets', quantity: 1,
+            composition_snapshot: { ...snap([]), addons: [{ role: 'menu_frites', quantity: 1, addon_name: 'Frites' }] },
+        });
+        expect(renderCuisson(r.pieces, 0)).toBe('6Nug 1F');
     });
 
     it('une ligne qui n’est pas une viande n’atteint jamais la plancha', () => {
@@ -98,15 +152,27 @@ describe('bandeau de cuisson — agrégation de toute la commande', () => {
             item('Tacos M', ['Viande Hachée'], 3),                    // 6K
             item('Méga', ['Viande Hachée', 'Poulet mariné'], 2),      // 2K 2P
             item('Galette Cayenne', ['Poulet mariné'], 1),            // 2P
-            item('Frites', [], 2),                                    // rien
+            item('Frites', [], 2),                                    // 2F
         ]);
-        expect(o.texte).toBe('8K 4P');
+        expect(o.texte).toBe('8K 4P 2F');
         expect(o.inconnus).toBe(0);
     });
 
     it('compte les recettes inconnues à part et les annonce', () => {
-        const o = cuissonForOrder([item('Tacos M', ['Viande Hachée'], 1), item('Big Burger', [], 2)]);
+        const o = cuissonForOrder([item('Tacos M', ['Viande Hachée'], 1), item('Mystery Burger', [], 2)]);
         expect(o.inconnus).toBe(2);
         expect(o.texte).toBe('2K 2×?');
+    });
+
+    /** La commande décrite par l'owner : 5 menus tacos (10K 5F) + Big Burger (3K) + grande frite (2F). */
+    it('mêle viandes, menus et frites en une seule ligne', () => {
+        const menu = { role: 'menu_frites', quantity: 1, addon_name: 'Frites' };
+        const o = cuissonForOrder([
+            { item_name: 'Tacos M', quantity: 5, composition_snapshot: { ...snap(['Viande Hachée']), addons: [menu] } },
+            item('Big Burger', [], 1),
+            item('Grande Frite', [], 1),
+        ]);
+        expect(o.texte).toBe('13K 7F');
+        expect(o.inconnus).toBe(0);
     });
 });

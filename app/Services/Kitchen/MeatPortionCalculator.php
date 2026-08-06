@@ -44,8 +44,44 @@ final class MeatPortionCalculator
     public const PORTION_COMPLETE = 2;
 
     /**
-     * Produits dont la viande est FIXE (aucun attribut « Viande N ») et dont la recette n'est
-     * PAS encore connue. Clé = motif sur le nom de l'article.
+     * RECETTES FIXES — produits sans attribut « Viande N », dont la composition est immuable.
+     *
+     * Données de l'owner (2026-08-06), CONFIRMÉES une à une contre la colonne `description` de
+     * la table items — il avait demandé vérification plutôt que d'être cru sur parole :
+     *   Cheese Burger  « Steak »                          → 1K
+     *   Double Cheese  « 2 steaks »                       → 2K
+     *   Grill Burger   « 2 steaks, jambon de dinde »      → 2K
+     *   Big Burger     « 3 steaks, 2 jambons de dinde »   → 3K
+     *   Fish Burger    « Poisson pané »                   → 1 Poi
+     *   Chicken Burger (nom)                              → 1 Chick
+     *   Suprême        « Steak haché, cordon bleu »       → 1K + 1 Cordon
+     *   Menu Enf. Nuggets  « 6 nuggets, frites »          → 6 Nug + 1F
+     *   Menu Enf. Chicken  « Chicken burger, frites »     → 1 Chick + 1F
+     *
+     * Le jambon de dinde et le cheddar ne figurent pas ici : ils ne passent pas à la plancha,
+     * et le bandeau ne doit dire que ce qu'il faut CUIRE.
+     *
+     * ⚠️ L'ORDRE COMPTE : le premier motif qui matche gagne. « Menu Enfant Chicken Burger »
+     * doit être reconnu AVANT « Chicken Burger », et « Double Cheese » avant « Cheese ».
+     *
+     * @var array<int, array{0:string, 1:array<string,int>}>
+     */
+    private const RECETTES_FIXES = [
+        ['/menu\s*enfant.*nugget|nugget.*menu\s*enfant/iu', ['Nug' => 6, 'F' => 1]],
+        ['/menu\s*enfant/iu',                               ['Chick' => 1, 'F' => 1]],
+        ['/double\s*cheese/iu',                             ['K' => 2]],
+        ['/big\s*burger/iu',                                ['K' => 3]],
+        ['/grill\s*burger/iu',                              ['K' => 2]],
+        ['/fish\s*burger|burger.*poisson/iu',               ['Poi' => 1]],
+        ['/chicken\s*burger/iu',                            ['Chick' => 1]],
+        ['/cheese\s*burger/iu',                             ['K' => 1]],
+        ['/supr[êe]me/iu',                                  ['K' => 1, 'Cordon' => 1]],
+    ];
+
+    /**
+     * Produits à recette fixe encore NON documentée. Vide depuis que l'owner a donné les 9
+     * recettes ci-dessus ; la garde reste en place pour tout burger futur qui arriverait sans
+     * recette — il s'affichera « ? » plutôt que de disparaître silencieusement de la plancha.
      *
      * @var array<int, string>
      */
@@ -53,7 +89,6 @@ final class MeatPortionCalculator
         '/burger/iu',
         '/supr[êe]me/iu',
         '/menu\s*enfant/iu',
-        '/nugget/iu',
     ];
 
     public function __construct(
@@ -137,9 +172,34 @@ final class MeatPortionCalculator
             }
         }
 
-        // 3. Recette fixe non encore connue → on le DIT, on ne devine pas.
-        $inconnu = false;
+        // 3. Recette FIXE (burgers, Suprême, menus enfants) — la composition ne dépend d'aucun
+        //    choix client, elle est documentée par l'owner et vérifiée contre la description item.
+        $recetteConnue = false;
         if ($viandes === []) {
+            foreach (self::RECETTES_FIXES as [$motif, $recette]) {
+                if (! preg_match($motif, $itemName)) {
+                    continue;
+                }
+                foreach ($recette as $symbole => $n) {
+                    $this->ajoute($pieces, $symbole, $n * $quantity);
+                }
+                $recetteConnue = true;
+                break;
+            }
+        }
+
+        // 4. FRITES (owner) — « le nombre de menu tu mets 5F ; une grande frite c'est
+        //    automatiquement 2F ». Elles vont au bain de friture : elles font partie de ce qu'il
+        //    faut CUIRE, donc du bandeau. Un menu complet apporte une portion ; une frite vendue
+        //    seule aussi ; une GRANDE en apporte deux.
+        $this->ajoute($pieces, 'F', $this->portionsFrites($itemName, $snapshot) * $quantity);
+        if (($pieces['F'] ?? 0) === 0) {
+            unset($pieces['F']);
+        }
+
+        // 5. Recette fixe encore non documentée → on le DIT, on ne devine pas.
+        $inconnu = false;
+        if ($viandes === [] && ! $recetteConnue) {
             foreach (self::RECETTE_INCONNUE as $motif) {
                 if (preg_match($motif, $itemName)) {
                     $inconnu = true;
@@ -192,7 +252,15 @@ final class MeatPortionCalculator
         }
 
         uksort($pieces, static function (string $a, string $b): int {
-            $rang = static fn (string $s): int => $s === 'K' ? 0 : ($s === 'P' ? 1 : ($s === '?' ? 3 : 2));
+            // Les viandes d'abord (K en tête : la plus longue à cuire, donc la première sur la
+            // plancha), puis les frites, puis l'inconnu.
+            $rang = static fn (string $s): int => match ($s) {
+                'K' => 0,
+                'P' => 1,
+                'F' => 3,
+                '?' => 4,
+                default => 2,
+            };
 
             return [$rang($a), $a] <=> [$rang($b), $b];
         });
@@ -241,6 +309,49 @@ final class MeatPortionCalculator
         }
 
         return $out;
+    }
+
+    /**
+     * Portions de frites d'UN exemplaire de l'article (owner 2026-08-06).
+     *
+     * Une GRANDE frite compte double — c'est le seul cas où une portion vaut 2. La taille peut
+     * être portée par le nom de l'article ou par une variation scellée, selon la surface de
+     * vente : on regarde les deux, sinon une grande frite prise en caisse compterait pour une.
+     * Les menus ENFANTS ne passent pas ici : leur frite est déjà dans RECETTES_FIXES, la
+     * compter deux fois enverrait le cuisinier au bain de friture pour rien.
+     */
+    private function portionsFrites(string $itemName, array $snapshot): int
+    {
+        if (preg_match('/menu\s*enfant/iu', $itemName)) {
+            return 0;
+        }
+
+        $grande = static function (string $texte): bool {
+            return (bool) preg_match('/\bgrande?\b|\bgrosse\b|\bxl\b|\blarge\b|\bmax[ii]?\b/iu', $texte);
+        };
+
+        // Frite vendue SEULE (article dont le nom est la frite elle-même).
+        if (preg_match('/\bfrites?\b/iu', $itemName) && ! preg_match('/\bmenu\b|\bformule\b/iu', $itemName)) {
+            $taille = '';
+            foreach (($snapshot['lines'] ?? $snapshot['variations'] ?? []) as $l) {
+                $taille .= ' '.(string) ($l['variation_name'] ?? $l['name'] ?? $l['value'] ?? '');
+            }
+
+            return $grande($itemName.$taille) ? 2 : 1;
+        }
+
+        // Frite portée par un MENU / une FORMULE (canal addon).
+        $portions = 0;
+        foreach (($snapshot['addons'] ?? []) as $a) {
+            $role = mb_strtolower((string) ($a['role'] ?? ''));
+            if ($role !== 'menu_frites' && $role !== 'menu_full' && $role !== 'menu_formule') {
+                continue;
+            }
+            $nom = (string) ($a['addon_name'] ?? $a['name'] ?? '');
+            $portions += ($grande($nom) ? 2 : 1) * max(1, (int) ($a['quantity'] ?? 1));
+        }
+
+        return $portions;
     }
 
     private function ajoute(array &$pieces, string $symbole, float|int $n): void

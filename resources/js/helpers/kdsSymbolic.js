@@ -612,8 +612,53 @@ export function renderItemSymbolic(orderItem) {
 /** Nombre de pièces d'une portion complète. Miroir de MeatPortionCalculator::PORTION_COMPLETE. */
 export const PORTION_COMPLETE = 2;
 
-/** Recettes FIXES non déclarées en base : signalées « ? », jamais devinées. */
-const RECETTE_INCONNUE = [/burger/i, /supr[êe]me/i, /menu\s*enfant/i, /nugget/i];
+/**
+ * RECETTES FIXES — miroir de MeatPortionCalculator::RECETTES_FIXES.
+ * Données owner 2026-08-06, confirmées contre la description produit en base.
+ * ⚠️ L'ORDRE COMPTE : « Menu Enfant Chicken Burger » avant « Chicken Burger », « Double
+ * Cheese » avant « Cheese Burger ». Jambon et cheddar absents : ils ne passent pas à la plancha.
+ */
+const RECETTES_FIXES = [
+    [/menu\s*enfant.*nugget|nugget.*menu\s*enfant/i, { Nug: 6, F: 1 }],
+    [/menu\s*enfant/i, { Chick: 1, F: 1 }],
+    [/double\s*cheese/i, { K: 2 }],
+    [/big\s*burger/i, { K: 3 }],
+    [/grill\s*burger/i, { K: 2 }],
+    [/fish\s*burger|burger.*poisson/i, { Poi: 1 }],
+    [/chicken\s*burger/i, { Chick: 1 }],
+    [/cheese\s*burger/i, { K: 1 }],
+    [/supr[êe]me/i, { K: 1, Cordon: 1 }],
+];
+
+/** Recette fixe encore non documentée : signalée « ? », jamais devinée. */
+const RECETTE_INCONNUE = [/burger/i, /supr[êe]me/i, /menu\s*enfant/i];
+
+/** Une GRANDE frite compte double (owner). */
+const EST_GRANDE = /\bgrande?\b|\bgrosse\b|\bxl\b|\blarge\b|\bmax[ii]?\b/i;
+
+/**
+ * Portions de frites d'UN exemplaire (owner : « le nombre de menu tu mets 5F ; une grande
+ * frite c'est automatiquement 2F »). Les menus ENFANTS sont exclus : leur frite est déjà
+ * dans RECETTES_FIXES, la compter deux fois enverrait le cuisinier au bain pour rien.
+ */
+function portionsFrites(itemName, snap) {
+    if (/menu\s*enfant/i.test(itemName)) return 0;
+
+    if (/\bfrites?\b/i.test(itemName) && !/\bmenu\b|\bformule\b/i.test(itemName)) {
+        const tailles = (snap?.lines || snap?.variations || [])
+            .map((l) => String(l?.variation_name || l?.name || l?.value || '')).join(' ');
+        return EST_GRANDE.test(`${itemName} ${tailles}`) ? 2 : 1;
+    }
+
+    let portions = 0;
+    for (const a of snap?.addons || []) {
+        const role = String(a?.role || '').toLowerCase();
+        if (role !== 'menu_frites' && role !== 'menu_full' && role !== 'menu_formule') continue;
+        const nom = String(a?.addon_name || a?.name || '');
+        portions += (EST_GRANDE.test(nom) ? 2 : 1) * Math.max(1, Number(a?.quantity) || 1);
+    }
+    return portions;
+}
 
 /** Un nom de viande → { symbole: part de l'emplacement }. « Mixte » partage son emplacement. */
 function meatShares(name) {
@@ -682,11 +727,24 @@ export function meatPortionsForItem(orderItem) {
         }
     }
 
-    let inconnu = false;
+    const nomItem = String(orderItem?.item_name || orderItem?.name || '');
+
+    // Recette FIXE : composition immuable, ne dépendant d'aucun choix client.
+    let recetteConnue = false;
     if (!viandes.length) {
-        const nomItem = String(orderItem?.item_name || orderItem?.name || '');
-        inconnu = RECETTE_INCONNUE.some((re) => re.test(nomItem));
+        for (const [re, recette] of RECETTES_FIXES) {
+            if (!re.test(nomItem)) continue;
+            for (const sym of Object.keys(recette)) addPiece(pieces, sym, recette[sym] * qty);
+            recetteConnue = true;
+            break;
+        }
     }
+
+    // Frites : elles vont au bain de friture, donc elles font partie de ce qu'il faut CUIRE.
+    const frites = portionsFrites(nomItem, orderItem?.composition_snapshot || {}) * qty;
+    if (frites > 0) addPiece(pieces, 'F', frites);
+
+    const inconnu = !viandes.length && !recetteConnue && RECETTE_INCONNUE.some((re) => re.test(nomItem));
 
     return { pieces, inconnu };
 }
@@ -699,7 +757,8 @@ export function renderCuisson(pieces, inconnus = 0) {
     const syms = Object.keys(pieces || {});
     if (!syms.length && !inconnus) return '';
 
-    const rang = (s) => (s === 'K' ? 0 : s === 'P' ? 1 : s === '?' ? 3 : 2);
+    // Viandes d'abord (K en tête : la plus longue à cuire), puis les frites, puis l'inconnu.
+    const rang = (s) => (s === 'K' ? 0 : s === 'P' ? 1 : s === 'F' ? 3 : s === '?' ? 4 : 2);
     syms.sort((a, b) => rang(a) - rang(b) || a.localeCompare(b));
 
     const parts = syms.map((s) => `${pieces[s]}${s}`);

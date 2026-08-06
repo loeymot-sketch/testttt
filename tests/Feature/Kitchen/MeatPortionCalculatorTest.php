@@ -118,23 +118,91 @@ class MeatPortionCalculatorTest extends TestCase
     }
 
     /**
-     * LES RECETTES INCONNUES — burgers, Suprême et menus enfants n'ont AUCUNE viande déclarée en
-     * base. Tant que l'owner ne l'a pas donnée, le moteur doit le DIRE et surtout ne rien
-     * inventer : une portion devinée ferait cuire la mauvaise quantité et fausserait le stock.
+     * LES RECETTES FIXES — données owner du 2026-08-06, chacune confirmée contre la colonne
+     * `description` de la table items (l'owner avait demandé vérification). Le jambon de dinde
+     * et le cheddar sont volontairement absents : ils ne passent pas à la plancha.
+     *
+     * @dataProvider recettesFixes
      */
-    public function test_une_recette_inconnue_est_signalee_et_jamais_devinee(): void
+    public function test_les_recettes_fixes_suivent_la_composition_documentee(string $item, string $attendu): void
     {
-        foreach (['Big Burger', 'Cheese Burger', 'Suprême', 'Menu Enfant Nuggets'] as $item) {
-            $r = $this->moteur->forLine($item, $this->snap([]), 1);
-            $this->assertTrue($r['inconnu'], "« {$item} » n'a pas de viande déclarée : le moteur doit le signaler.");
-            $this->assertSame([], $r['pieces'], "« {$item} » ne doit produire AUCUNE pièce inventée.");
-        }
+        $r = $this->moteur->forLine($item, $this->snap([]), 1);
+
+        $this->assertFalse($r['inconnu'], "« {$item} » a une recette documentée : il ne doit plus être signalé inconnu.");
+        $this->assertSame($attendu, $this->moteur->rendu($r['pieces'], 0));
     }
 
-    /** Un produit sans viande du tout (frites, boisson) ne produit ni pièce ni point d'interrogation. */
-    public function test_un_produit_sans_viande_ne_produit_rien(): void
+    public static function recettesFixes(): array
     {
-        $r = $this->moteur->forLine('Frites', $this->snap([]), 1);
+        return [
+            'Cheese Burger — « Steak »'                        => ['Cheese Burger', '1K'],
+            'Double Cheese — « 2 steaks »'                     => ['Double Cheese', '2K'],
+            'Grill Burger — « 2 steaks, jambon de dinde »'     => ['Grill Burger', '2K'],
+            'Big Burger — « 3 steaks, 2 jambons de dinde »'    => ['Big Burger', '3K'],
+            'Fish Burger — « Poisson pané »'                   => ['Fish Burger', '1Poi'],
+            'Chicken Burger'                                   => ['Chicken Burger', '1Chick'],
+            'Suprême — « Steak haché, cordon bleu »'           => ['Suprême', '1K 1Cordon'],
+            'Menu Enfant Nuggets — « 6 nuggets, frites »'      => ['Menu Enfant Nuggets', '6Nug 1F'],
+            'Menu Enfant Chicken — « Chicken burger, frites »' => ['Menu Enfant Chicken Burger', '1Chick 1F'],
+        ];
+    }
+
+    /**
+     * L'ORDRE des motifs est porteur de sens : « Double Cheese » ne doit pas être avalé par
+     * « Cheese Burger », ni « Menu Enfant Chicken Burger » par « Chicken Burger ». Une
+     * inversion donnerait un steak au lieu de deux — silencieusement.
+     */
+    public function test_les_recettes_qui_se_chevauchent_ne_se_volent_pas(): void
+    {
+        $this->assertSame('2K', $this->moteur->rendu($this->moteur->forLine('Double Cheese', $this->snap([]))['pieces']));
+        $this->assertSame('1K', $this->moteur->rendu($this->moteur->forLine('Cheese Burger', $this->snap([]))['pieces']));
+        $this->assertSame('1Chick 1F', $this->moteur->rendu($this->moteur->forLine('Menu Enfant Chicken Burger', $this->snap([]))['pieces']));
+        $this->assertSame('1Chick', $this->moteur->rendu($this->moteur->forLine('Chicken Burger', $this->snap([]))['pieces']));
+    }
+
+    /**
+     * LES FRITES (owner) — « le nombre de menu tu mets 5F », « une grande frite c'est
+     * automatiquement 2F ». Elles vont au bain de friture : elles font partie de ce qu'il
+     * faut cuire.
+     */
+    public function test_les_frites_sont_comptees_par_menu_et_doublees_si_grandes(): void
+    {
+        $menu = ['addons' => [
+            ['role' => 'menu_frites', 'quantity' => 1, 'addon_name' => 'Frites'],
+            ['role' => 'menu_boisson', 'quantity' => 1, 'addon_name' => 'Coca 33cl'],
+        ]];
+        $snapMenu = array_merge($this->snap(['Viande Hachée']), $menu);
+
+        $this->assertSame('2K 1F', $this->moteur->rendu($this->moteur->forLine('Tacos M', $snapMenu, 1)['pieces']));
+        $this->assertSame('10K 5F', $this->moteur->rendu($this->moteur->forLine('Tacos M', $snapMenu, 5)['pieces']), '5 menus = 5F, comme demandé.');
+        $this->assertSame('1F', $this->moteur->rendu($this->moteur->forLine('Frites', $this->snap([]))['pieces']));
+        $this->assertSame('2F', $this->moteur->rendu($this->moteur->forLine('Grande Frite', $this->snap([]))['pieces']));
+    }
+
+    /** La frite d'un menu enfant est déjà dans sa recette : elle ne doit pas être comptée deux fois. */
+    public function test_la_frite_du_menu_enfant_nest_jamais_comptee_deux_fois(): void
+    {
+        $snap = array_merge($this->snap([]), ['addons' => [['role' => 'menu_frites', 'quantity' => 1, 'addon_name' => 'Frites']]]);
+
+        $this->assertSame('6Nug 1F', $this->moteur->rendu($this->moteur->forLine('Menu Enfant Nuggets', $snap, 1)['pieces']));
+    }
+
+    /** Un burger futur, sans recette documentée, doit s'annoncer « ? » plutôt que disparaître. */
+    public function test_un_burger_sans_recette_documentee_reste_signale(): void
+    {
+        $r = $this->moteur->forLine('Mystery Burger', $this->snap([]), 1);
+
+        $this->assertTrue($r['inconnu'], 'Un burger inconnu ne doit jamais quitter le bandeau en silence.');
+        $this->assertSame([], $r['pieces'], 'Aucune pièce ne doit être inventée.');
+    }
+
+    /**
+     * Un produit qui ne demande AUCUNE cuisson (boisson, dessert) ne produit ni pièce ni point
+     * d'interrogation. Les frites, elles, en produisent — elles vont au bain de friture.
+     */
+    public function test_un_produit_sans_cuisson_ne_produit_rien(): void
+    {
+        $r = $this->moteur->forLine('Coca 33cl', $this->snap([]), 1);
 
         $this->assertFalse($r['inconnu']);
         $this->assertSame('', $this->moteur->rendu($r['pieces'], 0));
@@ -151,10 +219,10 @@ class MeatPortionCalculatorTest extends TestCase
             ['name' => 'Tacos M', 'snapshot' => $this->snap(['Viande Hachée']), 'quantity' => 3],   // 6K
             ['name' => 'Méga', 'snapshot' => $this->snap(['Viande Hachée', 'Poulet mariné']), 'quantity' => 2], // 2K 2P
             ['name' => 'Galette Cayenne', 'snapshot' => $this->snap(['Poulet mariné']), 'quantity' => 1],       // 2P
-            ['name' => 'Frites', 'snapshot' => $this->snap([]), 'quantity' => 2],                              // rien
+            ['name' => 'Frites', 'snapshot' => $this->snap([]), 'quantity' => 2],                              // 2F
         ]);
 
-        $this->assertSame('8K 4P', $o['texte']);
+        $this->assertSame('8K 4P 2F', $o['texte']);
         $this->assertSame(0, $o['inconnus']);
     }
 
@@ -163,11 +231,29 @@ class MeatPortionCalculatorTest extends TestCase
     {
         $o = $this->moteur->forOrder([
             ['name' => 'Tacos M', 'snapshot' => $this->snap(['Viande Hachée']), 'quantity' => 1],
-            ['name' => 'Big Burger', 'snapshot' => $this->snap([]), 'quantity' => 2],
+            ['name' => 'Mystery Burger', 'snapshot' => $this->snap([]), 'quantity' => 2],
         ]);
 
         $this->assertSame(2, $o['inconnus']);
         $this->assertSame('2K 2×?', $o['texte']);
+    }
+
+    /**
+     * LA COMMANDE COMPLÈTE telle que l'owner la décrit : 5 menus tacos hachée (10K + 5F),
+     * un Big Burger (3K) et une grande frite (2F) → une seule ligne, « 13K 7F ».
+     */
+    public function test_une_commande_reelle_melant_viandes_menus_et_frites(): void
+    {
+        $menu = ['addons' => [['role' => 'menu_frites', 'quantity' => 1, 'addon_name' => 'Frites']]];
+
+        $o = $this->moteur->forOrder([
+            ['name' => 'Tacos M', 'snapshot' => array_merge($this->snap(['Viande Hachée']), $menu), 'quantity' => 5],
+            ['name' => 'Big Burger', 'snapshot' => $this->snap([]), 'quantity' => 1],
+            ['name' => 'Grande Frite', 'snapshot' => $this->snap([]), 'quantity' => 1],
+        ]);
+
+        $this->assertSame('13K 7F', $o['texte']);
+        $this->assertSame(0, $o['inconnus']);
     }
 
     /**

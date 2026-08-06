@@ -114,21 +114,45 @@ class KitchenTicketCuissonBannerTest extends TestCase
         );
     }
 
-    /** Une commande sans aucune viande n'imprime pas de bandeau vide. */
-    public function test_une_commande_sans_viande_nimprime_aucun_bandeau(): void
+    /** Une commande qui ne demande aucune cuisson n'imprime pas de bandeau vide. */
+    public function test_une_commande_sans_cuisson_nimprime_aucun_bandeau(): void
     {
         $lines = $this->lines($this->render([
-            ['name' => 'Frites', 'snapshot' => ['lines' => []], 'quantity' => 2],
+            ['name' => 'Coca 33cl', 'snapshot' => ['lines' => []], 'quantity' => 2],
         ]));
 
         $this->assertSame(-1, $this->indexOf($lines, '/^CUISSON$/'), 'Un bandeau vide ne ferait qu\'encombrer le ticket.');
     }
 
-    /** Une recette non déclarée en base est ANNONCÉE au cuisinier, jamais devinée ni tue. */
-    public function test_une_recette_inconnue_est_annoncee_sur_le_ticket(): void
+    /** Les frites font partie de ce qu'il faut cuire : « le nombre de menu tu mets 5F ». */
+    public function test_les_frites_apparaissent_dans_le_bandeau(): void
+    {
+        $lines = $this->lines($this->render([
+            ['name' => 'Tacos M', 'snapshot' => array_merge($this->viandes(['Viande Hachée']), [
+                'addons' => [['role' => 'menu_frites', 'quantity' => 1, 'addon_name' => 'Frites']],
+            ]), 'quantity' => 5],
+        ]));
+
+        $i = $this->indexOf($lines, '/^CUISSON$/');
+        $this->assertSame('10K 5F', $lines[$i + 1] ?? '', '5 menus donnent 5 portions de frites.');
+    }
+
+    /** Une recette FIXE documentée s'imprime avec ses vraies quantités, jamais « ? ». */
+    public function test_une_recette_fixe_simprime_avec_ses_vraies_quantites(): void
     {
         $lines = $this->lines($this->render([
             ['name' => 'Big Burger', 'snapshot' => ['lines' => []], 'quantity' => 2],
+        ]));
+
+        $i = $this->indexOf($lines, '/^CUISSON$/');
+        $this->assertSame('6K', $lines[$i + 1] ?? '', 'Big Burger = 3 steaks ; deux exemplaires = 6K.');
+    }
+
+    /** Un burger SANS recette documentée reste annoncé « ? », jamais tu. */
+    public function test_une_recette_non_documentee_est_annoncee_sur_le_ticket(): void
+    {
+        $lines = $this->lines($this->render([
+            ['name' => 'Mystery Burger', 'snapshot' => ['lines' => []], 'quantity' => 2],
         ]));
 
         $i = $this->indexOf($lines, '/^CUISSON$/');
