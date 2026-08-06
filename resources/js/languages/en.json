@@ -1365,6 +1365,8 @@
         "kds_see_more": "See more",
         "oss_fallback_banner": "Real-time connection lost — auto-refresh every 5s...",
         "oss_main_aria": "Order status screen",
+        "oss_empty_preparing": "No order being prepared",
+        "oss_empty_ready": "No order ready",
         "oss_popular_region_aria": "Popular items",
         "oss_status_region_aria": "Order status",
         "kds_sync_stamp": "Synchronisé il y a {ago}",

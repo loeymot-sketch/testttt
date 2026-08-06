@@ -836,6 +836,8 @@
         "kds_see_more": "Voir plus",
         "oss_fallback_banner": "Connexion temps réel perdue — actualisation automatique toutes les 5s...",
         "oss_main_aria": "Écran de statut des commandes",
+        "oss_empty_preparing": "Aucune commande en préparation",
+        "oss_empty_ready": "Aucune commande prête",
         "oss_popular_region_aria": "Articles populaires",
         "oss_status_region_aria": "Statut des commandes",
         "kds_sync_stamp": "Synchronisé il y a {ago}",

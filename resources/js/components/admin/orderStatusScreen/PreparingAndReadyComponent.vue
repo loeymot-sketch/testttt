@@ -37,7 +37,12 @@
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparingItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
+      <!-- [AUDIT-R3 2026-08-06] État vide PARLANT : un tiret ne dit rien au client
+           qui attend devant l'écran (« l'écran est-il en panne ? »). Phrase explicite,
+           lisible de loin. Même traitement pour la colonne « Prêt ». -->
+      <p v-if="preparingItems.length === 0"
+         class="text-center text-[#A0A3BD] text-[32px] font-semibold mt-12"
+         data-testid="oss-empty-preparing">{{ $t('label.oss_empty_preparing') }}</p>
     </div>
   </div>
 
@@ -62,7 +67,9 @@
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparedItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
+      <p v-if="preparedItems.length === 0"
+         class="text-center text-[#A0A3BD] text-[32px] font-semibold mt-12"
+         data-testid="oss-empty-ready">{{ $t('label.oss_empty_ready') }}</p>
     </div>
   </div>
 </template>
