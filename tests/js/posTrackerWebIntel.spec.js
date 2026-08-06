@@ -86,14 +86,18 @@ const webPending = (over = {}) => ({
 });
 
 describe('isPaidOnline — badge « payé en ligne »', () => {
-    it('PAID + source web ⇒ true ; jamais pour une cash-pending ou une commande caisse', () => {
+    it('PAID + CARTE + source web ⇒ true ; jamais cash-pending, caisse, ni web payée en espèces', () => {
         const { wrapper } = buildHarness();
         const vm = wrapper.vm;
-        expect(vm.isPaidOnline({ payment_status: 5, source_surface: 'web' })).toBe(true);
+        // payment_method 4 = PaymentGateway::CARD (paiement en ligne Mollie)
+        expect(vm.isPaidOnline({ payment_status: 5, payment_method: 4, source_surface: 'web' })).toBe(true);
+        // [RED heal P2] web COD encaissée en ESPÈCES (PENDING_COUNTER→PAID, method=1)
+        // ⇒ PAS de badge « CB » — l'info moyen de paiement doit rester vraie.
+        expect(vm.isPaidOnline({ payment_status: 5, payment_method: 1, source_surface: 'web' })).toBe(false);
         // cash-pending (PENDING_COUNTER + COUNTER_DEFERRED) ⇒ pas payé en ligne
-        expect(vm.isPaidOnline({ payment_status: 15, pos_payment_method: 6, source_surface: 'web' })).toBe(false);
-        // commande tapée à la caisse, même payée ⇒ pas de badge (aucun doute à lever)
-        expect(vm.isPaidOnline({ payment_status: 5, source_surface: 'pos' })).toBe(false);
+        expect(vm.isPaidOnline({ payment_status: 15, payment_method: 1, pos_payment_method: 6, source_surface: 'web' })).toBe(false);
+        // commande tapée à la caisse, même payée carte ⇒ pas de badge (aucun doute à lever)
+        expect(vm.isPaidOnline({ payment_status: 5, payment_method: 4, source_surface: 'pos' })).toBe(false);
         expect(vm.isPaidOnline(null)).toBe(false);
     });
 });

@@ -130,7 +130,10 @@ describe('PosOrdersTracker — visibilité commandes WEB (plainte owner)', () =>
         expect(axios.post).toHaveBeenCalledTimes(1);
         const [url, body, cfg] = axios.post.mock.calls[0];
         expect(url).toBe('admin/online-order/change-status/901');
-        expect(body).toEqual({ status: orderStatusEnum.ACCEPT });
+        // [CAISSE-WEB-INTEL 2026-08-06 · RED heal P2] preparation_time TOUJOURS envoyé
+        // (défaut affiché 15) : ce que le caissier VOIT est ce qui est ENVOYÉ — sans ça,
+        // un défaut settings ≠ 15 rendait le select menteur.
+        expect(body).toEqual({ status: orderStatusEnum.ACCEPT, preparation_time: 15 });
         expect(cfg.headers['X-Idempotency-Key']).toMatch(/^web-accept-901-\d+$/);
         expect(alertService.success).toHaveBeenCalled();
         expect(fetchSpy).toHaveBeenCalled();

@@ -1015,6 +1015,11 @@ export default {
         Object.values(this._freshTimers).forEach((t) => clearTimeout(t));
         // [CAISSE-WEB-INTEL 2026-08-06] Restaure le titre d'onglet original.
         try { if (this._baseDocTitle) document.title = this._baseDocTitle; } catch (_e) { /* defensive */ }
+        // [RED heal P3 2026-08-06] Libère l'AudioContext (les navigateurs en
+        // plafonnent ~6 par page) + vide la dédup sonore.
+        try { this._audioCtx?.close?.(); } catch (_e) { /* defensive */ }
+        this._audioCtx = null;
+        this._notifiedOrderIds.clear();
     },
     methods: {
         authBranchId() {
@@ -1482,10 +1487,12 @@ export default {
             this.webAccepting = { ...this.webAccepting, [order.id]: true };
             try {
                 const minuteBucket = Math.floor(Date.now() / 60000);
-                // [CAISSE-WEB-INTEL 2026-08-06] Temps de préparation choisi (15/25/40)
-                // envoyé avec l'accept — persisté backend (preparation_time), lu par le
-                // suivi client. Défaut 15 si le caissier n'a pas touché le select.
-                const prep = parseInt(this.webPrepChoice[order.id], 10);
+                // [CAISSE-WEB-INTEL 2026-08-06 · RED heal P2] Temps de préparation choisi
+                // (15/25/40) envoyé avec l'accept — TOUJOURS envoyé, y compris le défaut
+                // affiché 15 : sans ça, le select montrait « 15 min » mais le backend
+                // gardait le défaut settings (réglable ≠ 15) → mensonge UI. Ce que le
+                // caissier VOIT est ce qui est ENVOYÉ.
+                const prep = parseInt(this.webPrepChoice[order.id] ?? 15, 10);
                 await axios.post(
                     `admin/online-order/change-status/${order.id}`,
                     {
@@ -1613,7 +1620,11 @@ export default {
         // doute (et le double encaissement). Complément exact du 🔔 cash-pending.
         isPaidOnline(o) {
             if (!o) return false;
+            // [RED heal P2 2026-08-06] Exiger le moyen de paiement CARTE (PaymentGateway::CARD=4) :
+            // une web COD encaissée en ESPÈCES passe PENDING_COUNTER→PAID et portait le badge
+            // « CB » à tort — information de moyen de paiement FAUSSE (litige/contrôle tiroir).
             return parseInt(o.payment_status, 10) === paymentStatusEnum.PAID
+                && parseInt(o.payment_method, 10) === 4
                 && this.sourceOf(o) === 'online'
                 && !this.isCashPending(o);
         },

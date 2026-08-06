@@ -85,7 +85,10 @@ class SimpleOrderResource extends JsonResource
             // fausse urgence aging + tri trompeur. Miroir KDSOrderDetailsResource.
             'scheduled_at'                 => $this->scheduled_at?->toIso8601String(),
             'scheduled_hm'                 => $this->scheduled_at?->format('H:i'),
-            'is_advance_order'             => $this->is_advance_order,
+            // [RED heal P3 2026-08-06] is_advance_order RETIRÉ du payload : enum Ask
+            // (YES=5, NO=10 — jamais 0) ⇒ tout futur `if (o.is_advance_order)` JS serait
+            // vrai pour TOUTES les commandes (piège documenté en mémoire). scheduled_at
+            // couvre le besoin ; ne shipper l'enum brut à aucun consommateur JS.
             'customer_name'                => $this->user?->name,
             // [Wave S-4 P-OWNER 2026-05-20] Suivi commandes "À ENCAISSER"
             // column filter. Pure projection — no business rule changes here:

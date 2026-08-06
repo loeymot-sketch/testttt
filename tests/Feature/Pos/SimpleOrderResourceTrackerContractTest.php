@@ -74,7 +74,9 @@ class SimpleOrderResourceTrackerContractTest extends TestCase
 
         $this->assertSame($order->fresh()->scheduled_at->toIso8601String(), $payload['scheduled_at']);
         $this->assertSame($order->fresh()->scheduled_at->format('H:i'), $payload['scheduled_hm']);
-        $this->assertArrayHasKey('is_advance_order', $payload);
+        // [RED heal P3 2026-08-06] L'enum Ask (YES=5/NO=10, jamais 0) ne doit JAMAIS
+        // partir brut vers le JS — piège `if (o.is_advance_order)` toujours vrai.
+        $this->assertArrayNotHasKey('is_advance_order', $payload);
     }
 
     /** @test */
