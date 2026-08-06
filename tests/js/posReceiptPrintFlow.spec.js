@@ -136,6 +136,13 @@ describe('ReceiptComponent print policy (W9.D)', () => {
         const clickSpy = vi.spyOn(hiddenTrigger.element, 'click');
 
         await wrapper.find('[data-testid="receipt-print-client"]').trigger('click');
+        // [AUDIT-R3 2026-08-06] Depuis PRINT-INSTANT (fire-and-forget), le clic REND LA
+        // MAIN et le pipeline (POST fiscal → sonde du pont → repli) tourne en async :
+        // un simple flushPromises() n'attend PAS la sonde du pont (fetch + timeout 800 ms),
+        // donc les assertions sur le repli lisaient l'état AVANT sa pose (faux échec, 3/3
+        // reproductible). Le composant expose `_lastClientPrintPromise` exactement pour
+        // ça (« test hook / observabilité », ReceiptComponent:645) — on l'attend.
+        await wrapper.vm._lastClientPrintPromise;
         await flushPromises();
 
         // Optimistic local bump even when the API rejects
