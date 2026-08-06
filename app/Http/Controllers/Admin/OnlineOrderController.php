@@ -170,6 +170,15 @@ class OnlineOrderController extends AdminController
         // (HttpException) et les autres erreurs restent remontés à l'identique HORS transaction.
         try {
             return DB::transaction(function () use ($order, $request) {
+                // [CAISSE-WEB-INTEL 2026-08-06] À l'ACCEPT, le caissier peut fixer le
+                // temps de préparation RÉEL (15/25/40 min depuis le tracker) — sinon le
+                // défaut settings stampé à la création reste. Colonne existante ;
+                // OrderDetailsResource:89 la ship déjà au suivi client (« prêt dans X min »
+                // décidé par le restaurant, plus un défaut global aveugle).
+                if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
+                    && $request->filled('preparation_time')) {
+                    $order->preparation_time = (int) $request->input('preparation_time');
+                }
                 // [S1 2026-07-18 · jumeau non-COD de P1-3] Le flip board-release la commande
                 // (KitchenReleaseRule admet PENDING_COUNTER). Il est donc gaté sur la COLLECTABILITÉ
                 // = CASH_ON_DELIVERY : une web NON-COD (carte/null) attend son paiement EN LIGNE et ne
@@ -199,6 +208,12 @@ class OnlineOrderController extends AdminController
                         $order->pos_payment_method = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
                     }
 
+                    $order->save();
+                }
+
+                // [CAISSE-WEB-INTEL 2026-08-06] Persiste le temps de préparation si le
+                // flip COD ci-dessus n'a pas déjà sauvegardé (commande non-COD, etc.).
+                if ($order->isDirty('preparation_time')) {
                     $order->save();
                 }
 

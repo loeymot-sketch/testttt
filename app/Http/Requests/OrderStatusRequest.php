@@ -50,6 +50,10 @@ class OrderStatusRequest extends FormRequest
         return [
             'status' => ['required', 'numeric'],
             'reason' => ['sometimes', 'nullable', 'string', 'max:700'],
+            // [CAISSE-WEB-INTEL 2026-08-06] Optionnel, transition ACCEPT web :
+            // le caissier fixe le temps de préparation réel (le défaut settings
+            // stampé à la création reste sinon). Bornes larges anti-typo.
+            'preparation_time' => ['sometimes', 'nullable', 'integer', 'min:5', 'max:120'],
         ];
     }
 

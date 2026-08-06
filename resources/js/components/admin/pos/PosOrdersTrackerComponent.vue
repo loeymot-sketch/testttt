@@ -359,18 +359,35 @@
                                       que le panneau web caisse (C1). Après accept → cash-pending
                                       → le CTA Encaisser ci-dessus prend le relais. FR direct.
                                     -->
-                                    <button
-                                        v-else-if="col.id === 'accept' && isWebPending(order) && canProcessWebOrders"
-                                        type="button"
-                                        class="pos-tracker-card-btn pos-tracker-card-btn--cash"
-                                        :disabled="!!webAccepting[order.id]"
-                                        title="Accepter la commande web — encaissement au comptoir"
-                                        :data-testid="`tracker-accept-web-${order.id}`"
-                                        @click="acceptWebOrder(order)"
-                                    >
-                                        <i class="fa-solid fa-globe" aria-hidden="true"></i>
-                                        <span class="hidden xl:inline">{{ webAccepting[order.id] ? 'Acceptation…' : 'Accepter' }}</span>
-                                    </button>
+                                    <template v-else-if="col.id === 'accept' && isWebPending(order) && canProcessWebOrders">
+                                        <!-- [CAISSE-WEB-INTEL 2026-08-06] Temps de préparation RÉEL choisi
+                                             à l'acceptation (persisté via preparation_time, lu par le suivi
+                                             client) — fini le défaut global aveugle de 15 min. -->
+                                        <select
+                                            class="pos-tracker-prep-select"
+                                            :value="webPrepChoice[order.id] ?? 15"
+                                            :data-testid="`tracker-prep-${order.id}`"
+                                            title="Temps de préparation annoncé au client"
+                                            aria-label="Temps de préparation"
+                                            @change="webPrepChoice = { ...webPrepChoice, [order.id]: parseInt($event.target.value, 10) }"
+                                            @click.stop
+                                        >
+                                            <option :value="15">15 min</option>
+                                            <option :value="25">25 min</option>
+                                            <option :value="40">40 min</option>
+                                        </select>
+                                        <button
+                                            type="button"
+                                            class="pos-tracker-card-btn pos-tracker-card-btn--cash"
+                                            :disabled="!!webAccepting[order.id]"
+                                            title="Accepter la commande web — encaissement au comptoir"
+                                            :data-testid="`tracker-accept-web-${order.id}`"
+                                            @click="acceptWebOrder(order)"
+                                        >
+                                            <i class="fa-solid fa-globe" aria-hidden="true"></i>
+                                            <span class="hidden xl:inline">{{ webAccepting[order.id] ? 'Acceptation…' : 'Accepter' }}</span>
+                                        </button>
+                                    </template>
                                     <router-link
                                         :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
                                         class="pos-tracker-card-btn"
@@ -692,6 +709,9 @@ export default {
             // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
             // pour le CTA « Accepter » des commandes web PENDING.
             webAccepting: {},
+            // [CAISSE-WEB-INTEL 2026-08-06] Temps de préparation choisi par
+            // commande web avant l'accept (défaut 15 min = défaut settings).
+            webPrepChoice: {},
             // [S2 F1 révisé 2026-07-29] Nombre de commandes à encaisser antérieures
             // au jour affiché (bandeau → /admin/encaissement). Cf. _refreshOlderPendingCount.
             olderPendingCount: 0,
@@ -1462,9 +1482,16 @@ export default {
             this.webAccepting = { ...this.webAccepting, [order.id]: true };
             try {
                 const minuteBucket = Math.floor(Date.now() / 60000);
+                // [CAISSE-WEB-INTEL 2026-08-06] Temps de préparation choisi (15/25/40)
+                // envoyé avec l'accept — persisté backend (preparation_time), lu par le
+                // suivi client. Défaut 15 si le caissier n'a pas touché le select.
+                const prep = parseInt(this.webPrepChoice[order.id], 10);
                 await axios.post(
                     `admin/online-order/change-status/${order.id}`,
-                    { status: orderStatusEnum.ACCEPT },
+                    {
+                        status: orderStatusEnum.ACCEPT,
+                        ...(Number.isFinite(prep) && prep > 0 ? { preparation_time: prep } : {}),
+                    },
                     { headers: { 'X-Idempotency-Key': `web-accept-${order.id}-${minuteBucket}` } }
                 );
                 const num = order.queue_number || order.order_serial_no || order.id;
@@ -2560,6 +2587,23 @@ export default {
     font-weight: 600;
     color: var(--pos-tracker-text);
 }
+/* [CAISSE-WEB-INTEL 2026-08-06] Select temps de préparation (accept web). */
+.pos-tracker-prep-select {
+    height: 30px;
+    padding: 0 6px;
+    border-radius: 8px;
+    border: 1px solid var(--pos-tracker-border);
+    background: #fff;
+    color: var(--pos-tracker-text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.pos-tracker-prep-select:focus-visible {
+    outline: 2px solid var(--pos-tracker-amber);
+    outline-offset: 1px;
+}
+
 /* [CAISSE-WEB-INTEL 2026-08-06] Chips raisons d'annulation 1-geste. */
 .pos-tracker-cancel-chips {
     display: flex;
