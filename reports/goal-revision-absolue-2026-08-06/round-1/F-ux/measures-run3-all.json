@@ -1,0 +1,357 @@
+{
+ "meta": {
+  "run": 3,
+  "sha": "a13e1e65672c9214a515fa6fd3a7e48a5abc4e4e",
+  "date": "2026-08-06T04:30:25.693Z"
+ },
+ "measures": [
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-encaisser-btn",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 772,
+   "y": 341,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false,
+   "contrast": 3.49
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-encaisser-btn",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 772,
+   "y": 385,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false,
+   "contrast": 3.49
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-encaisser-btn",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 772,
+   "y": 428,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false,
+   "contrast": 3.49
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-print-btn",
+   "text": "🖨️ Cuisine",
+   "w": 67.2,
+   "h": 32.6,
+   "x": 635,
+   "y": 341,
+   "fontSize": "11px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false,
+   "contrast": 17.4
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-print-btn",
+   "text": "🖨️ Client",
+   "w": 59.1,
+   "h": 32.6,
+   "x": 706,
+   "y": 341,
+   "fontSize": "11px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false,
+   "contrast": 17.4
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-shortcut-num",
+   "text": "N°A0009",
+   "w": 53.2,
+   "h": 21.6,
+   "x": 473,
+   "y": 347,
+   "fontSize": "13px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 16.18
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-shortcut-num",
+   "text": "N°A0010",
+   "w": 50.6,
+   "h": 21.6,
+   "x": 473,
+   "y": 390,
+   "fontSize": "13px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 16.18
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-shortcut-price",
+   "text": "9,90 €",
+   "w": 36.9,
+   "h": 21.6,
+   "x": 591,
+   "y": 347,
+   "fontSize": "13px",
+   "fontWeight": "600",
+   "color": "rgb(85, 85, 85)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 6.93
+  },
+  {
+   "surface": "pos-home3@1366",
+   "key": "home-shortcut-price",
+   "text": "11,10 €",
+   "w": 44.5,
+   "h": 21.6,
+   "x": 584,
+   "y": 390,
+   "fontSize": "13px",
+   "fontWeight": "600",
+   "color": "rgb(85, 85, 85)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 6.93
+  },
+  {
+   "surface": "pos-panier3@1366",
+   "key": "grand-total",
+   "text": "Total 0,00 €",
+   "w": 329.2,
+   "h": 48.5,
+   "x": 1011,
+   "y": 617,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false,
+   "contrast": 17.4
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-encaisser-btn",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 819,
+   "y": 292,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false,
+   "contrast": 3.49
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-encaisser-btn",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 819,
+   "y": 336,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false,
+   "contrast": 3.49
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-encaisser-btn",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 819,
+   "y": 379,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false,
+   "contrast": 3.49
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-print-btn",
+   "text": "🖨️ Cuisine",
+   "w": 67.2,
+   "h": 32.6,
+   "x": 682,
+   "y": 292,
+   "fontSize": "11px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false,
+   "contrast": 17.4
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-print-btn",
+   "text": "🖨️ Client",
+   "w": 59.1,
+   "h": 32.6,
+   "x": 753,
+   "y": 292,
+   "fontSize": "11px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false,
+   "contrast": 17.4
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-shortcut-num",
+   "text": "N°A0009",
+   "w": 53.2,
+   "h": 21.6,
+   "x": 496,
+   "y": 298,
+   "fontSize": "13px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 16.18
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-shortcut-num",
+   "text": "N°A0010",
+   "w": 50.6,
+   "h": 21.6,
+   "x": 496,
+   "y": 341,
+   "fontSize": "13px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 16.18
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-shortcut-price",
+   "text": "9,90 €",
+   "w": 36.9,
+   "h": 21.6,
+   "x": 638,
+   "y": 298,
+   "fontSize": "13px",
+   "fontWeight": "600",
+   "color": "rgb(85, 85, 85)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 6.93
+  },
+  {
+   "surface": "pos-home3@1920",
+   "key": "home-shortcut-price",
+   "text": "11,10 €",
+   "w": 44.5,
+   "h": 21.6,
+   "x": 630,
+   "y": 341,
+   "fontSize": "13px",
+   "fontWeight": "600",
+   "color": "rgb(85, 85, 85)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false,
+   "contrast": 6.93
+  },
+  {
+   "surface": "pos-panier3@1920",
+   "key": "grand-total",
+   "text": "Total 0,00 €",
+   "w": 329.2,
+   "h": 48.5,
+   "x": 1565,
+   "y": 897,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false,
+   "contrast": 17.4
+  }
+ ],
+ "notes": [
+  {
+   "home_collect@1366": {
+    "open": true,
+    "confirmY": 987,
+    "confirmDisabled": false,
+    "inputVal": "9,90",
+    "vh": 768
+   }
+  },
+  {
+   "meat@1366": "locator-click"
+  },
+  {
+   "sauce@1366": "fail:locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - wa"
+  },
+  {
+   "cart3@1366": {
+    "wizardOpen": true,
+    "cartLines": 0,
+    "payBtn": false,
+    "err": "⚠️ Sélectionnez au moins une sauce"
+   }
+  },
+  {
+   "home_collect@1920": {
+    "open": true,
+    "confirmY": 1014,
+    "confirmDisabled": false,
+    "inputVal": "9,90",
+    "vh": 1080
+   }
+  },
+  {
+   "meat@1920": "locator-click"
+  },
+  {
+   "sauce@1920": "fail:locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - wa"
+  },
+  {
+   "cart3@1920": {
+    "wizardOpen": true,
+    "cartLines": 0,
+    "payBtn": false,
+    "err": "⚠️ Sélectionnez au moins une sauce"
+   }
+  }
+ ]
+}

@@ -60,7 +60,11 @@
             <span class="cc-modal-order-no">
               N° {{ order?.queue_number || order?.order_serial_no || order?.id }}
             </span>
-            <span class="cc-modal-source">{{ $t('label.cc_source_kiosk') }}</span>
+            <!-- [AUDIT-F P2-2 2026-08-06] L'origine était écrite « BORNE » EN DUR : une
+                 commande téléphone ou web à encaisser s'annonçait comme une borne, en
+                 contradiction avec le badge de la liste (« Caisse »/« Téléphone »). Le
+                 caissier doit savoir d'où vient l'argent qu'il encaisse. -->
+            <span class="cc-modal-source" data-testid="cc-modal-source">{{ originLabel }}</span>
           </p>
         </div>
 
@@ -367,6 +371,16 @@ export default {
       }
       // MOBILE / TICKET : validation directe (backend accepte received null).
       return this.orderTotal > 0;
+    },
+    // [AUDIT-F P2-2 2026-08-06] Origine RÉELLE de la commande encaissée (plus de
+    // « BORNE » en dur). Miroir des libellés du badge de la liste Encaissement.
+    originLabel() {
+        const surface = String(this.order?.source_surface || '').toLowerCase();
+        if (surface === 'pos') return this.$t('label.caisse');
+        if (surface === 'phone') return this.$t('label.phone');
+        if (surface === 'delivery') return this.$t('label.delivery');
+        if (surface === 'web' || surface === 'app' || surface === 'mobile') return this.$t('label.online');
+        return this.$t('label.kiosk');
     },
     // [T-3.3.2] Montant de la tranche 1 (réutilise le champ + numpad existants).
     mixteFirstAmount() {
@@ -996,11 +1010,21 @@ export default {
 }
 
 /* Footer */
+/* [AUDIT-F P1-1 2026-08-06 · mesuré] Le bouton « Confirmer & Imprimer » tombait
+   SOUS la ligne de flottaison à CHAQUE encaissement (y=1059 pour vh=768, et même
+   y=1071 > vh=1080 en 1920 sur la page Encaissement) : l'action monétaire la plus
+   fréquente du service exigeait un scroll à l'aveugle. Footer STICKY collé au bas
+   de la modale défilante → toujours atteignable, aux deux résolutions. */
 .cc-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 10px 0 4px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, var(--pos-v5-surface, #fff) 30%);
 }
 .cc-cancel-btn,
 .cc-confirm-btn {

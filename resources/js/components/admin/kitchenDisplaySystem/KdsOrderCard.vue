@@ -674,18 +674,22 @@ export default {
     text-transform: uppercase;
 }
 
+/* [AUDIT-F P1-3 2026-08-06 · mesuré] La pastille ALLERGIE était le PLUS PETIT
+   texte de la carte (10px / h20px) alors que le n° fait 36-52px : le signal le
+   plus critique en sécurité alimentaire était illisible debout à 1-2 m du passe.
+   Portée à 17px / h32px (≈4,5 mm de cap) — lisible à 2 m, contraste 5.18:1 inchangé. */
 .kds-card__allergen-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 8px;
-    height: 20px;
-    border-radius: 4px;
+    gap: 6px;
+    padding: 0 12px;
+    height: 32px;
+    border-radius: 6px;
     background: #C2410C;
     color: #FFFFFF;
-    font-size: 10px;
+    font-size: 17px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.30);
 }

@@ -59,14 +59,18 @@ class AdminRoutePermissionFloorTest extends TestCase
         'api/admin/default-access',           // POS Operator bootstrap (cf. RouteCoverage_AdminPermissionGateSentinelTest)
         'api/admin/dining-table',             // n° table + contact BRANCHE (pas de PII perso)
         'api/admin/item',
-        'api/admin/payment-terminals',
+        // [AUDIT-E E2/E3 2026-08-06] `payment-terminals` et `setting/kiosk-machine`
+        // RETIRÉS de l'allowlist : mal classés « non-PII » alors que leur index
+        // expose le serial_number + grille de commissions (TPE) et le username de
+        // login borne (machine). Les deux sont désormais gatés en middleware
+        // (PaymentTerminalController:28 `settings|pos`, KioskMachineController:22
+        // `settings`) — la sentinelle doit les voir gardés, plus tolérés.
         'api/admin/pos-category',
         'api/admin/setting/analytic-section/{analytic}',
         'api/admin/setting/branch',
         'api/admin/setting/company',
         'api/admin/setting/cookies',
         'api/admin/setting/currency',
-        'api/admin/setting/kiosk-machine',
         'api/admin/setting/language',
         'api/admin/setting/menu-section',
         'api/admin/setting/menu-template',

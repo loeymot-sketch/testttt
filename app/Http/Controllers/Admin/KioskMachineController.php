@@ -19,7 +19,12 @@ class KioskMachineController extends AdminController
     {
         parent::__construct();
         $this->kioskMachineService = $kioskMachineService;
-        $this->middleware(['permission:settings'])->only('show', 'store', 'update', 'destroy', 'logout', 'changeStatus');
+        // [AUDIT-E E2 2026-08-06 · P1] `index` était OMIS de cette liste : un compte
+        // staff SANS AUCUNE permission lisait le `username` + `machine_id` de login
+        // borne (prouvé 200 + "kiosk-lecayenne"), la moitié d'un couple d'identifiants
+        // dont le mot de passe par défaut n'est bloqué qu'en `production`. La lecture
+        // exige désormais la même permission que l'écriture.
+        $this->middleware(['permission:settings'])->only('index', 'show', 'store', 'update', 'destroy', 'logout', 'changeStatus');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory

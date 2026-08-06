@@ -185,6 +185,11 @@ export default {
             if (surface === 'web' || surface === 'app' || surface === 'mobile') {
                 return { label: this.$t('label.online'), cls: 'origin-online' };
             }
+            // [AUDIT-F P2-2 2026-08-06] Origines manquantes : une commande TÉLÉPHONE
+            // ou LIVRAISON tombait dans le repli « Borne » — le caissier lisait une
+            // origine fausse sur la file d'encaissement.
+            if (surface === 'phone') return { label: this.$t('label.phone'), cls: 'origin-caisse' };
+            if (surface === 'delivery') return { label: this.$t('label.delivery'), cls: 'origin-online' };
             return { label: this.$t('label.kiosk'), cls: 'origin-borne' };
         },
         customerName(order) {

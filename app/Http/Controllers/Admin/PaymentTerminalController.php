@@ -25,6 +25,13 @@ class PaymentTerminalController extends AdminController
     {
         parent::__construct();
 
+        // [AUDIT-E E3 2026-08-06 · P2] `index` non gaté exposait le `serial_number`
+        // des TPE + la grille de commissions à un compte sans permission. Miroir du
+        // heal E2 (KioskMachineController) : lire = même permission qu'écrire.
+        // NOTE : la modale d'encaissement charge la liste des TPE — le caissier a
+        // besoin de cette lecture ; elle passe par `pos` (voir PosCounterCollectModal
+        // loadActiveTerminal), pas par `settings`, donc on autorise les deux.
+        $this->middleware(['permission:settings|pos'])->only(['index']);
         $this->middleware(['permission:settings'])->only(['store', 'update', 'destroy']);
     }
 
