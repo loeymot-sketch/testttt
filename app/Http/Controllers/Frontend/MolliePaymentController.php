@@ -27,6 +27,12 @@ use Throwable;
  * Le montant envoyé à Mollie est le TOTAL SCELLÉ BACKEND (jamais un montant
  * client) — voir Mollie::createPayment. La commande n'est JAMAIS marquée
  * PAID ici : seul le webhook (vérité re-fetchée) le fait.
+ *
+ * [OWNER 2026-08-06 · PORTEFEUILLES] Entrées optionnelles du corps :
+ *  - `card_token` : carte saisie dans notre page (Mollie Components) ;
+ *  - `method`     : `applepay` | `googlepay` (whitelist stricte, exclusive
+ *                   de `card_token`) → `reason=wallet` + URL de la feuille.
+ * Aucune des deux ne change le montant, le webhook ni le chemin fiscal.
  */
 class MolliePaymentController extends Controller
 {
@@ -88,8 +94,31 @@ class MolliePaymentController extends Controller
             return response()->json(['status' => false, 'message' => 'Jeton carte invalide.'], 422);
         }
 
+        // [OWNER 2026-08-06 · PORTEFEUILLES] Apple Pay / Google Pay. La valeur part TELLE QUELLE
+        // chez Mollie comme `method`, donc la whitelist est stricte : tout ce qui n'est pas un
+        // portefeuille connu est refusé ici plutôt que relayé. `null`/absent = parcours carte
+        // inchangé (un front qui envoie `method: null` ne doit pas être puni).
+        $walletMethod = $request->input('method') ?? '';
+        if (!is_string($walletMethod)
+            || ($walletMethod !== '' && !in_array($walletMethod, Mollie::WALLET_METHODS, true))) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Moyen de paiement en ligne non pris en charge.',
+            ], 422);
+        }
+
+        // Un portefeuille n'a PAS de jeton carte : la carte reste dans le téléphone, c'est la
+        // feuille Apple/Google qui l'autorise. Recevoir les deux = front incohérent → on refuse
+        // au lieu de deviner lequel prime (deviner ferait débiter par un rail non choisi).
+        if ($walletMethod !== '' && $cardToken !== '') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Choisissez soit le paiement par carte, soit un portefeuille — pas les deux.',
+            ], 422);
+        }
+
         try {
-            $created = $gateway->createPayment($frontendOrder, $cardToken);
+            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod);
         } catch (Throwable $e) {
             return response()->json([
                 'status'  => false,
@@ -115,6 +144,14 @@ class MolliePaymentController extends Controller
         } elseif ($cardToken !== '' && ! $checkoutUrl) {
             // paiement pris mais pas encore scellé (pending/authorized) → le front sonde le serveur.
             $reason = 'pending';
+        } elseif ($walletMethod !== '') {
+            // [OWNER 2026-08-06 · PORTEFEUILLES] Distinguable de `hosted` : l'URL n'est pas une
+            // page « choisissez un moyen » mais la feuille du portefeuille. Le site peut donc
+            // afficher un écran calme (« Ouverture de votre portefeuille… ») au lieu du discours
+            // « vous allez être redirigé vers un site de paiement ». Placé APRÈS les branches
+            // carte — toutes exigent un cardToken, exclusif du portefeuille — pour qu'aucune
+            // raison existante (null / 3ds / refused / pending / hosted) ne change de sens.
+            $reason = 'wallet';
         } else {
             $reason = 'hosted';
         }

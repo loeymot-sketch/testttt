@@ -45,6 +45,16 @@ use Throwable;
  */
 class Mollie extends PaymentAbstract
 {
+    /**
+     * [OWNER 2026-08-06 · PORTEFEUILLES] Portefeuilles acceptés — SOURCE UNIQUE de la whitelist,
+     * partagée avec {@see \App\Http\Controllers\Frontend\MolliePaymentController} pour qu'une
+     * valeur ne puisse jamais être autorisée d'un côté et refusée de l'autre. Mesuré le
+     * 2026-08-06 sur le profil pfl_Ymr3Tb6vvp (E.DELICE / www.lecayenne.fr, live) :
+     * `GET /v2/methods?includeWallets=applepay,googlepay` renvoie les deux `activated` — il n'y
+     * a donc aucun verrou côté compte Mollie, seulement l'absence de `method` côté code.
+     */
+    public const WALLET_METHODS = ['applepay', 'googlepay'];
+
     public function __construct()
     {
         $paymentService = new PaymentService();
@@ -89,11 +99,27 @@ class Mollie extends PaymentAbstract
      *                          DANS notre page (iframes Mollie pour la conformité PCI), donc le
      *                          client n'est jamais envoyé sur une page de paiement étrangère.
      *                          Vide = ancien comportement (page hébergée Mollie).
+     * @param string $walletMethod [OWNER 2026-08-06 · PORTEFEUILLES] `applepay` | `googlepay`.
+     *                          Exclusif avec $cardToken : un portefeuille n'a PAS de jeton carte
+     *                          (la carte reste dans le téléphone). Vide = inchangé.
      */
-    public function createPayment(FrontendOrder $order, string $cardToken = ''): array
+    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = ''): array
     {
         if (!$this->isMollieConfigured()) {
             throw new RuntimeException('Mollie non configuré.');
+        }
+
+        // Défense en profondeur : cette méthode est publique (appelée aussi par payment()), donc
+        // elle re-vérifie elle-même la whitelist — un `method` arbitraire ne doit JAMAIS pouvoir
+        // être relayé à Mollie, même si un futur appelant oublie de filtrer en amont.
+        if ($walletMethod !== '' && ! in_array($walletMethod, self::WALLET_METHODS, true)) {
+            throw new RuntimeException('Moyen de paiement en ligne non pris en charge.');
+        }
+
+        // Les deux ensemble = appelant incohérent. On refuse au lieu de faire primer l'un en
+        // silence : une précédence implicite ferait payer par un rail que le client n'a pas choisi.
+        if ($walletMethod !== '' && $cardToken !== '') {
+            throw new RuntimeException('Portefeuille et jeton carte sont exclusifs.');
         }
 
         $redirectBase = (string) config('payment.mollie.redirect_url', '');
@@ -108,6 +134,12 @@ class Mollie extends PaymentAbstract
         if ($cardToken !== '') {
             // Paiement direct : la carte a déjà été saisie sur NOTRE page.
             $extra = ['method' => 'creditcard', 'cardToken' => $cardToken];
+        } elseif ($walletMethod !== '') {
+            // Sans `method`, Mollie renvoie la page générique « choisissez un moyen » : la feuille
+            // du portefeuille ne s'ouvre jamais — c'est LA raison pour laquelle le site ne
+            // proposait pas Apple Pay / Google Pay. Avec `method`, la checkout URL ouvre
+            // directement la feuille, hébergée par Mollie : rien à valider sur notre domaine.
+            $extra = ['method' => $walletMethod];
         }
 
         $response = Http::withToken((string) config('payment.mollie.api_key'))
@@ -145,7 +177,9 @@ class Mollie extends PaymentAbstract
 
         // Sans cardToken, l'URL hébergée est le SEUL moyen de payer → son absence est une
         // réponse invalide. AVEC cardToken (paiement dans notre page), Mollie peut traiter la
-        // carte directement : pas d'URL = cas NOMINAL, et non une erreur.
+        // carte directement : pas d'URL = cas NOMINAL, et non une erreur. Un portefeuille passe
+        // volontairement par la 1re branche : sans URL, la feuille Apple/Google Pay ne peut pas
+        // s'ouvrir, donc l'absence d'URL y est bien une erreur (pas un paiement silencieux).
         if ($paymentId === '' || ($cardToken === '' && $checkoutUrl === '')) {
             throw new RuntimeException('Réponse Mollie invalide (id ou checkout url manquant).');
         }
@@ -155,6 +189,9 @@ class Mollie extends PaymentAbstract
             'order_id'   => $order->id,
             'payment_id' => $paymentId,
             'amount'     => number_format((float) $order->total, 2, '.', ''),
+            // Rail employé — permet à l'ops de distinguer, dans le journal fiscal, une vente
+            // portefeuille d'une vente carte sans avoir à interroger le dashboard Mollie.
+            'rail'       => $walletMethod !== '' ? $walletMethod : ($cardToken !== '' ? 'creditcard' : 'hosted'),
         ]);
 
         $mollieStatus = (string) ($payload['status'] ?? '');
