@@ -936,7 +936,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
             // [PERF N+1 2026-07-31] Meme eager-load que counter-collect (relations OrderDetailsResource).
             $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
-                ->where('source_surface', 'web')
+                // [AUDIT-B D3 2026-08-06 · P1] web ≡ delivery : FrontendOrder::creating force
+                // source_surface='delivery' dès que order_type=DELIVERY — une commande LIVRAISON
+                // site PENDING était donc INVISIBLE ici (et le janitor, correctement étendu à
+                // 'delivery', l'ANNULAIT après TTL = perte de commande silencieuse). Même
+                // équivalence que les gardes web/delivery (OrderService:2248) et les lanes janitor.
+                ->whereIn('source_surface', ['web', 'delivery'])
                 ->where('status', \App\Enums\OrderStatus::PENDING)
                 // [OWNER 2026-08-04 R1 SÉCU] Une carte web PENDING+UNPAID = paiement en LIGNE
                 // en vol : pilotée par le paiement (payée → auto-cuisine ; échouée → annulée),

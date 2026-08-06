@@ -152,9 +152,25 @@ class PaymentService
             // appliqué. L'avoir est non-fiscal (aucun impact chaîne NF525) ; l'atomicité Transaction +
             // balance + audit reste prouvée par CashBackAtomicityTest via le chemin 'credit'.
             $refundIssuedInCash = strtolower((string) $gatewaySlug) === 'cash';
+            // [AUDIT-B D1 2026-08-06 · P1] Compensation PAR ORIGINE de tranche, plus par
+            // gateway dominant. Sur un SPLIT (order_payments cash+carte), l'ancien code
+            // créditait l'avoir du TOTAL (gateway 'credit' → 20,01) PENDANT que le tiroir
+            // sortait la portion cash (8,01) = 28,02 rendus pour 20,01 payés ; et en
+            // dominant 'cash' l'avoir était sauté → la tranche CARTE n'était compensée
+            // nulle part. Règle : avoir = total − portion cash D'ORIGINE (tranches SSOT
+            // SplitPaymentService ; mono-tender sans tranches → repli sur le gateway).
+            // Mono cash → avoir 0 (MP-01 inchangé) ; mono carte → avoir total (inchangé) ;
+            // split → avoir = portion non-cash, tiroir = portion cash (somme == total).
+            $cashOriginPortion = 0.0;
+            if ($order instanceof Order && $this->hasPaymentTranches($order)) {
+                $cashOriginPortion = (float) $this->refundCashTranchePortion($order);
+            } elseif ($refundIssuedInCash) {
+                $cashOriginPortion = (float) $order->total;
+            }
+            $walletPortion = round((float) $order->total - $cashOriginPortion, 2);
             $user = User::find($order->user_id);
-            if ($user && ! $refundIssuedInCash) {
-                $user->balance = ($user->balance + $order->total);
+            if ($user && $walletPortion > 0.0) {
+                $user->balance = ($user->balance + $walletPortion);
                 $user->save();
             }
 
@@ -550,7 +566,13 @@ class PaymentService
             // session n'est ouverte (legacy ou avant rollout cash sessions),
             // log warning + continue — l'order reste valide, l'audit comptable
             // sera fait post-hoc via reconciliation.
-            if ($mode === PosPaymentMethod::CASH) {
+            // [AUDIT-B D4 2026-08-06 · P1] JAMAIS en multi-tender : le mode reçu est le
+            // mode DOMINANT (modal), et SplitPaymentService a DÉJÀ écrit un IN par
+            // tranche cash dans la transaction. Sans cette garde, un mixte cash-dominant
+            // écrivait tranche (13,01) + TOTAL (25,01) = 38,02 € au tiroir pour 13,01 €
+            // réels — variance garantie à chaque rapprochement. Miroir de la garde
+            // anti-double-IN du jumeau OrderService::changePaymentStatus:2923.
+            if ($breakdown === null && $mode === PosPaymentMethod::CASH) {
                 $this->recordCashOrderMovement($order, $note);
             }
         }
@@ -870,6 +892,34 @@ class PaymentService
                 $locked,
                 (string) $locked->source_surface === 'kiosk' ? 'kiosk' : 'pos'
             );
+
+            // [AUDIT-B D2 2026-08-06 · P1] 3e jumeau du clawback des points GAGNÉS.
+            // Une borne Plan-B déjà PREPARED a reçu son award (AwardLoyaltyPointsOnDelivery) ;
+            // l'annuler ICI au comptoir laissait les points sur une vente jamais payée
+            // (exploit « QR → faire préparer → faire annuler »). Les 2 jumeaux reprennent
+            // déjà (changeStatus OrderService:2486-2506 ; janitor CleanupStale...:439-459) —
+            // miroir strict, dans la même transaction que la mutation terminale.
+            $awardedPts = (int) $locked->loyalty_points_awarded;
+            if ($awardedPts > 0) {
+                $loyaltyUser = null;
+                if (! empty($locked->loyalty_customer_code)) {
+                    $loyaltyUser = \App\Models\User::where('loyalty_code', $locked->loyalty_customer_code)->first();
+                }
+                if (! $loyaltyUser && $locked->user_id) {
+                    $candidate = \App\Models\User::find($locked->user_id);
+                    if ($candidate && $candidate->loyalty_code) {
+                        $loyaltyUser = $candidate;
+                    }
+                }
+                if ($loyaltyUser) {
+                    app(\App\Services\LoyaltyService::class)->clawbackEarnedPoints(
+                        $loyaltyUser->id,
+                        $awardedPts,
+                        (int) $locked->id,
+                        'Clawback fidélité — annulation comptoir'
+                    );
+                }
+            }
 
             $locked->payment_status = PaymentStatus::REFUNDED;
             $locked->status = OrderStatus::CANCELED;

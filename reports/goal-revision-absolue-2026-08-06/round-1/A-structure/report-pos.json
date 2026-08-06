@@ -1,0 +1,524 @@
+{
+  "report": {
+    "dashboard": {
+      "finalPath": "/admin/dashboard",
+      "title": "Résumé Des Ventes",
+      "bodyLen": 23593,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "pos-caisse": {
+      "finalPath": "/admin/pos",
+      "title": "Commande rapide",
+      "bodyLen": 1415,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "pos-floorplan": {
+      "finalPath": "/admin/pos/floorplan",
+      "title": "Plan de salle",
+      "bodyLen": 413,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "encaissement": {
+      "finalPath": "/admin/encaissement",
+      "title": "Encaissement",
+      "bodyLen": 741,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "suivi-tracker": {
+      "finalPath": "/admin/pos-orders-tracker",
+      "title": "Suivi commandes",
+      "bodyLen": 854,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "historique": {
+      "finalPath": "/admin/historique",
+      "title": "Historique",
+      "bodyLen": 1581,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "pos-orders": {
+      "finalPath": "/admin/pos-orders",
+      "title": "Commandes Caisse",
+      "bodyLen": 1391,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "oss-ecran-client": {
+      "finalPath": "/admin/order-status-screen",
+      "title": "",
+      "bodyLen": 180,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Tableau De Bord Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion En préparation — Prêt —",
+      "httpStatus": 200
+    },
+    "kds": {
+      "finalPath": "/admin/kitchen-display-system",
+      "title": "",
+      "bodyLen": 406,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Tableau De Bord Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion 🚫 Rupture 📚 Historique 🔑 Afficher les no",
+      "httpStatus": 200
+    },
+    "cash-overview": {
+      "finalPath": "/admin/dashboard",
+      "title": "Résumé Des Ventes",
+      "bodyLen": 23539,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "cash-sessions-report": {
+      "finalPath": "/admin/dashboard",
+      "title": "Résumé Des Ventes",
+      "bodyLen": 23577,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "delivery-cash-sessions": {
+      "finalPath": "/admin/dashboard",
+      "title": "Résumé Des Ventes",
+      "bodyLen": 23584,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "catalog-hub-stock": {
+      "finalPath": "/admin/dashboard",
+      "title": "Résumé Des Ventes",
+      "bodyLen": 23560,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Cais",
+      "httpStatus": 200
+    },
+    "stock-rupture": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "stock-unified": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "items-studio": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "ingredients": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "purchasing-scan": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "transactions": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "sales-report": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "items-report": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "observability": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "observability-outbox": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "settings-root": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "settings-payment-terminals": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "settings-kiosk-machines": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "settings-roles-hidden": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "employees": {
+      "finalPath": "/login",
+      "title": "Bon Retour",
+      "bodyLen": 114,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion",
+      "httpStatus": 200
+    },
+    "spa-404-probe": {
+      "finalPath": "/admin/nonexistent-page-xyz",
+      "title": "",
+      "bodyLen": 113,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Connexion Page Non Trouvée ! Impossible de trouver la page demandée. Retour À L’accueil",
+      "httpStatus": 200
+    }
+  },
+  "consoleErrs": [
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "PAGEERROR AxiosError: Request failed with status code 401"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "stock-rupture",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ]
+}

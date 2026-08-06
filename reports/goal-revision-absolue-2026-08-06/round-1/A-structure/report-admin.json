@@ -1,0 +1,307 @@
+{
+  "report": {
+    "dashboard": {
+      "finalPath": "/admin/dashboard",
+      "title": "Résumé Des Ventes",
+      "bodyLen": 23941,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "pos-caisse": {
+      "finalPath": "/admin/pos",
+      "title": "Commande rapide",
+      "bodyLen": 1658,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "pos-floorplan": {
+      "finalPath": "/admin/pos/floorplan",
+      "title": "Plan de salle",
+      "bodyLen": 656,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "encaissement": {
+      "finalPath": "/admin/encaissement",
+      "title": "Encaissement",
+      "bodyLen": 984,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "suivi-tracker": {
+      "finalPath": "/admin/pos-orders-tracker",
+      "title": "Suivi commandes",
+      "bodyLen": 1097,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "historique": {
+      "finalPath": "/admin/historique",
+      "title": "Historique",
+      "bodyLen": 1824,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "pos-orders": {
+      "finalPath": "/admin/pos-orders",
+      "title": "Commandes Caisse",
+      "bodyLen": 1634,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "oss-ecran-client": {
+      "finalPath": "/admin/order-status-screen",
+      "title": "",
+      "bodyLen": 176,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Tableau De Bord Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion En préparation — Prêt —",
+      "httpStatus": 200
+    },
+    "kds": {
+      "finalPath": "/admin/kitchen-display-system",
+      "title": "",
+      "bodyLen": 402,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Tableau De Bord Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion 🚫 Rupture 📚 Historique 🔑 Afficher les noms L",
+      "httpStatus": 200
+    },
+    "cash-overview": {
+      "finalPath": "/admin/cash-overview",
+      "title": "Vue Caisse Unifiée",
+      "bodyLen": 1133,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "cash-sessions-report": {
+      "finalPath": "/admin/cash-sessions-report",
+      "title": "Rapport Caisses Quotidien",
+      "bodyLen": 4875,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "delivery-cash-sessions": {
+      "finalPath": "/admin/delivery-boy-cash-sessions",
+      "title": "Caisses Livreur",
+      "bodyLen": 1270,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "catalog-hub-stock": {
+      "finalPath": "/admin/catalog-hub?tab=stock",
+      "title": "Gestion Produits & Stock",
+      "bodyLen": 1134,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "stock-rupture": {
+      "finalPath": "/admin/stock/rupture",
+      "title": "Gestion Produits & Stock",
+      "bodyLen": 1107,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "stock-unified": {
+      "finalPath": "/admin/stock/unified",
+      "title": "Conso & Stock",
+      "bodyLen": 2519,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "items-studio": {
+      "finalPath": "/admin/items/studio",
+      "title": "Catalogue",
+      "bodyLen": 3577,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "ingredients": {
+      "finalPath": "/admin/ingredients",
+      "title": "Ingrédients",
+      "bodyLen": 5505,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "purchasing-scan": {
+      "finalPath": "/admin/purchasing/scan",
+      "title": "Scan de facture",
+      "bodyLen": 800,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "transactions": {
+      "finalPath": "/admin/transactions",
+      "title": "Transactions",
+      "bodyLen": 1703,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "sales-report": {
+      "finalPath": "/admin/sales-report",
+      "title": "Rapport Des Ventes",
+      "bodyLen": 1742,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "items-report": {
+      "finalPath": "/admin/items-report",
+      "title": "Rapport Articles",
+      "bodyLen": 1221,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "observability": {
+      "finalPath": "/admin/observability/outbox",
+      "title": "Pipeline outbox & événements",
+      "bodyLen": 14205,
+      "notFound": false,
+      "rawLabel": [
+        "menu.item_availability_changed",
+        "menu.extra_availability_changed",
+        "menu.variation_availability_changed",
+        "menu.item_availability_changed",
+        "menu.extra_availability_changed"
+      ],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "observability-outbox": {
+      "finalPath": "/admin/observability/outbox",
+      "title": "Pipeline outbox & événements",
+      "bodyLen": 14205,
+      "notFound": false,
+      "rawLabel": [
+        "menu.item_availability_changed",
+        "menu.extra_availability_changed",
+        "menu.variation_availability_changed",
+        "menu.item_availability_changed",
+        "menu.extra_availability_changed"
+      ],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "settings-root": {
+      "finalPath": "/admin/settings/company",
+      "title": "Entreprise",
+      "bodyLen": 774,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "settings-payment-terminals": {
+      "finalPath": "/admin/settings/payment-terminals",
+      "title": "Terminaux De Paiement (TPE)",
+      "bodyLen": 891,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "settings-kiosk-machines": {
+      "finalPath": "/admin/settings/kiosk-machines/list",
+      "title": "Bornes",
+      "bodyLen": 1970,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "settings-roles-hidden": {
+      "finalPath": "/admin/settings/role/list",
+      "title": "Rôle & Autorisations",
+      "bodyLen": 1253,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "employees": {
+      "finalPath": "/admin/employees",
+      "title": "Employés",
+      "bodyLen": 1759,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Produits & Stock Conso & Stock Catalogue At",
+      "httpStatus": 200
+    },
+    "spa-404-probe": {
+      "finalPath": "/admin/nonexistent-page-xyz",
+      "title": "",
+      "bodyLen": 257,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "Français Anglais Français Compte Admin Le Cayenne admin@lecayenne.fr 2,00 € Tableau De Bord Mes Commandes Modifier Le Profil Discussion Adresse Changer Le Mot De Passe Déconnexion Page Non Trouvée ! I",
+      "httpStatus": 200
+    }
+  },
+  "consoleErrs": []
+}

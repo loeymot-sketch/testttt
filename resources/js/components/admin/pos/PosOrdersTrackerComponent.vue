@@ -1474,8 +1474,11 @@ export default {
         // encore acceptée). Distincte de isCashPending (qui = déjà acceptée, PENDING_COUNTER).
         isWebPending(o) {
             if (!o) return false;
+            // [AUDIT-B D3 2026-08-06 · P1] web ≡ delivery (FrontendOrder::creating force
+            // 'delivery' sur une commande LIVRAISON site) : sans elle, la voie « Accepter »
+            // du tracker ignorait la livraison PENDING → personne ne pouvait l'accepter.
             const surface = String(o.source_surface || '').toLowerCase();
-            return surface === 'web' && parseInt(o.status, 10) === orderStatusEnum.PENDING;
+            return (surface === 'web' || surface === 'delivery') && parseInt(o.status, 10) === orderStatusEnum.PENDING;
         },
         // [WEB-TRACKER-VISIBILITY 2026-07-20] Accepter une commande web SANS quitter le tracker —
         // miroir exact de PosComponent.acceptWebOrder (C1 2026-07-18) : même endpoint

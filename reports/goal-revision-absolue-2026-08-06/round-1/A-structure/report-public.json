@@ -1,0 +1,25 @@
+{
+  "report": {
+    "carnet": {
+      "finalPath": "/carnet",
+      "title": "📒 Carnet",
+      "bodyLen": 70,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "📒 Carnet Entrez le code d'accès 1 2 3 4 5 6 7 8 9 C 0 ⌫ Déverrouiller",
+      "httpStatus": 200
+    },
+    "mobile-stock": {
+      "finalPath": "/m",
+      "title": "",
+      "bodyLen": 59,
+      "notFound": false,
+      "rawLabel": [],
+      "blank": false,
+      "first": "🌶️ LE CAYENNE — STOCK Entrez le code 1 2 3 4 5 6 7 8 9 0 ⌫",
+      "httpStatus": 200
+    }
+  },
+  "consoleErrs": []
+}

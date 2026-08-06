@@ -1,0 +1,259 @@
+{
+ "meta": {
+  "run": 2,
+  "sha": "a13e1e65672c9214a515fa6fd3a7e48a5abc4e4e",
+  "date": "2026-08-06T04:26:53.324Z"
+ },
+ "measures": [
+  {
+   "surface": "pos-home2@1366",
+   "key": "shortcut-row",
+   "text": "N°A0009 9,90 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser",
+   "w": 399.2,
+   "h": 39.8,
+   "x": 467,
+   "y": 338,
+   "fontSize": "13px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(250, 246, 241)",
+   "disabled": false
+  },
+  {
+   "surface": "pos-home2@1366",
+   "key": "shortcut-row",
+   "text": "🖨️ Cuisine",
+   "w": 67.2,
+   "h": 32.6,
+   "x": 635,
+   "y": 341,
+   "fontSize": "11px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "pos-home2@1366",
+   "key": "shortcut-row",
+   "text": "🖨️ Client",
+   "w": 59.1,
+   "h": 32.6,
+   "x": 706,
+   "y": 341,
+   "fontSize": "11px",
+   "fontWeight": "700",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "pos-home2@1366",
+   "key": "shortcut-row",
+   "text": "💳 Encaisser",
+   "w": 89,
+   "h": 32.4,
+   "x": 772,
+   "y": 341,
+   "fontSize": "12px",
+   "fontWeight": "700",
+   "color": "rgb(255, 255, 255)",
+   "bg": "rgb(244, 80, 30)",
+   "disabled": false
+  },
+  {
+   "surface": "pos-home2@1366",
+   "key": "rupture-chip",
+   "text": "🚫 Rupture",
+   "w": 95.9,
+   "h": 36,
+   "x": 257,
+   "y": 238,
+   "fontSize": "14px",
+   "fontWeight": "600",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "pos-home2@1366",
+   "key": "loyalty-chip",
+   "text": "🎁 Appliquer une réduction fidélité",
+   "w": 239.9,
+   "h": 36,
+   "x": 360,
+   "y": 238,
+   "fontSize": "14px",
+   "fontWeight": "600",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": true
+  },
+  {
+   "surface": "pos-panier2@1366",
+   "key": "grand-total",
+   "text": "Total 0,00 €",
+   "w": 329.2,
+   "h": 48.5,
+   "x": 1011,
+   "y": 617,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "stock-panel@1366",
+   "key": "stock-search",
+   "text": "",
+   "w": 822.8,
+   "h": 15,
+   "x": 52,
+   "y": 770,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 251, 245)",
+   "disabled": false
+  },
+  {
+   "surface": "stock-panel@1366",
+   "key": "stock-search",
+   "text": "",
+   "w": 425.1,
+   "h": 39.8,
+   "x": 447,
+   "y": 164,
+   "fontSize": "15px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "stock2@1366",
+   "key": "stock-row",
+   "text": "Caissier Le Cayenne Connexion utilisateur user#3 caf7269b il y a 23 secondes",
+   "w": 992,
+   "h": 53.5,
+   "x": 317,
+   "y": 1307,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(107, 114, 128)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "stock2@1366",
+   "key": "stock-row",
+   "text": "Admin Le Cayenne Connexion utilisateur user#1 fdb57e63 il y a 6 minutes",
+   "w": 992,
+   "h": 54,
+   "x": 317,
+   "y": 1361,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(107, 114, 128)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "stock2@1366",
+   "key": "stock-row",
+   "text": "Caissier Le Cayenne Connexion utilisateur user#3 69d25abf il y a 6 minutes",
+   "w": 992,
+   "h": 54,
+   "x": 317,
+   "y": 1415,
+   "fontSize": "14px",
+   "fontWeight": "400",
+   "color": "rgb(107, 114, 128)",
+   "bg": "rgb(255, 255, 255)",
+   "disabled": false
+  },
+  {
+   "surface": "tracker2@1366",
+   "key": "tracker-search",
+   "text": "",
+   "w": 160,
+   "h": 40,
+   "x": 353,
+   "y": 218,
+   "fontSize": "13px",
+   "fontWeight": "400",
+   "color": "rgb(26, 26, 26)",
+   "bg": "rgb(247, 247, 252)",
+   "disabled": false
+  }
+ ],
+ "notes": [
+  {
+   "home_fold@1366": {
+    "scrollY": 0,
+    "firstTileTop": 785,
+    "vh": 768,
+    "pageH": 768
+   }
+  },
+  {
+   "home_collect_modal@1366": {
+    "homeEnc": null,
+    "clicked": true,
+    "open": false,
+    "confirmY": null,
+    "inputVal": null,
+    "vh": 768
+   }
+  },
+  {
+   "wizard_meat_click@1366": "Poulet mariné"
+  },
+  {
+   "wizard_add_click@1366": "Ajouter au panier"
+  },
+  {
+   "cart_state@1366": {
+    "wizardOpen": true,
+    "cartLines": 0,
+    "payBtn": false
+   }
+  },
+  {
+   "rupture_click@1366": {
+    "rupClick": "🚫\nRupture",
+    "url": "http://127.0.0.1:8000/admin/pos"
+   }
+  },
+  {
+   "stock_url@1366": "http://127.0.0.1:8000/admin/dashboard"
+  },
+  {
+   "kds_hist@1366": {
+    "histClick": "Historique",
+    "url": "/admin/kitchen-display-system",
+    "cards": 0,
+    "texts": []
+   }
+  },
+  {
+   "tracker@1366": {
+    "url": "/admin/pos-orders-tracker",
+    "searchInput": true,
+    "rows": 0,
+    "reprint": 0,
+    "cols": [
+     "Bonjour\nCaissier Le Cayenne",
+     "Caissier Le Cayenne",
+     "0,00 €",
+     "🔔\nÀ ENCAISSER\n\nPaiement au comptoir (borne · caisse · tél · web)\n\n0",
+     "🔔\nÀ ENCAISSER",
+     "🍳\nEN PRÉPARATION\n0",
+     "🍳\nEN PRÉPARATION",
+     "🛎️\nPRÊTS À SERVIR\n0"
+    ]
+   }
+  }
+ ]
+}
