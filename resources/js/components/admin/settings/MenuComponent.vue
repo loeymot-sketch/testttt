@@ -22,6 +22,20 @@
                 <i class="lab lab-kiosk text-sm"></i>
                 {{ $t("menu.kiosk_machines") }}
             </router-link>
+            <!-- [AUDIT-A P1-1/P1-2 + P2 2026-08-06] Pages jusque-là inatteignables :
+                 rapports Z NF525, imprimantes, et TPE (page existante mais orpheline). -->
+            <router-link :to="{ name: 'admin.settings.zReports' }" class="db-tab-btn">
+                <i class="lab lab-license text-sm"></i>
+                {{ $t("menu.z_reports") }}
+            </router-link>
+            <router-link :to="{ name: 'admin.settings.printers' }" class="db-tab-btn">
+                <i class="lab lab-printer text-sm"></i>
+                {{ $t("menu.printers") }}
+            </router-link>
+            <router-link :to="{ name: 'admin.settings.paymentTerminals' }" class="db-tab-btn">
+                <i class="lab lab-payment text-sm"></i>
+                {{ $t("menu.payment_terminals") }}
+            </router-link>
             <router-link v-if="!isSettingHidden('mail')" :to="{ name: 'admin.settings.mail' }" class="db-tab-btn">
                 <i class="lab lab-mail text-sm"></i>
                 {{ $t("menu.mail") }}

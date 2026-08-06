@@ -44,6 +44,10 @@ const KioskSetupComponent = () => import(/* webpackChunkName: "admin-shell" */ "
 const LoyaltySetupComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/LoyaltySetup/LoyaltySetupComponent");
 const PaymentGatewayComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/PaymentGateway/PaymentGatewayComponent");
 const PaymentTerminalsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/PaymentTerminals/PaymentTerminalsComponent");
+// [AUDIT-A P1-1/P1-2 2026-08-06] Rapports Z NF525 + gestion imprimantes — APIs
+// complètes qui n'avaient AUCUNE page (PDF légaux inatteignables sans curl).
+const ZReportListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Fiscal/ZReportListComponent");
+const PrintersComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Printers/PrintersComponent");
 const SmsGatewayComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/SmsGateway/SmsGatewayComponent");
 const NotificationAlertComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/NotificationAlert/NotificationAlertComponent");
 const KioskMachineComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/KioskMachine/KioskMachineComponent.vue");
@@ -556,6 +560,30 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "payment_terminals",
+                },
+            },
+            {
+                // [AUDIT-A P1-1 2026-08-06] Rapports Z NF525 (liste + PDF + rapport X)
+                path: "z-reports",
+                component: ZReportListComponent,
+                name: "admin.settings.zReports",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "z_reports",
+                },
+            },
+            {
+                // [AUDIT-A P1-2 2026-08-06] Gestion des imprimantes (CRUD + test)
+                path: "printers",
+                component: PrintersComponent,
+                name: "admin.settings.printers",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "printers",
                 },
             },
             {
