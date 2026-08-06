@@ -103,7 +103,43 @@ class RawMaterialConsumptionService
         OrderStatus::RETURNED,
     ];
 
-    public function __construct(private RawMaterialStockService $stock)
+    /**
+     * [STOCK-VIANDE 2026-08-06 owner] Matières dont la QUANTITÉ appartient désormais au moteur
+     * de portions (celui qui alimente le bandeau CUISSON), et non plus à la fiche produit.
+     *
+     * Règle : une matière a UN SEUL propriétaire de sa quantité.
+     *   · ce que le CLIENT choisit  → MeatPortionCalculator, depuis le snapshot scellé
+     *   · ce que la RECETTE fixe    → raw_material_recipe_lines (pain, cheddar, crudités, sauce)
+     *
+     * Les lignes de recette PRODUIT et VARIATION portant ces matières sont donc ignorées :
+     * les conserver ferait un double comptage. Elles ne sont PAS supprimées de la base — la
+     * propriété est déclarée ici, ce qui reste réversible et préserve l'historique.
+     *
+     * « Poulet » (vrac, en grammes) figure dans la liste : c'était le forfait 200 g posé sur
+     * chaque Cayenne et Chicken Burger, y compris ceux commandés en viande hachée.
+     *
+     * ⚠️ La propriété est CONDITIONNELLE, jamais globale : une fiche produit n'est écartée que
+     * si le moteur de portions a effectivement quelque chose à dire sur CETTE ligne de commande.
+     * Un blocage global par nom de matière désactiverait des recettes parfaitement légitimes là
+     * où le moteur est muet (produit sans choix de viande, recette non documentée) — c'est-à-dire
+     * qu'il transformerait une correction en perte de données.
+     *
+     * @var array<int, string> noms canoniques, comparés en minuscules
+     */
+    private const VIANDES_PILOTEES = [
+        'viande hachée', 'poulet', 'poulet mariné', 'mexicanos', 'tenders',
+        'nuggets', 'fricadelle', 'cordon bleu', 'chicken burger', 'poisson pané',
+    ];
+
+    /** @var array<int, string> */
+    private const FRITES_PILOTEES = ['portion frites'];
+
+    public function __construct(
+        private RawMaterialStockService $stock,
+        private \App\Services\Kitchen\MeatPortionCalculator $portions = new \App\Services\Kitchen\MeatPortionCalculator,
+        private \App\Services\Kitchen\MeatMaterialResolver $matieres = new \App\Services\Kitchen\MeatMaterialResolver,
+        private \App\Services\Hardware\KitchenTicketSymbolicFormatter $symbolic = new \App\Services\Hardware\KitchenTicketSymbolicFormatter,
+    )
     {
     }
 
@@ -314,11 +350,25 @@ class RawMaterialConsumptionService
         // Agrégation raw_material_id => qty pour CET order_item (somme AVANT consume).
         $totals = [];
 
+        // 0. [STOCK-VIANDE 2026-08-06 owner] Le moteur de portions parle EN PREMIER : c'est lui
+        //    qui décide si la fiche produit garde ou non la main sur les viandes et les frites.
+        //    Le nom du produit vient de la relation `orderItem` (Item) : `order_items` ne porte
+        //    PAS de colonne `name`, et s'y fier donnerait une chaîne vide en silence — donc
+        //    aucune recette fixe reconnue, donc aucune viande de burger comptée.
+        $portions = $this->portions->forLine(
+            (string) (optional($orderItem->orderItem)->name ?? ''),
+            $snapshot,
+            $lineQty,
+            (string) $orderItem->instruction,
+        );
+        $aEcarter = $this->matieresReprises($portions['pieces']);
+
         // 1. Recette PRODUIT.
         $this->addRecipeLines(
             $totals,
             $this->recipeLinesFor(Item::class, (int) $orderItem->item_id),
-            $lineQty
+            $lineQty,
+            $aEcarter
         );
 
         // 2. VARIATIONS (snapshot.lines[].variation_id).
@@ -331,7 +381,8 @@ class RawMaterialConsumptionService
             $this->addRecipeLines(
                 $totals,
                 $this->recipeLinesFor(ItemVariation::class, $variationId),
-                $multiplier
+                $multiplier,
+                $aEcarter
             );
         }
 
@@ -340,6 +391,16 @@ class RawMaterialConsumptionService
             $extraId = (int) ($extra['extra_id'] ?? 0);
             $extraName = (string) ($extra['extra_name'] ?? '');
             $multiplier = $lineQty * max(1, (int) ($extra['quantity'] ?? 1));
+
+            // [STOCK-VIANDE 2026-08-06] Supplément viande NOMMÉ → le moteur de portions le
+            // décompte dans la VRAIE viande demandée (étape 4). La ligne de recette de groupe
+            // (« viande supplémentaire » → 75 g de hachée forfaitaires) ferait alors doublon.
+            // Supplément NON nommé → on garde la moyenne historique plutôt que de perdre la
+            // consommation : mieux vaut une approximation assumée qu'un trou silencieux.
+            if (preg_match('/viande\s*suppl|steak\s*suppl/iu', $extraName)
+                && $this->symbolic->extraViandeNames((string) $orderItem->instruction) !== []) {
+                continue;
+            }
 
             $lines = $this->recipeLinesForExtra($extraId, $extraName);
 
@@ -361,6 +422,30 @@ class RawMaterialConsumptionService
             }
 
             $this->addRecipeLines($totals, $lines, $multiplier);
+        }
+
+        // 4. [STOCK-VIANDE 2026-08-06 owner] VIANDES ET FRITES, depuis le choix RÉEL du client
+        //    (calculé à l'étape 0). Même calcul que le bandeau CUISSON du ticket et de l'écran :
+        //    la cuisine et le stock ne peuvent plus se contredire.
+        $resolu = $this->matieres->toMaterialQuantities($portions['pieces'], self::BRANCH_ID);
+        foreach ($resolu['totals'] as $rawMaterialId => $qty) {
+            $totals[(int) $rawMaterialId] = ($totals[(int) $rawMaterialId] ?? 0.0) + (float) $qty;
+        }
+        foreach ($resolu['skipped'] as $s) {
+            $skipped[] = [
+                'order_item_id' => (int) $orderItem->id,
+                'kind' => 'portion_'.$s['reason'],
+                'symbol' => $s['symbol'],
+                'pieces' => $s['pieces'],
+            ];
+        }
+        if ($portions['inconnu']) {
+            // Recette fixe non documentée : signalée, jamais devinée (cf. bandeau CUISSON).
+            $skipped[] = [
+                'order_item_id' => (int) $orderItem->id,
+                'kind' => 'portion_recette_non_documentee',
+                'item_id' => (int) $orderItem->item_id,
+            ];
         }
 
         if ($totals === []) {
@@ -451,13 +536,67 @@ class RawMaterialConsumptionService
      *
      * @param  array<int, float>  $totals
      */
-    private function addRecipeLines(array &$totals, Collection $lines, int $multiplier): void
+    /**
+     * @param  array<int, float>  $totals
+     * @param  array<int, bool>   $aEcarter  raw_material_id => true, matières reprises par le
+     *                                       moteur de portions POUR CETTE ligne de commande
+     */
+    private function addRecipeLines(array &$totals, Collection $lines, int $multiplier, array $aEcarter = []): void
     {
         foreach ($lines as $line) {
             $rawMaterialId = (int) $line->raw_material_id;
+            if (isset($aEcarter[$rawMaterialId])) {
+                continue;
+            }
             $qty = (float) $line->qty * $multiplier;
             $totals[$rawMaterialId] = ($totals[$rawMaterialId] ?? 0.0) + $qty;
         }
+    }
+
+    /** @var array<string, array<int, bool>>|null cache catégorie => {raw_material_id: true} */
+    private ?array $categories = null;
+
+    /**
+     * Matières de la fiche produit à écarter, compte tenu de ce que le moteur de portions a
+     * réellement produit sur CETTE ligne.
+     *
+     * S'il a produit de la viande, les viandes de la recette sont écartées (sinon double
+     * comptage, et surtout le forfait « 200 g de poulet » s'appliquerait encore à un Cayenne
+     * commandé en hachée). S'il n'a rien produit, la recette s'applique intégralement — c'est
+     * le comportement historique, préservé pour tout produit hors de son périmètre.
+     *
+     * @param  array<string, int>  $pieces
+     * @return array<int, bool>
+     */
+    private function matieresReprises(array $pieces): array
+    {
+        if ($this->categories === null) {
+            $this->categories = ['viande' => [], 'frites' => []];
+            foreach (\App\Models\RawMaterial::query()->where('branch_id', self::BRANCH_ID)->get(['id', 'name']) as $m) {
+                $nom = mb_strtolower(trim((string) $m->name));
+                if (in_array($nom, self::VIANDES_PILOTEES, true)) {
+                    $this->categories['viande'][(int) $m->id] = true;
+                } elseif (in_array($nom, self::FRITES_PILOTEES, true)) {
+                    $this->categories['frites'][(int) $m->id] = true;
+                }
+            }
+        }
+
+        $aEcarter = [];
+        $symboles = array_keys(array_filter($pieces, static fn ($n) => (int) $n > 0));
+
+        // « ? » (supplément dont le nom est irrécupérable) ne déclenche AUCUNE reprise : le
+        // moteur ne peut rien fournir en échange, et écarter la recette laisserait un trou au
+        // lieu d'une correction. La moyenne historique reste alors la meilleure information
+        // disponible. Idem pour « F », qui ne concerne que les frites.
+        if (array_diff($symboles, ['F', '?']) !== []) {
+            $aEcarter += $this->categories['viande'];
+        }
+        if (in_array('F', $symboles, true)) {
+            $aEcarter += $this->categories['frites'];
+        }
+
+        return $aEcarter;
     }
 
     /**
@@ -473,12 +612,17 @@ class RawMaterialConsumptionService
         }
 
         if (! is_array($snapshot)) {
-            return ['lines' => [], 'extras' => []];
+            return ['lines' => [], 'extras' => [], 'addons' => []];
         }
 
         return [
             'lines' => is_array($snapshot['lines'] ?? null) ? $snapshot['lines'] : [],
             'extras' => is_array($snapshot['extras'] ?? null) ? $snapshot['extras'] : [],
+            // [STOCK-VIANDE 2026-08-06] Les addons étaient VOLONTAIREMENT écartés (menus hors
+            // périmètre P2a). Ils sont désormais nécessaires : les frites de menu se comptaient
+            // à 4 % du réel (136 portions vendues, 6 décomptées). Les étapes 1 à 3 ne les
+            // lisent pas ; seule l'étape 4 (moteur de portions) les consomme.
+            'addons' => is_array($snapshot['addons'] ?? null) ? $snapshot['addons'] : [],
         ];
     }
 

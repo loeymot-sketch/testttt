@@ -182,10 +182,15 @@ class RawMaterialConsumptionTest extends TestCase
     // ── 2. Multiplicateurs : order_item.quantity ET extra.quantity. ────────────
     public function test_quantities_multiply_by_line_and_extra_quantity(): void
     {
+        // [STOCK-VIANDE 2026-08-06] Produit NEUTRE volontairement : « Chicken Burger » porte
+        // désormais une recette fixe (1 pièce de chicken burger, cf. MeatPortionCalculator), et
+        // sa viande n'appartient donc plus à la fiche produit. Ce test-ci mesure les
+        // MULTIPLICATEURS de quantité, pas la propriété des viandes — un nom neutre garde la
+        // mesure ciblée sur ce qu'elle prétend vérifier.
         $poulet = $this->material('Poulet');
         $bacon = $this->material('Bacon');
 
-        $item = $this->makeItem('Chicken Burger');
+        $item = $this->makeItem('Assiette Maison');
         $this->recipe(Item::class, $item->id, $poulet, 200);
         $this->recipe(ItemExtra::class, 88, $bacon, 10);
 
