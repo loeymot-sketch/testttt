@@ -72,6 +72,20 @@ class SimpleOrderResource extends JsonResource
             'parent_order_id'              => $this->parent_order_id,
             'status'                       => $this->status,
             'status_name'                  => trans('orderStatus.' . $this->status),
+            // [CAISSE-WEB-INTEL 2026-08-06] Temporel BRUT pour le tracker POS.
+            // Le tracker calcule âge / tri oldest-first / aging 5-10 min sur
+            // `order.created_at` (_tsOf, elapsedShort, trackerAgeClass) mais le
+            // resource ne shippait que `order_datetime` FORMATÉ → sur données
+            // réelles tout le temporel tournait à vide (les specs l'injectaient
+            // en fixture — pattern « fixture qui encode le bug »). Additif.
+            'created_at'                   => $this->created_at?->toIso8601String(),
+            // [CAISSE-WEB-INTEL 2026-08-06] Commande PROGRAMMÉE (web scheduled_at
+            // via OrderRequest:181). Le KDS l'exploite déjà (KitchenReleaseRule
+            // hold + lead) mais le tracker caisse la peignait comme un ASAP —
+            // fausse urgence aging + tri trompeur. Miroir KDSOrderDetailsResource.
+            'scheduled_at'                 => $this->scheduled_at?->toIso8601String(),
+            'scheduled_hm'                 => $this->scheduled_at?->format('H:i'),
+            'is_advance_order'             => $this->is_advance_order,
             'customer_name'                => $this->user?->name,
             // [Wave S-4 P-OWNER 2026-05-20] Suivi commandes "À ENCAISSER"
             // column filter. Pure projection — no business rule changes here:
@@ -121,6 +135,12 @@ class SimpleOrderResource extends JsonResource
             // Branch isolation: `OrderItem` enforces BranchScope global.
             // Mirrors SimpleDeliveryBoyOrderResource::resolveItemsForDriver().
             'order_items'                  => $this->resolveItemsForTracker(),
+            // [CAISSE-WEB-INTEL 2026-08-06] Une commande web portant une
+            // instruction client (allergie, « sans crudités » en note…) doit
+            // être VUE avant l'accept — l'info vivait uniquement dans le
+            // détail (order_items.instruction). Flag léger : pas de payload
+            // gonflé (POSPERF-07), le texte reste par ligne ci-dessus.
+            'has_instruction'              => $this->resolveHasInstruction(),
         ];
     }
 
@@ -146,10 +166,32 @@ class SimpleOrderResource extends JsonResource
 
         return $relation->map(function ($line) {
             return [
-                'item_id'   => (int) $line->item_id,
-                'item_name' => $line->orderItem?->name,
-                'quantity'  => (int) $line->quantity,
+                'item_id'     => (int) $line->item_id,
+                'item_name'   => $line->orderItem?->name,
+                'quantity'    => (int) $line->quantity,
+                // [CAISSE-WEB-INTEL 2026-08-06] Instruction client par ligne
+                // (colonne order_items.instruction) — le caissier doit voir une
+                // allergie AVANT d'accepter une commande web. Null si absente.
+                'instruction' => $line->instruction ?: null,
             ];
         })->values()->all();
+    }
+
+    /**
+     * [CAISSE-WEB-INTEL 2026-08-06] Au moins une ligne porte une instruction
+     * client. Même garde N+1 que resolveItemsForTracker : relation absente ⇒
+     * false, jamais de lazy SELECT.
+     */
+    private function resolveHasInstruction(): bool
+    {
+        $relation = $this->resource->relationLoaded('orderItems')
+            ? $this->resource->getRelation('orderItems')
+            : null;
+
+        if ($relation === null) {
+            return false;
+        }
+
+        return $relation->contains(fn ($line) => trim((string) $line->instruction) !== '');
     }
 }

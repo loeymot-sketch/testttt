@@ -22,6 +22,19 @@
                         <i class="fa-solid fa-bell-concierge" aria-hidden="true"></i>
                         {{ stats.ready }} {{ $t('pos.tracker.ready_short') }}
                     </span>
+                    <!-- [CAISSE-WEB-INTEL 2026-08-06] Pill « web à traiter » : compte les
+                         commandes du site exigeant une action caissier (accepter / encaisser).
+                         Cliquable → filtre 🌐. FR direct (ADR-007). -->
+                    <button
+                        v-if="webActionableCount > 0"
+                        type="button"
+                        class="pos-tracker-status-pill pos-tracker-status-pill--web"
+                        data-testid="tracker-web-pill"
+                        title="Afficher les commandes du site web"
+                        @click="filters.source = 'online'"
+                    >
+                        🌐 {{ webActionableCount }} web à traiter
+                    </button>
                     <span>{{ stats.todayCount }} {{ $t('pos.tracker.today_total') }}</span>
                     <!-- [CAISSE-HEALTH 2026-07-30] Santé système au cœur de la vue d'ensemble : l'opérateur
                          voit une dégradation temps réel/fiscale AVANT de perdre des commandes en silence. -->
@@ -179,6 +192,29 @@
                                 >
                                     🔔
                                 </span>
+                                <!-- [CAISSE-WEB-INTEL 2026-08-06] Payée EN LIGNE (CB) : rien à
+                                     encaisser — le badge tue le doute (anti double encaissement),
+                                     symétrique du 🔔 cash-pending. -->
+                                <span
+                                    v-if="isPaidOnline(order)"
+                                    class="pos-tracker-card-paid-badge"
+                                    title="Payée en ligne par carte — ne pas encaisser"
+                                    :data-testid="`tracker-paid-online-${order.id}`"
+                                    aria-label="Commande déjà payée en ligne"
+                                >
+                                    ✅ CB
+                                </span>
+                                <!-- [CAISSE-WEB-INTEL 2026-08-06] Livraison signalée dès l'arrivée
+                                     (order_type) — avant, seule la voie 🛵 OUT_FOR_DELIVERY la
+                                     révélait, trop tard pour organiser la préparation. -->
+                                <span
+                                    v-if="isDeliveryOrder(order)"
+                                    class="pos-tracker-card-type-badge"
+                                    title="Commande en livraison"
+                                    :data-testid="`tracker-delivery-${order.id}`"
+                                >
+                                    🛵
+                                </span>
                                 <span :class="['pos-tracker-card-source', `pos-tracker-card-source--${sourceOf(order)}`]"
                                       :title="$t('pos.tracker.source_' + sourceOf(order))">
                                     {{ sourceIcon(order) }}
@@ -202,6 +238,28 @@
                             >
                                 <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
                                 <span>{{ agingLabel(order) }}</span>
+                            </div>
+                            <!-- [CAISSE-WEB-INTEL 2026-08-06] Commande PROGRAMMÉE : « 🕐 pour 19:30 ».
+                                 Sans ce badge, une commande web pour ce soir ressemblait à un ASAP
+                                 (et l'aging la peignait « urgente » à tort — exclu dans trackerAgeClass). -->
+                            <div
+                                v-if="scheduledLabel(order)"
+                                class="pos-tracker-card-scheduled"
+                                :data-testid="`tracker-scheduled-${order.id}`"
+                            >
+                                <span aria-hidden="true">🕐</span>
+                                <span>{{ scheduledLabel(order) }}</span>
+                            </div>
+                            <!-- [CAISSE-WEB-INTEL 2026-08-06] Instruction client (allergie, note) :
+                                 visible AVANT l'accept — l'info vivait uniquement dans le détail. -->
+                            <div
+                                v-if="instructionPreview(order)"
+                                class="pos-tracker-card-instruction"
+                                :data-testid="`tracker-instruction-${order.id}`"
+                                role="note"
+                            >
+                                <span aria-hidden="true">⚠️</span>
+                                <span>{{ instructionPreview(order) }}</span>
                             </div>
                             <!--
                               [OWNER 2026-07-31] Identité client VISIBLE avant l'accept/encaissement :
@@ -416,6 +474,21 @@
                     <label for="pos-tracker-cancel-reason" class="pos-tracker-cancel-label">
                         {{ $t('pos.cancel_order_reason_label') }}
                     </label>
+                    <!-- [CAISSE-WEB-INTEL 2026-08-06] Raisons 1-geste : pré-remplissent le
+                         textarea (modifiable) — le refus d'une commande web ne doit pas
+                         coûter une saisie clavier en plein rush. Backend inchangé. -->
+                    <div class="pos-tracker-cancel-chips" data-testid="tracker-cancel-chips">
+                        <button
+                            v-for="preset in cancelReasonPresets"
+                            :key="preset"
+                            type="button"
+                            class="pos-tracker-cancel-chip"
+                            :class="{ 'is-active': cancelDialog.reason === preset }"
+                            @click="cancelDialog.reason = preset"
+                        >
+                            {{ preset }}
+                        </button>
+                    </div>
                     <textarea
                         id="pos-tracker-cancel-reason"
                         ref="cancelReasonInput"
@@ -496,6 +569,10 @@
 <script>
 import axios from 'axios';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+// [CAISSE-WEB-INTEL 2026-08-06] Enums canoniques pour les badges paiement/type
+// (payé en ligne CB vs à encaisser ; livraison vs à emporter).
+import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
+import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
 import appService from '../../../services/appService';
@@ -535,6 +612,12 @@ const EVENT_STALE_MS = 35000;
 const AGE_TICK_MS = 30000;
 const AGE_AGING_MIN = 5;
 const AGE_URGENT_MIN = 10;
+// [CAISSE-WEB-INTEL 2026-08-06] Commande PROGRAMMÉE (scheduled_at futur) :
+// tant que now < scheduled_at − lead, elle n'est PAS en retard — l'aging
+// 5/10 min ne s'applique pas. Miroir du lead KDS (config kds.scheduled_
+// lead_minutes, défaut 20) — constante côté front, le backend reste SSOT
+// pour la libération cuisine.
+const SCHEDULED_LEAD_MIN = 20;
 
 /**
  * [POS-V4-ORDERS-TRACKER 2026-05-02]
@@ -613,6 +696,14 @@ export default {
             // au jour affiché (bandeau → /admin/encaissement). Cf. _refreshOlderPendingCount.
             olderPendingCount: 0,
             _olderPendingFetchedAt: 0,
+            // [CAISSE-WEB-INTEL 2026-08-06] Alerte sonore nouvelle commande
+            // web/borne : ids déjà signalés (exactement-une-fois entre les
+            // chemins Echo→fetch et poll→fetch — le hook vit dans le poll-diff
+            // de fetchOrders, unique point de vérité des « nouveaux » ids).
+            _notifiedOrderIds: new Set(),
+            _audioCtx: null,
+            // Titre d'onglet original — restauré au démontage.
+            _baseDocTitle: '',
         };
     },
     computed: {
@@ -739,7 +830,17 @@ export default {
                 else if (s === orderStatusEnum.DELIVERED) buckets.delivered.push(o);
             }
             // Sort each bucket: oldest first for active queues, newest first for delivered.
-            buckets.accept.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            // [CAISSE-WEB-INTEL 2026-08-06] Voie « À encaisser » : tri composite —
+            // les web PENDING (seules cartes dont l'INACTION bloque le client
+            // distant : ni cuisine ni suivi tant que pas acceptées) remontent
+            // devant les cash-pending, puis plus ancien d'abord dans chaque
+            // groupe. Les autres voies restent purement chronologiques.
+            buckets.accept.sort((a, b) => {
+                const aw = this.isWebPending(a) ? 0 : 1;
+                const bw = this.isWebPending(b) ? 0 : 1;
+                if (aw !== bw) return aw - bw;
+                return this._tsOf(a) - this._tsOf(b);
+            });
             buckets.preparing.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.prepared.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.onTheWay.sort((a, b) => this._tsOf(a) - this._tsOf(b));
@@ -845,8 +946,41 @@ export default {
                 }, 0),
             };
         },
+        // [CAISSE-WEB-INTEL 2026-08-06] Nombre de commandes WEB exigeant une
+        // action caissier MAINTENANT : web PENDING (à accepter) + web déjà
+        // acceptée en attente d'encaissement. Alimente la pill header 🌐 et le
+        // compteur du titre d'onglet — le caissier voit « 3 web à traiter »
+        // d'un coup d'œil sans ouvrir le filtre.
+        // [CAISSE-WEB-INTEL 2026-08-06] Raisons d'annulation 1-geste (chips du
+        // dialog). FR direct (ADR-007) ; le texte reste éditable au clavier.
+        cancelReasonPresets() {
+            return [
+                'Rupture produit',
+                'Fermeture imminente',
+                'Client injoignable',
+                'Erreur de commande',
+            ];
+        },
+        webActionableCount() {
+            return this.orders.reduce((n, o) => {
+                const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+                if (this.isRefunded(o) || this.isTerminalStatus(s)) return n;
+                if (this.isWebPending(o)) return n + 1;
+                if (this.isCashPending(o) && this.sourceOf(o) === 'online') return n + 1;
+                return n;
+            }, 0);
+        },
+    },
+    watch: {
+        // [CAISSE-WEB-INTEL 2026-08-06] Compteur dans le titre d'onglet : si le
+        // tracker est en arrière-plan, « (2) Suivi commandes » reste visible
+        // dans la barre d'onglets — complément visuel de l'alerte sonore.
+        webActionableCount(n) {
+            this._updateDocTitle(n);
+        },
     },
     mounted() {
+        try { this._baseDocTitle = document.title || ''; } catch (_e) { /* SSR/test */ }
         this.fetchOrders();
         this._subscribeEcho();
         this._bindWsService();
@@ -859,6 +993,8 @@ export default {
         this._stopPolling();
         this._stopAgeTicker();
         Object.values(this._freshTimers).forEach((t) => clearTimeout(t));
+        // [CAISSE-WEB-INTEL 2026-08-06] Restaure le titre d'onglet original.
+        try { if (this._baseDocTitle) document.title = this._baseDocTitle; } catch (_e) { /* defensive */ }
     },
     methods: {
         authBranchId() {
@@ -1012,6 +1148,10 @@ export default {
         // | 'tracker-card--urgent' (≥10 min, red + pulse).
         trackerAgeClass(o, laneId) {
             if (laneId !== 'accept') return '';
+            // [CAISSE-WEB-INTEL 2026-08-06] Une commande PROGRAMMÉE pour plus
+            // tard n'est pas « en retard » : pas d'orange/rouge tant que
+            // now < scheduled_at − lead. Le badge 🕐 porte l'information.
+            if (this._scheduledNotYetDue(o)) return '';
             const mins = this._ageMinutes(o);
             if (mins >= AGE_URGENT_MIN) return 'tracker-card--urgent';
             if (mins >= AGE_AGING_MIN) return 'tracker-card--aging';
@@ -1099,6 +1239,14 @@ export default {
                         if (!this._seenOrderIds.has(id)) {
                             this._seenOrderIds.add(id);
                             this._markFresh(id);
+                            // [CAISSE-WEB-INTEL 2026-08-06] Alerte sonore+toast
+                            // pour une nouvelle commande DISTANTE (web/borne) —
+                            // le beep de PosComponent ne vit pas sur cette page.
+                            // Branché ici (poll-diff) : fiable même queue-worker
+                            // down, et exactement-une-fois (chemins Echo et poll
+                            // convergent tous deux vers fetchOrders).
+                            const o = this.orders.find((x) => parseInt(x?.id, 10) === id);
+                            this._maybeNotifyIncomingOrder(o);
                         }
                     }
                 }
@@ -1433,6 +1581,123 @@ export default {
             const m = mins % 60;
             return h + 'h' + (m < 10 ? '0' + m : m);
         },
+        // ── [CAISSE-WEB-INTEL 2026-08-06] Intelligence commandes web ─────────
+        // Payée EN LIGNE (CB Mollie) : rien à encaisser — badge ✅ pour tuer le
+        // doute (et le double encaissement). Complément exact du 🔔 cash-pending.
+        isPaidOnline(o) {
+            if (!o) return false;
+            return parseInt(o.payment_status, 10) === paymentStatusEnum.PAID
+                && this.sourceOf(o) === 'online'
+                && !this.isCashPending(o);
+        },
+        isDeliveryOrder(o) {
+            return o ? parseInt(o.order_type, 10) === orderTypeEnum.DELIVERY : false;
+        },
+        _scheduledTs(o) {
+            if (!o || !o.scheduled_at) return 0;
+            const t = new Date(o.scheduled_at).getTime();
+            return Number.isFinite(t) ? t : 0;
+        },
+        // Programmée ET pas encore due (échéance − lead dans le futur).
+        _scheduledNotYetDue(o) {
+            const ts = this._scheduledTs(o);
+            if (!ts) return false;
+            return this.ageTick < (ts - SCHEDULED_LEAD_MIN * 60000);
+        },
+        // « pour 19:30 » — badge 🕐 des commandes programmées (aujourd'hui) ou
+        // « pour le 12/08 19:30 » si une avance multi-jours arrive un jour.
+        scheduledLabel(o) {
+            const ts = this._scheduledTs(o);
+            if (!ts) return '';
+            const d = new Date(ts);
+            const hm = o.scheduled_hm || d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const today = new Date();
+            const sameDay = d.getFullYear() === today.getFullYear()
+                && d.getMonth() === today.getMonth()
+                && d.getDate() === today.getDate();
+            return sameDay ? `pour ${hm}` : `pour le ${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} ${hm}`;
+        },
+        // Première instruction client de la commande (allergie, note…) — le
+        // flag has_instruction vient du resource ; le texte vit par ligne.
+        instructionPreview(o) {
+            if (!o || !o.has_instruction) return '';
+            const items = Array.isArray(o.order_items) ? o.order_items : [];
+            const withNote = items.find((it) => it && typeof it.instruction === 'string' && it.instruction.trim() !== '');
+            return withNote ? withNote.instruction.trim() : '';
+        },
+        // Titre d'onglet « (N) … » quand des commandes web attendent une action.
+        _updateDocTitle(n) {
+            try {
+                if (!this._baseDocTitle) this._baseDocTitle = document.title || '';
+                document.title = n > 0 ? `(${n}) ${this._baseDocTitle}` : this._baseDocTitle;
+            } catch (_e) { /* environnement sans document */ }
+        },
+        // Réglage son : même clé que PosComponent (pos_new_order_sound_enabled,
+        // défaut ON) — un seul interrupteur pour toutes les surfaces caisse.
+        _newOrderSoundEnabled() {
+            try {
+                const s = this.$store.getters['frontendSetting/lists'] || {};
+                const flag = s.pos_new_order_sound_enabled;
+                if (flag === undefined || flag === null) return true;
+                return String(flag) === '1' || flag === true;
+            } catch (_e) {
+                return true;
+            }
+        },
+        // Beep + toast pour une nouvelle commande DISTANTE (web/borne). Les
+        // commandes créées à la caisse même ne sonnent pas (le caissier les a
+        // tapées). Dédup par id — jamais deux signaux pour la même commande.
+        _maybeNotifyIncomingOrder(o) {
+            if (!o) return;
+            const src = this.sourceOf(o);
+            if (src !== 'online' && src !== 'kiosk') return;
+            const idStr = String(o.id);
+            if (this._notifiedOrderIds.has(idStr)) return;
+            this._notifiedOrderIds.add(idStr);
+            try {
+                const num = o.queue_number || o.order_serial_no || o.id;
+                const label = src === 'online'
+                    ? `Nouvelle commande web N°${num}`
+                    : `Nouvelle commande borne N°${num}`;
+                alertService.info(label);
+            } catch (_e) { /* defensive */ }
+            if (!this._newOrderSoundEnabled()) return;
+            this._playNewOrderBeep();
+        },
+        // [CAISSE-WEB-INTEL 2026-08-06] Miroir exact du beep PosComponent
+        // (POS-9.1.11 / H.3.4) — Web Audio, aucun asset, resume() anti-autoplay.
+        _playNewOrderBeep() {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!this._audioCtx) {
+                try { this._audioCtx = new Ctx(); } catch (_e) { return; }
+            }
+            const ctx = this._audioCtx;
+            const emit = () => {
+                try {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 880;
+                    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                    osc.connect(gain).connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                } catch (_e) { /* autoplay bloqué */ }
+            };
+            try {
+                if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+                    const p = ctx.resume();
+                    if (p && typeof p.then === 'function') {
+                        p.then(emit).catch(() => { /* verrouillé */ });
+                        return;
+                    }
+                }
+                emit();
+            } catch (_e) { /* defensive */ }
+        },
     },
 };
 </script>
@@ -1537,6 +1802,22 @@ export default {
 
 .pos-tracker-status-pill--ready {
     animation: pos-tracker-soft-pulse 2.4s ease-in-out infinite;
+}
+
+/* [CAISSE-WEB-INTEL 2026-08-06] Pill « web à traiter » — bouton (filtre 🌐).
+   Ton cyan distinct du vert « prêts » et de l'ambre encaissement. */
+.pos-tracker-status-pill--web {
+    background: #ECFEFF;
+    color: #155e75;
+    border: 1px solid rgba(8, 145, 178, 0.35);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    animation: pos-tracker-soft-pulse 2.4s ease-in-out infinite;
+}
+.pos-tracker-status-pill--web:hover {
+    background: #CFFAFE;
 }
 
 .pos-tracker-bar-right {
@@ -1957,6 +2238,66 @@ export default {
     white-space: nowrap;
 }
 
+/* [CAISSE-WEB-INTEL 2026-08-06] Badge « ✅ CB » payé en ligne — vert succès,
+   même gabarit que le 🔔 cash-pending pour la symétrie visuelle. */
+.pos-tracker-card-paid-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 8px;
+    background: var(--pos-tracker-green-soft);
+    color: #166534;
+    font-size: 11px;
+    font-weight: 800;
+    border: 1px solid rgba(26, 183, 89, 0.35);
+    white-space: nowrap;
+}
+
+/* [CAISSE-WEB-INTEL 2026-08-06] Badge type livraison 🛵 sur la carte. */
+.pos-tracker-card-type-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--pos-tracker-blue-soft);
+    font-size: 14px;
+}
+
+/* [CAISSE-WEB-INTEL 2026-08-06] Badge commande programmée « 🕐 pour 19:30 ». */
+.pos-tracker-card-scheduled {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--pos-tracker-blue-soft);
+    color: var(--pos-tracker-blue);
+    border: 1px solid rgba(29, 78, 216, 0.30);
+}
+
+/* [CAISSE-WEB-INTEL 2026-08-06] Bandeau instruction client (allergie / note). */
+.pos-tracker-card-instruction {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid rgba(217, 119, 6, 0.30);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
 .pos-tracker-card-time {
     margin-left: auto;
     font-size: 12px;
@@ -2219,6 +2560,34 @@ export default {
     font-weight: 600;
     color: var(--pos-tracker-text);
 }
+/* [CAISSE-WEB-INTEL 2026-08-06] Chips raisons d'annulation 1-geste. */
+.pos-tracker-cancel-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.pos-tracker-cancel-chip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--pos-tracker-border);
+    background: #fff;
+    color: var(--pos-tracker-text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.pos-tracker-cancel-chip:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+}
+.pos-tracker-cancel-chip.is-active {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+
 .pos-tracker-cancel-textarea {
     width: 100%;
     min-height: 84px;
@@ -2358,6 +2727,7 @@ export default {
 .pos-tracker-card-leave-to { opacity: 0; transform: translateY(6px); }
 
 @media (prefers-reduced-motion: reduce) {
+    .pos-tracker-status-pill--web,
     .pos-tracker-status-pill--ready,
     .pos-tracker-col--green.is-pulse,
     .pos-tracker-card.tracker-card--urgent,
