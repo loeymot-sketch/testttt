@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { KDS_CARTES_PAR_ECRAN_DEFAUT } from '../../../resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue';
 import KdsV2Grid from '../../../resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue';
 import { ORDER_STATUS } from '../../../resources/js/helpers/kdsState.js';
 
@@ -63,9 +64,12 @@ describe('KDS — [A]–[H] never bumps an off-screen order (P2-k)', () => {
         expect(wrapper.vm.activeOrders.length).toBe(8);
         // [KDS-6CARDS] toutes rendues (flux horizontal)…
         expect(wrapper.vm.visibleActiveOrders.length).toBe(8);
-        // …mais 6 slots de raccourcis (garantis à l'écran) et +2 en pastille.
-        expect(wrapper.vm.shortcutOrders.length).toBe(6);
-        expect(wrapper.vm.overflowActiveCount).toBe(2);
+        // …mais seuls les slots garantis à l'écran ont un raccourci, le reste passe en pastille.
+        // [KDS-COLONNES 2026-08-07] Le nombre de raccourcis suit le RÉGLAGE de colonnes
+        // (défaut passé de 6 à 4 sur demande owner) — on l'assert contre le réglage, pas
+        // contre un chiffre en dur qui redeviendrait faux au prochain changement.
+        expect(wrapper.vm.shortcutOrders.length).toBe(KDS_CARTES_PAR_ECRAN_DEFAUT);
+        expect(wrapper.vm.overflowActiveCount).toBe(8 - KDS_CARTES_PAR_ECRAN_DEFAUT);
     });
 
     it('pressing [A]–[F] bumps the corresponding guaranteed-visible order', async () => {
@@ -75,7 +79,7 @@ describe('KDS — [A]–[H] never bumps an off-screen order (P2-k)', () => {
         await wrapper.vm.$nextTick();
 
         const emitted = wrapper.emitted('change-status') || [];
-        expect(emitted.length).toBe(6);
+        expect(emitted.length).toBe(KDS_CARTES_PAR_ECRAN_DEFAUT);
         // A→id100 … F→id105 (ACCEPT→PREPARING).
         emitted.forEach((e, i) => {
             expect(e[0]).toMatchObject({ orderId: 100 + i, status: ORDER_STATUS.PREPARING });

@@ -62,7 +62,30 @@
          6 commandes par écran, TOUTES rendues dans un flux horizontal défilable (barre
          visible + boutons ◀ ▶) — le chef voit ce qui arrive et lance les cuissons. -->
     <!-- [KDS-6CARDS 2026-08-05] ref pour les boutons ◀ ▶ (défilement programmatique). -->
-    <div v-else ref="gridEl" class="kds-v2__grid" :data-count="visibleActiveOrders.length">
+    <!-- [KDS-COLONNES 2026-08-07 owner] Sélecteur « combien de commandes à la fois ».
+         Discret, en haut à droite, cible tactile large : l'écran cuisine est en plein
+         écran et se pilote au doigt. -->
+    <div v-if="activeOrders.length > 0" class="kds-cols-picker" role="group" aria-label="Nombre de commandes affichées">
+      <button
+        v-for="n in choixCartes"
+        :key="`cols-${n}`"
+        type="button"
+        class="kds-cols-picker__btn"
+        :class="{ 'is-active': n === cartesParEcran }"
+        :aria-pressed="n === cartesParEcran ? 'true' : 'false'"
+        :data-testid="`kds-cols-${n}`"
+        @click="choisirCartesParEcran(n)"
+      >{{ n }}</button>
+    </div>
+
+    <div
+      v-if="activeOrders.length > 0"
+      ref="gridEl"
+      class="kds-v2__grid"
+      :data-count="visibleActiveOrders.length"
+      :data-cols="cartesParEcran"
+      :style="{ '--kds-cols': cartesParEcran }"
+    >
       <KdsOrderCard
         v-for="(o, idx) in visibleActiveOrders"
         :key="o.id"
@@ -146,10 +169,18 @@ import {
 
 const SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-// [KDS-6CARDS GOAL-8AXES 2026-08-05] Cartes par écran (révocation owner du
-// mandat 3-cartes c70b1e518 via /goal). La prochaine révision = cette ligne.
-export const KDS_VISIBLE_CARDS = 6;
-// Plafond de RENDU (4 écrans de 6) : au-delà, les cartes ne sont plus montées
+// [KDS-COLONNES 2026-08-07 owner] Cartes par écran — désormais RÉGLABLE, plus figée.
+//
+// Le défaut signalé : à 1 ou 2 commandes les cartes occupaient tout l'écran, puis à la
+// 3ᵉ elles tombaient d'un coup au sixième de la largeur — « trop trop petit, on ne voit
+// plus rien ». La largeur d'une carte est maintenant CONSTANTE quel que soit le nombre de
+// commandes, et le cuisinier choisit combien il en voit à la fois.
+export const KDS_CHOIX_CARTES = [4, 6, 8];
+export const KDS_CARTES_PAR_ECRAN_DEFAUT = 4;
+export const KDS_PREF_CARTES = 'kds.cartesParEcran';
+/** Conservé pour les appelants historiques : valeur par défaut, plus un plafond figé. */
+export const KDS_VISIBLE_CARDS = KDS_CARTES_PAR_ECRAN_DEFAUT;
+// Plafond de RENDU : au-delà, les cartes ne sont plus montées
 // (perf écran cuisine — la dev-DB a montré 488 actives) ; la pastille « +N en
 // attente » couvre le surplus. En service réel la file dépasse rarement 10.
 export const KDS_RENDER_MAX = 24;
@@ -186,6 +217,11 @@ export default {
     emits: ['change-status', 'auto-promote', 'reprint'],
     data() {
         return {
+            // [KDS-COLONNES 2026-08-07 owner] Combien de commandes le cuisinier voit d'un
+            // coup. Persisté sur le poste : l'écran cuisine démarre en plein écran sans
+            // qu'on le reconfigure chaque matin.
+            cartesParEcran: KDS_CARTES_PAR_ECRAN_DEFAUT,
+            choixCartes: KDS_CHOIX_CARTES,
             now: Date.now(),
             tickerId: null,
             // [Wave V 2026-05-21] activeToast + pendingTimeoutId removed — the
@@ -288,10 +324,10 @@ export default {
         // Raccourcis clavier bornés aux cartes garanties à l'écran SANS scroll
         // (régression P2-k : jamais bumper une commande hors de vue).
         shortcutOrders() {
-            return this.activeOrders.slice(0, KDS_VISIBLE_CARDS);
+            return this.activeOrders.slice(0, this.cartesParEcran);
         },
         overflowActiveCount() {
-            return Math.max(0, this.activeOrders.length - KDS_VISIBLE_CARDS);
+            return Math.max(0, this.activeOrders.length - this.cartesParEcran);
         },
     },
     watch: {
@@ -317,6 +353,12 @@ export default {
         },
     },
     mounted() {
+        // Restaure le réglage du poste avant le premier rendu utile.
+        try {
+            const memo = Number(window.localStorage.getItem(KDS_PREF_CARTES));
+            if (KDS_CHOIX_CARTES.includes(memo)) this.cartesParEcran = memo;
+        } catch (e) { /* stockage indisponible : on garde le défaut */ }
+
         // Single global ticker — all cards read `this.now` reactively, no
         // per-card setInterval.
         this.tickerId = window.setInterval(() => {
@@ -334,6 +376,22 @@ export default {
         window.removeEventListener('keydown', this.onKey);
     },
     methods: {
+        /**
+         * [KDS-COLONNES 2026-08-07 owner] Change le nombre de commandes visibles à la fois.
+         * Le choix est mémorisé sur le poste ; un stockage indisponible (mode privé, quota)
+         * ne doit jamais empêcher le changement d'affichage — la cuisine passe avant.
+         */
+        choisirCartesParEcran(n) {
+            const valeur = KDS_CHOIX_CARTES.includes(Number(n)) ? Number(n) : KDS_CARTES_PAR_ECRAN_DEFAUT;
+            this.cartesParEcran = valeur;
+            try {
+                window.localStorage.setItem(KDS_PREF_CARTES, String(valeur));
+            } catch (e) { /* stockage indisponible : le réglage vaut pour la session */ }
+            // Le défilement horizontal doit repartir du début, sinon on reste bloqué au
+            // milieu d'une file qui vient de changer de largeur.
+            this.$nextTick(() => { if (this.$refs.gridEl) this.$refs.gridEl.scrollLeft = 0; });
+        },
+
         // [KDS-6CARDS 2026-08-05] Défilement d'un « écran » (~3 cartes) par clic —
         // gros boutons ◀ ▶ utilisables au doigt OU à la souris.
         scrollGrid(dir) {
@@ -473,8 +531,10 @@ export default {
     flex: 1;
     display: grid;
     grid-auto-flow: column;
-    /* 6 colonnes par écran (5 gaps de 10px + padding 2×10px = 70px répartis) */
-    grid-auto-columns: calc((100% - 70px) / 6);
+    /* [KDS-COLONNES 2026-08-07] Largeur CONSTANTE : (largeur utile - gaps) / colonnes.
+       Elle ne dépend PLUS du nombre de commandes — c'est ce saut (plein écran à 2
+       commandes, puis un sixième à 3) qui rendait les cartes illisibles. */
+    grid-auto-columns: calc((100% - 20px - (var(--kds-cols, 4) - 1) * 10px) / var(--kds-cols, 4));
     grid-template-rows: 1fr;
     align-items: stretch;
     gap: 10px;
@@ -499,9 +559,37 @@ export default {
     border-radius: 8px;
     border: 3px solid #E5E7EB;
 }
-/* 1 ou 2 commandes → elles remplissent la largeur (pas de colonnes vides à droite). */
-.kds-v2__grid[data-count="1"] { grid-auto-columns: 100%; }
-.kds-v2__grid[data-count="2"] { grid-auto-columns: calc((100% - 30px) / 2); }
+/* [KDS-COLONNES 2026-08-07 owner] Les cas particuliers « 1 » et « 2 » sont SUPPRIMÉS :
+   ils faisaient occuper tout l'écran à deux cartes, puis rétrécir brutalement à la
+   troisième. Une carte garde désormais la même largeur, quelle que soit la file. */
+
+/* Sélecteur du nombre de colonnes — flottant, discret, tactile. */
+.kds-cols-picker {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    z-index: 95;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: rgba(26, 26, 26, 0.72);
+}
+.kds-cols-picker__btn {
+    min-width: 44px;
+    min-height: 44px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #F9FAFB;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.kds-cols-picker__btn.is-active {
+    background: #F4501E;
+    color: #FFFFFF;
+}
 
 /* [KDS-6CARDS] Boutons de défilement ◀ ▶ — cible tactile large (secours souris/tactile). */
 .kds-scroll-btn {
