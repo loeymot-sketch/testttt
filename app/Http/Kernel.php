@@ -138,6 +138,12 @@ class Kernel extends HttpKernel
         // [F-VERIFY-09-02 / PLAN_P11] HTTP-level idempotency guard. Opt-in
         // per-route via routes/api.php; flag-gated via IDEMPOTENCY_MIDDLEWARE_ENABLED.
         'idempotency' => \App\Http\Middleware\IdempotencyKeyMiddleware::class,
+        // [P0 PAIEMENT EN LIGNE 2026-08-07] À poser JUSTE AVANT `idempotency` sur toute
+        // route portant une commande : donne au garde gelé une branche dérivée du serveur
+        // (la commande de la route) au lieu de dépendre d'une convention que l'appelant
+        // doit se souvenir d'honorer dans son corps de requête. Voir la classe pour le
+        // détail : un compte client porte branch_id=0 et faisait échouer le garde en 422.
+        'idempotency.branch' => \App\Http\Middleware\ResolveIdempotencyBranchFromRoute::class,
         // [GOAL-J2-HEAL-02 2026-05-24] Phase J-ADV-6 PATH-1 RED P0 closer.
         // Blocks Sanctum tokens carrying the kiosk:order ability from reaching
         // /api/admin/* routes regardless of the underlying user's Spatie

@@ -1530,19 +1530,29 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-quote');
         Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
         // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
+        // [P0 2026-08-07] Jumelles de mollie-checkout : elles portent aussi une commande, donc
+        // même garde de branche dérivée du serveur. Ces deux méthodes ne lisent PAS `branch_id`
+        // dans la requête (elles utilisent `$frontendOrder->branch_id` et celui de la borne) :
+        // l'injection leur est inerte, elle ne sert qu'au garde d'idempotence.
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus'])
-            ->middleware('idempotency')
+            ->middleware(['idempotency.branch', 'idempotency'])
             ->name('change-status');
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
-        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
+        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware(['idempotency.branch', 'idempotency']);
         // [W5 Mollie 2026-07-20] Checkout carte web : crée le paiement Mollie (montant =
         // total scellé backend) d'une commande UNPAID du client → checkout_url hébergée.
         // FAIL-CLOSED 503 sans flag+clé (gate G-W5). Jamais de PAID ici (webhook seul).
         // [BRAIN RED 2026-08-03 P1] cardToken ⇒ la CRÉATION du paiement EST l'encaissement :
         // un retry (timeout client alors que Mollie a accepté) re-débiterait. `idempotency`
         // (comme les 3 routes sœurs) rejoue le 2xx caché pour la même X-Idempotency-Key.
+        // [P0 PAIEMENT EN LIGNE 2026-08-07] `idempotency.branch` AVANT `idempotency` : la
+        // branche est dérivée de la COMMANDE de la route, pas du corps envoyé par le client.
+        // Sans lui, un compte de rôle « Customer » (branch_id=0, aucune borne) faisait
+        // retomber le garde gelé sur `input('branch_id', -1)` → 422, et la requête
+        // n'atteignait JAMAIS Mollie. Mesuré en production : 21 comptes sur 24 concernés,
+        // carte comme portefeuille. Sentinelle : tests/Feature/Payment/IdempotencyBranchFromRouteTest.php
         Route::post('/{frontendOrder}/mollie-checkout', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'checkout'])
-            ->middleware(['idempotency', 'throttle:10,1'])
+            ->middleware(['idempotency.branch', 'idempotency', 'throttle:10,1'])
             ->name('mollie-checkout');
     });
 
