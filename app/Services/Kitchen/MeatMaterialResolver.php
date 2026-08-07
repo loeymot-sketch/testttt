@@ -114,12 +114,32 @@ final class MeatMaterialResolver
 
             if (! isset(self::SYMBOLE_VERS_MATIERE[$symbole])) {
                 $skipped[] = ['symbol' => $symbole, 'reason' => 'symbole_non_mappe', 'pieces' => $n];
+                // [CUISSON fail-loud 2026-08-07 · audit R1 P2] Une viande NON MAPPÉE consomme
+                // ZÉRO stock EN SILENCE : l'owner a ajouté une viande sans la câbler dans les 3
+                // tables (MEAT_TABLE, SYMBOLE_VERS_MATIERE, VIANDES_PILOTEES). Sans ce warning le
+                // trou de stock restait invisible (juste dans skipped[]) → food-cost faussé.
+                Log::warning('[MeatMaterialResolver] symbole viande NON MAPPÉ — stock NON consommé', [
+                    'symbol' => $symbole,
+                    'pieces' => $n,
+                    'branch_id' => $branchId,
+                    'hint' => 'Câbler le symbole dans SYMBOLE_VERS_MATIERE + créer la matière + son poids unitaire.',
+                ]);
+
                 continue;
             }
 
             $matiere = $this->matiere(self::SYMBOLE_VERS_MATIERE[$symbole], $branchId);
             if ($matiere === null) {
                 $skipped[] = ['symbol' => $symbole, 'reason' => 'matiere_absente', 'pieces' => $n];
+                // [CUISSON fail-loud 2026-08-07] Symbole mappé mais matière première absente en base
+                // pour cette branche → même trou de stock silencieux. On le rend visible.
+                Log::warning('[MeatMaterialResolver] matière première ABSENTE — stock NON consommé', [
+                    'symbol' => $symbole,
+                    'materiel' => self::SYMBOLE_VERS_MATIERE[$symbole],
+                    'pieces' => $n,
+                    'branch_id' => $branchId,
+                ]);
+
                 continue;
             }
 

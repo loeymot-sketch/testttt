@@ -1,0 +1,21 @@
+[
+  {"desc": "une viande hachee = portion complete (2 steaks)", "item": "Tacos M", "viandes": ["Viande Hachée"], "expected": "2K"},
+  {"desc": "hachee sur Cayenne", "item": "Cayenne", "viandes": ["Viande Hachée"], "expected": "2K"},
+  {"desc": "poulet se compte en PORTIONS (1 = 200g)", "item": "Galette Normale", "viandes": ["Poulet mariné"], "expected": "1P"},
+  {"desc": "cordon bleu reste en pieces (2 par portion)", "item": "Bol Riz", "viandes": ["Cordon Bleu"], "expected": "2Cordon"},
+  {"desc": "deux viandes = demi-portion de chacune (poulet en 0,5)", "item": "Méga", "viandes": ["Viande Hachée", "Poulet mariné"], "expected": "1K 0,5P"},
+  {"desc": "deux viandes distinctes en pieces", "item": "Tacos L", "viandes": ["Mexicanos", "Cordon Bleu"], "expected": "1Cordon 1Mex"},
+  {"desc": "deux fois la meme viande se recompose en portion pleine", "item": "Terminator", "viandes": ["Viande Hachée", "Viande Hachée"], "expected": "2K"},
+  {"desc": "Mixte partage son emplacement entre ses deux viandes", "item": "Cayenne", "viandes": ["Mixte (hachée + poulet)"], "expected": "1K 0,5P"},
+  {"desc": "la quantite de ligne multiplie les pieces", "item": "Tacos M", "viandes": ["Viande Hachée"], "quantity": 3, "expected": "6K"},
+  {"desc": "supplement viande = portion complete, nomme depuis l'instruction", "item": "Cayenne", "viandes": ["Poulet mariné"], "extras": [{"extra_name": "Viande supplémentaire", "quantity": 1}], "instruction": "Viandes en plus : Viande Hachée", "expected": "2K 1P"},
+  {"desc": "recette fixe Cheese Burger", "item": "Cheese Burger", "viandes": [], "expected": "1K"},
+  {"desc": "recette fixe Double Cheese (avant Cheese)", "item": "Double Cheese", "viandes": [], "expected": "2K"},
+  {"desc": "recette fixe Grill Burger", "item": "Grill Burger", "viandes": [], "expected": "2K"},
+  {"desc": "recette fixe Big Burger", "item": "Big Burger", "viandes": [], "expected": "3K"},
+  {"desc": "recette fixe Fish Burger", "item": "Fish Burger", "viandes": [], "expected": "1Poi"},
+  {"desc": "recette fixe Chicken Burger", "item": "Chicken Burger", "viandes": [], "expected": "1Chick"},
+  {"desc": "recette fixe Supreme", "item": "Suprême", "viandes": [], "expected": "1K 1Cordon"},
+  {"desc": "recette fixe Menu Enfant Nuggets (avant Chicken)", "item": "Menu Enfant Nuggets", "viandes": [], "expected": "6Nug 1F"},
+  {"desc": "recette fixe Menu Enfant Chicken (avant Chicken Burger)", "item": "Menu Enfant Chicken Burger", "viandes": [], "expected": "1Chick 1F"}
+]
