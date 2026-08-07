@@ -8,7 +8,7 @@
 - **Créé** : 2026-08-05
 - **Cycle** : GOAL_OWNER_8AXES_CUISINE_CAISSE_WEB (Vague 3, T-8.3)
 - **Phase** : EXECUTE
-- **Statut** : `APPROVED-BY-DIRECTIVE` (cf. §10 — demande owner verbatim du /goal ; contresign formel demandé au rapport final)
+- **Statut** : `APPROVED-COUNTERSIGNED` — contresigné par l'owner le 2026-08-08 (cf. §10). Historique : `APPROVED-BY-DIRECTIVE` (cf. §10 — demande owner verbatim du /goal ; contresign formel demandé au rapport final)
 
 ## §2. Fichier frozen ciblé
 | Path | Pourquoi frozen | Lignes ciblées |
@@ -66,5 +66,18 @@ Patch commité SEUL (aucun autre fichier dans le commit).
   moi-même sur la caisse lorsqu'il me dit pas de Recruiter [crudités] je, je
   fais pas toucher toutes les Recruiter pour les sélectionner comme ça y a pas
   de crudités » + directive d'exécution « do the goal … max and best result ».
-- **Contresign formel** : ☐ demandé au rapport final de convergence (Vague 8).
-  Si l'owner refuse : rollback §7 en un revert.
+- **Contresign formel** : ☑ **CONTRESIGNÉ PAR L'OWNER LE 2026-08-08.**
+  Demande owner du jour : « je veux résoudre et validé » (liste explicite des portes
+  ouvertes, dont ce LOCK), puis **confirmation explicite après présentation du diff** —
+  l'owner a vu la portée exacte AVANT de signer : `public/js/pos-wizard.js` uniquement,
+  **+20 lignes / −0**, aucune suppression, styles en ligne pour ne pas toucher non plus
+  au CSS gelé.
+  - Empreinte approuvée : `adc1e3c3423143f8949c715272dcca7af37bf2634bb6e3c367826f99f038ec83`
+    (référence `tests/Feature/Sentinels/frozen-zone-sha256-baseline.json` rattrapée le
+    2026-08-07 : le commit du 05/08 avait oublié de la régénérer, la sentinelle rougissait
+    donc sur une modification pourtant approuvée — sentinelle re-verte depuis).
+  - Vérifié avant signature : le geste « Sans crudités » est servi et fonctionne en
+    production ; suite Feature complète **3890 tests, 0 échec**.
+  - Statut du LOCK : `APPROVED-BY-DIRECTIVE` → **APPROVED-COUNTERSIGNED**.
+  Si l'owner change d'avis : rollback §7 en un revert — toujours valable, le patch étant
+  purement additif et isolé dans son propre commit.
