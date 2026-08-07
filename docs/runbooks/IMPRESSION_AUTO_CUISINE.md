@@ -23,6 +23,11 @@ mais **quand elle entre en cuisine**, ce qui vaut pour toutes les surfaces.
 ## Mise en service (sur la machine du restaurant)
 
 ```bash
+# 0. COMPILER LES ASSETS — sinon l'écran de cuisine sert l'ANCIEN bundle et aucun
+#    changement d'affichage n'apparaît. Les fichiers compilés sont hors git
+#    (public/.gitignore) : ils DOIVENT être rebâtis sur la machine.
+npm ci && npm run production
+
 # 1. Désactiver le bypass
 #    .env :  PRINTING_BYPASS_MODE=false
 php artisan config:clear

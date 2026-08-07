@@ -153,3 +153,46 @@ donc aucun moyen de savoir que les 25 % de viande manquants sont un bug de calcu
 
 L'étape 2 modifie des chiffres de coût matière existants : **elle demande votre accord explicite**
 avant d'être appliquée. Les étapes 1 et 5 sont additives et sans risque.
+
+
+---
+
+## 8. DÉCISION 2026-08-07 — le rejeu historique N'A PAS été lancé
+
+L'owner ayant demandé de finir et de décider, voici la décision et sa preuve.
+
+`raw-materials:replay-consumption` **ne peut pas corriger l'historique** : son idempotence porte
+sur le couple *(ligne de commande, matière)*. Les anciens mouvements erronés portent une matière
+DIFFÉRENTE de celle que le nouveau moteur calcule — ils ne sont donc jamais remplacés, seulement
+complétés.
+
+Vérifié sur une commande réelle :
+
+```
+order_item #5917 (Cayenne)
+  déjà consommé : Poulet 200 g · Cheddar · Jambon · Pain · Sauce · Salade · Tomate · Oignon
+  le rejeu AJOUTERAIT : « Poulet mariné » 200 g  ← NOUVEAU
+  l'ancien « Poulet » vrac RESTERAIT en base
+```
+
+Résultat : **400 g de poulet pour un sandwich qui en contient 200**. Ce n'est pas une correction,
+c'est un doublement. Le rejeu à blanc annonce 645 lignes de ce type sur 184 commandes.
+
+**Corriger réellement l'historique** supposerait d'abord d'ANNULER les anciens mouvements de vente
+(`consumption_reversal` sur la période), puis de rejouer. C'est une opération qui modifie les
+niveaux de stock actuels et qui doit être faite **juste après un inventaire compté**, sinon on
+remplace un chiffre faux par un autre chiffre invérifiable.
+
+**Décision : ne rien rejouer.** Les commandes NOUVELLES sont désormais justes ; l'historique reste
+tel quel, faux mais cohérent avec lui-même. Le premier inventaire compté servira de point zéro —
+c'est de toute façon le seul moyen de savoir où on en est vraiment.
+
+## 9. NON TOUCHÉ, DÉLIBÉRÉMENT
+
+- **Les lignes de recette « viande » restent en base** (Cayenne → Poulet 200 g, Suprême →
+  `Poulet ×0`, Big Burger → 75 g au lieu de 225). Le code les neutralise déjà de façon
+  conditionnelle ; les supprimer serait irréversible sans sauvegarde, pour un gain nul.
+- **Les bols n'ont toujours pas de recette non-viande** (riz, frites) : inventer des grammages
+  produirait un coût matière faux avec l'autorité d'un chiffre juste.
+- **Le jambon du Big Burger** : l'owner dit 1, la base dit 2. Sans effet sur la cuisson ; à
+  trancher le jour où le stock suivra le jambon.
