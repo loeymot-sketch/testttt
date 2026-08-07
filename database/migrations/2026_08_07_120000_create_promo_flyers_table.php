@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -75,26 +74,17 @@ return new class extends Migration
             $table->index(['branch_id', 'status', 'claimed_at'], 'promo_flyers_queue_idx');
         });
 
-        // Unicité réelle du code coupon. Elle n'existait pas : seule une règle
-        // de formulaire la vérifiait (Rule::unique), ce qui ne protège pas de
-        // deux insertions concurrentes. Sans danger ici : la production compte
-        // 0 coupon (vérifié avant écriture de cette migration).
-        if (Schema::hasTable('coupons')) {
-            $duplicates = DB::table('coupons')
-                ->select('code')
-                ->groupBy('code')
-                ->havingRaw('COUNT(*) > 1')
-                ->count();
-
-            // On refuse de casser une base qui contiendrait déjà des doublons :
-            // mieux vaut une migration qui s'abstient et le dit qu'une
-            // migration qui échoue à moitié en production.
-            if ($duplicates === 0) {
-                Schema::table('coupons', function (Blueprint $table) {
-                    $table->unique('code', 'coupons_code_unique');
-                });
-            }
-        }
+        // NOTE 2026-08-07 : cette migration ajoutait aussi un index UNIQUE sur
+        // `coupons.code`. Il a été RETIRÉ le jour même
+        // (`2026_08_07_140000_drop_coupons_code_unique_index`) parce qu'il
+        // cassait un comportement délibéré du projet — recréer un coupon avec
+        // le code d'un coupon supprimé — verrouillé par
+        // `CouponSoftDeleteHistoryTest`. L'unicité qui compte pour les tickets
+        // est portée par `promo_flyers.code` ci-dessus, qui n'a aucune notion
+        // de suppression logique.
+        //
+        // On laisse la trace ici plutôt que de réécrire l'historique : la
+        // migration a déjà tourné en production.
     }
 
     public function down(): void
