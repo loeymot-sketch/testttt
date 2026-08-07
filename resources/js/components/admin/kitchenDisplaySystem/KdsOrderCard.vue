@@ -403,6 +403,13 @@ export default {
             // est déjà flex (kds-card__body flex:1) donc le CTA reste collé en bas.
             return {
                 border: `3px solid ${this.borderColor}`,
+                // [KDS-UI-MULTI 2026-08-07] `container-type` est posé EN LIGNE, pas en CSS :
+                // le minifieur de la chaîne de build le SUPPRIME silencieusement de la feuille
+                // (vérifié dans le bundle servi : `13cqw` présent, `container-type` absent).
+                // Les tailles en `cqw` se résolvaient alors sur l'écran et le numéro restait à
+                // 52 px sur une carte de 136 px. Un moteur sans requêtes de conteneur ignore
+                // simplement cette propriété et garde les tailles de repli en px.
+                'container-type': 'inline-size',
             };
         },
         cardClass() {
@@ -718,7 +725,8 @@ export default {
 .kds-card__cuisson-label {
     flex-shrink: 0;
     color: #F9FAFB;
-    font-size: clamp(12px, 1.3vw, 16px);
+    font-size: 12px;
+    font-size: clamp(9px, 3.4cqw, 16px);
     font-weight: 700;
     letter-spacing: 0.08em;
     opacity: 0.7;
@@ -726,39 +734,63 @@ export default {
 .kds-card__cuisson-value {
     color: #FFFFFF;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: clamp(22px, 2.6vw, 34px);
+    font-size: 24px;
+    font-size: clamp(16px, 8.5cqw, 34px);
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: 0.01em;
     font-variant-numeric: tabular-nums;
-    /* Une grosse commande peut dépasser la largeur : on enroule plutôt que de tronquer —
-       une viande coupée serait une viande non cuite. */
-    overflow-wrap: anywhere;
+    /* [KDS-UI-MULTI 2026-08-07] `anywhere` cassait AU MILIEU des symboles quand la carte
+       devenait étroite : mesuré à 8 colonnes, « 1P 1F » s'affichait un caractère par ligne
+       dans un pavé noir illisible. On n'autorise plus la coupure qu'entre les groupes
+       (espaces) — « 2K » et « 0,5P » restent d'un seul tenant, ce que le cuisinier lit. */
+    overflow-wrap: normal;
+    word-break: keep-all;
 }
 .kds-card__main {
     display: flex;
+    /* [KDS-UI-MULTI 2026-08-07] `wrap` : sur une carte très étroite (8 colonnes en 1366 =
+       136 px), le numéro et le compteur d'attente ne tiennent pas côte à côte et se
+       CHEVAUCHAIENT — les deux informations vitales, illisibles ensemble. Ils passent
+       désormais l'un sous l'autre. Pur flexbox : aucune requête de conteneur, donc rien que
+       le minifieur puisse supprimer en silence. */
+    flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
     gap: 8px; /* tightened from 12px to recover horizontal budget */
     padding: 2px 12px 10px; /* tightened from 16px to recover ~8px */
 }
-.kds-card__queue,
+/* [KDS-UI-MULTI 2026-08-07 owner] `flex-shrink: 0` sur les DEUX colonnes garantissait le
+   débordement dès que la carte rétrécissait : mesuré au banc, le compteur d'attente sortait
+   de la carte et le mot « ATTENTE » était tronqué à « A ». Le numéro de commande reste
+   incompressible (c'est l'information vitale) ; c'est le bloc d'attente qui cède, et son
+   contenu est aligné à droite pour rester lisible jusqu'au dernier pixel. */
+/* L'attente cède la place, alignée à droite — mais ses chiffres restent VISIBLES
+   (intention Wave T WT-B-R1-002) : c'est sa taille qui s'adapte, jamais un rognage. */
 .kds-card__elapsed-wrap {
-    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */
-    min-width: 0; /* allow children to participate in the flex shrink calc */
-    overflow: visible; /* ensure timer descenders/digits never clipped */
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: visible;
+    text-align: right;
 }
+/* Le NUMÉRO est incompressible — c'est l'information vitale de la carte — mais sa TAILLE
+   s'adapte à la largeur de la carte, sinon il chevauche le compteur d'attente. */
 .kds-card__queue {
+    flex-shrink: 0;
+    min-width: 0;
+    overflow: visible;
     color: #111827;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: clamp(36px, 4.2vw, 52px);
+    font-size: 34px;
+    font-size: clamp(24px, 13cqw, 52px);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
 }
 .kds-card__queue-prefix {
-    font-size: clamp(16px, 2vw, 26px);
+    font-size: 16px;
+    font-size: clamp(11px, 5cqw, 26px);
     font-weight: 700;
     opacity: 0.55;
     margin-inline-end: 2px;
@@ -791,6 +823,7 @@ export default {
 }
 .kds-card__elapsed-label {
     font-size: 10px;
+    font-size: clamp(8px, 2.8cqw, 14px);
     font-weight: 700;
     /* [Wave T R1 F3 WT-B-R1-002 2026-05-20] letter-spacing reduced 0.15em→0.06em
        so "ATTENTE" fits the elapsed-wrap column without clipping at 1280px.
@@ -802,7 +835,10 @@ export default {
 }
 .kds-card__elapsed {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: clamp(22px, 2.8vw, 34px);
+    /* [KDS-UI-MULTI 2026-08-07] Ce compteur restait à 34 px sur une carte étroite et venait
+       CHEVAUCHER le numéro de commande — les deux informations vitales, illisibles ensemble. */
+    font-size: 22px;
+    font-size: clamp(15px, 7.5cqw, 34px);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;

@@ -66,6 +66,12 @@
          Discret, en haut à droite, cible tactile large : l'écran cuisine est en plein
          écran et se pilote au doigt. -->
     <div v-if="activeOrders.length > 0" class="kds-cols-picker" role="group" aria-label="Nombre de commandes affichées">
+      <!-- [KDS-UI-MULTI 2026-08-07] La pastille « +N en attente » vivait en absolu au-dessus
+           de la grille et RECOUVRAIT une carte entière (mesuré : carte [D] masquée à 4
+           colonnes). Elle est rapatriée ici, dans la barre de réglage, où elle ne cache rien. -->
+      <span v-if="overflowActiveCount > 0" class="kds-cols-picker__waiting" role="status">
+        +{{ overflowActiveCount }} en attente
+      </span>
       <button
         v-for="n in choixCartes"
         :key="`cols-${n}`"
@@ -82,6 +88,7 @@
       v-if="activeOrders.length > 0"
       ref="gridEl"
       class="kds-v2__grid"
+      :class="{ 'has-overflow': overflowActiveCount > 0 }"
       :data-count="visibleActiveOrders.length"
       :data-cols="cartesParEcran"
       :style="{ '--kds-cols': cartesParEcran }"
@@ -114,10 +121,6 @@
       data-testid="kds-scroll-right"
       @click="scrollGrid(1)"
     >▶</button>
-    <div v-if="overflowActiveCount > 0" class="kds-overflow-chip" role="status">
-      <span class="kds-overflow-chip__icon">+{{ overflowActiveCount }}</span>
-      <span>en attente</span>
-    </div>
 
     <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
          Renders the 4 most recently PREPARED orders with elapsed-since-served.
@@ -559,6 +562,22 @@ export default {
     border-radius: 8px;
     border: 3px solid #E5E7EB;
 }
+/* [KDS-UI-MULTI 2026-08-07 owner] ÉCHELLE TYPOGRAPHIQUE PAR NOMBRE DE COLONNES.
+   Mesuré au banc : à 8 colonnes sur 1366 px, une carte fait 152 px de large mais le numéro
+   de commande restait à 52 px — il sortait de la carte, le bandeau CUISSON s'empilait un
+   caractère par ligne et 1 seule ligne produit sur 6 restait visible. La cause : les tailles
+   étaient en `vw`, donc calées sur la largeur d'ÉCRAN et non sur celle de la CARTE.
+   Corrigé au bon endroit : la CARTE est devenue un conteneur de requête et dimensionne ses
+   textes sur SA propre largeur (`cqw`, cf. KdsOrderCard). Un facteur par nombre de colonnes
+   avait été essayé d'abord — insuffisant, il laissait encore le numéro chevaucher le compteur
+   d'attente sur une carte de 281 px. */
+/* Gouttières réservées aux boutons ◀ ▶ quand la file déborde : sans elles, les boutons se
+   posaient PAR-DESSUS le contenu de la première et de la dernière carte. */
+.kds-v2__grid.has-overflow {
+    padding-left: 76px;
+    padding-right: 76px;
+}
+
 /* [KDS-COLONNES 2026-08-07 owner] Les cas particuliers « 1 » et « 2 » sont SUPPRIMÉS :
    ils faisaient occuper tout l'écran à deux cartes, puis rétrécir brutalement à la
    troisième. Une carte garde désormais la même largeur, quelle que soit la file. */
@@ -574,6 +593,18 @@ export default {
     padding: 4px;
     border-radius: 10px;
     background: rgba(26, 26, 26, 0.72);
+}
+.kds-cols-picker__waiting {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    margin-right: 4px;
+    border-radius: 8px;
+    background: #F4501E;
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 .kds-cols-picker__btn {
     min-width: 44px;

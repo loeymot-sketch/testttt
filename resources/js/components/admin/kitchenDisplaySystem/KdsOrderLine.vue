@@ -198,7 +198,13 @@ export default {
   line-height: 1.2;
   letter-spacing: 0.3px;
   font-variant-numeric: tabular-nums;
-  word-break: break-word;
+  /* [KDS-UI-MULTI 2026-08-07 owner] `break-word` coupait EN PLEIN MOT sur les cartes
+     étroites : mesuré à 8 colonnes, « MENU » s'affichait « MEN / U » et « Coca-Cola »
+     devenait « Coca / - / Cola ». Le cuisinier lit des symboles courts ; les couper les rend
+     méconnaissables. On ne casse plus qu'entre les mots — un mot trop long débordera plutôt
+     que de devenir illisible, et c'est le moindre mal. */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 /* SYMBOLIC MENU — "MENU" / "F" badge */
