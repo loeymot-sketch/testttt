@@ -29,10 +29,30 @@ retour arrière coûte une commande si quelque chose se passe mal.
 
 ## Déploiement WEB seul (tes 3 plaintes — panier, champs carte, récap)
 
+> 🚨 **CORRIGÉ LE 2026-08-07, APRÈS ESSAI RÉEL : « Vercel déploie sur push » est FAUX.**
+> Le push GitHub a été fait (`fb1208c..e863353`) et **la production n'a pas bougé** :
+> `index.html` servi 32 845 o contre 54 982 en local, zéro marqueur récent ; `funnel.jsx`
+> servi 82 527 o contre 141 346, empreinte introuvable sur 250 commits. Il n'existe
+> **aucune liaison GitHub→Vercel** : la production est un instantané orphelin.
+> Vérifications faites : pas de `VERCEL_*` dans l'environnement, `auth.json` du CLI **vide**,
+> `vercel whoami` sans identifiants, aucun crochet de déploiement, aucun autre dépôt du
+> compte ne porte le site. **Le déploiement web exige donc une action interactive owner.**
+
 ```sh
 cd "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne"
-git log --oneline origin/main..HEAD | cat     # relire ce qui part (22 commits)
-git push origin main                          # Vercel déploie sur push
+git log --oneline origin/main..HEAD | cat     # relire ce qui part
+git push origin main                          # met GitHub à jour — NE DÉPLOIE PAS
+```
+
+**Pour que ça arrive réellement en ligne, au choix :**
+1. *Définitif* — dashboard Vercel → le projet du site → **Settings → Git → Connect Git
+   Repository** → `loeymot-sketch/Site-lecayenne`, branche `main`. Ensuite chaque push déploie.
+2. *Ponctuel* — `vercel login` puis `vercel --prod` depuis le dossier du site (login interactif).
+
+**Ne JAMAIS conclure « déployé » depuis un push.** La seule preuve valable :
+```sh
+curl -s "https://www.lecayenne.fr/index.html?x=$(date +%s)" | grep -c nbArticles   # doit être > 0
+curl -s "https://www.lecayenne.fr/funnel.jsx?x=$(date +%s)" | wc -c                # doit ≈ 141000
 ```
 Vérifier ensuite que la production sert bien le nouveau code :
 ```sh
