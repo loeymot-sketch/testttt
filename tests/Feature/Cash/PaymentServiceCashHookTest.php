@@ -195,16 +195,43 @@ class PaymentServiceCashHookTest extends TestCase
             'type'           => 'payment',
         ]);
 
+        // [PORTE OWNER `hasRecordedCashIn` RÉSOLUE 2026-08-07] La fixture créait la commande
+        // en PAID par factory, donc SANS passer par l'encaissement — aucune ENTRÉE tiroir
+        // n'existait. Depuis le durcissement du 30/07 (`662a846bc`), la sortie de tiroir est
+        // gatée sur l'existence de cette entrée : sortir sans entrée appariée produit une
+        // variance négative au rapprochement, exactement le défaut que ce garde ferme.
+        //
+        // Le test décrivait donc l'ANCIEN comportement avec une fixture que la production ne
+        // produit jamais : une session OUVERTE (le nom du test le dit) fait toujours enregistrer
+        // l'entrée par `recordCashOrderMovement`. On appelle donc la VRAIE méthode du flux
+        // plutôt que de fabriquer un mouvement à la main — la fixture ne peut plus dériver.
+        $this->paymentService->recordCashOrderMovement($order, 'encaissement espèces (fixture = flux réel)');
+
         $this->paymentService->cashBack($order, 'cash', 'TXN-CASHBACK-1');
 
         $movements = CashMovement::query()
             ->where('cash_drawer_session_id', $session->id)
+            ->orderBy('id')
             ->get();
 
-        $this->assertCount(1, $movements);
-        $this->assertSame(CashMovement::DIRECTION_OUT, $movements->first()->direction);
-        $this->assertSame(CashMovement::TYPE_CASHBACK, $movements->first()->type);
-        $this->assertSame($order->id, $movements->first()->order_id);
+        // La symétrie EST l'invariant : une entrée à l'encaissement, une sortie au remboursement.
+        $this->assertCount(2, $movements, 'attendu : 1 entrée (encaissement) + 1 sortie (cashback)');
+
+        $entree = $movements->firstWhere('type', CashMovement::TYPE_ORDER_PAYMENT);
+        $this->assertNotNull($entree, 'l\'entrée tiroir de l\'encaissement doit exister');
+        $this->assertSame(CashMovement::DIRECTION_IN, $entree->direction);
+
+        $sortie = $movements->firstWhere('type', CashMovement::TYPE_CASHBACK);
+        $this->assertNotNull($sortie, 'la sortie tiroir du cashback doit exister');
+        $this->assertSame(CashMovement::DIRECTION_OUT, $sortie->direction);
+        $this->assertSame($order->id, $sortie->order_id);
+
+        // Et les deux montants s'annulent : le tiroir revient à son fond de caisse.
+        $this->assertSame(
+            round((float) $entree->amount, 2),
+            round((float) $sortie->amount, 2),
+            'entrée et sortie doivent s\'annuler au centime'
+        );
     }
 
     /** I-E — re-confirm sur déjà PAID → 0 nouveau movement (hook ne se déclenche pas) */

@@ -153,7 +153,23 @@ class F003CashReconciliationSentinelTest extends TestCase
             'type'           => 'payment',
         ]);
 
+        // [PORTE OWNER `hasRecordedCashIn` RÉSOLUE 2026-08-07] Pré-condition RÉELLE ajoutée :
+        // la session est ouverte, donc l'encaissement espèces enregistre une ENTRÉE tiroir.
+        // Sans elle, la fixture décrivait un cas que la production ne produit pas (commande
+        // PAID par factory, sans passer par l'encaissement), et la sortie était — à raison —
+        // refusée par le garde du 30/07 : une sortie sans entrée appariée = variance négative
+        // au rapprochement. F-003 porte sur le RAPPROCHEMENT : c'est bien la symétrie
+        // entrée/sortie qu'il doit verrouiller, pas la sortie seule.
+        $paymentService->recordCashOrderMovement($order, 'encaissement espèces (fixture = flux réel)');
+
         $paymentService->cashBack($order, 'cash', 'TXN-CB-1');
+
+        $entree = CashMovement::query()
+            ->where('cash_drawer_session_id', $session->id)
+            ->where('type', CashMovement::TYPE_ORDER_PAYMENT)
+            ->first();
+        $this->assertNotNull($entree, 'F003-INV-3: entrée tiroir de l\'encaissement absente');
+        $this->assertSame(CashMovement::DIRECTION_IN, $entree->direction);
 
         $m = CashMovement::query()
             ->where('cash_drawer_session_id', $session->id)
@@ -162,6 +178,13 @@ class F003CashReconciliationSentinelTest extends TestCase
         $this->assertNotNull($m, 'F003-INV-3: cashback movement absent');
         $this->assertSame(CashMovement::DIRECTION_OUT, $m->direction);
         $this->assertSame($order->id, $m->order_id);
+
+        // Le rapprochement doit retomber sur le fond de caisse : entrée = sortie.
+        $this->assertSame(
+            round((float) $entree->amount, 2),
+            round((float) $m->amount, 2),
+            'F003-INV-3: entrée et sortie doivent s\'annuler au centime'
+        );
     }
 
     /** F003-INV-4 — reconcile variance arithmétique stricte */

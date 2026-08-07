@@ -94,6 +94,14 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
             'total' => 18.00,
         ]);
 
+        // [PORTE OWNER `hasRecordedCashIn` RÉSOLUE 2026-08-07] Pré-condition RÉELLE : la session
+        // est ouverte, donc l'encaissement espèces enregistre une ENTRÉE tiroir. La fixture créait
+        // la commande PAID par factory, sans passer par l'encaissement — cas que la production ne
+        // produit pas — et la sortie était alors refusée À RAISON par le garde du 30/07 (une sortie
+        // sans entrée appariée = variance négative au rapprochement). On appelle la VRAIE méthode
+        // du flux pour que la fixture ne puisse plus dériver.
+        app(\App\Services\PaymentService::class)->recordCashOrderMovement($order, 'encaissement espèces (fixture = flux réel)');
+
         $request = new OrderStatusRequest;
         $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash pré-Z']);
         app(OrderService::class)->changeStatus($order, $request, false);
@@ -221,6 +229,14 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
         ]);
         $this->seedPaymentTransaction($order, 'counter_cash'); // ligne Transaction présente → chemin cashBack
 
+        // [PORTE OWNER `hasRecordedCashIn` RÉSOLUE 2026-08-07] Pré-condition RÉELLE : la session
+        // est ouverte, donc l'encaissement espèces enregistre une ENTRÉE tiroir. La fixture créait
+        // la commande PAID par factory, sans passer par l'encaissement — cas que la production ne
+        // produit pas — et la sortie était alors refusée À RAISON par le garde du 30/07 (une sortie
+        // sans entrée appariée = variance négative au rapprochement). On appelle la VRAIE méthode
+        // du flux pour que la fixture ne puisse plus dériver.
+        app(\App\Services\PaymentService::class)->recordCashOrderMovement($order, 'encaissement espèces (fixture = flux réel)');
+
         $request = new OrderStatusRequest;
         $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash comptoir pré-Z']);
         app(OrderService::class)->changeStatus($order, $request, false);
@@ -259,6 +275,14 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
             'total'              => 9.00,
         ]);
         $this->seedPaymentTransaction($order, 'counter_cash');
+
+        // [PORTE OWNER `hasRecordedCashIn` RÉSOLUE 2026-08-07] Pré-condition RÉELLE : la session
+        // est ouverte, donc l'encaissement espèces enregistre une ENTRÉE tiroir. La fixture créait
+        // la commande PAID par factory, sans passer par l'encaissement — cas que la production ne
+        // produit pas — et la sortie était alors refusée À RAISON par le garde du 30/07 (une sortie
+        // sans entrée appariée = variance négative au rapprochement). On appelle la VRAIE méthode
+        // du flux pour que la fixture ne puisse plus dériver.
+        app(\App\Services\PaymentService::class)->recordCashOrderMovement($order, 'encaissement espèces (fixture = flux réel)');
 
         $request = new OrderStatusRequest;
         $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash']);

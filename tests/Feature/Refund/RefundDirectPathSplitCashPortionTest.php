@@ -81,6 +81,7 @@ class RefundDirectPathSplitCashPortionTest extends TestCase
         $this->seedMinimalSettings();
         $branch  = Branch::factory()->create();
         $cashier = User::factory()->create(['branch_id' => $branch->id]);
+
         $this->actingAs($cashier);
 
         $session = app(CashDrawerService::class)->openSession($branch->id, $cashier->id, 100.00);
@@ -91,6 +92,15 @@ class RefundDirectPathSplitCashPortionTest extends TestCase
             'payment_status' => PaymentStatus::PAID, 'status' => OrderStatus::DELIVERED,
             'pos_payment_method' => PosPaymentMethod::CASH,
         ]);
+        // [PORTE OWNER `hasRecordedCashIn` RÉSOLUE 2026-08-07] Le garde du 30/07 (`662a846bc`) ne
+        // porte QUE sur le REPLI mono-tender — d'où le fait que les variantes « split » de ce
+        // fichier passent déjà : elles n'empruntent pas le repli. Ici, la vente mono legacy sans
+        // tranche l'emprunte, et le repli exige qu'une ENTRÉE tiroir ait été enregistrée : sortir
+        // le total sans entrée appariée produit une variance négative au rapprochement. La fixture
+        // créait la commande PAID par factory sans passer par l'encaissement — cas que la
+        // production ne produit pas quand une session est ouverte. On appelle la VRAIE méthode.
+        app(PaymentService::class)->recordCashOrderMovement($order, 'encaissement especes (fixture = flux reel)');
+
         // Pas de lignes order_payments → repli sur le montant passé (=total).
 
         app(PaymentService::class)->recordCashRefundMovement($order, round((float) $order->total, 2));

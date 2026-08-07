@@ -62,6 +62,14 @@ return [
     // MIX_API_KEY is canonical (Mix + runtime Blade). API_KEY kept for backward compat with old .env copies.
     'api_key' => trim((string) (env('MIX_API_KEY') ?: env('API_KEY', ''))),
 
+    // [ROTATION 2026-08-08] Clé PRÉCÉDENTE, acceptée le temps d'une rotation seulement.
+    // La même clé vit dans le `.env`, dans les bundles compilés (`MIX_` → app.js/pos-app.js
+    // pour la borne et la caisse) et dans le meta `api-key` du site : ces trois surfaces ne
+    // peuvent pas basculer au même instant. On renseigne cette valeur avec l'ancienne clé
+    // pendant la bascule, puis on la VIDE dès que les trois sont vérifiées.
+    // Vide = une seule clé acceptée, ce qui est l'état normal.
+    'api_key_previous' => trim((string) env('API_KEY_PREVIOUS', '')),
+
     // POST /api/auth/login — fenêtre 10 min (voir RouteServiceProvider::login-lockout). Défaut 10 prod.
     // Playwright enchaîne plusieurs specs avec le même email → surcharger en CI (LOGIN_LOCKOUT_MAX_ATTEMPTS).
     'login_lockout_max_attempts' => max(1, (int) env('LOGIN_LOCKOUT_MAX_ATTEMPTS', 10)),
