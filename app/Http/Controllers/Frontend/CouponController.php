@@ -44,7 +44,15 @@ class CouponController extends Controller
         // lui-même le champ promo : promesse écrite non tenue + vente bloquée.
         // La validation consulte désormais le MÊME interrupteur que la commande.
         // Sentinelle : tests/Feature/Frontend/CouponCheckRespectsDiscountKillSwitchTest.php
-        if (config('pos.manual_discount_enabled') !== true) {
+        // [FLYER PROMO 2026-08-07] Interrupteur DÉDIÉ aux codes promo. Il doit
+        // rester le MIROIR EXACT de la garde de commande
+        // (`FrontendOrderService::assertDiscretionaryDiscountAllowed`) : c'est
+        // toute la raison d'être de ce bloc — ne jamais promettre au client
+        // une remise que la commande refusera au dernier clic.
+        $couponsAllowed = config('pos.coupon_codes_enabled') === true
+            || config('pos.manual_discount_enabled') === true;
+
+        if (! $couponsAllowed) {
             return response([
                 'status'  => false,
                 'message' => 'Les codes promo sont désactivés pour le moment.',

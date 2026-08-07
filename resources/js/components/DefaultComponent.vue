@@ -19,6 +19,14 @@
         <BackendNavbarComponent />
         <BackendMenuComponent />
         <router-view></router-view>
+        <!-- [FLYER PROMO 2026-08-07] Imprimeur des tickets promotionnels.
+             Monté ici, dans la coquille admin, et non sur l'écran de caisse :
+             le serveur est dans le cloud et ne peut pas joindre l'imprimante du
+             restaurant, il faut donc que quelque chose tourne sur le PC caisse
+             quel que soit l'écran affiché. Le composant ne rend rien et reste
+             inerte partout où le pont d'impression local est absent (téléphone,
+             poste bureau). -->
+        <PromoFlyerPrintListener />
       </main>
 
       <div v-if="!logged">
@@ -37,6 +45,7 @@
 
 <script>
 import BackendNavbarComponent from "./layouts/backend/BackendNavbarComponent";
+import PromoFlyerPrintListener from "./admin/promo/PromoFlyerPrintListener";
 import BackendMenuComponent from "./layouts/backend/BackendMenuComponent";
 import FrontendNavbarComponent from "./layouts/frontend/FrontendNavBarComponent";
 import FrontendFooterComponent from "./layouts/frontend/FrontendFooterComponent";
@@ -55,6 +64,7 @@ import { routes } from "../router";
 export default {
   name: "DefaultComponent",
   components: {
+    PromoFlyerPrintListener,
     TableCartComponent,
     TableFooterComponent,
     TableNavbarComponent,

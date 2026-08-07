@@ -257,6 +257,7 @@ return [
         'device_not_found' => 'Device session not found.',
         'device_revoked' => 'Device disconnected.',
         'device_renamed' => 'Device renamed.',
+        'flyer_settings_saved' => 'Promo flyer settings saved.',
         'account_delete_success' => 'Account Deleted Successfully.',
         'account_not_delete' => 'You cannot delete your account if you have an active order.',
         'invalid_api_key' => 'Invalid Api Key.',

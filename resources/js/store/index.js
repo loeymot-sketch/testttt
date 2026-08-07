@@ -2,6 +2,7 @@ import { createStore } from "vuex";
 
 import createPersistedState from "vuex-persistedstate";
 import { auth, sanitizePendingPhone } from "./modules/auth";
+import { promoFlyer } from "./modules/promoFlyer";
 import { company } from "./modules/company";
 import { itemCategory } from "./modules/itemCategory";
 import { itemAttribute } from "./modules/itemAttribute";
@@ -131,6 +132,7 @@ export default new createStore({
     actions: {},
     modules: {
         auth,
+        promoFlyer,
         company,
         itemCategory,
         itemAttribute,

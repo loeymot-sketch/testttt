@@ -484,7 +484,9 @@
         "accounts": "Comptes",
         "reports": "Rapports",
         "setup": "Configuration",
-        "connected_devices": "Appareils connectés"
+        "connected_devices": "Appareils connectés",
+        "promo_flyer": "Ticket promo",
+        "promo_flyer_settings": "Réglages ticket promo"
     },
     "label": {
         "kds_sync_uncertain_banner": "Synchro incertaine — données peut-être datées",
@@ -1440,7 +1442,35 @@
         "this_device": "Cet appareil",
         "staff_session": "Session personnel",
         "confirm_revoke_device": "Déconnecter « {device} » ? Cet appareil devra se reconnecter.",
-        "confirm_revoke_current_device": "Vous êtes sur le point de déconnecter CET appareil. Vous devrez vous reconnecter."
+        "confirm_revoke_current_device": "Vous êtes sur le point de déconnecter CET appareil. Vous devrez vous reconnecter.",
+        "promo_flyer": "Ticket promo (commandes plateformes)",
+        "promo_flyer_settings": "Réglages du ticket promo",
+        "customer_first_name": "Prénom du client",
+        "customer_first_name_placeholder": "ex. Camille",
+        "flyer_name_hint": "Le prénom figurant sur la commande Uber Eats. Il s'imprime en grand sur le ticket et sert à fabriquer un code unique.",
+        "flyer_sent_to_pos": "Ticket envoyé à la caisse. Code créé :",
+        "valid_until": "valable jusqu'au",
+        "sending": "Envoi…",
+        "flyer_history": "Derniers tickets",
+        "flyer_history_empty": "Aucun ticket pour le moment.",
+        "flyer_printed": "Imprimé",
+        "flyer_failed": "Échec",
+        "flyer_pending": "En attente",
+        "flyer_codes_disabled_title": "Les codes promo sont désactivés sur le site.",
+        "flyer_codes_disabled_body": "Le ticket s'imprimera, mais le client ne pourra pas utiliser son code tant que les codes promo ne sont pas activés (POS_COUPON_CODES_ENABLED=true).",
+        "flyer_headline": "Titre du ticket",
+        "flyer_headline_hint": "S'imprime en gros en haut, c'est ce qui fait reconnaître le restaurant.",
+        "flyer_discount_percent": "Remise (%)",
+        "flyer_validity_days": "Validité (jours)",
+        "flyer_intro": "Message principal",
+        "flyer_savings_note": "Argument d'économie",
+        "flyer_savings_hint": "C'est la raison pour laquelle le client changera d'habitude. À soigner.",
+        "flyer_footer_note": "Mention de bas de ticket",
+        "flyer_site_url": "Adresse affichée en clair",
+        "flyer_site_url_hint": "Imprimée sous le QR. Indispensable : certaines imprimantes n'affichent pas le QR, et sans erreur.",
+        "flyer_qr_url": "Adresse du QR code",
+        "flyer_qr_url_hint": "Le code promo y est ajouté automatiquement pour éviter au client de le retaper.",
+        "flyer_preview": "Aperçu (48 colonnes, sans le gras ni le QR)"
     },
     "button": {
         "refresh": "Actualiser",
@@ -1553,7 +1583,8 @@
         },
         "menu": "Menu",
         "rename": "Renommer",
-        "disconnect": "Déconnecter"
+        "disconnect": "Déconnecter",
+        "print_flyer": "Imprimer le ticket"
     },
     "error": {
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",

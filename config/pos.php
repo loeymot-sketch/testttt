@@ -229,6 +229,44 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Codes promo — interrupteur DÉDIÉ (FLYER PROMO 2026-08-07)
+    |--------------------------------------------------------------------------
+    |
+    | Même raisonnement que le découplage fidélité juste au-dessus, appliqué
+    | aux CODES PROMO.
+    |
+    | Constat qui a motivé ce flag : `manual_discount_enabled` (défaut false)
+    | gatait ensemble deux choses de nature très différentes —
+    |
+    |   1. la REMISE MANUELLE en caisse : un caissier saisit un montant
+    |      arbitraire. Risque commercial et de traçabilité réel, d'où le
+    |      défaut fermé.
+    |   2. le CODE PROMO : un coupon créé à l'avance, avec son montant, ses
+    |      dates, ses surfaces et son plafond d'utilisations. Rien d'arbitraire
+    |      — c'est une décision commerciale déjà prise et enregistrée.
+    |
+    | Les confondre obligeait à ouvrir (1) pour obtenir (2). L'exploitant veut
+    | distribuer des codes nominatifs à usage unique sur ticket, sans autoriser
+    | pour autant les remises libres au comptoir. Ce flag rend ça possible.
+    |
+    | Effet : quand il vaut true, le pré-contrôle et l'application d'un coupon
+    | sont autorisés, que les remises manuelles soient coupées ou non. Quand il
+    | vaut false, on retombe exactement sur l'ancien comportement (les coupons
+    | suivent `manual_discount_enabled`) — aucune régression pour une
+    | installation qui ne connaît pas cette variable.
+    |
+    | Fiscalement : un coupon est une réduction de famille F1, dont le netting
+    | TVA du Z est déjà FIXÉ et prouvé (ZReportDiscountNettingTest) — le même
+    | argument qui a permis d'ouvrir la fidélité s'applique ici.
+    */
+    'coupon_codes_enabled' => filter_var(
+        env('POS_COUPON_CODES_ENABLED', false),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE,
+    ) ?? false,
+
+    /*
+    |--------------------------------------------------------------------------
     | Walk-in route to counter (GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30)
     |--------------------------------------------------------------------------
     |

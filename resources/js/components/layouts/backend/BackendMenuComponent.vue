@@ -120,6 +120,19 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     Object.freeze({ url: 'encaissement', language: 'encaissement', icon: 'lab lab-pos-orders' }),
     Object.freeze({ url: 'cash-overview', language: 'cash_overview', icon: 'lab lab-pos-orders' }),
     Object.freeze({ url: 'delivery-boy-cash-sessions', language: 'delivery_cash_sessions', icon: 'lab lab-pos-orders' }),
+    // [FLYER PROMO 2026-08-07] Ticket promo nominatif pour les commandes des
+    // plateformes de livraison. Entrée déclarée EN CODE, sans seed : la
+    // permission réutilisée (`pos-orders`) existe déjà sur les rôles concernés,
+    // alors qu'une permission neuve ne serait portée par personne tant qu'un
+    // seeder ne l'aurait pas distribuée — l'écran serait inaccessible.
+    Object.freeze({
+        url: 'promo-flyer',
+        language: 'promo_flyer',
+        icon: 'lab lab-pos-orders',
+        children: Object.freeze([
+            Object.freeze({ url: 'promo-flyer/settings', language: 'promo_flyer_settings', icon: 'lab lab-list' }),
+        ]),
+    }),
 ]);
 
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
@@ -134,6 +147,9 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // pos-orders permission (admin + branch managers already hold it).
     historique: 'pos-orders',
     encaissement: 'pos-orders',
+    // [FLYER PROMO 2026-08-07] Même gate que la caisse — voir l'entrée de menu.
+    'promo-flyer': 'pos-orders',
+    'promo-flyer/settings': 'pos-orders',
 });
 
 function permissionUrlForSidebarPath(menuUrl) {

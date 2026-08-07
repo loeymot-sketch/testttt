@@ -1060,6 +1060,16 @@ class FrontendOrderService
             return;
         }
 
+        // [FLYER PROMO 2026-08-07] Un CODE PROMO n'est pas une remise
+        // discrétionnaire : c'est un coupon créé à l'avance, avec son montant,
+        // ses dates, ses surfaces et son plafond d'utilisations. Il a donc
+        // désormais son propre interrupteur, et l'ancien reste la porte de
+        // secours pour ne rien changer aux installations qui ne connaissent
+        // pas la nouvelle variable.
+        if (config('pos.coupon_codes_enabled') === true) {
+            return;
+        }
+
         if (config('pos.manual_discount_enabled') !== true) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount' => "Les remises (coupon) sont désactivées en V1.",

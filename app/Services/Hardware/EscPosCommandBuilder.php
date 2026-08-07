@@ -110,6 +110,65 @@ final class EscPosCommandBuilder
     }
 
     /**
+     * [FLYER PROMO 2026-08-07] QR code NATIF ESC/POS (`GS ( k`).
+     *
+     * Le projet n'avait aucune primitive QR côté imprimante : le seul QR
+     * existant (`simplesoftwareio/simple-qrcode`, QR de tables) produit un PNG,
+     * inimprimable tel quel sur une thermique sans passer par un raster.
+     *
+     * On utilise donc le générateur INTERNE de l'imprimante plutôt qu'une
+     * image : le rendu est net à toutes les tailles, l'impression est
+     * instantanée, et on n'envoie que quelques dizaines d'octets au lieu d'un
+     * bitmap. C'est le chemin standard sur les Epson TM et leurs compatibles.
+     *
+     * ⚠️ Toutes les thermiques ne gèrent PAS `GS ( k` (les modèles d'entrée de
+     * gamme l'ignorent silencieusement — rien ne s'imprime, aucune erreur).
+     * L'appelant DOIT donc toujours imprimer l'URL en clair à côté du QR, pour
+     * qu'un ticket reste exploitable même si le carré ne sort pas.
+     *
+     * @param  string  $data        contenu encodé (ici : une URL)
+     * @param  int     $moduleSize  1..16 — taille d'un module en points (6 ≈ 3 cm sur 80 mm)
+     * @param  string  $ecc         L|M|Q|H — correction d'erreur. M par défaut :
+     *                              un ticket thermique se froisse et pâlit vite,
+     *                              L serait trop fragile, H mangerait trop de place.
+     */
+    public static function qrCode(string $data, int $moduleSize = 6, string $ecc = 'M'): string
+    {
+        if ($data === '') {
+            return '';
+        }
+
+        $eccByte = match (strtoupper($ecc)) {
+            'L'     => "\x30", // 7 %
+            'Q'     => "\x32", // 25 %
+            'H'     => "\x33", // 30 %
+            default => "\x31", // M — 15 %
+        };
+
+        $moduleSize = max(1, min(16, $moduleSize));
+
+        // Fonction 165 — modèle 2 (le modèle universellement lu par les téléphones).
+        $model = self::GS . '(k' . "\x04\x00" . "\x31\x41" . "\x32\x00";
+
+        // Fonction 167 — taille du module.
+        $size = self::GS . '(k' . "\x03\x00" . "\x31\x43" . chr($moduleSize);
+
+        // Fonction 169 — niveau de correction d'erreur.
+        $level = self::GS . '(k' . "\x03\x00" . "\x31\x45" . $eccByte;
+
+        // Fonction 180 — stockage des données. La longueur inclut les 3 octets
+        // d'en-tête (cn, fn, m), d'où le +3 ; elle est encodée en petit-boutien
+        // sur deux octets.
+        $len = strlen($data) + 3;
+        $store = self::GS . '(k' . chr($len % 256) . chr(intdiv($len, 256)) . "\x31\x50\x30" . $data;
+
+        // Fonction 181 — impression du symbole stocké.
+        $print = self::GS . '(k' . "\x03\x00" . "\x31\x51\x30";
+
+        return $model . $size . $level . $store . $print;
+    }
+
+    /**
      * Transcode a UTF-8 string to a single-byte encoding compatible with
      * the printer's selected code page. Defaults to CP858 (most common
      * European thermal default). Falls back to ASCII translit on failure.

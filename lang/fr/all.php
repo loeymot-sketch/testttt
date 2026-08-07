@@ -255,6 +255,7 @@ return [
         'device_not_found' => 'Session appareil introuvable.',
         'device_revoked' => 'Appareil déconnecté.',
         'device_renamed' => 'Appareil renommé.',
+        'flyer_settings_saved' => 'Réglages du ticket promo enregistrés.',
         'account_delete_success' => 'Compte supprimé avec succès.',
         'account_not_delete' => 'Vous ne pouvez pas supprimer votre compte si vous avez une commande active.',
         'invalid_api_key' => 'Clé API invalide.',

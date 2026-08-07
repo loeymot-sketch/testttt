@@ -1125,6 +1125,21 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/customers/lookup-by-nfc', [CustomerNfcLookupController::class, 'lookup'])->name('customers.lookup-by-nfc');
     });
 
+    // [FLYER PROMO UBER 2026-08-07] Ticket promotionnel nominatif imprimé à la
+    // caisse. `pending` et `acknowledge` sont MUTANTS (ils posent un verrou de
+    // réclamation et incrémentent un compteur) : ils sont donc en POST, jamais
+    // en GET — un GET rejoué par un préchargement navigateur consommerait des
+    // tentatives d'impression en silence.
+    Route::prefix('promo-flyer')->name('promoFlyer.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\PromoFlyerController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\Admin\PromoFlyerController::class, 'store'])->name('store');
+        Route::get('/settings', [App\Http\Controllers\Admin\PromoFlyerController::class, 'settings'])->name('settings');
+        Route::match(['put', 'patch'], '/settings', [App\Http\Controllers\Admin\PromoFlyerController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/pending', [App\Http\Controllers\Admin\PromoFlyerController::class, 'pending'])->name('pending');
+        Route::get('/{flyer}/escpos', [App\Http\Controllers\Admin\PromoFlyerController::class, 'escpos'])->whereNumber('flyer')->name('escpos');
+        Route::post('/{flyer}/ack', [App\Http\Controllers\Admin\PromoFlyerController::class, 'acknowledge'])->whereNumber('flyer')->name('ack');
+    });
+
     Route::prefix('printers')->name('printers.')->group(function () {
         Route::get('/', [PrinterController::class, 'index'])->name('index');
         Route::post('/', [PrinterController::class, 'store'])->name('store');

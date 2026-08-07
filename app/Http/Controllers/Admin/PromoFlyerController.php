@@ -1,0 +1,236 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\PromoFlyer;
+use App\Models\Scopes\BranchScope;
+use App\Services\Promo\PromoFlyerService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+use Smartisan\Settings\Facades\Settings;
+
+/**
+ * [FLYER PROMO UBER 2026-08-07] Ticket promotionnel nominatif.
+ *
+ * Deux publics, un seul contrôleur :
+ *
+ *   - l'EXPLOITANT, depuis son téléphone : il tape un prénom, ça crée le code
+ *     et dépose l'ordre d'impression (`store`) ;
+ *   - la CAISSE, depuis n'importe quel écran admin ouvert : elle réclame les
+ *     ordres en attente (`pending`), récupère les octets (`escpos`) et confirme
+ *     (`acknowledge`).
+ *
+ * Ce découpage vient d'une contrainte physique mesurée : le serveur est dans le
+ * cloud et ne peut pas joindre l'imprimante du restaurant. C'est donc la caisse
+ * qui vient chercher le travail, jamais le serveur qui l'y pousse.
+ */
+class PromoFlyerController extends Controller
+{
+    public function __construct(private readonly PromoFlyerService $service)
+    {
+        // `pos` = permission déjà portée par les écrans de caisse et par
+        // l'exploitant. On ne crée pas de permission nouvelle : elle
+        // n'existerait sur aucun rôle en base tant qu'un seeder ne l'aurait pas
+        // distribuée, et l'écran serait donc inaccessible pour tout le monde.
+        $this->middleware('permission:pos|pos-orders');
+    }
+
+    /**
+     * Réglages du ticket (textes, pourcentage, validité) + état d'activation.
+     */
+    public function settings(): JsonResponse
+    {
+        $settings = $this->service->settings();
+
+        return new JsonResponse([
+            'settings' => $settings,
+            // Un ticket promettant une remise inutilisable serait pire que pas
+            // de ticket du tout : l'écran doit pouvoir le dire à l'exploitant.
+            'coupon_redemption_enabled' => config('pos.coupon_codes_enabled') === true
+                || config('pos.manual_discount_enabled') === true,
+        ], 200);
+    }
+
+    /**
+     * Enregistre les réglages.
+     */
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'headline'         => ['required', 'string', 'max:40'],
+            'intro'            => ['required', 'string', 'max:400'],
+            'savings_note'     => ['nullable', 'string', 'max:400'],
+            'footer_note'      => ['nullable', 'string', 'max:200'],
+            // Bornes volontaires : au-delà de 50 % la remise dépasserait la
+            // marge sur la plupart des plats — ce n'est plus une acquisition,
+            // c'est une perte.
+            'discount_percent' => ['required', 'numeric', 'min:1', 'max:50'],
+            'validity_days'    => ['required', 'integer', 'min:1', 'max:365'],
+            'site_url'         => ['required', 'string', 'max:120'],
+            'qr_url'           => ['required', 'string', 'max:200', 'url'],
+        ]);
+
+        Settings::group(PromoFlyerService::SETTINGS_GROUP)->set($validated);
+
+        return new JsonResponse([
+            'message'  => trans('all.message.flyer_settings_saved'),
+            'settings' => $this->service->settings(),
+        ], 200);
+    }
+
+    /**
+     * Crée un ticket : génère le code, crée le coupon, met en file d'impression.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            // 60 = la taille du champ `orders.pos_customer_name` déjà utilisé
+            // pour les noms clients ailleurs dans le projet : on reste cohérent.
+            'customer_name' => ['required', 'string', 'min:1', 'max:60'],
+        ]);
+
+        $user = $request->user();
+        $branchId = (int) ($user->branch_id ?: 1);
+
+        try {
+            $flyer = $this->service->create(
+                $validated['customer_name'],
+                $branchId,
+                (int) $user->id,
+                $this->service->deviceIdFrom($request),
+            );
+        } catch (\Throwable $e) {
+            Log::error('[FLYER] création impossible', [
+                'error' => $e->getMessage(),
+                'user'  => (int) $user->id,
+            ]);
+
+            return new JsonResponse([
+                'message' => "Impossible de créer le code promo. Réessayez.",
+            ], 500);
+        }
+
+        return new JsonResponse([
+            'message' => 'Ticket envoyé à la caisse.',
+            'flyer'   => $this->present($flyer),
+        ], 201);
+    }
+
+    /**
+     * Historique récent — pour retrouver le code d'un client qui rappelle.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $flyers = PromoFlyer::query()
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->map(fn (PromoFlyer $f) => $this->present($f))
+            ->values();
+
+        return new JsonResponse(['flyers' => $flyers], 200);
+    }
+
+    /**
+     * La caisse réclame ses ordres d'impression.
+     *
+     * Réclamer INCRÉMENTE le compteur de tentatives et pose un verrou : deux
+     * onglets ouverts sur le même PC ne peuvent pas sortir le même ticket deux
+     * fois.
+     */
+    public function pending(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $branchId = (int) ($user->branch_id ?: 1);
+
+        $claimed = $this->service->claimPending(
+            $branchId,
+            $this->service->deviceIdFrom($request),
+        );
+
+        return new JsonResponse([
+            'flyers' => array_map(fn (PromoFlyer $f) => $this->present($f), $claimed),
+        ], 200);
+    }
+
+    /**
+     * Octets ESC/POS d'un ticket, en base64 — même contrat que les tickets de
+     * commande, que le pont local de la caisse sait déjà consommer.
+     */
+    public function escpos(Request $request, int $flyer): JsonResponse
+    {
+        $model = $this->findForBranch($request, $flyer);
+
+        if (! $model) {
+            return new JsonResponse(['message' => 'Ticket introuvable.'], 404);
+        }
+
+        $width = (int) $request->query('width', 48);
+        $width = in_array($width, [32, 48], true) ? $width : 48;
+
+        return new JsonResponse([
+            'escpos_b64' => base64_encode($this->service->renderBytes($model, $width)),
+        ], 200);
+    }
+
+    /**
+     * La caisse confirme le résultat de l'impression.
+     */
+    public function acknowledge(Request $request, int $flyer): JsonResponse
+    {
+        $validated = $request->validate([
+            'success' => ['required', 'boolean'],
+            'error'   => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $model = $this->findForBranch($request, $flyer);
+
+        if (! $model) {
+            return new JsonResponse(['message' => 'Ticket introuvable.'], 404);
+        }
+
+        $this->service->acknowledge(
+            $model,
+            (bool) $validated['success'],
+            $validated['error'] ?? null,
+        );
+
+        return new JsonResponse(['flyer' => $this->present($model->fresh())], 200);
+    }
+
+    /**
+     * Recherche bornée à la branche de l'utilisateur.
+     *
+     * On contourne explicitement le scope global puis on refiltre à la main :
+     * un administrateur porte `branch_id = 0`, le scope le laisserait donc tout
+     * voir, alors qu'un ordre d'impression doit rester rattaché à SA caisse.
+     */
+    private function findForBranch(Request $request, int $id): ?PromoFlyer
+    {
+        $branchId = (int) ($request->user()->branch_id ?: 1);
+
+        return PromoFlyer::withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->whereKey($id)
+            ->first();
+    }
+
+    private function present(PromoFlyer $flyer): array
+    {
+        return [
+            'id'            => (int) $flyer->id,
+            'customer_name' => $flyer->customer_name,
+            'code'          => $flyer->code,
+            'status'        => $flyer->status,
+            'attempts'      => (int) $flyer->attempts,
+            'printed_at'    => optional($flyer->printed_at)->toIso8601String(),
+            'created_at'    => optional($flyer->created_at)->toIso8601String(),
+            'last_error'    => $flyer->last_error,
+            'valid_until'   => $flyer->rendered_payload['valid_until'] ?? null,
+            'discount'      => $flyer->rendered_payload['discount_percent'] ?? null,
+        ];
+    }
+}

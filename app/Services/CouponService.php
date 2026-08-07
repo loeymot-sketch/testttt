@@ -466,6 +466,29 @@ class CouponService
         // source-of-truth as limit_per_user above (single-box V1: same non-atomic semantics).
         $maxUsesGlobal = (int) ($coupon->max_uses_global ?? 0);
         if ($maxUsesGlobal > 0) {
+            // [FLYER PROMO 2026-08-07] Sérialisation des consommations du MÊME
+            // coupon. Le commentaire ci-dessus assumait des « semantics non
+            // atomiques » — acceptable pour une campagne plafonnée à 500, plus
+            // du tout pour un code NOMINATIF À USAGE UNIQUE distribué sur
+            // ticket : deux commandes simultanées comptaient toutes deux 0
+            // utilisation et passaient toutes deux, offrant deux fois la remise.
+            //
+            // On verrouille la ligne du coupon avant de compter : les
+            // redemptions concurrentes du même code s'exécutent alors l'une
+            // après l'autre, et la seconde voit bien la première. Le verrou ne
+            // porte QUE sur ce coupon — deux clients avec deux codes différents
+            // ne se bloquent jamais.
+            //
+            // `transactionLevel() > 0` : la validation est appelée aussi HORS
+            // transaction (pré-contrôle du site, qui ne consomme rien). Poser un
+            // verrou là serait inutile et immédiatement relâché.
+            if (DB::transactionLevel() > 0) {
+                Coupon::withoutGlobalScopes()
+                    ->whereKey($coupon->id)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
             $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->where($liveOrderCoupon)->count();
             if ($globalUsed >= $maxUsesGlobal) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);

@@ -30,6 +30,7 @@ import itemsReportRoutes from "./modules/itemsReportRoutes";
 import posRoutes from "./modules/posRoutes";
 import messageRoutes from "./modules/messageRoutes";
 import profileRoutes from "./modules/profileRoutes";
+import promoFlyerRoutes from "./modules/promoFlyerRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
 import historiqueRoutes from "./modules/historiqueRoutes";
 import encaissementRoutes from "./modules/encaissementRoutes";
@@ -186,6 +187,7 @@ export const routes = baseRoutes.concat(
     itemsReportRoutes,
     messageRoutes,
     profileRoutes,
+    promoFlyerRoutes,
     posRoutes,
     posOrderRoutes,
     historiqueRoutes,

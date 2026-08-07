@@ -489,7 +489,9 @@
         "ingredients": "Ingredients",
         "advanced_tools": "Advanced tools",
         "demo_wizard_advanced": "Advanced Wizard Demo",
-        "connected_devices": "Connected devices"
+        "connected_devices": "Connected devices",
+        "promo_flyer": "Promo flyer",
+        "promo_flyer_settings": "Promo flyer settings"
     },
     "label": {
         "kds_sync_uncertain_banner": "Sync uncertain — data may be out of date",
@@ -1509,7 +1511,35 @@
         "this_device": "This device",
         "staff_session": "Staff session",
         "confirm_revoke_device": "Disconnect “{device}”? That device will have to sign in again.",
-        "confirm_revoke_current_device": "You are about to disconnect THIS device. You will have to sign in again."
+        "confirm_revoke_current_device": "You are about to disconnect THIS device. You will have to sign in again.",
+        "promo_flyer": "Promo flyer (platform orders)",
+        "promo_flyer_settings": "Promo flyer settings",
+        "customer_first_name": "Customer first name",
+        "customer_first_name_placeholder": "e.g. Camille",
+        "flyer_name_hint": "The first name on the Uber Eats order. It is printed large on the flyer and used to build a unique code.",
+        "flyer_sent_to_pos": "Flyer sent to the POS. Code created:",
+        "valid_until": "valid until",
+        "sending": "Sending…",
+        "flyer_history": "Recent flyers",
+        "flyer_history_empty": "No flyer yet.",
+        "flyer_printed": "Printed",
+        "flyer_failed": "Failed",
+        "flyer_pending": "Pending",
+        "flyer_codes_disabled_title": "Promo codes are disabled on the website.",
+        "flyer_codes_disabled_body": "The flyer will print, but the customer cannot redeem the code until promo codes are enabled (POS_COUPON_CODES_ENABLED=true).",
+        "flyer_headline": "Flyer title",
+        "flyer_headline_hint": "Printed large at the top — this is what identifies the restaurant.",
+        "flyer_discount_percent": "Discount (%)",
+        "flyer_validity_days": "Validity (days)",
+        "flyer_intro": "Main message",
+        "flyer_savings_note": "Savings argument",
+        "flyer_savings_hint": "This is why the customer will change habit. Worth polishing.",
+        "flyer_footer_note": "Footer note",
+        "flyer_site_url": "Plain website address",
+        "flyer_site_url_hint": "Printed under the QR. Essential: some printers silently skip the QR.",
+        "flyer_qr_url": "QR code address",
+        "flyer_qr_url_hint": "The promo code is appended automatically so the customer never retypes it.",
+        "flyer_preview": "Preview (48 columns, without bold or QR)"
     },
     "button": {
         "refresh": "Refresh",
@@ -1621,7 +1651,8 @@
         },
         "menu": "Menu",
         "rename": "Rename",
-        "disconnect": "Disconnect"
+        "disconnect": "Disconnect",
+        "print_flyer": "Print flyer"
     },
     "error": {
         "something_wrong": "Something Wrong.",
