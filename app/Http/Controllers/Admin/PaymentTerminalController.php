@@ -31,7 +31,13 @@ class PaymentTerminalController extends AdminController
         // NOTE : la modale d'encaissement charge la liste des TPE — le caissier a
         // besoin de cette lecture ; elle passe par `pos` (voir PosCounterCollectModal
         // loadActiveTerminal), pas par `settings`, donc on autorise les deux.
-        $this->middleware(['permission:settings|pos'])->only(['index']);
+        //
+        // `show` était OMIS (audit indirect 2026-08-07 · P2) : la route sœur
+        // `GET /payment-terminals/{id}` renvoyait le MÊME serial + grille de commissions
+        // à un compte sans permission, rouvrant la fuite que le heal `index` fermait.
+        // Lecture unitaire = même sensibilité que la liste → même gate. Jumelle de
+        // KioskMachineController qui gate déjà `show`.
+        $this->middleware(['permission:settings|pos'])->only(['index', 'show']);
         $this->middleware(['permission:settings'])->only(['store', 'update', 'destroy']);
     }
 

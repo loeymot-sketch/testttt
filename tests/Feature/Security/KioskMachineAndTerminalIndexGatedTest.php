@@ -93,6 +93,32 @@ class KioskMachineAndTerminalIndexGatedTest extends TestCase
         $this->apiGet($cashier, '/api/admin/payment-terminals')->assertOk();
     }
 
+    /**
+     * [AUDIT-B indirect 2026-08-07] Le heal E3 a gaté `index` mais LAISSÉ `show` ouvert :
+     * `GET /payment-terminals/{id}` renvoyait le même serial + grille de commissions à un
+     * compte sans permission — la fuite que E3 prétendait fermer restait ouverte par la
+     * route sœur. Jumelle exacte de KioskMachineController qui, lui, gate bien `show`.
+     */
+    public function test_zero_permission_staff_cannot_read_terminal_serial_via_show(): void
+    {
+        $id = PaymentTerminal::withoutGlobalScopes()->firstOrFail()->id;
+
+        $res = $this->apiGet($this->zeroPermissionStaff(), '/api/admin/payment-terminals/' . $id);
+
+        $this->assertSame(403, $res->status(),
+            'le serial_number TPE ne doit pas fuiter via show() sans permission');
+        $this->assertStringNotContainsString('SN-CONFIDENTIEL-1', $res->getContent());
+    }
+
+    public function test_cashier_still_reads_a_single_terminal_via_show(): void
+    {
+        $id = PaymentTerminal::withoutGlobalScopes()->firstOrFail()->id;
+        $cashier = User::factory()->create(['branch_id' => $this->branch->id]);
+        $cashier->assignRole('POS Operator');
+
+        $this->apiGet($cashier, '/api/admin/payment-terminals/' . $id)->assertOk();
+    }
+
     public function test_admin_still_reads_kiosk_machines(): void
     {
         $admin = User::factory()->create(['branch_id' => 0]);
