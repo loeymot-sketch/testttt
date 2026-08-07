@@ -17,5 +17,15 @@
   {"desc": "recette fixe Chicken Burger", "item": "Chicken Burger", "viandes": [], "expected": "1Chick"},
   {"desc": "recette fixe Supreme", "item": "Suprême", "viandes": [], "expected": "1K 1Cordon"},
   {"desc": "recette fixe Menu Enfant Nuggets (avant Chicken)", "item": "Menu Enfant Nuggets", "viandes": [], "expected": "6Nug 1F"},
-  {"desc": "recette fixe Menu Enfant Chicken (avant Chicken Burger)", "item": "Menu Enfant Chicken Burger", "viandes": [], "expected": "1Chick 1F"}
+  {"desc": "recette fixe Menu Enfant Chicken (avant Chicken Burger)", "item": "Menu Enfant Chicken Burger", "viandes": [], "expected": "1Chick 1F"},
+
+  {"desc": "[86fc62979] nuggets seuls = 4 nuggets (portion par viande)", "item": "Tacos", "viandes": ["Nuggets"], "expected": "4Nug"},
+  {"desc": "[86fc62979] tenders seuls = 3 tenders", "item": "Tacos", "viandes": ["Tenders"], "expected": "3Tender"},
+  {"desc": "[86fc62979] nuggets + poulet = demi-portion chacun (poulet fractionnable, nuggets arrondis a 2)", "item": "Tacos", "viandes": ["Nuggets", "Poulet mariné"], "expected": "0,5P 2Nug"},
+  {"desc": "[86fc62979] tenders + poulet : demi-tender 1,5 ARRONDI a 2 (round-half-up), poulet reste 0,5", "item": "Tacos", "viandes": ["Tenders", "Poulet mariné"], "expected": "0,5P 2Tender"},
+  {"desc": "[86fc62979] tenders + hachee : demi-tender arrondi a 2, hachee demi-portion = 1 steak", "item": "Tacos", "viandes": ["Tenders", "Viande Hachée"], "expected": "1K 2Tender"},
+  {"desc": "[86fc62979] nuggets + tenders : deux pieces entieres cote a cote (2 + 2 arrondi)", "item": "Tacos", "viandes": ["Nuggets", "Tenders"], "expected": "2Nug 2Tender"},
+  {"desc": "[86fc62979] tenders + tenders : arrondi PAR EMPLACEMENT (2+2=4), pas de recomposition car impair", "item": "Tacos", "viandes": ["Tenders", "Tenders"], "expected": "4Tender"},
+  {"desc": "[86fc62979] tenders + cordon : cordon defaut 2 -> demi = 1, tender 1,5 -> 2", "item": "Tacos", "viandes": ["Tenders", "Cordon Bleu"], "expected": "1Cordon 2Tender"},
+  {"desc": "[86fc62979] nuggets + cordon : cordon demi = 1, nuggets demi = 2", "item": "Tacos", "viandes": ["Nuggets", "Cordon Bleu"], "expected": "1Cordon 2Nug"}
 ]
