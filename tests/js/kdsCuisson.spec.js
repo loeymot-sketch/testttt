@@ -43,6 +43,19 @@ describe('bandeau de cuisson — règle de portion owner', () => {
         expect(ligne('Tacos L', ['Mexicanos', 'Cordon Bleu'])).toBe('1Cordon 1Mex');
     });
 
+    // La valeur d'une portion dépend de la viande (owner 2026-08-07) — attendus IDENTIQUES au
+    // fournisseur PHP MeatPortionCalculatorTest::portionsParViande.
+    it.each([
+        [['Nuggets'], '4Nug'],
+        [['Tenders'], '3Tender'],
+        [['Cordon Bleu'], '2Cordon'],
+        [['Cordon Bleu', 'Cordon Bleu'], '2Cordon'],
+        [['Cordon Bleu', 'Poulet mariné'], '0,5P 1Cordon'],
+        [['Nuggets', 'Poulet mariné'], '0,5P 2Nug'],
+    ])('portion par viande : %s → %s', (viandes, attendu) => {
+        expect(ligne('Tacos', viandes)).toBe(attendu);
+    });
+
     it('deux fois la même viande se recompose en portion pleine', () => {
         expect(ligne('Terminator', ['Viande Hachée', 'Viande Hachée'])).toBe('2K');
     });

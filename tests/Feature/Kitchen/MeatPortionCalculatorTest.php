@@ -73,6 +73,30 @@ class MeatPortionCalculatorTest extends TestCase
         $this->assertSame('1Cordon 1Mex', $this->ligne('Tacos L', ['Mexicanos', 'Cordon Bleu']));
     }
 
+    /**
+     * RÈGLE 3 — la valeur d'une portion complète DÉPEND de la viande (owner 2026-08-07) :
+     * 2 steaks, 1 portion de poulet (200 g), 4 nuggets, 3 tenders, 2 pièces pour les autres.
+     * Les pièces entières ne se coupent pas en deux : seule la portion de poulet est décimale.
+     *
+     * @dataProvider portionsParViande
+     */
+    public function test_la_portion_complete_depend_de_la_viande(string $cas, array $viandes, string $attendu): void
+    {
+        $this->assertSame($attendu, $this->ligne('Tacos', $viandes), $cas);
+    }
+
+    public static function portionsParViande(): array
+    {
+        return [
+            'nuggets seuls = 4 nuggets'          => ['1 emplacement', ['Nuggets'], '4Nug'],
+            'tenders seuls = 3 tenders'          => ['1 emplacement', ['Tenders'], '3Tender'],
+            'cordon seul = 2 pièces'             => ['1 emplacement', ['Cordon Bleu'], '2Cordon'],
+            'deux fois cordon = 2Cordon (owner)' => ['2 emplacements', ['Cordon Bleu', 'Cordon Bleu'], '2Cordon'],
+            'cordon + poulet (owner)'            => ['2 emplacements', ['Cordon Bleu', 'Poulet mariné'], '0,5P 1Cordon'],
+            'nuggets + poulet'                   => ['2 emplacements', ['Nuggets', 'Poulet mariné'], '0,5P 2Nug'],
+        ];
+    }
+
     /** Deux fois la MÊME viande sur un produit à deux emplacements se recompose en portion pleine. */
     public function test_deux_fois_la_meme_viande_se_recompose_en_portion_pleine(): void
     {

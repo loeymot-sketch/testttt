@@ -44,21 +44,36 @@ final class MeatPortionCalculator
      * Valeur d'une PORTION COMPLÈTE, par viande. L'unité n'est pas la même selon la viande —
      * c'est la correction owner du 2026-08-07 :
      *
-     *   · VIANDE HACHÉE (K) : la portion se compte en STEAKS, et vaut 2 steaks (2 × 75 g).
-     *   · POULET (P)        : la portion se compte en PORTIONS, et vaut 1 portion (200 g).
-     *                          Un sandwich mixte en reçoit donc une DEMI-portion (100 g),
-     *                          noté « 0,5P » — d'où « 2,5P » pour 3 mixtes + 1 Cayenne entier.
+     *   · VIANDE HACHÉE (K) : 2 STEAKS (2 × 75 g).
+     *   · POULET (P)        : 1 PORTION de 200 g. Seule viande au poids continu, donc la
+     *                          seule qui puisse valoir une DEMI-portion « 0,5P » (100 g) —
+     *                          d'où « 2,5P » pour 3 sandwichs mixtes + 1 Cayenne entier.
+     *   · NUGGETS (Nug)     : 4 nuggets.
+     *   · TENDERS (Tender)  : 3 tenders.
+     *   · les autres        : 2 pièces (cordon bleu, mexicanos, fricadelle…), confirmé par
+     *                          l'owner — « un Tacos L 2 viandes au cordon bleu affiche 2Cordon ».
      *
-     * Les autres viandes restent en pièces (2 par portion complète) jusqu'à instruction
-     * contraire de l'owner : deviner leur unité fausserait à la fois la cuisson et le stock.
+     * Toutes ces viandes sont des PIÈCES ENTIÈRES : un demi-nugget n'existe pas en cuisine.
+     * Une demi-portion en donne donc la moitié ARRONDIE (2 nuggets, 1 tender, 1 cordon), jamais
+     * un nombre à virgule — seul le poulet, vendu au poids, garde ses décimales.
      */
     public const PORTION_COMPLETE = 2;
 
     /** @var array<string, float> symbole => valeur d'une portion complète */
     private const PORTION_PAR_VIANDE = [
         'K' => 2.0,   // 2 steaks
-        'P' => 1.0,   // 1 portion de 200 g
+        'P' => 1.0,   // 1 portion de 200 g — la seule fractionnable
+        'Nug' => 4.0, // 4 nuggets
+        'Tender' => 3.0, // 3 tenders
     ];
+
+    /**
+     * Seules ces viandes acceptent une demi-portion à la virgule. Les autres se comptent en
+     * pièces entières : afficher « 1,5Tender » enverrait le cuisinier couper un tender en deux.
+     *
+     * @var array<int, string>
+     */
+    private const VIANDES_FRACTIONNABLES = ['P'];
 
     /**
      * RECETTES FIXES — produits sans attribut « Viande N », dont la composition est immuable.
@@ -389,13 +404,18 @@ final class MeatPortionCalculator
     }
 
     /**
-     * Accumule en conservant les DEMI-portions : arrondir à l'entier ici ferait disparaître
-     * le « 0,5P » d'un sandwich mixte, et trois mixtes ne feraient plus 1,5 portion mais 3.
-     * Arrondi à 2 décimales seulement, pour absorber les flottants.
+     * Accumule en conservant les DEMI-portions du poulet : arrondir à l'entier ici ferait
+     * disparaître le « 0,5P » d'un sandwich mixte, et trois mixtes ne feraient plus 1,5 portion
+     * mais 3. Les viandes en pièces entières, elles, sont arrondies AU PLUS PROCHE dès
+     * l'accumulation — un demi-nugget n'existe pas.
      */
     private function ajoute(array &$pieces, string $symbole, float|int $n): void
     {
-        $pieces[$symbole] = round(((float) ($pieces[$symbole] ?? 0)) + (float) $n, 2);
+        $total = ((float) ($pieces[$symbole] ?? 0)) + (float) $n;
+
+        $pieces[$symbole] = in_array($symbole, self::VIANDES_FRACTIONNABLES, true)
+            ? round($total, 2)
+            : (float) round($total);
     }
 
     private function normalise(string $s): string

@@ -619,7 +619,15 @@ export function renderItemSymbolic(orderItem) {
  */
 export const PORTION_COMPLETE = 2;
 
-const PORTION_PAR_VIANDE = { K: 2, P: 1 };
+// K = 2 steaks · P = 1 portion de 200 g · Nug = 4 nuggets · Tender = 3 tenders ·
+// les autres (cordon, mexicanos, fricadelle) = 2 pièces.
+const PORTION_PAR_VIANDE = { K: 2, P: 1, Nug: 4, Tender: 3 };
+
+/**
+ * Seul le poulet, vendu au poids, accepte une demi-portion à la virgule. Les autres viandes
+ * sont des pièces entières : « 1,5Tender » enverrait le cuisinier couper un tender en deux.
+ */
+const VIANDES_FRACTIONNABLES = ['P'];
 
 /** Valeur d'une portion complète pour cette viande. */
 function portion(symbole) {
@@ -693,7 +701,8 @@ function meatShares(name) {
  * d'un sandwich mixte, et trois mixtes ne vaudraient plus 1,5 portion mais 3.
  */
 function addPiece(acc, sym, n) {
-    acc[sym] = Math.round(((acc[sym] || 0) + n) * 100) / 100;
+    const total = (acc[sym] || 0) + n;
+    acc[sym] = VIANDES_FRACTIONNABLES.includes(sym) ? Math.round(total * 100) / 100 : Math.round(total);
 }
 
 /** « 2 » et non « 2,0 » ; « 2,5 » à la française (locale FR, ADR-007). */

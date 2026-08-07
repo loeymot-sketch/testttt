@@ -160,7 +160,10 @@ class MeatDrivenConsumptionTest extends TestCase
         $this->ligne($order, $mega, 1, $this->viandes(['Tenders', 'Cordon Bleu']));
         $this->consomme($order);
 
-        $this->assertSame(-1.0, $this->onHand($tenders));
+        // [owner 2026-08-07] Une portion de tenders vaut 3 pièces, une portion de cordon 2.
+        // Sur un produit à deux viandes chacune vaut une DEMI-portion : 1,5 tender arrondi à 2
+        // (un tender ne se coupe pas en deux) et 1 cordon.
+        $this->assertSame(-2.0, $this->onHand($tenders));
         $this->assertSame(-1.0, $this->onHand($cordon));
     }
 
