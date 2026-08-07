@@ -46,6 +46,7 @@ use App\Events\StockLevelChanged;
 use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
+use App\Listeners\AutoPrintKitchenTicketOnKitchenEntry;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
 // [GOAL-J2-HEAL-07 2026-05-24] Phase J-ADV-3 L3 P1 — clawback earned points on refund.
 use App\Listeners\ClawbackLoyaltyPointsOnRefund;
@@ -154,6 +155,10 @@ class EventServiceProvider extends ServiceProvider
         // try/catch (defense in depth) so it never throws upward.
         OrderStatusChanged::class => [
             PersistOrderStatusChangedToOutbox::class,
+            // [KITCHEN-AUTOPRINT 2026-08-07 owner] Le ticket cuisine sort SEUL dès l'entrée en
+            // cuisine, quelle que soit la surface (la caisse était la grande oubliée : elle
+            // exigeait un clic). Doublon impossible — garde atomique en base.
+            AutoPrintKitchenTicketOnKitchenEntry::class,
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,

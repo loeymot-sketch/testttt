@@ -73,10 +73,11 @@ class PrintKioskKitchenTicketOnOrderCreated
                 }
             }
 
-            $bytes = $this->renderer->renderKitchenTicket($order, [
-                'width_chars' => (int) ($printer->width_chars ?: 48),
-            ]);
-            app(EscPosPrinterService::class)->sendRaw($printer, $bytes);
+            // [KITCHEN-AUTOPRINT 2026-08-07] Passe par la garde PARTAGÉE : une commande borne
+            // ou web peut aussi atteindre la cuisine par son changement de statut, et sans ce
+            // point de passage unique le ticket sortirait deux fois.
+            unset($bytes, $printer);
+            app(\App\Services\Kitchen\KitchenTicketAutoPrinter::class)->printOnce($order, 'order_created');
         } catch (Throwable $e) {
             Log::warning('[PrintKioskKitchenTicketOnOrderCreated] kitchen ticket print failed', [
                 'order_id' => $event->order->id ?? null,
