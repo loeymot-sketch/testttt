@@ -231,6 +231,34 @@ class PromoFlyerTest extends TestCase
         );
     }
 
+    /**
+     * [P2 audit adversarial] Un ticket dont les tentatives sont épuisées SANS
+     * accusé (onglet fermé à répétition) restait « en attente » pour toujours :
+     * l'exploitant n'avait aucun moyen de savoir que rien n'était sorti.
+     */
+    /** @test */
+    public function test_an_exhausted_flyer_is_reported_as_failed_not_left_pending_forever(): void
+    {
+        $flyer = $this->createFlyer('Camille');
+
+        // On simule des réclamations sans accusé : l'onglet meurt à chaque fois.
+        for ($i = 0; $i < PromoFlyer::MAX_ATTEMPTS; $i++) {
+            $flyer->fresh()->forceFill(['claimed_at' => null])->save();
+            $this->service->claimPending((int) $this->branch->id, 'ecran-1');
+        }
+
+        // Un cycle de plus : le balayage doit rendre l'échec VISIBLE.
+        $this->service->claimPending((int) $this->branch->id, 'ecran-1');
+
+        $fresh = $flyer->fresh();
+        $this->assertSame(
+            PromoFlyer::STATUS_FAILED,
+            $fresh->status,
+            "Un ticket abandonné doit être signalé, pas rester « en attente » indéfiniment."
+        );
+        $this->assertNotNull($fresh->last_error, "L'exploitant doit savoir POURQUOI.");
+    }
+
     /** @test */
     public function test_successful_print_leaves_the_queue(): void
     {

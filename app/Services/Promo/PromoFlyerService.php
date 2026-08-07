@@ -206,6 +206,25 @@ class PromoFlyerService
     {
         $staleBefore = Carbon::now()->subSeconds(PromoFlyer::CLAIM_TTL_SECONDS);
 
+        // [P2 2026-08-07 — audit adversarial] Un ticket dont toutes les
+        // tentatives sont épuisées SANS accusé d'échec (onglet fermé au mauvais
+        // moment, à répétition) sortait de la file par le filtre `attempts <
+        // MAX` mais gardait le statut « en attente » POUR TOUJOURS : aucun
+        // chemin ne le marquait en échec. L'exploitant voyait « en attente »
+        // indéfiniment et n'avait aucun moyen de savoir que le ticket de son
+        // client n'était jamais sorti. Un échec silencieux est pire qu'un échec
+        // bruyant — on le rend visible ici.
+        PromoFlyer::withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('status', PromoFlyer::STATUS_PENDING)
+            ->where('attempts', '>=', PromoFlyer::MAX_ATTEMPTS)
+            ->update([
+                'status'     => PromoFlyer::STATUS_FAILED,
+                'claimed_at' => null,
+                'last_error' => 'Abandonne apres ' . PromoFlyer::MAX_ATTEMPTS . ' tentatives sans confirmation',
+                'updated_at' => Carbon::now(),
+            ]);
+
         $candidates = PromoFlyer::withoutGlobalScope(BranchScope::class)
             ->where('branch_id', $branchId)
             ->where('status', PromoFlyer::STATUS_PENDING)
