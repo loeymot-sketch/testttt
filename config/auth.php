@@ -32,9 +32,19 @@ return [
     | Mettre 0 désactive le plafond (déconseillé : plus aucun garde-fou contre
     | la prolifération de jetons valides 8h).
     |
+    | ⚠️ Une valeur vide ou non numérique retombe sur 10, PAS sur 0 : `(int) ''`
+    | vaut 0, et 0 désactive le plafond. Un réglage mal saisi ne doit jamais
+    | ouvrir un garde-fou en grand (constaté en audit adversarial 2026-08-07).
+    |
     */
 
-    'max_devices_per_user' => (int) env('AUTH_MAX_DEVICES_PER_USER', 10),
+    'max_devices_per_user' => (static function () {
+        $raw = env('AUTH_MAX_DEVICES_PER_USER', 10);
+
+        // Seule une valeur explicitement numérique est prise en compte ; « 0 »
+        // reste un choix valide et volontaire (plafond désactivé).
+        return is_numeric($raw) ? (int) $raw : 10;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

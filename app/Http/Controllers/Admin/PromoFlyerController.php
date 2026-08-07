@@ -35,7 +35,26 @@ class PromoFlyerController extends Controller
         // l'exploitant. On ne crée pas de permission nouvelle : elle
         // n'existerait sur aucun rôle en base tant qu'un seeder ne l'aurait pas
         // distribuée, et l'écran serait donc inaccessible pour tout le monde.
+        //
+        // Ce socle suffit pour LIRE la file et CONFIRMER une impression : ce
+        // sont des gestes de caisse, exécutés automatiquement par l'écran.
         $this->middleware('permission:pos|pos-orders');
+
+        // [P1 2026-08-07 — audit adversarial] Deux actions sortent du geste de
+        // caisse et méritent leur propre barrière.
+        //
+        // `store` CRÉE UN VRAI COUPON en base. Partout ailleurs, créer un
+        // coupon exige `coupons_create` (CouponController:26). Laisser ce
+        // pouvoir derrière `pos` permettait à n'importe quel caissier de
+        // frapper autant de codes −10 % qu'il le souhaite, un POST à la fois.
+        $this->middleware('permission:coupons_create|settings')->only('store');
+
+        // `updateSettings` écrit le POURCENTAGE de remise (jusqu'à 50 %) et
+        // surtout l'ADRESSE encodée dans le QR imprimé sur des tickets remis
+        // en main propre aux clients — soit une redirection de trafic, voire
+        // un support d'hameçonnage distribué par le restaurant lui-même.
+        // Tous les autres écrits de réglages du projet exigent `settings`.
+        $this->middleware('permission:settings')->only('updateSettings');
     }
 
     /**

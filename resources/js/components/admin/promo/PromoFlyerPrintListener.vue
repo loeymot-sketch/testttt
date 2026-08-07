@@ -43,13 +43,18 @@ const POLL_MS = 5000;
 // démarrage, l'écran a mieux à faire (catalogue, commandes en cours).
 const START_DELAY_MS = 4000;
 
+// Le pont d'impression peut démarrer APRÈS l'écran (PC caisse qui boote) ou être
+// redémarré en cours de service. On re-sonde donc régulièrement tant qu'il est
+// absent, au lieu de conclure une fois pour toutes.
+const BRIDGE_RECHECK_MS = 60000;
+
 export default {
     name: "PromoFlyerPrintListener",
     data() {
         return {
             _timer: null,
             _running: false,
-            _bridgeChecked: false,
+            _bridgeCheckedAt: 0,
             _bridgeAvailable: false,
         };
     },
@@ -94,12 +99,26 @@ export default {
         },
 
         /**
-         * Le pont local n'est présent que sur le PC caisse. On ne teste qu'une
-         * fois : le résultat ne change pas en cours de session, et le helper
-         * garde déjà son propre cache court.
+         * Le pont local n'est présent que sur le PC caisse.
          */
         async _hasBridge() {
-            if (this._bridgeChecked) return this._bridgeAvailable;
+            // [P2 2026-08-07 — audit adversarial] La réponse était mise en cache
+            // POUR TOUTE LA VIE DE L'ONGLET. Si le pont d'impression démarrait
+            // encore au chargement de l'écran (PC caisse qui vient de démarrer),
+            // ou s'il était redémarré pour une mise à jour, cet onglet
+            // n'imprimait plus JAMAIS — en silence, sur la seule machine capable
+            // d'atteindre l'imprimante. Le commentaire d'origine affirmait que
+            // « le résultat ne change pas en cours de session » : c'est faux.
+            //
+            // On re-teste donc périodiquement quand le pont est absent. Quand il
+            // est présent, on garde le résultat : le helper a déjà son propre
+            // cache court et re-sonde de lui-même.
+            const now = Date.now();
+
+            if (this._bridgeAvailable) return true;
+            if (this._bridgeCheckedAt && (now - this._bridgeCheckedAt) < BRIDGE_RECHECK_MS) {
+                return false;
+            }
 
             try {
                 this._bridgeAvailable = await isCaisseBridgeAvailable();
@@ -107,7 +126,7 @@ export default {
                 this._bridgeAvailable = false;
             }
 
-            this._bridgeChecked = true;
+            this._bridgeCheckedAt = now;
             return this._bridgeAvailable;
         },
 

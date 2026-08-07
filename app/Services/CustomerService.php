@@ -199,6 +199,15 @@ class CustomerService
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
                 $customer->password = Hash::make($request->password);
                 $customer->save();
+
+                // [MULTI-DEVICE 2026-08-07 — régression fermée] Réinitialiser un
+                // mot de passe sert le plus souvent à COUPER un accès. Ce chemin
+                // s'appuyait implicitement sur la révocation totale que
+                // `LoginController` faisait à la reconnexion suivante ; en la
+                // scopant à l'appareil pour permettre le multi-terminaux, ce
+                // garde-fou a disparu. On révoque donc explicitement.
+                $customer->tokens()->delete();
+
                 return $customer;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);

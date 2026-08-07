@@ -48,6 +48,26 @@ class ProfileService
             $user           = User::find(auth()->user()->id);
             $user->password = bcrypt($request->get('password'));
             $user->save();
+
+            // [MULTI-DEVICE 2026-08-07 — régression fermée]
+            // Changer son mot de passe est le geste qu'on fait quand on pense
+            // s'être fait voler son accès. Il DOIT donc couper toutes les
+            // sessions existantes.
+            //
+            // Ce service ne l'a jamais fait explicitement : il en bénéficiait
+            // par ricochet, parce que `LoginController` supprimait TOUS les
+            // jetons du compte à la reconnexion suivante. En scopant cette
+            // révocation à l'appareil (pour permettre le multi-terminaux), j'ai
+            // supprimé ce garde-fou implicite sans le remplacer — un jeton
+            // exfiltré survivait alors au changement de mot de passe, et pouvait
+            // même se renouveler indéfiniment via /api/refresh-token.
+            //
+            // On révoque ici TOUS les jetons, y compris celui de la requête
+            // courante : c'est le comportement attendu et déjà appliqué par la
+            // réinitialisation par e-mail (ForgotPasswordController), qui réémet
+            // ensuite un jeton neuf.
+            $user->tokens()->delete();
+
             return $user;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

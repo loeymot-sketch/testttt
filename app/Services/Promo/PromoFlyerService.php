@@ -101,9 +101,34 @@ class PromoFlyerService
                         'maximum_discount' => 0,
                         'limit_per_user'   => 1,
                         'max_uses_global'  => 1,
-                        // Site uniquement : voir docblock de classe.
-                        'surfaces'         => ['web'],
-                        'branch_scope'     => [$branchId],
+
+                        // [P0 CORRIGÉ 2026-08-07 — trouvé par test de commande réelle]
+                        // `surfaces` et `branch_scope` sont volontairement LAISSÉS VIDES.
+                        //
+                        // Les renseigner rendait le code IMPOSSIBLE à utiliser, y compris
+                        // sur sa propre surface : le chemin de tarification (zone gelée
+                        // `PricingService`) résout le coupon SANS transmettre la surface ni
+                        // la branche, et `Coupon::isUsableNow()` échoue en mode FERMÉ quand
+                        // la surface vaut null. Comportement connu et documenté par
+                        // `CouponSurfaceEnforcedAtCommitTest` : « a restricted coupon is
+                        // REFUSED everywhere at commit — including on its own surface ».
+                        //
+                        // Le client voyait donc « −2,50 € appliqué », puis sa commande était
+                        // refusée au dernier clic — le pire scénario possible, et justement
+                        // celui que cette fonctionnalité prétend éviter.
+                        //
+                        // Ce qui protège RÉELLEMENT, sans ces champs :
+                        //   - usage unique (`max_uses_global = 1`) : la garantie qui compte,
+                        //     le code meurt après une utilisation quelle que soit la surface ;
+                        //   - la caisse ne peut pas appliquer de coupon (`manual_discount_enabled`
+                        //     est fermé, et l'ouvrir est une décision distincte) ;
+                        //   - la borne non plus (`kiosk.promo_enabled` est fermé) ;
+                        //   - la date de fin borne l'engagement dans le temps.
+                        //
+                        // Rétablir la restriction de surface suppose de faire passer branche
+                        // et surface par `PricingService` — fichier GELÉ (CLAUDE.md §7), donc
+                        // gate owner. C'est un défaut du système de coupons, pas du ticket :
+                        // il touche TOUT coupon restreint par surface ou par branche.
                         'usage_count'      => 0,
                         'status'           => Status::ACTIVE,
                     ])->save();
@@ -224,6 +249,15 @@ class PromoFlyerService
      */
     public function acknowledge(PromoFlyer $flyer, bool $success, ?string $error = null): void
     {
+        // [P1 2026-08-07 — audit adversarial] Un ticket DÉJÀ imprimé ne doit
+        // jamais retourner dans la file. Sans cette garde, un accusé d'échec
+        // envoyé après coup (onglet en retard, rejeu, appel forgé) repassait la
+        // ligne en `pending` et la caisse la ré-imprimait au cycle suivant —
+        // un second ticket, avec le même code, pour un client déjà servi.
+        if ($flyer->status !== PromoFlyer::STATUS_PENDING) {
+            return;
+        }
+
         if ($success) {
             $flyer->forceFill([
                 'status'     => PromoFlyer::STATUS_PRINTED,

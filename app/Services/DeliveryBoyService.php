@@ -202,6 +202,15 @@ class DeliveryBoyService
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 $deliveryBoy->password = Hash::make($request->password);
                 $deliveryBoy->save();
+
+                // [MULTI-DEVICE 2026-08-07 — régression fermée] Réinitialiser un
+                // mot de passe sert le plus souvent à COUPER un accès. Ce chemin
+                // s'appuyait implicitement sur la révocation totale que
+                // `LoginController` faisait à la reconnexion suivante ; en la
+                // scopant à l'appareil pour permettre le multi-terminaux, ce
+                // garde-fou a disparu. On révoque donc explicitement.
+                $deliveryBoy->tokens()->delete();
+
                 return $deliveryBoy;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);

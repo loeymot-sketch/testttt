@@ -162,6 +162,15 @@ class AdministratorService
             if ($administrator->hasRole(EnumRole::ADMIN)) {
                 $administrator->password = Hash::make($request->password);
                 $administrator->save();
+
+                // [MULTI-DEVICE 2026-08-07 — régression fermée] Réinitialiser un
+                // mot de passe sert le plus souvent à COUPER un accès. Ce chemin
+                // s'appuyait implicitement sur la révocation totale que
+                // `LoginController` faisait à la reconnexion suivante ; en la
+                // scopant à l'appareil pour permettre le multi-terminaux, ce
+                // garde-fou a disparu. On révoque donc explicitement.
+                $administrator->tokens()->delete();
+
                 return $administrator;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);

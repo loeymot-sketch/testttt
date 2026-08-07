@@ -123,7 +123,18 @@ class PromoFlyerTest extends TestCase
         $this->assertEquals(10.0, (float) $coupon->discount);
         $this->assertSame(1, (int) $coupon->max_uses_global, 'Le code doit être à usage unique.');
         $this->assertSame(1, (int) $coupon->limit_per_user);
-        $this->assertSame(['web'], $coupon->surfaces, 'Le code ne doit valoir que sur le site.');
+
+        // [P0 2026-08-07] `surfaces` et `branch_scope` doivent rester VIDES :
+        // les renseigner rend le coupon inutilisable AU COMMIT, y compris sur sa
+        // propre surface (PricingService, gelé, ne transmet ni surface ni
+        // branche, et isUsableNow échoue en mode fermé). Voir
+        // PromoFlyerRedeemableTest, qui passe une vraie commande.
+        $this->assertEmpty(
+            $coupon->surfaces,
+            'Une restriction de surface rendrait le code IMPOSSIBLE à utiliser au dernier clic.'
+        );
+        $this->assertEmpty($coupon->branch_scope, 'Même raison que surfaces.');
+
         $this->assertNotNull($coupon->end_date, 'Un code sans échéance est une dette ouverte.');
         $this->assertTrue($coupon->end_date->isFuture());
     }
@@ -187,6 +198,36 @@ class PromoFlyerTest extends TestCase
             0,
             $this->service->claimPending((int) $this->branch->id, 'ecran-1'),
             'Un ticket épuisé ne doit plus faire boucler la caisse.'
+        );
+    }
+
+    /**
+     * [P1 audit adversarial] Un ticket DÉJÀ imprimé ne doit jamais retourner
+     * dans la file : un accusé d'échec envoyé après coup (onglet en retard,
+     * rejeu, appel forgé) sortirait un SECOND ticket, avec le même code, pour
+     * un client déjà servi.
+     */
+    /** @test */
+    public function test_a_printed_flyer_can_never_be_pushed_back_into_the_queue(): void
+    {
+        $flyer = $this->createFlyer('Camille');
+
+        $claimed = $this->service->claimPending((int) $this->branch->id, 'ecran-1');
+        $this->service->acknowledge($claimed[0], true);
+        $this->assertSame(PromoFlyer::STATUS_PRINTED, $flyer->fresh()->status);
+
+        // Accusé d'échec tardif sur un ticket déjà sorti.
+        $this->service->acknowledge($flyer->fresh(), false, 'accuse tardif');
+
+        $this->assertSame(
+            PromoFlyer::STATUS_PRINTED,
+            $flyer->fresh()->status,
+            'Un ticket imprimé doit le rester.'
+        );
+        $this->assertCount(
+            0,
+            $this->service->claimPending((int) $this->branch->id, 'ecran-1'),
+            'Il ne doit JAMAIS revenir dans la file — sinon double impression.'
         );
     }
 

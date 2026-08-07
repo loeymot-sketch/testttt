@@ -243,6 +243,20 @@ class EmployeeService
                 }
                 $employee->password = Hash::make($request->password);
                 $employee->save();
+
+                // [MULTI-DEVICE 2026-08-07 — régression fermée]
+                // Un responsable qui réinitialise le mot de passe d'un employé
+                // le fait le plus souvent pour lui COUPER l'accès (départ,
+                // soupçon de partage de compte). Les sessions ouvertes de cet
+                // employé doivent donc tomber.
+                //
+                // Ce chemin s'appuyait implicitement sur la révocation totale
+                // que `LoginController` faisait à la reconnexion suivante. En
+                // la scopant à l'appareil pour permettre le multi-terminaux,
+                // ce garde-fou a disparu : l'employé restait connecté sur son
+                // téléphone malgré le changement.
+                $employee->tokens()->delete();
+
                 return $employee;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);
