@@ -56,7 +56,9 @@ class MeatPortionCalculatorTest extends TestCase
     {
         $this->assertSame('2K', $this->ligne('Tacos M', ['Viande Hachée']));
         $this->assertSame('2K', $this->ligne('Cayenne', ['Viande Hachée']));
-        $this->assertSame('2P', $this->ligne('Galette Normale', ['Poulet mariné']));
+        // [owner 2026-08-07] Le POULET se compte en PORTIONS : une portion complète = 1 (200 g),
+        // là où la viande hachée se compte en STEAKS (2 par portion).
+        $this->assertSame('1P', $this->ligne('Galette Normale', ['Poulet mariné']));
         $this->assertSame('2Cordon', $this->ligne('Bol Riz', ['Cordon Bleu']));
     }
 
@@ -67,7 +69,7 @@ class MeatPortionCalculatorTest extends TestCase
      */
     public function test_un_produit_a_deux_viandes_recoit_une_demi_portion_de_chacune(): void
     {
-        $this->assertSame('1K 1P', $this->ligne('Méga', ['Viande Hachée', 'Poulet mariné']));
+        $this->assertSame('1K 0,5P', $this->ligne('Méga', ['Viande Hachée', 'Poulet mariné']), 'Mixte : 1 steak (demi-portion de hachée) + une DEMI-portion de poulet (100 g).');
         $this->assertSame('1Cordon 1Mex', $this->ligne('Tacos L', ['Mexicanos', 'Cordon Bleu']));
     }
 
@@ -80,7 +82,7 @@ class MeatPortionCalculatorTest extends TestCase
     /** Un choix « Mixte (hachée + poulet) » occupe UN emplacement, partagé entre ses deux viandes. */
     public function test_le_choix_mixte_partage_son_emplacement_entre_ses_deux_viandes(): void
     {
-        $this->assertSame('1K 1P', $this->ligne('Cayenne', ['Mixte (hachée + poulet)']));
+        $this->assertSame('1K 0,5P', $this->ligne('Cayenne', ['Mixte (hachée + poulet)']));
     }
 
     /** La quantité de la ligne multiplie les pièces : 3 tacos hachée = 6 steaks à cuire. */
@@ -98,9 +100,9 @@ class MeatPortionCalculatorTest extends TestCase
         $extra = [['extra_name' => 'Viande supplémentaire', 'quantity' => 1]];
 
         $this->assertSame(
-            '2K 2P',
+            '2K 1P',
             $this->ligne('Cayenne', ['Poulet mariné'], 1, $extra, 'Viandes en plus : Viande Hachée'),
-            'Le Cayenne apporte 2P ; le supplément hachée apporte une portion complète, soit 2K.'
+            'Le Cayenne seul en poulet = 1 portion ; le supplément hachée apporte une portion complète, soit 2K.'
         );
     }
 
@@ -114,7 +116,7 @@ class MeatPortionCalculatorTest extends TestCase
         $rendu = $this->ligne('Cayenne', ['Poulet mariné'], 1, [['extra_name' => 'Viande supplémentaire', 'quantity' => 1]]);
 
         $this->assertStringContainsString('?', $rendu, 'Un supplément non nommé ne doit jamais disparaître silencieusement du bandeau de cuisson.');
-        $this->assertStringContainsString('2P', $rendu);
+        $this->assertStringContainsString('1P', $rendu);
     }
 
     /**
@@ -222,8 +224,26 @@ class MeatPortionCalculatorTest extends TestCase
             ['name' => 'Frites', 'snapshot' => $this->snap([]), 'quantity' => 2],                              // 2F
         ]);
 
-        $this->assertSame('8K 4P 2F', $o['texte']);
+        $this->assertSame('8K 2P 2F', $o['texte']);
         $this->assertSame(0, $o['inconnus']);
+    }
+
+    /**
+     * L'EXEMPLE DE L'OWNER, mot pour mot : « trois sandwichs mixtes qui contiennent du poulet
+     * […] et un Cayenne complet qui contient juste du poulet […] on va noter qu'il y a deux
+     * portions et demie, ça veut dire 2,5 ».
+     * 3 × 0,5 portion (mixtes) + 1 portion (Cayenne entier) = 2,5P.
+     */
+    public function test_lexemple_owner_donne_bien_deux_portions_et_demie_de_poulet(): void
+    {
+        $o = $this->moteur->forOrder([
+            ['name' => 'Tacos L', 'snapshot' => $this->snap(['Poulet mariné', 'Viande Hachée']), 'quantity' => 2],
+            ['name' => 'Tacos L', 'snapshot' => $this->snap(['Poulet mariné', 'Cordon Bleu']), 'quantity' => 1],
+            ['name' => 'Cayenne', 'snapshot' => $this->snap(['Poulet mariné']), 'quantity' => 1],
+        ]);
+
+        $this->assertStringContainsString('2,5P', $o['texte']);
+        $this->assertSame('2K 2,5P 1Cordon', $o['texte']);
     }
 
     /** Les recettes inconnues sont comptées à part et annoncées, pas noyées dans les pièces. */

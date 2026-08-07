@@ -117,7 +117,7 @@ class MeatDrivenConsumptionTest extends TestCase
     public function test_la_viande_choisie_par_le_client_est_celle_qui_sort_du_stock(): void
     {
         $hachee = $this->matiere('Viande hachée', 'g', 75);
-        $poulet = $this->matiere('Poulet mariné');
+        $poulet = $this->matiere('Poulet mariné', 'g', 200);
         $cayenne = $this->item('Cayenne');
         // La fiche produit porte l'ANCIEN forfait poulet : il doit être ignoré, pas additionné.
         $this->recetteProduit($cayenne, $poulet, 1);
@@ -126,8 +126,27 @@ class MeatDrivenConsumptionTest extends TestCase
         $this->ligne($order, $cayenne, 1, $this->viandes(['Viande Hachée']));
         $this->consomme($order);
 
-        $this->assertSame(-150.0, $this->onHand($hachee), 'Un Cayenne hachée = portion complète = 2 pièces × 75 g.');
+        $this->assertSame(-150.0, $this->onHand($hachee), 'Un Cayenne hachée = portion complète = 2 steaks × 75 g.');
         $this->assertSame(0.0, $this->onHand($poulet), 'Le forfait poulet de la fiche produit doit être IGNORÉ : sinon on décompte une viande jamais servie.');
+    }
+
+    /**
+     * [owner 2026-08-07] Le poulet se compte en PORTIONS de 200 g, et un sandwich MIXTE n'en
+     * reçoit qu'une demi — 100 g. C'est la correction qui distingue une portion complète d'un
+     * partage entre deux viandes, et elle doit se retrouver au gramme près dans le stock.
+     */
+    public function test_un_sandwich_mixte_ne_retire_quune_demi_portion_de_poulet(): void
+    {
+        $poulet = $this->matiere('Poulet mariné', 'g', 200);
+        $hachee = $this->matiere('Viande hachée', 'g', 75);
+        $mega = $this->item('Méga');
+
+        $order = $this->commande();
+        $this->ligne($order, $mega, 1, $this->viandes(['Poulet mariné', 'Viande Hachée']));
+        $this->consomme($order);
+
+        $this->assertSame(-100.0, $this->onHand($poulet), 'Mixte = une DEMI-portion de poulet = 100 g.');
+        $this->assertSame(-75.0, $this->onHand($hachee), 'Mixte = un seul steak = 75 g.');
     }
 
     /** Un produit à deux viandes retire une pièce de chacune — le Méga ne retirait rien. */
@@ -180,7 +199,7 @@ class MeatDrivenConsumptionTest extends TestCase
     public function test_un_supplement_nomme_sort_la_vraie_viande_sans_doublon(): void
     {
         $hachee = $this->matiere('Viande hachée', 'g', 75);
-        $poulet = $this->matiere('Poulet mariné');
+        $poulet = $this->matiere('Poulet mariné', 'g', 200);
         $cayenne = $this->item('Cayenne');
         // Ligne de GROUPE historique : 75 g de hachée forfaitaires pour tout supplément.
         RawMaterialRecipeLine::create([
@@ -196,7 +215,7 @@ class MeatDrivenConsumptionTest extends TestCase
         );
         $this->consomme($order);
 
-        $this->assertSame(-2.0, $this->onHand($poulet), 'Le Cayenne apporte 2 pièces de poulet.');
+        $this->assertSame(-200.0, $this->onHand($poulet), 'Un Cayenne en poulet seul = 1 portion complète = 200 g.');
         $this->assertSame(-150.0, $this->onHand($hachee), 'Le supplément nommé vaut une portion complète (2×75 g) — et PAS 150+75 : la ligne de groupe doit être écartée.');
     }
 
@@ -207,7 +226,7 @@ class MeatDrivenConsumptionTest extends TestCase
     public function test_un_supplement_non_nomme_garde_la_moyenne_historique(): void
     {
         $hachee = $this->matiere('Viande hachée', 'g', 75);
-        $poulet = $this->matiere('Poulet mariné');
+        $poulet = $this->matiere('Poulet mariné', 'g', 200);
         $cayenne = $this->item('Cayenne');
         RawMaterialRecipeLine::create([
             'branch_id' => 1, 'subject_type' => 'extra_group', 'subject_id' => 1,
@@ -223,7 +242,7 @@ class MeatDrivenConsumptionTest extends TestCase
         $this->consomme($order);
 
         $this->assertSame(-75.0, $this->onHand($hachee), 'Sans nom, la moyenne historique de 75 g doit rester appliquée.');
-        $this->assertSame(-2.0, $this->onHand($poulet));
+        $this->assertSame(-200.0, $this->onHand($poulet));
     }
 
     // ── Frites ────────────────────────────────────────────────────────────────

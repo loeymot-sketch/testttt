@@ -33,12 +33,13 @@ describe('bandeau de cuisson — règle de portion owner', () => {
     it('un produit à UNE viande reçoit la portion complète (2 pièces)', () => {
         expect(ligne('Tacos M', ['Viande Hachée'])).toBe('2K');
         expect(ligne('Cayenne', ['Viande Hachée'])).toBe('2K');
-        expect(ligne('Galette Normale', ['Poulet mariné'])).toBe('2P');
+        // [owner 2026-08-07] Le POULET se compte en PORTIONS (1 = 200 g), la hachée en STEAKS.
+        expect(ligne('Galette Normale', ['Poulet mariné'])).toBe('1P');
         expect(ligne('Bol Riz', ['Cordon Bleu'])).toBe('2Cordon');
     });
 
     it('un produit à DEUX viandes reçoit une demi-portion de chacune', () => {
-        expect(ligne('Méga', ['Viande Hachée', 'Poulet mariné'])).toBe('1K 1P');
+        expect(ligne('Méga', ['Viande Hachée', 'Poulet mariné'])).toBe('1K 0,5P');
         expect(ligne('Tacos L', ['Mexicanos', 'Cordon Bleu'])).toBe('1Cordon 1Mex');
     });
 
@@ -47,7 +48,7 @@ describe('bandeau de cuisson — règle de portion owner', () => {
     });
 
     it('le choix « Mixte » partage son emplacement entre ses deux viandes', () => {
-        expect(ligne('Cayenne', ['Mixte (hachée + poulet)'])).toBe('1K 1P');
+        expect(ligne('Cayenne', ['Mixte (hachée + poulet)'])).toBe('1K 0,5P');
     });
 
     it('la quantité de ligne multiplie les pièces', () => {
@@ -56,13 +57,13 @@ describe('bandeau de cuisson — règle de portion owner', () => {
 
     it('le supplément viande vaut une portion complète et est nommé depuis l’instruction', () => {
         const extra = [{ extra_name: 'Viande supplémentaire', quantity: 1 }];
-        expect(ligne('Cayenne', ['Poulet mariné'], 1, extra, 'Viandes en plus : Viande Hachée')).toBe('2K 2P');
+        expect(ligne('Cayenne', ['Poulet mariné'], 1, extra, 'Viandes en plus : Viande Hachée')).toBe('2K 1P');
     });
 
     it('un supplément non nommable reste VISIBLE plutôt que de disparaître', () => {
         const rendu = ligne('Cayenne', ['Poulet mariné'], 1, [{ extra_name: 'Viande supplémentaire', quantity: 1 }]);
         expect(rendu).toContain('?');
-        expect(rendu).toContain('2P');
+        expect(rendu).toContain('1P');
     });
 
     // Recettes FIXES — données owner 2026-08-06, confirmées contre la description produit.
@@ -154,8 +155,18 @@ describe('bandeau de cuisson — agrégation de toute la commande', () => {
             item('Galette Cayenne', ['Poulet mariné'], 1),            // 2P
             item('Frites', [], 2),                                    // 2F
         ]);
-        expect(o.texte).toBe('8K 4P 2F');
+        expect(o.texte).toBe('8K 2P 2F');
         expect(o.inconnus).toBe(0);
+    });
+
+    /** L'exemple owner : 3 mixtes au poulet (0,5 chacun) + 1 Cayenne entier (1) = 2,5P. */
+    it('donne bien 2,5 portions de poulet sur l’exemple owner', () => {
+        const o = cuissonForOrder([
+            item('Tacos L', ['Poulet mariné', 'Viande Hachée'], 2),
+            item('Tacos L', ['Poulet mariné', 'Cordon Bleu'], 1),
+            item('Cayenne', ['Poulet mariné'], 1),
+        ]);
+        expect(o.texte).toBe('2K 2,5P 1Cordon');
     });
 
     it('compte les recettes inconnues à part et les annonce', () => {

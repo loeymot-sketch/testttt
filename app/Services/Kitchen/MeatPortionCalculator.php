@@ -40,8 +40,25 @@ namespace App\Services\Kitchen;
  */
 final class MeatPortionCalculator
 {
-    /** Nombre de pièces d'une portion complète (owner : « la portion c'est 2 »). */
+    /**
+     * Valeur d'une PORTION COMPLÈTE, par viande. L'unité n'est pas la même selon la viande —
+     * c'est la correction owner du 2026-08-07 :
+     *
+     *   · VIANDE HACHÉE (K) : la portion se compte en STEAKS, et vaut 2 steaks (2 × 75 g).
+     *   · POULET (P)        : la portion se compte en PORTIONS, et vaut 1 portion (200 g).
+     *                          Un sandwich mixte en reçoit donc une DEMI-portion (100 g),
+     *                          noté « 0,5P » — d'où « 2,5P » pour 3 mixtes + 1 Cayenne entier.
+     *
+     * Les autres viandes restent en pièces (2 par portion complète) jusqu'à instruction
+     * contraire de l'owner : deviner leur unité fausserait à la fois la cuisson et le stock.
+     */
     public const PORTION_COMPLETE = 2;
+
+    /** @var array<string, float> symbole => valeur d'une portion complète */
+    private const PORTION_PAR_VIANDE = [
+        'K' => 2.0,   // 2 steaks
+        'P' => 1.0,   // 1 portion de 200 g
+    ];
 
     /**
      * RECETTES FIXES — produits sans attribut « Viande N », dont la composition est immuable.
@@ -130,11 +147,13 @@ final class MeatPortionCalculator
         $pieces = [];
 
         if ($viandes !== []) {
-            // Règle structurelle : 1 emplacement → portion complète ; N emplacements → 1 chacun.
-            $parViande = count($viandes) === 1 ? self::PORTION_COMPLETE : 1;
+            // Règle structurelle : 1 emplacement → portion COMPLÈTE ; N emplacements → une
+            // DEMI-portion chacun. La valeur d'une portion dépend ensuite de la viande
+            // (2 steaks pour la hachée, 1 portion de 200 g pour le poulet).
+            $partEmplacement = count($viandes) === 1 ? 1.0 : 0.5;
             foreach ($viandes as $nom) {
                 foreach ($this->symbolesPour($nom) as $symbole => $facteur) {
-                    $this->ajoute($pieces, $symbole, $parViande * $facteur * $quantity);
+                    $this->ajoute($pieces, $symbole, $this->portion($symbole) * $partEmplacement * $facteur * $quantity);
                 }
             }
         }
@@ -167,7 +186,7 @@ final class MeatPortionCalculator
                     $nom = trim($m[2]);
                 }
                 foreach ($this->symbolesPour($nom) as $symbole => $facteur) {
-                    $this->ajoute($pieces, $symbole, self::PORTION_COMPLETE * $facteur * $mult * $quantity);
+                    $this->ajoute($pieces, $symbole, $this->portion($symbole) * $facteur * $mult * $quantity);
                 }
             }
         }
@@ -192,9 +211,12 @@ final class MeatPortionCalculator
         //    automatiquement 2F ». Elles vont au bain de friture : elles font partie de ce qu'il
         //    faut CUIRE, donc du bandeau. Un menu complet apporte une portion ; une frite vendue
         //    seule aussi ; une GRANDE en apporte deux.
-        $this->ajoute($pieces, 'F', $this->portionsFrites($itemName, $snapshot) * $quantity);
-        if (($pieces['F'] ?? 0) === 0) {
-            unset($pieces['F']);
+        //    On n'ajoute la clé que si elle est non nulle : depuis que les portions sont
+        //    décimales, un `=== 0` strict ne reconnaissait plus le `0.0` et laissait traîner
+        //    un « 0F » sur chaque sandwich vendu seul.
+        $frites = $this->portionsFrites($itemName, $snapshot) * $quantity;
+        if ($frites > 0) {
+            $this->ajoute($pieces, 'F', $frites);
         }
 
         // 5. Recette fixe encore non documentée → on le DIT, on ne devine pas.
@@ -267,13 +289,19 @@ final class MeatPortionCalculator
 
         $parts = [];
         foreach ($pieces as $symbole => $n) {
-            $parts[] = $n . $symbole;
+            $parts[] = $this->nombre((float) $n) . $symbole;
         }
         if ($inconnus > 0) {
             $parts[] = $inconnus . '×?';
         }
 
         return implode(' ', $parts);
+    }
+
+    /** « 2 » et non « 2,0 » ; « 2,5 » à la française (locale FR, ADR-007). */
+    private function nombre(float $n): string
+    {
+        return rtrim(rtrim(number_format($n, 2, ',', ''), '0'), ',');
     }
 
     /**
@@ -354,9 +382,20 @@ final class MeatPortionCalculator
         return $portions;
     }
 
+    /** Valeur d'une portion complète pour cette viande (2 steaks, 1 portion de poulet…). */
+    private function portion(string $symbole): float
+    {
+        return self::PORTION_PAR_VIANDE[$symbole] ?? (float) self::PORTION_COMPLETE;
+    }
+
+    /**
+     * Accumule en conservant les DEMI-portions : arrondir à l'entier ici ferait disparaître
+     * le « 0,5P » d'un sandwich mixte, et trois mixtes ne feraient plus 1,5 portion mais 3.
+     * Arrondi à 2 décimales seulement, pour absorber les flottants.
+     */
     private function ajoute(array &$pieces, string $symbole, float|int $n): void
     {
-        $pieces[$symbole] = (int) round(($pieces[$symbole] ?? 0) + $n);
+        $pieces[$symbole] = round(((float) ($pieces[$symbole] ?? 0)) + (float) $n, 2);
     }
 
     private function normalise(string $s): string

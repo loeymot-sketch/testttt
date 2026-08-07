@@ -609,8 +609,22 @@ export function renderItemSymbolic(orderItem) {
  *   · supplément viande           → portion complète, nommée depuis l'instruction
  * ──────────────────────────────────────────────────────────────────────────── */
 
-/** Nombre de pièces d'une portion complète. Miroir de MeatPortionCalculator::PORTION_COMPLETE. */
+/**
+ * Valeur d'une PORTION COMPLÈTE, par viande — miroir de MeatPortionCalculator.
+ * [owner 2026-08-07] L'unité diffère selon la viande :
+ *   · VIANDE HACHÉE (K) : la portion se compte en STEAKS et vaut 2 steaks (2 × 75 g) ;
+ *   · POULET (P)        : la portion se compte en PORTIONS et vaut 1 portion (200 g),
+ *                          donc un sandwich mixte en reçoit 0,5P (100 g).
+ * Les autres viandes restent en pièces (2 par portion) jusqu'à instruction owner.
+ */
 export const PORTION_COMPLETE = 2;
+
+const PORTION_PAR_VIANDE = { K: 2, P: 1 };
+
+/** Valeur d'une portion complète pour cette viande. */
+function portion(symbole) {
+    return PORTION_PAR_VIANDE[symbole] ?? PORTION_COMPLETE;
+}
 
 /**
  * RECETTES FIXES — miroir de MeatPortionCalculator::RECETTES_FIXES.
@@ -674,8 +688,17 @@ function meatShares(name) {
     return out;
 }
 
+/**
+ * Accumule en conservant les DEMI-portions : arrondir à l'entier ferait disparaître le « 0,5P »
+ * d'un sandwich mixte, et trois mixtes ne vaudraient plus 1,5 portion mais 3.
+ */
 function addPiece(acc, sym, n) {
-    acc[sym] = Math.round((acc[sym] || 0) + n);
+    acc[sym] = Math.round(((acc[sym] || 0) + n) * 100) / 100;
+}
+
+/** « 2 » et non « 2,0 » ; « 2,5 » à la française (locale FR, ADR-007). */
+function formatNombre(n) {
+    return String(Math.round(n * 100) / 100).replace('.', ',');
 }
 
 /**
@@ -696,10 +719,12 @@ export function meatPortionsForItem(orderItem) {
     }
 
     if (viandes.length) {
-        const parEmplacement = viandes.length === 1 ? PORTION_COMPLETE : 1;
+        // 1 emplacement → portion COMPLÈTE ; N emplacements → une DEMI-portion chacun.
+        // La valeur d'une portion dépend ensuite de la viande (2 steaks / 1 portion de poulet).
+        const partEmplacement = viandes.length === 1 ? 1 : 0.5;
         for (const nom of viandes) {
             const shares = meatShares(nom);
-            for (const sym of Object.keys(shares)) addPiece(pieces, sym, parEmplacement * shares[sym] * qty);
+            for (const sym of Object.keys(shares)) addPiece(pieces, sym, portion(sym) * partEmplacement * shares[sym] * qty);
         }
     }
 
@@ -723,7 +748,7 @@ export function meatPortionsForItem(orderItem) {
             const m = String(nom).trim().match(/^(\d+)\s*[x×]\s*(.+)$/i);
             if (m) { mult = Math.max(1, parseInt(m[1], 10)); nom = m[2].trim(); }
             const shares = meatShares(nom);
-            for (const sym of Object.keys(shares)) addPiece(pieces, sym, PORTION_COMPLETE * shares[sym] * mult * qty);
+            for (const sym of Object.keys(shares)) addPiece(pieces, sym, portion(sym) * shares[sym] * mult * qty);
         }
     }
 
@@ -761,7 +786,7 @@ export function renderCuisson(pieces, inconnus = 0) {
     const rang = (s) => (s === 'K' ? 0 : s === 'P' ? 1 : s === 'F' ? 3 : s === '?' ? 4 : 2);
     syms.sort((a, b) => rang(a) - rang(b) || a.localeCompare(b));
 
-    const parts = syms.map((s) => `${pieces[s]}${s}`);
+    const parts = syms.map((s) => `${formatNombre(pieces[s])}${s}`);
     if (inconnus > 0) parts.push(`${inconnus}×?`);
     return parts.join(' ');
 }

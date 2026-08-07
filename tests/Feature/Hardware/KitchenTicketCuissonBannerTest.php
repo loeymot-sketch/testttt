@@ -80,7 +80,7 @@ class KitchenTicketCuissonBannerTest extends TestCase
     /**
      * LE CŒUR DE LA DEMANDE — « si on a dans toute la commande plusieurs, on va tous les
      * assembler et dire une seule fois qu'il y en a neuf ». Ici : 3 Tacos hachée (6K) +
-     * 2 Méga hachée/poulet (2K 2P) + 1 Galette poulet (2P) = 8K 4P.
+     * 2 Méga mixtes hachée/poulet (2K + 2 × 0,5P) + 1 Galette au poulet seul (1P) = 8K 2P.
      */
     public function test_le_bandeau_agrege_toutes_les_viandes_de_la_commande(): void
     {
@@ -92,7 +92,9 @@ class KitchenTicketCuissonBannerTest extends TestCase
 
         $i = $this->indexOf($lines, '/^CUISSON$/');
         $this->assertGreaterThan(-1, $i, 'Le ticket cuisine doit porter un bandeau CUISSON. Lignes : '.implode(' | ', $lines));
-        $this->assertSame('8K 4P', $lines[$i + 1] ?? '', 'Les viandes de toute la commande doivent être agrégées en une seule ligne.');
+        // [owner 2026-08-07] Le poulet se compte en PORTIONS : 2 Mégas mixtes = 2 × 0,5 = 1P,
+        // + 1 Galette au poulet seul = 1 portion → 2P au total.
+        $this->assertSame('8K 2P', $lines[$i + 1] ?? '', 'Les viandes de toute la commande doivent être agrégées en une seule ligne.');
     }
 
     /** « je demande de mettre pour les cuisiner tout en haut », au-dessus du numéro. */

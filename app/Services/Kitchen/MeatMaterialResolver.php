@@ -56,14 +56,27 @@ final class MeatMaterialResolver
     ];
 
     /**
-     * Matières à créer si absentes, comptées en PIÈCES (aucun poids requis pour compter).
-     * Le poids unitaire reste à saisir par l'owner pour la valorisation en grammes/coût.
+     * Matières à créer si absentes : nom => [unité, poids d'UNE unité comptée].
      *
-     * @var array<int, string>
+     * La plupart sont comptées en PIÈCES — une pièce se compte sans connaître son poids, et la
+     * question de l'owner (« combien on a vraiment sorti ») trouve alors une réponse exacte
+     * tout de suite. Le poids ne sert qu'à valoriser en grammes.
+     *
+     * Le POULET fait exception : depuis la correction owner du 2026-08-07 il se compte en
+     * PORTIONS, et une portion complète pèse 200 g (une demi-portion, celle d'un sandwich
+     * mixte, en pèse donc 100). L'unité est le gramme et la conversion est connue — c'est
+     * d'ailleurs exactement le forfait que portaient les anciennes fiches produit.
+     *
+     * @var array<string, array{0:string, 1:float|null}>
      */
-    public const MATIERES_EN_PIECES = [
-        'Poulet mariné', 'Mexicanos', 'Tenders', 'Nuggets', 'Fricadelle',
-        'Chicken burger', 'Poisson pané',
+    public const MATIERES_A_CREER = [
+        'Poulet mariné' => ['g', 200.0],
+        'Mexicanos' => ['piece', null],
+        'Tenders' => ['piece', null],
+        'Nuggets' => ['piece', null],
+        'Fricadelle' => ['piece', null],
+        'Chicken burger' => ['piece', null],
+        'Poisson pané' => ['piece', null],
     ];
 
     /** @var array<string, RawMaterial|null> cache par nom, pour ne pas requêter par ligne */
@@ -72,8 +85,9 @@ final class MeatMaterialResolver
     /**
      * Convertit les pièces du bandeau de cuisson en quantités de matière consommables.
      *
-     * @param  array<string, int>  $pieces  sortie de MeatPortionCalculator (symbole => pièces)
-     * @return array{totals: array<int, float>, skipped: array<int, array{symbol: string, reason: string, pieces: int}>}
+     * @param  array<string, float>  $pieces  sortie de MeatPortionCalculator (symbole => unités
+     *                                          comptées, éventuellement fractionnaires)
+     * @return array{totals: array<int, float>, skipped: array<int, array{symbol: string, reason: string, pieces: float}>}
      */
     public function toMaterialQuantities(array $pieces, int $branchId = 1): array
     {
@@ -81,7 +95,10 @@ final class MeatMaterialResolver
         $skipped = [];
 
         foreach ($pieces as $symbole => $n) {
-            $n = (int) $n;
+            // (float) et NON (int) : depuis que le poulet se compte en portions, une DEMI-portion
+            // vaut 0,5 — un cast entier l'écrasait à 0 et faisait disparaître du stock, en
+            // silence, tout le poulet des sandwichs mixtes.
+            $n = (float) $n;
             if ($n <= 0) {
                 continue;
             }
@@ -126,10 +143,11 @@ final class MeatMaterialResolver
     }
 
     /**
-     * Quantité à consommer pour N pièces, dans l'unité de la matière.
+     * Quantité à consommer pour N unités comptées, dans l'unité de la matière. N peut être
+     * FRACTIONNAIRE (une demi-portion de poulet = 0,5 → 100 g).
      * Retourne null si la conversion est impossible (grammes sans poids unitaire).
      */
-    private function quantitePour(RawMaterial $matiere, int $pieces): ?float
+    private function quantitePour(RawMaterial $matiere, float $pieces): ?float
     {
         $unit = mb_strtolower(trim((string) $matiere->unit));
 
