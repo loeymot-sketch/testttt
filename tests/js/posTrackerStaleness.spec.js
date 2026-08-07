@@ -42,7 +42,9 @@ import orderStatusEnum from '../../resources/js/enums/modules/orderStatusEnum';
 const NOW = 1_800_000_000_000; // horloge fixe — déterminisme total
 
 const POLL_WS_MS = 60000;
-const POLL_NO_WS_MS = 8000;
+// Miroir de la constante du composant (MULTI-DEVICE 2026-08-07 : 8 s → 5 s,
+// cadence de repli exigée entre terminaux quand le temps réel est indisponible).
+const POLL_NO_WS_MS = 5000;
 
 const makeStore = (dispatchImpl) => ({
     getters: new Proxy({ 'auth/authBranchId': 1 }, { get(t, p) { return p in t ? t[p] : undefined; } }),
@@ -127,7 +129,7 @@ describe('PosOrdersTracker — staleness events (UX-TRACKER-02 / POSPERF-09)', (
         const { wrapper } = buildHarness({ methods: { fetchOrders: fetchSpy } });
         wrapper.vm.realtimeConnected = true;
         wrapper.vm.orders = [{ id: 1 }];
-        wrapper.vm.lastEventAt = NOW - 40000;   // stale ⇒ _pollInterval() = 8000
+        wrapper.vm.lastEventAt = NOW - 40000;   // stale ⇒ _pollInterval() = 5000
         wrapper.vm._pollTimer = 123;            // un timer "tourne"
         wrapper.vm._pollTimerMs = POLL_WS_MS;   // ... armé à 60s avant la mort du worker
         wrapper.vm._onAgeTick();

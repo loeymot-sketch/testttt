@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use App\Libraries\AppLibrary;
 use App\Models\Branch;
 use App\Models\User;
+use App\Services\Auth\DeviceTokenService;
 use App\Services\DefaultAccessService;
 use App\Services\MenuService;
 use App\Services\Fiscal\AuditLogService;
@@ -114,6 +115,15 @@ class LoginController extends Controller
         // Failure to write must NOT block the already-validated login — wrap
         // in try/catch + Log::warning so a transient cache/DB hiccup doesn't
         // lock the cashier out.
+        // [MULTI-DEVICE 2026-08-07] Identité de l'appareil, résolue AVANT
+        // l'écriture d'audit : plusieurs terminaux peuvent partager un même
+        // compte (1 caisse + jusqu'à ~7 accès admin côté exploitation), donc
+        // « qui s'est connecté » ne suffit plus à la traçabilité NF525 — il
+        // faut « depuis quel poste ».
+        $deviceTokens = app(DeviceTokenService::class);
+        $deviceId     = $deviceTokens->resolveDeviceId($request);
+        $deviceLabel  = $deviceTokens->resolveDeviceLabel($request);
+
         try {
             app(AuditLogService::class)->write([
                 'branch_id'   => (int) $branchId,
@@ -122,12 +132,14 @@ class LoginController extends Controller
                 'resource'    => 'user',
                 'resource_id' => (int) $user->id,
                 'payload'     => [
-                    'user_id'    => (int) $user->id,
-                    'user_email' => (string) ($user->email ?? ''),
-                    'branch_id'  => (int) $branchId,
-                    'ip'         => (string) ($request->ip() ?? ''),
-                    'user_agent' => substr((string) $request->userAgent(), 0, 512),
-                    'role'       => isset($user->roles[0]) ? (string) $user->roles[0]->name : null,
+                    'user_id'      => (int) $user->id,
+                    'user_email'   => (string) ($user->email ?? ''),
+                    'branch_id'    => (int) $branchId,
+                    'ip'           => (string) ($request->ip() ?? ''),
+                    'user_agent'   => substr((string) $request->userAgent(), 0, 512),
+                    'role'         => isset($user->roles[0]) ? (string) $user->roles[0]->name : null,
+                    'device_id'    => $deviceId,
+                    'device_label' => $deviceLabel,
                 ],
                 'ip'         => (string) ($request->ip() ?? null),
                 'user_agent' => substr((string) $request->userAgent(), 0, 512),
@@ -152,12 +164,23 @@ class LoginController extends Controller
         // full 480-min TTL after a user logged in from a second device or
         // re-authenticated after a password change. Scoped by name so we
         // never touch kiosk:order tokens (different name, separate concern).
-        $user->tokens()->where('name', 'auth_token')->delete();
-
-        $this->token = $user->createToken(
+        //
+        // [MULTI-DEVICE 2026-08-07] CORRECTIF — la révocation portait sur TOUS
+        // les jetons `auth_token` du compte, y compris ceux des autres postes.
+        // En exploitation multi-terminaux (caisse + tablettes + téléphone),
+        // toute connexion éjectait les autres écrans : 401 au premier appel,
+        // donc déconnexion sèche sur la caisse (pos-app.js:62) ou message
+        // « impossible de procéder » sur l'admin. La révocation est désormais
+        // scopée à l'appareil (voir DeviceTokenService) : l'anti-prolifération
+        // est conservée, et un plafond `auth.max_devices_per_user` évince le
+        // terminal le moins récemment actif au-delà de la limite.
+        $this->token = $deviceTokens->issueForDevice(
+            $user,
             'auth_token',
             ['*'],
-            now()->addMinutes((int) config('sanctum.expiration', 480))
+            $request,
+            (int) config('sanctum.expiration', 480),
+            $deviceId
         )->plainTextToken;
 
         if (!isset($user->roles[0])) {

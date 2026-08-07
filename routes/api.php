@@ -93,6 +93,7 @@ use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\WaiterAddressController;
 use App\Http\Controllers\Admin\WaiterController;
 use App\Http\Controllers\Auth\DeactivateController;
+use App\Http\Controllers\Auth\DeviceSessionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\GuestSignupController;
 use App\Http\Controllers\Auth\KioskMachineLoginController;
@@ -234,6 +235,22 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // le trou visait les jetons émis par LoginController (staff/admin).
         Route::post('/logout', [LoginController::class, 'logout']);
         Route::post('/kiosk-logout', [KioskMachineLoginController::class, 'logout']);
+
+        // [MULTI-DEVICE 2026-08-07] Écran « Appareils connectés ». Même
+        // raisonnement que /logout juste au-dessus : gérer ses propres
+        // sessions est un CONTRÔLE DE SÉCURITÉ, il ne passe donc pas par
+        // `verify.api` ni par une permission — sinon on retire à l'exploitant
+        // le seul moyen de couper l'accès d'une tablette perdue.
+        // `block_kiosk_machine` en revanche est requis : un jeton MACHINE de
+        // borne ne doit pas pouvoir lister ni révoquer les sessions du compte
+        // auquel il est rattaché (il pourrait éteindre la caisse).
+        Route::middleware('block_kiosk_machine')->group(function () {
+            Route::get('/devices', [DeviceSessionController::class, 'index']);
+            Route::patch('/devices/{token}', [DeviceSessionController::class, 'update'])
+                ->whereNumber('token');
+            Route::delete('/devices/{token}', [DeviceSessionController::class, 'destroy'])
+                ->whereNumber('token');
+        });
 
         Route::middleware('verify.api')->group(function () {
             // La SUPPRESSION de compte reste derrière la vérification d'e-mail : c'est une

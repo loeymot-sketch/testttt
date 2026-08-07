@@ -63,13 +63,32 @@ class RefreshTokenController extends Controller
             // delete() (the in-memory model still holds the name, but be explicit).
             $tokenName = $token->name ?: 'auth_token';
 
+            // [MULTI-DEVICE 2026-08-07] Reporter l'identité d'appareil sur le
+            // jeton renouvelé. Sans ça, un appareil perdait son `device_id` au
+            // premier refresh (toutes les 2h) : la révocation ciblée à la
+            // reconnexion ne le retrouvait plus, il devenait une session
+            // fantôme non révocable depuis l'écran « Appareils connectés », et
+            // le plafond finissait par évincer des postes en service. Une
+            // dégradation strictement invisible sans ce report.
+            $deviceId    = $token->device_id;
+            $deviceLabel = $token->device_label;
+            $lastIp      = $token->last_ip;
+
             $token->delete();
 
-            $token = $user->createToken(
+            $newToken = $user->createToken(
                 $tokenName,
                 $abilities,
                 now()->addMinutes((int) config('sanctum.expiration', 480))
-            )->plainTextToken;
+            );
+
+            $newToken->accessToken->forceFill([
+                'device_id'    => $deviceId,
+                'device_label' => $deviceLabel,
+                'last_ip'      => $lastIp,
+            ])->save();
+
+            $token = $newToken->plainTextToken;
 
             return new JsonResponse([
                 'token'      => $token,

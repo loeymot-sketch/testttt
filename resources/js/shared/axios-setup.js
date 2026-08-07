@@ -22,6 +22,7 @@
 
 import ENV from '../config/env';
 import { getCurrentLocale } from '../i18n';
+import { getDeviceId, getDeviceLabel } from './device-id';
 
 /**
  * Reads the active Bearer token + language from the Vuex store, falling back
@@ -80,6 +81,18 @@ export function applySharedAxiosDefaults(axios, store) {
             // [PHASE-37] Backend localization header — read from i18n live, not store snapshot.
             const currentLocale = getCurrentLocale();
             config.headers['Accept-Language'] = currentLocale;
+
+            // [MULTI-DEVICE 2026-08-07] Identité d'appareil. Ajout STRICTEMENT
+            // additif : aucune sémantique d'en-tête existante n'est modifiée.
+            // Le serveur s'en sert à la connexion pour ne révoquer que le jeton
+            // précédent DE CE terminal — sans cet en-tête, toute connexion
+            // éjectait les autres écrans (401, cf. LoginController).
+            config.headers['X-Device-Id'] = getDeviceId();
+            // Le libellé est encodé en pourcent : un en-tête HTTP ne transporte
+            // que du latin-1, et un nom accentué (« Écran cuisine », ou un nom
+            // saisi par l'exploitant) ferait échouer la requête AVANT l'envoi.
+            // Le serveur décode (DeviceTokenService::resolveDeviceLabel).
+            config.headers['X-Device-Label'] = encodeURIComponent(getDeviceLabel());
 
             const { token, language } = readTokenFromVuexLocalStorage(store);
             config.headers['Authorization'] = token ? `Bearer ${token}` : '';

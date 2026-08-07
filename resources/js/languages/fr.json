@@ -483,7 +483,8 @@
         "users": "Utilisateurs",
         "accounts": "Comptes",
         "reports": "Rapports",
-        "setup": "Configuration"
+        "setup": "Configuration",
+        "connected_devices": "Appareils connectés"
     },
     "label": {
         "kds_sync_uncertain_banner": "Synchro incertaine — données peut-être datées",
@@ -1429,7 +1430,17 @@
         "valid_days_of_week": "Jours de validité",
         "valid_hours_start": "Heure de début",
         "valid_hours_end": "Heure de fin",
-        "error": "Une erreur est survenue."
+        "error": "Une erreur est survenue.",
+        "connected_devices": "Appareils connectés",
+        "connected_devices_help": "Ces terminaux sont connectés en même temps sur votre compte ({max} au maximum). Se connecter sur un appareil ne déconnecte plus les autres. Déconnectez ici tout appareil que vous ne reconnaissez pas.",
+        "no_connected_device": "Aucun appareil connecté.",
+        "device": "Appareil",
+        "ip_address": "Adresse IP",
+        "last_activity": "Dernière activité",
+        "this_device": "Cet appareil",
+        "staff_session": "Session personnel",
+        "confirm_revoke_device": "Déconnecter « {device} » ? Cet appareil devra se reconnecter.",
+        "confirm_revoke_current_device": "Vous êtes sur le point de déconnecter CET appareil. Vous devrez vous reconnecter."
     },
     "button": {
         "refresh": "Actualiser",
@@ -1540,7 +1551,9 @@
             "choose_template_v2": "Choisir un template",
             "add_page_manual": "Ajouter une page manuellement"
         },
-        "menu": "Menu"
+        "menu": "Menu",
+        "rename": "Renommer",
+        "disconnect": "Déconnecter"
     },
     "error": {
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",

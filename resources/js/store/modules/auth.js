@@ -62,6 +62,22 @@ export const auth = {
                 });
             });
         },
+        // [MULTI-DEVICE 2026-08-07] Écran « Appareils connectés ». Les trois
+        // actions renvoient `res.data` directement (et non la réponse axios) :
+        // ce sont des appels ponctuels d'un écran de sécurité, rien n'est
+        // stocké dans le state — un instantané mis en cache donnerait une
+        // fausse assurance sur qui est réellement connecté.
+        listDevices: function () {
+            return axios.get('auth/devices').then((res) => res.data);
+        },
+        renameDevice: function (context, payload) {
+            return axios.patch(`auth/devices/${payload.id}`, {
+                device_label: payload.device_label,
+            }).then((res) => res.data);
+        },
+        revokeDevice: function (context, id) {
+            return axios.delete(`auth/devices/${id}`).then((res) => res.data);
+        },
         authcheck: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post('auth/authcheck', payload).then((res) => {

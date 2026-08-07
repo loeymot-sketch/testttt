@@ -20,6 +20,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Appareils simultanés par compte
+    |--------------------------------------------------------------------------
+    |
+    | [MULTI-DEVICE 2026-08-07] Nombre de terminaux pouvant rester connectés
+    | EN MÊME TEMPS sur un même compte (caisse, tablettes de salle, poste
+    | bureau, téléphone). La reconnexion d'un appareil ne révoque que son
+    | propre jeton précédent ; ce plafond n'intervient qu'au-delà, et évince
+    | alors le terminal le MOINS RÉCEMMENT actif — jamais un poste en service.
+    |
+    | Mettre 0 désactive le plafond (déconseillé : plus aucun garde-fou contre
+    | la prolifération de jetons valides 8h).
+    |
+    */
+
+    'max_devices_per_user' => (int) env('AUTH_MAX_DEVICES_PER_USER', 10),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |

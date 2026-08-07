@@ -444,7 +444,16 @@ Loi de Finance France — non-négociable, prison time si violé.
 ### Sanctum kiosk:order
 - Token créé avec `['kiosk:order']` ability UNIQUEMENT
 - TTL 480 minutes (config sanctum.expiration)
-- Old tokens revoked à chaque relogin (prevent token sprawl)
+- Old tokens revoked à chaque relogin (prevent token sprawl) — **SCOPÉ À
+  L'APPAREIL depuis 2026-08-07 (décision owner, multi-terminaux)**. Une
+  reconnexion ne révoque QUE le jeton du même `personal_access_tokens.device_id` ;
+  l'anti-prolifération est assurée en plus par le plafond
+  `auth.max_devices_per_user` (10), qui évince le terminal le moins récemment
+  actif. ⛔ NE PAS « réparer » en revenant à
+  `$user->tokens()->where('name','auth_token')->delete()` : c'était la cause du
+  défaut « chaque connexion déconnecte les autres écrans » (caisse en 401 →
+  /login ; admin → « impossible de procéder »). Voir `App\Services\Auth\DeviceTokenService`
+  et `tests/Feature/Auth/MultiDeviceLoginTest.php`.
 - `tokenCan('kiosk:order')` checks dans 8 controllers (verified WI-7)
 - Pre-auth lookups : `withoutGlobalScope(BranchScope::class)` explicit
 - V1.0.1 roadmap (BRAIN §1) : TTL 8h → 1h sensitive ops

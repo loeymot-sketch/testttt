@@ -606,7 +606,13 @@ import PosStockOutflowModal from './PosStockOutflowModal.vue';
 import { adminPriceMixin } from '../../../helpers/formatPrice';
 
 const POLL_WS_MS = 60000;
-const POLL_NO_WS_MS = 8000;
+// [MULTI-DEVICE 2026-08-07] 8 s → 5 s sur demande du propriétaire, qui accepte
+// désormais des commandes depuis plusieurs terminaux : quand le temps réel est
+// indisponible (worker de file arrêté, socket coupée), deux caisses doivent se
+// voir l'une l'autre en 5 s maximum. Ce chemin n'est PAS le cas nominal — avec
+// le temps réel opérationnel, un événement arrive en moins d'une seconde et la
+// cadence lente ci-dessus ne sert que de filet.
+const POLL_NO_WS_MS = 5000;
 // [S2 F1 révisé 2026-07-29] Le compteur d'anciennes commandes à encaisser tape un
 // endpoint lourd (OrderDetailsResource, ~1,3 s) : 5 min de TTL, jamais la cadence
 // du poll dégradé.

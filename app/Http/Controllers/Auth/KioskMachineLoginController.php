@@ -88,7 +88,7 @@ class KioskMachineLoginController extends Controller
             ], 400);
         }
 
-        DB::transaction(function () use ($kioskMachine) {
+        DB::transaction(function () use ($kioskMachine, $request) {
             // [iter12 P1 KIOSK 2026-05-09] In-transaction lookup runs while the
             // user has not yet been authenticated for this request, so BranchScope
             // would still skip; we bypass explicitly for intent + parity with the
@@ -98,14 +98,29 @@ class KioskMachineLoginController extends Controller
                 ->find($kioskMachine->id);
             $user         = User::find($lockedKiosk->user_id);
 
-            // Revoke all existing kiosk tokens for this user to allow clean re-login
-            $user->tokens()->where('name', 'kiosk-token')->delete();
-
-            $this->token = $user->createToken(
-                'kiosk-token',
-                ['kiosk:order'],
-                now()->addMinutes((int) config('sanctum.expiration', 480))
-            )->plainTextToken;
+            // [MULTI-DEVICE 2026-08-07] Jumelle du défaut corrigé dans
+            // `LoginController` : la purge visait TOUS les jetons `kiosk-token`
+            // du compte lié. Or plusieurs bornes peuvent partager le même
+            // compte utilisateur — démarrer la borne 2 tuait donc la session de
+            // la borne 1, qui tombait en 401 en plein parcours client.
+            //
+            // L'identité d'appareil n'est pas prise dans l'en-tête ici mais
+            // DÉRIVÉE DE LA MACHINE elle-même : une borne EST un appareil
+            // identifié en base, c'est une source plus fiable qu'un en-tête
+            // fourni par le client, et ça reste stable même si le navigateur
+            // de la borne perd son stockage local.
+            $this->token = app(\App\Services\Auth\DeviceTokenService::class)
+                ->issueForDevice(
+                    $user,
+                    'kiosk-token',
+                    ['kiosk:order'],
+                    $request,
+                    (int) config('sanctum.expiration', 480),
+                    'kiosk-' . (int) $lockedKiosk->id,
+                    // `kiosk_machines` n'a pas de colonne `name` : l'identifiant
+                    // lisible côté exploitation est `machine_id`.
+                    'Borne ' . ($lockedKiosk->machine_id ?: ('#' . (int) $lockedKiosk->id))
+                )->plainTextToken;
             $lockedKiosk->update(['is_login' => Ask::YES]);
         });
 
@@ -120,12 +135,30 @@ class KioskMachineLoginController extends Controller
     {
         $user = $request->user();
         if ($user) {
-            // Identifier les machines potentiellement rattachées à cet user pour reset leur état de login
-            $kiosks = KioskMachine::where('user_id', $user->id)->get();
+            $current = $user->currentAccessToken();
+
+            // [MULTI-DEVICE 2026-08-07] La déconnexion remettait `is_login=NO`
+            // sur TOUTES les bornes rattachées au compte. Avec plusieurs bornes
+            // sur un même compte, éteindre la borne 1 affichait donc la borne 2
+            // comme déconnectée dans l'admin alors qu'elle servait un client.
+            // On ne touche que la borne réellement identifiée par le jeton
+            // présenté (device_id = 'kiosk-<id>'), avec repli sur l'ancien
+            // comportement pour les jetons hérités qui n'ont pas d'identité.
+            $kioskId = null;
+            if ($current instanceof PersonalAccessToken
+                && is_string($current->device_id)
+                && str_starts_with($current->device_id, 'kiosk-')) {
+                $kioskId = (int) substr($current->device_id, 6);
+            }
+
+            $kiosks = KioskMachine::where('user_id', $user->id)
+                ->when($kioskId, fn ($q) => $q->where('id', $kioskId))
+                ->get();
+
             foreach ($kiosks as $k) {
                 $k->update(['is_login' => Ask::NO]);
             }
-            $current = $user->currentAccessToken();
+
             if ($current instanceof PersonalAccessToken) {
                 $current->delete();
             }

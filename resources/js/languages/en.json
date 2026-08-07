@@ -488,7 +488,8 @@
         "printers": "Printers",
         "ingredients": "Ingredients",
         "advanced_tools": "Advanced tools",
-        "demo_wizard_advanced": "Advanced Wizard Demo"
+        "demo_wizard_advanced": "Advanced Wizard Demo",
+        "connected_devices": "Connected devices"
     },
     "label": {
         "kds_sync_uncertain_banner": "Sync uncertain — data may be out of date",
@@ -1074,7 +1075,6 @@
         "payment_info": "Payment Info",
         "method": "Method",
         "order_confirmed": "Commande confirmée",
-        "open": "Open",
         "got_your_order": "Got your order {name}!",
         "your_order": "Your order is {order}",
         "estimated_delivery_time": "Estimated delivery time",
@@ -1499,7 +1499,17 @@
         "valid_days_of_week": "Valid days of week",
         "valid_hours_start": "Start hour",
         "valid_hours_end": "End hour",
-        "error": "An error occurred."
+        "error": "An error occurred.",
+        "connected_devices": "Connected devices",
+        "connected_devices_help": "These terminals are signed in on your account at the same time ({max} max). Signing in on one device no longer disconnects the others. Disconnect any device you do not recognise.",
+        "no_connected_device": "No connected device.",
+        "device": "Device",
+        "ip_address": "IP address",
+        "last_activity": "Last activity",
+        "this_device": "This device",
+        "staff_session": "Staff session",
+        "confirm_revoke_device": "Disconnect “{device}”? That device will have to sign in again.",
+        "confirm_revoke_current_device": "You are about to disconnect THIS device. You will have to sign in again."
     },
     "button": {
         "refresh": "Refresh",
@@ -1609,7 +1619,9 @@
             "choose_template_v2": "Choose a template",
             "add_page_manual": "Add a page manually"
         },
-        "menu": "Menu"
+        "menu": "Menu",
+        "rename": "Rename",
+        "disconnect": "Disconnect"
     },
     "error": {
         "something_wrong": "Something Wrong.",

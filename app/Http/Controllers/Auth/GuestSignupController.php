@@ -346,9 +346,14 @@ class GuestSignupController extends Controller
             // autant de sessions actives que de connexions, et sa déconnexion n'en tuait qu'une.
             // On purge par NOM, comme la jumelle, pour ne jamais toucher un jeton d'une autre
             // nature.
-            $user->tokens()->where('name', 'auth_token')->delete();
-
-            $this->token = $user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))->plainTextToken;
+            // [MULTI-DEVICE 2026-08-07] Même correctif que sur la jumelle
+            // `LoginController` : la purge portait sur TOUS les jetons du
+            // compte, donc un client connecté sur son téléphone était éjecté
+            // dès qu'il ouvrait le site sur un autre appareil. On garde la
+            // purge anti-prolifération, scopée à l'appareil, plus le plafond.
+            $this->token = app(\App\Services\Auth\DeviceTokenService::class)
+                ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), 60 * 24 * 30)
+                ->plainTextToken;
 
             // [FIX] Guard against user with no roles (should not happen, but defensive)
             $firstRole = $user->roles->first();
