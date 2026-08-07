@@ -99,7 +99,15 @@ class OrderServicesContractTest extends TestCase
             $paymentService,
             // [F-COUNTER-PHANTOM-TRANSITION 2026-07-15] closure enrichie de &$prePaidStatus
             // (garde le broadcast ACCEPT→PREPARING sur la transition réelle, pas l'état final).
-            'DB::transaction(function () use ($order, $mode, $received, $note, &$paid, &$prePaidStatus): void',
+            //
+            // [HEAL 2026-08-07] L'ancre citait la liste `use` COMPLÈTE. Le 05/08, la CB
+            // déclarative (`e876347dd`) y a ajouté `$breakdown` — signature légitime, mais
+            // l'ancre est devenue introuvable et ce test rouge, sans qu'aucun invariant ne
+            // soit violé. L'invariant réel, c'est que l'encaissement comptoir est enveloppé
+            // dans UNE transaction qui précède le `if ($paid)`. On ancre donc sur le PRÉFIXE
+            // stable de la signature : une variable ajoutée à la fermeture ne fera plus
+            // rougir à tort, alors qu'un déplacement hors transaction, lui, sera bien vu.
+            'DB::transaction(function () use ($order, $mode, $received, $note',
             'if ($paid) {'
         );
         $this->assertSourceOrder($paymentService, 'if ($paid) {', 'OrderPaidAtCounter::dispatch($order, $mode);');

@@ -38,10 +38,35 @@ class F013FinalizeStateGuardSentinelTest extends TestCase
             'F-013 sentinel: method finalizePaidKioskOrder must exist in FrontendOrderService.'
         );
 
-        // Capture roughly the next 5000 chars — large enough to cover the
-        // method body (~110 LOC) but short enough to avoid bleed into
-        // adjacent methods.
-        return substr($full, $start, 5000);
+        // [HEAL 2026-08-07] Auparavant : `substr($full, $start, 5000)`. Fenêtre FIXE, donc
+        // périmée dès que la méthode grossit — et c'est arrivé : le garde
+        // `fiscal_sequence_no === null` s'est retrouvé à 5904 caractères du début, HORS
+        // fenêtre. La sentinelle criait à la régression fiscale alors que le garde était
+        // intact. Une sentinelle qui rougit à tort finit ignorée, ce qui est pire que pas
+        // de sentinelle du tout sur un invariant NF525.
+        //
+        // On borne désormais sur la DÉCLARATION DE MÉTHODE SUIVANTE : la fenêtre suit la
+        // taille réelle du corps, sans jamais déborder sur la méthode d'à côté.
+        $end = strlen($full);
+        foreach (['public function ', 'private function ', 'protected function '] as $next) {
+            $candidate = strpos($full, "\n    ".$next, $start + 1);
+            if ($candidate !== false && $candidate < $end) {
+                $end = $candidate;
+            }
+        }
+
+        $body = substr($full, $start, $end - $start);
+
+        // Garde anti-fenêtre-vide : si l'extraction ne rend presque rien, l'assertion
+        // suivante passerait ou échouerait pour la mauvaise raison.
+        $this->assertGreaterThan(
+            2000,
+            strlen($body),
+            'F-013 sentinel: extraction du corps de finalizePaidKioskOrder anormalement courte — '
+            .'le repérage de la méthode suivante a échoué, la sentinelle ne prouve plus rien.'
+        );
+
+        return $body;
     }
 
     public function test_finalize_paid_kiosk_order_uses_explicit_pending_whitelist(): void

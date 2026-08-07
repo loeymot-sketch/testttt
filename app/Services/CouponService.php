@@ -482,8 +482,16 @@ class CouponService
             // `transactionLevel() > 0` : la validation est appelée aussi HORS
             // transaction (pré-contrôle du site, qui ne consomme rien). Poser un
             // verrou là serait inutile et immédiatement relâché.
+            // [SENTINELLE Z6-P1-WGS 2026-08-07] `withoutGlobalScopes()` (pluriel) faisait
+            // rougir l'audit des scopes. Mesuré : `Coupon` ne porte QUE `SoftDeletingScope`
+            // (aucun `BranchScope`) — le remède « préféré » que propose la sentinelle
+            // (`withoutGlobalScope(BranchScope::class)`) serait donc FAUX ici, il ne
+            // retirerait rien. La forme exacte et explicite est `withTrashed()` : elle dit
+            // ce qu'on veut vraiment, verrouiller la ligne même si le coupon a été
+            // soft-deleted entre-temps (le verrou sert à SÉRIALISER, pas à valider — la
+            // validation a déjà eu lieu plus haut).
             if (DB::transactionLevel() > 0) {
-                Coupon::withoutGlobalScopes()
+                Coupon::withTrashed()
                     ->whereKey($coupon->id)
                     ->lockForUpdate()
                     ->first();

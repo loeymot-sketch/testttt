@@ -27,6 +27,23 @@ class CouponHttpScopeWiringTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * [TICKET PROMO 2026-08-07] Le commit `9b2f3a0a3` a introduit un interrupteur DÉDIÉ
+     * `POS_COUPON_CODES_ENABLED`, éteint par défaut. Cette classe s'est alors mise à
+     * tomber sur le coupe-circuit (« Les codes promo sont désactivés pour le moment. »)
+     * AVANT d'atteindre la logique de portée qu'elle est justement là pour vérifier :
+     * 6 tests rouges, sans que rien du câblage testé n'ait changé.
+     *
+     * On allume donc l'interrupteur ici. Ce n'est pas contourner une garde : le
+     * coupe-circuit a SA propre suite (`CouponCodesDedicatedSwitchTest`, qui vérifie
+     * les deux positions). Chaque test doit exercer ce qu'il prétend exercer.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['pos.coupon_codes_enabled' => true]);
+    }
+
     private function makeCoupon(array $overrides = []): Coupon
     {
         return Coupon::create(array_merge([
