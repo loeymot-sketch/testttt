@@ -81,6 +81,29 @@ class PromoFlyerEscPosRenderer
         }
 
         // --- 3. LE MESSAGE ---------------------------------------------------
+        // --- 2bis. L'APPÉTIT AVANT L'OFFRE ---------------------------------
+        // [UX 2026-08-08] Une remise ne donne pas faim. Ce qui déclenche la prochaine commande,
+        // c'est le souvenir du produit — la remise ne fait que lever le dernier frein. La promesse
+        // produit passe donc AVANT l'offre, en capitales et en gras : c'est la seule ligne du
+        // ticket qui parle de ce qu'on mange.
+        $quality = trim((string) ($data['quality_note'] ?? ''));
+        if ($quality !== '') {
+            $out .= E::bold(true);
+            // Les retours à la ligne EXPLICITES sont respectés : la coupure par mots remplit la
+            // ligne jusqu'à 42 et ne sait pas s'arrêter à une fin de phrase, ce qui donnait
+            // « … GRILLADES » / « SAVOUREUSES. » — 42 puis 12, bancal. En laissant l'exploitant
+            // placer sa coupure, la promesse produit tient sur deux lignes équilibrées, et il garde
+            // la main depuis l'admin sans redéploiement.
+            foreach (preg_split('/\r\n|\r|\n/', $quality) as $bloc) {
+                $bloc = trim((string) $bloc);
+                if ($bloc !== '') {
+                    $out .= E::encodeForPrinter(E::textWrap($bloc, $w));
+                }
+            }
+            $out .= E::bold(false);
+            $out .= E::feed(1);
+        }
+
         $intro = trim((string) ($data['intro'] ?? ''));
         if ($intro !== '') {
             $out .= E::encodeForPrinter(E::textWrap($intro, $w));
@@ -95,14 +118,19 @@ class PromoFlyerEscPosRenderer
         // première chose que l'œil trouve, avant même de lire. Sur un ticket qu'on regarde deux
         // secondes, cette hiérarchie EST le taux de conversion.
         $percent = $this->formatPercent($data['discount_percent'] ?? 10);
+        // [UX 2026-08-08] Avant : trois bandeaux séparés (plein / -10% / plein) avec le
+        // sous-titre EN DEHORS du noir. Sur le papier, le bandeau du haut se lisait comme un
+        // TRAIT parasite posé au-dessus de la remise — remarque du propriétaire. On n'imprime plus
+        // qu'UN SEUL bloc noir continu, sous-titre COMPRIS : plus rien ne flotte au-dessus, et
+        // l'ensemble se lit comme un tampon, pas comme trois éléments empilés.
         $out .= $this->band('', $w);
         $out .= E::textSize(2, 3);
         $out .= E::bold(true);
         $out .= $this->band('-' . $percent . '%', (int) floor($w / 2));
         $out .= E::bold(false);
         $out .= E::textSize(1, 1);
+        $out .= $this->band('sur ta prochaine commande en direct', $w);
         $out .= $this->band('', $w);
-        $out .= $this->line('sur ta prochaine commande en direct', $w);
 
         // L'ÉCHÉANCE COLLÉE À LA RÉCOMPENSE, en gras. Une remise sans date se remet à plus tard,
         // et « plus tard » ne revient jamais. Deux raisons de ne pas attendre sur une ligne :
@@ -148,11 +176,37 @@ class PromoFlyerEscPosRenderer
         // Le code en REPLI : pour qui n'a pas pu scanner. Taille normale et gras suffisent — le
         // mettre en double taille le mettait en concurrence visuelle avec la récompense, et deux
         // éléments qui crient aussi fort qu'une remise, c'est une remise qu'on ne voit plus.
+        // [UX 2026-08-08] « Le code promo n'est pas si bien affiché » — juste. Une ligne de texte
+        // parmi d'autres lignes de texte ne dit pas « ceci est le jeton à recopier ». On l'ENCADRE :
+        // un cadre délimite, il dit où commence et où finit ce qu'il faut saisir. Et on ESPACE les
+        // caractères, parce que ce code sera recopié à la main — « DORIAN-TH2P » recopié depuis un
+        // bloc serré produit des O pris pour des 0 et des 2 pris pour des Z. L'espacement coûte
+        // deux lignes de papier et supprime une classe entière d'échecs de saisie.
         if ($code !== '') {
             $out .= $this->line('ou tape ce code sur le site :', $w);
+            $out .= E::encodeForPrinter(E::textLine($this->frameTop($w)));
             $out .= E::bold(true);
-            $out .= $this->line($code, $w);
+            $out .= E::encodeForPrinter(E::textLine(
+                $this->frameRow($this->spaced($code, $w - 4), $w)
+            ));
             $out .= E::bold(false);
+            $out .= E::encodeForPrinter(E::textLine($this->frameTop($w)));
+        }
+
+        // --- 6bis. COMMANDER PAR TÉLÉPHONE ---------------------------------
+        // [UX 2026-08-08] Troisième chemin, demandé par le propriétaire. Il ne concurrence pas le
+        // QR : il s'adresse à qui ne scanne pas — et pour cette personne, c'est le SEUL chemin.
+        // Numéro en gras et double hauteur : il doit être lisible sans lunettes, de loin, et
+        // recopiable d'un coup d'oeil. Formaté par paires, comme on le dicte au téléphone.
+        $phone = trim((string) ($data['order_phone'] ?? ''));
+        if ($phone !== '') {
+            $out .= E::feed(1);
+            $out .= $this->line('ou commande par telephone :', $w);
+            $out .= E::doubleHeight(true);
+            $out .= E::bold(true);
+            $out .= $this->line($phone, $w);
+            $out .= E::bold(false);
+            $out .= E::doubleHeight(false);
         }
         $out .= E::feed(1);
 
@@ -242,6 +296,42 @@ class PromoFlyerEscPosRenderer
      *
      * Ne jamais « harmoniser » ces deux méthodes : elles répondent à deux contraintes opposées.
      */
+    /** Bord de cadre pleine largeur : « +--------+ ». Délimite ce qu'il faut recopier. */
+    private function frameTop(int $widthChars): string
+    {
+        $w = max(3, $widthChars);
+
+        return '+' . str_repeat('-', $w - 2) . '+';
+    }
+
+    /**
+     * Ligne INTÉRIEURE du cadre : « |      X Y Z      | ». Le remplissage est DÉLIBÉRÉ, comme dans
+     * `band()` et contrairement à `line()` : ici les espaces portent les barres latérales aux deux
+     * bords. Sans eux, le code flotterait entre deux traits au lieu d'être DANS un cadre — et un
+     * cadre fermé est ce qui dit « voici exactement ce qu'il faut recopier ».
+     */
+    private function frameRow(string $text, int $widthChars): string
+    {
+        $interieur = max(1, $widthChars - 2);
+        $t = mb_substr($text, 0, $interieur);
+        $libre = max(0, $interieur - mb_strlen($t));
+        $gauche = intdiv($libre, 2);
+
+        return '|' . str_repeat(' ', $gauche) . $t . str_repeat(' ', $libre - $gauche) . '|';
+    }
+
+    /**
+     * Espace les caractères d'un code destiné à être RECOPIÉ À LA MAIN. Si l'espacement ne tient
+     * pas dans la largeur, on rend le code brut : mieux vaut un code serré qu'un code réenroulé,
+     * qui serait recopié faux à coup sûr.
+     */
+    private function spaced(string $code, int $widthChars): string
+    {
+        $espace = implode(' ', mb_str_split($code));
+
+        return mb_strlen($espace) <= max(1, $widthChars) ? $espace : $code;
+    }
+
     private function band(string $text, int $widthChars): string
     {
         $w = max(1, $widthChars);

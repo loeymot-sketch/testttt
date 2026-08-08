@@ -6,6 +6,7 @@ use App\Enums\DiscountType;
 use App\Enums\Status;
 use App\Models\Coupon;
 use App\Models\PromoFlyer;
+use App\Models\Branch;
 use App\Models\Scopes\BranchScope;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -40,7 +41,19 @@ class PromoFlyerService
      */
     public const DEFAULTS = [
         'headline'         => 'LE CAYENNE',
-        'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le meme restaurant, mais moins cher.',
+        // [UX 2026-08-08] La promesse PRODUIT, demandée par le propriétaire. Placée avant
+        // l'offre : une remise ne donne pas faim, c'est le souvenir du produit qui déclenche
+        // la commande. En capitales parce qu'elle est imprimée en gras sur 2 lignes équilibrées
+        // à 42 colonnes (32 + 21) — une phrase plus longue se couperait n'importe où.
+        'quality_note'     => "VIANDE FRAICHE, FRITES FRAICHES
+GRILLADES SAVOUREUSES",
+        // Vide = « prends le numéro de la branche ». On ne code JAMAIS un numéro en dur : un
+        // faux numéro sur un ticket est pire que pas de numéro du tout.
+        'order_phone'      => '',
+        // [UX 2026-08-08] Resserrée : la salutation dit DÉJÀ « Merci … ! » juste au-dessus, et
+        // le bas de ticket redonne la raison. Répéter trois fois la même idée sur 9 cm de papier
+        // dilue le seul message qui compte. Une phrase, un bénéfice.
+        'intro'            => 'La prochaine fois, commande en direct sur notre site : c\'est moins cher.',
         // [CONVERSION 2026-08-08] L'ancien texte annonçait « jusqu'a -30% d'economies » —
         // en contradiction directe avec le -10% du code juste au-dessus. Le client lit -30,
         // reçoit -10, et se sent floué : deux nombres qui se contredisent sur le même bout de
@@ -163,6 +176,11 @@ class PromoFlyerService
                         'valid_until'      => $validUntil->format('d/m/Y'),
                         'headline'         => $settings['headline'],
                         'intro'            => $settings['intro'],
+                        'quality_note'     => $settings['quality_note'] ?? '',
+                        'order_phone'      => $this->resolveOrderPhone(
+                            (string) ($settings['order_phone'] ?? ''),
+                            $branchId
+                        ),
                         'savings_note'     => $settings['savings_note'],
                         'footer_note'      => $settings['footer_note'],
                     ];
@@ -256,6 +274,43 @@ class PromoFlyerService
      * `0` signifie « résous-la toi-même » : config d'abord, 48 en dernier recours. Un appelant
      * peut toujours imposer une largeur, mais il n'a plus à la connaître pour obtenir la bonne.
      */
+    /**
+     * Numéro à composer pour commander. Priorité : réglage explicite → téléphone de la BRANCHE.
+     *
+     * On ne code jamais un numéro en dur, et on REFUSE les gabarits : `settings.company_phone`
+     * valait « +33600000000 » sur cette installation — un numéro d'exemple. Imprimer un faux
+     * numéro sur un ticket est PIRE que n'en imprimer aucun : le client appelle, tombe dans le
+     * vide, et c'est la commande ET la confiance qui sont perdues. Le test de gabarit est donc
+     * volontairement large (au moins 4 chiffres identiques d'affilée, ou une suite 1234…).
+     *
+     * Le rendu final est formaté par paires — comme on dicte un numéro à voix haute.
+     */
+    private function resolveOrderPhone(string $configured, int $branchId): string
+    {
+        $brut = trim($configured);
+        if ($brut === '') {
+            $brut = (string) (Branch::query()
+                ->withoutGlobalScope(BranchScope::class)
+                ->whereKey($branchId)
+                ->value('phone') ?? '');
+        }
+
+        $chiffres = preg_replace('/\D+/', '', $brut) ?? '';
+        if (strlen($chiffres) < 9) {
+            return '';
+        }
+        if (preg_match('/(\d)\1{3,}/', $chiffres) || str_contains($chiffres, '123456')) {
+            return ''; // gabarit : on n'imprime rien plutôt qu'un numéro qui ne répond pas
+        }
+
+        // Numéro français à 10 chiffres → paires. Format international conservé tel quel.
+        if (strlen($chiffres) === 10 && $chiffres[0] === '0') {
+            return trim(chunk_split($chiffres, 2, ' '));
+        }
+
+        return $brut;
+    }
+
     public function renderBytes(PromoFlyer $flyer, int $widthChars = 0): string
     {
         $payload = $flyer->rendered_payload ?: [];
