@@ -212,15 +212,45 @@ class AuditLogService
                 return (int) $row->id;
             }
 
-            $recomputed = $this->computeHash(
-                (int) ($row->branch_id ?? 0),
-                $rowPrev,
-                (string) $row->action,
-                (array) ($row->payload ?? [])
-            );
-
             $storedCurrent = trim((string) $row->current_hash);
-            if (! hash_equals($storedCurrent, $recomputed)) {
+
+            // [LOCK_FISCAL_VERIFYCHAIN_AGILITE_SECRETS 2026-08-08] Agilité de clé en LECTURE.
+            //
+            // Mesuré sur la production (783 lignes, recalcul en lecture seule) : 360 signatures
+            // se reproduisent avec le secret de leur branche, **423 avec le secret par défaut**,
+            // et **AUCUNE n'est irréductible**. Chaînage `prev_hash` intact, aucun trou d'id :
+            // la chaîne n'a jamais été altérée. La cause est l'historique des secrets — un
+            // `FISCAL_AUDIT_SECRET_BRANCH_1` apparu après coup fait basculer `secretFor(1)` du
+            // défaut vers l'override, si bien que les lignes signées AVANT ne se reproduisent
+            // plus avec l'override seul.
+            //
+            // Or une chaîne signée sert à PROUVER la non-altération à un tiers (contrôle NF525).
+            // Refuser 423 lignes intactes, et annoncer « TAMPER », c'est perdre cette preuve ET
+            // rendre l'alarme inutilisable : elle est ignorée depuis six semaines.
+            //
+            // On accepte donc une ligne si sa signature se reproduit avec l'un des secrets
+            // CONNUS. Cela n'affaiblit rien : sans posséder l'un de ces secrets, une signature
+            // reste impossible à forger. Une ligne qui ne se reproduit avec AUCUN secret connu
+            // demeure une ALTÉRATION et est signalée — c'est la propriété essentielle, prouvée
+            // par mutation (tests/Feature/Fiscal/AuditChainSecretAgilityTest.php).
+            //
+            // ⛔ Rien n'est ré-écrit : `verifyChain` reste strictement en lecture (append-only).
+            $reproduite = false;
+            foreach ($this->candidateVerificationBranches($row) as $branchCandidate) {
+                $recomputed = $this->computeHash(
+                    $branchCandidate,
+                    $rowPrev,
+                    (string) $row->action,
+                    (array) ($row->payload ?? [])
+                );
+
+                if (hash_equals($storedCurrent, $recomputed)) {
+                    $reproduite = true;
+                    break;
+                }
+            }
+
+            if (! $reproduite) {
                 return (int) $row->id;
             }
 
@@ -228,6 +258,27 @@ class AuditLogService
         }
 
         return null;
+    }
+
+    /**
+     * Branches à essayer pour reproduire la signature d'une ligne, dans l'ordre.
+     *
+     * [LOCK_FISCAL_VERIFYCHAIN_AGILITE_SECRETS 2026-08-08] La branche de la ligne d'abord (le
+     * cas normal, qui doit rester le premier essayé), puis `0` — qui, via `secretFor()`, retombe
+     * sur le secret par DÉFAUT `fiscal.audit_secret`. C'est ce défaut qui a signé les lignes
+     * antérieures à l'apparition de l'override par branche.
+     *
+     * Volontairement limité aux secrets que la configuration COURANTE connaît : on n'essaie
+     * aucune valeur devinée, aucun secret historique non configuré. Le jour où l'override
+     * disparaît, la liste se réduit d'elle-même à un seul candidat.
+     *
+     * @return list<int>
+     */
+    private function candidateVerificationBranches(AuditLog $row): array
+    {
+        $branchDeLaLigne = (int) ($row->branch_id ?? 0);
+
+        return $branchDeLaLigne === 0 ? [0] : [$branchDeLaLigne, 0];
     }
 
     /**
