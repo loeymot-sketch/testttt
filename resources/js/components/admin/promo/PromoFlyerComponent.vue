@@ -22,7 +22,7 @@
 
                 <form @submit.prevent="createFlyer">
                     <div class="form-row">
-                        <div class="form-col-12 sm:form-col-8">
+                        <div class="form-col-12 sm:form-col-4">
                             <label for="customer_name" class="db-field-title required">
                                 {{ $t("label.customer_first_name") }}
                             </label>
@@ -41,6 +41,20 @@
                                 {{ errors.customer_name[0] }}
                             </small>
                             <small class="text-slate-500">{{ $t("label.flyer_name_hint") }}</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-4">
+                            <label class="db-field-title">{{ $t("label.civility") }}</label>
+                            <div class="flex gap-2">
+                                <button
+                                    v-for="c in civilities"
+                                    :key="c.value"
+                                    type="button"
+                                    class="db-btn py-2 flex-1"
+                                    :class="form.civility === c.value ? 'text-white bg-primary' : ''"
+                                    @click="form.civility = c.value"
+                                >{{ c.label }}</button>
+                            </div>
                         </div>
 
                         <div class="form-col-12 sm:form-col-4 flex items-end">
@@ -138,7 +152,12 @@ export default {
             busy: false,
             loaded: false,
             couponRedemptionEnabled: true,
-            form: { customer_name: "" },
+            form: { customer_name: "", civility: "" },
+            civilities: [
+                { value: "", label: "—" },
+                { value: "Mme", label: "Mme" },
+                { value: "M.", label: "M." },
+            ],
             errors: {},
             lastFlyer: null,
             flyers: [],
@@ -173,10 +192,11 @@ export default {
             this.busy = true;
             this.errors = {};
 
-            this.$store.dispatch("promoFlyerCreate", { customer_name: name })
+            this.$store.dispatch("promoFlyerCreate", { customer_name: name, civility: this.form.civility })
                 .then((res) => {
                     this.lastFlyer = res.flyer;
                     this.form.customer_name = "";
+                    this.form.civility = "";
                     alertService.success(res.message);
                     this.fetchHistory();
                 })

@@ -1477,7 +1477,8 @@
         "flyer_greeting": "Salutation",
         "flyer_greeting_hint": "Placée devant la civilité et le prénom : « Merci Mme Camille ! »",
         "flyer_logo_path": "Logo imprimé",
-        "flyer_logo_path_hint": "Chemin de l'image, relatif au dossier public. Vide = titre en texte à la place."
+        "flyer_logo_path_hint": "Chemin de l'image, relatif au dossier public. Vide = titre en texte à la place.",
+        "civility": "Civilité"
     },
     "button": {
         "refresh": "Actualiser",

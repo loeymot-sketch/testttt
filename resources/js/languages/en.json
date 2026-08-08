@@ -1546,7 +1546,8 @@
         "flyer_greeting": "Greeting",
         "flyer_greeting_hint": "Placed before the title and first name: “Merci Mme Camille!”",
         "flyer_logo_path": "Printed logo",
-        "flyer_logo_path_hint": "Image path, relative to the public folder. Empty = text headline instead."
+        "flyer_logo_path_hint": "Image path, relative to the public folder. Empty = text headline instead.",
+        "civility": "Title"
     },
     "button": {
         "refresh": "Refresh",
