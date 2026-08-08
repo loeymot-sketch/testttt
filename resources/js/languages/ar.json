@@ -1537,7 +1537,8 @@
             "add": "أضف {name}",
             "categories_nav_label": "تنقل الفئات",
             "cart_summary_label": "السلة والدفع",
-            "open_cart_label": "فتح السلة — {n} عنصر"
+            "open_cart_label": "فتح السلة — {n} عنصر",
+            "item_options_error": "Could not load the options for {name}. Tap the product again — nothing was added to your order."
         },
         "cart": {
             "bottom_sheet": {

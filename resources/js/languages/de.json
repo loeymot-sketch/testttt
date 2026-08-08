@@ -1170,7 +1170,8 @@
             "menu_refreshed_toast": "Die Speisekarte wurde aktualisiert",
             "cart_lines_removed": "Einige Positionen wurden aus Ihrem Warenkorb entfernt ({count})",
             "menu_refreshed_recheck_selection": "Bitte prüfen Sie Ihre Auswahl.",
-            "review_cart": "Warenkorb prüfen"
+            "review_cart": "Warenkorb prüfen",
+            "item_options_error": "Could not load the options for {name}. Tap the product again — nothing was added to your order."
         },
         "filters": {
             "halal": "Halal",

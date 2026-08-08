@@ -1170,7 +1170,8 @@
             "menu_refreshed_toast": "মেনু আপডেট করা হয়েছে",
             "cart_lines_removed": "আপনার কার্ট থেকে কিছু লাইন সরানো হয়েছে ({count})",
             "menu_refreshed_recheck_selection": "আপনার পছন্দগুলো যাচাই করুন।",
-            "review_cart": "আমার কার্ট যাচাই করুন"
+            "review_cart": "আমার কার্ট যাচাই করুন",
+            "item_options_error": "Could not load the options for {name}. Tap the product again — nothing was added to your order."
         },
         "filters": {
             "halal": "Halal",

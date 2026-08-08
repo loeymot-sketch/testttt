@@ -142,6 +142,13 @@
                 </p>
               </div>
 
+              <!-- Le message doit être VU par le client, donc dans la zone
+                   produits qu'il regarde — pas dans la branche « catalogue
+                   vide », qui ne se rend jamais quand il y a des produits. -->
+              <div v-if="itemError" class="kiosk-item-error" role="alert" data-testid="kiosk-item-error">
+                <span class="kiosk-item-error-icon" aria-hidden="true">📡</span>
+                <p>{{ $t('kiosk.catalog.item_options_error', { name: itemError }) }}</p>
+              </div>
               <div class="kiosk-product-grid" :class="productGridLayoutClass" role="list">
                 <div
                   v-for="product in catalogProducts"
@@ -339,6 +346,9 @@ export default {
       loadError: false,
       activeItem: null,
       loadingItemId: null,
+      // Nom du produit dont les options n'ont pas pu être chargées, après DEUX
+      // tentatives. Non nul = le message est affiché et RIEN n'a été ajouté.
+      itemError: null,
     };
   },
   computed: {
@@ -594,13 +604,28 @@ export default {
           category_id: product.item_category_id ?? null,
         });
       } catch (_) {}
-      try {
-        // Même contrat que KioskWizard (surface=kiosk) : variations/extras filtrés borne
+      // [FIX 2026-08-08] Cet appel dit si le produit se compose ou non. Tant
+      // qu'il n'a pas répondu, on NE SAIT PAS — et on ne doit donc rien mettre
+      // au panier. L'ancien `catch` ajoutait l'article directement : un Suprême
+      // partait à 7,00 € sans pain, sans sauce et sans viande, sans un mot au
+      // client, qui pouvait valider. La cuisine recevait une commande
+      // impossible à préparer. Reproduit en coupant cet appel : panier 0 → 1,
+      // wizard jamais ouvert, aucun message.
+      //
+      // Le premier échec est le plus souvent un 401 « jeton expiré » : la borne
+      // se reconnecte toute seule dans la foulée (kiosk-login), donc une
+      // deuxième tentative suffit. Si elle échoue aussi, on le DIT et on
+      // n'ajoute rien : mieux vaut un client qui retouche l'écran qu'une
+      // commande impossible en cuisine.
+      const charger = async () => {
         const res = await this.$store.dispatch('frontendItem/details', {
+          // Même contrat que KioskWizard (surface=kiosk) : variations/extras filtrés borne
           id: product.id,
           surface: 'kiosk',
         });
-        const detail = res?.data?.data || res?.data || product;
+        return res?.data?.data || res?.data || null;
+      };
+      const traiter = (detail) => {
         if (this.hasOptions(detail)) {
           this.activeItem = detail;
         } else {
@@ -608,9 +633,22 @@ export default {
           // FoodKing brand V2 (2026-05-10) — owner request : pas de toast sur
           // add-to-cart, le KsCartBottomSheet rend l'ajout visible directement.
         }
+      };
+      try {
+        this.itemError = null;
+        const detail = await charger();
+        if (!detail) throw new Error('details vides');
+        traiter(detail);
       } catch (_) {
-        this.addItem(this.buildSimpleCartItem(product));
-        // FoodKing brand V2 — toast retiré (cf. KsCartBottomSheet ci-dessous).
+        try {
+          await new Promise((r) => setTimeout(r, 600)); // laisse la reconnexion aboutir
+          const detail = await charger();
+          if (!detail) throw new Error('details vides');
+          traiter(detail);
+        } catch (_) {
+          // Aucun ajout : on ignore ce que le produit exige comme choix.
+          this.itemError = product.name || '';
+        }
       } finally {
         this.loadingItemId = null;
       }
@@ -956,6 +994,15 @@ export default {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.kiosk-item-error {
+  display: flex; align-items: center; gap: 14px;
+  margin: 0 0 14px; padding: 16px 20px;
+  background: #FFF4EF; border: 2px solid #F4501E; border-radius: 14px;
+  color: #1A1A1A; font-size: 20px; line-height: 1.35;
+}
+.kiosk-item-error p { margin: 0; }
+.kiosk-item-error-icon { font-size: 30px; }
 
 .kiosk-catalogue-error {
   display: flex;

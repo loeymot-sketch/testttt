@@ -1837,7 +1837,8 @@
             "add": "Ajouter {name}",
             "categories_nav_label": "Navigation catégories",
             "cart_summary_label": "Panier et paiement",
-            "open_cart_label": "Ouvrir le panier — {n} articles"
+            "open_cart_label": "Ouvrir le panier — {n} articles",
+            "item_options_error": "Impossible de charger les choix pour {name}. Retouchez le produit — rien n'a été ajouté à votre commande."
         },
         "cart": {
             "bottom_sheet": {
