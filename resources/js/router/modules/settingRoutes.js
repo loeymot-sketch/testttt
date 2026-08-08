@@ -570,7 +570,13 @@ export default [
                 meta: {
                     isFrontend: false,
                     auth: true,
-                    permissionUrl: "settings",
+                    // [P0 ACCÈS 2026-08-08] Le SPA exigeait « settings », le back-end exige
+                    // `pos-manage-fiscal` (ZReportController::…abort_unless). Contradiction
+                    // MESURÉE : le Gérant a `pos/manage-fiscal` mais PAS `settings` — le back-end
+                    // l'autorisait, le routeur le rejetait avec un toast. Seul l'Admin atteignait
+                    // les rapports Z. On aligne l'écran sur la vérité back-end : un droit fiscal
+                    // n'a rien à faire derrière le droit « réglages ».
+                    permissionUrl: "pos/manage-fiscal",
                     breadcrumb: "z_reports",
                 },
             },

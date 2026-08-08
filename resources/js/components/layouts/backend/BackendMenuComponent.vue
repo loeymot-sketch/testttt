@@ -150,6 +150,15 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // [FLYER PROMO 2026-08-07] Même gate que la caisse — voir l'entrée de menu.
     'promo-flyer': 'pos-orders',
     'promo-flyer/settings': 'pos-orders',
+    // [P1 LIENS MORTS 2026-08-08] Ces deux entrées n'étaient PAS mappées : faute de
+    // correspondance, la barre latérale retombait sur le nom de l'url lui-même, pour lequel il
+    // n'existe aucune permission — donc défaut permissif, donc lien AFFICHÉ. Mais la route, elle,
+    // exige un droit que le caissier n'a pas : clic -> toast « permission requise » -> retour au
+    // tableau de bord. Deux liens morts dans la navigation QUOTIDIENNE des 9 comptes caisse.
+    // On mappe chacun sur le droit que sa route exige réellement, pour que le menu dise la vérité :
+    // ce qui est affiché est atteignable.
+    'cash-overview': 'cash-sessions-report',
+    'delivery-boy-cash-sessions': 'delivery-boys',
 });
 
 function permissionUrlForSidebarPath(menuUrl) {

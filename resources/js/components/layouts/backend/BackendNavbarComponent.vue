@@ -172,6 +172,27 @@
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
                         </router-link>
 
+                        <!-- [P0 ACCÈS 2026-08-08] L'écran « Appareils connectés » (livré le
+                             2026-08-07 pour révoquer un terminal) était ORPHELIN : la route
+                             existait, et AUCUN lien n'y menait dans tout le dépôt. Une
+                             fonctionnalité de sécurité inatteignable autrement qu'en tapant l'URL
+                             à la main n'existe pas. On la place ici, à côté du mot de passe : c'est
+                             le même geste — je reprends la main sur mon compte. Les deux variantes
+                             (coquille caisse V4 en lien dur, SPA en router-link) suivent le motif
+                             exact de ses voisines. -->
+                        <a v-if="isPosV4Shell" href="/admin/profile/devices"
+                            role="menuitem" tabindex="-1"
+                            class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-b-0 border-gray-100">
+                            <i class="lab lab-mobile lab-font-size-17" aria-hidden="true"></i>
+                            <span class="text-sm leading-6 capitalize">{{ $t('label.connected_devices') }}</span>
+                        </a>
+                        <router-link v-else :to="{ name: 'admin.profile.devices' }"
+                            role="menuitem" tabindex="-1"
+                            class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-b-0 border-gray-100">
+                            <i class="lab lab-mobile lab-font-size-17" aria-hidden="true"></i>
+                            <span class="text-sm leading-6 capitalize">{{ $t('label.connected_devices') }}</span>
+                        </router-link>
+
                         <button @click="logout()"
                             role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
