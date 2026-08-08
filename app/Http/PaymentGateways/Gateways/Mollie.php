@@ -525,6 +525,38 @@ class Mollie extends PaymentAbstract
                     $locked->transaction_id = $transactionId;
                     $locked->card_type = 'mollie';
                     $locked->save();
+                } elseif ((string) $locked->transaction_id !== $transactionId) {
+                    // [P0 ARGENT 2026-08-08 · JUMEAU OUBLIÉ] Un paiement DIFFÉRENT arrive sur une
+                    // commande DÉJÀ payée : le client a été débité deux fois pour une seule vente.
+                    // Cette branche gardait l'argent sans rien rembourser, alors que ses DEUX
+                    // sœurs le remboursent (montant non attribuable, l. ~501 ; commande terminale,
+                    // l. ~565). Même principe ici : on ne garde JAMAIS un encaissement qu'on ne
+                    // peut pas rattacher à une vente valide — il serait hors Z et hors NF525.
+                    //
+                    // DISTINCTION VITALE : on ne rembourse QUE si l'identifiant de paiement
+                    // DIFFÈRE de celui déjà rattaché. Mollie RÉESSAIE ses webhooks ; rembourser
+                    // sur une simple relance du MÊME paiement annulerait une vente légitime.
+                    // La première vente reste intacte : seul le second débit est rendu.
+                    $autoRefund = [
+                        'payment_id' => $paymentId,
+                        'value'      => $amountValue,
+                        'currency'   => $amountCurrency ?: 'EUR',
+                        'order_id'   => $orderId,
+                        // Motif EXACT dans le tableau de bord Mollie et dans le journal fiscal : le
+                        // libellé par défaut (« annulée avant confirmation ») serait faux ici — la
+                        // vente existe et reste due, c'est le SECOND débit qui est rendu.
+                        'reason'     => 'second_payment_on_paid_order',
+                        'label'      => 'Second encaissement rendu — commande #' . $orderId . ' déjà payée',
+                    ];
+
+                    Log::channel('fiscal')->warning('mollie.webhook.second_payment_refunded', [
+                        'event'                 => 'mollie_webhook_second_payment_refunded',
+                        'order_id'              => $orderId,
+                        'payment_id'            => $paymentId,
+                        'existing_transaction'  => (string) $locked->transaction_id,
+                        'value'                 => $amountValue,
+                        'note'                  => 'Second encaissement sur une commande déjà payée : auto-remboursé, la vente d\'origine est conservée.',
+                    ]);
                 }
                 $alreadyPaid = true;
                 $event->markProcessed($orderId);
@@ -579,15 +611,25 @@ class Mollie extends PaymentAbstract
             $paidNow = true;
         });
 
+        // [P0-1 résidu 2026-08-04] Auto-remboursement APRÈS commit (appel HTTP hors transaction).
+        // Best-effort : un échec de refund est loggé (canal fiscal) pour rattrapage ops, jamais
+        // un 500 qui ferait rejouer le webhook.
+        //
+        // [P0 ARGENT 2026-08-08] Cette exécution était IMBRIQUÉE dans `if ($refusal !== null)`.
+        // Conséquence : la décision de rembourser n'était honorée que si l'on refusait AUSSI le
+        // paiement. Le cas « second débit sur commande déjà payée » décide de rendre l'argent sans
+        // refuser la vente (elle est valide et sera servie) — le remboursement était donc décidé
+        // puis silencieusement jamais exécuté. Règle désormais inconditionnelle : si on a décidé de
+        // rendre l'argent, on le rend, indépendamment de la réponse faite à Mollie. Les deux cas
+        // historiques posent `$refusal` en plus et remboursent donc exactement comme avant.
+        if (is_array($autoRefund)) {
+            $this->refundMolliePayment($autoRefund);
+        }
+
         if ($refusal !== null) {
-            // [P0-1 résidu 2026-08-04] Auto-remboursement APRÈS commit (appel HTTP hors transaction).
-            // Best-effort : un échec de refund est loggé (canal fiscal) pour rattrapage ops, jamais
-            // un 500 qui ferait rejouer le webhook. La commande reste terminale (jamais PAID).
-            if (is_array($autoRefund)) {
-                $this->refundMolliePayment($autoRefund);
-            }
             // 200 : condition permanente — un rejeu Mollie ne la changera pas ;
             // la ligne webhook_events (status=failed) porte l'anomalie.
+            // La commande reste terminale (jamais PAID).
             return response()->json(['status' => $refusal], 200);
         }
 
@@ -689,8 +731,8 @@ class Mollie extends PaymentAbstract
                 ->timeout(15)
                 ->post(config('payment.mollie.api_base') . '/payments/' . $r['payment_id'] . '/refunds', [
                     'amount'      => ['value' => $r['value'], 'currency' => $r['currency']],
-                    'description' => 'Auto-remboursement — commande #' . $r['order_id'] . ' annulée avant confirmation du paiement',
-                    'metadata'    => ['order_id' => (string) $r['order_id'], 'reason' => 'terminal_order_auto_refund'],
+                    'description' => (string) ($r['label'] ?? ('Auto-remboursement — commande #' . $r['order_id'] . ' annulée avant confirmation')),
+                    'metadata'    => ['order_id' => (string) $r['order_id'], 'reason' => (string) ($r['reason'] ?? 'terminal_order_auto_refund')],
                 ]);
 
             if ($resp->successful()) {
