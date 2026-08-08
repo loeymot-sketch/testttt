@@ -48,7 +48,7 @@ class PromoFlyerService
         // COMMISSIONS DE PLATEFORME — l'intérêt du restaurant, pas celui du client, qui n'a
         // aucune raison de porter votre marge. On garde une seule idée, la sienne : même
         // cuisine, prix plus juste, et il choisit son mode de retrait.
-        'savings_note'     => 'Meme cuisine, meme equipe, prix plus juste : en direct, tu paies le repas, pas la commission.',
+        'savings_note'     => 'Meme cuisine, meme equipe. En direct, tu paies le repas, pas la commission.',
         'footer_note'      => 'A emporter et en livraison. A tres vite !',
         'discount_percent' => 10,
         'validity_days'    => 30,

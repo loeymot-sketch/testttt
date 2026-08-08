@@ -127,7 +127,7 @@ class PromoFlyerEscPosRenderer
         $qrUrl = trim((string) ($data['qr_url'] ?? ''));
         if ($qrUrl !== '') {
             $out .= E::bold(true);
-            $out .= $this->line('SCANNE — ton code est deja rempli', $w);
+            $out .= $this->line('SCANNE : ton code est deja rempli', $w);
             $out .= E::bold(false);
             $out .= E::feed(1);
             // Module 8 (au lieu de 7) : un QR se scanne à bout de bras, dans la lumière d'un

@@ -43,8 +43,12 @@ class PromoFlyerTicketLayoutTest extends TestCase
         return [
             'headline' => 'LE CAYENNE',
             'greeting' => 'Merci',
-            'greeting_civility' => 'M.',
-            'greeting_name' => 'Dorian',
+            // Les VRAIES clés lues par le rendu. Avec `greeting_name`/`greeting_civility` la
+            // salutation sortait VIDE et toute cette suite passait sans jamais exercer la ligne
+            // « Merci M. Dorian ! » — précisément celle que le propriétaire citait. Un jeu de
+            // données aux mauvaises clés est un test creux qui ne se voit pas.
+            'civility' => 'M.',
+            'customer_name' => 'Dorian',
             'intro' => $d['intro'],
             'discount_percent' => 10,
             'code' => 'DORIAN-TH2P',
@@ -257,6 +261,20 @@ class PromoFlyerTicketLayoutTest extends TestCase
         $this->assertSame([10], $pourcentages,
             'le ticket annonce plusieurs pourcentages ' . json_encode($pourcentages) . ' : le client '
             . 'retient le plus élevé et se sent floué en recevant l\'autre');
+    }
+
+    /**
+     * LA LIGNE CITÉE PAR LE PROPRIÉTAIRE. Elle est le premier contact : c'est elle qui achète la
+     * seconde d'attention pendant laquelle tout le reste sera lu. On exige qu'elle soit présente,
+     * personnalisée, sur UNE ligne, et jamais pré-centrée à coups d'espaces.
+     */
+    public function test_la_salutation_nominative_est_bien_rendue_sur_une_ligne(): void
+    {
+        $t = $this->textes();
+
+        $this->assertContains('Merci M. Dorian !', $t,
+            'la salutation nominative a disparu ou s\'est coupée : c\'est le premier contact du '
+            . 'ticket, et la seule chose qui le distingue d\'un prospectus');
     }
 
     // ── CÂBLAGE ──────────────────────────────────────────────────────────────────────────────
