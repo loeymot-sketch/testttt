@@ -1,4 +1,10 @@
-# Diagnostic — l'alarme « TAMPER audit_logs » est un FAUX POSITIF
+# Diagnostic — l'alarme « TAMPER audit_logs » est un FAUX POSITIF · **RÉSOLU**
+
+> **ÉTAT FINAL (2026-08-08)** : corrigé sous
+> `plans/LOCK_FISCAL_VERIFYCHAIN_AGILITE_SECRETS_2026-08-08.md` (owner : « Corrige sous LOCK »),
+> déployé, et **vérifié en production** :
+> `SWEEP COMPLETE — CHAIN OK on every active branch`, `verifyChain(1)` ne signale plus aucune
+> ligne sur les **783**. Aucune ligne n'a été ré-écrite.
 
 **Date** : 2026-08-08 · **Méthode** : recalcul de la signature des 783 entrées, en lecture seule.
 
@@ -20,13 +26,19 @@ données.
 
 ## Cause racine
 
-`AuditLogService::computeHash()` signe avec `secretFor($branchId)`, où `$branchId` vient de
-`resolveBranchId($data)` — le contexte de la requête. Mais la ligne est **persistée** avec un
-`branch_id` résolu autrement (l'utilisateur authentifié, typiquement `1`).
+`secretFor($branchId)` renvoie l'override `FISCAL_AUDIT_SECRET_BRANCH_{id}` s'il existe, sinon le
+défaut `fiscal.audit_secret`. `verifyChain()` recalcule avec `secretFor((int) $row->branch_id)`,
+donc — pour ces lignes, toutes en branche 1 — avec l'**override**.
 
-Quand les deux divergent, la signature est calculée avec le secret **par défaut** alors que la
-ligne porte `branch_id = 1`. `verifyChain()` recalcule avec `secretFor((int) ($row->branch_id ?? 0))`,
-donc le secret de la branche 1 : il ne peut **jamais** reproduire le hachage.
+Or 423 lignes ont été signées avec le **défaut**. Elles ne peuvent donc jamais être reproduites
+avec l'override seul.
+
+**Le code de signature actuel n'est PAS en cause** : les 234 entrées postérieures à l'id 549 sont
+toutes valides. La divergence est **historique et environnementale** — aucun commit ne touche
+`AuditLogService.php` ni `config/fiscal.php` entre le 28/07 et le 05/08, donc l'alignement observé
+le 03/08 vient de l'apparition ou de la modification de `FISCAL_AUDIT_SECRET_BRANCH_1` sur le VPS.
+Les lignes signées avant ce basculement portent la marque du secret précédent. C'est un artefact
+de **rotation de secret**, pas un défaut de code vivant.
 
 Preuve directe sur l'entrée 56 (`user.login`, 2026-06-30 02:10:15) :
 
@@ -54,10 +66,10 @@ crie au loup finit ignorée : celle-ci l'est depuis le 30 juin, notée « anomal
 C'est exactement le motif rencontré le même jour avec la sentinelle `F013` (fenêtre fixe de
 5000 caractères) : **une sentinelle qui rougit à tort est pire que pas de sentinelle.**
 
-## Remède proposé — GATE OWNER (zone gelée)
+## Remède APPLIQUÉ — sous LOCK, validé par l'owner
 
-`app/Services/Fiscal/AuditLogService.php` est en zone gelée (CLAUDE.md §7) et le sujet est
-fiscal. Rien n'a été modifié. Proposition, à arbitrer :
+`app/Services/Fiscal/AuditLogService.php` est en zone gelée (CLAUDE.md §7). Patch autorisé par
+`LOCK_FISCAL_VERIFYCHAIN_AGILITE_SECRETS_2026-08-08.md`, portée limitée à `verifyChain()` :
 
 1. **Vérification tolérante aux deux secrets** (agilité de clé, exactement comme la rotation de
    clé d'API faite ce jour) : `verifyChain` accepte la signature si elle se reproduit avec le
@@ -65,11 +77,31 @@ fiscal. Rien n'a été modifié. Proposition, à arbitrer :
    — l'objectif légal — sans rien affaiblir : sans posséder l'un des secrets, on ne peut
    toujours pas forger. ⚠ Ne JAMAIS re-signer les 423 entrées : la table est append-only, les
    réécrire serait précisément l'altération qu'on veut exclure.
-2. **Cohérence à la signature** : utiliser pour le secret la MÊME branche que celle persistée,
-   afin que la divergence cesse pour les entrées futures.
-3. **Rapport utile** : `verifyChain` devrait distinguer « irréductible » (= suspect) de
-   « reproductible avec un autre secret connu » (= incohérence interne), et ne pas s'arrêter à
-   la première ligne. En l'état, l'outil ne sait pas dire « 0 altération » — il dit « TAMPER ».
+2. **Rapport honnête** : `verifyChain()` ne s'arrête plus sur une ligne qu'elle sait reproduire
+   avec un autre secret connu. Une ligne irréductible reste signalée comme ALTÉRATION.
+
+**Une partie de ma proposition initiale a été ABANDONNÉE, et c'est la mesure qui l'a réfutée** :
+je voulais aussi « rendre la signature cohérente ». Inutile — le chemin de signature l'est déjà
+depuis le 03/08 (234 entrées consécutives valides). Corriger ce qui fonctionne aurait été un
+risque gratuit sur du code fiscal.
+
+## Découverte annexe, rassurante
+
+En écrivant les tests, une tentative d'`UPDATE` sur `audit_logs` a été refusée par un
+**déclencheur de base de données** : « audit_logs is INSERT-only (NF525) ». L'append-only est
+donc garanti par la base elle-même, pas seulement par le modèle Eloquent — protection plus forte
+que ce que la documentation laissait supposer. Les tests d'altération forgent par conséquent des
+lignes à l'INSERTION, seul modèle de menace praticable.
+
+## Preuves du correctif
+
+- `tests/Feature/Fiscal/AuditChainSecretAgilityTest.php` **8/8**, dont 4 tests qui exigent la
+  DÉTECTION (charge utile incohérente, signature arbitraire, chaînage rompu, secret inconnu) et
+  le cas d'une altération au MILIEU d'une chaîne mixte.
+- **MUTATION** : détection neutralisée ⇒ ces 4 tests ROUGISSENT ; restaurée ⇒ 8/8. La tolérance
+  aux deux secrets n'est donc pas devenue « accepter n'importe quoi ».
+- Suites : Fiscal 292 (0 échec) · Security 131/131 · Sentinels 357 (0 échec).
+- Production : `fiscal:verify-chain --all` → **CHAIN OK**, 783 entrées, 0 signalée.
 
 ## Reproduction (lecture seule, aucune écriture)
 
