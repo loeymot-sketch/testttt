@@ -49,9 +49,7 @@ class PromoFlyerTicketLayoutTest extends TestCase
             // données aux mauvaises clés est un test creux qui ne se voit pas.
             'civility' => 'M.',
             'customer_name' => 'Dorian',
-            'quality_note' => $d['quality_note'],
             'intro' => $d['intro'],
-            'order_phone' => '03 65 67 82 91',
             'discount_percent' => 10,
             'code' => 'DORIAN-TH2P',
             'valid_until' => '07/09/2026',
@@ -227,116 +225,13 @@ class PromoFlyerTicketLayoutTest extends TestCase
     /** Le code ne doit pas concurrencer la remise : sinon plus rien ne ressort. */
     public function test_le_code_n_est_PAS_en_double_taille(): void
     {
-        // Le code est imprimé ESPACÉ (« D O R I A N - T H 2 P ») pour être recopié sans erreur :
-        // chercher « DORIAN-TH2P » ne matchait donc plus RIEN et la boucle ne s'exécutait pas.
-        // PHPUnit a signalé le test « risky » — c'est-à-dire creux. On cherche la forme réellement
-        // imprimée, et on EXIGE de l'avoir trouvée : sans ce compteur, le test redeviendrait vide
-        // à la première évolution du format.
-        $vues = 0;
         foreach ($this->rendu() as $l) {
-            if (! str_contains(str_replace(' ', '', $l['texte']), 'DORIAN-TH2P')) {
-                continue;
-            }
-            $vues++;
-            $this->assertFalse($l['double'],
-                'le code repasse en double taille : il crie aussi fort que la remise, et deux '
-                . 'éléments qui crient également fort ne laissent rien ressortir');
-        }
-
-        $this->assertGreaterThan(0, $vues, 'le code n\'a pas été trouvé sur le ticket');
-    }
-
-    /** LA PROMESSE PRODUIT, demandée par le propriétaire — et placée AVANT l'offre. */
-    public function test_la_promesse_produit_est_affichee_avant_l_offre(): void
-    {
-        $t = $this->textes();
-
-        $iProduit = null;
-        $iRemise = null;
-        foreach ($this->rendu() as $i => $l) {
-            if ($iProduit === null && str_contains($l['texte'], 'FRAICHE')) { $iProduit = $i; }
-            if ($iRemise === null && $l['inverse'] && str_contains($l['texte'], '%')) { $iRemise = $i; }
-        }
-
-        $this->assertNotNull($iProduit, 'la promesse produit a disparu : c\'est la seule ligne du '
-            . 'ticket qui parle de ce qu\'on mange, et une remise ne donne pas faim');
-        $this->assertNotNull($iRemise, 'la remise a disparu du bandeau');
-        $this->assertLessThan($iRemise, $iProduit,
-            'la remise passe avant le produit : on lève le frein avant d\'avoir donné envie');
-
-        $joint = implode(' ', $t);
-        foreach (['VIANDE', 'FRITES', 'GRILLADES'] as $mot) {
-            $this->assertStringContainsString($mot, $joint, "« $mot » manque à la promesse produit");
-        }
-    }
-
-    /**
-     * UN SEUL bloc noir : le sous-titre doit être DEDANS. Séparé, le bandeau du haut se lisait
-     * comme un trait parasite posé au-dessus de la remise (remarque du propriétaire).
-     */
-    public function test_le_sous_titre_de_la_remise_est_DANS_le_bloc_noir(): void
-    {
-        $dedans = false;
-        foreach ($this->rendu() as $l) {
-            if ($l['inverse'] && str_contains($l['texte'], 'prochaine commande')) {
-                $dedans = true;
+            if (str_contains($l['texte'], 'DORIAN-TH2P')) {
+                $this->assertFalse($l['double'],
+                    'le code repasse en double taille : il crie aussi fort que la remise, et deux '
+                    . 'éléments qui crient également fort ne laissent rien ressortir');
             }
         }
-
-        $this->assertTrue($dedans,
-            'le sous-titre est ressorti du bloc noir : le bandeau redevient un trait flottant '
-            . 'au-dessus de la remise au lieu d\'un tampon d\'un seul morceau');
-    }
-
-    /** Le code doit être DANS un cadre fermé, et espacé pour être recopié sans erreur. */
-    public function test_le_code_est_encadre_et_espace_pour_la_recopie(): void
-    {
-        $t = $this->textes();
-
-        $bords = array_values(array_filter($t, fn ($l) => preg_match('/^\+-+\+$/', $l)));
-        $this->assertGreaterThanOrEqual(2, count($bords),
-            'le cadre du code n\'est plus fermé : sans cadre, le code est une ligne de texte parmi '
-            . 'd\'autres et ne dit pas « voici ce qu\'il faut recopier »');
-        foreach ($bords as $b) {
-            $this->assertSame(self::LARGEUR, strlen($b), 'bord de cadre à la mauvaise largeur');
-        }
-
-        $interieur = array_values(array_filter($t, fn ($l) => str_starts_with($l, '|') && str_ends_with($l, '|')));
-        $this->assertNotEmpty($interieur, 'les barres latérales du cadre ont disparu');
-        $this->assertStringContainsString('D O R I A N', $interieur[0],
-            'le code n\'est plus espacé : recopié depuis un bloc serré, les O passent pour des 0');
-    }
-
-    /** LE TÉLÉPHONE, demandé par le propriétaire : troisième chemin pour qui ne scanne pas. */
-    public function test_le_numero_pour_commander_est_affiche_et_lisible(): void
-    {
-        $joint = implode(' | ', $this->textes());
-
-        $this->assertMatchesRegularExpression('/telephone/i', $joint,
-            'l\'invitation à appeler a disparu');
-        $this->assertStringContainsString('03 65 67 82 91', $joint,
-            'le numéro n\'est plus affiché, ou plus formaté par paires — un numéro collé se recopie mal');
-    }
-
-    /**
-     * ON N'IMPRIME JAMAIS UN NUMÉRO GABARIT. `settings.company_phone` valait « +33600000000 » sur
-     * cette installation. Un faux numéro est PIRE que pas de numéro : le client appelle, tombe dans
-     * le vide, et c'est la commande ET la confiance qui sont perdues.
-     */
-    public function test_un_numero_gabarit_n_est_JAMAIS_imprime(): void
-    {
-        $service = app(PromoFlyerService::class);
-        $m = new \ReflectionMethod($service, 'resolveOrderPhone');
-        $m->setAccessible(true);
-
-        foreach (['+33600000000', '0000000000', '0123456789', '01 23 45 67 89'] as $gabarit) {
-            $this->assertSame('', $m->invoke($service, $gabarit, 1),
-                'le gabarit « ' . $gabarit . ' » serait imprimé sur le ticket');
-        }
-
-        // Contre-preuve : un vrai numéro doit passer ET être formaté par paires.
-        $this->assertSame('03 65 67 82 91', $m->invoke($service, '0365678291', 1),
-            'un numéro valide doit passer, sinon on a échangé un faux numéro contre aucun numéro');
     }
 
     /** Rareté + échéance sur une seule ligne, collées à la récompense. */

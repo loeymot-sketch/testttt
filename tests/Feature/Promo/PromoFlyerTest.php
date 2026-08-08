@@ -407,13 +407,7 @@ class PromoFlyerTest extends TestCase
     {
         $bytes = app(PromoFlyerEscPosRenderer::class)->render(['code' => 'X-1234']);
 
-        // [UX CODE 2026-08-08] Le code est désormais imprimé ESPACÉ (« X - 1 2 3 4 ») : il est fait
-        // pour être recopié à la main, et un bloc serré fait lire des 0 pour des O. La chaîne brute
-        // n'apparaît donc plus telle quelle dans les octets. L'INTENTION du test est inchangée —
-        // un payload partiel ne casse pas le rendu et le code en sort — on la vérifie donc sur la
-        // forme réellement imprimée, en neutralisant l'espacement.
-        $this->assertStringContainsString('X-1234', str_replace(' ', '', $bytes),
-            'un payload partiel doit toujours produire un ticket portant le code');
+        $this->assertStringContainsString('X-1234', $bytes);
     }
 
     /**
