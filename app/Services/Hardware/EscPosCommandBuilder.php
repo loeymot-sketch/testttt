@@ -43,6 +43,27 @@ final class EscPosCommandBuilder
         return self::ESC . '-' . ($on ? "\x01" : "\x00");
     }
 
+    /**
+     * [CONVERSION TICKET 2026-08-08] Inversion vidéo — GS B n. Blanc sur NOIR.
+     *
+     * C'est le SEUL effet d'une imprimante thermique qui crée un vrai contraste : elle n'a ni
+     * couleur, ni graisse variable, ni taille intermédiaire. Un texte gras double-taille reste du
+     * noir sur blanc parmi du noir sur blanc ; un bandeau inversé est la seule chose qui « saute
+     * aux yeux » sur un ticket que le client regarde deux secondes.
+     *
+     * Le fond noir ne couvre QUE les caractères réellement imprimés : pour obtenir un bandeau
+     * pleine largeur, il faut donc imprimer des ESPACES autour du texte — voir la méthode `band()`
+     * du générateur de ticket promo, où ce remplissage est le visuel lui-même.
+     *
+     * Supporté par les imprimantes ESC/POS courantes (Epson et compatibles SAGA/SK1). Une
+     * imprimante qui l'ignorerait rendrait simplement du noir sur blanc : dégradation propre,
+     * jamais de caractères parasites.
+     */
+    public static function invert(bool $on): string
+    {
+        return self::GS . 'B' . chr($on ? 1 : 0);
+    }
+
     public static function doubleSize(bool $on): string
     {
         return self::GS . '!' . ($on ? "\x11" : "\x00");

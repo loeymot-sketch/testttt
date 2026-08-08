@@ -3,30 +3,34 @@
 namespace Tests\Feature\Promo;
 
 use App\Services\Promo\PromoFlyerEscPosRenderer;
+use App\Services\Promo\PromoFlyerService;
 use Tests\TestCase;
 
 /**
- * [PHOTO OWNER IMG_2090 · 2026-08-08] Le ticket promo imprimé était mal centré et coupait les mots.
+ * TICKET PROMO — géométrie ET hiérarchie de conversion, prouvées sur les OCTETS envoyés
+ * à l'imprimante. C'est le seul niveau qui prouve quelque chose : un aperçu écran ne dit rien de
+ * ce que le papier montrera.
  *
- * Deux défauts indépendants, chacun suffisant :
+ * ── Historique des défauts que cette suite verrouille ────────────────────────────────────────
  *
- * 1. LARGEUR. `PromoFlyerService::renderBytes` avait 48 EN DUR par défaut, et le contrôleur
- *    n'admettait que `[32, 48]` — donc 42, la largeur réelle de la caisse de production
- *    (`RECEIPT_WIDTH_CHARS=42`, calée en juillet sur la photo IMG_1709 pour le ticket de COMMANDE),
- *    était silencieusement ramenée à 48. Le ticket promo est le jumeau qu'on avait oublié de
- *    brancher sur ce réglage. Sur le papier : les 48 « = » débordaient en 42 + 6, laissant une
- *    seconde ligne « ====== » orpheline ; « rien que pour toi » se coupait en « pour t » / « oi » ;
- *    « prelevent jusqu'a » en « prelevent j » / « usqu'a ». L'imprimante réenroule au CARACTÈRE,
- *    pas au mot — une ligne trop longue est donc toujours coupée en plein mot.
+ * [PHOTO OWNER IMG_2090 · 2026-08-08] Ticket mal centré et mots coupés. Deux causes :
+ *   1. LARGEUR : `renderBytes` avait 48 en dur et le contrôleur n'admettait que `[32, 48]` — donc
+ *      42, la largeur réelle de la caisse (`RECEIPT_WIDTH_CHARS=42`, calée en juillet sur la photo
+ *      IMG_1709 pour le ticket de COMMANDE), était ramenée à 48. Le ticket promo n'avait jamais été
+ *      branché sur ce réglage. L'imprimante réenroule au CARACTÈRE : « rien que pour toi » devenait
+ *      « pour t » / « oi », et les 48 « = » débordaient en 42 + 6.
+ *   2. CENTRAGE DEUX FOIS : le pilote est en mode centré pour tout le ticket, et `centerLine()`
+ *      ajoutait EN PLUS des espaces à gauche → la ligne partait vers la DROITE.
  *
- * 2. CENTRAGE FAIT DEUX FOIS. Le pilote est mis en mode centré une fois pour tout le ticket
- *    (`E::alignCenter()`), et `centerLine()` ajoutait EN PLUS des espaces à gauche. L'imprimante
- *    centrait donc « <espaces>-10% », espaces compris : la ligne partait vers la DROITE. C'est le
- *    « pas au milieu, pas bien centré » du propriétaire, et il touchait le « Merci M. Dorian ! »,
- *    le -10%, le code promo et l'adresse du site — tout ce qui passe par `line()`.
- *
- * Le test lit les OCTETS réellement envoyés à l'imprimante. C'est le seul niveau qui prouve quoi
- * que ce soit ici : un rendu HTML ou un aperçu écran ne dit rien de ce que le papier montrera.
+ * [CONVERSION 2026-08-08] Refonte de la hiérarchie. Ce qui est testé ici est du DESIGN, mais du
+ * design vérifiable :
+ *   · la récompense est en INVERSION VIDÉO pleine largeur — seul contraste dont dispose une
+ *     imprimante thermique (ni couleur, ni graisse variable) ;
+ *   · l'ACTION FACILE (scanner) passe AVANT le repli coûteux (taper le code) ;
+ *   · le code n'est plus en double taille : deux éléments qui crient aussi fort qu'une remise,
+ *     c'est une remise qu'on ne voit plus ;
+ *   · le texte n'annonce plus « jusqu'a -30% » au-dessus d'un code à -10% — deux nombres
+ *     contradictoires sur le même papier détruisent la promesse.
  */
 class PromoFlyerTicketLayoutTest extends TestCase
 {
@@ -34,133 +38,235 @@ class PromoFlyerTicketLayoutTest extends TestCase
 
     private function donnees(): array
     {
+        $d = PromoFlyerService::DEFAULTS;
+
         return [
             'headline' => 'LE CAYENNE',
+            'greeting' => 'Merci',
             'greeting_civility' => 'M.',
             'greeting_name' => 'Dorian',
-            'intro' => "Merci pour ta commande ! La prochaine fois commande en direct sur notre "
-                . "site : c'est le meme restaurant, mais moins cher.",
+            'intro' => $d['intro'],
             'discount_percent' => 10,
             'code' => 'DORIAN-TH2P',
             'valid_until' => '07/09/2026',
             'qr_url' => 'https://www.lecayenne.fr/?promo=DORIAN-TH2P',
             'site_url' => 'www.lecayenne.fr',
-            'footer' => "Jusqu'a -30% d'economies en commandant en direct : les plateformes de "
-                . "livraison prelevent jusqu'a 35% de commission sur chaque commande.",
+            'savings_note' => $d['savings_note'],
+            'footer_note' => $d['footer_note'],
         ];
     }
 
     /**
-     * Ne garde que les caractères imprimables ASCII de chaque ligne. Les octets de commande
-     * (ESC/GS) et le bloc QR sont hors de cette plage et disparaissent ; un ESPACE (0x20) est
-     * conservé — c'est indispensable, puisque c'est justement le padding fautif qu'on traque.
+     * Dépouilleur ESC/POS RÉEL. Il consomme chaque séquence de commande selon sa longueur connue,
+     * au lieu de « filtrer les octets non imprimables » — un filtre naïf laisse passer la LETTRE de
+     * la commande (`GS B` devient « B ») et colle ce parasite en tête de ligne. Une assertion
+     * « la ligne ne commence pas par un espace » passait alors pour la mauvaise raison : c'est
+     * exactement le piège du test creux, et il s'était refermé sur moi.
      *
-     * @return array<int, string> lignes contenant au moins une lettre ou un chiffre
+     * @return array<int, array{texte: string, inverse: bool, double: bool}>
      */
     private function lignes(string $octets): array
     {
         $lignes = [];
-        foreach (explode("\n", $octets) as $brut) {
-            $propre = preg_replace('/[^\x20-\x7E]/', '', $brut);
-            if ($propre === null || ! preg_match('/[A-Za-z0-9=]/', $propre)) {
+        $courant = '';
+        $inverse = false;
+        $double = false;
+
+        $n = strlen($octets);
+        for ($i = 0; $i < $n; $i++) {
+            $c = $octets[$i];
+
+            if ($c === "\x1B") { // ESC
+                $suite = $octets[$i + 1] ?? '';
+                if ($suite === '@') { $i += 1; continue; }              // init
+                if ($suite === 'E') {                                    // gras
+                    $i += 2; continue;
+                }
+                $i += 2; continue;                                       // ESC x n (a, t, d, -, …)
+            }
+
+            if ($c === "\x1D") { // GS
+                $suite = $octets[$i + 1] ?? '';
+                if ($suite === 'B') {                                    // inversion vidéo
+                    $inverse = ord($octets[$i + 2] ?? "\x00") === 1;
+                    $i += 2; continue;
+                }
+                if ($suite === '!') {
+                    // `GS ! n` : quartet HAUT = largeur, quartet BAS = hauteur
+                    // (`(($w-1) << 4) | ($h-1)`). Seule la LARGEUR consomme deux colonnes — une
+                    // double HAUTEUR laisse les 42 colonnes intactes, le pilote le documente
+                    // lui-même. Confondre les deux faisait échouer des lignes parfaitement bonnes.
+                    $double = (ord($octets[$i + 2] ?? "\x00") >> 4) > 0;
+                    $i += 2; continue;
+                }
+                if ($suite === '(') {                                    // bloc QR : longueur portée
+                    $pL = ord($octets[$i + 3] ?? "\x00");
+                    $pH = ord($octets[$i + 4] ?? "\x00");
+                    $i += 4 + ($pL + $pH * 256);
+                    continue;
+                }
+                if ($suite === 'v') {                                    // image raster
+                    return $lignes; // pas de logo dans ce banc : on s'arrête proprement si présent
+                }
+                $i += 2; continue;                                       // GS x n (V, …)
+            }
+
+            if ($c === "\n") {
+                // On enregistre l'état COURANT : les commandes qui referment un effet
+                // (`GS B 0`, `GS ! 0`) arrivent APRÈS le saut de ligne, donc l'état en vigueur au
+                // moment du LF est bien celui sous lequel le texte a été imprimé. Un drapeau
+                // « collant » par ligne faisait fuir l'effet sur la ligne suivante — c'est ce qui
+                // faisait prendre un bandeau pleine largeur pour un bandeau double largeur.
+                $lignes[] = ['texte' => $courant, 'inverse' => $inverse, 'double' => $double];
+                $courant = '';
                 continue;
             }
-            // Le bloc QR transporte l'URL comme DONNÉE, pas comme ligne imprimée : il traverse ce
-            // filtre en laissant « (k…https://… ». L'exclure n'assouplit rien — une donnée de QR
-            // n'a pas de largeur de colonne. Le marqueur est la séquence GS ( k, qui survit au
-            // filtre sous la forme « (k ».
-            if (str_contains($propre, '(k')) {
-                continue;
+
+            if (ord($c) >= 0x20) {
+                $courant .= $c;
             }
-            $lignes[] = rtrim($propre);
         }
 
-        return $lignes;
+        return array_values(array_filter($lignes, fn ($l) => $l['texte'] !== ''));
     }
 
-    private function rendu(int $largeur = self::LARGEUR): array
+    /** @return array<int, array{texte: string, inverse: bool, double: bool}> */
+    private function rendu(): array
     {
-        $octets = app(PromoFlyerEscPosRenderer::class)->render($this->donnees(), $largeur);
-
-        return $this->lignes($octets);
+        return $this->lignes(
+            app(PromoFlyerEscPosRenderer::class)->render($this->donnees(), self::LARGEUR)
+        );
     }
 
-    /** LE DÉFAUT DE LARGEUR : plus une seule ligne ne dépasse, donc plus un seul mot coupé. */
+    private function textes(): array
+    {
+        return array_map(fn ($l) => rtrim($l['texte']), $this->rendu());
+    }
+
+    // ── GÉOMÉTRIE ────────────────────────────────────────────────────────────────────────────
+
     public function test_aucune_ligne_ne_depasse_la_largeur_de_l_imprimante(): void
     {
         $lignes = $this->rendu();
-
-        // Garde anti-test-vide : sans contenu, « aucune ligne ne dépasse » ne prouve rien.
-        $this->assertGreaterThan(8, count($lignes), 'le ticket doit avoir du contenu à mesurer');
+        $this->assertGreaterThan(10, count($lignes), 'le ticket doit avoir du contenu à mesurer');
 
         foreach ($lignes as $l) {
-            $this->assertLessThanOrEqual(self::LARGEUR, strlen($l),
-                'ligne de ' . strlen($l) . ' car. sur une imprimante ' . self::LARGEUR
-                . ' col. : elle sera réenroulée EN PLEIN MOT — |' . $l . '|');
+            // Une ligne en double largeur consomme 2 colonnes par caractère.
+            $max = $l['double'] ? intdiv(self::LARGEUR, 2) : self::LARGEUR;
+            $this->assertLessThanOrEqual($max, strlen(rtrim($l['texte'])),
+                'ligne de ' . strlen(rtrim($l['texte'])) . ' car. pour un maximum de ' . $max
+                . ' : elle sera réenroulée EN PLEIN MOT — |' . $l['texte'] . '|');
         }
     }
 
-    /** LE DÉFAUT DE CENTRAGE : l'imprimante centre déjà ; aucun padding ne doit s'y ajouter. */
-    public function test_aucune_ligne_n_est_pre_centree_a_coups_d_espaces(): void
+    public function test_les_lignes_ordinaires_ne_sont_pas_pre_centrees_a_coups_d_espaces(): void
     {
         foreach ($this->rendu() as $l) {
-            $this->assertStringStartsNotWith(' ', $l,
-                'cette ligne est pré-centrée avec des espaces alors que le pilote est déjà en mode '
-                . 'centré : elle partira vers la DROITE — |' . $l . '|');
+            if ($l['inverse']) {
+                continue; // un bandeau EST fait d'espaces — voir le test dédié juste après
+            }
+            $this->assertStringStartsNotWith(' ', $l['texte'],
+                'ligne pré-centrée alors que le pilote est déjà en mode centré : elle partira vers '
+                . 'la DROITE — |' . $l['texte'] . '|');
         }
     }
 
+    // ── CONVERSION ───────────────────────────────────────────────────────────────────────────
+
     /**
-     * Les deux mots que la photo montrait coupés. On exige la phrase ENTIÈRE sur UNE ligne :
-     * c'est la formulation qui échoue si la largeur redevient fausse, alors qu'un simple
-     * `assertStringContainsString` sur tout le ticket passerait même coupé.
+     * LE DISPOSITIF D'ATTENTION. En inversion vidéo le fond noir ne couvre que les caractères
+     * imprimés : un bandeau qui ne remplit pas la ligne devient une étiquette noire au milieu du
+     * papier. On exige donc la largeur EXACTE, bords compris.
      */
-    public function test_les_mots_coupes_sur_la_photo_tiennent_sur_une_seule_ligne(): void
+    public function test_la_recompense_est_dans_un_bandeau_noir_pleine_largeur(): void
     {
-        $lignes = $this->rendu();
+        $bandeaux = array_values(array_filter($this->rendu(), fn ($l) => $l['inverse']));
 
-        $this->assertContains('valable une seule fois, rien que pour toi', $lignes,
-            '« rien que pour toi » était coupé en « pour t » / « oi » sur la photo IMG_2090');
+        $this->assertNotEmpty($bandeaux,
+            'la remise n\'est plus en inversion vidéo : sur une imprimante thermique c\'est le SEUL '
+            . 'contraste disponible, sans lui rien ne ressort du ticket');
 
-        $joint = implode('|', $lignes);
-        $this->assertStringNotContainsString('pour t|', $joint, '« toi » est de nouveau coupé');
-        $this->assertStringNotContainsString("prelevent j|", $joint, '« jusqu\'a » est de nouveau coupé');
+        $porteLaRemise = false;
+        foreach ($bandeaux as $b) {
+            $attendu = $b['double'] ? intdiv(self::LARGEUR, 2) : self::LARGEUR;
+            $this->assertSame($attendu, strlen($b['texte']),
+                'bandeau de ' . strlen($b['texte']) . ' au lieu de ' . $attendu . ' colonnes : le '
+                . 'fond noir ne toucherait pas les bords — |' . $b['texte'] . '|');
+            if (str_contains($b['texte'], '-10%')) {
+                $porteLaRemise = true;
+            }
+        }
+
+        $this->assertTrue($porteLaRemise, 'le bandeau noir doit contenir la remise elle-même');
     }
 
-    /** Le séparateur remplit la ligne EXACTEMENT : ni marge blanche, ni « ====== » orphelin. */
-    public function test_le_separateur_fait_exactement_la_largeur(): void
+    /** L'ACTION FACILE AVANT LE REPLI COÛTEUX : scanner d'abord, taper ensuite. */
+    public function test_le_scan_est_propose_AVANT_la_saisie_manuelle_du_code(): void
     {
-        $lignes = $this->rendu();
-        $separateurs = array_values(array_filter($lignes, fn ($l) => preg_match('/^=+$/', $l)));
+        $t = $this->textes();
 
-        $this->assertNotEmpty($separateurs, 'le ticket doit encadrer la remise');
-        foreach ($separateurs as $s) {
-            $this->assertSame(self::LARGEUR, strlen($s),
-                'séparateur de ' . strlen($s) . ' « = » : à 48 il débordait en 42 + 6 et laissait '
-                . 'une seconde ligne « ====== » orpheline sur le papier');
+        $iScan = null;
+        $iSaisie = null;
+        foreach ($t as $i => $l) {
+            if ($iScan === null && str_contains($l, 'SCANNE')) { $iScan = $i; }
+            if ($iSaisie === null && str_contains($l, 'tape ce code')) { $iSaisie = $i; }
+        }
+
+        $this->assertNotNull($iScan, 'l\'appel à scanner a disparu — c\'est le geste le moins coûteux');
+        $this->assertNotNull($iSaisie, 'le repli « taper le code » doit rester offert');
+        $this->assertLessThan($iSaisie, $iScan,
+            'la saisie manuelle passe avant le scan : on met le chemin le PLUS coûteux en premier');
+    }
+
+    /** Le code ne doit pas concurrencer la remise : sinon plus rien ne ressort. */
+    public function test_le_code_n_est_PAS_en_double_taille(): void
+    {
+        foreach ($this->rendu() as $l) {
+            if (str_contains($l['texte'], 'DORIAN-TH2P')) {
+                $this->assertFalse($l['double'],
+                    'le code repasse en double taille : il crie aussi fort que la remise, et deux '
+                    . 'éléments qui crient également fort ne laissent rien ressortir');
+            }
         }
     }
 
-    /**
-     * La largeur vient de la CONFIG quand l'appelant n'en impose pas — c'est ce lien qui manquait.
-     * Sans ce test, on pourrait « corriger » le rendu tout en laissant le défaut d'origine : un
-     * défaut de câblage, pas de mise en page.
-     */
-    public function test_la_largeur_configuree_est_reellement_honoree(): void
+    /** Rareté + échéance sur une seule ligne, collées à la récompense. */
+    public function test_l_urgence_est_affichee_avec_la_date_limite(): void
     {
-        config(['printing.receipt.width_chars' => 42]);
+        $joint = implode(' | ', $this->textes());
 
-        $flyer = new \App\Models\PromoFlyer();
-        $service = app(\App\Services\Promo\PromoFlyerService::class);
+        $this->assertMatchesRegularExpression('/1 seule fois/i', $joint,
+            'l\'usage unique n\'est plus dit : c\'est la rareté qui empêche de remettre à plus tard');
+        $this->assertStringContainsString('07/09/2026', $joint,
+            'la date limite n\'est plus dite : une remise sans date se remet à plus tard, et plus '
+            . 'tard ne revient jamais');
+    }
 
-        // On n'exige pas un rendu complet (le modèle n'est pas persisté) : on exige que la valeur
-        // 48 en dur ait disparu de la signature, seule cause du mauvais calage.
-        $r = new \ReflectionMethod($service, 'renderBytes');
-        $defaut = $r->getParameters()[1]->getDefaultValue();
+    /**
+     * LE DÉFAUT DE PROMESSE : deux pourcentages différents sur le même papier. Le client lisait
+     * « jusqu'a -30% » puis recevait -10%.
+     */
+    public function test_aucun_pourcentage_ne_contredit_la_remise_annoncee(): void
+    {
+        $joint = implode(' ', $this->textes());
 
-        $this->assertSame(0, $defaut,
+        preg_match_all('/-?\s?(\d{1,2})\s?%/', $joint, $m);
+        $pourcentages = array_values(array_unique(array_map('intval', $m[1] ?? [])));
+
+        $this->assertNotEmpty($pourcentages, 'le ticket doit annoncer une remise');
+        $this->assertSame([10], $pourcentages,
+            'le ticket annonce plusieurs pourcentages ' . json_encode($pourcentages) . ' : le client '
+            . 'retient le plus élevé et se sent floué en recevant l\'autre');
+    }
+
+    // ── CÂBLAGE ──────────────────────────────────────────────────────────────────────────────
+
+    public function test_la_largeur_par_defaut_vient_de_la_config_et_non_de_48_en_dur(): void
+    {
+        $r = new \ReflectionMethod(app(PromoFlyerService::class), 'renderBytes');
+
+        $this->assertSame(0, $r->getParameters()[1]->getDefaultValue(),
             'la largeur par défaut doit être 0 = « résous-la depuis la config », jamais 48 en dur : '
             . 'c\'est ce 48 qui imprimait un ticket de 48 colonnes sur une caisse de 42');
-        unset($flyer);
     }
 }

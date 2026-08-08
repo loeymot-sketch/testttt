@@ -87,42 +87,52 @@ class PromoFlyerEscPosRenderer
             $out .= E::feed(1);
         }
 
-        // --- 4. LA REMISE, EN GRAND -----------------------------------------
-        $out .= E::encodeForPrinter(E::separator('=', $w));
+        // --- 4. LA RÉCOMPENSE — BANDEAU NOIR --------------------------------
+        // [CONVERSION 2026-08-08] Avant : un « -10% » gras entre deux lignes de « = ». Du noir sur
+        // blanc au milieu de noir sur blanc — rien ne ressortait. Une imprimante thermique n'a ni
+        // couleur ni graisse variable : l'inversion vidéo est le SEUL contraste dont on dispose.
+        // La récompense passe donc en blanc sur noir, encadrée de deux lignes pleines : c'est la
+        // première chose que l'œil trouve, avant même de lire. Sur un ticket qu'on regarde deux
+        // secondes, cette hiérarchie EST le taux de conversion.
         $percent = $this->formatPercent($data['discount_percent'] ?? 10);
+        $out .= $this->band('', $w);
         $out .= E::textSize(2, 3);
         $out .= E::bold(true);
-        $out .= $this->line('-' . $percent . '%', $w / 2);
+        $out .= $this->band('-' . $percent . '%', (int) floor($w / 2));
         $out .= E::bold(false);
         $out .= E::textSize(1, 1);
+        $out .= $this->band('', $w);
         $out .= $this->line('sur ta prochaine commande en direct', $w);
-        $out .= E::encodeForPrinter(E::separator('=', $w));
-        $out .= E::feed(1);
 
-        // --- 5. LE CODE ------------------------------------------------------
-        $out .= $this->line('TON CODE PERSONNEL', $w);
-        $out .= E::feed(1);
-        $code = (string) ($data['code'] ?? '');
-        $out .= E::textSize(2, 2);
-        $out .= E::bold(true);
-        $out .= $this->line($code, $w / 2);
-        $out .= E::bold(false);
-        $out .= E::textSize(1, 1);
-        $out .= E::feed(1);
-
+        // L'ÉCHÉANCE COLLÉE À LA RÉCOMPENSE, en gras. Une remise sans date se remet à plus tard,
+        // et « plus tard » ne revient jamais. Deux raisons de ne pas attendre sur une ligne :
+        // usage unique (rareté) et date limite (perte). Elles pèsent plus que la remise elle-même.
         $validUntil = $data['valid_until'] ?? null;
-        if ($validUntil) {
-            $out .= $this->line('valable jusqu\'au ' . $validUntil, $w);
-        }
-        $out .= $this->line('valable une seule fois, rien que pour toi', $w);
+        $out .= E::bold(true);
+        $out .= $this->line(
+            $validUntil
+                ? 'Valable 1 seule fois, jusqu\'au ' . $validUntil
+                : 'Valable 1 seule fois, rien que pour toi',
+            $w
+        );
+        $out .= E::bold(false);
         $out .= E::feed(1);
 
-        // --- 6. QR + URL EN CLAIR -------------------------------------------
+        // --- 5. L'ACTION AVANT LE REPLI -------------------------------------
+        // [CONVERSION 2026-08-08] Avant, le CODE venait en premier, en double taille, et le QR
+        // ensuite. C'était l'inverse de ce qu'on veut : taper un code à la main est le chemin le
+        // plus coûteux, scanner est le moins coûteux. Le geste facile passe donc devant, en grand,
+        // avec un verbe à l'impératif ; le code devient le repli de celui qui n'a pas pu scanner.
+        $code = (string) ($data['code'] ?? '');
         $qrUrl = trim((string) ($data['qr_url'] ?? ''));
         if ($qrUrl !== '') {
-            $out .= $this->line('Scanne, ton code est deja rempli :', $w);
+            $out .= E::bold(true);
+            $out .= $this->line('SCANNE — ton code est deja rempli', $w);
+            $out .= E::bold(false);
             $out .= E::feed(1);
-            $out .= E::qrCode($qrUrl, 7, 'M');
+            // Module 8 (au lieu de 7) : un QR se scanne à bout de bras, dans la lumière d'un
+            // couloir d'immeuble. Chaque module gagné est une tentative de scan en moins.
+            $out .= E::qrCode($qrUrl, 8, 'M');
             $out .= E::feed(1);
         }
 
@@ -133,6 +143,16 @@ class PromoFlyerEscPosRenderer
             $out .= $this->line($siteUrl, $w);
             $out .= E::bold(false);
             $out .= E::doubleHeight(false);
+        }
+
+        // Le code en REPLI : pour qui n'a pas pu scanner. Taille normale et gras suffisent — le
+        // mettre en double taille le mettait en concurrence visuelle avec la récompense, et deux
+        // éléments qui crient aussi fort qu'une remise, c'est une remise qu'on ne voit plus.
+        if ($code !== '') {
+            $out .= $this->line('ou tape ce code sur le site :', $w);
+            $out .= E::bold(true);
+            $out .= $this->line($code, $w);
+            $out .= E::bold(false);
         }
         $out .= E::feed(1);
 
@@ -208,6 +228,32 @@ class PromoFlyerEscPosRenderer
      * double occupe deux colonnes. Sans cette division, tout texte agrandi
      * serait centré de travers.
      */
+    /**
+     * [CONVERSION 2026-08-08] Bandeau BLANC SUR NOIR, pleine largeur.
+     *
+     * ATTENTION — ici le remplissage par espaces est DÉLIBÉRÉ, à l'exact opposé de `line()` juste
+     * en dessous, et les deux règles sont justes :
+     *   · `line()` ne doit PAS remplir, parce que le pilote centre déjà (remplir décale à droite) ;
+     *   · `band()` DOIT remplir, parce qu'en inversion vidéo le fond noir ne couvre que les
+     *     caractères imprimés — les espaces SONT le bandeau. Sans eux, on obtient une petite
+     *     étiquette noire au milieu du papier au lieu d'une bande pleine largeur.
+     * La ligne faisant exactement la largeur, le centrage du pilote est un non-événement : le
+     * bandeau touche les deux bords.
+     *
+     * Ne jamais « harmoniser » ces deux méthodes : elles répondent à deux contraintes opposées.
+     */
+    private function band(string $text, int $widthChars): string
+    {
+        $w = max(1, $widthChars);
+        $t = mb_substr($text, 0, $w);
+        $libre = max(0, $w - mb_strlen($t));
+        $gauche = intdiv($libre, 2);
+
+        $ligne = str_repeat(' ', $gauche) . $t . str_repeat(' ', $libre - $gauche);
+
+        return E::invert(true) . E::encodeForPrinter(E::textLine($ligne)) . E::invert(false);
+    }
+
     private function line(string $text, float $widthChars): string
     {
         $w = (int) max(1, floor($widthChars));

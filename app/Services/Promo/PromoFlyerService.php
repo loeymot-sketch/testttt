@@ -41,7 +41,14 @@ class PromoFlyerService
     public const DEFAULTS = [
         'headline'         => 'LE CAYENNE',
         'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le meme restaurant, mais moins cher.',
-        'savings_note'     => 'Jusqu\'a -30% d\'economies en commandant en direct : les plateformes de livraison prelevent jusqu\'a 35% de commission sur chaque commande.',
+        // [CONVERSION 2026-08-08] L'ancien texte annonçait « jusqu'a -30% d'economies » —
+        // en contradiction directe avec le -10% du code juste au-dessus. Le client lit -30,
+        // reçoit -10, et se sent floué : deux nombres qui se contredisent sur le même bout de
+        // papier détruisent la promesse au lieu de la renforcer. Il expliquait en plus les
+        // COMMISSIONS DE PLATEFORME — l'intérêt du restaurant, pas celui du client, qui n'a
+        // aucune raison de porter votre marge. On garde une seule idée, la sienne : même
+        // cuisine, prix plus juste, et il choisit son mode de retrait.
+        'savings_note'     => 'Meme cuisine, meme equipe, prix plus juste : en direct, tu paies le repas, pas la commission.',
         'footer_note'      => 'A emporter et en livraison. A tres vite !',
         'discount_percent' => 10,
         'validity_days'    => 30,
