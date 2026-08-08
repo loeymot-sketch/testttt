@@ -102,8 +102,12 @@ class Mollie extends PaymentAbstract
      * @param string $walletMethod [OWNER 2026-08-06 · PORTEFEUILLES] `applepay` | `googlepay`.
      *                          Exclusif avec $cardToken : un portefeuille n'a PAS de jeton carte
      *                          (la carte reste dans le téléphone). Vide = inchangé.
+     * @param string $applePayToken [OWNER 2026-08-08 · FEUILLE NATIVE] Jeton produit par la
+     *                          feuille Apple Pay ouverte DANS notre page (`ApplePaySession`).
+     *                          Avec lui, Mollie encaisse directement : aucune page intermédiaire,
+     *                          aucune redirection. Exige `$walletMethod === 'applepay'`.
      */
-    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = ''): array
+    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = '', string $applePayToken = ''): array
     {
         if (!$this->isMollieConfigured()) {
             throw new RuntimeException('Mollie non configuré.');
@@ -122,6 +126,15 @@ class Mollie extends PaymentAbstract
             throw new RuntimeException('Portefeuille et jeton carte sont exclusifs.');
         }
 
+        // [OWNER 2026-08-08 · FEUILLE NATIVE] Un jeton Apple Pay n'a de sens qu'avec `applepay`.
+        // Le refuser ailleurs évite qu'un appelant l'accroche par erreur à un autre rail.
+        if ($applePayToken !== '' && $walletMethod !== 'applepay') {
+            throw new RuntimeException('Un jeton Apple Pay exige le moyen applepay.');
+        }
+        if ($applePayToken !== '' && $cardToken !== '') {
+            throw new RuntimeException('Jeton Apple Pay et jeton carte sont exclusifs.');
+        }
+
         $redirectBase = (string) config('payment.mollie.redirect_url', '');
         if ($redirectBase === '') {
             $redirectBase = (string) config('app.url');
@@ -134,11 +147,16 @@ class Mollie extends PaymentAbstract
         if ($cardToken !== '') {
             // Paiement direct : la carte a déjà été saisie sur NOTRE page.
             $extra = ['method' => 'creditcard', 'cardToken' => $cardToken];
+        } elseif ($applePayToken !== '') {
+            // [OWNER 2026-08-08 · FEUILLE NATIVE] Le client a validé DANS la feuille Apple Pay
+            // ouverte sur notre page (Face ID / double-clic). On transmet son jeton : Mollie
+            // encaisse directement, sans page intermédiaire ni redirection. C'est le chemin que
+            // l'owner demandait — « tu l'ajoutes comme elle est, et ça paye ».
+            $extra = ['method' => 'applepay', 'applePayPaymentToken' => $applePayToken];
         } elseif ($walletMethod !== '') {
-            // Sans `method`, Mollie renvoie la page générique « choisissez un moyen » : la feuille
-            // du portefeuille ne s'ouvre jamais — c'est LA raison pour laquelle le site ne
-            // proposait pas Apple Pay / Google Pay. Avec `method`, la checkout URL ouvre
-            // directement la feuille, hébergée par Mollie : rien à valider sur notre domaine.
+            // Repli : pas de jeton (appareil sans feuille native, ou Google Pay). Avec `method`,
+            // la checkout URL de Mollie ouvre directement le bon moyen au lieu de la page
+            // générique « choisissez un moyen ».
             $extra = ['method' => $walletMethod];
         }
 

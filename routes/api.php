@@ -1551,6 +1551,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // retomber le garde gelé sur `input('branch_id', -1)` → 422, et la requête
         // n'atteignait JAMAIS Mollie. Mesuré en production : 21 comptes sur 24 concernés,
         // carte comme portefeuille. Sentinelle : tests/Feature/Payment/IdempotencyBranchFromRouteTest.php
+        // [OWNER 2026-08-08 · FEUILLE APPLE PAY NATIVE] Validation marchand : le navigateur
+        // fournit une `validationURL` signée par Apple, on la relaie à Mollie qui répond une
+        // session. Sans cette route, `ApplePaySession` ne peut pas s'ouvrir sur notre domaine et
+        // il ne reste que la redirection vers une page hébergée. La route ne crée AUCUN paiement
+        // et ne touche à aucune commande — d'où l'absence d'idempotence ; elle est en revanche
+        // limitée en débit (une feuille par tentative) et n'accepte qu'une URL *.apple.com.
+        Route::post('/applepay-session', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'applePaySession'])
+            ->middleware('throttle:10,1')
+            ->name('applepay-session');
         Route::post('/{frontendOrder}/mollie-checkout', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'checkout'])
             ->middleware(['idempotency.branch', 'idempotency', 'throttle:10,1'])
             ->name('mollie-checkout');

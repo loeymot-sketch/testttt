@@ -10,6 +10,8 @@ use App\Http\PaymentGateways\Gateways\Mollie;
 use App\Models\FrontendOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 
@@ -117,8 +119,27 @@ class MolliePaymentController extends Controller
             ], 422);
         }
 
+        // [OWNER 2026-08-08 · FEUILLE NATIVE] Jeton produit par la feuille Apple Pay ouverte DANS
+        // la page (`ApplePaySession`). C'est un objet JSON signé par Apple, opaque pour nous :
+        // on ne le lit pas, on le relaie. On borne seulement sa TAILLE et son type — un jeton
+        // Apple pèse quelques kilo-octets, jamais mégaoctets.
+        $applePayToken = $request->input('apple_pay_token');
+        if ($applePayToken !== null && !is_string($applePayToken)) {
+            return response()->json(['status' => false, 'message' => 'Jeton Apple Pay invalide.'], 422);
+        }
+        $applePayToken = (string) ($applePayToken ?? '');
+        if ($applePayToken !== '' && strlen($applePayToken) > 20000) {
+            return response()->json(['status' => false, 'message' => 'Jeton Apple Pay invalide.'], 422);
+        }
+        if ($applePayToken !== '' && $walletMethod !== 'applepay') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Un jeton Apple Pay exige le moyen applepay.',
+            ], 422);
+        }
+
         try {
-            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod);
+            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken);
         } catch (Throwable $e) {
             return response()->json([
                 'status'  => false,
@@ -163,5 +184,63 @@ class MolliePaymentController extends Controller
             'inline'       => $inline,
             'reason'       => $reason,
         ], 200);
+    }
+
+    /**
+     * [OWNER 2026-08-08 · FEUILLE APPLE PAY NATIVE] Validation marchand — l'étape qu'Apple exige
+     * avant d'ouvrir la feuille sur NOTRE domaine.
+     *
+     * Le navigateur nous transmet une `validationURL` signée par Apple ; nous la relayons à
+     * Mollie, qui répond une session marchand. Sans ce relais, `ApplePaySession` ne s'ouvre pas
+     * et il ne reste que la redirection vers une page hébergée — précisément ce que l'owner
+     * refuse (« pourquoi tu fais toute cette complexité »).
+     *
+     * Deux gardes qui comptent :
+     *  · l'URL de validation doit appartenir à APPLE. Relayer une URL arbitraire ferait de ce
+     *    point d'entrée un proxy authentifié vers n'importe quel serveur (SSRF).
+     *  · le domaine annoncé est celui de la REQUÊTE, jamais une valeur envoyée par le client.
+     */
+    public function applePaySession(Request $request): JsonResponse
+    {
+        $gateway = new Mollie();
+        if (!$gateway->isMollieConfigured()) {
+            return response()->json(['status' => false, 'message' => 'Mollie non configuré.'], 503);
+        }
+
+        $validationUrl = (string) $request->input('validation_url', '');
+        $hote = parse_url($validationUrl, PHP_URL_HOST) ?: '';
+
+        // Apple documente ses passerelles sous *.apple.com — on n'accepte rien d'autre.
+        if ($validationUrl === ''
+            || parse_url($validationUrl, PHP_URL_SCHEME) !== 'https'
+            || !preg_match('/(^|\.)apple\.com$/', $hote)) {
+            return response()->json([
+                'status'  => false,
+                'message' => "URL de validation Apple invalide.",
+            ], 422);
+        }
+
+        $reponse = Http::withToken((string) config('payment.mollie.api_key'))
+            ->acceptJson()->asJson()->timeout(15)
+            ->post(config('payment.mollie.api_base') . '/wallets/applepay/sessions', [
+                'domain'        => $request->getHost(),
+                'validationUrl' => $validationUrl,
+            ]);
+
+        if (!$reponse->successful()) {
+            Log::channel('fiscal')->error('mollie.applepay.session.failed', [
+                'status' => $reponse->status(),
+                'domain' => $request->getHost(),
+            ]);
+
+            return response()->json([
+                'status'  => false,
+                'message' => "La feuille Apple Pay n'a pas pu s'ouvrir. Réessaie, paie par carte, ou choisis « Payer sur place ».",
+            ], 502);
+        }
+
+        // Le corps est la session marchand d'Apple : opaque pour nous, destinée telle quelle à
+        // `completeMerchantValidation()`.
+        return response()->json(['status' => true, 'session' => $reponse->json()], 200);
     }
 }
