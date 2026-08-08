@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
@@ -121,6 +123,50 @@ class VerifyFiscalSequenceContinuityCommand extends Command
 
             if ($duplicates->isNotEmpty()) {
                 $this->error('   DOUBLONS (anomalie grave) : ' . $duplicates->implode(', '));
+            }
+        }
+
+        // [ANGLE MORT 2026-08-08] Ce scan ne regardait QUE les commandes qui PORTENT un numéro
+        // (`whereNotNull('fiscal_sequence_no')`, plus haut). Une vente PAYÉE dont le numéro est
+        // resté NULL lui était donc structurellement invisible : la séquence est parfaitement
+        // contiguë, la commande annonçait « GAP-FREE, OK », et 13 ventes payées ne portaient
+        // aucun numéro — dont la commande #333 (1,90 € encaissés le 2026-08-03), restée cinq
+        // jours inaperçue. Une vente sans numéro n'est pas un trou DANS la séquence : c'est une
+        // vente HORS séquence, ce que ce contrôle ne savait pas dire.
+        //
+        // On REND COMPTE, on ne RÉPARE PAS. Allouer un numéro ici serait improviser un chemin
+        // fiscal que le webhook Mollie refuse explicitement de prendre (point d'activation
+        // propriétaire G-W5) ; l'attribution reste une décision humaine. Cette commande reste
+        // donc strictement en lecture seule — mais elle sort désormais en ÉCHEC, pour qu'un cron
+        // ou une porte de livraison le remarque au lieu de lire « OK ».
+        $sansNumero = Order::query()
+            ->withTrashed()
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('payment_status', PaymentStatus::PAID)
+            ->whereNull('fiscal_sequence_no')
+            ->when($branchFilter !== null, fn ($q) => $q->where('branch_id', (int) $branchFilter))
+            ->orderBy('id')
+            ->get(['id', 'branch_id', 'total', 'source_surface', 'status', 'created_at']);
+
+        if ($sansNumero->isNotEmpty()) {
+            $anyGap = true;
+            $this->newLine();
+            $this->error('VENTES PAYÉES SANS NUMÉRO FISCAL : ' . $sansNumero->count()
+                . ' commande(s), ' . number_format((float) $sansNumero->sum('total'), 2, ',', ' ') . ' EUR');
+
+            foreach ($sansNumero->groupBy(fn ($o) => $o->source_surface ?: '(non renseignée)') as $surface => $lot) {
+                $this->line('   ' . $surface . ' : ' . $lot->count() . ' cmd, '
+                    . number_format((float) $lot->sum('total'), 2, ',', ' ') . ' EUR'
+                    . ' — #' . $lot->take(10)->pluck('id')->implode(', #')
+                    . ($lot->count() > 10 ? ', …' : ''));
+            }
+
+            // Le pire cas mérite sa propre ligne : encaissée ET jamais promue, donc jamais
+            // servie. Le client a payé et n'a rien reçu.
+            $jamaisServies = $sansNumero->where('status', OrderStatus::PENDING);
+            if ($jamaisServies->isNotEmpty()) {
+                $this->error('   dont PAYÉES ET JAMAIS PROMUES (client débité, jamais servi) : #'
+                    . $jamaisServies->pluck('id')->implode(', #'));
             }
         }
 
