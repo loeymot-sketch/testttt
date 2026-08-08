@@ -4,6 +4,7 @@ namespace App\Services\Promo;
 
 use App\Enums\DiscountType;
 use App\Enums\Status;
+use App\Models\Branch;
 use App\Models\Coupon;
 use App\Models\PromoFlyer;
 use App\Models\Scopes\BranchScope;
@@ -40,6 +41,9 @@ class PromoFlyerService
      */
     public const DEFAULTS = [
         'headline'         => 'LE CAYENNE',
+        // Vide = « prends le numéro de la branche ». On ne code JAMAIS un numéro en dur : un
+        // faux numéro sur un ticket est pire que pas de numéro du tout.
+        'order_phone'      => '',
         'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le meme restaurant, mais moins cher.',
         // [CONVERSION 2026-08-08] L'ancien texte annonçait « jusqu'a -30% d'economies » —
         // en contradiction directe avec le -10% du code juste au-dessus. Le client lit -30,
@@ -163,6 +167,10 @@ class PromoFlyerService
                         'valid_until'      => $validUntil->format('d/m/Y'),
                         'headline'         => $settings['headline'],
                         'intro'            => $settings['intro'],
+                        'order_phone'      => $this->resolveOrderPhone(
+                            (string) ($settings['order_phone'] ?? ''),
+                            $branchId
+                        ),
                         'savings_note'     => $settings['savings_note'],
                         'footer_note'      => $settings['footer_note'],
                     ];
@@ -256,6 +264,42 @@ class PromoFlyerService
      * `0` signifie « résous-la toi-même » : config d'abord, 48 en dernier recours. Un appelant
      * peut toujours imposer une largeur, mais il n'a plus à la connaître pour obtenir la bonne.
      */
+    /**
+     * Numéro à composer pour commander. Priorité : réglage explicite → téléphone de la BRANCHE.
+     *
+     * On ne code jamais un numéro en dur, et on REFUSE les gabarits : `settings.company_phone`
+     * valait « +33600000000 » sur cette installation — un numéro d'exemple. Imprimer un faux
+     * numéro est PIRE que n'en imprimer aucun : le client appelle, tombe dans le vide, et c'est la
+     * commande ET la confiance qui sont perdues. Le test de gabarit est donc volontairement large
+     * (au moins 4 chiffres identiques d'affilée, ou une suite 123456).
+     *
+     * Rendu final par paires — comme on dicte un numéro à voix haute.
+     */
+    private function resolveOrderPhone(string $configured, int $branchId): string
+    {
+        $brut = trim($configured);
+        if ($brut === '') {
+            $brut = (string) (Branch::query()
+                ->withoutGlobalScope(BranchScope::class)
+                ->whereKey($branchId)
+                ->value('phone') ?? '');
+        }
+
+        $chiffres = preg_replace('/\D+/', '', $brut) ?? '';
+        if (strlen($chiffres) < 9) {
+            return '';
+        }
+        if (preg_match('/(\d)\1{3,}/', $chiffres) || str_contains($chiffres, '123456')) {
+            return '';
+        }
+
+        if (strlen($chiffres) === 10 && $chiffres[0] === '0') {
+            return trim(chunk_split($chiffres, 2, ' '));
+        }
+
+        return $brut;
+    }
+
     public function renderBytes(PromoFlyer $flyer, int $widthChars = 0): string
     {
         $payload = $flyer->rendered_payload ?: [];

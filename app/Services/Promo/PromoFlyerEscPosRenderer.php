@@ -95,14 +95,17 @@ class PromoFlyerEscPosRenderer
         // première chose que l'œil trouve, avant même de lire. Sur un ticket qu'on regarde deux
         // secondes, cette hiérarchie EST le taux de conversion.
         $percent = $this->formatPercent($data['discount_percent'] ?? 10);
-        $out .= $this->band('', $w);
+        // [OWNER 2026-08-08] « Enlève le trait au-dessus du -10% ». C'était un bandeau noir VIDE,
+        // posé au-dessus de la remise pour l'encadrer — sur le papier il se lit comme un trait
+        // parasite, pas comme un cadre. Les deux bandeaux vides sont supprimés et le sous-titre
+        // entre DANS le noir : la remise devient un tampon d'un seul morceau, et plus rien ne
+        // flotte au-dessus. Aucun élément ajouté au ticket, deux lignes de papier gagnées.
         $out .= E::textSize(2, 3);
         $out .= E::bold(true);
         $out .= $this->band('-' . $percent . '%', (int) floor($w / 2));
         $out .= E::bold(false);
         $out .= E::textSize(1, 1);
-        $out .= $this->band('', $w);
-        $out .= $this->line('sur ta prochaine commande en direct', $w);
+        $out .= $this->band('sur ta prochaine commande en direct', $w);
 
         // L'ÉCHÉANCE COLLÉE À LA RÉCOMPENSE, en gras. Une remise sans date se remet à plus tard,
         // et « plus tard » ne revient jamais. Deux raisons de ne pas attendre sur une ligne :
@@ -153,6 +156,16 @@ class PromoFlyerEscPosRenderer
             $out .= E::bold(true);
             $out .= $this->line($code, $w);
             $out .= E::bold(false);
+        }
+
+        // [OWNER 2026-08-08] Le téléphone, remis SEUL et DISCRET. La version précédente l'annonçait
+        // sur deux lignes en gras et double hauteur, au milieu de trois autres appels à l'action :
+        // le ticket donnait l'impression d'insister, et un ticket qui insiste finit reposé. Ici une
+        // seule ligne, sans effet : elle ne s'adresse qu'à qui ne scanne pas, et pour cette personne
+        // c'est le seul chemin. Le numéro est formaté par paires — assez lisible sans crier.
+        $phone = trim((string) ($data['order_phone'] ?? ''));
+        if ($phone !== '') {
+            $out .= $this->line('ou par telephone : ' . $phone, $w);
         }
         $out .= E::feed(1);
 

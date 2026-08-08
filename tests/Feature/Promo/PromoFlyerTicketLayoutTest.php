@@ -55,6 +55,7 @@ class PromoFlyerTicketLayoutTest extends TestCase
             'valid_until' => '07/09/2026',
             'qr_url' => 'https://www.lecayenne.fr/?promo=DORIAN-TH2P',
             'site_url' => 'www.lecayenne.fr',
+            'order_phone' => '03 65 67 82 91',
             'savings_note' => $d['savings_note'],
             'footer_note' => $d['footer_note'],
         ];
@@ -275,6 +276,76 @@ class PromoFlyerTicketLayoutTest extends TestCase
         $this->assertContains('Merci M. Dorian !', $t,
             'la salutation nominative a disparu ou s\'est coupée : c\'est le premier contact du '
             . 'ticket, et la seule chose qui le distingue d\'un prospectus');
+    }
+
+    /**
+     * « ENLÈVE LE TRAIT AU-DESSUS DU -10% » — c'était un bandeau noir VIDE, censé encadrer la
+     * remise, qui se lisait comme un trait parasite. Deux exigences liées : aucun bandeau vide, et
+     * le sous-titre DANS le noir — sinon le bloc se re-décompose en éléments empilés.
+     */
+    public function test_aucun_bandeau_vide_ne_flotte_au_dessus_de_la_remise(): void
+    {
+        $bandeaux = array_values(array_filter($this->rendu(), fn ($l) => $l['inverse']));
+        $this->assertNotEmpty($bandeaux, 'la remise n\'est plus en inversion vidéo');
+
+        foreach ($bandeaux as $b) {
+            $this->assertNotSame('', trim($b['texte']),
+                'un bandeau noir VIDE est de retour : sur le papier il se lit comme un trait '
+                . 'parasite posé au-dessus de la remise, pas comme un cadre');
+        }
+
+        $dedans = false;
+        foreach ($bandeaux as $b) {
+            if (str_contains($b['texte'], 'prochaine commande')) {
+                $dedans = true;
+            }
+        }
+        $this->assertTrue($dedans,
+            'le sous-titre est ressorti du bloc noir : la remise redevient plusieurs éléments '
+            . 'empilés au lieu d\'un tampon d\'un seul morceau');
+    }
+
+    /** LE TÉLÉPHONE, remis SEUL et DISCRET : une ligne, sans effet, pour qui ne scanne pas. */
+    public function test_le_numero_est_affiche_sur_UNE_ligne_discrete(): void
+    {
+        $trouvees = [];
+        foreach ($this->rendu() as $l) {
+            if (str_contains($l['texte'], '03 65 67 82 91')) {
+                $trouvees[] = $l;
+            }
+        }
+
+        $this->assertCount(1, $trouvees,
+            'le numéro doit tenir sur UNE seule ligne : la version précédente l\'annonçait sur deux '
+            . 'lignes en gras et double hauteur, et le ticket donnait l\'impression d\'insister');
+        $this->assertFalse($trouvees[0]['double'],
+            'le numéro repasse en grand format : on avait retenu la discrétion');
+        $this->assertFalse($trouvees[0]['inverse'],
+            'le numéro ne doit pas crier plus fort que la remise');
+        $this->assertStringContainsString('telephone', $trouvees[0]['texte'],
+            'la ligne doit dire à quoi sert ce numéro');
+    }
+
+    /**
+     * ON N'IMPRIME JAMAIS UN NUMÉRO GABARIT. `settings.company_phone` valait « +33600000000 » sur
+     * cette installation. Un faux numéro est PIRE que pas de numéro : le client appelle, tombe dans
+     * le vide, et c'est la commande ET la confiance qui sont perdues.
+     */
+    public function test_un_numero_gabarit_n_est_JAMAIS_imprime(): void
+    {
+        $service = app(PromoFlyerService::class);
+        $m = new \ReflectionMethod($service, 'resolveOrderPhone');
+        $m->setAccessible(true);
+
+        foreach (['+33600000000', '0000000000', '0123456789', '01 23 45 67 89'] as $gabarit) {
+            $this->assertSame('', $m->invoke($service, $gabarit, 1),
+                'le gabarit « ' . $gabarit . ' » serait imprimé sur le ticket');
+        }
+
+        // Contre-preuve : un vrai numéro doit passer ET sortir formaté par paires — sinon on aurait
+        // échangé un faux numéro contre aucun numéro.
+        $this->assertSame('03 65 67 82 91', $m->invoke($service, '0365678291', 1),
+            'un numéro valide doit passer et être formaté par paires');
     }
 
     // ── CÂBLAGE ──────────────────────────────────────────────────────────────────────────────
