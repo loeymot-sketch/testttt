@@ -22,11 +22,13 @@ use Smartisan\Settings\Facades\Settings;
  *   - une seule utilisation au total (`max_uses_global = 1`) — c'est un cadeau
  *     nominatif, pas un code à faire circuler sur les réseaux ;
  *   - une par client (`limit_per_user = 1`) — ceinture et bretelles ;
- *   - surface `web` uniquement — le ticket sert à ramener le client sur le
- *     site en direct ; l'accepter en caisse ou sur la borne offrirait une
- *     remise là où il n'y a aucune commission à éviter ;
  *   - une date de fin obligatoire — un code sans échéance est une dette
  *     ouverte pour toujours.
+ *
+ * ⚠️ La restriction « site uniquement » a été RETIRÉE le 2026-08-07 : elle
+ * rendait le code inutilisable PARTOUT, y compris sur le site (voir le
+ * commentaire détaillé sur `surfaces` plus bas). Ce qui protège réellement est
+ * l'usage unique, doublé des interrupteurs fermés en caisse et sur la borne.
  */
 class PromoFlyerService
 {
@@ -45,7 +47,11 @@ class PromoFlyerService
         'validity_days'    => 30,
         'site_url'         => 'www.lecayenne.fr',
         'qr_url'           => 'https://www.lecayenne.fr/',
-        'enabled'          => true,
+        // Salutation placée devant la civilité et le nom : « Merci Mme Camille ! »
+        'greeting'         => 'Merci',
+        // Logo imprimé en haut du ticket. Chemin RELATIF à public/ : un chemin
+        // absolu saisi depuis l'admin serait une lecture de fichier arbitraire.
+        'logo_path'        => 'images/kiosk-attract/logo.png',
     ];
 
     public function __construct(
@@ -70,8 +76,13 @@ class PromoFlyerService
      *
      * @throws \RuntimeException si aucun code libre n'a pu être généré
      */
-    public function create(string $customerName, int $branchId, ?int $userId, ?string $deviceId): PromoFlyer
-    {
+    public function create(
+        string $customerName,
+        int $branchId,
+        ?int $userId,
+        ?string $deviceId,
+        string $civility = ''
+    ): PromoFlyer {
         $settings = $this->settings();
         $name = trim($customerName);
 
@@ -85,7 +96,7 @@ class PromoFlyerService
             $code = $this->codeGenerator->generate($name);
 
             try {
-                return DB::transaction(function () use ($code, $name, $branchId, $userId, $deviceId, $settings) {
+                return DB::transaction(function () use ($code, $name, $branchId, $userId, $deviceId, $settings, $civility) {
                     $validUntil = Carbon::now()->addDays((int) $settings['validity_days'])->endOfDay();
 
                     $coupon = new Coupon();
@@ -135,6 +146,9 @@ class PromoFlyerService
 
                     $payload = [
                         'customer_name'    => $name,
+                        'civility'         => $civility,
+                        'greeting'         => $settings['greeting'] ?? 'Merci',
+                        'logo_path'        => $this->resolveLogoPath((string) ($settings['logo_path'] ?? '')),
                         'code'             => $code,
                         'discount_percent' => $settings['discount_percent'],
                         'site_url'         => $settings['site_url'],
@@ -180,6 +194,44 @@ class PromoFlyerService
             0,
             $lastError
         );
+    }
+
+    /**
+     * Chemin absolu du logo à imprimer, à partir d'un chemin RELATIF à `public/`.
+     *
+     * La valeur vient des réglages, donc d'une saisie d'administration. Elle est
+     * traitée comme non fiable : un chemin absolu ou remontant (`../`) permettrait
+     * de faire lire au serveur n'importe quel fichier de la machine et d'en
+     * imprimer le contenu — une fuite discrète mais bien réelle. On n'accepte
+     * donc qu'un chemin sage, sous `public/`, avec une extension d'image.
+     */
+    public function resolveLogoPath(string $relative): string
+    {
+        $relative = trim($relative);
+        if ($relative === '') {
+            return '';
+        }
+
+        if (str_contains($relative, '..') || str_starts_with($relative, '/') || preg_match('#^[a-zA-Z]:#', $relative)) {
+            Log::warning('[FLYER] chemin de logo refuse (hors de public/)', ['path' => $relative]);
+            return '';
+        }
+
+        if (! preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $relative)) {
+            return '';
+        }
+
+        $absolute = public_path($relative);
+        $realPublic = realpath(public_path());
+        $realTarget = realpath($absolute);
+
+        // Ceinture et bretelles : même après nettoyage, on vérifie que le
+        // fichier résolu vit bien SOUS public/ (liens symboliques compris).
+        if ($realTarget === false || $realPublic === false || ! str_starts_with($realTarget, $realPublic)) {
+            return '';
+        }
+
+        return $realTarget;
     }
 
     /**

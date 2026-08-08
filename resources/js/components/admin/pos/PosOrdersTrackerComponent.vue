@@ -72,6 +72,20 @@
                         <span>{{ src.label }}</span>
                     </button>
                 </div>
+                <!-- [FLYER PROMO 2026-08-08] Ticket promo depuis la CAISSE : l'exploitant
+                     voit arriver une commande plateforme et imprime le ticket sans
+                     changer d'écran. Le nom se pré-remplit depuis la commande quand on
+                     part de sa carte (bouton 🎟️ sur la carte). -->
+                <button
+                    type="button"
+                    class="pos-tracker-history-link"
+                    @click="openPromoFlyer('')"
+                    title="Imprimer un ticket promo nominatif (commande plateforme)"
+                    data-testid="pos-tracker-promo-flyer"
+                >
+                    <span aria-hidden="true">🎟️</span>
+                    <span>Ticket promo</span>
+                </button>
                 <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Ouvre la modale de sortie de stock hors-vente. -->
                 <button
                     type="button"
@@ -333,6 +347,24 @@
                                 </span>
                                 <div class="pos-tracker-card-actions">
                                     <!--
+                                      [FLYER PROMO 2026-08-08] Ticket promo, sur les seules
+                                      commandes venues d'une PLATEFORME : c'est là que la
+                                      commission de 30-35 % s'applique et qu'un retour en
+                                      direct rapporte. Le prénom de la commande pré-remplit
+                                      la fenêtre — un geste au lieu de trois, en plein service.
+                                    -->
+                                    <button
+                                        v-if="isPlatformOrder(order)"
+                                        type="button"
+                                        class="pos-tracker-card-btn"
+                                        title="Imprimer un ticket promo pour ce client"
+                                        :data-testid="`tracker-promo-${order.id}`"
+                                        @click.stop="openPromoFlyer(customerLabel(order))"
+                                    >
+                                        <span aria-hidden="true">🎟️</span>
+                                        <span class="hidden xl:inline">Ticket promo</span>
+                                    </button>
+                                    <!--
                                       [Wave S-4 P-OWNER 2026-05-20] Encaisser
                                       CTA — only on cash-pending cards. Wires
                                       to Wave S-5 encaissement modal via a
@@ -580,6 +612,11 @@
 
         <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Sortie de stock hors-vente. -->
         <PosStockOutflowModal :open="stockOutflowOpen" @close="stockOutflowOpen = false" />
+        <PromoFlyerQuickModal
+            :open="promoFlyerOpen"
+            :prefill-name="promoFlyerPrefill"
+            @close="promoFlyerOpen = false"
+        />
     </section>
 </template>
 
@@ -601,6 +638,7 @@ import ReceiptComponent from './ReceiptComponent.vue';
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
 import PosSystemHealthPill from './PosSystemHealthPill.vue';
 import PosStockOutflowModal from './PosStockOutflowModal.vue';
+import PromoFlyerQuickModal from '../promo/PromoFlyerQuickModal.vue';
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
 import { adminPriceMixin } from '../../../helpers/formatPrice';
@@ -651,13 +689,15 @@ const SCHEDULED_LEAD_MIN = 20;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal },
     mixins: [adminPriceMixin],
     data() {
         return {
             loading: false,
             // [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Modale sortie de stock hors-vente.
             stockOutflowOpen: false,
+            promoFlyerOpen: false,
+            promoFlyerPrefill: '',
             orders: [],
             filters: {
                 query: '',
@@ -1585,6 +1625,24 @@ export default {
             const u = o.user || {};
             const n = u.name || [u.first_name, u.last_name].filter(Boolean).join(' ');
             return n || o.customer_name || '';
+        },
+
+        // [FLYER PROMO 2026-08-08] Ouvre la fenêtre « ticket promo » depuis la
+        // caisse. Le nom est pré-rempli quand on part d'une carte de commande :
+        // l'exploitant lit le prénom sur la commande plateforme et n'a plus
+        // qu'à valider — un geste au lieu de trois.
+        openPromoFlyer(prefill) {
+            this.promoFlyerPrefill = String(prefill || '').trim();
+            this.promoFlyerOpen = true;
+        },
+
+        // Le ticket vise les clients venus d'une PLATEFORME : c'est là que la
+        // commission de 30-35 % s'applique et qu'un retour en direct rapporte.
+        // Sur une commande déjà passée en direct, le bouton n'aurait aucun sens
+        // et encombrerait la carte.
+        isPlatformOrder(o) {
+            const s = String(o.source_surface || o._origin || '').toLowerCase();
+            return s.includes('uber') || s.includes('deliveroo') || s.includes('just') || s.includes('platform');
         },
         // [OWNER 2026-07-31] Téléphone du client pour la carte de suivi. SimpleOrderResource
         // ship `customer_phone` pour les commandes WEB (client distant → le caissier appelle

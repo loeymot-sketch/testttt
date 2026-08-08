@@ -1470,7 +1470,14 @@
         "flyer_site_url_hint": "Imprimée sous le QR. Indispensable : certaines imprimantes n'affichent pas le QR, et sans erreur.",
         "flyer_qr_url": "Adresse du QR code",
         "flyer_qr_url_hint": "Le code promo y est ajouté automatiquement pour éviter au client de le retaper.",
-        "flyer_preview": "Aperçu (48 colonnes, sans le gras ni le QR)"
+        "flyer_preview": "Aperçu (48 colonnes, sans le gras ni le QR)",
+        "promo_flyer_short": "Ticket promo",
+        "flyer_prints_on_pos_printer": "S'imprime sur l'imprimante de la caisse.",
+        "flyer_create_failed": "Création impossible. Réessayez.",
+        "flyer_greeting": "Salutation",
+        "flyer_greeting_hint": "Placée devant la civilité et le prénom : « Merci Mme Camille ! »",
+        "flyer_logo_path": "Logo imprimé",
+        "flyer_logo_path_hint": "Chemin de l'image, relatif au dossier public. Vide = titre en texte à la place."
     },
     "button": {
         "refresh": "Actualiser",
@@ -1584,7 +1591,8 @@
         "menu": "Menu",
         "rename": "Renommer",
         "disconnect": "Déconnecter",
-        "print_flyer": "Imprimer le ticket"
+        "print_flyer": "Imprimer le ticket",
+        "print_another": "Imprimer un autre ticket"
     },
     "error": {
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",

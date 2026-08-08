@@ -298,6 +298,76 @@ class PromoFlyerTest extends TestCase
     }
 
     /**
+     * [2026-08-08] Le LOGO doit réellement partir à l'imprimante, sinon le
+     * ticket ressemble à un tract anonyme et perd sa raison d'être.
+     */
+    /** @test */
+    public function test_the_ticket_carries_the_printed_logo(): void
+    {
+        $flyer = $this->createFlyer('Camille');
+        $bytes = $this->service->renderBytes($flyer);
+
+        // GS v 0 = impression d'une image en points.
+        $this->assertStringContainsString(
+            "\x1Dv0",
+            $bytes,
+            "Aucune commande d'image : le logo n'est pas imprimé."
+        );
+
+        // Un logo réel pèse plusieurs kilo-octets : une commande vide passerait
+        // l'assertion précédente sans rien imprimer.
+        $this->assertGreaterThan(
+            3000,
+            strlen($bytes),
+            'Le ticket est trop léger pour contenir un vrai logo.'
+        );
+    }
+
+    /**
+     * La civilité demandée par l'exploitant : « Merci Mme Camille ! ».
+     */
+    /** @test */
+    public function test_civility_is_printed_before_the_name(): void
+    {
+        $flyer = $this->service->create('Camille', (int) $this->branch->id, null, 'test', 'Mme');
+        $bytes = $this->service->renderBytes($flyer);
+
+        $this->assertStringContainsString('Mme Camille', $bytes);
+    }
+
+    /** @test */
+    public function test_without_civility_the_greeting_stays_natural(): void
+    {
+        $flyer = $this->createFlyer('Camille');
+        $bytes = $this->service->renderBytes($flyer);
+
+        $this->assertStringContainsString('Merci Camille', $bytes);
+        $this->assertStringNotContainsString('Mme', $bytes);
+    }
+
+    /**
+     * Le chemin du logo vient d'une saisie d'administration : il ne doit jamais
+     * permettre de faire lire (et imprimer) un fichier hors de `public/`.
+     */
+    /** @test */
+    public function test_logo_path_cannot_escape_the_public_directory(): void
+    {
+        $service = $this->service;
+
+        $this->assertSame('', $service->resolveLogoPath('../.env'));
+        $this->assertSame('', $service->resolveLogoPath('/etc/passwd'));
+        $this->assertSame('', $service->resolveLogoPath('images/../../.env'));
+        // Une extension non-image est refusée même sous public/.
+        $this->assertSame('', $service->resolveLogoPath('index.php'));
+
+        $this->assertNotSame(
+            '',
+            $service->resolveLogoPath('images/kiosk-attract/logo.png'),
+            'Un logo légitime doit rester accepté.'
+        );
+    }
+
+    /**
      * Le QR doit porter le code, sinon le client scanne puis doit le retaper —
      * exactement la friction qu'on cherche à supprimer.
      */

@@ -110,6 +110,119 @@ final class EscPosCommandBuilder
     }
 
     /**
+     * [FLYER PROMO 2026-08-08] Image en points (`GS v 0`) — le logo du restaurant.
+     *
+     * Une thermique n'imprime QUE du noir ou du blanc, un point à la fois. Il
+     * faut donc convertir l'image en bitmap 1 bit avant de l'envoyer ; aucune
+     * primitive de ce genre n'existait dans le projet.
+     *
+     * Choix du TRAMAGE plutôt que d'un seuil brut : le logo Le Cayenne mélange
+     * du texte noir (qui doit rester net) et un piment orange en aplat. Un seuil
+     * simple transforme l'orange en un pâté noir informe ou l'efface
+     * entièrement ; le tramage Floyd-Steinberg restitue un dégradé lisible en
+     * points, exactement comme les photos des journaux. Le texte, lui, reste
+     * franc parce qu'il est déjà aux extrêmes.
+     *
+     * La transparence est aplatie sur du BLANC : sans ça, un PNG transparent
+     * ressort en aplat noir (le canal alpha vaut 0 = « sombre » pour un calcul
+     * de luminance naïf) et l'imprimante crache un rectangle plein.
+     *
+     * @param  string  $path           chemin absolu de l'image source
+     * @param  int     $maxWidthDots   largeur cible en points (arrondie au multiple de 8 inférieur)
+     * @return string  octets ESC/POS, ou chaîne vide si l'image est illisible
+     */
+    public static function rasterImage(string $path, int $maxWidthDots = 512): string
+    {
+        if (! function_exists('imagecreatefromstring') || ! is_readable($path)) {
+            return '';
+        }
+
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return '';
+        }
+
+        $src = @imagecreatefromstring($raw);
+        if ($src === false) {
+            return '';
+        }
+
+        try {
+            $srcW = imagesx($src);
+            $srcH = imagesy($src);
+            if ($srcW < 1 || $srcH < 1) {
+                return '';
+            }
+
+            // La largeur DOIT être un multiple de 8 : chaque octet transporte
+            // 8 points horizontaux.
+            $targetW = (int) (min($maxWidthDots, $srcW * 4) & ~7);
+            if ($targetW < 8) {
+                return '';
+            }
+            $targetH = max(1, (int) round($srcH * ($targetW / $srcW)));
+
+            $dst = imagecreatetruecolor($targetW, $targetH);
+            // Fond blanc AVANT la copie — voir docblock (transparence).
+            imagefilledrectangle($dst, 0, 0, $targetW, $targetH, imagecolorallocate($dst, 255, 255, 255));
+            imagealphablending($dst, true);
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $targetW, $targetH, $srcW, $srcH);
+
+            // Luminance perçue, puis tramage par diffusion d'erreur.
+            $lum = [];
+            for ($y = 0; $y < $targetH; $y++) {
+                for ($x = 0; $x < $targetW; $x++) {
+                    $rgb = imagecolorat($dst, $x, $y);
+                    $lum[$y][$x] =
+                        0.299 * (($rgb >> 16) & 0xFF)
+                        + 0.587 * (($rgb >> 8) & 0xFF)
+                        + 0.114 * ($rgb & 0xFF);
+                }
+            }
+
+            $bytesPerRow = intdiv($targetW, 8);
+            $data = '';
+
+            for ($y = 0; $y < $targetH; $y++) {
+                $row = str_repeat("\x00", $bytesPerRow);
+
+                for ($x = 0; $x < $targetW; $x++) {
+                    $old = $lum[$y][$x];
+                    $new = $old < 128 ? 0.0 : 255.0;
+                    $err = $old - $new;
+
+                    if ($new === 0.0) {
+                        // 1 = point encré.
+                        $i = intdiv($x, 8);
+                        $row[$i] = chr(ord($row[$i]) | (0x80 >> ($x % 8)));
+                    }
+
+                    // Floyd-Steinberg : 7/16 à droite, 3/16 5/16 1/16 en dessous.
+                    if ($x + 1 < $targetW)                     $lum[$y][$x + 1]     += $err * 7 / 16;
+                    if ($y + 1 < $targetH) {
+                        if ($x > 0)                            $lum[$y + 1][$x - 1] += $err * 3 / 16;
+                                                               $lum[$y + 1][$x]     += $err * 5 / 16;
+                        if ($x + 1 < $targetW)                 $lum[$y + 1][$x + 1] += $err * 1 / 16;
+                    }
+                }
+
+                $data .= $row;
+            }
+
+            imagedestroy($dst);
+
+            return self::GS . 'v0' . "\x00"
+                . chr($bytesPerRow % 256) . chr(intdiv($bytesPerRow, 256))
+                . chr($targetH % 256) . chr(intdiv($targetH, 256))
+                . $data;
+        } finally {
+            if (is_resource($src) || $src instanceof \GdImage) {
+                @imagedestroy($src);
+            }
+        }
+    }
+
+    /**
      * [FLYER PROMO 2026-08-07] QR code NATIF ESC/POS (`GS ( k`).
      *
      * Le projet n'avait aucune primitive QR côté imprimante : le seul QR

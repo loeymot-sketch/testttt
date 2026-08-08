@@ -65,6 +65,18 @@
                         </div>
 
                         <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title">{{ $t("label.flyer_greeting") }}</label>
+                            <input v-model="form.greeting" type="text" maxlength="30" class="db-field-control" />
+                            <small class="text-slate-500">{{ $t("label.flyer_greeting_hint") }}</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title">{{ $t("label.flyer_logo_path") }}</label>
+                            <input v-model="form.logo_path" type="text" maxlength="160" class="db-field-control" />
+                            <small class="text-slate-500">{{ $t("label.flyer_logo_path_hint") }}</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
                             <label class="db-field-title required">{{ $t("label.flyer_qr_url") }}</label>
                             <input v-model="form.qr_url" type="url" maxlength="200" class="db-field-control" />
                             <small class="text-slate-500">{{ $t("label.flyer_qr_url_hint") }}</small>
@@ -126,6 +138,8 @@ export default {
                 validity_days: 30,
                 site_url: "",
                 qr_url: "",
+                greeting: "",
+                logo_path: "",
             },
         };
     },
@@ -149,9 +163,9 @@ export default {
             };
 
             const out = [];
-            out.push(center(this.form.headline));
+            out.push(center(this.form.logo_path ? "[ LOGO ]" : this.form.headline));
             out.push("");
-            out.push(center("Merci Camille !"));
+            out.push(center(`${(this.form.greeting || "Merci")} Mme Camille !`));
             out.push("");
             out.push(wrap(this.form.intro));
             out.push("");
@@ -200,6 +214,8 @@ export default {
                 validity_days: Number(this.form.validity_days),
                 site_url: this.form.site_url,
                 qr_url: this.form.qr_url,
+                greeting: this.form.greeting,
+                logo_path: this.form.logo_path,
             })
                 .then((res) => {
                     this.form = { ...this.form, ...(res.settings || {}) };

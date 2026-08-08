@@ -90,6 +90,11 @@ class PromoFlyerController extends Controller
             'validity_days'    => ['required', 'integer', 'min:1', 'max:365'],
             'site_url'         => ['required', 'string', 'max:120'],
             'qr_url'           => ['required', 'string', 'max:200', 'url'],
+            'greeting'         => ['nullable', 'string', 'max:30'],
+            // Chemin RELATIF à public/ : validé et re-vérifié côté service
+            // (un chemin absolu ou remontant permettrait de faire imprimer
+            // n'importe quel fichier de la machine).
+            'logo_path'        => ['nullable', 'string', 'max:160', 'regex:/^[A-Za-z0-9._\/-]*$/'],
         ]);
 
         Settings::group(PromoFlyerService::SETTINGS_GROUP)->set($validated);
@@ -109,6 +114,9 @@ class PromoFlyerController extends Controller
             // 60 = la taille du champ `orders.pos_customer_name` déjà utilisé
             // pour les noms clients ailleurs dans le projet : on reste cohérent.
             'customer_name' => ['required', 'string', 'min:1', 'max:60'],
+            // Liste fermée : la civilité est imprimée telle quelle sur le
+            // ticket, on n'y laisse pas passer du texte libre.
+            'civility'      => ['nullable', 'string', Rule::in(['', 'Mme', 'M.'])],
         ]);
 
         $user = $request->user();
@@ -120,6 +128,7 @@ class PromoFlyerController extends Controller
                 $branchId,
                 (int) $user->id,
                 $this->service->deviceIdFrom($request),
+                (string) ($validated['civility'] ?? ''),
             );
         } catch (\Throwable $e) {
             Log::error('[FLYER] création impossible', [

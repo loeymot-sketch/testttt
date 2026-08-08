@@ -1539,7 +1539,14 @@
         "flyer_site_url_hint": "Printed under the QR. Essential: some printers silently skip the QR.",
         "flyer_qr_url": "QR code address",
         "flyer_qr_url_hint": "The promo code is appended automatically so the customer never retypes it.",
-        "flyer_preview": "Preview (48 columns, without bold or QR)"
+        "flyer_preview": "Preview (48 columns, without bold or QR)",
+        "promo_flyer_short": "Promo flyer",
+        "flyer_prints_on_pos_printer": "Prints on the POS printer.",
+        "flyer_create_failed": "Could not create. Try again.",
+        "flyer_greeting": "Greeting",
+        "flyer_greeting_hint": "Placed before the title and first name: “Merci Mme Camille!”",
+        "flyer_logo_path": "Printed logo",
+        "flyer_logo_path_hint": "Image path, relative to the public folder. Empty = text headline instead."
     },
     "button": {
         "refresh": "Refresh",
@@ -1652,7 +1659,8 @@
         "menu": "Menu",
         "rename": "Rename",
         "disconnect": "Disconnect",
-        "print_flyer": "Print flyer"
+        "print_flyer": "Print flyer",
+        "print_another": "Print another flyer"
     },
     "error": {
         "something_wrong": "Something Wrong.",
