@@ -3426,7 +3426,7 @@ class OrderService
 
         if ($pct > 50.0 && ! $user->can('pos-discount-unlimited')) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'discount' => 'Only an owner can apply a discount above 50%.',
+                'discount' => 'Remise au-delà de 50 % : seul le responsable peut la valider.',
             ]);
         }
 
@@ -3434,7 +3434,7 @@ class OrderService
             && ! $user->can('pos-discount-over-10-requires-manager')
             && ! $user->can('pos-discount-unlimited')) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'discount' => 'Discount above 10% requires manager approval.',
+                'discount' => 'Remise au-delà de 10 % : demande la validation d\'un responsable.',
             ]);
         }
 
@@ -3442,7 +3442,7 @@ class OrderService
             && ! $user->can('pos-discount-over-10-requires-manager')
             && ! $user->can('pos-discount-unlimited')) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'discount' => 'You do not have permission to apply POS discounts.',
+                'discount' => 'Ton compte ne peut pas appliquer de remise en caisse.',
             ]);
         }
     }

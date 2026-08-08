@@ -2259,6 +2259,23 @@ export default {
         // (stable, toujours renvoyé par PermissionResource) : la colonne custom
         // `url` était NULL sur les lignes DB préexistantes → bouton invisible
         // pour le caissier (finding adversarial W6).
+        // [P1 CAISSE 2026-08-08 · owner « la gestion est-elle fonctionnelle ? »] Le plafond de
+        // remise n'était vérifié QU'AU SERVEUR, au moment d'encaisser : le caissier saisissait
+        // 20 %, voyait le total baisser, ANNONÇAIT le prix au client, puis le paiement échouait
+        // — avec un message en anglais brut. Le refus arrivait au pire moment possible, devant
+        // le client. On reflète donc le gate serveur DÈS LA SAISIE (miroir de
+        // OrderService::assertDiscountAllowed). Même lecture de permissions que
+        // canToggleAvailability : sur `p.name`, la colonne `url` étant NULL sur les lignes
+        // préexistantes.
+        peutRemiseAuDela10: function () {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw)
+                ? raw
+                : (raw && Array.isArray(raw.data) ? raw.data : []);
+            return perms.some((p) => p
+                && (p.name === 'pos-discount-over-10-requires-manager' || p.name === 'pos-discount-unlimited')
+                && p.access === true);
+        },
         canToggleAvailability: function () {
             const raw = this.$store.getters.authPermission;
             const perms = Array.isArray(raw)
@@ -4709,6 +4726,12 @@ export default {
             } else {
                 if (this.discount > 100) {
                     return alertService.error(this.$t('message.discount_error_message'));
+                } else if (parseFloat(this.discount) > 10 && !this.peutRemiseAuDela10) {
+                    // Miroir du gate serveur : on refuse ICI, avant que le prix soit annoncé.
+                    return alertService.error(
+                        'Remise au-delà de 10 % : demande la validation d\'un responsable. '
+                        + 'Applique au plus 10 %, ou fais valider par un responsable.'
+                    );
                 } else {
 
                     this.checkoutProps.form.discount = parseFloat((this.subtotal * this.discount) / 100).toFixed(this.setting.site_digit_after_decimal_point);
