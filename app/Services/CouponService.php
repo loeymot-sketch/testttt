@@ -340,7 +340,19 @@ class CouponService
             // ignorait `status` → un coupon DÉSACTIVÉ dans la gestion restait listé publiquement (le toggle
             // admin n'avait aucun effet sur la vitrine ; UX trompeuse, coupon montré puis refusé au checkout
             // par validateCouponForOrder→isUsableNow). Bonus : requête DB au lieu de charger toute la table.
-            return Coupon::active()->get();
+            // [P0 SÉCURITÉ 2026-08-08] Les coupons NOMINATIFS à usage unique (tickets promo,
+            // {@see PromoFlyerService}) n'ont RIEN à faire dans une vitrine publique : leur code
+            // est destiné à UNE personne, remis par son canal. Mesuré en production : l'appel
+            // anonyme les renvoyait avec le prénom de la cliente, si bien qu'un inconnu pouvait
+            // brûler son code avant elle (`max_uses_global = 1`, premier arrivé premier servi).
+            // Signature d'un code nominatif : plafond global à 1. On l'exclut donc de la vitrine.
+            // Sa VALIDATION reste entière (`coupon-checking` + `validateCouponForOrder`) : la
+            // cliente saisit son code et l'obtient normalement — seule la LISTE se referme.
+            return Coupon::active()
+                ->where(function ($q) {
+                    $q->whereNull('max_uses_global')->orWhere('max_uses_global', '<>', 1);
+                })
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

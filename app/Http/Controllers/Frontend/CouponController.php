@@ -6,6 +6,7 @@ use Exception;
 use App\Services\CouponService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CouponResource;
+use App\Http\Resources\PublicCouponResource;
 use App\Http\Requests\CouponCheckRequest;
 use App\Http\Resources\CouponCheckResource;
 
@@ -27,7 +28,9 @@ class CouponController extends Controller
     public function index() : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return CouponResource::collection($this->couponService->couponDateWise());
+            // [P0 SÉCURITÉ 2026-08-08] Ressource PUBLIQUE, sans `code` : cette route est anonyme
+            // (clé d'API publiée dans le meta HTML du site). {@see PublicCouponResource}.
+            return PublicCouponResource::collection($this->couponService->couponDateWise());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
