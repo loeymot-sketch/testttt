@@ -5088,20 +5088,33 @@ export default {
             // stable X-Idempotency-Key per entry, server is SSOT on fiscal seq
             // at replay time per NF525 CLAUDE.md §8) and toast soft so the
             // cashier knows the order will sync when network returns.
+            // [P0 ARGENT 2026-08-08] CETTE DÉRIVATION PRENAIT L'ARGENT POUR UNE COMMANDE QUI
+            // N'EXISTERAIT JAMAIS. Deux raisons indépendantes, chacune suffisante :
+            //
+            // 1) LE REJEU ÉTAIT STRUCTURELLEMENT IMPOSSIBLE. Le contenu mis en file était
+            //    `{...checkoutProps.form}`, donc avec ses valeurs par défaut : `pos_received_amount`
+            //    à null et AUCUN `quote_token`/`quote_signature` (ils sont forgés par le SERVEUR
+            //    dans `PaymentComponent.refreshQuote`, jamais atteint puisque la modale de paiement
+            //    ne s'ouvrait pas). Au retour du réseau, le serveur refusait donc TOUJOURS :
+            //    `PosOrderRequest` exige `pos_received_amount` en espèces (422) et
+            //    `OrderQuoteService` exige le couple jeton/signature sur la surface `pos` (401).
+            //    L'entrée n'étant jamais purgée, le bandeau annonçait « retentée plus tard » pour
+            //    quelque chose qui ne réussirait jamais. Bilan d'un service hors-ligne : 0 commande,
+            //    0 numéro fiscal, 0 mouvement de tiroir, 0 ticket cuisine — et l'argent encaissé.
+            //
+            // 2) LE DÉCLENCHEUR ÉTAIT FAUX SUR CETTE INSTALLATION. V1 est MONO-POSTE LOCAL :
+            //    `navigator.onLine === false` signale la perte du réseau EXTERNE, alors que le
+            //    serveur tourne sur la même machine et reste joignable en local. La dérivation
+            //    pouvait donc se déclencher alors que la commande aurait parfaitement abouti.
+            //
+            // On tente désormais le chemin NORMAL. S'il échoue réellement, le caissier reçoit une
+            // vraie erreur — un refus franc AVANT de prendre l'argent vaut infiniment mieux qu'une
+            // fausse promesse APRÈS. Le signal réseau devient un simple avertissement : il invite à
+            // vérifier que la commande est bien passée avant de servir, il ne détourne plus rien.
+            // (La file `posOfflineQueue` reste en place, plus aucun appelant ici ; la rebrancher
+            // exigerait de faire signer le devis hors-ligne, ce qui est un chantier NF525 à part.)
             if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                try {
-                    const queued = await this.enqueueOrder({ ...this.checkoutProps.form });
-                    this.loading.isActive = false;
-                    if (queued) {
-                        alertService.info(`Commande mise en file d'attente (${this.queueDepth}). Synchronisation auto au retour réseau.`);
-                    } else {
-                        alertService.warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
-                    }
-                } catch (_e) {
-                    this.loading.isActive = false;
-                    alertService.error('Impossible de mettre la commande en file d\'attente offline.');
-                }
-                return;
+                alertService.warning('Réseau externe indisponible. Vérifie que la commande est bien enregistrée AVANT de servir et d\'encaisser.');
             }
 
             this.loading.isActive = false;
