@@ -107,7 +107,7 @@ class Mollie extends PaymentAbstract
      *                          Avec lui, Mollie encaisse directement : aucune page intermédiaire,
      *                          aucune redirection. Exige `$walletMethod === 'applepay'`.
      */
-    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = '', string $applePayToken = ''): array
+    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = '', string $applePayToken = '', string $googlePayToken = ''): array
     {
         if (!$this->isMollieConfigured()) {
             throw new RuntimeException('Mollie non configuré.');
@@ -135,6 +135,16 @@ class Mollie extends PaymentAbstract
             throw new RuntimeException('Jeton Apple Pay et jeton carte sont exclusifs.');
         }
 
+        // [OWNER 2026-08-08 · GOOGLE PAY NATIF] Symétrique d'Apple Pay. Champ Mollie vérifié par
+        // sonde API : `googlePayPaymentToken` (et non `googlePayPaymentData`, que Mollie refuse
+        // explicitement en suggérant le bon nom).
+        if ($googlePayToken !== '' && $walletMethod !== 'googlepay') {
+            throw new RuntimeException('Un jeton Google Pay exige le moyen googlepay.');
+        }
+        if ($googlePayToken !== '' && ($cardToken !== '' || $applePayToken !== '')) {
+            throw new RuntimeException('Un seul jeton de paiement à la fois.');
+        }
+
         $redirectBase = (string) config('payment.mollie.redirect_url', '');
         if ($redirectBase === '') {
             $redirectBase = (string) config('app.url');
@@ -153,8 +163,13 @@ class Mollie extends PaymentAbstract
             // encaisse directement, sans page intermédiaire ni redirection. C'est le chemin que
             // l'owner demandait — « tu l'ajoutes comme elle est, et ça paye ».
             $extra = ['method' => 'applepay', 'applePayPaymentToken' => $applePayToken];
+        } elseif ($googlePayToken !== '') {
+            // [OWNER 2026-08-08 · GOOGLE PAY NATIF] Le client a validé DANS la feuille Google Pay
+            // ouverte sur notre page. Même principe qu'Apple : encaissement direct, zéro page
+            // intermédiaire.
+            $extra = ['method' => 'googlepay', 'googlePayPaymentToken' => $googlePayToken];
         } elseif ($walletMethod !== '') {
-            // Repli : pas de jeton (appareil sans feuille native, ou Google Pay). Avec `method`,
+            // Repli : pas de jeton (appareil sans feuille native). Avec `method`,
             // la checkout URL de Mollie ouvre directement le bon moyen au lieu de la page
             // générique « choisissez un moyen ».
             $extra = ['method' => $walletMethod];
@@ -193,12 +208,15 @@ class Mollie extends PaymentAbstract
         $paymentId   = (string) ($payload['id'] ?? '');
         $checkoutUrl = (string) ($payload['_links']['checkout']['href'] ?? '');
 
-        // Sans cardToken, l'URL hébergée est le SEUL moyen de payer → son absence est une
-        // réponse invalide. AVEC cardToken (paiement dans notre page), Mollie peut traiter la
-        // carte directement : pas d'URL = cas NOMINAL, et non une erreur. Un portefeuille passe
-        // volontairement par la 1re branche : sans URL, la feuille Apple/Google Pay ne peut pas
-        // s'ouvrir, donc l'absence d'URL y est bien une erreur (pas un paiement silencieux).
-        if ($paymentId === '' || ($cardToken === '' && $checkoutUrl === '')) {
+        // [P0 2026-08-08 · JUMEAU OUBLIÉ] Un paiement ENCAISSÉ DIRECTEMENT n'a pas besoin d'URL
+        // hébergée : c'est le cas nominal, pas une erreur. C'était vrai du jeton carte ; ça l'est
+        // devenu des jetons de PORTEFEUILLE NATIF (Apple/Google Pay), ajoutés le même jour sans
+        // mettre ces deux gardes à jour. Conséquence prouvée : un paiement autorisé par Face ID
+        // levait ici une exception → 502 → le site basculait sur son repli comptoir et affichait
+        // « rien n'a été débité » ALORS QUE L'ARGENT ÉTAIT PRIS. Exactement le motif « le
+        // correctif est complet sur le chemin regardé, pas sur ses jumeaux ».
+        $encaissementDirect = $cardToken !== '' || $applePayToken !== '' || $googlePayToken !== '';
+        if ($paymentId === '' || (! $encaissementDirect && $checkoutUrl === '')) {
             throw new RuntimeException('Réponse Mollie invalide (id ou checkout url manquant).');
         }
 
@@ -222,7 +240,13 @@ class Mollie extends PaymentAbstract
             // synchrone (status=failed, sans checkout_url) passait inline=true → écran « payé »
             // sur une carte refusée. Le montant/PAID restent scellés par le webhook ; ici on
             // ne fait que router honnêtement l'UI.
-            'inline'       => $cardToken !== '' && $checkoutUrl === '' && $mollieStatus === 'paid',
+            // [P0 2026-08-08 · JUMEAU OUBLIÉ] Même correction : `inline` était indexé sur le
+            // SEUL jeton carte, si bien qu'un portefeuille natif ne pouvait JAMAIS être « payé
+            // dans la page » — le site renvoyait donc le client vers une page de paiement pour un
+            // montant qu'il venait d'autoriser. La condition porte désormais sur l'encaissement
+            // direct, quel que soit le rail. Le reste est inchangé et reste strict : Mollie doit
+            // confirmer `paid` (un refus synchrone ne passe pas), et seul le webhook scelle PAID.
+            'inline'       => $encaissementDirect && $checkoutUrl === '' && $mollieStatus === 'paid',
             'status'       => $mollieStatus,
         ];
     }
