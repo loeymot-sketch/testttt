@@ -20,6 +20,14 @@ use Illuminate\Validation\ValidationException;
 use Smartisan\Settings\Facades\Settings;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/*
+ * [FR DEVANT LE CLIENT 2026-08-08] Les quatre refus d'encaissement ci-dessous remontaient EN
+ * ANGLAIS jusqu'au caissier : `PosController` renvoie tel quel le `getMessage()` de
+ * l'`HttpException` et `PaymentComponent` l'affiche brut. Un caissier lisait donc « Order quote
+ * expired. » devant un client qui attend. Traduits, et surtout rendus ACTIONNABLES : chacun dit
+ * quoi faire (relancer l'encaissement), parce qu'un message qui décrit la panne sans nommer le
+ * geste laisse le caissier bloqué aussi sûrement qu'un message en anglais.
+ */
 class OrderQuoteService
 {
     /**
@@ -120,7 +128,7 @@ class OrderQuoteService
         $quote = $this->quote($request, $surface, $orderId);
 
         if (abs($this->money($quote->total_ttc) - $this->money($expectedTotal)) > 0.000001) {
-            throw new HttpException(409, 'Order total does not match sealed quote total.');
+            throw new HttpException(409, 'Le total a changé depuis le devis. Relance l\'encaissement pour le recalculer.');
         }
 
         return $quote->refresh();
@@ -413,7 +421,7 @@ class OrderQuoteService
 
         if ($pricing->subtotal <= 0.0 || $discount > $pricing->subtotal) {
             throw ValidationException::withMessages([
-                'discount' => 'Cannot apply discount without a valid backend subtotal.',
+                'discount' => 'Remise impossible : le sous-total n\'est pas encore calculé. Relance l\'encaissement.',
             ]);
         }
 
@@ -454,7 +462,7 @@ class OrderQuoteService
         }
 
         if ($quote->isExpired()) {
-            throw new HttpException(410, 'Order quote expired.');
+            throw new HttpException(410, 'Le devis d\'encaissement a expiré. Relance l\'encaissement, il sera recalculé.');
         }
 
         $requestSignature = (string) $request->input('quote_signature', '');
@@ -487,7 +495,7 @@ class OrderQuoteService
     {
         if ($quote->consumed_at !== null) {
             if ($orderId !== null && (int) $quote->consumed_order_id !== $orderId) {
-                throw new HttpException(409, 'Order quote has already been consumed.');
+                throw new HttpException(409, 'Ce devis a déjà servi à une commande. Relance l\'encaissement pour en obtenir un neuf.');
             }
 
             return;
