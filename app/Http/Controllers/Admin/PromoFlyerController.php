@@ -196,8 +196,13 @@ class PromoFlyerController extends Controller
             return new JsonResponse(['message' => 'Ticket introuvable.'], 404);
         }
 
-        $width = (int) $request->query('width', 48);
-        $width = in_array($width, [32, 48], true) ? $width : 48;
+        // [PHOTO OWNER IMG_2090 · 2026-08-08] Cette liste blanche N'ADMETTAIT PAS 42 — la largeur
+        // réelle de la caisse de production. Toute demande à 42 était donc silencieusement ramenée
+        // à 48, et le ticket se réenroulait au caractère (« pour t » / « oi »). On accepte
+        // désormais une PLAGE physique plausible, et l'absence de paramètre veut dire « prends la
+        // largeur configurée » — c'est le service qui la résout, comme pour le ticket de commande.
+        $width = (int) $request->query('width', 0);
+        $width = ($width >= 24 && $width <= 64) ? $width : 0;
 
         return new JsonResponse([
             'escpos_b64' => base64_encode($this->service->renderBytes($model, $width)),

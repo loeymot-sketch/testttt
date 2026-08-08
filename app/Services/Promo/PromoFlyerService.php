@@ -237,11 +237,27 @@ class PromoFlyerService
     /**
      * Octets ESC/POS du ticket, à partir de l'instantané figé à la création.
      */
-    public function renderBytes(PromoFlyer $flyer, int $widthChars = 48): string
+    /**
+     * [PHOTO OWNER IMG_2090 · 2026-08-08] La largeur par défaut était 48 EN DUR, alors que la
+     * caisse de production imprime 42 colonnes (`RECEIPT_WIDTH_CHARS=42`, calé en juillet sur la
+     * photo IMG_1709 pour le ticket de COMMANDE). Le ticket promo est le jumeau qu'on avait
+     * oublié de brancher sur ce réglage. Conséquences visibles sur le papier :
+     *   · les 48 « = » du séparateur débordaient en 42 + 6 → une seconde ligne « ====== » orpheline ;
+     *   · « rien que pour toi » se coupait en « pour t » / « oi », et « prelevent jusqu'a » en
+     *     « prelevent j » / « usqu'a » — l'imprimante réenroule au caractère, pas au mot ;
+     *   · le message d'introduction laissait un mot seul au milieu d'une ligne.
+     * `0` signifie « résous-la toi-même » : config d'abord, 48 en dernier recours. Un appelant
+     * peut toujours imposer une largeur, mais il n'a plus à la connaître pour obtenir la bonne.
+     */
+    public function renderBytes(PromoFlyer $flyer, int $widthChars = 0): string
     {
         $payload = $flyer->rendered_payload ?: [];
 
-        return $this->renderer->render($payload, $widthChars);
+        $w = $widthChars > 0
+            ? $widthChars
+            : ((int) config('printing.receipt.width_chars', 0) ?: 48);
+
+        return $this->renderer->render($payload, $w);
     }
 
     /**

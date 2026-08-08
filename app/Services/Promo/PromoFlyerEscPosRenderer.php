@@ -210,7 +210,20 @@ class PromoFlyerEscPosRenderer
      */
     private function line(string $text, float $widthChars): string
     {
-        return E::encodeForPrinter(E::centerLine($text, (int) max(1, floor($widthChars))));
+        $w = (int) max(1, floor($widthChars));
+
+        // [PHOTO OWNER IMG_2090 · 2026-08-08] CENTRAGE FAIT DEUX FOIS.
+        // Le pilote est mis en mode centré une fois pour tout le ticket (E::alignCenter(), en
+        // tête de render()). `centerLine()` ajoutait EN PLUS des espaces à gauche. L'imprimante
+        // centrait donc « <espaces>-10% », espaces compris : la ligne partait vers la DROITE au
+        // lieu d'être centrée. C'est le « pas au milieu, pas bien centré » du propriétaire, et il
+        // touchait tout ce qui passe par ici — le « Merci M. Dorian ! », le -10%, le code promo et
+        // l'adresse du site.
+        //
+        // On laisse donc l'imprimante faire le centrage (elle le fait juste, au point près) et on
+        // se contente de tenir la ligne DANS la largeur : une ligne trop longue se réenroulerait,
+        // et une ligne réenroulée n'est plus centrée du tout.
+        return E::encodeForPrinter(E::textLine(mb_substr($text, 0, $w)));
     }
 
     /**
