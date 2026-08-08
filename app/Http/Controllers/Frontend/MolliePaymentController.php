@@ -138,8 +138,31 @@ class MolliePaymentController extends Controller
             ], 422);
         }
 
+        // [OWNER 2026-08-08 · GOOGLE PAY NATIF] Symétrique du jeton Apple. Champ Mollie vérifié
+        // par sonde : `googlePayPaymentToken`. Opaque pour nous : borné en taille, jamais lu.
+        $googlePayToken = $request->input('google_pay_token');
+        if ($googlePayToken !== null && !is_string($googlePayToken)) {
+            return response()->json(['status' => false, 'message' => 'Jeton Google Pay invalide.'], 422);
+        }
+        $googlePayToken = (string) ($googlePayToken ?? '');
+        if ($googlePayToken !== '' && strlen($googlePayToken) > 20000) {
+            return response()->json(['status' => false, 'message' => 'Jeton Google Pay invalide.'], 422);
+        }
+        if ($googlePayToken !== '' && $walletMethod !== 'googlepay') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Un jeton Google Pay exige le moyen googlepay.',
+            ], 422);
+        }
+        if ($googlePayToken !== '' && $applePayToken !== '') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Un seul jeton de paiement à la fois.',
+            ], 422);
+        }
+
         try {
-            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken);
+            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken, $googlePayToken);
         } catch (Throwable $e) {
             return response()->json([
                 'status'  => false,
