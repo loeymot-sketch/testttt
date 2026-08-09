@@ -74,6 +74,12 @@ export default {
         },
 
         async _tick() {
+            // [OPTIMISATION 2026-08-09] Onglet caché = personne ne regarde, et le PC caisse en
+            // garde souvent plusieurs ouverts en arrière-plan. Inutile de réclamer toutes les
+            // 5 s depuis chacun : on saute le cycle. Rien n'est perdu — l'onglet visible fait le
+            // travail, et au retour au premier plan le cycle suivant rattrape en 5 s.
+            if (typeof document !== 'undefined' && document.hidden) return;
+
             // Un cycle à la fois : si l'impression traîne (papier, pont lent),
             // on ne veut pas empiler les réclamations.
             if (this._running) return;

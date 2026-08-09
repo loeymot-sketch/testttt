@@ -173,7 +173,9 @@ class PromoFlyerService
                     ])->save();
 
                     $payload = [
-                        'customer_name'    => $name,
+                        // Nom MIS EN FORME pour l'impression ; la ligne `promo_flyers` garde
+                        // la saisie brute de l'exploitant.
+                        'customer_name'    => $this->displayName($name),
                         'civility'         => $civility,
                         'greeting'         => $this->resolveGreeting((string) ($settings['greeting'] ?? '')),
                         'strengths'        => $settings['strengths'] ?? '',
@@ -196,7 +198,10 @@ class PromoFlyerService
                     $flyer = new PromoFlyer();
                     $flyer->forceFill([
                         'branch_id'          => $branchId,
-                        'customer_name'      => $name,
+                        // Nom MIS EN FORME : c'est lui qui est affiché dans l'historique et
+                        // qui sert à repérer un doublon (« camille » et « Camille » sont la
+                        // même personne à dix minutes d'intervalle).
+                        'customer_name'      => $this->displayName($name),
                         'code'               => $code,
                         'coupon_id'          => $coupon->id,
                         'status'             => PromoFlyer::STATUS_PENDING,
@@ -227,6 +232,70 @@ class PromoFlyerService
             0,
             $lastError
         );
+    }
+
+    /**
+     * Fenêtre pendant laquelle un même prénom est considéré comme la MÊME commande.
+     *
+     * 10 minutes : assez large pour couvrir un double appui, une hésitation ou un retour en
+     * arrière ; assez court pour que deux clients réellement différents du même prénom, en
+     * plein coup de feu, ne se marchent pas dessus.
+     */
+    public const DOUBLON_MINUTES = 10;
+
+    /**
+     * Un code a-t-il déjà été créé pour ce prénom, à l'instant ?
+     *
+     * [DÉTAIL 2026-08-09] Deux appuis sur « Imprimer » — un doigt qui insiste, un écran qui
+     * rame — et le client repartait avec DEUX codes : deux fois 10 % offerts, deux tickets de
+     * papier, et un client qui ne sait plus lequel utiliser. Rien ne l'empêchait.
+     *
+     * On ne BLOQUE pas : deux « Camille » dans la même soirée, ça existe. On signale, et
+     * l'exploitant décide (le contrôleur laisse passer avec `force`).
+     */
+    public function recentDuplicate(string $customerName, int $branchId): ?PromoFlyer
+    {
+        $nom = $this->displayName($customerName);
+        if ($nom === '') {
+            return null;
+        }
+
+        return PromoFlyer::withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('customer_name', $nom)
+            ->where('created_at', '>=', Carbon::now()->subMinutes(self::DOUBLON_MINUTES))
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * Prénom tel qu'il sera IMPRIMÉ.
+     *
+     * [DÉTAIL 2026-08-09] En plein service on tape vite : « camille », « CAMILLE », « camille  ».
+     * Le ticket sortait alors « Bonsoir camille, » — négligé, sur le seul objet que le client
+     * emporte chez lui. Le prénom est donc mis en forme pour l'impression.
+     *
+     * Les prénoms composés sont traités (« jean-luc » → « Jean-Luc », « marie claire » →
+     * « Marie Claire ») : couper au premier caractère seulement produirait « Jean-luc ».
+     * On ne touche PAS à ce qui est enregistré en base — la saisie de l'exploitant reste la
+     * vérité, on n'embellit que le rendu.
+     */
+    public function displayName(string $raw): string
+    {
+        $nom = preg_replace('/\s+/u', ' ', trim($raw)) ?? '';
+        if ($nom === '') {
+            return '';
+        }
+
+        // mb_convert_case gère les accents (« élodie » → « Élodie »), contrairement à ucfirst.
+        $nom = mb_convert_case($nom, MB_CASE_TITLE, 'UTF-8');
+
+        // MB_CASE_TITLE ne repart pas après un tiret ni une apostrophe.
+        return preg_replace_callback(
+            "/([-'\x{2019}])(\p{L})/u",
+            static fn ($m) => $m[1] . mb_strtoupper($m[2], 'UTF-8'),
+            $nom
+        ) ?? $nom;
     }
 
     /**
@@ -468,34 +537,53 @@ class PromoFlyerService
     {
         $staleBefore = Carbon::now()->subSeconds(PromoFlyer::CLAIM_TTL_SECONDS);
 
-        // [P2 2026-08-07 — audit adversarial] Un ticket dont toutes les
-        // tentatives sont épuisées SANS accusé d'échec (onglet fermé au mauvais
-        // moment, à répétition) sortait de la file par le filtre `attempts <
-        // MAX` mais gardait le statut « en attente » POUR TOUJOURS : aucun
-        // chemin ne le marquait en échec. L'exploitant voyait « en attente »
-        // indéfiniment et n'avait aucun moyen de savoir que le ticket de son
-        // client n'était jamais sorti. Un échec silencieux est pire qu'un échec
-        // bruyant — on le rend visible ici.
-        PromoFlyer::withoutGlobalScope(BranchScope::class)
+        // UNE SEULE LECTURE pour le cas normal — celui qui se produit 99,99 % du temps.
+        //
+        // [OPTIMISATION 2026-08-09] La version précédente lançait un UPDATE de balayage AVANT
+        // toute lecture, à chaque appel. Mesuré : un sondage à vide coûtait 1 ÉCRITURE + 1
+        // lecture. Or cette méthode est appelée toutes les 5 s par CHAQUE écran d'administration
+        // ouvert sur le PC caisse — soit ~17 000 écritures par jour et par onglet, pour ne rien
+        // faire. On lit d'abord, et on n'écrit que s'il y a réellement quelque chose à écrire.
+        $candidats = PromoFlyer::withoutGlobalScope(BranchScope::class)
             ->where('branch_id', $branchId)
             ->where('status', PromoFlyer::STATUS_PENDING)
-            ->where('attempts', '>=', PromoFlyer::MAX_ATTEMPTS)
-            ->update([
-                'status'     => PromoFlyer::STATUS_FAILED,
-                'claimed_at' => null,
-                'last_error' => 'Abandonne apres ' . PromoFlyer::MAX_ATTEMPTS . ' tentatives sans confirmation',
-                'updated_at' => Carbon::now(),
-            ]);
-
-        $candidates = PromoFlyer::withoutGlobalScope(BranchScope::class)
-            ->where('branch_id', $branchId)
-            ->where('status', PromoFlyer::STATUS_PENDING)
-            ->where('attempts', '<', PromoFlyer::MAX_ATTEMPTS)
             ->where(function ($q) use ($staleBefore) {
-                $q->whereNull('claimed_at')->orWhere('claimed_at', '<', $staleBefore);
+                // Réclamables : jamais pris, ou pris par un écran qui n'a pas confirmé.
+                $q->whereNull('claimed_at')
+                  ->orWhere('claimed_at', '<', $staleBefore)
+                  // …ET les ÉPUISÉS, même encore marqués comme pris. Sans cette branche, un
+                  // ticket à bout de tentatives attendait l'expiration du verrou (90 s) avant
+                  // d'être signalé en échec — l'exploitant le voyait « en attente » alors qu'il
+                  // était déjà abandonné. Le gain de la lecture unique ne doit pas se payer d'un
+                  // silence, même court.
+                  ->orWhere('attempts', '>=', PromoFlyer::MAX_ATTEMPTS);
             })
             ->orderBy('id')
-            ->limit($limit)
+            ->limit($limit + 5) // marge : les épuisés occupent des places dans la liste
+            ->get(['id', 'attempts']);
+
+        // Les tickets à bout de tentatives sortent de la file de façon VISIBLE. Sans ça ils
+        // restaient « en attente » pour toujours et l'exploitant n'avait aucun moyen de savoir
+        // que le ticket de son client n'était jamais sorti. On n'écrit que s'il y en a.
+        $epuises = $candidats
+            ->filter(fn ($f) => (int) $f->attempts >= PromoFlyer::MAX_ATTEMPTS)
+            ->pluck('id')
+            ->all();
+
+        if ($epuises !== []) {
+            PromoFlyer::withoutGlobalScope(BranchScope::class)
+                ->whereIn('id', $epuises)
+                ->update([
+                    'status'     => PromoFlyer::STATUS_FAILED,
+                    'claimed_at' => null,
+                    'last_error' => 'Abandonne apres ' . PromoFlyer::MAX_ATTEMPTS . ' tentatives sans confirmation',
+                    'updated_at' => Carbon::now(),
+                ]);
+        }
+
+        $candidates = $candidats
+            ->filter(fn ($f) => (int) $f->attempts < PromoFlyer::MAX_ATTEMPTS)
+            ->take($limit)
             ->pluck('id');
 
         $claimed = [];

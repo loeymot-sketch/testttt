@@ -197,6 +197,102 @@ class PromoFlyerManagementTest extends TestCase
         );
     }
 
+    /**
+     * [DÉTAIL 2026-08-09] En plein service on tape vite. Le ticket est le seul objet que le
+     * client emporte chez lui : « Bonsoir camille, » y fait négligé.
+     */
+    /** @test */
+    public function test_the_printed_first_name_is_always_well_formed(): void
+    {
+        $service = $this->service;
+
+        $this->assertSame('Camille', $service->displayName('camille'));
+        $this->assertSame('Camille', $service->displayName('CAMILLE'));
+        $this->assertSame('Camille', $service->displayName('  camille  '));
+        // Un prénom composé ne doit pas ressortir « Jean-luc ».
+        $this->assertSame('Jean-Luc', $service->displayName('jean-luc'));
+        $this->assertSame('Marie Claire', $service->displayName('marie   claire'));
+        // Les accents survivent (ucfirst les casserait).
+        $this->assertSame('Élodie', $service->displayName('élodie'));
+        $this->assertSame("O'Brien", $service->displayName("o'brien"));
+    }
+
+    /** @test */
+    public function test_the_ticket_prints_the_formatted_name_whatever_was_typed(): void
+    {
+        $flyer = $this->service->create('  camILLe ', (int) $this->branch->id, null, 'test');
+
+        $this->assertSame('Camille', $flyer->customer_name);
+        $this->assertStringContainsString('Camille', $this->service->renderBytes($flyer));
+    }
+
+    /**
+     * [DÉTAIL 2026-08-09] Deux appuis sur « Imprimer » — un doigt qui insiste, un écran qui
+     * rame — et le client repartait avec DEUX codes : deux fois 10 % offerts et deux tickets.
+     */
+    /** @test */
+    public function test_a_second_code_for_the_same_first_name_is_flagged_not_silently_created(): void
+    {
+        $premier = $this->flyer('Camille');
+
+        $doublon = $this->service->recentDuplicate('camille', (int) $this->branch->id);
+
+        $this->assertNotNull($doublon, 'Le doublon n\'est pas detecte : deux appuis coutent deux codes.');
+        $this->assertSame($premier->id, $doublon->id);
+    }
+
+    /** @test */
+    public function test_a_different_first_name_is_never_flagged_as_duplicate(): void
+    {
+        $this->flyer('Camille');
+
+        $this->assertNull(
+            $this->service->recentDuplicate('Salim', (int) $this->branch->id),
+            'Un autre client est bloque a tort : le service serait paralyse en coup de feu.'
+        );
+    }
+
+    /**
+     * La détection ne doit pas gêner deux clients réellement différents à des heures
+     * différentes : elle est bornée dans le temps, pas éternelle.
+     */
+    /** @test */
+    public function test_the_duplicate_guard_expires(): void
+    {
+        $flyer = $this->flyer('Camille');
+
+        $flyer->forceFill([
+            'created_at' => now()->subMinutes(PromoFlyerService::DOUBLON_MINUTES + 1),
+        ])->save();
+
+        $this->assertNull($this->service->recentDuplicate('Camille', (int) $this->branch->id));
+    }
+
+    /**
+     * [OPTIMISATION 2026-08-09] La caisse sonde toutes les 5 s, depuis CHAQUE écran ouvert.
+     * Un sondage à vide — le cas 99,99 % du temps — ne doit rien écrire en base : la version
+     * précédente coûtait ~17 000 écritures par jour et par onglet, pour ne rien faire.
+     */
+    /** @test */
+    public function test_an_empty_poll_writes_nothing_to_the_database(): void
+    {
+        DB::enableQueryLog();
+        $this->service->claimPending((int) $this->branch->id, 'ecran-1');
+        $requetes = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $ecritures = array_filter(
+            $requetes,
+            fn ($q) => (bool) preg_match('/^\s*(insert|update|delete)/i', $q['query'])
+        );
+
+        $this->assertSame(
+            [],
+            array_values(array_map(fn ($q) => $q['query'], $ecritures)),
+            'Un sondage a vide ecrit en base : multiplie par 17 000 par jour et par onglet.'
+        );
+    }
+
     /** @test */
     public function test_revoking_an_already_printed_flyer_keeps_its_printed_status(): void
     {

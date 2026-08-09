@@ -17,7 +17,19 @@
                     </button>
                 </div>
 
-                <form v-else @submit.prevent="submit">
+                <div v-else-if="duplicate" class="pfq-dup">
+                    <div class="pfq-dup-label">{{ $t("label.flyer_duplicate_warning") }}</div>
+                    <div class="pfq-code">{{ duplicate.code }}</div>
+                    <div class="pfq-dup-sub">{{ duplicate.customer_name }}</div>
+                    <button type="button" class="pfq-again" @click="reset">
+                        {{ $t("button.close") }}
+                    </button>
+                    <button type="button" class="pfq-dup-force" @click="submit(true)">
+                        {{ $t("button.create_anyway") }}
+                    </button>
+                </div>
+
+                <form v-else @submit.prevent="submit(false)">
                     <label class="pfq-label" for="pfq-name">{{ $t("label.customer_first_name") }}</label>
                     <input
                         id="pfq-name"
@@ -89,6 +101,7 @@ export default {
             busy: false,
             error: null,
             lastCode: null,
+            duplicate: null,
             civilities: [
                 { value: "", label: "—" },
                 { value: "Mme", label: "Mme" },
@@ -110,6 +123,7 @@ export default {
     methods: {
         reset() {
             this.lastCode = null;
+            this.duplicate = null;
             this.error = null;
             this.busy = false;
             this.name = "";
@@ -118,7 +132,7 @@ export default {
         close() {
             this.$emit("close");
         },
-        submit() {
+        submit(force) {
             const name = (this.name || "").trim();
             if (name === "" || this.busy) return;
 
@@ -128,8 +142,17 @@ export default {
             this.$store.dispatch("promoFlyerCreate", {
                 customer_name: name,
                 civility: this.civility,
+                force: force === true,
             })
                 .then((res) => {
+                    // [DÉTAIL 2026-08-09] Le serveur signale qu'un code vient d'être créé pour
+                    // ce prénom. On l'affiche au lieu d'en frapper un second : deux appuis ne
+                    // doivent pas coûter deux fois 10 % et deux tickets. L'exploitant garde la
+                    // main s'il s'agit réellement d'un autre client.
+                    if (res.duplicate) {
+                        this.duplicate = res.flyer;
+                        return;
+                    }
                     this.lastCode = (res.flyer && res.flyer.code) || null;
                     this.$emit("created", res.flyer);
                 })
@@ -220,5 +243,13 @@ export default {
 .pfq-again {
     width: 100%; height: 48px; border-radius: 12px; border: 2px solid #cbd5e1;
     background: #fff; color: #334155; font-weight: 700; cursor: pointer;
+}
+.pfq-dup { text-align: center; padding: 8px 0 4px; }
+.pfq-dup-label { font-size: 14px; font-weight: 700; color: #b45309; }
+.pfq-dup-sub { margin-top: -8px; margin-bottom: 14px; font-size: 13px; color: #64748b; }
+/* Créer quand même reste possible, mais discret : c'est l'exception, pas le geste attendu. */
+.pfq-dup-force {
+    width: 100%; margin-top: 8px; height: 40px; border: 0; background: transparent;
+    color: #64748b; font-size: 13px; text-decoration: underline; cursor: pointer;
 }
 </style>

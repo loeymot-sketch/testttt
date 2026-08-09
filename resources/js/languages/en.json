@@ -1557,7 +1557,8 @@
         "flyer_stat_given": "of which given:",
         "flyer_used": "Order",
         "flyer_revoked": "cancelled",
-        "flyer_confirm_revoke": "Cancel code {code} for {name}? It will no longer work."
+        "flyer_confirm_revoke": "Cancel code {code} for {name}? It will no longer work.",
+        "flyer_duplicate_warning": "A code was just created for this first name:"
     },
     "button": {
         "refresh": "Refresh",
@@ -1673,7 +1674,8 @@
         "print_flyer": "Print flyer",
         "print_another": "Print another flyer",
         "reprint": "Reprint",
-        "cancel_code": "Cancel"
+        "cancel_code": "Cancel",
+        "create_anyway": "Different customer — create anyway"
     },
     "error": {
         "something_wrong": "Something Wrong.",

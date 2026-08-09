@@ -125,10 +125,28 @@ class PromoFlyerController extends Controller
             // Liste fermée : la civilité est imprimée telle quelle sur le
             // ticket, on n'y laisse pas passer du texte libre.
             'civility'      => ['nullable', 'string', Rule::in(['', 'Mme', 'M.'])],
+            // Confirmation explicite de l'exploitant quand un doublon est signalé.
+            'force'         => ['nullable', 'boolean'],
         ]);
 
         $user = $request->user();
         $branchId = (int) ($user->branch_id ?: 1);
+
+        // [DÉTAIL 2026-08-09] Deux appuis sur « Imprimer » — un doigt qui insiste, un écran qui
+        // rame — et le client repartait avec DEUX codes : deux fois 10 % offerts, deux tickets,
+        // et un client qui ne sait plus lequel utiliser. On ne BLOQUE pas (deux « Camille » dans
+        // la même soirée, ça arrive) : on rend la main à l'exploitant avec le code déjà créé.
+        if (! $request->boolean('force')) {
+            $doublon = $this->service->recentDuplicate($validated['customer_name'], $branchId);
+
+            if ($doublon) {
+                return new JsonResponse([
+                    'duplicate' => true,
+                    'message'   => 'Un code vient deja d\'etre cree pour ce prenom.',
+                    'flyer'     => $this->present($doublon),
+                ], 200);
+            }
+        }
 
         try {
             $flyer = $this->service->create(

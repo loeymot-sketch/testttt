@@ -1488,7 +1488,8 @@
         "flyer_stat_given": "dont offert :",
         "flyer_used": "Commande",
         "flyer_revoked": "annule",
-        "flyer_confirm_revoke": "Annuler le code {code} de {name} ? Il ne sera plus utilisable."
+        "flyer_confirm_revoke": "Annuler le code {code} de {name} ? Il ne sera plus utilisable.",
+        "flyer_duplicate_warning": "Un code vient deja d'etre cree pour ce prenom :"
     },
     "button": {
         "refresh": "Actualiser",
@@ -1605,7 +1606,8 @@
         "print_flyer": "Imprimer le ticket",
         "print_another": "Imprimer un autre ticket",
         "reprint": "Reimprimer",
-        "cancel_code": "Annuler"
+        "cancel_code": "Annuler",
+        "create_anyway": "C'est un autre client, creer quand meme"
     },
     "error": {
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",

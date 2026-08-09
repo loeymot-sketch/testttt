@@ -20,7 +20,7 @@
                     <div>{{ $t("label.flyer_codes_disabled_body") }}</div>
                 </div>
 
-                <form @submit.prevent="createFlyer">
+                <form @submit.prevent="createFlyer(false)">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-4">
                             <label for="customer_name" class="db-field-title required">
@@ -69,7 +69,22 @@
                     </div>
                 </form>
 
-                <div v-if="lastFlyer"
+                <div v-if="duplicate"
+                    class="mt-5 rounded border border-amber-400 bg-amber-50 p-4">
+                    <div class="text-sm font-semibold text-amber-900">
+                        {{ $t("label.flyer_duplicate_warning") }}
+                    </div>
+                    <div class="mt-1 text-2xl font-bold tracking-wider text-amber-950">
+                        {{ duplicate.code }}
+                    </div>
+                    <div class="text-sm text-amber-900">{{ duplicate.customer_name }}</div>
+                    <button type="button" class="mt-2 text-sm underline text-slate-600"
+                        @click="createFlyer(true)">
+                        {{ $t("button.create_anyway") }}
+                    </button>
+                </div>
+
+                <div v-else-if="lastFlyer"
                     class="mt-5 rounded border border-emerald-400 bg-emerald-50 p-4">
                     <div class="text-sm text-emerald-900">{{ $t("label.flyer_sent_to_pos") }}</div>
                     <div class="mt-1 text-2xl font-bold tracking-wider text-emerald-950">
@@ -224,6 +239,7 @@ export default {
             ],
             errors: {},
             lastFlyer: null,
+            duplicate: null,
             flyers: [],
             stats: { total: 0, printed: 0, used: 0, rate: null, revenue: 0, given_away: 0 },
             busyRow: null,
@@ -254,15 +270,27 @@ export default {
                 .finally(() => { this.loading.isActive = false; });
         },
 
-        createFlyer() {
+        createFlyer(force) {
             const name = (this.form.customer_name || "").trim();
             if (name === "" || this.busy) return;
 
             this.busy = true;
             this.errors = {};
 
-            this.$store.dispatch("promoFlyerCreate", { customer_name: name, civility: this.form.civility })
+            this.$store.dispatch("promoFlyerCreate", {
+                customer_name: name,
+                civility: this.form.civility,
+                force: force === true,
+            })
                 .then((res) => {
+                    // [DÉTAIL 2026-08-09] Un code vient d'être créé pour ce prénom : on le
+                    // montre au lieu d'en frapper un second. Deux appuis ne doivent pas coûter
+                    // deux fois 10 % et deux tickets de papier.
+                    if (res.duplicate) {
+                        this.duplicate = res.flyer;
+                        return;
+                    }
+                    this.duplicate = null;
                     this.lastFlyer = res.flyer;
                     this.form.customer_name = "";
                     this.form.civility = "";
