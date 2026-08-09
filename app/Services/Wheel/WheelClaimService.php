@@ -155,15 +155,42 @@ class WheelClaimService
         ];
     }
 
-    /** Produit de référence configuré pour ce segment, ou NUL s'il n'a pas été choisi. */
+    /**
+     * Produit de RÉFÉRENCE pour chiffrer le cadeau.
+     *
+     * Deux niveaux, dans cet ordre :
+     *   1. l'identifiant réglé par l'exploitant (`cost_item_id`) — c'est sa décision, elle primera
+     *      toujours ;
+     *   2. sinon, une recherche par NOM dans la carte (`cost_item_name`). Ce repli existe parce
+     *      qu'un trou comptable ne doit pas dépendre d'une variable d'environnement que quelqu'un a
+     *      pensé à poser. Un produit renommé fait échouer la recherche — et c'est mieux ainsi : on
+     *      préfère un cadeau non chiffré SIGNALÉ à un cadeau chiffré sur le mauvais produit, qui
+     *      ferait dériver l'inventaire de celui-là en silence.
+     */
     private function costItemId(string $prizeKey): ?int
     {
         foreach ((array) config('wheel.segments', []) as $s) {
-            if ((string) ($s['key'] ?? '') === $prizeKey) {
-                $id = (int) ($s['cost_item_id'] ?? 0);
-
-                return $id > 0 ? $id : null;
+            if ((string) ($s['key'] ?? '') !== $prizeKey) {
+                continue;
             }
+
+            $id = (int) ($s['cost_item_id'] ?? 0);
+            if ($id > 0) {
+                return $id;
+            }
+
+            $nom = trim((string) ($s['cost_item_name'] ?? ''));
+            if ($nom === '') {
+                return null;
+            }
+
+            $trouve = \App\Models\Item::query()
+                ->withoutGlobalScopes()
+                ->where('name', $nom)
+                ->orderBy('id')
+                ->value('id');
+
+            return $trouve ? (int) $trouve : null;
         }
 
         return null;

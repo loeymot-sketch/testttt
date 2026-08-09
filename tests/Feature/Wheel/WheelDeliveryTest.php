@@ -197,6 +197,54 @@ class WheelDeliveryTest extends TestCase
             'la charge n\'est pas chiffrée — c\'est signalé ailleurs, pas bloquant ici');
     }
 
+    /**
+     * LE REPLI PAR NOM. Un trou comptable ne doit pas dépendre d'une variable d'environnement que
+     * quelqu'un a pensé à poser : si aucun identifiant n'est réglé, on cherche le produit par son
+     * NOM dans la carte. L'exploitant garde la main (son identifiant prime toujours).
+     */
+    public function test_sans_identifiant_le_produit_de_cout_est_trouve_par_son_NOM(): void
+    {
+        $vrai = Item::factory()->create(['name' => 'Boisson Seule']);
+
+        Config::set('wheel.segments', [[
+            'key' => 'seg', 'label' => 'Boisson offerte', 'type' => 'free_item', 'value' => 0,
+            'weight' => 1, 'daily_cap' => 0,
+            'cost_item_id' => 0,                  // rien de réglé
+            'cost_item_name' => 'Boisson Seule',  // le repli
+        ]]);
+
+        $spin = $this->tourner('0611000020');
+        $this->delivery->deliver($spin->id, $this->caissier->id);
+
+        $sortie = StockOutflow::withoutGlobalScope(BranchScope::class)->firstOrFail();
+        $this->assertSame((int) $vrai->id, (int) $sortie->item_id,
+            'le repli par nom n\'a pas trouvé le produit : le cadeau resterait non chiffré');
+    }
+
+    /**
+     * ET IL NE DEVINE PAS. Un nom qui ne correspond à rien (produit renommé) ne doit PAS retomber
+     * sur « le premier produit trouvé » : mieux vaut un cadeau non chiffré SIGNALÉ qu'un cadeau
+     * chiffré sur le mauvais produit, qui ferait dériver l'inventaire de celui-là en silence.
+     */
+    public function test_un_nom_qui_ne_correspond_a_rien_ne_devine_AUCUN_produit(): void
+    {
+        Item::factory()->create(['name' => 'Boisson Seule']);
+
+        Config::set('wheel.segments', [[
+            'key' => 'seg', 'label' => 'Boisson offerte', 'type' => 'free_item', 'value' => 0,
+            'weight' => 1, 'daily_cap' => 0,
+            'cost_item_id' => 0,
+            'cost_item_name' => 'Produit Qui N Existe Pas',
+        ]]);
+
+        $spin = $this->tourner('0611000021');
+        $r = $this->delivery->deliver($spin->id, $this->caissier->id);
+
+        $this->assertTrue($r['ok'], 'le client doit être servi même si le chiffrage échoue');
+        $this->assertSame(0, StockOutflow::withoutGlobalScope(BranchScope::class)->count(),
+            'un produit a été DEVINÉ : l\'inventaire de ce produit dériverait en silence');
+    }
+
     // ── 4. DOUBLE REMISE ──────────────────────────────────────────────────────────────────────
 
     public function test_un_lot_ne_se_remet_JAMAIS_deux_fois(): void

@@ -83,9 +83,15 @@ return [
         ['key' => 'remise_15',   'label' => '-15%',             'type' => 'coupon_percent', 'value' => 15,  'weight' => 12, 'daily_cap' => 30, 'max_discount' => (float) env('WHEEL_MAX_DISCOUNT_15', 6.0)],
         // `cost_item_id` : produit de RÉFÉRENCE pour la charge (voir §DÉCHARGE ci-dessous).
         // NUL = pas encore choisi → le cadeau n'est pas chiffré et la réconciliation le SIGNALE.
-        ['key' => 'boisson',     'label' => 'Boisson offerte',  'type' => 'free_item',      'value' => 0,   'weight' => 8,  'daily_cap' => 15, 'cost_item_id' => (int) env('WHEEL_COST_ITEM_BOISSON', 0)],
-        ['key' => 'frites',      'label' => 'Frites offertes',  'type' => 'free_item',      'value' => 0,   'weight' => 3,  'daily_cap' => 8,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_FRITES', 0)],
-        ['key' => 'menu',        'label' => 'Menu offert',      'type' => 'free_item',      'value' => 0,   'weight' => 1,  'daily_cap' => 2,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_MENU', 0)],
+        // `cost_item_name` : motif de REPLI, cherché dans la carte si aucun identifiant n'est réglé.
+        // Il évite qu'un réglage oublié laisse un cadeau non chiffré — un trou comptable ne doit pas
+        // dépendre d'une variable d'environnement que quelqu'un a pensé à poser.
+        ['key' => 'boisson',     'label' => 'Boisson offerte',  'type' => 'free_item',      'value' => 0,   'weight' => 8,  'daily_cap' => 15, 'cost_item_id' => (int) env('WHEEL_COST_ITEM_BOISSON', 0), 'cost_item_name' => 'Boisson Seule'],
+        ['key' => 'frites',      'label' => 'Frites offertes',  'type' => 'free_item',      'value' => 0,   'weight' => 3,  'daily_cap' => 8,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_FRITES', 0),  'cost_item_name' => 'Frites Seules'],
+        // Libellé RENOMMÉ : « Menu offert » désignait en réalité le supplément « Frites + Boisson »
+        // à 2,50 €. Un client qui lit « Menu offert » et reçoit des frites et une boisson se sent
+        // floué — et il a raison. On nomme ce qu'on donne.
+        ['key' => 'menu',        'label' => 'Frites + Boisson', 'type' => 'free_item',      'value' => 0,   'weight' => 1,  'daily_cap' => 2,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_MENU', 0),    'cost_item_name' => 'Menu (Frites + Boisson)'],
     ],
 
     /*
