@@ -101,6 +101,42 @@
             </div>
         </div>
 
+        <!-- Voir ET agir au même endroit : un écran d'état sans levier oblige à
+             appeler quelqu'un, ce qui est précisément ce qu'on veut éviter. -->
+        <div class="rounded-lg border border-slate-200 bg-white p-4" data-testid="system-interrupteurs">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Interrupteurs</h3>
+            <p class="mt-1 text-xs text-slate-500">
+                Prise en compte immédiate, sans mise en ligne. Chaque bascule est tracée.
+            </p>
+            <ul class="mt-3 divide-y divide-slate-100">
+                <li
+                    v-for="i in interrupteurs"
+                    :key="i.nom"
+                    class="flex items-start justify-between gap-4 py-3"
+                    :data-testid="`interrupteur-${i.nom}`"
+                >
+                    <div class="min-w-0">
+                        <p class="font-medium text-slate-800">{{ i.libelle }}</p>
+                        <p class="text-sm text-slate-600">{{ i.description }}</p>
+                        <p class="mt-0.5 text-xs text-slate-500">{{ i.consequence }}</p>
+                    </div>
+                    <button
+                        type="button"
+                        class="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium"
+                        :class="i.actif
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            : 'border border-slate-300 text-slate-700 hover:bg-slate-50'"
+                        :disabled="bascule === i.nom"
+                        :aria-pressed="i.actif ? 'true' : 'false'"
+                        :data-testid="`interrupteur-bouton-${i.nom}`"
+                        @click="basculer(i)"
+                    >
+                        {{ i.actif ? 'Activé' : 'Désactivé' }}
+                    </button>
+                </li>
+            </ul>
+        </div>
+
         <p v-if="erreur" class="text-sm text-red-700" data-testid="system-health-erreur">{{ erreur }}</p>
     </section>
 </template>
@@ -119,7 +155,7 @@ const LIBELLES = {
 export default {
     name: 'SystemHealthComponent',
     data() {
-        return { etat: {}, chargement: false, erreur: null };
+        return { etat: {}, interrupteurs: [], bascule: null, chargement: false, erreur: null };
     },
     computed: {
         verdictOk() {
@@ -178,6 +214,7 @@ export default {
     },
     mounted() {
         this.charger();
+        this.chargerInterrupteurs();
         // Un écran d'état qui fige est pire que pas d'écran : il rassure à tort.
         this.minuteur = setInterval(this.charger, 60000);
     },
@@ -185,6 +222,27 @@ export default {
         if (this.minuteur) clearInterval(this.minuteur);
     },
     methods: {
+        async chargerInterrupteurs() {
+            try {
+                const { data } = await axios.get('/admin/observability/interrupteurs');
+                this.interrupteurs = data.data || [];
+            } catch (e) {
+                this.interrupteurs = [];
+            }
+        },
+        async basculer(i) {
+            this.bascule = i.nom;
+            try {
+                const { data } = await axios.put(`/admin/observability/interrupteurs/${i.nom}`, { actif: !i.actif });
+                this.interrupteurs = data.data || this.interrupteurs;
+            } catch (e) {
+                // Ne PAS inverser l'affichage sur un échec : montrer « Activé »
+                // alors que rien n'a changé est pire que de ne rien montrer.
+                this.erreur = "La bascule n'a pas pu être enregistrée.";
+            } finally {
+                this.bascule = null;
+            }
+        },
         async charger() {
             this.chargement = true;
             this.erreur = null;

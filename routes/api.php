@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\MyOrderDetailsController;
 use App\Http\Controllers\Admin\NotificationAlertController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\Observability\SyncOverviewController;
+use App\Http\Controllers\Admin\Pilotage\InterrupteurController;
 use App\Http\Controllers\Admin\OfferController;
 use App\Http\Controllers\Admin\OfferItemController;
 use App\Http\Controllers\Admin\OnlineOrderController;
@@ -1425,6 +1426,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // battement du planificateur. Agrège ce qui existe déjà, n'invente aucune
         // mesure — jusqu'ici le système se surveillait sans rien en dire.
         Route::get('/system-health', [SyncOverviewController::class, 'systemHealth'])->name('system-health');
+
+        // [PILOTAGE 2026-08-09] Les bascules actionnables sans deploiement.
+        // Liste BLANCHE cote service : `idempotency.enabled` en est exclu
+        // volontairement — c'est une protection NF525, pas une option.
+        Route::get('/interrupteurs', [InterrupteurController::class, 'index'])->name('interrupteurs.index');
+        Route::put('/interrupteurs/{nom}', [InterrupteurController::class, 'update'])->name('interrupteurs.update');
         Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
             ->middleware('throttle:60,1')
             ->name('client-metrics');

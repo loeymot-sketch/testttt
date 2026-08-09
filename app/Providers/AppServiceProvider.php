@@ -84,6 +84,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // [PILOTAGE 2026-08-09] Les bascules reglees depuis l'administration
+        // ecrasent celles des fichiers. On le fait ICI, au demarrage, pour que
+        // les huit `config('split_payment.enabled')` deja presents dans le code
+        // — dont cinq dans le chemin de paiement — refletent le reglage sans
+        // etre modifies. Silencieux si la base est injoignable : le fichier
+        // reprend alors la main, exactement comme avant.
+        try {
+            app(\App\Services\Pilotage\InterrupteurService::class)->appliquerAuDemarrage();
+        } catch (\Throwable $e) {
+            // Ne jamais empecher le demarrage pour un reglage de confort.
+        }
+
         Schema::defaultStringLength(191);
 
         $audit = SoftDeleteAuditObserver::class;
