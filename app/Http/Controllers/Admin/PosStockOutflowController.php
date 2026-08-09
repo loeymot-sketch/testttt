@@ -127,7 +127,16 @@ class PosStockOutflowController extends Controller
             'item_name'         => $o->item_name,
             'quantity'          => $o->quantity,
             'type'              => $o->type,
-            'type_label'        => $o->type === StockOutflow::TYPE_STAFF_MEAL ? 'Repas personnel' : 'Perte',
+            // [ROUE 2026-08-09] Un ternaire à deux branches étiquetait TOUT ce qui n'est pas
+            // « repas personnel » en « Perte ». Un cadeau gagné à la roue serait donc apparu
+            // comme une perte — faux au sens comptable (c'est une remise commerciale voulue)
+            // et faux au sens du pilotage : on ne distinguerait plus ce qu'on GASPILLE de ce
+            // qu'on OFFRE pour récupérer un client.
+            'type_label'        => [
+                StockOutflow::TYPE_STAFF_MEAL => 'Repas personnel',
+                StockOutflow::TYPE_WASTE      => 'Perte',
+                StockOutflow::TYPE_PROMO_GIFT => 'Cadeau roue',
+            ][$o->type] ?? 'Autre',
             'note'              => $o->note,
             'stock_decremented' => (bool) $o->stock_decremented,
             'created_at'        => optional($o->created_at)->toIso8601String(),

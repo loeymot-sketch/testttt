@@ -17,7 +17,22 @@ class StockOutflow extends Model
 
     public const TYPE_WASTE = 'waste';
 
+    /**
+     * [ROUE 2026-08-09] Cadeau gagné à la roue et RÉELLEMENT consommé sur une commande.
+     *
+     * Volontairement ABSENT de `TYPES` : cette constante-là sert de liste blanche à la saisie
+     * MANUELLE au comptoir (`PosStockOutflowController`). Un cadeau de roue ne doit jamais être
+     * saisi à la main — il n'existe que si un lot a été gagné puis consommé, et c'est la
+     * réconciliation qui l'inscrit. L'ouvrir à la saisie créerait une porte pour sortir du stock
+     * sans qu'aucun lot ne corresponde.
+     */
+    public const TYPE_PROMO_GIFT = 'promo_gift';
+
+    /** Saisissables à la main au comptoir. */
     public const TYPES = [self::TYPE_STAFF_MEAL, self::TYPE_WASTE];
+
+    /** TOUS les types qui peuvent exister en base — pour l'affichage et les totaux. */
+    public const TYPES_ALL = [self::TYPE_STAFF_MEAL, self::TYPE_WASTE, self::TYPE_PROMO_GIFT];
 
     protected $fillable = [
         'branch_id',

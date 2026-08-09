@@ -37,6 +37,19 @@ class Kernel extends ConsoleKernel
         // node when scaled horizontally to avoid double-processing the same outbox
         // batch / stale order set across nodes. `withoutOverlapping` only prevents
         // re-entry on the SAME host; `onOneServer` adds cross-host serialization.
+        /*
+         | ROUE — inscrit dans les charges le coût des cadeaux RÉELLEMENT consommés.
+         | Toutes les heures : un cadeau consommé à midi doit peser sur la journée en cours, pas
+         | sur le lendemain. Idempotente et rattrapante — si le planificateur n'a pas tourné
+         | pendant trois jours, elle rattrape les trois jours. `withoutOverlapping` parce que deux
+         | passages simultanés tenteraient d'inscrire la même charge (la garde interne les
+         | refuserait, mais autant ne pas la solliciter pour rien).
+         */
+        $schedule->command('wheel:reconcile-claims')
+            ->hourly()
+            ->withoutOverlapping()
+            ->runInBackground();
+
         $schedule->command('foodking:outbox:rescue')
             ->everyMinute()
             ->withoutOverlapping()

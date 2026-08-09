@@ -77,9 +77,11 @@ return [
         ['key' => 'remise_10',   'label' => '-10%',             'type' => 'coupon_percent', 'value' => 10,  'weight' => 28, 'daily_cap' => 0],
         ['key' => 'points_100',  'label' => '100 points',       'type' => 'points',         'value' => 100, 'weight' => 18, 'daily_cap' => 0],
         ['key' => 'remise_15',   'label' => '-15%',             'type' => 'coupon_percent', 'value' => 15,  'weight' => 12, 'daily_cap' => 30],
-        ['key' => 'boisson',     'label' => 'Boisson offerte',  'type' => 'free_item',      'value' => 0,   'weight' => 8,  'daily_cap' => 15],
-        ['key' => 'frites',      'label' => 'Frites offertes',  'type' => 'free_item',      'value' => 0,   'weight' => 3,  'daily_cap' => 8],
-        ['key' => 'menu',        'label' => 'Menu offert',      'type' => 'free_item',      'value' => 0,   'weight' => 1,  'daily_cap' => 2],
+        // `cost_item_id` : produit de RÉFÉRENCE pour la charge (voir §DÉCHARGE ci-dessous).
+        // NUL = pas encore choisi → le cadeau n'est pas chiffré et la réconciliation le SIGNALE.
+        ['key' => 'boisson',     'label' => 'Boisson offerte',  'type' => 'free_item',      'value' => 0,   'weight' => 8,  'daily_cap' => 15, 'cost_item_id' => (int) env('WHEEL_COST_ITEM_BOISSON', 0)],
+        ['key' => 'frites',      'label' => 'Frites offertes',  'type' => 'free_item',      'value' => 0,   'weight' => 3,  'daily_cap' => 8,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_FRITES', 0)],
+        ['key' => 'menu',        'label' => 'Menu offert',      'type' => 'free_item',      'value' => 0,   'weight' => 1,  'daily_cap' => 2,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_MENU', 0)],
     ],
 
     /*
@@ -93,9 +95,22 @@ return [
     | et doit apparaître dans les charges, sinon la marge affichée est fausse et
     | l'inventaire dérive. Chaque `free_item` consommé génère une sortie de stock
     | tracée, du même type que le module « repas & pertes » déjà en place.
+    |
+    | POURQUOI UN `cost_item_id` PAR SEGMENT, ET NON UNE SORTIE « SANS PRODUIT ».
+    | La table `stock_outflows` exige un produit (`item_id` NOT NULL) : elle est née pour les repas
+    | du personnel et les pertes, où l'on nomme toujours ce qui sort. La roue, elle, promet « une
+    | boisson » — l'équipe sert ce qu'elle veut au retrait.
+    | Trois réponses possibles, deux mauvaises :
+    |   · assouplir la colonne → exige une dépendance absente, et sous SQLite une reconstruction de
+    |     table à déclencheurs. Trop de risque pour une écriture comptable ;
+    |   · choisir un produit tout seul (le premier de la catégorie) → on inscrirait dans les charges
+    |     un produit que PERSONNE n'a choisi, et l'inventaire de ce produit dériverait ;
+    |   · demander à l'exploitant quel produit sert de RÉFÉRENCE DE COÛT. C'est la bonne : ce n'est
+    |     pas une donnée inventée, c'est une décision de gestion, et lui seul peut la prendre.
+    | Tant qu'un segment n'a pas son `cost_item_id`, son cadeau n'est PAS chiffré — et la
+    | réconciliation le dit à chaque passage, plutôt que de laisser un trou silencieux.
     */
     'record_cost_on_claim' => true,
-    'cost_outflow_reason'  => env('WHEEL_COST_REASON', 'offert_roue'),
 
     /*
     | DÉVERROUILLAGE — la partie qu'on ne peut PAS automatiser, et il faut le dire.
