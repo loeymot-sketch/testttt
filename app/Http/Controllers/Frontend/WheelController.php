@@ -136,6 +136,15 @@ class WheelController extends Controller
             return true;
         }
 
+        // Clé de prévisualisation : le seul chemin praticable depuis la page, qui vit sur un autre
+        // domaine que l'API et n'emporte donc aucun cookie de session. Comparaison en temps
+        // constant — un `===` fuit, par son temps d'exécution, le nombre d'octets corrects.
+        $attendue = (string) config('wheel.preview_key', '');
+        $fournie = (string) $request->input('preview', (string) $request->query('preview', ''));
+        if ($attendue !== '' && $fournie !== '' && hash_equals($attendue, $fournie)) {
+            return true;
+        }
+
         $user = $request->user();
         $role = (string) config('wheel.preview_role', 'Admin');
 

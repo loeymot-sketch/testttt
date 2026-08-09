@@ -42,6 +42,18 @@ return [
     // Qui peut jouer pendant la mise au point.
     'preview_role' => env('WHEEL_PREVIEW_ROLE', 'Admin'),
 
+    // CLÉ DE PRÉVISUALISATION. La page de la roue est servie par Vercel et l'API par le VPS :
+    // deux domaines, donc aucun cookie de session n'accompagne l'appel. Le contrôle par rôle
+    // ne peut donc pas fonctionner depuis cette page. Cette clé, passée en `?preview=…`,
+    // permet au propriétaire de tester EN PRODUCTION sur le vrai matériel avant l'ouverture.
+    // Elle ne protège PAS d'argent : gagner un tour exige toujours un jeton signé émis au
+    // comptoir. Vide = désactivée (aucune clé par défaut : une clé par défaut serait publique).
+    'preview_key' => (string) env('WHEEL_PREVIEW_KEY', ''),
+
+    // Adresse PUBLIQUE de la page de la roue (site client). Sert à composer le QR affiché au
+    // comptoir. Vide = pas de QR : on préfère ne rien afficher qu'un QR qui mène nulle part.
+    'public_url' => rtrim((string) env('WHEEL_PUBLIC_URL', 'https://www.lecayenne.fr'), '/'),
+
     // Change de campagne = tout le monde peut rejouer une fois. C'est le seul
     // levier pour relancer le jeu sans vider la table des participations.
     'campaign_key' => env('WHEEL_CAMPAIGN', '2026-rentree'),

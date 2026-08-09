@@ -135,6 +135,22 @@ Route::get('/dl/{bridge}', function (string $bridge) {
     ]);
 })->where('bridge', '[a-z0-9\-]+\.js')->name('dl.bridge');
 
+/*
+| ROUE — écran de validation au comptoir. Placé AVANT l'attrape-tout `/{any}` : après, la SPA
+| l'avalerait et la tablette afficherait l'application au lieu de l'écran de validation.
+|
+| `auth` + `can:pos` : valider un tour, c'est donner un lot. Ce droit n'a rien à faire dans les
+| mains d'un compte qui n'est pas au comptoir.
+*/
+Route::middleware(['installed', 'auth'])->group(function () {
+    Route::get('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'show'])
+        ->middleware('can:pos')
+        ->name('admin.wheel.counter');
+    Route::post('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'issue'])
+        ->middleware(['can:pos', 'throttle:60,1'])
+        ->name('admin.wheel.counter.issue');
+});
+
 // [C-001 test-e2e 2026-07-17] Un ASSET manquant (chunk périmé, image disparue…)
 // doit répondre 404 — pas la SPA en 200 text/html (pages blanches « tout vert »,
 // classe de l'incident paiement borne 2026-07-07 ; les fichiers EXISTANTS sont
