@@ -88,6 +88,19 @@ class HealthzCheckCommand extends Command
             'timestamp' => now()->toIso8601String(),
         ];
 
+        // [PILOTAGE 2026-08-09] Le résultat est conservé pour que l'écran
+        // « État du système » de l'administration puisse l'afficher. Sans ça, ce
+        // diagnostic n'existait que dans la sortie console et pour la sonde
+        // externe : le logiciel se surveillait sans jamais rien en dire au
+        // propriétaire. Cache::forever, sans expiration — c'est l'horodatage
+        // porté par la charge utile qui dit si la mesure est fraîche, et une
+        // clé expirée effacerait justement l'information « plus rien ne mesure ».
+        try {
+            \Illuminate\Support\Facades\Cache::forever('healthz:last', $payload);
+        } catch (\Throwable $e) {
+            // Un cache indisponible ne doit pas faire échouer la sonde de santé.
+        }
+
         if ($this->option('json')) {
             $this->line((string) json_encode($payload, JSON_UNESCAPED_SLASHES));
         } else {

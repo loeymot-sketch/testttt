@@ -5,6 +5,12 @@
 const OutboxOverviewComponent = () =>
     import(/* webpackChunkName: "admin-shell" */ "../../components/admin/observability/OutboxOverviewComponent");
 
+// [PILOTAGE 2026-08-09] « Est-ce que ça va ? » — les cinq contrôles de healthz,
+// la fraîcheur de la sauvegarde et le battement du planificateur, réunis. Le
+// système se surveillait déjà sans rien en dire à l'administration.
+const SystemHealthComponent = () =>
+    import(/* webpackChunkName: "admin-shell" */ "../../components/admin/observability/SystemHealthComponent");
+
 export default [
     // [iter15-mega-fix A-001 2026-05-10] /admin/observability was a dead URL:
     // Laravel SPA fallback returned 200 HTML, but Vue Router fell through to
@@ -14,7 +20,18 @@ export default [
     // /admin/observability/outbox entry stays intact below.
     {
         path: "/admin/observability",
-        redirect: { name: "admin.observability.outbox" },
+        redirect: { name: "admin.observability.system" },
+    },
+    {
+        path: "/admin/observability/system",
+        name: "admin.observability.system",
+        component: SystemHealthComponent,
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "dashboard",
+            breadcrumb: "observability_system",
+        },
     },
     {
         path: "/admin/observability/outbox",

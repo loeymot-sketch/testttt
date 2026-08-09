@@ -584,4 +584,89 @@ class SyncOverviewController extends AdminController
             ],
         ];
     }
+
+    /**
+     * [PILOTAGE 2026-08-09] « Est-ce que ça va ? » — la réponse en un appel.
+     *
+     * Le logiciel SAVAIT déjà s'il allait bien : `healthz:check` contrôle cinq
+     * sous-systèmes toutes les minutes, la sauvegarde tourne à 3 h et une
+     * restauration de vérification à 5 h. Rien de tout ça n'était visible dans
+     * l'administration, qui n'exposait qu'un seul écran d'observabilité — la
+     * file d'expédition. Autrement dit : le système se surveillait, et ne vous
+     * le disait pas.
+     *
+     * Cette route agrège ce qui existe déjà. Elle n'invente aucune mesure.
+     */
+    public function systemHealth(Request $request): JsonResponse
+    {
+        $sante = Cache::get('healthz:last', []);
+
+        // Fraîcheur des sauvegardes : c'est la DATE du fichier le plus récent qui
+        // compte, pas leur nombre. Dix sauvegardes vieilles d'un mois ne valent rien.
+        $dossier = storage_path('backups'.DIRECTORY_SEPARATOR.'db-daily');
+        $dernier = null;
+        $ageHeures = null;
+        if (is_dir($dossier)) {
+            $fichiers = glob($dossier.DIRECTORY_SEPARATOR.'*.gz') ?: [];
+            if ($fichiers !== []) {
+                usort($fichiers, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+                $dernier = basename($fichiers[0]);
+                $ageHeures = (int) round((time() - filemtime($fichiers[0])) / 3600);
+            }
+        }
+
+        // Battement du planificateur : s'il s'arrête, TOUT s'arrête en silence —
+        // sauvegardes, relances de file, vérification de la chaîne fiscale.
+        // C'est déjà arrivé sur le VPS (jamais lancé, réparé le 27 juillet).
+        $tic = Cache::get('scheduler:last_tick');
+        $ticAgeMin = $tic ? (int) round((time() - (int) $tic) / 60) : null;
+
+        $verdict = 'ok';
+        $alertes = [];
+        foreach ((array) ($sante['checks'] ?? []) as $quoi => $etat) {
+            if ($quoi === 'queue_pending') {
+                if ((int) $etat > 50) {
+                    $alertes[] = "file d'attente : {$etat} messages";
+                }
+                continue;
+            }
+            if ($etat !== 'ok') {
+                $alertes[] = "{$quoi} : {$etat}";
+            }
+        }
+        if ($ageHeures === null) {
+            $alertes[] = 'aucune sauvegarde trouvée';
+        } elseif ($ageHeures > 30) {
+            // Même unité que la carte de l'écran : « 111 h » dans l'alerte et
+            // « 5 jours » sur la carte décrivaient le même fait de deux façons,
+            // ce qui fait douter de l'un des deux.
+            $alertes[] = $ageHeures > 48
+                ? 'dernière sauvegarde il y a '.((int) round($ageHeures / 24)).' jours'
+                : "dernière sauvegarde il y a {$ageHeures} h";
+        }
+        if ($ticAgeMin === null) {
+            $alertes[] = 'planificateur : aucun battement enregistré';
+        } elseif ($ticAgeMin > 10) {
+            $alertes[] = "planificateur muet depuis {$ticAgeMin} min";
+        }
+        if ($alertes !== []) {
+            $verdict = 'attention';
+        }
+
+        return response()->json([
+            'verdict'    => $verdict,
+            'alertes'    => $alertes,
+            'controles'  => (array) ($sante['checks'] ?? []),
+            'mesure_le'  => $sante['timestamp'] ?? null,
+            'sauvegarde' => [
+                'dernier_fichier' => $dernier,
+                'age_heures'      => $ageHeures,
+                'attendu_max_h'   => 30,
+            ],
+            'planificateur' => [
+                'dernier_battement_min' => $ticAgeMin,
+                'attendu_max_min'       => 10,
+            ],
+        ]);
+    }
 }

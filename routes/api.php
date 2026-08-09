@@ -1419,6 +1419,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
     Route::prefix('observability')->name('observability.')->group(function () {
         Route::get('/sync-overview', [SyncOverviewController::class, 'index'])->name('sync-overview');
+
+        // [PILOTAGE 2026-08-09] « Est-ce que ça va ? » en un seul appel : les cinq
+        // contrôles de healthz, la fraîcheur de la dernière sauvegarde et le
+        // battement du planificateur. Agrège ce qui existe déjà, n'invente aucune
+        // mesure — jusqu'ici le système se surveillait sans rien en dire.
+        Route::get('/system-health', [SyncOverviewController::class, 'systemHealth'])->name('system-health');
         Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
             ->middleware('throttle:60,1')
             ->name('client-metrics');
