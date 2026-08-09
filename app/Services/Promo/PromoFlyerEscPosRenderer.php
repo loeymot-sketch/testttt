@@ -87,25 +87,50 @@ class PromoFlyerEscPosRenderer
             $out .= E::feed(1);
         }
 
-        // --- 4. LA RÉCOMPENSE — BANDEAU NOIR --------------------------------
-        // [CONVERSION 2026-08-08] Avant : un « -10% » gras entre deux lignes de « = ». Du noir sur
-        // blanc au milieu de noir sur blanc — rien ne ressortait. Une imprimante thermique n'a ni
-        // couleur ni graisse variable : l'inversion vidéo est le SEUL contraste dont on dispose.
-        // La récompense passe donc en blanc sur noir, encadrée de deux lignes pleines : c'est la
-        // première chose que l'œil trouve, avant même de lire. Sur un ticket qu'on regarde deux
-        // secondes, cette hiérarchie EST le taux de conversion.
+        // --- 4. LA RÉCOMPENSE — UN COUPON, PAS UN PAVÉ ----------------------
+        // [OWNER 2026-08-09] « mieux que 10% en bloc noir ». Le bandeau inversé pleine largeur
+        // attirait bien l'œil, mais il ressemblait à une erreur d'impression : sur du papier
+        // thermique, une grande surface noire bave, chauffe la tête et se lit comme un défaut.
+        // Il donnait au ticket un air de rappel de facture, pas de cadeau.
+        //
+        // On dessine donc un vrai COUPON : deux barres pleines qui l'isolent du reste, le montant
+        // en très grande taille, et le code DANS son propre cadre — l'objet que le client va
+        // découper mentalement. Le contraste vient de la TAILLE et du CADRE, pas d'un aplat.
+        // Tous les caractères de filet utilisés ici ont été vérifiés un par un contre l'encodage
+        // CP858 de l'imprimante (═ ║ ┌ ─ ┐ └ ┘ ▄ ▀ passent ; ★ et ✓ sont PERDUS — ne pas les
+        // réintroduire, ils sortiraient en « ? »).
         $percent = $this->formatPercent($data['discount_percent'] ?? 10);
-        // [OWNER 2026-08-08] « Enlève le trait au-dessus du -10% ». C'était un bandeau noir VIDE,
-        // posé au-dessus de la remise pour l'encadrer — sur le papier il se lit comme un trait
-        // parasite, pas comme un cadre. Les deux bandeaux vides sont supprimés et le sous-titre
-        // entre DANS le noir : la remise devient un tampon d'un seul morceau, et plus rien ne
-        // flotte au-dessus. Aucun élément ajouté au ticket, deux lignes de papier gagnées.
-        $out .= E::textSize(2, 3);
+        $code = (string) ($data['code'] ?? '');
+
+        $out .= $this->rule('╔', '═', '╗', $w);
         $out .= E::bold(true);
-        $out .= $this->band('-' . $percent . '%', (int) floor($w / 2));
+        $out .= $this->line('TON CADEAU, RIEN QUE POUR TOI', $w);
+        $out .= E::bold(false);
+
+        // Le montant : le plus gros élément du ticket, sans concurrence.
+        $out .= E::textSize(3, 3);
+        $out .= E::bold(true);
+        $out .= $this->line('-' . $percent . '%', $w / 3);
         $out .= E::bold(false);
         $out .= E::textSize(1, 1);
-        $out .= $this->band('sur ta prochaine commande en direct', $w);
+        $out .= $this->line('sur ta prochaine commande en direct', $w);
+        $out .= E::feed(1);
+
+        // [OWNER 2026-08-09] « le code promo avec son nom plus visible ». Le code PORTE le prénom
+        // du client : c'est ce qui transforme un bon de réduction anonyme en cadeau personnel.
+        // La version précédente l'avait rétrogradé en repli discret, sous le QR — logique du point
+        // de vue du geste (scanner coûte moins cher que taper), mais elle effaçait justement ce qui
+        // rend le ticket touchant. Il reprend donc sa place ici, en double taille, dans son cadre.
+        if ($code !== '') {
+            $largeurCadre = min($w - 2, 36);
+            $out .= $this->line('┌' . str_repeat('─', $largeurCadre - 2) . '┐', $w);
+            $out .= E::textSize(2, 2);
+            $out .= E::bold(true);
+            $out .= $this->line($code, $w / 2);
+            $out .= E::bold(false);
+            $out .= E::textSize(1, 1);
+            $out .= $this->line('└' . str_repeat('─', $largeurCadre - 2) . '┘', $w);
+        }
 
         // L'ÉCHÉANCE COLLÉE À LA RÉCOMPENSE, en gras. Une remise sans date se remet à plus tard,
         // et « plus tard » ne revient jamais. Deux raisons de ne pas attendre sur une ligne :
@@ -119,6 +144,7 @@ class PromoFlyerEscPosRenderer
             $w
         );
         $out .= E::bold(false);
+        $out .= $this->rule('╚', '═', '╝', $w);
         $out .= E::feed(1);
 
         // --- 5. L'ACTION AVANT LE REPLI -------------------------------------
@@ -126,7 +152,6 @@ class PromoFlyerEscPosRenderer
         // ensuite. C'était l'inverse de ce qu'on veut : taper un code à la main est le chemin le
         // plus coûteux, scanner est le moins coûteux. Le geste facile passe donc devant, en grand,
         // avec un verbe à l'impératif ; le code devient le repli de celui qui n'a pas pu scanner.
-        $code = (string) ($data['code'] ?? '');
         $qrUrl = trim((string) ($data['qr_url'] ?? ''));
         if ($qrUrl !== '') {
             $out .= E::bold(true);
@@ -148,14 +173,11 @@ class PromoFlyerEscPosRenderer
             $out .= E::doubleHeight(false);
         }
 
-        // Le code en REPLI : pour qui n'a pas pu scanner. Taille normale et gras suffisent — le
-        // mettre en double taille le mettait en concurrence visuelle avec la récompense, et deux
-        // éléments qui crient aussi fort qu'une remise, c'est une remise qu'on ne voit plus.
+        // Le code n'est PAS répété ici : il est déjà en grand dans le coupon ci-dessus. Le
+        // réimprimer une seconde fois donnait au ticket un air de formulaire, et diluait
+        // l'élément même qu'on veut rendre mémorable. Une seule mention, mais la bonne.
         if ($code !== '') {
-            $out .= $this->line('ou tape ce code sur le site :', $w);
-            $out .= E::bold(true);
-            $out .= $this->line($code, $w);
-            $out .= E::bold(false);
+            $out .= $this->line('ou tape ton code ci-dessus sur le site', $w);
         }
 
         // [OWNER 2026-08-08] Le téléphone, remis SEUL et DISCRET. La version précédente l'annonçait
@@ -170,9 +192,11 @@ class PromoFlyerEscPosRenderer
         $out .= E::feed(1);
 
         // --- 7. POURQUOI COMMANDER EN DIRECT --------------------------------
+        $out .= $this->strengths((string) ($data['strengths'] ?? ''), $w);
+
         $savings = trim((string) ($data['savings_note'] ?? ''));
         if ($savings !== '') {
-            $out .= E::encodeForPrinter(E::separator('-', $w));
+            $out .= E::feed(1);
             $out .= E::encodeForPrinter(E::textWrap($savings, $w));
         }
 
@@ -190,9 +214,18 @@ class PromoFlyerEscPosRenderer
     }
 
     /**
-     * « Merci Mme Camille ! » — la civilité est facultative, parce que les
-     * plateformes ne fournissent qu'un prénom et qu'on ne devine pas le genre
-     * de quelqu'un. Quand elle est absente, la phrase reste naturelle.
+     * « Bonsoir Camille, » — la salutation d'ouverture.
+     *
+     * [OWNER 2026-08-09] « au debut bonsoir (prenom) ». La salutation est calculée à l'heure
+     * de création du ticket (voir PromoFlyerService) : un ticket glissé dans un sac à 21 h
+     * doit dire « Bonsoir », pas « Merci ». C'est la première ligne que le client lit, et
+     * c'est elle qui décide s'il lit la suite ou s'il froisse le papier.
+     *
+     * La civilité reste facultative : les plateformes ne fournissent qu'un prénom et on ne
+     * devine pas le genre de quelqu'un. Sans elle la phrase reste naturelle.
+     *
+     * Virgule finale et non point d'exclamation : « Bonsoir Camille, » ouvre une phrase que
+     * le message d'introduction termine. Un « ! » refermerait l'adresse sur elle-même.
      */
     private function greeting(array $data): string
     {
@@ -202,11 +235,62 @@ class PromoFlyerEscPosRenderer
         }
 
         $civility = trim((string) ($data['civility'] ?? ''));
-        $hello = trim((string) ($data['greeting'] ?? 'Merci')) ?: 'Merci';
+        $hello = trim((string) ($data['greeting'] ?? '')) ?: 'Bonjour';
 
         $who = $civility !== '' ? ($civility . ' ' . $name) : $name;
 
-        return $hello . ' ' . $who . ' !';
+        return $hello . ' ' . $who . ',';
+    }
+
+    /**
+     * Filet de coupon, pleine largeur, avec ses coins.
+     *
+     * [OWNER 2026-08-09] Premier essai fait en demi-blocs pleins (`▄` / `▀`) : le résultat
+     * redevenait un pavé noir, exactement ce qu'on cherchait à quitter. Le filet double avec
+     * coins (`╔══╗` / `╚══╝`) se lit comme une CARTE — un objet qu'on garde — au lieu d'une
+     * surface encrée. Il économise aussi l'encre et la chauffe de la tête d'impression.
+     * Caractères vérifiés un par un contre CP858 : 0xC9 0xCD 0xBB 0xC8 0xBC.
+     */
+    private function rule(string $gauche, string $milieu, string $droite, int $widthChars): string
+    {
+        $w = max(3, $widthChars);
+
+        return E::encodeForPrinter(E::textLine($gauche . str_repeat($milieu, $w - 2) . $droite));
+    }
+
+    /**
+     * « Pourquoi commander en direct » — les points forts, un par ligne.
+     *
+     * [OWNER 2026-08-09] « tout autre details de dire nos point forts ». Le ticket demandait
+     * au client de changer d'habitude sans jamais lui dire ce qu'il y gagne AUTRE que la
+     * remise. Une remise seule achète une commande ; une raison en fabrique une habitude.
+     *
+     * Les lignes viennent des réglages (une par ligne) : l'exploitant connaît ses arguments
+     * mieux que moi, et il doit pouvoir les réécrire sans redéploiement.
+     */
+    private function strengths(string $raw, int $w): string
+    {
+        $lignes = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', $raw) ?: [])));
+        if ($lignes === []) {
+            return '';
+        }
+
+        $out = E::encodeForPrinter(E::separator('-', $w));
+        $out .= E::bold(true);
+        $out .= $this->line('POURQUOI COMMANDER EN DIRECT ?', $w);
+        $out .= E::bold(false);
+
+        foreach ($lignes as $ligne) {
+            // Le texte est aligné à GAUCHE le temps de la liste : une puce centrée produit
+            // un escalier illisible dès que deux lignes ont des longueurs différentes.
+            $out .= E::alignLeft();
+            foreach (E::wrapIndented('> ' . $ligne, $w, '  ') as $morceau) {
+                $out .= E::encodeForPrinter(E::textLine($morceau));
+            }
+            $out .= E::alignCenter();
+        }
+
+        return $out;
     }
 
     /**

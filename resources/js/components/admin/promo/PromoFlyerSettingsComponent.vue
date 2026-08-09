@@ -54,6 +54,13 @@
                         </div>
 
                         <div class="form-col-12">
+                            <label class="db-field-title">{{ $t("label.flyer_strengths") }}</label>
+                            <textarea v-model="form.strengths" rows="4" maxlength="600"
+                                class="db-field-control"></textarea>
+                            <small class="text-slate-500">{{ $t("label.flyer_strengths_hint") }}</small>
+                        </div>
+
+                        <div class="form-col-12">
                             <label class="db-field-title">{{ $t("label.flyer_footer_note") }}</label>
                             <input v-model="form.footer_note" type="text" maxlength="200" class="db-field-control" />
                         </div>
@@ -139,6 +146,7 @@ export default {
                 site_url: "",
                 qr_url: "",
                 greeting: "",
+                strengths: "",
                 logo_path: "",
             },
         };
@@ -165,7 +173,7 @@ export default {
             const out = [];
             out.push(center(this.form.logo_path ? "[ LOGO ]" : this.form.headline));
             out.push("");
-            out.push(center(`${(this.form.greeting || "Merci")} Mme Camille !`));
+            out.push(center(`${(this.form.greeting || "Bonsoir")} Mme Camille,`));
             out.push("");
             out.push(wrap(this.form.intro));
             out.push("");
@@ -182,6 +190,11 @@ export default {
             out.push(center(this.form.site_url));
             out.push("");
             out.push("-".repeat(WIDTH));
+            out.push(center("POURQUOI COMMANDER EN DIRECT ?"));
+            for (const l of String(this.form.strengths || "").split(/\n/).filter(Boolean)) {
+                out.push("  > " + l.trim());
+            }
+            out.push("");
             out.push(wrap(this.form.savings_note));
             out.push(wrap(this.form.footer_note));
 
@@ -215,6 +228,7 @@ export default {
                 site_url: this.form.site_url,
                 qr_url: this.form.qr_url,
                 greeting: this.form.greeting,
+                strengths: this.form.strengths,
                 logo_path: this.form.logo_path,
             })
                 .then((res) => {

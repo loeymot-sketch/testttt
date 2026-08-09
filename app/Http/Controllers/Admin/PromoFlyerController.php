@@ -90,7 +90,11 @@ class PromoFlyerController extends Controller
             'validity_days'    => ['required', 'integer', 'min:1', 'max:365'],
             'site_url'         => ['required', 'string', 'max:120'],
             'qr_url'           => ['required', 'string', 'max:200', 'url'],
+            // Vide = salutation calculée à l'heure (« Bonjour » / « Bonsoir »).
             'greeting'         => ['nullable', 'string', 'max:30'],
+            // Les points forts, un par ligne. Plafonné : au-delà, le ticket
+            // devient un tract et personne ne le lit.
+            'strengths'        => ['nullable', 'string', 'max:600'],
             // Chemin RELATIF à public/ : validé et re-vérifié côté service
             // (un chemin absolu ou remontant permettrait de faire imprimer
             // n'importe quel fichier de la machine).

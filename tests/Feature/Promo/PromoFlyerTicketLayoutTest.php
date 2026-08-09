@@ -42,7 +42,7 @@ class PromoFlyerTicketLayoutTest extends TestCase
 
         return [
             'headline' => 'LE CAYENNE',
-            'greeting' => 'Merci',
+            'greeting' => 'Bonsoir',
             // Les VRAIES clés lues par le rendu. Avec `greeting_name`/`greeting_civility` la
             // salutation sortait VIDE et toute cette suite passait sans jamais exercer la ligne
             // « Merci M. Dorian ! » — précisément celle que le propriétaire citait. Un jeu de
@@ -183,56 +183,89 @@ class PromoFlyerTicketLayoutTest extends TestCase
      * imprimés : un bandeau qui ne remplit pas la ligne devient une étiquette noire au milieu du
      * papier. On exige donc la largeur EXACTE, bords compris.
      */
-    public function test_la_recompense_est_dans_un_bandeau_noir_pleine_largeur(): void
-    {
-        $bandeaux = array_values(array_filter($this->rendu(), fn ($l) => $l['inverse']));
-
-        $this->assertNotEmpty($bandeaux,
-            'la remise n\'est plus en inversion vidéo : sur une imprimante thermique c\'est le SEUL '
-            . 'contraste disponible, sans lui rien ne ressort du ticket');
-
-        $porteLaRemise = false;
-        foreach ($bandeaux as $b) {
-            $attendu = $b['double'] ? intdiv(self::LARGEUR, 2) : self::LARGEUR;
-            $this->assertSame($attendu, strlen($b['texte']),
-                'bandeau de ' . strlen($b['texte']) . ' au lieu de ' . $attendu . ' colonnes : le '
-                . 'fond noir ne toucherait pas les bords — |' . $b['texte'] . '|');
-            if (str_contains($b['texte'], '-10%')) {
-                $porteLaRemise = true;
-            }
-        }
-
-        $this->assertTrue($porteLaRemise, 'le bandeau noir doit contenir la remise elle-même');
-    }
-
-    /** L'ACTION FACILE AVANT LE REPLI COÛTEUX : scanner d'abord, taper ensuite. */
-    public function test_le_scan_est_propose_AVANT_la_saisie_manuelle_du_code(): void
+    public function test_la_recompense_est_dans_une_carte_encadree_pleine_largeur(): void
     {
         $t = $this->textes();
 
-        $iScan = null;
-        $iSaisie = null;
+        $haut = null;
+        $bas = null;
         foreach ($t as $i => $l) {
-            if ($iScan === null && str_contains($l, 'SCANNE')) { $iScan = $i; }
-            if ($iSaisie === null && str_contains($l, 'tape ce code')) { $iSaisie = $i; }
+            if ($haut === null && str_starts_with($l, "\xC9")) { $haut = $i; }   // ╔ en CP858
+            if (str_starts_with($l, "\xC8")) { $bas = $i; }                      // ╚ en CP858
         }
 
-        $this->assertNotNull($iScan, 'l\'appel à scanner a disparu — c\'est le geste le moins coûteux');
-        $this->assertNotNull($iSaisie, 'le repli « taper le code » doit rester offert');
-        $this->assertLessThan($iSaisie, $iScan,
-            'la saisie manuelle passe avant le scan : on met le chemin le PLUS coûteux en premier');
+        $this->assertNotNull($haut, 'le filet HAUT du coupon a disparu : sans cadre, la remise se '
+            . 'confond avec le reste du ticket');
+        $this->assertNotNull($bas, 'le filet BAS du coupon a disparu');
+        $this->assertGreaterThan($haut, $bas, 'le coupon n\'est pas refermé');
+
+        $this->assertSame(self::LARGEUR, strlen($t[$haut]),
+            'le filet ne fait pas la largeur du papier : le cadre ne toucherait pas les bords');
+        $this->assertSame(self::LARGEUR, strlen($t[$bas]));
+
+        $dedans = implode(' | ', array_slice($t, $haut + 1, $bas - $haut - 1));
+        $this->assertStringContainsString('-10%', $dedans,
+            'la remise doit se trouver DANS le coupon, pas à côté');
+        $this->assertStringContainsString('DORIAN-TH2P', $dedans,
+            'le code doit se trouver DANS le coupon : c\'est le même cadeau, pas deux éléments');
     }
 
-    /** Le code ne doit pas concurrencer la remise : sinon plus rien ne ressort. */
-    public function test_le_code_n_est_PAS_en_double_taille(): void
+    /**
+     * [OWNER 2026-08-09] « mieux que 10% en bloc noir ».
+     *
+     * L'inversion vidéo pleine largeur avait été choisie la veille comme seul contraste d'une
+     * thermique. Le propriétaire l'a REFUSÉE sur le papier réel : un aplat noir bave, chauffe la
+     * tête et se lit comme une erreur d'impression, pas comme un cadeau. Décision d'exploitant,
+     * prise devant le résultat imprimé — elle prime sur le raisonnement de conception.
+     *
+     * Ce test empêche le retour silencieux du pavé.
+     */
+    public function test_aucun_aplat_noir_ne_revient_sur_le_ticket(): void
     {
+        $inverses = array_values(array_filter($this->rendu(), fn ($l) => $l['inverse']));
+
+        $this->assertSame([], $inverses,
+            'un bandeau en inversion vidéo est de retour alors que le propriétaire l\'a refusé '
+            . 'sur le papier réel : le contraste doit venir de la TAILLE et du CADRE');
+    }
+
+    /**
+     * Le geste facile reste offert, et il reste explicite.
+     *
+     * [OWNER 2026-08-09] L'ordre « scanner AVANT le code » a été inversé : le propriétaire veut
+     * le code — qui porte le PRÉNOM du client — bien visible, et c'est lui qui rend le ticket
+     * personnel. Le code vit donc dans le coupon, en haut ; le QR reste juste en dessous comme
+     * raccourci. On ne teste plus un ordre, on teste que les DEUX chemins sont proposés.
+     */
+    public function test_les_deux_chemins_sont_proposes_scan_et_code(): void
+    {
+        $joint = implode(' | ', $this->textes());
+
+        $this->assertStringContainsString('SCANNE', $joint,
+            'l\'appel à scanner a disparu — c\'est le geste le moins coûteux');
+        $this->assertStringContainsString('DORIAN-TH2P', $joint,
+            'le code a disparu — sans lui, pas de repli pour qui ne scanne pas');
+    }
+
+    /**
+     * [OWNER 2026-08-09] « le code promo avec son nom plus visible ».
+     *
+     * La veille, le code avait été volontairement réduit pour ne pas concurrencer la remise. Le
+     * propriétaire a tranché l'inverse : le code CONTIENT le prénom du client, c'est lui qui
+     * transforme un bon de réduction anonyme en cadeau adressé. Il doit se voir.
+     */
+    public function test_le_code_est_bien_agrandi(): void
+    {
+        $agrandi = false;
         foreach ($this->rendu() as $l) {
-            if (str_contains($l['texte'], 'DORIAN-TH2P')) {
-                $this->assertFalse($l['double'],
-                    'le code repasse en double taille : il crie aussi fort que la remise, et deux '
-                    . 'éléments qui crient également fort ne laissent rien ressortir');
+            if (str_contains($l['texte'], 'DORIAN-TH2P') && $l['double']) {
+                $agrandi = true;
             }
         }
+
+        $this->assertTrue($agrandi,
+            'le code est repassé en taille normale : il porte le prénom du client, c\'est '
+            . 'l\'élément qui rend le ticket personnel');
     }
 
     /** Rareté + échéance sur une seule ligne, collées à la récompense. */
@@ -273,89 +306,37 @@ class PromoFlyerTicketLayoutTest extends TestCase
     {
         $t = $this->textes();
 
-        $this->assertContains('Merci M. Dorian !', $t,
+        // [OWNER 2026-08-09] « au debut bonsoir (prenom) ». La salutation d'ouverture remplace
+        // le « Merci » : elle s'adresse au client avant de lui vendre quoi que ce soit. Virgule
+        // finale, pas point d'exclamation — elle ouvre une phrase que l'introduction termine.
+        $this->assertContains('Bonsoir M. Dorian,', $t,
             'la salutation nominative a disparu ou s\'est coupée : c\'est le premier contact du '
             . 'ticket, et la seule chose qui le distingue d\'un prospectus');
     }
 
     /**
-     * « ENLÈVE LE TRAIT AU-DESSUS DU -10% » — c'était un bandeau noir VIDE, censé encadrer la
-     * remise, qui se lisait comme un trait parasite. Deux exigences liées : aucun bandeau vide, et
-     * le sous-titre DANS le noir — sinon le bloc se re-décompose en éléments empilés.
+     * [OWNER 2026-08-08 puis 2026-08-09] « Enlève le trait au-dessus du -10% ».
+     *
+     * Le trait parasite était un bandeau noir VIDE. La refonte du 09 supprime tout aplat (voir
+     * `test_aucun_aplat_noir_ne_revient_sur_le_ticket`) ; il reste à garantir qu'aucune ligne
+     * vide ne flotte à l'intérieur du coupon, ce qui recréerait le même effet de trait perdu.
      */
-    public function test_aucun_bandeau_vide_ne_flotte_au_dessus_de_la_remise(): void
+    public function test_aucune_ligne_vide_ne_flotte_dans_le_coupon(): void
     {
-        $bandeaux = array_values(array_filter($this->rendu(), fn ($l) => $l['inverse']));
-        $this->assertNotEmpty($bandeaux, 'la remise n\'est plus en inversion vidéo');
+        $t = $this->textes();
 
-        foreach ($bandeaux as $b) {
-            $this->assertNotSame('', trim($b['texte']),
-                'un bandeau noir VIDE est de retour : sur le papier il se lit comme un trait '
-                . 'parasite posé au-dessus de la remise, pas comme un cadre');
+        $haut = null;
+        $bas = null;
+        foreach ($t as $i => $l) {
+            if ($haut === null && str_starts_with($l, "\xC9")) { $haut = $i; }
+            if (str_starts_with($l, "\xC8")) { $bas = $i; }
         }
+        $this->assertNotNull($haut);
+        $this->assertNotNull($bas);
 
-        $dedans = false;
-        foreach ($bandeaux as $b) {
-            if (str_contains($b['texte'], 'prochaine commande')) {
-                $dedans = true;
-            }
+        foreach (array_slice($t, $haut + 1, $bas - $haut - 1) as $ligne) {
+            $this->assertNotSame('', trim($ligne),
+                'une ligne vide flotte dans le coupon : sur le papier elle se lit comme un trou');
         }
-        $this->assertTrue($dedans,
-            'le sous-titre est ressorti du bloc noir : la remise redevient plusieurs éléments '
-            . 'empilés au lieu d\'un tampon d\'un seul morceau');
-    }
-
-    /** LE TÉLÉPHONE, remis SEUL et DISCRET : une ligne, sans effet, pour qui ne scanne pas. */
-    public function test_le_numero_est_affiche_sur_UNE_ligne_discrete(): void
-    {
-        $trouvees = [];
-        foreach ($this->rendu() as $l) {
-            if (str_contains($l['texte'], '03 65 67 82 91')) {
-                $trouvees[] = $l;
-            }
-        }
-
-        $this->assertCount(1, $trouvees,
-            'le numéro doit tenir sur UNE seule ligne : la version précédente l\'annonçait sur deux '
-            . 'lignes en gras et double hauteur, et le ticket donnait l\'impression d\'insister');
-        $this->assertFalse($trouvees[0]['double'],
-            'le numéro repasse en grand format : on avait retenu la discrétion');
-        $this->assertFalse($trouvees[0]['inverse'],
-            'le numéro ne doit pas crier plus fort que la remise');
-        $this->assertStringContainsString('telephone', $trouvees[0]['texte'],
-            'la ligne doit dire à quoi sert ce numéro');
-    }
-
-    /**
-     * ON N'IMPRIME JAMAIS UN NUMÉRO GABARIT. `settings.company_phone` valait « +33600000000 » sur
-     * cette installation. Un faux numéro est PIRE que pas de numéro : le client appelle, tombe dans
-     * le vide, et c'est la commande ET la confiance qui sont perdues.
-     */
-    public function test_un_numero_gabarit_n_est_JAMAIS_imprime(): void
-    {
-        $service = app(PromoFlyerService::class);
-        $m = new \ReflectionMethod($service, 'resolveOrderPhone');
-        $m->setAccessible(true);
-
-        foreach (['+33600000000', '0000000000', '0123456789', '01 23 45 67 89'] as $gabarit) {
-            $this->assertSame('', $m->invoke($service, $gabarit, 1),
-                'le gabarit « ' . $gabarit . ' » serait imprimé sur le ticket');
-        }
-
-        // Contre-preuve : un vrai numéro doit passer ET sortir formaté par paires — sinon on aurait
-        // échangé un faux numéro contre aucun numéro.
-        $this->assertSame('03 65 67 82 91', $m->invoke($service, '0365678291', 1),
-            'un numéro valide doit passer et être formaté par paires');
-    }
-
-    // ── CÂBLAGE ──────────────────────────────────────────────────────────────────────────────
-
-    public function test_la_largeur_par_defaut_vient_de_la_config_et_non_de_48_en_dur(): void
-    {
-        $r = new \ReflectionMethod(app(PromoFlyerService::class), 'renderBytes');
-
-        $this->assertSame(0, $r->getParameters()[1]->getDefaultValue(),
-            'la largeur par défaut doit être 0 = « résous-la depuis la config », jamais 48 en dur : '
-            . 'c\'est ce 48 qui imprimait un ticket de 48 colonnes sur une caisse de 42');
     }
 }

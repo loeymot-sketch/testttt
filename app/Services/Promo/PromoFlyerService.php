@@ -58,8 +58,21 @@ class PromoFlyerService
         'validity_days'    => 30,
         'site_url'         => 'www.lecayenne.fr',
         'qr_url'           => 'https://www.lecayenne.fr/',
-        // Salutation placée devant la civilité et le nom : « Merci Mme Camille ! »
-        'greeting'         => 'Merci',
+        // Salutation d'ouverture. VIDE = calculée à l'heure de création
+        // (« Bonjour » / « Bonsoir ») — voir `resolveGreeting()`. Une valeur
+        // saisie ici la fige : l'exploitant peut écrire « Merci » ou « Salut »
+        // s'il préfère, au prix de la justesse horaire.
+        'greeting'         => '',
+        // [OWNER 2026-08-09] Les points forts, un par ligne. Ceux fournis par
+        // défaut sont VÉRIFIABLES dans ce dépôt : les catégories viennent du
+        // logo du restaurant, la fidélité est réellement active
+        // (`pos.loyalty_enabled`), le paiement en ligne est branché (Mollie).
+        // Aucune promesse inventée : un argument faux sur un ticket papier se
+        // retourne contre le restaurant, et il n'est pas rattrapable.
+        'strengths'        => "Meme cuisine, meme equipe qu'aujourd'hui\n"
+            . "Tacos, burgers, sandwichs et bowls\n"
+            . "Des points fidelite a chaque commande\n"
+            . "Paiement en ligne securise",
         // Logo imprimé en haut du ticket. Chemin RELATIF à public/ : un chemin
         // absolu saisi depuis l'admin serait une lecture de fichier arbitraire.
         'logo_path'        => 'images/kiosk-attract/logo.png',
@@ -158,7 +171,8 @@ class PromoFlyerService
                     $payload = [
                         'customer_name'    => $name,
                         'civility'         => $civility,
-                        'greeting'         => $settings['greeting'] ?? 'Merci',
+                        'greeting'         => $this->resolveGreeting((string) ($settings['greeting'] ?? '')),
+                        'strengths'        => $settings['strengths'] ?? '',
                         'logo_path'        => $this->resolveLogoPath((string) ($settings['logo_path'] ?? '')),
                         'code'             => $code,
                         'discount_percent' => $settings['discount_percent'],
@@ -209,6 +223,29 @@ class PromoFlyerService
             0,
             $lastError
         );
+    }
+
+    /**
+     * Salutation d'ouverture : « Bonjour » le jour, « Bonsoir » le soir.
+     *
+     * [OWNER 2026-08-09] « au debut bonsoir (prenom) ». Elle est figée ICI, à la création,
+     * et non au rendu : le ticket sort quelques secondes plus tard, et l'instantané du
+     * message doit rester fidèle à ce qui est réellement parti chez le client — c'est la
+     * même règle que pour le reste du texte.
+     *
+     * Bascule à 18 h, l'usage français. Le fuseau vient de l'application (Europe/Paris) et
+     * non du serveur : un VPS en UTC dirait « Bonjour » à 20 h locales.
+     *
+     * Une valeur saisie dans les réglages l'emporte : l'exploitant reste maître de son ton.
+     */
+    public function resolveGreeting(string $configured): string
+    {
+        $configured = trim($configured);
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return Carbon::now(config('app.timezone'))->hour >= 18 ? 'Bonsoir' : 'Bonjour';
     }
 
     /**

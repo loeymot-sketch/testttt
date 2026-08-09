@@ -341,8 +341,54 @@ class PromoFlyerTest extends TestCase
         $flyer = $this->createFlyer('Camille');
         $bytes = $this->service->renderBytes($flyer);
 
-        $this->assertStringContainsString('Merci Camille', $bytes);
+        // [OWNER 2026-08-09] « au debut bonsoir (prenom) » : la salutation suit désormais
+        // l'heure de création. On accepte les deux, c'est la même règle.
+        $this->assertMatchesRegularExpression(
+            '/Bon(jour|soir) Camille,/',
+            $bytes,
+            "La salutation d'ouverture doit nommer le client."
+        );
         $this->assertStringNotContainsString('Mme', $bytes);
+    }
+
+    /**
+     * [OWNER 2026-08-09] La salutation suit l'heure : un ticket glissé dans un sac à 21 h
+     * doit dire « Bonsoir ». Le fuseau vient de l'application, pas du serveur — un VPS en
+     * UTC dirait « Bonjour » à 20 h locales.
+     */
+    /** @test */
+    public function test_the_greeting_follows_the_time_of_day(): void
+    {
+        $service = $this->service;
+
+        \Illuminate\Support\Carbon::setTestNow(
+            \Illuminate\Support\Carbon::parse('2026-08-09 21:30', config('app.timezone'))
+        );
+        $this->assertSame('Bonsoir', $service->resolveGreeting(''));
+
+        \Illuminate\Support\Carbon::setTestNow(
+            \Illuminate\Support\Carbon::parse('2026-08-09 11:00', config('app.timezone'))
+        );
+        $this->assertSame('Bonjour', $service->resolveGreeting(''));
+
+        // Une salutation saisie dans les réglages l'emporte : l'exploitant reste maître du ton.
+        $this->assertSame('Salut', $service->resolveGreeting('Salut'));
+
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
+    /**
+     * [OWNER 2026-08-09] « tout autre details de dire nos point forts ». Une remise seule
+     * achète une commande ; une raison en fabrique une habitude.
+     */
+    /** @test */
+    public function test_the_ticket_lists_the_selling_points(): void
+    {
+        $flyer = $this->createFlyer('Camille');
+        $bytes = $this->service->renderBytes($flyer);
+
+        $this->assertStringContainsString('POURQUOI COMMANDER EN DIRECT', $bytes);
+        $this->assertStringContainsString('points fidelite', $bytes);
     }
 
     /**

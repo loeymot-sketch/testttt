@@ -1478,7 +1478,9 @@
         "flyer_greeting_hint": "Placée devant la civilité et le prénom : « Merci Mme Camille ! »",
         "flyer_logo_path": "Logo imprimé",
         "flyer_logo_path_hint": "Chemin de l'image, relatif au dossier public. Vide = titre en texte à la place.",
-        "civility": "Civilité"
+        "civility": "Civilité",
+        "flyer_strengths": "Nos points forts",
+        "flyer_strengths_hint": "Un argument par ligne. Ils s'impriment en liste sous « Pourquoi commander en direct ? ». N'y mettez que des promesses que vous tenez : un ticket papier ne se corrige pas."
     },
     "button": {
         "refresh": "Actualiser",
