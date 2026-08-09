@@ -34,6 +34,10 @@ class WheelSettingsService
             'review_url' => (string) config('wheel.steps.review.url', ''),
             'instagram_url' => (string) config('wheel.steps.follow.instagram', ''),
             'snapchat_url' => (string) config('wheel.steps.follow.snapchat', ''),
+            // Facebook : troisième réseau, dont l'adresse est DÉJÀ dans le site du restaurant. Ce
+            // n'est donc pas une supposition — c'est une donnée vérifiée, et elle rend l'étape
+            // « abonnement » utilisable dès aujourd'hui, sans attendre les deux autres comptes.
+            'facebook_url' => (string) config('wheel.steps.follow.facebook', ''),
             'review_required' => (bool) config('wheel.steps.review.required', true) ? '1' : '0',
             'follow_required' => (bool) config('wheel.steps.follow.required', true) ? '1' : '0',
             'review_dwell' => (string) config('wheel.steps.review.dwell_seconds', 20),
@@ -90,9 +94,68 @@ class WheelSettingsService
 
     // ── Lectures typées, utilisées par le reste du jeu ────────────────────────────────────────
 
+    /**
+     * Lien pour laisser un avis.
+     *
+     * Si l'exploitant n'a pas encore collé le lien COURT de sa fiche Google (celui en `g.page/r/…`,
+     * qui ouvre directement le formulaire), on en DÉRIVE un depuis l'identité du restaurant : une
+     * recherche Google Maps sur le nom et l'adresse. Ce n'est pas aussi direct — le client aura un
+     * appui de plus à faire — mais ça FONCTIONNE tout de suite, sans rien attendre de personne.
+     *
+     * On ne devine rien : le nom et l'adresse viennent de la fiche du restaurant en base, pas d'une
+     * supposition. Et le lien collé par l'exploitant prime toujours.
+     */
     public function reviewUrl(): string
     {
-        return trim((string) $this->get('review_url', ''));
+        $saisi = trim((string) $this->get('review_url', ''));
+        if ($saisi !== '') {
+            return $saisi;
+        }
+
+        return $this->derivedReviewUrl();
+    }
+
+    /** Le lien d'avis a-t-il été COLLÉ, ou est-il seulement dérivé ? Utile pour le dire à l'écran. */
+    public function reviewUrlIsDerived(): bool
+    {
+        return trim((string) $this->get('review_url', '')) === '' && $this->derivedReviewUrl() !== '';
+    }
+
+    private function derivedReviewUrl(): string
+    {
+        // Un repli qu'on ne peut pas éteindre est un repli sur lequel on ne peut pas raisonner :
+        // impossible de vérifier le comportement « aucun lien », ni de le désactiver si
+        // l'exploitant ne veut PAS de lien d'avis du tout.
+        if (! (bool) config('wheel.steps.review.derive_fallback', true)) {
+            return '';
+        }
+
+        try {
+            $b = \App\Models\Branch::query()
+                ->withoutGlobalScopes()
+                ->orderBy('id')
+                ->first(['name', 'address', 'zip_code', 'city']);
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        if (! $b || trim((string) $b->name) === '') {
+            return '';
+        }
+
+        $morceaux = array_filter([
+            trim((string) $b->name),
+            trim((string) $b->address),
+            trim((string) $b->zip_code),
+            trim((string) $b->city),
+        ], static fn ($x) => $x !== '');
+
+        return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode(implode(' ', $morceaux));
+    }
+
+    public function facebookUrl(): string
+    {
+        return trim((string) $this->get('facebook_url', ''));
     }
 
     public function instagramUrl(): string
@@ -137,6 +200,7 @@ class WheelSettingsService
      */
     public function journeyReady(): bool
     {
-        return $this->reviewUrl() !== '' || $this->instagramUrl() !== '' || $this->snapchatUrl() !== '';
+        return $this->reviewUrl() !== '' || $this->instagramUrl() !== ''
+            || $this->snapchatUrl() !== '' || $this->facebookUrl() !== '';
     }
 }

@@ -160,7 +160,9 @@ class WheelStepService
             return $this->reglages->reviewUrl() !== '';
         }
 
-        return $this->reglages->instagramUrl() !== '' || $this->reglages->snapchatUrl() !== '';
+        return $this->reglages->instagramUrl() !== ''
+            || $this->reglages->snapchatUrl() !== ''
+            || $this->reglages->facebookUrl() !== '';
     }
 
     /**
@@ -205,12 +207,14 @@ class WheelStepService
         }
         $ig = $this->reglages->instagramUrl();
         $sc = $this->reglages->snapchatUrl();
-        if ($ig !== '' || $sc !== '') {
+        $fb = $this->reglages->facebookUrl();
+        if ($ig !== '' || $sc !== '' || $fb !== '') {
             $out[] = [
                 'key' => self::FOLLOW,
                 'required' => $this->required(self::FOLLOW),
                 'instagram' => $ig,
                 'snapchat' => $sc,
+                'facebook' => $fb,
                 'dwell' => $this->dwell(self::FOLLOW),
             ];
         }

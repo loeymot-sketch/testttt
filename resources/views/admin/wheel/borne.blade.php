@@ -35,7 +35,12 @@
   @media (max-aspect-ratio:1/1){ .scene{grid-template-columns:1fr; gap:2.5vmin} }
 
   .gauche{text-align:center}
-  .marque{font-size:2.4vmin; letter-spacing:.4em; opacity:.75; font-weight:800; margin-bottom:1.5vmin}
+  .logo{
+    height:min(9vmin,90px); width:auto; display:block; margin:0 auto 2vmin;
+    /* Lettrage sombre sur fond sombre : on l'éclaircit sans le rendre blanc cassant. */
+    filter:brightness(0) invert(1) sepia(.16) saturate(1.6) hue-rotate(-12deg);
+    opacity:.97;
+  }
   h1{
     margin:0; font-size:min(13vmin,150px); line-height:.94; font-weight:900; letter-spacing:-.02em;
     background:linear-gradient(100deg,var(--jaune2),var(--orange2) 62%,var(--jaune));
@@ -65,7 +70,9 @@
 <div class="scene">
 
   <div class="gauche">
-    <div class="marque">LE CAYENNE</div>
+    {{-- Le VRAI logo, en grand : c'est la première chose vue de loin, et c'est ce qui fait
+         reconnaître l'écran comme celui du restaurant et non une publicité quelconque. --}}
+    <img class="logo" src="{{ asset('images/kiosk-attract/logo.png') }}" alt="Le Cayenne">
     <h1>Tu gagnes<br>à 100 %</h1>
     <p class="sous">
       {{-- Un `@if` COLLÉ à un mot (« commande@if ») n'est pas reconnu comme directive par Blade :

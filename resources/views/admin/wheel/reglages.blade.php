@@ -77,8 +77,12 @@
     <input id="review_url" name="review_url" type="url" placeholder="https://g.page/r/…/review"
            value="{{ $s['review_url'] ?? '' }}">
     <p class="aide">
-      Sur ta fiche Google : <b>Demander des avis</b> → copie le lien court. Il ressemble à
-      <code>https://g.page/r/CXXXXXXXX/review</code>.
+      @if (! empty($reviewDerive))
+        <b style="color:var(--jaune)">Actuellement : un lien de secours</b> — il ouvre ta fiche Google,
+        le client doit ensuite appuyer sur « Écrire un avis ». Ça marche, mais un appui de plus.<br>
+      @endif
+      Pour le lien DIRECT : sur ta fiche Google, <b>Demander des avis</b> → copie le lien court. Il
+      ressemble à <code>https://g.page/r/CXXXXXXXX/review</code> et ouvre le formulaire d'un coup.
     </p>
     <div class="bascule">
       <input type="checkbox" id="review_required" name="review_required" value="1"
@@ -95,6 +99,11 @@
     <label for="snapchat_url">Ton Snapchat</label>
     <input id="snapchat_url" name="snapchat_url" type="url" placeholder="https://snapchat.com/add/…"
            value="{{ $s['snapchat_url'] ?? '' }}">
+
+    <label for="facebook_url">Ta page Facebook</label>
+    <input id="facebook_url" name="facebook_url" type="url" placeholder="https://facebook.com/…"
+           value="{{ $s['facebook_url'] ?? '' }}">
+    <p class="aide">Un seul réseau renseigné suffit pour que l'étape fonctionne. Mets-en autant que tu veux.</p>
     <div class="bascule">
       <input type="checkbox" id="follow_required" name="follow_required" value="1"
              {{ ($s['follow_required'] ?? '0') === '1' ? 'checked' : '' }}>

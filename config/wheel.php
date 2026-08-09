@@ -189,11 +189,19 @@ return [
             // phrase, trop court pour être vécu comme une attente. En dessous, le geste n'a pas eu
             // lieu ; au-dessus, on perd des gens.
             'dwell_seconds' => (int) env('WHEEL_REVIEW_DWELL', 20),
+            // REPLI : sans lien collé, on en dérive un depuis le nom et l'adresse du restaurant
+            // (recherche Google Maps). Un appui de plus pour le client, mais ça FONCTIONNE tout de
+            // suite au lieu d'attendre que quelqu'un colle le lien court.
+            'derive_fallback' => (bool) env('WHEEL_REVIEW_DERIVE', true),
         ],
         'follow' => [
             'required' => (bool) env('WHEEL_STEP_FOLLOW_REQUIRED', true),
             'instagram' => env('WHEEL_INSTAGRAM_URL', ''),
             'snapchat' => env('WHEEL_SNAPCHAT_URL', ''),
+            // Facebook : l'adresse figure DÉJÀ dans le site du restaurant, c'est donc une donnée
+            // vérifiée et non une supposition. Elle rend l'étape « abonnement » utilisable tout de
+            // suite, sans attendre les deux autres comptes.
+            'facebook' => env('WHEEL_FACEBOOK_URL', 'https://www.facebook.com/LeCayenne'),
             // Plus court : s'abonner prend un geste, pas une rédaction.
             'dwell_seconds' => (int) env('WHEEL_FOLLOW_DWELL', 8),
         ],

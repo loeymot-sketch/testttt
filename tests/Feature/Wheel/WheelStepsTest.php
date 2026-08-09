@@ -57,9 +57,9 @@ class WheelStepsTest extends TestCase
              'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4.0],
         ]);
         Config::set('wheel.steps', [
-            'review' => ['required' => true, 'url' => 'https://g.page/r/exemple/review', 'dwell_seconds' => 20],
+            'review' => ['required' => true, 'url' => 'https://g.page/r/exemple/review', 'dwell_seconds' => 20, 'derive_fallback' => false],
             'follow' => ['required' => true, 'instagram' => 'https://instagram.com/lecayenne',
-                         'snapchat' => 'https://snapchat.com/add/lecayenne', 'dwell_seconds' => 8],
+                         'snapchat' => 'https://snapchat.com/add/lecayenne', 'facebook' => '', 'dwell_seconds' => 8],
         ]);
     }
 
@@ -287,8 +287,8 @@ class WheelStepsTest extends TestCase
     public function test_une_etape_requise_SANS_lien_est_sautee_et_signalee(): void
     {
         Config::set('wheel.steps', [
-            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20],
-            'follow' => ['required' => true, 'instagram' => '', 'snapchat' => '', 'dwell_seconds' => 8],
+            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20, 'derive_fallback' => false],
+            'follow' => ['required' => true, 'instagram' => '', 'snapchat' => '', 'facebook' => '', 'dwell_seconds' => 8],
         ]);
 
         // Aucune étape ouverte, et pourtant le tour doit aboutir : elles ne sont pas fournies.
@@ -312,9 +312,9 @@ class WheelStepsTest extends TestCase
     public function test_une_etape_sans_lien_n_est_pas_publiee_au_client(): void
     {
         Config::set('wheel.steps', [
-            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20],
+            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20, 'derive_fallback' => false],
             'follow' => ['required' => true, 'instagram' => 'https://instagram.com/lecayenne',
-                         'snapchat' => '', 'dwell_seconds' => 8],
+                         'snapchat' => '', 'facebook' => '', 'dwell_seconds' => 8],
         ]);
 
         $r = $this->withHeaders($this->cle())

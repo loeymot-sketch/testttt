@@ -48,8 +48,8 @@ class WheelEndpointSecurityTest extends TestCase
         // Étapes DÉSACTIVÉES ici : ce banc éprouve la sécurité du JETON. Les mêler au parcours
         // rendrait chaque échec ambigu. Le parcours a son propre banc (WheelStepsTest).
         Config::set('wheel.steps', [
-            'review' => ['required' => false, 'url' => '', 'dwell_seconds' => 0],
-            'follow' => ['required' => false, 'instagram' => '', 'snapchat' => '', 'dwell_seconds' => 0],
+            'review' => ['required' => false, 'url' => '', 'dwell_seconds' => 0, 'derive_fallback' => false],
+            'follow' => ['required' => false, 'instagram' => '', 'snapchat' => '', 'facebook' => '', 'dwell_seconds' => 0],
         ]);
         Config::set('wheel.segments', [
             ['key' => 'a', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10, 'weight' => 1, 'daily_cap' => 0],

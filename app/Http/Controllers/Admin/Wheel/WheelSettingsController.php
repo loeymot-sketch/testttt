@@ -28,6 +28,7 @@ class WheelSettingsController extends Controller
         return view('admin.wheel.reglages', [
             's' => $this->reglages->all(),
             'pret' => $this->reglages->journeyReady(),
+            'reviewDerive' => $this->reglages->reviewUrlIsDerived(),
         ]);
     }
 
@@ -42,6 +43,7 @@ class WheelSettingsController extends Controller
             'review_url' => ['nullable', 'url', 'max:500'],
             'instagram_url' => ['nullable', 'url', 'max:500'],
             'snapchat_url' => ['nullable', 'url', 'max:500'],
+            'facebook_url' => ['nullable', 'url', 'max:500'],
             'review_dwell' => ['nullable', 'integer', 'min:0', 'max:180'],
             'follow_dwell' => ['nullable', 'integer', 'min:0', 'max:180'],
             'min_order' => ['nullable', 'numeric', 'min:0', 'max:200'],
@@ -60,6 +62,7 @@ class WheelSettingsController extends Controller
         return view('admin.wheel.reglages', [
             's' => $this->reglages->all(),
             'pret' => $this->reglages->journeyReady(),
+            'reviewDerive' => $this->reglages->reviewUrlIsDerived(),
             'enregistre' => true,
         ]);
     }

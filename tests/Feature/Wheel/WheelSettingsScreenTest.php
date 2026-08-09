@@ -50,8 +50,8 @@ class WheelSettingsScreenTest extends TestCase
 
         // Départ : AUCUN lien configuré — l'état réel de la production avant cet écran.
         Config::set('wheel.steps', [
-            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20],
-            'follow' => ['required' => true, 'instagram' => '', 'snapchat' => '', 'dwell_seconds' => 8],
+            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20, 'derive_fallback' => false],
+            'follow' => ['required' => true, 'instagram' => '', 'snapchat' => '', 'facebook' => '', 'dwell_seconds' => 8],
         ]);
     }
 
@@ -179,6 +179,59 @@ class WheelSettingsScreenTest extends TestCase
      * l'a montré : la retirer ne cassait aucun test. C'est de la défense en profondeur, et on la
      * prouve en s'adressant au service lui-même.
      */
+    /**
+     * LE REPLI QUI REND LE JEU UTILISABLE TOUT DE SUITE. Sans lien collé, on dérive une adresse de
+     * recherche Google Maps depuis le NOM et l'ADRESSE du restaurant — données réelles, pas une
+     * supposition. Un appui de plus pour le client, mais le parcours tourne le jour même au lieu
+     * d'attendre que quelqu'un colle le lien court.
+     */
+    public function test_sans_lien_colle_un_lien_d_avis_est_DERIVE_du_restaurant(): void
+    {
+        Config::set('wheel.steps.review.derive_fallback', true);
+
+        $svc = app(WheelSettingsService::class);
+
+        $this->assertNotSame('', $svc->reviewUrl(),
+            'aucun lien dérivé : le parcours resterait bloqué à attendre une adresse');
+        $this->assertStringContainsString('google.com/maps', $svc->reviewUrl());
+        $this->assertTrue($svc->reviewUrlIsDerived(),
+            'l\'écran doit pouvoir DIRE que c\'est un lien de secours, pas le lien direct');
+        $this->assertTrue($svc->journeyReady(), 'le parcours doit être prêt dès le premier jour');
+    }
+
+    /** Et le lien COLLÉ prime toujours : c'est la décision de l'exploitant. */
+    public function test_un_lien_colle_remplace_le_lien_derive(): void
+    {
+        Config::set('wheel.steps.review.derive_fallback', true);
+
+        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+            'review_url' => 'https://g.page/r/Cdirect/review',
+        ])->assertOk();
+
+        $svc = app(WheelSettingsService::class);
+        $this->assertSame('https://g.page/r/Cdirect/review', $svc->reviewUrl());
+        $this->assertFalse($svc->reviewUrlIsDerived());
+    }
+
+    /** Facebook seul suffit : l'étape abonnement fonctionne sans Instagram ni Snapchat. */
+    public function test_facebook_seul_suffit_pour_l_etape_abonnement(): void
+    {
+        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+            'facebook_url' => 'https://www.facebook.com/LeCayenne',
+            'follow_required' => '1',
+        ])->assertOk();
+
+        $steps = app(WheelStepService::class);
+        $this->assertTrue($steps->hasLink(WheelStepService::FOLLOW),
+            'Facebook seul doit suffire : attendre trois comptes bloquerait le jeu');
+        $this->assertTrue($steps->required(WheelStepService::FOLLOW));
+
+        $follow = null;
+        foreach ($steps->publicSteps() as $st) { if ($st['key'] === 'follow') { $follow = $st; } }
+        $this->assertNotNull($follow);
+        $this->assertSame('https://www.facebook.com/LeCayenne', $follow['facebook']);
+    }
+
     public function test_le_service_refuse_directement_une_cle_inconnue(): void
     {
         $svc = app(WheelSettingsService::class);
