@@ -486,7 +486,8 @@
         "setup": "Configuration",
         "connected_devices": "Appareils connectés",
         "promo_flyer": "Ticket promo",
-        "promo_flyer_settings": "Réglages ticket promo"
+        "promo_flyer_settings": "Réglages ticket promo",
+        "system_health": "État du système"
     },
     "label": {
         "kds_sync_uncertain_banner": "Synchro incertaine — données peut-être datées",

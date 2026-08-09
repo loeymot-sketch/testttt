@@ -491,7 +491,8 @@
         "demo_wizard_advanced": "Advanced Wizard Demo",
         "connected_devices": "Connected devices",
         "promo_flyer": "Promo flyer",
-        "promo_flyer_settings": "Promo flyer settings"
+        "promo_flyer_settings": "Promo flyer settings",
+        "system_health": "System health"
     },
     "label": {
         "kds_sync_uncertain_banner": "Sync uncertain — data may be out of date",

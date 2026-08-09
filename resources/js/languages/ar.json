@@ -323,7 +323,8 @@
         "kiosk_machines": "آلات الكشك",
         "ingredients": "المكونات",
         "advanced_tools": "أدوات متقدمة",
-        "demo_wizard_advanced": "عرض المعالج المتقدم"
+        "demo_wizard_advanced": "عرض المعالج المتقدم",
+        "system_health": "System health"
     },
     "label": {
         "kds_sync_uncertain_banner": "المزامنة غير مؤكدة — قد تكون البيانات قديمة",

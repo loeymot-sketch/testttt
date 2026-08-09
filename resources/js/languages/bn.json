@@ -126,7 +126,8 @@
         "kiosk_machines": "কিয়স্ক মেশিন",
         "ingredients": "উপকরণ",
         "advanced_tools": "উন্নত টুল",
-        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো"
+        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো",
+        "system_health": "System health"
     },
     "label": {
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
