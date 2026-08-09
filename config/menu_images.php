@@ -341,6 +341,12 @@ return [
         'Tomate'    => 'tomate.png',
         'Oignon'    => 'oignon.png',
         'Cornichon' => 'cornichon.png',
+        // [2026-08-09] L'oignon cuit n'a pas sa propre photo : on réutilise
+        // celle de l'oignon. L'ingrédient reste identifiable, ce qui vaut
+        // mieux qu'une case grise. ⚠️ Deux options partagent donc le même
+        // visuel — seul le libellé les distingue. À remplacer dès qu'une
+        // photo d'oignons cuits existe.
+        'Oignons cuits' => 'oignon.png',
     ],
 
     /*
@@ -402,6 +408,28 @@ return [
         'Poulet mariné' => 'viande-poulet.png',
         'Viande Hachée' => 'viande-hachee.png',
         'Cordon Bleu'   => 'viande-cordon-bleu.png', // ⚠️ visuel watermarké PNGTREE — à remplacer par version propre
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bases — étapes « Type de Pain » et « Base bol »
+    |--------------------------------------------------------------------------
+    | Ajouté le 2026-08-09. ItemVariation::getThumbAttribute ne traitait que les
+    | attributs « Sauce », « Crudité », « Garniture » et « Viande » ; tout le
+    | reste tombait dans le `else` et renvoyait l'image par défaut. Les DEUX
+    | PREMIÈRES étapes du wizard sandwich et bol — donc la toute première chose
+    | que voit le client — étaient des cases grises.
+    |
+    | « Pain » prend la photo du sandwich classique et « Galette » celle de la
+    | galette : c'est exactement la distinction utile à cette étape, pain long
+    | contre galette roulée.
+    */
+    'bases' => [
+        'Pain'        => 'sandwich-classique.png',
+        'Galette'     => 'galette.png',
+        'Frites'      => 'frites.png',
+        'Riz basmati' => 'bol-riz.png',
+        'Riz'         => 'bol-riz.png',
     ],
 
     'default' => 'item-default.svg',

@@ -44,7 +44,20 @@ class ItemExtra extends Model
         $defaultFile = Config::get('menu_images.default', 'item-default.svg');
 
         $filename = null;
-        if (str_starts_with($this->name, 'Sauce supplémentaire:')) {
+        // [FIX 2026-08-09] On essaie D'ABORD le nom COMPLET dans les tables
+        // supplements/crudités. Sans ça, « Sauce supplémentaire » tombait dans la
+        // branche « Sauce … » ci-dessous, qui retire le préfixe et cherche
+        // « supplémentaire » dans `sauces` — introuvable, alors que la config
+        // déclarait bien 'Sauce supplémentaire' => 'sauce-supplementaire.png'
+        // dans `supplements`. Résultat : 42 options en case grise, avec le bon
+        // fichier présent sur le disque et la bonne ligne dans la config.
+        // Chercher le nom entier avant de le découper évite toute la classe.
+        $nomEntier = Config::get('menu_images.supplements', [])[$this->name]
+            ?? Config::get('menu_images.crudite_extras', [])[$this->name]
+            ?? null;
+        if ($nomEntier !== null) {
+            $filename = $nomEntier;
+        } elseif (str_starts_with($this->name, 'Sauce supplémentaire:')) {
             $sauceName = trim(str_replace('Sauce supplémentaire:', '', $this->name));
             $sauces = Config::get('menu_images.sauces', []);
             $filename = $sauces[$sauceName] ?? null;

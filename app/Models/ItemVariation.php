@@ -79,6 +79,15 @@ class ItemVariation extends Model
                 Config::get('menu_images.viandes', []),
                 (string) $this->name
             );
+        } elseif (str_contains($attrName, 'Pain') || str_contains($attrName, 'Base')) {
+            // [FIX 2026-08-09] Sans cette branche, « Type de Pain » et « Base bol »
+            // tombaient dans le `else` et affichaient l'image par défaut : les deux
+            // PREMIÈRES étapes du wizard, donc la première chose que voit le
+            // client, étaient des cases grises alors que les photos existaient.
+            $filename = $this->resolveMenuImageFilename(
+                Config::get('menu_images.bases', []),
+                (string) $this->name
+            );
         } else {
             $filename = null;
         }
