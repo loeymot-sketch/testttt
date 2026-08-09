@@ -1480,7 +1480,15 @@
         "flyer_logo_path_hint": "Chemin de l'image, relatif au dossier public. Vide = titre en texte à la place.",
         "civility": "Civilité",
         "flyer_strengths": "Nos points forts",
-        "flyer_strengths_hint": "Un argument par ligne. Ils s'impriment en liste sous « Pourquoi commander en direct ? ». N'y mettez que des promesses que vous tenez : un ticket papier ne se corrige pas."
+        "flyer_strengths_hint": "Un argument par ligne. Ils s'impriment en liste sous « Pourquoi commander en direct ? ». N'y mettez que des promesses que vous tenez : un ticket papier ne se corrige pas.",
+        "flyer_stat_printed": "Tickets imprimes",
+        "flyer_stat_used": "Codes utilises",
+        "flyer_stat_rate": "Taux de retour",
+        "flyer_stat_revenue": "Chiffre ramene",
+        "flyer_stat_given": "dont offert :",
+        "flyer_used": "Commande",
+        "flyer_revoked": "annule",
+        "flyer_confirm_revoke": "Annuler le code {code} de {name} ? Il ne sera plus utilisable."
     },
     "button": {
         "refresh": "Actualiser",
@@ -1595,7 +1603,9 @@
         "rename": "Renommer",
         "disconnect": "Déconnecter",
         "print_flyer": "Imprimer le ticket",
-        "print_another": "Imprimer un autre ticket"
+        "print_another": "Imprimer un autre ticket",
+        "reprint": "Reimprimer",
+        "cancel_code": "Annuler"
     },
     "error": {
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",

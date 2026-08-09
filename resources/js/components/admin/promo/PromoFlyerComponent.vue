@@ -94,6 +94,35 @@
                 </button>
             </div>
             <div class="db-card-body">
+                <!-- [OWNER 2026-08-09] Ce que les tickets ont RAPPORTÉ. Sans ces quatre nombres,
+                     l'exploitant offre 10 % et du papier sans jamais savoir si quelqu'un revient :
+                     c'est la seule mesure qui permet de décider de continuer, d'augmenter la
+                     remise, ou d'arrêter. -->
+                <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div class="rounded border border-slate-200 p-3">
+                        <div class="text-xs uppercase text-slate-500">{{ $t("label.flyer_stat_printed") }}</div>
+                        <div class="text-2xl font-bold">{{ stats.printed }}</div>
+                    </div>
+                    <div class="rounded border border-emerald-300 bg-emerald-50 p-3">
+                        <div class="text-xs uppercase text-emerald-700">{{ $t("label.flyer_stat_used") }}</div>
+                        <div class="text-2xl font-bold text-emerald-900">{{ stats.used }}</div>
+                    </div>
+                    <div class="rounded border border-slate-200 p-3">
+                        <div class="text-xs uppercase text-slate-500">{{ $t("label.flyer_stat_rate") }}</div>
+                        <div class="text-2xl font-bold">
+                            <span v-if="stats.rate !== null">{{ stats.rate }} %</span>
+                            <span v-else class="text-slate-400">—</span>
+                        </div>
+                    </div>
+                    <div class="rounded border border-slate-200 p-3">
+                        <div class="text-xs uppercase text-slate-500">{{ $t("label.flyer_stat_revenue") }}</div>
+                        <div class="text-2xl font-bold">{{ money(stats.revenue) }}</div>
+                        <div class="text-xs text-slate-500">
+                            {{ $t("label.flyer_stat_given") }} {{ money(stats.given_away) }}
+                        </div>
+                    </div>
+                </div>
+
                 <div v-if="flyers.length === 0" class="py-4 text-center text-slate-500">
                     {{ $t("label.flyer_history_empty") }}
                 </div>
@@ -104,20 +133,55 @@
                                 <th>{{ $t("label.customer") }}</th>
                                 <th>{{ $t("label.code") }}</th>
                                 <th>{{ $t("label.status") }}</th>
+                                <th>{{ $t("label.flyer_used") }}</th>
                                 <th>{{ $t("label.date") }}</th>
+                                <th class="text-right">{{ $t("label.action") }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="flyer in flyers" :key="flyer.id">
                                 <td>{{ flyer.customer_name }}</td>
-                                <td class="font-mono font-bold">{{ flyer.code }}</td>
+                                <td class="font-mono font-bold">
+                                    {{ flyer.code }}
+                                    <div v-if="flyer.revoked" class="text-xs font-normal text-rose-700">
+                                        {{ $t("label.flyer_revoked") }}
+                                    </div>
+                                </td>
                                 <td>
                                     <span :class="statusClass(flyer.status)">{{ statusLabel(flyer) }}</span>
                                     <div v-if="flyer.last_error" class="text-xs text-rose-700">
                                         {{ flyer.last_error }}
                                     </div>
                                 </td>
+                                <td>
+                                    <span v-if="flyer.used" class="font-medium text-emerald-700">
+                                        {{ money(flyer.order_total) }}
+                                    </span>
+                                    <span v-else class="text-slate-400">—</span>
+                                </td>
                                 <td>{{ formatDate(flyer.created_at) }}</td>
+                                <td class="text-right whitespace-nowrap">
+                                    <!-- Un ticket déjà utilisé ne se réimprime pas et ne s'annule
+                                         plus : le client a été servi, l'action n'aurait aucun sens
+                                         et ne ferait que semer le doute. -->
+                                    <template v-if="!flyer.used">
+                                        <button
+                                            v-if="flyer.status !== 'pending'"
+                                            type="button"
+                                            class="db-btn py-1"
+                                            :disabled="busyRow === flyer.id"
+                                            @click="reprint(flyer)"
+                                        >{{ $t("button.reprint") }}</button>
+                                        <button
+                                            v-if="!flyer.revoked"
+                                            type="button"
+                                            class="db-btn py-1 ml-1 bg-rose-700 text-white"
+                                            :disabled="busyRow === flyer.id"
+                                            @click="revoke(flyer)"
+                                        >{{ $t("button.cancel_code") }}</button>
+                                    </template>
+                                    <span v-else class="text-xs text-slate-400">—</span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -161,6 +225,8 @@ export default {
             errors: {},
             lastFlyer: null,
             flyers: [],
+            stats: { total: 0, printed: 0, used: 0, rate: null, revenue: 0, given_away: 0 },
+            busyRow: null,
         };
     },
     mounted() {
@@ -180,7 +246,10 @@ export default {
         fetchHistory() {
             this.loading.isActive = true;
             this.$store.dispatch("promoFlyerList")
-                .then((res) => { this.flyers = res.flyers || []; })
+                .then((res) => {
+                    this.flyers = res.flyers || [];
+                    if (res.stats) this.stats = res.stats;
+                })
                 .catch((err) => alertService.error(err?.response?.data?.message))
                 .finally(() => { this.loading.isActive = false; });
         },
@@ -205,6 +274,36 @@ export default {
                     alertService.error(err?.response?.data?.message);
                 })
                 .finally(() => { this.busy = false; });
+        },
+
+        money(value) {
+            const n = Number(value || 0);
+            try {
+                return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+            } catch (_) {
+                return n.toFixed(2) + " EUR";
+            }
+        },
+
+        reprint(flyer) {
+            this.busyRow = flyer.id;
+            this.$store.dispatch("promoFlyerReprint", flyer.id)
+                .then((res) => { alertService.success(res.message); this.fetchHistory(); })
+                .catch((err) => alertService.error(err?.response?.data?.message))
+                .finally(() => { this.busyRow = null; });
+        },
+
+        revoke(flyer) {
+            // Geste irréversible côté client : on demande confirmation avec le NOM, parce
+            // qu'annuler le code de la mauvaise personne est silencieux et se découvre trop tard.
+            if (!window.confirm(this.$t("label.flyer_confirm_revoke", { name: flyer.customer_name, code: flyer.code }))) {
+                return;
+            }
+            this.busyRow = flyer.id;
+            this.$store.dispatch("promoFlyerRevoke", flyer.id)
+                .then((res) => { alertService.success(res.message); this.fetchHistory(); })
+                .catch((err) => alertService.error(err?.response?.data?.message))
+                .finally(() => { this.busyRow = null; });
         },
 
         statusLabel(flyer) {

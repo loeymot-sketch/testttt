@@ -55,6 +55,10 @@ class PromoFlyerController extends Controller
         // un support d'hameçonnage distribué par le restaurant lui-même.
         // Tous les autres écrits de réglages du projet exigent `settings`.
         $this->middleware('permission:settings')->only('updateSettings');
+
+        // Annuler un code et relancer une impression engagent de l'argent et du papier :
+        // même barrière que la création.
+        $this->middleware('permission:coupons_create|settings')->only(['revoke', 'reprint']);
     }
 
     /**
@@ -152,18 +156,102 @@ class PromoFlyerController extends Controller
     }
 
     /**
-     * Historique récent — pour retrouver le code d'un client qui rappelle.
+     * Historique + ce que les tickets ont RAPPORTÉ.
+     *
+     * [OWNER 2026-08-09] L'écran listait qui avait reçu un code, jamais si quelqu'un l'avait
+     * utilisé. L'exploitant offrait 10 % et du papier sans le moindre retour : impossible de
+     * décider s'il fallait continuer, augmenter la remise ou arrêter. C'est la seule mesure qui
+     * transforme cette fonctionnalité en outil de gestion plutôt qu'en imprimante à coupons.
      */
     public function index(Request $request): JsonResponse
     {
         $flyers = PromoFlyer::query()
             ->orderByDesc('id')
-            ->limit(50)
-            ->get()
-            ->map(fn (PromoFlyer $f) => $this->present($f))
-            ->values();
+            ->limit(100)
+            ->get();
 
-        return new JsonResponse(['flyers' => $flyers], 200);
+        $couponIds = $flyers->pluck('coupon_id')->filter()->all();
+        $usages = $this->service->redemptionsFor($couponIds);
+        $actifs = $this->couponsActifs($couponIds);
+
+        $lignes = $flyers->map(function (PromoFlyer $f) use ($usages, $actifs) {
+            $usage = $usages[(int) $f->coupon_id] ?? null;
+            $revoque = ! isset($actifs[(int) $f->coupon_id]);
+
+            return $this->present($f, $revoque) + [
+                'used'        => $usage !== null,
+                'used_at'     => $usage['used_at'] ?? null,
+                'order_total' => $usage['order_total'] ?? null,
+                'saved'       => $usage['discount'] ?? null,
+            ];
+        })->values();
+
+        $utilises = $lignes->where('used', true);
+        $imprimes = $lignes->where('status', PromoFlyer::STATUS_PRINTED)->count();
+
+        return new JsonResponse([
+            'flyers' => $lignes,
+            // Le taux se calcule sur les tickets RÉELLEMENT IMPRIMÉS : un ticket resté en file
+            // n'a jamais atteint personne, le compter comme un échec commercial serait faux et
+            // ferait renoncer à une idée qui marche.
+            'stats'  => [
+                'total'       => $lignes->count(),
+                'printed'     => $imprimes,
+                'used'        => $utilises->count(),
+                'rate'        => $imprimes > 0 ? round($utilises->count() * 100 / $imprimes, 1) : null,
+                'revenue'     => round((float) $utilises->sum('order_total'), 2),
+                'given_away'  => round((float) $utilises->sum('saved'), 2),
+            ],
+        ], 200);
+    }
+
+    /**
+     * Remet un ticket dans la file.
+     *
+     * [OWNER 2026-08-09] Une impression échouée (papier épuisé, caisse éteinte, plafond de
+     * tentatives atteint) laissait le code créé mais JAMAIS remis au client : un cadeau promis
+     * à personne, et un coupon qui traîne en base jusqu'à expiration. Il fallait pouvoir
+     * relancer sans recréer un second code au même nom.
+     */
+    public function reprint(Request $request, int $flyer): JsonResponse
+    {
+        $model = $this->findForBranch($request, $flyer);
+
+        if (! $model) {
+            return new JsonResponse(['message' => trans('all.message.device_not_found')], 404);
+        }
+
+        $this->service->requeue($model);
+
+        return new JsonResponse([
+            'message' => 'Ticket remis en file d\'impression.',
+            'flyer'   => $this->present($model->fresh()),
+        ], 200);
+    }
+
+    /**
+     * Annule un code.
+     *
+     * [OWNER 2026-08-09] Un prénom mal tapé, un ticket imprimé deux fois, un client qui repart
+     * sans son sac : le code existe et reste utilisable par quiconque le lit. Il fallait pouvoir
+     * le neutraliser. On DÉSACTIVE le coupon (statut) au lieu de le supprimer : la trace de ce
+     * qui a été offert, à qui et quand, doit survivre — c'est elle qui rend les statistiques
+     * ci-dessus honnêtes.
+     */
+    public function revoke(Request $request, int $flyer): JsonResponse
+    {
+        $model = $this->findForBranch($request, $flyer);
+
+        if (! $model) {
+            return new JsonResponse(['message' => trans('all.message.device_not_found')], 404);
+        }
+
+        $this->service->revoke($model);
+
+        return new JsonResponse([
+            'message' => 'Code annule.',
+            'flyer'   => $this->present($model->fresh()),
+        ], 200);
     }
 
     /**
@@ -255,7 +343,45 @@ class PromoFlyerController extends Controller
             ->first();
     }
 
-    private function present(PromoFlyer $flyer): array
+    /**
+     * Codes ENCORE actifs parmi ceux fournis, en UNE requête.
+     *
+     * Première écriture faite dans `present()`, donc une requête PAR LIGNE : 100 tickets
+     * affichés = 100 requêtes, sur un écran qu'on rafraîchit en plein service. Le défaut le
+     * plus banal et le plus coûteux qui soit — corrigé avant d'atteindre l'écran.
+     *
+     * @param  array<int,int|null>  $couponIds
+     * @return array<int,bool>  coupon_id => actif
+     */
+    private function couponsActifs(array $couponIds): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $couponIds))));
+        if ($ids === []) {
+            return [];
+        }
+
+        return \App\Models\Coupon::withoutGlobalScopes()
+            ->whereIn('id', $ids)
+            ->where('status', \App\Enums\Status::ACTIVE)
+            ->pluck('id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
+    }
+
+    private function estRevoque(PromoFlyer $flyer): bool
+    {
+        if (! $flyer->coupon_id) {
+            return true;
+        }
+
+        return ! \App\Models\Coupon::withoutGlobalScopes()
+            ->whereKey($flyer->coupon_id)
+            ->where('status', \App\Enums\Status::ACTIVE)
+            ->exists();
+    }
+
+    private function present(PromoFlyer $flyer, ?bool $revoque = null): array
     {
         return [
             'id'            => (int) $flyer->id,
@@ -267,6 +393,7 @@ class PromoFlyerController extends Controller
             'created_at'    => optional($flyer->created_at)->toIso8601String(),
             'last_error'    => $flyer->last_error,
             'valid_until'   => $flyer->rendered_payload['valid_until'] ?? null,
+            'revoked'       => $revoque ?? $this->estRevoque($flyer),
             'discount'      => $flyer->rendered_payload['discount_percent'] ?? null,
         ];
     }

@@ -48,11 +48,15 @@ class PromoFlyerService
         // [CONVERSION 2026-08-08] L'ancien texte annonçait « jusqu'a -30% d'economies » —
         // en contradiction directe avec le -10% du code juste au-dessus. Le client lit -30,
         // reçoit -10, et se sent floué : deux nombres qui se contredisent sur le même bout de
-        // papier détruisent la promesse au lieu de la renforcer. Il expliquait en plus les
-        // COMMISSIONS DE PLATEFORME — l'intérêt du restaurant, pas celui du client, qui n'a
-        // aucune raison de porter votre marge. On garde une seule idée, la sienne : même
-        // cuisine, prix plus juste, et il choisit son mode de retrait.
-        'savings_note'     => 'Meme cuisine, meme equipe. En direct, tu paies le repas, pas la commission.',
+        // papier détruisent la promesse au lieu de la renforcer.
+        //
+        // [2026-08-09] VIDÉ. En ajoutant la liste des points forts la veille, j'ai laissé ce
+        // bloc en place : le ticket disait donc DEUX FOIS « Même cuisine, même équipe », à six
+        // lignes d'intervalle. Quatre blocs de prose répétaient la même idée, ce qui dilue
+        // l'argument au lieu de l'appuyer — et coûte du papier. L'idée unique de ce texte
+        // (« tu paies le repas, pas la commission ») a rejoint la liste, à sa place.
+        // Le réglage reste disponible pour qui veut ajouter un mot de fin propre à lui.
+        'savings_note'     => '',
         'footer_note'      => 'A emporter et en livraison. A tres vite !',
         'discount_percent' => 10,
         'validity_days'    => 30,
@@ -69,7 +73,7 @@ class PromoFlyerService
         // (`pos.loyalty_enabled`), le paiement en ligne est branché (Mollie).
         // Aucune promesse inventée : un argument faux sur un ticket papier se
         // retourne contre le restaurant, et il n'est pas rattrapable.
-        'strengths'        => "Meme cuisine, meme equipe qu'aujourd'hui\n"
+        'strengths'        => "Meme cuisine, meme equipe : tu paies le repas, pas la commission\n"
             . "Tacos, burgers, sandwichs et bowls\n"
             . "Des points fidelite a chaque commande\n"
             . "Paiement en ligne securise",
@@ -346,6 +350,108 @@ class PromoFlyerService
             : ((int) config('printing.receipt.width_chars', 0) ?: 48);
 
         return $this->renderer->render($payload, $w);
+    }
+
+    /**
+     * Remet un ticket dans la file d'impression.
+     *
+     * On remet le compteur de tentatives à zéro : le motif d'échec précédent (papier épuisé,
+     * caisse éteinte) est justement ce que l'exploitant vient de corriger. Repartir de 5/5
+     * ferait abandonner la file au premier cycle et le geste n'aurait servi à rien.
+     *
+     * Le texte du ticket n'est PAS recalculé : c'est le même cadeau, avec le même code et la
+     * même échéance. Le régénérer changerait la salutation (« Bonjour » devenu « Bonsoir ») et
+     * ferait mentir l'instantané conservé pour la traçabilité.
+     */
+    public function requeue(PromoFlyer $flyer): void
+    {
+        $flyer->forceFill([
+            'status'     => PromoFlyer::STATUS_PENDING,
+            'claimed_at' => null,
+            'printed_at' => null,
+            'attempts'   => 0,
+            'last_error' => null,
+        ])->save();
+    }
+
+    /**
+     * Neutralise le code sans effacer la trace.
+     *
+     * DÉSACTIVATION et non suppression : savoir ce qui a été offert, à qui et quand, doit
+     * survivre à l'annulation — c'est cette trace qui rend les statistiques de conversion
+     * honnêtes, et c'est elle qu'on regarde si un client se présente avec un code refusé.
+     *
+     * Le ticket lui-même sort de la file : réimprimer un code annulé n'aurait aucun sens.
+     */
+    public function revoke(PromoFlyer $flyer): void
+    {
+        if ($flyer->coupon_id) {
+            Coupon::withoutGlobalScopes()
+                ->whereKey($flyer->coupon_id)
+                ->update(['status' => Status::INACTIVE]);
+        }
+
+        if ($flyer->status === PromoFlyer::STATUS_PENDING) {
+            $flyer->forceFill([
+                'status'     => PromoFlyer::STATUS_FAILED,
+                'claimed_at' => null,
+                'last_error' => 'Code annule avant impression',
+            ])->save();
+        }
+    }
+
+    /**
+     * Ce qu'un ticket a RÉELLEMENT rapporté.
+     *
+     * [OWNER 2026-08-09 « ameliore … la gestion »] Le ticket coûte du papier et 10 % de marge,
+     * et jusqu'ici rien ne disait s'il ramenait quelqu'un. L'exploitant dépensait à l'aveugle :
+     * il pouvait imprimer cinq cents tickets sans jamais savoir si un seul client était revenu.
+     * C'est la seule question qui décide de continuer, d'augmenter la remise ou d'arrêter.
+     *
+     * Une utilisation = une ligne `order_coupons` dont la commande n'est pas terminale-annulée.
+     * C'est EXACTEMENT la règle qui décide si le coupon est consommé côté `CouponService` : si
+     * on comptait autrement, le tableau de bord et le moteur de coupons se contrediraient, et
+     * l'exploitant croirait à un bug de l'un ou de l'autre.
+     *
+     * @return array<int, array{used_at:string, order_id:int, order_total:float, discount:float}>
+     *         indexé par `coupon_id`
+     */
+    public function redemptionsFor(array $couponIds): array
+    {
+        $couponIds = array_values(array_filter(array_map('intval', $couponIds)));
+        if ($couponIds === []) {
+            return [];
+        }
+
+        $lignes = DB::table('order_coupons')
+            ->join('orders', 'orders.id', '=', 'order_coupons.order_id')
+            ->whereIn('order_coupons.coupon_id', $couponIds)
+            ->whereNotIn('orders.status', [
+                \App\Enums\OrderStatus::CANCELED,
+                \App\Enums\OrderStatus::REJECTED,
+                \App\Enums\OrderStatus::RETURNED,
+            ])
+            ->orderBy('order_coupons.id')
+            ->get([
+                'order_coupons.coupon_id',
+                'order_coupons.order_id',
+                'order_coupons.discount',
+                'order_coupons.created_at',
+                'orders.total',
+            ]);
+
+        $par = [];
+        foreach ($lignes as $l) {
+            // Un code est à usage unique : la première utilisation valable fait foi.
+            $par[(int) $l->coupon_id] ??= [
+                'used_at'     => (string) $l->created_at,
+                'order_id'    => (int) $l->order_id,
+                'order_total' => (float) $l->total,
+                'discount'    => (float) $l->discount,
+            ];
+        }
+
+        return $par;
     }
 
     /**

@@ -1146,6 +1146,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/pending', [App\Http\Controllers\Admin\PromoFlyerController::class, 'pending'])->name('pending');
         Route::get('/{flyer}/escpos', [App\Http\Controllers\Admin\PromoFlyerController::class, 'escpos'])->whereNumber('flyer')->name('escpos');
         Route::post('/{flyer}/ack', [App\Http\Controllers\Admin\PromoFlyerController::class, 'acknowledge'])->whereNumber('flyer')->name('ack');
+        // Gestion : relancer une impression ratée, annuler un code émis par erreur.
+        Route::post('/{flyer}/reprint', [App\Http\Controllers\Admin\PromoFlyerController::class, 'reprint'])->whereNumber('flyer')->name('reprint');
+        Route::post('/{flyer}/revoke', [App\Http\Controllers\Admin\PromoFlyerController::class, 'revoke'])->whereNumber('flyer')->name('revoke');
     });
 
     Route::prefix('printers')->name('printers.')->group(function () {

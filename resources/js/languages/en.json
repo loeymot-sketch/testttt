@@ -1549,7 +1549,15 @@
         "flyer_logo_path_hint": "Image path, relative to the public folder. Empty = text headline instead.",
         "civility": "Title",
         "flyer_strengths": "Our selling points",
-        "flyer_strengths_hint": "One argument per line, printed as a list. Only promises you can keep — a paper flyer cannot be edited."
+        "flyer_strengths_hint": "One argument per line, printed as a list. Only promises you can keep — a paper flyer cannot be edited.",
+        "flyer_stat_printed": "Flyers printed",
+        "flyer_stat_used": "Codes redeemed",
+        "flyer_stat_rate": "Return rate",
+        "flyer_stat_revenue": "Revenue back",
+        "flyer_stat_given": "of which given:",
+        "flyer_used": "Order",
+        "flyer_revoked": "cancelled",
+        "flyer_confirm_revoke": "Cancel code {code} for {name}? It will no longer work."
     },
     "button": {
         "refresh": "Refresh",
@@ -1663,7 +1671,9 @@
         "rename": "Rename",
         "disconnect": "Disconnect",
         "print_flyer": "Print flyer",
-        "print_another": "Print another flyer"
+        "print_another": "Print another flyer",
+        "reprint": "Reprint",
+        "cancel_code": "Cancel"
     },
     "error": {
         "something_wrong": "Something Wrong.",

@@ -27,5 +27,11 @@ export const promoFlyer = {
         promoFlyerCreate(context, payload) {
             return axios.post("admin/promo-flyer", payload).then((res) => res.data);
         },
+        promoFlyerReprint(context, id) {
+            return axios.post(`admin/promo-flyer/${id}/reprint`).then((res) => res.data);
+        },
+        promoFlyerRevoke(context, id) {
+            return axios.post(`admin/promo-flyer/${id}/revoke`).then((res) => res.data);
+        },
     },
 };
