@@ -44,7 +44,14 @@ class WheelSettingsScreenTest extends TestCase
             touch(storage_path('installed'));
         }
 
-        $branch = Branch::factory()->create();
+        // La branche porte volontairement un suffixe technique, comme en production : sans lui, le
+        // test du nettoyage passerait sans rien prouver.
+        $branch = Branch::factory()->create([
+            'name' => 'Le Cayenne (principal)',
+            'address' => '437 Rue Élie Gruyelle',
+            'zip_code' => '62110',
+            'city' => 'Hénin-Beaumont',
+        ]);
         $this->caissier = User::factory()->create(['branch_id' => $branch->id]);
         $this->caissier->givePermissionTo('pos');
 
@@ -194,6 +201,12 @@ class WheelSettingsScreenTest extends TestCase
         $this->assertNotSame('', $svc->reviewUrl(),
             'aucun lien dérivé : le parcours resterait bloqué à attendre une adresse');
         $this->assertStringContainsString('google.com/maps', $svc->reviewUrl());
+        // Le nom de branche porte souvent un suffixe technique (« … (principal) ») qui n'existe pas
+        // sur la fiche Google et ferait échouer la recherche. Il doit être retiré.
+        $this->assertStringNotContainsString('principal', $svc->reviewUrl(),
+            'le suffixe technique du nom de branche pollue la recherche Google');
+        $this->assertStringNotContainsString('%28', $svc->reviewUrl(),
+            'une parenthèse subsiste dans la recherche : elle vient du nom interne, pas de la fiche');
         $this->assertTrue($svc->reviewUrlIsDerived(),
             'l\'écran doit pouvoir DIRE que c\'est un lien de secours, pas le lien direct');
         $this->assertTrue($svc->journeyReady(), 'le parcours doit être prêt dès le premier jour');

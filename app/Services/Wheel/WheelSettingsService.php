@@ -143,8 +143,17 @@ class WheelSettingsService
             return '';
         }
 
+        // Le nom de la branche porte souvent un suffixe technique — « Le Cayenne (principal) » —
+        // qui n'existe pas sur la fiche Google et fait échouer la recherche. On le retire, ainsi que
+        // tout ce qui suit un tiret cadratin ou un pipe : ces marqueurs servent à l'exploitant, pas
+        // à Google.
+        $nom = trim(preg_replace('/\s*[\(\[|—-]{1}.*$/u', '', (string) $b->name) ?? '');
+        if ($nom === '') {
+            $nom = trim((string) $b->name);
+        }
+
         $morceaux = array_filter([
-            trim((string) $b->name),
+            $nom,
             trim((string) $b->address),
             trim((string) $b->zip_code),
             trim((string) $b->city),
