@@ -155,6 +155,15 @@ Route::middleware(['installed', 'auth'])->group(function () {
     | aucune surface ne disait a l'equipe qu'un client avait un lot a recevoir.
     | Meme garde que la validation : `can:pos`, et la branche vient du COMPTE.
     */
+    /*
+    | ROUE — ECRAN D'ATTENTE de la tablette du comptoir. Plein ecran, personne ne le touche, le QR
+    | se renouvelle tout seul. `can:pos` : c'est un ecran de service, pas une page publique — et
+    | c'est lui qui EMET les jetons.
+    */
+    Route::get('/admin/roue-borne', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'kiosk'])
+        ->middleware('can:pos')
+        ->name('admin.wheel.kiosk');
+
     Route::get('/admin/roue-lot', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'show'])
         ->middleware('can:pos')
         ->name('admin.wheel.prize');

@@ -27,6 +27,60 @@ class WheelCounterController extends Controller
         return view('admin.wheel.validation', ['token' => null, 'qr' => null, 'url' => null, 'ttl' => null]);
     }
 
+    /**
+     * L'ÉCRAN D'ATTENTE DE LA TABLETTE, posé au comptoir face aux clients.
+     *
+     * Personne ne le touche : ni l'équipe pendant un service, ni le client qui se contente de
+     * scanner. Le jeton se renouvelle donc TOUT SEUL — un QR figé serait consommé par le premier
+     * scan (usage unique) et les suivants tomberaient sur « validation introuvable ».
+     *
+     * Effet de bord voulu : une photo du QR partagée à l'extérieur ne vaut plus rien quelques
+     * minutes plus tard. Il faut être DEVANT le comptoir.
+     */
+    public function kiosk(Request $request)
+    {
+        $user = $request->user();
+        if (! $user || ! $user->can('pos')) {
+            abort(403);
+        }
+
+        $branchId = (int) ($user->branch_id ?: 1);
+        $ttl = max(1, (int) config('wheel.unlock_token_ttl_minutes', 15));
+
+        $commun = [
+            'segments' => app(\App\Services\Wheel\WheelService::class)->publicSegments(),
+            'minOrder' => (float) config('wheel.min_order_amount', 0),
+            // On recharge à la MOITIÉ de la durée de vie : le QR affiché est ainsi toujours valable
+            // au moins autant de temps qu'il en reste à l'écran. Recharger à l'expiration exacte
+            // laisserait une fenêtre où le client scanne un jeton déjà mort.
+            'refreshMs' => (int) max(30, $ttl * 30) * 1000,
+        ];
+
+        try {
+            $jeton = $this->unlock->issue($branchId, (int) $user->id);
+        } catch (WheelException $e) {
+            return view('admin.wheel.borne', $commun + ['qr' => null, 'erreur' => $e->getMessage()]);
+        }
+
+        $base = (string) config('wheel.public_url', '');
+        if ($base === '') {
+            return view('admin.wheel.borne', $commun + [
+                'qr' => null,
+                'erreur' => "L'adresse publique de la roue n'est pas configurée (WHEEL_PUBLIC_URL).",
+            ]);
+        }
+
+        $url = $base . '/roue.html?t=' . urlencode($jeton['token']);
+        $apercu = (string) config('wheel.preview_key', '');
+        if (! (bool) config('wheel.enabled', false) && $apercu !== '') {
+            $url .= '&preview=' . urlencode($apercu);
+        }
+
+        return view('admin.wheel.borne', $commun + [
+            'qr' => QrCode::format('svg')->size(560)->margin(1)->errorCorrection('M')->generate($url),
+        ]);
+    }
+
     public function issue(Request $request)
     {
         $user = $request->user();
