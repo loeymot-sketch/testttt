@@ -152,12 +152,22 @@ class WheelSettingsService
             $nom = trim((string) $b->name);
         }
 
-        $morceaux = array_filter([
-            $nom,
-            trim((string) $b->address),
-            trim((string) $b->zip_code),
-            trim((string) $b->city),
-        ], static fn ($x) => $x !== '');
+        // Le champ « adresse » contient souvent DÉJÀ le code postal et la ville : les ajouter
+        // produisait « 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont 62110 Hénin-Beaumont ». Une
+        // adresse qui se répète brouille la recherche au lieu de la préciser.
+        $adresse = trim((string) $b->address);
+        $cp = trim((string) $b->zip_code);
+        $ville = trim((string) $b->city);
+
+        $morceaux = [$nom, $adresse];
+        if ($cp !== '' && ! str_contains($adresse, $cp)) {
+            $morceaux[] = $cp;
+        }
+        if ($ville !== '' && mb_stripos($adresse, $ville) === false) {
+            $morceaux[] = $ville;
+        }
+
+        $morceaux = array_filter($morceaux, static fn ($x) => $x !== '');
 
         return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode(implode(' ', $morceaux));
     }

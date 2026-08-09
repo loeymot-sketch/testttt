@@ -48,7 +48,9 @@ class WheelSettingsScreenTest extends TestCase
         // test du nettoyage passerait sans rien prouver.
         $branch = Branch::factory()->create([
             'name' => 'Le Cayenne (principal)',
-            'address' => '437 Rue Élie Gruyelle',
+            // Adresse COMPLÈTE, comme en production : elle contient déjà le code postal et la
+            // ville. Sans ça, le test du dédoublonnage ne prouverait rien.
+            'address' => '437 Rue Élie Gruyelle, 62110 Hénin-Beaumont',
             'zip_code' => '62110',
             'city' => 'Hénin-Beaumont',
         ]);
@@ -207,6 +209,14 @@ class WheelSettingsScreenTest extends TestCase
             'le suffixe technique du nom de branche pollue la recherche Google');
         $this->assertStringNotContainsString('%28', $svc->reviewUrl(),
             'une parenthèse subsiste dans la recherche : elle vient du nom interne, pas de la fiche');
+
+        // L'adresse ne doit pas se répéter : « … 62110 Hénin-Beaumont 62110 Hénin-Beaumont »
+        // brouille la recherche au lieu de la préciser.
+        $decode = urldecode($svc->reviewUrl());
+        $this->assertSame(1, substr_count($decode, '62110'),
+            'le code postal apparaît deux fois : l\'adresse contient déjà le code postal');
+        $this->assertSame(1, substr_count($decode, 'Hénin-Beaumont'),
+            'la ville apparaît deux fois');
         $this->assertTrue($svc->reviewUrlIsDerived(),
             'l\'écran doit pouvoir DIRE que c\'est un lien de secours, pas le lien direct');
         $this->assertTrue($svc->journeyReady(), 'le parcours doit être prêt dès le premier jour');
