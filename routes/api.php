@@ -859,6 +859,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->middleware('permission:catalog.publish');
     });
 
+    /*
+    | ROUE — validation au comptoir. C'est un droit de DONNER un lot : réservé aux comptes caisse,
+    | et la branche vient du COMPTE, jamais de la requête (sinon on valide chez le voisin).
+    */
+    Route::post('/wheel/unlock-token', [\App\Http\Controllers\Admin\Wheel\WheelUnlockController::class, 'issue'])
+        ->middleware('throttle:60,1')
+        ->name('wheel.unlockToken');
+
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('/walk-in-customer', [PosController::class, 'walkInCustomer'])
             ->middleware('throttle:pos-quote')
@@ -1610,6 +1618,22 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendCouponController::class, 'index']);
         // [SEC-26-1] Rate limit coupon brute-force: 10 attempts/min per IP
         Route::post('/coupon-checking', [FrontendCouponController::class, 'couponChecking'])
+            ->middleware('throttle:10,1');
+    });
+
+    /*
+    | ROUE — surface publique. Sous `apiKey` comme le reste du frontend (cette clé n'est pas un
+    | secret : elle est publiée dans le meta HTML du site). La vraie sécurité est ailleurs — le
+    | tirage est serveur, le tour exige un jeton de validation signé émis au comptoir, et la porte
+    | reste fermée au public tant que `wheel.enabled` est faux.
+    |
+    | Débit limité SERRÉ sur `spin` : c'est le seul endpoint du site qui DONNE quelque chose. Sans
+    | limite, on balaye des milliers de numéros pour trouver ceux qui n'ont pas encore joué.
+    */
+    Route::prefix('wheel')->name('wheel.')->group(function () {
+        Route::get('/config', [\App\Http\Controllers\Frontend\WheelController::class, 'config'])
+            ->middleware('throttle:60,1');
+        Route::post('/spin', [\App\Http\Controllers\Frontend\WheelController::class, 'spin'])
             ->middleware('throttle:10,1');
     });
 

@@ -26,6 +26,12 @@ class WheelSpin extends Model
         'claimed_at'     => 'datetime',
     ];
 
+    /** Le coupon matérialisant le lot, quand le lot est une remise (pas des points). */
+    public function coupon()
+    {
+        return $this->belongsTo(\App\Models\Coupon::class, 'coupon_id')->withoutGlobalScopes();
+    }
+
     protected static function booted(): void
     {
         static::addGlobalScope(new BranchScope());
