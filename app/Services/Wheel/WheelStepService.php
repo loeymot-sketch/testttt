@@ -120,9 +120,53 @@ class WheelStepService
         ];
     }
 
+    /**
+     * Une étape est requise SEULEMENT si elle est à la fois demandée ET FOURNIE.
+     *
+     * [P0 2026-08-09] Sans cette condition, une étape marquée « requise » mais sans adresse
+     * configurée rendait le jeu INJOUABLE : le client n'avait aucun lien à ouvrir, le serveur
+     * exigeait pourtant l'horodatage, et tout tour était refusé en 428 — indéfiniment, sans que
+     * personne comprenne pourquoi. On ne peut pas exiger ce qu'on ne fournit pas.
+     *
+     * Conséquence voulue : tant que le propriétaire n'a pas donné son lien d'avis et ses comptes,
+     * le jeu TOURNE (étapes sautées) au lieu d'être bloqué. `missingLinks()` le signale.
+     */
     public function required(string $step): bool
     {
-        return (bool) (config('wheel.steps.' . $step . '.required', false));
+        if (! (bool) config('wheel.steps.' . $step . '.required', false)) {
+            return false;
+        }
+
+        return $this->hasLink($step);
+    }
+
+    /** L'étape a-t-elle au moins une adresse utilisable ? */
+    public function hasLink(string $step): bool
+    {
+        if ($step === self::REVIEW) {
+            return trim((string) config('wheel.steps.review.url', '')) !== '';
+        }
+
+        return trim((string) config('wheel.steps.follow.instagram', '')) !== ''
+            || trim((string) config('wheel.steps.follow.snapchat', '')) !== '';
+    }
+
+    /**
+     * Étapes DEMANDÉES mais non fournies. Un trou nommé se corrige ; un trou silencieux fait croire
+     * que le jeu vérifie quelque chose qu'il ne vérifie pas.
+     *
+     * @return array<int, string>
+     */
+    public function missingLinks(): array
+    {
+        $out = [];
+        foreach ([self::REVIEW, self::FOLLOW] as $step) {
+            if ((bool) config('wheel.steps.' . $step . '.required', false) && ! $this->hasLink($step)) {
+                $out[] = $step;
+            }
+        }
+
+        return $out;
     }
 
     public function dwell(string $step): int
@@ -134,7 +178,7 @@ class WheelStepService
     public function publicSteps(): array
     {
         $out = [];
-        if ($this->required(self::REVIEW) || (string) config('wheel.steps.review.url', '') !== '') {
+        if ($this->hasLink(self::REVIEW)) {
             $out[] = [
                 'key' => self::REVIEW,
                 'required' => $this->required(self::REVIEW),
@@ -144,7 +188,7 @@ class WheelStepService
         }
         $ig = (string) config('wheel.steps.follow.instagram', '');
         $sc = (string) config('wheel.steps.follow.snapchat', '');
-        if ($this->required(self::FOLLOW) || $ig !== '' || $sc !== '') {
+        if ($ig !== '' || $sc !== '') {
             $out[] = [
                 'key' => self::FOLLOW,
                 'required' => $this->required(self::FOLLOW),

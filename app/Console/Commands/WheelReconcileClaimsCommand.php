@@ -36,6 +36,15 @@ class WheelReconcileClaimsCommand extends Command
             $this->line('  Renseigne WHEEL_COST_ITEM_<SEGMENT> dans .env avec l\'identifiant du produit qui sert de référence.');
         }
 
+        // Étapes demandées mais SANS adresse : le jeu tourne, mais il ne vérifie pas ce que
+        // l'exploitant croit qu'il vérifie. On le répète à chaque passage.
+        $manquantes = app(\App\Services\Wheel\WheelStepService::class)->missingLinks();
+        if (! empty($manquantes)) {
+            $this->warn('Etapes DEMANDEES mais SANS lien configure — elles sont SAUTEES : '
+                . implode(', ', $manquantes));
+            $this->line('  Renseigne WHEEL_REVIEW_URL / WHEEL_INSTAGRAM_URL / WHEEL_SNAPCHAT_URL.');
+        }
+
         return self::SUCCESS;
     }
 }

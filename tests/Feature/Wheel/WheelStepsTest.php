@@ -278,6 +278,53 @@ class WheelStepsTest extends TestCase
             'sans minimum d\'achat, on distribue des cadeaux à qui ne commande rien');
     }
 
+    /**
+     * ON NE PEUT PAS EXIGER CE QU'ON NE FOURNIT PAS. Une étape marquée « requise » mais SANS adresse
+     * configurée rendait le jeu INJOUABLE : aucun lien à ouvrir, mais le serveur exigeait
+     * l'horodatage — tout tour refusé en 428, indéfiniment, sans que personne comprenne. Le jeu
+     * doit TOURNER en sautant l'étape, et le manque doit être SIGNALÉ à l'exploitant.
+     */
+    public function test_une_etape_requise_SANS_lien_est_sautee_et_signalee(): void
+    {
+        Config::set('wheel.steps', [
+            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20],
+            'follow' => ['required' => true, 'instagram' => '', 'snapchat' => '', 'dwell_seconds' => 8],
+        ]);
+
+        // Aucune étape ouverte, et pourtant le tour doit aboutir : elles ne sont pas fournies.
+        $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', [
+            'branch_id' => $this->branchId, 'phone' => '0611000040',
+            'email' => 'sanslien@exemple.fr', 'unlock_token' => $this->jeton(),
+        ])->assertOk();
+
+        // Et le manque est nommé, pas tu.
+        $manquantes = app(\App\Services\Wheel\WheelStepService::class)->missingLinks();
+        $this->assertSame(['review', 'follow'], $manquantes,
+            'le manque doit être signalé : sinon l\'exploitant croit que le jeu vérifie quelque '
+            . 'chose qu\'il ne vérifie pas');
+
+        $this->artisan('wheel:reconcile-claims')
+            ->expectsOutputToContain('SANS lien configure')
+            ->assertExitCode(0);
+    }
+
+    /** Et une étape sans lien n'est PAS publiée : afficher un bouton vers rien serait pire. */
+    public function test_une_etape_sans_lien_n_est_pas_publiee_au_client(): void
+    {
+        Config::set('wheel.steps', [
+            'review' => ['required' => true, 'url' => '', 'dwell_seconds' => 20],
+            'follow' => ['required' => true, 'instagram' => 'https://instagram.com/lecayenne',
+                         'snapchat' => '', 'dwell_seconds' => 8],
+        ]);
+
+        $r = $this->withHeaders($this->cle())
+            ->getJson('/api/frontend/wheel/config?branch_id=' . $this->branchId)->assertOk();
+
+        $cles = array_column($r->json('steps'), 'key');
+        $this->assertSame(['follow'], $cles,
+            'une étape sans lien est publiée : le client verrait un bouton qui ne mène nulle part');
+    }
+
     // ── 6. L'AVIS PEUT ÊTRE DÉCONDITIONNÉ EN UN RÉGLAGE ───────────────────────────────────────
 
     /**
