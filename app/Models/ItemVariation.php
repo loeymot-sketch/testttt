@@ -4,14 +4,17 @@ namespace App\Models;
 
 use App\Libraries\AppLibrary;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class ItemVariation extends Model
+class ItemVariation extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
     protected $table = "item_variations";
     protected $appends = ['convert_price', 'currency_price', 'flat_price', 'thumb'];
@@ -60,6 +63,11 @@ class ItemVariation extends Model
      */
     public function getThumbAttribute(): ?string
     {
+        // La photo posée depuis l'admin prime sur la correspondance par nom.
+        if ($url = $this->photoTeleverseeUrl()) {
+            return $url;
+        }
+
         $attrName = optional($this->itemAttribute)->name ?? '';
         $basePath = Config::get('menu_images.base_path', 'images/menu');
         $defaultFile = Config::get('menu_images.default', 'item-default.svg');
@@ -152,5 +160,32 @@ class ItemVariation extends Model
     public function getConvertPriceAttribute(): float
     {
         return AppLibrary::convertAmountFormat($this->price);
+    }
+
+    /**
+     * [PILOTAGE 2026-08-09] Une option pouvait être CRÉÉE depuis l'admin, mais
+     * pas ILLUSTRÉE : sa photo était déduite de son NOM via config/menu_images.php,
+     * un fichier PHP. Ajouter une image demandait donc un développeur et un accès
+     * au serveur — et 131 choix sur 1002 s'affichaient en case grise, dont les deux
+     * premières étapes du wizard borne.
+     *
+     * Même mécanique que Item : la photo téléversée GAGNE, la table de
+     * correspondance par nom reste le repli. Rien de ce qui marchait ne change.
+     */
+    public function registerMediaConversions(Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')->crop('crop-center', 168, 180)->keepOriginalImageFormat()->sharpen(10);
+        $this->addMediaConversion('cover')->crop('crop-center', 390, 270)->keepOriginalImageFormat()->sharpen(10);
+    }
+
+    /** URL de la photo téléversée, ou null si l'option n'en a pas. */
+    protected function photoTeleverseeUrl(): ?string
+    {
+        if (empty($this->getFirstMediaUrl('option'))) {
+            return null;
+        }
+        $m = $this->getMedia('option')->last();
+
+        return file_exists($m->getPath('thumb')) ? $m->getUrl('thumb') : $m->getUrl();
     }
 }

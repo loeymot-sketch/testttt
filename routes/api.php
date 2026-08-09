@@ -814,6 +814,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/extra/{item}/{itemExtra}', [ItemExtraController::class, 'destroy']);
         Route::get('/extra/{item}/show/{itemExtra}', [ItemExtraController::class, 'show']);
 
+        // [PILOTAGE 2026-08-09] Donner une photo à une OPTION depuis l'admin.
+        // Jusqu'ici la photo d'un supplément ou d'une variation était déduite de
+        // son NOM via config/menu_images.php : il fallait un développeur ET un
+        // accès au serveur. Ces deux routes ferment ce trou — même contrat que
+        // `item/change-image`, la photo posée ici prime sur la table par nom.
+        Route::post('/extra/{item}/{itemExtra}/change-image', [ItemExtraController::class, 'changeImage']);
+        Route::delete('/extra/{item}/{itemExtra}/change-image', [ItemExtraController::class, 'removeImage']);
+        Route::post('/variation/{item}/{itemVariation}/change-image', [ItemVariationController::class, 'changeImage']);
+        Route::delete('/variation/{item}/{itemVariation}/change-image', [ItemVariationController::class, 'removeImage']);
+
         Route::get('/addon/{item}', [ItemAddonController::class, 'index']);
         Route::post('/addon/{item}', [ItemAddonController::class, 'store']);
         Route::delete('/addon/{item}/{itemAddon}', [ItemAddonController::class, 'destroy']);
@@ -1636,6 +1646,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('wheel')->name('wheel.')->group(function () {
         Route::get('/config', [\App\Http\Controllers\Frontend\WheelController::class, 'config'])
             ->middleware('throttle:60,1');
+        // Le SERVEUR horodate l'ouverture d'un lien : c'est la seule garde « il a pris le temps »
+        // qui ne se contourne pas depuis le navigateur.
+        Route::post('/step', [\App\Http\Controllers\Frontend\WheelController::class, 'step'])
+            ->middleware('throttle:30,1');
         Route::post('/spin', [\App\Http\Controllers\Frontend\WheelController::class, 'spin'])
             ->middleware('throttle:10,1');
     });
