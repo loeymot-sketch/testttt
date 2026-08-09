@@ -58,12 +58,22 @@ class WheelClaimService
             return ['examines' => 0, 'inscrits' => 0, 'ignores' => 0];
         }
 
+        // [P1 2026-08-09] Le rescan n'était pas borné. Les tours en POURCENTAGE ne peuvent JAMAIS
+        // recevoir de `cost_outflow_id` (ils sortent par `continue`) : ils s'accumulaient donc
+        // indéfiniment et étaient réhydratés en entier à chaque passage horaire. On restreint aux
+        // seuls types qui peuvent générer une charge, et à une fenêtre : un lot vieux de plus de
+        // deux fois sa validité ne sera plus jamais consommé.
+        $fenetre = now()->subDays(2 * (int) config('wheel.prize_validity_days', 30));
+
         $spins = WheelSpin::query()
             ->withoutGlobalScope(BranchScope::class)
             ->whereNotNull('coupon_id')
             ->whereNull('cost_outflow_id')
+            ->where('prize_type', 'free_item')
+            ->where('created_at', '>=', $fenetre)
             ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->orderBy('id')
+            ->limit(500)
             ->get();
 
         $inscrits = 0;
@@ -106,14 +116,43 @@ class WheelClaimService
         ];
     }
 
-    /** @return object{order_id: int, created_at: string|null}|null */
+    /**
+     * Consommation RÉELLE et VIVANTE du coupon.
+     *
+     * [P0 2026-08-09] On prenait la PREMIÈRE ligne `order_coupons` sans regarder le statut de la
+     * commande. Or le moteur de coupons exclut délibérément les commandes annulées/refusées/rendues
+     * du comptage d'usage — une annulation ne brûle pas le code — et la ligne `order_coupons`, elle,
+     * n'est jamais supprimée. Séquence exploitable :
+     *   gagner « Menu offert » → appliquer le code → ANNULER la commande → la réconciliation inscrit
+     *   la charge et marque le tour comme réclamé → le code, lui, est redevenu dépensable → le
+     *   client obtient un SECOND menu, et celui-là ne sera jamais chiffré (le tour porte déjà un
+     *   `cost_outflow_id`, il est donc exclu à jamais du rescan). Répétable.
+     * On aligne donc la définition de « consommé » sur celle du moteur de coupons : une commande
+     * dans un état terminal ne consomme rien.
+     */
     private function redemption(int $couponId)
     {
         return DB::table('order_coupons')
-            ->where('coupon_id', $couponId)
-            ->orderBy('id')
-            ->select('order_id', 'created_at')
+            ->join('orders', 'orders.id', '=', 'order_coupons.order_id')
+            ->where('order_coupons.coupon_id', $couponId)
+            ->whereNotIn('orders.status', $this->statutsTerminaux())
+            ->orderBy('order_coupons.id')
+            ->select('order_coupons.order_id', 'order_coupons.created_at')
             ->first();
+    }
+
+    /**
+     * États dans lesquels une commande ne consomme PAS son coupon. Repris de la même liste que
+     * `CouponService` : deux définitions divergentes de « consommé » finiraient par se contredire,
+     * et c'est toujours l'argent qui trancherait.
+     */
+    private function statutsTerminaux(): array
+    {
+        return [
+            \App\Enums\OrderStatus::CANCELED,
+            \App\Enums\OrderStatus::REJECTED,
+            \App\Enums\OrderStatus::RETURNED,
+        ];
     }
 
     /** Produit de référence configuré pour ce segment, ou NUL s'il n'a pas été choisi. */

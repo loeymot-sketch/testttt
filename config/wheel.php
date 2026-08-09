@@ -74,9 +74,13 @@ return [
     */
     'segments' => [
         ['key' => 'points_50',   'label' => '50 points',        'type' => 'points',         'value' => 50,  'weight' => 30, 'daily_cap' => 0],
-        ['key' => 'remise_10',   'label' => '-10%',             'type' => 'coupon_percent', 'value' => 10,  'weight' => 28, 'daily_cap' => 0],
+        // `max_discount` : PLAFOND EN EUROS. Sans lui, `-15 %` sur une commande de groupe de 250 €
+        // fait 37,50 € offerts par un jeu censé donner « un petit lot ». Le moteur de coupons
+        // n'applique le plafond que s'il est > 0 (`CouponService`), et la colonne vaut 0 par
+        // défaut : ne pas le renseigner, c'est un pourcentage SANS LIMITE.
+        ['key' => 'remise_10',   'label' => '-10%',             'type' => 'coupon_percent', 'value' => 10,  'weight' => 28, 'daily_cap' => 0,  'max_discount' => (float) env('WHEEL_MAX_DISCOUNT_10', 4.0)],
         ['key' => 'points_100',  'label' => '100 points',       'type' => 'points',         'value' => 100, 'weight' => 18, 'daily_cap' => 0],
-        ['key' => 'remise_15',   'label' => '-15%',             'type' => 'coupon_percent', 'value' => 15,  'weight' => 12, 'daily_cap' => 30],
+        ['key' => 'remise_15',   'label' => '-15%',             'type' => 'coupon_percent', 'value' => 15,  'weight' => 12, 'daily_cap' => 30, 'max_discount' => (float) env('WHEEL_MAX_DISCOUNT_15', 6.0)],
         // `cost_item_id` : produit de RÉFÉRENCE pour la charge (voir §DÉCHARGE ci-dessous).
         // NUL = pas encore choisi → le cadeau n'est pas chiffré et la réconciliation le SIGNALE.
         ['key' => 'boisson',     'label' => 'Boisson offerte',  'type' => 'free_item',      'value' => 0,   'weight' => 8,  'daily_cap' => 15, 'cost_item_id' => (int) env('WHEEL_COST_ITEM_BOISSON', 0)],

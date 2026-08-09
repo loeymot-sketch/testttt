@@ -37,9 +37,30 @@ class WheelController extends Controller
         }
 
         $branchId = $this->branchId($request);
-        $tel = (string) $request->query('phone', '');
 
-        $deja = $tel !== '' ? $this->wheel->alreadySpun($branchId, $tel) : null;
+        // [P1 ORACLE 2026-08-09] Cet endpoint renvoyait `already_spun` et `previous_prize` pour
+        // N'IMPORTE QUEL numéro, sans jeton ni authentification. C'était un annuaire interrogeable :
+        // « ce numéro a-t-il joué, et qu'a-t-il gagné ». Deux usages malveillants immédiats :
+        // énumérer des numéros pour trouver ceux qui n'ont pas joué (afin d'y brûler un jeton volé),
+        // et lire les lots des autres.
+        // La consultation exige désormais le JETON du client : il ne peut donc interroger que dans
+        // le cadre de sa propre validation, et c'est précisément ce qu'il faut pour lui permettre de
+        // RETROUVER son lot après une coupure réseau.
+        $tel = (string) $request->query('phone', '');
+        $jeton = (string) $request->query('t', '');
+        $deja = null;
+        if ($tel !== '' && $jeton !== '') {
+            try {
+                $v = $this->unlock->verify($jeton);
+                if ((int) $v['branch_id'] === $branchId) {
+                    $deja = $this->wheel->alreadySpun($branchId, $tel);
+                }
+            } catch (WheelException $e) {
+                // Jeton invalide ou expiré : on ne dit RIEN sur ce numéro. Un refus silencieux vaut
+                // mieux qu'un oracle poli.
+                $deja = null;
+            }
+        }
 
         return response()->json([
             'segments'       => $this->wheel->publicSegments(),
@@ -47,6 +68,11 @@ class WheelController extends Controller
             'preview'        => ! $this->wheel->isOpenToPublic(),
             'already_spun'   => $deja !== null,
             'previous_prize' => $deja?->prize_label,
+            // De quoi RÉAFFICHER le lot après une coupure réseau ou un rechargement en plein tour.
+            // Sans ça, le client à qui l'on a dit « ton tour n'a pas été utilisé » puis « tu as déjà
+            // tourné » ne revoit jamais son lot : deux messages contradictoires et une impasse.
+            'previous_code'  => $deja && $deja->coupon_id ? optional($deja->coupon)->code : null,
+            'previous_points' => $deja?->points_awarded,
         ]);
     }
 

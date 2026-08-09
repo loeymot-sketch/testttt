@@ -212,6 +212,7 @@ class WheelService
                     'label' => (string) $e['s']['label'],
                     'type'  => (string) $e['s']['type'],
                     'value' => (float) ($e['s']['value'] ?? 0),
+                    'max_discount' => (float) ($e['s']['max_discount'] ?? 0),
                 ];
             }
         }
@@ -221,6 +222,7 @@ class WheelService
         return [
             'key' => (string) $dernier['key'], 'label' => (string) $dernier['label'],
             'type' => (string) $dernier['type'], 'value' => (float) ($dernier['value'] ?? 0),
+            'max_discount' => (float) ($dernier['max_discount'] ?? 0),
         ];
     }
 
@@ -242,7 +244,16 @@ class WheelService
         }
 
         $jours = (int) config('wheel.prize_validity_days', 30);
+
+        // [P1 COLLISION] `coupons.code` N'A PLUS d'index UNIQUE (retiré volontairement le
+        // 2026-08-07) : la garantie repose désormais sur un générateur qui VÉRIFIE et REPREND sur
+        // collision — c'est écrit dans le docbloc de cette migration. Frapper un code au hasard
+        // sans contrôle contourne exactement ce dispositif, et `resolveCouponByCode` renvoie le
+        // PLUS ANCIEN en cas de doublon : le gagnant tomberait sur un coupon déjà brûlé.
         $code = 'ROUE-' . strtoupper(Str::random(6));
+        for ($essai = 0; $essai < 5 && Coupon::withoutGlobalScopes()->withTrashed()->where('code', $code)->exists(); $essai++) {
+            $code = 'ROUE-' . strtoupper(Str::random(6));
+        }
 
         $coupon = new Coupon();
         $coupon->forceFill([
@@ -259,6 +270,9 @@ class WheelService
             'max_uses_global' => 1,
             'limit_per_user'  => 1,
             'minimum_order'   => 0,
+            // PLAFOND EN EUROS — voir config/wheel.php. 0 = illimité côté moteur de coupons, ce
+            // qui transformerait « -15 % » en cadeau à trois chiffres sur une grosse commande.
+            'maximum_discount' => (float) ($segment['max_discount'] ?? 0),
             'usage_count'     => 0,
         ])->save();
 

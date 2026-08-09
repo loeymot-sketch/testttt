@@ -68,7 +68,11 @@
     <p class="sous">Fais-lui scanner ce QR maintenant, devant toi.</p>
     <div class="qr">{!! $qr !!}</div>
     <p class="expire">Valable {{ $ttl }} minutes — une seule fois.</p>
-    <p class="lien">{{ $url }}</p>
+    {{-- [P1 2026-08-09] L'adresse COMPLÈTE, jeton compris, était affichée en clair : n'importe qui
+         dans la file pouvait la photographier et consommer la validation avec SON numéro — le client
+         légitime recevant ensuite « tu as déjà tourné la roue », qui l'accuse à tort. Le QR reste
+         (il faut bien scanner quelque chose) mais le texte ne montre plus que le domaine. --}}
+    <p class="lien">{{ parse_url($url, PHP_URL_HOST) }} — scanne le QR ci-dessus</p>
     <form method="POST" action="{{ url('/admin/roue-validation') }}">
       @csrf
       <button type="submit">Valider un autre client</button>

@@ -74,7 +74,14 @@ class WheelCounterScreenTest extends TestCase
 
         $html = $r->getContent();
         $this->assertStringContainsString('<svg', $html, 'aucun QR généré : rien à scanner');
-        $this->assertStringContainsString('/roue.html?t=', $html, 'le QR ne mène pas à la roue');
+
+        // [P1 2026-08-09] L'adresse n'est PLUS affichée en clair (elle était photographiable par
+        // toute la file). On vérifie donc la donnée passée à la vue — c'est elle qui construit le
+        // QR — plutôt que le texte rendu. Assertion tout aussi forte, sans exiger la fuite.
+        $r->assertViewHas('url', fn ($u) => is_string($u) && str_contains($u, '/roue.html?t='));
+        $this->assertStringNotContainsString('roue.html?t=', $html,
+            'le jeton est de nouveau affiché en clair : n\'importe qui dans la file le photographie '
+            . 'et consomme la validation avec SON numéro');
         $this->assertMatchesRegularExpression('/Valable\s+\d+\s+minutes/', $html,
             'la durée de validité doit être dite : un jeton sans échéance visible traîne');
     }
@@ -97,10 +104,8 @@ class WheelCounterScreenTest extends TestCase
         Config::set('wheel.enabled', false);
         Config::set('wheel.preview_key', 'cle-de-test-du-patron');
 
-        $html = $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk()->getContent();
-
-        $this->assertStringContainsString('preview=cle-de-test-du-patron', $html,
-            'sans la clé, le client scannerait un QR qui répond « pas encore ouvert »');
+        $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk()
+            ->assertViewHas('url', fn ($u) => str_contains((string) $u, 'preview=cle-de-test-du-patron'));
     }
 
     public function test_porte_OUVERTE_le_QR_ne_contient_PAS_la_cle(): void
@@ -108,9 +113,10 @@ class WheelCounterScreenTest extends TestCase
         Config::set('wheel.enabled', true);
         Config::set('wheel.preview_key', 'cle-de-test-du-patron');
 
-        $html = $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk()->getContent();
+        $r = $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk();
 
-        $this->assertStringNotContainsString('cle-de-test-du-patron', $html,
+        $r->assertViewHas('url', fn ($u) => ! str_contains((string) $u, 'cle-de-test-du-patron'));
+        $this->assertStringNotContainsString('cle-de-test-du-patron', $r->getContent(),
             'la clé de prévisualisation fuite dans un QR public : elle finirait partagée');
     }
 }
