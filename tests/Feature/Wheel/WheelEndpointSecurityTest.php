@@ -45,6 +45,12 @@ class WheelEndpointSecurityTest extends TestCase
         Config::set('wheel.campaign_key', 'test-http');
         Config::set('wheel.daily_total_cap', 500);
         Config::set('wheel.unlock_methods', ['staff' => true, 'order' => true, 'declaratif' => false]);
+        // Étapes DÉSACTIVÉES ici : ce banc éprouve la sécurité du JETON. Les mêler au parcours
+        // rendrait chaque échec ambigu. Le parcours a son propre banc (WheelStepsTest).
+        Config::set('wheel.steps', [
+            'review' => ['required' => false, 'url' => '', 'dwell_seconds' => 0],
+            'follow' => ['required' => false, 'instagram' => '', 'snapchat' => '', 'dwell_seconds' => 0],
+        ]);
         Config::set('wheel.segments', [
             ['key' => 'a', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10, 'weight' => 1, 'daily_cap' => 0],
             ['key' => 'b', 'label' => 'Menu offert', 'type' => 'free_item', 'value' => 0, 'weight' => 1, 'daily_cap' => 0],
@@ -64,8 +70,20 @@ class WheelEndpointSecurityTest extends TestCase
         return app(WheelUnlockService::class)->issue($branchId ?? $this->branchId, 1)['token'];
     }
 
+    /**
+     * [MISE À JOUR 2026-08-09] Le tour exige désormais une ADRESSE (seconde clé d'identité, et canal
+     * des conditions du lot) et le FRANCHISSEMENT DES ÉTAPES, horodaté par le serveur.
+     *
+     * Ce banc-ci teste la SÉCURITÉ DU JETON, pas les étapes : on les désactive donc dans son
+     * `setUp`. Les tester ici mêlerait deux sujets, et un échec ne dirait plus lequel a cassé.
+     * Une adresse dérivée du numéro garde chaque cas indépendant : sans ça, l'unicité de l'adresse
+     * ferait échouer des tests qui parlent d'autre chose.
+     */
     private function tourner(array $corps)
     {
+        $tel = (string) ($corps['phone'] ?? '0600000000');
+        $corps += ['email' => 'banc-' . preg_replace('/\D+/', '', $tel) . '@exemple.fr'];
+
         return $this->withHeaders($this->cle())
             ->postJson('/api/frontend/wheel/spin', $corps + ['branch_id' => $this->branchId]);
     }

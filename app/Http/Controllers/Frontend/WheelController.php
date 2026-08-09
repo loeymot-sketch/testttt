@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Services\Wheel\WheelException;
 use App\Services\Wheel\WheelService;
+use App\Services\Wheel\WheelStepService;
 use App\Services\Wheel\WheelUnlockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class WheelController extends Controller
     public function __construct(
         private readonly WheelService $wheel,
         private readonly WheelUnlockService $unlock,
+        private readonly WheelStepService $steps,
     ) {}
 
     /** De quoi DESSINER la roue et savoir si l'on peut jouer. Jamais les poids. */
@@ -65,6 +67,15 @@ class WheelController extends Controller
         return response()->json([
             'segments'       => $this->wheel->publicSegments(),
             'requires_order' => $this->wheel->requiresOrder(),
+            // Les ÉTAPES, dans l'ordre, avec leurs liens et leur temps d'attente. La page les
+            // révèle UNE PAR UNE — on n'annonce jamais « 3 étapes » : un client debout au comptoir
+            // qui lit ça repose son téléphone.
+            // On ne publie NI les poids des lots, NI le contrôle d'abonnés : le client n'a pas à
+            // savoir qu'on compare les totaux avant et après.
+            'steps' => $this->steps->publicSteps(),
+            // Annoncé AVANT, jamais découvert après : une condition qu'on apprend au moment de
+            // retirer son lot est vécue comme un piège.
+            'min_order' => (float) config('wheel.min_order_amount', 0),
             'preview'        => ! $this->wheel->isOpenToPublic(),
             'already_spun'   => $deja !== null,
             'previous_prize' => $deja?->prize_label,
@@ -74,6 +85,39 @@ class WheelController extends Controller
             'previous_code'  => $deja && $deja->coupon_id ? optional($deja->coupon)->code : null,
             'previous_points' => $deja?->points_awarded,
         ]);
+    }
+
+    /**
+     * LE CLIENT VIENT D'OUVRIR UN LIEN — c'est le SERVEUR qui pose l'heure.
+     *
+     * Le compteur du navigateur ne prouve rien : il se contourne dans les outils de développement.
+     * Cet appel est la seule version honnête de la garde « il a pris le temps d'écrire ».
+     */
+    public function step(Request $request): JsonResponse
+    {
+        if (! $this->accessible($request)) {
+            return $this->porteFermee();
+        }
+
+        $data = $request->validate([
+            'step' => ['required', 'string', 'in:review,follow'],
+            'unlock_token' => ['required', 'string', 'max:512'],
+        ]);
+
+        $branchId = $this->branchId($request);
+
+        try {
+            $v = $this->unlock->verify($data['unlock_token']);
+            if ((int) $v['branch_id'] !== $branchId) {
+                throw new WheelException('Cette validation ne vient pas de ce comptoir.', 403);
+            }
+        } catch (WheelException $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], $e->status());
+        }
+
+        $r = $this->steps->open($v['token_hash'], $branchId, $data['step']);
+
+        return response()->json(['status' => true, 'wait_seconds' => $r['wait_seconds']]);
     }
 
     /**
@@ -89,6 +133,10 @@ class WheelController extends Controller
 
         $data = $request->validate([
             'phone'        => ['required', 'string', 'max:32'],
+            // L'ADRESSE est requise : c'est la seconde clé d'identité ET le canal par lequel les
+            // conditions du lot sont envoyées. Un lot dont les conditions ne sont pas écrites est
+            // un lot qu'on découvre au moment de le retirer — et le client se sent piégé.
+            'email'        => ['required', 'email', 'max:190'],
             'name'         => ['nullable', 'string', 'max:120'],
             'unlock_token' => ['nullable', 'string', 'max:512'],
         ]);
@@ -98,6 +146,10 @@ class WheelController extends Controller
         try {
             $deverrouillage = $this->resoudreDeverrouillage($data['unlock_token'] ?? null, $branchId);
 
+            // LES ÉTAPES, vérifiées côté serveur. Si l'une manque ou a été franchie trop vite, on
+            // refuse AVANT de tirer : un tour accordé puis annulé serait pire que refusé.
+            $etapes = $this->steps->assertDone((string) ($deverrouillage['token_hash'] ?? ''));
+
             $spin = $this->wheel->spin(
                 $branchId,
                 $data['phone'],
@@ -105,8 +157,19 @@ class WheelController extends Controller
                 $deverrouillage,
                 (string) $request->header('X-Device-Id', ''),
                 // L'IP est HACHÉE : elle sert à repérer un abus, pas à identifier quelqu'un.
-                hash('sha256', (string) $request->ip() . (string) config('app.key'))
+                hash('sha256', (string) $request->ip() . (string) config('app.key')),
+                $data['email']
             );
+
+            // Traces des étapes et contrôle d'abonnés, recopiés sur le tour. Le relevé « après »
+            // est pris maintenant : l'abonnement vient d'avoir lieu.
+            $spin->forceFill([
+                'review_clicked_at' => $etapes['review_opened_at'],
+                'follow_clicked_at' => $etapes['follow_opened_at'],
+                'steps_seconds' => $etapes['steps_seconds'],
+                'followers_before' => $etapes['followers_before'],
+                'followers_after' => $this->steps->followersNow(),
+            ])->save();
         } catch (WheelException $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], $e->status());
         }
@@ -128,6 +191,9 @@ class WheelController extends Controller
             'code'           => $spin->coupon_id ? optional($spin->coupon)->code : null,
             'points'         => $spin->points_awarded,
             'requires_order' => $this->wheel->requiresOrder(),
+            // Le minimum d'achat est RAPPELÉ sur l'écran de gain : le client doit le lire au
+            // moment où il apprend son lot, pas le découvrir en caisse.
+            'min_order' => (float) config('wheel.min_order_amount', 0),
             // L'ÉCHÉANCE. La page ne la disait nulle part : un lot sans date se remet à plus tard,
             // et plus tard ne revient jamais. Pour un produit offert (sans coupon) on calcule la
             // même validité que celle des codes — la promesse doit être identique quel que soit le

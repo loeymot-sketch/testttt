@@ -160,6 +160,75 @@ return [
     // d'identité invité du système — pas de second annuaire à maintenir.
     'one_spin_per_phone' => true,
 
+    /*
+    |--------------------------------------------------------------------------
+    | LE PARCOURS EN ÉTAPES — arbitré par le propriétaire le 2026-08-09
+    |--------------------------------------------------------------------------
+    |
+    | RÈGLE D'ERGONOMIE QUI COMMANDE TOUT : on n'annonce JAMAIS « 3 étapes » au
+    | départ. Un client debout au comptoir qui lit « 3 étapes » repose son
+    | téléphone. On révèle une étape à la fois — « une dernière petite étape » —
+    | parce que l'engagement déjà consenti pousse à finir, alors qu'un parcours
+    | annoncé long décourage avant de commencer.
+    |
+    | Ce qu'on peut vérifier, et ce qu'on ne peut pas : AUCUNE API ne dit qu'une
+    | personne précise a écrit un avis ou s'est abonnée. On mesure donc ce qui est
+    | mesurable — le lien a été ouvert, le temps passé — et on contrôle le RESTE
+    | globalement (nombre d'abonnés avant/après). Le client, lui, n'en sait rien :
+    | le propriétaire ne veut surtout pas l'alourdir avec ça.
+    */
+
+    'steps' => [
+        'review' => [
+            // FAUX = l'avis devient une simple INVITATION, sans conditionner le lot.
+            // À basculer si l'on veut se conformer strictement à la politique Google, qui
+            // interdit de récompenser un avis. Un seul réglage, aucun redéploiement.
+            'required' => (bool) env('WHEEL_STEP_REVIEW_REQUIRED', true),
+            'url' => env('WHEEL_REVIEW_URL', ''),
+            // Temps de rédaction avant que le bouton se débloque. 20 s : assez pour écrire une
+            // phrase, trop court pour être vécu comme une attente. En dessous, le geste n'a pas eu
+            // lieu ; au-dessus, on perd des gens.
+            'dwell_seconds' => (int) env('WHEEL_REVIEW_DWELL', 20),
+        ],
+        'follow' => [
+            'required' => (bool) env('WHEEL_STEP_FOLLOW_REQUIRED', true),
+            'instagram' => env('WHEEL_INSTAGRAM_URL', ''),
+            'snapchat' => env('WHEEL_SNAPCHAT_URL', ''),
+            // Plus court : s'abonner prend un geste, pas une rédaction.
+            'dwell_seconds' => (int) env('WHEEL_FOLLOW_DWELL', 8),
+        ],
+    ],
+
+    /*
+    | CONDITIONS D'UTILISATION DU LOT — « ils peuvent récupérer ça que avec une
+    | commande », plus un minimum d'achat. C'est ce qui rend le jeu rentable : on ne
+    | donne rien à qui ne revient pas, et une boisson offerte sur une commande de
+    | 10 € reste largement bénéficiaire. C'est aussi le garde-fou contre celui qui
+    | viendrait chercher un cadeau sans rien acheter.
+    */
+    'min_order_amount' => (float) env('WHEEL_MIN_ORDER', 10.0),
+
+    /*
+    | L'E-MAIL DES CONDITIONS. Le lot est expliqué par écrit : ce qu'il a gagné, le
+    | minimum d'achat, la date limite, et le fait qu'il se retire au comptoir. Un
+    | client qui découvre une condition AU MOMENT de la retirer se sent piégé — et il
+    | a raison. Tout doit être dit avant.
+    */
+    'notify_by_email' => (bool) env('WHEEL_NOTIFY_EMAIL', true),
+
+    /*
+    | CONTRÔLE DE COHÉRENCE, invisible du client. Le nombre d'abonnés est un TOTAL :
+    | il ne prouve rien individuellement, et il baisse quand quelqu'un d'autre se
+    | désabonne. Mais sur une journée, l'écart entre « tours accordés » et « abonnés
+    | gagnés » dit la vérité. Instagram expose ce nombre pour SON PROPRE compte pro ;
+    | Snapchat n'a aucune API publique équivalente — on ne prétendra donc pas le
+    | mesurer.
+    */
+    'followers' => [
+        'instagram_account_id' => env('WHEEL_IG_ACCOUNT_ID', ''),
+        'instagram_token' => env('WHEEL_IG_TOKEN', ''),
+    ],
+
     // Garde-fou global : au-delà, la roue se ferme d'elle-même pour la journée et
     // le dit honnêtement au client. Mieux vaut « revenez demain » qu'un budget qui
     // part sans que personne ne regarde.

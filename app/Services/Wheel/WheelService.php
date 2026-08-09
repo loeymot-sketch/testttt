@@ -88,6 +88,22 @@ class WheelService
             ->first();
     }
 
+    /** Cette adresse a-t-elle déjà joué ? Seconde clé, indépendante du téléphone. */
+    public function alreadySpunByEmail(int $branchId, string $email): ?WheelSpin
+    {
+        $mail = mb_strtolower(trim($email));
+        if ($mail === '') {
+            return null;
+        }
+
+        return WheelSpin::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('campaign_key', (string) config('wheel.campaign_key'))
+            ->where('email', $mail)
+            ->first();
+    }
+
     /**
      * LE TIRAGE. Tout se passe dans une transaction : soit le tour existe avec son lot attribué,
      * soit rien ne s'est produit. Un tour enregistré sans lot, ou un lot sans tour, laisserait un
@@ -103,11 +119,28 @@ class WheelService
         ?string $customerName,
         array $unlock,
         ?string $deviceId = null,
-        ?string $ipHash = null
+        ?string $ipHash = null,
+        ?string $email = null
     ): WheelSpin {
         $tel = $this->normalizePhone($phone);
         if (strlen($tel) < 9) {
             throw new WheelException('Numéro de téléphone invalide.', 422);
+        }
+
+        // [ÉTAPES 2026-08-09] L'ADRESSE, seconde clé d'identité voulue par le propriétaire : « un
+        // e-mail, ça rentre pas deux fois ; le téléphone, ça rentre pas deux fois ». Deux clés
+        // valent mieux qu'une — un numéro se change plus facilement qu'une adresse — et l'adresse
+        // sert AUSSI à envoyer les conditions du lot. Franchir l'une ne suffit pas.
+        $mail = $email !== null ? mb_strtolower(trim($email)) : null;
+        if ($mail !== null && $mail !== '') {
+            if (! filter_var($mail, FILTER_VALIDATE_EMAIL)) {
+                throw new WheelException('Adresse e-mail invalide.', 422);
+            }
+            if ($this->alreadySpunByEmail($branchId, $mail)) {
+                throw new WheelException('Cette adresse a déjà tourné la roue pour cette opération.', 409);
+            }
+        } else {
+            $mail = null;
         }
 
         $methode = (string) ($unlock['method'] ?? '');
@@ -125,7 +158,7 @@ class WheelService
             throw new WheelException('La roue a distribué tous ses lots pour aujourd\'hui. Reviens demain !', 429);
         }
 
-        return DB::transaction(function () use ($branchId, $tel, $customerName, $unlock, $methode, $deviceId, $ipHash) {
+        return DB::transaction(function () use ($branchId, $tel, $mail, $customerName, $unlock, $methode, $deviceId, $ipHash) {
             $segment = $this->draw($branchId);
 
             $spin = new WheelSpin();
@@ -133,6 +166,7 @@ class WheelService
                 'branch_id'           => $branchId,
                 'campaign_key'        => (string) config('wheel.campaign_key'),
                 'phone'               => $tel,
+                'email'               => $mail,
                 'customer_name'       => $customerName ? mb_substr(trim($customerName), 0, 120) : null,
                 'prize_key'           => $segment['key'],
                 'prize_label'         => $segment['label'],
@@ -152,6 +186,9 @@ class WheelService
                 // Course entre deux requêtes du même téléphone : la contrainte d'unicité a tranché.
                 // C'est le comportement voulu — on préfère un refus net à deux lots attribués.
                 if ($this->isUniqueViolation($e)) {
+                    // Deux contraintes peuvent avoir tranché : le téléphone ou l'adresse. On ne dit
+                    // pas LAQUELLE — le message resterait le même pour le client honnête, et
+                    // distinguer les deux apprendrait à un fraudeur quelle clé changer.
                     throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
                 }
                 throw $e;
@@ -281,7 +318,10 @@ class WheelService
             // Nominatif à usage unique : c'est le lot de CETTE personne, pas un code qui circule.
             'max_uses_global' => 1,
             'limit_per_user'  => 1,
-            'minimum_order'   => 0,
+            // MINIMUM D'ACHAT — « ils peuvent récupérer ça que avec une commande », plus un
+            // plancher. C'est ce qui rend le jeu rentable : une remise sur une commande de 10 €
+            // reste largement bénéficiaire, et personne ne vient chercher un cadeau sans acheter.
+            'minimum_order'   => (float) config('wheel.min_order_amount', 0),
             // PLAFOND EN EUROS — voir config/wheel.php. 0 = illimité côté moteur de coupons, ce
             // qui transformerait « -15 % » en cadeau à trois chiffres sur une grosse commande.
             'maximum_discount' => (float) ($segment['max_discount'] ?? 0),
