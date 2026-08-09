@@ -35,6 +35,15 @@ class WheelStepService
     public const FOLLOW = 'follow';
 
     /**
+     * Les adresses et les délais viennent des RÉGLAGES SAISIS par l'exploitant, pas de variables
+     * d'environnement. C'est ce qui débloque le jeu : il colle ses trois liens depuis un écran, en
+     * dix secondes, et le parcours s'active — sans redéploiement ni accès serveur.
+     */
+    public function __construct(private readonly WheelSettingsService $reglages)
+    {
+    }
+
+    /**
      * Le client vient d'ouvrir un lien. Le SERVEUR pose l'heure.
      *
      * @return array{ok: bool, wait_seconds: int}
@@ -133,7 +142,11 @@ class WheelStepService
      */
     public function required(string $step): bool
     {
-        if (! (bool) config('wheel.steps.' . $step . '.required', false)) {
+        $demandee = $step === self::REVIEW
+            ? $this->reglages->reviewRequired()
+            : $this->reglages->followRequired();
+
+        if (! $demandee) {
             return false;
         }
 
@@ -144,11 +157,10 @@ class WheelStepService
     public function hasLink(string $step): bool
     {
         if ($step === self::REVIEW) {
-            return trim((string) config('wheel.steps.review.url', '')) !== '';
+            return $this->reglages->reviewUrl() !== '';
         }
 
-        return trim((string) config('wheel.steps.follow.instagram', '')) !== ''
-            || trim((string) config('wheel.steps.follow.snapchat', '')) !== '';
+        return $this->reglages->instagramUrl() !== '' || $this->reglages->snapchatUrl() !== '';
     }
 
     /**
@@ -161,7 +173,10 @@ class WheelStepService
     {
         $out = [];
         foreach ([self::REVIEW, self::FOLLOW] as $step) {
-            if ((bool) config('wheel.steps.' . $step . '.required', false) && ! $this->hasLink($step)) {
+            $demandee = $step === self::REVIEW
+                ? $this->reglages->reviewRequired()
+                : $this->reglages->followRequired();
+            if ($demandee && ! $this->hasLink($step)) {
                 $out[] = $step;
             }
         }
@@ -171,7 +186,9 @@ class WheelStepService
 
     public function dwell(string $step): int
     {
-        return max(0, (int) config('wheel.steps.' . $step . '.dwell_seconds', 0));
+        return $step === self::REVIEW
+            ? $this->reglages->reviewDwell()
+            : $this->reglages->followDwell();
     }
 
     /** Ce que le client a besoin de savoir pour agir : les liens, et rien de plus. */
@@ -182,12 +199,12 @@ class WheelStepService
             $out[] = [
                 'key' => self::REVIEW,
                 'required' => $this->required(self::REVIEW),
-                'url' => (string) config('wheel.steps.review.url', ''),
+                'url' => $this->reglages->reviewUrl(),
                 'dwell' => $this->dwell(self::REVIEW),
             ];
         }
-        $ig = (string) config('wheel.steps.follow.instagram', '');
-        $sc = (string) config('wheel.steps.follow.snapchat', '');
+        $ig = $this->reglages->instagramUrl();
+        $sc = $this->reglages->snapchatUrl();
         if ($ig !== '' || $sc !== '') {
             $out[] = [
                 'key' => self::FOLLOW,

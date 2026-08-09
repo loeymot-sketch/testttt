@@ -160,6 +160,16 @@ Route::middleware(['installed', 'auth'])->group(function () {
     | se renouvelle tout seul. `can:pos` : c'est un ecran de service, pas une page publique — et
     | c'est lui qui EMET les jetons.
     */
+    /*
+    | ROUE — REGLAGES. L'ecran qui DEBLOQUE le jeu : le proprietaire y colle son lien d'avis et ses
+    | comptes. Ce sont SES comptes, personne d'autre ne peut les fournir — et tant qu'ils vivaient
+    | dans des variables d'environnement, la fonctionnalite dormait en attendant qu'on les pose.
+    */
+    Route::get('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'show'])
+        ->middleware('can:pos')->name('admin.wheel.settings');
+    Route::post('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'save'])
+        ->middleware(['can:pos', 'throttle:60,1'])->name('admin.wheel.settings.save');
+
     Route::get('/admin/roue-borne', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'kiosk'])
         ->middleware('can:pos')
         ->name('admin.wheel.kiosk');
