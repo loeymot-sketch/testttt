@@ -149,6 +149,18 @@ Route::middleware(['installed', 'auth'])->group(function () {
     Route::post('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'issue'])
         ->middleware(['can:pos', 'throttle:60,1'])
         ->name('admin.wheel.counter.issue');
+
+    /*
+    | ROUE — REMISE DU LOT. Le maillon dont trois audits ont montre l'absence : la roue tirait, mais
+    | aucune surface ne disait a l'equipe qu'un client avait un lot a recevoir.
+    | Meme garde que la validation : `can:pos`, et la branche vient du COMPTE.
+    */
+    Route::get('/admin/roue-lot', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'show'])
+        ->middleware('can:pos')
+        ->name('admin.wheel.prize');
+    Route::post('/admin/roue-lot/remettre', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'deliver'])
+        ->middleware(['can:pos', 'throttle:120,1'])
+        ->name('admin.wheel.prize.deliver');
 });
 
 // [C-001 test-e2e 2026-07-17] Un ASSET manquant (chunk périmé, image disparue…)

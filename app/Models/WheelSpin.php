@@ -24,6 +24,11 @@ class WheelSpin extends Model
         'prize_value'    => 'float',
         'points_awarded' => 'integer',
         'claimed_at'     => 'datetime',
+        // Sans ce cast, `delivered_at` reste une CHAÎNE et tout `->format()` casse — y compris le
+        // message « ce lot a déjà été remis le … » que l'équipe montre au client.
+        'delivered_at'   => 'datetime',
+        'delivered_by_user_id' => 'integer',
+        'points_credited_user_id' => 'integer',
     ];
 
     /** Le coupon matérialisant le lot, quand le lot est une remise (pas des points). */

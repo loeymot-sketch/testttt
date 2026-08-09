@@ -128,6 +128,14 @@ class WheelController extends Controller
             'code'           => $spin->coupon_id ? optional($spin->coupon)->code : null,
             'points'         => $spin->points_awarded,
             'requires_order' => $this->wheel->requiresOrder(),
+            // L'ÉCHÉANCE. La page ne la disait nulle part : un lot sans date se remet à plus tard,
+            // et plus tard ne revient jamais. Pour un produit offert (sans coupon) on calcule la
+            // même validité que celle des codes — la promesse doit être identique quel que soit le
+            // lot, sinon on crée deux règles que personne ne retiendra.
+            'valid_until' => $spin->coupon_id
+                ? optional(optional($spin->coupon)->end_date)->format('d/m/Y')
+                : $spin->created_at?->copy()
+                    ->addDays((int) config('wheel.prize_validity_days', 30))->format('d/m/Y'),
         ]);
     }
 

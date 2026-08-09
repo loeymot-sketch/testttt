@@ -239,7 +239,19 @@ class WheelService
             return;
         }
 
-        if (! in_array($segment['type'], ['coupon_percent', 'coupon_fixed', 'free_item'], true)) {
+        /*
+         * [P0 2026-08-09 — trois audits convergents] Un `free_item` NE DOIT PAS créer de coupon.
+         *
+         * Il en créait un avec `discount = 0` : le client saisissait le code, le total ne bougeait
+         * pas, et l'usage unique était BRÛLÉ. Il payait plein tarif, son lot était mort, et la
+         * comptabilité enregistrait le coût d'un cadeau jamais donné.
+         *
+         * La cause est conceptuelle, pas technique : un coupon retire de l'argent d'un total ; « une
+         * boisson offerte » n'est pas une remise, c'est un objet qu'on tend. Ces lots se remettent
+         * donc AU COMPTOIR (voir WheelDeliveryService), ce qui est cohérent avec un jeu dont tout le
+         * modèle repose déjà sur un humain au comptoir.
+         */
+        if (! in_array($segment['type'], ['coupon_percent', 'coupon_fixed'], true)) {
             return;
         }
 

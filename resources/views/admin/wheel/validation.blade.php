@@ -79,6 +79,9 @@
     </form>
   @endif
 
+    {{-- Les deux écrans du comptoir se répondent : valider un tour / remettre un lot. Sans ce
+         lien, l'équipe devrait retenir deux adresses. --}}
+    <a class="encore" href="{{ url('/admin/roue-lot') }}" style="display:block;margin-top:18px">Remettre un lot gagné →</a>
 </div>
 </body>
 </html>

@@ -108,7 +108,20 @@ class WheelAdversarialFixesTest extends TestCase
 
     // ── 2. LA COMMANDE ANNULÉE ────────────────────────────────────────────────────────────────
 
-    public function test_une_commande_ANNULEE_ne_declenche_AUCUNE_charge(): void
+    /**
+     * [MISE À JOUR 2026-08-09] Ces deux tests visaient la réconciliation PAR COUPON. Depuis que la
+     * charge est inscrite AU MOMENT DE LA REMISE au comptoir, un produit offert n'a plus de coupon
+     * du tout : la réconciliation ne peut donc plus le voir. Elle ne sert désormais qu'à RATTRAPER
+     * les tours créés avant ce changement — ceux qui portent encore un coupon.
+     *
+     * On teste donc exactement cela, avec une ligne fabriquée comme le faisait l'ancien code : un
+     * coupon de roue consommé sur une commande ANNULÉE ne doit produire AUCUNE charge. C'était le
+     * défaut : le moteur de coupons exclut les commandes annulées du comptage d'usage (une
+     * annulation ne brûle pas le code) mais la ligne `order_coupons` reste — on inscrivait donc la
+     * charge d'un cadeau jamais donné, on marquait le tour comme réclamé, et le code redevenu
+     * dépensable offrait un SECOND cadeau que le rescan excluait à jamais. Répétable.
+     */
+    public function test_un_coupon_consomme_sur_une_commande_ANNULEE_ne_declenche_AUCUNE_charge(): void
     {
         $item = Item::factory()->create();
         Config::set('wheel.segments', [
@@ -117,16 +130,15 @@ class WheelAdversarialFixesTest extends TestCase
         ]);
         Config::set('wheel.record_cost_on_claim', true);
 
-        $spin = app(WheelService::class)->spin($this->branchId, '0622222222', 'X', ['method' => 'staff']);
+        [$spin, $coupon] = $this->tourAncienFormat('0622222222', 'Menu offert', $item->id);
 
-        // Le coupon est appliqué… puis la commande est ANNULÉE.
         $client = User::factory()->create(['branch_id' => 0]);
         $order = Order::factory()->create([
             'branch_id' => $this->branchId, 'user_id' => $client->id,
             'status' => OrderStatus::CANCELED,
         ]);
         DB::table('order_coupons')->insert([
-            'coupon_id' => $spin->coupon_id, 'order_id' => $order->id, 'user_id' => $client->id,
+            'coupon_id' => $coupon->id, 'order_id' => $order->id, 'user_id' => $client->id,
             'discount' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]);
 
@@ -141,29 +153,57 @@ class WheelAdversarialFixesTest extends TestCase
             . 'ne serait jamais chiffré');
     }
 
-    public function test_une_commande_VIVANTE_declenche_bien_la_charge(): void
+    public function test_un_coupon_consomme_sur_une_commande_VIVANTE_declenche_bien_la_charge(): void
     {
-        // Contre-preuve : sans elle, le test précédent passerait même si RIEN ne marchait.
+        // Contre-preuve : sans elle, le test précédent passerait même si la réconciliation était
+        // entièrement morte.
         $item = Item::factory()->create();
         Config::set('wheel.segments', [
             ['key' => 'free', 'label' => 'Menu offert', 'type' => 'free_item', 'value' => 0,
              'weight' => 1, 'daily_cap' => 0, 'cost_item_id' => $item->id],
         ]);
 
-        $spin = app(WheelService::class)->spin($this->branchId, '0633333333', 'X', ['method' => 'staff']);
+        [$spin, $coupon] = $this->tourAncienFormat('0633333333', 'Menu offert', $item->id);
+
         $client = User::factory()->create(['branch_id' => 0]);
         $order = Order::factory()->create([
             'branch_id' => $this->branchId, 'user_id' => $client->id,
             'status' => OrderStatus::PENDING,
         ]);
         DB::table('order_coupons')->insert([
-            'coupon_id' => $spin->coupon_id, 'order_id' => $order->id, 'user_id' => $client->id,
+            'coupon_id' => $coupon->id, 'order_id' => $order->id, 'user_id' => $client->id,
             'discount' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $r = app(WheelClaimService::class)->reconcile();
 
-        $this->assertSame(1, $r['inscrits'], 'une commande vivante doit bien générer la charge');
+        $this->assertSame(1, $r['inscrits'], 'le rattrapage des anciens tours doit rester fonctionnel');
+        $this->assertNotNull($spin->refresh()->cost_outflow_id);
+    }
+
+    /**
+     * Fabrique un tour AU FORMAT D'AVANT : produit offert AVEC un coupon. C'est exactement ce que la
+     * roue créait jusqu'au 2026-08-09, et ce que le rattrapage doit encore savoir traiter.
+     */
+    private function tourAncienFormat(string $tel, string $label, int $itemId): array
+    {
+        $coupon = new Coupon();
+        $coupon->forceFill([
+            'name' => 'Roue', 'code' => 'ROUE-' . strtoupper(bin2hex(random_bytes(3))),
+            'discount' => 0, 'discount_type' => 5,
+            'start_date' => now()->subDay(), 'end_date' => now()->addDays(30),
+            'status' => 5, 'max_uses_global' => 1, 'limit_per_user' => 1,
+            'minimum_order' => 0, 'usage_count' => 0,
+        ])->save();
+
+        $spin = new WheelSpin();
+        $spin->forceFill([
+            'branch_id' => $this->branchId, 'campaign_key' => 'adv', 'phone' => $tel,
+            'prize_key' => 'free', 'prize_label' => $label, 'prize_type' => 'free_item',
+            'prize_value' => 0, 'coupon_id' => $coupon->id, 'unlock_method' => 'staff',
+        ])->save();
+
+        return [$spin, $coupon];
     }
 
     // ── 3. L'UNICITÉ DU CODE ──────────────────────────────────────────────────────────────────
