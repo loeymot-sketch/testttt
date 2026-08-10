@@ -27,6 +27,18 @@ model_list:
       model: moonshot/moonshot-v1-8k
       api_key: "os.environ/MOONSHOT_API_KEY"
 
+  # --- Chat Graphiti → OpenRouter / Gemini [2026-08-10] ---
+  # GRAPHITI_LLM_MODEL valait `gemini-3.1-pro`, un modele qui N'EXISTE PAS :
+  # ni chez le proxy, ni dans les 399 modeles d'OpenRouter. Le serveur demarrait
+  # tres bien et aurait echoue a la PREMIERE ecriture reelle, avec
+  # « Invalid model name » — une panne invisible au demarrage.
+  # google/gemini-2.5-flash existe, est rapide et bon marche, et supporte la
+  # sortie structuree dont Graphiti a besoin pour extraire entites et relations.
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: openrouter/google/gemini-2.5-flash
+      api_key: "os.environ/OPENROUTER_API_KEY"
+
   # --- Embeddings → OpenRouter (clé OPENROUTER_API_KEY + OPENROUTER_API_BASE dans ~/.cursor/mcp.json) ---
   # Doc LiteLLM: model "openrouter/openai/text-embedding-3-small" + os.environ/OPENROUTER_API_KEY
   - model_name: text-embedding-ada-002
