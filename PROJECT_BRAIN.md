@@ -47,6 +47,20 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-10e (ROUE — DÉPLOYÉE ET VÉRIFIÉE EN PRODUCTION ; VPS `b68af828`, site Vercel aliasé `www.lecayenne.fr`)** — Accord explicite du propriétaire (« deploy et finis tout »). **17 commits publiés**, tous les miens (vérifié un par un avant la poussée).
+>
+> **PRÉVOL** : avance rapide confirmée depuis `a6eb4fdf` · **aucune collision** entre mes 177 fichiers et les 12 fichiers non committés de l'autre session sur le VPS (croisement des listes) · 0 motif de secret ajouté dans les 17 commits · **83 Mo de captures d'audit RETIRÉES** avant la poussée (dépôt PUBLIC). Réserve : elles restent dans l'historique de `986d95282`, car les en extirper exigeait un arbre de travail propre — donc de déranger le travail non committé d'une autre session. Perdre les heures de quelqu'un d'autre pour 83 Mo n'était pas un échange acceptable ; le nettoyage d'historique reste possible quand la branche n'aura qu'une main dessus.
+>
+> **VPS** : `.env` sauvegardé (`.env.avant-roue-2026-08-10`) · `git pull --ff-only` → **les 12 fichiers de l'autre session préservés** · migration `add_pending_prize_to_wheel_step_progress` appliquée · caches vidés puis recachés · **`WHEEL_PIN=481526` posé** (sans lui les 4 écrans restaient fermés — fail-closed voulu).
+>
+> **VÉRIFIÉ SUR LE CONTENU RÉELLEMENT SERVI, jamais sur « le push est passé »** (le piège qui nous a gelés deux jours le 7 août) : le site sert bien la version neuve (verrou présent, `btnFollow`, `retourEtapes`, `previous_prize_type`, roue de secours anonyme) et **plus aucune trace de l'ancienne** (`JE TOURNE`, `btnIg` : 0 occurrence) · `/admin/roue` sert la page du code en HTML (plus de JSON `unauthenticated`) · `POST /wheel/claim` répond 400 « clé d'API exigée » au lieu de 405, donc la route existe.
+>
+> **PARCOURS RÉEL EN PRODUCTION, de bout en bout** : mode aperçu reconnu · attente de 20 s chronométrée par le serveur · un seul bouton d'abonnement (« S'abonner sur Facebook », le seul réseau renseigné) · tour → **-10%** · réclamation → **code `ROUE-FLZ5EN`** · compte créé · condition honnête. 5 appels réseau, tous 200, **0 erreur JS**. Les lignes de test ont été supprimées (participation + coupon + compte) ; **aucune remise faite, donc AUCUNE écriture append-only** — la seule sortie « cadeau roue » en base est celle d'août, antérieure.
+>
+> **LE JEU RESTE FERMÉ AU PUBLIC** (`WHEEL_ENABLED=false`) : sans clé d'aperçu, `/wheel/config` répond **404**. C'est la décision du propriétaire — l'ouverture au public est un geste séparé, qu'il garde.
+>
+> **RESTE OWNER** : coller le lien court de sa fiche Google, son Instagram et son Snapchat depuis `/admin/roue-reglages` (aujourd'hui seul Facebook est renseigné, d'où un unique bouton) ; puis basculer `WHEEL_ENABLED=true` quand il voudra ouvrir. 13 P2 en backlog, aucun ne touche l'argent ni la promesse.
+
 > **2026-08-10d (ROUE — RONDE 2 d'audit E2E, tout fermé ; commits `986d95282` `13047b197` `9da13557b`, site `88b655e` — NON DÉPLOYÉ)** — 41 constats de plus sur 3 vagues (porte/tableau · roue×stock en adversaire · parcours client réel). **1 P0, 13 P1, tous fermés.** Verdict de la vague parcours, mot pour mot : **« oui, ça fonctionne aujourd'hui pour un vrai client »** — 9 parcours sur 9 aboutis à jeton réel (iPhone 13 et 320×568), écran = base = e-mail, chaîne complète jusqu'au comptoir prouvée deux fois, 5 refus propres sans trace fantôme.
 >
 > **LE P0 ÉTAIT DE MA MAIN, dans le tableau écrit une heure plus tôt** : `Coupon::withoutGlobalScopes()->where('code','like','ROUE-%')` exagérait l'exposition d'un **facteur 9,5** (179 € de coupons SUPPRIMÉS + 33 € d'une autre caisse + un coupon simplement NOMMÉ « ROUE-… » ; vrai chiffre : 1 code, 25 €). C'est le piège `withoutGlobalScopes()` que j'avais consigné **le matin même**. Tout est désormais mesuré SUR LE TOUR.
