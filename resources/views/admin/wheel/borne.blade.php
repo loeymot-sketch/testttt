@@ -28,6 +28,16 @@
   suivants tomberaient sur « validation introuvable ». La page en redemande donc un régulièrement.
   Effet de bord utile : une photo du QR partagée à l'extérieur ne vaut plus rien quelques minutes
   plus tard. Il faut être DEVANT le comptoir.
+
+  ── POURQUOI TOUT EST DANS LE FLUX, ET RIEN PAR-DESSUS ─────────────────────────────────────────
+  [2026-08-10, mesuré] La version précédente posait le bandeau des conditions en `position:fixed`
+  et devinait la hauteur du message (`min-height:min(30vmin,300px)`). Résultat mesuré sur 12 tailles
+  d'écran sur 12 : le message sortait de sa boîte de 16 à 47 px, et ce débordement était INVISIBLE
+  dans une mesure de la page parce que les actes étaient en `position:absolute`. En portrait, le
+  carré blanc du QR recouvrait la 7e pastille sur toute sa hauteur (« Frites + Boisson » disparue)
+  et effaçait les trois mots du geste. Donc : plus une seule boîte de hauteur devinée, plus un seul
+  calque posé au-dessus d'un autre. Chaque bloc occupe une ligne, et c'est la ROUE qui cède la
+  place quand l'écran est court — jamais le texte qui dit ce qu'on gagne.
 --}}
 <!doctype html>
 <html lang="fr">
@@ -47,6 +57,11 @@
     background:var(--noir); color:var(--creme);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;
+    /* Le bandeau des conditions est un ÉTAGE de la page, pas un calque par-dessus : en
+       `position:fixed` il écrasait les pastilles des lots (264 × 23 px mesurés) et la phrase du
+       QR (261 × 34 px en portrait). En colonne, sa hauteur est retirée du budget avant que le
+       reste ne se partage l'écran. */
+    display:flex; flex-direction:column;
   }
 
   /* Lueur de fond qui respire très lentement : la scène a l'air VIVANTE même quand rien ne se
@@ -62,47 +77,56 @@
   @keyframes respireFond{0%,100%{opacity:.85}50%{opacity:1}}
 
   .scene{
-    position:relative; height:100%; display:grid;
-    grid-template-columns:1.15fr .85fr; gap:3vmin; align-items:center; padding:3.5vmin;
+    position:relative; flex:1 1 auto; min-height:0; display:grid;
+    grid-template-columns:1.15fr .85fr; grid-template-rows:minmax(0,1fr);
+    gap:3vmin; align-items:stretch; padding:3.5vmin;
   }
-  @media (max-aspect-ratio:1/1){ .scene{grid-template-columns:1fr; grid-template-rows:1fr auto; gap:2vmin} }
+  @media (max-aspect-ratio:1/1){
+    .scene{grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; gap:2vmin}
+  }
 
   /* ── CÔTÉ GAUCHE : LE SPECTACLE ─────────────────────────────────────────────────────────── */
-  .gauche{position:relative; display:grid; place-items:center; height:100%; min-height:0}
+  /* Trois étages : le logo, la roue, le message. La roue est sur la ligne élastique — c'est
+     ELLE qui rétrécit quand l'écran est court, jamais le texte : un lot annoncé à moitié caché
+     est un lot qu'on ne lit pas. */
+  .gauche{
+    display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:1.4vmin;
+    justify-items:center; align-items:center; min-height:0; min-width:0;
+  }
 
   .logo{
-    height:min(7.5vmin,78px); width:auto; display:block; margin:0 auto 1.5vmin;
+    height:min(7.5vmin,78px); width:auto; display:block;
     /* Lettrage sombre sur fond sombre : on l'éclaircit sans le rendre blanc cassant. */
     filter:brightness(0) invert(1) sepia(.16) saturate(1.6) hue-rotate(-12deg); opacity:.97;
   }
 
-  .roue-boite{position:relative; display:grid; place-items:center}
+  /* La roue est dimensionnée par sa HAUTEUR, largeur déduite. Deux pièges déjà payés ici :
+     · un diamètre exprimé seulement en `vmin` ignore ce qui reste au-dessus et en dessous — c'est
+       ce qui poussait le message hors de sa boîte (+89 px mesurés) ;
+     · borner la largeur puis laisser `max-height` rogner la hauteur ne conserve PAS le rapport
+       d'un canvas : la roue est devenue une ELLIPSE de 434 × 295. Le `100%` est donc DANS le
+       `min()` de la hauteur — l'axe imposé est celui qu'on borne, la largeur suit toute seule.
+     Le canvas est posé directement sur la ligne élastique : dans un conteneur intermédiaire dont
+     la ligne de grille est en `auto`, le pourcentage ne se résout pas. */
   .roue{
-    width:min(46vmin,470px); height:min(46vmin,470px); display:block;
+    height:min(48vmin,620px,100%); width:auto; display:block;
     filter:drop-shadow(0 2.5vmin 5vmin rgba(0,0,0,.55));
   }
-  /* Le repère qui désigne le lot gagnant, en haut de la roue. */
-  .repere{
-    position:absolute; top:-1.2vmin; left:50%; transform:translateX(-50%);
-    width:0; height:0; border-left:1.5vmin solid transparent; border-right:1.5vmin solid transparent;
-    border-top:2.6vmin solid var(--jaune2); filter:drop-shadow(0 .5vmin 1vmin rgba(0,0,0,.6)); z-index:2;
-  }
-  /* Éclat au moment où la roue s'immobilise : c'est CE flash qui fait tourner les têtes. */
-  .eclat{
-    position:absolute; inset:-8%; border-radius:50%; pointer-events:none; opacity:0;
-    background:radial-gradient(circle, rgba(255,211,77,.55), transparent 62%);
-  }
-  .eclat.va{animation:eclate 1.1s ease-out}
-  @keyframes eclate{0%{opacity:0; transform:scale(.85)}22%{opacity:1}100%{opacity:0; transform:scale(1.22)}}
 
   /* ── LES TROIS ACTES ────────────────────────────────────────────────────────────────────── */
-  .actes{position:relative; width:100%; min-height:min(30vmin,300px); display:grid; place-items:center}
+  /* Les trois actes se SUPERPOSENT dans une seule case de grille : c'est le plus grand des trois
+     qui donne sa hauteur à la ligne, et la hauteur ne peut donc plus être sous-estimée. Ils
+     étaient auparavant en `position:absolute` dans une boîte de hauteur devinée — le contenu en
+     sortait sur 12 mesures sur 12, et allait recouvrir le QR et le bandeau. */
+  .actes{display:grid; width:100%; min-width:0}
+  /* Fondu SEUL, sans glissement : un acte invisible déplacé de 1,6vmin agrandit quand même la
+     zone de défilement de la ligne (13 à 30 px mesurés), et rend invérifiable la seule règle qui
+     compte ici — rien ne sort de sa boîte. */
   .acte{
-    position:absolute; inset:0; display:grid; place-content:center; text-align:center;
-    opacity:0; transform:translateY(2.2vmin) scale(.985); pointer-events:none;
-    transition:opacity .7s ease, transform .7s cubic-bezier(.2,.9,.3,1);
+    grid-area:1/1; align-self:center; display:grid; place-content:center; text-align:center;
+    opacity:0; pointer-events:none; transition:opacity .3s ease;
   }
-  .acte.on{opacity:1; transform:none}
+  .acte.on{opacity:1}
 
   h1{
     margin:0; font-size:min(11.5vmin,132px); line-height:.92; font-weight:900; letter-spacing:-.025em;
@@ -116,16 +140,19 @@
   }
 
   /* Acte 2 — les lots, en pastilles qui entrent une par une. */
-  .lots{display:flex; flex-wrap:wrap; gap:1.4vmin; justify-content:center; max-width:min(78vmin,760px)}
+  .lots{display:flex; flex-wrap:wrap; gap:1.4vmin; justify-content:center; max-width:min(88vmin,860px)}
   .pastille{
     padding:1.4vmin 2.4vmin; border-radius:99px; font-size:min(3.4vmin,34px); font-weight:900;
     background:rgba(255,255,255,.07); border:1px solid rgba(255,184,0,.42); color:var(--creme);
-    opacity:0; transform:translateY(1.4vmin) scale(.94);
+    /* Les pastilles se posent depuis le HAUT et non depuis le bas : leur position de départ, même
+       invisible, agrandissait la zone de défilement de la ligne des actes de 10 à 13 px — vers le
+       haut elle ne compte pas, et la seule règle qui vaille ici reste vérifiable à zéro. */
+    opacity:0; transform:translateY(-1.4vmin) scale(.94);
   }
   .acte.on .pastille{animation:entrePastille .5s cubic-bezier(.2,1.5,.4,1) forwards}
   @keyframes entrePastille{to{opacity:1; transform:none}}
 
-  /* Acte 3 — le geste, en deux temps. On n'en annonce jamais trois : « scanne, tourne » suffit. */
+  /* Acte 3 — le geste. */
   .geste{display:flex; align-items:center; justify-content:center; gap:2.4vmin; flex-wrap:wrap}
   .pas{display:grid; place-items:center; gap:.8vmin}
   .pas .rond{
@@ -136,58 +163,129 @@
   .fleche-h{font-size:min(4.4vmin,46px); opacity:.55}
 
   /* ── CÔTÉ DROIT : LE QR, IMMOBILE ───────────────────────────────────────────────────────── */
-  .droite{display:grid; place-items:center; text-align:center; gap:1.6vmin}
-  .qr-boite{position:relative; display:inline-block}
-  /* Anneau qui pulse autour du QR : il désigne l'endroit sans rien recouvrir. */
+  /* `align-content:center` garde le trio flèche / QR / phrase SOUDÉ : réparti sur la hauteur, la
+     flèche se retrouvait à un demi-écran du QR qu'elle est censée désigner. */
+  .droite{
+    display:grid; place-items:center; align-content:center; text-align:center;
+    gap:1.6vmin; min-width:0; min-height:0;
+  }
+  /* Anneau qui pulse autour du QR : il désigne l'endroit sans rien recouvrir. L'espace qu'il
+     occupe est RÉSERVÉ (padding) et sa respiration se fait vers l'intérieur : en débordant de sa
+     boîte il sortait de la mise en page de 18 px, et rien ne garantissait qu'un écran plus court
+     ne le rogne. */
+  .qr-boite{position:relative; display:inline-block; padding:2.4vmin}
   .qr-boite::before{
-    content:''; position:absolute; inset:-2.2vmin; border-radius:5vmin;
+    content:''; position:absolute; inset:0; border-radius:5vmin;
     border:.5vmin solid rgba(255,184,0,.42); animation:pulseAnneau 2.8s ease-in-out infinite;
   }
   @keyframes pulseAnneau{
-    0%,100%{transform:scale(1); opacity:.5}
-    50%{transform:scale(1.035); opacity:1}
+    0%,100%{transform:scale(.972); opacity:.5}
+    50%{transform:scale(1); opacity:1}
   }
   .qr{background:#fff; border-radius:3vmin; padding:2.2vmin; display:block;
       box-shadow:0 2vmin 6vmin rgba(0,0,0,.5)}
-  .qr svg{display:block; width:min(36vmin,380px); height:auto}
+  /* Le terme en `vh` empêche le QR de manger la hauteur du message sur un écran bas. */
+  .qr svg{display:block; width:min(38vmin,46vh,480px); height:auto}
+  .qr-mots{display:grid; gap:.6vmin}
   .scanne{margin:0; font-size:min(4.4vmin,46px); font-weight:900; letter-spacing:-.01em}
-  .detail{margin:0; font-size:min(2.4vmin,25px); opacity:.72; line-height:1.5}
+  /* Plancher en px : à 2,4vmin cette phrase tombait à 18 px sur une petite tablette, soit
+     3,5 mm de haut — sous la limite de lecture debout à trois mètres. */
+  .detail{margin:0; font-size:clamp(22px,2.4vmin,28px); opacity:.78; line-height:1.45}
   .fleche{font-size:min(5vmin,52px); line-height:1; animation:pointe 2.2s ease-in-out infinite}
   @keyframes pointe{0%,100%{transform:translateY(0)}50%{transform:translateY(1.1vmin)}}
 
-  .err{background:rgba(217,48,37,.16); border:1px solid rgba(217,48,37,.5); border-radius:2vmin;
-       padding:2.4vmin; font-size:min(2.8vmin,28px); line-height:1.5; max-width:60vmin}
+  @media (max-aspect-ratio:1/1){
+    /* En portrait, le QR se place À CÔTÉ de son texte au lieu d'être empilé dessus : empilés,
+       les deux mangeaient les 150 px de hauteur qui manquaient aux lots, et la dernière pastille
+       finissait sous le carré blanc. La flèche disparaît — le QR est déjà juste en dessous du
+       message, elle ne désigne plus rien. */
+    .droite{grid-auto-flow:column; justify-content:center; gap:3.2vmin; text-align:left}
+    .fleche{display:none}
+    .qr-mots{max-width:min(40vmin,360px)}
+    /* Un cran plus petit qu'en paysage : en portrait, tout est empilé et chaque pixel rendu au QR
+       est un pixel pris à la roue. 31vmin ≈ 4,8 cm sur une tablette, largement scannable au
+       comptoir. */
+    .qr svg{width:min(31vmin,42vh,420px)}
+  }
 
   /* ── BANDEAU BAS : la condition, écrite une fois pour toutes ────────────────────────────── */
+  /* Plancher en px pour la même raison que ci-dessus, et opacité remontée de 0,66 à 0,8 : c'est
+     la SEULE mention des conditions du jeu, donc une information contractuelle. */
   .bandeau{
-    position:fixed; left:0; right:0; bottom:0; padding:1.4vmin 3vmin;
+    flex:0 0 auto; padding:1.2vmin 3vmin; text-align:center;
+    border-top:1px solid rgba(255,184,0,.14);
     background:linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-    font-size:min(2.2vmin,23px); opacity:.66; text-align:center;
+    font-size:clamp(20px,2.2vmin,26px); opacity:.8;
+  }
+
+  /* ── QUAND LE QR NE PEUT PAS ÊTRE FABRIQUÉ ─────────────────────────────────────────────────
+     Cet écran est posé FACE AUX CLIENTS : sans code à scanner, il ne doit plus rien promettre.
+     La version précédente continuait d'afficher « Tu gagnes à 100 % », d'annoncer les sept lots
+     et de faire tourner la roue — une publicité pour un jeu auquel personne ne pouvait jouer —
+     avec pour seule explication un nom de variable d'environnement. Ici : aucune promesse, aucune
+     roue, aucun lot. Un écran sobre adressé à l'ÉQUIPE, et le détail technique en petit. */
+  .panne{
+    flex:1 1 auto; min-height:0; display:grid; place-content:center; justify-items:center;
+    gap:2.4vmin; padding:6vmin; text-align:center;
+  }
+  .panne .logo{height:min(6vmin,62px); opacity:.65}
+  .panne-titre{margin:0; font-size:min(6vmin,58px); font-weight:900; letter-spacing:-.015em; color:var(--jaune2)}
+  .panne-quoi{margin:0; font-size:clamp(22px,3vmin,34px); line-height:1.4; max-width:34ch; opacity:.92}
+  .panne-faire{
+    margin:0; font-size:clamp(20px,2.6vmin,30px); line-height:1.45; max-width:44ch;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,184,0,.3);
+    border-radius:2vmin; padding:2.2vmin 2.8vmin;
+  }
+  .panne-faire b{color:var(--jaune2)}
+  .panne-tech{
+    margin:0; max-width:60ch; opacity:.45; line-height:1.4;
+    font-size:clamp(14px,1.6vmin,18px);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
 
   @media (prefers-reduced-motion:reduce){
-    .fond,.fleche,.qr-boite::before,.eclat.va,.acte.on .pastille{animation:none}
+    .fond,.fleche,.qr-boite::before,.acte.on .pastille{animation:none}
     .acte{transition:none}
     .pastille{opacity:1; transform:none}
   }
 </style>
 </head>
 <body>
-<div class="fond" aria-hidden="true"></div>
 
-<div class="scene">
+@if (! empty($erreur))
 
-  <div class="gauche">
-    <div style="display:grid; place-items:center; gap:2vmin; width:100%">
+  {{-- Pas de lueur orange ici : c'est elle qui donne à l'écran son air de publicité. --}}
+  <main class="panne">
+    <img class="logo" src="{{ asset('images/kiosk-attract/logo.png') }}" alt="Le Cayenne">
+    <p class="panne-titre">Roue indisponible</p>
+    <p class="panne-quoi">
+      Cet écran ne peut pas fabriquer le code à scanner.
+      Aucun jeu n'est proposé aux clients pour le moment.
+    </p>
+    <p class="panne-faire">
+      À faire par l'équipe : ouvrir <b>Réglages de la roue</b> dans l'administration et compléter
+      ce qui manque. Cet écran se remet en route tout seul dès que c'est réparé.
+    </p>
+    <p class="panne-tech">{{ $erreur }}</p>
+  </main>
+
+@else
+
+  <div class="fond" aria-hidden="true"></div>
+
+  <main class="scene">
+
+    <div class="gauche">
       {{-- Le VRAI logo, en grand : c'est la première chose vue de loin, et c'est ce qui fait
            reconnaître l'écran comme celui du restaurant et non une publicité quelconque. --}}
       <img class="logo" src="{{ asset('images/kiosk-attract/logo.png') }}" alt="Le Cayenne">
 
-      <div class="roue-boite">
-        <div class="repere" aria-hidden="true"></div>
-        <canvas class="roue" id="roue" width="720" height="720" aria-hidden="true"></canvas>
-        <div class="eclat" id="eclat" aria-hidden="true"></div>
-      </div>
+      {{-- Le repère qui désigne le lot gagnant est DESSINÉ dans le canvas (voir plus bas) : la
+           roue change de taille pour laisser la place au texte, et un triangle posé à côté en
+           HTML se décrochait de son sommet. Le `aria-label` donne la liste des lots hors de
+           l'acte 2 : sans lui, la roue est une image muette les deux tiers du temps. --}}
+      <canvas class="roue" id="roue" width="720" height="720" role="img"
+              aria-label="Roue des lots : {{ implode(', ', array_column($segments ?? [], 'label')) ?: 'à découvrir' }}"></canvas>
 
       <div class="actes">
         {{-- ACTE 1 — L'ACCROCHE. Une promesse, lisible à trois mètres. --}}
@@ -203,21 +301,27 @@
         </div>
 
         {{-- ACTE 2 — CE QU'IL Y A À GAGNER. On montre les lots : une promesse sans contenu ne
-             déclenche rien, et les libellés viennent du serveur, jamais d'une liste écrite ici. --}}
+             déclenche rien, et les libellés viennent du serveur, jamais d'une liste écrite ici.
+             C'est aussi l'endroit où les lots sont VRAIMENT lisibles : sur la roue, la géométrie
+             d'un secteur limite la taille du texte, ici non. --}}
         <div class="acte" data-acte="1">
           <p class="titre2">Aujourd'hui, on distribue</p>
           <div class="lots">
-            {{-- TOUS les lots, sans coupe. En tronquer un ferait dire à l'écran « on distribue
-                 ceci » pendant que la roue en montre un de plus juste au-dessus — le client
-                 remarque l'écart, et c'est le genre de détail qui fait douter du reste. --}}
+            {{-- TOUS les lots, sans coupe — et désormais sans coupe POUR DE VRAI : la ligne des
+                 actes n'est plus une boîte de hauteur devinée, et le QR n'est plus posé par-dessus.
+                 En tronquer un ferait dire à l'écran « on distribue ceci » pendant que la roue en
+                 montre un de plus juste au-dessus — le client remarque l'écart, et c'est le genre
+                 de détail qui fait douter du reste. --}}
             @foreach ($segments ?? [] as $i => $s)
               <span class="pastille" style="animation-delay:{{ 0.12 * $i }}s">{{ $s['label'] }}</span>
             @endforeach
           </div>
         </div>
 
-        {{-- ACTE 3 — LE GESTE. Deux temps, jamais trois : « scanne, tourne ». Annoncer un
-             parcours long fait reposer le téléphone avant même de commencer. --}}
+        {{-- ACTE 3 — LE GESTE. Trois pastilles, mais DEUX gestes seulement : « scanne » puis
+             « tourne ». La troisième est la récompense, pas une corvée de plus — c'est la
+             différence entre annoncer un parcours long (qui fait reposer le téléphone) et
+             annoncer une fin heureuse. Ne pas la relire comme une étape à supprimer. --}}
         <div class="acte" data-acte="2">
           <p class="titre2">C'est tout de suite</p>
           <div class="geste">
@@ -230,25 +334,22 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="droite">
-    @if (! empty($erreur))
-      <p class="err">{{ $erreur }}</p>
-    @else
+    <div class="droite">
       <div class="fleche" aria-hidden="true">↓</div>
       <div class="qr-boite">
         <div class="qr" id="qr">{!! $qr !!}</div>
       </div>
-      <p class="scanne">Scanne avec ton téléphone</p>
-      <p class="detail">Aucune application à installer.<br>Ça prend moins d'une minute.</p>
-    @endif
-  </div>
+      <div class="qr-mots">
+        <p class="scanne">Scanne avec ton téléphone</p>
+        <p class="detail">Aucune application à installer.<br>Ça prend moins d'une minute.</p>
+      </div>
+    </div>
 
-</div>
+  </main>
 
-@if (empty($erreur))
   <p class="bandeau">Un tour par personne — le lot est à utiliser sur une prochaine commande.</p>
+
 @endif
 
 <script>
@@ -262,37 +363,92 @@
 
   var cv = document.getElementById('roue');
   var ctx = cv && cv.getContext ? cv.getContext('2d') : null;
-  var eclat = document.getElementById('eclat');
   var lent = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var COULEURS = ['#F4501E', '#FFB800', '#FF6A3D', '#FFD34D', '#E8431A', '#FFC633'];
+  var COTE = 720, R = COTE / 2, RAYON = R - 8, TAU = Math.PI * 2;
   var angle = 0;
+  var feu = 0;                 // éclat résiduel juste après un arrêt (1 → 0)
 
-  function ombrer(hex, t) {
-    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
-    function f(x) { return Math.max(0, Math.min(255, Math.round(t < 0 ? x * (1 + t) : x + (255 - x) * t))); }
-    return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+  /* ── LES COULEURS ─────────────────────────────────────────────────────────────────────────
+     Une palette FIXE de six teintes laissait deux secteurs VOISINS identiques dès que le nombre
+     de lots n'était pas un multiple de six : avec sept lots, le premier et le dernier se
+     touchaient dans le même orange, la roue paraissait n'avoir que six cases, et un lot semblait
+     donc deux fois plus probable. La teinte est maintenant CALCULÉE : une case sur deux dans
+     l'orange de la marque, l'autre dans son jaune — l'alternance d'une fête foraine — PLUS un
+     léger glissement en fonction du rang. C'est ce glissement qui sauve le raccord du tour quand
+     le nombre de lots est impair : les deux cases qui se rejoignent appartiennent alors à la même
+     famille, et sans lui elles seraient identiques. */
+  function teinte(i, N, dl) {
+    var jaune = i % 2 === 1, glisse = i / N;
+    var h = jaune ? 40 + 6 * glisse : 11 + 11 * glisse;
+    var l = Math.max(10, Math.min(92, (jaune ? 57 : 45) + 7 * glisse + dl));
+    return 'hsl(' + h.toFixed(1) + ',' + (jaune ? 97 : 88) + '%,' + l.toFixed(1) + '%)';
+  }
+
+  /* ── LA TAILLE DES LIBELLÉS ───────────────────────────────────────────────────────────────
+     Le texte est dessiné dans le repère du canvas (720 px) puis AFFICHÉ à 340–530 px selon
+     l'écran. Une police écrite « 25 px » ne faisait donc plus que 12 px à l'écran : le texte le
+     plus petit de la page, alors que c'est lui qui dit ce qu'on gagne. On part maintenant d'une
+     taille voulue À L'ÉCRAN et on la convertit — l'échelle est MESURÉE, jamais supposée.
+     Puis on réduit juste ce qu'il faut pour que le mot tienne dans son secteur : sa longueur le
+     long du rayon, et l'épaisseur de ses deux lignes en travers. Le résultat est mis en cache,
+     il ne dépend que de l'échelle d'affichage. */
+  var VISEE = 30;              // hauteur de police voulue à l'écran, en px CSS
+  var R_TEXTE = R * 0.615;     // milieu du mot, sur le rayon
+  var R_MIN = 80, R_MAX = 316; // bande utile : après le moyeu, avant le repère et les ampoules
+  var echelle = 1, cache = null, cacheEchelle = -1;
+
+  function police(t) { return '900 ' + t.toFixed(1) + 'px -apple-system,Segoe UI,Roboto,sans-serif'; }
+
+  function mesurerEchelle() {
+    var l = cv ? cv.getBoundingClientRect().width : 0;
+    echelle = l > 4 ? COTE / l : 1;
+  }
+
+  function libelles() {
+    if (cache && cacheEchelle === echelle) { return cache; }
+    var N = LOTS.length;
+    cache = LOTS.map(function (brut) {
+      // Deux lignes pour les libellés longs : « Frites + Boisson » sur une seule ligne sort du
+      // secteur et se fait rogner par le bord de la roue.
+      var mots = String(brut).split(' ');
+      var coupe = Math.ceil(mots.length / 2);
+      var l1 = mots.length > 1 ? mots.slice(0, coupe).join(' ') : mots[0];
+      var l2 = mots.length > 1 ? mots.slice(coupe).join(' ') : '';
+      var t = VISEE * echelle;
+      for (var k = 0; k < 14; k++) {
+        ctx.font = police(t);
+        var demi = Math.max(ctx.measureText(l1).width, l2 ? ctx.measureText(l2).width : 0) / 2;
+        var interne = R_TEXTE - demi;
+        var epais = l2 ? 1.95 * t : 0.8 * t;                 // encre en travers du rayon
+        var place = TAU * Math.max(interne, 30) / N * 0.86;   // largeur du secteur à cet endroit
+        if (interne >= R_MIN && R_TEXTE + demi <= R_MAX && epais <= place) { break; }
+        t *= 0.94;
+      }
+      return { l1: l1, l2: l2, t: t };
+    });
+    cacheEchelle = echelle;
+    return cache;
   }
 
   function dessiner() {
     if (!ctx) return;
-    var N = LOTS.length, R = 360, pas = (Math.PI * 2) / N;
-    ctx.clearRect(0, 0, 720, 720);
+    var N = LOTS.length, pas = TAU / N, libs = libelles();
+    ctx.clearRect(0, 0, COTE, COTE);
     ctx.save();
     ctx.translate(R, R);
     ctx.rotate(angle);
 
     for (var i = 0; i < N; i++) {
       var a0 = i * pas - Math.PI / 2, a1 = a0 + pas;
-      var base = COULEURS[i % COULEURS.length];
 
-      var g = ctx.createRadialGradient(0, 0, R * 0.18, 0, 0, R);
-      g.addColorStop(0, ombrer(base, 0.22));
-      g.addColorStop(1, ombrer(base, -0.18));
+      var g = ctx.createRadialGradient(0, 0, RAYON * 0.18, 0, 0, RAYON);
+      g.addColorStop(0, teinte(i, N, 10));
+      g.addColorStop(1, teinte(i, N, -12));
 
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.arc(0, 0, R - 8, a0, a1);
+      ctx.arc(0, 0, RAYON, a0, a1);
       ctx.closePath();
       ctx.fillStyle = g;
       ctx.fill();
@@ -308,24 +464,26 @@
       ctx.save();
       var am = a0 + pas / 2;
       ctx.rotate(am);
-      var abs = ((am + angle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      var abs = ((am + angle) % TAU + TAU) % TAU;
       var retourne = abs > Math.PI / 2 && abs < Math.PI * 1.5;
-      ctx.translate(R * 0.60, 0);
+      ctx.translate(R_TEXTE, 0);
       if (retourne) { ctx.rotate(Math.PI); }
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fff';
-      ctx.shadowColor = 'rgba(0,0,0,.5)';
-      ctx.shadowBlur = 6;
-      // Deux lignes pour les libellés longs : « Frites + Boisson » sur une seule ligne déborde du
-      // secteur et se fait rogner par le bord de la roue.
-      var mots = String(LOTS[i]).split(' ');
-      var l1 = mots.length > 1 ? mots.slice(0, Math.ceil(mots.length / 2)).join(' ') : mots[0];
-      var l2 = mots.length > 1 ? mots.slice(Math.ceil(mots.length / 2)).join(' ') : '';
-      var taille = (l1.length > 9 || l2.length > 9) ? 25 : 31;
-      ctx.font = '900 ' + taille + 'px -apple-system,Segoe UI,Roboto,sans-serif';
-      if (l2) { ctx.fillText(l1, 0, -taille * 0.55); ctx.fillText(l2, 0, taille * 0.55); }
-      else { ctx.fillText(l1, 0, 0); }
+      ctx.shadowColor = 'rgba(0,0,0,.55)';
+      ctx.shadowBlur = 7;
+      var L = libs[i];
+      ctx.font = police(L.t);
+      /* Un cerne sombre sous le blanc : une case jaune de fête foraine est presque aussi claire
+         que le texte posé dessus (1,5:1). Le cerne rend le mot lisible sans assombrir la case,
+         donc sans perdre la couleur de la marque. */
+      ctx.lineWidth = Math.max(2, L.t * 0.1);
+      ctx.strokeStyle = 'rgba(60,24,0,.62)';
+      ctx.lineJoin = 'round';
+      var lignes = L.l2 ? [[L.l1, -L.t * 0.56], [L.l2, L.t * 0.56]] : [[L.l1, 0]];
+      for (var m = 0; m < lignes.length; m++) { ctx.strokeText(lignes[m][0], 0, lignes[m][1]); }
+      for (var f = 0; f < lignes.length; f++) { ctx.fillText(lignes[f][0], 0, lignes[f][1]); }
       ctx.restore();
     }
     ctx.restore();
@@ -334,10 +492,10 @@
     ctx.save();
     ctx.translate(R, R);
     for (var k = 0; k < 24; k++) {
-      var aa = angle * 0.5 + (k / 24) * Math.PI * 2;
+      var aa = angle * 0.5 + (k / 24) * TAU;
       var vive = (Math.floor(Date.now() / 260) + k) % 3 === 0;
       ctx.beginPath();
-      ctx.arc(Math.cos(aa) * (R - 2), Math.sin(aa) * (R - 2), vive ? 7 : 5, 0, Math.PI * 2);
+      ctx.arc(Math.cos(aa) * (R - 2), Math.sin(aa) * (R - 2), vive ? 7 : 5, 0, TAU);
       ctx.fillStyle = vive ? '#FFF3CF' : 'rgba(255,220,150,.55)';
       ctx.shadowColor = 'rgba(255,200,90,.9)';
       ctx.shadowBlur = vive ? 16 : 7;
@@ -345,7 +503,7 @@
     }
     // Moyeu.
     ctx.beginPath();
-    ctx.arc(0, 0, 58, 0, Math.PI * 2);
+    ctx.arc(0, 0, 58, 0, TAU);
     var gm = ctx.createRadialGradient(-14, -18, 6, 0, 0, 58);
     gm.addColorStop(0, '#FFE9A8');
     gm.addColorStop(1, '#C9791A');
@@ -353,6 +511,46 @@
     ctx.shadowColor = 'rgba(0,0,0,.45)';
     ctx.shadowBlur = 18;
     ctx.fill();
+    ctx.restore();
+
+    /* Éclat au moment où la roue s'immobilise : c'est CE flash qui fait tourner les têtes. Il est
+       peint SUR la roue plutôt que posé en calque HTML — un calque était positionné par rapport à
+       une boîte qui ne fait plus la taille de la roue, donc décalé. */
+    if (feu > 0.01) {
+      ctx.save();
+      ctx.translate(R, R);
+      var ge = ctx.createRadialGradient(0, 0, RAYON * 0.25, 0, 0, RAYON);
+      ge.addColorStop(0, 'rgba(255,240,200,0)');
+      ge.addColorStop(1, 'rgba(255,228,155,' + (0.6 * feu).toFixed(3) + ')');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.beginPath();
+      ctx.arc(0, 0, RAYON, 0, TAU);
+      ctx.fillStyle = ge;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* LE REPÈRE qui désigne le lot gagnant. Dessiné ici et pas en HTML à côté : la roue cède de
+       la place au texte quand l'écran est court, sa taille d'affichage varie donc, et un triangle
+       positionné par rapport au conteneur se décrochait de son sommet. */
+    ctx.save();
+    ctx.translate(R, 0);
+    ctx.beginPath();
+    ctx.moveTo(-31, 0);
+    ctx.lineTo(31, 0);
+    ctx.lineTo(0, 44);
+    ctx.closePath();
+    ctx.fillStyle = '#FFD34D';
+    ctx.shadowColor = 'rgba(0,0,0,.6)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 5;
+    ctx.fill();
+    // Un cerne sombre : posé sur un secteur ambré, un triangle jaune sans contour se fond dedans
+    // et l'écran n'a plus de repère lisible à trois mètres.
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(38,18,4,.8)';
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -372,10 +570,10 @@
     // l'affichage. Le vrai tirage vit sur le serveur, et il est le seul à décider.
     var N = LOTS.length;
     var secteur = Math.floor(Math.random() * N);
-    var pas = (Math.PI * 2) / N;
+    var pas = TAU / N;
     var arret = -(secteur * pas + pas / 2);
-    cible = base + Math.PI * 2 * (3 + Math.floor(Math.random() * 3))
-          + ((arret - base) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    cible = base + TAU * (3 + Math.floor(Math.random() * 3))
+          + ((arret - base) % TAU + TAU) % TAU;
     etat = 'lance';
   }
 
@@ -390,14 +588,11 @@
       if (p >= 1) {
         etat = 'pause';
         depart = t;
-        if (eclat && !lent) {
-          eclat.classList.remove('va');
-          void eclat.offsetWidth;      // relance l'animation
-          eclat.classList.add('va');
-        }
+        feu = 1;
       }
-    } else if (t - depart > PAUSE) {
-      nouveauLancer(t);
+    } else {
+      feu = Math.max(0, 1 - (t - depart) / 900);
+      if (t - depart > PAUSE) { nouveauLancer(t); }
     }
 
     dessiner();
@@ -405,7 +600,27 @@
   }
 
   if (ctx) {
-    if (lent) { dessiner(); } else { requestAnimationFrame(boucle); }
+    mesurerEchelle();
+    if (lent) {
+      /* MOUVEMENT RÉDUIT : on ne fige pas la roue sur son angle brut. À angle nul, une
+         SÉPARATION tombe pile sous le repère, entre deux secteurs — l'écran désigne un trait au
+         lieu d'un lot, et il a l'air cassé. On centre donc le premier secteur sous le repère. */
+      angle = -(TAU / LOTS.length) / 2;
+      dessiner();
+    } else {
+      requestAnimationFrame(boucle);
+    }
+
+    /* La roue prend la place qui reste : sa taille d'AFFICHAGE change avec la fenêtre, donc la
+       conversion « px d'écran → px de canvas » des libellés doit être refaite. Sans ça, une roue
+       redimensionnée garderait des libellés calculés pour l'ancienne taille. */
+    var suivre = function () {
+      var avant = echelle;
+      mesurerEchelle();
+      if (avant !== echelle && lent) { dessiner(); }
+    };
+    if (window.ResizeObserver) { new ResizeObserver(suivre).observe(cv); }
+    else { addEventListener('resize', suivre); }
   }
 
   /* ── LES TROIS ACTES ──────────────────────────────────────────────────────────────────────
@@ -414,24 +629,33 @@
   var actes = [].slice.call(document.querySelectorAll('.acte'));
   if (actes.length > 1) {
     var courant = 0;
+    /* Sortie PUIS entrée, jamais les deux en même temps : en fondu croisé, deux textes de
+       hauteurs différentes se superposaient 700 ms toutes les 6,5 s — un dixième du temps
+       d'affichage passé en brouillard, « Tu gagnes à 100 % » lisible en fantôme derrière les
+       lots. Un fondu croisé n'est lisible que si les deux états ont la même silhouette. */
+    var FONDU = lent ? 0 : 320;
     setInterval(function () {
       actes[courant].classList.remove('on');
       courant = (courant + 1) % actes.length;
       var el = actes[courant];
-      el.classList.add('on');
-      // On relance l'entrée des pastilles à chaque passage : sinon l'acte 2 n'est animé qu'une
-      // fois, et paraît figé aux passages suivants.
-      [].forEach.call(el.querySelectorAll('.pastille'), function (p) {
-        p.style.animation = 'none';
-        void p.offsetWidth;
-        p.style.animation = '';
-      });
+      setTimeout(function () {
+        el.classList.add('on');
+        // On relance l'entrée des pastilles à chaque passage : sinon l'acte 2 n'est animé qu'une
+        // fois, et paraît figé aux passages suivants.
+        [].forEach.call(el.querySelectorAll('.pastille'), function (p) {
+          p.style.animation = 'none';
+          void p.offsetWidth;
+          p.style.animation = '';
+        });
+      }, FONDU);
     }, 6500);
   }
 
   /* Renouvellement du jeton : la page se recharge à la MOITIÉ de la durée de vie, pour que le QR
-     affiché soit toujours valable au moins autant de temps qu'il en reste à l'écran. */
-  setTimeout(function () { location.reload(); }, {{ (int) $refreshMs }});
+     affiché soit toujours valable au moins autant de temps qu'il en reste à l'écran.
+     En panne de QR, on réessaie toutes les minutes : l'écran doit repartir tout seul dès que le
+     réglage manquant est saisi, sans que personne n'ait à toucher la tablette. */
+  setTimeout(function () { location.reload(); }, {{ empty($erreur) ? (int) $refreshMs : 60000 }});
 })();
 </script>
 </body>
