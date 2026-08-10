@@ -131,6 +131,89 @@ class WheelPointsDeliveryTest extends TestCase
             'les points ont été crédités DEUX FOIS : la maison paie deux fois le même lot');
     }
 
+    // ── LES TROIS FAÇONS DE NE PAS TROUVER LE BON COMPTE ─────────────────────────────────────
+
+    /**
+     * [P1 2026-08-10 · audit ronde 2] LE JUMEAU OUBLIÉ, ET C'EST MOI QUI L'AI OUBLIÉ.
+     *
+     * `WheelAccountService::variantes()` cherche « ce numéro » sous ses QUATRE écritures — parce que la
+     * base contient « 0612345678 », « 612345678 » et « +33612345678 » pour le même humain. Son jumeau
+     * `creditPoints()`, trente lignes plus loin, n'en cherchait QU'UNE.
+     *
+     * Mesuré en base : 62 comptes sur 348 portent une forme non normalisée. Pour eux, le compte
+     * EXISTE, la réclamation l'a retrouvé — et la remise répondait « aucun compte à ce numéro, dis-lui
+     * de créer son compte avec CE numéro puis reviens ». Une consigne impossible à exécuter, sur ce
+     * qui est le lot le plus fréquent quand les codes de remise sont éteints.
+     *
+     * Une seule définition de « ce numéro », partagée. C'est la leçon « un correctif est complet sur la
+     * surface regardée, pas sur ses jumelles » — recommise le jour même où je l'ai écrite.
+     */
+    public function test_les_points_trouvent_le_compte_meme_ecrit_SANS_le_zero(): void
+    {
+        $spin = $this->tour('0611000910', 'variante@exemple.fr');
+
+        // Forme réellement présente en base (constatée : « 600099482 »).
+        $u = User::factory()->create([
+            'phone' => '611000910', 'branch_id' => 0, 'is_guest' => Ask::YES, 'loyalty_points' => 3,
+        ]);
+
+        $r = app(WheelDeliveryService::class)->deliver($spin->id, null);
+
+        $this->assertTrue($r['ok'], $r['message']);
+        $this->assertTrue($r['points_credited'],
+            'le compte existe sous une autre écriture du numéro : le comptoir envoie le client créer '
+            . 'un compte qu\'il a déjà, ce qui est impossible à faire');
+        $this->assertSame(53, (int) $u->fresh()->loyalty_points);
+    }
+
+    public function test_les_points_trouvent_le_compte_ecrit_au_format_international(): void
+    {
+        $spin = $this->tour('0611000911', 'intl@exemple.fr');
+        $u = User::factory()->create([
+            'phone' => '+33611000911', 'branch_id' => 0, 'is_guest' => Ask::YES, 'loyalty_points' => 0,
+        ]);
+
+        $this->assertTrue(app(WheelDeliveryService::class)->deliver($spin->id, null)['points_credited']);
+        $this->assertSame(50, (int) $u->fresh()->loyalty_points);
+    }
+
+    /**
+     * [P1] LES POINTS ÉTAIENT CRÉDITÉS SUR UN COMPTE SUPPRIMÉ. `withoutGlobalScopes()` retire aussi le
+     * filtre de suppression douce : le lot était clos, l'écran annonçait « points crédités sur son
+     * compte », et le client vivant n'avait rien.
+     */
+    public function test_les_points_ne_sont_PAS_credites_sur_un_compte_supprime(): void
+    {
+        $spin = $this->tour('0611000912', 'mort@exemple.fr');
+        $mort = User::factory()->create([
+            'phone' => '0611000912', 'branch_id' => 0, 'is_guest' => Ask::YES, 'loyalty_points' => 0,
+        ]);
+        $mort->delete();
+
+        $r = app(WheelDeliveryService::class)->deliver($spin->id, null);
+
+        $this->assertFalse($r['ok'],
+            'les points sont crédités sur un compte SUPPRIMÉ : le lot est clos et personne ne les a');
+        $this->assertNull($spin->fresh()->delivered_at, 'le lot doit rester dû');
+        $this->assertSame(0, (int) User::withoutGlobalScopes()->withTrashed()
+            ->whereKey($mort->id)->value('loyalty_points'));
+    }
+
+    /** Ni sur un compte de l'ÉQUIPE : un numéro n'est pas une preuve d'identité. */
+    public function test_les_points_ne_sont_PAS_credites_sur_un_compte_de_l_equipe(): void
+    {
+        $spin = $this->tour('0611000913', 'staff@exemple.fr');
+        $staff = User::factory()->create([
+            'phone' => '0611000913', 'branch_id' => 1, 'is_guest' => Ask::NO, 'loyalty_points' => 0,
+        ]);
+
+        $r = app(WheelDeliveryService::class)->deliver($spin->id, null);
+
+        $this->assertFalse($r['ok']);
+        $this->assertSame(0, (int) $staff->fresh()->loyalty_points,
+            'les points d\'un client ont été versés sur un compte de l\'équipe');
+    }
+
     /** Le lot reste visible comme EN ATTENTE tant qu'il n'est pas remis — sinon l'équipe l'oublie. */
     public function test_le_lot_conserve_reste_visible_dans_les_lots_en_attente(): void
     {

@@ -86,11 +86,14 @@ class WheelAccountService
         // qui a déjà commandé — deux comptes, deux soldes de points, un seul humain.
         $existant = User::withoutGlobalScope(BranchScope::class)
             ->withTrashed()
-            ->whereIn('phone', $this->variantes($tel))
+            ->whereIn('phone', app(WheelService::class)->phoneVariants($tel))
             ->orderBy('id')
             ->first();
 
-        if ($existant && (int) $existant->is_guest !== (int) Ask::YES) {
+        // Même règle que le crédit des points : « pas l'équipe », et non « invité ». Un client
+        // réellement inscrit (`is_guest = NO` + rôle client) est un client, et son lot doit lui être
+        // rattaché comme aux autres.
+        if ($existant && ! app(WheelService::class)->isCustomerAccount($existant)) {
             // Compte de l'équipe. On n'y touche pas — et le lot passe quand même : c'est très
             // probablement le propriétaire qui teste avec son propre numéro.
             return ['user_id' => null, 'created' => false, 'reason' => 'staff_phone'];
@@ -168,25 +171,5 @@ class WheelAccountService
         if ($modifie) {
             $user->save();
         }
-    }
-
-    /**
-     * Les écritures possibles d'un même numéro français. On ne devine pas un indicatif étranger :
-     * mieux vaut un compte de plus qu'un compte rattaché au mauvais humain.
-     *
-     * @return array<int, string>
-     */
-    private function variantes(string $tel): array
-    {
-        $v = [$tel];
-
-        if (str_starts_with($tel, '0') && strlen($tel) === 10) {
-            $sansZero = substr($tel, 1);
-            $v[] = $sansZero;
-            $v[] = '33' . $sansZero;
-            $v[] = '+33' . $sansZero;
-        }
-
-        return array_values(array_unique($v));
     }
 }

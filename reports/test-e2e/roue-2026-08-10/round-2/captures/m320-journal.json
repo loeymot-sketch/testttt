@@ -1,0 +1,234 @@
+{
+  "tag": "m320",
+  "viewport": "320x568",
+  "etapes": [
+    {
+      "t": 1028,
+      "k": "API 200 config",
+      "v": "{\"segments\":[{\"key\":\"points_50\",\"label\":\"50 points\"},{\"key\":\"remise_10\",\"label\":\"-10%\"},{\"key\":\"points_100\",\"label\":\"100 points\"},{\"key\":\"remise_15\",\"label\":\"-15%\"},{\"key\":\"boisson\",\"label\":\"Boisson o"
+    },
+    {
+      "t": 1053,
+      "k": "demarrer disabled à l'arrivée",
+      "v": false
+    },
+    {
+      "t": 1067,
+      "k": "demarrer activé après config",
+      "v": "1067ms"
+    },
+    {
+      "t": 1446,
+      "k": "capture",
+      "v": "01-arrivee"
+    },
+    {
+      "t": 2033,
+      "k": "capture",
+      "v": "02-avis"
+    },
+    {
+      "t": 2159,
+      "k": "POPUP",
+      "v": "chrome-error://chromewebdata/"
+    },
+    {
+      "t": 2176,
+      "k": "API 200 step",
+      "v": "{\"status\":true,\"wait_seconds\":20}"
+    },
+    {
+      "t": 3050,
+      "k": "compteur avis",
+      "v": "Encore 20 secondes…"
+    },
+    {
+      "t": 3344,
+      "k": "capture",
+      "v": "03-avis-attente"
+    },
+    {
+      "t": 22189,
+      "k": "avis débloqué après",
+      "v": "20156ms"
+    },
+    {
+      "t": 22615,
+      "k": "capture",
+      "v": "04-abonnement"
+    },
+    {
+      "t": 22762,
+      "k": "POPUP",
+      "v": "chrome-error://chromewebdata/"
+    },
+    {
+      "t": 22777,
+      "k": "API 200 step",
+      "v": "{\"status\":true,\"wait_seconds\":8}"
+    },
+    {
+      "t": 30780,
+      "k": "abonnement débloqué après",
+      "v": "8165ms"
+    },
+    {
+      "t": 31157,
+      "k": "capture",
+      "v": "05-avant-tour"
+    },
+    {
+      "t": 31447,
+      "k": "API 200 spin",
+      "v": "{\"status\":true,\"segment_index\":0,\"prize_label\":\"50 points\",\"prize_type\":\"points\",\"claim_minutes\":30}"
+    },
+    {
+      "t": 36959,
+      "k": "LOT ANNONCÉ",
+      "v": "50 points"
+    },
+    {
+      "t": 36959,
+      "k": "verrou",
+      "v": "Ton cadeau est <b>réservé pendant 30 minutes</b>. Dis-nous où t'envoyer les détails et c'est à toi."
+    },
+    {
+      "t": 36959,
+      "k": "cadenas",
+      "v": "À RETIRER"
+    },
+    {
+      "t": 36959,
+      "k": "bouton",
+      "v": "DÉBLOQUER MON CADEAU"
+    },
+    {
+      "t": 37423,
+      "k": "capture",
+      "v": "06-verrou"
+    },
+    {
+      "t": 37804,
+      "k": "capture",
+      "v": "07-verrou-rempli"
+    },
+    {
+      "t": 38149,
+      "k": "API 200 claim",
+      "v": "{\"status\":true,\"prize_label\":\"50 points\",\"prize_type\":\"points\",\"code\":null,\"points\":50,\"requires_order\":true,\"min_order\":10,\"valid_until\":\"09\\/09\\/2026\",\"account_created\":true,\"account_ready\":true}"
+    },
+    {
+      "t": 39526,
+      "k": "CADRE CODE caché ?",
+      "v": true
+    },
+    {
+      "t": 39526,
+      "k": "condition",
+      "v": "Donne ton <b>numéro au comptoir</b> à ta prochaine commande : on ajoute tes <b>50 points</b> sur ton compte. <b>Dès 10,00 € de commande.</b>"
+    },
+    {
+      "t": 39526,
+      "k": "pied",
+      "v": "Enregistré sur ton numéro — à utiliser avant le 09/09/2026."
+    },
+    {
+      "t": 39526,
+      "k": "compte",
+      "v": "✓ Ton compte est créé. Pour te connecter : ton numéro, puis le code qu'on t'envoie par e-mail — aucun mot de passe à retenir."
+    },
+    {
+      "t": 39965,
+      "k": "capture",
+      "v": "08-debloque"
+    },
+    {
+      "t": 39967,
+      "k": "débordement",
+      "v": "{\"scrollW\":320,\"clientW\":320,\"carteRect\":{\"top\":70,\"bottom\":498,\"h\":429},\"vh\":568,\"lienRect\":{\"top\":264,\"bottom\":320},\"carteScrollable\":{\"scrollH\":584,\"clientH\":568,\"overflowY\":\"auto\"}}"
+    },
+    {
+      "t": 40785,
+      "k": "capture",
+      "v": "09-debloque-bas"
+    }
+  ],
+  "console": [],
+  "reseau": [
+    {
+      "url": "/api/frontend/wheel/config?branch_id=1&preview=audit-roue-2026-08-10",
+      "status": 200,
+      "body": "{\"segments\":[{\"key\":\"points_50\",\"label\":\"50 points\"},{\"key\":\"remise_10\",\"label\":\"-10%\"},{\"key\":\"points_100\",\"label\":\"100 points\"},{\"key\":\"remise_15\",\"label\":\"-15%\"},{\"key\":\"boisson\",\"label\":\"Boisson offerte\"},{\"key\":\"frites\",\"label\":\"Frites offertes\"},{\"key\":\"menu\",\"label\":\"Frites + Boisson\"}],\"requires_order\":true,\"steps\":[{\"key\":\"review\",\"required\":true,\"url\":\"https:\\/\\/www.google.com\\/maps\\/search\\/?api=1&query=Le%20Cayenne%20437%20Rue%20%C3%89lie%20Gruyelle%2C%2062110%20H%C3%A9nin-Beaumont\",\"dwell\":20},{\"key\":\"follow\",\"required\":true,\"instagram\":\"\",\"snapchat\":\"\",\"facebook\":\"https:\\/\\/www.facebook.com\\/LeCayenne\",\"dwell\":8}],\"min_order\":10,\"preview\":true,\"already_spun\":false,\"previous_pri"
+    },
+    {
+      "bloque": "https://www.google.com/maps/search/?api=1&query=Le%20Cayenne%20437%20Rue%20%C3%89lie%20Gruyelle%2C%2062110%20H%C3%A9nin-"
+    },
+    {
+      "url": "/api/frontend/wheel/step",
+      "status": 200,
+      "body": "{\"status\":true,\"wait_seconds\":20}"
+    },
+    {
+      "bloque": "https://www.facebook.com/LeCayenne"
+    },
+    {
+      "url": "/api/frontend/wheel/step",
+      "status": 200,
+      "body": "{\"status\":true,\"wait_seconds\":8}"
+    },
+    {
+      "url": "/api/frontend/wheel/spin",
+      "status": 200,
+      "body": "{\"status\":true,\"segment_index\":0,\"prize_label\":\"50 points\",\"prize_type\":\"points\",\"claim_minutes\":30}"
+    },
+    {
+      "url": "/api/frontend/wheel/claim",
+      "status": 200,
+      "body": "{\"status\":true,\"prize_label\":\"50 points\",\"prize_type\":\"points\",\"code\":null,\"points\":50,\"requires_order\":true,\"min_order\":10,\"valid_until\":\"09\\/09\\/2026\",\"account_created\":true,\"account_ready\":true}"
+    }
+  ],
+  "dom": {
+    "demarrer_disabled_immediat": false,
+    "sousTitre": "Un lot pour ta prochaine commande, dès 10,00 €.",
+    "msg_arrivee": "Mode test — visible seulement par le patron.",
+    "okAvis_avant": true,
+    "btnAvis_href": "https://www.google.com/maps/search/?api=1&query=Le%20Cayenne%20437%20Rue%20%C3%89lie%20Gruyelle%2C%2062110%20H%C3%A9nin-Beaumont",
+    "attenteAvis": "Encore 20 secondes…",
+    "avis_attente_mesuree_ms": 20156,
+    "btnFollow_txt": "S'abonner sur Facebook",
+    "btnFollow_href": "https://www.facebook.com/LeCayenne",
+    "attenteFollow": "Encore 8 secondes…",
+    "follow_attente_mesuree_ms": 8165,
+    "gainLot": "50 points",
+    "verrouTxt": "Ton cadeau est <b>réservé pendant 30 minutes</b>. Dis-nous où t'envoyer les détails et c'est à toi.",
+    "cadenasTxt": "À RETIRER",
+    "go_txt": "DÉBLOQUER MON CADEAU",
+    "rgpd": "Ton compte Le Cayenne se crée en même temps — pas de mot de passe : pour te connecter, tu\n        recevras un code par e-mail.",
+    "gainCode_hidden": true,
+    "gainCodeTxt": "",
+    "gainCondition": "Donne ton <b>numéro au comptoir</b> à ta prochaine commande : on ajoute tes <b>50 points</b> sur ton compte. <b>Dès 10,00 € de commande.</b>",
+    "gainPied": "Enregistré sur ton numéro — à utiliser avant le 09/09/2026.",
+    "compteOk_hidden": false,
+    "compteOk": "✓ Ton compte est créé. Pour te connecter : ton numéro, puis le code qu'on t'envoie par e-mail — aucun mot de passe à retenir.",
+    "verrou_hidden": true,
+    "debordement": {
+      "scrollW": 320,
+      "clientW": 320,
+      "carteRect": {
+        "top": 70,
+        "bottom": 498,
+        "h": 429
+      },
+      "vh": 568,
+      "lienRect": {
+        "top": 264,
+        "bottom": 320
+      },
+      "carteScrollable": {
+        "scrollH": 584,
+        "clientH": 568,
+        "overflowY": "auto"
+      }
+    }
+  }
+}

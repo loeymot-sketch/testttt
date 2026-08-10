@@ -1,0 +1,146 @@
+[
+  {
+    "severity": "P1",
+    "category": "money",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:237-241",
+    "title": "Les points du lot le plus fréquent (71 % des tirages) sont INCRÉDITABLES quand le compte du client porte le téléphone sous une autre écriture — et le comptoir est envoyé dans une boucle sans issue.",
+    "evidence": "`creditPoints()` cherche `where('phone', $spin->phone)` sur la SEULE forme normalisée (0XXXXXXXXX). Son jumeau `WheelAccountService::variantes()` (même dossier, ligne 179) cherche QUATRE écritures ('0612345678', '612345678', '33612345678', '+33612345678') et documente explicitement que « la base contient 0612345678, 600099482 et +33612345678 ». Mesuré sur la base de dév : 62 comptes sur 348 portent une forme non normalisée (ex. id 10 = '+33700000010', id 11 = '+33600000099', id 95 = '065660254'). Le site écrit le téléphone BRUT (`LoyaltyController.php:178` : `$user->phone = $request->input('phone')`), donc la forme dépend de ce que le client a tapé. Conséquence prouvée : le compte EXISTE, `WheelAccountService::ensure()` le retrouve (reason='existing'), et `deliver()` répond « Aucun compte à ce numéro : ses 50 points sont CONSERVÉS. Dis-lui de créer son compte avec CE numéro… puis reviens ici ». Le client a déjà ce compte : la consigne est impossible à exécuter, le lot n'est jamais remis. Poids réel : avec les codes de remise ÉTEINTS (état par défaut, `remisesAcceptees()=false` mesuré), le vivier de tirage tombe à 42 points de poids dont 30 en 'points' → 71 % des lots. 50 points = 0,50 € (settings loyalty_setup: 100 points = 1 € de remise, seuil de retrait = 50 points, donc immédiatement dépensables).",
+    "reproduction": "reports/test-e2e/roue-2026-08-10/round-2/wave-E-bench.php → test_a2_points_jamais_credites_si_le_compte_porte_la_forme_plus33 (copier le fichier en tests/Feature/Wheel/AdvWaveEAttackTest.php puis `php vendor/bin/phpunit tests/Feature/Wheel/AdvWaveEAttackTest.php --filter a2_points_jamais`). Mesure base réelle : `php artisan tinker --execute=\"foreach(DB::table('users')->whereNotNull('phone')->get(['id','phone']) as $r) if(!preg_match('/^0\\d{9}$/',$r->phone)) echo $r->id.':'.$r->phone.PHP_EOL;\"`",
+    "recommendation": "Dans `creditPoints()`, réutiliser la recherche par variantes déjà écrite : extraire `WheelAccountService::variantes()` en méthode publique (ou en petit service partagé) et faire `whereIn('phone', $variantes)`. Une seule définition de « ce numéro », partagée par le service qui crée le compte et celui qui le crédite."
+  },
+  {
+    "severity": "P1",
+    "category": "money",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:238",
+    "title": "Les points sont crédités sur un compte SUPPRIMÉ (ou sur un compte de l'équipe) pendant que le comptoir lit « points crédités sur son compte » — le lot est clos, le client vivant n'a rien.",
+    "evidence": "`User::query()->withoutGlobalScopes()` retire AUSSI le scope SoftDeletes, puis `orderBy('id')->first()` prend le plus ANCIEN compte du numéro. Un client dont le compte a été supprimé et qui s'est réinscrit (même numéro, id plus grand) voit ses points partir sur le compte mort : `deliver()` retourne ok=true, message « 50 points crédités sur son compte. », `delivered_at` est posé — le lot est définitivement clos et l'argent est détruit. `WheelAccountService` refuse explicitement les deux cas (`reason='deleted_account'` ligne 99-101, `reason='staff_phone'` ligne 93-97, avec le docbloc « Un compte invité SUPPRIMÉ n'est pas ressuscité »). La règle est donc écrite dans le même dossier et violée ici. Prouvé aussi pour un compte non-invité (équipe/gérant) : les points atterrissent sur le solde du personnel.",
+    "reproduction": "wave-E-bench.php → test_a2b_points_credites_a_un_compte_supprime et test_a2c_points_credites_a_un_compte_de_l_equipe (`--filter 'a2b|a2c'`).",
+    "recommendation": "Aligner la sélection sur `WheelAccountService` : exclure les comptes `trashed()` (retirer `withoutGlobalScopes()` au profit de `withoutGlobalScope(BranchScope::class)`) et exclure `is_guest != Ask::YES`. Si aucun compte éligible : conserver le lot (chemin déjà en place ligne 189-198)."
+  },
+  {
+    "severity": "P1",
+    "category": "stock_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:374-377",
+    "title": "« Boisson offerte » — le cadeau produit le plus fréquent — ne décrémente RIEN en base réelle, et le comptoir reçoit un motif FAUX qui garantit que personne ne corrigera jamais.",
+    "evidence": "Mesuré sur la base de dév : `costItemId('boisson')` = item 3 « Boisson Seule », et `stock_levels` ne contient AUCUNE ligne pour (branche 1, item 3) — la branche 1 n'a que 3 niveaux de stock au total (items 1, 2 et un autre). `recordManualOutflow()` retourne donc false (StockService.php:208-210 « pas de stock direct »), `stock_decremented=false`, et le message affiché au comptoir est « (stock non décrémenté — produit sans stock direct : à corriger à l'inventaire si besoin.) ». Le motif est faux : « Boisson Seule » n'est pas un composite, il n'a simplement pas de ligne de stock. Le P0 déclaré fermé (« LE STOCK N'ÉTAIT PAS DÉCRÉMENTÉ », docbloc lignes 272-289) est donc SANS EFFET sur le lot free_item de poids 8 / plafond 15 par jour. Même diagnostic faux quand `on_hand = 0` : `recordManualOutflow` renvoie false par le plancher delta=0 (StockService.php:228-230) et le comptoir lit encore « produit sans stock direct ». Trois causes distinctes (composite, aucune ligne de stock, rayon vide) rendent le même message.",
+    "reproduction": "wave-E-bench.php → test_a3_cadeau_sans_stocklevel_message_faux et test_a3b_on_hand_zero_message_accuse_le_mauvais_motif. Mesure base réelle : `php artisan tinker --execute=\"echo app(App\\Services\\Wheel\\WheelDeliveryService::class)->costItemId('boisson'); echo DB::table('stock_levels')->where('branch_id',1)->where('stockable_id',3)->count();\"` → 3 puis 0.",
+    "recommendation": "Deux gestes distincts. (1) Faire remonter par `recordManualOutflow` la RAISON du non-décrément (aucun niveau / rayon à zéro / composite) et l'écrire dans le message et dans la note de la sortie, au lieu d'un motif unique inventé. (2) Signaler dans les `avertissements` du tableau tout segment free_item dont le produit de référence n'a pas de `StockLevel` dans la branche du comptoir — c'est un réglage manquant, pas une fatalité."
+  },
+  {
+    "severity": "P1",
+    "category": "money",
+    "file": "app/Http/Controllers/Admin/Wheel/WheelPrizeController.php:72-83",
+    "title": "`spin_id` n'est jamais rattaché au numéro affiché : l'écran parle du client A, le lot du client B est consommé (et son stock décrémenté).",
+    "evidence": "La validation n'exige que `spin_id` (entier) et un `phone` OPTIONNEL, purement décoratif : `deliver()` ne compare jamais `$spin->phone` au numéro demandé. Prouvé par HTTP : deux clients avec un lot « Boisson offerte » en attente ; POST /admin/roue-lot/remettre {spin_id: <lot de B>, phone: '0611111111'} → le lot de B passe à delivered_at, le stock est décrémenté, l'écran affiche « Remis » sous le numéro de A, et le lot de A reste intact. Le client B, en revenant, lira « Ce lot a déjà été remis le … ». La garde de branche neuve (ligne 121) ne protège pas de ça : les deux lots sont dans la même caisse. Couplé au constat suivant (auteur nul), un lot d'autrui devient un moyen de sortir du stock au nom d'un client qui n'a rien reçu.",
+    "reproduction": "wave-E-bench.php → test_a8_spin_id_trafique_consomme_le_lot_d_un_autre_client (`--filter a8_spin_id`).",
+    "recommendation": "Exiger `phone` (déjà connu de l'écran) et refuser dans `deliver()` si `normalizePhone($phone) !== $spin->phone` — la même logique que la garde de branche déjà présente, sur la seule autre donnée qui identifie le titulaire."
+  },
+  {
+    "severity": "P1",
+    "category": "stock_integrity",
+    "file": "app/Http/Middleware/EnsureWheelAccess.php:84 + app/Services/Wheel/WheelDeliveryService.php:303-315",
+    "title": "Un cadeau remis par le code de la maison décrémente le stock avec `stock_outflows.user_id = NULL` : sortie de stock réelle, sans aucun auteur — le chemin de la caisse, lui, en exige toujours un.",
+    "evidence": "Sur le chemin PIN, `poserContexte($request, config('wheel.counter_branch_id',1), null)` pose `wheel_actor_id = null` volontairement ; `recordCost()` écrit alors `user_id => null` et `delivered_by_user_id` reste nul. La colonne est pourtant documentée « qui a saisi (accountabilité) » dans la migration (2026_07_31_120000_create_stock_outflows_table.php:26), et `PosStockOutflowController::store` y met TOUJOURS `auth()->id()`. Le PIN est un secret partagé (un seul code pour toute l'équipe) : n'importe qui l'ayant peut faire sortir des produits du stock, tracés « Cadeau roue », sans nom. Prouvé par HTTP : session déverrouillée par PIN → remise → `stock_levels.on_hand` 10→9, ligne `stock_outflows` avec `user_id = NULL`.",
+    "reproduction": "wave-E-bench.php → test_a8b_cadeau_remis_par_le_code_sortie_de_stock_anonyme (`--filter a8b`).",
+    "recommendation": "Sur le chemin PIN, demander une identification légère avant la remise (choix dans la liste des comptes `pos` de la branche, ou code personnel), et refuser d'écrire une sortie de stock sans auteur. À défaut : marquer la sortie `user_id = null` ET la note « ouvert par code de la maison », puis faire remonter le compte de ces sorties anonymes dans les avertissements du tableau."
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "app/Http/Controllers/Admin/Wheel/WheelPrizeController.php:121-129",
+    "title": "Codes de remise éteints : l'écran ORDONNE à l'équipe d'envoyer le client saisir un code que la prise de commande refuse — la garde neuve du tirage n'a pas de jumelle au comptoir.",
+    "evidence": "`draw()` écarte désormais les lots en remise quand `remisesAcceptees()` est faux (WheelService.php:420-423) — état par DÉFAUT (`pos.coupon_codes_enabled` et `pos.manual_discount_enabled` sont faux par défaut, mesuré `remisesAcceptees()=false` sur la base de dév). Mais tout lot en remise DÉJÀ émis reste affiché par `pourquoiRienARemettre()` avec la consigne « Rien à lui tendre : son lot est une remise (…), à saisir sur le site avec le code ROUE-XXXXXX. » Or `FrontendOrderService::assertDiscretionaryDiscountAllowed` (ligne 1069-1076) jette « Les remises (coupon) sont désactivées en V1. » dans cet état. L'équipe envoie donc le client vers un échec, avec un code lu à voix haute — exactement le défaut que le tirage vient de fermer. Prouvé par HTTP : codes éteints, lot coupon_percent en attente, l'écran affiche le code et « saisir sur le site ».",
+    "reproduction": "wave-E-bench.php → test_a8c_ecran_envoie_le_client_avec_un_code_mort (`--filter a8c`).",
+    "recommendation": "Dans `pourquoiRienARemettre()`, lire `WheelService::remisesAcceptees()` : si les codes sont refusés, dire la vérité (« ce lot est un code que la caisse n'accepte pas en ce moment — préviens le gérant ») au lieu d'une consigne vouée à l'échec."
+  },
+  {
+    "severity": "P1",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelReportService.php:95-137",
+    "title": "« Valeur offerte » ignore 71 % des lots : les points crédités ne sont valorisés nulle part, et le tableau qui sert à régler les plafonds affiche 0,00 €.",
+    "evidence": "`valeur_offerte` est calculée UNIQUEMENT depuis `stock_outflows` de type promo_gift. Les lots en points n'écrivent aucune sortie de stock : 20 remises de 500 points (10 000 points crédités = 100,00 € de remise future au barème mesuré 100 points = 1 €) laissent `valeur_offerte = 0.0`. Or les points sont l'essentiel du jeu : poids 30 + 18 sur 100, et avec les codes de remise éteints (état par défaut) 30 des 42 points de poids tirables, soit 71 % des lots. Au plafond journalier configuré (`daily_total_cap = 120`), c'est ~0,50 €/lot × ~85 lots = ~42 €/jour d'engagement invisible sur l'écran dont le docbloc annonce « CE QUE LA ROUE A DONNÉ, ET CE QU'ELLE A COÛTÉ ». Sous-estimation donc structurelle, et rassurante à tort. Deux autres écarts prouvés au même endroit : un pourcentage sans `maximum_discount` compte pour 0,00 € d'`exposition_max` (donc « aucun risque » pour une remise sans limite — le cas existe en base : coupon 68 `ROUE-AUDITX2`, -15 %, maximum_discount = 0) ; et `Coupon::withoutGlobalScopes()` retire le scope SoftDeletes, si bien qu'un code SUPPRIMÉ reste compté dans `codes_emis` et dans `exposition_max`.",
+    "reproduction": "wave-E-bench.php → test_a7c_les_points_offerts_ne_sont_jamais_valorises, test_a7d_exposition_max_nulle_pour_un_pourcentage_sans_plafond, test_a7e_code_supprime_compte_encore_dans_l_exposition (`--filter 'a7c|a7d|a7e'`).",
+    "recommendation": "Ajouter une ligne « points offerts » valorisée au barème `loyalty_setup.loyalty_points_for_1_euro_discount` (SUM(points_awarded) des tours remis sur la période ÷ barème), à côté de la valeur des produits. Compter l'exposition d'un pourcentage sans plafond comme INCONNUE (et l'avertir) plutôt que comme 0 €. Écarter les coupons `trashed()` du comptage."
+  },
+  {
+    "severity": "P2",
+    "category": "stock_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:333-360",
+    "title": "Le produit de référence n'est jamais validé : un produit SUPPRIMÉ du catalogue voit son stock décrémenté, un `cost_item_id` inexistant écrit une charge fantôme à 0,00 €.",
+    "evidence": "`costItemId()` fait `Item::query()->withoutGlobalScopes()` — SoftDeletes compris — et le `cost_item_id` de la configuration est pris tel quel, sans aucune vérification d'existence, de statut ni de branche. Prouvé : produit soft-deleted retrouvé par nom, remise acceptée, `stock_levels.on_hand` 10→9 sur un produit retiré de la carte ; pendant que le chemin de référence de la caisse refuse le même produit (422 « Article introuvable ou inactif. », PosStockOutflowController.php:44-47, qui exige `status = ACTIVE` et laisse le scope SoftDeletes agir). Prouvé aussi : `cost_item_id = 999999` → aucune garde, ligne `stock_outflows` écrite sur un item_id qui n'existe pas (aucune clé étrangère sur la colonne), `valeur_offerte = 0,00 €` pour un cadeau réellement donné. Et un `cost_item_id` appartenant à une AUTRE branche laisse le stock des deux branches intact tout en écrivant la charge ici.",
+    "reproduction": "wave-E-bench.php → test_a3d_produit_supprime_accepte_comme_produit_de_cout, test_a3e_cost_item_id_inexistant_charge_fantome, test_a3f_cost_item_d_une_autre_branche (`--filter 'a3d|a3e|a3f'`).",
+    "recommendation": "Aligner `costItemId()` sur la garde de la caisse : `Item::query()->where('status', Status::ACTIVE)->whereNull('deleted_at')` pour les deux niveaux (identifiant réglé ET repli par nom), et rendre null si le produit ne passe pas — le tableau signale déjà les segments sans produit de référence, ce qui rend le trou visible au lieu de le rendre faux."
+  },
+  {
+    "severity": "P2",
+    "category": "stock_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:99-218",
+    "title": "La rupture (86) est vérifiée au TIRAGE mais pas à la REMISE : un produit retiré de la vente à la caisse est quand même donné, et son stock décrémenté.",
+    "evidence": "Le tirage écarte les lots dont le produit n'est pas `AvailabilityService::isAvailable()` (WheelService.php:394-398). `deliver()` ne consulte jamais la disponibilité. Séquence prouvée : lot tiré alors que le produit est disponible → 86 MANUEL posé à la caisse (`item_branch_availability.is_available = 0`) → la remise passe, `on_hand` 10→9. L'équipe se retrouve à donner un produit qu'elle vient de déclarer indisponible (ou à refuser un lot que le logiciel a validé). À noter : sur les données réelles la garde du tirage est de toute façon inopérante pour « Boisson offerte », `isAvailable(3,1)` valant true faute de ligne de disponibilité.",
+    "reproduction": "wave-E-bench.php → test_a3c_rupture_posee_apres_le_tirage_ne_bloque_pas_la_remise (`--filter a3c`).",
+    "recommendation": "Consulter `AvailabilityService::isAvailable()` dans `deliver()` pour les lots free_item et refuser AVANT de poser `delivered_at`, avec un message qui nomme le produit indisponible et conserve le lot (comme le fait déjà le cas « aucun compte »)."
+  },
+  {
+    "severity": "P2",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelReportService.php:66-71",
+    "title": "`lots_dus` n'a ni fenêtre ni échéance : les lots morts depuis des mois restent comptés « dus », et contredisent le chiffre affiché juste à côté.",
+    "evidence": "`lots_dus` compte TOUS les tours free_item/points sans `delivered_at`, depuis toujours — alors que `deliver()` refuse désormais un lot au-delà de `prize_validity_days` (30 jours). Prouvé : 4 lots de 200 jours → `lots_dus = 4` (« de l'argent promis qui dort », dit le docbloc) tandis que `periodes.mois.cadeaux_dus = 0`. Deux chiffres contradictoires sur le même écran, et le premier ne redescendra jamais : au bout d'un an d'exploitation il n'informe plus de rien.",
+    "reproduction": "wave-E-bench.php → test_a4d_lots_dus_compte_les_perimes_a_jamais (`--filter a4d`).",
+    "recommendation": "Borner `lots_dus` à la fenêtre de validité (`created_at >= now()->subDays(prize_validity_days)`) et, si l'on veut garder la mémoire des lots perdus, l'afficher sur une ligne séparée intitulée « périmés non remis »."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:59-74",
+    "title": "`pending()` ignore l'échéance : l'écran propose le bouton « Remis » d'un lot périmé, dont l'appui échoue toujours, et aucun message n'explique jamais l'expiration.",
+    "evidence": "`pending()` filtre sur `delivered_at IS NULL` et le type, jamais sur la date. Prouvé : lot de 400 jours → `pending()` le rend, l'écran affiche le lot et son bouton, `deliver()` refuse « Ce lot a expiré le … ». `pourquoiRienARemettre()` ne connaît pas non plus le cas périmé : ses trois branches sont « aucun tour », « c'est une remise », « déjà remis ». L'équipe découvre l'échéance en appuyant, devant le client.",
+    "reproduction": "wave-E-bench.php → test_a4b_ecran_propose_un_bouton_qui_echoue_toujours (`--filter a4b`).",
+    "recommendation": "Écarter les lots périmés de `pending()` et ajouter une quatrième branche à `pourquoiRienARemettre()` qui nomme la date d'expiration — l'information existe déjà, elle est calculée dans `deliver()`."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "app/Http/Controllers/Admin/PosStockOutflowController.php:123-144",
+    "title": "La liste « sorties récentes » de la caisse nomme le LOT, pas le produit réellement sorti du stock : l'exploitant voit « Boisson offerte » sans pouvoir savoir quel article a été décrémenté.",
+    "evidence": "`recordCost()` écrit `item_name => $spin->prize_label` (donc « Boisson offerte ») là où le chemin caisse écrit `$item->name` (« Coca 33cl »). `present()` n'expose pas `item_id`. Prouvé : cadeau chiffré sur l'item « Coca 33cl » → la ligne renvoyée par /api/admin/pos/stock-outflow/recent porte `item_name = 'Boisson offerte'`, `type_label = 'Cadeau roue'`, et aucune clé `item_id`. L'étiquetage « Cadeau roue » fonctionne (garde tenue), mais la ligne ne permet pas de rapprocher la sortie de l'inventaire du produit.",
+    "reproduction": "wave-E-bench.php → test_a6c_liste_recente_masque_le_produit_reellement_sorti (`--filter a6c`).",
+    "recommendation": "Écrire `item_name` = nom réel du produit de référence et garder le libellé du lot dans `note` (la note porte déjà « Roue — remis au comptoir — tour #N »). Exposer `item_id` dans `present()`."
+  },
+  {
+    "severity": "P3",
+    "category": "concurrency",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:99",
+    "title": "La garde de caisse est OPTIONNELLE par signature (`?int $branchId = null`) : tout appelant qui l'omet remet le lot de n'importe quel comptoir.",
+    "evidence": "`deliver($spinId, $staffUserId, ?int $branchId = null)` ne compare les branches que `if ($branchId !== null)`. Prouvé : `deliver($spin->id, null, null)` sur un lot d'une autre branche → ok=true, points crédités. Le seul appelant actuel (WheelPrizeController:79-83) passe toujours la branche, donc rien n'est exploitable par HTTP aujourd'hui ; c'est la garde elle-même qui est fragile — désactivée par défaut, dans un service dont le docbloc dit « la branche vient du contexte résolu par la porte, jamais du corps de la requête ».",
+    "reproduction": "wave-E-bench.php → test_a5b_appelant_sans_branche_contourne_la_garde (`--filter a5b`).",
+    "recommendation": "Rendre le paramètre obligatoire (`int $branchId`) : le compilateur devient la garde, et tout futur appelant est obligé de nommer sa caisse."
+  },
+  {
+    "severity": "P3",
+    "category": "stock_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:260",
+    "title": "`record_cost_on_claim = false` remet le cadeau sans décrémenter, sans trace, sans avertissement — dérive muette totale (chemin code seulement : la valeur est codée en dur à true).",
+    "evidence": "`recordCost()` sort immédiatement si le drapeau est faux : pas de `recordManualOutflow`, pas de ligne `stock_outflows`, et `$stockDecremente` reste null donc `messageSucces()` n'ajoute AUCUN avertissement (message exact prouvé : « Remis : Boisson offerte. Bon service ! »). Le tableau ne peut rien signaler non plus : ses avertissements comptent des lignes qui n'existent pas (`avertissements = []` prouvé). Le nom du drapeau parle de CHARGE, pas de stock : quiconque l'éteindrait pour arrêter la comptabilité arrêterait aussi l'inventaire, en silence. Non atteignable en exploitation : `config/wheel.php:123` vaut `true` en dur, sans variable d'environnement.",
+    "reproduction": "wave-E-bench.php → test_a3g_interrupteur_de_charge_eteint_derive_muette (`--filter a3g`).",
+    "recommendation": "Séparer les deux effets : le décrément de stock suit la remise physique, la ligne de charge suit le drapeau. Ou, plus simple, refuser de remettre un free_item quand la charge est désactivée."
+  },
+  {
+    "severity": "P3",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:140-151",
+    "title": "`prize_validity_days` ≤ 0 (variable d'environnement `WHEEL_PRIZE_DAYS`) désactive l'échéance en silence, alors que l'écran client et l'e-mail continuent d'annoncer une date.",
+    "evidence": "La garde est `if ($jours > 0 …)`. Prouvé avec `prize_validity_days = -1` : un lot de TROIS ANS est remis, ok=true. La même valeur produit par ailleurs un coupon dont `end_date = now()->addDays(-1)` (WheelService.php:511) — donc mort à la naissance : la configuration devient incohérente d'un chemin à l'autre sans que rien ne le dise.",
+    "reproduction": "wave-E-bench.php → test_a4c_validite_negative_desactive_l_echeance (`--filter a4c`).",
+    "recommendation": "Planchoir la valeur à la lecture (`max(1, (int) env(...))`) dans `config/wheel.php`, ou refuser de démarrer la roue avec une validité ≤ 0."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:89",
+    "title": "L'historique est borné à 5 tours : au-delà, l'écran affirme « ses lots sont déjà remis » alors que le client détient un code jamais utilisé.",
+    "evidence": "`history()` fait `limit(5)`, et `pourquoiRienARemettre()` raisonne UNIQUEMENT sur ces 5 lignes. `wheel_spins` étant UNIQUE (branche, campagne, téléphone), il faut six CAMPAGNES pour l'atteindre — ce qu'une année d'exploitation produit (`campaign_key` = '2026-rentree', etc.). Prouvé par HTTP : lot en remise le plus ancien + 5 tours plus récents remis → l'écran affiche « déjà remis » et n'affiche PAS le code ROUE-CACHEE.",
+    "reproduction": "wave-E-bench.php → test_a8d_historique_borne_a_5_fait_mentir_l_ecran (`--filter a8d`).",
+    "recommendation": "Décider la phrase sur une requête dédiée (existe-t-il un lot en remise non consommé pour ce numéro ?) plutôt que sur la fenêtre d'affichage, et remonter les lots non remis en tête de l'historique."
+  }
+]

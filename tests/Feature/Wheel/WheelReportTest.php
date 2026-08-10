@@ -146,6 +146,158 @@ class WheelReportTest extends TestCase
             ->tableau($voisin->id)['periodes']['aujourdhui']['tours']);
     }
 
+    // ── 1bis. LES TROIS FUITES DU CHIFFRE EN EUROS ───────────────────────────────────────────
+
+    /**
+     * [P0 2026-08-10 · audit ronde 2 vague D] LE CHIFFRE EN EUROS ÉTAIT FAUX D'UN FACTEUR 9,5.
+     *
+     * `Coupon::query()->withoutGlobalScopes()->where('code','like','ROUE-%')` ramassait TOUT :
+     *   · `withoutGlobalScopes()` retire AUSSI le filtre de suppression douce → les coupons
+     *     supprimés étaient comptés (mesuré : 179,00 € sur 237,00 €) ;
+     *   · aucun filtre de caisse → un coupon d'un autre point de vente comptait (33,00 €) ;
+     *   · aucune jointure sur `wheel_spins.coupon_id` → un coupon simplement NOMMÉ « ROUE-… »,
+     *     créé à la main, comptait comme un lot de la roue.
+     *
+     * Un tableau de contrôle qui exagère l'exposition de dix fois est pire que pas de tableau : on
+     * règle les plafonds sur un chiffre inventé.
+     *
+     * C'est le piège `withoutGlobalScopes()` que j'avais consigné le matin même et dans lequel je
+     * suis retombé l'après-midi.
+     */
+    public function test_les_coupons_SUPPRIMES_ne_comptent_plus(): void
+    {
+        Config::set('wheel.segments', [[
+            'key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+            'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4.0,
+        ]]);
+
+        $vivant = $this->tour($this->branchId, '0611000920');
+        $mort = $this->tour($this->branchId, '0611000921');
+        \App\Models\Coupon::withoutGlobalScopes()->whereKey($mort->coupon_id)->delete();
+
+        $jour = app(WheelReportService::class)->tableau($this->branchId)['periodes']['aujourdhui'];
+
+        $this->assertSame(1, $jour['codes_emis'],
+            'un coupon SUPPRIMÉ est encore compté : le tableau exagère ce qui est dehors');
+        $this->assertSame(4.00, $jour['exposition_max']);
+        $this->assertNotNull($vivant->coupon_id);
+    }
+
+    public function test_un_coupon_d_une_AUTRE_caisse_ne_compte_pas(): void
+    {
+        $voisin = Branch::factory()->create();
+        Config::set('wheel.segments', [[
+            'key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+            'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4.0,
+        ]]);
+
+        $this->tour($this->branchId, '0611000922');
+        $this->tour($voisin->id, '0611000923');
+
+        $this->assertSame(1, app(WheelReportService::class)
+            ->tableau($this->branchId)['periodes']['aujourdhui']['codes_emis'],
+            'le coupon d\'un autre point de vente est compté ici : chaque caisse doit voir SES chiffres');
+    }
+
+    /** Un coupon simplement NOMMÉ « ROUE-… », créé à la main, n'est pas un lot de la roue. */
+    public function test_un_coupon_juste_NOMME_ROUE_ne_compte_pas(): void
+    {
+        Config::set('wheel.segments', [[
+            'key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+            'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4.0,
+        ]]);
+
+        $this->tour($this->branchId, '0611000924');
+
+        \App\Models\Coupon::query()->forceCreate([
+            'name' => 'promo maison', 'code' => 'ROUE-FAUX01', 'discount' => 50,
+            'discount_type' => \App\Enums\DiscountType::FIXED, 'start_date' => now(),
+            'end_date' => now()->addDays(30), 'status' => \App\Enums\Status::ACTIVE,
+            'max_uses_global' => 1, 'limit_per_user' => 1, 'minimum_order' => 0,
+            'maximum_discount' => 999.0, 'usage_count' => 0,
+        ]);
+
+        $jour = app(WheelReportService::class)->tableau($this->branchId)['periodes']['aujourdhui'];
+
+        $this->assertSame(1, $jour['codes_emis'],
+            'un coupon qui porte juste le bon préfixe est compté comme un lot de la roue');
+        $this->assertSame(4.00, $jour['exposition_max'],
+            'et son plafond de 999 € gonfle l\'exposition annoncée');
+    }
+
+    /**
+     * UN POURCENTAGE SANS PLAFOND EST LE SEUL LOT RÉELLEMENT ILLIMITÉ — et il comptait pour 0 €.
+     * `config/wheel.php` documente lui-même « 0 = illimité côté moteur de coupons ». Le chiffre censé
+     * être « le pire cas, et le seul honnête » devenait donc muet précisément là où il compte.
+     */
+    public function test_un_pourcentage_SANS_plafond_est_signale_comme_illimite(): void
+    {
+        Config::set('wheel.segments', [[
+            'key' => 'p', 'label' => '-15%', 'type' => 'coupon_percent', 'value' => 15,
+            'weight' => 1, 'daily_cap' => 0, 'max_discount' => 0,
+        ]]);
+
+        $this->tour($this->branchId, '0611000925');
+
+        $t = app(WheelReportService::class)->tableau($this->branchId);
+        $jour = $t['periodes']['aujourdhui'];
+
+        $this->assertSame(1, $jour['codes_sans_plafond'],
+            'un pourcentage sans plafond doit être COMPTÉ à part : son exposition est inconnue, pas nulle');
+        $this->assertMatchesRegularExpression('/sans plafond/iu', implode(' ', $t['avertissements']),
+            'et l\'avertir, sinon un chiffre à 0 € rassure exactement là où il ne faut pas');
+    }
+
+    /**
+     * LES POINTS NE SONT VALORISÉS NULLE PART. Codes de remise éteints, ils représentent la majorité
+     * des lots — et le tableau qui sert à régler les plafonds affichait 0,00 €. Barème mesuré en base :
+     * 100 points = 1 € de remise.
+     */
+    public function test_les_points_remis_sont_VALORISES_au_bareme(): void
+    {
+        Config::set('wheel.segments', [[
+            'key' => 'pt', 'label' => '100 points', 'type' => 'points', 'value' => 100,
+            'weight' => 1, 'daily_cap' => 0,
+        ]]);
+
+        $spin = $this->tour($this->branchId, '0611000926');
+        \App\Models\User::factory()->create([
+            'phone' => '0611000926', 'branch_id' => 0,
+            'is_guest' => \App\Enums\Ask::YES, 'loyalty_points' => 0,
+        ]);
+        app(WheelDeliveryService::class)->deliver($spin->id, null, $this->branchId);
+
+        $jour = app(WheelReportService::class)->tableau($this->branchId)['periodes']['aujourdhui'];
+
+        $this->assertSame(100, $jour['points_remis']);
+        $this->assertSame(1.00, $jour['valeur_points'],
+            '100 points valent 1 € au barème de la maison : les afficher à 0 € cache la majorité du coût');
+    }
+
+    /**
+     * DEUX HORLOGES, JAMAIS RÉCONCILIÉES. « tours » se mesurait sur la participation, « cadeaux
+     * remis » et « valeur offerte » sur la ligne de sortie de stock, sans jointure. Un lot gagné le 1
+     * et retiré le 20 comptait donc dans « Aujourd'hui » alors que son tour n'y figurait pas — et le
+     * panneau affichait « 2 tours / 3 cadeaux remis », un écart que personne ne peut expliquer.
+     */
+    public function test_les_deux_horloges_sont_reconciliees_sur_le_TOUR(): void
+    {
+        $spin = $this->tour($this->branchId, '0611000927');
+
+        // Le cadeau est retiré 20 jours plus tard : c'est le TOUR qui date le lot, pas le retrait.
+        $this->travel(20)->days();
+        app(WheelDeliveryService::class)->deliver($spin->id, null, $this->branchId);
+
+        $t = app(WheelReportService::class)->tableau($this->branchId);
+
+        $this->assertSame(0, $t['periodes']['aujourdhui']['tours']);
+        $this->assertSame(0, $t['periodes']['aujourdhui']['cadeaux_remis'],
+            'un cadeau retiré aujourd\'hui mais GAGNÉ il y a 20 jours est compté dans « aujourd\'hui » '
+            . 'alors que son tour n\'y est pas : les deux colonnes ne parlent pas du même jour');
+        $this->assertSame(1, $t['periodes']['mois']['tours']);
+        $this->assertSame(1, $t['periodes']['mois']['cadeaux_remis']);
+    }
+
     // ── 2. LES AVERTISSEMENTS ────────────────────────────────────────────────────────────────
 
     /**
@@ -182,8 +334,16 @@ class WheelReportTest extends TestCase
         $t = app(WheelReportService::class)->tableau($this->branchId);
 
         $this->assertSame(1, $t['periodes']['aujourdhui']['cadeaux_sans_stock']);
-        $this->assertMatchesRegularExpression('/sans d[ée]cr[ée]ment de stock/iu',
-            implode(' ', $t['avertissements']));
+
+        $avert = implode(' ', $t['avertissements']);
+        $this->assertMatchesRegularExpression('/sans sortir du stock/iu', $avert);
+        // « À corriger à l'inventaire » laissait croire que l'avertissement s'éteindrait. Il ne peut
+        // PAS : `stock_outflows` est immuable par déclencheur. Un signal qu'on croit cassé est un
+        // signal qu'on cesse de lire, donc il doit se présenter comme un HISTORIQUE.
+        $this->assertMatchesRegularExpression('/historique/iu', $avert,
+            'le relevé doit se dire historique, sinon on le prend pour une tâche qui ne se coche jamais');
+        $this->assertMatchesRegularExpression('/inventaire/iu', $avert,
+            'et dire ce qu\'il faut faire : reprendre l\'écart au prochain inventaire');
     }
 
     /**

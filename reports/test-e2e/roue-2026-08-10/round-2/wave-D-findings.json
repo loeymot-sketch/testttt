@@ -1,0 +1,146 @@
+[
+  {
+    "severity": "P0",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelReportService.php:118-136",
+    "title": "Le chiffre en euros « jusqu'à 237,00 € de remise possible » compte les coupons SUPPRIMÉS, ceux d'une AUTRE caisse, et tout coupon simplement nommé ROUE-…",
+    "evidence": "La requête est `Coupon::query()->withoutGlobalScopes()->where('code','like','ROUE-%')->where('created_at','>=',$depuis)`. `withoutGlobalScopes()` retire AUSSI le SoftDeletingScope (Coupon utilise SoftDeletes — app/Models/Coupon.php:19), il n'y a aucun filtre de caisse et aucune jointure sur `wheel_spins.coupon_id`. Mesuré au même instant, porte ouverte sur http://127.0.0.1:8000/admin/roue : le panneau affiche « 0/30 codes utilisés » et « Codes non utilisés : jusqu'à 237,00 € de remise possible ». Les mêmes données en SQL : (a) code du service = 30 codes / 237,00 € ; (b) honnête (`c.deleted_at IS NULL` + `JOIN wheel_spins s ON s.coupon_id=c.id AND s.branch_id=1`) = 1 code / 25,00 €. Décomposition : 179,00 € proviennent de 27 coupons dont `deleted_at IS NOT NULL`, 33,00 € d'un coupon rattaché à un tour de la CAISSE 7, et 1 coupon `ROUE-…` sans aucun tour est compté. Preuve complémentaire sur les codes utilisés : `UPDATE coupons SET usage_count=1 WHERE code='ROUE-AUDITX3'` (ligne soft-deleted) fait passer l'affichage à `<b>1/30</b>` — le panneau déclare une consommation sur un coupon qui n'existe plus. Écart mesuré sur le chiffre d'argent : 237,00 € affichés contre 25,00 € réels (×9,5).",
+    "reproduction": "1) `mysql -uroot foodking_e2e -e \"INSERT INTO coupons (name,code,discount,discount_type,start_date,end_date,max_uses_global,usage_count,status,minimum_order,maximum_discount,limit_per_user,created_at,updated_at,deleted_at) VALUES ('t','ROUE-ZZZ1',10,10,NOW(),NOW()+INTERVAL 30 DAY,1,0,5,10,50.00,1,NOW(),NOW(),NOW())\"` (coupon SUPPRIMÉ, plafond 50 €). 2) Ouvrir /admin/roue avec le code 481526. 3) « Codes non utilisés » augmente de 50,00 € alors que le coupon est soft-deleted. Idem avec un coupon rattaché à un tour d'une autre caisse.",
+    "recommendation": "Partir des tours et non du préfixe du code : `Coupon::query()->withoutGlobalScope(BranchScope::class)->whereIn('id', $tours->pluck('coupon_id')->filter())` — les tours sont DÉJÀ filtrés par caisse (ligne 81) et le SoftDeletingScope reprend effet, ce qui règle les trois fuites d'un coup."
+  },
+  {
+    "severity": "P1",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelReportService.php:136",
+    "title": "Un pourcentage SANS plafond (maximum_discount = 0, documenté « 0 = illimité ») pèse 0,00 € dans l'exposition maximale : le seul lot au risque illimité est compté comme gratuit",
+    "evidence": "`'exposition_max' => round((float) $codes->where('usage_count', 0)->sum('maximum_discount'), 2)`. Coupon inséré `ROUE-AUDITX2` (−15 %, `discount_type` = PERCENTAGE, `maximum_discount` = 0.00, `usage_count` = 0) : `exposition_max` est resté à 237,00 € — soit 129 + 50 + 33 + 25 + **0**. config/wheel.php dit explicitement pour ces segments « 0 = illimité côté moteur de coupons, ce qui transformerait -15 % en cadeau à trois chiffres sur une grosse commande » et les plafonds viennent des variables `WHEEL_MAX_DISCOUNT_10` / `WHEEL_MAX_DISCOUNT_15` (4 € / 6 € par défaut). Il suffit qu'une de ces variables soit posée à 0 pour que le seul lot réellement dangereux devienne invisible dans « l'exposition MAXIMALE » — le chiffre qui prétend être « le pire cas, et le seul honnête ».",
+    "reproduction": "Insérer un coupon `ROUE-…` avec `maximum_discount=0`, `usage_count=0`, `discount_type=10` puis recharger /admin/roue : « Codes non utilisés : jusqu'à X € » n'augmente pas d'un centime.",
+    "recommendation": "Compter à part les codes à plafond nul et l'écrire : « … dont N codes SANS PLAFOND ». Un chiffre suivi d'une mention explicite vaut mieux qu'une somme qui avale l'illimité."
+  },
+  {
+    "severity": "P1",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelReportService.php:82 et :100",
+    "title": "« tours » et « cadeaux remis » sont mesurés sur DEUX horloges différentes et jamais réconciliés — le panneau peut afficher plus de cadeaux remis que de tours joués",
+    "evidence": "`tours()` filtre `wheel_spins.created_at >= $depuis` (date du TIRAGE) ; `cadeaux_remis` et `valeur_offerte` filtrent `stock_outflows.created_at >= $depuis` (date du RETRAIT). Aucune jointure entre les deux. Le lot est valable 30 jours (`wheel.prize_validity_days`), donc un cadeau gagné le 1 et retiré le 20 compte dans « Aujourd'hui : cadeaux remis » alors que son tour ne figure dans aucun compteur du jour. Constaté en base : les trois sorties `promo_gift` de la caisse 1 portent les notes « Roue — remis au comptoir — tour #12 / #13 / #14 » et ces trois tours n'existent PLUS (`SELECT id FROM wheel_spins WHERE id IN (12,13,14)` → vide) ; le panneau affichait pourtant « Aujourd'hui : 2 tours / 3 cadeaux remis » — trois cadeaux remis pour deux tours joués. Aucun contrôle ne peut détecter que le tour derrière un cadeau remis a disparu.",
+    "reproduction": "Comparer `SELECT COUNT(*) FROM wheel_spins WHERE branch_id=1 AND created_at>=CURDATE()` et `SELECT COUNT(*) FROM stock_outflows WHERE branch_id=1 AND type='promo_gift' AND created_at>=CURDATE()` : les deux nombres affichés côte à côte sur la même ligne du panneau ne portent pas sur les mêmes événements.",
+    "recommendation": "Joindre les sorties aux tours (`wheel_spins.cost_outflow_id`) et dater les deux mesures sur le TOUR ; sinon renommer la tuile « cadeaux retirés ce jour-là » et le dire dans la note, pour que la juxtaposition cesse d'être lue comme une arithmétique."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelReportService.php:66-71",
+    "title": "« lots dus » — l'argent promis qui dort — est calculé par la requête la PLUS lente du panneau, puis jeté : aucune vue ne l'affiche",
+    "evidence": "`grep -n \"lots_dus\\|par_type\\|cadeaux_sans_stock\" resources/views/admin/wheel/*.blade.php app/Http/Controllers/Admin/Wheel/*.php` → aucune occurrence. Trois champs sont calculés et jamais rendus : `lots_dus` (COUNT global sur wheel_spins), `periodes[*].par_type`, `periodes[*].cadeaux_sans_stock`. Mesuré par `DB::listen` sous charge de 30 jours au plafond du jeu : la requête `select count(*) from wheel_spins where branch_id = ? and delivered_at is null and prize_type in (?,?)` (= `lots_dus`) coûte 16,19 ms sur 52,48 ms de SQL total, soit 31 % du temps SQL de la page pour un chiffre que personne ne voit. Le docbloc de la ligne 64 dit pourtant : « c'est de l'argent promis qui dort, et il faut qu'un humain sache qu'il existe ».",
+    "reproduction": "php artisan tinker → `$r = app(App\\Services\\Wheel\\WheelReportService::class)->tableau(1); echo $r['lots_dus'];` (renvoie 7 sur la base de dév) puis chercher « lots dus » dans le DOM de /admin/roue : absent.",
+    "recommendation": "Afficher une ligne « N lots dus, toutes dates confondues » sous le plafond du jour (c'est le chiffre le plus utile du lot), ou supprimer les trois champs morts et leur requête."
+  },
+  {
+    "severity": "P2",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelReportService.php:147-157",
+    "title": "L'avertissement « N cadeaux sans décrément de stock — à corriger à l'inventaire » ne peut JAMAIS s'éteindre : la ligne est immuable par déclencheur de base",
+    "evidence": "L'avertissement compte `stock_outflows.stock_decremented = false` sur 30 jours. Or `information_schema.TRIGGERS` montre DEUX déclencheurs sur cette table : `stock_outflows_no_delete` ET `stock_outflows_no_update` — la colonne `stock_decremented` ne peut donc plus jamais passer à 1 après l'écriture, même par un administrateur qui vient de corriger l'inventaire. Les 2 lignes concernées ici (ids 2 et 3, notes « Roue — remis au comptoir — tour #12 / #13 ») resteront comptées pendant 30 jours quoi qu'il arrive. Le message donne un ordre (« à corriger à l'inventaire ») dont l'exécution ne change rien à l'affichage : c'est la définition d'un avertissement qu'on apprend à ignorer.",
+    "reproduction": "`mysql -uroot foodking_e2e -e \"UPDATE stock_outflows SET stock_decremented=1 WHERE id=2\"` → refusé par le déclencheur ; l'avertissement reste identique sur /admin/roue.",
+    "recommendation": "Le reformuler en information datée (« 2 cadeaux non décrémentés, le 10/08 — vérifier l'inventaire de ce rayon ») et l'acquitter ailleurs (une clé de réglage, ou une table d'acquittement), puisque la ligne comptable est volontairement immuable."
+  },
+  {
+    "severity": "P2",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:350-354",
+    "title": "L'avertissement « lots sans produit de référence » est AVEUGLE à un produit retiré de la carte : le cadeau continue d'être chiffré sur un produit supprimé, sans un mot",
+    "evidence": "`costItemId()` fait `Item::query()->withoutGlobalScopes()->where('name',$nom)->value('id')` — `withoutGlobalScopes()` retire le SoftDeletingScope alors que `Item` utilise SoftDeletes (app/Models/Item.php:17). Deux tests, l'un après l'autre, sur le segment « boisson » (référence par nom « Boisson Seule », id 3) : (a) `UPDATE items SET name='Boisson Seule ZZZ' WHERE id=3` → `costItemId('boisson')=NULL` et l'avertissement APPARAÎT (« Lots sans produit de référence … : Boisson offerte ») — le cas positif fonctionne ; (b) `UPDATE items SET deleted_at=NOW() WHERE id=3` (produit retiré de la carte) → `costItemId('boisson')=3` et l'avertissement reste MUET. Les deux états ont été restaurés (`name='Boisson Seule'`, `deleted_at=NULL`, vérifié).",
+    "reproduction": "Les deux UPDATE ci-dessus, avec `php artisan tinker` → `app(App\\Services\\Wheel\\WheelDeliveryService::class)->costItemId('boisson')` et `app(App\\Services\\Wheel\\WheelReportService::class)->tableau(1)['avertissements']`.",
+    "recommendation": "`Item::query()->withoutGlobalScope(BranchScope::class)` au lieu de `withoutGlobalScopes()` dans `costItemId()` : on garde le contournement de caisse dont la méthode a besoin, on rend au SoftDeletes son droit de veto."
+  },
+  {
+    "severity": "P2",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelReportService.php:103-111",
+    "title": "« Valeur offerte » est revalorisée RÉTROACTIVEMENT au prix du jour : une hausse de carte réécrit ce que la roue a coûté le mois dernier",
+    "evidence": "`stock_outflows` ne porte AUCUNE colonne de prix (DESCRIBE : id, branch_id, item_id, item_name, quantity, type, note, user_id, stock_decremented, created_at) et le service lit `items.price` au moment de l'affichage. Mesuré : `UPDATE items SET price=5.00 WHERE id=1` → « valeur offerte (30 derniers jours) » passe de 10,00 € à 20,00 € pour des cadeaux remis il y a plusieurs heures ; `UPDATE items SET price=2.500000 WHERE id=1` → retour à 10,00 € (prix restauré, vérifié). La note de la page dit « le prix de VENTE de ce qui a été donné » — c'est le prix de vente d'aujourd'hui, pas celui du jour du cadeau.",
+    "reproduction": "Les deux UPDATE ci-dessus autour d'un rechargement de /admin/roue.",
+    "recommendation": "Soit préciser dans la note « au prix de vente ACTUEL », soit figer un prix unitaire dans la sortie de stock au moment de l'écriture (mais la table est immuable : ce serait une nouvelle colonne, pas une correction de lignes)."
+  },
+  {
+    "severity": "P2",
+    "category": "performance",
+    "file": "app/Services/Wheel/WheelReportService.php:86-138",
+    "title": "Le panneau hydrate toutes les lignes de 30 jours au lieu d'agréger : 7,7 ms sur la base de dév, 144,6 ms au plafond réel du jeu",
+    "evidence": "Mesuré par `DB::listen` autour de `WheelReportService::tableau(1)` : 18 requêtes SQL dans les deux cas. Sur les données de dév (11 tours) : 3,86 ms de SQL, 7,7 ms mur. Après injection d'une charge réaliste de 30 jours au plafond du jeu (3 600 tours = 120/jour × 30, plus 1 440 codes — insérés puis SUPPRIMÉS) : 52,48 ms de SQL, **144,6 ms mur** (×19). Les trois requêtes `select id, prize_type, prize_label, delivered_at, coupon_id from wheel_spins where branch_id = ? and created_at >= ?` (11,5 / 12,3 ms) hydratent 3 × N modèles Eloquent pour n'en tirer que des `count()` et un `whereIn(...)->whereNull(...)->count()` — faisables en SQL. Temps de réponse HTTP mesuré au même moment sur /admin/roue : porte ouverte 172–241 ms, porte fermée (sans panneau) 17–26 ms. Toutes les lignes de charge ont été supprimées (`DELETE FROM wheel_spins WHERE campaign_key='audit-D-perf'`, `DELETE FROM coupons WHERE name='perf'`, vérifié à 0).",
+    "reproduction": "Injecter 3 600 `wheel_spins` sur 30 jours pour branch_id=1 puis mesurer `tableau(1)` avec `DB::listen`.",
+    "recommendation": "Remplacer les trois `get()` par des agrégats (`selectRaw('COUNT(*) …')`, `GROUP BY prize_type`, `SUM`) et supprimer la requête `lots_dus` tant qu'elle n'est pas affichée. La page la plus ouverte du lot ne doit pas grossir avec l'historique."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/acces.blade.php:222-224",
+    "title": "Les deux seuls avertissements de la page sont SOUS la pliure sur la tablette du comptoir — il faut faire défiler 470 px pour les voir",
+    "evidence": "Capture regardée : shots/tablette-1194x834-OUVERT.png. Hauteur totale de page mesurée 1 431 px pour une fenêtre de 834 px ; les blocs `.alerte` se trouvent à y ≈ 1 190–1 310 px, soit ~470 px sous la pliure. À 320×568 la page fait 2 267 px et les avertissements arrivent au 4ᵉ écran (capture shots/petit-320x568-OUVERT.png regardée). Les avertissements sont placés APRÈS les trois blocs de périodes, la note de bas de tableau et le plafond du jour — c'est-à-dire le plus loin possible de l'œil de quelqu'un debout en service.",
+    "reproduction": "Ouvrir /admin/roue en 1194×834 avec le code 481526 : rien d'orange n'est visible sans défiler.",
+    "recommendation": "Remonter les `.alerte` juste sous le titre « Ce que la roue a donné » (ou même au-dessus de la grille des quatre écrans) : ce sont les seuls éléments de la page qui demandent une action."
+  },
+  {
+    "severity": "P2",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/acces.blade.php:50 et 126-147",
+    "title": "La grille des quatre écrans laisse « Réglages » orphelin sur une deuxième ligne aux deux tiers vide, et 430 px de tablette inutilisés à droite",
+    "evidence": "Capture regardée : shots/tablette-1194x834-OUVERT.png. `.grille{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}` dans un `main{max-width:760px}` donne exactement 3 colonnes : les trois premières cartes tiennent sur une ligne et la quatrième — « Réglages », décrite comme « C'est ici que le jeu s'active » — se retrouve seule en bas à gauche, avec deux emplacements vides à sa droite. Sur une fenêtre de 1 194 px, 430 px de largeur restent inutilisés. Mêmes valeurs à 1440×900 (le max-width plafonne à 760 px).",
+    "reproduction": "Ouvrir /admin/roue porte ouverte en 1194×834.",
+    "recommendation": "`minmax(300px,1fr)` (donne un 2×2 propre à 760 px de large) ou une colonne fixe `repeat(2,1fr)` au-delà de 640 px."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/acces.blade.php:228-231",
+    "title": "« Refermer les écrans » : cible tactile de 16 px de haut, href=\"#\", et totalement inopérante sans JavaScript",
+    "evidence": "Mesuré par Playwright sur les quatre fenêtres : 760×16 px (1194 et 1440), 354×16 px (390), 284×16 px (320) — hauteur 16 px contre 44 px recommandés, et c'est le SEUL élément de la page sous ce seuil. Le balisage est `<a class=\"refermer\" href=\"#\" onclick=\"event.preventDefault();this.closest('form').submit()\">` : sans JavaScript le lien ne ferme rien, un clic milieu ou « ouvrir dans un onglet » mène à `#`, et c'est le seul moyen de refermer une session de 4 h sur une tablette partagée. Tous les autres contrôles sont corrects (champ code 340×56, bouton Ouvrir 340×56, cartes 240×112 minimum).",
+    "reproduction": "Playwright : `page.$eval('.refermer', e => e.getBoundingClientRect())` → hauteur 16 px sur les quatre fenêtres testées.",
+    "recommendation": "Un vrai `<button type=\"submit\">` dans le formulaire, `min-height:44px` — même mécanique, sans dépendance à JS ni cible de 16 px."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "app/Providers/RouteServiceProvider.php:67-72",
+    "title": "Cinq codes erronés et la tablette du comptoir tombe sur la page d'erreur ANGLAISE du framework, sans issue",
+    "evidence": "Mesuré : 6 POST successifs sur /admin/roue/ouvrir depuis la même IP → `final=429 type=text/html size=6619`, et le corps porte `<title>Too Many Requests</title>`. `ls resources/views/errors/` ne contient que `419.blade.php` : il n'existe aucun `429.blade.php`. L'équipe qui se trompe cinq fois de code voit donc un écran anglais sans lien de retour — exactement l'impasse que le docbloc d'EnsureWheelAccess:127-131 dit avoir réparée (« un navigateur qui ouvre une page doit VOIR une page, jamais un JSON d'erreur »), sauf qu'elle a été réparée pour le refus d'accès et pas pour le blocage du code.",
+    "reproduction": "`for i in $(seq 1 6); do curl -s -b jar -X POST http://127.0.0.1:8000/admin/roue/ouvrir -d \"_token=…&pin=000000\"; done` puis regarder le titre HTML de la 6ᵉ réponse.",
+    "recommendation": "Ajouter `resources/views/errors/429.blade.php` en français avec un lien vers /admin/roue et le délai d'attente (l'en-tête `Retry-After: 60` est déjà envoyé)."
+  },
+  {
+    "severity": "P2",
+    "category": "security",
+    "file": "app/Providers/RouteServiceProvider.php:67-72",
+    "title": "Quinze requêtes anonymes par minute suffisent à fermer la porte de la roue au comptoir pendant 60 s — le BON code est refusé lui aussi",
+    "evidence": "Le débit annoncé est exact, vérifié en le dépassant : 5 essais par IP passent, le 6ᵉ répond 429 avec `Retry-After: 60`, et le BON code depuis la même IP est également refusé (429). Le plafond GLOBAL existe aussi : depuis dix IP neuves successives (en-tête `X-Forwarded-For`, honoré parce que `app/Http/Middleware/TrustProxies.php:24` fixe `$proxies = '*'`), 10.0.0.2 à 10.0.0.11 passent et 10.0.0.12 est refusée ; **le bon code depuis une IP encore jamais vue (10.0.0.99) est alors refusé lui aussi (429)**. Aucune IP du réseau du restaurant n'échappe au plafond global, et le compteur global est incrémenté par les ÉCHECS comme par les succès. C'est le même dessin que `daily-book-pin` (lignes 74-79), donc un choix assumé — mais il rend la porte du comptoir refermable de l'extérieur pour 60 s, à répétition, sans authentification.",
+    "reproduction": "Boucle de POST sur /admin/roue/ouvrir en faisant varier `X-Forwarded-For`, puis un POST avec le vrai code depuis une IP neuve → 429.",
+    "recommendation": "Exempter du plafond global une liste d'IP/sous-réseau du restaurant (ou l'IP locale), ou ne compter dans le plafond global que les échecs, pour qu'un flot d'échecs extérieurs ne prive pas le comptoir de sa propre porte."
+  },
+  {
+    "severity": "P3",
+    "category": "a11y",
+    "file": "resources/views/admin/wheel/acces.blade.php:43",
+    "title": "L'anneau de focus du champ Code ne contraste que 1,73:1 avec l'intérieur blanc du champ (WCAG 2.2 exige 3:1 pour un indicateur)",
+    "evidence": "`input:focus{outline:none; border-color:var(--jaune)}` remplace le contour par le passage d'une bordure de 2 px de `transparent` à `#FFB800`, sur un fond `rgba(255,255,255,.94)`. Ratio calculé #FFB800 contre blanc = 1,73:1 ; contre la page (#100E0C) le même anneau donne 28:1, donc l'indicateur RESTE perceptible — vérifié sur la capture regardée shots/tel-390x844-FERME.png, où l'anneau jaune est net. Tous les autres éléments focalisables ont un vrai `outline:3px solid #FFD34D` (`:focus-visible`, ligne 48), vérifié par Playwright sur les 4 cartes et le lien de fermeture. C'est donc un écart de conformité sur un seul élément, pas un défaut d'usage.",
+    "reproduction": "Tabuler jusqu'au champ Code sur /admin/roue et comparer la bordure jaune à l'intérieur blanc du champ.",
+    "recommendation": "Garder le changement de bordure ET ajouter `outline:3px solid var(--jaune2); outline-offset:2px` sur `input:focus-visible`, comme pour les autres contrôles."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/acces.blade.php:111",
+    "title": "« Il reste ouvert 4 h » se casse dès que la durée de session n'est pas un multiple de 60 minutes",
+    "evidence": "L'expression est `{{ (int) config('wheel.access.session_minutes', 240) / 60 }} h`. Mesuré en PHP : 240/60 = 4 (l'affichage actuel est donc juste), mais 90/60 = 1.5 et 45/60 = 0.75 — la page écrirait « 1.5 h » ou « 0.75 h », avec un point décimal anglais, jamais « 1 h 30 ». Le réglage est exposé par la variable `WHEEL_SESSION_MINUTES` (config/wheel.php), donc la valeur n'est pas garantie multiple de 60.",
+    "reproduction": "php -r 'echo 90/60;' → 1.5. Poser WHEEL_SESSION_MINUTES=90 et recharger /admin/roue porte fermée.",
+    "recommendation": "Formater en heures et minutes (`intdiv($m,60).' h '.($m%60 ? ($m%60).' min' : '')`) ou afficher les minutes telles quelles."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "routes/web.php:162 et :207",
+    "title": "GET /admin/roue/ouvrir n'ouvre rien (correct) mais affiche l'application CLIENT au lieu de l'accueil de la roue",
+    "evidence": "`GET http://127.0.0.1:8000/admin/roue/ouvrir` → 200 avec `<title>Le Cayenne</title>` et `id=\"app\"` : la route n'existe qu'en POST, donc l'attrape-tout `/{any}` (RootController) l'avale et sert la SPA vitrine. Vérifié aussi pour toutes les variantes de chemin qui ne correspondent pas exactement à une route de la roue (`//admin//roue-lot`, `/Admin/Roue-Lot`, `/ADMIN/ROUE-LOT`, `/admin/roue-lot%2f`, `/admin/roue-lot;` → 200, 16 622 octets, `<title>Le Cayenne</title>`). Aucun contenu de la roue ne fuit — mais sur la tablette du comptoir, une URL mal tapée affiche le site client sans dire pourquoi.",
+    "reproduction": "curl -s http://127.0.0.1:8000/admin/roue/ouvrir | grep '<title>'",
+    "recommendation": "Déclarer la route en `Route::match(['get','post'], …)` avec un GET qui redirige vers `admin.wheel.home`, ou exclure le préfixe `admin/roue` de l'attrape-tout."
+  }
+]

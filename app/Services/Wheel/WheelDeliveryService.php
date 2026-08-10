@@ -2,6 +2,7 @@
 
 namespace App\Services\Wheel;
 
+use App\Enums\Ask;
 use App\Models\Scopes\BranchScope;
 use App\Models\StockOutflow;
 use App\Models\User;
@@ -234,17 +235,40 @@ class WheelDeliveryService
             return false;
         }
 
+        /*
+         * [P1 2026-08-10 · audit ronde 2] TROIS DÉFAUTS EN QUATRE LIGNES.
+         *
+         *   · une SEULE écriture du numéro était cherchée, alors que le service qui crée le compte en
+         *     cherche quatre, trente lignes plus loin. 62 comptes sur 348 portent une forme non
+         *     normalisée : pour eux, le compte existait et le comptoir lisait « aucun compte à ce
+         *     numéro, crée-le puis reviens » — une consigne impossible à exécuter ;
+         *   · `withoutGlobalScopes()` retire AUSSI le filtre de suppression douce : les points
+         *     partaient sur un compte SUPPRIMÉ, le lot était clos, et le client vivant n'avait rien ;
+         *   · aucun filtre sur `is_guest` : un numéro rattaché à un compte de l'ÉQUIPE recevait les
+         *     points d'un client. Un numéro n'est pas une preuve d'identité.
+         *
+         * On aligne donc la sélection sur celle du service qui CRÉE le compte : même définition du
+         * numéro, mêmes exclusions. Deux façons de désigner la même personne, c'est un jour où l'une
+         * des deux se trompe.
+         */
+        $roue = app(WheelService::class);
+
+        // Plusieurs comptes peuvent porter des écritures différentes du même numéro : on prend le
+        // premier qui est bien celui d'un CLIENT. Écarter sur `is_guest` seul priverait les clients
+        // réellement inscrits (13 en base) de leurs points.
         $user = User::query()
-            ->withoutGlobalScopes()
-            ->where('phone', $spin->phone)
+            ->withoutGlobalScope(BranchScope::class)
+            ->whereIn('phone', $roue->phoneVariants((string) $spin->phone))
             ->orderBy('id')
-            ->first();
+            ->get()
+            ->first(fn ($u) => $roue->isCustomerAccount($u));
 
         if (! $user) {
             return false;
         }
 
-        User::withoutGlobalScopes()->whereKey($user->id)->increment('loyalty_points', $points);
+        User::withoutGlobalScope(BranchScope::class)->whereKey($user->id)
+            ->increment('loyalty_points', $points);
         $spin->points_credited_user_id = $user->id;
 
         return true;

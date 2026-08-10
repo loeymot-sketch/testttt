@@ -1,0 +1,83 @@
+[
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "app/Services/Wheel/WheelService.php:53",
+    "title": "La tablette du comptoir ET la roue du téléphone annoncent « -10% » et « -15% », deux lots que la roue ne peut PLUS tirer aujourd'hui — l'écran mène le client en bateau.",
+    "evidence": "`publicSegments()` (WheelService.php:53-59) renvoie les 7 segments de `config/wheel.php` SANS AUCUNE des trois gardes appliquées par `draw()` (remises éteintes, rupture, plafond du jour). Mesuré côté serveur : `pos.coupon_codes_enabled=false` ET `pos.manual_discount_enabled=false`, donc `remisesAcceptees()=false` ; 4000 tirages par réflexion sur `draw()` donnent remise_10=0 et remise_15=0 (points_50 50,05 % / points_100 29,35 % / boisson 13,83 % / frites 4,75 % / menu 2,02 %). Or la tablette annonce les 7 : `aria-label` du canvas = « Roue des lots : 50 points, -10%, 100 points, -15%, Boisson offerte, Frites offertes, Frites + Boisson » et l'acte 2 « Aujourd'hui, on distribue » liste 7 pastilles dont « -10% » et « -15% » (borne.blade.php:288 et :316, capture captures/borne-arret-8500.png, regardée). PIRE : la roue de la tablette s'ARRÊTE sur un secteur au hasard (`Math.floor(Math.random()*7)`, borne.blade.php:573) et pendant les 30 s d'observation elle s'est arrêtée sous le repère sur « -15% » — capture captures/borne-arret-18300.png, regardée. 2 secteurs sur 7 = 28,6 % des arrêts désignent un lot impossible, et l'acte 2 les affiche 100 % du temps (un cycle toutes les 19,5 s). La roue du TÉLÉPHONE a le même défaut : captures/p1-01-arrivee.png (regardée) montre « -10% » et « -15% » dessinés sur la roue que le client regarde tourner. Enfin la garde rupture aggrave le cas : 86 posé sur « Frites Seules » (mesuré puis restauré) → `frites` jamais tirée en 3000 tirages, alors que la tablette continue d'afficher « Frites offertes ». `config/wheel.php:73` écrit lui-même : « une roue qui affiche un lot jamais tiré est une tromperie, et elle se voit ».",
+    "reproduction": "1) `php artisan tinker --execute=\"echo var_export(app(App\\Services\\Wheel\\WheelService::class)->remisesAcceptees(),true);\"` → false. 2) Ouvrir http://127.0.0.1:8000/admin/roue (code 481526) puis http://127.0.0.1:8000/admin/roue-borne et laisser tourner 30 s : lire l'acte « Aujourd'hui, on distribue » et attendre deux arrêts de roue. 3) `node f2-borne.mjs` rejoue la mesure et capture les arrêts.",
+    "recommendation": "Faire passer `publicSegments()` par les MÊMES gardes que `draw()` : ne publier que les segments réellement tirables (ou ajouter un booléen `tirable` que `borne.blade.php` et `roue.html` honorent en grisant/retirant le secteur). Un seul point de vérité pour « ce que la maison peut donner maintenant » — sinon l'écran et le tirage divergeront à chaque changement d'interrupteur de la caisse."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/roue.html:749",
+    "title": "Le refus 428 est INVISIBLE : le message tombe entièrement hors de l'écran, le client voit sa roue ne pas tourner sans aucune explication.",
+    "evidence": "Parcours réel sur iPhone 13 (jeton neuf, avis fait pour de vrai, abonnement franchi 5 s trop tôt). Le serveur refuse correctement : `API 428 spin {\"message\":\"Encore 5 secondes et c'est à toi !\"}`. Géométrie mesurée de `#msg` juste après : `{top:676, bottom:722, h:46, vh:664, dansEcran:false, partiel:false}` — le message est ENTIÈREMENT sous le pli, pas même partiellement visible. Capture captures/mesure-428-follow-court.png (regardée) : on voit la roue et la carte « Laisse-nous un petit avis », et AUCUN message nulle part. Cause : `dire()` (roue.html:749) fait défiler `#msg` au centre, puis la branche 428 appelle `retourEtapes()` (roue.html:965 → :926) qui fait défiler `#ecran1` et ANNULE le premier défilement. Le correctif de la ronde 1 (« un refus qu'on ne lit pas est vécu comme une panne », roue.html:746-748) n'a été appliqué qu'à `#msgVerrou` ; `#msg` sur le chemin 428 est resté en dehors.",
+    "reproduction": "`node f2-mesure428.mjs <jeton neuf>` : le script ouvre le lien d'avis pour de vrai, attend les 20 s serveur, ouvre le lien d'abonnement puis appuie « C'est fait » avant les 8 s, appuie TOURNER LA ROUE et mesure `#msg.getBoundingClientRect()` contre `window.innerHeight`.",
+    "recommendation": "Dans la branche `if (r.status === 428)`, appeler `retourEtapes()` AVANT `dire()`, ou poser le message DANS la carte d'étape rouverte (`#ecran1`/`#ecran2`) plutôt que dans le `#msg` de bas de page — un refus doit être écrit là où le client vient d'appuyer et là où on le renvoie."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelService.php:1",
+    "title": "Une AUTRE session réécrit les services de la roue et réinitialise la base de dév PENDANT l'audit : aucune mesure de cette vague ne peut servir de feu vert de déploiement.",
+    "evidence": "Constaté deux fois en cours d'audit. (1) `git status --porcelain -- app/Services/Wheel/` est passé de « rien » à `M WheelReportService.php` (+92/-20), puis `M WheelService.php` (+64), `M WheelDeliveryService.php` (+32), `M WheelAccountService.php` (+27/-27) — tous NON COMMITÉS sur `pos/category-first-caisse-2026-06-23`, HEAD `2ef93e6eb`. Preuve directe que le fichier a changé sous moi : la même méthode privée `WheelReportService::mesures()` a renvoyé successivement 12 clés (lecture du fichier) puis 14 clés dont `points_remis:150` et `valeur_points:1.5` (appel par réflexion 20 min plus tard) — clés absentes du fichier que j'avais lu. (2) La base `foodking_e2e` a été vidée/re-semée : `wheel_spins` contenait 14 lignes du jour (ids 10,11,61..69) puis 10, les ids 63 à 69 ayant DISPARU tandis que les nouveaux tours prenaient les ids 4165+ ; le tour d'un de mes parcours (p3, tél 0612000303, « 100 points » annoncé et réclamé avec succès à l'écran) n'existait plus en base dix minutes plus tard. Effet de bord mesuré : `stock_outflows#5` (append-only, indélébile) a survécu alors que le `wheel_spins#4168` qui le portait a été supprimé — la ligne de charge est désormais ORPHELINE.",
+    "reproduction": "`git status --porcelain -- app/Services/Wheel/` puis `git diff --stat -- app/Services/Wheel/` ; comparer les clés du tableau rendu par `app(WheelReportService::class)->tableau(1)` avec le code du fichier. Compter `WheelSpin::withoutGlobalScopes()->count()` à deux instants espacés.",
+    "recommendation": "Poser un HOLD : geler l'une des deux sessions, committer (ou remiser) le travail en vol, et rejouer la vague F sur un arbre propre avant toute décision de déploiement. À court terme, donner à chaque session sa propre base (`DB_DATABASE`) et son propre worktree — un audit et une réécriture sur le même fichier et la même base ne prouvent rien, ni l'un ni l'autre."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/roue.html:920",
+    "title": "Le 428 ramène toujours à la PREMIÈRE étape, jamais à celle qui manque : le client est renvoyé à un avis déjà déposé 30 secondes plus tôt.",
+    "evidence": "`retourEtapes()` (roue.html:920-930) ne lit ni le message du serveur ni l'état des étapes : si un lien d'avis existe, il affiche `#ecran1` et sort. Mesuré sur un parcours réel où l'AVIS était fait (horodaté serveur, 20 s écoulées) et où c'est l'ABONNEMENT qui manquait de 5 s — le serveur a répondu « Encore 5 secondes et c'est à toi ! » et la page a affiché `#ecran1` (avis) `visible=true` tandis que `#ecran2` (abonnement) restait `visible=false`. Capture captures/mesure-428-follow-court.png (regardée) : la carte « Laisse-nous un petit avis » est de retour. Cumulé au constat précédent (message hors écran), le client appuie sur TOURNER LA ROUE, rien ne tourne, et une étape déjà faite réapparaît sans un mot : c'est lu comme une page cassée.",
+    "reproduction": "`node f2-mesure428.mjs <jeton neuf>` puis lire `ecran1_avis_visible` / `ecran2_abonnement_visible` dans captures/mesure428-journal.json.",
+    "recommendation": "Rouvrir l'étape RÉELLEMENT manquante : le serveur sait laquelle (`WheelStepService::messageManquant()`), il suffit de la nommer dans la réponse 428 (`step: 'review'|'follow'`) et de router `retourEtapes(step)` dessus. À défaut, côté page : si `#okAvis` a déjà été validé, aller directement à `versFollow()`."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "routes/api.php:1680",
+    "title": "Au-delà de 10 tours par minute et par adresse IP, le client lit « Too Many Attempts. » — en anglais, brut, sans délai indiqué. Sur le WiFi du restaurant, tous les téléphones partagent la même IP.",
+    "evidence": "`Route::post('/spin', ...)->middleware('throttle:10,1')` (routes/api.php:1680-1681). Plafond confirmé par en-tête : `curl -D -` sur `/api/frontend/wheel/spin` renvoie `X-RateLimit-Limit: 10`. Atteint pour de vrai pendant l'audit avec trois parcours simultanés : `/tmp/f2-p4.log` et `/tmp/f2-p5.log` portent `API 429 spin {\"message\": \"Too Many Attempts.\"}`. La page relaie ce texte tel quel — `dire((r.json && r.json.message) || 'Ce tour n'a pas pu aboutir.', 'err')` (roue.html:960) — donc un client francophone debout au comptoir lit une phrase anglaise de framework, sans savoir qu'il suffit d'attendre une minute. Le scénario n'est pas théorique : derrière le WiFi du restaurant (NAT), le 11ᵉ tour de la minute est refusé, et le compteur est partagé par tous les clients présents.",
+    "reproduction": "Émettre 10 POST vers `/api/frontend/wheel/spin` en moins d'une minute depuis la même IP (même sans jeton : les 403 comptent), puis jouer un parcours complet et appuyer sur TOURNER LA ROUE.",
+    "recommendation": "Traiter le 429 dans la page : message français + le délai lu dans `Retry-After` (« la roue reprend dans N secondes »). Et clé de limitation plus juste : l'empreinte du jeton de validation plutôt que l'IP — un jeton est déjà à usage unique, donc non rejouable, alors qu'une IP est partagée par toute la salle."
+  },
+  {
+    "severity": "P2",
+    "category": "functional",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:321",
+    "title": "Aucune remise de lot n'est attribuable à un humain quand l'écran est ouvert par le code de la maison — or c'est le seul chemin d'accès existant.",
+    "evidence": "Deux remises réelles jouées via /admin/roue-lot après ouverture par le code 481526 (le seul chemin : `wheel.access` accepte le code ou une session `pos`, et `WheelPrizeController::actorId()` rend `null` sur le chemin du code). Base après remise : `wheel_spins.delivered_by_user_id = NULL` pour le lot en points ET pour le produit offert ; `stock_outflows#5 ... user=NULL`. Le commentaire de `recordCost()` (WheelDeliveryService.php:321-322) annonce pourtant « La véritable trace d'attribution reste `stock_outflows.user_id`, laissée nulle plutôt que faussée » : la trace désignée comme véritable est celle qui est vide. Conséquence : un cadeau sorti du stock (871 → 870 sur `stock_levels#1`, mouvement `delta=-1`) n'est rattachable à personne — ni équipe, ni service, ni horaire d'ouverture de session.",
+    "reproduction": "Ouvrir /admin/roue avec 481526, remettre un lot depuis /admin/roue-lot, puis `WheelSpin::withoutGlobalScopes()->latest('delivered_at')->first(['delivered_by_user_id'])` et `StockOutflow::withoutGlobalScopes()->latest('id')->first(['user_id'])`.",
+    "recommendation": "Écrire l'identité de la SESSION de code (identifiant de session `wheel.access` + horodatage d'ouverture) dans `stock_outflows.note` et dans une colonne `delivered_by_label`, à défaut d'un compte. « Code maison, session ouverte à 17:38 » n'est pas un nom, mais c'est une piste ; NULL n'en est pas une."
+  },
+  {
+    "severity": "P2",
+    "category": "visual_defect",
+    "file": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/roue.html:406",
+    "title": "À 320×568, le bouton « DÉBLOQUER MON CADEAU » arrive coupé sous le pli et la fenêtre du lot ne le fait pas défiler — la mention « ton compte se crée » est, elle, entièrement invisible à l'arrivée.",
+    "evidence": "Mise en page réelle mesurée à 320×568 (état verrou d'un lot en points) : la boîte `#gain` est défilable (`scrollHeight 693 > clientHeight 568`, `overflow-y:auto`) mais rien ne fait défiler le bouton à l'ouverture — `#go` = `{top:520, bottom:582}` pour `vh=568`, soit 14 px sous le pli, et `#rgpd` (« Ton compte Le Cayenne se crée en même temps ») = `{top:592, bottom:644}`, hors écran complet. Capture captures/geo-320x568-verrou-haut.png (regardée) : le mot « CADEAU » touche le bord bas. Comparaison iPhone 13 (390×844) : `#go` = `{top:588, bottom:650}` DANS l'écran, boîte non défilable. Le parcours 320×568 complet (captures/m320-*) aboutit tout de même : 52 px des 62 px du bouton restent cliquables, le défilement rend tout atteignable, aucun débordement horizontal (`scrollWidth 320 = clientWidth 320`) et le refus reste lisible (`#msgVerrou` mesuré `{top:390, bottom:457}`). Donc rien n'est inatteignable, mais le geste principal n'est pas entièrement montré, et sur un vrai téléphone le clavier logiciel (déclenché par le focus automatique sur `#tel`) réduit encore la hauteur utile.",
+    "reproduction": "`node f2-geo320.mjs` : mesure `#go`, `#rgpd`, `#msgVerrou` et la boîte `#gain` à 320×568 puis à 390×844. Ou jouer un parcours complet avec `node f2-parcours.mjs <jeton> <tel> <mail> <nom> m320 320 568`.",
+    "recommendation": "À l'ouverture du verrou, faire défiler `#go` dans la vue (comme le fait déjà le focus sur `#tel`), ou réduire le retrait haut de la carte sous 600 px de hauteur (`@media (max-height:600px)`) pour que le bouton et la mention de compte tiennent au premier écran."
+  },
+  {
+    "severity": "P3",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelService.php:305",
+    "title": "Le refus nomme la clé d'identité franchie (« Cette adresse a déjà tourné ») alors que le code s'était donné pour règle de ne pas la révéler.",
+    "evidence": "Mesuré sur un parcours réel : réclamation avec un numéro NEUF (0612009999) et une adresse DÉJÀ jouée → `API 409 claim {\"message\":\"Cette adresse a déjà tourné la roue pour cette opération.\"}` (WheelService.php:305), alors que le même parcours avec un numéro déjà joué rend « Tu as déjà tourné la roue pour cette opération. ». Le commentaire du chemin de rattrapage par contrainte d'unicité (WheelService.php:349-350) énonce l'inverse : « On ne dit pas LAQUELLE — [...] distinguer les deux apprendrait à un fraudeur quelle clé changer. » Le contrôle préalable, lui, la distingue. Capture captures/refus-R3-409-adresse.png (regardée). Impact réel faible : les deux clés sont protégées par des index UNIQUE en base (`wheel_spins_one_per_phone`, `wheel_spins_one_per_email`), donc l'information ne débloque rien — elle indique seulement laquelle des deux essayer ensuite.",
+    "reproduction": "`node f2-refus2.mjs <jeton neuf>` : le script joue un parcours complet puis réclame trois fois — numéro déjà joué, adresse déjà jouée, identité neuve.",
+    "recommendation": "Rendre le même message dans les deux cas de contrôle préalable, comme le fait déjà le rattrapage de contrainte d'unicité ; ou assumer la distinction et retirer le commentaire qui prétend le contraire. Une règle écrite que le code ne suit pas finira par tromper le prochain lecteur."
+  },
+  {
+    "severity": "P3",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:330",
+    "title": "La ligne de charge du cadeau porte le LIBELLÉ du lot et non le nom du produit réellement sorti du stock.",
+    "evidence": "Remise réelle d'un lot « Frites + Boisson » : `stock_outflows#5` écrit `item_id=1`, `item_name='Frites + Boisson'` (WheelDeliveryService.php:330 : `'item_name' => $spin->prize_label`), alors que l'article 1 s'appelle « Menu (Frites + Boisson) » en base. Le décrément a bien porté sur le bon article (`stock_levels#1` 871 → 870, `stock_movements#290 delta=-1 reason=manual_out idempotency=wheel-gift-4168`), donc l'inventaire est juste ; c'est la LISIBILITÉ de la ligne comptable qui est fausse — un rapprochement par nom d'article ne retrouvera pas ce produit.",
+    "reproduction": "Remettre un lot `free_item` depuis /admin/roue-lot puis comparer `StockOutflow::latest('id')->first(['item_id','item_name'])` avec `Item::find(<item_id>)->name`.",
+    "recommendation": "Écrire le nom canonique de l'article (`Item::find($itemId)->name`) dans `item_name`, et garder le libellé du lot dans `note` — c'est déjà là que vit le contexte (« Roue — remis au comptoir — tour #… »)."
+  }
+]

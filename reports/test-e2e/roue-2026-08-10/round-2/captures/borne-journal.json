@@ -1,0 +1,99 @@
+{
+  "actes": [
+    {
+      "t": 1332,
+      "k": "porte ouverte",
+      "v": "http://127.0.0.1:8000/admin/roue"
+    },
+    {
+      "t": 1753,
+      "k": "aria-label roue",
+      "v": "Roue des lots : 50 points, -10%, 100 points, -15%, Boisson offerte, Frites offertes, Frites + Boisson"
+    },
+    {
+      "t": 1753,
+      "k": "pastilles acte 2",
+      "v": "[\"50 points\",\"-10%\",\"100 points\",\"-15%\",\"Boisson offerte\",\"Frites offertes\",\"Frites + Boisson\"]"
+    },
+    {
+      "t": 1753,
+      "k": "QR présent",
+      "v": true
+    },
+    {
+      "t": 1992,
+      "k": "ACTE 0",
+      "v": "Tu gagnesà 100 % Un lot pour ta prochaine commande, dès 10,00 €."
+    },
+    {
+      "t": 8589,
+      "k": "ACTE 1",
+      "v": "Aujourd'hui, on distribue 50 points -10% 100 points -15% Boisson offerte Frites offertes F"
+    },
+    {
+      "t": 10318,
+      "k": "capture arrêt",
+      "v": "borne-arret-8500"
+    },
+    {
+      "t": 15057,
+      "k": "ACTE 2",
+      "v": "C'est tout de suite 📱Scanne → 🎡Tourne → 🎁Gagne"
+    },
+    {
+      "t": 20112,
+      "k": "capture arrêt",
+      "v": "borne-arret-18300"
+    },
+    {
+      "t": 21510,
+      "k": "ACTE 0",
+      "v": "Tu gagnesà 100 % Un lot pour ta prochaine commande, dès 10,00 €."
+    },
+    {
+      "t": 28126,
+      "k": "ACTE 1",
+      "v": "Aujourd'hui, on distribue 50 points -10% 100 points -15% Boisson offerte Frites offertes F"
+    },
+    {
+      "t": 29903,
+      "k": "capture arrêt",
+      "v": "borne-arret-28100"
+    },
+    {
+      "t": 31905,
+      "k": "durée observée",
+      "v": "30264ms"
+    }
+  ],
+  "arrets": [
+    {
+      "ms": 8500,
+      "capture": "borne-arret-8500.png"
+    },
+    {
+      "ms": 18300,
+      "capture": "borne-arret-18300.png"
+    },
+    {
+      "ms": 28100,
+      "capture": "borne-arret-28100.png"
+    }
+  ],
+  "console": [],
+  "dom": {
+    "aria": "Roue des lots : 50 points, -10%, 100 points, -15%, Boisson offerte, Frites offertes, Frites + Boisson",
+    "pastilles": [
+      "50 points",
+      "-10%",
+      "100 points",
+      "-15%",
+      "Boisson offerte",
+      "Frites offertes",
+      "Frites + Boisson"
+    ],
+    "erreur": "",
+    "qr_present": true,
+    "duree_observee_ms": 30264
+  }
+}

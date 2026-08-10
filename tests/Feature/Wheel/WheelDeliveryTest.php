@@ -118,7 +118,15 @@ class WheelDeliveryTest extends TestCase
     {
         $this->segment('points', '100 points', 100);
 
-        $client = User::factory()->create(['branch_id' => 0, 'phone' => '0611000003', 'loyalty_points' => 20]);
+        /*
+         * [2026-08-10] LA FABRIQUE LAISSE `is_guest` À NULL ET N'ASSIGNE AUCUN RÔLE — un compte qui
+         * n'existe pas dans la vraie base (elle ne contient que 5, 10 et 1). Le crédit des points
+         * refuse désormais un compte qu'il ne peut pas identifier comme CLIENT, à cause d'un défaut
+         * réel : les points partaient sur des comptes de l'équipe et sur des comptes supprimés.
+         * Le fixture doit donc ressembler à un vrai client, sinon il éprouve un cas impossible.
+         */
+        $client = User::factory()->create(['branch_id' => 0, 'phone' => '0611000003',
+            'loyalty_points' => 20, 'is_guest' => \App\Enums\Ask::YES]);
         $spin = $this->tourner('0611000003');
 
         $r = $this->delivery->deliver($spin->id, $this->caissier->id);
@@ -136,7 +144,11 @@ class WheelDeliveryTest extends TestCase
     {
         $this->segment('points', '50 points', 50);
 
-        $client = User::factory()->create(['branch_id' => 0, 'phone' => '0611000004', 'loyalty_points' => 0]);
+        // L'AUTRE forme de client : réellement inscrit, donc `is_guest = NO` + rôle client. La base
+        // en contient 13. Un filtre posé sur `is_guest` seul les aurait privés de leurs points.
+        $client = User::factory()->create(['branch_id' => 0, 'phone' => '0611000004',
+            'loyalty_points' => 0, 'is_guest' => \App\Enums\Ask::NO]);
+        $client->assignRole(\App\Enums\Role::CUSTOMER);
         $spin = $this->tourner('06 11 00 00 04');
 
         $r = $this->delivery->deliver($spin->id, $this->caissier->id);
@@ -288,7 +300,8 @@ class WheelDeliveryTest extends TestCase
     public function test_les_points_ne_sont_credites_qu_une_fois(): void
     {
         $this->segment('points', '100 points', 100);
-        $client = User::factory()->create(['branch_id' => 0, 'phone' => '0611000009', 'loyalty_points' => 0]);
+        $client = User::factory()->create(['branch_id' => 0, 'phone' => '0611000009',
+            'loyalty_points' => 0, 'is_guest' => \App\Enums\Ask::YES]);
         $spin = $this->tourner('0611000009');
 
         $this->delivery->deliver($spin->id, $this->caissier->id);

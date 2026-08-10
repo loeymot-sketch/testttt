@@ -70,6 +70,70 @@ class WheelService
         return $d;
     }
 
+    /**
+     * TOUTES LES ÉCRITURES D'UN MÊME NUMÉRO, en un seul endroit.
+     *
+     * [P1 2026-08-10] Cette liste existait en double : une version à quatre écritures dans le service
+     * qui CRÉE le compte, une version à une seule écriture dans celui qui CRÉDITE les points, trente
+     * lignes plus loin. Résultat mesuré : 62 comptes sur 348 portent une forme non normalisée — pour
+     * eux le compte existait, la réclamation le retrouvait, et la remise répondait « aucun compte à ce
+     * numéro, crée-le puis reviens ». Impossible à exécuter.
+     *
+     * Le site n'impose aucune forme : la base contient « 0612345678 », « 612345678 » et
+     * « +33612345678 » pour le même humain. La définition de « ce numéro » vit donc ICI, à côté de la
+     * normalisation, et tout le monde l'emprunte.
+     *
+     * On ne devine PAS d'indicatif étranger : mieux vaut un compte de plus qu'un lot crédité au
+     * mauvais humain.
+     *
+     * @return array<int, string>
+     */
+    public function phoneVariants(string $phone): array
+    {
+        $tel = $this->normalizePhone($phone);
+        $v = [$tel];
+
+        if (str_starts_with($tel, '0') && strlen($tel) === 10) {
+            $sansZero = substr($tel, 1);
+            $v[] = $sansZero;
+            $v[] = '33' . $sansZero;
+            $v[] = '+33' . $sansZero;
+        }
+
+        return array_values(array_unique(array_filter($v, static fn ($x) => $x !== '')));
+    }
+
+    /**
+     * CE COMPTE EST-IL CELUI D'UN CLIENT — et pas de l'équipe ?
+     *
+     * [2026-08-10] Premier réflexe : `is_guest === YES`. FAUX, et les tests l'ont attrapé avant que ça
+     * parte : un client qui s'INSCRIT vraiment passe à `is_guest = NO` (`SignupController`), et la base
+     * en contient 13 qui portent le rôle client. Le filtre aurait privé ces treize personnes de leurs
+     * points, en silence, pour corriger un défaut voisin.
+     *
+     * Le bon critère n'est donc pas « invité » mais « pas l'équipe » : un compte invité OU porteur du
+     * rôle client. Un compte de l'équipe n'est ni l'un ni l'autre.
+     */
+    public function isCustomerAccount($user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        if ((int) $user->is_guest === (int) \App\Enums\Ask::YES) {
+            return true;
+        }
+
+        try {
+            return method_exists($user, 'hasRole')
+                && $user->hasRole(\App\Enums\Role::CUSTOMER);
+        } catch (\Throwable $e) {
+            // Rôles illisibles : on ne bloque pas un crédit pour un incident de lecture. Le compte
+            // reste candidat, et les autres gardes (suppression, unicité) tiennent toujours.
+            return true;
+        }
+    }
+
     public function isOpenToPublic(): bool
     {
         return (bool) config('wheel.enabled', false);

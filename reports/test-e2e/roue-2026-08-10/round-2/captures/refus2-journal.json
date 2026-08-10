@@ -1,0 +1,97 @@
+{
+  "refus": [
+    {
+      "cas": "R2 409 numéro déjà joué",
+      "tel": "0612000101",
+      "mail": "f2-autre-adresse@exemple.fr",
+      "message": "Tu as déjà tourné la roue pour cette opération.",
+      "classe": "msg on err",
+      "bouton": "DÉBLOQUER MON CADEAU",
+      "debloque_visible": false,
+      "code": "",
+      "msg_dans_ecran": {
+        "top": 487,
+        "bottom": 553,
+        "vh": 664
+      }
+    },
+    {
+      "cas": "R3 409 adresse déjà jouée",
+      "tel": "0612009999",
+      "mail": "f2-parcours1@exemple.fr",
+      "message": "Cette adresse a déjà tourné la roue pour cette opération.",
+      "classe": "msg on err",
+      "bouton": "DÉBLOQUER MON CADEAU",
+      "debloque_visible": false,
+      "code": "",
+      "msg_dans_ecran": {
+        "top": 487,
+        "bottom": 553,
+        "vh": 664
+      }
+    },
+    {
+      "cas": "reprise identité neuve",
+      "tel": "0612000777",
+      "mail": "f2-refus-ok@exemple.fr",
+      "message": "Cette adresse a déjà tourné la roue pour cette opération.",
+      "classe": "msg",
+      "bouton": "Un instant…",
+      "debloque_visible": true,
+      "code": "",
+      "msg_dans_ecran": {
+        "top": 0,
+        "bottom": 0,
+        "vh": 664
+      }
+    }
+  ],
+  "console": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    }
+  ],
+  "reseau": [
+    {
+      "ep": "config",
+      "status": 200,
+      "body": "{\"segments\":[{\"key\":\"points_50\",\"label\":\"50 points\"},{\"key\":\"remise_10\",\"label\":\"-10%\"},{\"key\":\"points_100\",\"label\":\"100 points\"},{\"key\":\"remise_15\",\"label\":\"-15%\"},{\"key\":\"boisson\",\"label\":\"Boisson offerte\"},{\"key\":\"frites\",\"label\":\"Frites offertes\"},{\"key\":\""
+    },
+    {
+      "ep": "step",
+      "status": 200,
+      "body": "{\"status\":true,\"wait_seconds\":20}"
+    },
+    {
+      "ep": "step",
+      "status": 200,
+      "body": "{\"status\":true,\"wait_seconds\":8}"
+    },
+    {
+      "ep": "spin",
+      "status": 200,
+      "body": "{\"status\":true,\"segment_index\":2,\"prize_label\":\"100 points\",\"prize_type\":\"points\",\"claim_minutes\":30}"
+    },
+    {
+      "ep": "claim",
+      "status": 409,
+      "body": "{\"status\":false,\"message\":\"Tu as d\\u00e9j\\u00e0 tourn\\u00e9 la roue pour cette op\\u00e9ration.\"}"
+    },
+    {
+      "ep": "claim",
+      "status": 409,
+      "body": "{\"status\":false,\"message\":\"Cette adresse a d\\u00e9j\\u00e0 tourn\\u00e9 la roue pour cette op\\u00e9ration.\"}"
+    },
+    {
+      "ep": "claim",
+      "status": 200,
+      "body": "{\"status\":true,\"prize_label\":\"100 points\",\"prize_type\":\"points\",\"code\":null,\"points\":100,\"requires_order\":true,\"min_order\":10,\"valid_until\":\"09\\/09\\/2026\",\"account_created\":true,\"account_ready\":true}"
+    }
+  ],
+  "lot": "100 points"
+}

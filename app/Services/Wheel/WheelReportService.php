@@ -2,6 +2,7 @@
 
 namespace App\Services\Wheel;
 
+use App\Enums\DiscountType;
 use App\Models\Coupon;
 use App\Models\Item;
 use App\Models\Scopes\BranchScope;
@@ -82,23 +83,45 @@ class WheelReportService
             ->where('created_at', '>=', $depuis);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * TOUT EST MESURÉ SUR LE TOUR, ET RIEN D'AUTRE.
+     *
+     * [P0 + P1 2026-08-10 · audit ronde 2] Trois défauts vivaient ici, et tous venaient de la même
+     * paresse : compter des lignes au lieu de partir des participations.
+     *
+     *   · `Coupon::withoutGlobalScopes()->where('code','like','ROUE-%')` ramassait TOUT — les coupons
+     *     SUPPRIMÉS (le filtre de suppression douce fait partie des portées globales : 179 € sur
+     *     237 € mesurés), ceux d'une AUTRE caisse (33 €), et jusqu'aux coupons simplement NOMMÉS
+     *     « ROUE-… » créés à la main. Le tableau exagérait l'exposition d'un facteur 9,5. On règle des
+     *     plafonds sur ce chiffre : le fausser est pire que ne rien afficher.
+     *   · DEUX HORLOGES jamais réconciliées : les tours datés sur la participation, les cadeaux et la
+     *     valeur datés sur la ligne de sortie de stock. Un lot gagné le 1er et retiré le 20 comptait
+     *     donc dans « aujourd'hui » sans que son tour y figure — d'où un « 2 tours / 3 cadeaux remis »
+     *     que personne ne peut expliquer. C'est le TOUR qui date un lot, de bout en bout.
+     *   · Les POINTS n'étaient valorisés nulle part alors qu'ils font la majorité des lots quand les
+     *     codes de remise sont éteints : le tableau affichait 0,00 € pour l'essentiel du coût.
+     *
+     * @return array<string, mixed>
+     */
     private function mesures(int $branchId, Carbon $depuis): array
     {
-        $tours = $this->tours($branchId, $depuis)->get(['id', 'prize_type', 'prize_label', 'delivered_at', 'coupon_id']);
+        $tours = $this->tours($branchId, $depuis)
+            ->get(['id', 'prize_type', 'prize_label', 'delivered_at', 'coupon_id',
+                'points_awarded', 'cost_outflow_id', 'created_at']);
 
         $parType = [];
         foreach ($tours as $t) {
             $parType[(string) $t->prize_type] = ($parType[(string) $t->prize_type] ?? 0) + 1;
         }
 
-        // Valeur des produits offerts, AU PRIX DE VENTE (voir le docbloc : pas un coût de revient).
-        $sorties = StockOutflow::query()
+        // ── LES PRODUITS OFFERTS, par leurs TOURS ─────────────────────────────────────────────
+        $remis = $tours->where('prize_type', 'free_item')->whereNotNull('delivered_at');
+        $idsSorties = $remis->pluck('cost_outflow_id')->filter()->unique()->all();
+
+        $sorties = $idsSorties === [] ? collect() : StockOutflow::query()
             ->withoutGlobalScope(BranchScope::class)
-            ->where('branch_id', $branchId)
-            ->where('type', StockOutflow::TYPE_PROMO_GIFT)
-            ->where('created_at', '>=', $depuis)
-            ->get(['item_id', 'quantity', 'stock_decremented']);
+            ->whereIn('id', $idsSorties)
+            ->get(['id', 'item_id', 'quantity', 'stock_decremented']);
 
         $prix = $sorties->isEmpty() ? collect() : Item::query()
             ->withoutGlobalScopes()
@@ -114,27 +137,60 @@ class WheelReportService
             }
         }
 
-        // Les codes de remise émis sur la période, et ceux réellement consommés.
-        $codes = Coupon::query()
-            ->withoutGlobalScopes()
-            ->where('code', 'like', 'ROUE-%')
-            ->where('created_at', '>=', $depuis)
-            ->get(['usage_count', 'maximum_discount', 'discount', 'discount_type']);
+        // ── LES POINTS, valorisés au barème DE LA MAISON ──────────────────────────────────────
+        $points = (int) $tours->where('prize_type', 'points')->whereNotNull('delivered_at')
+            ->sum('points_awarded');
+
+        // ── LES CODES DE REMISE, par leurs TOURS ──────────────────────────────────────────────
+        // Pas de `withoutGlobalScopes()` : le filtre de suppression douce doit RESTER. Et on part des
+        // `coupon_id` des tours de CETTE caisse — un coupon qui n'est rattaché à aucun tour n'est pas
+        // un lot de la roue, quel que soit son nom.
+        $idsCoupons = $tours->pluck('coupon_id')->filter()->unique()->all();
+        $codes = $idsCoupons === [] ? collect() : Coupon::query()
+            ->whereIn('id', $idsCoupons)
+            ->get(['id', 'usage_count', 'maximum_discount', 'discount', 'discount_type']);
+
+        $dehors = $codes->where('usage_count', 0);
+        // Un pourcentage SANS plafond est le seul lot réellement illimité — et `config/wheel.php`
+        // documente lui-même « 0 = illimité côté moteur de coupons ». L'additionner à 0 € rendait le
+        // chiffre censé être « le pire cas » muet précisément là où il compte. On le compte à part.
+        $sansPlafond = $dehors->filter(
+            fn ($c) => (string) $c->discount_type === (string) DiscountType::PERCENTAGE
+                && (float) $c->maximum_discount <= 0
+        );
 
         return [
             'tours' => $tours->count(),
             'par_type' => $parType,
-            'cadeaux_remis' => $sorties->count(),
+            'cadeaux_remis' => $remis->count(),
             'cadeaux_dus' => $tours->whereIn('prize_type', ['free_item', 'points'])
                 ->whereNull('delivered_at')->count(),
             'valeur_offerte' => round($valeur, 2),
             'cadeaux_sans_stock' => $sansStock,
+            'points_remis' => $points,
+            'valeur_points' => round($points / max(1, $this->baremePoints()), 2),
             'codes_emis' => $codes->count(),
             'codes_utilises' => $codes->where('usage_count', '>', 0)->count(),
-            // Exposition MAXIMALE des codes encore vivants : la somme des plafonds de ceux qui
-            // n'ont pas encore été consommés. C'est le pire cas, et c'est le seul chiffre honnête.
-            'exposition_max' => round((float) $codes->where('usage_count', 0)->sum('maximum_discount'), 2),
+            'exposition_max' => round((float) $dehors->sum('maximum_discount'), 2),
+            'codes_sans_plafond' => $sansPlafond->count(),
         ];
+    }
+
+    /**
+     * Combien de points valent un euro de remise, selon le barème DE LA MAISON — pas une constante
+     * inventée ici. Sans réglage lisible, on retombe sur 100 (la valeur observée en base) plutôt que
+     * de diviser par zéro ou d'annoncer un coût nul.
+     */
+    private function baremePoints(): int
+    {
+        try {
+            $v = (int) \Smartisan\Settings\Facades\Settings::group('loyalty_setup')
+                ->get('loyalty_points_for_1_euro_discount');
+
+            return $v > 0 ? $v : 100;
+        } catch (\Throwable $e) {
+            return 100;
+        }
     }
 
     /** @return array<int, string> */
@@ -152,8 +208,24 @@ class WheelReportService
             ->where('stock_decremented', false)
             ->count();
         if ($sans > 0) {
-            $out[] = $sans . ' cadeau' . ($sans > 1 ? 'x' : '') . ' sans décrément de stock sur 30 jours '
-                . '(produit composite, ou rayon déjà à zéro) — à corriger à l\'inventaire.';
+            // « À corriger à l'inventaire » laissait croire que l'avertissement s'éteindrait après
+            // correction. Il ne peut PAS : `stock_outflows` porte un déclencheur qui interdit toute
+            // modification, la colonne est immuable. C'est un JOURNAL, pas une tâche à cocher — et le
+            // dire ainsi évite qu'on le prenne pour un signal cassé, donc qu'on cesse de le lire.
+            $out[] = 'Sur 30 jours, ' . $sans . ' cadeau' . ($sans > 1 ? 'x a' : ' a')
+                . ' été remis sans sortir du stock (produit composite, produit sans niveau de stock, '
+                . 'ou rayon déjà à zéro). Ce relevé est un historique : il ne s\'effacera pas. '
+                . 'Ce qu\'il faut faire, c\'est reprendre l\'écart au prochain inventaire.';
+        }
+
+        // Un pourcentage SANS plafond est le seul lot dont l'exposition est INCONNUE, pas nulle. Le
+        // taire, c'est laisser un 0 € rassurer là où il ne faut pas.
+        $sansPlafond = $this->mesures($branchId, Carbon::today()->subDays(29))['codes_sans_plafond'];
+        if ($sansPlafond > 0) {
+            $out[] = $sansPlafond . ' code' . ($sansPlafond > 1 ? 's' : '') . ' de remise en pourcentage '
+                . 'SANS PLAFOND en euros : sur une grosse commande, la remise n\'a aucune limite. '
+                . 'Son exposition n\'est pas comptée dans le chiffre ci-dessus — elle est inconnue. '
+                . 'Pose un plafond dans config/wheel.php (max_discount).';
         }
 
         /*
