@@ -55,8 +55,13 @@ class WheelPrizeMail extends Mailable
                 . 'commande : on vous le remet en main propre.';
         } elseif ($type === 'points') {
             $pts = (int) ($this->spin->points_awarded ?? 0);
+            // « ONT ÉTÉ AJOUTÉS » ÉTAIT FAUX : les points arrivent sur le compte quand l'équipe
+            // REMET le lot au comptoir (WheelDeliveryService), pas à la réclamation. Un e-mail qui
+            // annonce un solde déjà crédité envoie le client vérifier son compte et y trouver zéro
+            // — et cet e-mail-là, il le GARDE, donc le mensonge dure.
             $commentFaire = $pts > 0
-                ? $pts . ' points ont été ajoutés à votre compte fidélité, utilisables dès votre prochaine commande.'
+                ? 'Donnez votre numéro de téléphone au comptoir lors de votre prochaine commande : '
+                    . 'nous ajouterons vos ' . $pts . ' points sur votre compte.'
                 : 'Donnez votre numéro au comptoir pour récupérer vos points.';
         } else {
             $commentFaire = 'Saisissez ce code dans votre panier sur le site, à votre prochaine commande.';

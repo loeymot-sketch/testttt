@@ -435,6 +435,32 @@ class WheelClaimAccountTest extends TestCase
             'l\'envoi est marqué fait alors qu\'il a échoué : on ne saurait plus qui relancer');
     }
 
+    /**
+     * UN LOT EN POINTS N'EST PAS ENCORE CRÉDITÉ À LA RÉCLAMATION — il l'est à la REMISE, au
+     * comptoir. L'écran ET l'e-mail disaient « crédités » : le client allait vérifier son compte et
+     * y trouvait zéro. L'e-mail est le pire des deux, parce qu'il le GARDE.
+     */
+    public function test_l_email_ne_pretend_PAS_que_les_points_sont_deja_credites(): void
+    {
+        Config::set('wheel.segments', [
+            ['key' => 'p', 'label' => '50 points', 'type' => 'points', 'value' => 50,
+             'weight' => 1, 'daily_cap' => 0],
+        ]);
+
+        $jeton = $this->jeton();
+        $this->tourner($jeton)->assertOk();
+        $this->reclamer($jeton, '0611000033', 'points-mail@exemple.fr')->assertOk();
+
+        $spin = WheelSpin::withoutGlobalScope(BranchScope::class)->firstOrFail();
+        $rendu = (new WheelPrizeMail($spin, null, 10.0, '09/09/2026', true))->render();
+
+        $this->assertStringNotContainsString('ont été ajoutés', $rendu);
+        $this->assertStringNotContainsString('crédités', $rendu);
+        $this->assertStringContainsString('comptoir', $rendu,
+            'il doit être dit OÙ récupérer les points, sinon le client les cherche sur le site');
+        $this->assertStringContainsString('50 points', $rendu);
+    }
+
     // ── 7. LE COMPTE CRÉÉ REND LES POINTS LIVRABLES ──────────────────────────────────────────
 
     /**
