@@ -67,14 +67,14 @@ class WheelSettingsScreenTest extends TestCase
     public function test_l_ecran_est_ferme_sans_droit_caisse(): void
     {
         $quidam = User::factory()->create(['branch_id' => 1]);
-        $this->actingAs($quidam)->get('/admin/roue-reglages')->assertStatus(403);
-        $this->actingAs($quidam)->post('/admin/roue-reglages')->assertStatus(403);
+        $this->actingAs($quidam, 'web')->get('/admin/roue-reglages')->assertStatus(403);
+        $this->actingAs($quidam, 'web')->post('/admin/roue-reglages')->assertStatus(403);
     }
 
     /** SANS lien : l'écran dit que ça ne tourne pas, et pourquoi. */
     public function test_sans_aucun_lien_l_ecran_dit_que_le_parcours_ne_tourne_PAS(): void
     {
-        $r = $this->actingAs($this->caissier)->get('/admin/roue-reglages')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->get('/admin/roue-reglages')->assertOk();
 
         $r->assertSee('ne tourne pas encore', false);
         $this->assertFalse(app(WheelSettingsService::class)->journeyReady());
@@ -88,7 +88,7 @@ class WheelSettingsScreenTest extends TestCase
      */
     public function test_coller_un_lien_ACTIVE_le_parcours_immediatement(): void
     {
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'https://g.page/r/CtestAvis/review',
             'review_required' => '1',
             'follow_required' => '1',
@@ -115,7 +115,7 @@ class WheelSettingsScreenTest extends TestCase
 
     public function test_les_comptes_sociaux_activent_l_etape_abonnement(): void
     {
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'instagram_url' => 'https://instagram.com/lecayenne',
             'follow_required' => '1',
         ])->assertOk();
@@ -137,14 +137,14 @@ class WheelSettingsScreenTest extends TestCase
      */
     public function test_decocher_une_case_a_bien_un_effet(): void
     {
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'https://g.page/r/CtestAvis/review',
             'review_required' => '1',
         ])->assertOk();
         $this->assertTrue(app(WheelSettingsService::class)->reviewRequired());
 
         // Deuxième envoi SANS la case : le navigateur ne l'envoie pas du tout.
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'https://g.page/r/CtestAvis/review',
         ])->assertOk();
 
@@ -158,7 +158,7 @@ class WheelSettingsScreenTest extends TestCase
     {
         // 302 (renvoi vers le formulaire) ou 422 (erreurs en JSON) selon ce que la requête accepte.
         // Ce qui compte n'est pas le code mais le RÉSULTAT : rien d'invalide n'est enregistré.
-        $r = $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $r = $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'pas-une-adresse',
         ]);
         $this->assertContains($r->status(), [302, 422]);
@@ -170,7 +170,7 @@ class WheelSettingsScreenTest extends TestCase
     /** Un formulaire n'a pas à pouvoir écrire n'importe quelle clé de réglage de l'application. */
     public function test_une_cle_inconnue_n_est_PAS_enregistree(): void
     {
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'https://g.page/r/CtestAvis/review',
             'app_key' => 'pirate',
             'wheel_enabled' => '1',
@@ -227,7 +227,7 @@ class WheelSettingsScreenTest extends TestCase
     {
         Config::set('wheel.steps.review.derive_fallback', true);
 
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'https://g.page/r/Cdirect/review',
         ])->assertOk();
 
@@ -239,7 +239,7 @@ class WheelSettingsScreenTest extends TestCase
     /** Facebook seul suffit : l'étape abonnement fonctionne sans Instagram ni Snapchat. */
     public function test_facebook_seul_suffit_pour_l_etape_abonnement(): void
     {
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'facebook_url' => 'https://www.facebook.com/LeCayenne',
             'follow_required' => '1',
         ])->assertOk();
@@ -277,7 +277,7 @@ class WheelSettingsScreenTest extends TestCase
 
     public function test_le_temps_d_attente_et_le_minimum_sont_saisissables(): void
     {
-        $this->actingAs($this->caissier)->post('/admin/roue-reglages', [
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-reglages', [
             'review_url' => 'https://g.page/r/CtestAvis/review',
             'review_dwell' => 35,
             'follow_dwell' => 12,
