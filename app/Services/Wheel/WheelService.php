@@ -375,6 +375,28 @@ class WheelService
             if ($poids > 0 && $cap > 0 && $this->dailyCount($branchId, (string) $s['key']) >= $cap) {
                 $poids = 0; // plafond atteint : plus tirable aujourd'hui
             }
+
+            /*
+             * [P1 2026-08-10] LA ROUE OFFRAIT DES PRODUITS EN RUPTURE.
+             *
+             * Prouvé en base : produit passé en rupture (86) depuis la caisse, et la roue a quand
+             * même offert « Boisson offerte » — que le comptoir a pu remettre. Le client gagne, on
+             * lui dit non : c'est la pire séquence possible, et elle vient du logiciel, pas de
+             * l'équipe.
+             *
+             * On réemploie le mécanisme qui existe déjà juste au-dessus : un lot indisponible voit
+             * son poids tomber à zéro. La roue continue de tourner, elle cesse simplement de
+             * promettre CE lot-là — exactement comme pour un plafond journalier. Rien à expliquer au
+             * client, rien à surveiller pour l'équipe : la rupture qu'elle pose à la caisse suffit.
+             *
+             * Ne concerne que les produits offerts : un pourcentage ou des points ne sortent d'aucun
+             * stock.
+             */
+            if ($poids > 0 && (string) ($s['type'] ?? '') === 'free_item'
+                && ! $this->produitServable($branchId, (string) $s['key'])) {
+                $poids = 0;
+            }
+
             if ($poids > 0) {
                 $eligibles[] = ['s' => $s, 'w' => $poids];
                 $total += $poids;
@@ -484,6 +506,30 @@ class WheelService
     public function requiresOrder(): bool
     {
         return (bool) config('wheel.requires_order_to_claim', true);
+    }
+
+    /**
+     * Le produit qu'engage ce lot est-il encore servable dans cette caisse ?
+     *
+     * Sans produit de référence configuré, on ne peut rien vérifier — et on ne bloque pas : mieux
+     * vaut un lot non chiffré (la commande de réconciliation le signale) qu'une roue qui refuse de
+     * tourner à cause d'un réglage manquant.
+     *
+     * Toute panne de lecture laisse passer, aussi : une roue qui s'arrête parce que la table de
+     * disponibilité tousse serait un remède pire que le mal.
+     */
+    private function produitServable(int $branchId, string $prizeKey): bool
+    {
+        try {
+            $itemId = app(WheelDeliveryService::class)->costItemId($prizeKey);
+            if ($itemId === null) {
+                return true;
+            }
+
+            return app(\App\Services\Menu\AvailabilityService::class)->isAvailable($itemId, $branchId);
+        } catch (\Throwable $e) {
+            return true;
+        }
     }
 
     private function dailyCount(int $branchId, string $prizeKey): int

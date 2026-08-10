@@ -6,6 +6,7 @@ use App\Models\Scopes\BranchScope;
 use App\Models\StockOutflow;
 use App\Models\User;
 use App\Models\WheelSpin;
+use App\Services\Stock\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -44,6 +45,13 @@ use Illuminate\Support\Facades\Log;
  */
 class WheelDeliveryService
 {
+    /**
+     * Le stock a-t-il RÉELLEMENT bougé lors de la dernière remise ? Un produit composite (un menu)
+     * n'a pas de stock direct : la charge est tracée, le stock non. L'équipe doit le savoir, sinon
+     * elle croit que l'inventaire est à jour alors qu'il ne l'est pas.
+     */
+    private ?bool $stockDecremente = null;
+
     /**
      * Le lot en attente pour ce numéro, s'il y en a un. Rend NUL si aucun tour, ou si le lot a déjà
      * été remis, ou s'il s'agit d'un lot en pourcentage (rien à tendre : le code fait le travail).
@@ -261,6 +269,37 @@ class WheelDeliveryService
             return;
         }
 
+        /*
+         * [P0 2026-08-10 — « relis avec notre système de gestion et de stock depuis la caisse »]
+         * LE STOCK N'ÉTAIT PAS DÉCRÉMENTÉ. On écrivait `stock_decremented => false` en dur.
+         *
+         * Prouvé en base : cadeau remis, ligne de charge écrite, `stock_levels.on_hand` INCHANGÉ,
+         * ZÉRO mouvement de stock. Autrement dit, chaque boisson offerte laissait le stock théorique
+         * croire qu'elle était encore sur l'étagère. Sur une semaine, c'est la rupture (86), la borne,
+         * le site et l'inventaire qui dérivent — précisément le système que la caisse pilote.
+         *
+         * Le chemin « repas / pertes » de la caisse, lui, appelle bien le service de stock. Il n'y a
+         * aucune raison que le cadeau de la roue en soit dispensé : on emprunte EXACTEMENT le même
+         * chemin, avec le même motif canonique et une clé d'idempotence dérivée du tour.
+         *
+         * Le `false` en dur venait d'un raisonnement valable AILLEURS : sur le chemin historique
+         * (`WheelClaimService`), l'article servi n'est pas identifié, donc on ne peut rien
+         * décrémenter. Ici il EST identifié, et un humain vient de confirmer la remise. La
+         * justification ne se transportait pas — c'est ce genre de copie qui fait les trous.
+         */
+        $decremente = app(StockService::class)->recordManualOutflow(
+            $itemId,
+            (int) $spin->branch_id,
+            1,
+            // Motif canonique de l'énumération `stock_movements.reason` : la distinction métier
+            // (repas / perte / cadeau) vit dans `stock_outflows.type`, pas ici.
+            'manual_out',
+            // Aucun compte quand la porte a été ouverte par le code de la maison. La véritable trace
+            // d'attribution reste `stock_outflows.user_id`, laissée nulle plutôt que faussée.
+            (int) ($staffUserId ?? 0),
+            'wheel-gift-' . $spin->id,
+        );
+
         $sortie = StockOutflow::create([
             'branch_id' => (int) $spin->branch_id,
             'item_id'   => $itemId,
@@ -269,11 +308,14 @@ class WheelDeliveryService
             'type'      => StockOutflow::TYPE_PROMO_GIFT,
             'note'      => 'Roue — remis au comptoir — tour #' . $spin->id,
             'user_id'   => $staffUserId,
-            'stock_decremented' => false,
+            // La VALEUR RÉELLE, jamais une constante : `false` alors que le stock a bougé (ou
+            // l'inverse) rend la ligne inexploitable pour l'inventaire.
+            'stock_decremented' => $decremente,
             'created_at' => now(),
         ]);
 
         $spin->cost_outflow_id = $sortie->id;
+        $this->stockDecremente = $decremente;
     }
 
     /**
@@ -288,7 +330,7 @@ class WheelDeliveryService
      *      préfère un cadeau non chiffré SIGNALÉ à un cadeau chiffré sur le mauvais produit, qui
      *      ferait dériver l'inventaire de celui-là en silence.
      */
-    private function costItemId(string $prizeKey): ?int
+    public function costItemId(string $prizeKey): ?int
     {
         foreach ((array) config('wheel.segments', []) as $s) {
             if ((string) ($s['key'] ?? '') !== $prizeKey) {
@@ -325,6 +367,15 @@ class WheelDeliveryService
             return $spin->points_awarded . ' points crédités sur son compte.';
         }
 
-        return 'Remis : ' . $spin->prize_label . '. Bon service !';
+        $message = 'Remis : ' . $spin->prize_label . '. Bon service !';
+
+        // Un produit composite (un menu) n'a pas de stock direct : la charge est tracée, le stock
+        // non. Le taire laisserait croire que l'inventaire suit.
+        if ($this->stockDecremente === false) {
+            $message .= ' (stock non décrémenté — produit sans stock direct : à corriger à '
+                . 'l\'inventaire si besoin.)';
+        }
+
+        return $message;
     }
 }
