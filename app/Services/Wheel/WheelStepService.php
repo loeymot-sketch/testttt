@@ -114,14 +114,14 @@ class WheelStepService
             }
 
             if (! $p) {
-                throw new WheelException($this->messageManquant($step), 428);
+                throw new WheelException($this->messageManquant($step), 428, $step);
             }
 
             $reste = $this->remaining($p, $step);
             $champ = $step === self::REVIEW ? 'review_opened_at' : 'follow_opened_at';
 
             if ($p->{$champ} === null) {
-                throw new WheelException($this->messageManquant($step), 428);
+                throw new WheelException($this->messageManquant($step), 428, $step);
             }
 
             if ($reste > 0) {
@@ -129,7 +129,8 @@ class WheelStepService
                 // vécu comme une panne.
                 throw new WheelException(
                     'Encore ' . $reste . ' seconde' . ($reste > 1 ? 's' : '') . ' et c\'est à toi !',
-                    428
+                    428,
+                    $step
                 );
             }
         }

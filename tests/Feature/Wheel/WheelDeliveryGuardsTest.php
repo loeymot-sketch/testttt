@@ -141,6 +141,46 @@ class WheelDeliveryGuardsTest extends TestCase
         $this->assertTrue(app(WheelDeliveryService::class)->deliver($spin->id, null, null)['ok']);
     }
 
+    // ── LE NUMÉRO AFFICHÉ ────────────────────────────────────────────────────────────────────
+
+    /**
+     * [P1 2026-08-10 · audit ronde 2] `spin_id` N'ÉTAIT RATTACHÉ À RIEN. Il arrive d'un champ caché :
+     * l'écran affichait le client A et consommait le lot de B, en décrémentant SON stock. L'équipe
+     * croit avoir servi la personne en face d'elle ; le vrai titulaire reviendra s'entendre dire
+     * « déjà remis ».
+     */
+    public function test_le_lot_d_un_AUTRE_numero_ne_peut_pas_etre_remis(): void
+    {
+        $aLui = $this->tour($this->branchId, '0611000801', 'alui@exemple.fr');
+        $this->tour($this->branchId, '0611000802', 'autre@exemple.fr');
+
+        $r = app(WheelDeliveryService::class)
+            ->deliver($aLui->id, null, $this->branchId, '0611000802');
+
+        $this->assertFalse($r['ok'],
+            'le lot d\'un client a été consommé alors que l\'écran affichait un autre numéro');
+        $this->assertMatchesRegularExpression('/num[ée]ro affich[ée]/iu', (string) $r['message']);
+        $this->assertNull($aLui->fresh()->delivered_at);
+    }
+
+    /** Le même numéro écrit autrement reste le même client : on ne bloque pas un service pour un espace. */
+    public function test_le_meme_numero_ecrit_autrement_passe(): void
+    {
+        $spin = $this->tour($this->branchId, '0611000803', 'ecriture@exemple.fr');
+
+        $this->assertTrue(app(WheelDeliveryService::class)
+            ->deliver($spin->id, null, $this->branchId, '06 11 00 08 03')['ok']);
+    }
+
+    /** Sans numéro transmis (appels internes), on ne bloque rien — la garde est une vérification, pas un péage. */
+    public function test_sans_numero_transmis_la_remise_reste_possible(): void
+    {
+        $spin = $this->tour($this->branchId, '0611000804', 'sansnum@exemple.fr');
+
+        $this->assertTrue(app(WheelDeliveryService::class)
+            ->deliver($spin->id, null, $this->branchId, null)['ok']);
+    }
+
     /** Et la garde de la caisse ne casse pas le crédit des points, qui vit sur un autre chemin. */
     public function test_la_garde_de_caisse_ne_casse_pas_le_credit_des_points(): void
     {

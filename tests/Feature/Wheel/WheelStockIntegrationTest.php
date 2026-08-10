@@ -329,6 +329,121 @@ class WheelStockIntegrationTest extends TestCase
         $this->tour('0613000903');
     }
 
+    // ── 3bis. ON N'AFFICHE PAS CE QU'ON NE PEUT PAS DONNER ───────────────────────────────────
+
+    /**
+     * [P1 2026-08-10 · vague F] LA ROUE MONTRAIT DES LOTS QU'ELLE NE POUVAIT PLUS TIRER.
+     *
+     * J'avais posé les gardes dans le TIRAGE sans les appliquer à ce qui est MONTRÉ. Mesuré sur la
+     * tablette : arrêt sous le repère sur « -15% », un lot impossible ce jour-là (2 secteurs sur 7 =
+     * 28,6 % des arrêts), et l'acte « Aujourd'hui, on distribue » les listait 100 % du temps. Même
+     * défaut sur le téléphone du client. Un écran qui montre ce qu'il ne donne pas mène le client en
+     * bateau, en salle, en boucle toutes les vingt secondes.
+     */
+    public function test_un_lot_en_remise_n_est_pas_AFFICHE_quand_la_caisse_refuse_les_codes(): void
+    {
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('pos.manual_discount_enabled', false);
+        Config::set('wheel.segments', [
+            ['key' => 'g', 'label' => 'Boisson offerte', 'type' => 'free_item', 'value' => 0,
+             'weight' => 1, 'daily_cap' => 0, 'cost_item_id' => $this->itemId],
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+
+        $libelles = array_column(app(WheelService::class)->publicSegments($this->branchId), 'label');
+
+        $this->assertNotContains('-10%', $libelles,
+            'la roue AFFICHE un lot qu\'elle ne peut pas donner : le client le voit passer sous le repère');
+        $this->assertContains('Boisson offerte', $libelles);
+    }
+
+    public function test_un_lot_en_RUPTURE_n_est_pas_AFFICHE(): void
+    {
+        Config::set('wheel.segments', [
+            ['key' => 'g', 'label' => 'Boisson offerte', 'type' => 'free_item', 'value' => 0,
+             'weight' => 1, 'daily_cap' => 0, 'cost_item_id' => $this->itemId],
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+        app(AvailabilityService::class)->toggle($this->itemId, $this->branchId, false, 'rupture');
+
+        $libelles = array_column(app(WheelService::class)->publicSegments($this->branchId), 'label');
+
+        $this->assertNotContains('Boisson offerte', $libelles);
+        $this->assertContains('-10%', $libelles);
+    }
+
+    /**
+     * L'INDEX DOIT RESTER COHÉRENT. L'animation s'arrête sur `segment_index` calculé côté serveur : si
+     * la liste dessinée et la liste indexée divergent, la roue s'arrête sur le mauvais secteur — le
+     * client voit « Frites » et reçoit « points ».
+     */
+    public function test_l_index_du_lot_suit_la_liste_REELLEMENT_affichee(): void
+    {
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('wheel.segments', [
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+            ['key' => 'g', 'label' => 'Boisson offerte', 'type' => 'free_item', 'value' => 0,
+             'weight' => 1, 'daily_cap' => 0, 'cost_item_id' => $this->itemId],
+        ]);
+
+        // Les étapes sont neutralisées ici : ce banc éprouve la COHÉRENCE de l'index, pas le parcours.
+        Config::set('wheel.steps', [
+            'review' => ['required' => false, 'url' => '', 'dwell_seconds' => 0, 'derive_fallback' => false],
+            'follow' => ['required' => false, 'instagram' => '', 'snapchat' => '', 'facebook' => '', 'dwell_seconds' => 0],
+        ]);
+
+        $jeton = app(\App\Services\Wheel\WheelUnlockService::class)->issue($this->branchId, 1)['token'];
+        $cle = ['x-api-key' => (string) config('app.api_key')];
+
+        $conf = $this->withHeaders($cle)
+            ->getJson('/api/frontend/wheel/config?branch_id=' . $this->branchId)->assertOk();
+        $affiches = array_column($conf->json('segments'), 'label');
+
+        $tour = $this->withHeaders($cle)->postJson('/api/frontend/wheel/spin', [
+            'branch_id' => $this->branchId, 'unlock_token' => $jeton,
+        ])->assertOk();
+
+        $this->assertSame(['Boisson offerte'], $affiches, 'la remise ne doit pas être dessinée');
+        $this->assertSame(0, (int) $tour->json('segment_index'),
+            'l\'index pointe hors de la liste dessinée : la roue s\'arrête sur le mauvais secteur');
+        $this->assertSame($affiches[(int) $tour->json('segment_index')], $tour->json('prize_label'),
+            'le secteur désigné ne porte pas le lot annoncé');
+    }
+
+    /**
+     * SI RIEN N'EST TIRABLE, on republie tout. Une liste vide fait afficher à la page sa liste de
+     * SECOURS — des lots inventés — donc un mensonge pire que celui qu'on répare. Le serveur refusera
+     * le tour avec un message honnête.
+     */
+    public function test_si_rien_n_est_tirable_la_roue_reste_dessinable(): void
+    {
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('pos.manual_discount_enabled', false);
+        Config::set('wheel.segments', [
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+
+        $this->assertSame(['-10%'],
+            array_column(app(WheelService::class)->publicSegments($this->branchId), 'label'),
+            'une liste vide ferait afficher les lots INVENTÉS de la liste de secours de la page');
+    }
+
+    /** Sans caisse précisée, on publie tout : filtrer sans savoir OÙ n'aurait aucun sens. */
+    public function test_sans_caisse_precisee_tous_les_lots_sont_publies(): void
+    {
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('wheel.segments', [
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+
+        $this->assertCount(1, app(WheelService::class)->publicSegments());
+    }
+
     // ── 4. LA CAISSE VOIT LE CADEAU DANS SES SORTIES ─────────────────────────────────────────
 
     /**

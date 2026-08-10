@@ -50,12 +50,66 @@ class WheelService
      *
      * @return array<int, array{key: string, label: string}>
      */
-    public function publicSegments(): array
+    /**
+     * LES LOTS À DESSINER — et, si une caisse est précisée, SEULEMENT ceux qu'on peut réellement donner.
+     *
+     * [P1 2026-08-10 · audit ronde 2 vague F] La roue AFFICHAIT des lots qu'elle ne pouvait plus tirer.
+     * Mesuré sur la tablette : elle s'est arrêtée sous le repère sur « -15% », un lot impossible ce
+     * jour-là (2 secteurs sur 7 = 28,6 % des arrêts), et l'acte « Aujourd'hui, on distribue » les
+     * listait 100 % du temps. Même défaut sur le téléphone du client, et même défaut pour un produit
+     * en rupture — « Frites offertes » jamais tirée en 3 000 tirages, toujours affichée.
+     *
+     * C'était un trou de ma main : j'ai posé les gardes dans `draw()` sans les appliquer à ce qui est
+     * MONTRÉ. Une roue qui montre ce qu'elle ne donne pas est un écran qui mène le client en bateau,
+     * en boucle, en salle, toutes les vingt secondes.
+     *
+     * Sans caisse (appels de dessin hors contexte, tests), on publie tout : filtrer sans savoir OÙ
+     * n'aurait aucun sens.
+     */
+    public function publicSegments(?int $branchId = null): array
     {
+        $segments = (array) config('wheel.segments', []);
+
+        if ($branchId !== null) {
+            $tirables = array_values(array_filter(
+                $segments,
+                fn ($s) => $this->lotTirable($branchId, (array) $s)
+            ));
+
+            // Si RIEN n'est tirable, on republie tout : une roue vide ferait afficher à la page sa
+            // liste de secours — des lots inventés, donc un mensonge pire que celui qu'on répare. Le
+            // serveur refusera le tour avec un message honnête (« tous les lots du jour sont partis »).
+            $segments = $tirables !== [] ? $tirables : $segments;
+        }
+
         return array_values(array_map(
             fn ($s) => ['key' => (string) $s['key'], 'label' => (string) $s['label']],
-            (array) config('wheel.segments', [])
+            $segments
         ));
+    }
+
+    /**
+     * Ce lot peut-il être donné dans cette caisse, en ce moment ? Une seule définition, partagée par
+     * le TIRAGE et par ce qui est MONTRÉ — c'est leur divergence qui a créé le défaut.
+     *
+     * Le plafond journalier n'est PAS ici : c'est un compte, pas une propriété du lot, et il change
+     * au fil de la journée. `draw()` l'applique en plus.
+     *
+     * @param  array<string, mixed>  $s
+     */
+    private function lotTirable(int $branchId, array $s): bool
+    {
+        $type = (string) ($s['type'] ?? '');
+
+        if (str_starts_with($type, 'coupon_') && ! $this->remisesAcceptees()) {
+            return false;
+        }
+
+        if ($type === 'free_item' && ! $this->produitServable($branchId, (string) ($s['key'] ?? ''))) {
+            return false;
+        }
+
+        return true;
     }
 
     /** Chiffres seuls : « 06 12 34 56 78 », « +33612345678 » et « 0612345678 » sont UNE personne. */
@@ -441,48 +495,12 @@ class WheelService
             }
 
             /*
-             * [P1 2026-08-10] LA ROUE OFFRAIT DES PRODUITS EN RUPTURE.
-             *
-             * Prouvé en base : produit passé en rupture (86) depuis la caisse, et la roue a quand
-             * même offert « Boisson offerte » — que le comptoir a pu remettre. Le client gagne, on
-             * lui dit non : c'est la pire séquence possible, et elle vient du logiciel, pas de
-             * l'équipe.
-             *
-             * On réemploie le mécanisme qui existe déjà juste au-dessus : un lot indisponible voit
-             * son poids tomber à zéro. La roue continue de tourner, elle cesse simplement de
-             * promettre CE lot-là — exactement comme pour un plafond journalier. Rien à expliquer au
-             * client, rien à surveiller pour l'équipe : la rupture qu'elle pose à la caisse suffit.
-             *
-             * Ne concerne que les produits offerts : un pourcentage ou des points ne sortent d'aucun
-             * stock.
+             * [P1 + P0 2026-08-10] LA ROUE OFFRAIT DES PRODUITS EN RUPTURE, ET DES CODES QUE LA CAISSE
+             * REFUSE. Les deux gardes vivent maintenant dans `lotTirable()`, partagé avec ce qui est
+             * MONTRÉ au client — leur divergence est précisément ce qui faisait afficher des lots
+             * impossibles sur la tablette et sur le téléphone.
              */
-            if ($poids > 0 && (string) ($s['type'] ?? '') === 'free_item'
-                && ! $this->produitServable($branchId, (string) $s['key'])) {
-                $poids = 0;
-            }
-
-            /*
-             * [P0 2026-08-10 · relecture « gestion et contrôle »] LA ROUE DONNAIT DES CODES QUE LE
-             * LOGICIEL REFUSE PARTOUT.
-             *
-             * Les remises sont derrière deux interrupteurs de la caisse — `pos.coupon_codes_enabled`
-             * et l'ancien `pos.manual_discount_enabled` — et TOUS DEUX valent faux par défaut. Dans
-             * cet état, `FrontendOrderService` refuse la remise à la création de commande ET l'entrée
-             * du code est masquée sur le site. Mesuré : 40 % du poids de la roue sur des lots en
-             * remise, donc deux clients sur cinq repartaient avec un code inutilisable — pendant que
-             * la page leur disait « saisis-le dans ton panier, c'est valable dès maintenant », et que
-             * l'e-mail le répétait.
-             *
-             * On ne promet pas ce que la maison refuse. Le lot cesse d'être tiré, exactement comme un
-             * lot en rupture ou au plafond du jour. Et le jour où l'exploitant rallume les codes, il
-             * revient tout seul.
-             *
-             * On lit LE MÊME couple d'interrupteurs que la garde de commande
-             * (`FrontendOrderService::assertDiscretionaryDiscountAllowed`) : un miroir qui dérive
-             * finirait par promettre à nouveau ce que la commande refuse.
-             */
-            if ($poids > 0 && str_starts_with((string) ($s['type'] ?? ''), 'coupon_')
-                && ! $this->remisesAcceptees()) {
+            if ($poids > 0 && ! $this->lotTirable($branchId, (array) $s)) {
                 $poids = 0;
             }
 

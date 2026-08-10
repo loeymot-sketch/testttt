@@ -48,7 +48,7 @@ class WheelCounterController extends Controller
         $ttl = max(1, (int) config('wheel.unlock_token_ttl_minutes', 15));
 
         $commun = [
-            'segments' => app(\App\Services\Wheel\WheelService::class)->publicSegments(),
+            'segments' => app(\App\Services\Wheel\WheelService::class)->publicSegments($branchId),
             'minOrder' => (float) config('wheel.min_order_amount', 0),
             // On recharge à la MOITIÉ de la durée de vie : le QR affiché est ainsi toujours valable
             // au moins autant de temps qu'il en reste à l'écran. Recharger à l'expiration exacte

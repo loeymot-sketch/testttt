@@ -97,9 +97,9 @@ class WheelDeliveryService
      *
      * @return array{ok: bool, message: string, points_credited: bool}
      */
-    public function deliver(int $spinId, ?int $staffUserId, ?int $branchId = null): array
+    public function deliver(int $spinId, ?int $staffUserId, ?int $branchId = null, ?string $phone = null): array
     {
-        return DB::transaction(function () use ($spinId, $staffUserId, $branchId) {
+        return DB::transaction(function () use ($spinId, $staffUserId, $branchId, $phone) {
             $spin = WheelSpin::query()
                 ->withoutGlobalScope(BranchScope::class)
                 ->whereKey($spinId)
@@ -119,6 +119,27 @@ class WheelDeliveryService
              * caisse remet les lots de l'autre. La branche vient du contexte résolu par la porte,
              * jamais du corps de la requête.
              */
+            /*
+             * [P1 2026-08-10 · audit ronde 2] `spin_id` N'ÉTAIT RATTACHÉ À RIEN.
+             *
+             * Il arrive d'un champ caché du formulaire. Prouvé par HTTP : l'écran affiche le client A,
+             * le lot de B est consommé et SON stock décrémenté. L'équipe croit avoir servi la personne
+             * en face d'elle ; le vrai titulaire reviendra s'entendre dire « déjà remis ».
+             *
+             * Le numéro affiché est la seule autre donnée qui identifie le titulaire : on l'exige.
+             */
+            if ($phone !== null && $phone !== '') {
+                $attendu = app(WheelService::class)->normalizePhone($phone);
+                if ($attendu !== '' && $attendu !== (string) $spin->phone) {
+                    return [
+                        'ok' => false,
+                        'message' => 'Ce lot n\'est pas celui du numéro affiché. Recherche le numéro à '
+                            . 'nouveau, puis remets le lot depuis cet écran.',
+                        'points_credited' => false,
+                    ];
+                }
+            }
+
             if ($branchId !== null && (int) $spin->branch_id !== $branchId) {
                 return [
                     'ok' => false,
@@ -330,7 +351,12 @@ class WheelDeliveryService
             'item_name' => $spin->prize_label,
             'quantity'  => 1,
             'type'      => StockOutflow::TYPE_PROMO_GIFT,
-            'note'      => 'Roue — remis au comptoir — tour #' . $spin->id,
+            // [P1 2026-08-10] Une sortie de stock SANS AUTEUR est une sortie que personne n'assume —
+            // et le chemin de la caisse, lui, en exige toujours un. Sur le chemin du code de la maison
+            // il n'y a pas de compte : on écrit au moins COMMENT la porte a été ouverte, pour qu'un
+            // inventaire puisse distinguer « untel a remis » de « quelqu'un avec le code a remis ».
+            'note'      => 'Roue — remis au comptoir — tour #' . $spin->id
+                . ($staffUserId === null ? ' — ouvert par le code de la maison' : ''),
             'user_id'   => $staffUserId,
             // La VALEUR RÉELLE, jamais une constante : `false` alors que le stock a bougé (ou
             // l'inverse) rend la ligne inexploitable pour l'inventaire.

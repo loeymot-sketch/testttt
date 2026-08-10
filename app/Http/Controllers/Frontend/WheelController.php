@@ -76,7 +76,7 @@ class WheelController extends Controller
         }
 
         return response()->json([
-            'segments'       => $this->wheel->publicSegments(),
+            'segments'       => $this->wheel->publicSegments($branchId),
             'requires_order' => $this->wheel->requiresOrder(),
             // Les ÉTAPES, dans l'ordre, avec leurs liens et leur temps d'attente. La page les
             // révèle UNE PAR UNE — on n'annonce jamais « 3 étapes » : un client debout au comptoir
@@ -141,7 +141,13 @@ class WheelController extends Controller
                 throw new WheelException('Cette validation ne vient pas de ce comptoir.', 403);
             }
         } catch (WheelException $e) {
-            return response()->json(['status' => false, 'message' => $e->getMessage()], $e->status());
+            // L'ÉTAPE en cause voyage avec le refus : la page renvoie le client là où ça manque, au
+            // lieu de le renvoyer toujours à l'avis (mesuré : 5 s d'abonnement manquantes, client
+            // renvoyé écrire un avis déjà écrit). Le serveur sait, il le dit — deviner à partir du
+            // texte casserait en silence à la première reformulation.
+            return response()->json([
+                'status' => false, 'message' => $e->getMessage(), 'step' => $e->step(),
+            ], $e->status());
         }
 
         $r = $this->steps->open($v['token_hash'], $branchId, $data['step']);
@@ -184,12 +190,18 @@ class WheelController extends Controller
             $progress = $this->steps->progress($empreinte, $branchId);
             $segment = $this->wheel->drawPending($branchId, $progress);
         } catch (WheelException $e) {
-            return response()->json(['status' => false, 'message' => $e->getMessage()], $e->status());
+            // L'ÉTAPE en cause voyage avec le refus : la page renvoie le client là où ça manque, au
+            // lieu de le renvoyer toujours à l'avis (mesuré : 5 s d'abonnement manquantes, client
+            // renvoyé écrire un avis déjà écrit). Le serveur sait, il le dit — deviner à partir du
+            // texte casserait en silence à la première reformulation.
+            return response()->json([
+                'status' => false, 'message' => $e->getMessage(), 'step' => $e->step(),
+            ], $e->status());
         }
 
         return response()->json([
             'status' => true,
-            'segment_index' => $this->indexDuLot((string) $segment['key']),
+            'segment_index' => $this->indexDuLot((string) $segment['key'], $branchId),
             'prize_label' => $segment['label'],
             'prize_type' => $segment['type'],
             // Combien de temps il lui reste pour réclamer. Affiché : une échéance qu'on découvre
@@ -257,7 +269,13 @@ class WheelController extends Controller
                 'followers_after' => $this->steps->followersNow(),
             ])->save();
         } catch (WheelException $e) {
-            return response()->json(['status' => false, 'message' => $e->getMessage()], $e->status());
+            // L'ÉTAPE en cause voyage avec le refus : la page renvoie le client là où ça manque, au
+            // lieu de le renvoyer toujours à l'avis (mesuré : 5 s d'abonnement manquantes, client
+            // renvoyé écrire un avis déjà écrit). Le serveur sait, il le dit — deviner à partir du
+            // texte casserait en silence à la première reformulation.
+            return response()->json([
+                'status' => false, 'message' => $e->getMessage(), 'step' => $e->step(),
+            ], $e->status());
         }
 
         // LE COMPTE. Après la participation, jamais avant : si la création échouait, le lot resterait
@@ -322,9 +340,10 @@ class WheelController extends Controller
         }
     }
 
-    private function indexDuLot(string $prizeKey): int
+    private function indexDuLot(string $prizeKey, int $branchId): int
     {
-        foreach ($this->wheel->publicSegments() as $i => $s) {
+        // MÊME liste que celle dessinée par la page, sinon l'animation s'arrête sur le mauvais secteur.
+        foreach ($this->wheel->publicSegments($branchId) as $i => $s) {
             if ($s['key'] === $prizeKey) {
                 return $i;
             }

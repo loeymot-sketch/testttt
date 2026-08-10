@@ -76,13 +76,15 @@ class WheelPrizeController extends Controller
 
         // La caisse vient du contexte posé par la porte, jamais du corps : `spin_id` est un champ
         // caché, donc une valeur qu'on ne peut pas croire seule.
+        $phone = trim((string) ($data['phone'] ?? ''));
+
         $r = $this->delivery->deliver(
             (int) $data['spin_id'],
             $this->actorId($request),
-            (int) $request->attributes->get('wheel_branch_id', 1)
+            (int) $request->attributes->get('wheel_branch_id', 1),
+            // Le numéro AFFICHÉ : sans lui, `spin_id` seul permet de consommer le lot d'un autre.
+            $phone
         );
-
-        $phone = trim((string) ($data['phone'] ?? ''));
 
         return view('admin.wheel.lot', $this->commun() + [
             'phone' => $phone,
@@ -120,6 +122,16 @@ class WheelPrizeController extends Controller
 
         if ($remise) {
             $code = trim((string) ($remise->coupon->code ?? ''));
+
+            // [P1 2026-08-10] LA GARDE DU TIRAGE N'AVAIT PAS DE JUMELLE AU COMPTOIR. Quand les codes
+            // de remise sont éteints dans la caisse, l'écran ORDONNAIT quand même à l'équipe d'envoyer
+            // le client saisir un code que la prise de commande refuse. Une consigne vouée à l'échec
+            // fait perdre la face à l'équipe devant le client — autant dire la vérité.
+            if (! app(\App\Services\Wheel\WheelService::class)->remisesAcceptees()) {
+                return 'Rien à lui tendre : son lot est une remise (' . $remise->prize_label . '), et '
+                    . 'les codes promo sont DÉSACTIVÉS dans la caisse en ce moment — il serait refusé '
+                    . 'au panier. Préviens le gérant avant de promettre quoi que ce soit.';
+            }
 
             return 'Rien à lui tendre : son lot est une remise (' . $remise->prize_label . '), '
                 . ($code !== ''
