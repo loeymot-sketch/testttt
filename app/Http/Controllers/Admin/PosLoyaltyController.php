@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PosCustomerCreateRequest;
+use App\Http\Requests\PosLoyaltyAttachRequest;
 use App\Http\Requests\PosLoyaltyLookupRequest;
 use App\Http\Requests\PosLoyaltyRedeemRequest;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Services\Identity\CustomerAccountProvisioner;
 use App\Services\Loyalty\PosCustomerLookupService;
+use App\Services\Loyalty\PosLoyaltyAttachService;
 use App\Services\Loyalty\PosRedemptionException;
 use App\Services\Loyalty\PosRedemptionService;
 use Illuminate\Http\JsonResponse;
@@ -36,7 +38,70 @@ final class PosLoyaltyController extends Controller
         private readonly PosRedemptionService $redemptionService,
         private readonly PosCustomerLookupService $lookupService,
         private readonly CustomerAccountProvisioner $provisioner,
+        private readonly PosLoyaltyAttachService $attachService,
     ) {
+    }
+
+    /**
+     * RATTACHER LE CLIENT À CETTE VENTE, pour que ses points lui soient crédités.
+     *
+     * [2026-08-10 · propriétaire : « pouvoir lui ajouter des points pour sa commande »]
+     *
+     * Mesuré en base : 1411 ventes de caisse arrivées à DELIVERED, UNE SEULE rattachée à un client.
+     * Le crédit fonctionnait ; personne ne pouvait dire à qui créditer.
+     *
+     * La vérification de caisse reprend mot pour mot celle du débit (`redeem` plus bas) : la
+     * permission Spatie est GLOBALE par utilisateur, pas liée à une caisse — sans ce contrôle après
+     * lecture, un caissier de la caisse 5 rattacherait un client sur une commande de la caisse 3.
+     */
+    public function attachCustomer(PosLoyaltyAttachRequest $request, int $orderId): JsonResponse
+    {
+        $order = Order::withoutGlobalScope(BranchScope::class)->find($orderId);
+        if (! $order) {
+            return response()->json([
+                'status' => false, 'code' => 'ORDER_NOT_FOUND', 'message' => 'Commande introuvable',
+            ], 404);
+        }
+
+        $userBranchId = (int) ($request->user()?->branch_id ?? -1);
+        if ($userBranchId !== 0 && $userBranchId !== (int) $order->branch_id) {
+            abort(403, 'Cross-branch access denied');
+        }
+
+        try {
+            $resultat = $this->attachService->attach(
+                $order,
+                (string) $request->input('loyalty_code'),
+                $request->user()?->id
+            );
+        } catch (\Throwable $e) {
+            Log::error('pos.loyalty.rattachement_echoue', [
+                'order' => $orderId, 'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false, 'code' => 'ATTACH_FAILED', 'message' => 'Rattachement impossible pour le moment.',
+            ], 500);
+        }
+
+        if (! ($resultat['ok'] ?? false)) {
+            return response()->json([
+                'status'  => false,
+                'code'    => $resultat['code'] ?? 'ATTACH_REFUSED',
+                'message' => $resultat['message'] ?? 'Rattachement refusé.',
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => [
+                'customer'       => $resultat['customer'],
+                // Combien de points viennent d'être crédités POUR CETTE VENTE. Zéro est une réponse
+                // légitime : la commande n'a pas encore atteint son déclencheur, le crédit viendra
+                // par la voie normale. L'écran doit dire laquelle des deux, pas rester muet.
+                'points_awarded' => (int) ($resultat['points_awarded'] ?? 0),
+            ],
+        ]);
     }
 
     /**
