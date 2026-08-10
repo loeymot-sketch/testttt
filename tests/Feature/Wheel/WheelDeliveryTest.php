@@ -62,6 +62,11 @@ class WheelDeliveryTest extends TestCase
         $this->caissier->givePermissionTo('pos');
 
         Config::set('wheel.enabled', true);
+        // [ROUE × CAISSE 2026-08-10] La roue ne tire plus de lot en REMISE quand la caisse
+        // refuse les codes — c'est une garde neuve, et elle est juste. Ce banc parle d'autre
+        // chose : on accepte donc les codes ici, pour qu'un interrupteur de la caisse ne
+        // décide pas de ce qu'il éprouve.
+        Config::set('pos.coupon_codes_enabled', true);
         Config::set('wheel.campaign_key', 'livraison');
         Config::set('wheel.daily_total_cap', 500);
         Config::set('wheel.record_cost_on_claim', true);

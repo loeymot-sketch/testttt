@@ -67,6 +67,23 @@
   .etat .ok{color:#8fe0ab}
   .etat .ko{color:#ffb2a6}
   .refermer{display:inline-block; margin-top:20px; font-size:13px; opacity:.6; color:inherit}
+
+  /* ── LE PANNEAU DE CONTRÔLE ─────────────────────────────────────────────────────────────── */
+  .bilan{margin:22px 0 0; padding:18px; border-radius:16px;
+         background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1)}
+  .bilan h2{margin:0 0 14px; font-size:13px; letter-spacing:.14em; text-transform:uppercase; opacity:.7}
+  .periode{padding:12px 0; border-top:1px solid rgba(255,255,255,.07)}
+  .periode:first-of-type{border-top:0; padding-top:0}
+  .ptitre{margin:0 0 8px; font-size:13px; font-weight:800; opacity:.8}
+  .chiffres{display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:10px}
+  .chiffres div{background:rgba(255,255,255,.05); border-radius:12px; padding:10px 12px}
+  .chiffres b{display:block; font-size:21px; font-weight:900; line-height:1.15; color:var(--jaune2)}
+  .chiffres span{display:block; font-size:11.5px; opacity:.66; margin-top:2px; line-height:1.35}
+  .bilan .detail{margin:8px 0 0; font-size:13px; line-height:1.5; opacity:.8}
+  .bilan .detail b{color:var(--jaune2)}
+  .bilan .note{margin:14px 0 0; font-size:11.5px; line-height:1.5; opacity:.55}
+  .alerte{margin:10px 0 0; padding:10px 12px; border-radius:11px; font-size:12.5px; line-height:1.5;
+          background:rgba(255,184,0,.1); border:1px solid rgba(255,184,0,.34)}
 </style>
 </head>
 <body>
@@ -156,6 +173,57 @@
         </li>
       </ul>
     </div>
+
+    {{-- ── CE QUE LA ROUE A DONNÉ, ET CE QU'ELLE A COÛTÉ ─────────────────────────────────────
+         Le jeu avait des plafonds et AUCUNE lecture de ce qui sortait vraiment : le propriétaire
+         réglait des limites à l'aveugle. Un contrôle sans lecture est une intention, pas un
+         contrôle. --}}
+    @if (! empty($bilan))
+      <div class="bilan">
+        <h2>Ce que la roue a donné</h2>
+
+        @foreach ($bilan['periodes'] as $p)
+          <div class="periode">
+            <p class="ptitre">{{ $p['libelle'] }}</p>
+            <div class="chiffres">
+              <div><b>{{ $p['tours'] }}</b><span>tour{{ $p['tours'] > 1 ? 's' : '' }}</span></div>
+              <div><b>{{ $p['cadeaux_remis'] }}</b><span>cadeaux remis</span></div>
+              <div><b>{{ number_format($p['valeur_offerte'], 2, ',', ' ') }} €</b><span>valeur offerte</span></div>
+              <div><b>{{ $p['codes_utilises'] }}/{{ $p['codes_emis'] }}</b><span>codes utilisés</span></div>
+            </div>
+            @if ($p['cadeaux_dus'] > 0 || $p['exposition_max'] > 0)
+              <p class="detail">
+                @if ($p['cadeaux_dus'] > 0)
+                  {{ $p['cadeaux_dus'] }} cadeau{{ $p['cadeaux_dus'] > 1 ? 'x' : '' }} encore
+                  {{ $p['cadeaux_dus'] > 1 ? 'dus' : 'dû' }}.
+                @endif
+                @if ($p['exposition_max'] > 0)
+                  Codes non utilisés : jusqu'à
+                  <b>{{ number_format($p['exposition_max'], 2, ',', ' ') }} €</b> de remise possible.
+                @endif
+              </p>
+            @endif
+          </div>
+        @endforeach
+
+        {{-- On ne prétend PAS calculer un coût : la base ne porte aucun prix d'achat. --}}
+        <p class="note">
+          « Valeur offerte » = le prix de VENTE de ce qui a été donné, donc le chiffre d'affaires
+          abandonné — pas ta dépense réelle (le prix d'achat n'existe pas dans le logiciel).
+        </p>
+
+        @if ($bilan['plafond_jour']['plafond'] > 0)
+          <p class="detail">
+            Plafond du jour : <b>{{ $bilan['plafond_jour']['utilise'] }}</b> /
+            {{ $bilan['plafond_jour']['plafond'] }} tours.
+          </p>
+        @endif
+
+        @foreach ($bilan['avertissements'] as $a)
+          <p class="alerte" role="status">{{ $a }}</p>
+        @endforeach
+      </div>
+    @endif
 
     <form method="POST" action="{{ route('admin.wheel.lock') }}" style="max-width:none">
       @csrf

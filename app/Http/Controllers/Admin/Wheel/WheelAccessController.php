@@ -28,8 +28,17 @@ class WheelAccessController extends Controller
 {
     public function show(Request $request)
     {
+        $ouvert = $this->ouvert($request);
+
         return view('admin.wheel.acces', [
-            'ouvert' => $this->ouvert($request),
+            'ouvert' => $ouvert,
+            // Le tableau de contrôle n'est calculé que si la porte est ouverte : personne n'a à
+            // connaître les chiffres du restaurant depuis l'écran de code.
+            'bilan' => $ouvert
+                ? app(\App\Services\Wheel\WheelReportService::class)
+                    ->tableau((int) ($request->attributes->get('wheel_branch_id')
+                        ?: config('wheel.counter_branch_id', 1)))
+                : null,
             'pinConfigure' => (string) config('wheel.access.pin', '') !== '',
             'message' => $request->session()->get('wheel_locked'),
             'jeuOuvertAuPublic' => (bool) config('wheel.enabled', false),

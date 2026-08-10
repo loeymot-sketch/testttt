@@ -70,6 +70,9 @@ class WheelStockIntegrationTest extends TestCase
         Config::set('wheel.daily_total_cap', 500);
         Config::set('wheel.record_cost_on_claim', true);
         Config::set('wheel.unlock_methods', ['staff' => true, 'order' => true, 'declaratif' => false]);
+        // Les remises sont ACCEPTÉES par défaut dans ce banc : les cas qui parlent d'autre chose ne
+        // doivent pas dépendre d'un interrupteur de la caisse. La section 3 les éteint exprès.
+        Config::set('pos.coupon_codes_enabled', true);
         $this->cadeau($this->itemId);
     }
 
@@ -251,7 +254,82 @@ class WheelStockIntegrationTest extends TestCase
         $this->assertSame('free_item', $this->tour('0611000807')->prize_type);
     }
 
-    // ── 3. LA CAISSE VOIT LE CADEAU DANS SES SORTIES ─────────────────────────────────────────
+    // ── 3. ON NE PROMET PAS CE QUE LA CAISSE REFUSE ──────────────────────────────────────────
+
+    /**
+     * TROISIÈME TROU, ET LE PLUS GROS. Les remises sont derrière deux interrupteurs de la caisse
+     * (`pos.coupon_codes_enabled` et l'ancien `pos.manual_discount_enabled`) qui valent TOUS DEUX
+     * faux par défaut. Dans cet état, la commande refuse la remise et l'entrée du code est masquée
+     * sur le site : un code de la roue est refusé PARTOUT.
+     *
+     * Mesuré sur la configuration réelle : 40 % du poids de la roue sur des lots en remise. Deux
+     * clients sur cinq repartaient donc avec un code inutilisable, pendant que la page leur disait
+     * « saisis-le dans ton panier, c'est valable dès maintenant » et que l'e-mail le répétait.
+     *
+     * Le poids est volontairement écrasant (50 contre 1) : sans la garde, la remise sortirait presque
+     * à chaque tour.
+     */
+    public function test_aucun_lot_en_remise_n_est_tire_quand_la_caisse_refuse_les_codes(): void
+    {
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('pos.manual_discount_enabled', false);
+        Config::set('wheel.segments', [
+            ['key' => 'g', 'label' => 'Boisson offerte', 'type' => 'free_item', 'value' => 0,
+             'weight' => 1, 'daily_cap' => 0, 'cost_item_id' => $this->itemId],
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 50, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+
+        $types = [];
+        for ($i = 0; $i < 20; $i++) {
+            $types[] = $this->tour('06130008' . str_pad((string) $i, 2, '0', STR_PAD_LEFT))->prize_type;
+        }
+
+        $this->assertNotContains('coupon_percent', $types,
+            'la roue donne un code que la commande REFUSERA au dernier clic — et la page promet au '
+            . 'client qu\'il est « valable dès maintenant »');
+        $this->assertContains('free_item', $types,
+            'la roue ne tourne plus : elle devait continuer avec les lots qui, eux, fonctionnent');
+    }
+
+    /** Chacun des deux interrupteurs suffit à rouvrir les remises — c'est le même couple que la commande. */
+    public function test_chacun_des_deux_interrupteurs_ramene_les_lots_en_remise(): void
+    {
+        Config::set('wheel.segments', [
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+
+        Config::set('pos.coupon_codes_enabled', true);
+        Config::set('pos.manual_discount_enabled', false);
+        $this->assertSame('coupon_percent', $this->tour('0613000901')->prize_type,
+            'l\'interrupteur dédié aux codes promo devrait suffire');
+
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('pos.manual_discount_enabled', true);
+        $this->assertSame('coupon_percent', $this->tour('0613000902')->prize_type,
+            'l\'ancien interrupteur reste la porte de secours des installations qui ne connaissent '
+            . 'pas la nouvelle variable');
+    }
+
+    /**
+     * ET SI LA ROUE N'A QUE DES REMISES, codes éteints ? Elle ne peut rien donner, et elle le DIT
+     * plutôt que de tirer un lot mort en silence.
+     */
+    public function test_une_roue_faite_QUE_de_remises_codes_eteints_refuse_le_tour_et_le_dit(): void
+    {
+        Config::set('pos.coupon_codes_enabled', false);
+        Config::set('pos.manual_discount_enabled', false);
+        Config::set('wheel.segments', [
+            ['key' => 'p', 'label' => '-10%', 'type' => 'coupon_percent', 'value' => 10,
+             'weight' => 1, 'daily_cap' => 0, 'max_discount' => 4],
+        ]);
+
+        $this->expectException(\App\Services\Wheel\WheelException::class);
+        $this->tour('0613000903');
+    }
+
+    // ── 4. LA CAISSE VOIT LE CADEAU DANS SES SORTIES ─────────────────────────────────────────
 
     /**
      * Le cadeau doit apparaître dans la liste des sorties de la caisse, et étiqueté « Cadeau roue » —

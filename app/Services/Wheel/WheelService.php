@@ -397,6 +397,31 @@ class WheelService
                 $poids = 0;
             }
 
+            /*
+             * [P0 2026-08-10 · relecture « gestion et contrôle »] LA ROUE DONNAIT DES CODES QUE LE
+             * LOGICIEL REFUSE PARTOUT.
+             *
+             * Les remises sont derrière deux interrupteurs de la caisse — `pos.coupon_codes_enabled`
+             * et l'ancien `pos.manual_discount_enabled` — et TOUS DEUX valent faux par défaut. Dans
+             * cet état, `FrontendOrderService` refuse la remise à la création de commande ET l'entrée
+             * du code est masquée sur le site. Mesuré : 40 % du poids de la roue sur des lots en
+             * remise, donc deux clients sur cinq repartaient avec un code inutilisable — pendant que
+             * la page leur disait « saisis-le dans ton panier, c'est valable dès maintenant », et que
+             * l'e-mail le répétait.
+             *
+             * On ne promet pas ce que la maison refuse. Le lot cesse d'être tiré, exactement comme un
+             * lot en rupture ou au plafond du jour. Et le jour où l'exploitant rallume les codes, il
+             * revient tout seul.
+             *
+             * On lit LE MÊME couple d'interrupteurs que la garde de commande
+             * (`FrontendOrderService::assertDiscretionaryDiscountAllowed`) : un miroir qui dérive
+             * finirait par promettre à nouveau ce que la commande refuse.
+             */
+            if ($poids > 0 && str_starts_with((string) ($s['type'] ?? ''), 'coupon_')
+                && ! $this->remisesAcceptees()) {
+                $poids = 0;
+            }
+
             if ($poids > 0) {
                 $eligibles[] = ['s' => $s, 'w' => $poids];
                 $total += $poids;
@@ -506,6 +531,18 @@ class WheelService
     public function requiresOrder(): bool
     {
         return (bool) config('wheel.requires_order_to_claim', true);
+    }
+
+    /**
+     * La maison accepte-t-elle les codes de remise en ce moment ?
+     *
+     * MÊME couple d'interrupteurs que la garde de commande. Le dupliquer ailleurs ou en oublier un
+     * ferait dériver le miroir, et la roue recommencerait à promettre ce que la commande refuse.
+     */
+    public function remisesAcceptees(): bool
+    {
+        return config('pos.coupon_codes_enabled') === true
+            || config('pos.manual_discount_enabled') === true;
     }
 
     /**

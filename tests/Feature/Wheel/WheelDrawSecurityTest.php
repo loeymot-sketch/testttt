@@ -45,6 +45,10 @@ class WheelDrawSecurityTest extends TestCase
         $this->branchId = Branch::factory()->create()->id;
 
         Config::set('wheel.campaign_key', 'test-campagne');
+        // [ROUE × CAISSE 2026-08-10] La roue ne tire plus de lot en REMISE quand la caisse
+        // refuse les codes. Ce banc parle d'autre chose : on accepte donc les codes ici, pour
+        // qu'un interrupteur de la caisse ne décide pas de ce qu'il éprouve.
+        Config::set('pos.coupon_codes_enabled', true);
         Config::set('wheel.daily_total_cap', 500);
         Config::set('wheel.unlock_methods', ['staff' => true, 'order' => true, 'declaratif' => false]);
     }

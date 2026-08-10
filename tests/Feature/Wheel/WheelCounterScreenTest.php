@@ -110,6 +110,11 @@ class WheelCounterScreenTest extends TestCase
     public function test_porte_fermee_le_QR_embarque_la_cle_de_previsualisation(): void
     {
         Config::set('wheel.enabled', false);
+        // [ROUE × CAISSE 2026-08-10] La roue ne tire plus de lot en REMISE quand la caisse
+        // refuse les codes — c'est une garde neuve, et elle est juste. Ce banc parle d'autre
+        // chose : on accepte donc les codes ici, pour qu'un interrupteur de la caisse ne
+        // décide pas de ce qu'il éprouve.
+        Config::set('pos.coupon_codes_enabled', true);
         Config::set('wheel.preview_key', 'cle-de-test-du-patron');
 
         $this->actingAs($this->caissier, 'web')->post('/admin/roue-validation')->assertOk()
