@@ -88,9 +88,9 @@ class WheelDeliveryService
      *
      * @return array{ok: bool, message: string, points_credited: bool}
      */
-    public function deliver(int $spinId, ?int $staffUserId): array
+    public function deliver(int $spinId, ?int $staffUserId, ?int $branchId = null): array
     {
-        return DB::transaction(function () use ($spinId, $staffUserId) {
+        return DB::transaction(function () use ($spinId, $staffUserId, $branchId) {
             $spin = WheelSpin::query()
                 ->withoutGlobalScope(BranchScope::class)
                 ->whereKey($spinId)
@@ -99,6 +99,47 @@ class WheelDeliveryService
 
             if (! $spin) {
                 return ['ok' => false, 'message' => 'Ce lot n\'existe pas.', 'points_credited' => false];
+            }
+
+            /*
+             * [P2 2026-08-10 · audit E2E vague C] `spin_id` ARRIVE D'UN CHAMP CACHÉ.
+             *
+             * Rien ne vérifiait que le lot appartenait bien au comptoir qui le remet. En V1 LOCAL il
+             * n'y a qu'une caisse, donc le risque est théorique aujourd'hui — mais c'est exactement le
+             * genre de garde qu'on n'ajoute plus jamais après, et le jour où il y a deux comptoirs, une
+             * caisse remet les lots de l'autre. La branche vient du contexte résolu par la porte,
+             * jamais du corps de la requête.
+             */
+            if ($branchId !== null && (int) $spin->branch_id !== $branchId) {
+                return [
+                    'ok' => false,
+                    'message' => 'Ce lot a été gagné dans un autre point de vente.',
+                    'points_credited' => false,
+                ];
+            }
+
+            /*
+             * [P1 2026-08-10] LE DÉLAI ÉTAIT AFFICHÉ, PAS APPLIQUÉ.
+             *
+             * L'écran annonce au client « à utiliser avant le … », l'e-mail le répète — et un lot de
+             * six mois se remettait encore en un appui. Une échéance qu'on écrit trois fois et qu'on
+             * n'applique jamais n'est pas une échéance : c'est une décoration, et c'est la maison qui
+             * paie la différence.
+             *
+             * Le refus NOMME la date, pour que l'équipe puisse expliquer plutôt que d'avoir l'air de
+             * subir une panne. Et rien n'est marqué remis : le lot est simplement périmé.
+             */
+            $jours = (int) config('wheel.prize_validity_days', 30);
+            if ($jours > 0 && $spin->created_at !== null) {
+                $limite = $spin->created_at->copy()->addDays($jours)->endOfDay();
+                if ($limite->isPast()) {
+                    return [
+                        'ok' => false,
+                        'message' => 'Ce lot a expiré le ' . $limite->format('d/m/Y')
+                            . ' (gagné le ' . $spin->created_at->format('d/m/Y') . ').',
+                        'points_credited' => false,
+                    ];
+                }
             }
 
             if ($spin->delivered_at !== null) {

@@ -4,6 +4,12 @@
   Trois audits adversaires avaient montré qu'aucune surface ne disait au comptoir qu'un client
   avait un lot à recevoir : cet écran est ce maillon.
   Blade sans JavaScript : pendant un service, un écran qui charge est un écran qu'on n'utilise pas.
+
+  [P1 2026-08-10 — audit E2E vague C] L'écran engageait de l'argent sans rien montrer : ni le nom
+  enregistré (n'importe qui connaissant un numéro obtenait le produit), ni la condition d'achat, ni le
+  code du coupon que le client vient justement chercher quand il a perdu son e-mail. Les trois sont
+  affichés ici. La condition d'achat, elle, n'est PAS contrôlée par le logiciel — on le dit, plutôt
+  que de laisser croire le contraire.
 --}}
 <!doctype html>
 <html lang="fr">
@@ -28,11 +34,20 @@
   button{width:100%;min-height:60px;border:0;border-radius:15px;cursor:pointer;margin-top:12px;
     font-size:17px;font-weight:900;color:#2a1508;background:linear-gradient(100deg,var(--jaune),#FF6A3D)}
   button.remettre{background:linear-gradient(100deg,#7BE495,var(--ok));color:#062d13;font-size:19px;min-height:70px}
-  .lot{margin:18px 0;padding:18px;border-radius:16px;background:rgba(255,184,0,.10);
+  .lot{margin:18px 0 0;padding:18px;border-radius:16px;background:rgba(255,184,0,.10);
     border:1px solid rgba(255,184,0,.45);text-align:center}
   .lot b{display:block;font-size:30px;line-height:1.15;margin-bottom:6px}
   .lot small{opacity:.8;font-size:13px}
-  .msg{margin:14px 0 0;padding:13px 15px;border-radius:13px;font-size:15px;line-height:1.5}
+  .aqui{margin:12px 0 0;padding-top:12px;border-top:1px dashed rgba(255,255,255,.16);
+    font-size:16px;line-height:1.45}
+  .aqui b{display:inline;font-size:19px;color:var(--jaune)}
+  .aqui em{font-style:normal;display:block;font-size:13px;opacity:.72;margin-top:4px}
+  /* La condition d'achat doit être LUE avant le geste : elle est donc entre le lot et le bouton, pas
+     en petit sous l'écran. Le logiciel ne la contrôle pas — c'est écrit noir sur blanc. */
+  .condition{margin:12px 0 0;padding:13px 15px;border-radius:13px;font-size:15px;line-height:1.5;
+    background:rgba(244,80,30,.14);border:1px solid rgba(244,80,30,.55)}
+  .condition b{color:#FFD08A}
+  .msg{margin:0 0 16px;padding:13px 15px;border-radius:13px;font-size:15px;line-height:1.5}
   .msg.ok{background:rgba(29,185,84,.14);border:1px solid rgba(29,185,84,.55)}
   .msg.err{background:rgba(217,48,37,.16);border:1px solid rgba(217,48,37,.55)}
   .msg.info{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.42)}
@@ -41,13 +56,28 @@
   .hist li{list-style:none;font-size:14px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
   .hist ul{margin:0;padding:0}
   .hist em{font-style:normal;opacity:.6;font-size:12px}
-  a.retour{display:inline-block;margin-top:16px;color:var(--jaune);font-size:14px;text-decoration:none;font-weight:700}
+  .hist code{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:700;color:var(--jaune);
+    background:rgba(255,184,0,.12);padding:1px 6px;border-radius:5px;opacity:1}
+  /* Cible tactile : une tablette se pilote au pouce, 17 px de haut ne s'attrapent pas. */
+  a.retour{display:inline-flex;align-items:center;min-height:44px;margin-top:10px;color:var(--jaune);
+    font-size:15px;text-decoration:none;font-weight:700}
 </style>
 </head>
 <body>
-<div class="carte">
+@php
+  // « 12 € » et non « 12,00 € » : un montant qui traîne des zéros se relit deux fois.
+  $euros = static fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ',', ' '), '0'), ',') . ' €';
+@endphp
+<main class="carte">
   <h1>Remettre un lot</h1>
   <p class="sous">Le client donne son numéro. Tu vérifies, tu remets, tu appuies.</p>
+
+  {{-- Le message vient AVANT le formulaire : chaque geste recharge la page, et le résultat de ce
+       geste est ce qu'il faut lire en premier — y compris à la synthèse vocale. --}}
+  @if (! empty($message))
+    <p class="msg {{ $messageType ?? 'info' }}"
+       role="{{ ($messageType ?? 'info') === 'err' ? 'alert' : 'status' }}">{{ $message }}</p>
+  @endif
 
   <form method="GET" action="{{ url('/admin/roue-lot') }}">
     <label for="phone">Numéro du client</label>
@@ -56,10 +86,6 @@
     <button type="submit">Chercher son lot</button>
   </form>
 
-  @if (! empty($message))
-    <p class="msg {{ $messageType ?? 'info' }}">{{ $message }}</p>
-  @endif
-
   @if (! empty($spin))
     <div class="lot">
       <b>{{ $spin->prize_label }}</b>
@@ -67,7 +93,28 @@
         Gagné le {{ $spin->created_at?->format('d/m/Y à H:i') }}
         @if ($spin->prize_type === 'points') · à créditer sur son compte @endif
       </small>
+
+      {{-- Le nom est en base depuis le tirage. Ne pas l'afficher, c'était remettre le lot à
+           quiconque connaît un numéro de téléphone. --}}
+      @if (filled($spin->customer_name))
+        <p class="aqui">
+          Au nom de <b>{{ $spin->customer_name }}</b>
+          <em>Demande-lui son prénom avant de remettre : c'est la seule vérification possible ici.</em>
+        </p>
+      @else
+        <p class="aqui">
+          Aucun nom enregistré pour ce tour
+          <em>Rien à recouper : assure-toi que c'est bien son numéro avant de remettre.</em>
+        </p>
+      @endif
     </div>
+
+    @if (! empty($exigeCommande) && ($minOrder ?? 0) > 0)
+      <p class="condition" role="status">
+        À vérifier <b>avant</b> de remettre : une commande de <b>{{ $euros($minOrder) }} minimum</b>,
+        encaissée maintenant. Le logiciel ne peut pas le contrôler — regarde le ticket.
+      </p>
+    @endif
 
     {{-- Le bouton de remise est VERT et plus grand que tout le reste : pendant un service, c'est le
          seul geste qui compte sur cet écran, et il ne doit pas se chercher. --}}
@@ -89,7 +136,18 @@
             <em>
               — {{ $h->created_at?->format('d/m/Y') }}
               @if ($h->delivered_at) · remis le {{ $h->delivered_at->format('d/m/Y') }}
-              @elseif (in_array($h->prize_type, ['coupon_percent','coupon_fixed'], true)) · code à utiliser sur le site
+              @elseif (in_array($h->prize_type, ['coupon_percent','coupon_fixed'], true))
+                @php
+                  // Le minimum vient du COUPON, pas des réglages du jour : c'est la condition qui a
+                  // été promise à ce client-là, ce jour-là. Un réglage changé depuis ne doit pas
+                  // réécrire ce qu'on lui a dit.
+                  $mini = (float) ($h->coupon->minimum_order ?? 0);
+                @endphp
+                @if (filled($h->coupon?->code))
+                  · code <code>{{ $h->coupon->code }}</code>, à saisir sur le site{{ $mini > 0 ? ', minimum ' . $euros($mini) : '' }}
+                @else
+                  · remise à saisir sur le site — code introuvable, dis-lui de rouvrir son écran de lot
+                @endif
               @else · EN ATTENTE
               @endif
             </em>
@@ -100,6 +158,6 @@
   @endif
 
   <a class="retour" href="{{ url('/admin/roue-validation') }}">← Valider un tour</a>
-</div>
+</main>
 </body>
 </html>

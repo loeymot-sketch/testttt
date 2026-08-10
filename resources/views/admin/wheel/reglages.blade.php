@@ -1,13 +1,17 @@
 {{--
   RÉGLAGES DE LA ROUE — l'écran qui débloque le jeu.
 
-  Les trois adresses (avis Google, Instagram, Snapchat) sont les COMPTES du propriétaire : personne
-  d'autre ne peut les fournir. Tant qu'elles vivaient dans des variables d'environnement, le jeu
-  restait à attendre que quelqu'un les pose sur le serveur. Ici, il les colle lui-même en dix
-  secondes, depuis sa tablette, et le parcours s'active immédiatement.
+  Les liens du parcours (avis Google, Instagram, Snapchat, Facebook) sont les COMPTES du propriétaire :
+  personne d'autre ne peut les fournir. Tant qu'ils vivaient dans des variables d'environnement, le jeu
+  restait à attendre que quelqu'un les pose sur le serveur. Ici, il les colle lui-même en dix secondes,
+  depuis sa tablette, et le parcours s'active immédiatement.
 
-  L'écran DIT L'ÉTAT en haut : « le parcours tourne » ou « il ne tourne pas encore, et voici
-  pourquoi ». Un réglage dont on ne voit pas l'effet est un réglage qu'on ne touche pas.
+  L'écran DIT L'ÉTAT en haut, ligne par ligne. Deux corrections du 2026-08-10 tiennent à ça :
+    · la bannière verte « le parcours tourne » s'affichait au-dessus de champs TOUS VIDES (elle
+      regardait le lien de secours et l'adresse livrée par défaut) — elle nomme maintenant, champ par
+      champ, ce qui vient du patron et ce qui n'en vient pas ;
+    · une saisie refusée par le serveur disparaissait sans un mot — les erreurs sont affichées, et ce
+      qui a été tapé est réaffiché.
 --}}
 <!doctype html>
 <html lang="fr">
@@ -29,44 +33,109 @@
   .etat.on{background:rgba(29,185,84,.14);border:1px solid rgba(29,185,84,.55)}
   .etat.off{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.5)}
   .etat b{display:block;margin-bottom:4px;font-size:16px}
+  /* Le bilan ligne par ligne : le patron doit pouvoir lire « ce champ-là est à moi, celui-là non »
+     sans interpréter une couleur. D'où une puce TEXTE en plus de la teinte. */
+  .bilan{list-style:none;margin:12px 0 0;padding:0;font-size:14.5px}
+  .bilan li{display:flex;gap:8px;align-items:baseline;padding:3px 0;line-height:1.45}
+  .bilan .puce{flex:0 0 16px;font-weight:900;text-align:center}
+  .bilan li.saisi .puce{color:#7BE495}
+  .bilan li.secours .puce,.bilan li.defaut .puce{color:var(--jaune)}
+  .bilan li.absent .puce,.bilan li.retire .puce{opacity:.55}
   label{display:block;font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
     opacity:.72;margin:16px 0 6px}
   input[type=text],input[type=url],input[type=number]{width:100%;min-height:52px;border-radius:13px;
     padding:0 14px;font-size:16px;background:#fff;color:#1a1a1a;border:2px solid transparent}
-  input:focus{outline:none;border-color:var(--jaune)}
+  /* Le remplacement de l'anneau de focus par une bordure ne marche QUE sur les champs texte : une
+     case à cocher native ne peint pas de bordure CSS, elle perdait donc son repère sans rien en
+     échange. Les cases gardent un anneau, bien visible. */
+  input[type=text]:focus,input[type=url]:focus,input[type=number]:focus{outline:none;border-color:var(--jaune)}
+  input[type=checkbox]:focus-visible{outline:3px solid var(--jaune);outline-offset:3px}
+  input.faux{border-color:var(--rouge)}
   .aide{font-size:12.5px;opacity:.65;margin:6px 0 0;line-height:1.5}
   .aide code{background:rgba(255,255,255,.10);padding:1px 5px;border-radius:5px;font-size:12px}
+  /* L'avertissement « lien de secours » vivait dans le plus petit texte de la page, sous un champ
+     vide : rien ne reliait « ce champ est vide » à « on utilise donc un repli ». C'est un encart. */
+  .note{margin:8px 0 0;padding:11px 13px;border-radius:12px;font-size:15px;line-height:1.5;
+    background:rgba(255,184,0,.13);border:1px solid rgba(255,184,0,.45)}
   .duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .bascule{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:15px}
-  .bascule input{width:22px;height:22px;accent-color:var(--jaune)}
+  /* Tablette tenue à la main : toute la ligne est une cible, hauteur 44 px minimum, case comprise. */
+  .bascule{display:flex;align-items:center;gap:12px;margin-top:12px;font-size:15px;min-height:44px}
+  .bascule input{width:44px;height:44px;flex:0 0 44px;accent-color:var(--jaune);margin:0}
+  .bascule label{margin:0;text-transform:none;letter-spacing:0;font-size:15px;opacity:1;
+    display:flex;align-items:center;min-height:44px;flex:1;cursor:pointer}
   button{width:100%;min-height:60px;border:0;border-radius:15px;cursor:pointer;margin-top:22px;
     font-size:17px;font-weight:900;color:#2a1508;background:linear-gradient(100deg,var(--jaune),#FF6A3D)}
-  .msg{margin:0 0 16px;padding:13px 15px;border-radius:13px;font-size:15px}
+  .msg{margin:0 0 16px;padding:13px 15px;border-radius:13px;font-size:15px;line-height:1.5}
   .msg.ok{background:rgba(29,185,84,.14);border:1px solid rgba(29,185,84,.55)}
+  .msg.err{background:rgba(217,48,37,.18);border:1px solid rgba(217,48,37,.6)}
+  .msg.err b{display:block;margin-bottom:6px;font-size:16px}
+  .msg.err ul{margin:0;padding-left:20px}
+  .msg.err li{padding:2px 0}
+  .champ-err{margin:6px 0 0;font-size:14px;font-weight:700;color:#FFB4AC;line-height:1.45}
   .liens{margin-top:22px;border-top:1px solid rgba(255,255,255,.12);padding-top:16px;font-size:14px}
-  .liens a{display:block;color:var(--jaune);text-decoration:none;font-weight:700;padding:5px 0}
+  .liens a{display:flex;align-items:center;min-height:44px;color:var(--jaune);text-decoration:none;font-weight:700}
 </style>
 </head>
 <body>
-<div class="carte">
+<main class="carte">
   <h1>Réglages de la roue</h1>
   <p class="sous">Colle tes liens ici. Le parcours s'active dès qu'au moins un lien est renseigné.</p>
 
   @if (! empty($enregistre))
-    <p class="msg ok">Réglages enregistrés.</p>
+    <p class="msg ok" role="status">Réglages enregistrés.</p>
   @endif
 
-  @if ($pret)
-    <div class="etat on">
-      <b>Le parcours tourne.</b>
-      Les étapes cochées sont exigées : le client doit ouvrir le lien, y passer le temps prévu, et
-      revenir. Le serveur vérifie le temps lui-même — le compteur du téléphone n'est qu'un affichage.
+  {{-- Un refus du serveur DOIT se voir : sans ce bloc, la page revenait à l'identique et le patron
+       corrigeait à l'aveugle. --}}
+  @if ($errors->any())
+    <div class="msg err" role="alert">
+      <b>Rien n'a été enregistré.</b>
+      <ul>
+        @foreach ($errors->all() as $erreur)
+          <li>{{ $erreur }}</li>
+        @endforeach
+      </ul>
     </div>
-  @else
-    <div class="etat off">
+  @endif
+
+  @php
+    // La puce est décorative : le texte de chaque ligne dit déjà l'état, donc elle est masquée à la
+    // synthèse vocale.
+    $puce = static fn (string $etat) => $etat === 'saisi'
+      ? '✓'
+      : (in_array($etat, ['absent', 'retire'], true) ? '–' : '!');
+  @endphp
+
+  @if (! $pret)
+    <div class="etat off" role="status">
       <b>Le parcours ne tourne pas encore.</b>
       Aucun lien n'est renseigné : il n'y a donc rien à ouvrir ni à chronométrer, et les étapes sont
       sautées. Colle au moins un lien ci-dessous et ce sera actif immédiatement.
+    </div>
+  @elseif (! $aMoi)
+    <div class="etat off" role="status">
+      <b>Aucun lien n'est de TOI pour l'instant.</b>
+      Le jeu tourne quand même, avec un lien de secours ou une adresse livrée par défaut — mais le
+      client n'arrive pas forcément sur tes comptes. Voici ce qui est réglé, ligne par ligne :
+      <ul class="bilan">
+        @foreach ($etatLiens as $l)
+          <li class="{{ $l['etat'] }}"><span class="puce" aria-hidden="true">{{ $puce($l['etat']) }}</span>
+            <span><b style="display:inline">{{ $l['nom'] }}</b> : {{ $l['dit'] }}</span></li>
+        @endforeach
+      </ul>
+    </div>
+  @else
+    <div class="etat on" role="status">
+      <b>Le parcours tourne.</b>
+      Voici ce qui est réglé, ligne par ligne :
+      <ul class="bilan">
+        @foreach ($etatLiens as $l)
+          <li class="{{ $l['etat'] }}"><span class="puce" aria-hidden="true">{{ $puce($l['etat']) }}</span>
+            <span><b style="display:inline">{{ $l['nom'] }}</b> : {{ $l['dit'] }}</span></li>
+        @endforeach
+      </ul>
+      Les étapes cochées sont exigées : le client doit ouvrir le lien, y passer le temps prévu, et
+      revenir. Le serveur vérifie le temps lui-même — le compteur du téléphone n'est qu'un affichage.
     </div>
   @endif
 
@@ -75,65 +144,94 @@
 
     <label for="review_url">Lien pour laisser un avis Google</label>
     <input id="review_url" name="review_url" type="url" placeholder="https://g.page/r/…/review"
-           value="{{ $s['review_url'] ?? '' }}">
+           class="{{ $errors->has('review_url') ? 'faux' : '' }}"
+           @if ($errors->has('review_url')) aria-invalid="true" aria-describedby="err_review_url" @endif
+           value="{{ old('review_url', $s['review_url'] ?? '') }}">
+    @error('review_url')<p class="champ-err" id="err_review_url" role="alert">{{ $message }}</p>@enderror
+    @if (! empty($reviewDerive))
+      <p class="note">
+        <b>Ce n'est pas encore ton vrai lien d'avis.</b>
+        Pour l'instant on ouvre ta fiche Google et le client doit encore appuyer sur « Écrire un
+        avis ». Colle ton lien ici : un appui de moins pour lui, donc plus d'avis pour toi.
+      </p>
+    @endif
     <p class="aide">
-      @if (! empty($reviewDerive))
-        <b style="color:var(--jaune)">Actuellement : un lien de secours</b> — il ouvre ta fiche Google,
-        le client doit ensuite appuyer sur « Écrire un avis ». Ça marche, mais un appui de plus.<br>
-      @endif
-      Pour le lien DIRECT : sur ta fiche Google, <b>Demander des avis</b> → copie le lien court. Il
-      ressemble à <code>https://g.page/r/CXXXXXXXX/review</code> et ouvre le formulaire d'un coup.
+      Sur ta fiche Google : <b>Demander des avis</b> → copie le lien court. Il ressemble à
+      <code>https://g.page/r/CXXXXXXXX/review</code> et ouvre le formulaire d'un coup.
     </p>
     <div class="bascule">
+      {{-- Le champ caché envoie « 0 » quand la case est décochée : sans lui, le navigateur n'envoie
+           RIEN et une saisie refusée réafficherait la case cochée à tort. --}}
+      <input type="hidden" name="review_required" value="0">
       <input type="checkbox" id="review_required" name="review_required" value="1"
-             {{ ($s['review_required'] ?? '0') === '1' ? 'checked' : '' }}>
-      <label for="review_required" style="margin:0;text-transform:none;letter-spacing:0;font-size:15px;opacity:1">
-        Obligatoire pour tourner
-      </label>
+             {{ (string) old('review_required', $s['review_required'] ?? '0') === '1' ? 'checked' : '' }}>
+      <label for="review_required">Obligatoire pour tourner</label>
     </div>
 
     <label for="instagram_url">Ton Instagram</label>
     <input id="instagram_url" name="instagram_url" type="url" placeholder="https://instagram.com/…"
-           value="{{ $s['instagram_url'] ?? '' }}">
+           class="{{ $errors->has('instagram_url') ? 'faux' : '' }}"
+           @if ($errors->has('instagram_url')) aria-invalid="true" aria-describedby="err_instagram_url" @endif
+           value="{{ old('instagram_url', $s['instagram_url'] ?? '') }}">
+    @error('instagram_url')<p class="champ-err" id="err_instagram_url" role="alert">{{ $message }}</p>@enderror
 
     <label for="snapchat_url">Ton Snapchat</label>
     <input id="snapchat_url" name="snapchat_url" type="url" placeholder="https://snapchat.com/add/…"
-           value="{{ $s['snapchat_url'] ?? '' }}">
+           class="{{ $errors->has('snapchat_url') ? 'faux' : '' }}"
+           @if ($errors->has('snapchat_url')) aria-invalid="true" aria-describedby="err_snapchat_url" @endif
+           value="{{ old('snapchat_url', $s['snapchat_url'] ?? '') }}">
+    @error('snapchat_url')<p class="champ-err" id="err_snapchat_url" role="alert">{{ $message }}</p>@enderror
 
     <label for="facebook_url">Ta page Facebook</label>
     <input id="facebook_url" name="facebook_url" type="url" placeholder="https://facebook.com/…"
-           value="{{ $s['facebook_url'] ?? '' }}">
-    <p class="aide">Un seul réseau renseigné suffit pour que l'étape fonctionne. Mets-en autant que tu veux.</p>
+           class="{{ $errors->has('facebook_url') ? 'faux' : '' }}"
+           @if ($errors->has('facebook_url')) aria-invalid="true" aria-describedby="err_facebook_url" @endif
+           value="{{ old('facebook_url', $s['facebook_url'] ?? '') }}">
+    @error('facebook_url')<p class="champ-err" id="err_facebook_url" role="alert">{{ $message }}</p>@enderror
+    <p class="aide">
+      Un seul réseau renseigné suffit pour que l'étape fonctionne. Mets-en autant que tu veux. Vide un
+      champ et enregistre pour retirer un compte : il ne sera plus proposé au client.
+    </p>
     <div class="bascule">
+      <input type="hidden" name="follow_required" value="0">
       <input type="checkbox" id="follow_required" name="follow_required" value="1"
-             {{ ($s['follow_required'] ?? '0') === '1' ? 'checked' : '' }}>
-      <label for="follow_required" style="margin:0;text-transform:none;letter-spacing:0;font-size:15px;opacity:1">
-        Obligatoire pour tourner
-      </label>
+             {{ (string) old('follow_required', $s['follow_required'] ?? '0') === '1' ? 'checked' : '' }}>
+      <label for="follow_required">Obligatoire pour tourner</label>
     </div>
 
     <div class="duo">
       <div>
-        <label for="review_dwell">Temps avis (secondes)</label>
+        <label for="review_dwell">Temps sur l'avis (s)</label>
         <input id="review_dwell" name="review_dwell" type="number" min="0" max="180"
-               value="{{ $s['review_dwell'] ?? 20 }}">
+               class="{{ $errors->has('review_dwell') ? 'faux' : '' }}"
+               @if ($errors->has('review_dwell')) aria-invalid="true" aria-describedby="err_review_dwell" @endif
+               value="{{ old('review_dwell', $s['review_dwell'] ?? 20) }}">
+        @error('review_dwell')<p class="champ-err" id="err_review_dwell" role="alert">{{ $message }}</p>@enderror
       </div>
       <div>
-        <label for="follow_dwell">Temps abonnement (s)</label>
+        <label for="follow_dwell">Temps sur l'abonnement (s)</label>
         <input id="follow_dwell" name="follow_dwell" type="number" min="0" max="180"
-               value="{{ $s['follow_dwell'] ?? 8 }}">
+               class="{{ $errors->has('follow_dwell') ? 'faux' : '' }}"
+               @if ($errors->has('follow_dwell')) aria-invalid="true" aria-describedby="err_follow_dwell" @endif
+               value="{{ old('follow_dwell', $s['follow_dwell'] ?? 8) }}">
+        @error('follow_dwell')<p class="champ-err" id="err_follow_dwell" role="alert">{{ $message }}</p>@enderror
       </div>
     </div>
     <p class="aide">
-      Le temps que le client doit passer avant que le bouton se débloque. 20 s pour un avis : assez
-      pour écrire une phrase, trop court pour être vécu comme une attente. C'est le SERVEUR qui
-      compte — impossible de tricher depuis le téléphone.
+      Le temps que le client doit passer avant que le bouton se débloque, <b>de 0 à 180 secondes</b>.
+      20 s pour un avis : assez pour écrire une phrase, trop court pour être vécu comme une attente.
+      C'est le SERVEUR qui compte — impossible de tricher depuis le téléphone.
     </p>
 
     <label for="min_order">Minimum de commande pour utiliser le lot (€)</label>
-    <input id="min_order" name="min_order" type="number" min="0" step="0.5"
-           value="{{ $s['min_order'] ?? 10 }}">
-    <p class="aide">Annoncé au client avant qu'il joue, redit sur son lot. Jamais découvert en caisse.</p>
+    <input id="min_order" name="min_order" type="number" min="0" max="200" step="0.5"
+           class="{{ $errors->has('min_order') ? 'faux' : '' }}"
+           @if ($errors->has('min_order')) aria-invalid="true" aria-describedby="err_min_order" @endif
+           value="{{ old('min_order', $s['min_order'] ?? 10) }}">
+    @error('min_order')<p class="champ-err" id="err_min_order" role="alert">{{ $message }}</p>@enderror
+    <p class="aide">
+      <b>De 0 à 200 €.</b> Annoncé au client avant qu'il joue, redit sur son lot. Jamais découvert en caisse.
+    </p>
 
     <button type="submit">Enregistrer</button>
   </form>
@@ -143,6 +241,6 @@
     <a href="{{ url('/admin/roue-lot') }}">→ Remettre un lot gagné</a>
     <a href="{{ url('/admin/roue-validation') }}">→ Valider un tour à la main</a>
   </div>
-</div>
+</main>
 </body>
 </html>

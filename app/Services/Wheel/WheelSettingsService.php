@@ -19,9 +19,10 @@ use Smartisan\Settings\Facades\Settings;
  * tablette, et le parcours s'active immédiatement — sans redéploiement, sans accès serveur, sans moi.
  *
  * ── L'ORDRE DE PRIORITÉ ──────────────────────────────────────────────────────────────────────
- * Ce que l'exploitant a saisi PRIME toujours sur la configuration. La configuration ne sert que de
- * valeur de départ. Une valeur saisie vide est traitée comme absente — sinon un champ effacé par
- * mégarde ferait disparaître un réglage sans qu'on comprenne pourquoi.
+ * Ce que l'exploitant a saisi PRIME toujours sur la configuration — y compris quand il a saisi
+ * « rien ». La configuration ne sert que de valeur de départ, pour les clés auxquelles il n'a jamais
+ * touché. Voir `stored()` : c'est là que se joue la différence entre « jamais réglé » et « retiré
+ * exprès », et c'est ce qui rend le retrait d'un compte enfin possible.
  */
 class WheelSettingsService
 {
@@ -49,21 +50,40 @@ class WheelSettingsService
     /** Réglages effectifs = défauts écrasés par ce que l'exploitant a saisi. */
     public function all(): array
     {
-        $stored = [];
+        return array_merge($this->defaults(), $this->stored());
+    }
+
+    /**
+     * CE QUE L'EXPLOITANT A RÉELLEMENT ENREGISTRÉ — sans les valeurs de départ de la configuration.
+     *
+     * ── POURQUOI UNE CHAÎNE VIDE EST CONSERVÉE ICI ────────────────────────────────────────────
+     * [P1 2026-08-10 — audit E2E vague C] La version précédente jetait TOUTE valeur vide, au motif
+     * qu'« un champ effacé par mégarde ne doit pas faire disparaître un réglage ». Conséquence
+     * mesurée : retirer un compte était IMPOSSIBLE. Le champ vidé était bien écrit en base, la
+     * lecture le remplaçait par la valeur par défaut de la configuration, et l'écran affichait quand
+     * même « Réglages enregistrés ». Le patron retirait son lien, on lui répondait oui, et le lien
+     * revenait tout seul au rechargement.
+     *
+     * Une chaîne vide ne peut arriver ici que d'une seule façon : l'exploitant a vidé CE champ et
+     * envoyé le formulaire — `save()` n'écrit que les clés qui lui sont soumises, jamais les autres.
+     * C'est donc une DÉCISION, et une décision prime sur une valeur livrée par défaut.
+     *
+     * La protection contre l'effacement involontaire n'est pas supprimée, elle change de place :
+     * l'écran dit maintenant champ par champ ce qui est saisi, absent, de secours ou par défaut (voir
+     * `linkStatuses()`). Un lien retiré par erreur se VOIT immédiatement, au lieu de réapparaître en
+     * silence. `null` reste traité comme absent : c'est la marque d'une clé jamais écrite.
+     */
+    private function stored(): array
+    {
         try {
             $brut = Settings::group(self::GROUP)->all();
-            // Une valeur vide vaut « non renseignée » : un champ effacé par mégarde ne doit pas
-            // faire disparaître un réglage en silence.
-            $stored = is_array($brut)
-                ? array_filter($brut, static fn ($v) => $v !== null && $v !== '')
-                : [];
         } catch (\Throwable $e) {
             // Réglages illisibles : on retombe sur la configuration. Un jeu qui tourne avec ses
             // valeurs de départ vaut mieux qu'un jeu en panne.
-            $stored = [];
+            return [];
         }
 
-        return array_merge($this->defaults(), $stored);
+        return is_array($brut) ? array_filter($brut, static fn ($v) => $v !== null) : [];
     }
 
     public function get(string $key, $default = null)
@@ -213,13 +233,97 @@ class WheelSettingsService
     }
 
     /**
-     * Le parcours est-il RÉELLEMENT actif ? C'est la question que le propriétaire pose : « jamais ça
-     * tourne ». Il tourne dès qu'au moins un lien est renseigné — donc dès qu'il y a quelque chose à
-     * ouvrir et à chronométrer.
+     * Le parcours PEUT-IL tourner ? C'est la question du moteur : y a-t-il quelque chose à ouvrir et
+     * à chronométrer ? Un lien de secours ou une adresse livrée par défaut comptent ici — un jeu qui
+     * tourne vaut mieux qu'un jeu qui attend, et c'est un choix assumé (correctif du 2026-08-09).
+     *
+     * ⚠️ Ce n'est PAS la question du patron. Lui demande « est-ce que MON jeu est réglé ? » — et à
+     * cette question-là répondent `configuredByOperator()` et `linkStatuses()`. Confondre les deux
+     * est exactement ce qui affichait une bannière verte au-dessus de champs tous vides.
      */
     public function journeyReady(): bool
     {
         return $this->reviewUrl() !== '' || $this->instagramUrl() !== ''
             || $this->snapchatUrl() !== '' || $this->facebookUrl() !== '';
+    }
+
+    /** Les quatre liens du parcours, dans l'ordre où l'écran les présente. */
+    public const LINK_KEYS = ['review_url', 'instagram_url', 'snapchat_url', 'facebook_url'];
+
+    /**
+     * Au moins un lien vient-il RÉELLEMENT du patron ? C'est ce que la bannière doit dire.
+     *
+     * [P1 2026-08-10 — audit E2E vague C] La bannière verte « Le parcours tourne » s'affichait
+     * au-dessus de champs tous vides, parce qu'elle interrogeait le moteur (`journeyReady()`) qui
+     * compte le lien d'avis dérivé et la page Facebook livrée par défaut. Sur l'écran qui existe
+     * précisément pour débloquer le jeu, le patron ne pouvait donc pas savoir s'il avait réglé quoi
+     * que ce soit.
+     */
+    public function configuredByOperator(): bool
+    {
+        foreach ($this->linkStatuses() as $lien) {
+            if ($lien['etat'] === 'saisi') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * L'ÉTAT VRAI DE CHAQUE LIEN, champ par champ, pour que l'écran arrête de résumer.
+     *
+     * Cinq états, et l'écran les nomme un par un :
+     *   · 'saisi'   — c'est SON lien, il l'a collé lui-même ;
+     *   · 'retire'  — il avait quelque chose et l'a vidé exprès : on CONFIRME le retrait, au lieu de
+     *                 laisser croire à une valeur par défaut revenue en douce ;
+     *   · 'secours' — rien de collé : on ouvre une recherche Google Maps fabriquée depuis l'adresse
+     *                 du restaurant. Ça marche, mais ce n'est pas sa vraie fiche ;
+     *   · 'defaut'  — la valeur vient de la configuration livrée, pas de lui : à vérifier ;
+     *   · 'absent'  — rien du tout, ce réseau ne sera pas proposé au client.
+     *
+     * @return array<int, array{cle: string, nom: string, etat: string, dit: string}>
+     */
+    public function linkStatuses(): array
+    {
+        $stored = $this->stored();
+        $defauts = $this->defaults();
+
+        $noms = [
+            'review_url' => 'Avis Google',
+            'instagram_url' => 'Instagram',
+            'snapchat_url' => 'Snapchat',
+            'facebook_url' => 'Facebook',
+        ];
+
+        $etats = [];
+        foreach ($noms as $cle => $nom) {
+            // L'ordre compte : un champ VIDÉ par le patron est un choix, il passe donc avant la valeur
+            // par défaut. C'est tout le sens du correctif — sinon l'écran annoncerait « valeur par
+            // défaut » pour un compte que le patron vient de retirer, et le retrait aurait l'air raté.
+            $aTouche = array_key_exists($cle, $stored);
+            $saisi = trim((string) ($stored[$cle] ?? ''));
+
+            if ($aTouche && $saisi !== '') {
+                $etat = 'saisi';
+                $dit = 'ton lien';
+            } elseif ($aTouche) {
+                $etat = 'retire';
+                $dit = 'retiré par toi — plus proposé au client';
+            } elseif (trim((string) ($defauts[$cle] ?? '')) !== '') {
+                $etat = 'defaut';
+                $dit = 'valeur livrée par défaut — vérifie que c\'est bien ton compte';
+            } elseif ($cle === 'review_url' && $this->reviewUrlIsDerived()) {
+                $etat = 'secours';
+                $dit = 'lien de secours, pas encore ta vraie fiche';
+            } else {
+                $etat = 'absent';
+                $dit = 'absent — ne sera pas proposé au client';
+            }
+
+            $etats[] = ['cle' => $cle, 'nom' => $nom, 'etat' => $etat, 'dit' => $dit];
+        }
+
+        return $etats;
     }
 }

@@ -7,12 +7,53 @@
 
   Rendu en Blade sans JavaScript : la tablette du comptoir doit afficher ça instantanément, même
   sur un réseau moyen, et pendant un service il n'y a pas de place pour un écran qui charge.
+
+  [P1 2026-08-10 — audit E2E vague C] La consigne était ÉCRITE EN DUR (« abonné aux deux comptes »)
+  et réclamait des abonnements que le client ne s'était jamais vu proposer : Instagram et Snapchat
+  étaient vides, seul Facebook était renseigné. Elle est maintenant composée depuis les réglages, avec
+  la même règle que le moteur (`WheelStepService::required`) — l'équipe ne demande plus que ce qui a
+  réellement été demandé au client.
 --}}
+@php
+  /*
+   * La liste vient des RÉGLAGES, pas du code. Les services sont résolus ici plutôt que passés par le
+   * contrôleur : cette consigne doit suivre les réglages sur les deux entrées de l'écran (arrivée et
+   * jeton émis), et une variable oubliée d'un côté redonnerait une consigne fausse — exactement le
+   * défaut qu'on corrige.
+   */
+  $reglagesRoue = app(\App\Services\Wheel\WheelSettingsService::class);
+  $etapesRoue = app(\App\Services\Wheel\WheelStepService::class);
+
+  $avisExige = $etapesRoue->required(\App\Services\Wheel\WheelStepService::REVIEW);
+  $abonnementExige = $etapesRoue->required(\App\Services\Wheel\WheelStepService::FOLLOW);
+
+  // On ne nomme QUE les comptes réellement renseignés : réclamer un abonnement à un compte qui
+  // n'existe pas dans le parcours, c'est demander l'impossible au client, devant témoin.
+  $comptes = [];
+  if ($reglagesRoue->facebookUrl() !== '') { $comptes[] = 'notre page Facebook'; }
+  if ($reglagesRoue->instagramUrl() !== '') { $comptes[] = 'notre Instagram'; }
+  if ($reglagesRoue->snapchatUrl() !== '') { $comptes[] = 'notre Snapchat'; }
+  $listeComptes = count($comptes) > 1
+    ? implode(', ', array_slice($comptes, 0, -1)) . ' et ' . end($comptes)
+    : (string) ($comptes[0] ?? '');
+@endphp
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+{{--
+  RESTER OUVERT DES HEURES SANS TOMBER SUR « 419 PAGE EXPIRED ».
+  Cet écran est posé au comptoir et personne ne le touche entre deux clients. Le jeton de sécurité du
+  formulaire finit par périmer, et l'équipe appuyait sur VALIDER pour tomber sur une page blanche en
+  anglais. Un rechargement périodique renouvelle ce jeton et garde la session vivante — sans une ligne
+  de JavaScript, et sans rien à saisir sur cet écran qu'on pourrait perdre.
+  ⚠️ UNIQUEMENT sur l'écran d'attente : recharger pendant qu'un client scanne le QR le ferait
+  disparaître sous ses yeux.
+--}}
+@if (empty($token) && empty($erreur))
+  <meta http-equiv="refresh" content="600">
+@endif
 <title>Roue — valider un tour</title>
 <style>
   :root{--orange:#F4501E;--jaune:#FFB800;--noir:#141414;--creme:#FFF6EC;--ok:#1DB954}
@@ -34,24 +75,44 @@
   .lien{font-family:ui-monospace,Menlo,monospace;font-size:11px;word-break:break-all;opacity:.6;margin:8px 0 14px}
   .expire{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.4);border-radius:12px;
     padding:11px 13px;font-size:14px;margin-bottom:16px}
-  .encore{display:inline-block;margin-top:6px;color:var(--jaune);font-size:14px;text-decoration:none;font-weight:700}
+  /* Cible tactile : une tablette se pilote au pouce, un lien de 17 px de haut ne s'attrape pas. */
+  .encore{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:6px;
+    color:var(--jaune);font-size:15px;text-decoration:none;font-weight:700}
   .err{background:rgba(217,48,37,.16);border:1px solid rgba(217,48,37,.5);border-radius:12px;padding:12px;font-size:14px}
+  .err-suite{font-size:14px;line-height:1.5;opacity:.85;margin:12px 0 0}
 </style>
 </head>
 <body>
-<div class="carte">
+<main class="carte">
 
   @if (! empty($erreur))
     <h1>Validation impossible</h1>
-    <p class="err">{{ $erreur }}</p>
+    <p class="err" role="alert">{{ $erreur }}</p>
+    {{-- Le texte de l'erreur vient du contrôleur et cite un nom technique. On ne peut pas le
+         réécrire d'ici, mais on peut dire à l'équipe QUOI FAIRE : sans ça, elle réessaie en boucle
+         un geste qui ne peut pas aboutir. --}}
+    <p class="err-suite">
+      Si ce message revient, il n'y a rien à corriger depuis cet écran : c'est un réglage.
+      Préviens le patron, et encaisse la commande normalement.
+    </p>
     <a class="encore" href="{{ url('/admin/roue-validation') }}">Réessayer</a>
 
   @elseif (empty($token))
     <h1>Valider un tour de roue</h1>
     <p class="sous">Le client montre son écran. Tu regardes. Tu valides. Il tourne devant toi.</p>
     <ol>
-      <li>Il a laissé un <b>avis Google</b> — l'avis est visible à son nom.</li>
-      <li>Il est <b>abonné aux deux comptes</b>.</li>
+      @if ($avisExige)
+        <li>Il a laissé un <b>avis Google</b> — l'avis est visible à son nom.</li>
+      @endif
+      @if ($abonnementExige && $listeComptes !== '')
+        <li>Il est <b>abonné</b> à {{ $listeComptes }}.</li>
+      @endif
+      @if (! $avisExige && ! $abonnementExige)
+        <li>
+          <b>Aucune condition n'est exigée en ce moment</b> — le client n'a rien eu à faire pour
+          jouer. Valide seulement s'il a commandé.
+        </li>
+      @endif
       <li>Alors seulement, tu appuies ci-dessous.</li>
     </ol>
     <form method="POST" action="{{ url('/admin/roue-validation') }}">
@@ -81,7 +142,7 @@
 
     {{-- Les deux écrans du comptoir se répondent : valider un tour / remettre un lot. Sans ce
          lien, l'équipe devrait retenir deux adresses. --}}
-    <a class="encore" href="{{ url('/admin/roue-lot') }}" style="display:block;margin-top:18px">Remettre un lot gagné →</a>
-</div>
+    <a class="encore" href="{{ url('/admin/roue-lot') }}" style="display:flex;margin-top:18px">Remettre un lot gagné →</a>
+</main>
 </body>
 </html>

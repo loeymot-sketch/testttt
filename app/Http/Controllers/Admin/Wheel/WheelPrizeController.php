@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin\Wheel;
 
 use App\Http\Controllers\Controller;
 use App\Services\Wheel\WheelDeliveryService;
+use App\Services\Wheel\WheelService;
+use App\Services\Wheel\WheelSettingsService;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 
 /**
@@ -16,7 +19,10 @@ use Illuminate\Http\Request;
  */
 class WheelPrizeController extends Controller
 {
-    public function __construct(private readonly WheelDeliveryService $delivery) {}
+    public function __construct(
+        private readonly WheelDeliveryService $delivery,
+        private readonly WheelSettingsService $reglages,
+    ) {}
 
     public function show(Request $request)
     {
@@ -24,23 +30,34 @@ class WheelPrizeController extends Controller
         $phone = trim((string) $request->query('phone', ''));
 
         if ($phone === '') {
-            return view('admin.wheel.lot', ['phone' => '', 'spin' => null, 'history' => []]);
+            return view('admin.wheel.lot', $this->commun() + ['phone' => '', 'spin' => null, 'history' => []]);
+        }
+
+        /*
+         * [P3 2026-08-10 — audit E2E vague C] « Je me suis trompé en tapant » n'est PAS « ce client
+         * n'a jamais joué ». Sous 9 chiffres, le service ne cherche même pas — l'équipe lisait donc
+         * « aucun tour à ce numéro » pour un numéro incomplet et concluait que le client mentait.
+         */
+        if (strlen(app(WheelService::class)->normalizePhone($phone)) < 9) {
+            return view('admin.wheel.lot', $this->commun() + [
+                'phone' => $phone,
+                'spin' => null,
+                'history' => [],
+                'message' => 'Numéro incomplet : il faut les 10 chiffres. Retape-le en entier.',
+                'messageType' => 'info',
+            ]);
         }
 
         $spin = $this->delivery->pending($branchId, $phone);
-        $history = $this->delivery->history($branchId, $phone);
+        $history = $this->historiqueAvecCodes($this->delivery->history($branchId, $phone));
 
         $message = null;
         $type = 'info';
         if (! $spin) {
-            // On distingue les deux cas : « rien à ce numéro » et « lot déjà remis ». Un seul
-            // message pour les deux ferait passer l'équipe pour désorganisée devant le client.
-            $message = $history->isEmpty()
-                ? 'Aucun tour à ce numéro. Vérifie le numéro, ou fais-le jouer d\'abord.'
-                : 'Rien à remettre : ses lots sont déjà remis, ou ce sont des codes à utiliser sur le site.';
+            $message = $this->pourquoiRienARemettre($history);
         }
 
-        return view('admin.wheel.lot', [
+        return view('admin.wheel.lot', $this->commun() + [
             'phone' => $phone,
             'spin' => $spin,
             'history' => $history,
@@ -57,25 +74,117 @@ class WheelPrizeController extends Controller
             'phone'   => ['nullable', 'string', 'max:32'],
         ]);
 
-        $r = $this->delivery->deliver((int) $data['spin_id'], (int) $request->user()?->id);
+        // La caisse vient du contexte posé par la porte, jamais du corps : `spin_id` est un champ
+        // caché, donc une valeur qu'on ne peut pas croire seule.
+        $r = $this->delivery->deliver(
+            (int) $data['spin_id'],
+            $this->actorId($request),
+            (int) $request->attributes->get('wheel_branch_id', 1)
+        );
 
         $phone = trim((string) ($data['phone'] ?? ''));
 
-        return view('admin.wheel.lot', [
+        return view('admin.wheel.lot', $this->commun() + [
             'phone' => $phone,
             // Après une remise on ne réaffiche PAS de bouton : le geste est fait, et un second
             // bouton juste après un succès est la meilleure façon de provoquer un double clic.
             'spin' => $r['ok'] ? null : $this->delivery->pending($branchId, $phone),
-            'history' => $phone !== '' ? $this->delivery->history($branchId, $phone) : [],
+            'history' => $phone !== '' ? $this->historiqueAvecCodes($this->delivery->history($branchId, $phone)) : [],
             'message' => $r['message'],
             'messageType' => $r['ok'] ? 'ok' : 'err',
         ]);
     }
 
+    /**
+     * POURQUOI il n'y a rien à tendre — et c'est la question de l'équipe, devant le client.
+     *
+     * [P1 2026-08-10 — audit E2E vague C] Un seul message couvrait deux situations opposées : « ses
+     * lots sont déjà remis, ou ce sont des codes à utiliser sur le site ». L'équipe lisait cette
+     * phrase à deux branches et ne pouvait pas trancher devant un client qui, lui, sait très bien
+     * qu'il n'a rien reçu. On tranche donc ici, où l'information existe.
+     */
+    private function pourquoiRienARemettre($history): ?string
+    {
+        if (empty($history) || count($history) === 0) {
+            return 'Aucun tour à ce numéro. Vérifie le numéro, ou fais-le jouer d\'abord.';
+        }
+
+        $remise = null;
+        foreach ($history as $h) {
+            if ($h->delivered_at === null
+                && in_array((string) $h->prize_type, ['coupon_percent', 'coupon_fixed'], true)) {
+                $remise = $h;
+                break;
+            }
+        }
+
+        if ($remise) {
+            $code = trim((string) ($remise->coupon->code ?? ''));
+
+            return 'Rien à lui tendre : son lot est une remise (' . $remise->prize_label . '), '
+                . ($code !== ''
+                    ? 'à saisir sur le site avec le code ' . $code . '.'
+                    : 'à saisir sur le site avec son code.')
+                . ' Le détail est en bas, dans ses derniers tours.';
+        }
+
+        return 'Ses lots sont déjà remis — rien à lui donner cette fois. Les dates sont en bas, dans '
+            . 'ses derniers tours.';
+    }
+
+    /**
+     * Les codes des remises, chargés en UNE requête. Sans ça l'historique en réclamait un par ligne
+     * pendant un service, et le code du coupon — la seule chose que le client vient chercher quand il
+     * a perdu son e-mail — n'était affiché nulle part.
+     */
+    private function historiqueAvecCodes($history)
+    {
+        if ($history instanceof EloquentCollection) {
+            $history->loadMissing('coupon');
+        }
+
+        return $history;
+    }
+
+    /** Ce que l'écran doit dire à chaque affichage, quelle que soit la branche du code. */
+    private function commun(): array
+    {
+        return [
+            'minOrder' => $this->reglages->minOrder(),
+            'exigeCommande' => (bool) config('wheel.requires_order_to_claim', true),
+        ];
+    }
+
+    /*
+     * ── LA CAISSE ET L'AUTEUR VIENNENT DE LA PORTE, PAS DE L'ÉCRAN ───────────────────────────
+     * L'intergiciel `wheel.access` ouvre les écrans de deux façons : session web habilitée, ou code
+     * de la maison. Sur le chemin du code il n'y a PAS d'utilisateur — relire `$request->user()` ici
+     * refermait l'écran juste après que la porte l'avait ouvert. Le contexte est donc posé une seule
+     * fois, par la porte. Jamais lu dans le corps de la requête : ce serait remettre un lot au nom
+     * d'un autre comptoir.
+     */
     private function branchId(Request $request): int
     {
+        $porte = (int) $request->attributes->get('wheel_branch_id', 0);
+        if ($porte > 0) {
+            return $porte;
+        }
+
         $u = $request->user();
 
         return (int) (($u && $u->branch_id) ? $u->branch_id : 1);
+    }
+
+    /** Qui a fait le geste — nul quand l'écran a été ouvert par le code : on n'invente pas un auteur. */
+    private function actorId(Request $request): ?int
+    {
+        $porte = (int) $request->attributes->get('wheel_actor_id', 0);
+        if ($porte > 0) {
+            return $porte;
+        }
+
+        $id = (int) ($request->user()?->id ?? 0);
+
+        return $id > 0 ? $id : null;
     }
 }
