@@ -71,7 +71,7 @@ class WheelUnlockService
      *
      * @throws WheelException
      */
-    public function verify(string $token): array
+    public function verify(string $token, bool $tolererExpiration = false): array
     {
         $token = trim($token);
         $morceaux = explode(self::SEP, $token);
@@ -90,7 +90,18 @@ class WheelUnlockService
             throw new WheelException('Validation illisible. Demande à l\'équipe de revalider.', 403);
         }
 
-        if (Carbon::createFromTimestamp((int) $charge['e'])->isPast()) {
+        // [DEUX TEMPS 2026-08-10] L'expiration peut être TOLÉRÉE à la réclamation, jamais au tour.
+        //
+        // La durée de vie du jeton existe pour empêcher qu'une validation photographiée fasse TOURNER
+        // quelqu'un une heure plus tard. À la réclamation, ce risque est derrière nous : le lot est
+        // déjà tiré, figé sur cette empreinte, et un seul lot naîtra de ce jeton (index unique).
+        //
+        // Sans cette tolérance, un client qui tourne à la 14ᵉ minute d'un jeton de 15 minutes avait
+        // UNE minute pour taper son numéro, puis se heurtait à « cette validation a expiré » — un
+        // refus incompréhensible juste après avoir vu son lot à l'écran. La fenêtre de réclamation
+        // (30 min depuis le TOUR) est la seule échéance qui compte à cet instant, et c'est elle qui
+        // rend le message honnête : « ce tour a expiré, rescanne le QR ».
+        if (! $tolererExpiration && Carbon::createFromTimestamp((int) $charge['e'])->isPast()) {
             throw new WheelException('Cette validation a expiré. Demande à l\'équipe de revalider.', 403);
         }
 

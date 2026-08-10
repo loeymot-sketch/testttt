@@ -84,8 +84,25 @@ class WheelEndpointSecurityTest extends TestCase
         $tel = (string) ($corps['phone'] ?? '0600000000');
         $corps += ['email' => 'banc-' . preg_replace('/\D+/', '', $tel) . '@exemple.fr'];
 
-        return $this->withHeaders($this->cle())
+        $tour = $this->withHeaders($this->cle())
             ->postJson('/api/frontend/wheel/spin', $corps + ['branch_id' => $this->branchId]);
+
+        // [DEUX TEMPS 2026-08-10] Le tour a été REFUSÉ : c'est ce refus-là qu'on veut assertir
+        // (porte fermée, jeton forgé, expiré, d'un autre comptoir). Enchaîner une réclamation
+        // masquerait la cause derrière un second code d'erreur.
+        if ($tour->status() !== 200) {
+            return $tour;
+        }
+
+        // Le tour ne fait que tirer ; c'est la RÉCLAMATION qui crée la participation, tranche
+        // l'unicité et émet le code. Les gardes de ce banc vivent donc désormais là.
+        return $this->reclamer($corps);
+    }
+
+    private function reclamer(array $corps)
+    {
+        return $this->withHeaders($this->cle())
+            ->postJson('/api/frontend/wheel/claim', $corps + ['branch_id' => $this->branchId]);
     }
 
     // ── 1. LA PORTE ──────────────────────────────────────────────────────────────────────────
@@ -191,22 +208,36 @@ class WheelEndpointSecurityTest extends TestCase
      */
     public function test_aucun_champ_envoye_ne_peut_choisir_le_lot(): void
     {
-        $r = $this->tourner([
+        // On frappe LES DEUX temps avec la même charge : le tour tire, la réclamation attribue.
+        // Une garde qui ne tient que sur le premier appel d'une paire ne garde rien.
+        $injection = [
             'phone'         => '0612345678',
+            'email'         => 'injection@exemple.fr',
             'unlock_token'  => $this->jeton(),
-            // Tentatives d'injection : toutes doivent être ignorées.
             'prize_key'     => 'b',
             'prize'         => 'Menu offert',
             'segment_index' => 1,
             'prize_value'   => 999,
             'points'        => 99999,
-        ])->assertOk();
+        ];
+
+        $tour = $this->withHeaders($this->cle())
+            ->postJson('/api/frontend/wheel/spin', $injection + ['branch_id' => $this->branchId])
+            ->assertOk();
+
+        // Rien n'est encore écrit : le tour ne crée pas de participation.
+        $this->assertSame(0, WheelSpin::withoutGlobalScope(BranchScope::class)->count(),
+            'le tour a créé une participation : un lot non réclamé doit ne rien coûter');
+
+        $r = $this->reclamer($injection)->assertOk();
 
         $spin = WheelSpin::withoutGlobalScope(BranchScope::class)->firstOrFail();
 
-        $this->assertSame($spin->prize_key === 'a' ? 0 : 1, (int) $r->json('segment_index'),
+        $this->assertSame($spin->prize_key === 'a' ? 0 : 1, (int) $tour->json('segment_index'),
             'l\'index renvoyé ne correspond pas au lot réellement enregistré');
-        $this->assertSame($spin->prize_label, $r->json('prize_label'));
+        $this->assertSame($spin->prize_label, $tour->json('prize_label'));
+        $this->assertSame($spin->prize_label, $r->json('prize_label'),
+            'le lot annoncé au tour et celui livré à la réclamation doivent être le MÊME');
         $this->assertNotSame(999.0, (float) $spin->prize_value, 'une valeur envoyée a été retenue');
         $this->assertNotSame(99999, (int) $spin->points_awarded, 'des points envoyés ont été retenus');
     }

@@ -1665,6 +1665,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
             ->middleware('throttle:30,1');
         Route::post('/spin', [\App\Http\Controllers\Frontend\WheelController::class, 'spin'])
             ->middleware('throttle:10,1');
+        // La RÉCLAMATION est l'endpoint qui donne réellement quelque chose : c'est lui qui crée la
+        // participation, émet le code et crée le compte. Débit limité aussi serré que le tour.
+        Route::post('/claim', [\App\Http\Controllers\Frontend\WheelController::class, 'claim'])
+            ->middleware('throttle:10,1');
     });
 
     Route::prefix('slider')->name('slider.')->group(function () {

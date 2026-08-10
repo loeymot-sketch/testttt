@@ -7,6 +7,7 @@ use App\Enums\Status;
 use App\Models\Coupon;
 use App\Models\Scopes\BranchScope;
 use App\Models\WheelSpin;
+use App\Models\WheelStepProgress;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -105,9 +106,79 @@ class WheelService
     }
 
     /**
-     * LE TIRAGE. Tout se passe dans une transaction : soit le tour existe avec son lot attribué,
-     * soit rien ne s'est produit. Un tour enregistré sans lot, ou un lot sans tour, laisserait un
-     * client avec une promesse que le système ne connaît pas.
+     * LE TIRAGE SEUL, SANS IDENTITÉ — première moitié du parcours.
+     *
+     * [2026-08-10] Le propriétaire a arbitré : le client TOURNE d'abord, et ne donne ses
+     * coordonnées qu'ensuite pour débloquer son code. Demander deux champs AVANT le tour, c'est
+     * demander un effort contre une promesse ; les demander APRÈS, c'est les demander contre un lot
+     * déjà visible. L'écart d'acceptation est énorme.
+     *
+     * Conséquence : au moment du tirage on ne sait pas QUI joue. Le lot est donc mis EN ATTENTE sur
+     * la progression (clé = empreinte du jeton de la tablette, déjà à usage unique) et ne devient une
+     * participation — ligne, coupon, points — qu'à la RÉCLAMATION, quand l'identité est connue et son
+     * unicité vérifiée en base.
+     *
+     * Un lot non réclamé n'existe donc pas : aucun coupon émis, aucune charge, rien à nettoyer.
+     * Celui qui tourne et s'en va n'a rien coûté.
+     *
+     * @return array{key: string, label: string, type: string, value: float}
+     *
+     * @throws WheelException
+     */
+    public function drawPending(int $branchId, WheelStepProgress $progress): array
+    {
+        if ($this->dailyTotal($branchId) >= (int) config('wheel.daily_total_cap', 120)) {
+            throw new WheelException('La roue a distribué tous ses lots pour aujourd\'hui. Reviens demain !', 429);
+        }
+
+        // Déjà tourné avec CE jeton : on rend le MÊME lot. Sans ça, recharger la page pendant
+        // l'animation ferait re-tirer — donc « re-tourner jusqu'à gagner », la faille classique.
+        if ($progress->prize_key !== null && $progress->spun_at !== null) {
+            return [
+                'key' => (string) $progress->prize_key,
+                'label' => (string) $progress->prize_label,
+                'type' => (string) $progress->prize_type,
+                'value' => (float) $progress->prize_value,
+            ];
+        }
+
+        $segment = $this->draw($branchId);
+
+        $progress->forceFill([
+            'prize_key' => $segment['key'],
+            'prize_label' => $segment['label'],
+            'prize_type' => $segment['type'],
+            'prize_value' => (float) ($segment['value'] ?? 0),
+            'spun_at' => now(),
+        ])->save();
+
+        return $segment;
+    }
+
+    /**
+     * Le lot en attente est-il encore réclamable ? Un lot laissé en attente indéfiniment serait
+     * réclamable des semaines plus tard, hors de tout plafond journalier — et le client aurait de
+     * toute façon oublié.
+     */
+    public function pendingStillValid(WheelStepProgress $progress): bool
+    {
+        if ($progress->prize_key === null || $progress->spun_at === null) {
+            return false;
+        }
+
+        $minutes = max(5, (int) config('wheel.claim_window_minutes', 30));
+
+        return $progress->spun_at->greaterThan(now()->subMinutes($minutes));
+    }
+
+    /**
+     * TIRAGE + PERSISTANCE EN UN SEUL APPEL — pour le chemin où l'identité est connue D'AVANCE
+     * (validation directe au comptoir par l'équipe, ou tout appelant qui a déjà les coordonnées).
+     *
+     * Le parcours client, lui, passe par `drawPending()` puis `claimPending()` : le tour d'abord,
+     * l'identité ensuite. Les deux chemins finissent dans le MÊME `persist()` — il n'existe qu'un
+     * seul endroit où une participation naît et où l'unicité est tranchée. Deux endroits, ce serait
+     * deux jeux de gardes à maintenir, et un jour l'un des deux oublierait quelque chose.
      *
      * @param  array{method: string, user_id?: int|null, order_id?: int|null, token_hash?: string|null}  $unlock
      *
@@ -121,6 +192,36 @@ class WheelService
         ?string $deviceId = null,
         ?string $ipHash = null,
         ?string $email = null
+    ): WheelSpin {
+        if ($this->dailyTotal($branchId) >= (int) config('wheel.daily_total_cap', 120)) {
+            throw new WheelException('La roue a distribué tous ses lots pour aujourd\'hui. Reviens demain !', 429);
+        }
+
+        return $this->persist(
+            $branchId, $phone, $email, $customerName, $this->draw($branchId),
+            $unlock, $deviceId, $ipHash
+        );
+    }
+
+    /**
+     * LE SEUL ENDROIT OÙ UNE PARTICIPATION NAÎT. Tout se passe dans une transaction : soit le tour
+     * existe avec son lot attribué, soit rien ne s'est produit. Un tour enregistré sans lot, ou un
+     * lot sans tour, laisserait un client avec une promesse que le système ne connaît pas.
+     *
+     * @param  array{key: string, label: string, type: string, value: float, max_discount?: float}  $segment
+     * @param  array{method: string, user_id?: int|null, order_id?: int|null, token_hash?: string|null}  $unlock
+     *
+     * @throws WheelException
+     */
+    private function persist(
+        int $branchId,
+        string $phone,
+        ?string $email,
+        ?string $customerName,
+        array $segment,
+        array $unlock,
+        ?string $deviceId,
+        ?string $ipHash
     ): WheelSpin {
         $tel = $this->normalizePhone($phone);
         if (strlen($tel) < 9) {
@@ -154,13 +255,7 @@ class WheelService
             throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
         }
 
-        if ($this->dailyTotal($branchId) >= (int) config('wheel.daily_total_cap', 120)) {
-            throw new WheelException('La roue a distribué tous ses lots pour aujourd\'hui. Reviens demain !', 429);
-        }
-
-        return DB::transaction(function () use ($branchId, $tel, $mail, $customerName, $unlock, $methode, $deviceId, $ipHash) {
-            $segment = $this->draw($branchId);
-
+        return DB::transaction(function () use ($branchId, $tel, $mail, $customerName, $segment, $unlock, $methode, $deviceId, $ipHash) {
             $spin = new WheelSpin();
             $spin->forceFill([
                 'branch_id'           => $branchId,
@@ -203,6 +298,60 @@ class WheelService
 
             return $spin->refresh();
         });
+    }
+
+    /**
+     * LA RÉCLAMATION — l'identité arrive, le lot devient réel.
+     *
+     * C'est ICI que tout se joue : la ligne de participation est créée, l'unicité du téléphone ET de
+     * l'adresse est tranchée EN BASE, le coupon est émis. Avant cet instant, rien n'existe.
+     *
+     * @param  array{method: string, user_id?: int|null, order_id?: int|null, token_hash?: string|null}  $unlock
+     *
+     * @throws WheelException
+     */
+    public function claimPending(
+        int $branchId,
+        WheelStepProgress $progress,
+        string $phone,
+        string $email,
+        ?string $customerName = null,
+        array $unlock = [],
+        ?string $deviceId = null,
+        ?string $ipHash = null
+    ): WheelSpin {
+        if (! $this->pendingStillValid($progress)) {
+            throw new WheelException(
+                'Ce tour a expiré. Rescanne le QR au comptoir, ça prend dix secondes.',
+                410
+            );
+        }
+
+        $segment = [
+            'key' => (string) $progress->prize_key,
+            'label' => (string) $progress->prize_label,
+            'type' => (string) $progress->prize_type,
+            'value' => (float) $progress->prize_value,
+            // Le plafond en euros est relu dans la CONFIGURATION au moment de l'attribution, jamais
+            // stocké en attente : un plafond figé dans une ligne temporaire pourrait être exploité
+            // en réclamant un vieux lot après un changement de réglage.
+            'max_discount' => $this->maxDiscountFor((string) $progress->prize_key),
+        ];
+
+        return $this->persist(
+            $branchId, $phone, $email, $customerName, $segment, $unlock, $deviceId, $ipHash
+        );
+    }
+
+    private function maxDiscountFor(string $prizeKey): float
+    {
+        foreach ((array) config('wheel.segments', []) as $s) {
+            if ((string) ($s['key'] ?? '') === $prizeKey) {
+                return (float) ($s['max_discount'] ?? 0);
+            }
+        }
+
+        return 0.0;
     }
 
     /**

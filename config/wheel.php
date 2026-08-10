@@ -217,6 +217,14 @@ return [
     'min_order_amount' => (float) env('WHEEL_MIN_ORDER', 10.0),
 
     /*
+    | Délai pour réclamer un lot qu'on vient de gagner (donner son numéro et son adresse). Assez
+    | large pour taper deux champs sans stress, assez court pour qu'un lot laissé en attente ne
+    | devienne pas réclamable des heures plus tard, hors de tout plafond journalier — et de toute
+    | façon le client aurait oublié.
+    */
+    'claim_window_minutes' => (int) env('WHEEL_CLAIM_WINDOW', 30),
+
+    /*
     | L'E-MAIL DES CONDITIONS. Le lot est expliqué par écrit : ce qu'il a gagné, le
     | minimum d'achat, la date limite, et le fait qu'il se retire au comptoir. Un
     | client qui découvre une condition AU MOMENT de la retirer se sent piégé — et il

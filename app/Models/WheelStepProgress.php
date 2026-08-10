@@ -22,5 +22,7 @@ class WheelStepProgress extends Model
         'review_opened_at' => 'datetime',
         'follow_opened_at' => 'datetime',
         'followers_before' => 'integer',
+        'prize_value' => 'float',
+        'spun_at' => 'datetime',
     ];
 }

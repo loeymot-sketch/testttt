@@ -70,6 +70,21 @@ class WheelStepService
         return ['ok' => true, 'wait_seconds' => $this->remaining($p, $step)];
     }
 
+    /**
+     * La ligne de progression de CE jeton, créée si besoin.
+     *
+     * Elle doit exister même quand aucune étape n'est requise (le propriétaire n'a pas encore collé
+     * ses liens) : c'est elle qui PORTE le lot en attente entre le tour et la réclamation. Sans elle,
+     * le jeu serait injouable exactement dans le cas où il devrait l'être le plus — à vide.
+     */
+    public function progress(string $tokenHash, int $branchId): WheelStepProgress
+    {
+        return WheelStepProgress::firstOrCreate(
+            ['unlock_token_hash' => $tokenHash],
+            ['branch_id' => $branchId, 'followers_before' => $this->followersNow()]
+        );
+    }
+
     /** Secondes restantes avant que l'étape se débloque. 0 = c'est bon. */
     public function remaining(WheelStepProgress $p, string $step): int
     {

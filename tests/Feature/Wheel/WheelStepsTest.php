@@ -80,12 +80,31 @@ class WheelStepsTest extends TestCase
         ]);
     }
 
+    /**
+     * [DEUX TEMPS 2026-08-10] Le parcours complet : on TOURNE, puis on RÉCLAME. Si le tour est
+     * refusé (étape non faite, trop rapide) c'est ce refus qu'on rend — enchaîner masquerait la
+     * cause. Les gardes d'étapes s'appliquent aux DEUX appels : la réclamation les revérifie.
+     */
     private function tourner(string $jeton, array $extra = [])
     {
-        return $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', $extra + [
+        $tour = $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', [
+            'branch_id' => $this->branchId, 'unlock_token' => $jeton,
+        ]);
+
+        if ($tour->status() !== 200) {
+            return $tour;
+        }
+
+        return $this->reclamer($jeton, $extra['phone'] ?? '0611220000',
+            $extra['email'] ?? 'client@exemple.fr', $extra);
+    }
+
+    private function reclamer(string $jeton, string $tel, string $mail, array $extra = [])
+    {
+        return $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/claim', $extra + [
             'branch_id' => $this->branchId,
-            'phone' => '0611220000',
-            'email' => 'client@exemple.fr',
+            'phone' => $tel,
+            'email' => $mail,
             'unlock_token' => $jeton,
         ]);
     }
@@ -202,9 +221,7 @@ class WheelStepsTest extends TestCase
         $this->ouvrir($jeton, 'follow');
         $this->travel(9)->seconds();
 
-        return $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', [
-            'branch_id' => $this->branchId, 'phone' => $tel, 'email' => $mail, 'unlock_token' => $jeton,
-        ]);
+        return $this->tourner($jeton, ['phone' => $tel, 'email' => $mail]);
     }
 
     public function test_l_adresse_ne_rentre_pas_deux_fois_meme_avec_un_autre_numero(): void
@@ -239,9 +256,10 @@ class WheelStepsTest extends TestCase
         $this->travel(9)->seconds();
 
         $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', [
-            'branch_id' => $this->branchId, 'phone' => '0611000004',
-            'email' => 'pas-une-adresse', 'unlock_token' => $jeton,
-        ])->assertStatus(422);
+            'branch_id' => $this->branchId, 'unlock_token' => $jeton,
+        ])->assertOk();
+
+        $this->reclamer($jeton, '0611000004', 'pas-une-adresse')->assertStatus(422);
     }
 
     /**
@@ -292,10 +310,8 @@ class WheelStepsTest extends TestCase
         ]);
 
         // Aucune étape ouverte, et pourtant le tour doit aboutir : elles ne sont pas fournies.
-        $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', [
-            'branch_id' => $this->branchId, 'phone' => '0611000040',
-            'email' => 'sanslien@exemple.fr', 'unlock_token' => $this->jeton(),
-        ])->assertOk();
+        $this->tourner($this->jeton(), ['phone' => '0611000040', 'email' => 'sanslien@exemple.fr'])
+            ->assertOk();
 
         // Et le manque est nommé, pas tu.
         $manquantes = app(\App\Services\Wheel\WheelStepService::class)->missingLinks();
@@ -340,10 +356,7 @@ class WheelStepsTest extends TestCase
         $this->ouvrir($jeton, 'follow')->assertOk();
         $this->travel(9)->seconds();
 
-        $this->withHeaders($this->cle())->postJson('/api/frontend/wheel/spin', [
-            'branch_id' => $this->branchId, 'phone' => '0611000006',
-            'email' => 'invit@exemple.fr', 'unlock_token' => $jeton,
-        ])->assertOk();
+        $this->tourner($jeton, ['phone' => '0611000006', 'email' => 'invit@exemple.fr'])->assertOk();
 
         // Et le lien reste PUBLIÉ : on invite toujours, on ne conditionne plus.
         $brut = $this->withHeaders($this->cle())
