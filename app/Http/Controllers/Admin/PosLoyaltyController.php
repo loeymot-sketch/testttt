@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PosLoyaltyLookupRequest;
 use App\Http\Requests\PosLoyaltyRedeemRequest;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
+use App\Services\Loyalty\PosCustomerLookupService;
 use App\Services\Loyalty\PosRedemptionException;
 use App\Services\Loyalty\PosRedemptionService;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +32,58 @@ final class PosLoyaltyController extends Controller
 {
     public function __construct(
         private readonly PosRedemptionService $redemptionService,
+        private readonly PosCustomerLookupService $lookupService,
     ) {
+    }
+
+    /**
+     * QUI EST LE CLIENT DEVANT LE COMPTOIR ?
+     *
+     * [2026-08-10 · propriétaire : « pouvoir utiliser les points accumulés ou lui en ajouter pour sa
+     * commande ; l'accumulation avec le numéro de téléphone, c'est préférable ; on scanne le QR
+     * directement avec la tablette »]
+     *
+     * Le logiciel savait déjà créditer (`AwardLoyaltyPointsOnDelivery` lit
+     * `orders.loyalty_customer_code`) et débiter (`redeem` ci-dessous), et la commande de caisse
+     * acceptait déjà le champ de rattachement. Il n'existait AUCUN moyen de dire qui est le client —
+     * d'où 2 lignes de gain « surface caisse » dans toute la base. Cette route est ce maillon.
+     *
+     * Réponse toujours 200 quand la requête est valide : « pas de compte » est une information de
+     * comptoir, pas une erreur de programme. Le caissier doit lire une phrase, pas un code HTTP.
+     */
+    public function lookup(PosLoyaltyLookupRequest $request): JsonResponse
+    {
+        [$critere, $valeur] = $request->critere();
+
+        try {
+            $resultat = match ($critere) {
+                'qr'   => $this->lookupService->byQr($valeur),
+                'code' => $this->lookupService->byCode($valeur),
+                default => $this->lookupService->byPhone($valeur),
+            };
+        } catch (\Throwable $e) {
+            Log::error('pos.loyalty.lookup.echec', [
+                'critere'  => $critere,
+                'cashier'  => $request->user()?->id,
+                'message'  => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => false,
+                'code'    => 'LOOKUP_FAILED',
+                'message' => 'Recherche impossible pour le moment.',
+            ], 500);
+        }
+
+        // On ne journalise JAMAIS le critère de recherche : un journal qui contient les numéros de
+        // téléphone tapés au comptoir est un carnet d'adresses en clair, conservé sans limite.
+        Log::info('pos.loyalty.lookup', [
+            'via'     => $resultat['via'] ?? $critere,
+            'status'  => $resultat['status'],
+            'cashier' => $request->user()?->id,
+        ]);
+
+        return response()->json(['status' => true, 'data' => $resultat]);
     }
 
     public function redeem(PosLoyaltyRedeemRequest $request, int $orderId): JsonResponse

@@ -239,6 +239,18 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
+        // [2026-08-10] Recherche d'un client au comptoir : la route dit si un numéro possède un
+        // compte, c'est donc un ORACLE d'énumération. Le personnel authentifié en a besoin plusieurs
+        // fois par service (un client se trompe de numéro, un autre hésite entre deux), mais pas
+        // trente fois par minute — au-delà, ce n'est plus un comptoir, c'est un balayage. Compté par
+        // caissier, pas par adresse : plusieurs postes derrière la même connexion ne doivent pas se
+        // bloquer entre eux.
+        RateLimiter::for('pos-loyalty-lookup', function (Request $request) {
+            $perMinute = max(1, (int) config('pos.rate_limit.loyalty_lookup', 30));
+
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+        });
+
         // [GOAL Phase F.1 2026-05-23] Menu availability toggle dedicated limiter.
         // The original hardcoded `throttle:60,1` at routes/api.php:256 tripped
         // empirically at call #60 with retry_after=25s when a manager bulk-86'd

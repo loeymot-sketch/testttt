@@ -57,6 +57,8 @@ return [
     | invariants.
     */
     'rate_limit' => [
+        // Recherche d'un client au comptoir (téléphone / code / QR). Oracle d'énumération : borné.
+        'loyalty_lookup' => (int) env('POS_RATE_LIMIT_LOYALTY_LOOKUP', 30),
         'quote'        => max(1, (int) env('POS_RATE_LIMIT_QUOTE', 120)),
         'order_create' => max(1, (int) env('POS_RATE_LIMIT_ORDER_CREATE', 60)),
         'order_update' => max(1, (int) env('POS_RATE_LIMIT_ORDER_UPDATE', 120)),

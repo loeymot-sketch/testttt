@@ -21,7 +21,15 @@ export const V1_HIDDEN_MENU_MODULES = Object.freeze([
     'waiters',
     'diningTables',
     'settings.mail',
-    'settings.loyalty-setup',
+    // [2026-08-10 · propriétaire : « une limite utilisable à partir de 1000 points »] L'écran des
+    // règles de fidélité est DÉMASQUÉ. Il était caché depuis le nettoyage V1 du 2 mai, si bien que
+    // l'exploitant n'avait aucun moyen de régler son barème ni son plancher : les trois valeurs
+    // (points par €, points pour 1 € de remise, minimum utilisable) tournaient sur leurs défauts et
+    // toute demande de changement exigeait un développeur. Ce n'est pas un module « différé V2 » :
+    // c'est le tableau de bord de sa propre mécanique de fidélité, et il le pilote lui-même.
+    // L'écran existe et est complet (LoyaltySetupComponent.vue, route admin.settings.loyaltySetup,
+    // libellés FR présents, aperçu « 10 € d'achat = X pts → Y € de réduction »).
+    // 'settings.loyalty-setup',
     'settings.notification',
     'settings.theme',
     'settings.item-categories',

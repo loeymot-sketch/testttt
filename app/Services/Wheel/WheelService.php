@@ -112,16 +112,17 @@ class WheelService
         return true;
     }
 
-    /** Chiffres seuls : « 06 12 34 56 78 », « +33612345678 » et « 0612345678 » sont UNE personne. */
+    /**
+     * Chiffres seuls : « 06 12 34 56 78 », « +33612345678 » et « 0612345678 » sont UNE personne.
+     *
+     * [2026-08-10] L'implémentation a déménagé dans `App\Services\Identity\PhoneIdentity` : le
+     * comptoir a besoin de la même définition pour retrouver un client par son téléphone, et en
+     * écrire une seconde version aurait refait la faute que cette définition venait de réparer.
+     * Cette méthode reste le point d'entrée historique de la roue et délègue.
+     */
     public function normalizePhone(string $phone): string
     {
-        $d = preg_replace('/\D+/', '', $phone) ?? '';
-        // Forme nationale française : +33 6 … → 06 …
-        if (strlen($d) === 11 && str_starts_with($d, '33')) {
-            $d = '0' . substr($d, 2);
-        }
-
-        return $d;
+        return app(\App\Services\Identity\PhoneIdentity::class)->normalize($phone);
     }
 
     /**
@@ -144,17 +145,7 @@ class WheelService
      */
     public function phoneVariants(string $phone): array
     {
-        $tel = $this->normalizePhone($phone);
-        $v = [$tel];
-
-        if (str_starts_with($tel, '0') && strlen($tel) === 10) {
-            $sansZero = substr($tel, 1);
-            $v[] = $sansZero;
-            $v[] = '33' . $sansZero;
-            $v[] = '+33' . $sansZero;
-        }
-
-        return array_values(array_unique(array_filter($v, static fn ($x) => $x !== '')));
+        return app(\App\Services\Identity\PhoneIdentity::class)->variants($phone);
     }
 
     /**
@@ -174,18 +165,10 @@ class WheelService
             return false;
         }
 
-        if ((int) $user->is_guest === (int) \App\Enums\Ask::YES) {
-            return true;
-        }
-
-        try {
-            return method_exists($user, 'hasRole')
-                && $user->hasRole(\App\Enums\Role::CUSTOMER);
-        } catch (\Throwable $e) {
-            // Rôles illisibles : on ne bloque pas un crédit pour un incident de lecture. Le compte
-            // reste candidat, et les autres gardes (suppression, unicité) tiennent toujours.
-            return true;
-        }
+        // [2026-08-10] Définition déménagée dans `App\Services\Identity\CustomerAccount` : le
+        // comptoir doit répondre à la même question (ne pas créditer un collègue), et une seconde
+        // version aurait été le « jumeau oublié » de plus.
+        return app(\App\Services\Identity\CustomerAccount::class)->isCustomer($user);
     }
 
     public function isOpenToPublic(): bool

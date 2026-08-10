@@ -521,22 +521,22 @@ class LoyaltyController extends Controller
     public function config(Request $request)
     {
         try {
-            $pointsPerEuro  = (int)   Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
-            $pointsFor1Euro = (int)   Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
-            $minRedeem      = (int)   Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+            // [2026-08-10] Le barème vient de `LoyaltyRules`, la définition UNIQUE. Il était recopié
+            // ici, dans `redeem()`, dans `DiscountCalculator` et dans `PosRedemptionService` — et le
+            // 10 août la caisse s'est révélée être le jumeau oublié : elle n'appliquait aucun
+            // plancher. Une règle exprimée quatre fois est une divergence programmée.
+            $regles         = app(\App\Services\Loyalty\LoyaltyRules::class);
+            $pointsPerEuro  = $regles->pointsPerEuro();
+            $pointsFor1Euro = $regles->rate();
             $rawTiers       = Settings::group('loyalty_setup')->get('loyalty_tiers', '100,250,500,1000,2000');
 
             // [A6-P1-1 · GOAL_WEB_ADVERSARIAL 2026-08-05] Publier le plancher EFFECTIF, pas le
-            // réglage brut. Les deux seules surfaces qui débitent réellement des points exigent
-            // un MULTIPLE du taux (`redeem()` ligne ~395 `% $rate !== 0` et PosRedemptionService) :
-            // avec le réglage de production (min 50, taux 100), on annonçait « dès 50 points » à
-            // un client qui se faisait refuser sa remise au comptoir tant qu'il n'avait pas 100.
-            // Le plancher publié est donc le premier multiple du taux ≥ réglage (et ≥ 1 unité :
-            // annoncer « dès 0 point » n'a aucun sens, rien n'est débitable sous le taux).
+            // réglage brut : les surfaces qui débitent exigent aussi un MULTIPLE du taux, donc avec
+            // le réglage de production (min 50, taux 100) on annonçait « dès 50 points » à un client
+            // refusé au comptoir sous 100. Le calcul vit désormais dans `LoyaltyRules`, avec la
+            // règle du multiple qu'il complète — les deux ne peuvent plus s'éloigner.
             // Sentinelle : tests/Feature/Frontend/LoyaltyConfigEffectiveFloorTest.php
-            if ($pointsFor1Euro > 0) {
-                $minRedeem = (int) (max(1, (int) ceil($minRedeem / $pointsFor1Euro)) * $pointsFor1Euro);
-            }
+            $minRedeem = $regles->effectiveFloor();
 
             if (is_string($rawTiers)) {
                 $tiers = collect(explode(',', $rawTiers))

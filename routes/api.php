@@ -1376,6 +1376,26 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::match(['put', 'patch'], '/address/{customer}/{address}', [SimpleUserController::class, 'updateAddress']);
     });
 
+    // [FIDÉLITÉ COMPTOIR 2026-08-10 · propriétaire] IDENTIFIER le client au comptoir.
+    //
+    // Le chaînon qui manquait à toute la fidélité de caisse : le logiciel savait créditer
+    // (`AwardLoyaltyPointsOnDelivery` lit `orders.loyalty_customer_code`), débiter
+    // (`pos-order/{order}/redeem-loyalty`), et la commande de caisse acceptait déjà le champ de
+    // rattachement (`PosOrderRequest:215`, persisté `OrderService:1181`). Personne ne pouvait dire
+    // QUI est le client — d'où 2 lignes de gain « surface caisse » dans toute la base.
+    //
+    // Trois entrées : téléphone (le moyen préféré du propriétaire), code fidélité, ou QR scanné avec
+    // la caméra de la tablette (il n'y a pas de lecteur de code-barres).
+    //
+    // Porte : `permission:pos` via la FormRequest — identifier n'est pas débiter, un caissier qui n'a
+    // que le droit de faire cumuler doit pouvoir rattacher. Débit limité : la route dit si un numéro
+    // possède un compte, c'est un oracle d'énumération.
+    Route::prefix('pos-loyalty')->name('posLoyalty.')->group(function () {
+        Route::post('/lookup', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'lookup'])
+            ->middleware('throttle:pos-loyalty-lookup')
+            ->name('lookup');
+    });
+
     Route::prefix('pos-category')->name('pos-category.')->group(function () {
         Route::get('/', [PosCategoryController::class, 'index']);
     });
