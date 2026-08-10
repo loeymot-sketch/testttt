@@ -46,13 +46,21 @@ class WheelCounterScreenTest extends TestCase
         // 401 et non une redirection : c'est le comportement d'authentification de ce projet, et il
         // convient pour une tablette (pas de page de connexion à traverser, un refus net). On
         // accepte les deux formes pour ne pas figer un détail de configuration dans ce test.
+        // [P0 2026-08-10] Ce que ce banc protège, c'est que l'écran soit FERMÉ — pas la forme exacte
+        // du refus. Depuis la porte `wheel.access`, la forme dépend du demandeur : un navigateur est
+        // renvoyé vers l'accueil de la roue (302, il doit voir une page et pas un code), un appel
+        // JSON reçoit 401 (« entre le code ») ou 403 (« aucun code configuré sur cette machine »).
+        // La forme précise de chaque cas est éprouvée par WheelAccessTest ; ici on vérifie la nature.
+        $ferme = [401, 403, 302];
         $anonyme = $this->get('/admin/roue-validation');
-        $this->assertContains($anonyme->status(), [401, 302],
+        $this->assertContains($anonyme->status(), $ferme,
             'l\'écran de validation est accessible sans connexion : n\'importe qui donnerait des lots');
 
         $quidam = User::factory()->create(['branch_id' => 1]);
-        $this->actingAs($quidam)->get('/admin/roue-validation')->assertStatus(403);
-        $this->actingAs($quidam)->post('/admin/roue-validation')->assertStatus(403);
+        $this->assertContains($this->actingAs($quidam)->get('/admin/roue-validation')->status(), $ferme,
+            'un compte sans droit caisse ouvre l\'écran qui donne les tours');
+        $this->assertContains($this->actingAs($quidam)->post('/admin/roue-validation')->status(), $ferme,
+            'un compte sans droit caisse peut ÉMETTRE un jeton : il distribue des lots');
     }
 
     /**
@@ -62,7 +70,7 @@ class WheelCounterScreenTest extends TestCase
      */
     public function test_l_ecran_n_est_pas_avale_par_l_attrape_tout_de_la_SPA(): void
     {
-        $r = $this->actingAs($this->caissier)->get('/admin/roue-validation')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->get('/admin/roue-validation')->assertOk();
 
         $r->assertSee('Valider un tour de roue', false);
         $r->assertSee('avis Google', false);
@@ -70,7 +78,7 @@ class WheelCounterScreenTest extends TestCase
 
     public function test_la_validation_produit_un_QR_vers_la_page_de_la_roue_avec_un_jeton(): void
     {
-        $r = $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->post('/admin/roue-validation')->assertOk();
 
         $html = $r->getContent();
         $this->assertStringContainsString('<svg', $html, 'aucun QR généré : rien à scanner');
@@ -91,7 +99,7 @@ class WheelCounterScreenTest extends TestCase
     {
         Config::set('wheel.public_url', '');
 
-        $r = $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->post('/admin/roue-validation')->assertOk();
 
         $html = $r->getContent();
         $this->assertStringNotContainsString('<svg', $html, 'un QR a été affiché sans destination');
@@ -104,7 +112,7 @@ class WheelCounterScreenTest extends TestCase
         Config::set('wheel.enabled', false);
         Config::set('wheel.preview_key', 'cle-de-test-du-patron');
 
-        $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk()
+        $this->actingAs($this->caissier, 'web')->post('/admin/roue-validation')->assertOk()
             ->assertViewHas('url', fn ($u) => str_contains((string) $u, 'preview=cle-de-test-du-patron'));
     }
 
@@ -113,7 +121,7 @@ class WheelCounterScreenTest extends TestCase
         Config::set('wheel.enabled', true);
         Config::set('wheel.preview_key', 'cle-de-test-du-patron');
 
-        $r = $this->actingAs($this->caissier)->post('/admin/roue-validation')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->post('/admin/roue-validation')->assertOk();
 
         $r->assertViewHas('url', fn ($u) => ! str_contains((string) $u, 'cle-de-test-du-patron'));
         $this->assertStringNotContainsString('cle-de-test-du-patron', $r->getContent(),

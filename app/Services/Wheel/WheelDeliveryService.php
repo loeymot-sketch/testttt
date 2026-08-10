@@ -123,6 +123,30 @@ class WheelDeliveryService
 
             if ((string) $spin->prize_type === 'points') {
                 $pointsCredites = $this->creditPoints($spin);
+
+                /*
+                 * [P0 2026-08-10 — audit E2E vague C] LES POINTS ÉTAIENT DÉTRUITS.
+                 *
+                 * `delivered_at` était posé quel que soit le résultat. Quand aucun compte ne portait
+                 * le numéro, l'écran affichait « points en attente : dis-lui de créer son compte
+                 * avec CE numéro, les points y seront ajoutés » — et la marque de remise fermait
+                 * définitivement la porte. Le client revenait avec son compte créé, l'équipe
+                 * cherchait son numéro, et lisait « rien à remettre : ses lots sont déjà remis ».
+                 *
+                 * Un lot dont on promet la suite ne peut pas être marqué REMIS. Rien n'a été remis :
+                 * on refuse, on CONSERVE le lot, et on dit quoi faire. C'est la seule version qui
+                 * tient la promesse écrite juste au-dessus.
+                 */
+                if (! $pointsCredites) {
+                    return [
+                        'ok' => false,
+                        'message' => 'Aucun compte à ce numéro : ses ' . (int) $spin->points_awarded
+                            . ' points sont CONSERVÉS. Dis-lui de créer son compte avec CE numéro '
+                            . '(ou de commander une fois sur le site), puis reviens ici : les points '
+                            . 'seront ajoutés.',
+                        'points_credited' => false,
+                    ];
+                }
             } else {
                 $this->recordCost($spin, $staffUserId);
             }
@@ -254,11 +278,10 @@ class WheelDeliveryService
 
     private function messageSucces(WheelSpin $spin, bool $pointsCredites): string
     {
+        // Un lot en points n'arrive ici QUE si le crédit a réellement eu lieu : le cas « aucun
+        // compte » est refusé plus haut, sans marquer la remise (sinon les points mouraient).
         if ((string) $spin->prize_type === 'points') {
-            return $pointsCredites
-                ? $spin->points_awarded . ' points crédités sur son compte.'
-                : $spin->points_awarded . ' points en attente : aucun compte à ce numéro. Dis-lui de créer '
-                    . 'son compte avec CE numéro, les points y seront ajoutés.';
+            return $spin->points_awarded . ' points crédités sur son compte.';
         }
 
         return 'Remis : ' . $spin->prize_label . '. Bon service !';

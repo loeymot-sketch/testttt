@@ -62,6 +62,15 @@ class RouteServiceProvider extends ServiceProvider
         // confondues) — le throttle IP seul est contournable en spoofant
         // X-Forwarded-For (TrustProxies '*'), le plafond global ferme ce vecteur
         // sur un PIN à 10^4-10^6 combinaisons.
+        // Miroir de daily-book-pin. Le code de la roue ouvre des écrans qui DISTRIBUENT des lots :
+        // même couche par-IP + même plafond global (qui ferme le vecteur X-Forwarded-For).
+        RateLimiter::for('wheel-pin', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('wp-ip:'.$request->ip()),
+                Limit::perMinute(15)->by('wp-global'),
+            ];
+        });
+
         RateLimiter::for('daily-book-pin', function (Request $request) {
             return [
                 Limit::perMinute(5)->by('dbp-ip:'.$request->ip()),

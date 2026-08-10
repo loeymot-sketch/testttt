@@ -1,0 +1,173 @@
+[
+  {
+    "severity": "P0",
+    "category": "silent_error",
+    "file": "app/Http/Controllers/Auth/LoginController.php:158",
+    "title": "Les trois écrans de l'équipe sont INACCESSIBLES après une connexion normale : la caisse est renvoyée vers un JSON d'erreur",
+    "evidence": "PREUVE 0 exécutée dans un vrai navigateur : connexion par la SPA /login avec audit-roue@local.test, puis navigation vers /admin/roue-validation → URL finale http://127.0.0.1:8000/api/login, corps affiché = {\"errors\":\"unauthenticated\"} (capture tests/captures/roue-e2e-2026-08-10/wave-C/preuve0-b-roue-validation-apres-login-spa.png + preuve0-acces-apres-login-spa.json). Cause : LoginController::login() ligne 158 fait Auth::guard('web')->logout() après attempt() et rend un jeton Bearer ; il ne reste donc AUCUNE session navigateur, alors que routes/web.php:145 protège les 3 écrans par le middleware 'auth' (garde par défaut sanctum → guard 'web', config/sanctum.php:36). curl le confirme sans cookie de session : GET /admin/roue-validation → 302 vers http://127.0.0.1:8000/api/login, lui-même 401 JSON. Aggravant : aucun lien vers ces écrans n'existe dans l'application — `grep -rn 'roue-validation|roue-lot|roue-reglages|roue-borne' resources app database public/js` ne remonte QUE les vues de la roue elles-mêmes. Il a fallu fabriquer un cookie de session à la main pour pouvoir auditer les écrans.",
+    "reproduction": "Ouvrir http://127.0.0.1:8000/login, se connecter (audit-roue@local.test / AuditRoue!2026), puis taper http://127.0.0.1:8000/admin/roue-validation dans la barre d'adresse → JSON {\"errors\":\"unauthenticated\"}.",
+    "recommendation": "Servir ces 3 routes via une garde qui existe réellement dans le navigateur : soit ne pas détruire la session web pour les comptes `pos` (garder Auth::guard('web') en plus du Bearer), soit poser une route de passerelle POST /admin/roue/session qui ouvre une session web depuis le jeton Bearer, soit passer ces écrans dans la SPA. Et ajouter les 3 entrées au menu admin : un écran de service qu'on ne peut atteindre qu'en tapant l'URL de mémoire n'est pas un écran de service."
+  },
+  {
+    "severity": "P0",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:130",
+    "title": "Un lot en points est marqué REMIS alors que rien n'est crédité : les points sont détruits et l'écran promet le contraire",
+    "evidence": "`$spin->delivered_at = now();` (ligne 130) est exécuté INCONDITIONNELLEMENT, y compris quand creditPoints() a renvoyé false parce qu'aucun compte ne porte le numéro. Preuve écran (tests/captures/roue-e2e-2026-08-10/wave-C/tablette-1194x834__lot-11-points-sans-compte-remis.viewport.png, regardée) : un bandeau VERT de succès annonce « 50 points en attente : aucun compte à ce numéro. Dis-lui de créer son compte avec CE numéro, les points y seront ajoutés. » et 60 px plus bas l'historique du MÊME écran dit « 50 points — 10/08/2026 · remis le 10/08/2026 ». Extrait DOM : `<p class=\"msg ok\">50 points en attente…` + `remis le 10/08/2026`. Preuve base : tour #9 (0600000906) → delivered_at=10/08/2026 04:21, points_credited_user_id=NULL. Conséquence vérifiée : au retour du client, pending() écarte le tour (whereNull('delivered_at'), ligne 62) et l'écran affiche « Rien à remettre : ses lots sont déjà remis » — les 50 points sont perdus. Le docbloc du service (lignes 33-35) promet exactement l'inverse : « Sinon on conserve le lot : les points seront créditables le jour où la personne crée son compte ».",
+    "reproduction": "Créer un tour points sur un numéro qui n'a AUCUN compte, ouvrir /admin/roue-lot?phone=<numéro>, appuyer sur « ✓ REMIS AU CLIENT » : message vert « points en attente », puis recharger la page → « Rien à remettre : ses lots sont déjà remis ».",
+    "recommendation": "Ne poser delivered_at que si la remise a réellement eu lieu : `if ($spin->prize_type === 'points' && ! $pointsCredites) { return ['ok' => false, 'message' => '…aucun compte à ce numéro, le lot est CONSERVÉ…']; }` avant la ligne 130 — et styler ce cas en `msg info`, pas en `msg ok`."
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "app/Http/Controllers/Admin/Wheel/WheelPrizeController.php:40",
+    "title": "Un lot en pourcentage n'est pas distingué d'un lot déjà remis, et son code n'est jamais affiché au comptoir",
+    "evidence": "Message unique pour deux situations opposées : « Rien à remettre : ses lots sont déjà remis, ou ce sont des codes à utiliser sur le site. » (contrôleur ligne 40). Capture regardée tel-390x844__lot-05-lot-pourcentage.png : le client 0600000902 a gagné -10 %, l'équipe lit cette phrase à deux branches et ne peut pas trancher. L'historique (lot.blade.php:92) dit « -10% — 10/08/2026 · code à utiliser sur le site » mais JAMAIS le code : le coupon ROUE-SBQV1W existe en base (table coupons) et n'apparaît sur aucune surface comptoir. Un client qui a perdu l'e-mail de son lot ne peut donc pas récupérer son code, alors qu'il est devant la personne qui a l'information.",
+    "reproduction": "GET /admin/roue-lot?phone=0600000902 (tour coupon_percent en attente) — comparer avec /admin/roue-lot?phone=<numéro dont le lot est déjà remis> : message identique.",
+    "recommendation": "Séparer les deux cas dans le contrôleur (l'historique dit déjà lequel est lequel) et afficher le code du coupon dans la ligne d'historique : « -10% — code ROUE-SBQV1W, à saisir sur le site, minimum 12 € »."
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "app/Services/Wheel/WheelSettingsService.php:220",
+    "title": "La bannière d'état des réglages est bloquée sur « Le parcours tourne » — le patron ne peut pas savoir si son jeu est réellement configuré",
+    "evidence": "Capture regardée tablette-1194x834__reglages-01-arrivee-avis-derive.png : bandeau VERT « Le parcours tourne. » alors que les champs Avis Google, Instagram et Snapchat sont TOUS VIDES (mesure a11y.champs : review_url='', instagram_url='', snapchat_url=''), en contradiction directe avec le sous-titre de la même page : « Le parcours s'active dès qu'au moins un lien est renseigné. » Cause : journeyReady() (ligne 220) teste reviewUrl(), qui retombe sur l'URL DÉRIVÉE Google Maps (ligne 115), et facebookUrl(), dont le défaut de configuration est codé en dur non vide (config/wheel.php:204 → 'https://www.facebook.com/LeCayenne'). Vérifié en tinker : journeyReady=true, reviewDerive=true, sur une base où le patron n'a rien saisi. La branche « off » de la vue (reglages.blade.php:65-71) est donc inatteignable en pratique.",
+    "reproduction": "php artisan tinker → app(WheelSettingsService::class)->journeyReady() renvoie true sans aucun réglage enregistré ; ouvrir /admin/roue-reglages et constater le bandeau vert au-dessus de champs vides.",
+    "recommendation": "Faire porter la bannière sur ce que le patron a RÉELLEMENT saisi (les valeurs stockées), pas sur les replis : `journeyReady()` doit ignorer l'URL dérivée et le défaut Facebook, et la bannière doit lister champ par champ ce qui est vrai (« Avis : lien de secours », « Instagram : absent », « Facebook : valeur par défaut »)."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "app/Services/Wheel/WheelSettingsService.php:58",
+    "title": "Impossible de retirer un lien : le champ vidé revient tout seul, et l'écran affiche quand même « Réglages enregistrés »",
+    "evidence": "Séquence capturée : reglages-05-champ-facebook-vide (champ Facebook effacé + Enregistrer) → message vert « Réglages enregistrés. » ET facebook_url = 'https://www.facebook.com/LeCayenne' de retour dans le champ ; reglages-06-relecture-apres-vidage (rechargement) → toujours 'https://www.facebook.com/LeCayenne'. La chaîne vide EST bien écrite en base — vérifié : settings group wheel = {…,\"facebook_url\":\"\",…} — mais all() ligne 58 `array_filter($brut, fn($v) => $v !== null && $v !== '')` la jette et retombe sur defaults() → config/wheel.php:204. La confirmation de succès est donc mensongère, et le contrôleur documente lui-même l'intention violée (WheelSettingsController.php:40-42 : « un champ vidé DOIT pouvoir l'être (on retire un compte) »).",
+    "reproduction": "GET /admin/roue-reglages → vider « Ta page Facebook » → Enregistrer → le message vert apparaît et le champ est de nouveau rempli. Recharger : toujours rempli.",
+    "recommendation": "Distinguer « clé absente » de « clé volontairement vide » : ne filtrer les valeurs vides QUE pour les clés absentes du stockage (array_key_exists), ou stocker un marqueur explicite. Un défaut de configuration non vide ne doit jamais reprendre la main sur un choix du patron."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "resources/views/admin/wheel/reglages.blade.php:55",
+    "title": "Toute saisie refusée par le serveur est perdue en SILENCE sur l'écran qui débloque le jeu",
+    "evidence": "La vue n'affiche QUE `$enregistre` (ligne 55) ; `$errors` n'est jamais rendu. Trois soumissions invalides mesurées, réseau à l'appui (fichiers *.network.json) : URL sans schéma « instagram.com/lecayenne » → 302 POST /admin/roue-reglages puis 200 GET, page identique, AUCUN message (reglages-03-url-invalide-cote-serveur) ; schéma dangereux « javascript:alert(1) » → 302, rejeté sans un mot (reglages-07-schema-javascript) ; valeurs hors bornes review_dwell=9999 et min_order=9999 → 302, rejetées sans un mot (reglages-08-valeurs-hors-bornes). Le texte visible des trois états est mot pour mot celui de l'arrivée. La validation native du navigateur ne couvre que le premier cas et de façon éphémère (mesure : checkValidity()=false, message natif transitoire) ; les bornes max:180 / max:200 (WheelSettingsController.php:47-49) ne sont écrites nulle part à l'écran.",
+    "reproduction": "GET /admin/roue-reglages, mettre 9999 dans « Temps avis (secondes) », soumettre : la page revient à l'identique, la valeur est perdue, aucun message.",
+    "recommendation": "Afficher `@error(...)` sous chaque champ + un bandeau rouge en tête de formulaire, et repeupler les champs avec `old()`. Écrire les bornes dans l'aide (« de 0 à 180 s », « de 0 à 200 € »)."
+  },
+  {
+    "severity": "P1",
+    "category": "numeric_integrity",
+    "file": "resources/views/admin/wheel/lot.blade.php:64",
+    "title": "L'écran de remise n'affiche ni le nom du client ni la condition d'achat, et aucune condition n'est vérifiée avant de donner le cadeau",
+    "evidence": "Capture regardée tablette-1194x834__lot-04-lot-en-attente-produit.viewport.png : la carte du lot ne montre que « Boisson offerte » et « Gagné le 10/08/2026 à 04:07 ». Le nom EST en base (wheel_spins.customer_name = 'Client Audit Un') et n'est pas rendu (vue lignes 64-70) : n'importe qui connaissant un numéro obtient le produit. Aucune trace du minimum d'achat pourtant réglé à 12 € (settings wheel min_order=12) ni de wheel.requires_order_to_claim=true (config/wheel.php:101) — ni à l'écran, ni dans deliver() (WheelDeliveryService.php:91-120, qui ne contrôle que l'existence, delivered_at et prize_type). Aucune date limite non plus : prize_validity_days=30 n'est appliqué qu'aux coupons (award() sort avant pour un free_item, WheelService.php:440), donc un produit gagné il y a six mois reste remis sans achat.",
+    "reproduction": "GET /admin/roue-lot?phone=0600000901 : le produit est remis en un appui, sans nom affiché, sans commande, sans date limite.",
+    "recommendation": "Afficher le nom enregistré et le rappel de condition (« minimum 12 € sur la commande en cours — vérifie le ticket »), et faire porter la règle par le serveur : refuser la remise hors délai (created_at + prize_validity_days) et exiger une confirmation explicite « commande ≥ min_order encaissée »."
+  },
+  {
+    "severity": "P1",
+    "category": "i18n_leak",
+    "file": "resources/views/admin/wheel/validation.blade.php:57",
+    "title": "Session expirée sur la tablette du comptoir : « 419 PAGE EXPIRED » en anglais, sans issue",
+    "evidence": "État capturé en direct (tablette-1194x834__validation-04-csrf-perime-419.viewport.png, regardée) : page blanche du framework, « 419 | PAGE EXPIRED », en anglais, thème clair au milieu d'écrans noirs, aucun lien de retour. Réseau : POST /admin/roue-validation → 419 (document) ; console : 1 erreur « Failed to load resource: the server responded with a status of 419 ». Aucune vue personnalisée n'existe (`ls resources/views/errors/` → absent). C'est l'erreur la PLUS probable en service : le formulaire est en Blade sans JavaScript, la tablette reste allumée au comptoir, et le jeton CSRF de session finit par périmer — l'équipe appuie sur VALIDER et tombe sur cet écran. L'état d'erreur soigné de la vue (« VALIDATION IMPOSSIBLE », lignes 44-47) n'est PAS ce qu'elle voit.",
+    "reproduction": "Ouvrir /admin/roue-validation, remplacer la valeur de input[name=_token] par n'importe quoi, soumettre → 419 PAGE EXPIRED.",
+    "recommendation": "Ajouter resources/views/errors/419.blade.php en français, au thème du comptoir, avec un bouton « Recharger l'écran de validation » — et rafraîchir le jeton CSRF de la page (méta + rechargement périodique) puisque cet écran est fait pour rester ouvert des heures."
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/validation.blade.php:54",
+    "title": "La consigne de l'écran de validation est figée dans le code et contredit les réglages : l'équipe réclame des abonnements que le client ne s'est jamais vu proposer",
+    "evidence": "La liste est écrite en dur : « Il a laissé un avis Google » et « Il est abonné aux deux comptes » (lignes 53-54, capture validation-01-arrivee lue). Or l'écran de réglages permet 0 à 3 réseaux et rend l'avis facultatif (cases review_required / follow_required). État réel mesuré à l'arrivée : instagram_url et snapchat_url VIDES, seul Facebook renseigné — l'équipe demande donc « les deux comptes » (Instagram + Snapchat) que le parcours client n'a jamais présentés. Aucune synchronisation possible : WheelUnlockService::issue() (lignes 45-67) n'inspecte ni review_required ni follow_required ; la consigne est purement décorative.",
+    "reproduction": "Comparer /admin/roue-reglages (Instagram et Snapchat vides, Facebook seul) et /admin/roue-validation (« abonné aux deux comptes »).",
+    "recommendation": "Composer la liste depuis WheelSettingsService : n'exiger l'avis que si review_required, et nommer les réseaux réellement renseignés (« abonné à notre page Facebook »)."
+  },
+  {
+    "severity": "P2",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelUnlockService.php:64",
+    "title": "Deux appuis sur VALIDER = deux tours valides, alors que l'écran affirme le contraire",
+    "evidence": "issue() (lignes 45-67) fabrique un jeton signé indépendant à chaque appel et ne révoque jamais le précédent : aucun stockage des jetons émis, l'unicité n'est tranchée qu'à la consommation (index UNIQUE sur wheel_spins.unlock_token_hash). Deux appuis émettent donc deux jetons vivants 15 minutes, consommables par deux numéros différents. Le texte de l'écran laisse croire l'inverse (validation.blade.php:62 : « Chaque validation ne sert qu'une fois. Si le client repart sans tourner, il faudra revalider — un code qui traîne se partage »). Vérifié : validation-02-jeton-emis puis validation-03-jeton-reemis produisent deux QR différents, sans le moindre avertissement sur le sort du premier. Garde-fou existant : throttle 60/min (routes/web.php:150), qui n'empêche pas un double appui.",
+    "reproduction": "GET /admin/roue-validation, appuyer sur VALIDER, puis sur « Valider un autre client » : deux QR distincts, tous deux valables 15 minutes.",
+    "recommendation": "Soit invalider le jeton précédent (garder la dernière empreinte émise par utilisateur en cache et refuser les plus anciennes), soit corriger le texte pour dire la vérité : « chaque appui donne UN tour de plus ». Afficher aussi l'heure limite (« valable jusqu'à 04:22 ») plutôt que « 15 minutes », que personne ne peut chronométrer."
+  },
+  {
+    "severity": "P2",
+    "category": "numeric_integrity",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:93",
+    "title": "`spin_id` est un champ caché de confiance : la remise ne vérifie ni la caisse ni le numéro cherché",
+    "evidence": "Extrait DOM de l'écran de remise : `<input type=\"hidden\" name=\"spin_id\" value=\"3\">` et `<input type=\"hidden\" name=\"phone\" value=\"0600000901\">` — les deux viennent du client. deliver() (lignes 93-98) charge le tour par `whereKey($spinId)` avec `withoutGlobalScope(BranchScope::class)` et SANS filtre branch_id, et sans vérifier que le tour appartient au numéro posté ; WheelPrizeController::deliver() ne valide que `spin_id => integer` (lignes 55-58). Un compte `pos` peut donc marquer remis n'importe quel tour, y compris d'un autre comptoir : le client légitime s'entend ensuite répondre « Ce lot a déjà été remis le … ». Impact limité en V1 mono-branche (branch_id=1), mais l'isolation de branche est affaiblie (CLAUDE.md §9). Non exécuté volontairement : remettre un free_item écrit dans stock_outflows (table append-only interdite par la consigne).",
+    "reproduction": "Lire le DOM de /admin/roue-lot?phone=0600000901 : spin_id est modifiable côté client ; POST /admin/roue-lot/remettre avec un spin_id d'une autre branche/d'un autre numéro passe les contrôles.",
+    "recommendation": "Recharger le tour attendu côté serveur au lieu de faire confiance au formulaire : `deliver(branchId, phone)` qui relit pending() sous verrou, et ajouter `where('branch_id', $branchId)` dans la requête de deliver()."
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "resources/views/admin/wheel/reglages.blade.php:41",
+    "title": "Cibles tactiles sous 44 px sur une tablette utilisée à la main : cases à cocher 22x22 et liens de navigation 17 à 27 px",
+    "evidence": "Mesures getBoundingClientRect aux 3 tailles (_resultats.json) : input#review_required et input#follow_required = 22x22 px (CSS ligne 41 `.bascule input{width:22px;height:22px}`) ; les 3 liens du bas de réglages = 590x27 px (`.liens a{padding:5px 0}`, ligne 47) ; « Remettre un lot gagné → » de l'écran de validation = 474x17 px (`.encore`, validation.blade.php:37) ; « ← Valider un tour » de l'écran de remise = 117,6x17 px (`a.retour`, lot.blade.php:44) ; « Réessayer » de l'état d'erreur = 71,3x17 px. Identique en 1194x834, 1440x900 et 390x844. Les boutons principaux, eux, sont conformes (66 px, 60 px, 70 px pour « REMIS AU CLIENT »).",
+    "reproduction": "Ouvrir chaque écran et mesurer les liens `.encore`, `a.retour`, `.liens a` et les deux cases à cocher.",
+    "recommendation": "Passer les cases à 44x44 (agrandir la zone cliquable du bloc `.bascule` entier, label compris) et donner `min-height:44px;display:flex;align-items:center` aux liens de navigation."
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "resources/views/admin/wheel/reglages.blade.php:36",
+    "title": "Aucun repère de focus visible sur les deux cases « Obligatoire pour tourner »",
+    "evidence": "`input:focus{outline:none;border-color:var(--jaune)}` (ligne 36) s'applique aussi aux cases à cocher, mais une case native ne peint pas de bordure CSS : elle perd donc l'anneau du navigateur sans rien en échange. Mesure de la navigation au clavier (tablette-1194x834__clavier-reglages.json), position 2 et 6 : `outline = 0px none rgb(0,0,0)`, `border = rgb(0,0,0)` — contre `border = rgb(255,184,0)` sur les champs texte, où le remplacement fonctionne. Par ailleurs l'ordre de tabulation est complet et logique (9 champs → Enregistrer → 3 liens), ce qui est correct.",
+    "reproduction": "Ouvrir /admin/roue-reglages, appuyer deux fois sur Tab : le focus est sur la première case et rien ne le montre.",
+    "recommendation": "Restreindre la règle : `input[type=text]:focus, input[type=url]:focus, input[type=number]:focus{outline:none;border-color:var(--jaune)}` et laisser l'anneau natif aux cases (ou `outline:3px solid var(--jaune);outline-offset:2px` sur `.bascule input:focus-visible`)."
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "resources/views/admin/wheel/lot.blade.php:60",
+    "title": "Les messages de succès et d'échec ne sont pas annoncés, et aucune page n'a de repère principal",
+    "evidence": "Mesures a11y.roles sur les 24 états des trois écrans : role=alert 0, role=status 0, aria-live 0, main 0. Les blocs porteurs de sens sont de simples `<p class=\"msg ok\">` / `<p class=\"msg err\">` (lot.blade.php:60) et `<div class=\"etat on|off\">` (reglages.blade.php:60,66), sans rôle. Comme chaque action recharge la page, le message apparaît APRÈS le formulaire dans l'ordre de lecture : une personne à la synthèse vocale entend le titre et le formulaire avant d'apprendre que la remise a réussi ou échoué. Points corrects par ailleurs : `lang=\"fr\"` présent sur les 3 vues, un `<h1>` par écran, tous les champs ont un `<label for>` lié (mesure a11y.champs : 0 champ sans nom accessible sur les 24 états), tous les boutons ont un nom textuel.",
+    "reproduction": "Inspecter n'importe quel état après soumission : aucun attribut role/aria-live sur le bloc de message.",
+    "recommendation": "`role=\"status\"` sur les messages de succès, `role=\"alert\"` sur les échecs, placer le bloc AVANT le formulaire dans le DOM, et envelopper la carte dans `<main>`."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "app/Http/Controllers/Admin/Wheel/WheelCounterController.php:108",
+    "title": "L'état d'erreur de l'écran de validation cite une variable d'environnement et ne propose qu'une action qui ne peut pas marcher",
+    "evidence": "Capture de la vue rendue (tablette-1194x834__validation-05-etat-erreur-vue-rendue.viewport.png, regardée) : « VALIDATION IMPOSSIBLE » puis « L'adresse publique de la roue n'est pas configurée (WHEEL_PUBLIC_URL). » et pour seule issue un lien « Réessayer ». « WHEEL_PUBLIC_URL » ne veut rien dire pour une personne au comptoir, la phrase ne dit pas QUOI FAIRE, et réessayer ne peut pas résoudre une configuration absente — la boucle est infinie. À noter : cette branche est en pratique inatteignable (config/wheel.php:55 donne un défaut non vide et WheelUnlockService::issue() ne lève jamais d'exception), donc le seul état d'erreur réellement vécu est le 419 anglais du framework.",
+    "reproduction": "Rendre la vue avec la variable $erreur : `view('admin.wheel.validation', ['token'=>null,'qr'=>null,'url'=>null,'ttl'=>null,'erreur'=>'…'])`.",
+    "recommendation": "Écrire le message pour l'équipe (« La roue n'est pas encore reliée au site. Préviens le patron — rien à faire ici. ») et retirer « Réessayer » quand l'erreur est une configuration ; garder le nom technique dans les journaux, pas à l'écran."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/reglages.blade.php:79",
+    "title": "L'avertissement « lien de secours » est bien présent, mais dans le plus petit texte de la page et sous un champ vide",
+    "evidence": "Capture regardée tablette-1194x834__reglages-01-arrivee-avis-derive.png : la mention « Actuellement : un lien de secours — il ouvre ta fiche Google, le client doit ensuite appuyer sur \"Écrire un avis\". » existe bien (bloc conditionnel $reviewDerive, lignes 79-86) et est en jaune gras — le point du brief est donc couvert. Mais c'est le corps de texte le plus petit de l'écran : `.aide{font-size:12.5px;opacity:.65}` (ligne 37), mesuré à 12,5 px et 65 % d'opacité (contraste effectif 4,92:1, juste au-dessus du seuil), placé SOUS un champ vide — rien ne relie visuellement « ce champ est vide » à « on utilise donc un lien de secours ». La phrase ne dit pas non plus que c'est ce point qui débloque le jeu.",
+    "reproduction": "Ouvrir /admin/roue-reglages avec review_url vide et regarder la taille du texte d'avertissement par rapport au reste.",
+    "recommendation": "Sortir cet avertissement du texte d'aide et en faire un encart au même niveau que la bannière d'état (fond ambré, 15 px, pleine opacité), formulé comme une action : « Ce n'est pas encore ton vrai lien d'avis. Colle-le ici pour supprimer un appui au client. »"
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "app/Services/Wheel/WheelDeliveryService.php:51",
+    "title": "Un numéro trop court donne le même message que « ce client n'a jamais joué »",
+    "evidence": "pending() et history() renvoient vide dès que le numéro fait moins de 9 chiffres (lignes 54-56 et 72-74), avant toute requête. Capture lot-03-numero-incomplet (recherche « 0612 ») : « Aucun tour à ce numéro. Vérifie le numéro, ou fais-le jouer d'abord. » — texte identique à lot-02-numero-introuvable (numéro complet inconnu). L'équipe ne sait pas si elle a mal tapé ou si le client n'a pas joué.",
+    "reproduction": "GET /admin/roue-lot?phone=0612 puis /admin/roue-lot?phone=0600000999 : même message.",
+    "recommendation": "Message dédié sous les 9 chiffres : « Numéro incomplet — il en faut 10. »"
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/reglages.blade.php:117",
+    "title": "Unités notées de deux façons différentes sur deux champs voisins",
+    "evidence": "« TEMPS AVIS (SECONDES) » (ligne 117) et « TEMPS ABONNEMENT (S) » (ligne 123), côte à côte dans la même grille `.duo` — visible sur toutes les captures reglages. Sur téléphone (390 px) le premier libellé passe sur deux lignes et le second aussi, ce qui accentue l'asymétrie.",
+    "reproduction": "Ouvrir /admin/roue-reglages et lire les deux libellés de la grille.",
+    "recommendation": "Uniformiser : « Temps sur l'avis (s) » / « Temps sur l'abonnement (s) »."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "routes/web.php:180",
+    "title": "Après une remise, l'écran vit sur une URL réservée au POST : recharger ouvre une boîte « renvoyer le formulaire »",
+    "evidence": "Mesure : après « ✓ REMIS AU CLIENT », location.href = http://127.0.0.1:8000/admin/roue-lot/remettre (états lot-07, lot-08, lot-11) ; la route n'existe qu'en POST (routes/web.php:180). Un F5 réflexe sur la tablette déclenche la boîte de renvoi du navigateur, et un accès direct répond 405. La double remise est bien refusée côté serveur (voir lot-08), donc le risque est un écran incompréhensible, pas une double dépense.",
+    "reproduction": "Remettre un lot puis recharger la page.",
+    "recommendation": "Rediriger après succès vers `/admin/roue-lot?phone=…` en passant le message par la session (POST-redirect-GET)."
+  }
+]

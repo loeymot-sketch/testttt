@@ -146,18 +146,34 @@ class WheelDeliveryTest extends TestCase
      * AUCUN COMPTE : on ne crédite rien, on garde le lot, et on le DIT. Inventer un compte à partir
      * d'un numéro créerait un client sans son consentement ; promettre des points qui n'arriveront
      * jamais serait un mensonge.
+     *
+     * ── [P0 2026-08-10] CE TEST ENCODAIT LE DÉFAUT ────────────────────────────────────────────
+     * Il exigeait `ok = true` avec pour justification « le lot est acquis ». C'était un raccourci de
+     * raisonnement : « le lot est DÛ » et « le lot a été REMIS » ne sont pas la même chose. Comme
+     * `deliver()` posait `delivered_at` dans tous les cas, le lot passait pour remis sans qu'un seul
+     * point ne soit crédité — et le client qui revenait avec son compte créé, exactement comme le
+     * message le lui demandait, s'entendait répondre « ses lots sont déjà remis ». Les points
+     * mouraient là.
+     *
+     * La remise ÉCHOUE donc, et c'est le bon comportement : rien n'a été remis. Le lot reste dû, il
+     * reste visible dans les lots en attente, et il sera créditable au retour du client.
+     * Voir `WheelPointsDeliveryTest` pour la suite de l'histoire.
      */
-    public function test_sans_compte_a_ce_numero_on_ne_credite_rien_et_on_l_explique(): void
+    public function test_sans_compte_a_ce_numero_on_ne_credite_rien_et_le_lot_reste_DU(): void
     {
         $this->segment('points', '100 points', 100);
         $spin = $this->tourner('0611000005');
 
         $r = $this->delivery->deliver($spin->id, $this->caissier->id);
 
-        $this->assertTrue($r['ok'], 'la remise doit aboutir : le lot est acquis');
+        $this->assertFalse($r['ok'],
+            'la remise est déclarée réussie alors que rien n\'a été remis : le lot va être marqué '
+            . 'comme donné et les points seront perdus');
         $this->assertFalse($r['points_credited']);
-        $this->assertMatchesRegularExpression('/cr(é|e)er son compte/i', $r['message'],
+        $this->assertMatchesRegularExpression('/cr[ée]er son compte/iu', $r['message'],
             'le message doit dire au client quoi faire pour récupérer ses points');
+        $this->assertNull($spin->fresh()->delivered_at,
+            'le lot ne doit PAS être marqué remis : c\'est cette marque qui tuait les points');
         $this->assertSame(0, User::withoutGlobalScopes()->where('phone', '0611000005')->count(),
             'un compte fantôme a été créé sans consentement');
     }
@@ -315,11 +331,11 @@ class WheelDeliveryTest extends TestCase
         $this->segment('free_item', 'Menu offert', 0, $this->itemId);
         $spin = $this->tourner('0611000011');
 
-        $r = $this->actingAs($this->caissier)->get('/admin/roue-lot?phone=0611000011')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->get('/admin/roue-lot?phone=0611000011')->assertOk();
         $r->assertSee('Menu offert', false);
         $r->assertSee('REMIS AU CLIENT', false);
 
-        $r2 = $this->actingAs($this->caissier)->post('/admin/roue-lot/remettre', [
+        $r2 = $this->actingAs($this->caissier, 'web')->post('/admin/roue-lot/remettre', [
             'spin_id' => $spin->id, 'phone' => '0611000011',
         ])->assertOk();
 
@@ -333,7 +349,7 @@ class WheelDeliveryTest extends TestCase
 
     public function test_un_numero_inconnu_le_dit_clairement(): void
     {
-        $r = $this->actingAs($this->caissier)->get('/admin/roue-lot?phone=0699999999')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->get('/admin/roue-lot?phone=0699999999')->assertOk();
 
         $r->assertSee('Aucun tour à ce numéro', false);
         $r->assertDontSee('REMIS AU CLIENT', false);

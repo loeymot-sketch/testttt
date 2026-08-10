@@ -95,6 +95,24 @@ class WheelController extends Controller
             // tourné » ne revoit jamais son lot : deux messages contradictoires et une impasse.
             'previous_code'  => $deja && $deja->coupon_id ? optional($deja->coupon)->code : null,
             'previous_points' => $deja?->points_awarded,
+            /*
+             * [P0 2026-08-10] LE TYPE MANQUAIT, et la page de secours redevenait malhonnête.
+             *
+             * Sans lui, la reprise après coupure retombait sur le cas « remise » et affichait
+             * « saisis ce code dans ton panier » pour un lot en points ou un produit offert — qui
+             * n'ont pas de code. Ces deux types pèsent 60 % de la roue. Le défaut d'honnêteté avait
+             * été corrigé sur le chemin normal et revenait par le chemin de secours.
+             *
+             * Le type n'est pas un secret : il est déjà annoncé au tour, et sans lui le client
+             * cherche un code qui n'existe pas.
+             */
+            'previous_prize_type' => $deja?->prize_type,
+            'previous_valid_until' => $deja
+                ? ($deja->coupon_id
+                    ? optional(optional($deja->coupon)->end_date)->format('d/m/Y')
+                    : $deja->created_at?->copy()
+                        ->addDays((int) config('wheel.prize_validity_days', 30))->format('d/m/Y'))
+                : null,
         ]);
     }
 

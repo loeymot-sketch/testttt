@@ -1,0 +1,200 @@
+[
+  {
+    "severity": "P0",
+    "category": "silent_error",
+    "file": "roue.html:328",
+    "title": "Le bouton « TOURNER LA ROUE » est actif AVANT la réponse de /wheel/config : un appui pendant le trajet réseau saute les deux étapes et enferme le client dans une impasse dont seul un rechargement sort.",
+    "evidence": "`<button class=\"cta\" id=\"demarrer\" type=\"button\">` n'a PAS d'attribut `disabled` : mesuré `{disabled:false, cliquable:true}` au premier rendu, avant toute réponse. Avec 1 200 ms de latence sur /wheel/config (4G moyenne, le scénario même de la page), un appui à cet instant donne `ETAPES=[]` → `etape('review')` nul → `versFollow()` → `etape('follow')` nul → `versTour()`. Mesuré : `{ecran0:false, ecran1:false, ecran2:false, ecran3:true}`, `etapesSautees:true`. Le tour est alors refusé 428 « Laisse d'abord ton avis — le bouton se débloque juste après. » et les SEULS boutons encore visibles sont `[\"son:🔊 Son\",\"lancer:TOURNER LA ROUE\"]` : le bouton d'avis n'existe plus à l'écran. Aucun retour vers ecran0/1/2 (`{ecran0:false,ecran1:false,ecran2:false}`), aucun message ne suggère de recharger. Capture regardée : cas-erreur/N-course-config/N2-428-impasse.full.png. Défaut rencontré pour de vrai : mes 3 premiers parcours à jeton réel ont échoué exactement là.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/N-course-config/ — `page.route('**/wheel/config**')` avec 1 200 ms de délai, puis `page.click('#demarrer')` immédiatement, puis `#lancer`.",
+    "recommendation": "Ajouter `disabled` sur `#demarrer` dans le HTML (roue.html:328) et ne l'activer que dans la branche de succès de `demarrer()` (roue.html:782-793), à côté de `dessiner(0)`. Les branches 404 / !ok / catch le laissent déjà désactivé."
+  },
+  {
+    "severity": "P0",
+    "category": "numeric_integrity",
+    "file": "roue.html:1008",
+    "title": "Après une coupure réseau, la reprise perd le TYPE du lot : un gain en points ou un produit offert s'affiche avec « Saisis ce code dans ton panier sur le site » et AUCUN code — exactement le P0 d'honnêteté que le commentaire de la ligne 1041 dit avoir corrigé.",
+    "evidence": "`recuperer()` construit `{prize_label, code, points, min_order}` sans `prize_type` (roue.html:1008-1011), et `/wheel/config` ne l'expose pas (WheelController.php:92-97 : `previous_prize`, `previous_code`, `previous_points`, pas de type). `revelerLot()` tombe donc toujours dans le `else` (roue.html:1062-1064). PROUVÉ SUR LE VRAI SERVEUR (cas D2, jeton réel, /wheel/claim réel puis abort du 2ᵉ appel) : lot réel « 100 points », réponse serveur `{prize_type:\"points\", code:null, points:100, valid_until:\"09/09/2026\", account_created:true}` — et la page a rendu `condition = \"Saisis ce code dans ton panier sur le site — c'est valable dès maintenant. Dès 10,00 € de commande.\"` avec `gainCodeCache:true` (aucun code affiché). Reproduit à l'identique de façon déterministe (D2b). Capture regardée : cas-erreur/D2b-reprise-points/D2b-reprise-points.png — « TU AS GAGNÉ / 100 points / Saisis ce code dans ton panier sur le site » sans le moindre code. Poids concerné : points 48 % + free_item 12 % = 60 % de la roue (config/wheel.php:79-94). Deux pertes annexes sur le même chemin : `pied = \"Enregistré sur ton numéro.\"` (l'échéance 09/09/2026 disparaît, roue.html:1075) et `compteOk` reste caché alors que `account_created` valait true (roue.html:1081).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/D2-coupure-avec-lot-reel/ (réel) et D2b-reprise-points/ (déterministe) — réclamer par `fetch` direct, puis `page.route('**/wheel/claim', r => r.abort())` et soumettre le formulaire.",
+    "recommendation": "Ajouter `previous_prize_type`, `previous_valid_until` et `previous_account_ready` à la réponse de `WheelController::config()` (déjà lisibles sur `$deja`), et les recopier dans l'objet de `recuperer()` (roue.html:1008-1011). En attendant le backend : mémoriser `LOT.prize_type` (déjà reçu du /spin, WheelController.php:176) dans une variable et l'injecter dans l'objet de reprise."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "roue.html:367",
+    "title": "Sur un écran 320x568, le refus 428 (« Encore 14 secondes ») est rendu ENTIÈREMENT hors écran : le client voit son bouton revenir à « TOURNER LA ROUE » sans aucune explication.",
+    "evidence": "`#msg` vit tout en bas de `.wrap`, après ecran3, et `dire()` (roue.html:730-733) ne fait aucun `scrollIntoView`. Mesuré au moment exact où le client vient d'appuyer : 320x568 → `#msg {top:599.8, bottom:646.1, innerHeight:568, visibleEntier:false, visiblePartiel:false}` et `scrollY` inchangé (66). Capture regardée : cas-erreur/P-msg428-petits-ecrans/320x568/P1-428.png — aucune trace du message à l'écran. Sur 375x667 (`top:581.5/667`) et 390x664 (`top:578.7/664`) il est visible : le défaut est propre au plus petit écran. Le message serveur lui-même est bon (428 réel obtenu : « Encore 17 secondes et c'est à toi ! », cas A).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/P-msg428-petits-ecrans/320x568/ — ouvrir l'avis, forcer l'écran du tour, appuyer sur `#lancer`, lire le rect de `#msg`.",
+    "recommendation": "Dans `dire()` (roue.html:730-733), après avoir posé la classe : `msg.scrollIntoView({block:'center', behavior:'smooth'})`. Le fichier utilise déjà ce motif en roue.html:901."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "roue.html:404",
+    "title": "Sur 320x568, le message du verrou (409 / 410 / réseau coupé) est aussi ENTIÈREMENT hors écran : le client appuie sur « DÉBLOQUER MON CODE » et rien ne semble se produire.",
+    "evidence": "`#msgVerrou` est le DERNIER enfant de `#verrou`, après le bouton ET après le paragraphe RGPD. `direVerrou()` (roue.html:951-955) ne défile pas. Mesuré à la position de défilement réelle au moment de l'appui, 320x568 : `#msgVerrou {top:642, bottom:708.6, innerHeight:568, visibleEntier:false, visiblePartiel:false}`, overlay `{scrollTop:29, scrollHeight:787, clientHeight:568}`. Capture regardée : tiny-320x568/08-verrou-erreur.png — la première ligne « Tu as déjà tourné la roue pour » n'apparaît qu'après un défilement supplémentaire. Sur 390x844 il est visible (`top:694.9/844`).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/Q-msg409-320x568/ et tiny-320x568/08-verrou-erreur.png",
+    "recommendation": "Dans `direVerrou()`, ajouter `m.scrollIntoView({block:'center'})`. Et remonter `#msgVerrou` juste AU-DESSUS de `#go` dans le balisage (roue.html:396/404) : un message d'erreur se lit avant le bouton qu'on va réappuyer, pas deux paragraphes plus bas."
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "roue.html:351",
+    "title": "Le bouton « S'abonner » n'est PAS un bouton : il lui manque `.cta--lien`, il reste donc un lien en ligne de 229,1 × 21 px sous un gros bouton vert, sur l'écran qui est la dernière porte avant le tour.",
+    "evidence": "Mesuré sur les 6 appareils, identique : `#btnFollow` → `display:\"inline\"`, rect `{w:229.1, h:21}` ; `#btnAvis` (qui a bien `.cta--lien`) → `display:\"block\"`, rect 62 px de haut. Sur un élément en ligne, `width:100%`, `min-height:62px` et `overflow:hidden` de `.cta` (roue.html:145-151) sont INERTES. Capture regardée : iphone13-390x844/04-abonnement.full.png — un petit texte souligné en dégradé rose/violet au-dessus d'un bouton vert « C'est fait » plein format, qui capte tout le regard alors qu'il est désactivé. Deux conséquences mesurées en plus : (a) cible tactile 229,1 × **21** px, très en dessous de 44 ; (b) le balayage `.cta::after` (roue.html:162-168) s'échappe de la boîte en ligne — `documentElement.scrollWidth` atteint **403 px pour 320 px de fenêtre** (9 relevés sur 60, soit exactement les 15 % du cycle où `left:120%`), pseudo mesuré à `left:274.922px`. C'est l'unique débordement horizontal de tout l'audit, et il n'est invisible que grâce à `body{overflow-x:clip}` (roue.html:51).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/M-debordement-404/preuve-deterministe.json (60 relevés × 3 viewports) + */04-abonnement.png sur les 6 profils.",
+    "recommendation": "roue.html:351 → `class=\"cta cta--lien cta--fb\"` (ou `cta--ig`/`cta--sc` selon le réseau réellement choisi par `versFollow()`), comme le fait déjà `#btnAvis` en roue.html:336."
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "roue.html:939",
+    "title": "Le verrou promet « ton code » pour 60 % des lots de la roue, qui n'ont pas de code : « DÉBLOQUER MON CODE » puis, après avoir donné téléphone et e-mail, aucun code n'apparaît.",
+    "evidence": "Texte identique pour les 4 types (mesuré) : `verrouTxt = \"Ton code est réservé pendant 30 minutes. Dis-nous où l'envoyer et il s'affiche tout de suite.\"`, cadenas `ROUE-XXXXXX` (roue.html:377), bouton `DÉBLOQUER MON CODE` (roue.html:396). Après réclamation : `coupon_percent`/`coupon_fixed` → code affiché ; `free_item`/`points` → `gainCodeCache:true`, `display:none`, code `\"\"`. Le mot « code » est employé 4 fois AVANT et 0 fois après. Prouvé sur un parcours à jeton réel de bout en bout (cas B) : lot réel « 100 points », claim 200, `code` vide — le client a payé son téléphone et son adresse pour un code qui n'a jamais existé. Poids : points 48 % + free_item 12 % (config/wheel.php:79-94). L'information est disponible au bon moment : `/spin` renvoie déjà `prize_type` (WheelController.php:176) et la page le stocke dans `LOT` (roue.html:930) sans l'utiliser.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/E-types/{points,free_item}/E1-verrou.png + B-parcours-reel/resultat.json",
+    "recommendation": "Dans le callback de `tourner()` (roue.html:938-942), brancher sur `LOT.prize_type` : pour `points`/`free_item`, masquer `.cadenas`, écrire « Ton lot est réservé pendant N minutes. Dis-nous où l'envoyer et on le met de côté. » et changer le libellé de `#go` en « JE RÉCUPÈRE MON LOT ». La logique par type existe déjà 120 lignes plus bas (roue.html:1049-1064) : il s'agit de l'appliquer aussi AVANT."
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "roue.html:1096",
+    "title": "Le bouton « Copier » affiche « Copié ✓ » même quand la copie a ÉCHOUÉ — le client repart persuadé d'avoir son code dans le presse-papiers.",
+    "evidence": "`navigator.clipboard.writeText(t).then(fait, fait)` : le même `fait()` sert de succès ET d'échec, et le repli `document.execCommand('copy')` appelle `fait()` sans regarder sa valeur de retour (roue.html:1099). Mesuré avec `writeText` qui rejette et `execCommand` qui rend `false` : `{texteAvant:\"Copier\", texteApres:\"Copié ✓\", mentSurLeSucces:true, code:\"ROUE-COPIE01\"}`, 0 erreur console. C'est la seule action qui transporte le code jusqu'au panier.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/I-presse-papiers-et-clavier/ — `addInitScript` remplaçant `navigator.clipboard.writeText` par une promesse rejetée.",
+    "recommendation": "Séparer les deux voies : `.then(fait, rate)` avec `rate()` qui affiche « Sélectionne le code » et sélectionne le texte de `#gainCodeTxt` (`getSelection().selectAllChildren`). Idem pour le repli : ne appeler `fait()` que si `document.execCommand('copy') === true`."
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "roue.html:849",
+    "title": "Une étape révélée n'est jamais amenée à l'écran : sur 320x568 le bouton « Écrire mon avis » — puis « S'abonner » — apparaît ENTIÈREMENT sous la ligne de flottaison, alors que `versTour()` fait bien défiler.",
+    "evidence": "Le gestionnaire de `#demarrer` (roue.html:849-861) et celui de `#okAvis` (roue.html:869) appellent `montrer()` sans `scrollIntoView`, contrairement à `versTour()` (roue.html:899-902). Mesuré après un clic sans défilement automatique de l'outil : `#btnAvis` visible entièrement — 390x844 oui (top 648,7/844) · Pixel 5 oui · iPad oui · **390x664 NON** (top 648,7/664) · **375x667 NON** (top 632,5/667) · **320x568 NON** (top 589,8/568, donc totalement hors écran). Sur 320x568 `#btnFollow` est également hors écran après « C'est fait ». Capture regardée : tiny-320x568/02-avis.png — on ne voit que le titre « Laisse-nous un petit avis » rogné au bord inférieur ; le bouton à appuyer n'est pas là.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/U-revelation-sans-defilement/resultat.json (6 profils) + tiny-320x568/02-avis.png",
+    "recommendation": "Reprendre le motif déjà présent : dans `montrer(id)` (roue.html:809) ou dans les deux gestionnaires, `$(id).scrollIntoView({behavior:'smooth', block:'nearest'})` dans un `try/catch`, comme en roue.html:901."
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "roue.html:986",
+    "title": "Sur un 409 « tu as déjà tourné », la roue vient d'ANNONCER un lot que le client n'aura jamais et la page ne va pas chercher son lot réel, alors qu'elle sait le faire.",
+    "evidence": "Parcours réel complet avec un jeton neuf et un numéro déjà joué (cas B2) : la roue s'arrête, `#gainLot = \"Boisson offerte\"`, puis claim 409 « Tu as déjà tourné la roue pour cette opération. » Mesuré : `recuperationTentee:false` — aucun appel `/wheel/config?phone=…&t=…` n'est émis sur ce chemin, alors que `recuperer()` (roue.html:1000) existe et fonctionne (prouvé par D2c : code `ROUE-K7M2P9` réaffiché). Résultat à l'écran : le lot refusé reste affiché, le cadenas `ROUE-XXXXXX` reste affiché, et `#go` est réactivé avec « DÉBLOQUER MON CODE » (`{disabled:false}`) — un bouton qui échouera indéfiniment. Le message ne dit ni ce qu'il a gagné la première fois, ni où le retrouver.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/B2-409-deja-joue/ (jeton réel, 409 réel du serveur)",
+    "recommendation": "Dans le `if (!r.ok …)` de la réclamation (roue.html:986-990), sur `r.status === 409` appeler `recuperer(tel)` avant d'afficher un message ; si le lot est retrouvé, remplacer l'annonce par le lot réel. Sinon, dire où il est : « Ton lot d'origine t'a été envoyé par e-mail. »"
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "roue.html:72",
+    "title": "Deux cibles tactiles sous 44 × 44 px sur les 6 appareils : le bouton de son (69 × 38) et le bouton « Copier » du code (64 × 40).",
+    "evidence": "`.son{min-height:38px}` (roue.html:74) → mesuré 69 × 38 sur iPhone 13, iPhone 13 Safari, iPhone SE 375, Pixel 5, 320x568 et iPad. `.code button{min-height:40px}` (roue.html:249) → mesuré 64 × 40 sur les états où le code existe (E-types/coupon_percent, coupon_fixed). Tous les autres contrôles passent (`.cta` 62 px, `input` 54 px).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/_devices-summary.json → `etapes.*.ciblesFautives`",
+    "recommendation": "`min-height:44px` sur `.son` (roue.html:74) et sur `.code button` (roue.html:249)."
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "roue.html:370",
+    "title": "Le dialogue de gain se déclare `aria-modal=\"true\"` mais ne retient pas le clavier, ne se ferme pas à Échap, et n'offre AUCUN moyen de sortir.",
+    "evidence": "Chaîne de tabulations mesurée depuis le verrou : `#mail → #nom → #go → BODY → #son (hors du dialogue) → #tel …` — `echappe:true`. `.wrap` n'a ni `inert` ni `aria-hidden` (`{inert:false, ariaHidden:null}`) alors que `#gain` porte `aria-modal=\"true\"`, donc les lecteurs d'écran masquent l'arrière-plan que le clavier atteint quand même. Échap ne ferme pas (`escapeFerme:false`) et les seuls éléments actionnables du dialogue sont `go`, `copier` (caché) et `gainLien:Commander maintenant` : un client qui ne veut pas donner son numéro n'a aucune sortie, et rien ne lui dit qu'un rechargement conserve son lot (il le conserve : la progression porte le lot côté serveur, WheelStepService::progress).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/I-presse-papiers-et-clavier/resultat.json → clé `J`",
+    "recommendation": "À l'ouverture, poser `inert` sur `.wrap` et le retirer à la fermeture ; boucler le Tab entre `#tel` et `#go` ; et ajouter un « Plus tard » discret qui referme `#gain` en rappelant « ton lot reste réservé N minutes »."
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "roue.html:338",
+    "title": "Le compte à rebours de 20 s est muet pour un lecteur d'écran, et le déblocage de « C'est fait » n'est jamais annoncé.",
+    "evidence": "`<p class=\"attente\" id=\"attenteAvis\" hidden>` — mesuré `{role:null, live:null}`. Les seules régions annoncées de la page sont `DIV#msg[alert]` et `DIV#msgVerrou[alert]`. `compteRebours()` (roue.html:829-846) réécrit le texte chaque seconde et lève `btn.disabled` sans aucune annonce : un utilisateur non voyant reste sur un bouton désactivé sans savoir quand il s'active.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/_devices-summary.json → `etapes.03-attente.a11y.ariaLive` / `attenteAriaLive`",
+    "recommendation": "`role=\"status\"` sur `#attenteAvis` et `#attenteFollow`, et écrire « C'est à toi ! » dans cette même région quand le compteur tombe à 0."
+  },
+  {
+    "severity": "P2",
+    "category": "silent_error",
+    "file": "roue.html:737",
+    "title": "`req()` n'a aucun délai d'expiration : sur une connexion qui traîne, le bouton reste bloqué sur « Un instant… » indéfiniment, sans message.",
+    "evidence": "`fetch(...)` sans `AbortSignal.timeout` (roue.html:738-741). Mesuré avec une réponse retardée de 15 s : à 6 s, `#go` = `{disabled:true, texte:\"Un instant…\"}` et `#msgVerrou` = `{classe:\"msg\", texte:\"\"}` — donc aucun message. `.catch()` ne se déclenche que sur une erreur réseau, jamais sur une réponse qui n'arrive pas.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/I-presse-papiers-et-clavier/L1-reponse-qui-traine-6s.png",
+    "recommendation": "`signal: AbortSignal.timeout(12000)` dans `req()` : l'abandon tombe dans le `.catch()` existant, qui déclenche déjà la reprise par `recuperer()` pour la réclamation."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "roue.html:942",
+    "title": "Le focus est posé sur `#tel` 420 ms APRÈS le geste : sur iOS Safari cela déplace le curseur sans ouvrir le clavier, le client doit toucher le champ lui-même.",
+    "evidence": "`setTimeout(function(){ $('tel').focus(); }, 420)` — mesuré : `activeElement` = BODY à 100 ms et 300 ms, `#tel` à partir de ~500 ms. Le focus fonctionne donc (et c'est conforme à la demande), mais il est hors de la chaîne du geste utilisateur : iOS Safari n'affiche le clavier que pour un `focus()` synchrone dans un gestionnaire d'événement. Mesuré dans Chromium ; le comportement iOS est une règle de plateforme, pas une observation directe — à confirmer sur un vrai iPhone.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/S-focus-et-clavier/resultat (clé `focusVerrou`)",
+    "recommendation": "Garder le `focus()` (utile pour le clavier physique et les lecteurs d'écran) et ne pas compter sur lui pour le clavier tactile : le champ `#tel` est déjà le premier élément et il est visible d'emblée sur tous les appareils sauf 320x568 (voir P1 défilement)."
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "roue.html:986",
+    "title": "Sur un lot expiré (410), l'écran continue d'afficher le lot gagné et un bouton « DÉBLOQUER MON CODE » réactivé qui échouera toujours.",
+    "evidence": "Message serveur exact affiché et lisible : « Ce tour a expiré. Rescanne le QR au comptoir, ça prend dix secondes. » (`visibleEntier:true` sur 390x844). Mais mesuré au même instant : `gainLot = \"-15%\"` toujours affiché, `#go = {disabled:false, texte:\"DÉBLOQUER MON CODE\"}`, et les seuls actionnables du dialogue sont `go` / `copier` (caché) / `gainLien`. Le client est invité à rescanner un QR qu'il ne peut obtenir qu'au comptoir, sans pouvoir quitter le dialogue.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/C-410-expire/",
+    "recommendation": "Sur `r.status === 410`, désactiver `#go` définitivement, remplacer le lot par « Tour expiré » et proposer un rechargement (« Rescanne le QR »), pour ne pas laisser un bouton qui promet ce qu'il ne peut plus donner."
+  },
+  {
+    "severity": "P2",
+    "category": "visual_defect",
+    "file": "roue.html:351",
+    "title": "Le bouton d'abonnement porte les couleurs d'Instagram alors qu'il mène à Facebook, et le texte blanc y tombe à 2,54:1.",
+    "evidence": "`class=\"cta cta--ig\"` est codé en dur (roue.html:351) ; `versFollow()` (roue.html:874-890) ne change que `href` et `textContent`. Avec la configuration réelle (`instagram:\"\"`, `snapchat:\"\"`, `facebook:\"https://www.facebook.com/LeCayenne\"`), le bouton affiche « S'abonner sur Facebook » sur `linear-gradient(100deg,#F58529,#DD2A7B 55%,#8134AF)`. `.cta--fb` et `.cta--sc` existent (roue.html:185-186) et ne sont JAMAIS appliqués. Contraste mesuré au repos (opacité 1, 18 px / 900, donc seuil 4,5) : blanc sur #F58529 = **2,54:1**, sur #DD2A7B = 4,48:1, sur #8134AF = 6,90:1 — le début du libellé est sous le seuil.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/iphone13-390x844/04-abonnement.full.png ; ratios dans cas-erreur/T-contraste/",
+    "recommendation": "Dans `versFollow()`, ajouter la classe du réseau retenu (`b.classList.add('cta--fb')` etc.) en même temps que le libellé, et vérifier le contraste du texte blanc sur le premier arrêt du dégradé retenu."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "roue.html:829",
+    "title": "Réappuyer sur le lien d'étape lance un SECOND compte à rebours : le premier continue en fond et déclenche une vibration fantôme jusqu'à 20 s plus tard.",
+    "evidence": "`compteRebours()` crée un `setInterval` sans annuler le précédent (roue.html:835). Geste courant : on touche « Écrire mon avis », l'onglet s'ouvre, on revient, on touche à nouveau. Mesuré : après le 2ᵉ appui (serveur → `wait_seconds:0`), `attenteCachee:true` et `okAvisActif:true`, mais le texte du premier intervalle continue de descendre — « Encore 18 secondes… » puis « Encore 16 secondes… » 2 s plus tard, dans un élément caché. À l'échéance il exécute `vibre(14)` sans cause visible. Si les deux intervalles tournent alors que l'élément est visible, le nombre affiché oscille.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/_devices-summary.json → `etapes.03-attente.doubleIntervalle`",
+    "recommendation": "Conserver l'identifiant d'intervalle par élément et faire `clearInterval` en entrée de `compteRebours()`."
+  },
+  {
+    "severity": "P3",
+    "category": "a11y",
+    "file": "roue.html:533",
+    "title": "Le libellé « 50 points » de la roue est à 3,27:1 : le seul couple de la palette sous le seuil, et il tombe sur le segment le plus probable.",
+    "evidence": "`PALETTE[0] = ['#F4501E','#FFF6EC']` (roue.html:534) → ratio **3,27:1**. Taille réelle mesurée : échelle canvas→CSS 0,477, donc `taille 37` (roue.html:616, libellé court) = **17,6 px CSS** en graisse 900 → sous les 18,66 px du « grand texte » WCAG, seuil applicable 4,5:1. L'index 0 est `points_50` (config/wheel.php:79), de poids 30/100 — le lot le plus tiré. Les 7 autres couples vont de 4,79 à 18,15:1. Note : les libellés du canvas sont de toute façon invisibles pour les technologies d'assistance (`aria-label=\"Roue des lots\"` seul, roue.html:315).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/_devices-summary.json → `etapes.01-arrivee.canvasContraste`",
+    "recommendation": "Foncer le fond du couple 0 (#C93A12, déjà dans la palette, donne 4,79:1) ou passer l'encre à #1A1006 sur #F4501E."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "roue.html:776",
+    "title": "« Impossible de charger le jeu… Réessaie dans un instant. » sans aucun moyen de réessayer, et la roue de secours affiche des lots qui ne sont pas les vrais.",
+    "evidence": "Branche `!r.ok` (roue.html:776-780) : bouton désactivé, message d'invitation à réessayer, mais aucune nouvelle tentative automatique et aucun bouton — seul un rechargement fonctionne, et le message ne le dit pas. Rencontré pour de vrai pendant l'audit (429 du plafond de 60 req/min sur `/wheel/config`, capture initiale). En parallèle, `SECOURS` (roue.html:750-754) dessine 6 lots codés en dur alors que la configuration réelle en compte 7 (« Frites + Boisson » absent de la liste de secours) : mesuré `segmentsDessines:true` sur le cas « jeu fermé » (404).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/G-jeu-ferme/ ; 429 observé dans le premier passage du balayage.",
+    "recommendation": "Une nouvelle tentative automatique (2 essais, 2 s puis 5 s) et, à défaut, un bouton « Réessayer » qui rappelle `demarrer()`. Et ne dessiner la roue de secours QUE quand le jeu est fermé (404), pas quand la configuration a échoué."
+  },
+  {
+    "severity": "P3",
+    "category": "a11y",
+    "file": "roue.html:308",
+    "title": "Aucun `<h1>` sur la page : le titre visuel est un `<b>`, et la hiérarchie commence directement à `<h2>`.",
+    "evidence": "Mesuré `{h1:0, h2:4}`. « Tu gagnes à 100 % » est un `<b>` dans `.promesse` (roue.html:308-311). `lang=\"fr\"` est bien présent, aucun bouton sans nom accessible (`boutonsSansNom:[]`), et l'anneau de focus du navigateur est bien visible sur les boutons (mesuré `outline-style:auto` sur `#go` et `#son` ; capture regardée : cas-erreur/S-focus-et-clavier/S2-focus-sur-go.png).",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/_devices-summary.json → `etapes.*.a11y`",
+    "recommendation": "Transformer `.promesse b` en `<h1>` (le style est déjà porté par la classe) et laisser les cartes en `<h2>`."
+  },
+  {
+    "severity": "P3",
+    "category": "visual_defect",
+    "file": "roue.html:169",
+    "title": "L'état désactivé de « C'est fait » ne repose que sur l'opacité : le libellé tombe à 2,30:1 et le bouton reste, en un coup d'œil, un gros bouton vert appelant l'appui.",
+    "evidence": "`.cta[disabled]{opacity:.5}` (roue.html:169). Mesuré sur l'écran de l'avis : `#okFollow` `{disabled:true, opacite:\"0.5\"}`, libellé composé à **2,30:1** (5,83:1 à opacité pleine). Un contrôle désactivé est exempté de WCAG 1.4.3, mais il reste illisible et, dans la capture iphone13-390x844/04-abonnement.full.png, il attire l'œil davantage que l'action réelle à faire.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/cas-erreur/T-contraste/contraste.json",
+    "recommendation": "Sur `.cta[disabled]`, remplacer l'opacité globale par un fond neutre plein (gris) et un texte à contraste tenu, pour que « désactivé » se lise sans comparaison."
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "roue.html:394",
+    "title": "« Ton prénom » est optionnel mais présenté exactement comme les deux champs obligatoires.",
+    "evidence": "`#nom` n'a pas `required` (mesuré `{required:false}`) alors que `#tel` et `#mail` l'ont ; les trois portent le même `<label>` en capitales et le même style. Rien ne dit qu'on peut le laisser vide, sur un écran où chaque champ supplémentaire perçu coûte un abandon.",
+    "reproduction": "tests/captures/roue-e2e-2026-08-10/wave-B/_devices-summary.json → `etapes.07-verrou.clavier`",
+    "recommendation": "« Ton prénom (facultatif) » sur le label de roue.html:394."
+  }
+]

@@ -49,17 +49,24 @@ class WheelKioskScreenTest extends TestCase
 
     public function test_l_ecran_est_ferme_sans_droit_caisse(): void
     {
+        // [P0 2026-08-10] Ce que ce banc protège, c'est que l'écran soit FERMÉ — pas la forme exacte
+        // du refus. Depuis la porte `wheel.access`, la forme dépend du demandeur : un navigateur est
+        // renvoyé vers l'accueil de la roue (302, il doit voir une page et pas un code), un appel
+        // JSON reçoit 401 (« entre le code ») ou 403 (« aucun code configuré sur cette machine »).
+        // La forme précise de chaque cas est éprouvée par WheelAccessTest ; ici on vérifie la nature.
+        $ferme = [401, 403, 302];
         $quidam = User::factory()->create(['branch_id' => 1]);
-        $this->actingAs($quidam)->get('/admin/roue-borne')->assertStatus(403);
 
-        $anonyme = $this->get('/admin/roue-borne');
-        $this->assertContains($anonyme->status(), [401, 403, 302],
-            'l\'écran d\'attente ÉMET des jetons : il ne doit pas être une page publique');
+        $this->assertContains($this->actingAs($quidam)->get('/admin/roue-borne')->status(), $ferme,
+            'la vitrine est ouvrable sans droit caisse : elle affiche un QR qui donne des tours');
+        $this->assertContains($this->get('/admin/roue-borne')->status(), $ferme,
+            'la vitrine est ouvrable sans aucune connexion');
     }
+
 
     public function test_il_affiche_la_roue_le_QR_et_le_minimum_d_achat(): void
     {
-        $r = $this->actingAs($this->caissier)->get('/admin/roue-borne')->assertOk();
+        $r = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk();
 
         $html = $r->getContent();
         $this->assertStringContainsString('<svg', $html, 'aucun QR : rien à scanner');
@@ -78,8 +85,8 @@ class WheelKioskScreenTest extends TestCase
      */
     public function test_deux_affichages_donnent_deux_jetons_DIFFERENTS(): void
     {
-        $un = $this->actingAs($this->caissier)->get('/admin/roue-borne')->assertOk();
-        $deux = $this->actingAs($this->caissier)->get('/admin/roue-borne')->assertOk();
+        $un = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk();
+        $deux = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk();
 
         // Le jeton n'est pas affiché en clair (il est dans le QR) : on compare les QR eux-mêmes.
         $qr1 = $this->extraireQr($un->getContent());
@@ -96,7 +103,7 @@ class WheelKioskScreenTest extends TestCase
     {
         Config::set('wheel.unlock_token_ttl_minutes', 10);
 
-        $html = $this->actingAs($this->caissier)->get('/admin/roue-borne')->assertOk()->getContent();
+        $html = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk()->getContent();
 
         preg_match('/setTimeout\(function \(\) \{ location\.reload\(\); \}, (\d+)\)/', $html, $m);
         $this->assertNotEmpty($m, 'aucun rechargement programmé : le QR mourrait à l\'écran');
@@ -114,7 +121,7 @@ class WheelKioskScreenTest extends TestCase
     {
         Config::set('wheel.public_url', '');
 
-        $html = $this->actingAs($this->caissier)->get('/admin/roue-borne')->assertOk()->getContent();
+        $html = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk()->getContent();
 
         $this->assertStringNotContainsString('<svg', $html, 'un QR sans destination a été affiché');
         $this->assertStringContainsString('WHEEL_PUBLIC_URL', $html);
@@ -128,11 +135,11 @@ class WheelKioskScreenTest extends TestCase
 
         // `QrCode::generate()` rend un objet « stringable » (HtmlString), pas une chaîne : tester
         // `is_string()` échouait sur du code parfaitement correct.
-        $this->actingAs($this->caissier)->get('/admin/roue-borne')->assertOk()
+        $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk()
             ->assertViewHas('qr', fn ($qr) => trim((string) $qr) !== '');
 
         // La clé ne doit PAS apparaître en clair dans la page : seulement dans le QR.
-        $html = $this->actingAs($this->caissier)->get('/admin/roue-borne')->getContent();
+        $html = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->getContent();
         $this->assertStringNotContainsString('cle-patron-borne', $html,
             'la clé de prévisualisation est lisible sur la tablette : elle finirait partagée');
     }

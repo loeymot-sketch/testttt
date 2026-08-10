@@ -39,12 +39,12 @@ class WheelCounterController extends Controller
      */
     public function kiosk(Request $request)
     {
-        $user = $request->user();
-        if (! $user || ! $user->can('pos')) {
-            abort(403);
-        }
-
-        $branchId = (int) ($user->branch_id ?: 1);
+        // [P0 2026-08-10] L'autorisation est portée par la PORTE (`wheel.access`), plus par une
+        // relecture de `$request->user()` : sur le chemin du code de la maison il n'y a aucun
+        // utilisateur, et cet `abort(403)` refermait l'écran juste après que la porte l'ait ouvert.
+        // La branche et l'auteur sont résolus une seule fois, par le middleware.
+        $branchId = (int) $request->attributes->get('wheel_branch_id', 1);
+        $actorId = $request->attributes->get('wheel_actor_id');
         $ttl = max(1, (int) config('wheel.unlock_token_ttl_minutes', 15));
 
         $commun = [
@@ -57,7 +57,7 @@ class WheelCounterController extends Controller
         ];
 
         try {
-            $jeton = $this->unlock->issue($branchId, (int) $user->id);
+            $jeton = $this->unlock->issue($branchId, $actorId !== null ? (int) $actorId : null);
         } catch (WheelException $e) {
             return view('admin.wheel.borne', $commun + ['qr' => null, 'erreur' => $e->getMessage()]);
         }
@@ -83,16 +83,16 @@ class WheelCounterController extends Controller
 
     public function issue(Request $request)
     {
-        $user = $request->user();
-        if (! $user || ! $user->can('pos')) {
-            abort(403);
-        }
-
-        // La branche vient du COMPTE, jamais de la requête : sinon on valide chez le voisin.
-        $branchId = (int) ($user->branch_id ?: 1);
+        // La branche ne vient JAMAIS du corps de la requête — sinon on valide chez le voisin. Elle
+        // vient du compte quand il y en a un, sinon de la configuration de la machine ; dans les
+        // deux cas c'est la porte qui l'a résolue (voir EnsureWheelAccess).
+        $branchId = (int) $request->attributes->get('wheel_branch_id', 1);
+        $actorId = $request->attributes->get('wheel_actor_id');
 
         try {
-            $jeton = $this->unlock->issue($branchId, (int) $user->id);
+            // L'auteur reste NUL quand la porte a été ouverte par le code : on n'attribue pas un
+            // geste à quelqu'un qui ne s'est pas identifié.
+            $jeton = $this->unlock->issue($branchId, $actorId !== null ? (int) $actorId : null);
         } catch (WheelException $e) {
             return view('admin.wheel.validation', [
                 'token' => null, 'qr' => null, 'url' => null, 'ttl' => null,

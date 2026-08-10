@@ -1,0 +1,163 @@
+[
+  {
+    "severity": "P0",
+    "category": "silent_error",
+    "file": "routes/web.php:145",
+    "title": "La tablette du comptoir est INACCESSIBLE depuis un navigateur : /admin/roue-borne repond 401 apres une connexion normale",
+    "evidence": "Playwright, connexion SPA reussie sur /login avec audit-roue@local.test (redirection vers /admin/dashboard, authToken present dans localStorage.vuex, cookies XSRF-TOKEN + le_cayenne_session poses), puis page.goto('/admin/roue-borne') -> status HTTP 401, url finale http://127.0.0.1:8000/api/login, corps servi = {\"errors\":\"unauthenticated\"}. Chaine causale verifiee : config/auth.php:17 fixe le guard par defaut a 'sanctum' ; app/Http/Controllers/Auth/LoginController.php:158 execute Auth::guard('web')->logout() apres l'attempt, donc AUCUNE session web ne survit au login SPA ; la route est gardee par middleware ['installed','auth'] (routes/web.php:145) ; une navigation de document ne porte jamais d'en-tete Authorization, donc sanctum n'a ni token ni session. Les 40 captures de cet audit n'ont pu etre prises qu'en injectant manuellement 'Authorization: Bearer <authToken>' sur le contexte Playwright (wave-a-roue-borne.mjs, fonction connexion) — ce qu'un navigateur ne fait jamais de lui-meme. Meme diagnostic pour /admin/roue-validation, /admin/roue-reglages et /admin/roue-lot, gardees par le meme groupe.",
+    "reproduction": "1) Ouvrir http://127.0.0.1:8000/login dans Chrome, se connecter (audit-roue@local.test / AuditRoue!2026) — la SPA arrive bien sur /admin/dashboard. 2) Dans le meme onglet, taper http://127.0.0.1:8000/admin/roue-borne. 3) Observer : JSON {\"errors\":\"unauthenticated\"} au lieu de l'ecran. Reproductible aussi en CLI : curl -s -o /dev/null -w '%{http_code}' --cookie <cookie_de_session> http://127.0.0.1:8000/admin/roue-borne -> 401.",
+    "recommendation": "Faire porter la route par le guard de session : ->middleware(['installed','auth:web','can:pos']) au lieu de 'auth' (le guard par defaut sanctum ne peut pas resoudre une navigation de document), ET ne pas detruire la session web au login pour les comptes staff (ou fournir une route de connexion session-based dediee aux ecrans de service). Un test Feature qui GET /admin/roue-borne avec actingAs($user) ne reproduit pas le defaut : il faut un test qui passe par le cookie de session reel, sinon la regression revient.",
+    "surface": "http://127.0.0.1:8000/admin/roue-borne",
+    "captures": "tests/captures/roue-e2e-2026-08-10/wave-A/ (script wave-a-diag-auth.mjs, sortie tracee dans le resume)"
+  },
+  {
+    "severity": "P1",
+    "category": "silent_error",
+    "file": "app/Http/Middleware/Authenticate.php:18",
+    "title": "L'impasse est totale : la redirection non-authentifiee sert du JSON brut au lieu d'un ecran de connexion",
+    "evidence": "Authenticate::redirectTo retourne route('login'), et cette route nommee est le stub API de routes/api.php:153-155 : Route::match(['get','post'], '/login', fn () => response()->json(['errors' => 'unauthenticated'], 401)). Resultat servi dans le navigateur, DOM capture (tests/captures/roue-e2e-2026-08-10/wave-A, premiere passe) : <body><pre>{\"errors\":\"unauthenticated\"}</pre></body> — 191 octets, aucun champ, aucun lien. L'equipe qui pose la tablette au comptoir n'a AUCUN moyen de se connecter depuis cet ecran.",
+    "reproduction": "Navigation privee, taper http://127.0.0.1:8000/admin/roue-borne sans etre connecte. Observer le JSON brut au lieu de /login.",
+    "recommendation": "Rendre a route('login') sa vocation d'ecran : nommer 'login' la route web GET /login (routes/web.php) et laisser le stub API sous un autre nom, ou surcharger redirectTo() pour retourner '/login' en dur quand la requete n'attend pas du JSON.",
+    "surface": "http://127.0.0.1:8000/admin/roue-borne"
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:68",
+    "title": "Tablette en PORTRAIT : le bloc QR recouvre les actes — la 7e pastille disparait, les 3 mots du geste sont effaces, le sous-titre est coupe en deux",
+    "evidence": "Mesures d'intersection de rectangles a 834x1194 (tests/captures/roue-e2e-2026-08-10/wave-A/chevauchements.json), transitions terminees : acte 2, pastille 'Frites + Boisson' rect y=718,3..776,6 recouverte par le carre blanc .qr (y=698,2..1035,1) sur 264,8 x 58,3 px = 15 438 px2, soit la pastille ENTIERE (hauteur d'intersection 58,3 = hauteur totale 58,3) ; 'Boisson offerte' et 'Frites offertes' rognees de 8,4 px chacune. Acte 3 : .mot 'Scanne' 50,7 x 30 px, 'Tourne' 87,7 x 30 px, 'Gagne' 42,6 x 30 px — les trois mots sont recouverts sur TOUTE leur hauteur (30 px sur 30 px). Acte 1 : p.sous 'Un lot pour ta prochaine commande, des 10,00 EUR' recouverte sur 337 x 37,2 px = sa hauteur totale, et h1 rogne de 10,2 px. Captures regardees : stable-portrait-834x1194--acte1.png (le sous-titre se lit 'Un lot pour...' puis '...s 10,00 EUR', le milieu est sous le QR), reduced-portrait-834x1194--acte3.png ('Sca...' et '...gne' visibles, 'Tourne' invisible). Cela contredit frontalement le commentaire borne.blade.php:210-212 : 'TOUS les lots, sans coupe. En tronquer un ferait dire a l'ecran on distribue ceci pendant que la roue en montre un de plus juste au-dessus'.",
+    "reproduction": "Ouvrir /admin/roue-borne en 834x1194 (media query max-aspect-ratio:1/1 -> grid-template-rows:1fr auto). Attendre l'acte 2 (6,5 s) puis l'acte 3 (13 s). La 3e ligne de pastilles et les mots Scanne/Tourne/Gagne sont sous le carre blanc du QR.",
+    "recommendation": "En portrait, reserver une ligne propre aux actes : grid-template-rows: auto auto 1fr auto (logo / roue / actes / QR) et ajouter overflow:hidden + une hauteur reellement suffisante sur .actes, ou reduire la roue et le QR en portrait (.roue min(38vmin,...), .qr svg min(30vmin,...)) pour degager la hauteur consommee par les 3 lignes de pastilles.",
+    "surface": "http://127.0.0.1:8000/admin/roue-borne @ 834x1194"
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:99",
+    "title": ".actes est sous-dimensionne dans TOUTES les tailles et TOUS les actes : le contenu sort du conteneur (jusqu'a +47 px) et vient chevaucher ses voisins",
+    "evidence": "scrollHeight vs clientHeight de .actes (tests/captures/roue-e2e-2026-08-10/wave-A/chevauchements.json + *--mesures.json) : 1194x834 -> 282/250 (acte 1), 267/250 (acte 2), 282/250 (acte 3) ; 834x1194 -> idem ; 1920x1080 -> 347/300, 322/300, 347/300 ; 1024x768 -> 260/230, 246/230, 260/230. Debordement de +16 a +47 px, systematique, 12 mesures sur 12. min-height:min(30vmin,300px) ne couvre jamais le contenu reel. Comme .acte est position:absolute; inset:0 (borne.blade.php:101), le surplus ne fait pas grossir scrollHeight de documentElement (mesure demandee = 834/834, 1194/1194, 1080/1080, 768/768, aucun debordement detecte) : la page a l'air saine alors que le texte sort deja de sa boite. C'est ce debordement qui produit tous les chevauchements bandeau/QR listes plus bas.",
+    "reproduction": "Sur /admin/roue-borne, evaluer document.querySelector('.actes').scrollHeight - clientHeight a n'importe quelle taille : jamais 0.",
+    "recommendation": "Dimensionner .actes sur son contenu reel plutot que sur une fraction du viewport : min-height:min(38vmin,360px) au minimum, ou basculer les trois actes en grid-area empilees (grid-template-areas) au lieu de position:absolute, ce qui laisse la hauteur du plus grand acte piloter la ligne.",
+    "surface": "toutes tailles"
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:162",
+    "title": "Le bandeau des conditions est recouvert par les pastilles de l'acte 2 (264,7 x 23 px sur iPad, 2 pastilles x 22,1 px sur petite tablette)",
+    "evidence": "Intersections mesurees (chevauchements.json) : 1194x834 acte 2, span.pastille 'Frites + Boisson' y=735..793,3 x .bandeau y=770,3..815,7 -> 264,7 x 23 px = 6 088 px2 ; 1024x768 acte 2, 'Frites offertes' 221,8 x 22,1 px et 'Frites + Boisson' 243,6 x 22,1 px ; 1920x1080 acte 2, 2 pastilles x 6,5 px. Acte 1 aussi : p.sous x bandeau = 590,7 x 7 px (iPad) et 544 x 6,2 px (1024x768). Captures regardees : paysage-1194x834--roue-arret.png et petite-1024x768--roue-arret.png — la phrase 'Un tour par personne — le lot est a utiliser sur une prochaine commande.' est traversee par les pastilles et illisible sur la portion recouverte. C'est la SEULE mention des conditions du jeu a l'ecran.",
+    "reproduction": "/admin/roue-borne en 1194x834 ou 1024x768, attendre l'acte 2 (t = 6,5 s). Comparer les rects de .bandeau et de la derniere .pastille.",
+    "recommendation": "Sortir le bandeau du flux fixe et le mettre en 3e ligne de la grille .scene (grid-template-rows: 1fr auto), ou reserver sa hauteur : .scene{padding-bottom:calc(3.5vmin + 6vmin)} + .actes redimensionne (finding precedent). Un padding-bottom seul ne suffira pas tant que .actes deborde.",
+    "surface": "1194x834, 1024x768, 1920x1080"
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:154",
+    "title": "Portrait : le bandeau ecrase 'Ca prend moins d'une minute' — deux phrases empilees au meme endroit",
+    "evidence": "834x1194 (chevauchements.json, rects acte 1) : .detail y=1104,8..1164,8 (h=60) et .bandeau y=1130,3..1175,7 -> intersection 261,8 x 34,5 px, soit la 2e ligne complete de .detail. Capture regardee : stable-portrait-834x1194--acte1.png, bas de l'ecran — 'Ca prend moins d'une minute.' et 'Un tour par personne — le lot est a utiliser sur une prochaine commande.' se superposent lettre sur lettre.",
+    "reproduction": "/admin/roue-borne en 834x1194, regarder le bas de l'ecran (aucune attente necessaire, present des l'acte 1).",
+    "recommendation": "Meme correctif que le finding precedent : le bandeau doit occuper une ligne de grille reservee, pas flotter en position:fixed au-dessus d'une colonne dont la hauteur n'est pas contrainte.",
+    "surface": "834x1194"
+  },
+  {
+    "severity": "P1",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:408",
+    "title": "prefers-reduced-motion : la roue reste figee avec le repere PILE sur une separation, entre deux secteurs de la MEME couleur",
+    "evidence": "borne.blade.php:408 : if (lent) { dessiner(); } — dessiner() est appele une seule fois sans passer par nouveauLancer(), donc angle reste a 0, et borne.blade.php:286 pose a0 = i*pas - PI/2, c'est-a-dire une FRONTIERE de secteur exactement au sommet. Preuve pixel (roue-details.json, mode reduce, lecture de getImageData sur le canvas 720x720) : au sommet, x=360-14 -> luminance 98,3, x=360 -> 59,4, x=360+14 -> 98,3 ; creux central de 38,9 unites = le trait de separation est sous le repere ; et couleurGaucheDroiteIdentiques=true (rgb 206,73,32 des deux cotes). Capture regardee : roue-detail-reduce.png et reduced-paysage-1194x834--acte1.png — le triangle jaune pointe le trait entre 'Frites + Boisson' et '50 points'. En mode normal, a l'inverse, les 3 cycles d'arret mesures tombent PARFAITEMENT au milieu (separations detectees a -25,8 deg et +25,6 deg pour un demi-pas ideal de 25,71 deg, repere-mesures.json, 3 cycles sur 3) : le defaut est propre au mode reduced-motion.",
+    "reproduction": "Chrome/Playwright avec reducedMotion:'reduce' (ou macOS Reduire les animations) sur /admin/roue-borne : la roue ne bouge pas et le repere designe une separation.",
+    "recommendation": "En mode reduce, dessiner un etat d'arret VALIDE au lieu de l'etat brut : appeler nouveauLancer(0) puis forcer angle = cible avant le dessiner() unique, ou simplement initialiser angle = -(pas/2) pour centrer le premier secteur sous le repere.",
+    "surface": "toutes tailles, prefers-reduced-motion:reduce"
+  },
+  {
+    "severity": "P1",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/borne.blade.php:325",
+    "title": "Les libelles des lots sur la roue sont le texte le PLUS PETIT de l'ecran : 12,3 a 16,3 px apparents, contre 95,9 px pour le titre",
+    "evidence": "Le canvas est dessine en 720 px internes et affiche a 353,3 / 383,6 / 470 px CSS selon la taille (facteur 0,491 / 0,533 / 0,653 — chevauchements.json, cle libellesRoue). La police du canvas est 25 px pour les libelles longs et 31 px pour les courts (borne.blade.php:325), soit une taille APPARENTE de 12,3 px et 15,2 px en 1024x768, 13,3 px et 16,5 px en 1194x834, 16,3 px et 20,2 px en 1920x1080. Sur un iPad 11 pouces (264 ppi, DPR 2), 13,3 px CSS = environ 2,5 mm de hauteur de capitale ; a 3 metres il faut de l'ordre de 4 a 5 mm pour une lecture confortable. Le meme ecran affiche le titre a 95,9 px et 'Scanne avec ton telephone' a 36,7 px : le coeur du message ('voila ce que tu peux gagner') est 7 fois plus petit que la promesse. Captures regardees : paysage-1194x834--roue-arret.png, tv-1920x1080--roue-arret.png.",
+    "reproduction": "/admin/roue-borne, se reculer de 3 m (ou reduire la capture a 25 %) : le titre reste lisible, les libelles de la roue non.",
+    "recommendation": "Rendre la police du canvas proportionnelle a la taille AFFICHEE, pas aux 720 px internes : passer l'echelle (rect.width/720) au dessin et viser une taille apparente >= 22 px, ou augmenter le rayon de la roue (min(46vmin,470px) bride inutilement sur grand ecran) et poser les libelles tangentiellement.",
+    "surface": "toutes tailles"
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "app/Http/Controllers/Admin/Wheel/WheelCounterController.php:62",
+    "title": "Etat d'erreur : le message est technique, ne dit PAS quoi faire, et l'ecran continue de promettre 'Tu gagnes a 100 %' sans aucun QR",
+    "evidence": "Vue rendue hors HTTP (view('admin.wheel.borne', [...'qr'=>null,'erreur'=>...])->render()) pour les deux messages possibles : 'Le jeu n'est pas configure cote serveur.' (WheelUnlockService.php:127) et 'L'adresse publique de la roue n'est pas configuree (WHEEL_PUBLIC_URL).' (WheelCounterController.php:69). Captures regardees : erreur-jeu-non-configure--paysage-1194x834.png, erreur-url-publique--portrait-834x1194.png. Sonde (etat-erreur.json) : errPresent=true, errDansEcran=true, police 23,35 px, fond rgba(217,48,37,0.16), MAIS actesPresents=3 et pastilles=7 -> le texte total de la page reste 'Tu gagnes a 100 % / Un lot pour ta prochaine commande, des 10,00 EUR / Aujourd'hui, on distribue / 50 points -10% 100 points -15% Boisson offerte Frites offertes Frites + Boisson / C'est tout de suite / Scanne Tourne Gagne' + le message d'erreur. La roue tourne, les 3 actes defilent, les 7 lots sont annonces — et il n'y a aucun moyen de jouer. Aucune instruction pour l'equipe ; le nom de variable d'environnement WHEEL_PUBLIC_URL est affiche FACE AUX CLIENTS.",
+    "reproduction": "php artisan tinker --execute=\"file_put_contents('/tmp/e.html', view('admin.wheel.borne', ['segments'=>app(App\\\\Services\\\\Wheel\\\\WheelService::class)->publicSegments(),'minOrder'=>10.0,'refreshMs'=>450000,'qr'=>null,'erreur'=>'Le jeu n\\'est pas configure cote serveur.'])->render());\" puis ouvrir file:///tmp/e.html. En conditions reelles : vider WHEEL_PUBLIC_URL.",
+    "recommendation": "En etat d'erreur, ne PAS jouer la promesse : masquer les 3 actes et la roue, afficher plein ecran un message d'exploitation actionnable et non technique ('Le jeu est momentanement indisponible. Equipe : ouvrez Reglages de la roue depuis la caisse.'), garder le detail technique dans un coin discret ou dans les logs, et grossir le message (23 px est trop petit alors qu'il devient le seul contenu utile).",
+    "surface": "etat erreur, 1194x834 et 834x1194"
+  },
+  {
+    "severity": "P2",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:268",
+    "title": "6 couleurs pour 7 secteurs : les deux secteurs voisins 'Frites + Boisson' et '50 points' sont IDENTIQUES — la roue parait n'avoir que 6 cases",
+    "evidence": "borne.blade.php:268 : COULEURS contient 6 entrees et l'index est COULEURS[i % COULEURS.length] pour 7 segments, donc i=0 et i=6 recoivent la meme base #F4501E, et ces deux secteurs sont ADJACENTS. Preuve pixel a angle=0 (roue-details.json, mode reduce, echantillonnage au milieu angulaire de chaque secteur a r=330) : secteur 0 = #cd471f et secteur 6 = #cd471f, couleursDistinctes = 6 pour 7 secteurs. Capture regardee : roue-detail-reduce.png — un unique bloc rouge de 102,8 degres au sommet, separe par un simple trait de 2 px. A 3 m le client compte 6 cases et voit une case double, ce qui suggere une probabilite doublee pour un lot.",
+    "reproduction": "Ouvrir /admin/roue-borne avec prefers-reduced-motion (roue immobile a angle=0) et regarder le sommet, ou lire les pixels du canvas aux milieux angulaires des secteurs 0 et 6.",
+    "recommendation": "Porter COULEURS a 7 teintes (ou a un nombre premier avec le nombre de segments), ou generer la teinte par i/N sur la rampe orange-jaune. Un garde-fou utile : refuser au dessin deux secteurs adjacents de meme base.",
+    "surface": "toutes tailles"
+  },
+  {
+    "severity": "P2",
+    "category": "a11y",
+    "file": "resources/views/admin/wheel/borne.blade.php:165",
+    "title": "Bandeau et sous-ligne du QR sous la limite de lisibilite a 3 m : 16,9 a 18,3 px et 18,4 a 20,0 px",
+    "evidence": "Polices calculees (chevauchements.json) : .bandeau = 16,896 px en 1024x768, 18,348 px en 1194x834 et 834x1194, 23 px en 1920x1080 ; .detail = 18,432 / 20,016 / 25 px. Le contraste, lui, est bon : bandeau 8,15:1 (rgb 255,246,236 a opacity 0,66 sur #0E0C0A) et detail 9,57:1 — donc le probleme est la TAILLE, pas la couleur. Pour comparaison sur la meme surface : h1 95,91 px, .titre2 43,368 px, .scanne 36,696 px, .pastille 28,356 px, .mot 25,854 px, .sous 27,522 px. Sur un iPad 11 pouces, 16,9 px = environ 3,2 mm de capitale : illisible debout a 3 m. Or le bandeau porte la seule condition du jeu ('Un tour par personne'), donc une information contractuelle.",
+    "reproduction": "getComputedStyle(document.querySelector('.bandeau')).fontSize sur /admin/roue-borne en 1024x768 -> '16.896px'.",
+    "recommendation": "Plancher en px sur les deux regles : font-size:clamp(20px, 2.2vmin, 26px) pour .bandeau et clamp(22px, 2.4vmin, 28px) pour .detail, et remonter l'opacite du bandeau de 0,66 a environ 0,8 puisque la marge de contraste existe.",
+    "surface": "toutes tailles, 1024x768 en particulier"
+  },
+  {
+    "severity": "P2",
+    "category": "visual_defect",
+    "file": "resources/views/admin/wheel/borne.blade.php:103",
+    "title": "Fondu croise entre actes de hauteurs tres differentes : les deux textes se superposent 700 ms toutes les 6,5 s",
+    "evidence": "transition:opacity .7s sur .acte, trois actes empiles en position:absolute; inset:0. Capture regardee : paysage-1194x834--acte2.png prise a t=7193 ms (bascule a 6500 ms, donc 693 ms apres) — 'Tu gagnes' et 'a 100 %' sont parfaitement lisibles en fantome DERRIERE les pastilles de l'acte 2, et 'Un lot pour ta prochaine commande, des 10,00 EUR' se superpose au bandeau. Idem paysage-1194x834--acte3.png : 'Aujourd'hui, on distribue' reste visible sous 'C'est tout de suite'. Comme les actes n'ont pas la meme hauteur (282 vs 267 px de contenu) et sont centres, les lignes ne se recouvrent pas proprement : pendant 700 ms sur 6 500, soit un dixieme du temps d'affichage, l'ecran est brouille.",
+    "reproduction": "/admin/roue-borne, capturer a t = 6,7 s puis 13,2 s (700 ms apres chaque bascule).",
+    "recommendation": "Enchainer sortie puis entree au lieu de croiser : sortir l'acte courant (opacity 0 en 250 ms) et n'entrer le suivant qu'ensuite, ou reduire la transition a 250 ms. Un fondu croise n'est lisible que si les deux etats ont la meme silhouette, ce qui n'est pas le cas ici.",
+    "surface": "toutes tailles"
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/borne.blade.php:81",
+    "title": "Grand ecran 1920x1080 : composition desequilibree, roue et QR brides par des plafonds en px, quart inferieur droit vide",
+    "evidence": "Mesures a 1920x1080 (chevauchements.json) : canvas affiche a 470 px de large (plafond min(46vmin,470px) atteint, 46vmin vaudrait 497 px), QR svg a 380 px (plafond min(36vmin,380px), 36vmin vaudrait 389 px) dans une colonne .droite de 770,1 px de large ; .droite occupe y=209,8..870,1 alors que la colonne gauche occupe y=86,3..993,7. Capture regardee : tv-1920x1080--roue-arret.png — la zone x>1100, y>900 est entierement noire et vide, et l'ensemble parait petit et perdu au centre d'un ecran de 2 megapixels.",
+    "reproduction": "Ouvrir /admin/roue-borne en 1920x1080 et regarder le quart inferieur droit.",
+    "recommendation": "Lever ou relever les plafonds en px (min(46vmin,640px) pour la roue, min(36vmin,520px) pour le QR) et aligner verticalement les deux colonnes (align-items:stretch + place-content:space-evenly sur .droite) pour que l'ecran remplisse la surface qu'il occupe.",
+    "surface": "1920x1080"
+  },
+  {
+    "severity": "P2",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/borne.blade.php:308",
+    "title": "Les libelles sont ecrits RADIALEMENT : aucun n'est a l'envers, mais certains sont quasi verticaux et ne sont pas lus a distance",
+    "evidence": "ctx.rotate(am) puis translate(R*0.60,0) : chaque libelle suit son rayon, donc son inclinaison varie de 0 a 90 degres selon la position du secteur. Verification a l'arret sur roue-detail-reduce.png et paysage-1194x834--roue-arret.png : les 7 libelles sont bien dans le bon sens de lecture (le correctif documente borne.blade.php:303-307, qui teste l'angle ABSOLU rotation comprise, fonctionne — aucun texte en miroir sur les 4 tailles et les 2 modes), mais '-15%' et 'Frites offertes' apparaissent a environ 90 degres, illisibles sans pencher la tete. Aucun libelle n'est rogne par le bord : le texte est centre a 0,60R = 216 px sur un rayon utile de 352 px, et les libelles longs sont coupes en deux lignes (borne.blade.php:322-327), donc 'Frites + Boisson' tient dans son secteur.",
+    "reproduction": "/admin/roue-borne, attendre un arret (t = 8,5 s) et lire les 7 libelles sans bouger la tete.",
+    "recommendation": "Poser les libelles tangentiellement (ctx.rotate(am + PI/2)) ou horizontalement avec un retour a la ligne, comme le font les roues de fete foraine modernes ; a defaut, limiter l'inclinaison a +/-45 degres.",
+    "surface": "toutes tailles"
+  },
+  {
+    "severity": "P3",
+    "category": "ux_quality",
+    "file": "resources/views/admin/wheel/borne.blade.php:128",
+    "title": "L'acte 3 annonce TROIS temps alors que le commentaire juste au-dessus interdit d'en annoncer trois",
+    "evidence": "borne.blade.php:128 : 'Acte 3 — le geste, en deux temps. On n'en annonce jamais trois : \"scanne, tourne\" suffit.' puis borne.blade.php:219-220 : 'Deux temps, jamais trois'. Le balisage rendu (borne.blade.php:224-228) contient bien TROIS .pas : Scanne -> Tourne -> Gagne. Texte extrait du DOM (etat-erreur.json, champ texteTotal) : 'C'est tout de suite 📱 Scanne → 🎡 Tourne → 🎁 Gagne'. Capture regardee : paysage-1194x834--acte3.png. Le code contredit sa propre regle : soit la regle est perimee et le commentaire doit tomber, soit 'Gagne' doit disparaitre.",
+    "reproduction": "/admin/roue-borne, attendre l'acte 3 (t = 13 s) et compter les etapes.",
+    "recommendation": "Trancher explicitement : retirer le 3e .pas, ou reecrire le commentaire pour dire pourquoi 'Gagne' est la recompense annoncee et non une etape. Laisser les deux en place garantit qu'un futur agent 'corrigera' dans un sens ou dans l'autre au hasard.",
+    "surface": "toutes tailles"
+  },
+  {
+    "severity": "P3",
+    "category": "a11y",
+    "file": "resources/views/admin/wheel/borne.blade.php:188",
+    "title": "Les lots n'existent en texte que pendant l'acte 2 : hors de cet acte, la roue est un canvas aria-hidden sans equivalent",
+    "evidence": "borne.blade.php:188 : <canvas class=\"roue\" id=\"roue\" ... aria-hidden=\"true\">. Les libelles ne sont accessibles que via les .pastille de l'acte 2, elles-memes a opacity:0 les deux tiers du temps (13 s sur 19,5). Aucun role live, aucun aria-label sur la roue. Impact reel limite : ecran d'affichage non interactif, personne ne le pilote au clavier, et le QR renvoie vers la page telephone ou le parcours accessible se joue. Consigne a titre de dette, pas de blocage.",
+    "reproduction": "Inspecter l'arbre d'accessibilite de /admin/roue-borne pendant l'acte 1 : la roue et ses 7 lots sont absents.",
+    "recommendation": "Ajouter au canvas un role=\"img\" avec un aria-label liste des lots genere depuis $segments (et retirer aria-hidden), ce qui coute une ligne et rend l'ecran auditable.",
+    "surface": "toutes tailles"
+  }
+]

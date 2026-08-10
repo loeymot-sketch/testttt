@@ -225,6 +225,31 @@ return [
     'claim_window_minutes' => (int) env('WHEEL_CLAIM_WINDOW', 30),
 
     /*
+    |--------------------------------------------------------------------------
+    | ACCÈS AUX ÉCRANS DE LA ROUE (code de la maison)
+    |--------------------------------------------------------------------------
+    | [P0 2026-08-10] Ces écrans étaient gardés par `auth`, donc INACCESSIBLES : la connexion de la
+    | caisse détruit la session web et rend un jeton Bearer, qu'une navigation de document ne porte
+    | jamais. Personne ne pouvait ouvrir l'écran de réglages — celui qui existe pour débloquer le jeu.
+    |
+    | On réemploie le modèle déjà éprouvé du Carnet (`/carnet`) et du Stock mobile (`/m`) : un code
+    | posé une fois sur la machine, une session glissante. Même besoin, même public, même contrainte.
+    |
+    | Vide = accès REFUSÉ (fail-closed). Ces écrans distribuent des lots : une porte ouverte par
+    | défaut serait pire que la porte fermée qu'on répare.
+    */
+    /*
+    | La caisse à laquelle rattacher les gestes faits depuis le code de la maison (pas
+    | d'utilisateur, donc pas de `branch_id` de compte). V1 LOCAL Le Cayenne = une seule caisse.
+    */
+    'counter_branch_id' => (int) env('WHEEL_COUNTER_BRANCH', 1),
+
+    'access' => [
+        'pin' => (string) env('WHEEL_PIN', ''),
+        'session_minutes' => (int) env('WHEEL_SESSION_MINUTES', 240),
+    ],
+
+    /*
     | L'E-MAIL DES CONDITIONS. Le lot est expliqué par écrit : ce qu'il a gagné, le
     | minimum d'achat, la date limite, et le fait qu'il se retire au comptoir. Un
     | client qui découvre une condition AU MOMENT de la retirer se sent piégé — et il

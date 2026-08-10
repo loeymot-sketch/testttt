@@ -142,12 +142,35 @@ Route::get('/dl/{bridge}', function (string $bridge) {
 | `auth` + `can:pos` : valider un tour, c'est donner un lot. Ce droit n'a rien à faire dans les
 | mains d'un compte qui n'est pas au comptoir.
 */
-Route::middleware(['installed', 'auth'])->group(function () {
+/*
+| LES ÉCRANS DE LA ROUE.
+|
+| [P0 2026-08-10] Ils étaient derrière `auth`, donc derrière une porte que PERSONNE ne pouvait
+| ouvrir : la garde par défaut est `sanctum`, la connexion détruit la session web et rend un jeton
+| Bearer, et une navigation de document ne porte jamais d'en-tête `Authorization`. Après une
+| connexion normale, ces quatre écrans rendaient `{"errors":"unauthenticated"}` — y compris l'écran
+| de réglages, construit pour que le propriétaire débloque le jeu seul.
+|
+| `wheel.access` accepte DEUX chemins : une session web habilitée `pos` (rien n'est retiré à qui en
+| possède une), ou le code de la maison — le modèle déjà en service sur le Carnet et le Stock mobile.
+| L'accueil `/admin/roue` porte le champ du code ET la liste des écrans : aucun lien ne menait à eux,
+| il fallait taper les URL de mémoire.
+*/
+Route::middleware(['installed'])->group(function () {
+    Route::get('/admin/roue', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'show'])
+        ->name('admin.wheel.home');
+    Route::post('/admin/roue/ouvrir', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'unlock'])
+        ->middleware('throttle:wheel-pin')->name('admin.wheel.unlock');
+    Route::post('/admin/roue/fermer', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'lock'])
+        ->name('admin.wheel.lock');
+});
+
+Route::middleware(['installed', 'wheel.access'])->group(function () {
     Route::get('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'show'])
-        ->middleware('can:pos')
+        
         ->name('admin.wheel.counter');
     Route::post('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'issue'])
-        ->middleware(['can:pos', 'throttle:60,1'])
+        ->middleware(['throttle:60,1'])
         ->name('admin.wheel.counter.issue');
 
     /*
@@ -166,19 +189,19 @@ Route::middleware(['installed', 'auth'])->group(function () {
     | dans des variables d'environnement, la fonctionnalite dormait en attendant qu'on les pose.
     */
     Route::get('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'show'])
-        ->middleware('can:pos')->name('admin.wheel.settings');
+        ->name('admin.wheel.settings');
     Route::post('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'save'])
-        ->middleware(['can:pos', 'throttle:60,1'])->name('admin.wheel.settings.save');
+        ->middleware(['throttle:60,1'])->name('admin.wheel.settings.save');
 
     Route::get('/admin/roue-borne', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'kiosk'])
-        ->middleware('can:pos')
+        
         ->name('admin.wheel.kiosk');
 
     Route::get('/admin/roue-lot', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'show'])
-        ->middleware('can:pos')
+        
         ->name('admin.wheel.prize');
     Route::post('/admin/roue-lot/remettre', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'deliver'])
-        ->middleware(['can:pos', 'throttle:120,1'])
+        ->middleware(['throttle:120,1'])
         ->name('admin.wheel.prize.deliver');
 });
 
