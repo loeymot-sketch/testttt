@@ -32,7 +32,11 @@ use Tests\TestCase;
  * multi-tender n'exigeait déjà PAS cette note (incohérence).
  *
  * Nouveau contrat : pos_payment_note OPTIONNELLE pour CARD ; si fournie,
- * toujours 4 chiffres exacts. terminal_id reste requis (attribution TPE au Z).
+ * toujours 4 chiffres exacts.
+ *
+ * [2026-08-10] « terminal_id reste requis » a été RETIRÉ : la règle bloquait toute vente carte de
+ * la caisse (l'interface ne l'envoie jamais) et n'apportait rien au Z (le règlement unique ne
+ * persiste pas ce champ). Voir test_card_without_terminal_is_accepted ci-dessous.
  * Montage : copié de PosSimulationHardware4ScenariosTest (S2).
  */
 class PosCardDeclarativeNoNoteTest extends TestCase
@@ -139,11 +143,28 @@ class PosCardDeclarativeNoNoteTest extends TestCase
         $this->postCard($this->cardPayload(['pos_payment_note' => 'abc']))->assertStatus(422);
     }
 
-    public function test_card_without_terminal_still_rejected(): void
+    /**
+     * [P0 2026-08-10] CE TEST VERROUILLAIT LA PANNE. Il exigeait le 422 dont le propriétaire se
+     * plaignait : « la carte bleue ne fonctionne pas ».
+     *
+     * La décision d'août — « terminal_id reste requis (attribution TPE au Z) » — a été prise sans
+     * vérifier que l'interface pouvait le fournir. Elle ne peut pas : zéro occurrence de
+     * `terminal_id` dans `public/js/pos-wizard.js` comme dans `public/js/pos-app.js`. Chaque vente
+     * carte créée à la caisse partait donc en 422 muet, exactement comme la note à 4 chiffres qu'on
+     * venait de relâcher pour la MÊME raison, un champ à côté.
+     *
+     * Aggravant, mesuré ensuite : le chemin à règlement unique n'écrit même PAS
+     * `order_payments.terminal_id`. La règle exigeait donc un champ que le code jetait — elle bloquait
+     * toutes les ventes sans rien apporter au Z.
+     *
+     * Nouveau contrat : la vente ABOUTIT. Voir PosCardSaleWithoutTerminalTest pour le détail, et pour
+     * le câblage du règlement unique qui reste à faire (nommé, pas sous-entendu).
+     */
+    public function test_card_without_terminal_is_accepted(): void
     {
         $payload = $this->cardPayload();
         unset($payload['terminal_id']);
 
-        $this->postCard($payload)->assertStatus(422);
+        $this->postCard($payload)->assertStatus(201);
     }
 }

@@ -183,7 +183,34 @@ class PosOrderRequest extends FormRequest
                 // Single-tender CARD exige un terminal_id top-level (attribution TPE au Z). En split,
                 // le terminal_id vit dans chaque tranche CARD (payment_breakdown.*.terminal_id) → ne pas
                 // l'exiger au niveau top, sinon tout split card-dominant est rejeté 422.
-                $hasBreakdown ? [] : ['required_if:pos_payment_method,'.PosPaymentMethod::CARD],
+                /*
+                 * [P0 2026-08-10 · propriétaire : « la carte bleue ne fonctionne pas »] `required_if`
+                 * REFUSAIT TOUTE VENTE CARTE CRÉÉE À LA CAISSE.
+                 *
+                 * Mesuré : `terminal_id` n'apparaît NI dans `public/js/pos-wizard.js` NI dans
+                 * `public/js/pos-app.js` — zéro occurrence. L'interface ne peut donc pas satisfaire la
+                 * règle, et chaque vente carte partait en 422 dont le seul retour est un toast fugace.
+                 * L'encaissement d'une commande borne/téléphone passe ailleurs, sans cette règle :
+                 * d'où « ça ne marche que là ».
+                 *
+                 * C'est le JUMEAU du défaut corrigé le 5 août un champ à côté (`pos_payment_note`),
+                 * pour la MÊME raison écrite alors : « le champ UI n'est pas câblé ». On avait relâché
+                 * la note et laissé le terminal.
+                 *
+                 * Une vente ne se bloque pas pour une attribution de rapport — et cette règle
+                 * n'apportait RIEN au Z : mesuré, le chemin à règlement unique n'écrit pas
+                 * `order_payments.terminal_id`, même quand le champ est fourni (`TerminalIdWireInTest`
+                 * ne couvre que le chemin FRACTIONNÉ). Elle exigeait donc un champ que le code jetait.
+                 *
+                 * J'avais d'abord ajouté une déduction du TPE unique côté serveur : retirée, car
+                 * QUATRE mutations dessus passaient inaperçues — rien ne peut l'observer tant que le
+                 * règlement unique ne persiste pas ce champ. Livrer du code que rien ne vérifie est
+                 * exactement ce qui a produit cette panne. Le CÂBLAGE reste à faire, et il est nommé
+                 * dans PosCardSaleWithoutTerminalTest plutôt que sous-entendu ici.
+                 *
+                 * Sentinelle : tests/Feature/Pos/PosCardSaleWithoutTerminalTest.php
+                 */
+                [],
             ),
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
             // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
