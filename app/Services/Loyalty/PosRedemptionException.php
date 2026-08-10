@@ -15,6 +15,7 @@ use Exception;
  *   INVALID_POINTS          422 — points <= 0
  *   INVALID_LOYALTY_CODE    422 — empty / malformed code
  *   POINTS_NOT_MULTIPLE     422 — not a multiple of rate
+ *   BELOW_MIN_REDEEM        422 — points < loyalty_min_redeem_points (même seuil que borne/site)
  *   CUSTOMER_NOT_FOUND      404 — loyalty_code unknown
  *   INSUFFICIENT_BALANCE    422 — customer.loyalty_points < points
  *   DISCOUNT_EXCEEDS_SUBTOTAL 422 — computed eur > order.subtotal

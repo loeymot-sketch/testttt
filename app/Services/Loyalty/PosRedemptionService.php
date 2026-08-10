@@ -108,6 +108,37 @@ final class PosRedemptionService
             );
         }
 
+        /*
+         * [P1 2026-08-10 · propriétaire : « limite utilisable à partir de 1000 points »] LE PLANCHER
+         * N'ÉTAIT APPLIQUÉ NULLE PART À LA CAISSE.
+         *
+         * `loyalty_min_redeem_points` est respecté sur le site et à la borne
+         * (`DiscountCalculator:58`, `LoyaltyController:402` et `:526`) — et `grep min_redeem` dans ce
+         * fichier ne donnait AUCUNE occurrence. Le défaut restait masqué tant que le seuil valait son
+         * défaut de 50, puisque la règle du multiple impose déjà 100 points. Il mord dès que
+         * l'exploitant règle 1000, ce qu'il demande : la borne et le site refuseraient sous 1000 et la
+         * caisse accepterait encore 100 points pour 1 €. Le client apprendrait vite à venir dépenser
+         * ses points au comptoir — un seuil qui ne tient que sur deux surfaces sur trois n'est pas un
+         * seuil.
+         *
+         * Le refus NOMME le chiffre : un caissier doit pouvoir l'expliquer au client, pas subir un
+         * rejet muet. Et il porte un code stable, parce que la fenêtre de caisse s'appuie sur le code,
+         * jamais sur le texte.
+         *
+         * Le défaut lu ici est le MÊME que partout ailleurs (50). Deux défauts différents pour un
+         * même réglage, c'est un jour où les surfaces divergent sans que personne le voie.
+         *
+         * Sentinelle : tests/Feature/Pos/PosLoyaltyRedeemFloorTest.php
+         */
+        $plancher = (int) Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+        if ($plancher > 0 && $points < $plancher) {
+            throw new PosRedemptionException(
+                'BELOW_MIN_REDEEM',
+                "Il faut au moins {$plancher} points pour les utiliser (il en propose {$points}).",
+                422
+            );
+        }
+
         $discountEur = round($points / $rate, 2);
 
         // Atomic block — customer row locked + balance check + ledger append +
