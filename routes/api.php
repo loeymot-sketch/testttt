@@ -395,19 +395,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::post('/purchasing/{document}/validate', [PurchasingScanController::class, 'apply'])
         ->name('purchasing.validate');
 
-    // [UBER-PHOTO 2026-08-10 · owner] Commande Uber PHOTOGRAPHIÉE sur la tablette → lecture →
-    // aperçu cuisine → validation humaine → commande réelle (écran de cuisine, caisse, ticket
-    // imprimé « UBER EATS » + nom du client). Le canal fonctionne SANS l'accès production Uber.
-    // Porte : permission:pos-orders|pos, comme la liste « commandes en cours » de la caisse.
-    // Domaine NEUF, ADDITIF, HORS NF525.
-    Route::post('/uber/photo/scan', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'scan'])
-        ->name('uber.photo.scan');
-    Route::get('/uber/photo/recent', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'recent'])
-        ->name('uber.photo.recent');
-    Route::post('/uber/photo/{capture}/confirm', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'confirm'])
-        ->whereNumber('capture')->name('uber.photo.confirm');
-    Route::post('/uber/photo/{capture}/discard', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'discard'])
-        ->whereNumber('capture')->name('uber.photo.discard');
+    // [UBER-PHOTO 2026-08-10] Les 4 routes `uber/photo/*` ont été RETIRÉES d'ici le
+    // 2026-08-10 à 22h30, et voici pourquoi — pour que personne ne les remette seules.
+    //
+    // Elles pointaient sur App\Http\Controllers\Admin\UberPhotoCaptureController, qui
+    // n'est PAS suivi par git (comme le modèle UberTicketCapture, son fournisseur de
+    // service et la migration de sa table). En déployant ce fichier, on publiait donc
+    // des routes vers une classe absente du serveur : `php artisan route:list` tombait
+    // en erreur, et tout appel authentifié à ces routes aurait produit une 500.
+    //
+    // La fonctionnalité elle-même n'est pas en cause et son travail reste intact sur le
+    // poste de développement. Elle doit simplement partir D'UN SEUL BLOC : contrôleur +
+    // modèle + fournisseur + migration + ces routes, dans le même commit. Une route ne
+    // vaut jamais mieux que la classe qu'elle appelle.
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
