@@ -1394,6 +1394,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/lookup', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'lookup'])
             ->middleware('throttle:pos-loyalty-lookup')
             ->name('lookup');
+
+        // INSCRIRE un client au comptoir. `idempotency` parce qu'un double appui sur « Créer » ne
+        // doit pas produire deux comptes — et parce que le service lui-même retrouve un numéro déjà
+        // connu, la protection est double, pas unique.
+        Route::post('/customers', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'createCustomer'])
+            ->middleware(['throttle:pos-loyalty-lookup', 'idempotency'])
+            ->name('customers.store');
     });
 
     Route::prefix('pos-category')->name('pos-category.')->group(function () {

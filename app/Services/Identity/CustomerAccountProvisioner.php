@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Wheel;
+namespace App\Services\Identity;
 
 use App\Enums\Ask;
 use App\Enums\Role as EnumRole;
@@ -12,68 +12,66 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * LE COMPTE CRÉÉ AU MOMENT OÙ LE CLIENT RÉCLAME SON LOT.
+ * CRÉER — OU RETROUVER — LE COMPTE D'UN CLIENT À PARTIR DE SON TÉLÉPHONE.
  *
- * ── LA DEMANDE ───────────────────────────────────────────────────────────────────────────────
- * « On va lui créer un compte en même temps, ça va être inscrit avec son numéro et e-mail pour
- * recevoir le code, et en même temps on va créer son compte. Chaque fois qu'il veut se connecter,
- * il va mettre le code qu'il va recevoir. »
+ * ── POURQUOI CE SERVICE A CHANGÉ DE MAISON ───────────────────────────────────────────────────
+ * Il s'appelait `WheelAccountService` et vivait sous `App\Services\Wheel`, parce que la roue a été
+ * la première à en avoir besoin. Le comptoir en a maintenant besoin pour la même chose, mot pour
+ * mot : « je veux ajouter la section pour pouvoir créer un compte pour un client ». En écrire une
+ * seconde version aurait produit deux façons de créer un client — donc, tôt ou tard, deux comptes
+ * pour un même humain, deux soldes de points, et une plainte au comptoir.
  *
- * Le client a déjà tapé son numéro et son adresse pour débloquer son lot. Lui redemander les mêmes
- * deux champs plus tard, pour « créer un compte », c'est le même effort une seconde fois — et c'est
- * là qu'on perd les gens.
+ * C'est le troisième déménagement de ce type ce jour-là (« ce numéro », « ce client », et
+ * maintenant « créer ce client ») : la roue avait servi de laboratoire, les définitions qu'elle a
+ * fait naître appartiennent au logiciel entier.
  *
- * ── AUCUN NOUVEAU MÉCANISME DE CONNEXION ─────────────────────────────────────────────────────
- * Le compte créé ici est EXACTEMENT celui du site : compte invité (`is_guest`), clé = téléphone,
- * adresse rattachée, `loyalty_code` présent, rôle client. La connexion « avec le code reçu » que
- * décrit le propriétaire EXISTE DÉJÀ (`/guest-signup/email-otp` puis `/verify`) : le client entre son
- * numéro, reçoit un code par e-mail, entre le code. On ne construit donc pas une seconde porte
- * d'entrée — deux portes, c'est deux fois les gardes à maintenir, et un jour l'une des deux oublie
- * quelque chose.
+ * ── CE QUE CE SERVICE GARANTIT ───────────────────────────────────────────────────────────────
+ * - Il ne jette JAMAIS : un compte impossible à créer ne doit pas faire tomber une vente.
+ * - Il ne crée PAS de doublon : il cherche les quatre écritures du numéro avant d'insérer.
+ * - Il ne touche PAS aux comptes de l'ÉQUIPE (très probablement l'exploitant qui teste).
+ * - Il ne RESSUSCITE PAS un compte supprimé — la suppression était une décision.
+ * - Il ne vole PAS l'e-mail d'un autre compte.
+ * - Il ne marque PAS l'e-mail vérifié : le client l'a tapé, personne n'a prouvé qu'il est à lui.
+ *   Ce sera prouvé à sa première connexion par code. L'affirmer ici serait affirmer une preuve
+ *   qu'on n'a pas.
  *
- * ── CE QU'ON NE FAIT JAMAIS ICI ──────────────────────────────────────────────────────────────
- * Cet appel arrive d'un point d'entrée PUBLIC, où le seul « secret » est un numéro de téléphone.
- * Un numéro n'est pas une preuve d'identité. Donc :
+ * `$origine` ne change AUCUNE règle — seulement le nom de repli (« Client Comptoir » plutôt que
+ * « Client Roue ») et l'étiquette de la trace, pour qu'on sache d'où vient un compte sans nom.
  *
- *   · AUCUN jeton, AUCUNE session émise. Sinon n'importe qui réclamerait un lot avec le numéro d'un
- *     autre et repartirait avec sa session : contournement d'authentification complet.
- *   · Un numéro portant un compte NON-INVITÉ (équipe, gérant, administrateur) n'est pas touché. On
- *     ne crée rien, on ne modifie rien. C'est la même garde que sur l'inscription invitée, et pour
- *     la même raison : un compte privilégié ne se réclame pas avec un numéro.
- *   · Un compte invité SUPPRIMÉ n'est pas ressuscité. La restauration sans preuve de possession est
- *     précisément le défaut fermé le 4 août sur le chemin d'inscription.
- *   · Une adresse DÉJÀ portée par un autre compte n'est jamais rattachée. Le lot est quand même
- *     accordé — le client honnête ne doit pas payer une collision — mais on ne déplace pas l'adresse
- *     de quelqu'un d'autre.
- *
- * ── ET SI LA CRÉATION ÉCHOUE ? ───────────────────────────────────────────────────────────────
- * Le lot reste dû. Un client qui a laissé un avis, s'est abonné et a tourné n'a pas à perdre son
- * cadeau parce qu'une écriture annexe a échoué. L'échec est journalisé, pas propagé.
+ * Sentinelles : tests/Feature/Wheel/WheelPointsDeliveryTest.php (parcours roue)
+ *               tests/Feature/Pos/PosCustomerCreateTest.php     (création au comptoir)
  */
-class WheelAccountService
+class CustomerAccountProvisioner
 {
     /**
      * Crée — ou complète — le compte du gagnant. Ne jette jamais.
      *
      * @return array{user_id: int|null, created: bool, reason: string}
      */
-    public function ensure(string $phone, ?string $email, ?string $name): array
+    public function ensure(string $phone, ?string $email, ?string $name, string $origine = 'roue'): array
     {
         try {
-            return $this->run($phone, $email, $name);
+            return $this->run($phone, $email, $name, $origine);
         } catch (\Throwable $e) {
-            Log::channel('daily')->warning('wheel.account_failed', [
-                'phone' => substr($phone, 0, 4) . '…', 'error' => $e->getMessage(),
-            ]);
+            // « Ne jette jamais » veut aussi dire « ne dit jamais qu'il est cassé ». Le 10 août, un
+            // simple changement de namespace a fait pointer un `app(WheelService::class)` sur une
+            // classe inexistante : ce filet a transformé une erreur FATALE en « reason: error », et
+            // plus aucun compte n'était créé — sans une ligne visible. Les tests l'ont attrapé ; la
+            // production ne l'aurait pas fait. On écrit donc AUSSI dans le canal par défaut, au
+            // niveau `error`, là où les incidents sont réellement lus.
+            $contexte = ['phone' => substr($phone, 0, 4) . '…', 'error' => $e->getMessage(), 'via' => $origine];
+
+            Log::channel('daily')->warning($origine . '.account_failed', $contexte);
+            Log::error('customer_account.provisioning_failed', $contexte);
 
             return ['user_id' => null, 'created' => false, 'reason' => 'error'];
         }
     }
 
     /** @return array{user_id: int|null, created: bool, reason: string} */
-    private function run(string $phone, ?string $email, ?string $name): array
+    private function run(string $phone, ?string $email, ?string $name, string $origine = 'roue'): array
     {
-        $tel = app(WheelService::class)->normalizePhone($phone);
+        $tel = app(PhoneIdentity::class)->normalize($phone);
         if (strlen($tel) < 9) {
             return ['user_id' => null, 'created' => false, 'reason' => 'phone_invalid'];
         }
@@ -86,14 +84,14 @@ class WheelAccountService
         // qui a déjà commandé — deux comptes, deux soldes de points, un seul humain.
         $existant = User::withoutGlobalScope(BranchScope::class)
             ->withTrashed()
-            ->whereIn('phone', app(WheelService::class)->phoneVariants($tel))
+            ->whereIn('phone', app(PhoneIdentity::class)->variants($tel))
             ->orderBy('id')
             ->first();
 
         // Même règle que le crédit des points : « pas l'équipe », et non « invité ». Un client
         // réellement inscrit (`is_guest = NO` + rôle client) est un client, et son lot doit lui être
         // rattaché comme aux autres.
-        if ($existant && ! app(WheelService::class)->isCustomerAccount($existant)) {
+        if ($existant && ! app(CustomerAccount::class)->isCustomer($existant)) {
             // Compte de l'équipe. On n'y touche pas — et le lot passe quand même : c'est très
             // probablement le propriétaire qui teste avec son propre numéro.
             return ['user_id' => null, 'created' => false, 'reason' => 'staff_phone'];
@@ -109,7 +107,7 @@ class WheelAccountService
             return ['user_id' => (int) $existant->id, 'created' => false, 'reason' => 'existing'];
         }
 
-        $nomCompte = $nom !== '' ? $nom : 'Client Roue';
+        $nomCompte = $nom !== '' ? $nom : ($origine === 'comptoir' ? 'Client Comptoir' : 'Client Roue');
         $user = User::create([
             'name' => $nomCompte,
             'username' => Str::slug($nomCompte) . Str::random(5),
@@ -126,7 +124,7 @@ class WheelAccountService
 
         $this->completer($user, $mail, $nom);
 
-        Log::channel('daily')->info('wheel.account_created', ['user_id' => $user->id]);
+        Log::channel('daily')->info($origine . '.account_created', ['user_id' => $user->id]);
 
         return ['user_id' => (int) $user->id, 'created' => true, 'reason' => 'created'];
     }

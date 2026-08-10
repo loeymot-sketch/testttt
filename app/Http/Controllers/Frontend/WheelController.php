@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WheelPrizeMail;
-use App\Services\Wheel\WheelAccountService;
+use App\Services\Identity\CustomerAccountProvisioner;
 use App\Services\Wheel\WheelException;
 use App\Services\Wheel\WheelService;
 use App\Services\Wheel\WheelStepService;
@@ -33,7 +33,7 @@ class WheelController extends Controller
         private readonly WheelService $wheel,
         private readonly WheelUnlockService $unlock,
         private readonly WheelStepService $steps,
-        private readonly WheelAccountService $comptes,
+        private readonly CustomerAccountProvisioner $comptes,
     ) {}
 
     /** De quoi DESSINER la roue et savoir si l'on peut jouer. Jamais les poids. */
@@ -280,7 +280,7 @@ class WheelController extends Controller
 
         // LE COMPTE. Après la participation, jamais avant : si la création échouait, le lot resterait
         // dû quand même. Et aucune session n'est émise ici — un numéro de téléphone n'est pas une
-        // preuve d'identité (cf. WheelAccountService).
+        // preuve d'identité (cf. CustomerAccountProvisioner).
         $compte = $this->comptes->ensure($data['phone'], $data['email'], $data['name'] ?? null);
 
         $code = $spin->coupon_id ? optional($spin->coupon)->code : null;

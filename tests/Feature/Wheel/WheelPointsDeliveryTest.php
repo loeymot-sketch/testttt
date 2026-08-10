@@ -136,7 +136,7 @@ class WheelPointsDeliveryTest extends TestCase
     /**
      * [P1 2026-08-10 · audit ronde 2] LE JUMEAU OUBLIÉ, ET C'EST MOI QUI L'AI OUBLIÉ.
      *
-     * `WheelAccountService::variantes()` cherche « ce numéro » sous ses QUATRE écritures — parce que la
+     * `CustomerAccountProvisioner::variantes()` cherche « ce numéro » sous ses QUATRE écritures — parce que la
      * base contient « 0612345678 », « 612345678 » et « +33612345678 » pour le même humain. Son jumeau
      * `creditPoints()`, trente lignes plus loin, n'en cherchait QU'UNE.
      *

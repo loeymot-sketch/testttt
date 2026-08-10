@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PosCustomerCreateRequest;
 use App\Http\Requests\PosLoyaltyLookupRequest;
 use App\Http\Requests\PosLoyaltyRedeemRequest;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
+use App\Services\Identity\CustomerAccountProvisioner;
 use App\Services\Loyalty\PosCustomerLookupService;
 use App\Services\Loyalty\PosRedemptionException;
 use App\Services\Loyalty\PosRedemptionService;
@@ -33,7 +35,74 @@ final class PosLoyaltyController extends Controller
     public function __construct(
         private readonly PosRedemptionService $redemptionService,
         private readonly PosCustomerLookupService $lookupService,
+        private readonly CustomerAccountProvisioner $provisioner,
     ) {
+    }
+
+    /**
+     * INSCRIRE LE CLIENT QUI EST DEVANT LE COMPTOIR.
+     *
+     * [2026-08-10 · propriétaire : « je veux ajouter la section pour pouvoir créer un compte pour un
+     * client »]
+     *
+     * Le service employé est celui de la roue — le MÊME, déménagé sous `App\Services\Identity`.
+     * Deux façons de créer un client, c'est tôt ou tard deux comptes pour un même humain, deux
+     * soldes de points, et une plainte au comptoir qu'on ne saura pas expliquer.
+     *
+     * Un numéro qui a DÉJÀ un compte n'en reçoit pas un second : on rend le compte existant, et le
+     * caissier voit tout de suite le solde au lieu d'un doublon vide. C'est le comportement utile —
+     * un client qui dit « je ne suis pas inscrit » se trompe une fois sur deux.
+     */
+    public function createCustomer(PosCustomerCreateRequest $request): JsonResponse
+    {
+        $resultat = $this->provisioner->ensure(
+            (string) $request->input('phone'),
+            $request->input('email'),
+            $request->input('name'),
+            'comptoir'
+        );
+
+        // `ensure()` ne jette jamais — il RAPPORTE. Chaque motif mérite une phrase que le caissier
+        // peut lire au client, pas un code technique : un refus qu'on ne peut pas expliquer, c'est un
+        // caissier qui répète « ça ne marche pas » et un client qui s'en va.
+        if ($resultat['user_id'] === null) {
+            $messages = [
+                'phone_invalid'    => 'Ce numéro est incomplet.',
+                'staff_phone'      => 'Ce numéro est celui d\'un compte de l\'équipe.',
+                'deleted_account'  => 'Un compte supprimé existe pour ce numéro — un responsable doit le rétablir.',
+                'error'            => 'Création impossible pour le moment.',
+            ];
+            $motif = (string) ($resultat['reason'] ?? 'error');
+
+            Log::warning('pos.loyalty.creation_refusee', [
+                'reason'  => $motif,
+                'cashier' => $request->user()?->id,
+            ]);
+
+            return response()->json([
+                'status'  => false,
+                'code'    => strtoupper($motif),
+                'message' => $messages[$motif] ?? $messages['error'],
+            ], $motif === 'error' ? 500 : 422);
+        }
+
+        $user = \App\Models\User::find($resultat['user_id']);
+
+        Log::info('pos.loyalty.compte', [
+            'created' => (bool) $resultat['created'],
+            'reason'  => $resultat['reason'],
+            'cashier' => $request->user()?->id,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'data'   => [
+                // On dit s'il a été CRÉÉ ou simplement RETROUVÉ : l'écran n'annonce pas « compte
+                // créé » à un client qui était déjà inscrit depuis six mois.
+                'created'  => (bool) $resultat['created'],
+                'customer' => $user ? $this->lookupService->presenter($user) : null,
+            ],
+        ], $resultat['created'] ? 201 : 200);
     }
 
     /**
