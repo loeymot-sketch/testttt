@@ -395,6 +395,20 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::post('/purchasing/{document}/validate', [PurchasingScanController::class, 'apply'])
         ->name('purchasing.validate');
 
+    // [UBER-PHOTO 2026-08-10 · owner] Commande Uber PHOTOGRAPHIÉE sur la tablette → lecture →
+    // aperçu cuisine → validation humaine → commande réelle (écran de cuisine, caisse, ticket
+    // imprimé « UBER EATS » + nom du client). Le canal fonctionne SANS l'accès production Uber.
+    // Porte : permission:pos-orders|pos, comme la liste « commandes en cours » de la caisse.
+    // Domaine NEUF, ADDITIF, HORS NF525.
+    Route::post('/uber/photo/scan', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'scan'])
+        ->name('uber.photo.scan');
+    Route::get('/uber/photo/recent', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'recent'])
+        ->name('uber.photo.recent');
+    Route::post('/uber/photo/{capture}/confirm', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'confirm'])
+        ->whereNumber('capture')->name('uber.photo.confirm');
+    Route::post('/uber/photo/{capture}/discard', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'discard'])
+        ->whereNumber('capture')->name('uber.photo.discard');
+
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
             Route::get('/', [CompanyController::class, 'index']);
@@ -998,6 +1012,66 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
         })->middleware('throttle:pos-order-update')->name('web-orders.pending');
 
+        // [WEB-PAYEE-MUETTE 2026-08-10 · P0 owner] File des commandes WEB **DÉJÀ PAYÉES**, parties
+        // seules en cuisine.
+        //
+        // POURQUOI CETTE ROUTE EXISTE — un trou entre deux gardes justes
+        // ---------------------------------------------------------------
+        // La file `web-orders/pending` ci-dessus exige `status = PENDING` ET exclut
+        // `CARD + UNPAID`. Une commande web réglée par carte n'entre donc dans ce panneau
+        // À AUCUN INSTANT de sa vie : pendant sa fenêtre PENDING elle est CARD+UNPAID
+        // (exclue, à raison — paiement en vol, le caissier ne doit pas l'« accepter ») ;
+        // dès que le paiement tombe elle est promue ACCEPT→PREPARING (exclue, plus PENDING).
+        // Résultat mesuré en production le 2026-08-10 : la commande #440 (31,40 € encaissés,
+        // 4 articles) n'a produit AUCUN signal en caisse — pas de ligne, pas de bip — et le
+        // ticket cuisine n'est jamais sorti (aucune imprimante en base, cf. la file
+        // kitchen-tickets). Elle n'existait QUE sur l'écran KDS. Le client a attendu.
+        //
+        // Ce panneau est le signal manquant : il montre ce que la cuisine a reçu SANS que
+        // la caisse en soit informée. LECTURE SEULE — aucun changement de statut ni de
+        // paiement ici (la commande est déjà payée et déjà acceptée par le flux paiement ;
+        // proposer un bouton « Accepter » rejouerait une transition déjà faite).
+        //
+        // Fenêtre et statuts calqués sur le BOARD CUISINE (KitchenReleaseRule +
+        // oss.stale_window_hours) : ce panneau et le KDS montrent le même ensemble, donc
+        // « vu en caisse » et « vu en cuisine » ne peuvent pas diverger. PREPARED est
+        // volontairement exclu — une commande finie remonte dans « Prêt à livrer »
+        // (loadReadyOrders), pas ici. Miroir volontaire de web-orders/pending :
+        // même portée branche, même cap 200, même tri FIFO.
+        Route::get('/web-orders/paid', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
+                // Même équivalence web ≡ delivery que la file PENDING : FrontendOrder::creating
+                // force source_surface='delivery' dès que order_type=DELIVERY.
+                ->whereIn('source_surface', ['web', 'delivery'])
+                ->where('payment_status', \App\Enums\PaymentStatus::PAID)
+                ->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                // Borne basse identique au board cuisine : sans elle, un vieux payé jamais bumpé
+                // (il en existe — #333 du 2026-08-03) squatterait le panneau à vie et le bip
+                // deviendrait du bruit que l'équipe apprendrait à ignorer.
+                ->where('order_datetime', '>=', now()->subHours((int) config('oss.stale_window_hours', 8)))
+                ->orderBy('created_at');
+
+            $branchId = (int) (auth()->user()?->branch_id ?? 0);
+            if ($branchId > 0) {
+                $query->where('branch_id', $branchId);
+            }
+
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+        })->middleware('throttle:pos-order-update')->name('web-orders.paid');
+
+        // [WEB-PAYEE-MUETTE 2026-08-10 · P0 owner] File des tickets cuisine réclamée par le PC
+        // caisse. Le serveur ne peut pas joindre l'imprimante (hébergeur ≠ réseau du restaurant),
+        // donc c'est le poste qui vient chercher — même modèle que le ticket promo. Les octets se
+        // lisent ensuite sur `orders/{order}/escpos?ticket=kitchen`, qui sait déjà rendre sans
+        // aucune row `Printer`. PAS d'idempotence ici : une réclamation rejouée depuis un cache
+        // rendrait un ticket déjà pris et le papier ne sortirait jamais.
+        Route::post('/kitchen-tickets/pending', [\App\Http\Controllers\Admin\Pos\KitchenTicketQueueController::class, 'pending'])
+            ->middleware('throttle:pos-order-update')->name('kitchen-tickets.pending');
+        Route::post('/kitchen-tickets/{order}/ack', [\App\Http\Controllers\Admin\Pos\KitchenTicketQueueController::class, 'acknowledge'])
+            ->whereNumber('order')->middleware('throttle:pos-order-update')->name('kitchen-tickets.ack');
+
         // [CAISSE-HEALTH 2026-07-30] Santé SYSTÈME pour le poste de commande : temps réel (socket +
         // worker outbox) + chaîne fiscale NF525. READ-ONLY. L'opérateur voit une dégradation AVANT
         // que des commandes se perdent en silence (soketi « connecté » alors que le worker est DOWN).
@@ -1221,6 +1295,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/{order}/redeem-loyalty', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'redeem'])
             ->middleware(['throttle:pos-order-update', 'idempotency'])
             ->name('redeem-loyalty');
+        // [FIDÉLITÉ COMPTOIR 2026-08-10 · propriétaire] RATTACHER le client à la vente, pour que ses
+        // points lui soient crédités. Mesuré : 1411 ventes de caisse arrivées à DELIVERED, UNE SEULE
+        // rattachée à un client — le crédit fonctionnait, personne ne pouvait dire à qui créditer.
+        // Porte `permission:pos` (faire cumuler n'est pas dépenser) ; `idempotency` parce qu'un
+        // double appui ne doit pas relancer deux fois le crédit.
+        Route::post('/{order}/attach-loyalty', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'attachCustomer'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('attach-loyalty');
     });
 
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {

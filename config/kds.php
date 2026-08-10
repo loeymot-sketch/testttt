@@ -98,4 +98,18 @@ return [
      */
     'scheduled_window_open' => (string) env('KDS_SCHEDULED_WINDOW_OPEN', '18:00'),
     'scheduled_window_close' => (string) env('KDS_SCHEDULED_WINDOW_CLOSE', '00:30'),
+
+    /*
+     * [WEB-PAYEE-MUETTE 2026-08-10] Âge maximum d'une commande encore éligible à
+     * l'impression AUTOMATIQUE de son ticket cuisine par le pont caisse
+     * (KitchenTicketQueueController).
+     *
+     * Cette borne n'est pas un réglage de confort, c'est un garde-fou. À la première
+     * mise en service, TOUTES les commandes de l'historique ont
+     * `kitchen_ticket_printed_at` à NULL : sans borne basse, le premier sondage du
+     * poste caisse réclamerait des centaines de tickets et viderait le rouleau. Et
+     * passé quelques dizaines de minutes, un ticket cuisine n'a plus d'usage — le
+     * plat est fait, ou la commande est un problème d'exploitation, pas d'impression.
+     */
+    'bridge_print_window_minutes' => max(1, (int) env('KDS_BRIDGE_PRINT_WINDOW_MINUTES', 30)),
 ];

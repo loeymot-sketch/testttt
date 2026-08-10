@@ -594,6 +594,75 @@
               {{ _formatLastRefresh(lastWebRefresh) }}
             </p>
           </section>
+          <!-- [WEB-PAYEE-MUETTE 2026-08-10 · P0 owner] Panneau « Web payées — en cuisine ».
+               Le panneau du dessus ne montre QUE les commandes à accepter. Une commande du site
+               réglée par carte n'y entre à AUCUN instant : carte+non-payée pendant sa fenêtre
+               PENDING (exclue, à raison), puis promue en cuisine dès le paiement (exclue, plus
+               PENDING). Le 2026-08-10, une commande de 31,40 € est ainsi passée sans un bruit —
+               ni ligne, ni bip, ni papier. Ce panneau est ce signal manquant.
+               LECTURE SEULE : pas de bouton « Accepter » ici, la commande est déjà payée ET déjà
+               acceptée par le flux paiement ; le proposer ferait rejouer une transition faite. -->
+          <section
+            v-if="canProcessWebOrders"
+            class="pos-shortcuts__panel pos-shortcuts__panel--web"
+            :class="{ 'pos-shortcuts__panel--empty': paidWebOrders.length === 0 }"
+            data-testid="pos-shortcuts-web-paid"
+            :aria-label="`Commandes web payées en cuisine (${paidWebOrders.length})`"
+          >
+            <header class="pos-shortcuts__head">
+              <h2 class="pos-shortcuts__title">
+                <span aria-hidden="true">💳</span>
+                Web payées · {{ paidWebOrders.length }}
+              </h2>
+            </header>
+            <ul
+              v-if="paidWebOrders.length > 0"
+              class="pos-shortcuts__list"
+              role="list"
+            >
+              <li
+                v-for="o in paidWebOrders.slice(0, 4)"
+                :key="o.id"
+                class="pos-shortcuts__item"
+                :data-testid="`pos-shortcut-web-paid-${o.id}`"
+              >
+                <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <span class="pos-shortcuts__actions">
+                  <button
+                    type="button"
+                    class="pos-shortcuts__cta pos-shortcuts__cta--web-details"
+                    :data-testid="`pos-shortcut-web-paid-open-${o.id}`"
+                    @click="openWebOrder(o)"
+                  >Détails</button>
+                </span>
+              </li>
+            </ul>
+            <p
+              v-else
+              class="pos-shortcuts__empty"
+              data-testid="pos-shortcuts-web-paid-empty"
+            >
+              Aucune commande web payée en cuisine.
+            </p>
+            <button
+              v-if="paidWebOrders.length > 4"
+              type="button"
+              class="pos-shortcuts__more"
+              data-testid="pos-shortcut-web-paid-more"
+              @click="$router.push({ name: 'admin.order.list' })"
+            >
+              Voir les {{ paidWebOrders.length }} commandes web payées
+            </button>
+            <p
+              v-if="lastPaidWebRefresh"
+              class="pos-shortcuts__refresh"
+              data-testid="pos-shortcuts-web-paid-refresh"
+              aria-live="off"
+            >
+              {{ _formatLastRefresh(lastPaidWebRefresh) }}
+            </p>
+          </section>
         </div>
 
         <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
@@ -1981,6 +2050,11 @@ export default {
             webOrders: [],
             webOrdersLoading: false,
             lastWebRefresh: null,
+            // [WEB-PAYEE-MUETTE 2026-08-10] Commandes du site DÉJÀ PAYÉES, parties seules en
+            // cuisine. Liste séparée de `webOrders` à dessein : celles-ci ne s'acceptent pas.
+            paidWebOrders: [],
+            paidWebOrdersLoading: false,
+            lastPaidWebRefresh: null,
             // [C1 2026-07-18 · accept web INLINE] Anti double-submit PAR commande du bouton
             // « Accepter » du panneau « Commandes web ». Map réactive {orderId: true} (idiome
             // immuable du fichier, cf. expandedKioskCashOrders) → le bouton se désactive le temps
@@ -2816,6 +2890,8 @@ export default {
             // [WEB-CAISSE-SYNC 2026-07-13] Rafraîchit aussi la file des commandes web à traiter
             // sur chaque rafale d'événements Echo (OrderCreated d'une commande site inclus).
             this.loadWebOrders();
+            // [WEB-PAYEE-MUETTE 2026-08-10] Et les web DÉJÀ PAYÉES parties en cuisine.
+            this.loadPaidWebOrders();
         }, 400);
         // [POS-OFFLINE-WIRE 2026-05-17] Bind axios.post as the replay transport
         // and run an opportunistic flush every 30s while the page is open. The
@@ -2862,6 +2938,8 @@ export default {
         this.loadReadyOrders();
         // [WEB-CAISSE-SYNC 2026-07-13] Initial fetch de la file commandes web à traiter.
         this.loadWebOrders();
+        // [WEB-PAYEE-MUETTE 2026-08-10] Idem pour les web payées déjà en cuisine.
+        this.loadPaidWebOrders();
         this._subscribeEcho();
         this._startKioskPolling();
         // [Q10 P-OWNER 2026-05-21] 5 s ticker bumps `_lastRefreshTick` so
@@ -3459,6 +3537,11 @@ export default {
                 // [WEB-CAISSE-SYNC 2026-07-13] Même tick rafraîchit la file commandes web
                 // (secours si Echo tombe — une commande site apparaît en <15s).
                 this.loadWebOrders();
+                // [WEB-PAYEE-MUETTE 2026-08-10] Même tick pour les web payées parties en
+                // cuisine. En production il n'y a AUCUN temps réel (aucun serveur de sockets,
+                // diffusion en journal) : ce tick est donc le seul chemin réel — d'où
+                // l'importance qu'il soit ici et pas seulement sur la rafale Echo.
+                this.loadPaidWebOrders();
                 // [pos-86-propagation-dead-no-poll 2026-07-22] Même tick = filet 86
                 // transport-agnostique (self-throttled ~30s) : tuiles/panier 86 à jour
                 // même worker down (Echo muet).
@@ -3884,6 +3967,39 @@ export default {
                 // vrai signal de fraîcheur, au lieu d'un faux « Aucune commande » rassurant.
             } finally {
                 this.webOrdersLoading = false;
+            }
+        },
+        /**
+         * [WEB-PAYEE-MUETTE 2026-08-10 · P0 owner] Charge les commandes du site DÉJÀ PAYÉES,
+         * parties seules en cuisine.
+         *
+         * POURQUOI UN SECOND CHARGEMENT PLUTÔT QU'UN FILTRE
+         * -------------------------------------------------
+         * `loadWebOrders` ci-dessus interroge la file « à accepter ». Une commande réglée par
+         * carte n'y figure à AUCUN instant de sa vie (carte+non-payée pendant PENDING, puis
+         * promue en cuisine dès le paiement). Il ne s'agit donc pas de filtrer la même liste
+         * autrement : c'est un ensemble que la caisse ne voyait tout simplement jamais.
+         *
+         * La CLÉ DE SEMIS est distincte ('web_paid') : partager celle de la file « à accepter »
+         * ferait taire le bip, puisqu'une commande y a souvent déjà été vue une fraction de
+         * seconde avant sa promotion. Deux ensembles, deux mémoires.
+         */
+        async loadPaidWebOrders() {
+            this.paidWebOrdersLoading = true;
+            try {
+                const res = await axios.get('admin/pos/web-orders/paid');
+                const all = res?.data?.data || [];
+                this.paidWebOrders = all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                this.lastPaidWebRefresh = Date.now();
+                // Le bip : c'est LUI qui manquait le 2026-08-10. Indépendant de tout temps réel
+                // (il n'y en a pas en production) — simple différence d'identifiants à chaque
+                // sondage, donc ≤ 5 s après l'encaissement en ligne.
+                this._notifyPolledNewOrders(all, 'web_paid', 'web');
+            } catch (_) {
+                // Même discipline que les panneaux voisins : garder le dernier état connu plutôt
+                // qu'afficher un « aucune commande » faussement rassurant.
+            } finally {
+                this.paidWebOrdersLoading = false;
             }
         },
         // [C1 2026-07-18 · accept web INLINE] Accepte une commande web PENDING SANS quitter la

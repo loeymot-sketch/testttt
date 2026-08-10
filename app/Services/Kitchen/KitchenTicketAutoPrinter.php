@@ -144,6 +144,35 @@ final class KitchenTicketAutoPrinter
         DB::table('orders')->where('id', $orderId)->update(['kitchen_ticket_printed_at' => null]);
     }
 
+    /**
+     * [PONT-CAISSE 2026-08-10] Même garde, pour le chemin où l'imprimante est INATTEIGNABLE
+     * depuis le serveur.
+     *
+     * En production le serveur applicatif est chez l'hébergeur et l'imprimante est au bout du
+     * réseau local du restaurant : `printOnce()` ci-dessus sort en `no_printer` et rien ne sort
+     * jamais (mesuré — la table `printers` est vide, zéro ligne de journal depuis l'origine).
+     * C'est le PC caisse qui doit tirer le ticket, exactement comme pour le ticket promo.
+     *
+     * Ce chemin réclame donc SANS exiger de row `Printer` — le pont local EST l'imprimante. La
+     * garde reste celle-ci, une seule, partagée : un jour où une imprimante serveur serait
+     * enfin configurée, les deux chemins se disputeraient la même colonne et la base
+     * trancherait. C'est précisément pour ça que la garde ne doit pas être recopiée ailleurs.
+     */
+    public function claimForBridge(int $orderId): bool
+    {
+        return $this->claim($orderId);
+    }
+
+    /**
+     * Rend la commande à la file. Appelé quand le pont n'a rien pu sortir (papier, hors tension,
+     * pont arrêté) : sans ça, une commande réclamée puis non imprimée serait perdue pour de bon,
+     * marquée « imprimée » alors qu'aucun papier n'est sorti — le pire des deux mondes.
+     */
+    public function releaseClaim(int $orderId): void
+    {
+        $this->release($orderId);
+    }
+
     /** Imprimante cuisine ACTIVE de la branche, station chaude en priorité. */
     private function kitchenPrinter(int $branchId): ?Printer
     {

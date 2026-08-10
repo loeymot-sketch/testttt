@@ -27,6 +27,12 @@
              inerte partout où le pont d'impression local est absent (téléphone,
              poste bureau). -->
         <PromoFlyerPrintListener />
+        <!-- [WEB-PAYEE-MUETTE 2026-08-10] Imprimeur des tickets CUISINE. Monté au même
+             endroit et pour la même raison que celui du dessus : le serveur ne peut pas
+             joindre l'imprimante, donc c'est le poste qui vient chercher. Sans lui, une
+             commande du site payée en ligne n'a JAMAIS produit de papier — constaté en
+             production le 2026-08-10 sur une commande de 31,40 €. -->
+        <KitchenTicketPrintListener />
       </main>
 
       <div v-if="!logged">
@@ -46,6 +52,10 @@
 <script>
 import BackendNavbarComponent from "./layouts/backend/BackendNavbarComponent";
 import PromoFlyerPrintListener from "./admin/promo/PromoFlyerPrintListener";
+// Volontairement HORS de admin/kitchenDisplaySystem/ : ce composant n'est PAS chargé par le
+// bundle KDS (il vit dans la coquille admin), et l'y ranger rendait la sentinelle de fraîcheur
+// du bundle KDS rouge à vie — elle surveille ce dossier entier.
+import KitchenTicketPrintListener from "./admin/kitchen/KitchenTicketPrintListener";
 import BackendMenuComponent from "./layouts/backend/BackendMenuComponent";
 import FrontendNavbarComponent from "./layouts/frontend/FrontendNavBarComponent";
 import FrontendFooterComponent from "./layouts/frontend/FrontendFooterComponent";
@@ -65,6 +75,7 @@ export default {
   name: "DefaultComponent",
   components: {
     PromoFlyerPrintListener,
+    KitchenTicketPrintListener,
     TableCartComponent,
     TableFooterComponent,
     TableNavbarComponent,
