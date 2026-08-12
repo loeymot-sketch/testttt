@@ -51,10 +51,49 @@ class RouteServiceProvider extends ServiceProvider
     {
         // [AUDIT-P1] req/min per user (authenticated) or per IP (guest/kiosk) — config(app.api_throttle_per_minute).
         // Per-route stricter limits (order creation, login-lockout, etc.) still apply.
+        // [GOAL-OPS-SWAP W3 2026-08-12] Budget PAR APPAREIL, plus par compte.
+        //
+        // DÉFAUT CORRIGÉ : la clé était `$request->user()?->id` seul, donc la
+        // caisse, l'écran cuisine et l'écran client connectés sous le MÊME login
+        // se partageaient UN SEUL budget. Mesuré : ouvrir la caisse coûte 29
+        // requêtes ; au 4ᵉ écran le compte franchissait 120/min et le caissier
+        // voyait « Trop de requêtes » — sans qu'aucun écran n'ait rien fait de mal.
+        //
+        // L'identité d'appareil est déjà de première classe ici : `X-Device-Id`
+        // part sur CHAQUE requête (`resources/js/shared/axios-setup.js:90`) et
+        // `DeviceTokenService::resolveDeviceId()` la valide déjà par liste blanche
+        // stricte, avec repli déterministe pour les clients anciens.
+        //
+        // DEUX LIMITES, et la seconde n'est pas décorative : sans plafond global,
+        // faire tourner l'en-tête `X-Device-Id` donnerait un débit ILLIMITÉ. La
+        // limite par compte (tous appareils confondus) ferme ce vecteur tout en
+        // laissant respirer les écrans légitimes.
+        //
+        // Anonymes : comportement INCHANGÉ, clé par IP. Un client sans compte ne
+        // doit jamais pouvoir s'offrir un budget en inventant un identifiant.
+        //
+        // Banc : tests/Feature/Security/ApiRateLimitPerDeviceTest.php
         RateLimiter::for('api', function (Request $request) {
             $perMinute = max(1, (int) config('app.api_throttle_per_minute', 120));
 
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            $user = $request->user();
+            if (! $user) {
+                return Limit::perMinute($perMinute)->by($request->ip());
+            }
+
+            $deviceId = app(\App\Services\Auth\DeviceTokenService::class)->resolveDeviceId($request);
+
+            // Défaut = 5× le budget d'un écran : de quoi couvrir les écrans
+            // simultanés d'un même exploitant, sans offrir un débit libre.
+            $ceiling = max(
+                $perMinute,
+                (int) config('app.api_throttle_user_ceiling_per_minute', $perMinute * 5)
+            );
+
+            return [
+                Limit::perMinute($perMinute)->by('u'.$user->id.'|d'.$deviceId),
+                Limit::perMinute($ceiling)->by('u'.$user->id),
+            ];
         });
 
         // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Anti-bruteforce PIN du
