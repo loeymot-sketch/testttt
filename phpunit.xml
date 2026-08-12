@@ -42,9 +42,25 @@
     <php>
         <!-- [C1] Default PHP CLI memory_limit (128M) overflows on the full
              Feature suite (562 tests, heavy fixtures + Spatie permission
-             cache). Bump to 512M so runs do not require `-d memory_limit=512M`
-             on the CLI. Mirrors the limit used in CI runners. -->
-        <ini name="memory_limit" value="512M"/>
+             cache). Bump so runs do not require `-d memory_limit=...` on the
+             CLI. Mirrors the limit used in CI runners.
+
+             [AUDIT 2026-08-12] 512M NE SUFFIT PLUS. La suite comptait 562 tests
+             quand ce plafond a été posé ; elle en compte aujourd'hui ~4650
+             répartis sur 967 fichiers. Un `php artisan test` complet mourait
+             donc en « Allowed memory size of 536870912 bytes exhausted » AVANT
+             d'exécuter le moindre test — et sortait avec un code 0, ce qui
+             donne l'illusion d'un succès. Seules les exécutions CIBLÉES
+             passaient, ce qui masquait le problème : on croit tester la suite
+             alors qu'on n'en couvre qu'une tranche.
+
+             ATTENTION — ce réglage est SOUVERAIN : PHPUnit l'applique par
+             `ini_set()` au démarrage (TextUI\XmlConfiguration\PHP\PhpHandler),
+             donc il ÉCRASE tout `php -d memory_limit=...` passé en ligne de
+             commande. Vérifié en l'abaissant à 32M : PHPUnit avertit qu'il n'a
+             pas pu descendre si bas. Inutile d'essayer de contourner par le
+             CLI : c'est ICI qu'il faut agir. -->
+        <ini name="memory_limit" value="2G"/>
         <env name="APP_ENV" value="testing"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
