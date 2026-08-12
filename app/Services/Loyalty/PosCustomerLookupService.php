@@ -28,9 +28,14 @@ use Illuminate\Support\Facades\Log;
  * tapé, et on le traite exactement comme tel — le prétendre plus sûr serait mentir.
  *
  * ── LE DANGER PRINCIPAL : LE MAUVAIS HUMAIN ──────────────────────────────────────────────────
- * 5 numéros de la base sont portés par PLUSIEURS comptes (l'un par 5). Choisir pour le caissier,
- * c'est créditer ou débiter le solde de quelqu'un d'autre. Ce service ne choisit JAMAIS : il rend
- * la liste et laisse l'humain trancher, avec de quoi trancher (prénom, numéro masqué, solde).
+ * Ce service ne choisit JAMAIS entre deux comptes : il rend la liste et laisse l'humain trancher,
+ * avec de quoi trancher (nom, numéro masqué, solde). Choisir à la place du caissier, c'est créditer
+ * ou débiter le solde de quelqu'un d'autre, et personne ne s'en aperçoit avant la plainte.
+ *
+ * Précision sur l'état RÉEL de la base (mesuré le 10 août, à ne pas exagérer) : 5 numéros sont
+ * portés par plusieurs comptes, mais ce sont des comptes d'ÉQUIPE ou sans code de fidélité — un
+ * seul compte adhérent par numéro aujourd'hui. La garde est donc PRÉVENTIVE, pas curative. Elle le
+ * reste : le site n'impose aucune unicité sur `users.phone`, et la colonne n'a même pas d'index.
  *
  * ── CE QUE LE COMPTOIR NE DOIT PAS VOIR ──────────────────────────────────────────────────────
  * Ni un compte d'ÉQUIPE (un caissier ne se crédite pas lui-même), ni un compte SUPPRIMÉ, ni un
@@ -178,7 +183,21 @@ final class PosCustomerLookupService
     // ── privé ────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Un compte utilisable au comptoir : un CLIENT, jamais l'équipe.
+     * Un compte utilisable au comptoir : PAS L'ÉQUIPE, et porteur d'un code de fidélité.
+     *
+     * ── POURQUOI ON N'EXIGE PAS DE PROUVER QU'IL EST « CLIENT » ──────────────────────────────
+     * Le premier jet exigeait `isCustomer()` en plus. Mesuré sur la base réelle : 5 comptes portent
+     * un code de fidélité sans porter le rôle client ni `is_guest = OUI` — ni l'équipe, ni
+     * « reconnus client ». Ils seraient devenus invisibles au comptoir, avec leurs points, sans que
+     * personne comprenne pourquoi. C'est exactement la faute que j'avais évitée en refusant
+     * `is_guest === YES` comme critère : je l'avais réintroduite par une autre porte.
+     *
+     * Le code de fidélité EST la preuve d'adhésion — il n'est délivré qu'à un client. Exiger en plus
+     * un rôle, c'est exiger une seconde preuve que rien ne garantit d'avoir posée.
+     *
+     * L'exclusion de l'ÉQUIPE, elle, reste indispensable et suffit : un caissier ne doit pas
+     * retrouver un collègue et lui créditer des points. Et un compte d'équipe PEUT porter un code
+     * (mesuré : un compte Admin détient 350 points), donc le filtre équipe fait un vrai travail.
      *
      * Les comptes supprimés sont déjà exclus par le soft-delete d'Eloquent — à condition de ne
      * jamais écrire `withoutGlobalScopes()` sans argument, qui retire AUSSI `SoftDeletingScope` et
@@ -190,7 +209,7 @@ final class PosCustomerLookupService
             return false;
         }
 
-        return $this->comptes->isCustomer($user) && ! empty($user->loyalty_code);
+        return ! empty($user->loyalty_code);
     }
 
     /** @param \Illuminate\Support\Collection<int, User> $candidats */

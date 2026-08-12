@@ -21,9 +21,13 @@ use Tests\TestCase;
  * commande de caisse. Il n'y avait aucun moyen de dire QUI est le client — d'où 2 lignes de gain
  * « surface caisse » dans toute la base.
  *
- * Le danger n'est pas de ne pas trouver : c'est de trouver le MAUVAIS humain. 5 numéros de la base
- * sont portés par plusieurs comptes, l'un par 5. Un service qui choisit à la place du caissier
- * crédite ou débite le solde de quelqu'un d'autre — et personne ne s'en aperçoit avant la plainte.
+ * Le danger n'est pas de ne pas trouver : c'est de trouver le MAUVAIS humain. Un service qui choisit
+ * à la place du caissier crédite ou débite le solde de quelqu'un d'autre — et personne ne s'en
+ * aperçoit avant la plainte.
+ *
+ * Sur l'état réel de la base, à ne pas exagérer : 5 numéros sont portés par plusieurs comptes, mais
+ * ce sont des comptes d'ÉQUIPE ou sans code de fidélité. Un seul adhérent par numéro aujourd'hui,
+ * donc cette garde est PRÉVENTIVE. Elle le reste : `users.phone` n'a ni unicité ni index.
  */
 class PosCustomerLookupTest extends TestCase
 {
@@ -159,6 +163,45 @@ class PosCustomerLookupTest extends TestCase
         $u->assignRole('Customer');
 
         $this->assertSame(PosCustomerLookupService::INTROUVABLE, $this->recherche->byPhone('0644332211')['status']);
+    }
+
+    /**
+     * UN ADHÉRENT SANS RÔLE RESTE TROUVABLE — le piège que j'ai failli refermer sur moi.
+     *
+     * Mon premier filtre exigeait, en plus de « pas l'équipe », une preuve positive que le compte est
+     * un client (`is_guest = OUI` ou rôle client). Mesuré sur la base réelle : 5 comptes portent un
+     * CODE DE FIDÉLITÉ sans porter ni l'un ni l'autre. Ils devenaient invisibles au comptoir, avec
+     * leurs points, sans que personne comprenne pourquoi.
+     *
+     * C'est la même faute que `is_guest === YES`, réintroduite par une autre porte : exiger une
+     * seconde preuve d'adhésion que rien ne garantit d'avoir posée. Le code EST la preuve — il n'est
+     * délivré qu'à un client.
+     */
+    public function test_un_adherent_sans_role_ni_marque_invite_reste_trouvable(): void
+    {
+        $u = User::factory()->create(['phone' => '0677001122', 'is_guest' => Ask::NO]);
+        // Aucun rôle attribué, `is_guest = NON` : l'état des 5 comptes réels concernés.
+        DB::table('users')->where('id', $u->id)->update(['loyalty_code' => 'ORPHELIN', 'loyalty_points' => 1200]);
+
+        $r = $this->recherche->byPhone('0677001122');
+
+        $this->assertSame(PosCustomerLookupService::TROUVE, $r['status'],
+            '5 adhérents réels sont dans cet état : les exclure les priverait de leurs points en silence');
+        $this->assertSame(1200, $r['customer']['balance']);
+    }
+
+    /**
+     * MAIS UN COMPTE D'ÉQUIPE PORTEUR D'UN CODE RESTE EXCLU. Le filtre équipe fait un vrai travail :
+     * un compte Admin de la base détient 350 points de fidélité.
+     */
+    public function test_un_compte_d_equipe_porteur_d_un_code_reste_exclu(): void
+    {
+        $patron = User::factory()->create(['phone' => '0688001122', 'is_guest' => Ask::NO]);
+        $patron->assignRole('Admin');
+        DB::table('users')->where('id', $patron->id)->update(['loyalty_code' => 'PATRON01', 'loyalty_points' => 350]);
+
+        $this->assertSame(PosCustomerLookupService::INTROUVABLE, $this->recherche->byPhone('0688001122')['status']);
+        $this->assertSame(PosCustomerLookupService::INTROUVABLE, $this->recherche->byCode('PATRON01')['status']);
     }
 
     /** Un invité de passage EST un client : `is_guest = YES` ne l'exclut pas. */

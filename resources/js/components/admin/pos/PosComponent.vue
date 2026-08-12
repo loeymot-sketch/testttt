@@ -313,20 +313,34 @@
                           is intentional (CTA only after an order is in flight), so
                           the heal is a clearer hint, not a logic change.
                         -->
+                        <!--
+                          [FIDÉLITÉ COMPTOIR 2026-08-10 · propriétaire] Ce bouton ouvre désormais
+                          l'IDENTIFICATION du client, et il n'est plus jamais grisé.
+
+                          Avant : il n'ouvrait que la remise, et restait donc inaccessible tant
+                          qu'aucune commande n'était en cours — ce que le propriétaire avait signalé
+                          (« réduction fidélité grisée / inaccessible », vague Q-5). Le correctif de
+                          l'époque avait été une infobulle plus claire, pas un accès.
+
+                          Or l'essentiel du travail de comptoir se fait AVANT la remise : retrouver
+                          un client par son numéro, l'inscrire, le rattacher pour qu'il CUMULE.
+                          Mesuré en base : 1411 ventes de caisse servies, UNE SEULE au nom d'un
+                          client. La remise reste accessible depuis cette fenêtre, mais seulement
+                          quand elle a un sens (commande en cours ET points réellement utilisables).
+                        -->
                         <PosV5Button
                             v-else
                             variant="ghost"
                             size="md"
                             class="pos-v4-loyalty-main-cta"
-                            data-testid="pos-loyalty-redeem-main-cta-open"
-                            :disabled="!canShowLoyaltyMainCta"
-                            :tone="canShowLoyaltyMainCta ? 'ready' : 'neutral'"
-                            :title="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
-                            :aria-label="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
-                            @click="openLoyaltyMainModal"
+                            data-testid="pos-loyalty-identify-cta-open"
+                            tone="ready"
+                            title="Fidélité client — retrouver, inscrire, cumuler ou utiliser des points"
+                            aria-label="Fidélité client — retrouver, inscrire, cumuler ou utiliser des points"
+                            @click="openLoyaltyIdentifyModal"
                         >
                             <template #icon>🎁</template>
-                            <span class="hidden lg:inline">{{ $t('pos.loyalty.redeem.title') }}</span>
+                            <span class="hidden lg:inline">Fidélité client</span>
                         </PosV5Button>
                     </div>
                 </div>
@@ -1566,6 +1580,16 @@
         @close="closeLoyaltyMainModal"
         @applied="onLoyaltyMainApplied"
     />
+    <!-- [FIDÉLITÉ COMPTOIR 2026-08-10] Identification du client : téléphone, code, ou QR scanné
+         à la caméra de la tablette. C'est le chaînon qui manquait — le crédit et le débit
+         existaient, personne ne pouvait dire QUI est le client. -->
+    <PosLoyaltyIdentifyModal
+        :open="loyaltyIdentifyOpen"
+        :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
+        @close="loyaltyIdentifyOpen = false"
+        @attached="onLoyaltyAttached"
+        @use-points="onLoyaltyUsePoints"
+    />
     <!-- [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) -->
     <div v-if="successFlashing" class="pos-v5-success-flash" aria-hidden="true"></div>
     <!--====================================
@@ -1913,6 +1937,7 @@ import labelEnum from "../../../enums/modules/labelEnum";
 // terminal/PAID guards remain authoritative; this UI gating only hides the
 // visual entry point for orders where redeem would always 422/409.
 import PosLoyaltyRedeemModal from "./PosLoyaltyRedeemModal.vue";
+import PosLoyaltyIdentifyModal from "./PosLoyaltyIdentifyModal.vue";
 // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Panel rupture (86) partagé caisse+cuisine.
 import AvailabilityTogglePanel from "../shared/AvailabilityTogglePanel.vue";
 import {
@@ -2001,6 +2026,7 @@ export default {
         // redeem modal — co-existing with the canonical CTA on
         // PosOrderShowComponent (defense-in-depth, both paths reachable).
         PosLoyaltyRedeemModal,
+        PosLoyaltyIdentifyModal,
         // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Rupture produits (86).
         AvailabilityTogglePanel,
     },
@@ -2129,6 +2155,8 @@ export default {
             // order transitions terminal/PAID. Cleared on resetCart +
             // resetPaymentForm so the next cycle starts fresh.
             currentLoyaltyOrder: null,
+            // [FIDÉLITÉ COMPTOIR 2026-08-10] Fenêtre d'identification du client au comptoir.
+            loyaltyIdentifyOpen: false,
             loyaltyRedeemMainOpen: false,
             // [2026-05-18 F-4] POS first-page filter. False (default) = strip
             // shows only featured categories per `config('pos.featured_category_ids')`.
@@ -3230,6 +3258,42 @@ export default {
         },
         closeLoyaltyMainModal() {
             this.loyaltyRedeemMainOpen = false;
+        },
+        /**
+         * [FIDÉLITÉ COMPTOIR 2026-08-10] Ouvre l'identification du client.
+         *
+         * Aucune condition : retrouver un client, l'inscrire ou le rattacher n'exige pas de
+         * commande en cours. C'est justement ce qui manquait — l'ancienne entrée n'ouvrait que la
+         * remise et restait donc grisée la plupart du temps.
+         */
+        openLoyaltyIdentifyModal() {
+            this.loyaltyIdentifyOpen = true;
+        },
+        /**
+         * Le client vient d'être rattaché à la vente en cours. On rafraîchit la pastille de solde
+         * affichée sur l'écran de caisse : sans ça, le caissier voit encore l'ancien chiffre et
+         * croit que le rattachement n'a rien fait.
+         */
+        onLoyaltyAttached(payload) {
+            const client = payload && payload.customer ? payload.customer : null;
+            if (!client) return;
+            this.selectedCustomerLoyalty = {
+                ...this.selectedCustomerLoyalty,
+                code: client.loyalty_code,
+                points: client.balance,
+                loading: false,
+            };
+        },
+        /**
+         * Passe le relais à la fenêtre de REMISE existante, qui porte déjà toutes ses gardes.
+         * Deux chemins de débit auraient été deux occasions de diverger sur le plancher, le
+         * multiple du taux et le plafond de la commande.
+         */
+        onLoyaltyUsePoints() {
+            this.loyaltyIdentifyOpen = false;
+            if (this.canShowLoyaltyMainCta) {
+                this.loyaltyRedeemMainOpen = true;
+            }
         },
         /**
          * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Modal `applied`
