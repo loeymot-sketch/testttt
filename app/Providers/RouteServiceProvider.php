@@ -284,6 +284,40 @@ class RouteServiceProvider extends ServiceProvider
         // trente fois par minute — au-delà, ce n'est plus un comptoir, c'est un balayage. Compté par
         // caissier, pas par adresse : plusieurs postes derrière la même connexion ne doivent pas se
         // bloquer entre eux.
+        /*
+         * [429 EN SERVICE 2026-08-13 · owner « beaucoup d'erreur trop de request »] Le sondage
+         * des files d'impression.
+         *
+         * CE QUI SE PASSAIT
+         * -----------------
+         * Deux files d'impression (ticket promo et ticket cuisine) demandent leur travail toutes
+         * les 5 s, soit 12 POST/min CHACUNE, et elles tournent sur TOUS les écrans d'administration
+         * ouverts — le PC caisse en garde souvent plusieurs. Ces POST tombaient dans le seau
+         * `admin-mutation`, plafonné à 60/min et dimensionné pour du CRUD administrateur.
+         *
+         * Deux onglets ouverts = 48 POST/min de sondage PUR ; trois = 72/min. Le plafond était donc
+         * vidé AVANT qu'un caissier ne fasse quoi que ce soit, et le 429 tombait sur la requête
+         * suivante — en pratique sur le ticket promo, le plus fréquent. Mesuré en production :
+         * 1130 refus sur `promo-flyer/pending`. L'exploitant l'a vécu comme « trop de requêtes,
+         * réessayez plus tard » pendant le service.
+         *
+         * POURQUOI UN SEAU À PART PLUTÔT QU'UN PLAFOND PLUS HAUT
+         * ------------------------------------------------------
+         * Monter `admin-mutation` aurait desserré la protection anti-force-brute de TOUT le CRUD
+         * administrateur pour un problème qui ne vient pas de lui. Ces routes ne sont pas des
+         * mutations : ce sont des demandes de travail idempotentes, faites par du personnel
+         * authentifié et autorisé, dont le rythme est FIXE et connu (une toutes les 5 s par
+         * écran). Elles méritent leur propre mesure, calée sur ce rythme.
+         *
+         * 240/min = 20 écrans d'administration ouverts simultanément sur le même compte. Très
+         * au-delà de tout usage réel, et toujours un plafond : une boucle emballée reste bornée.
+         */
+        RateLimiter::for('print-queue-poll', function (Request $request) {
+            $perMinute = max(1, (int) config('pos.rate_limit.print_queue_poll', 240));
+
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('pos-loyalty-lookup', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.loyalty_lookup', 30));
 

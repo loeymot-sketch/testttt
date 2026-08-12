@@ -1078,10 +1078,20 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // lisent ensuite sur `orders/{order}/escpos?ticket=kitchen`, qui sait déjà rendre sans
         // aucune row `Printer`. PAS d'idempotence ici : une réclamation rejouée depuis un cache
         // rendrait un ticket déjà pris et le papier ne sortirait jamais.
+        // [429 EN SERVICE 2026-08-13] Ces deux routes sont un SONDAGE, pas une mutation admin.
+        // Elles partaient toutes les 5 s depuis chaque écran d'administration ouvert et vidaient
+        // le seau `admin-mutation` (60/min, prévu pour du CRUD) : le service voyait « trop de
+        // requêtes, réessayez plus tard ». On les sort de ce seau et on les met sur leur propre
+        // mesure, calée sur leur rythme réel. Le plafond demeure — simplement au bon endroit.
         Route::post('/kitchen-tickets/pending', [\App\Http\Controllers\Admin\Pos\KitchenTicketQueueController::class, 'pending'])
-            ->middleware('throttle:pos-order-update')->name('kitchen-tickets.pending');
+            ->middleware('throttle:print-queue-poll')
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('kitchen-tickets.pending');
         Route::post('/kitchen-tickets/{order}/ack', [\App\Http\Controllers\Admin\Pos\KitchenTicketQueueController::class, 'acknowledge'])
-            ->whereNumber('order')->middleware('throttle:pos-order-update')->name('kitchen-tickets.ack');
+            ->whereNumber('order')
+            ->middleware('throttle:print-queue-poll')
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('kitchen-tickets.ack');
 
         // [CAISSE-HEALTH 2026-07-30] Santé SYSTÈME pour le poste de commande : temps réel (socket +
         // worker outbox) + chaîne fiscale NF525. READ-ONLY. L'opérateur voit une dégradation AVANT
@@ -1239,9 +1249,20 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/', [App\Http\Controllers\Admin\PromoFlyerController::class, 'store'])->name('store');
         Route::get('/settings', [App\Http\Controllers\Admin\PromoFlyerController::class, 'settings'])->name('settings');
         Route::match(['put', 'patch'], '/settings', [App\Http\Controllers\Admin\PromoFlyerController::class, 'updateSettings'])->name('settings.update');
-        Route::post('/pending', [App\Http\Controllers\Admin\PromoFlyerController::class, 'pending'])->name('pending');
+        // [429 EN SERVICE 2026-08-13] Même traitement que la file cuisine, et pour la même raison.
+        // C'est CETTE route qui encaissait les refus mesurés en production (1130 sur 4746 appels) :
+        // un sondage toutes les 5 s par écran ouvert, dans un seau de 60/min prévu pour du CRUD.
+        // Elle n'avait même pas de mesure à elle — seul `admin-mutation` la bornait.
+        Route::post('/pending', [App\Http\Controllers\Admin\PromoFlyerController::class, 'pending'])
+            ->middleware('throttle:print-queue-poll')
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('pending');
         Route::get('/{flyer}/escpos', [App\Http\Controllers\Admin\PromoFlyerController::class, 'escpos'])->whereNumber('flyer')->name('escpos');
-        Route::post('/{flyer}/ack', [App\Http\Controllers\Admin\PromoFlyerController::class, 'acknowledge'])->whereNumber('flyer')->name('ack');
+        Route::post('/{flyer}/ack', [App\Http\Controllers\Admin\PromoFlyerController::class, 'acknowledge'])
+            ->whereNumber('flyer')
+            ->middleware('throttle:print-queue-poll')
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('ack');
         // Gestion : relancer une impression ratée, annuler un code émis par erreur.
         Route::post('/{flyer}/reprint', [App\Http\Controllers\Admin\PromoFlyerController::class, 'reprint'])->whereNumber('flyer')->name('reprint');
         Route::post('/{flyer}/revoke', [App\Http\Controllers\Admin\PromoFlyerController::class, 'revoke'])->whereNumber('flyer')->name('revoke');

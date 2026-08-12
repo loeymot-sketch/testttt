@@ -62,6 +62,13 @@ return [
         'quote'        => max(1, (int) env('POS_RATE_LIMIT_QUOTE', 120)),
         'order_create' => max(1, (int) env('POS_RATE_LIMIT_ORDER_CREATE', 60)),
         'order_update' => max(1, (int) env('POS_RATE_LIMIT_ORDER_UPDATE', 120)),
+        // [429 EN SERVICE 2026-08-13] Sondage des files d'impression (ticket promo + ticket
+        // cuisine), une demande toutes les 5 s PAR ÉCRAN d'administration ouvert. Ces POST
+        // tombaient dans le seau `admin-mutation` (60/min, dimensionné pour du CRUD) : deux
+        // onglets suffisaient à le vider en sondage pur, et le service voyait « trop de requêtes,
+        // réessayez plus tard ». 240/min = 20 écrans simultanés sur le même compte — très au-delà
+        // de tout usage réel, tout en gardant une borne contre une boucle emballée.
+        'print_queue_poll' => max(1, (int) env('POS_RATE_LIMIT_PRINT_QUEUE_POLL', 240)),
     ],
 
     /*

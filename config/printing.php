@@ -207,4 +207,34 @@ return [
         'screen_marker_text' => env('PRINTING_BYPASS_SCREEN_MARKER', '🔧 MODE TEST — IMPRESSION BYPASSÉE'),
         'log_channel' => env('PRINTING_BYPASS_LOG_CHANNEL', 'stack'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tiroir-caisse — ouverture avec le ticket
+    |--------------------------------------------------------------------------
+    |
+    | [TIROIR 2026-08-13 · owner « le tiroir ne s'ouvre pas »] L'impulsion
+    | d'ouverture (1B 70 00 19 FA) est attachée aux OCTETS du ticket client
+    | plutôt que poussée séparément par le serveur.
+    |
+    | La commande existait déjà, mais elle n'empruntait que le chemin
+    | serveur→imprimante en TCP : impossible ici (le serveur est chez
+    | l'hébergeur, le tiroir est câblé sur l'imprimante au bout du réseau du
+    | restaurant) et de surcroît simulé sur cette machine. Attachée au ticket,
+    | elle voyage avec lui et n'exige AUCUNE modification du pont installé sur
+    | le PC de la caisse.
+    |
+    | Le tiroir ne s'ouvre que s'il y a des espèces dans la vente (paiement
+    | mixte compris), jamais sur un duplicata ni sur le ticket de la borne.
+    |
+    | Mettre à false coupe l'ouverture automatique sans déploiement — utile si
+    | un poste sans tiroir se met à claquer à chaque ticket.
+    |
+    */
+    'drawer' => [
+        'open_with_receipt' => filter_var(
+            env('PRINTING_DRAWER_OPEN_WITH_RECEIPT', true),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+    ],
 ];

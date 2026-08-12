@@ -2,9 +2,11 @@
 
 namespace App\Services\Hardware;
 
+use App\Enums\PosPaymentMethod;
 use App\Models\Order;
 use App\Models\Printer;
 use App\Models\Scopes\BranchScope;
+use Illuminate\Support\Facades\DB;
 
 /**
  * [TICKET-UNIFY 2026-07-01] Source unique des octets ESC/POS d'un ticket (client ou cuisine).
@@ -105,8 +107,69 @@ final class EscPosTicketBytesService
             $opts['cut_partial'] = strtolower((string) config('printing.cut.kiosk_client_mode', 'partial')) === 'partial';
         }
 
-        return $ticket === 'kitchen'
-            ? $this->renderer->renderKitchenTicket($order, $opts)
-            : $this->renderer->renderClientTicket($order, $opts);
+        if ($ticket === 'kitchen') {
+            return $this->renderer->renderKitchenTicket($order, $opts);
+        }
+
+        $octets = $this->renderer->renderClientTicket($order, $opts);
+
+        // [TIROIR 2026-08-13 · owner « le tiroir ne s'ouvre pas »] L'impulsion d'ouverture voyage
+        // AVEC le ticket, au lieu d'être poussée séparément par le serveur.
+        //
+        // POURQUOI ICI ET NON DANS LE PONT DU PC CAISSE
+        // ----------------------------------------------
+        // La commande existe déjà (EscPosCommandBuilder::openDrawerCommand — exactement
+        // 1B 70 00 19 FA) mais elle n'empruntait que `EscPosPrinterService::openDrawer()`, qui
+        // pousse du SERVEUR vers l'imprimante en TCP. C'est la même topologie impossible que
+        // l'impression : le serveur est chez l'hébergeur, le tiroir est au bout du réseau du
+        // restaurant, câblé sur l'imprimante. Et la machine tourne en simulation matérielle, donc
+        // ce chemin ne sortait de toute façon rien.
+        //
+        // En l'attachant aux octets du ticket, le tiroir s'ouvre quand le reçu s'imprime — sans
+        // modifier `caisse-bridge.js`, donc sans intervention sur le PC de la caisse.
+        //
+        // QUAND, EXACTEMENT
+        // -----------------
+        // Un tiroir qui s'ouvre est un geste de caisse, pas une décoration : il ne s'ouvre que
+        // s'il y a des ESPÈCES à encaisser ou à rendre.
+        //  - jamais sur un DUPLICATA : réimprimer un vieux reçu ne doit pas ouvrir le tiroir ;
+        //  - jamais sur le ticket de la BORNE : il n'y a pas de tiroir devant le client ;
+        //  - jamais sur un règlement carte seul.
+        // Le paiement MIXTE compte : dès qu'une ligne de règlement est en espèces, le tiroir doit
+        // s'ouvrir, même si le reste est passé en carte.
+        if ($this->tiroirDoitSOuvrir($order, $isDuplicata, $kioskClient)) {
+            $octets .= EscPosCommandBuilder::openDrawerCommand();
+        }
+
+        return $octets;
+    }
+
+    /**
+     * Y a-t-il des espèces dans cette vente ?
+     *
+     * On regarde les DEUX endroits où un règlement peut vivre : le marqueur de la commande
+     * (`pos_payment_method`) et les lignes de règlement (`order_payments.mode`, où vit le
+     * paiement mixte). N'en lire qu'un laisserait le tiroir fermé sur une vente moitié espèces.
+     */
+    private function tiroirDoitSOuvrir(Order $order, bool $isDuplicata, bool $kioskClient): bool
+    {
+        if ($isDuplicata || $kioskClient) {
+            return false;
+        }
+
+        // Interrupteur d'exploitation : permet de couper l'ouverture automatique sans déployer,
+        // si un poste sans tiroir se met à claquer à chaque ticket.
+        if (! config('printing.drawer.open_with_receipt', true)) {
+            return false;
+        }
+
+        if ((int) ($order->pos_payment_method ?? 0) === PosPaymentMethod::CASH) {
+            return true;
+        }
+
+        return DB::table('order_payments')
+            ->where('order_id', $order->id)
+            ->where('mode', PosPaymentMethod::CASH)
+            ->exists();
     }
 }
