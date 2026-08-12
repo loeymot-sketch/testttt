@@ -236,7 +236,7 @@ class WheelReportService
         if (! app(WheelService::class)->remisesAcceptees()) {
             $poidsRemises = 0;
             $poidsTotal = 0;
-            foreach ((array) config('wheel.segments', []) as $s) {
+            foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $s) {
                 $w = max(0, (int) ($s['weight'] ?? 0));
                 $poidsTotal += $w;
                 if (str_starts_with((string) ($s['type'] ?? ''), 'coupon_')) {
@@ -253,7 +253,7 @@ class WheelReportService
 
         // Un segment sans produit de référence ne sera JAMAIS chiffré.
         $orphelins = [];
-        foreach ((array) config('wheel.segments', []) as $s) {
+        foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $s) {
             if ((string) ($s['type'] ?? '') !== 'free_item') {
                 continue;
             }

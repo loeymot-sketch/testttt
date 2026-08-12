@@ -44,31 +44,76 @@ use Illuminate\Support\Str;
 class WheelService
 {
     /**
-     * Ce que le navigateur a le droit de connaître : de quoi DESSINER la roue, et rien de plus.
-     * Ni poids, ni plafonds — les publier reviendrait à publier la probabilité de chaque case, et
+     * LES LOTS, UNE SEULE PORTE D'ENTRÉE — fichier de configuration + réglages de l'exploitant.
+     *
+     * [2026-08-12 · propriétaire : « je veux permettre de faire la probabilité et le nombre de
+     * cadeaux »] Les lots viennent du fichier ; la probabilité et la quantité peuvent être décidées
+     * depuis `/admin/roue-reglages`, sans déploiement. Ce qui est enregistré PRIME.
+     *
+     * Tout le monde passe par ici — le tirage, ce qui est affiché, le plafond de remise, le tableau
+     * de contrôle. Lire `config('wheel.segments')` en direct ailleurs, ce serait ignorer les réglages
+     * du propriétaire sur une surface et pas sur l'autre : la roue montrerait des probabilités qu'elle
+     * n'applique pas. C'est le motif du « jumeau oublié », et il a déjà coûté deux fois ici.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function segments(): array
+    {
+        $segments = (array) config('wheel.segments', []);
+        $reglages = app(WheelSettingsService::class)->prizeOverrides();
+
+        if ($reglages === []) {
+            return $segments;
+        }
+
+        return array_map(static function ($s) use ($reglages) {
+            $cle = (string) ($s['key'] ?? '');
+            $r = $reglages[$cle] ?? null;
+
+            if ($r === null) {
+                return $s;
+            }
+
+            if (array_key_exists('weight', $r)) {
+                $s['weight'] = $r['weight'];
+            }
+            if (array_key_exists('quantity', $r)) {
+                $s['quantity'] = $r['quantity'];
+            }
+
+            return $s;
+        }, $segments);
+    }
+
+    /**
+     * CE QUE LE NAVIGATEUR A LE DROIT DE CONNAÎTRE : de quoi DESSINER la roue, et rien de plus. Ni
+     * poids, ni plafonds — les publier reviendrait à publier la probabilité de chaque case, et
      * surtout à laisser croire qu'ils sont négociables côté client.
      *
-     * @return array<int, array{key: string, label: string}>
-     */
-    /**
-     * LES LOTS À DESSINER — et, si une caisse est précisée, SEULEMENT ceux qu'on peut réellement donner.
+     * Et, si une caisse est précisée, SEULEMENT les lots qu'on peut réellement donner.
      *
-     * [P1 2026-08-10 · audit ronde 2 vague F] La roue AFFICHAIT des lots qu'elle ne pouvait plus tirer.
-     * Mesuré sur la tablette : elle s'est arrêtée sous le repère sur « -15% », un lot impossible ce
-     * jour-là (2 secteurs sur 7 = 28,6 % des arrêts), et l'acte « Aujourd'hui, on distribue » les
-     * listait 100 % du temps. Même défaut sur le téléphone du client, et même défaut pour un produit
-     * en rupture — « Frites offertes » jamais tirée en 3 000 tirages, toujours affichée.
+     * [P1 2026-08-10 · audit ronde 2 vague F] La roue AFFICHAIT des lots qu'elle ne pouvait plus
+     * tirer. Mesuré sur la tablette : elle s'est arrêtée sous le repère sur « -15% », un lot
+     * impossible ce jour-là (2 secteurs sur 7 = 28,6 % des arrêts), et l'acte « Aujourd'hui, on
+     * distribue » les listait 100 % du temps. Même défaut sur le téléphone du client, et même défaut
+     * pour un produit en rupture — « Frites offertes » jamais tirée en 3 000 tirages, toujours
+     * affichée. C'était un trou de ma main : j'avais posé les gardes dans `draw()` sans les appliquer
+     * à ce qui est MONTRÉ. Une roue qui montre ce qu'elle ne donne pas mène le client en bateau, en
+     * boucle, en salle, toutes les vingt secondes.
      *
-     * C'était un trou de ma main : j'ai posé les gardes dans `draw()` sans les appliquer à ce qui est
-     * MONTRÉ. Une roue qui montre ce qu'elle ne donne pas est un écran qui mène le client en bateau,
-     * en boucle, en salle, toutes les vingt secondes.
+     * Un lot à probabilité NULLE reste publié, lui : c'est la vitrine voulue par le propriétaire
+     * (« le Terminator, on l'affiche mais la probabilité ça va être zéro »). Il est affiché parce
+     * qu'il EXISTE et qu'il peut être activé d'un curseur — ce n'est pas la même chose qu'un lot
+     * épuisé ou en rupture, qui disparaît.
      *
      * Sans caisse (appels de dessin hors contexte, tests), on publie tout : filtrer sans savoir OÙ
      * n'aurait aucun sens.
+     *
+     * @return array<int, array{key: string, label: string}>
      */
     public function publicSegments(?int $branchId = null): array
     {
-        $segments = (array) config('wheel.segments', []);
+        $segments = $this->segments();
 
         if ($branchId !== null) {
             $tirables = array_values(array_filter(
@@ -89,19 +134,77 @@ class WheelService
     }
 
     /**
+     * LES LOTS SUR LESQUELS LA VITRINE A LE DROIT DE S'ARRÊTER.
+     *
+     * [2026-08-12] Une roue de vitrine qui s'arrête sur un lot impossible ment, même sans rien miser.
+     * Mesuré : avec 7 secteurs tirés au hasard uniforme et un lot à probabilité nulle (le Terminator
+     * voulu par le propriétaire), la tablette s'arrêtait dessus **1 fois sur 7**, toutes les dix
+     * secondes, en salle, toute la journée. Un habitué finit par le remarquer — et c'est exactement
+     * la tromperie corrigée le 10 août pour les lots en rupture, revenue par la porte de la vitrine.
+     *
+     * Le lot reste DESSINÉ sur la roue (voir `publicSegments()`) : c'est sa raison d'être. Il n'est
+     * simplement jamais désigné comme gagnant par l'animation.
+     *
+     * Cette liste ne sort PAS par une API publique : la tablette est une page rendue par le serveur,
+     * derrière le code de la roue. Publier « ce lot ne peut pas être gagné » sur une API ouverte
+     * reviendrait à annoncer au client ce que le propriétaire ne veut pas annoncer.
+     *
+     * @return array<int, string> clés des lots
+     */
+    public function spinnableKeys(int $branchId): array
+    {
+        $cles = [];
+
+        foreach ($this->segments() as $s) {
+            if ((int) ($s['weight'] ?? 0) <= 0) {
+                continue;
+            }
+            if (! $this->lotTirable($branchId, (array) $s)) {
+                continue;
+            }
+            $cles[] = (string) $s['key'];
+        }
+
+        return $cles;
+    }
+
+    /**
      * Ce lot peut-il être donné dans cette caisse, en ce moment ? Une seule définition, partagée par
      * le TIRAGE et par ce qui est MONTRÉ — c'est leur divergence qui a créé le défaut.
      *
-     * Le plafond journalier n'est PAS ici : c'est un compte, pas une propriété du lot, et il change
-     * au fil de la journée. `draw()` l'applique en plus.
+     * [2026-08-12] LE PLAFOND DU JOUR ET LA QUANTITÉ SONT ENTRÉS ICI. Ils étaient appliqués par
+     * `draw()` seul, au motif qu'un compte n'est « pas une propriété du lot ». C'était le défaut du
+     * 10 août, réparé à moitié : les gardes « rupture » et « codes éteints » avaient bien rejoint
+     * l'affichage, le plafond journalier était resté derrière. Conséquence, mesurable en salle :
+     * après 2 « Frites + Boisson » dans la journée (plafond de 2), la roue continuait de l'afficher
+     * et de s'arrêter dessus sans jamais la donner.
+     *
+     * Un compte qui change au fil de la journée n'est pas une raison de montrer un lot impossible :
+     * c'est une raison de le recalculer à chaque appel — ce que fait déjà cette méthode, qui reçoit la
+     * caisse. La quantité de campagne (le « mois » du propriétaire) suit exactement la même règle :
+     * épuisée, le lot disparaît de la roue.
+     *
+     * Le POIDS, lui, n'est PAS regardé ici, et c'est voulu : un lot à probabilité nulle doit rester
+     * AFFICHÉ (le Terminator du propriétaire). C'est `draw()` qui ne le tire jamais.
      *
      * @param  array<string, mixed>  $s
      */
     private function lotTirable(int $branchId, array $s): bool
     {
         $type = (string) ($s['type'] ?? '');
+        $cle  = (string) ($s['key'] ?? '');
 
         if (str_starts_with($type, 'coupon_') && ! $this->remisesAcceptees()) {
+            return false;
+        }
+
+        $plafondJour = (int) ($s['daily_cap'] ?? 0);
+        if ($plafondJour > 0 && $this->dailyCount($branchId, $cle) >= $plafondJour) {
+            return false;
+        }
+
+        $quantite = (int) ($s['quantity'] ?? 0);
+        if ($quantite > 0 && $this->campaignCount($branchId, $cle) >= $quantite) {
             return false;
         }
 
@@ -446,7 +549,7 @@ class WheelService
 
     private function maxDiscountFor(string $prizeKey): float
     {
-        foreach ((array) config('wheel.segments', []) as $s) {
+        foreach ($this->segments() as $s) {
             if ((string) ($s['key'] ?? '') === $prizeKey) {
                 return (float) ($s['max_discount'] ?? 0);
             }
@@ -463,7 +566,7 @@ class WheelService
      */
     private function draw(int $branchId): array
     {
-        $segments = (array) config('wheel.segments', []);
+        $segments = $this->segments();
         if (empty($segments)) {
             throw new WheelException('La roue n\'est pas configurée.', 503);
         }
@@ -471,17 +574,18 @@ class WheelService
         $eligibles = [];
         $total = 0;
         foreach ($segments as $s) {
+            // Poids 0 = AFFICHÉ, JAMAIS TIRÉ. C'est le Terminator du propriétaire : « on l'affiche
+            // mais ça va être jamais gagné, la probabilité ça va être zéro ». Il reste sur la roue
+            // (`lotTirable()` ne regarde pas le poids) et ne sort jamais d'ici.
             $poids = max(0, (int) ($s['weight'] ?? 0));
-            $cap = (int) ($s['daily_cap'] ?? 0);
-            if ($poids > 0 && $cap > 0 && $this->dailyCount($branchId, (string) $s['key']) >= $cap) {
-                $poids = 0; // plafond atteint : plus tirable aujourd'hui
-            }
 
             /*
-             * [P1 + P0 2026-08-10] LA ROUE OFFRAIT DES PRODUITS EN RUPTURE, ET DES CODES QUE LA CAISSE
-             * REFUSE. Les deux gardes vivent maintenant dans `lotTirable()`, partagé avec ce qui est
-             * MONTRÉ au client — leur divergence est précisément ce qui faisait afficher des lots
-             * impossibles sur la tablette et sur le téléphone.
+             * [P1 + P0 2026-08-10, complété le 2026-08-12] LA ROUE OFFRAIT DES PRODUITS EN RUPTURE,
+             * DES CODES QUE LA CAISSE REFUSE, ET DES LOTS DÉJÀ AU PLAFOND DU JOUR. Toutes ces gardes
+             * vivent maintenant dans `lotTirable()`, partagé avec ce qui est MONTRÉ au client — leur
+             * divergence est précisément ce qui faisait afficher des lots impossibles sur la tablette
+             * et sur le téléphone. Le plafond journalier et la quantité de campagne y sont entrés le
+             * 12 août : ils étaient restés ici, donc invisibles à l'affichage.
              */
             if ($poids > 0 && ! $this->lotTirable($branchId, (array) $s)) {
                 $poids = 0;
@@ -641,6 +745,28 @@ class WheelService
             ->where('branch_id', $branchId)
             ->where('prize_key', $prizeKey)
             ->whereDate('created_at', now()->toDateString())
+            ->count();
+    }
+
+    /**
+     * Combien de fois ce lot est-il déjà parti SUR LA CAMPAGNE en cours ?
+     *
+     * C'est le compteur de la « quantité » du propriétaire (« 50 tiramisu, 10 burgers pour le mois »).
+     * On compte sur `campaign_key`, pas sur un mois calendaire : c'est déjà le levier qui relance le
+     * jeu (changer la campagne rend un tour à tout le monde), et compter sur autre chose ferait deux
+     * notions de « période » qui divergeraient au premier changement de campagne.
+     *
+     * `withoutGlobalScope(BranchScope::class)` au SINGULIER, avec un filtre de caisse explicite :
+     * sans argument, `withoutGlobalScopes()` retirerait AUSSI le filtre de suppression douce et
+     * compterait des participations effacées. Piège rencontré deux fois le 10 août.
+     */
+    private function campaignCount(int $branchId, string $prizeKey): int
+    {
+        return WheelSpin::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('prize_key', $prizeKey)
+            ->where('campaign_key', (string) config('wheel.campaign_key'))
             ->count();
     }
 

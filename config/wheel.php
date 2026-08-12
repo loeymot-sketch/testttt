@@ -72,7 +72,58 @@ return [
     | Le libellé est ce que le client LIT sur la roue. Il doit être vrai : une roue
     | qui affiche un lot jamais tiré est une tromperie, et elle se voit.
     */
+    /*
+    | [2026-08-12 · propriétaire] DES PRODUITS, PAS DES POINTS NI DES POURCENTAGES.
+    |
+    | Sa demande, mot pour mot : « des vrais produits à gagner — une boisson, une frite, un
+    | cheeseburger, un Cayenne, une tarte, un tiramisu ; et un Terminator qu'on affiche mais que
+    | personne ne gagne, parce que ça ferait mal à notre production : la probabilité, ça va être
+    | zéro. Je veux pouvoir régler la probabilité ET le nombre de cadeaux. »
+    |
+    | Ce que ces valeurs sont, et ne sont pas :
+    |   · `weight`   = la PROBABILITÉ relative. Un poids de 0 signifie « affiché, jamais tiré ».
+    |   · `quantity` = le NOMBRE de cadeaux pour la campagne (le « mois » du propriétaire). Épuisé,
+    |                  le lot disparaît de la roue — il n'est plus ni tiré, ni montré.
+    |   · `daily_cap`= un frein JOURNALIER de sécurité, pour qu'un lot ne parte pas en une heure.
+    |
+    | CES CHIFFRES NE SONT QU'UN POINT DE DÉPART. L'exploitant les règle depuis `/admin/roue-reglages`
+    | sans déploiement ; les réglages enregistrés PRIMENT sur ce fichier
+    | (`WheelSettingsService::prizeOverrides()`).
+    |
+    | Tous les produits cités existent en base — vérifié : Boisson Seule (3), Frites Seules (2),
+    | Cheese Burger (98), Cayenne (22), Tarte Daim (50), Tiramisu (51), Terminator (105). ⛔ Ne
+    | JAMAIS inventer un produit : s'il n'est pas dans la carte, il n'existe pas (CLAUDE.md §3bis).
+    |
+    | UNE RÉSERVE QUE JE DOIS AU PROPRIÉTAIRE, et qu'il a tranchée : afficher un lot dont la
+    | probabilité est nulle reste une tromperie si elle est définitive — un habitué finit par
+    | remarquer que le Terminator ne tombe jamais. Ici ce n'est PAS gravé dans le code : c'est un
+    | curseur sur SON écran, qu'il peut lever un soir de lancement. C'est ce qui rend la chose
+    | tenable plutôt que mensongère.
+    */
     'segments' => [
+        // Les deux lots les plus probables sont les moins coûteux (1,90 € pièce).
+        ['key' => 'boisson',     'label' => 'Boisson',          'type' => 'free_item',      'value' => 0,   'weight' => 34, 'daily_cap' => 20, 'quantity' => 50,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_BOISSON', 3), 'cost_item_name' => 'Boisson Seule'],
+        ['key' => 'frites',      'label' => 'Frites',           'type' => 'free_item',      'value' => 0,   'weight' => 30, 'daily_cap' => 20, 'quantity' => 50,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_FRITES', 2),  'cost_item_name' => 'Frites Seules'],
+        // Desserts : coût moyen (3,50 €), forte valeur perçue.
+        ['key' => 'tiramisu',    'label' => 'Tiramisu',         'type' => 'free_item',      'value' => 0,   'weight' => 14, 'daily_cap' => 10, 'quantity' => 50,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_TIRAMISU', 51), 'cost_item_name' => 'Tiramisu'],
+        ['key' => 'tarte',       'label' => 'Tarte Daim',       'type' => 'free_item',      'value' => 0,   'weight' => 12, 'daily_cap' => 10, 'quantity' => 50,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_TARTE', 50),    'cost_item_name' => 'Tarte Daim'],
+        // Sandwichs : les lots chers. Le propriétaire a dit « 10 sandwiches, 10 burgers ».
+        ['key' => 'cheeseburger', 'label' => 'Cheese Burger',   'type' => 'free_item',      'value' => 0,   'weight' => 6,  'daily_cap' => 3,  'quantity' => 10,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_CHEESE', 98),  'cost_item_name' => 'Cheese Burger'],
+        ['key' => 'cayenne',     'label' => 'Cayenne',          'type' => 'free_item',      'value' => 0,   'weight' => 4,  'daily_cap' => 2,  'quantity' => 10,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_CAYENNE', 22),  'cost_item_name' => 'Cayenne'],
+        // LA VITRINE. Poids 0 = affiché, jamais tiré. Curseur sur l'écran du propriétaire.
+        ['key' => 'terminator',  'label' => 'Terminator',       'type' => 'free_item',      'value' => 0,   'weight' => 0,  'daily_cap' => 1,  'quantity' => 1,   'cost_item_id' => (int) env('WHEEL_COST_ITEM_TERMINATOR', 105), 'cost_item_name' => 'Terminator'],
+    ],
+
+    /*
+    | Ancienne liste (points + pourcentages), gardée pour mémoire : le propriétaire a demandé des
+    | produits réels, plus lisibles sur une roue et plus désirables qu'un « -10 % ». Elle reste
+    | reconstituable si besoin — les types `points` et `coupon_percent` sont toujours pris en charge
+    | par le moteur, et l'écran de réglages ne les supprime pas.
+    |
+    |   points_50 (30) · remise_10 (28, plafond 4 €) · points_100 (18) ·
+    |   remise_15 (12, plafond 6 €) · boisson (8) · frites (3) · menu (1)
+    */
+    'segments_heritage' => [
         ['key' => 'points_50',   'label' => '50 points',        'type' => 'points',         'value' => 50,  'weight' => 30, 'daily_cap' => 0],
         // `max_discount` : PLAFOND EN EUROS. Sans lui, `-15 %` sur une commande de groupe de 250 €
         // fait 37,50 € offerts par un jeu censé donner « un petit lot ». Le moteur de coupons

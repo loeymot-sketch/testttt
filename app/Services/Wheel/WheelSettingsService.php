@@ -54,6 +54,56 @@ class WheelSettingsService
     }
 
     /**
+     * LES LOTS TELS QUE L'EXPLOITANT LES A RÉGLÉS — probabilité et quantité.
+     *
+     * [2026-08-12 · propriétaire : « je veux permettre de faire la probabilité et le nombre de
+     * cadeaux que je veux faire gagner aux gens — 50 tiramisu, 50 boissons, 10 sandwiches, 10
+     * burgers pour le mois ; plus de probabilité sur les boissons aujourd'hui. »]
+     *
+     * Deux réglages par lot, et deux seulement, parce que ce sont les deux seules décisions qui lui
+     * appartiennent vraiment :
+     *   · `prize_<clé>_weight`   — la probabilité relative. 0 = affiché, jamais tiré.
+     *   · `prize_<clé>_quantity` — le nombre de cadeaux pour la campagne. 0 = illimité.
+     *
+     * Ce qu'on ne lui donne PAS à régler : le produit de référence de coût, le type, le libellé. Un
+     * libellé modifiable, c'est une roue qui promet « Big Cayenne » et sort une boisson ; un produit
+     * de coût modifiable, c'est l'inventaire d'un autre article qui dérive. Ces choix restent dans le
+     * fichier, où ils sont relus par quelqu'un.
+     *
+     * Une clé absente veut dire « je n'ai pas décidé » → la valeur du fichier tient. Une clé écrite à
+     * 0 est une DÉCISION (« ne le fais plus gagner ») et prime, comme pour les liens de réseaux.
+     *
+     * @return array<string, array{weight?: int, quantity?: int}>
+     */
+    public function prizeOverrides(): array
+    {
+        $stored = $this->stored();
+        $out = [];
+
+        foreach ($stored as $cle => $valeur) {
+            if (! preg_match('/^prize_(.+)_(weight|quantity)$/', (string) $cle, $m)) {
+                continue;
+            }
+
+            if ($valeur === '' || $valeur === null) {
+                continue;
+            }
+
+            // Jamais de valeur négative : un poids négatif fausserait le total du tirage, une
+            // quantité négative rendrait un lot épuisé dès le premier tour.
+            $out[$m[1]][$m[2]] = max(0, (int) $valeur);
+        }
+
+        return $out;
+    }
+
+    /** Les clés de réglage d'un lot, pour composer le formulaire et la validation. */
+    public static function prizeKeys(string $prizeKey): array
+    {
+        return ["prize_{$prizeKey}_weight", "prize_{$prizeKey}_quantity"];
+    }
+
+    /**
      * CE QUE L'EXPLOITANT A RÉELLEMENT ENREGISTRÉ — sans les valeurs de départ de la configuration.
      *
      * ── POURQUOI UNE CHAÎNE VIDE EST CONSERVÉE ICI ────────────────────────────────────────────

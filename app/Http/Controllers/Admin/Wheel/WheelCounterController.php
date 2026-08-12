@@ -49,6 +49,11 @@ class WheelCounterController extends Controller
 
         $commun = [
             'segments' => app(\App\Services\Wheel\WheelService::class)->publicSegments($branchId),
+            // [2026-08-12] Les lots sur lesquels l'animation de la vitrine a le droit de S'ARRÊTER.
+            // Le Terminator est dessiné sur la roue (probabilité nulle voulue par le propriétaire)
+            // mais l'animation ne doit jamais le désigner gagnant : avec un arrêt au hasard uniforme,
+            // la tablette s'arrêtait dessus 1 fois sur 7, toutes les dix secondes, en salle.
+            'spinnable' => app(\App\Services\Wheel\WheelService::class)->spinnableKeys($branchId),
             'minOrder' => (float) config('wheel.min_order_amount', 0),
             // On recharge à la MOITIÉ de la durée de vie : le QR affiché est ainsi toujours valable
             // au moins autant de temps qu'il en reste à l'écran. Recharger à l'expiration exacte

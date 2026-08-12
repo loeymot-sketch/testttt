@@ -94,10 +94,25 @@
     justify-items:center; align-items:center; min-height:0; min-width:0;
   }
 
+  /* ── LE LOGO ────────────────────────────────────────────────────────────────────────────────
+     [2026-08-12 · propriétaire : « le logo, déjà, il s'affiche mal »] Il avait raison, et la cause
+     était ici : un filtre `brightness(0) invert(1) sepia(.16) saturate(1.6) hue-rotate(-12deg)`.
+     `brightness(0)` écrase TOUTE l'image en noir, `invert(1)` la repasse en blanc, le reste la
+     teinte — le résultat est une silhouette crème uniforme. Or le logo n'est pas un lettrage : c'est
+     un PIMENT MASCOTTE en couleurs (casquette blanche, lunettes, moustache) à côté d'un lettrage
+     noir. Le filtre effaçait purement et simplement la mascotte.
+
+     Le vrai problème n'était pas la couleur du logo, c'était le fond NOIR de la vitrine sous un
+     logo dessiné pour du blanc. On ne détruit donc pas le logo : on lui donne sa plaque claire, avec
+     une marge intérieure pour qu'il ne touche pas les bords. C'est ce que fait n'importe quelle
+     marque sur un fond sombre — et la mascotte, qui est ce qu'on reconnaît de loin, revient. */
   .logo{
-    height:min(7.5vmin,78px); width:auto; display:block;
-    /* Lettrage sombre sur fond sombre : on l'éclaircit sans le rendre blanc cassant. */
-    filter:brightness(0) invert(1) sepia(.16) saturate(1.6) hue-rotate(-12deg); opacity:.97;
+    height:min(9vmin,92px); width:auto; display:block;
+    background:var(--creme);
+    padding:min(1.1vmin,11px) min(1.8vmin,18px);
+    border-radius:min(2vmin,18px);
+    /* Un léger halo chaud décolle la plaque du fond noir sans dessiner de bordure dure. */
+    box-shadow:0 0 0 1px rgba(255,184,0,.22), 0 .8vmin 2.4vmin rgba(0,0,0,.45);
   }
 
   /* La roue est dimensionnée par sa HAUTEUR, largeur déduite. Deux pièges déjà payés ici :
@@ -342,7 +357,12 @@
       </div>
       <div class="qr-mots">
         <p class="scanne">Scanne avec ton téléphone</p>
-        <p class="detail">Aucune application à installer.<br>Ça prend moins d'une minute.</p>
+        {{-- [2026-08-12 · propriétaire : « ça va prendre moins d'une minute, c'est pas bien vu que
+             ça va prendre quelques secondes »] Il a raison, et pas seulement sur la durée : annoncer
+             « moins d'une minute » à quelqu'un qui attend sa commande, c'est lui donner une raison de
+             ne pas commencer. « Quelques secondes » est à la fois plus vrai — le parcours mesuré tient
+             en une vingtaine de secondes — et moins coûteux à décider. --}}
+        <p class="detail">Aucune application à installer.<br>Ça prend quelques secondes.</p>
       </div>
     </div>
 
@@ -359,7 +379,14 @@
   /* Les libellés viennent du SERVEUR. Aucune liste écrite dans cette page : une roue qui affiche
      autre chose que ce qu'elle donne est un mensonge, et le client le découvre au pire moment. */
   var LOTS = @json(array_column($segments ?? [], 'label'));
-  if (!LOTS.length) { LOTS = ['-10%', '50 points', 'Boisson offerte', '-15%', '100 points', 'Frites offertes']; }
+  // Les CLÉS, dans le même ordre que les libellés : c'est par elles qu'on sait sur lesquels
+  // l'animation a le droit de s'arrêter.
+  var LOTS_CLES = @json(array_column($segments ?? [], 'key'));
+  var LOTS_ARRET = @json($spinnable ?? []);
+  // LISTE DE SECOURS, si le serveur n'a pas répondu. Elle doit rester le REFLET des lots réels :
+  // le 12 août elle annonçait encore « -10% » et « 50 points », des lots que la roue ne donne plus.
+  // Une roue de secours qui promet autre chose que la vraie est un mensonge de plus, pas un filet.
+  if (!LOTS.length) { LOTS = ['Boisson', 'Frites', 'Tiramisu', 'Tarte Daim', 'Cheese Burger', 'Cayenne', 'Terminator']; }
 
   var cv = document.getElementById('roue');
   var ctx = cv && cv.getContext ? cv.getContext('2d') : null;
@@ -569,7 +596,25 @@
     // Entre 3 et 5 tours, puis un arrêt sur un secteur au hasard. Rien n'est misé ici : c'est de
     // l'affichage. Le vrai tirage vit sur le serveur, et il est le seul à décider.
     var N = LOTS.length;
-    var secteur = Math.floor(Math.random() * N);
+
+    /* ── OÙ LA ROUE A LE DROIT DE S'ARRÊTER ────────────────────────────────────────────────
+       [2026-08-12] Un arrêt au hasard uniforme désignait gagnant N'IMPORTE QUEL secteur, y compris
+       un lot à probabilité nulle — le Terminator que le propriétaire veut afficher sans le donner.
+       Mesuré : 1 arrêt sur 7, toutes les dix secondes, en salle, toute la journée. Rien n'est misé
+       ici, mais un client qui voit la roue s'arrêter dix fois sur le Terminator et ne le gagne
+       jamais n'a pas tort de se sentir mené en bateau. C'est la tromperie corrigée le 10 août pour
+       les lots en rupture, revenue par la porte de la vitrine.
+
+       Le serveur dit lesquels sont réellement distribuables ; on tire parmi ceux-là. S'il n'en donne
+       aucun (jeu fermé, liste de secours), on retombe sur tous les secteurs : mieux vaut une roue qui
+       tourne qu'une roue figée sur un écran de comptoir. */
+    var permis = [];
+    for (var pi = 0; pi < N; pi++) {
+      if (!LOTS_ARRET.length || LOTS_ARRET.indexOf(LOTS_CLES[pi]) !== -1) { permis.push(pi); }
+    }
+    if (!permis.length) { for (var pj = 0; pj < N; pj++) { permis.push(pj); } }
+
+    var secteur = permis[Math.floor(Math.random() * permis.length)];
     var pas = TAU / N;
     var arret = -(secteur * pas + pas / 2);
     cible = base + TAU * (3 + Math.floor(Math.random() * 3))

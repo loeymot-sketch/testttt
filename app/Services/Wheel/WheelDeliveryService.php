@@ -382,7 +382,7 @@ class WheelDeliveryService
      */
     public function costItemId(string $prizeKey): ?int
     {
-        foreach ((array) config('wheel.segments', []) as $s) {
+        foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $s) {
             if ((string) ($s['key'] ?? '') !== $prizeKey) {
                 continue;
             }

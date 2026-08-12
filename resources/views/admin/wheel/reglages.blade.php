@@ -74,6 +74,32 @@
   .champ-err{margin:6px 0 0;font-size:14px;font-weight:700;color:#FFB4AC;line-height:1.45}
   .liens{margin-top:22px;border-top:1px solid rgba(255,255,255,.12);padding-top:16px;font-size:14px}
   .liens a{display:flex;align-items:center;min-height:44px;color:var(--jaune);text-decoration:none;font-weight:700}
+
+  /* ── LES CADEAUX ─────────────────────────────────────────────────────────────────────────
+     Un tableau, parce que la question est « lequel, combien de chances, combien il en reste » —
+     trois colonnes qu'on compare d'un regard. Trois blocs empilés obligeraient à retenir des
+     chiffres d'une ligne à l'autre.
+     Le tableau DÉFILE horizontalement sur un téléphone plutôt que de comprimer les champs à une
+     largeur où le doigt ne les atteint plus. */
+  .lots-titre{margin:30px 0 4px;font-size:17px;font-weight:900;letter-spacing:.02em}
+  .lots-intro{margin-bottom:12px}
+  .lots-enveloppe{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.lots{width:100%;border-collapse:collapse;font-size:15px;min-width:520px}
+  table.lots th,table.lots td{padding:9px 8px;text-align:left;vertical-align:middle;
+    border-bottom:1px solid rgba(255,255,255,.10)}
+  table.lots thead th{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    opacity:.62;border-bottom:1px solid rgba(255,255,255,.2)}
+  table.lots tbody th{font-weight:800;white-space:nowrap}
+  /* 44 px de haut : la même cible tactile que le reste de l'écran, tenu à une main au comptoir. */
+  table.lots input{width:86px;min-height:44px;padding:0 10px;margin:0;font-size:16px;text-align:center}
+  table.lots td.chance{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap}
+  table.lots td.restant{font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}
+  table.lots td.restant .sur{opacity:.55}
+  table.lots tr.epuise tbody th,table.lots tr.epuise td{opacity:.55}
+  .etiq{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:7px;
+    font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle}
+  .etiq-vitrine{background:rgba(255,184,0,.18);border:1px solid rgba(255,184,0,.5);color:var(--jaune)}
+  .etiq-epuise{background:rgba(217,48,37,.18);border:1px solid rgba(217,48,37,.55);color:#FFB4AC}
 </style>
 </head>
 <body>
@@ -232,6 +258,70 @@
     <p class="aide">
       <b>De 0 à 200 €.</b> Annoncé au client avant qu'il joue, redit sur son lot. Jamais découvert en caisse.
     </p>
+
+    {{--
+      ── LES CADEAUX : PROBABILITÉ ET NOMBRE ────────────────────────────────────────────────
+      [2026-08-12 · propriétaire : « je veux permettre de faire la probabilité et le nombre de
+      cadeaux que je veux faire gagner aux gens — 50 tiramisu, 50 boissons, 10 sandwiches, 10
+      burgers pour le mois ; plus de probabilité sur les boissons aujourd'hui. »]
+
+      Deux colonnes, deux décisions. On affiche la CHANCE EN POURCENTAGE à côté du poids, parce que
+      c'est la seule chose que le propriétaire lit vraiment : « 34 » ne veut rien dire tant qu'on n'a
+      pas divisé par le total. Et on affiche le RESTANT : régler une quantité sans voir ce qui est
+      déjà parti, c'est régler à l'aveugle.
+    --}}
+    <h2 class="lots-titre">Les cadeaux</h2>
+    <p class="aide lots-intro">
+      <b>Probabilité</b> : un poids, pas un pourcentage. Ce qui compte, c'est le rapport entre les
+      lots — la chance réelle est calculée à côté. <b>0 = affiché sur la roue, jamais gagné.</b><br>
+      <b>Nombre</b> : combien de cadeaux pour cette campagne. <b>0 = illimité.</b> Épuisé, le lot
+      disparaît de la roue.
+    </p>
+
+    <div class="lots-enveloppe">
+    <table class="lots">
+      <thead>
+        <tr><th>Cadeau</th><th>Probabilité</th><th>Chance</th><th>Nombre</th><th>Restant</th></tr>
+      </thead>
+      <tbody>
+      @foreach ($lots as $lot)
+        @php
+          $cleP = 'prize_'.$lot['key'].'_weight';
+          $cleQ = 'prize_'.$lot['key'].'_quantity';
+        @endphp
+        <tr class="{{ $lot['exhausted'] ? 'epuise' : '' }}">
+          <th scope="row">
+            {{ $lot['label'] }}
+            @if ($lot['showcase'])<span class="etiq etiq-vitrine">vitrine</span>@endif
+            @if ($lot['exhausted'])<span class="etiq etiq-epuise">épuisé</span>@endif
+          </th>
+          <td>
+            <input id="{{ $cleP }}" name="{{ $cleP }}" type="number" min="0" max="1000" step="1"
+                   aria-label="Probabilité de {{ $lot['label'] }}"
+                   class="{{ $errors->has($cleP) ? 'faux' : '' }}"
+                   value="{{ old($cleP, $lot['weight']) }}">
+            @error($cleP)<p class="champ-err" role="alert">{{ $message }}</p>@enderror
+          </td>
+          <td class="chance">{{ $lot['chance'] > 0 ? number_format($lot['chance'], 1, ',', ' ').' %' : '—' }}</td>
+          <td>
+            <input id="{{ $cleQ }}" name="{{ $cleQ }}" type="number" min="0" max="100000" step="1"
+                   aria-label="Nombre de {{ $lot['label'] }}"
+                   class="{{ $errors->has($cleQ) ? 'faux' : '' }}"
+                   value="{{ old($cleQ, $lot['quantity']) }}">
+            @error($cleQ)<p class="champ-err" role="alert">{{ $message }}</p>@enderror
+          </td>
+          <td class="restant">
+            @if ($lot['left'] === null)
+              illimité
+            @else
+              {{ $lot['left'] }} <span class="sur">/ {{ $lot['quantity'] }}</span>
+            @endif
+          </td>
+        </tr>
+      @endforeach
+      </tbody>
+    </table>
+    </div>
 
     <button type="submit">Enregistrer</button>
   </form>

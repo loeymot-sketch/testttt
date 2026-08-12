@@ -79,6 +79,36 @@ class WheelSettingsController extends Controller
             'min_order.max' => 'Le minimum de commande va de 0 à 200 €.',
         ];
 
+        /*
+         * ── LES LOTS : PROBABILITÉ ET NOMBRE DE CADEAUX ──────────────────────────────────────
+         * [2026-08-12 · propriétaire : « je veux permettre de faire la probabilité et le nombre de
+         * cadeaux que je veux faire gagner aux gens »]
+         *
+         * Règles ET messages sont composés à partir des lots RÉELLEMENT configurés, jamais d'une liste
+         * recopiée ici : une liste en double, c'est un lot ajouté au fichier dont les champs seraient
+         * rejetés en silence sur cet écran, sans que personne comprenne pourquoi.
+         *
+         * `max:1000` sur la probabilité : ce sont des poids RELATIFS, pas des pourcentages. 1000 laisse
+         * de quoi rendre un lot largement dominant sans qu'un zéro de trop écrase tous les autres par
+         * accident. Quantité à 0 = illimitée, probabilité à 0 = affiché mais jamais gagné.
+         *
+         * Ce bloc est POSÉ APRÈS `$messages` : le déclarer avant, et la déclaration du tableau
+         * effacerait tous ces messages en silence — l'écran retomberait sur l'anglais technique.
+         */
+        foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $lot) {
+            [$cleP, $cleQ] = \App\Services\Wheel\WheelSettingsService::prizeKeys((string) $lot['key']);
+            $regles[$cleP] = ['nullable', 'integer', 'min:0', 'max:1000'];
+            $regles[$cleQ] = ['nullable', 'integer', 'min:0', 'max:100000'];
+
+            $nom = (string) ($lot['label'] ?? $lot['key']);
+            $messages[$cleP.'.integer'] = "La probabilité de « {$nom} » se donne en nombre entier (0 = jamais gagné).";
+            $messages[$cleP.'.min'] = "La probabilité de « {$nom} » ne peut pas être négative.";
+            $messages[$cleP.'.max'] = "La probabilité de « {$nom} » va de 0 à 1000.";
+            $messages[$cleQ.'.integer'] = "Le nombre de « {$nom} » se donne en nombre entier (0 = illimité).";
+            $messages[$cleQ.'.min'] = "Le nombre de « {$nom} » ne peut pas être négatif.";
+            $messages[$cleQ.'.max'] = "Le nombre de « {$nom} » est trop grand.";
+        }
+
         $validateur = Validator::make($request->all(), $regles, $messages);
 
         if ($validateur->fails()) {
@@ -125,7 +155,55 @@ class WheelSettingsController extends Controller
             'aMoi' => $this->reglages->configuredByOperator(),
             'etatLiens' => $this->reglages->linkStatuses(),
             'reviewDerive' => $this->reglages->reviewUrlIsDerived(),
+            // [2026-08-12] Les lots tels qu'ils tournent VRAIMENT (fichier + réglages du patron),
+            // avec ce qui est déjà parti sur la campagne : régler une quantité sans voir le restant,
+            // c'est régler à l'aveugle.
+            'lots' => $this->lotsAffichables(),
         ];
+    }
+
+    /**
+     * Les lots à montrer sur l'écran, avec leur probabilité en pourcentage et le restant.
+     *
+     * Le POURCENTAGE est calculé ici et pas dans la vue : c'est la seule information que le
+     * propriétaire lit vraiment (« combien de chances ? »), et les poids relatifs ne la donnent pas.
+     * Un poids de 34 sur un total de 100 ne dit rien tant qu'on n'a pas fait la division.
+     */
+    private function lotsAffichables(): array
+    {
+        $segments = app(\App\Services\Wheel\WheelService::class)->segments();
+        $total = 0;
+        foreach ($segments as $s) {
+            $total += max(0, (int) ($s['weight'] ?? 0));
+        }
+
+        $branche = (int) (request()->attributes->get('wheel_branch_id') ?: 1);
+        $campagne = (string) config('wheel.campaign_key');
+
+        return array_map(static function ($s) use ($total, $branche, $campagne) {
+            $poids = max(0, (int) ($s['weight'] ?? 0));
+            $quantite = max(0, (int) ($s['quantity'] ?? 0));
+
+            $partis = \App\Models\WheelSpin::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('branch_id', $branche)
+                ->where('prize_key', (string) $s['key'])
+                ->where('campaign_key', $campagne)
+                ->count();
+
+            return [
+                'key' => (string) $s['key'],
+                'label' => (string) ($s['label'] ?? $s['key']),
+                'weight' => $poids,
+                'quantity' => $quantite,
+                // Pourcentage réel de chances. 0 quand le lot ne peut pas sortir.
+                'chance' => $total > 0 ? round($poids * 100 / $total, 1) : 0.0,
+                'given' => $partis,
+                'left' => $quantite > 0 ? max(0, $quantite - $partis) : null,
+                'exhausted' => $quantite > 0 && $partis >= $quantite,
+                'showcase' => $poids === 0,
+            ];
+        }, $segments);
     }
 
     /*
