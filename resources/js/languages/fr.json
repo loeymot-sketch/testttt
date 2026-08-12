@@ -486,6 +486,7 @@
         "setup": "Configuration",
         "connected_devices": "Appareils connectés",
         "promo_flyer": "Ticket promo",
+        "uber_photo": "Commande Uber (photo)",
         "promo_flyer_settings": "Réglages ticket promo",
         "system_health": "État du système"
     },
@@ -1445,6 +1446,7 @@
         "confirm_revoke_device": "Déconnecter « {device} » ? Cet appareil devra se reconnecter.",
         "confirm_revoke_current_device": "Vous êtes sur le point de déconnecter CET appareil. Vous devrez vous reconnecter.",
         "promo_flyer": "Ticket promo (commandes plateformes)",
+        "uber_photo": "Commande Uber par photo du ticket",
         "promo_flyer_settings": "Réglages du ticket promo",
         "customer_first_name": "Prénom du client",
         "customer_first_name_placeholder": "ex. Camille",

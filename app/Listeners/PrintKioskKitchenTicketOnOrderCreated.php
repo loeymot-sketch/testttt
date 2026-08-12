@@ -38,7 +38,13 @@ class PrintKioskKitchenTicketOnOrderCreated
             // active OU transport Null (PRINT_DRIVER non câblé) — cf. gardes ci-dessous.
             // [PROCUREUR cycle 7 — 2026-08-05 · P2 F-G] La surface 'delivery' manquait :
             // une commande LIVRAISON n'imprimait NI ticket cuisine NI ticket comptoir.
-            if (! in_array((string) ($order->source_surface ?? ''), ['kiosk', 'web', 'online', 'delivery'], true)) {
+            // [UBER-PHOTO 2026-08-10 · owner « ça imprime directement en cuisine »] La surface
+            // 'uber_eats' manquait : une commande Uber naît DÉJÀ au statut ACCEPTÉ (elle est
+            // prépayée), elle ne franchit donc jamais le changement de statut sur lequel repose
+            // l'autre déclencheur d'impression. Résultat : aucune commande Uber n'a jamais fait
+            // sortir de ticket cuisine — ni par le webhook, ni par la photo. La garde atomique de
+            // KitchenTicketAutoPrinter rend le doublon impossible si un autre chemin s'y ajoute.
+            if (! in_array((string) ($order->source_surface ?? ''), ['kiosk', 'web', 'online', 'delivery', 'uber_eats'], true)) {
                 return;
             }
             $branchId = (int) ($order->branch_id ?? 0);

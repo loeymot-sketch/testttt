@@ -27,5 +27,23 @@
   {"desc": "[86fc62979] nuggets + tenders : deux pieces entieres cote a cote (2 + 2 arrondi)", "item": "Tacos", "viandes": ["Nuggets", "Tenders"], "expected": "2Nug 2Tender"},
   {"desc": "[86fc62979] tenders + tenders : arrondi PAR EMPLACEMENT (2+2=4), pas de recomposition car impair", "item": "Tacos", "viandes": ["Tenders", "Tenders"], "expected": "4Tender"},
   {"desc": "[86fc62979] tenders + cordon : cordon defaut 2 -> demi = 1, tender 1,5 -> 2", "item": "Tacos", "viandes": ["Tenders", "Cordon Bleu"], "expected": "1Cordon 2Tender"},
-  {"desc": "[86fc62979] nuggets + cordon : cordon demi = 1, nuggets demi = 2", "item": "Tacos", "viandes": ["Nuggets", "Cordon Bleu"], "expected": "1Cordon 2Nug"}
+  {"desc": "[86fc62979] nuggets + cordon : cordon demi = 1, nuggets demi = 2", "item": "Tacos", "viandes": ["Nuggets", "Cordon Bleu"], "expected": "1Cordon 2Nug"},
+
+  {"desc": "[FRITES-MENU 2026-08-10] BORNE — le menu est un ADDON du produit : 1 frite", "item": "Cayenne", "viandes": ["Poulet mariné"], "addons": [{"role": "menu_full", "addon_name": "Menu (Frites + Boisson)", "quantity": 1}], "expected": "1P 1F"},
+  {"desc": "[FRITES-MENU 2026-08-10] BORNE — formule FRITES SEULES (addon menu_frites) : 1 frite", "item": "Terminator", "viandes": ["Viande Hachée"], "addons": [{"role": "menu_frites", "addon_name": "Menu (Frites + Boisson)", "quantity": 1}], "expected": "2K 1F"},
+  {"desc": "[FRITES-MENU 2026-08-10] BORNE — formule BOISSON SEULE : aucune frite", "item": "Terminator", "viandes": ["Viande Hachée"], "addons": [{"role": "menu_boisson", "addon_name": "Menu (Frites + Boisson)", "quantity": 1}], "expected": "2K"},
+  {"desc": "[FRITES-MENU 2026-08-10] BORNE — menu a GRANDE frite compte double", "item": "Cayenne", "viandes": ["Poulet mariné"], "addons": [{"role": "menu_full", "addon_name": "Menu (Grande Frites + Boisson)", "quantity": 1}], "expected": "1P 2F"},
+
+  {"desc": "[FRITES-MENU 2026-08-10] CAISSE — le menu est une LIGNE DEDIEE : elle porte la frite", "item": "Menu (Frites + Boisson)", "viandes": [], "expected": "1F"},
+  {"desc": "[FRITES-MENU 2026-08-10] CAISSE — ligne dediee x2 : deux frites", "item": "Menu (Frites + Boisson)", "viandes": [], "quantity": 2, "expected": "2F"},
+  {"desc": "[FRITES-MENU 2026-08-10] CAISSE — l'echo « + Menu (…) » du parent ne compte PAS (anti double)", "item": "Cayenne", "viandes": ["Poulet mariné"], "instruction": "CAYENNE\nPain - Salade, Tomate, Oignons cuits Sauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)", "expected": "1P"},
+
+  {"desc": "[FRITES-MENU 2026-08-10] PROFIL COMPOSE — « Formule : Avec frites » en texte libre : 1 frite", "item": "Bol Riz", "viandes": ["Mexicanos"], "instruction": "Viandes : Mexicanos ×1. Formule : Avec frites. Sauce frites : Sauce fromagère maison", "expected": "2Mex 1F"},
+  {"desc": "[FRITES-MENU 2026-08-10] PROFIL COMPOSE — « Formule : Sans frites » ne compte rien", "item": "Bol Riz", "viandes": ["Mexicanos"], "instruction": "Viandes : Mexicanos ×1. Formule : Sans supplément. Sauce frites : Harissa", "expected": "2Mex"},
+  {"desc": "[FRITES-MENU 2026-08-10] anti-double — addon menu_full ET « Formule : … » : une seule frite", "item": "Cayenne", "viandes": ["Poulet mariné"], "addons": [{"role": "menu_full", "addon_name": "Menu (Frites + Boisson)", "quantity": 1}], "instruction": "Pain : Pain. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce frites : Algérienne", "expected": "1P 1F"},
+  {"desc": "[FRITES-MENU 2026-08-10] « Sauce frites : … » SEULE ne cree aucune frite", "item": "Tacos M", "viandes": ["Viande Hachée"], "instruction": "TACOS M\n↳ Sauce frites: Andalouse", "expected": "2K"},
+  {"desc": "[FRITES-MENU 2026-08-10] « Boisson Seule » est une part de menu qui ne se plonge pas", "item": "Boisson Seule", "viandes": [], "expected": ""},
+  {"desc": "[FRITES-MENU 2026-08-10] « Frites Seules » vendues seules : 1 frite (regle inchangee)", "item": "Frites Seules", "viandes": [], "expected": "1F"},
+  {"desc": "[FRITES-MENU 2026-08-10] « Grande Frites » vendue seule : 2 frites (regle inchangee)", "item": "Grande Frites", "viandes": [], "expected": "2F"},
+  {"desc": "[FRITES-MENU 2026-08-10] Menu Enfant garde sa frite de RECETTE_FIXE, jamais doublee", "item": "Menu Enfant Nuggets", "viandes": [], "addons": [{"role": "menu_full", "addon_name": "Menu (Frites + Boisson)", "quantity": 1}], "expected": "6Nug 1F"}
 ]

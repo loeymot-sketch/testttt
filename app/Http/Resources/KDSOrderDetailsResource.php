@@ -96,10 +96,50 @@ class KDSOrderDetailsResource extends JsonResource
             // cards don't need (and shouldn't expose) the customer phone
             // number; the Vue UI gated rendering on isDeliveryOrder but JSON
             // wire still leaked phone to all KDS WebSocket subscribers.
-            'customer'                            => $this->whenLoaded('user', fn () => $this->user ? [
-                'name'  => $this->user->name,
-                'phone' => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user->phone : null,
-            ] : null),
+            // [UBER-PHOTO 2026-08-10 · owner « le nom du client »] Le nom saisi/lu POUR CETTE
+            // COMMANDE prime sur le compte porteur. Une commande d'agrégateur est ancrée sur un
+            // utilisateur TECHNIQUE (« Uber Eats », téléphone factice 0000000042) : la carte de
+            // cuisine annonçait donc « Uber Eats » et un numéro que personne ne doit composer,
+            // alors que le vrai prénom du client était déjà scellé sur la commande — et déjà
+            // imprimé sur le ticket. L'écran dit désormais la même chose que le papier.
+            'customer'                            => $this->customerForKds(),
         ];
+    }
+
+    /**
+     * Nom + téléphone à afficher en cuisine.
+     *
+     * Le téléphone reste réservé aux LIVRAISONS (minimisation des données, Z9-P0-03) et n'est
+     * JAMAIS emprunté à l'ancre technique d'un canal agrégateur : un numéro factice affiché à
+     * côté d'une commande est pire que pas de numéro du tout — quelqu'un finira par l'appeler.
+     *
+     * @return array{name: string, phone: string|null}|null
+     */
+    private function customerForKds(): ?array
+    {
+        $nomCommande = trim((string) ($this->pos_customer_name ?? ''));
+        $telCommande = trim((string) ($this->pos_customer_phone ?? ''));
+        $ancreTechnique = in_array(
+            strtolower(trim((string) ($this->source_surface ?? ''))),
+            ['uber_eats', 'uber', 'ubereats'],
+            true
+        );
+
+        $utilisateur = $this->relationLoaded('user') ? $this->user : null;
+        $nom = $nomCommande !== '' ? $nomCommande : trim((string) ($utilisateur->name ?? ''));
+
+        if ($nom === '') {
+            return null;
+        }
+
+        $estLivraison = (int) $this->order_type === OrderType::DELIVERY;
+        $tel = null;
+        if ($estLivraison) {
+            $tel = $telCommande !== ''
+                ? $telCommande
+                : ($ancreTechnique ? null : ($utilisateur->phone ?? null));
+        }
+
+        return ['name' => $nom, 'phone' => $tel];
     }
 }

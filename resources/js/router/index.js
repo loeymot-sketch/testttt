@@ -31,6 +31,7 @@ import posRoutes from "./modules/posRoutes";
 import messageRoutes from "./modules/messageRoutes";
 import profileRoutes from "./modules/profileRoutes";
 import promoFlyerRoutes from "./modules/promoFlyerRoutes";
+import uberPhotoRoutes from "./modules/uberPhotoRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
 import historiqueRoutes from "./modules/historiqueRoutes";
 import encaissementRoutes from "./modules/encaissementRoutes";
@@ -188,6 +189,7 @@ export const routes = baseRoutes.concat(
     messageRoutes,
     profileRoutes,
     promoFlyerRoutes,
+    uberPhotoRoutes,
     posRoutes,
     posOrderRoutes,
     historiqueRoutes,

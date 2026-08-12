@@ -75,10 +75,15 @@ describe('V1 admin sidebar cleanup', () => {
         // Les deux entrées sont légitimes — la fonctionnalité est en production et un
         // ticket y a déjà été imprimé — donc on verrouille le nouveau plancher au lieu
         // de retirer les entrées.
+        // [UBER-PHOTO 2026-08-10] +1 : « Commande Uber (Photo) » — l'écran tablette qui
+        // photographie un ticket Uber et l'envoie en cuisine. Même porte que la caisse
+        // (`pos-orders`), donc visible pour le même personnel → 16 rows. Le compteur est
+        // remonté DANS la session qui livre l'entrée, pas découvert deux semaines plus tard.
         expect(text).toContain('menu.historique');
         expect(text).toContain('menu.encaissement');
         expect(text).toContain('menu.stock_unified');
         expect(text).toContain('menu.promo_flyer');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(15);
+        expect(text).toContain('menu.uber_photo');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(16);
     });
 });

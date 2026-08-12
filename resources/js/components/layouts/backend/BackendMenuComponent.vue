@@ -133,6 +133,10 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
             Object.freeze({ url: 'promo-flyer/settings', language: 'promo_flyer_settings', icon: 'lab lab-list' }),
         ]),
     }),
+    // [UBER-PHOTO 2026-08-10] Photographier un ticket Uber depuis la tablette et l'envoyer en
+    // cuisine. Même gate réutilisée (`pos-orders`) et même raison qu'au-dessus : une permission
+    // neuve ne serait portée par aucun rôle, l'écran serait inaccessible à tout le monde.
+    Object.freeze({ url: 'uber-photo', language: 'uber_photo', icon: 'fa-solid fa-camera' }),
 ]);
 
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
@@ -150,6 +154,8 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // [FLYER PROMO 2026-08-07] Même gate que la caisse — voir l'entrée de menu.
     'promo-flyer': 'pos-orders',
     'promo-flyer/settings': 'pos-orders',
+    // [UBER-PHOTO 2026-08-10] Même gate que la caisse — voir l'entrée de menu.
+    'uber-photo': 'pos-orders',
     // [P1 LIENS MORTS 2026-08-08] Ces deux entrées n'étaient PAS mappées : faute de
     // correspondance, la barre latérale retombait sur le nom de l'url lui-même, pour lequel il
     // n'existe aucune permission — donc défaut permissif, donc lien AFFICHÉ. Mais la route, elle,

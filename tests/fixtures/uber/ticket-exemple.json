@@ -1,0 +1,21 @@
+{
+  "customer_name": "Karim B.",
+  "display_id": "#4F7A2",
+  "order_type": "delivery",
+  "total": 27.4,
+  "items": [
+    {
+      "title": "Tacos M",
+      "quantity": 1,
+      "options": ["Viande : Poulet mariné", "Sauce : Algérienne", "Salade", "Tomate", "Supplément Cheddar (+1,00 €)", "Menu (Frites + Boisson)", "Coca-Cola 33cl"],
+      "note": "SANS OIGNONS SVP"
+    },
+    {
+      "title": "Cayenne",
+      "quantity": 2,
+      "options": ["Viande : Viande Hachée", "Sauce Samouraï", "Oignons cuits"],
+      "note": ""
+    },
+    { "title": "Grande Frites", "quantity": 1, "options": ["Sauce frites : Ketchup"], "note": "" }
+  ]
+}

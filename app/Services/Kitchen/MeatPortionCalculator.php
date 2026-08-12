@@ -229,7 +229,7 @@ final class MeatPortionCalculator
         //    On n'ajoute la clé que si elle est non nulle : depuis que les portions sont
         //    décimales, un `=== 0` strict ne reconnaissait plus le `0.0` et laissait traîner
         //    un « 0F » sur chaque sandwich vendu seul.
-        $frites = $this->portionsFrites($itemName, $snapshot) * $quantity;
+        $frites = $this->portionsFrites($itemName, $snapshot, $instruction) * $quantity;
         if ($frites > 0) {
             $this->ajoute($pieces, 'F', $frites);
         }
@@ -362,8 +362,35 @@ final class MeatPortionCalculator
      * vente : on regarde les deux, sinon une grande frite prise en caisse compterait pour une.
      * Les menus ENFANTS ne passent pas ici : leur frite est déjà dans RECETTES_FIXES, la
      * compter deux fois enverrait le cuisinier au bain de friture pour rien.
+     *
+     * [OWNER 2026-08-10 · « quand on prend un menu, ça doit compter une frite »]
+     * -------------------------------------------------------------------------
+     * Le menu n'arrive PAS de la même façon selon la surface de vente, et seul le canal de la
+     * BORNE était lu. Vérifié en base sur les commandes réelles :
+     *
+     *   · BORNE / WEB  → le menu est un ADDON du produit (role `menu_full` / `menu_frites`)
+     *                    porté par la ligne du sandwich.                        → déjà compté.
+     *   · CAISSE       → le menu est une LIGNE DE COMMANDE À PART ENTIÈRE, l'article
+     *                    « Menu (Frites + Boisson) », et le produit parent n'en garde qu'un écho
+     *                    dans son texte libre (« + Menu (Frites + Boisson) (+2,50 €) »).
+     *                    Cette ligne tombait dans le trou : son nom contient « Frites », mais la
+     *                    garde anti-menu de la règle « frite vendue seule » l'excluait →  0F.
+     *   · PROFIL COMPOSÉ (bols) → aucun addon, aucune ligne : la formule ne vit que dans le
+     *                    texte libre (« Formule : Avec frites »).                → 0F.
+     *
+     * Résultat terrain : un menu pris à la caisse n'ajoutait RIEN au bandeau de cuisson — le
+     * cuisinier ne voyait pas la frite à plonger. Les trois canaux sont désormais lus, dans un
+     * ordre qui rend le double comptage IMPOSSIBLE :
+     *   (A) l'article EST le conteneur de menu          → il porte la frite, personne d'autre ;
+     *   (B) l'article EST une frite vendue seule        → inchangé ;
+     *   (C) canal ADDON (borne/web)                     → inchangé ;
+     *   (D) repli TEXTE LIBRE « Formule : … frites … »  → UNIQUEMENT si (C) n'a rien donné.
+     *
+     * (D) ne peut pas doubler avec la ligne dédiée de la caisse : l'écho du parent s'écrit
+     * « + Menu (…) » et ne comporte JAMAIS « Formule : ». Et « Sauce frites : Andalouse » —
+     * présent sur des tickets sans aucune frite — n'est pas non plus une formule.
      */
-    private function portionsFrites(string $itemName, array $snapshot): int
+    private function portionsFrites(string $itemName, array $snapshot, ?string $instruction = null): int
     {
         if (preg_match('/menu\s*enfant/iu', $itemName)) {
             return 0;
@@ -373,7 +400,14 @@ final class MeatPortionCalculator
             return (bool) preg_match('/\bgrande?\b|\bgrosse\b|\bxl\b|\blarge\b|\bmax[ii]?\b/iu', $texte);
         };
 
-        // Frite vendue SEULE (article dont le nom est la frite elle-même).
+        // (A) L'article EST le conteneur de menu, vendu comme sa propre ligne (caisse) :
+        //     « Menu (Frites + Boisson) », « Formule … frites ». Testé AVANT la règle (B), dont
+        //     la garde anti-menu l'écartait justement.
+        if ($this->estConteneurMenuAvecFrites($itemName)) {
+            return $grande($itemName) ? 2 : 1;
+        }
+
+        // (B) Frite vendue SEULE (article dont le nom est la frite elle-même).
         if (preg_match('/\bfrites?\b/iu', $itemName) && ! preg_match('/\bmenu\b|\bformule\b/iu', $itemName)) {
             $taille = '';
             foreach (($snapshot['lines'] ?? $snapshot['variations'] ?? []) as $l) {
@@ -383,7 +417,7 @@ final class MeatPortionCalculator
             return $grande($itemName.$taille) ? 2 : 1;
         }
 
-        // Frite portée par un MENU / une FORMULE (canal addon).
+        // (C) Frite portée par un MENU / une FORMULE (canal addon — borne, web).
         $portions = 0;
         foreach (($snapshot['addons'] ?? []) as $a) {
             $role = mb_strtolower((string) ($a['role'] ?? ''));
@@ -394,7 +428,51 @@ final class MeatPortionCalculator
             $portions += ($grande($nom) ? 2 : 1) * max(1, (int) ($a['quantity'] ?? 1));
         }
 
+        // (D) Repli TEXTE LIBRE, uniquement si aucun addon n'a porté la formule.
+        if ($portions === 0) {
+            $portions = $this->portionsFritesDepuisInstruction($instruction, $grande);
+        }
+
         return $portions;
+    }
+
+    /**
+     * L'article vendu EST-IL le conteneur d'un menu qui comprend des frites ?
+     *
+     * Même grammaire de conteneur que {@see \App\Services\Hardware\KitchenTicketSymbolicFormatter::isMenuItem()}
+     * — « Menu ( … ) » ou « Formule … » — de sorte qu'un vrai produit dont le nom contient le mot
+     * « menu » (« Menu Enfant Nuggets ») ne soit jamais confondu avec le conteneur. On exige EN PLUS
+     * que le nom nomme les frites : « Boisson Seule » est aussi une part de menu, et elle ne se
+     * plonge pas dans l'huile.
+     */
+    private function estConteneurMenuAvecFrites(string $itemName): bool
+    {
+        return (bool) preg_match('/\bmenu\s*\(|\bformule\b/iu', $itemName)
+            && (bool) preg_match('/\bfrites?\b/iu', $itemName);
+    }
+
+    /**
+     * Formule déclarée dans le TEXTE LIBRE (« Formule : Avec frites », « Formule : Menu complet
+     * (frites + boisson) (Hawaï 33cl) ») — dernier canal, celui des profils composés qui n'écrivent
+     * ni addon ni ligne dédiée. On lit le SEGMENT de la formule et lui seul : le reste de
+     * l'instruction contient couramment « Sauce frites : … », qui ne prouve aucune frite.
+     */
+    private function portionsFritesDepuisInstruction(?string $instruction, callable $grande): int
+    {
+        if (! is_string($instruction) || trim($instruction) === '') {
+            return 0;
+        }
+        // Le segment s'arrête au séparateur de composition ('.' borne, '|' legacy, saut de ligne)
+        // pour ne pas avaler la « Sauce frites » qui suit très souvent la formule.
+        if (! preg_match('/\bformules?\s*:\s*([^\n.|]+)/iu', $instruction, $m)) {
+            return 0;
+        }
+        $segment = $m[1];
+        if (! preg_match('/\bfrites?\b/iu', $segment)) {
+            return 0;
+        }
+
+        return $grande($segment) ? 2 : 1;
     }
 
     /** Valeur d'une portion complète pour cette viande (2 steaks, 1 portion de poulet…). */

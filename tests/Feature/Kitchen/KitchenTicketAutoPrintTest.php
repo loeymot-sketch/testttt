@@ -133,7 +133,40 @@ class KitchenTicketAutoPrintTest extends TestCase
 
     public static function surfaces(): array
     {
-        return [['pos'], ['kiosk'], ['web'], ['delivery']];
+        // [UBER-PHOTO 2026-08-10] 'uber_eats' ajouté : une commande d'agrégateur naît DÉJÀ au
+        // statut ACCEPTÉ (elle est prépayée), elle ne franchit donc jamais le changement de
+        // statut sur lequel repose le déclencheur « entrée en cuisine » — et la surface manquait
+        // au déclencheur « à la création ». Aucune commande Uber n'avait jamais fait sortir de
+        // ticket, ni par le webhook, ni par la photo.
+        return [['pos'], ['kiosk'], ['web'], ['delivery'], ['uber_eats']];
+    }
+
+    /**
+     * Le déclencheur À LA CRÉATION doit accepter la surface Uber. Ce test passe par le LISTENER
+     * (et non par le service) : c'est sa liste de surfaces qui excluait le canal, et c'est le
+     * seul chemin qu'une commande Uber emprunte réellement.
+     */
+    public function test_une_commande_uber_declenche_le_ticket_des_sa_creation(): void
+    {
+        $this->imprimanteCuisine();
+        $order = $this->commande('uber_eats');
+
+        (new \App\Listeners\PrintKioskKitchenTicketOnOrderCreated)
+            ->handle(new \App\Events\OrderCreated($order));
+
+        $this->assertSame(1, $this->envois, 'Une commande Uber doit faire sortir son ticket cuisine sans aucun clic.');
+    }
+
+    /** Une commande de comptoir n'emprunte PAS ce déclencheur (elle passe par son changement de statut). */
+    public function test_le_declencheur_a_la_creation_ignore_toujours_la_caisse(): void
+    {
+        $this->imprimanteCuisine();
+        $order = $this->commande('pos');
+
+        (new \App\Listeners\PrintKioskKitchenTicketOnOrderCreated)
+            ->handle(new \App\Events\OrderCreated($order));
+
+        $this->assertSame(0, $this->envois);
     }
 
     // ── La garde anti-doublon ─────────────────────────────────────────────────

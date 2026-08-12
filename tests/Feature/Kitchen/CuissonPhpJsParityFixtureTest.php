@@ -26,10 +26,10 @@ class CuissonPhpJsParityFixtureTest extends TestCase
      * @param  array<int,string>  $viandes
      * @param  array<int,array<string,mixed>>  $extras
      */
-    public function test_php_engine_matches_shared_golden(string $desc, string $item, array $viandes, int $quantity, array $extras, string $instruction, string $expected): void
+    public function test_php_engine_matches_shared_golden(string $desc, string $item, array $viandes, int $quantity, array $extras, string $instruction, string $expected, array $addons = []): void
     {
         $moteur = new MeatPortionCalculator();
-        $r = $moteur->forLine($item, $this->snap($viandes, $extras), $quantity, $instruction !== '' ? $instruction : null);
+        $r = $moteur->forLine($item, $this->snap($viandes, $extras, $addons), $quantity, $instruction !== '' ? $instruction : null);
 
         $this->assertSame(
             $expected,
@@ -51,6 +51,9 @@ class CuissonPhpJsParityFixtureTest extends TestCase
             (array) ($c['extras'] ?? []),
             (string) ($c['instruction'] ?? ''),
             (string) $c['expected'],
+            // [FRITES-MENU 2026-08-10] Le canal ADDON (menu de la borne) fait partie du golden :
+            // sans lui, la moitié des canaux qui portent une frite n'était pas exercée du tout.
+            (array) ($c['addons'] ?? []),
         ], (array) $json);
     }
 
@@ -62,7 +65,7 @@ class CuissonPhpJsParityFixtureTest extends TestCase
      * @param  array<int,array<string,mixed>>  $extras
      * @return array<string,mixed>
      */
-    private function snap(array $viandes, array $extras = []): array
+    private function snap(array $viandes, array $extras = [], array $addons = []): array
     {
         $lines = [];
         foreach (array_values($viandes) as $i => $nom) {
@@ -70,6 +73,6 @@ class CuissonPhpJsParityFixtureTest extends TestCase
         }
         $lines[] = ['attribute_name' => 'Sauce 1', 'variation_name' => 'Algérienne'];
 
-        return ['lines' => $lines, 'extras' => $extras];
+        return ['lines' => $lines, 'extras' => $extras, 'addons' => $addons];
     }
 }

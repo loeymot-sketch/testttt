@@ -40,10 +40,49 @@ class KitchenTicketBolBaseTest extends TestCase
         // [F-01 AUDIT CUISINIER 2026-08-01 · P0] Cette ligne attendait « BUR » tout court —
         // c'est-à-dire EXACTEMENT le même code que le « Burger » adulte. L'audit a prouvé la
         // collision en cuisine (deux lignes byte-identiques sur le ticket A0035, portion enfant
-        // invisible). Le code produit compact reste « BUR » ; le marqueur « ENF » le précède
-        // pour que le cuisinier sache qu'il monte le menu enfant.
-        $this->assertSame('ENF BUR', $this->code('Menu Enfant Burger'));
+        // invisible).
+        // [OWNER 2026-08-10] Le marqueur « ENF » ne suffisait pas : trop discret pour un
+        // cuisinier en coup de feu. Un menu enfant s'écrit désormais EN TOUTES LETTRES. La
+        // propriété protégée par ce test est INCHANGÉE — jamais la même ligne que l'adulte —
+        // seule sa formulation devient explicite.
+        $this->assertSame('MENU ENFANT BURGER', $this->code('Menu Enfant Burger'));
         $this->assertNotSame($this->code('Burger'), $this->code('Menu Enfant Burger'),
             'Un menu enfant ne doit JAMAIS rendre la même ligne que son produit adulte homonyme.');
+    }
+
+    /**
+     * [OWNER 2026-08-10 · « la cuisine se trompe entre CHEESE et CHICKEN »]
+     *
+     * Le code 3 lettres rendait « CHE » pour Cheese Burger ET pour Cheddar, et « CHI » pour
+     * Chicken Burger — une lettre d'écart, lue à deux mètres sur un écran, en plein service.
+     * Ces familles s'écrivent maintenant en entier.
+     */
+    public function test_les_familles_confondues_sont_ecrites_en_toutes_lettres(): void
+    {
+        $this->assertSame('CHEESE BURGER', $this->code('Cheese Burger'));
+        $this->assertSame('CHICKEN BURGER', $this->code('Chicken Burger'));
+        $this->assertSame('DOUBLE CHEESE', $this->code('Double Cheese'));
+        $this->assertSame('MENU ENFANT CHICKEN BURGER', $this->code('Menu Enfant Chicken Burger'));
+        $this->assertSame('MENU ENFANT NUGGETS', $this->code('Menu Enfant Nuggets'));
+
+        // Aucune de ces lignes ne doit pouvoir se confondre avec une autre.
+        $rendus = array_map(fn (string $n): string => $this->code($n), [
+            'Cheese Burger', 'Chicken Burger', 'Double Cheese', 'Cheddar',
+            'Menu Enfant Chicken Burger', 'Menu Enfant Nuggets',
+        ]);
+        $this->assertSame($rendus, array_values(array_unique($rendus)),
+            'Deux produits distincts rendent la même ligne : le cuisinier ne peut pas les distinguer.');
+    }
+
+    /**
+     * [OWNER 2026-08-10] Même défaut, même remède, sur une famille trouvée au passage : trois
+     * galettes ACTIVES du catalogue rendaient toutes « GAL », et rien d'autre sur la ligne ne
+     * les distinguait.
+     */
+    public function test_les_galettes_sont_distinguees_comme_les_bols(): void
+    {
+        $this->assertSame('GAL CAY', $this->code('Galette Cayenne'));
+        $this->assertSame('GAL NOR', $this->code('Galette Normale'));
+        $this->assertSame('GAL POM', $this->code('Galette pommes de terre'));
     }
 }

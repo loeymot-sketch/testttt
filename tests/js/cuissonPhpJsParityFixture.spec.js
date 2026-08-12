@@ -12,19 +12,22 @@ const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), '../fixtures/cuiss
 const cases = JSON.parse(readFileSync(FIXTURE, 'utf8'));
 
 // Miroir EXACT de kdsCuisson.spec.js::snap ET de MeatPortionCalculatorTest::snap.
-const snap = (viandes, extras = []) => ({
+const snap = (viandes, extras = [], addons = []) => ({
     lines: [
         ...viandes.map((v, i) => ({ attribute_name: `Viande ${i + 1}`, variation_name: v })),
         { attribute_name: 'Sauce 1', variation_name: 'Algérienne' },
     ],
     extras,
+    // [FRITES-MENU 2026-08-10] Le canal ADDON (menu de la borne) fait partie du golden : sans
+    // lui, la moitié des canaux qui portent une frite n'était pas exercée du tout.
+    addons,
 });
 
 const buildItem = (c) => ({
     item_name: c.item,
     quantity: c.quantity ?? 1,
     instruction: c.instruction ?? '',
-    composition_snapshot: snap(c.viandes ?? [], c.extras ?? []),
+    composition_snapshot: snap(c.viandes ?? [], c.extras ?? [], c.addons ?? []),
 });
 
 describe('parité cuisson PHP↔JS — même fixture golden', () => {

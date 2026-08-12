@@ -102,6 +102,31 @@ final class KitchenTicketSymbolicFormatter
 
     public function sauceSymbol(?string $name): string
     {
+        $connue = $this->knownSauceSymbol($name);
+        if ($connue !== '') {
+            return $connue;
+        }
+
+        // Sauce hors table → code 3 lettres (comportement historique, inchangé).
+        return mb_strtoupper(mb_substr(preg_replace('/^sauce\s+/', '', $this->norm($name)), 0, 3));
+    }
+
+    /**
+     * [UBER-PHOTO 2026-08-10] Symbole d'une sauce RECONNUE, ou chaîne vide si le nom n'est pas
+     * dans la table des sauces.
+     *
+     * Pourquoi cette méthode existe : {@see sauceSymbol()} ne peut PAS servir à reconnaître une
+     * sauce — elle rend toujours quelque chose (les 3 premières lettres) et dirait donc « oui »
+     * de n'importe quel mot. Le classement d'une option de ticket Uber a besoin d'une réponse
+     * franche. Une seconde table de sauces serait le défaut favori de ce projet (« un correctif
+     * appliqué à une moitié du mécanisme ») : elle finirait par diverger le jour où l'owner ajoute
+     * une sauce. Il n'y a donc qu'UNE table, et les deux usages la partagent.
+     *
+     * Outil de CLASSEMENT côté serveur, pas de rendu : aucun jumeau JS n'est requis (l'écran KDS
+     * ne classe rien, il affiche ce que le composition_snapshot contient déjà).
+     */
+    public function knownSauceSymbol(?string $name): string
+    {
         $n = $this->norm($name);
         foreach (self::SAUCE_TABLE as [$re, $sym]) {
             if (preg_match($re, $n)) {
@@ -109,7 +134,7 @@ final class KitchenTicketSymbolicFormatter
             }
         }
 
-        return mb_strtoupper(mb_substr(preg_replace('/^sauce\s+/', '', $n), 0, 3));
+        return '';
     }
 
     public function cruditeSymbol(?string $name): string
@@ -256,7 +281,28 @@ final class KitchenTicketSymbolicFormatter
         // récupéré (extraSauceNames non vide = exactement ce qui alimente la ligne 1). Sinon (legacy
         // sans instruction parsable) on GARDE le libellé générique pour ne pas perdre l'info que le
         // client a payé une sauce en plus.
-        $extraSaucesFolded = $this->extraSauceNames($instruction) !== [];
+        // [OWNER 2026-08-10 · « les sauces au bon endroit, frites ou sandwich »] Une sauce payée
+        // doit apparaître UNE FOIS, à sa place — jamais une seconde fois en supplément anonyme.
+        //
+        // Les wizards sont FROZEN : ils facturent un extra GÉNÉRIQUE et sans nom (« Sauce
+        // supplémentaire »), et l'identité de la sauce ne survit que dans le texte libre, sur
+        // DEUX canaux distincts :
+        //   · « Sauces en plus : … »   → sauces du PRODUIT   → repliées dans la ligne 1 ;
+        //   · « Sauce frites : A, B »  → sauces des FRITES   → la 1ʳᵉ est offerte, les suivantes
+        //                                 sont les payantes, et elles s'affichent déjà sur le
+        //                                 badge (« MENU : KTP MAY »).
+        //
+        // Seul le premier canal était pris en compte. Constaté sur une commande réelle (#5835) :
+        // le client prend 1 sauce sandwich et 2 sauces frites ; le ticket affichait la bonne
+        // ligne 1, le bon badge… PLUS un « + Sauce supplémentaire » anonyme — une quatrième
+        // sauce fantôme, sans nom, dont le cuisinier ne pouvait pas savoir où elle allait.
+        //
+        // On tient donc un BUDGET de sauces payantes déjà expliquées ailleurs, et on ne masque
+        // que ce nombre d'unités. Tout ce qui dépasse RESTE affiché : une sauce facturée que
+        // rien n'explique ne doit jamais disparaître en silence.
+        $budgetSaucesExpliquees = count($this->extraSauceNames($instruction))
+            + max(0, count($this->fritesSauceNames($instruction)) - 1);
+
         foreach (($snapshot['extras'] ?? []) as $e) {
             $name = (string) ($e['extra_name'] ?? $e['name'] ?? '');
             // Skip only FREE garnitures (folded into Line 1). Paid extras — even
@@ -264,8 +310,17 @@ final class KitchenTicketSymbolicFormatter
             if ($name === '' || ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e))) {
                 continue;
             }
-            // La sauce en plus générique (« Sauce supplémentaire ») remonte en ligne 1 → skip ici.
-            if ($extraSaucesFolded && preg_match('/sauce\s*suppl/iu', $name)) {
+            // La sauce en plus générique : on masque autant d'unités que le budget en explique
+            // (ligne 1 pour le sandwich, badge pour les frites) et on garde le reste VISIBLE.
+            if (preg_match('/sauce\s*suppl/iu', $name)) {
+                $q = max(1, (int) ($e['quantity'] ?? 1));
+                $restant = max(0, $q - $budgetSaucesExpliquees);
+                $budgetSaucesExpliquees = max(0, $budgetSaucesExpliquees - $q);
+                if ($restant === 0) {
+                    continue;
+                }
+                $out[] = '+ '.$name.($restant > 1 ? " ×{$restant}" : '');
+
                 continue;
             }
             $q = (int) ($e['quantity'] ?? 1);
@@ -428,19 +483,33 @@ final class KitchenTicketSymbolicFormatter
      */
     public function fritesSauceSymbol(?string $instruction): string
     {
+        $syms = array_filter(
+            array_map(fn ($n): string => $this->sauceSymbol($n), $this->fritesSauceNames($instruction)),
+            static fn ($s): bool => $s !== ''
+        );
+
+        return implode(' ', $syms);
+    }
+
+    /**
+     * [OWNER 2026-08-10] NOMS des sauces choisies POUR LES FRITES, dans l'ordre de sélection.
+     *
+     * Extrait de {@see fritesSauceSymbol()} pour que le décompte des sauces payées puisse s'appuyer
+     * sur la MÊME lecture que l'affichage : la 1ʳᵉ est offerte, les suivantes sont les suppléments
+     * facturés. Deux lectures séparées finiraient par diverger, et l'une des deux mentirait.
+     *
+     * @return list<string>
+     */
+    public function fritesSauceNames(?string $instruction): array
+    {
         if (! is_string($instruction) || $instruction === '') {
-            return '';
+            return [];
         }
         if (preg_match('/sauce\s*frites\s*:\s*([^\n]+)/iu', $instruction, $m)) {
-            $syms = array_filter(
-                array_map(fn ($n): string => $this->sauceSymbol($n), $this->splitSauceList($m[1])),
-                static fn ($s): bool => $s !== ''
-            );
-
-            return implode(' ', $syms);
+            return $this->splitSauceList($m[1]);
         }
 
-        return '';
+        return [];
     }
 
     /** @param array<string,mixed> $snapshot */
@@ -482,6 +551,50 @@ final class KitchenTicketSymbolicFormatter
         }
 
         return '';
+    }
+
+    /**
+     * [FRITES-SAUCE 2026-08-10] BADGE de formule tel qu'il doit être IMPRIMÉ et AFFICHÉ :
+     * « MENU », « MENU : ALG », « FRITES : KTP », « BOISSON », ou rien.
+     *
+     * Pourquoi cette méthode existe : la règle du badge était écrite dans le moteur de rendu du
+     * ticket. Le jour où un deuxième écran a eu besoin du même badge (l'aperçu d'une commande Uber
+     * photographiée, qui doit montrer EXACTEMENT ce que la cuisine verra), la recopier aurait
+     * créé une troisième variante à maintenir — le défaut dominant de ce projet. Elle vit
+     * désormais avec les autres règles symboliques, et le rendu comme l'aperçu l'appellent.
+     *
+     * Le cas « frites vendues comme PRODUIT » est inclus : sans menu ni formule il n'y avait aucun
+     * badge, et la sauce choisie disparaissait (le nettoyeur d'instruction retire la ligne
+     * « Sauce frites : … », censée être rendue ici). Vu en base sur une commande à trois sauces.
+     *
+     * @param  array<string,mixed>  $snapshot
+     */
+    public function menuBadge(array $snapshot, string $itemName, ?string $instruction): string
+    {
+        $menu = $this->menuLine($snapshot);
+
+        if ($menu === 'MENU' || $menu === 'FRITES') {
+            $sym = $this->fritesSauceSymbol($instruction);
+
+            return $sym !== '' ? $menu.' : '.$sym : $menu;
+        }
+
+        // [OWNER 2026-08-10 · 2ᵉ passe] Aucun badge, mais une sauce a bien été CHOISIE pour des
+        // frites : on l'affiche quand même. La règle est volontairement large — « une sauce
+        // choisie ne disparaît jamais » — parce que les frites arrivent par des chemins que le
+        // badge ne couvre pas tous :
+        //   · frites vendues comme PRODUIT (« Grande Frites ») → aucun menu, donc aucun badge ;
+        //   · MENU ENFANT → ses frites viennent de la RECETTE (RECETTES_FIXES F:1), pas d'un
+        //     addon : le bandeau de cuisson les compte, mais rien n'affichait leur sauce.
+        // Le nettoyeur d'instruction supprime la ligne « Sauce frites : … » puisqu'elle est
+        // censée être rendue ICI ; sans ce repli, le choix du client était purement perdu.
+        if ($menu === '') {
+            $sym = $this->fritesSauceSymbol($instruction);
+
+            return $sym !== '' ? 'FRITES : '.$sym : '';
+        }
+
+        return $menu;
     }
 
     /**
@@ -628,6 +741,13 @@ final class KitchenTicketSymbolicFormatter
             if ($t === '') {
                 continue;
             }
+            // [OWNER 2026-08-10] Une ligne réduite à de la PONCTUATION après le strip des segments
+            // de composition n'apprend rien et ressemble à un bug. Constaté sur une commande réelle
+            // (#5896) : « Viandes en plus : … · Sauces en plus : … » laissait « · . » imprimé en
+            // note client. Le strip historique ne nettoyait que le DÉBUT de ligne.
+            if (! preg_match('/[\p{L}\p{N}]/u', $t)) {
+                continue;
+            }
             if ($name !== '' && mb_strtoupper($t) === $name) {
                 continue; // echoed product name (exact)
             }
@@ -743,9 +863,33 @@ final class KitchenTicketSymbolicFormatter
      */
     private const CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
 
+    /**
+     * [OWNER 2026-08-10 · « la cuisine se trompe entre CHEESE et CHICKEN, écris-les en entier »]
+     * Produits dont le nom s'écrit EN TOUTES LETTRES, jamais en code 3 lettres.
+     *
+     * Le code court a été demandé pour rendre le ticket compact et l'écran lisible à deux mètres.
+     * Mais il ne vaut que s'il DÉSIGNE sans ambiguïté. Vérifié sur le catalogue réel :
+     *   · « Cheese Burger » → CHE … et « Cheddar » → CHE aussi : deux produits, un seul code ;
+     *   · « Chicken Burger » → CHI, à une lettre de CHE : à deux mètres, sur un écran, en coup
+     *     de feu, les deux se confondent — et le plat part faux ;
+     *   · « Double Cheese » → DOU, qui ne dit RIEN de ce qu'il faut préparer ;
+     *   · « Menu Enfant Chicken Burger » → « ENF CHI », que rien ne distingue à l'œil d'un
+     *     poulet seul, alors que la portion et l'accompagnement diffèrent.
+     *
+     * Pour ces familles, la lisibilité prime sur la compacité : le nom entier tient largement
+     * dans la largeur du ticket, et il ne se confond avec rien.
+     *
+     * @var array<int, string> motifs cherchés dans le nom NORMALISÉ (sans accent, minuscule)
+     */
+    private const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant'];
+
     // [F-KITCHEN-BOL-BASE 2026-07-15] Mots-catégorie dont la BASE distinctive suit dans le nom
     // (« Bol Frites » vs « Bol Riz » — sans variation « base », le nom est le seul porteur).
-    private const CODE_BASE_WORDS = ['bol'];
+    // [OWNER 2026-08-10] « galette » ajouté pour la MÊME raison que « bol » : trois produits
+    // actifs du catalogue — Galette Cayenne, Galette Normale, Galette pommes de terre — rendaient
+    // TOUS « GAL », et rien d'autre sur la ligne ne les distingue. Même défaut, même remède :
+    // « GAL CAY » / « GAL NOR » / « GAL POM ».
+    private const CODE_BASE_WORDS = ['bol', 'galette'];
 
     private function produitCode(string $produit): string
     {
@@ -753,6 +897,19 @@ final class KitchenTicketSymbolicFormatter
         if ($n === '') {
             return '';
         }
+        $n = (string) preg_replace('/\s+/', ' ', $n);
+
+        // [OWNER 2026-08-10] Familles écrites EN TOUTES LETTRES — voir CODE_ECRIT_EN_ENTIER.
+        // On rend le nom NORMALISÉ en majuscules (et non le libellé d'origine) pour que le
+        // ticket ESC/POS reste en pur ASCII : « Suprême » deviendrait « SUPRÊME », dont l'accent
+        // ne survit pas à toutes les pages de code d'imprimante. Le marqueur « ENF » n'est PAS
+        // ajouté : le nom contient déjà « MENU ENFANT ».
+        foreach (self::CODE_ECRIT_EN_ENTIER as $motif) {
+            if (str_contains($n, $motif)) {
+                return mb_strtoupper($n);
+            }
+        }
+
         $words = array_values(array_filter(explode(' ', $n), static fn ($x): bool => $x !== ''));
         // Premier mot SIGNIFICATIF : on saute les préfixes génériques (Menu/Enfant/Grande…) et
         // les tailles/volumes (33cl, 50cl, 1l) → « Coca 33cl »→COC, « Menu Enfant Burger »→BUR.

@@ -89,7 +89,12 @@ class SimpleOrderResource extends JsonResource
             // (YES=5, NO=10 — jamais 0) ⇒ tout futur `if (o.is_advance_order)` JS serait
             // vrai pour TOUTES les commandes (piège documenté en mémoire). scheduled_at
             // couvre le besoin ; ne shipper l'enum brut à aucun consommateur JS.
-            'customer_name'                => $this->user?->name,
+            // [UBER-PHOTO 2026-08-10 · owner « le nom du client »] Le nom saisi/lu POUR CETTE
+            // COMMANDE prime sur le compte porteur — même règle que la carte de cuisine
+            // (KDSOrderDetailsResource::customerForKds) et que le ticket imprimé. Une commande
+            // d'agrégateur est ancrée sur un utilisateur TECHNIQUE : la caisse annonçait
+            // « Uber Eats » alors que le prénom du client était déjà scellé sur la commande.
+            'customer_name'                => $this->displayCustomerName(),
             // [Wave S-4 P-OWNER 2026-05-20] Suivi commandes "À ENCAISSER"
             // column filter. Pure projection — no business rule changes here:
             // upstream FrontendOrderService stamps the canonical signals at
@@ -126,9 +131,11 @@ class SimpleOrderResource extends JsonResource
             // que c'est une vraie commande d'une vraie personne, anti « commande nulle »). Le client web a
             // fourni un email VÉRIFIÉ (OTP) + un téléphone à l'inscription. Finalité légitime (fulfillment/
             // vérification) → la minimisation reste pour borne/walk-in (client physiquement présent).
-            'customer_phone'               => (((int) $this->order_type === OrderType::DELIVERY) || $this->source_surface === 'web')
-                ? $this->user?->phone
-                : null,
+            // [UBER-PHOTO 2026-08-10] Le téléphone de l'ANCRE TECHNIQUE d'un agrégateur
+            // (« 0000000042 ») n'est le numéro de personne : affiché à côté d'une commande, il
+            // finit par être composé. On rend le numéro porté par la commande s'il existe, jamais
+            // celui du compte système.
+            'customer_phone'               => $this->displayCustomerPhone(),
             // [Wave Q-1 P-OWNER 2026-05-19] Items summary for the POS tracker
             // cards (suivi commandes). Without this, `PosOrdersTrackerComponent`
             // renders only N°/source/time — caissier ne voyait pas le contenu.
@@ -157,6 +164,51 @@ class SimpleOrderResource extends JsonResource
      * `item_name` and `quantity` are mandatory; `item_id` is included for
      * future linkability without forcing a payload diff later.
      */
+    /**
+     * [UBER-PHOTO 2026-08-10] Un canal d'agrégateur est-il derrière cette commande ? Elle est
+     * alors ancrée sur un utilisateur TECHNIQUE dont ni le nom ni le numéro ne désignent un
+     * client réel. Même vocabulaire que la carte de cuisine et le ticket imprimé.
+     */
+    private function isAggregatorAnchoredOrder(): bool
+    {
+        return in_array(
+            strtolower(trim((string) ($this->source_surface ?? ''))),
+            ['uber_eats', 'uber', 'ubereats'],
+            true
+        );
+    }
+
+    /** Nom à afficher : celui porté par la commande d'abord, le compte porteur ensuite. */
+    private function displayCustomerName(): ?string
+    {
+        $nomCommande = trim((string) ($this->pos_customer_name ?? ''));
+        if ($nomCommande !== '') {
+            return $nomCommande;
+        }
+
+        return $this->user?->name;
+    }
+
+    /**
+     * Téléphone à afficher. Reste réservé aux LIVRAISONS et aux commandes WEB (minimisation des
+     * données, Z9-P0-03 + décision owner 2026-07-31), et n'est JAMAIS emprunté à l'ancre
+     * technique d'un agrégateur.
+     */
+    private function displayCustomerPhone(): ?string
+    {
+        $autorise = ((int) $this->order_type === OrderType::DELIVERY) || $this->source_surface === 'web';
+        if (! $autorise) {
+            return null;
+        }
+
+        $telCommande = trim((string) ($this->pos_customer_phone ?? ''));
+        if ($telCommande !== '') {
+            return $telCommande;
+        }
+
+        return $this->isAggregatorAnchoredOrder() ? null : $this->user?->phone;
+    }
+
     private function resolveItemsForTracker(): array
     {
         $relation = $this->resource->relationLoaded('orderItems')

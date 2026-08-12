@@ -276,6 +276,8 @@ return [
         App\Providers\RouteServiceProvider::class,
         // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Binding lecteur factures IA (mock↔OpenAI).
         App\Providers\PurchasingServiceProvider::class,
+        // [UBER-PHOTO 2026-08-10] Lecteur de ticket Uber photographié (doublure locale par défaut).
+        App\Providers\UberVisionServiceProvider::class,
     ],
 
     /*

@@ -30,9 +30,32 @@ describe('KDS symbolique — menu enfant distinguable (F-01)', () => {
         expect(produit('Menu Enfant Chicken Burger')).not.toBe(produit('Menu Enfant Nuggets'));
     });
 
-    it('ne marque PAS les produits adultes et préserve les codes existants', () => {
-        expect(produit('Chicken Burger')).toBe('CHI');
+    it('préserve les codes compacts des produits qui ne prêtent pas à confusion', () => {
         expect(produit('Cayenne')).toBe('CAY');
         expect(produit('Bol Frites')).toBe('BOL FRI');
+        expect(produit('Tacos M')).toBe('TAC');
+    });
+
+    /**
+     * [OWNER 2026-08-10 · « la cuisine se trompe entre CHEESE et CHICKEN, écris-les en entier »]
+     * Jumeau du test PHP KitchenTicketBolBaseTest : l'écran et le ticket doivent nommer le plat
+     * de la même façon, sinon le cuisinier lit deux vérités.
+     */
+    it('écrit en toutes lettres les familles que la cuisine confondait', () => {
+        expect(produit('Cheese Burger')).toBe('CHEESE BURGER');
+        expect(produit('Chicken Burger')).toBe('CHICKEN BURGER');
+        expect(produit('Double Cheese')).toBe('DOUBLE CHEESE');
+        expect(produit('Menu Enfant Chicken Burger')).toBe('MENU ENFANT CHICKEN BURGER');
+        expect(produit('Menu Enfant Nuggets')).toBe('MENU ENFANT NUGGETS');
+
+        const rendus = ['Cheese Burger', 'Chicken Burger', 'Double Cheese', 'Cheddar',
+            'Menu Enfant Chicken Burger', 'Menu Enfant Nuggets'].map(produit);
+        expect(new Set(rendus).size, 'deux produits distincts rendent la même ligne').toBe(rendus.length);
+    });
+
+    it('distingue les galettes comme les bols', () => {
+        expect(produit('Galette Cayenne')).toBe('GAL CAY');
+        expect(produit('Galette Normale')).toBe('GAL NOR');
+        expect(produit('Galette pommes de terre')).toBe('GAL POM');
     });
 });

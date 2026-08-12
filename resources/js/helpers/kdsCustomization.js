@@ -295,6 +295,12 @@ export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
     const kept = preStripped.split('\n').filter((ln) => {
         const t = ln.trim().replace(/^[.|\s]+/, '').trim();
         if (t === '') return false;
+        // [OWNER 2026-08-10] Ligne réduite à de la PONCTUATION après le strip des segments de
+        // composition : elle n'apprend rien et ressemble à un bug. Constaté sur une commande
+        // réelle (#5896) où « Viandes en plus : … · Sauces en plus : … » laissait « · . » à
+        // l'écran. Le strip historique ne nettoyait que le DÉBUT de ligne.
+        // Jumeau STRICT : KitchenTicketSymbolicFormatter::cleanInstruction().
+        if (!/[\p{L}\p{N}]/u.test(t)) return false;
         if (name && t.toUpperCase() === name) return false; // echoed product name (exact)
         // [KITCHEN 2026-06-30] Ligne 100% MAJUSCULES (sans chiffre) = écho du nom produit
         // écrit par le wizard (« TACOS », « SANDWICH CAYENNE ») → drop (la L1 le montre déjà).

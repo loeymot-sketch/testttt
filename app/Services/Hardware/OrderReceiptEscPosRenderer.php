@@ -261,6 +261,18 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::textLine('CUISINE');
         $b .= EscPosCommandBuilder::bold(false);
 
+        // [UBER-PHOTO 2026-08-10 · owner « les dessus Uber et le nom de client »] BANDEAU DE
+        // CANAL — la toute première chose lue, avant même la cuisson. Une commande d'agrégateur
+        // ne se prépare pas comme une commande de comptoir : elle part dans un sac scellé,
+        // souvent avec un livreur qui attend déjà. Le cuisinier doit le savoir en un coup d'œil,
+        // pas le déduire du type « livraison » perdu trois lignes plus bas. En double hauteur
+        // parce qu'un ticket cuisine se lit à un mètre, posé sur un plan de travail.
+        if ($this->isUberOrder($order)) {
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine('*** UBER EATS ***');
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        }
+
         // [CUISSON 2026-08-06 owner] BANDEAU DE CUISSON — la toute première chose que le
         // cuisinier lit, AU-DESSUS du numéro de commande, comme demandé. Il agrège TOUTES les
         // viandes de la commande entière en une seule ligne symbolique (« 9K 3P 2Cordon ») :
@@ -365,13 +377,11 @@ final class OrderReceiptEscPosRenderer
                 continue;
             }
 
-            $menu = $this->symbolic->menuLine($snap);
-            if ($menu === 'MENU' || $menu === 'FRITES') {
-                $sym = $this->symbolic->fritesSauceSymbol($instruction);
-                if ($sym !== '') {
-                    $menu = $menu.' : '.$sym;
-                }
-            }
+            // [FRITES-SAUCE 2026-08-10] La règle du badge (MENU / FRITES / BOISSON, annoté de la
+            // sauce des frites) vit désormais avec les autres règles symboliques : l'aperçu d'une
+            // commande Uber photographiée doit montrer EXACTEMENT ce badge, et une recopie aurait
+            // fini par diverger de ce qui s'imprime réellement.
+            $menu = $this->symbolic->menuBadge($snap, $name, $instruction);
             // [D-1 GOAL-8AXES 2026-08-05] Boissons du canal ADDON calculées AVANT la
             // note : cleanInstruction les reçoit pour ne pas ré-émettre la même
             // boisson via la ligne « Formule : … (X) » de l'instruction.
@@ -728,6 +738,19 @@ final class OrderReceiptEscPosRenderer
     {
         return (int) ($order->status ?? 0) === \App\Enums\OrderStatus::RETURNED
             && ($order->parent_order_id ?? null) !== null;
+    }
+
+    /**
+     * [UBER-PHOTO 2026-08-10] Commande du canal Uber ? On lit `source_surface`, la colonne qui
+     * porte déjà cette vérité pour l'écran de cuisine (vignette verte UBER) et pour la caisse.
+     * Les deux portes d'entrée — webhook et ticket photographié — y écrivent la même valeur, donc
+     * un seul test suffit et aucune ne peut être oubliée.
+     */
+    private function isUberOrder(BroadcastableOrder $order): bool
+    {
+        $surface = strtolower(trim((string) ($order->source_surface ?? '')));
+
+        return $surface === 'uber_eats' || $surface === 'uber' || $surface === 'ubereats';
     }
 
     private function orderTypeLabel(BroadcastableOrder $order): string

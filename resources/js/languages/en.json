@@ -491,6 +491,7 @@
         "demo_wizard_advanced": "Advanced Wizard Demo",
         "connected_devices": "Connected devices",
         "promo_flyer": "Promo flyer",
+        "uber_photo": "Uber order (photo)",
         "promo_flyer_settings": "Promo flyer settings",
         "system_health": "System health"
     },
@@ -1514,6 +1515,7 @@
         "confirm_revoke_device": "Disconnect “{device}”? That device will have to sign in again.",
         "confirm_revoke_current_device": "You are about to disconnect THIS device. You will have to sign in again.",
         "promo_flyer": "Promo flyer (platform orders)",
+        "uber_photo": "Uber order from a ticket photo",
         "promo_flyer_settings": "Promo flyer settings",
         "customer_first_name": "Customer first name",
         "customer_first_name_placeholder": "e.g. Camille",

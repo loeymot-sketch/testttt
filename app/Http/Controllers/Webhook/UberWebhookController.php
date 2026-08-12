@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Webhook;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Services\Uber\UberClient;
 use App\Services\Uber\UberOrderMapper;
 use Illuminate\Http\Request;
@@ -146,143 +145,50 @@ class UberWebhookController extends Controller
         return response()->json(['status' => 'ok'], 200);
     }
 
-    /** Crée la commande dans notre système à partir du détail Uber. Retourne l'order_id ou null. */
+    /**
+     * Crée la commande dans notre système à partir du détail Uber. Retourne l'order_id ou null.
+     *
+     * [UBER-PHOTO 2026-08-10] La CRÉATION elle-même vit désormais dans {@see UberOrderIngestor},
+     * partagée avec le canal « ticket photographié ». Toutes les protections historiques y ont
+     * été déplacées TELLES QUELLES — idempotence au niveau commande, pierre tombale d'annulation
+     * antérieure, boucle anti-collision de numéro d'appel, utilisateur technique d'ancrage,
+     * diffusion `OrderCreated`. Ce contrôleur ne garde que ce qui lui est propre : récupérer le
+     * détail chez Uber et le convertir.
+     */
     private function createFromUber(string $uberOrderId): ?int
     {
         if ($uberOrderId === '') {
             return null;
         }
-        // [UBER-DEDUP 2026-07-02] Idempotence AU NIVEAU COMMANDE : l'idempotence webhook est keyée sur
-        // event_id ; deux events Uber pour la MÊME commande (resource_id identique, event_id distincts,
-        // filtre 'order' large) créeraient 2 commandes internes. On dédup ici sur l'uber order id.
-        $existing = Order::withoutGlobalScopes()->where('transaction_id', 'uber:'.$uberOrderId)->first();
+
+        $dedupKey = 'uber:'.$uberOrderId;
+
+        // Dédup AVANT l'appel réseau : inutile d'interroger Uber pour une commande déjà connue.
+        $existing = Order::withoutGlobalScopes()->where('transaction_id', $dedupKey)->first();
         if ($existing) {
             return (int) $existing->id;
         }
-        // [SELF-AUDIT R3 P2 2026-07-05 — annulation AVANT création] Si un cancel Uber est arrivé AVANT ce
-        // create (pierre tombale posée par cancelFromUber), la commande a été annulée par le client avant
-        // même sa création interne → on NE crée PAS (sinon commande fantôme LIVE : stock décrémenté, KDS,
-        // ré-accept Uber). Ack neutre, rien créé.
-        $canceledBeforeCreate = DB::table('webhook_events')
-            ->where('provider', 'uber_eats')
-            ->where('webhook_id', 'uber-cancel-tombstone:'.$uberOrderId)
-            ->exists();
-        if ($canceledBeforeCreate) {
+        // Annulation arrivée AVANT la création : ne rien créer (l'ingesteur revérifie aussi, mais
+        // on évite ici un appel réseau inutile).
+        if (DB::table('webhook_events')->where('provider', 'uber_eats')
+            ->where('webhook_id', 'uber-cancel-tombstone:'.$uberOrderId)->exists()) {
             Log::info('[Uber webhook] création ignorée — commande annulée AVANT création', ['uber' => $uberOrderId]);
 
             return null;
         }
+
         $detail = $this->client->fetchOrder($uberOrderId);
         if (! $detail) {
             throw new \RuntimeException('fetchOrder null pour '.$uberOrderId);
         }
         $mapped = $this->mapper->map($detail);
+        // Le nom du client était extrait par le mapper puis JETÉ : la cuisine ne voyait qu'un
+        // numéro. Il rejoint le canal que le ticket et la caisse affichent déjà.
+        $mapped['customer_name'] = (string) ($mapped['raw_customer'] ?? '');
 
-        $branchId = (int) config('uber.branch_id', 1);
-        $userId = $this->uberSystemUserId($branchId);
-        $baseQueue = (string) ($mapped['queue_number'] ?? '');
-
-        // [SELF-AUDIT P1 2026-07-05 — perte de commande PAYÉE] queue_number = 'U'+4 derniers du
-        // display_id n'est PAS unique par commande → 2 commandes Uber du même jour dont les
-        // display_id se terminent pareil COLLISIONNENT sur l'index UNIQUE (branch, business_date,
-        // queue_number) → l'INSERT de la 2e throw → rollback → 5×503 → 200 give-up → commande PAYÉE
-        // perdue (le bug MÊME que le go-live prétendait éliminer ; mon commentaire « vrai verrou »
-        // était faux : l'index verrouille sur le suffixe NON-unique du display_id). Fix = boucle de
-        // récupération sur violation d'unicité : (a) si la MÊME commande (transaction_id) existe déjà
-        // (insert concurrent) → dédup VRAI, on la retourne ; (b) sinon AUTRE commande qui collisionne
-        // sur queue_number → on désambiguïse le queue et on retente.
-        for ($attempt = 0; $attempt <= 5; $attempt++) {
-            $queue = $attempt === 0 ? $baseQueue : ($baseQueue.'-'.$attempt);
-            try {
-                $order = DB::transaction(function () use ($mapped, $uberOrderId, $branchId, $userId, $queue) {
-                    $order = (new Order)->forceFill([
-                        'branch_id' => $branchId,
-                        // [GO-LIVE UBER 2026-07-04] orders.user_id est NOT NULL → SANS ancre user,
-                        // l'INSERT échouait TOUJOURS (la « commande perdue » était encore plus totale
-                        // que l'audit ne le disait : aucune commande Uber ne pouvait être créée).
-                        // Ancre = user technique NON privilégié (aucun rôle), même pattern que l'item
-                        // placeholder du mapper. Hoisté hors boucle : une seule résolution firstOrCreate.
-                        'user_id' => $userId,
-                        'order_type' => \App\Enums\OrderType::DELIVERY, // canal agrégateur
-                        'source' => \App\Enums\Source::WEB, // canal API/web ; Uber distingué par source_surface
-                        'source_surface' => 'uber_eats',
-                        'status' => \App\Enums\OrderStatus::ACCEPT, // visible KDS immédiatement (board-release OK car PAID)
-                        'payment_status' => \App\Enums\PaymentStatus::PAID, // Uber prépayé
-                        // [GO-LIVE UBER 2026-07-04] Commande IMMÉDIATE : sans ce champ, le défaut DB
-                        // (Ask::YES) classait chaque commande Uber en PRÉCOMMANDE → le KDS affichait
-                        // delivery_date=DEMAIN et la rangeait dans la branche « advance ».
-                        'is_advance_order' => \App\Enums\Ask::NO,
-                        // [GO-LIVE UBER 2026-07-04] business_date posé → l'index UNIQUE existant
-                        // (branch_id, business_date, queue_number) devient un vrai verrou anti-doublon
-                        // concurrent (avant : NULL = NULLs distincts sous MySQL, index inopérant).
-                        'business_date' => now()->toDateString(),
-                        'total' => $mapped['total'],
-                        'subtotal' => $mapped['total'],
-                        'discount' => 0,
-                        'queue_number' => $queue, // désambiguïsé par la boucle de récupération anti-collision
-                        'order_serial_no' => $mapped['display_id'],
-                        // [UBER-DEDUP 2026-07-02] Clé d'idempotence AU NIVEAU COMMANDE (uber order id), pour
-                        // qu'un 2e event Uber sur la MÊME commande (event_id distinct) ne duplique pas.
-                        'transaction_id' => 'uber:'.$uberOrderId,
-                        'order_datetime' => now(),
-                        // Fiscal : NON par défaut (canal séparé). Si config uber.fiscalize=true, le
-                        // cron/encaissement alloue un fiscal_sequence_no ; sinon reste null (Uber facture à part).
-                    ]);
-                    $order->save();
-
-                    foreach ($mapped['items'] as $line) {
-                        (new OrderItem)->forceFill([
-                            'order_id' => $order->id,
-                            'branch_id' => $branchId,
-                            'item_id' => $line['item_id'],
-                            'quantity' => $line['quantity'],
-                            'price' => $line['unit_price'],
-                            'discount' => 0,
-                            'total_price' => $line['total'],
-                            'composition_snapshot' => $line['composition_snapshot'],
-                            'instruction' => $line['instruction'],
-                        ])->save();
-                    }
-
-                    Log::info('[Uber webhook] commande créée', ['order_id' => $order->id, 'uber' => $uberOrderId, 'total' => $mapped['total']]);
-
-                    return $order;
-                });
-            } catch (\Illuminate\Database\QueryException $e) {
-                if (! $this->isUniqueViolation($e)) {
-                    throw $e; // erreur DB réelle → on ne l'avale pas.
-                }
-                // (a) Insert concurrent de la MÊME commande Uber (2e event pendant la création) →
-                // dédup VRAI : la ligne existe déjà sous ce transaction_id, on la retourne.
-                $existing = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-                    ->where('transaction_id', 'uber:'.$uberOrderId)->first();
-                if ($existing) {
-                    return (int) $existing->id;
-                }
-                // (b) AUTRE commande, même queue_number → l'itération suivante désambiguïse
-                // (queue-1, queue-2…). On ne relève qu'après épuisement des tentatives : jamais
-                // de commande PAYÉE perdue en silence.
-                if ($attempt >= 5) {
-                    throw $e;
-                }
-
-                continue;
-            }
-
-            // [GO-LIVE UBER 2026-07-04] Uber était le SEUL chemin de création sans OrderCreated →
-            // pas de décrément stock/disponibilité (= SURVENTE silencieuse : un article épuisé via
-            // Uber restait commandable borne/POS) ni de broadcast temps réel (KDS/OSS/caisse au
-            // polling seul). DispatchableAfterCommit : la transaction ci-dessus est commitée, le
-            // dispatch part immédiatement. Les impressions kiosk restent source-gated (kiosk-only),
-            // donc AUCUNE impression parasite. Dédup : le chemin « existing » plus haut retourne
-            // avant d'arriver ici → jamais re-dispatché.
-            \App\Events\OrderCreated::dispatch($order);
-
-            return (int) $order->id;
-        }
-
-        // Inatteignable : chaque itération retourne ou relève avant la 6e passe.
-        throw new \RuntimeException('Uber: résolution queue_number impossible pour '.$uberOrderId);
+        return app(\App\Services\Uber\UberOrderIngestor::class)->ingest($mapped, $dedupKey, [
+            'tombstone_key' => 'uber-cancel-tombstone:'.$uberOrderId,
+        ]);
     }
 
     /**
@@ -385,25 +291,6 @@ class UberWebhookController extends Controller
         return $sqlState === '23000'
             || in_array($driverCode, [1062, 19, 2067], true)
             || str_contains(strtolower($e->getMessage()), 'unique');
-    }
-
-    /** User technique Uber (non privilégié, aucun rôle) — ancre FK pour orders.user_id NOT NULL. */
-    private function uberSystemUserId(int $branchId): int
-    {
-        // [Z6-P1-WGS] Branch-fence only (singulier) : le user système ne doit PAS ressusciter
-        // une ligne soft-deleted → SoftDeletingScope conservé.
-        $user = \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->firstOrCreate(
-            ['username' => 'uber-eats-system'],
-            [
-                'name' => 'Uber Eats',
-                'email' => 'uber-eats@system.local',
-                'phone' => '0000000042',
-                'password' => bcrypt(bin2hex(random_bytes(16))),
-                'branch_id' => $branchId,
-            ]
-        );
-
-        return (int) $user->id;
     }
 
     private function markProcessed(string $webhookId, ?int $orderId): void

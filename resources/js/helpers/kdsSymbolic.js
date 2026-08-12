@@ -141,6 +141,15 @@ export function isMenuItem(name) {
 }
 
 /**
+ * [FRITES-SAUCE 2026-08-10] L'article vendu EST-IL une portion de frites ? (« Grande Frites »,
+ * « Frites Seules »). Un conteneur de menu n'en est PAS un : il a son propre badge.
+ * Jumeau PHP : OrderReceiptEscPosRenderer::isFriesProduct().
+ */
+export function estProduitFrites(name) {
+    return /\bfrites?\b/.test(normalize(name)) && !isMenuItem(name);
+}
+
+/**
  * Sauce(s) frites du menu (depuis l'instruction) → SYMBOLE(s) court(s) (Andalouse → AND).
  *
  * [MULTIFRITES 2026-07-18] owner : « si le client a plusieurs sortes pour les frites, on
@@ -152,10 +161,20 @@ export function isMenuItem(name) {
  * PHP : KitchenTicketSymbolicFormatter::fritesSauceSymbol().
  */
 export function fritesSauceSymbol(instruction) {
-    if (typeof instruction !== 'string' || instruction === '') return '';
+    return fritesSauceNames(instruction).map((n) => sauceSymbol(n)).filter(Boolean).join(' ');
+}
+
+/**
+ * [OWNER 2026-08-10] NOMS des sauces choisies POUR LES FRITES, dans l'ordre de sélection : la 1ʳᵉ
+ * est offerte, les suivantes sont les suppléments facturés. Extrait de fritesSauceSymbol() pour
+ * que le DÉCOMPTE des sauces payées s'appuie sur la même lecture que l'AFFICHAGE — deux lectures
+ * séparées finiraient par diverger, et l'une des deux mentirait.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::fritesSauceNames().
+ */
+export function fritesSauceNames(instruction) {
+    if (typeof instruction !== 'string' || instruction === '') return [];
     const m = instruction.match(/sauce\s*frites\s*:\s*([^\n]+)/i);
-    if (!m) return '';
-    return splitSauceList(m[1]).map((n) => sauceSymbol(n)).filter(Boolean).join(' ');
+    return m ? splitSauceList(m[1]) : [];
 }
 
 /**
@@ -285,10 +304,30 @@ function classifyVariation(group, value) {
  */
 const CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
 // [F-KITCHEN-BOL-BASE 2026-07-15] Mots-catégorie dont la BASE distinctive suit (Bol Frites/Bol Riz).
-const CODE_BASE_WORDS = ['bol'];
+// [OWNER 2026-08-10] « galette » ajouté pour la MÊME raison que « bol » : trois produits actifs
+// (Galette Cayenne / Normale / pommes de terre) rendaient TOUS « GAL » et rien ne les distinguait.
+const CODE_BASE_WORDS = ['bol', 'galette'];
+
+/**
+ * [OWNER 2026-08-10] Produits écrits EN TOUTES LETTRES sur l'écran et le ticket — jamais en code
+ * 3 lettres. Jumeau STRICT : KitchenTicketSymbolicFormatter::CODE_ECRIT_EN_ENTIER (même liste,
+ * même ordre, même comparaison sur le nom normalisé).
+ */
+const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant'];
 function produitCode(produit) {
-    const n = normalize(produit).replace(/[^a-z0-9 ]+/g, ' ').trim();
+    const n = normalize(produit).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!n) return '';
+
+    // [OWNER 2026-08-10 · « la cuisine se trompe entre CHEESE et CHICKEN »] Familles écrites EN
+    // TOUTES LETTRES. Le code court ne vaut que s'il DÉSIGNE : « Cheese Burger » et « Cheddar »
+    // rendaient tous deux CHE, « Chicken Burger » rendait CHI — une lettre d'écart, lues à deux
+    // mètres en coup de feu. « Menu Enfant Chicken Burger » ne se distinguait d'un poulet seul
+    // que par un « ENF » discret, alors que portion et accompagnement diffèrent.
+    // Jumeau STRICT : KitchenTicketSymbolicFormatter::CODE_ECRIT_EN_ENTIER.
+    if (CODE_ECRIT_EN_ENTIER.some((motif) => n.includes(motif))) {
+        return n.toUpperCase();
+    }
+
     const words = n.split(' ').filter(Boolean);
     // Premier mot SIGNIFICATIF : saute prefixes generiques + tailles/volumes (parite PHP).
     const significant = words.filter((w) => !CODE_GENERIC_WORDS.includes(w) && !/^\d+(cl|ml|l|g|kg)?$/.test(w));
@@ -382,7 +421,18 @@ export function buildSymbolic(orderItem) {
     // [MEGA-BORNE 2026-07-22 owner] La sauce EN PLUS remonte en ligne 1 (slot Sauce) DÈS QUE son nom
     // est récupérable (extraSauceNames non vide) → plus de ligne « + Sauce supplémentaire ». Sinon
     // (legacy non parsable) on GARDE le libellé générique (ne pas perdre une sauce payée). Jumeau PHP.
-    const extraSaucesFolded = extraSauceNames(orderItem?.instruction).length > 0;
+    // [OWNER 2026-08-10 · « les sauces au bon endroit, frites ou sandwich »] Une sauce payée
+    // apparaît UNE FOIS, à sa place. Les wizards frozen facturent un extra GÉNÉRIQUE et sans nom ;
+    // l'identité vit dans le texte libre, sur DEUX canaux : « Sauces en plus : … » (produit →
+    // repliées en ligne 1) et « Sauce frites : A, B » (frites → la 1ʳᵉ offerte, les suivantes
+    // payantes, déjà affichées sur le badge). Seul le premier était compté : sur une commande
+    // réelle (#5835), une 4ᵉ sauce FANTÔME et anonyme s'ajoutait aux trois vraies.
+    // On masque autant d'unités que les deux canaux en expliquent, et on garde le reste VISIBLE :
+    // une sauce facturée que rien n'explique ne doit jamais disparaître en silence.
+    // Jumeau STRICT : KitchenTicketSymbolicFormatter::supplementLines().
+    let budgetSaucesExpliquees = extraSauceNames(orderItem?.instruction).length
+        + Math.max(0, fritesSauceNames(orderItem?.instruction).length - 1);
+
     for (const e of readExtras(orderItem)) {
         const name = extraName(e);
         if (!name) continue;
@@ -392,9 +442,11 @@ export function buildSymbolic(orderItem) {
         // that happens to match (e.g. "Oignons frits" 0,90) is a supplement.
         if (cs && price <= 0) {
             crud.add(cs);
-        } else if (extraSaucesFolded && /sauce\s*suppl/i.test(name)) {
-            // La sauce en plus générique remonte en ligne 1 (slot Sauce) → pas de supplément.
-            continue;
+        } else if (/sauce\s*suppl/i.test(name)) {
+            const q = Math.max(1, parseInt(e?.quantity, 10) || 1);
+            const restant = Math.max(0, q - budgetSaucesExpliquees);
+            budgetSaucesExpliquees = Math.max(0, budgetSaucesExpliquees - q);
+            if (restant > 0) supplements.push(`+ ${name}${restant > 1 ? ` ×${restant}` : ''}`);
         } else {
             const q = parseInt(e?.quantity, 10);
             // [MULTIVIANDE 2026-07-24] Name the generic "Viande supplémentaire" with the
@@ -568,6 +620,15 @@ export function renderItemSymbolic(orderItem) {
             ? `${s.menu} : ${fritesSym}`
             : s.menu;
         lines.push({ type: 'symbolic-menu', label: menuLabel });
+    } else if (fritesSym) {
+        // [FRITES-SAUCE 2026-08-10 · 2ᵉ passe owner] Aucun badge, mais une sauce a bien été
+        // CHOISIE pour des frites → on l'affiche quand même. Règle volontairement large — « une
+        // sauce choisie ne disparaît jamais » — car les frites arrivent par des chemins que le
+        // badge ne couvre pas tous : frites vendues comme PRODUIT (aucun menu), et MENU ENFANT
+        // dont les frites viennent de la RECETTE (le bandeau de cuisson les compte, mais rien
+        // n'affichait leur sauce). Le nettoyeur d'instruction retire la ligne « Sauce frites : … »
+        // puisqu'elle est censée être rendue ICI. Jumeau PHP : menuBadge().
+        lines.push({ type: 'symbolic-menu', label: `FRITES : ${fritesSym}` });
     }
 
     for (const sup of s.supplements) {
@@ -659,26 +720,71 @@ const RECETTE_INCONNUE = [/burger/i, /supr[êe]me/i, /menu\s*enfant/i];
 const EST_GRANDE = /\bgrande?\b|\bgrosse\b|\bxl\b|\blarge\b|\bmax[ii]?\b/i;
 
 /**
+ * L'article vendu EST-IL le conteneur d'un menu qui comprend des frites ?
+ * Même grammaire de conteneur que isMenuItem() (« Menu ( … ) » / « Formule … ») pour qu'un vrai
+ * produit nommé « Menu Enfant Nuggets » ne soit jamais confondu avec lui ; on exige EN PLUS que
+ * le nom nomme les frites (« Boisson Seule » est aussi une part de menu et ne se plonge pas).
+ * Jumeau STRICT : MeatPortionCalculator::estConteneurMenuAvecFrites().
+ */
+const EST_CONTENEUR_MENU = (itemName) =>
+    /\bmenu\s*\(|\bformule\b/i.test(itemName) && /\bfrites?\b/i.test(itemName);
+
+/**
+ * Formule déclarée dans le TEXTE LIBRE (« Formule : Avec frites »), dernier canal — celui des
+ * profils composés qui n'écrivent ni addon ni ligne dédiée. On lit le SEGMENT de la formule et
+ * lui seul : « Sauce frites : … » suit très souvent et ne prouve aucune frite.
+ * Jumeau STRICT : MeatPortionCalculator::portionsFritesDepuisInstruction().
+ */
+function portionsFritesDepuisInstruction(instruction) {
+    const txt = String(instruction || '');
+    if (!txt.trim()) return 0;
+    const m = txt.match(/\bformules?\s*:\s*([^\n.|]+)/i);
+    if (!m) return 0;
+    const segment = m[1];
+    if (!/\bfrites?\b/i.test(segment)) return 0;
+    return EST_GRANDE.test(segment) ? 2 : 1;
+}
+
+/**
  * Portions de frites d'UN exemplaire (owner : « le nombre de menu tu mets 5F ; une grande
  * frite c'est automatiquement 2F »). Les menus ENFANTS sont exclus : leur frite est déjà
  * dans RECETTES_FIXES, la compter deux fois enverrait le cuisinier au bain pour rien.
+ *
+ * [OWNER 2026-08-10] Le menu n'arrive pas par le même canal selon la surface : ADDON à la borne,
+ * LIGNE DE COMMANDE DÉDIÉE à la caisse (« Menu (Frites + Boisson) »), TEXTE LIBRE sur les profils
+ * composés. Seul le premier était lu → un menu pris à la caisse ne montrait AUCUNE frite au
+ * bandeau de cuisson. L'ordre (A)…(D) rend le double comptage impossible — voir le jumeau PHP
+ * MeatPortionCalculator::portionsFrites() pour la démonstration canal par canal.
  */
-function portionsFrites(itemName, snap) {
+function portionsFrites(itemName, snap, instruction, addons) {
     if (/menu\s*enfant/i.test(itemName)) return 0;
 
+    // (A) L'article EST le conteneur de menu (caisse) — testé AVANT (B), dont la garde
+    //     anti-menu l'écartait justement.
+    if (EST_CONTENEUR_MENU(itemName)) return EST_GRANDE.test(itemName) ? 2 : 1;
+
+    // (B) Frite vendue seule.
     if (/\bfrites?\b/i.test(itemName) && !/\bmenu\b|\bformule\b/i.test(itemName)) {
         const tailles = (snap?.lines || snap?.variations || [])
             .map((l) => String(l?.variation_name || l?.name || l?.value || '')).join(' ');
         return EST_GRANDE.test(`${itemName} ${tailles}`) ? 2 : 1;
     }
 
+    // (C) Canal ADDON (borne, web). La liste est celle que readAddons() a déjà résolue : le
+    //     tableau de bord « articles » du KDS (KDSOrderItemsResource) n'expose PAS le
+    //     composition_snapshot mais bien `item_addons` — lire `snap.addons` seul y rendait
+    //     TOUJOURS zéro frite.
     let portions = 0;
-    for (const a of snap?.addons || []) {
+    for (const a of (Array.isArray(addons) && addons.length ? addons : (snap?.addons || []))) {
         const role = String(a?.role || '').toLowerCase();
         if (role !== 'menu_frites' && role !== 'menu_full' && role !== 'menu_formule') continue;
         const nom = String(a?.addon_name || a?.name || '');
         portions += (EST_GRANDE.test(nom) ? 2 : 1) * Math.max(1, Number(a?.quantity) || 1);
     }
+
+    // (D) Repli texte libre — uniquement si aucun addon n'a porté la formule.
+    if (portions === 0) portions = portionsFritesDepuisInstruction(instruction);
+
     return portions;
 }
 
@@ -775,7 +881,7 @@ export function meatPortionsForItem(orderItem) {
     }
 
     // Frites : elles vont au bain de friture, donc elles font partie de ce qu'il faut CUIRE.
-    const frites = portionsFrites(nomItem, orderItem?.composition_snapshot || {}) * qty;
+    const frites = portionsFrites(nomItem, orderItem?.composition_snapshot || {}, instruction, readAddons(orderItem)) * qty;
     if (frites > 0) addPiece(pieces, 'F', frites);
 
     const inconnu = !viandes.length && !recetteConnue && RECETTE_INCONNUE.some((re) => re.test(nomItem));
