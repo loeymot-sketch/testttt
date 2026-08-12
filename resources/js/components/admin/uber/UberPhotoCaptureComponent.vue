@@ -180,11 +180,12 @@ export default {
         this.liberer_urls();
     },
     methods: {
-        onFiles(event) {
+        async onFiles(event) {
             const fichiers = Array.from(event.target.files || []);
-            for (const f of fichiers) {
+            for (const brut of fichiers) {
+                const f = await this.alleger(brut);
                 this.photos.push({
-                    key: `${f.name}-${f.size}-${this.photos.length}-${f.lastModified || 0}`,
+                    key: `${f.name}-${f.size}-${this.photos.length}-${brut.lastModified || 0}`,
                     file: f,
                     // `createObjectURL` n'existe pas dans jsdom ni sur certains navigateurs
                     // embarqués : l'absence de vignette ne doit jamais empêcher d'envoyer.
@@ -193,6 +194,53 @@ export default {
             }
             // On vide l'input pour que reprendre LA MÊME photo redéclenche bien l'événement.
             event.target.value = "";
+        },
+
+        /**
+         * [POIDS 2026-08-12] Réduit la photo AVANT l'envoi.
+         *
+         * Le serveur refuse tout fichier de plus de 2 Mo (`upload_max_filesize` de PHP) alors
+         * qu'une photo de tablette en pèse 2 à 5. L'envoi échouait alors sur un « le
+         * téléversement a échoué » qui n'explique rien et ne dit pas quoi faire.
+         *
+         * Un ticket se lit parfaitement à 1600 px de large — vérifié : la même commande découpée
+         * à 1330 px a été lue sans une erreur. On envoie donc quelques centaines de kilo-octets
+         * au lieu de plusieurs mégaoctets : plus rien ne bute sur la limite, et l'envoi est
+         * nettement plus rapide sur la connexion du restaurant.
+         *
+         * Si quoi que ce soit manque (canvas indisponible, image illisible, navigateur
+         * embarqué), on renvoie le fichier D'ORIGINE : mieux vaut un envoi lourd qu'un envoi
+         * impossible.
+         */
+        async alleger(fichier) {
+            const LARGEUR_MAX = 1600;
+            const SEUIL_OCTETS = 900 * 1024;
+
+            try {
+                if (!fichier || fichier.size <= SEUIL_OCTETS) return fichier;
+                if (typeof document === "undefined" || typeof createImageBitmap !== "function") return fichier;
+
+                const image = await createImageBitmap(fichier);
+                const ratio = Math.min(1, LARGEUR_MAX / Math.max(image.width, image.height));
+                if (ratio >= 1) return fichier;
+
+                const toile = document.createElement("canvas");
+                toile.width = Math.round(image.width * ratio);
+                toile.height = Math.round(image.height * ratio);
+                const ctx = toile.getContext("2d");
+                if (!ctx) return fichier;
+                ctx.drawImage(image, 0, 0, toile.width, toile.height);
+
+                const blob = await new Promise((r) => toile.toBlob(r, "image/jpeg", 0.85));
+                if (!blob || blob.size >= fichier.size) return fichier;
+
+                return new File([blob], (fichier.name || "ticket").replace(/\.[^.]+$/, "") + ".jpg", {
+                    type: "image/jpeg",
+                    lastModified: Date.now(),
+                });
+            } catch (e) {
+                return fichier;
+            }
         },
 
         retirer(i) {
