@@ -254,6 +254,13 @@ final class KitchenTicketSymbolicFormatter
         if ($support === '' && (preg_match('/\btacos?\b/', $this->norm($itemName)) || str_contains($this->norm($itemName), 'galette'))) {
             $support = 'G';
         }
+        // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » n'a pas de step pain actif
+        // (comme le Cayenne) → aucune ligne snapshot ne porte le support. Nom sans « Cayenne » +
+        // sans code produit (CODE_SANS_MENTION) : le S doit donc venir du NOM, comme le G ci-dessus
+        // pour la galette. Jumeau STRICT : kdsSymbolic.js mainLine().
+        if ($support === '' && $this->norm($itemName) === 'sandwich classique') {
+            $support = 'S';
+        }
 
         $crudites = implode('', array_filter(self::CRUDITE_ORDER, fn ($c) => isset($crud[$c])));
 
@@ -891,6 +898,15 @@ final class KitchenTicketSymbolicFormatter
     // « GAL CAY » / « GAL NOR » / « GAL POM ».
     private const CODE_BASE_WORDS = ['bol', 'galette'];
 
+    /**
+     * [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » / « Galette Classique » — clones
+     * du Cayenne sans le mélange fromager — ne portent AUCUN nom produit en cuisine (owner :
+     * « il y aura pas de Cayenne, y aura rien, juste la viande dedans »). Seuls le support (S/G,
+     * cf. mainLine()) et la viande identifient le plat sur la ligne 1. Jumeau STRICT :
+     * kdsSymbolic.js CODE_SANS_MENTION.
+     */
+    private const CODE_SANS_MENTION = ['sandwich classique', 'galette classique'];
+
     private function produitCode(string $produit): string
     {
         $n = trim(preg_replace('/[^a-z0-9 ]+/', ' ', $this->norm($produit)));
@@ -898,6 +914,10 @@ final class KitchenTicketSymbolicFormatter
             return '';
         }
         $n = (string) preg_replace('/\s+/', ' ', $n);
+
+        if (in_array($n, self::CODE_SANS_MENTION, true)) {
+            return '';
+        }
 
         // [OWNER 2026-08-10] Familles écrites EN TOUTES LETTRES — voir CODE_ECRIT_EN_ENTIER.
         // On rend le nom NORMALISÉ en majuscules (et non le libellé d'origine) pour que le

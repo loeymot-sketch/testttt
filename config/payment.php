@@ -117,6 +117,11 @@ return [
         'api_base' => rtrim((string) env('MOLLIE_API_BASE', 'https://api.mollie.com/v2'), '/'),
         // Page de retour côté site web après le checkout Mollie (fallback APP_URL).
         'redirect_url' => (string) env('MOLLIE_REDIRECT_URL', ''),
+        // Apple Pay valide le domaine VISIBLE dans Safari, pas l'hôte de l'API.
+        // Les appels partent du site www.lecayenne.fr vers le VPS, donc Request::getHost()
+        // retournerait le VPS et ferait fermer la feuille après son ouverture. Cette valeur
+        // est une config serveur, jamais un champ fourni par le navigateur.
+        'apple_pay_domain' => strtolower(trim((string) env('MOLLIE_APPLE_PAY_DOMAIN', 'www.lecayenne.fr'))),
         'gate' => 'G-W5 GOAL_ULTRA_SYNC_STRUCTURE_2026-07-20',
     ],
 ];

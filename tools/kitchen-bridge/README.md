@@ -31,8 +31,17 @@ fenêtre Chrome, sans charabia, **automatiquement**.
    set KITCHEN_BRIDGE_PORT=9101
    node kitchen-bridge.js
    ```
-   (port par défaut **9101** — distinct du pont caisse qui utilise 9100 ; laisser la
-   fenêtre ouverte, ou créer une tâche planifiée pour un démarrage auto).
+   (port par défaut **9101** — distinct du pont caisse qui utilise 9100).
+
+   ⛔ **NE PAS** « laisser la fenêtre ouverte » ni mettre `node`/`powershell` nu dans une
+   tâche planifiée `/TR` : ça flashe une console en pleine cuisine à chaque relance, et
+   ça ne survit pas proprement à un redémarrage. Utiliser un des deux artefacts dédiés
+   (`tools/bridge-service/`), miroirs de ceux de la caisse :
+   - `install-kitchen-service.ps1` — **recommandé** : vrai service Windows via NSSM
+     (session 0 = 0 fenêtre par construction, redémarrage natif si le process meurt).
+     Il **vérifie que le nom d'imprimante existe** avant d'installer.
+   - `start-kitchen-bridge-hidden.vbs` — repli sans droits admin (tourne dans la session
+     utilisateur, donc voit aussi les imprimantes installées « par utilisateur »).
 5. Lancer **Chrome/KDS** avec le flag (page HTTPS → 127.0.0.1) :
    ```
    chrome.exe --disable-features=BlockInsecurePrivateNetworkRequests,LocalNetworkAccessChecks

@@ -154,6 +154,21 @@ describe('symbolicMainLine — owner examples', () => {
     it('a drink renders just the product name (no slots)', () => {
         expect(symbolicMainLine({ item_name: 'Coca 33cl' })).toBe('COC');
     });
+
+    // [OWNER SANDWICH-CLASSIQUE 2026-08-12] Clone du Cayenne sans mélange fromager : AUCUN nom
+    // produit en cuisine, juste le support (S) + la viande — le Cayenne original reste inchangé
+    // (CAY). Jumeau : tests/Unit/Hardware/KitchenTicketSymbolicFormatterTest.php.
+    it('sandwich classique / galette classique show support + meat only, no product code', () => {
+        const snap = {
+            lines: [
+                { attribute_name: 'Viande 1', variation_name: 'Poulet mariné' },
+                { attribute_name: 'Sauce', variation_name: 'Algérienne' },
+            ],
+        };
+        expect(symbolicMainLine({ item_name: 'Sandwich Classique', composition_snapshot: snap })).toBe('S | P | ALG');
+        expect(symbolicMainLine({ item_name: 'Galette Classique', composition_snapshot: snap })).toBe('G | P | ALG');
+        expect(symbolicMainLine({ item_name: 'Cayenne', composition_snapshot: snap })).toBe('CAY | P | ALG');
+    });
 });
 
 describe('renderItemSymbolic — line list for the KDS card', () => {

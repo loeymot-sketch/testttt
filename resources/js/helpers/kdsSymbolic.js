@@ -314,9 +314,19 @@ const CODE_BASE_WORDS = ['bol', 'galette'];
  * même ordre, même comparaison sur le nom normalisé).
  */
 const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant'];
+
+/**
+ * [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » / « Galette Classique » ne portent
+ * AUCUN nom produit en cuisine (owner : « il y aura pas de Cayenne, y aura rien, juste la viande
+ * dedans »). Jumeau STRICT : KitchenTicketSymbolicFormatter::CODE_SANS_MENTION.
+ */
+const CODE_SANS_MENTION = ['sandwich classique', 'galette classique'];
+
 function produitCode(produit) {
     const n = normalize(produit).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!n) return '';
+
+    if (CODE_SANS_MENTION.includes(n)) return '';
 
     // [OWNER 2026-08-10 · « la cuisine se trompe entre CHEESE et CHICKEN »] Familles écrites EN
     // TOUTES LETTRES. Le code court ne vaut que s'il DÉSIGNE : « Cheese Burger » et « Cheddar »
@@ -463,6 +473,13 @@ export function buildSymbolic(orderItem) {
     // Owner rule: tacos (and any galette product) show the support first, default G.
     if (!support && (category === 'taco' || /galette/.test(normalize(orderItem?.item_name)))) {
         support = 'G';
+    }
+    // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » : pas de step pain actif (comme
+    // le Cayenne) → aucune ligne snapshot ne porte le support, et le nom ne s'affiche pas
+    // (CODE_SANS_MENTION) : le S vient donc du nom, comme le G ci-dessus pour la galette. Jumeau
+    // STRICT : KitchenTicketSymbolicFormatter::mainLine().
+    if (!support && normalize(orderItem?.item_name) === 'sandwich classique') {
+        support = 'S';
     }
 
     // Line 3: a full formule → "MENU"; a PARTIAL formule → "FRITES"/"BOISSON" (a lone

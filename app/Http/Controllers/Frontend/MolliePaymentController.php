@@ -221,7 +221,8 @@ class MolliePaymentController extends Controller
      * Deux gardes qui comptent :
      *  · l'URL de validation doit appartenir à APPLE. Relayer une URL arbitraire ferait de ce
      *    point d'entrée un proxy authentifié vers n'importe quel serveur (SSRF).
-     *  · le domaine annoncé est celui de la REQUÊTE, jamais une valeur envoyée par le client.
+     *  · le domaine annoncé est la configuration serveur du site qui affiche Apple Pay,
+     *    jamais une valeur envoyée par le client ni l'hôte du VPS API.
      */
     public function applePaySession(Request $request): JsonResponse
     {
@@ -243,22 +244,31 @@ class MolliePaymentController extends Controller
             ], 422);
         }
 
+        $domain = (string) config('payment.mollie.apple_pay_domain', '');
+        if ($domain === '' || !preg_match('/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i', $domain)) {
+            Log::channel('fiscal')->error('mollie.applepay.session.invalid_domain_config');
+            return response()->json([
+                'status' => false,
+                'message' => 'Apple Pay est temporairement indisponible.',
+            ], 503);
+        }
+
         $reponse = Http::withToken((string) config('payment.mollie.api_key'))
             ->acceptJson()->asJson()->timeout(15)
             ->post(config('payment.mollie.api_base') . '/wallets/applepay/sessions', [
-                'domain'        => $request->getHost(),
+                'domain'        => $domain,
                 'validationUrl' => $validationUrl,
             ]);
 
         if (!$reponse->successful()) {
             Log::channel('fiscal')->error('mollie.applepay.session.failed', [
                 'status' => $reponse->status(),
-                'domain' => $request->getHost(),
+                'domain' => $domain,
             ]);
 
             return response()->json([
                 'status'  => false,
-                'message' => "La feuille Apple Pay n'a pas pu s'ouvrir. Réessaie, paie par carte, ou choisis « Payer sur place ».",
+                'message' => "Apple Pay n'a pas pu vérifier le site. Ta commande n'est pas envoyée ni débitée. Réessaie dans un instant ou choisis un autre moyen de paiement.",
             ], 502);
         }
 

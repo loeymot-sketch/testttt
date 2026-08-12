@@ -49,6 +49,25 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('G | TAC | K | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
+    /**
+     * [OWNER SANDWICH-CLASSIQUE 2026-08-12] Le clone sans mélange fromager du Cayenne n'affiche
+     * AUCUN nom produit en cuisine — juste le support (S) et la viande — contrairement au Cayenne
+     * lui-même (CAY), inchangé. Jumeau : tests/js/kdsSymbolic.spec.js.
+     */
+    public function test_sandwich_classique_shows_support_and_meat_only(): void
+    {
+        $snap = [
+            'lines' => [
+                ['attribute_name' => 'Viande 1', 'variation_name' => 'Poulet mariné'],
+                ['attribute_name' => 'Sauce', 'variation_name' => 'Algérienne'],
+            ],
+        ];
+        $this->assertSame('S | P | ALG', $this->f->mainLine('Sandwich Classique', $snap));
+        $this->assertSame('G | P | ALG', $this->f->mainLine('Galette Classique', $snap));
+        // Le Cayenne original reste INCHANGÉ (pas de S, code produit CAY conservé).
+        $this->assertSame('CAY | P | ALG', $this->f->mainLine('Cayenne', $snap));
+    }
+
     public function test_two_meats_space_joined(): void
     {
         $snap = [

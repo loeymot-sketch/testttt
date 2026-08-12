@@ -21,12 +21,16 @@ ssh -o ConnectTimeout=25 lecayenne "cd /var/www/lecayenne && \
   php artisan fiscal:verify-immutability-triggers 2>&1 | tail -4 && \
   echo '--- vignettes WebP POS (grille légère) ---' && \
   php artisan images:generate-pos-thumbs 2>&1 | tail -2 && \
-  echo '--- ponts locaux (borne + caisse) publiés ---' && \
+  echo '--- ponts locaux (borne + caisse + CUISINE) publiés ---' && \
   mkdir -p public/dl && cp -f tools/borne/bridge.js public/dl/bridge.js && cp -f tools/caisse-bridge/caisse-bridge.js public/dl/caisse-bridge.js && \
   cp -f tools/bridge-service/start-borne-bridge-hidden.vbs public/dl/start-borne-bridge-hidden.vbs && cp -f tools/bridge-service/start-caisse-bridge-hidden.vbs public/dl/start-caisse-bridge-hidden.vbs && \
   cp -f tools/bridge-service/install-borne-service.ps1 public/dl/install-borne-service.ps1 && cp -f tools/bridge-service/install-caisse-service.ps1 public/dl/install-caisse-service.ps1 && \
+  echo '--- [KITCHEN-AUTOSTART 2026-08-09] pont CUISINE : il n était PAS publié, donc le PC cuisine n avait AUCUN moyen de le récupérer ---' && \
+  cp -f tools/kitchen-bridge/kitchen-bridge.js public/dl/kitchen-bridge.js && \
+  cp -f tools/bridge-service/start-kitchen-bridge-hidden.vbs public/dl/start-kitchen-bridge-hidden.vbs && \
+  cp -f tools/bridge-service/install-kitchen-service.ps1 public/dl/install-kitchen-service.ps1 && \
   echo '--- lanceurs anti-flash (VBS window-0 + service NSSM) publies ---' && \
-  echo 'bridge md5='\$(md5sum public/dl/bridge.js|cut -d' ' -f1)' caisse md5='\$(md5sum public/dl/caisse-bridge.js|cut -d' ' -f1) && \
+  echo 'bridge md5='\$(md5sum public/dl/bridge.js|cut -d' ' -f1)' caisse md5='\$(md5sum public/dl/caisse-bridge.js|cut -d' ' -f1)' cuisine md5='\$(md5sum public/dl/kitchen-bridge.js|cut -d' ' -f1) && \
   echo '--- impression silencieuse (0 écran gris) ---' && \
   ( grep -q '^POS_PRINT_SILENT_ONLY=' .env && sed -i 's/^POS_PRINT_SILENT_ONLY=.*/POS_PRINT_SILENT_ONLY=true/' .env || echo 'POS_PRINT_SILENT_ONLY=true' >> .env ) && \
   php artisan config:clear >/dev/null 2>&1 && php artisan config:cache >/dev/null 2>&1 && php artisan cache:clear >/dev/null 2>&1 && \

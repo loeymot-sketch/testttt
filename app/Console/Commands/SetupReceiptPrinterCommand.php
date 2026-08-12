@@ -20,12 +20,12 @@ use Illuminate\Console\Command;
 class SetupReceiptPrinterCommand extends Command
 {
     protected $signature = 'pos:setup-receipt-printer
-        {name : Exact Windows printer queue name of the SAGA (Devices & Printers)}
+        {name : Exact Windows printer queue name (Get-Printer | Select-Object Name)}
         {--branch=1 : Branch id}
         {--width=48 : Characters per line (48 = 80mm Font A, 32 = 58mm)}
         {--code-page=19 : ESC/POS code page (19 = CP858, FR accents + €)}';
 
-    protected $description = 'Create/update the ACTIVE receipt printer row so the POS prints ESC/POS to the SAGA';
+    protected $description = 'Create/update the ACTIVE receipt printer row so the POS prints ESC/POS to the counter printer';
 
     public function handle(): int
     {
@@ -45,7 +45,10 @@ class SetupReceiptPrinterCommand extends Command
 
         $printer->forceFill([
             'branch_id' => $branchId,
-            'name' => 'SAGA Caisse',
+            // [CHANGEMENT-IMPRIMANTE 2026-08-09] Le libellé était figé sur « SAGA Caisse »
+            // et survivait donc au remplacement du matériel (back-office affichant une
+            // marque qui n'est plus branchée). Il DÉRIVE désormais du nom de file réel.
+            'name' => 'Caisse (' . $name . ')',
             'type' => 'escpos_usb_windows',
             'host' => $name,
             'station' => 'receipt',

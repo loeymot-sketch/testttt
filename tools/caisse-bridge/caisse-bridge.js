@@ -24,8 +24,16 @@
  *
  * LANCER (PowerShell/CMD sur le PC caisse) :
  *     node caisse-bridge.js "NOM_EXACT_IMPRIMANTE"
- *   (le nom = Panneau de config > Périphériques et imprimantes, ex "SAGA")
- *   ou via variable : set CAISSE_PRINTER=SAGA && node caisse-bridge.js
+ *   (le nom = Panneau de config > Périphériques et imprimantes, ex "Epson TM-m30II")
+ *   ou via variable : set CAISSE_PRINTER=Epson TM-m30II && node caisse-bridge.js
+ *
+ * [CHANGEMENT-IMPRIMANTE 2026-08-09] SAGA → Epson TM-m30II. Le nom ci-dessous n'est
+ * qu'un DÉFAUT de repli : le lanceur du PC caisse (C:\lecayenne\start-caisse.ps1 et
+ * watchdog.ps1) passe le nom en ARGUMENT, ce qui écrase ce défaut. Changer l'imprimante
+ * du restaurant impose donc de changer AUSSI ces deux scripts — sinon les tickets
+ * partent dans la file de l'ancienne imprimante SANS erreur visible (le spouleur
+ * Windows accepte les octets tant que la file existe encore). Le nom exact se lit avec
+ * `Get-Printer | Select-Object Name` : il doit correspondre AU CARACTÈRE PRÈS.
  *
  * Puis lancer Chrome de la caisse avec le flag (page HTTPS → 127.0.0.1) :
  *     --disable-features=BlockInsecurePrivateNetworkRequests,LocalNetworkAccessChecks
@@ -42,7 +50,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const PORT = parseInt(process.env.CAISSE_BRIDGE_PORT || '9100', 10);
-const PRINTER = process.argv[2] || process.env.CAISSE_PRINTER || 'SAGA';
+const PRINTER = process.argv[2] || process.env.CAISSE_PRINTER || 'Epson TM-m30II';
 
 // Win32 RawPrinterHelper (Microsoft KB 322090) — envoie les octets RAW à
 // l'imprimante nommée via le spouleur, SANS rendu pilote (donc accents/€ et coupe

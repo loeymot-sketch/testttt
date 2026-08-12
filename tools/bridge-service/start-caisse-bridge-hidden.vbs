@@ -13,7 +13,7 @@
 '  UTILISATION :
 '    1. Placer ce .vbs A COTE de caisse-bridge.js sur le PC caisse.
 '    2. Regler PRINTER_NAME ci-dessous = NOM EXACT de l'imprimante (Panneau de
-'       configuration -> Peripheriques et imprimantes), ex "SAGA", "POS-80".
+'       configuration -> Peripheriques et imprimantes), ex "Epson TM-m30II".
 '    3. Double-clic pour lancer maintenant (rien ne s'affiche = c'est NORMAL).
 '    4. Demarrage auto : Win+R -> shell:startup -> y deposer un RACCOURCI de ce .vbs.
 '    5. SUPPRIMER tout ancien lanceur qui relance node en boucle (tache planifiee
@@ -36,7 +36,10 @@ bridgeJs  = scriptDir & "\caisse-bridge.js"
 nodeExe = "node"
 
 ' NOM EXACT de l'imprimante caisse (a adapter) — passe en argument au pont.
-printerName = "SAGA"
+' [CHANGEMENT-IMPRIMANTE 2026-08-09] SAGA remplacee par une Epson TM-m30II.
+' Verifier le nom AU CARACTERE PRES avec :  Get-Printer | Select-Object Name
+' (le pilote Epson cree parfois "EPSON TM-m30II Receipt" et non "Epson TM-m30II").
+printerName = "Epson TM-m30II"
 
 ' Guillemets autour des chemins + du nom d'imprimante (espaces eventuels).
 cmd = """" & nodeExe & """ """ & bridgeJs & """ """ & printerName & """"
