@@ -112,4 +112,23 @@ return [
      * plat est fait, ou la commande est un problème d'exploitation, pas d'impression.
      */
     'bridge_print_window_minutes' => max(1, (int) env('KDS_BRIDGE_PRINT_WINDOW_MINUTES', 30)),
+
+    /*
+     * [RÉCLAMATION ORPHELINE 2026-08-12] Durée de vie d'une réclamation NON CONFIRMÉE.
+     *
+     * Un poste réclame un ticket puis meurt avant d'accuser : onglet fermé, PC redémarré, `ack`
+     * parti dans un réseau coupé. Sans cette borne, la ligne de réclamation reste à vie et la
+     * file exclut la commande pour toujours — le ticket est perdu, et en cuisine cela veut dire
+     * un plat oublié. Trouvé en abusant de la file pendant l'audit : cinq tickets détruits en une
+     * seule requête.
+     *
+     * Passé ce délai, une réclamation sans accusé est considérée comme abandonnée et le ticket
+     * est re-proposé. La valeur reprend celle du ticket promo (`PromoFlyer::CLAIM_TTL_SECONDS`),
+     * dont ce mécanisme est le jumeau : assez long pour qu'un pont lent finisse son travail,
+     * assez court pour qu'un poste mort ne retienne pas le papier.
+     *
+     * L'arbitrage est celui que le dépôt a déjà tranché dans KitchenTicketAutoPrinter : « Mieux
+     * vaut un risque de doublon qu'un ticket perdu en cuisine. »
+     */
+    'bridge_claim_ttl_seconds' => max(10, (int) env('KDS_BRIDGE_CLAIM_TTL_SECONDS', 90)),
 ];

@@ -169,6 +169,71 @@ class KitchenTicketQueueTest extends TestCase
         $this->assertContains($web->id, $this->reclamer('kitchen'), 'le papier cuisine a échoué, il doit être re-proposé');
     }
 
+    /**
+     * @test
+     * LE TROU TROUVÉ EN ABUSANT DE MA PROPRE FILE (2026-08-12).
+     *
+     * Un poste réclame, puis meurt avant d'accuser : onglet fermé, PC redémarré, `ack` qui part
+     * dans un réseau coupé. La ligne de réclamation reste, `printed_at` reste NULL — et la file
+     * exclut TOUTE commande ayant une ligne pour cette destination, sans regarder `printed_at`.
+     * Le ticket est perdu POUR TOUJOURS : aucune tâche planifiée, aucune commande, aucune
+     * expiration ne le reprend. En cuisine, cela veut dire un plat oublié.
+     *
+     * Reproduit en une seule requête sur la base locale pendant l'audit : cinq tickets détruits.
+     *
+     * Le patron dont je m'étais inspiré — le ticket promo — porte précisément la garde que
+     * j'avais laissée tomber (`PromoFlyer::CLAIM_TTL_SECONDS`, 90 s) : « pris par un écran qui
+     * n'a pas confirmé » y est explicitement réclamable. J'en avais copié la forme, pas la
+     * sûreté.
+     *
+     * La doctrine du dépôt tranche déjà l'arbitrage, dans KitchenTicketAutoPrinter :
+     * « Mieux vaut un risque de doublon qu'un ticket perdu en cuisine. »
+     */
+    public function une_reclamation_jamais_accusee_est_reproposee_apres_expiration(): void
+    {
+        $web = $this->commandeWeb();
+
+        $this->assertContains($web->id, $this->reclamer(), 'premier sondage : le ticket sort');
+        $this->assertNotContains($web->id, $this->reclamer(), 'tant que le poste est vivant, pas de doublon');
+
+        // Le poste meurt ici : aucun accusé ne viendra jamais.
+        $this->travel(config('kds.bridge_claim_ttl_seconds', 90) + 30)->seconds();
+
+        $this->assertContains(
+            $web->id,
+            $this->reclamer(),
+            'un ticket réclamé mais jamais accusé DOIT revenir en file — sinon il est perdu pour toujours'
+        );
+    }
+
+    /** @test La reprise ne doit PAS ressusciter un ticket dont le papier est réellement sorti. */
+    public function un_ticket_reellement_imprime_ne_revient_jamais_meme_tres_tard(): void
+    {
+        $web = $this->commandeWeb();
+        $this->reclamer();
+        $this->accuser($web->id, true);
+
+        $this->travel(config('kds.bridge_claim_ttl_seconds', 90) * 10)->seconds();
+
+        $this->assertNotContains(
+            $web->id,
+            $this->reclamer(),
+            'le papier est sorti : l\'expiration du verrou ne doit pas le refaire sortir'
+        );
+    }
+
+    /** @test Un poste vivant qui met du temps à imprimer ne doit pas se faire voler son ticket. */
+    public function une_reclamation_recente_reste_protegee(): void
+    {
+        $web = $this->commandeWeb();
+        $this->reclamer();
+
+        // Bien en deçà de l'expiration : le poste est encore en train d'imprimer.
+        $this->travel(10)->seconds();
+
+        $this->assertNotContains($web->id, $this->reclamer(), 'pas de vol de ticket sous le nez d\'un poste actif');
+    }
+
     /** @test Un poste qui n'annonce pas sa destination est traité comme la caisse (ancien paquet en cache). */
     public function une_reclamation_sans_destination_vaut_pour_la_caisse(): void
     {

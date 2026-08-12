@@ -172,12 +172,36 @@ final class KitchenTicketAutoPrinter
      */
     public function claimForBridge(int $orderId, string $destination): bool
     {
-        return DB::table('kitchen_ticket_claims')->insertOrIgnore([
+        $pris = DB::table('kitchen_ticket_claims')->insertOrIgnore([
             'order_id'    => $orderId,
             'destination' => $destination,
             'created_at'  => now(),
             'updated_at'  => now(),
         ]) === 1;
+
+        if ($pris) {
+            return true;
+        }
+
+        // [RÉCLAMATION ORPHELINE 2026-08-12] Une ligne existe déjà. Deux cas très différents :
+        //
+        //  - le papier est sorti, ou un poste est en train de le sortir → on ne touche à rien ;
+        //  - un poste a réclamé puis est mort sans accuser (onglet fermé, PC redémarré, `ack`
+        //    perdu) → la réclamation est ABANDONNÉE et le ticket doit repartir, sinon il est
+        //    perdu pour toujours.
+        //
+        // La reprise est un UPDATE CONDITIONNEL : c'est encore la base qui arbitre. Deux postes
+        // qui tentent la reprise au même instant ne peuvent pas gagner tous les deux — le second
+        // ré-évalue la condition après le verrou de ligne et ne trouve plus de réclamation
+        // périmée, donc zéro ligne touchée.
+        $ttl = max(10, (int) config('kds.bridge_claim_ttl_seconds', 90));
+
+        return DB::table('kitchen_ticket_claims')
+            ->where('order_id', $orderId)
+            ->where('destination', $destination)
+            ->whereNull('printed_at')
+            ->where('updated_at', '<', now()->subSeconds($ttl))
+            ->update(['updated_at' => now(), 'error' => null]) === 1;
     }
 
     /**

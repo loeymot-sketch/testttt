@@ -84,10 +84,19 @@ return [
         // ── Galette (cat 2)
         'galette-cayenne' => 'galette.png',
         'galette-normale' => 'galette.png',
+        // [AUDIT 2026-08-12] Créée le jour même, elle n'avait aucune entrée ici : l'accesseur
+        // `Item::getThumbAttribute()` ne lit que `items` + `addons`, jamais `categories`. Une
+        // entrée manquante ne casse rien et ne lève aucune erreur — elle sert simplement la
+        // vignette par défaut. Le client la voyait donc en « produit sans photo » sur la borne,
+        // au milieu de voisins illustrés. Trouvé en LISANT une capture, pas par un test.
+        'galette-classique' => 'galette.png',
 
         // ── Sandwich Classique (cat 3)
         'sandwich-classique-faluche' => 'sandwich-classique.png',
         'big-classique'              => 'sandwich-classique-maxi.png',
+        // [AUDIT 2026-08-12] Même trou que la galette ci-dessus. Le fichier existait déjà
+        // (public/images/menu/sandwich-classique.png) : il ne manquait que la correspondance.
+        'sandwich-classique' => 'sandwich-classique.png',
 
         // ── Burgers (cat 4)
         'chicken-burger' => 'burger-cheese.png',

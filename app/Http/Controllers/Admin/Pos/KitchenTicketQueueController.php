@@ -94,11 +94,20 @@ class KitchenTicketQueueController extends Controller
             // « Pas encore réclamé POUR CETTE DESTINATION » — et non « pas encore imprimé » tout
             // court. C'est toute la différence entre deux postes qui impriment chacun leur papier
             // et deux postes qui se volent les tickets à tour de rôle.
+            // [RÉCLAMATION ORPHELINE 2026-08-12] Une réclamation ne bloque le ticket que si elle
+            // est ENCORE VALABLE : soit le papier est réellement sorti, soit le poste est encore
+            // en train de le sortir. Une réclamation sans accusé passé le délai est un poste MORT
+            // (onglet fermé, PC redémarré, `ack` perdu) et ne doit plus retenir le ticket —
+            // sinon il est perdu pour toujours, ce qui en cuisine veut dire un plat oublié.
             ->whereNotExists(function ($sub) use ($destination) {
                 $sub->select(DB::raw(1))
                     ->from('kitchen_ticket_claims')
                     ->whereColumn('kitchen_ticket_claims.order_id', 'orders.id')
-                    ->where('kitchen_ticket_claims.destination', $destination);
+                    ->where('kitchen_ticket_claims.destination', $destination)
+                    ->where(function ($q) {
+                        $q->whereNotNull('kitchen_ticket_claims.printed_at')
+                            ->orWhere('kitchen_ticket_claims.updated_at', '>=', $this->reclamationValideDepuis());
+                    });
             })
             ->whereIn('source_surface', self::SURFACES)
             ->whereIn('status', KitchenReleaseRule::visibleStatuses())
@@ -157,6 +166,18 @@ class KitchenTicketQueueController extends Controller
         }
 
         return response()->json(['orders' => $reclamees, 'destination' => $destination]);
+    }
+
+    /**
+     * Instant avant lequel une réclamation non confirmée est réputée ABANDONNÉE.
+     *
+     * On se base sur `updated_at` et non sur `created_at` : une réimpression touche la ligne
+     * existante, et une demande fraîche doit repartir avec un délai plein plutôt que d'hériter
+     * de l'âge de la réclamation d'origine.
+     */
+    private function reclamationValideDepuis(): \Illuminate\Support\Carbon
+    {
+        return now()->subSeconds(max(10, (int) config('kds.bridge_claim_ttl_seconds', 90)));
     }
 
     /**
