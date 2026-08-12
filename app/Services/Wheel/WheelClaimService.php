@@ -185,7 +185,8 @@ class WheelClaimService
             }
 
             $trouve = \App\Models\Item::query()
-                ->withoutGlobalScopes()
+                // Singulier : un produit RETIRÉ de la carte ne doit pas servir de référence de coût.
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('name', $nom)
                 ->orderBy('id')
                 ->value('id');

@@ -124,7 +124,10 @@ class WheelReportService
             ->get(['id', 'item_id', 'quantity', 'stock_decremented']);
 
         $prix = $sorties->isEmpty() ? collect() : Item::query()
-            ->withoutGlobalScopes()
+            // Ici les produits SUPPRIMÉS comptent, et on le dit : un cadeau remis hier garde son prix
+            // même si l'article a quitté la carte depuis. Le pluriel donnait le même résultat par
+            // ACCIDENT — l'écrire explicitement empêche qu'on « répare » ce comportement voulu.
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()
             ->whereIn('id', $sorties->pluck('item_id')->unique()->all())
             ->pluck('price', 'id');
 

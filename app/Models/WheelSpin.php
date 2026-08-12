@@ -34,7 +34,12 @@ class WheelSpin extends Model
     /** Le coupon matérialisant le lot, quand le lot est une remise (pas des points). */
     public function coupon()
     {
-        return $this->belongsTo(\App\Models\Coupon::class, 'coupon_id')->withoutGlobalScopes();
+        // [2026-08-12] `withoutGlobalScope(BranchScope)` au SINGULIER, et pas `withoutGlobalScopes()` :
+        // le pluriel retirait AUSSI le filtre de suppression douce, donc un coupon RÉVOQUÉ se
+        // résolvait par cette relation — et tout code qui lit `$spin->coupon` pour décider quelque
+        // chose agissait alors sur un coupon mort. Qui a besoin des supprimés ajoute `withTrashed()`.
+        return $this->belongsTo(\App\Models\Coupon::class, 'coupon_id')
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class);
     }
 
     protected static function booted(): void

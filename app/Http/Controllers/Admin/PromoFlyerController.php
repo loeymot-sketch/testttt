@@ -378,7 +378,8 @@ class PromoFlyerController extends Controller
             return [];
         }
 
-        return \App\Models\Coupon::withoutGlobalScopes()
+        // Singulier : un coupon SUPPRIMÉ n'est pas « actif ». Le pluriel le comptait comme tel.
+        return \App\Models\Coupon::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->whereIn('id', $ids)
             ->where('status', \App\Enums\Status::ACTIVE)
             ->pluck('id')
@@ -393,7 +394,8 @@ class PromoFlyerController extends Controller
             return true;
         }
 
-        return ! \App\Models\Coupon::withoutGlobalScopes()
+        // Singulier : un coupon SUPPRIMÉ n'est pas « actif ».
+        return ! \App\Models\Coupon::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->whereKey($flyer->coupon_id)
             ->where('status', \App\Enums\Status::ACTIVE)
             ->exists();

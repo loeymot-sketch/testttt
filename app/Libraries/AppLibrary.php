@@ -162,10 +162,28 @@ class AppLibrary
         return $menus;
     }
 
+    /**
+     * [2026-08-12] `$defaulPermission` peut n'avoir AUCUNE propriété `url`.
+     *
+     * `defaultPermission()` rend un objet vide quand le rôle ne porte aucune permission d'administration
+     * — c'est le cas d'un CLIENT. Lire `->url` dessus levait alors une erreur, et la connexion
+     * répondait 500 : `AuthComprehensiveTest::test_customer_receives_home_landing` et
+     * `AntiGravityLoginRedirectionTest::test_customer_receives_null_landing_url` étaient rouges pour
+     * cette seule raison.
+     *
+     * Pas de permission par défaut = pas de menu par défaut. C'est une réponse, pas une erreur : on
+     * rend un tableau vide, et l'appelant retombe sur l'adresse d'atterrissage du rôle.
+     */
     public static function defaultMenu($menus, $defaulPermission): array
     {
+        $cible = is_object($defaulPermission) ? ($defaulPermission->url ?? null) : null;
+
+        if ($cible === null) {
+            return [];
+        }
+
         foreach ($menus as $menu) {
-            if (isset($menu['url']) && $menu['url'] === $defaulPermission->url) {
+            if (isset($menu['url']) && $menu['url'] === $cible) {
                 return $menu;
             }
             if (isset($menu['children']) && is_array($menu['children']) && count($menu['children']) > 0) {

@@ -201,8 +201,10 @@ class WheelSettingsService
         }
 
         try {
+            // `Branch` est déjà exempt de BranchScope (auto-référence) : le pluriel ne retirait donc que
+            // le filtre de suppression douce, et pouvait rendre une branche SUPPRIMÉE comme adresse
+            // du restaurant. Une requête simple est à la fois plus juste et plus courte.
             $b = \App\Models\Branch::query()
-                ->withoutGlobalScopes()
                 ->orderBy('id')
                 ->first(['name', 'address', 'zip_code', 'city']);
         } catch (\Throwable $e) {

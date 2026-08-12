@@ -455,7 +455,8 @@ class PromoFlyerService
     public function revoke(PromoFlyer $flyer): void
     {
         if ($flyer->coupon_id) {
-            Coupon::withoutGlobalScopes()
+            // Révoquer doit marcher même sur un coupon déjà supprimé — dit explicitement.
+            Coupon::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()
                 ->whereKey($flyer->coupon_id)
                 ->update(['status' => Status::INACTIVE]);
         }

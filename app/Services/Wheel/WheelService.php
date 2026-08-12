@@ -665,7 +665,7 @@ class WheelService
         // sans contrôle contourne exactement ce dispositif, et `resolveCouponByCode` renvoie le
         // PLUS ANCIEN en cas de doublon : le gagnant tomberait sur un coupon déjà brûlé.
         $code = 'ROUE-' . strtoupper(Str::random(6));
-        for ($essai = 0; $essai < 5 && Coupon::withoutGlobalScopes()->withTrashed()->where('code', $code)->exists(); $essai++) {
+        for ($essai = 0; $essai < 5 && Coupon::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->where('code', $code)->exists(); $essai++) {
             $code = 'ROUE-' . strtoupper(Str::random(6));
         }
 

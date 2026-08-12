@@ -94,7 +94,13 @@ describe('POS header reorg — préservation des boutons existants', () => {
         'pos-no-sale',
         'pos-cash-session-open',
         'pos-availability-panel-open',
-        'pos-loyalty-redeem-main-cta-open',
+        // [FIDÉLITÉ COMPTOIR 2026-08-12] Ce repère a été RENOMMÉ, et c'est voulu : le bouton n'ouvre
+        // plus la remise mais l'IDENTIFICATION du client (retrouver, inscrire, cumuler, puis utiliser).
+        // Il n'est d'ailleurs plus jamais grisé — l'ancien restait inaccessible sans commande en cours,
+        // ce que le propriétaire avait signalé. Le repère surveillé suit donc le bouton.
+        // La fenêtre de remise, elle, existe toujours et garde son propre repère
+        // (`pos-loyalty-redeem-apply`, éprouvé par tests/js/posLoyaltyRedeemModal.spec.js).
+        'pos-loyalty-identify-cta-open',
         'kiosk-cash-panel-history',
     ];
 

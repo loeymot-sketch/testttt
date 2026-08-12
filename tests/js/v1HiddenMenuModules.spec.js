@@ -10,7 +10,12 @@ describe('V1_HIDDEN_MENU_MODULES (Lot A.2)', () => {
         const expected = [
             'customers', 'coupons', 'offers', 'creditBalanceReport',
             'deliveryBoys', 'onlineOrders', 'tableOrders', 'waiters', 'diningTables',
-            'settings.mail', 'settings.loyalty-setup', 'settings.notification', 'settings.theme',
+            // [FIDÉLITÉ 2026-08-12] `settings.loyalty-setup` RETIRÉ de cette liste : l'écran des règles
+            // de fidélité est DÉMASQUÉ. Il était caché depuis le nettoyage V1 du 2 mai, si bien que
+            // l'exploitant n'avait aucun moyen de régler son barème ni son plancher — les trois valeurs
+            // tournaient sur leurs défauts et tout changement exigeait un développeur. Ce n'est pas un
+            // module « différé V2 » : c'est le tableau de bord de sa propre mécanique de fidélité.
+            'settings.mail', 'settings.notification', 'settings.theme',
             'settings.item-categories',
             'settings.item-attributes',
             'settings.permission', 'settings.role', 'settings.tax', 'settings.charge',
