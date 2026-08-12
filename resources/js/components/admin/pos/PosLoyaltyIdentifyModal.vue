@@ -165,6 +165,38 @@
                             Aucune commande en cours&nbsp;: ajoutez des articles et validez la vente, puis revenez
                             ici pour lui créditer ses points.
                         </p>
+
+                        <!--
+                          L'HISTORIQUE, REPLIÉ. Un solde sans histoire ne se défend pas : le client qui
+                          conteste, le responsable qui cherche un écart, le caissier qui a rattaché la
+                          mauvaise vente posent la même question. Replié parce que le geste courant est
+                          « encaisser », pas « enquêter » — et déplié en un appui quand la question vient.
+                        -->
+                        <button
+                            type="button"
+                            class="pos-loy-id__lien-histo"
+                            data-testid="loy-id-history-toggle"
+                            @click="basculerHistorique"
+                        >{{ historiqueOuvert ? 'Masquer l\'historique' : 'Voir l\'historique des points' }}</button>
+
+                        <div v-if="historiqueOuvert" class="pos-loy-id__histo" data-testid="loy-id-history">
+                            <p v-if="historiqueEnCours" class="pos-loy-id__hint">Lecture…</p>
+                            <p v-else-if="!historique.length" class="pos-loy-id__hint" data-testid="loy-id-history-empty">
+                                Aucun mouvement de points pour ce client.
+                            </p>
+                            <ul v-else class="pos-loy-id__histo-liste">
+                                <li v-for="e in historique" :key="e.id" class="pos-loy-id__histo-ligne">
+                                    <span class="pos-loy-id__histo-quoi">
+                                        {{ e.label }}
+                                        <span class="pos-loy-id__histo-quand">{{ e.when }}</span>
+                                    </span>
+                                    <span :class="['pos-loy-id__histo-pts', e.points < 0 && 'is-moins']">
+                                        {{ e.signed }} pts
+                                    </span>
+                                    <span class="pos-loy-id__histo-solde">→ {{ e.balance }}</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- ── AUCUN COMPTE : ON PROPOSE DE L'INSCRIRE ─────────────────── -->
@@ -306,6 +338,9 @@ export default {
             erreur: '',
             succes: '',
             occupe: false,
+            historiqueOuvert: false,
+            historiqueEnCours: false,
+            historique: [],
             scanEnCours: false,
             flux: null,
             boucleScan: null,
@@ -362,6 +397,10 @@ export default {
             this.succes = '';
             this.nouveauNom = '';
             this.nouveauMail = '';
+            // L'historique appartient à UN client : le laisser ouvert d'une recherche à l'autre
+            // afficherait les mouvements de la personne précédente sous le nom de la suivante.
+            this.historiqueOuvert = false;
+            this.historique = [];
         },
         changerOnglet(cle) {
             if (cle !== 'qr') this.arreterScan();
@@ -477,6 +516,26 @@ export default {
                 this.erreur = this.messageErreur(e, 'Rattachement impossible.');
             } finally {
                 this.occupe = false;
+            }
+        },
+
+        async basculerHistorique() {
+            if (this.historiqueOuvert) { this.historiqueOuvert = false; return; }
+            if (!this.client) return;
+
+            this.historiqueOuvert = true;
+            this.historiqueEnCours = true;
+
+            try {
+                const { data } = await axios.get('/admin/pos-loyalty/history', {
+                    params: { loyalty_code: this.client.loyalty_code, limit: 20 },
+                });
+                this.historique = (data && data.data && data.data.entries) || [];
+            } catch (e) {
+                this.erreur = this.messageErreur(e, 'Historique indisponible.');
+                this.historiqueOuvert = false;
+            } finally {
+                this.historiqueEnCours = false;
             }
         },
 
@@ -754,6 +813,46 @@ export default {
     color: #6b6b76;
     border-top: 1px dashed #e0e0ea;
 }
+
+.pos-loy-id__lien-histo {
+    margin-top: 0.75rem;
+    padding: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #f4501e;
+    text-decoration: underline;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.pos-loy-id__histo { margin-top: 0.625rem }
+
+.pos-loy-id__histo-liste {
+    /* Une liste haute défile DANS son cadre : sans ça, vingt lignes poussent les boutons d'action
+       hors de l'écran sur une tablette, et le caissier ne peut plus rien valider. */
+    max-height: 11rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.pos-loy-id__histo-ligne {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.4375rem 0;
+    font-size: 0.8125rem;
+    border-bottom: 1px solid #ececf2;
+}
+
+.pos-loy-id__histo-quoi { color: #4a4a55 }
+.pos-loy-id__histo-quand { margin-left: 0.375rem; font-size: 0.6875rem; color: #a0a0aa }
+.pos-loy-id__histo-pts { font-weight: 700; font-variant-numeric: tabular-nums; color: #14572f }
+.pos-loy-id__histo-pts.is-moins { color: #8f1d0f }
+.pos-loy-id__histo-solde { font-variant-numeric: tabular-nums; color: #a0a0aa }
 
 .pos-loy-id__vide { margin-top: 1rem; }
 .pos-loy-id__vide > p:first-child { margin: 0 0 0.75rem; font-weight: 600; color: #1a1a1a; }

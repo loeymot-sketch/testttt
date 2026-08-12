@@ -5,6 +5,8 @@ namespace App\Services\Loyalty;
 use App\Models\User;
 use App\Services\Identity\CustomerAccount;
 use App\Services\Identity\PhoneIdentity;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -179,6 +181,66 @@ final class PosCustomerLookupService
             'effective_floor' => $this->regles->effectiveFloor(),
         ];
     }
+
+    /**
+     * L'HISTORIQUE DES POINTS D'UN CLIENT — pour pouvoir répondre « pourquoi j'ai ce solde ? ».
+     *
+     * [2026-08-12] Sans lui, un solde est un chiffre sans histoire. Un client qui conteste (« j'avais
+     * plus que ça »), un responsable qui veut comprendre un écart, un caissier qui a rattaché la
+     * mauvaise commande : tous les trois ont besoin de la même chose, et personne ne l'avait. Le
+     * grand-livre `loyalty_transactions` existe et est immuable — il n'était simplement lu nulle part.
+     *
+     * On ne rend PAS l'identifiant de commande brut sans plus : on rend de quoi RECONNAÎTRE la ligne
+     * (date, ce que ça a fait, combien, solde après, quelle surface). Un caissier ne cherche pas une
+     * clé étrangère, il cherche « la vente d'hier soir ».
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function history(string $loyaltyCode, int $limite = 20): array
+    {
+        $code = strtoupper(trim($loyaltyCode));
+        if (strlen($code) < 4) {
+            return [];
+        }
+
+        // On interroge par le CODE et non par l'identifiant du compte : c'est la clé que porte l'écran,
+        // et le grand-livre la stocke — un détour par `users` ajouterait une jointure pour rien.
+        $lignes = DB::table('loyalty_transactions')
+            ->where('loyalty_code', $code)
+            ->orderByDesc('id')
+            ->limit(max(1, min(100, $limite)))
+            ->get(['id', 'type', 'points', 'balance_after', 'source_surface', 'order_id', 'description', 'created_at']);
+
+        return $lignes->map(function ($l) {
+            $points = (int) $l->points;
+
+            return [
+                'id'       => (int) $l->id,
+                'when'     => optional($l->created_at ? Carbon::parse($l->created_at) : null)->format('d/m/Y H:i'),
+                'type'     => (string) $l->type,
+                // Un mot que le comptoir comprend, pas l'étiquette technique du grand-livre.
+                'label'    => self::LIBELLES_TYPE[(string) $l->type] ?? (string) $l->type,
+                'points'   => $points,
+                // Le signe est PORTÉ par la donnée (les débits sont négatifs en base) : on ne le
+                // recalcule pas depuis le type, sinon un type inconnu afficherait un gain à la place
+                // d'une perte.
+                'signed'   => ($points > 0 ? '+' : '') . $points,
+                'balance'  => (int) $l->balance_after,
+                'surface'  => (string) ($l->source_surface ?? ''),
+                'order_id' => $l->order_id ? (int) $l->order_id : null,
+            ];
+        })->all();
+    }
+
+    /** Les étiquettes du grand-livre, dites comme au comptoir. */
+    private const LIBELLES_TYPE = [
+        'earn'          => 'Gagné sur une commande',
+        'redeem'        => 'Utilisé en remise',
+        'manual_add'    => 'Ajouté à la main',
+        'manual_deduct' => 'Retiré à la main',
+        'refund'        => 'Rendu après remboursement',
+        'clawback'      => 'Reprise après annulation',
+    ];
 
     // ── privé ────────────────────────────────────────────────────────────────────────────────
 

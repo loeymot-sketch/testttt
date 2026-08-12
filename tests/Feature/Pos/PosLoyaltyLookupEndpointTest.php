@@ -157,6 +157,98 @@ class PosLoyaltyLookupEndpointTest extends TestCase
             ->assertStatus(422);
     }
 
+    // ── L'HISTORIQUE DES POINTS ──────────────────────────────────────────────────────────────
+
+    /**
+     * « POURQUOI J'AI CE SOLDE ? » — la question que trois personnes posent et à laquelle personne
+     * ne pouvait répondre : le client qui conteste, le responsable qui cherche un écart, le caissier
+     * qui a rattaché la mauvaise vente. Le grand-livre existait, immuable, et n'était lu nulle part.
+     */
+    public function test_l_historique_rend_les_mouvements_dans_un_langage_de_comptoir(): void
+    {
+        $c = $this->client('0612345678', 350, 'HISTO001');
+
+        foreach ([
+            ['type' => 'earn',   'points' => 500,  'balance_after' => 500, 'surface' => 'pos'],
+            ['type' => 'redeem', 'points' => -200, 'balance_after' => 300, 'surface' => 'pos'],
+            ['type' => 'earn',   'points' => 50,   'balance_after' => 350, 'surface' => 'kiosk'],
+        ] as $i => $l) {
+            DB::table('loyalty_transactions')->insert([
+                'user_id' => $c->id, 'loyalty_code' => 'HISTO001', 'order_id' => null,
+                'type' => $l['type'], 'points' => $l['points'], 'balance_after' => $l['balance_after'],
+                'source_surface' => $l['surface'], 'description' => 'ligne '.$i,
+                'created_at' => now()->subMinutes(10 - $i), 'updated_at' => now(),
+            ]);
+        }
+
+        $r = $this->actingAs($this->caissier, 'sanctum')
+            ->getJson('/api/admin/pos-loyalty/history?loyalty_code=HISTO001')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(350, $r['customer']['balance']);
+        $this->assertCount(3, $r['entries']);
+
+        // Le plus récent d'abord : au comptoir on cherche « ce qui vient de se passer ».
+        $this->assertSame('Gagné sur une commande', $r['entries'][0]['label']);
+        $this->assertSame('kiosk', $r['entries'][0]['surface']);
+
+        // Le SIGNE vient de la donnée, pas du type : un type inconnu ne doit pas afficher un gain
+        // à la place d'une perte.
+        $debit = collect($r['entries'])->firstWhere('type', 'redeem');
+        $this->assertSame('-200', $debit['signed']);
+        $this->assertSame('Utilisé en remise', $debit['label']);
+        $this->assertSame(300, $debit['balance']);
+    }
+
+    /**
+     * ON N'OUVRE PAS L'HISTORIQUE D'UN COMPTE QUE LE COMPTOIR N'A PAS LE DROIT DE VOIR. Sans cette
+     * garde, le code d'un membre de l'équipe rendrait ses mouvements de points.
+     */
+    public function test_l_historique_d_un_compte_d_equipe_est_refuse(): void
+    {
+        $collegue = User::factory()->create(['phone' => '0699000444']);
+        $collegue->assignRole('POS Operator');
+        DB::table('users')->where('id', $collegue->id)->update(['loyalty_code' => 'STAFFH1', 'loyalty_points' => 800]);
+        DB::table('loyalty_transactions')->insert([
+            'user_id' => $collegue->id, 'loyalty_code' => 'STAFFH1', 'order_id' => null,
+            'type' => 'earn', 'points' => 800, 'balance_after' => 800,
+            'source_surface' => 'pos', 'description' => 'ne doit pas fuiter',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $r = $this->actingAs($this->caissier, 'sanctum')
+            ->getJson('/api/admin/pos-loyalty/history?loyalty_code=STAFFH1')
+            ->assertStatus(404);
+
+        $this->assertStringNotContainsString('ne doit pas fuiter', $r->getContent());
+    }
+
+    /** Un client sans mouvement rend une liste vide, pas une erreur. */
+    public function test_un_client_sans_mouvement_rend_une_liste_vide(): void
+    {
+        $this->client('0612345679', 0, 'HISTO002');
+
+        $this->actingAs($this->caissier, 'sanctum')
+            ->getJson('/api/admin/pos-loyalty/history?loyalty_code=HISTO002')
+            ->assertOk()
+            ->assertJsonPath('data.entries', []);
+    }
+
+    /** Sans le droit caisse, aucun historique. */
+    public function test_sans_le_droit_caisse_l_historique_est_ferme(): void
+    {
+        $this->client('0612345680', 100, 'HISTO003');
+
+        $this->getJson('/api/admin/pos-loyalty/history?loyalty_code=HISTO003')->assertStatus(401);
+
+        $quidam = User::factory()->create(['is_guest' => Ask::NO]);
+        $quidam->assignRole('Customer');
+        $this->actingAs($quidam, 'sanctum')
+            ->getJson('/api/admin/pos-loyalty/history?loyalty_code=HISTO003')
+            ->assertStatus(403);
+    }
+
     // ── L'ORACLE D'ÉNUMÉRATION ───────────────────────────────────────────────────────────────
 
     /**

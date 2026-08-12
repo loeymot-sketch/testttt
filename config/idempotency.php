@@ -32,6 +32,14 @@ return [
     'fail_open'           => (bool) env('IDEMPOTENCY_FAIL_OPEN', false),
 
     'required_routes' => [
+        // [FIDÉLITÉ COMPTOIR 2026-08-12] Les deux écritures de fidélité au comptoir. Elles portaient
+        // déjà l'intergiciel `idempotency`, mais SANS figurer ici la clé restait FACULTATIVE : un
+        // client qui l'oublie passait quand même, et un double appui créait un second compte ou
+        // relançait le crédit. Le crochet et l'exigence sont deux choses distinctes — la sentinelle
+        // `IdempotencyRequiredRoutesCoverageTest` existe précisément pour attraper cet écart, et
+        // c'est elle qui l'a attrapé.
+        'api/admin/pos-loyalty/customers',
+        'api/admin/pos-order/*/attach-loyalty',
         'api/admin/pos',
         'api/admin/pos-order/change-payment-status/*',
         'api/admin/pos-order/select-delivery-boy/*',

@@ -1477,6 +1477,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->middleware('throttle:pos-loyalty-lookup')
             ->name('lookup');
 
+        // L'HISTORIQUE des points d'un client — « pourquoi j'ai ce solde ? ». En GET : c'est une
+        // lecture, sans effet, rejouable. Le grand-livre existait et immuable depuis des mois ; il
+        // n'était lu nulle part, donc un solde contesté ne se défendait pas.
+        Route::get('/history', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'history'])
+            ->middleware('throttle:pos-loyalty-lookup')
+            ->name('history');
+
         // INSCRIRE un client au comptoir. `idempotency` parce qu'un double appui sur « Créer » ne
         // doit pas produire deux comptes — et parce que le service lui-même retrouve un numéro déjà
         // connu, la protection est double, pas unique.

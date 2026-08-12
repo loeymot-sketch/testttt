@@ -15,6 +15,7 @@ use App\Services\Loyalty\PosLoyaltyAttachService;
 use App\Services\Loyalty\PosRedemptionException;
 use App\Services\Loyalty\PosRedemptionService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -168,6 +169,52 @@ final class PosLoyaltyController extends Controller
                 'customer' => $user ? $this->lookupService->presenter($user) : null,
             ],
         ], $resultat['created'] ? 201 : 200);
+    }
+
+    /**
+     * L'HISTORIQUE DES POINTS D'UN CLIENT — « pourquoi j'ai ce solde ? ».
+     *
+     * [2026-08-12] Un solde sans histoire ne se défend pas. Trois personnes posent la même question
+     * et aucune n'avait de réponse : le client qui conteste (« j'avais plus que ça »), le responsable
+     * qui cherche un écart, le caissier qui a rattaché la mauvaise commande. Le grand-livre
+     * `loyalty_transactions` existe et est immuable depuis des mois — il n'était lu nulle part.
+     *
+     * En GET : c'est une lecture, elle doit être rejouable, partageable et sans effet. La porte reste
+     * la même que la recherche (`permission:pos`) et le débit est borné par le même limiteur : un
+     * historique est aussi un oracle, il dit qu'un code existe.
+     */
+    public function history(Request $request): JsonResponse
+    {
+        if (! ($request->user()?->can('pos') ?? false)) {
+            return response()->json([
+                'status' => false, 'code' => 'FORBIDDEN', 'message' => 'Droit caisse requis.',
+            ], 403);
+        }
+
+        $code = strtoupper(trim((string) $request->query('loyalty_code', '')));
+
+        if (strlen($code) < 4) {
+            return response()->json([
+                'status' => false, 'code' => 'CODE_TOO_SHORT', 'message' => 'Code fidélité manquant.',
+            ], 422);
+        }
+
+        // On n'ouvre l'historique QUE d'un compte que le comptoir a le droit de voir : sans cette
+        // vérification, le code d'un membre de l'équipe rendrait ses mouvements de points.
+        $trouve = $this->lookupService->byCode($code);
+        if (($trouve['status'] ?? '') !== \App\Services\Loyalty\PosCustomerLookupService::TROUVE) {
+            return response()->json([
+                'status' => false, 'code' => 'NO_ACCOUNT', 'message' => 'Aucun compte client à ce code.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => [
+                'customer' => $trouve['customer'],
+                'entries'  => $this->lookupService->history($code, (int) $request->query('limit', 20)),
+            ],
+        ]);
     }
 
     /**

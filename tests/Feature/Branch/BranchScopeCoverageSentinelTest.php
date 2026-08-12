@@ -67,6 +67,14 @@ class BranchScopeCoverageSentinelTest extends TestCase
         // explicitement « PAS de BranchScope : V1 LOCAL mono-branche (branch_id=1 fixe) ». Exemption
         // déclarée ici comme le sentinel l'exige (l'oubli de cette ligne le rendait rouge). V2-SaaS blocker.
         'App\\Models\\DailyBookEntry'        => 'BASELINE_V1_2026-07-15 — carnet mono-branche V1 (branch_id fixe), V1.0.2 heal target',
+        // [ROUE 2026-08-12] `WheelStepProgress` : le modèle documente déjà l'absence de BranchScope
+        // comme VOULUE — cette table est lue AVANT toute authentification (le client vient de scanner
+        // un QR, il n'est pas connecté), donc un scope qui dépend de `Auth::check()` ne s'appliquerait
+        // pas ; la portée par caisse est assurée par la CLÉ, l'empreinte du jeton, qui porte sa branche
+        // et que le contrôleur vérifie. L'exemption n'avait jamais été déclarée ici : c'est ce que la
+        // sentinelle réclame, et c'est elle qui l'a attrapé. V2-SaaS : à revoir si le jeton cesse de
+        // porter la branche.
+        'App\\Models\\WheelStepProgress'     => 'ROUE_2026-08-12 — lue avant authentification, portée assurée par l\'empreinte du jeton (qui porte la branche)',
         // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P1a] Domaine « matières premières » (raw
         // materials / BOM) : hard-scope explicite par les appelants (pattern DailyBookEntry),
         // pas de BranchScope global — mono-branche V1 (branch_id=1 fixe). V2-SaaS blocker → V1.0.2 heal target.
