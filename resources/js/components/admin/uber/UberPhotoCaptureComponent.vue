@@ -6,10 +6,38 @@
             </div>
 
             <div class="db-card-body">
-                <!-- ── 1. PRENDRE LES PHOTOS ─────────────────────────────────────────────
+                <!-- ── ÉTAT 3 · ENVOYÉE ──────────────────────────────────────────────────
+                     L'écran se remet seul en position photo : en coup de feu on enchaîne les
+                     tickets, et l'écran doit être prêt avant la main. Le décompte est VISIBLE
+                     et interruptible — un retour automatique qu'on ne peut pas arrêter est une
+                     porte qui claque. -->
+                <div v-if="envoyee" class="uber-cap-done" data-testid="uber-photo-done">
+                    <div class="uber-cap-done-main">
+                        <span class="uber-cap-done-check">✓</span>
+                        <div>
+                            <strong>{{ envoyee.numero || "Commande" }} — {{ envoyee.client || "sans nom" }}</strong>
+                            <span class="uber-cap-done-sub">partie en cuisine</span>
+                        </div>
+                    </div>
+                    <div class="uber-cap-done-actions">
+                        <button type="button" class="uber-cap-btn uber-cap-btn--ghost" :disabled="busy"
+                                data-testid="uber-photo-reprint-done" @click="reimprimer(envoyee)">
+                            🖨 Réimprimer
+                        </button>
+                        <button v-if="compte_a_rebours > 0" type="button" class="uber-cap-btn uber-cap-btn--ghost"
+                                @click="rester">
+                            Rester ({{ compte_a_rebours }})
+                        </button>
+                        <button type="button" class="uber-cap-btn uber-cap-btn--primary" @click="ticket_suivant">
+                            Ticket suivant
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── ÉTAT 1 · PRÊT ─────────────────────────────────────────────────────
                      Le doigt vise gros : cet écran s'utilise debout, une tablette dans une
                      main, en plein service. Rien de plus petit que ~56 px de haut. -->
-                <div class="uber-cap-actions">
+                <div v-if="!envoyee" class="uber-cap-actions">
                     <label class="uber-cap-btn uber-cap-btn--primary" data-testid="uber-photo-pick">
                         <input
                             ref="fileInput"
@@ -20,7 +48,7 @@
                             class="uber-cap-file"
                             @change="onFiles"
                         />
-                        📷 Photographier le ticket
+                        📷 {{ photos.length ? "Reprendre la photo" : "Photographier le ticket" }}
                     </label>
 
                     <button
@@ -38,13 +66,13 @@
                     </button>
                 </div>
 
-                <p class="uber-cap-hint">
-                    Le ticket ne tient pas sur un seul écran ? Photographiez-le en plusieurs fois :
-                    toutes les photos forment <strong>une seule</strong> commande.
+                <p v-if="!envoyee" class="uber-cap-hint">
+                    Ticket trop long ? Photographiez-le en plusieurs fois — les photos forment
+                    <strong>une seule</strong> commande. Ajoutez la suite avant d'envoyer.
                 </p>
 
                 <!-- Vignettes des photos prises, avec retrait possible avant lecture. -->
-                <ul v-if="photos.length" class="uber-cap-thumbs" data-testid="uber-photo-thumbs">
+                <ul v-if="photos.length && !envoyee" class="uber-cap-thumbs" data-testid="uber-photo-thumbs">
                     <li v-for="(p, i) in photos" :key="p.key" class="uber-cap-thumb">
                         <!-- Si le fichier n'est pas une image affichable (HEIC non supporté par
                              le navigateur, fichier d'un autre type), on retombe sur une pastille
@@ -59,7 +87,7 @@
                 <!-- ── 2. CE QUE LA CUISINE VERRA ────────────────────────────────────────
                      L'aperçu est calculé par les services de la cuisine eux-mêmes : ce qui
                      est validé ici est très exactement ce qui sera préparé. -->
-                <div v-if="capture" class="uber-cap-result" data-testid="uber-photo-result">
+                <div v-if="capture && !envoyee" class="uber-cap-result" data-testid="uber-photo-result">
                     <div v-if="capture.status === 'failed'" class="uber-cap-alert" data-testid="uber-photo-failed">
                         <strong>Ticket illisible.</strong>
                         {{ capture.erreur || "Reprenez la photo de plus près, bien à plat et sans reflet." }}
@@ -84,6 +112,16 @@
                                 <span class="uber-cap-cuisson-label">CUISSON</span>
                                 <span class="uber-cap-cuisson-value">{{ capture.apercu.cuisson || "—" }}</span>
                             </div>
+                        </div>
+
+                        <!-- [TICKET COUPÉ] Tout ticket Uber finit par un montant payé. N'en avoir
+                             lu aucun est le signe le plus net que la photo s'est arrêtée avant le
+                             bas du papier. On le dit AVANT l'envoi, pendant qu'il est encore
+                             temps — pas après, quand la cuisine prépare une commande amputée. -->
+                        <div v-if="capture.ticket_coupe" class="uber-cap-alert uber-cap-alert--warn"
+                             data-testid="uber-photo-truncated">
+                            <strong>Ce ticket semble coupé :</strong> aucun montant total n'a été lu.
+                            Photographiez la suite du papier — elle rejoindra cette même commande.
                         </div>
 
                         <div v-if="capture.articles_non_reconnus > 0" class="uber-cap-alert uber-cap-alert--warn">
@@ -120,6 +158,18 @@
                                     data-testid="uber-photo-send" @click="envoyer">
                                 {{ capture.order_id ? "✓ Déjà envoyée en cuisine" : "Envoyer en cuisine" }}
                             </button>
+
+                            <!-- Toujours offert, alerte ou pas : la détection du ticket coupé est
+                                 un garde-fou, jamais une autorisation. Le personnel voit le papier,
+                                 pas nous. -->
+                            <label v-if="!capture.order_id"
+                                   :class="['uber-cap-btn', capture.ticket_coupe ? 'uber-cap-btn--primary' : '']"
+                                   data-testid="uber-photo-add-more">
+                                <input type="file" accept="image/*" capture="environment" multiple
+                                       class="uber-cap-file" @change="ajouter_suite" />
+                                ＋ Ajouter la suite du ticket
+                            </label>
+
                             <button type="button" class="uber-cap-btn uber-cap-btn--ghost"
                                     :disabled="busy || !!capture.order_id" @click="jeter">
                                 Jeter cette lecture
@@ -128,15 +178,54 @@
                     </template>
                 </div>
 
-                <!-- ── 3. CE QUI VIENT DE PASSER ────────────────────────────────────────── -->
-                <div v-if="recentes.length" class="uber-cap-recent">
-                    <h4>Dernières commandes photographiées</h4>
+                <!-- ── HISTORIQUE DU SERVICE ─────────────────────────────────────────────
+                     Tout se fait ICI : rouvrir une commande, revoir ce que la cuisine a reçu,
+                     ressortir le papier. Changer de page en plein service, c'est perdre le fil
+                     de ce qu'on était en train de faire. -->
+                <div v-if="recentes.length" class="uber-cap-recent" data-testid="uber-photo-history">
+                    <h4>Commandes du service <span class="uber-cap-recent-count">{{ recentes.length }}</span></h4>
                     <ul>
-                        <li v-for="r in recentes" :key="r.id">
-                            <span class="uber-cap-recent-state" :class="`is-${r.status}`">{{ etat(r.status) }}</span>
-                            <span>{{ r.client || "—" }}</span>
-                            <span>{{ r.numero || "" }}</span>
-                            <span>{{ r.apercu && r.apercu.cuisson ? r.apercu.cuisson : "" }}</span>
+                        <li v-for="r in recentes" :key="r.id" :class="{ 'is-open': ouverte === r.id }">
+                            <!-- La ligne ENTIÈRE est la cible : un doigt gras sur une tablette ne
+                                 vise pas un chevron de 16 px. -->
+                            <button type="button" class="uber-cap-recent-row" :data-testid="`uber-photo-history-row-${r.id}`"
+                                    @click="basculer(r.id)">
+                                <span class="uber-cap-recent-state" :class="`is-${r.status}`">{{ etat(r.status) }}</span>
+                                <span class="uber-cap-recent-num">{{ r.numero || "—" }}</span>
+                                <span class="uber-cap-recent-client">{{ r.client || "sans nom" }}</span>
+                                <span class="uber-cap-recent-cuisson">{{ (r.apercu && r.apercu.cuisson) || "" }}</span>
+                                <span class="uber-cap-recent-heure">{{ heure(r.cree_le) }}</span>
+                                <span class="uber-cap-recent-chevron">{{ ouverte === r.id ? "▾" : "▸" }}</span>
+                            </button>
+
+                            <div v-if="ouverte === r.id" class="uber-cap-recent-detail">
+                                <p v-if="!r.apercu || !r.apercu.lignes.length" class="uber-cap-recent-vide">
+                                    Aucune ligne lisible sur cette capture.
+                                </p>
+                                <ul v-else class="uber-cap-recent-lines">
+                                    <li v-for="(l, i) in r.apercu.lignes" :key="i">
+                                        <span class="uber-cap-qty">{{ l.quantity }}×</span>
+                                        <span class="uber-cap-sym">{{ l.symbolique || l.titre }}</span>
+                                        <span v-if="l.menu" class="uber-cap-menu">{{ l.menu }}</span>
+                                        <span v-for="(b, k) in l.boissons" :key="'b' + k" class="uber-cap-drink">{{ b }}</span>
+                                        <span v-for="(s, k) in l.supplements" :key="'s' + k" class="uber-cap-supp">{{ s }}</span>
+                                        <em v-if="l.note" class="uber-cap-note">{{ l.note }}</em>
+                                    </li>
+                                </ul>
+
+                                <div class="uber-cap-recent-actions">
+                                    <!-- Pas de commande, pas de papier : le bouton n'existe pas
+                                         plutôt que d'exister et de refuser. -->
+                                    <button v-if="r.order_id" type="button" class="uber-cap-btn uber-cap-btn--ghost"
+                                            :disabled="busy" :data-testid="`uber-photo-reprint-${r.id}`"
+                                            @click="reimprimer(r)">
+                                        🖨 Réimprimer le ticket cuisine
+                                    </button>
+                                    <span v-else class="uber-cap-recent-note">
+                                        Jamais envoyée en cuisine — rien à réimprimer.
+                                    </span>
+                                </div>
+                            </div>
                         </li>
                     </ul>
                 </div>
@@ -171,6 +260,13 @@ export default {
             capture: null,
             edition: { customer_name: "", display_id: "", items: [] },
             recentes: [],
+            // La commande qui vient de partir : c'est elle qui met l'écran en état ENVOYÉE.
+            envoyee: null,
+            compte_a_rebours: 0,
+            minuteur: null,
+            // Ligne d'historique dépliée (une seule : deux détails ouverts sur une tablette,
+            // c'est un écran qu'on ne lit plus).
+            ouverte: null,
         };
     },
     mounted() {
@@ -178,6 +274,7 @@ export default {
     },
     beforeUnmount() {
         this.liberer_urls();
+        this.arreter_minuteur();
     },
     methods: {
         async onFiles(event) {
@@ -317,6 +414,16 @@ export default {
                         ? "Cette commande était déjà partie en cuisine."
                         : "Commande envoyée en cuisine."
                 );
+                // On bascule en état ENVOYÉE : l'écran affiche ce qui est parti, propose de le
+                // réimprimer, et se remet seul en position photo. Le geste suivant du personnel,
+                // c'est le ticket suivant — pas de chercher un bouton « Recommencer ».
+                this.envoyee = {
+                    id: this.capture.id,
+                    order_id: data.order_id || this.capture.order_id,
+                    numero: this.capture.numero || this.edition.display_id,
+                    client: this.capture.client || this.edition.customer_name,
+                };
+                this.demarrer_retour();
                 this.charger_recentes();
             } catch (e) {
                 alertService.error(this.message(e, "L'envoi en cuisine a échoué."));
@@ -339,9 +446,99 @@ export default {
             }
         },
 
+        /**
+         * [TICKET EN PLUSIEURS PHOTOS 2026-08-12 · owner « si trop longue commande en 2 photos »]
+         *
+         * On AJOUTE la photo aux précédentes et on relit L'ENSEMBLE : le serveur dédoublonne sur
+         * l'empreinte de toutes les photos, donc l'ensemble « photo 1 + photo 2 » est une capture
+         * neuve, et il n'y a rien à recoller à la main.
+         *
+         * La lecture partielle qui la précède est JETÉE : sans cela elle resterait dans
+         * l'historique comme une commande « à valider », et quelqu'un finirait par l'envoyer —
+         * la même commande partirait deux fois en cuisine, amputée la première.
+         */
+        async ajouter_suite(event) {
+            const avant = this.photos.length;
+            await this.onFiles(event);
+            if (this.photos.length === avant) return;
+
+            const partielle = this.capture && !this.capture.order_id ? this.capture.id : null;
+            await this.lire();
+
+            if (partielle && this.capture && this.capture.id !== partielle) {
+                try {
+                    await axios.post(`admin/uber/photo/${partielle}/discard`);
+                } catch (e) {
+                    // Jeter la lecture partielle est du confort : l'échouer ne doit pas empêcher
+                    // d'envoyer la commande complète, qui est déjà lue et à l'écran.
+                }
+                this.charger_recentes();
+            }
+        },
+
+        /**
+         * [RÉIMPRESSION 2026-08-12 · owner] Le papier se perd : il tombe, il bourre, il part avec
+         * l'emballage. Rephotographier le ticket créerait une SECONDE commande, donc un second
+         * plat — c'est précisément ce que ce bouton évite.
+         */
+        async reimprimer(cible) {
+            if (!cible || this.busy) return;
+            this.busy = true;
+            try {
+                const { data } = await axios.post(`admin/uber/photo/${cible.id}/reprint`);
+                alertService.success(data.message || "Réimpression demandée.");
+            } catch (e) {
+                alertService.error(this.message(e, "La réimpression n'a pas pu être demandée."));
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        basculer(id) {
+            this.ouverte = this.ouverte === id ? null : id;
+        },
+
+        /** Retour automatique à l'écran photo — visible, et interruptible d'un doigt. */
+        demarrer_retour() {
+            this.arreter_minuteur();
+            this.compte_a_rebours = 4;
+            this.minuteur = setInterval(() => {
+                this.compte_a_rebours -= 1;
+                if (this.compte_a_rebours <= 0) this.ticket_suivant();
+            }, 1000);
+        },
+
+        arreter_minuteur() {
+            if (this.minuteur) {
+                clearInterval(this.minuteur);
+                this.minuteur = null;
+            }
+        },
+
+        /** « Rester » : on garde la commande à l'écran, sans jamais la renvoyer. */
+        rester() {
+            this.arreter_minuteur();
+            this.compte_a_rebours = 0;
+        },
+
+        ticket_suivant() {
+            this.arreter_minuteur();
+            this.compte_a_rebours = 0;
+            this.envoyee = null;
+            this.tout_effacer();
+        },
+
+        /** Heure courte, pour situer la commande dans le service sans encombrer la ligne. */
+        heure(iso) {
+            if (!iso) return "";
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return "";
+            return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        },
+
         async charger_recentes() {
             try {
-                const { data } = await axios.get("admin/uber/photo/recent", { params: { limit: 8 } });
+                const { data } = await axios.get("admin/uber/photo/recent", { params: { limit: 20 } });
                 this.recentes = data.data || [];
             } catch (e) {
                 // Un historique indisponible ne doit pas empêcher de prendre une commande.
@@ -417,10 +614,46 @@ export default {
 
 .uber-cap-send { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
 .uber-cap-recent { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
-.uber-cap-recent h4 { font-size: 14px; color: #475569; margin-bottom: 8px; }
+.uber-cap-recent h4 { font-size: 14px; color: #475569; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.uber-cap-recent-count {
+    background: #eef2f7; color: #475569; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700;
+}
 .uber-cap-recent ul { list-style: none; padding: 0; margin: 0; }
-.uber-cap-recent li { display: flex; gap: 14px; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
+.uber-cap-recent li { border-bottom: 1px dashed #e2e8f0; }
+.uber-cap-recent li.is-open { background: #f8fafc; border-radius: 10px; }
+
+/* La ligne entière est le bouton : sur une tablette, un doigt ne vise pas un chevron. */
+.uber-cap-recent-row {
+    width: 100%; display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 6px 10px;
+    background: none; border: 0; font-size: 15px; text-align: left; cursor: pointer; color: inherit;
+}
+.uber-cap-recent-row:hover { background: #f1f5f9; border-radius: 10px; }
 .uber-cap-recent-state { font-weight: 700; min-width: 92px; }
 .uber-cap-recent-state.is-confirmed { color: #06C167; }
 .uber-cap-recent-state.is-failed { color: #b91c1c; }
+.uber-cap-recent-num { font-weight: 700; min-width: 84px; }
+.uber-cap-recent-client { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uber-cap-recent-cuisson { font-family: ui-monospace, Menlo, monospace; color: #b45309; font-weight: 700; }
+.uber-cap-recent-heure { color: #94a3b8; font-variant-numeric: tabular-nums; }
+.uber-cap-recent-chevron { color: #94a3b8; width: 14px; }
+
+.uber-cap-recent-detail { padding: 4px 12px 14px; }
+.uber-cap-recent-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.uber-cap-recent-lines li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 0; padding: 2px 0; }
+.uber-cap-recent-vide { color: #94a3b8; font-size: 14px; margin-bottom: 12px; }
+.uber-cap-recent-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.uber-cap-recent-note { color: #94a3b8; font-size: 14px; }
+
+/* État ENVOYÉE : large, vert, et il s'efface tout seul. */
+.uber-cap-done {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+    background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 18px 20px; margin-bottom: 18px;
+}
+.uber-cap-done-main { display: flex; align-items: center; gap: 14px; font-size: 18px; }
+.uber-cap-done-check {
+    width: 40px; height: 40px; border-radius: 50%; background: #06C167; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800;
+}
+.uber-cap-done-sub { display: block; color: #047857; font-size: 15px; }
+.uber-cap-done-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 </style>

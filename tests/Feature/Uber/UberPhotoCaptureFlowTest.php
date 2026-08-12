@@ -209,6 +209,73 @@ class UberPhotoCaptureFlowTest extends TestCase
         $this->assertStringContainsString('F', $res->json('apercu.cuisson'), 'Aucune frite comptée pour deux menus.');
     }
 
+    /**
+     * [RÉIMPRESSION 2026-08-12 · owner « pour réimprimer »] Le papier se perd — il tombe, il
+     * bourre, il part avec l'emballage. Sans ce bouton la seule issue était de rephotographier le
+     * ticket Uber, ce qui créait une SECONDE commande donc un second plat.
+     *
+     * @test
+     */
+    public function reimprimer_repose_la_demande_que_le_pont_cuisine_viendra_chercher(): void
+    {
+        $this->actingCaisse();
+
+        $capture = $this->postJson('/api/admin/uber/photo/scan', ['photos' => [$this->photo()]])->json('id');
+        $orderId = $this->postJson("/api/admin/uber/photo/{$capture}/confirm")->json('order_id');
+
+        $this->postJson("/api/admin/uber/photo/{$capture}/reprint")
+            ->assertOk()
+            ->assertJsonPath('status', 'ok');
+
+        $claim = \Illuminate\Support\Facades\DB::table('kitchen_ticket_claims')
+            ->where('order_id', $orderId)->where('destination', 'kitchen')->first();
+
+        $this->assertNotNull($claim, 'Aucune demande posée : le pont ne viendra rien chercher.');
+        $this->assertNotNull($claim->reprint_requested_at);
+        $this->assertNull($claim->printed_at, 'Une demande de réimpression doit rouvrir la réclamation.');
+    }
+
+    /** @test Rien n'est parti en cuisine : on refuse clairement plutôt que de promettre un papier. */
+    public function reimprimer_une_commande_jamais_envoyee_est_refuse(): void
+    {
+        $this->actingCaisse();
+
+        $capture = $this->postJson('/api/admin/uber/photo/scan', ['photos' => [$this->photo()]])->json('id');
+
+        $this->postJson("/api/admin/uber/photo/{$capture}/reprint")
+            ->assertStatus(409)
+            ->assertJsonPath('status', 'jamais_envoyee');
+    }
+
+    /**
+     * [TICKET COUPÉ 2026-08-12 · owner « si trop longue commande en 2 photos je ferais comment »]
+     *
+     * TOUT ticket Uber se termine par un montant payé. N'en avoir lu aucun est le signe le plus
+     * net que la photo s'est arrêtée avant la fin du papier : l'écran doit le dire et proposer de
+     * photographier la suite, au lieu de laisser envoyer une commande amputée.
+     *
+     * @test
+     */
+    public function un_ticket_sans_montant_total_est_signale_comme_coupe(): void
+    {
+        $this->actingCaisse();
+
+        $coupe = $this->photo('coupe.json', [
+            'customer_name' => 'Olivier H.', 'display_id' => 'E63F5', 'order_type' => 'delivery',
+            'items' => [['title' => 'Cayenne', 'quantity' => 1, 'options' => [], 'note' => '']],
+            // Pas de `total` : la photo s'est arrêtée avant le bas du ticket.
+        ]);
+
+        $this->postJson('/api/admin/uber/photo/scan', ['photos' => [$coupe]])
+            ->assertOk()
+            ->assertJsonPath('ticket_coupe', true);
+
+        // …et un ticket COMPLET ne doit jamais déclencher l'alerte, sinon plus personne ne la lit.
+        $this->postJson('/api/admin/uber/photo/scan', ['photos' => [$this->photo('entier.json')]])
+            ->assertOk()
+            ->assertJsonPath('ticket_coupe', false);
+    }
+
     /** @test */
     public function la_validation_cree_la_commande_avec_le_canal_uber_et_le_nom_du_client(): void
     {

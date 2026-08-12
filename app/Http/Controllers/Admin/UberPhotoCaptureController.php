@@ -237,12 +237,50 @@ class UberPhotoCaptureController extends AdminController
         return response()->json(['status' => 'ok', 'capture' => $this->present($model, $mapper, $preview, true)]);
     }
 
+    /**
+     * [RÉIMPRESSION 2026-08-12 · owner] Ressort le ticket CUISINE d'une commande déjà partie.
+     *
+     * Le papier se perd : il tombe, il bourre, il prend de la graisse, quelqu'un le jette avec
+     * l'emballage. Sans ce bouton, la seule issue était de rephotographier le ticket Uber — ce
+     * qui créait une SECONDE commande, donc un second plat.
+     *
+     * On ne réimprime pas nous-mêmes : la production ne peut pas joindre les imprimantes du
+     * restaurant. On pose une DEMANDE que le pont cuisine vient chercher à son prochain sondage
+     * (5 s). C'est le même chemin que l'impression normale — donc le même papier, la même mise en
+     * page, aucune divergence possible entre le premier ticket et le second.
+     */
+    public function reprint(int $capture): JsonResponse
+    {
+        $model = UberTicketCapture::query()->findOrFail($capture);
+
+        if (! $model->order_id) {
+            // Rien n'est jamais parti en cuisine : il n'y a pas de ticket à ressortir. On refuse
+            // clairement plutôt que de promettre un papier qui ne sortira pas.
+            return response()->json([
+                'status' => 'jamais_envoyee',
+                'message' => "Cette commande n'a pas encore été envoyée en cuisine.",
+            ], 409);
+        }
+
+        \Illuminate\Support\Facades\DB::table('kitchen_ticket_claims')->updateOrInsert(
+            ['order_id' => (int) $model->order_id, 'destination' => 'kitchen'],
+            ['reprint_requested_at' => now(), 'printed_at' => null, 'error' => null, 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        Log::info('[UberPhotoCapture] réimpression demandée', ['capture' => $model->id, 'order_id' => $model->order_id]);
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'Réimpression demandée — le ticket sort en cuisine dans quelques secondes.',
+        ]);
+    }
+
     /** Les dernières captures du service — l'écran de la tablette montre ce qui vient de passer. */
     public function recent(Request $request, UberPhotoOrderMapper $mapper, UberTicketPreviewBuilder $preview): JsonResponse
     {
         $captures = UberTicketCapture::query()
             ->orderByDesc('id')
-            ->limit(min(30, max(1, (int) $request->query('limit', 12))))
+            ->limit(min(50, max(1, (int) $request->query('limit', 20))))
             ->get();
 
         return response()->json([
@@ -286,6 +324,12 @@ class UberPhotoCaptureController extends AdminController
             'ticket' => $ticket,
             'apercu' => $apercu,
             'articles_non_reconnus' => $nonMappes,
+            // [TICKET COUPÉ 2026-08-12 · owner « si trop longue commande en 2 photos »] TOUT ticket
+            // Uber se termine par un montant payé. N'en avoir lu aucun est le signe le plus net que
+            // la photo s'est arrêtée avant la fin du papier. L'écran le dit alors et propose de
+            // photographier la suite, au lieu de laisser envoyer une commande amputée.
+            // C'est un garde-fou, pas une autorisation : « ajouter la suite » reste toujours offert.
+            'ticket_coupe' => $capture->total === null && ($ticket['items'] ?? []) !== [],
             'cree_le' => optional($capture->created_at)->toIso8601String(),
         ];
     }

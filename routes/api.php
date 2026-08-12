@@ -415,6 +415,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->whereNumber('capture')->name('uber.photo.confirm');
     Route::post('/uber/photo/{capture}/discard', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'discard'])
         ->whereNumber('capture')->name('uber.photo.discard');
+    // [RÉIMPRESSION 2026-08-12 · owner] Ressort le ticket cuisine d'une commande déjà envoyée :
+    // le papier se perd, et rephotographier créerait une SECONDE commande donc un second plat.
+    Route::post('/uber/photo/{capture}/reprint', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'reprint'])
+        ->whereNumber('capture')->name('uber.photo.reprint');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {

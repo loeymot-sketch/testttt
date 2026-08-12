@@ -254,4 +254,54 @@ class KitchenTicketQueueTest extends TestCase
             ->postJson('/api/admin/pos/kitchen-tickets/pending')
             ->assertForbidden();
     }
+
+    /**
+     * [RÉIMPRESSION 2026-08-12] LE test qui justifie la colonne.
+     *
+     * On réimprime justement un ticket perdu, bourré ou taché — souvent bien après le coup de
+     * feu. Une commande VIEILLE et déjà servie est hors de la fenêtre automatique de 30 minutes :
+     * effacer sa réclamation n'aurait rien produit, et l'écran aurait promis un papier qui ne
+     * serait jamais sorti. La demande explicite, elle, doit passer.
+     *
+     * @test
+     */
+    public function une_reimpression_demandee_ressort_meme_une_commande_hors_fenetre(): void
+    {
+        $vieille = $this->commandeWeb(['created_at' => now()->subHours(3), 'status' => OrderStatus::DELIVERED]);
+
+        DB::table('kitchen_ticket_claims')->insert([
+            'order_id' => $vieille->id, 'destination' => 'kitchen',
+            'printed_at' => now()->subHours(3), 'created_at' => now()->subHours(3), 'updated_at' => now()->subHours(3),
+        ]);
+
+        // Sans demande : la file automatique l'ignore, et c'est voulu.
+        $this->assertNotContains($vieille->id, $this->reclamer('kitchen'));
+
+        DB::table('kitchen_ticket_claims')
+            ->where('order_id', $vieille->id)->where('destination', 'kitchen')
+            ->update(['reprint_requested_at' => now()]);
+
+        $this->assertContains($vieille->id, $this->reclamer('kitchen'), 'La réimpression demandée par un humain doit passer la fenêtre.');
+
+        // La demande est CONSOMMÉE : un second sondage ne doit pas ressortir un troisième papier.
+        $this->assertNull(
+            DB::table('kitchen_ticket_claims')->where('order_id', $vieille->id)->where('destination', 'kitchen')->value('reprint_requested_at')
+        );
+        $this->assertNotContains($vieille->id, $this->reclamer('kitchen'), 'Une demande servie ne doit pas boucler.');
+    }
+
+    /** @test Une réimpression demandée pour la CUISINE ne doit pas sortir à la caisse. */
+    public function une_reimpression_ne_sort_qu_a_la_destination_demandee(): void
+    {
+        $commande = $this->commandeWeb(['created_at' => now()->subHours(3), 'status' => OrderStatus::DELIVERED]);
+
+        DB::table('kitchen_ticket_claims')->insert([
+            'order_id' => $commande->id, 'destination' => 'kitchen',
+            'printed_at' => now()->subHours(3), 'reprint_requested_at' => now(),
+            'created_at' => now()->subHours(3), 'updated_at' => now(),
+        ]);
+
+        $this->assertNotContains($commande->id, $this->reclamer('counter'));
+        $this->assertContains($commande->id, $this->reclamer('kitchen'));
+    }
 }

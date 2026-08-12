@@ -125,7 +125,57 @@ class KitchenTicketQueueController extends Controller
             ];
         }
 
+        // [RÉIMPRESSION 2026-08-12 · owner] Second chemin, ADDITIF : les demandes explicites.
+        //
+        // Le bloc ci-dessus est le chemin AUTOMATIQUE, inchangé — il vient de servir 10 tickets
+        // réels en production et on n'y touche pas pour ajouter un confort. Celui-ci sert les
+        // commandes qu'un humain a explicitement réclamées depuis un écran, et lui seul ignore la
+        // fenêtre de 30 minutes et le statut cuisine : on réimprime justement un ticket perdu,
+        // bourré ou taché, souvent bien après le coup de feu. Une heuristique de fraîcheur ne
+        // doit pas contredire quelqu'un qui a regardé et décidé.
+        foreach ($this->reimpressionsDemandees($destination, $branchId) as $orderId) {
+            DB::table('kitchen_ticket_claims')
+                ->where('order_id', $orderId)
+                ->where('destination', $destination)
+                // La demande est consommée AVANT d'être servie : si le pont meurt entre les deux,
+                // on perd un papier — pas de boucle qui recracherait le même ticket sans fin.
+                ->update(['reprint_requested_at' => null, 'printed_at' => null, 'error' => null, 'updated_at' => now()]);
+
+            $order = Order::query()
+                ->select(['id', 'order_serial_no', 'queue_number', 'source_surface'])
+                ->find($orderId);
+
+            if ($order) {
+                $reclamees[] = [
+                    'id'              => (int) $order->id,
+                    'order_serial_no' => $order->order_serial_no,
+                    'queue_number'    => $order->queue_number,
+                    'source_surface'  => $order->source_surface,
+                    'reimpression'    => true,
+                ];
+            }
+        }
+
         return response()->json(['orders' => $reclamees, 'destination' => $destination]);
+    }
+
+    /**
+     * Les commandes dont un humain réclame le papier, pour CETTE destination et CETTE branche.
+     *
+     * @return list<int>
+     */
+    private function reimpressionsDemandees(string $destination, int $branchId): array
+    {
+        return DB::table('kitchen_ticket_claims')
+            ->join('orders', 'orders.id', '=', 'kitchen_ticket_claims.order_id')
+            ->where('kitchen_ticket_claims.destination', $destination)
+            ->whereNotNull('kitchen_ticket_claims.reprint_requested_at')
+            ->when($branchId > 0, fn ($q) => $q->where('orders.branch_id', $branchId))
+            ->orderBy('kitchen_ticket_claims.reprint_requested_at')
+            ->limit(self::MAX_PAR_CYCLE)
+            ->pluck('kitchen_ticket_claims.order_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 
     /**

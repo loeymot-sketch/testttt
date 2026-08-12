@@ -94,11 +94,51 @@ test.describe('Écran tablette — commande Uber par photo', () => {
 
         // Envoi en cuisine.
         await page.click('[data-testid="uber-photo-send"]');
-        await page.waitForTimeout(2500);
+
+        // [UX 2026-08-12] L'écran ne reste PAS sur la commande partie : il annonce ce qui est
+        // parti, offre de le réimprimer, puis se remet seul en position photo. On capture donc
+        // le bandeau AVANT que le retour automatique (4 s) ne l'efface.
+        await page.waitForSelector('[data-testid="uber-photo-done"]', { timeout: 15000 });
         await page.screenshot({ path: `${SHOTS}/03-envoyee-en-cuisine.png`, fullPage: true });
 
-        const bouton = await page.locator('[data-testid="uber-photo-send"]').innerText();
-        expect(bouton).toContain('Déjà envoyée');
+        const bandeau = await page.locator('[data-testid="uber-photo-done"]').innerText();
+        expect(bandeau).toContain('partie en cuisine');
+        // Le papier se perd : la réimpression doit être offerte là où on la cherche d'abord.
+        await expect(page.locator('[data-testid="uber-photo-reprint-done"]')).toBeVisible();
+
+        // …et l'écran redevient prêt tout seul, sans qu'on ait à chercher « Recommencer ».
+        await page.waitForSelector('[data-testid="uber-photo-done"]', { state: 'detached', timeout: 15000 });
+        await expect(page.locator('[data-testid="uber-photo-pick"]')).toBeVisible();
+        await expect(page.locator('[data-testid="uber-photo-result"]')).toHaveCount(0);
+    });
+
+    /**
+     * [HISTORIQUE 2026-08-12 · owner « voir historique … ça reste pas sur même page »] Tout se
+     * fait sur cet écran : rouvrir une commande passée, revoir ce que la cuisine a reçu, et
+     * ressortir le papier — sans jamais changer de page.
+     */
+    test('historique : une commande passée se rouvre sur place et se réimprime', async ({ page }) => {
+        await page.setViewportSize({ width: 1180, height: 820 });
+        await login(page);
+        await page.goto(`${BASE}/admin/uber-photo`, { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('[data-testid="uber-photo-history"]', { timeout: 15000 });
+
+        const lignes = page.locator('[data-testid="uber-photo-history"] .uber-cap-recent-row');
+        expect(await lignes.count(), "l'historique du service est vide").toBeGreaterThan(0);
+
+        // Le détail est REPLIÉ par défaut : la liste doit rester lisible d'un coup d'œil.
+        expect(await page.locator('.uber-cap-recent-detail').count()).toBe(0);
+
+        await lignes.first().click();
+        await page.waitForSelector('.uber-cap-recent-detail', { timeout: 5000 });
+        await page.screenshot({ path: `${SHOTS}/07-historique-deplie.png`, fullPage: true });
+
+        // On n'a pas quitté l'écran de capture : le bouton photo est toujours là.
+        await expect(page.locator('[data-testid="uber-photo-pick"]')).toBeVisible();
+        expect(page.url()).toContain('/admin/uber-photo');
+
+        const morts = await page.evaluate(TEXTE_MORT);
+        expect(morts, `libellés bruts visibles : ${JSON.stringify(morts)}`).toEqual([]);
     });
 
     test('rendu portrait (tablette tenue à la verticale) sans débordement horizontal', async ({ page }) => {
