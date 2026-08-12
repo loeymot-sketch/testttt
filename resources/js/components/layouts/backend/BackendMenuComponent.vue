@@ -48,6 +48,7 @@
 
 <script>
 import { V1_HIDDEN_MENU_MODULES, V1_HIDDEN_BACKEND_MENU_URLS } from "../../../config/v1-hidden-modules";
+import { hasPermissionAccess } from "../../../shared/permission-match";
 
 /**
  * Mapping local : clés de V1_HIDDEN_MENU_MODULES → URL `menu.url` côté seeder.
@@ -282,19 +283,13 @@ export default {
 
     },
     methods: {
+        // [GOAL-OPS-SWAP W1 2026-08-12] Même résolveur que la garde de route
+        // (shared/permission-match.js). Avant : cette barre latérale proposait
+        // « Ingrédients » à l'opérateur caisse et au chef, qui recevaient un 403
+        // sur /api/admin/ingredients — parce que la permission `ingredients_manage`
+        // a `url = NULL` en base et que la recherche ne portait que sur `url`.
         userHasPermissionUrl(permissionUrl) {
-            if (!permissionUrl) {
-                return true;
-            }
-            const permissions = this.normalizedPermissions;
-            if (!permissions.length) {
-                return true;
-            }
-            const entry = permissions.find((x) => x && x.url === permissionUrl);
-            if (!entry) {
-                return true;
-            }
-            return entry.access === true;
+            return hasPermissionAccess(this.normalizedPermissions, permissionUrl);
         },
         menuPathAllowed(menuUrl) {
             return this.userHasPermissionUrl(permissionUrlForSidebarPath(menuUrl));

@@ -46,7 +46,11 @@ class SalesReportController extends AdminController
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return SimpleOrderResource::collection($this->orderService->list($request));
+            // [GOAL-OPS-SWAP W2 2026-08-12] `true` = écarte les contre-écritures de
+            // remboursement, comme le fait déjà `salesReportOverview()`. Sans ce
+            // drapeau, la tuile et le pied de tableau du MÊME écran annonçaient
+            // deux chiffres différents (3185 contre 3191).
+            return SimpleOrderResource::collection($this->orderService->list($request, true));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -73,7 +77,9 @@ class SalesReportController extends AdminController
             $company = $this->companyService->list();
             $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
             $copyright   = Settings::group('site')->get('site_copyright');
-            $orders = $this->orderService->list($request);
+            // [GOAL-OPS-SWAP W2 2026-08-12] Même exclusion que l'écran : un PDF de
+            // rapport ne peut pas compter autrement que son propre résumé.
+            $orders = $this->orderService->list($request, true);
 
             // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] Régression du fix R1 : paginate=0
             // sans filtre de date force le rendu de ~2850 commandes → dompdf épuise la mémoire

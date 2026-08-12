@@ -42,7 +42,16 @@ import 'vue-next-select/dist/index.css';
 // window.location). Extracting the identical parts removes the false safety
 // signal: each entry now declares its own 401 handler explicitly below.
 import { applySharedAxiosDefaults } from './shared/axios-setup';
+import { installBlobErrorNormalizer } from './shared/blob-error';
+import { installInFlightGetDedupe } from './shared/inflight-dedupe';
 applySharedAxiosDefaults(axios, store);
+// [GOAL-OPS-SWAP W1 2026-08-12] Jumeau de app.js — installé ici AUSSI, et pas
+// « plus tard » : une entrée corrigée et l'autre pas, c'est la divergence
+// programmée. Voir resources/js/shared/blob-error.js pour le défaut mesuré.
+installBlobErrorNormalizer(axios);
+// [GOAL-OPS-SWAP W3 2026-08-12] Jumeau de app.js — la caisse V4 partage
+// exactement le même défaut de rafale à l'ouverture. Voir shared/inflight-dedupe.js.
+installInFlightGetDedupe(axios);
 
 // 401 RESPONSE handler — POS-only variant.
 // Divergence vs app.js intentional: pos-app.js has no `auth.login` named route

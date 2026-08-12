@@ -36,6 +36,8 @@ import VueApexCharts from "vue3-apexcharts";
 // 401 RESPONSE handler explicitly (this file = kiosk-aware; pos-app.js =
 // POS-only). See AUDIT_W2_DEDICATED_ENTRY_CLAUDE_2026-04-26.md D.3.
 import { applySharedAxiosDefaults } from './shared/axios-setup';
+import { installBlobErrorNormalizer } from './shared/blob-error';
+import { installInFlightGetDedupe } from './shared/inflight-dedupe';
 
 
 /* Start tooltip alert code */
@@ -60,6 +62,20 @@ const options = {
 // See ./shared/axios-setup.js. The 401 RESPONSE handler stays here because it
 // uses Vue Router (router.push to auth.login) — kiosk-aware variant.
 applySharedAxiosDefaults(axios, store);
+// [GOAL-OPS-SWAP W1 2026-08-12] Les exports admin partent en `responseType:'blob'`.
+// Sur une réponse d'ERREUR, axios ne désérialise pas : `err.response.data` reste
+// un Blob et les 20 écrans qui affichent `err.response.data.message` montrent
+// « undefined ». Installé AVANT le gestionnaire 401 pour que celui-ci, et tous
+// les `.catch()` des écrans, reçoivent un corps déjà lisible. Additif : le chemin
+// de succès et les en-têtes sont inchangés. Banc : tests/js/exportBlobErrorNormalizer.spec.js
+installBlobErrorNormalizer(axios);
+// [GOAL-OPS-SWAP W3 2026-08-12] « Trop de requêtes » sur la caisse. Mesuré :
+// ouvrir la caisse coûte 35 requêtes, dont 7 endpoints appelés DEUX FOIS à
+// 0-1 ms d'écart. Le plafond production est de 120/min et il est PAR COMPTE,
+// pas par écran — caisse + F5 + un 2ᵉ écran = 105, le 4ᵉ franchit le mur.
+// Fusionne les GET identiques EN VOL. Ne met RIEN en cache, ne touche jamais
+// une mutation. Banc : tests/js/inflightGetDedupe.spec.js
+installInFlightGetDedupe(axios);
 /**
  * Response interceptor: handle 401 globally.
  * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)

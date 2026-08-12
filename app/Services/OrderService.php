@@ -124,7 +124,13 @@ class OrderService
     /**
      * @throws Exception
      */
-    public function list(PaginateRequest $request)
+    /**
+     * @param  bool  $excludeRefundMirrors  Écarte les contre-écritures de remboursement
+     *                                      (`parent_order_id` non nul). Positionné par le
+     *                                      SERVEUR uniquement — voir le commentaire au
+     *                                      point d'application, en bas de cette méthode.
+     */
+    public function list(PaginateRequest $request, bool $excludeRefundMirrors = false)
     {
         try {
             $requests = $request->all();
@@ -253,9 +259,26 @@ class OrderService
                 if (isset($requests['exceptSource'])) {
                     $query->where('source', '!=', $requests['exceptSource']);
                 }
-            })->orderBy($orderColumn, $orderType)->$method(
-                $methodValue
-            );
+            })
+                // [GOAL-OPS-SWAP W2 2026-08-12] Exclusion des CONTRE-ÉCRITURES de
+                // remboursement (`parent_order_id` non nul, totaux négatifs, `RTN-*`).
+                //
+                // Défaut corrigé : le heal « SELF-AUDIT R3 P2 2026-07-05 » a été appliqué
+                // à `salesReportOverview()` et PAS ici. Résultat mesuré : sur le MÊME
+                // écran, la tuile annonçait 3185 commandes et le pied de tableau
+                // « 3191 entrées » — 6 remboursements comptés comme des ventes.
+                //
+                // Le drapeau est un PARAMÈTRE de méthode, jamais un champ de requête :
+                // seul le serveur le positionne, le navigateur ne peut pas l'influencer.
+                // Il est FAUX par défaut, donc les 5 autres appelants de `list()`
+                // (historique, commandes caisse, commandes en ligne, commandes table,
+                // commandes du site) gardent EXACTEMENT leur comportement — ils doivent
+                // continuer à montrer les remboursements. Garde de non-régression :
+                // tests/Feature/Reports/SalesReportListMirrorParitySentinelTest.php
+                ->when($excludeRefundMirrors, fn ($q) => $q->whereNull('parent_order_id'))
+                ->orderBy($orderColumn, $orderType)->$method(
+                    $methodValue
+                );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

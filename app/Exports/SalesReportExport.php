@@ -29,7 +29,10 @@ class SalesReportExport implements FromCollection, WithHeadings
         // ItemsReportExport:28 / CreditBalanceReportExport).
         $this->request->merge(['paginate' => 0]);
         $salesReportArray = [];
-        $salesReportsArray = $this->orderService->list($this->request);
+        // [GOAL-OPS-SWAP W2 2026-08-12] Le troisième jumeau : écran, PDF et tableur
+        // doivent compter à l'identique. `true` écarte les contre-écritures de
+        // remboursement, comme `salesReportOverview()` le fait déjà.
+        $salesReportsArray = $this->orderService->list($this->request, true);
 
         foreach ($salesReportsArray as $order) {
             $salesReportArray[] = [

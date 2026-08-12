@@ -3,6 +3,7 @@ import ENV from '../config/env';
 import appService from "../services/appService";
 import alertService from "../services/alertService";
 import i18n, { ensureKioskLocale } from '../i18n';
+import { hasPermissionAccess } from '../shared/permission-match';
 import DashboardComponent from "../components/admin/dashboard/DashboardComponent";
 import NotFoundComponent from "../components/frontend/otherPage/NotFoundComponent";
 import ExceptionComponent from "../components/frontend/otherPage/ExceptionComponent";
@@ -75,13 +76,14 @@ const STAFF_ONLY_FRONTEND_ALLOWLIST = new Set([
 // permission donnée (via son URL Spatie, ex: 'items'). Renvoie true quand
 // l'entrée est inconnue côté store pour préserver le comportement historique
 // (le backend reste l'autorité finale via 403 sur l'API).
-const userHasPermission = (permissionUrl) => {
-    if (!permissionUrl) return true;
-    const permissions = store.getters.authPermission || [];
-    const entry = permissions.find((p) => p && p.url === permissionUrl);
-    if (!entry) return true;
-    return entry.access === true;
-};
+// [GOAL-OPS-SWAP W1 2026-08-12] La résolution vit désormais dans UN seul
+// module, partagé avec la barre latérale (BackendMenuComponent.vue) : la même
+// question posée à deux endroits finissait par recevoir deux réponses.
+// Le repli permissif ci-dessus est CONSERVÉ tel quel ; seul le désaccord de clé
+// est corrigé (`ingredients_manage`/`catalog.compose` ont `url` NULL en base,
+// `items_create` porte `url='items/create'`). Voir shared/permission-match.js.
+const userHasPermission = (permissionUrl) =>
+    hasPermissionAccess(store.getters.authPermission || [], permissionUrl);
 
 // [CV1-WIZARD-COMPOSABLE-001 T-WC-PERM-01] Notifie l'utilisateur quand une route
 // avec meta.permissionUrl lui est refusée (meta.access === false), et redirige
