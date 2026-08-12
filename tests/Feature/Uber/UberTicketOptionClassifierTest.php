@@ -193,6 +193,30 @@ class UberTicketOptionClassifierTest extends TestCase
         $this->assertSame(['PAIN: Galette', 'Sauce : Harissa'], $t['items'][0]['options']);
     }
 
+    /**
+     * ⚠️ « Pain » EST un choix de la carte (Pain ou Galette), pas seulement un titre de rubrique.
+     *
+     * Une première version de la garde filtrait sans regarder la casse : elle a effacé le pain
+     * d'un menu RÉEL (commande E63F5) — la cuisine ne savait plus sur quoi servir le sandwich.
+     * Le ticket imprime la rubrique en CAPITALES et la valeur en casse normale : c'est le seul
+     * discriminant fiable, et on s'aligne sur le papier.
+     */
+    public function test_le_pain_choisi_survit_alors_que_la_rubrique_PAIN_disparait(): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [[
+                'title' => 'Menu sandwich Cayenne', 'quantity' => 1,
+                'options' => ['PAIN', 'Pain', 'SAUCE', 'Fromagère maison'], 'note' => '',
+            ]],
+        ]);
+
+        $this->assertSame(
+            ['Pain', 'Fromagère maison'],
+            $t['items'][0]['options'],
+            'Le pain CHOISI a été effacé avec le titre de rubrique.'
+        );
+    }
+
     /** Sans produit au-dessus, on ne replie pas : une ligne visible vaut mieux qu'un choix effacé. */
     public function test_une_rubrique_en_tete_de_ticket_reste_visible(): void
     {

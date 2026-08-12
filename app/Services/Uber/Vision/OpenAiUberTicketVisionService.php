@@ -114,12 +114,27 @@ TXT;
         return $sortie;
     }
 
-    /** Une étiquette de rubrique SANS valeur — « CRUDITÉS » seul, pas « CRUDITÉS : Salade ». */
+    /**
+     * Une étiquette de rubrique SANS valeur — « CRUDITÉS » seul, pas « CRUDITÉS : Salade ».
+     *
+     * ⚠️ LA CASSE EST LE SEUL DISCRIMINANT FIABLE, et l'oublier coûte cher : « Pain » est à la
+     * fois un titre de rubrique ET un vrai choix de la carte (Pain ou Galette). Une première
+     * version filtrait sans regarder la casse : elle a effacé le pain d'un menu réel, mesuré sur
+     * la commande E63F5 — la cuisine ne savait plus sur quoi servir le sandwich. Le ticket, lui,
+     * imprime la rubrique en CAPITALES et la valeur en casse normale. On s'aligne sur le papier.
+     */
     private static function estEtiquetteNue(string $texte): bool
     {
+        $brut = trim($texte);
+
+        // Une valeur (« Pain », « 1x Pain ») n'est jamais tout en capitales sur le ticket.
+        if ($brut !== mb_strtoupper($brut, 'UTF-8')) {
+            return false;
+        }
+
         return (bool) preg_match(
             '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
-            self::sansAccents(mb_strtolower(trim($texte)))
+            self::sansAccents(mb_strtolower($brut))
         );
     }
 
