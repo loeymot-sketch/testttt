@@ -56,11 +56,71 @@ Règles impératives :
   1 seulement si aucun nombre n'est écrit devant le produit.
 - options = la liste des choix/suppléments/sauces/boissons imprimés SOUS le produit, un par
   entrée, recopiés tels quels.
+- Les titres de RUBRIQUE en capitales (PAIN, SAUCE, CRUDITÉS, BOISSON, SUPPLÉMENTS, VIANDE) ne
+  sont PAS des produits : ils annoncent les options du produit écrit AU-DESSUS. Ne crée jamais
+  une ligne d'items pour eux ; range ce qui les suit dans les options de ce produit.
 - note = l'instruction libre du client pour cette ligne ("sans oignons"...). Vide si absente.
 - total = le montant total du ticket en euros, ou omets le champ si tu ne le lis pas.
 - N'INVENTE RIEN. Un champ illisible se laisse VIDE. Une ligne illisible se laisse hors du
   tableau plutôt que devinée.
 TXT;
+
+    /**
+     * [RUBRIQUES 2026-08-12] Un en-tête de rubrique n'est pas un produit.
+     *
+     * Le ticket Uber range les choix sous des titres en capitales — PAIN, SAUCE, CRUDITÉS,
+     * BOISSON, SUPPLÉMENTS. Sur une VRAIE commande (7B9F2, BOUDJEMA), la lecture en a fait des
+     * LIGNES DE PRODUIT à part entière : la cuisine recevait « CRU | TO », « SUP + Chéddar » et
+     * une ligne « Menu (Frites + Boisson) » née du seul mot « Boisson » — trois plats fantômes
+     * pour une commande qui n'en comptait qu'un. Deux lectures du MÊME ticket ont donné des
+     * structures différentes : la consigne ne suffit pas, il faut une garde déterministe.
+     *
+     * On replie donc la rubrique sur le produit qui la précède : son titre disparaît (il ne porte
+     * aucune information), ses options rejoignent celles du produit — donc RIEN n'est perdu, ni
+     * la sauce, ni la boisson, ni le supplément payé.
+     *
+     * Sans produit au-dessus, on ne replie pas : mieux vaut une ligne étrange et VISIBLE, que le
+     * personnel corrigera à l'écran, qu'un choix client silencieusement supprimé.
+     *
+     * @param  list<array{title: string, quantity: int, options: list<string>, note: string}>  $items
+     * @return list<array{title: string, quantity: int, options: list<string>, note: string}>
+     */
+    private static function replierLesRubriques(array $items): array
+    {
+        $sortie = [];
+
+        foreach ($items as $item) {
+            $titre = self::sansAccents(mb_strtolower(trim((string) $item['title'])));
+            $estRubrique = (bool) preg_match(
+                '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
+                $titre
+            );
+
+            if ($estRubrique && $sortie !== []) {
+                $dernier = count($sortie) - 1;
+                foreach ($item['options'] as $o) {
+                    $sortie[$dernier]['options'][] = $o;
+                }
+                if (($item['note'] ?? '') !== '') {
+                    $sortie[$dernier]['note'] = trim($sortie[$dernier]['note'].' '.$item['note']);
+                }
+
+                continue;
+            }
+
+            $sortie[] = $item;
+        }
+
+        return $sortie;
+    }
+
+    /** Minuscules ASCII : « CRUDITÉS » et « crudites » doivent se reconnaître. */
+    private static function sansAccents(string $s): string
+    {
+        $t = @iconv('UTF-8', 'ASCII//TRANSLIT', $s);
+
+        return is_string($t) ? preg_replace('/[^a-z0-9\s]/', '', mb_strtolower($t)) ?? $s : $s;
+    }
 
     public function driverName(): string
     {
@@ -183,6 +243,8 @@ TXT;
                 'note' => trim((string) ($line['note'] ?? $line['special_instructions'] ?? '')),
             ];
         }
+
+        $items = self::replierLesRubriques($items);
 
         $total = $decoded['total'] ?? null;
 

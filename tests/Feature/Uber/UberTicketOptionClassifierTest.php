@@ -125,6 +125,51 @@ class UberTicketOptionClassifierTest extends TestCase
         ];
     }
 
+    /**
+     * [RUBRIQUES 2026-08-12] Sur la commande RÉELLE 7B9F2 (BOUDJEMA), la lecture a transformé les
+     * en-têtes du ticket en PRODUITS : la cuisine recevait « CRU | TO », « SUP + Chéddar » et une
+     * ligne « Menu (Frites + Boisson) » née du seul mot « Boisson » — trois plats fantômes pour
+     * une commande qui n'en comptait qu'un. Une seconde lecture du MÊME ticket était propre :
+     * la consigne ne suffit pas, il faut une garde déterministe.
+     */
+    public function test_une_rubrique_du_ticket_n_est_jamais_un_produit(): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [
+                ['title' => '1 x Menu Sandwich Cayenne', 'quantity' => 1, 'options' => ['PAN: Pain', 'SAUCE: Harissa'], 'note' => ''],
+                ['title' => '1 x Crudités', 'quantity' => 1, 'options' => ['1 x Tomate', '1 x Oignon'], 'note' => ''],
+                ['title' => '1 x Boisson', 'quantity' => 1, 'options' => ['1 x Thé Glacé'], 'note' => ''],
+                ['title' => 'SUPPLÉMENTS', 'quantity' => 1, 'options' => ['1 x Chéddar (recommandé)'], 'note' => ''],
+            ],
+        ]);
+
+        $this->assertCount(1, $t['items'], 'Les rubriques du ticket sont devenues des plats fantômes.');
+        $this->assertSame('Menu Sandwich Cayenne', $t['items'][0]['title']);
+
+        // RIEN n'est perdu au repliement : chaque choix du client rejoint le produit.
+        foreach (['Tomate', 'Oignon', 'Thé Glacé', 'Chéddar'] as $attendu) {
+            $this->assertStringContainsString(
+                $attendu,
+                implode(' | ', $t['items'][0]['options']),
+                "Le choix « {$attendu} » a disparu du repliement."
+            );
+        }
+    }
+
+    /** Sans produit au-dessus, on ne replie pas : une ligne visible vaut mieux qu'un choix effacé. */
+    public function test_une_rubrique_en_tete_de_ticket_reste_visible(): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [
+                ['title' => 'CRUDITÉS', 'quantity' => 1, 'options' => ['1 x Tomate'], 'note' => ''],
+                ['title' => 'Cheese Burger', 'quantity' => 1, 'options' => [], 'note' => ''],
+            ],
+        ]);
+
+        $this->assertCount(2, $t['items']);
+        $this->assertSame('CRUDITÉS', $t['items'][0]['title']);
+    }
+
     /** @test */
     public function une_option_reduite_a_son_etiquette_reste_visible_en_entier(): void
     {
