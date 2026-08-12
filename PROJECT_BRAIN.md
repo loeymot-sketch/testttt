@@ -47,6 +47,27 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-12 (COMMANDE DU SITE MUETTE — CORRIGÉ, DÉPLOYÉ, ET PROUVÉ EN SERVICE RÉEL ; VPS `744bf89f`)**
+>
+> **L'INCIDENT** — Le 2026-08-10 à 20h31, la commande **#440** (site, carte Mollie, **31,40 € encaissés**, 4 articles, Mathieu Duport) n'a produit **aucun signal** en caisse : ni ligne, ni bip, ni papier. Elle n'existait que sur l'écran KDS. Le client a attendu. Trois causes empilées, toutes mesurées en production :
+> 1. **La file caisse `web-orders/pending` est aveugle aux commandes payées par carte** — elle exige `status = PENDING` ET exclut `CARD + UNPAID`. Pendant sa fenêtre PENDING la commande est carte+non-payée (exclue, à raison) ; dès que Mollie confirme elle est promue ACCEPT→PREPARING (exclue, plus PENDING). **Elle n'y entre à AUCUN instant de sa vie** — un trou entre deux gardes justes prises séparément.
+> 2. **L'impression serveur→imprimante n'a JAMAIS fonctionné** — table `printers` **vide** en prod, `printOnce()` sort en `no_printer` sans erreur ni trace, **zéro ligne `[KitchenTicketAutoPrinter]` dans les journaux depuis l'origine**.
+> 3. **Aucun temps réel** — `BROADCAST_DRIVER=log`, identifiants Pusher vides, aucun serveur de sockets sur le VPS. **Pas une régression** (identique dans tous les `.env` de sauvegarde depuis le 21 juillet) ; tout repose sur le sondage, heureusement à 5 s.
+>
+> **LIVRÉ** — Panneau caisse « 💳 Web payées » + **bip** (fenêtre et statuts calqués sur le board cuisine, pour que « vu en caisse » et « vu en cuisine » ne divergent pas ; lecture seule, pas de bouton « Accepter » sur une commande déjà acceptée) · **file d'impression réclamée par les postes** (`kitchen-tickets/pending` → `orders/{id}/escpos?ticket=kitchen` → `ack`), patron du ticket promo · **deux destinations** (`counter` pont 9100, `kitchen` pont 9101) via `kitchen_ticket_claims`, clé (commande, destination) — une colonne binaire ne pouvait servir qu'UN poste, les deux se seraient volé les tickets un sur deux. Garde-fous : fenêtre 30 min sur la réclamation, caisse/téléphone exclus (ils impriment au checkout), reprise de l'existant à la migration (**10 lignes `counter` semées en prod, 0 `kitchen`** — aucun ticket déjà servi ne ressort).
+>
+> **PREUVE EN SERVICE RÉEL** (c'est ça qui compte, pas les tests) — **10 tickets réclamés et imprimés** depuis le déploiement, dont **#457 (27,60 €) et #459 (27,90 €)**, commandes du site du 11 août : ticket sorti, statut **PRÊTE**. Exactement le scénario qui avait perdu #440. **#440 elle-même est passée en REMISE** — le client a eu sa commande.
+>
+> **TESTS** — 20 neufs (7 panneau + 14 file + 3 table), 285 verts sur Pos/Kitchen/Hardware. Gardes vérifiées **PAR MUTATION** : garde « une seule fois », remise en file, exclusion des préparées, borne d'ancienneté, et séparation des destinations — chaque test visé tombe quand on casse le code. Zones gelées : **diff vide**. NF525 : intouché.
+>
+> **⚠️ FAUTE DE MÉTHODE À NE PAS RÉPÉTER** — en committant `routes/api.php` j'ai emporté du travail Uber-photo **non committé** d'une autre session : 4 routes déployées vers un contrôleur **absent du serveur** (`route:list` en erreur, 500 pour un admin connecté ; le restaurant n'a rien vu — login 200, API 200, ces routes renvoyaient 401 avant la classe manquante). Mon contrôle « ce fichier ne contient que mes modifs » filtrait par motifs et **acceptait toute ligne `Route::` / `->`** : il validait exactement ce qu'il devait attraper. Corrigé par `590e1cc62`. **La bonne méthode : comparer à la version PUBLIÉE et LIRE chaque ligne ajoutée ; une route ne vaut jamais mieux que la classe qu'elle appelle.**
+>
+> **⚠️ BRANCHE PARTAGÉE** — une autre session Claude a commité **5 vagues « fidélité au comptoir »** (W1→W5) sur la même branche pendant cette session, dont deux **entre ma vérification et mon push**. Déploiement autorisé explicitement par le propriétaire (« tout déployer ») après présentation du risque. **2 tests JS restent rouges de leur fait** : `posHeaderReorg` (`pos-loyalty-redeem-main-cta-open`) et `v1HiddenMenuModules` (`settings.loyalty-setup` démasqué sans mise à jour du test) — à eux de fermer.
+>
+> **À FAIRE** — le pont **cuisine** (9101) doit être installé et démarré sur le PC cuisine pour que le second papier sorte ; sans lui l'écouteur reste inerte de ce côté (la caisse continue d'imprimer normalement). Publié sur `/dl/kitchen-bridge.js`.
+
+---
+
 > **2026-08-10e (ROUE — DÉPLOYÉE ET VÉRIFIÉE EN PRODUCTION ; VPS `b68af828`, site Vercel aliasé `www.lecayenne.fr`)** — Accord explicite du propriétaire (« deploy et finis tout »). **17 commits publiés**, tous les miens (vérifié un par un avant la poussée).
 >
 > **PRÉVOL** : avance rapide confirmée depuis `a6eb4fdf` · **aucune collision** entre mes 177 fichiers et les 12 fichiers non committés de l'autre session sur le VPS (croisement des listes) · 0 motif de secret ajouté dans les 17 commits · **83 Mo de captures d'audit RETIRÉES** avant la poussée (dépôt PUBLIC). Réserve : elles restent dans l'historique de `986d95282`, car les en extirper exigeait un arbre de travail propre — donc de déranger le travail non committé d'une autre session. Perdre les heures de quelqu'un d'autre pour 83 Mo n'était pas un échange acceptable ; le nettoyage d'historique reste possible quand la branche n'aura qu'une main dessus.
