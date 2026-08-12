@@ -1,0 +1,48 @@
+{
+  "task_id": "GLOBAL-OPS-RELIABILITY-OWNER-APPROVED-2026-08-12",
+  "execution_delegation": "claude-orchestrator-to-codex-extension",
+  "mode": "orchestrate-bounded-cycles",
+  "objective": "Correct and qualify FoodKing POS, web/mobile, kiosk, KDS, payments, printing, drawer, stock and operations reliability under the owner-approved manual external CARD constraint.",
+  "authoritative_plan": "reports/planning/PLAN_GLOBAL_OPS_CLAUDE_ORCHESTRATION_2026-08-12.md",
+  "master_prompt": "missions/GLOBAL-OPS-RELIABILITY-OWNER-APPROVED-2026-08-12/CLAUDE_MASTER_MISSION.md",
+  "owner_decision": "D1-D7 Option A approved with POS CARD manual external only; no integrated TPE in current scope",
+  "preconditions": [
+    "Read CLAUDE.md and AGENTS.md",
+    "Read gate HG-GLOBAL-OPS-RELIABILITY-2026-08-11 and GATE_LOG entry",
+    "Run verify:boucle and activity-log tail",
+    "Resolve dirty worktree ownership per bounded child cycle",
+    "Open schema/fiscal/hardware sub-gates before those edits"
+  ],
+  "forbidden": [
+    "No monolithic product execute",
+    "No direct Claude product edits",
+    "No POS TPE integration or CARD disablement",
+    "No terminal_id mono if not persisted",
+    "No pricing frontend logic",
+    "No OrderStatus magic values",
+    "No branch_id bypass",
+    "No dispatch before commit",
+    "No hardware success from software-only tests",
+    "No historical data mutation without reviewed repair set"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "order-status-enum-ssot",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "order-service-frontend-order-service-symmetry",
+    "frozen-zone-gates",
+    "manual-external-card-owner-constraint",
+    "no-false-hardware-proof"
+  ],
+  "expected_outputs": [
+    "Bounded child cycles with plans and allowlists",
+    "Codex-executed product changes",
+    "Claude and GPT double audits",
+    "Natural E2E and chaos evidence",
+    "Hardware UAT signed evidence",
+    "Canary and rollback report",
+    "Final human GO/NO-GO packet"
+  ]
+}
+

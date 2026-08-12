@@ -53,13 +53,13 @@ use Tests\TestCase;
  *       — Already chains `->withTrashed()` explicitly; intent is to find ALL
  *         phone matches including soft-deleted guests for safe restore
  *
- *   - app/Http/Controllers/Webhook/UberWebhookController.php (1 site: 167)
+ *   - app/Http/Controllers/Webhook/UberWebhookController.php (1 site: 158)
  *       — [2026-07-02] dédup idempotente webhook Uber cross-branch + soft-deleted
  *   - app/Services/Uber/UberOrderIngestor.php (1 site: 47)
- *       — [2026-08-10] chemin de création UNIQUE du canal Uber (webhook + ticket
- *         photographié) : le dédup au niveau commande doit voir la commande
- *         cross-branch (job sans utilisateur) ET soft-deleted (sinon doublon
- *         préparé deux fois en cuisine). Sémantique reprise telle quelle.
+ *       — [2026-08-10] chemin de création du canal Uber PHOTOGRAPHIÉ : le dédup au
+ *         niveau commande doit voir la commande cross-branch (appel possible sans
+ *         utilisateur authentifié) ET soft-deleted (sinon doublon préparé deux fois
+ *         en cuisine). Sémantique reprise telle quelle de l'ancien code du webhook.
  *   - app/Console/Commands/CleanupWebTestOrdersCommand.php (1 site: 42)
  *       — [2026-07-02] purge e2e web-test orders par téléphone, cross-branch + soft-deleted
  *
@@ -129,19 +129,18 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         // l'indentation → ligne 146.
         // [SELF-AUDIT R3 2026-07-05] 146→158 : createFromUber a reçu la garde « annulation-avant-création »
         // (check pierre tombale webhook_events) au-dessus du dédup pluriel. Reste PLURIEL par design.
-        // [UBER-PHOTO 2026-08-10] 158→167 : la CRÉATION de la commande a été extraite vers
-        // App\Services\Uber\UberOrderIngestor (chemin unique partagé avec le canal « ticket
-        // photographié »). Le contrôleur ne garde qu'un dédup d'ENTRÉE, avant l'appel réseau —
-        // toujours PLURIEL par design (cross-branch + soft-deleted : au rejeu, une commande
-        // tombstonée prouve que le ticket a déjà été ingéré ; la recréer enverrait le même plat
-        // deux fois en cuisine).
-        'Http/Controllers/Webhook/UberWebhookController.php' => [167],
-        // [UBER-PHOTO 2026-08-10] Cat A — chemin de création UNIQUE du canal Uber (webhook ET
-        // ticket photographié). Le dédup au niveau commande DOIT voir la commande quelle que
-        // soit la branche (l'appel peut venir d'un job sans utilisateur authentifié) ET même
-        // soft-deleted (sinon le rejeu d'un webhook, ou une photo re-confirmée, recréerait un
-        // doublon déjà préparé). Sémantique reprise TELLE QUELLE de l'ancien code du webhook —
-        // aucune règle changée par l'extraction.
+        // [UBER-PHOTO 2026-08-12] Reste à 158 : le refactor qui extrayait la création vers
+        // UberOrderIngestor a été SORTI du déploiement (il vit dans l'historique, `4806b7b71`).
+        // Raison : la production fait tourner sa propre version non committée de ce contrôleur
+        // (events store, `pickup_time`, `resource_href`) qu'un déploiement aurait écrasée. Le
+        // canal photographié n'a pas besoin de ce refactor pour fonctionner ; la réconciliation
+        // appartient à qui porte le travail « menu push ».
+        'Http/Controllers/Webhook/UberWebhookController.php' => [158],
+        // [UBER-PHOTO 2026-08-10] Cat A — chemin de création du canal Uber PHOTOGRAPHIÉ. Le
+        // dédup au niveau commande DOIT voir la commande quelle que soit la branche (l'appel
+        // peut venir d'un contexte sans utilisateur authentifié) ET même soft-deleted (sinon une
+        // photo re-confirmée recréerait un doublon déjà préparé). Sémantique reprise TELLE
+        // QUELLE de l'ancien code du webhook — aucune règle changée.
         'Services/Uber/UberOrderIngestor.php' => [47],
         // [SELF-AUDIT D 2026-07-05] 42→52 : garde anti-perte Uber (source_surface!='uber_eats' +
         // payment_status!=PAID) insérée au-dessus du whereHas('user') plural. Reste PLURIEL par design :

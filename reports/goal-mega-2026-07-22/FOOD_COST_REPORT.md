@@ -1,6 +1,6 @@
 # Rapport Food Cost — coût matière & marge par produit (Le Cayenne)
 
-> Généré le 2026-08-02 05:52 par `php artisan raw-materials:food-cost`.
+> Généré le 2026-08-12 18:07 par `php artisan raw-materials:food-cost`.
 > 1 produits actifs — **0 complets**, **1 en attente prix d'achat**, **0 sans recette paramétrée**.
 >
 > **Coût matière** = Σ (quantité recette × prix d'achat moyen de la matière). Les produits

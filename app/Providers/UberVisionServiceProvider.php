@@ -31,7 +31,7 @@ class UberVisionServiceProvider extends ServiceProvider
     {
         $this->app->bind(UberTicketVisionContract::class, function ($app): UberTicketVisionContract {
             $key = (string) config('services.openai.key', '');
-            $enabled = (bool) config('uber.vision_enabled', false);
+            $enabled = (bool) config('uber_photo.vision_enabled', false);
 
             if ($enabled && $key !== '') {
                 return $app->make(OpenAiUberTicketVisionService::class);

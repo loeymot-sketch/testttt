@@ -39,6 +39,12 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 - Routes: `routes/api.php:792` `pos.`, `:971` `pos-order.`, `:1156` `pos-category.`
 - Config: `config/pos.php` (`simulation_hardware:37`)
 
+**Canal AGRÉGATEUR (Uber) — rattaché à la CAISSE (même porte `pos-orders|pos`, même personnel) :**
+- Écran tablette : `resources/js/components/admin/uber/UberPhotoCaptureComponent.vue` · router `modules/uberPhotoRoutes.js` (`/admin/uber-photo`)
+- Backend : `app/Http/Controllers/Admin/UberPhotoCaptureController.php` · `app/Services/Uber/**` · `app/Models/UberTicketCapture.php` · `app/Providers/UberVisionServiceProvider.php`
+- Routes : `routes/api.php` `uber.photo.*` · Config : `config/uber.php` (`vision_enabled`, `photo_max_*`)
+- ⚠️ **`app/Services/Uber/UberOrderIngestor.php` = chemin de création UNIQUE** partagé avec le webhook `Webhook/UberWebhookController.php`. **NE JAMAIS le dupliquer** : il porte l'anti-doublon au niveau commande, la boucle anti-collision de numéro d'appel, l'ancre utilisateur technique et la pierre tombale d'annulation-avant-création.
+
 **FROZEN inside (STRICT no-touch):** `public/js/pos-wizard.js` · `public/css/pos-wizard.css` · `resources/views/admin-pos-v4.blade.php`. **FROZEN (auditable-w/-gate):** `PaymentComponent.vue`, `v5/PosV5TrancheRow.vue`.
 **SHARED it touches:** PricingService, Fiscal chain (alloc at counter-PAID), OrderStateMachine, sync bus (publishes→KDS/OSS) — all §6.
 

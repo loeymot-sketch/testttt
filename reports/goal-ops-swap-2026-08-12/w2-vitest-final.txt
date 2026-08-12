@@ -1,0 +1,1503 @@
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ✓ tests/js/KioskWizard.spec.js  (97 tests) 491ms
+ ✓ tests/js/kioskOfflineQueueV2.spec.js  (23 tests) 197ms
+ ✓ tests/js/posKioskVariationParity.spec.js  (8 tests | 1 skipped) 6ms
+ ✓ tests/js/kdsSymbolic.spec.js  (25 tests) 14ms
+ ✓ tests/js/kdsCustomization.spec.js  (38 tests) 10ms
+ ✓ tests/js/a11y/modalFocusTrap.spec.js  (18 tests) 84ms
+ ✓ tests/js/PosComponent.spec.js  (11 tests) 205ms
+stderr | tests/js/PosComponent.spec.js > PosComponent > category selection clears text search before fetching the category items
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent > drawer_expandable_details
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent > uses the authenticated cashier branch when default access is missing
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent > applies POS branch scope to search and cart scope together
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent > cancelLastCartLine removes only the last cart line via posCart/deleteCartItem
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent > disables the discount apply button when a positive discount has no reason
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent — category-first browse (POS-CATEGORY-FIRST) > landing renders the category grid hub (real categories only), not the product dump
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent — category-first browse (POS-CATEGORY-FIRST) > picking a category drills into products and surfaces the back bar
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent — category-first browse (POS-CATEGORY-FIRST) > the back control returns to the category grid hub
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent — category-first browse (POS-CATEGORY-FIRST) > taking a cart line auto-returns to the category grid ("après chaque prise de commande")
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/PosComponent.spec.js > PosComponent — category-first browse (POS-CATEGORY-FIRST) > an active search shows products (search spans the catalogue), with a back-to-categories bar
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | Fetch.onError (file:/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:698:35)
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at connResetException (node:internal/errors:720:14)
+    at Socket.socketCloseListener (node:_http_client:474:25)
+    at Socket.emit (node:events:529:35)
+    at TCP.<anonymous> (node:net:350:12) {
+  code: 'ECONNRESET'
+}
+
+stderr | Fetch.onError (file:/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:698:35)
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+
+ ✓ tests/js/kioskLoyaltyDiscountConsistency.spec.js  (14 tests) 88ms
+ ✓ tests/js/sentinels/posKioskPollingCadenceSentinel.spec.js  (17 tests) 5ms
+ ✓ tests/js/kioskViandeSupplement.spec.js  (11 tests) 98ms
+ ✓ tests/js/PosCashDrawerSessionDialog.spec.js  (10 tests) 65ms
+ ✓ tests/js/eventContractChannelRefcount.spec.js  (9 tests) 6ms
+ ✓ tests/js/kioskFormuleSplitPages.spec.js  (12 tests) 111ms
+ ✓ tests/js/stockRuptureDashboardMount.spec.js  (9 tests) 499ms
+ ✓ tests/js/sentinels/posRefundModalSentinel.spec.js  (22 tests) 71ms
+ ✓ tests/js/kdsManualReprint.spec.js  (18 tests) 13ms
+ ✓ tests/js/posTrackerStaleness.spec.js  (13 tests) 95ms
+ ✓ tests/js/kds/kdsScheduledBanner.spec.js  (19 tests) 28ms
+ ✓ tests/js/posReceiptBuilder.spec.js  (20 tests) 5ms
+ ✓ tests/js/posOfflineQueueImpl.spec.js  (16 tests) 45ms
+ ✓ tests/js/posRuptureUx.spec.js  (4 tests) 55ms
+ ✓ tests/js/geranceDisplayLabels.spec.js  (8 tests) 868ms
+stderr | tests/js/geranceDisplayLabels.spec.js > FIX 5 — HistoriqueListComponent status badge is adjectival > renders the ACCEPT status as "Acceptée" (not the verb "Accepter")
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <CaisseSecondaryNav current="historique" > 
+  at <HistoriqueListComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ ✓ tests/js/sentinels/KeyboardNavigationSentinel.spec.js  (22 tests) 5ms
+ ✓ tests/js/posSplitPaymentValidation.spec.js  (39 tests) 5ms
+ ✓ tests/js/kioskFrLockImmutable.spec.js  (8 tests) 33ms
+ ✓ tests/js/posLoyaltyRedeemModal.spec.js  (11 tests) 64ms
+ ✓ tests/js/posTrackerWebIntel.spec.js  (10 tests) 83ms
+ ✓ tests/js/sentinels/f4DynamicButtonMatrixSentinel.spec.js  (15 tests) 71ms
+ ✓ tests/js/KioskPhase3EdgeCases.spec.js  (13 tests) 75ms
+ ✓ tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js  (12 tests) 6ms
+ ✓ tests/js/kdsSymbolicDrinks.spec.js  (32 tests) 10ms
+ ✓ tests/js/kioskA11yStructuralAudit.spec.js  (17 tests) 54ms
+ ✓ tests/js/sentinels/receiptAddonsRenderingSentinel.spec.js  (11 tests) 51ms
+ ❯ tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js  (3 tests | 1 failed) 12ms
+   ❯ tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js > Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12) > admin-kds.js bundle is not stale relative to KDS sources
+     → KDS bundle stale: source resources/js/helpers/kdsSymbolic.js (mtime 2026-08-10T19:47:15.345Z, group "kds-helpers") is newer than public/js/admin-kds.cddea678.js (mtime 2026-08-10T12:44:29.437Z). Run 'npm run development' or 'npm run production' to rebuild.: expected 'KDS bundle stale: source resources/js…' to be null
+ ✓ tests/js/posItemAvailabilityHandler.spec.js  (11 tests) 5ms
+stderr | tests/js/posReceiptPrintFlow.spec.js > ReceiptComponent print policy (W9.D) > still counts the print locally even if the increment endpoint fails — SANS window.print auto
+[ReceiptComponent] increment API failed, printing anyway Error: network down
+    at Function.<anonymous> (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/js/posReceiptPrintFlow.spec.js:132:49)
+    at Function.mockCall (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/@vitest/spy/dist/index.js:50:17)
+    at Function.spy [as post] (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/tinyspy/dist/index.js:42:80)
+    at Proxy._printClientPipeline (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/ReceiptComponent.vue:651:54)
+    at Proxy.handlePrintClientClick (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/ReceiptComponent.vue:631:28)
+    at __vite_ssr_import_13__.createElementBlock.__vite_ssr_import_13__.createElementVNode.__vite_ssr_import_13__.createElementVNode.__vite_ssr_import_13__.createElementVNode.__vite_ssr_import_13__.createElementVNode.onClick._cache.<computed>._cache.<computed> (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/ReceiptComponent.vue:37:29)
+    at callWithErrorHandling (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19)
+    at Object.callWithAsyncErrorHandling (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17)
+    at HTMLButtonElement.invoker (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:665:17)
+    at HTMLButtonElement.#callDispatchEventListeners (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/event/EventTarget.ts:305:42)
+
+ ✓ tests/js/posReceiptPrintFlow.spec.js  (8 tests) 881ms
+ ✓ tests/js/kioskWizardNavigation.spec.js  (9 tests) 93ms
+ ✓ tests/js/posVariationMultiQty.spec.js  (8 tests) 7ms
+ ✓ tests/js/a11y/AxeCoreCriticalGateSentinel.spec.js  (3 tests) 335ms
+ ✓ tests/js/posSplitPaymentBidirectional.spec.js  (20 tests) 4ms
+ ✓ tests/js/KioskPhase3Screens.spec.js  (15 tests) 66ms
+ ✓ tests/js/sentinels/posShortcutsSentinel.spec.js  (17 tests) 6ms
+ ✓ tests/js/kioskPricingPreview.spec.js  (15 tests) 7ms
+ ✓ tests/js/unifiedStockView.spec.js  (9 tests) 73ms
+ ✓ tests/js/stockDashboardPhotoAction.spec.js  (8 tests) 92ms
+ ✓ tests/js/kioskA11yTouchTargets.spec.js  (7 tests) 61ms
+ ✓ tests/js/composerEditorV2.spec.js  (8 tests) 118ms
+ ✓ tests/js/KioskCategoriesRestyle.spec.js  (9 tests) 69ms
+ ✓ tests/js/kdsCuisson.spec.js  (33 tests) 16ms
+ ✓ tests/js/posTileInstantOpen.spec.js  (9 tests) 8ms
+ ✓ tests/js/mobileStockUxF4F5.spec.js  (8 tests) 102ms
+ ✓ tests/js/kioskWizardEditRoundtrip.spec.js  (11 tests) 10ms
+ ✓ tests/js/kioskLocalBridge.spec.js  (20 tests) 8ms
+ ✓ tests/js/posAvailabilityLiveGuard.spec.js  (7 tests) 37ms
+ ✓ tests/js/catalogStudioRouting.spec.js  (16 tests) 12ms
+ ✓ tests/js/kioskWizardCatalogChangedHandling.spec.js  (7 tests) 22ms
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > filtre vide + catalogue → section boisson rendue avec les noms réels (hors regex inclus)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > les boissons du repli sont GRATUITES : libellé « Incluse », jamais un prix
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > boisson en rupture (is_available:false) exclue du repli
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > masquée par défaut, visible après « Menu (Frites + Boisson) », re-masquée + purgée sur « Frites Seules »
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > « Boisson Seule » (addon id=3) affiche aussi la liste
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > sélection boisson → total sticky INCHANGÉ (9,90 € avec Menu, modèle borne 0 €)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > catalogue vide + addons génériques → AUCUNE section boisson (comportement historique)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardDrinkFallback.spec.js > pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > chemin COMPOSER-AWARE (prod Cayenne) : la section boisson existe aussi (ensureBoissonChoiceStep)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+ ✓ tests/js/posWizardDrinkFallback.spec.js  (8 tests) 311ms
+ ✓ tests/js/kioskPhase6Instrumentation.spec.js  (13 tests) 43ms
+ ✓ tests/js/KioskCartRestyle.spec.js  (6 tests) 65ms
+stderr | tests/js/KioskCartRestyle.spec.js > KioskCartComponent restyle > empty state : testid + role=status + CTA present
+[vuex] unknown action type: frontendSetting/lists
+
+stderr | tests/js/KioskCartRestyle.spec.js > KioskCartComponent restyle > non-empty cart : 1 item rendered with all testids
+[vuex] module namespace not found in mapGetters(): frontendSetting/
+[vuex] unknown getter: kioskMenu/allItems
+[vuex] unknown getter: kioskCart/promoDiscount
+[vuex] unknown getter: kioskCart/promoCode
+[vuex] unknown getter: kioskCart/promoError
+[vuex] unknown getter: kioskCart/promoLoading
+[vuex] unknown action type: frontendSetting/lists
+
+stderr | tests/js/KioskCartRestyle.spec.js > KioskCartComponent restyle > order-type bar : role=radiogroup + aria-checked aligns with state
+[vuex] module namespace not found in mapGetters(): frontendSetting/
+[vuex] unknown getter: kioskMenu/allItems
+[vuex] unknown getter: kioskCart/promoDiscount
+[vuex] unknown getter: kioskCart/promoCode
+[vuex] unknown getter: kioskCart/promoError
+[vuex] unknown getter: kioskCart/promoLoading
+[vuex] unknown action type: frontendSetting/lists
+
+stderr | tests/js/KioskCartRestyle.spec.js > KioskCartComponent restyle > clear modal : aria-modal + testid + open/close via button
+[vuex] module namespace not found in mapGetters(): frontendSetting/
+[vuex] unknown getter: kioskMenu/allItems
+[vuex] unknown getter: kioskCart/promoDiscount
+[vuex] unknown getter: kioskCart/promoCode
+[vuex] unknown getter: kioskCart/promoError
+[vuex] unknown getter: kioskCart/promoLoading
+[vuex] unknown action type: frontendSetting/lists
+
+stderr | tests/js/KioskCartRestyle.spec.js > KioskCartComponent restyle > qty minus dispatches updateQuantity with quantity - 1
+[vuex] module namespace not found in mapGetters(): frontendSetting/
+[vuex] unknown getter: kioskMenu/allItems
+[vuex] unknown getter: kioskCart/promoDiscount
+[vuex] unknown getter: kioskCart/promoCode
+[vuex] unknown getter: kioskCart/promoError
+[vuex] unknown getter: kioskCart/promoLoading
+[vuex] unknown action type: frontendSetting/lists
+
+stderr | tests/js/KioskCartRestyle.spec.js > KioskCartComponent restyle > loyalty button shown with correct testid
+[vuex] module namespace not found in mapGetters(): frontendSetting/
+[vuex] unknown getter: kioskMenu/allItems
+[vuex] unknown getter: kioskCart/promoDiscount
+[vuex] unknown getter: kioskCart/promoCode
+[vuex] unknown getter: kioskCart/promoError
+[vuex] unknown getter: kioskCart/promoLoading
+[vuex] unknown action type: frontendSetting/lists
+
+stderr | tests/js/kioskA11yAxe.spec.js > kiosk A11y — axe-core sentinels > KioskAppComponent — barre panier (bouton natif)
+[kioskOfflineQueueDb] IndexedDB unavailable, falling back to localStorage.
+
+stderr | tests/js/kioskA11yAxe.spec.js > kiosk A11y — axe-core sentinels > KioskToastComponent — région live + bouton fermer
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+[KioskApp] Failed to load settings into globalState: Failed to execute "fetch()" on "Window" with URL "http://localhost:3000/frontend/setting": connect ECONNREFUSED ::1:3000
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+
+ ✓ tests/js/kioskA11yAxe.spec.js  (5 tests) 180ms
+ ✓ tests/js/ossChimePublicWall.spec.js  (7 tests) 5ms
+ ✓ tests/js/sentinels/kdsV2ArchiveSlotSentinel.spec.js  (9 tests) 4ms
+ ✓ tests/js/posHeaderReorg.spec.js  (23 tests) 5ms
+ ✓ tests/js/kioskWizardEditRestore.spec.js  (7 tests) 82ms
+ ✓ tests/js/sentinels/kdsRecallButtonSentinel.spec.js  (8 tests) 3ms
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > défaut : cru INCLUS, cuit NON inclus (removed)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > cocher « Oignons cuits » décoche « Oignon » (et inversement)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > les autres crudités (Salade/Tomates) restent incluses par défaut et insensibles à l'exclusivité
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > aperçu ticket par défaut : Oignon (cru) listé dans les crudités, « Oignons cuits » ABSENT
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > aperçu ticket cuit coché : « Oignons cuits » listé, le cru (Oignon nu) disparaît
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > décocher le cuit ne re-coche PAS le cru automatiquement (sans oignon du tout = légitime)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > sérialisation panier : cuit choisi → checkbox « Oignons cuits » cochée, « Oignon » décochée
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardOnionCuit.spec.js > pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > sérialisation panier par défaut (intouché) : « Oignons cuits » JAMAIS coché
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+ ✓ tests/js/posWizardOnionCuit.spec.js  (8 tests) 1366ms
+ ✓ tests/js/wsReconnectStormCircuitBreaker.spec.js  (8 tests) 8ms
+ ✓ tests/js/posAvailabilityPollFallback.spec.js  (7 tests) 60ms
+ ✓ tests/js/kioskExtrasPartition.spec.js  (17 tests) 4ms
+ ✓ tests/js/kioskComposerProfileChangeHandling.spec.js  (5 tests) 17ms
+ ✓ tests/js/productComposerEditor.spec.js  (7 tests) 14ms
+ ✓ tests/js/sentinels/adminShellBundleFreshnessSentinel.spec.js  (3 tests) 2ms
+ ✓ tests/js/kioskCartPromoGate.spec.js  (9 tests) 41ms
+ ✓ tests/js/sentinels/kioskExtrasOosMarkerStructure.spec.js  (9 tests) 4ms
+ ✓ tests/js/posLoyaltyMainPageCta.spec.js  (13 tests) 3ms
+ ✓ tests/js/itemListWizardButton.spec.js  (4 tests) 2ms
+ ✓ tests/js/posParked.spec.js  (6 tests) 5ms
+ ✓ tests/js/ingredientUsageDrawer.spec.js  (8 tests) 36ms
+ ✓ tests/js/kioskOfflineQueue.spec.js  (9 tests) 44ms
+ ✓ tests/js/catalogHubComponent.spec.js  (11 tests) 33ms
+ ✓ tests/js/onlineOrderCancelPostAccept.spec.js  (13 tests) 70ms
+ ✓ tests/js/sentinels/posCancelKioskCashConfirmSentinel.spec.js  (8 tests) 11ms
+ ✓ tests/js/posOrdersTrackerWebVisibility.spec.js  (6 tests) 54ms
+ ✓ tests/js/kioskTicketComposition.spec.js  (12 tests) 5ms
+stderr | tests/js/kioskPrinter.spec.js > kioskPrinter > [BORNE-PRINT] ne masque PAS un échec bridge en succès navigateur même si l'élément reçu existe
+[kioskPrinter] printReceipt failed: paper_out
+[kioskPrinter] printEscPos failed: paper_out
+
+stderr | tests/js/kioskPrinter.spec.js > kioskPrinter > [BORNE-PRINT] ne masque PAS un échec bridge en succès navigateur même si l'élément reçu existe
+[kioskPrinter] printReceipt failed: paper_out
+[kioskPrinter] printEscPos failed: paper_out
+
+stderr | tests/js/kioskPrinter.spec.js > kioskPrinter > [BORNE-PRINT] ne masque PAS un échec bridge en succès navigateur même si l'élément reçu existe
+[kioskPrinter] printReceipt failed: paper_out
+[kioskPrinter] printEscPos failed: paper_out
+
+stderr | tests/js/kioskPrinter.spec.js > kioskPrinter > [BORNE-PRINT] un retour bridge {ok:true, success:false} ne compte PAS comme imprimé (tente l'ESC/POS)
+[kioskPrinter] printReceipt returned non-success: { ok: true, success: false }
+
+ ✓ tests/js/kioskPrinter.spec.js  (9 tests) 2073ms
+ ✓ tests/js/sentinels/refundReceiptMarkerSentinel.spec.js  (15 tests) 23ms
+ ✓ tests/js/kioskFritesSauceBilling.spec.js  (10 tests) 62ms
+ ✓ tests/js/kdsSymbolicViandeName.spec.js  (12 tests) 7ms
+ ✓ tests/js/kdsVisualHealsWaveT.spec.js  (14 tests) 5ms
+ ✓ tests/js/kds/kitchen-printer-cross-tab.spec.js  (5 tests) 14ms
+ ✓ tests/js/posTrackerCashPendingAllStatuses.spec.js  (9 tests) 69ms
+ ✓ tests/js/promoFlyerPrintListener.spec.js  (7 tests) 17ms
+ ✓ tests/js/availabilityPanelExtraVariation.spec.js  (5 tests) 41ms
+ ✓ tests/js/sentinels/kdsV2MultiBumpSentinel.spec.js  (10 tests) 3ms
+ ✓ tests/js/kioskWizardMultiViande.spec.js  (5 tests) 2ms
+ ✓ tests/js/orderDetailsClientPolling.spec.js  (5 tests) 42ms
+stderr | tests/js/kioskFilterPersist.spec.js > P-MEGA-09 kioskFilter store + isVariationAllowedByFilters > 7 — init via route guard : hydraté avant mount enfant (deep-link wizard)
+[Vue Router warn]: No match found for location with path ""
+
+ ✓ tests/js/kioskFilterPersist.spec.js  (8 tests) 22ms
+ ✓ tests/js/purchaseScanComponent.spec.js  (5 tests) 43ms
+ ✓ tests/js/storePersistedPathsSentinel.spec.js  (9 tests) 5ms
+ ✓ tests/js/sentinels/adminReportsBundleFreshnessSentinel.spec.js  (3 tests) 1ms
+ ✓ tests/js/mobileDataAntiFiction.spec.js  (5 tests) 6ms
+ ✓ tests/js/sentinels/posCounterCollectModalSentinel.spec.js  (15 tests) 4ms
+ ✓ tests/js/kiosk/bol-drink-addon.spec.js  (7 tests) 25ms
+ ✓ tests/js/itemCreatePostSaveCTA.spec.js  (5 tests) 55ms
+ ✓ tests/js/PosOrdersTrackerComponent.spec.js  (6 tests) 49ms
+ ✓ tests/js/kioskConsentModal.spec.js  (8 tests) 57ms
+ ✓ tests/js/posPollNotifyResetConfirm.spec.js  (12 tests) 3ms
+ ✓ tests/js/correlationDedupePersistence.spec.js  (5 tests) 3ms
+ ✓ tests/js/posOrdersTrackerPhantomCount.spec.js  (5 tests) 51ms
+stderr | tests/js/observabilityOutboxRoute.spec.js > [CV1-OBSERVABILITY-OUTBOX-001] Outbox dashboard SPA wiring > OutboxOverviewComponent compiles + mounts cleanly (build smoke)
+[Vue warn]: Do not use built-in or reserved HTML elements as component id: i
+[Vue warn]: Do not use built-in or reserved HTML elements as component id: i
+
+ ✓ tests/js/observabilityOutboxRoute.spec.js  (6 tests) 76ms
+ ✓ tests/js/sentinels/appBundleFreshnessSentinel.spec.js  (3 tests) 2ms
+ ✓ tests/js/posKioskCashEncaisser.spec.js  (11 tests) 3ms
+ ✓ tests/js/posSyncFallback.spec.js  (5 tests) 8ms
+ ✓ tests/js/posCounterCollectPrint.spec.js  (8 tests) 24ms
+ ✓ tests/js/posComponentA11y.spec.js  (3 tests) 76ms
+stderr | tests/js/posComponentA11y.spec.js > POS operator a11y (T18) > PosComponent renders skip-link to #pos-cart
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/posComponentA11y.spec.js > POS operator a11y (T18) > PosComponent cart panel has role=region and aria-label
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: vue-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <PosComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | Fetch.onError (file:/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:698:35)
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+Error: connect ECONNREFUSED ::1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+  errno: -61,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '::1',
+  port: 3000
+}
+
+ ✓ tests/js/sentinels/telemetryAllowlistSentinel.spec.js  (8 tests) 2ms
+ ✓ tests/js/kioskOrderTypeExplicit.spec.js  (4 tests) 43ms
+stderr | tests/js/kioskOrderTypeExplicit.spec.js > K-02 kiosk explicit order type > idle screen emits start-order; parent startOrder applies type + navigates
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <Transition name="cay-line" mode="out-in" > 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <Transition name="cay-line" mode="out-in" > 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <Transition name="cay-line" mode="out-in" > 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <Transition name="cay-line" mode="out-in" > 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <Transition name="cay-line" mode="out-in" > 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Property "$te" was accessed during render but is not defined on instance. 
+  at <KioskIdleScreenComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ ✓ tests/js/sentinels/KdsV2GridOverflowChipSentinel.spec.js  (6 tests) 4ms
+ ✓ tests/js/parkedOrderDiscardConfirm.spec.js  (5 tests) 49ms
+ ✓ tests/js/wsAuthAndStormCohabitation.spec.js  (4 tests) 5ms
+ ✓ tests/js/kioskA11ySettingsDrawer.spec.js  (9 tests) 90ms
+ ✓ tests/js/authProactiveTokenRefresh.spec.js  (9 tests) 3ms
+ ✓ tests/js/receiptAutoPrint.spec.js  (10 tests) 3ms
+ ✓ tests/js/posOrderShowComposition.spec.js  (7 tests) 14ms
+ ✓ tests/js/posComponentMenuFiltering.spec.js  (4 tests) 5ms
+ ✓ tests/js/posEchoDebounce.spec.js  (10 tests) 5ms
+ ✓ tests/js/KioskUpsellOrderSummaryRestyle.spec.js  (6 tests) 56ms
+ ✓ tests/js/kdsSyncBaseUrl.spec.js  (5 tests) 5ms
+ ✓ tests/js/pos/receiptNonBlockingPrint.spec.js  (6 tests) 4ms
+ ✓ tests/js/receiptPaymentMethodLabel.spec.js  (9 tests) 82ms
+stderr | tests/js/receiptPaymentMethodLabel.spec.js > receipt/detail component renders the FR label, not the raw slug > shows "Carte" for a raw CREDIT transaction slug
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <OrderDetailsComponent order= {
+  status: 1,
+  payment_status: 5,
+  payment_method: 1,
+  transaction: { payment_method: 'CREDIT', transaction_no: 'TX1' }
+} orderItems= {} orderBranch= {}  ... > 
+  at <VTUROOT>
+
+stderr | tests/js/receiptPaymentMethodLabel.spec.js > receipt/detail component renders the FR label, not the raw slug > shows "Espèces (Caisse)" for COUNTER_CASH
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <OrderDetailsComponent order= {
+  status: 1,
+  payment_status: 5,
+  payment_method: 1,
+  transaction: { payment_method: 'COUNTER_CASH', transaction_no: 'TX1' }
+} orderItems= {} orderBranch= {}  ... > 
+  at <VTUROOT>
+
+stderr | tests/js/receiptPaymentMethodLabel.spec.js > receipt/detail component renders the FR label, not the raw slug > shows "Multi-paiement" for a SPLIT transaction (no raw slug)
+[Vue warn]: Failed to resolve component: router-link
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  at <OrderDetailsComponent order= {
+  status: 1,
+  payment_status: 5,
+  payment_method: 1,
+  transaction: { payment_method: 'SPLIT', transaction_no: 'TX1' }
+} orderItems= {} orderBranch= {}  ... > 
+  at <VTUROOT>
+
+ ✓ tests/js/composerEditorVersionConflict.spec.js  (3 tests) 71ms
+ ✓ tests/js/sentinels/posAppBundleFreshnessSentinel.spec.js  (3 tests) 3ms
+ ✓ tests/js/posNoRefetchOnCartAdd.spec.js  (9 tests) 5ms
+stdout | tests/js/posWizardViandeSupplementUnified.spec.js > caisse — supplément viande unifié sur les tuiles > « Viande supplémentaire » N'EST PLUS dans la liste des suppléments génériques
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+
+stdout | tests/js/posWizardViandeSupplementUnified.spec.js > caisse — supplément viande unifié sur les tuiles > Merguez et Viande Hachée absentes des tuiles viande
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+
+stdout | tests/js/posWizardViandeSupplementUnified.spec.js > caisse — supplément viande unifié sur les tuiles > clic ≤ max = inclus gratuit ; clic au-delà = supplément @2,50 nommé sur la tuile
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+
+stdout | tests/js/posWizardViandeSupplementUnified.spec.js > caisse — supplément viande unifié sur les tuiles > instruction cuisine : « Viandes en plus : Kefta » présente après supplément
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+
+stdout | tests/js/posWizardViandeSupplementUnified.spec.js > caisse — supplément viande unifié sur les tuiles > retrait : − enlève d'abord le supplément, puis l'inclus
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Tacos L (2 viandes)'
+}
+
+ ✓ tests/js/posWizardViandeSupplementUnified.spec.js  (5 tests) 267ms
+ ✓ tests/js/posOssCadenceCap.spec.js  (11 tests) 3ms
+ ✓ tests/js/kdsFreshness.spec.js  (21 tests) 3ms
+ ✓ tests/js/kioskPaymentPlanBRoute.spec.js  (7 tests) 5ms
+ ✓ tests/js/receiptNf525FiscalRender.spec.js  (5 tests) 59ms
+ ✓ tests/js/posNewOrderNotify.spec.js  (9 tests) 4ms
+ ✓ tests/js/kioskWizardGenericComposer.spec.js  (5 tests) 23ms
+ ✓ tests/js/kdsSaucesPlacement.spec.js  (10 tests) 9ms
+ ✓ tests/js/kitchenParityRealData.spec.js  (7 tests) 27ms
+ ✓ tests/js/kds/kds-v2-grid-keys.spec.js  (5 tests) 34ms
+ ✓ tests/js/kdsFritesEtMenuCaisse.spec.js  (8 tests) 7ms
+ ✓ tests/js/kdsCadenceFloor.spec.js  (9 tests) 3ms
+ ✓ tests/js/kioskWizardOnionCuit.spec.js  (8 tests) 3ms
+ ✓ tests/js/ossSyncFallback.spec.js  (4 tests) 7ms
+ ✓ tests/js/kdsAudioAutoplayUnlock.spec.js  (9 tests) 10ms
+ ✓ tests/js/sentinels/kdsInflightOosMarkerStructure.spec.js  (10 tests) 4ms
+ ✓ tests/js/kdsStatusBannerTiers.spec.js  (9 tests) 26ms
+ ✓ tests/js/posBarcode.spec.js  (8 tests) 6ms
+ ✓ tests/js/quickwins/discountReasonBindingTest.spec.js  (3 tests) 66ms
+ ✓ tests/js/kioskCartPromo.spec.js  (8 tests) 3ms
+ ✓ tests/js/posBrowseView.spec.js  (13 tests) 3ms
+ ✓ tests/js/kioskVirtualKeyboard.spec.js  (12 tests) 85ms
+ ✓ tests/js/kioskSpeechComposable.spec.js  (5 tests) 19ms
+ ✓ tests/js/kioskConfirmationAutoPrintGate.spec.js  (4 tests) 57ms
+ ✓ tests/js/kioskOfflineQueueMigration.spec.js  (5 tests) 26ms
+ ✓ tests/js/kdsSource.spec.js  (19 tests) 4ms
+stderr | tests/js/itemPreviewProjection.spec.js > ItemPreviewComponent > shows assertive error and announcer.assertive when /api/admin/menu-projection returns 500
+{ response: { status: 500 } }
+
+ ✓ tests/js/itemPreviewProjection.spec.js  (7 tests | 2 skipped) 61ms
+ ✓ tests/js/sentinels/kdsCashPendingBadge.spec.js  (9 tests) 7ms
+ ✓ tests/js/categoryComposerEditorContract.spec.js  (4 tests) 52ms
+ ✓ tests/js/kioskFritesKidsSauceSteps.spec.js  (3 tests) 46ms
+ ✓ tests/js/posTrackerRefundedOrphan.spec.js  (4 tests) 50ms
+stderr | tests/js/KioskPaymentRestyle.spec.js > KioskPaymentComponent restyle > root + header + 3 methods + confirm : tous les testids présents
+[vuex] unknown getter: kioskCart/subtotal
+
+stderr | tests/js/KioskPaymentRestyle.spec.js > KioskPaymentComponent restyle > radiogroup a11y : role + aria-checked cohérents avec la sélection
+[vuex] unknown getter: kioskCart/subtotal
+
+stderr | tests/js/KioskPaymentRestyle.spec.js > KioskPaymentComponent restyle > sélection clavier (Space) équivalente au clic
+[vuex] unknown getter: kioskCart/subtotal
+
+stderr | tests/js/KioskPaymentRestyle.spec.js > KioskPaymentComponent restyle > confirm est disabled tant quaucune méthode nest choisie
+[vuex] unknown getter: kioskCart/subtotal
+
+stderr | tests/js/KioskPaymentRestyle.spec.js > KioskPaymentComponent restyle > error block exposed role=alert quand error set
+[vuex] unknown getter: kioskCart/subtotal
+
+stderr | tests/js/KioskPaymentRestyle.spec.js > KioskPaymentComponent restyle > TPE overlay : role=dialog + aria-modal + aria-labelledby quand tpeWaiting
+[vuex] unknown getter: kioskCart/subtotal
+
+ ✓ tests/js/KioskPaymentRestyle.spec.js  (6 tests) 77ms
+ ✓ tests/js/composerEditorApplyTemplateError.spec.js  (2 tests) 46ms
+ ✓ tests/js/sentinels/stockManagementV2Sentinel.spec.js  (13 tests) 3ms
+ ✓ tests/js/kioskSettingsStore.spec.js  (8 tests) 7ms
+ ✓ tests/js/multiSauceNames.spec.js  (9 tests) 9ms
+ ✓ tests/js/permissionMatchResolver.spec.js  (10 tests) 2ms
+ ✓ tests/js/posCartScoped.spec.js  (5 tests) 3ms
+ ✓ tests/js/itemPhotoUpload.spec.js  (9 tests) 32ms
+ ✓ tests/js/eventContractDedupe.spec.js  (10 tests) 6ms
+stderr | tests/js/eventContractDedupe.spec.js > eventContract — envelope validation > validateEnvelope rejects v0 / missing payload / wrong type
+[eventContract] Invalid envelope: Envelope must be an object. null
+[eventContract] Invalid envelope: Envelope version must be 1. { version: 0, type: 'x', payload: {} }
+[eventContract] Invalid envelope: Envelope type must be a non-empty string. { version: 1, type: '', payload: {} }
+[eventContract] Invalid envelope: Envelope payload must be an object. { version: 1, type: 'x' }
+
+ ✓ tests/js/posSystemHealthPill.spec.js  (9 tests) 23ms
+ ✓ tests/js/sentinels/f008KioskPaymentReconcileQueue.spec.js  (11 tests) 3ms
+ ✓ tests/js/ossWakeLockOnMount.spec.js  (6 tests) 3ms
+ ✓ tests/js/posDineInFlag.spec.js  (11 tests) 4ms
+ ✓ tests/js/composerPublishDiffModal.spec.js  (6 tests) 30ms
+ ✓ tests/js/studioTokensAdditions.spec.js  (1 test) 10ms
+ ✓ tests/js/sentinels/f014TpeStubQaToggleProductionGuard.spec.js  (8 tests) 3ms
+ ✓ tests/js/posCartPrune.spec.js  (6 tests) 4ms
+ ✓ tests/js/kioskReceiptPersistence.spec.js  (8 tests) 15ms
+ ✓ tests/js/sidebarV1Cleanup.spec.js  (2 tests) 34ms
+ ✓ tests/js/sentinels/posOssFetchCoalesceSentinel.spec.js  (6 tests) 4ms
+ ✓ tests/js/exportBlobErrorNormalizer.spec.js  (6 tests) 3ms
+ ✓ tests/js/kioskCategoriesTopChips.spec.js  (4 tests) 44ms
+ ✓ tests/js/kitchenLocalPrinter.spec.js  (12 tests) 5ms
+ ✓ tests/js/sentinels/kdsA11yRichStructure.spec.js  (7 tests) 3ms
+ ✓ tests/js/kdsState.spec.js  (16 tests) 3ms
+ ✓ tests/js/gestionAccessibleSentinel.spec.js  (3 tests) 3ms
+ ✓ tests/js/KioskPhase3Routes.spec.js  (10 tests) 2ms
+ ✓ tests/js/kdsSymbolLegend.spec.js  (5 tests) 3ms
+ ✓ tests/js/kdsBackoffOn5xx.spec.js  (3 tests) 5ms
+ ✓ tests/js/historiqueListStatusFilter.spec.js  (3 tests) 37ms
+ ✓ tests/js/paymentComponent401Retry.spec.js  (4 tests) 4ms
+ ✓ tests/js/kioskNoBlindAddOnDetailsFailure.spec.js  (5 tests) 5ms
+ ✓ tests/js/posWizardComposerAware.spec.js  (9 tests) 3ms
+ ✓ tests/js/posLocalPrinter.spec.js  (11 tests) 4ms
+ ✓ tests/js/itemShowComposerWarning.spec.js  (4 tests) 28ms
+ ✓ tests/js/kioskHardwareService.spec.js  (9 tests) 10ms
+ ✓ tests/js/kdsReactsToReconnectStorm.spec.js  (3 tests) 6ms
+ ✓ tests/js/catalogStudioCategoryWizardEntry.spec.js  (4 tests) 37ms
+ ✓ tests/js/kioskTacosCruditesStep.spec.js  (2 tests) 20ms
+ ✓ tests/js/receiptComponentBridge.spec.js  (10 tests) 3ms
+ ✓ tests/js/kioskRuptureUx.spec.js  (1 test) 29ms
+ ✓ tests/js/studioFrontendI18nParity.spec.js  (8 tests) 5ms
+ ✓ tests/js/kioskViandeCatalog.spec.js  (12 tests) 4ms
+ ✓ tests/js/metricsBatcherFlush.spec.js  (5 tests) 6ms
+ ✓ tests/js/kdsRemediation.spec.js  (10 tests) 12ms
+stderr | tests/js/kdsRemediation.spec.js > OssSyncService — #6 (4xx backoff) + #7 (emit guard) > #7 _emit: a throwing listener does not stop the others or throw
+[OSS] listener for "sync" threw (swallowed to keep poll loop alive): Error: listener boom
+    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/js/kdsRemediation.spec.js:82:38
+    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/OssSyncService.js:459:17
+    at Set.forEach (<anonymous>)
+    at OssSyncService._emit (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/OssSyncService.js:457:19)
+    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/js/kdsRemediation.spec.js:85:26
+    at Proxy.assertThrows (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/chai/lib/chai/core/assertions.js:2644:7)
+    at Proxy.methodWrapper (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/chai/lib/chai/utils/addMethod.js:57:25)
+    at Proxy.<anonymous> (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/@vitest/expect/dist/index.js:850:16)
+    at Proxy.overwritingMethodWrapper (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/chai/lib/chai/utils/overwriteMethod.js:78:33)
+    at Proxy.<anonymous> (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/@vitest/expect/dist/index.js:1324:19)
+
+ ✓ tests/js/kdsSymbolicOnionCuit.spec.js  (6 tests) 4ms
+ ✓ tests/js/kioskWizardTemplateAliases.spec.js  (4 tests) 2ms
+ ✓ tests/js/userReportedBlockersRuntime.spec.js  (4 tests) 7ms
+ ✓ tests/js/kioskGlobalErrors.spec.js  (5 tests) 6ms
+ ✓ tests/js/posCounterCollectSplit.spec.js  (5 tests) 47ms
+ ✓ tests/js/kioskA11yComposable.spec.js  (5 tests) 13ms
+ ✓ tests/js/posOfflineNoFalsePromiseSentinel.spec.js  (4 tests) 2ms
+stdout | tests/js/posWizardFritesSauce.spec.js > CAISSE frites — étape sauce data-driven (owner 2026-07-28) > la section SAUCE s'affiche avec les 12 sauces + badge « 1ère gratuite »
+[POS-WIZARD] detectCategory (fallback): { apiCat: 'Frites', domCat: 'frites', name: 'Petite Frites' }
+[POS-WIZARD] detectCategory (fallback): { apiCat: 'Frites', domCat: 'frites', name: 'Petite Frites' }
+
+stdout | tests/js/posWizardFritesSauce.spec.js > CAISSE frites — étape sauce data-driven (owner 2026-07-28) > 1ère sauce = gratuite ; 2ᵉ sauce = +0,50 (multi, money-path « comme la logique d'avant »)
+[POS-WIZARD] detectCategory (fallback): { apiCat: 'Frites', domCat: 'frites', name: 'Petite Frites' }
+[POS-WIZARD] detectCategory (fallback): { apiCat: 'Frites', domCat: 'frites', name: 'Petite Frites' }
+
+ ✓ tests/js/posWizardFritesSauce.spec.js  (2 tests) 106ms
+ ✓ tests/js/kioskAnalytics.spec.js  (7 tests) 43ms
+ ✓ tests/js/posCartPruneScoped.spec.js  (4 tests) 4ms
+ ✓ tests/js/kioskWaitingAutoReturn.spec.js  (3 tests) 36ms
+ ✓ tests/js/posOrderListStatusFilter.spec.js  (3 tests) 34ms
+ ✓ tests/js/kioskSettingsIdleTimeouts.spec.js  (8 tests) 4ms
+ ✓ tests/js/stockRuptureDashboardComponent.spec.js  (8 tests) 2ms
+ ✓ tests/js/kdsAllergens.spec.js  (13 tests) 3ms
+ ✓ tests/js/kiosk/kioskCashInstructionServerTicket.spec.js  (6 tests) 3ms
+ ✓ tests/js/kdsAutoTransition.spec.js  (11 tests) 3ms
+ ✓ tests/js/kds/kdsOrderCardScheduled.spec.js  (3 tests) 25ms
+ ✓ tests/js/kioskTacosSize.spec.js  (46 tests) 5ms
+ ✓ tests/js/ingredientListA11y.spec.js  (4 tests) 25ms
+ ✓ tests/js/i18nAuditTool.spec.js  (13 tests) 6ms
+ ✓ tests/js/itemChannelsField.spec.js  (7 tests) 3ms
+ ✓ tests/js/ingredientToggleOptimistic.spec.js  (3 tests) 21ms
+ ✓ tests/js/sentinels/frTypoHardenedSentinel.spec.js  (4 tests) 3ms
+ ✓ tests/js/kdsRemediationComponents.spec.js  (6 tests) 32ms
+ ✓ tests/js/quickwins/kdsSwiperRtlTest.spec.js  (3 tests) 48ms
+stderr | tests/js/quickwins/kdsSwiperRtlTest.spec.js > KDS Swiper RTL quickwin > uses ltr by default and passes it to Swiper
+[Vue warn]: Invalid prop: type check failed for prop "entries". Expected Array, got Object  
+  at <KdsScheduledBanner entries= {} > 
+  at <KitchenDisplaySystemComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/quickwins/kdsSwiperRtlTest.spec.js > KDS Swiper RTL quickwin > uses rtl when the frontend language is RTL
+[Vue warn]: Invalid prop: type check failed for prop "entries". Expected Array, got Object  
+  at <KdsScheduledBanner entries= {} > 
+  at <KitchenDisplaySystemComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+stderr | tests/js/quickwins/kdsSwiperRtlTest.spec.js > KDS Swiper RTL quickwin > falls back to ltr when display_mode is missing
+[Vue warn]: Invalid prop: type check failed for prop "entries". Expected Array, got Object  
+  at <KdsScheduledBanner entries= {} > 
+  at <KitchenDisplaySystemComponent ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ ✓ tests/js/sentinels/posComponentCleanupSentinel.spec.js  (6 tests) 2ms
+ ✓ tests/js/sentinels/kioskRushBannerSentinel.spec.js  (3 tests) 8ms
+ ✓ tests/js/kioskMenuStore.spec.js  (7 tests) 3ms
+ ✓ tests/js/composerGuidanceCallout.spec.js  (1 test) 30ms
+ ✓ tests/js/kioskWizardStepRegistry.spec.js  (5 tests) 20ms
+ ✓ tests/js/kioskStepSauceA11y.spec.js  (5 tests) 29ms
+ ✓ tests/js/sentinels/livreurCashSessionButtonsWiredSentinel.spec.js  (6 tests) 2ms
+ ✓ tests/js/ParkedOrdersComponentSearch.spec.js  (6 tests) 31ms
+ ✓ tests/js/labelKeyParityFrontend.spec.js  (1 test) 23ms
+ ✓ tests/js/kioskPaymentRetryGate.spec.js  (6 tests) 2ms
+ ✓ tests/js/posPaymentItemsNormalize.spec.js  (6 tests) 3ms
+ ✓ tests/js/kdsVersionGate.spec.js  (3 tests) 4ms
+ ✓ tests/js/kiosk/kioskPaymentCashNavOrderId.spec.js  (6 tests) 2ms
+stderr | tests/js/kdsRemediationDrawerOss.spec.js > #12 KdsHistoryDrawer — a failed recall refetches (purges the stale row) > calls this.fetch() (axios.get) when recall returns 422
+[KDS recall] failed: 422 window expired
+
+ ✓ tests/js/kdsRemediationDrawerOss.spec.js  (2 tests) 20ms
+ ✓ tests/js/sentinels/f004KioskCancelReasonSent.spec.js  (5 tests) 2ms
+ ✓ tests/js/kdsSymbolicInstruction.spec.js  (6 tests) 7ms
+ ✓ tests/js/kioskMenuCache.spec.js  (9 tests) 3ms
+ ✓ tests/js/kdsSymbolicKidsMenu.spec.js  (6 tests) 4ms
+ ✓ tests/js/wsReconnectStormDetection.spec.js  (3 tests) 5ms
+ ✓ tests/js/appServiceCurrencyFormatFr.spec.js  (8 tests) 3ms
+ ✓ tests/js/posCartOptimistic.spec.js  (4 tests) 3ms
+ ✓ tests/js/posPaymentComponentContract.spec.js  (4 tests) 4ms
+ ✓ tests/js/wsAuthRefreshLoop.spec.js  (3 tests) 4ms
+ ✓ tests/js/kioskFormulePrices.spec.js  (3 tests) 24ms
+ ✓ tests/js/kdsAriaI18n.spec.js  (6 tests) 2ms
+ ✓ tests/js/kioskWaitingMarkReadyTimer.spec.js  (2 tests) 36ms
+ ✓ tests/js/posCart.spec.js  (3 tests) 2ms
+ ✓ tests/js/posNormalizeIds.spec.js  (8 tests) 3ms
+ ✓ tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js  (4 tests) 29ms
+ ✓ tests/js/encaissementClientReceiptGate.spec.js  (4 tests) 3ms
+stdout | tests/js/posWizardMeatImages.spec.js > pos-wizard — images réelles viandes (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > variation avec thumb → <img.viande-img> rendue avec la vraie source
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardMeatImages.spec.js > pos-wizard — images réelles viandes (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > variation SANS thumb → repli pastille emoji (aucune <img>)
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+stdout | tests/js/posWizardMeatImages.spec.js > pos-wizard — images réelles viandes (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8) > supplément viande UNIFIÉ sur les tuiles : plus de section/toggle séparé
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+[POS-WIZARD] detectCategory (fallback): {
+  apiCat: 'Sandwichs',
+  domCat: 'sandwichs',
+  name: 'Cayenne (1 viande)'
+}
+
+ ✓ tests/js/posWizardMeatImages.spec.js  (3 tests) 79ms
+ ✓ tests/js/kioskRoutesGuard.spec.js  (5 tests) 4ms
+ ✓ tests/js/backendMenuVirtualChildrenOverride.spec.js  (2 tests) 20ms
+ ✓ tests/js/routerPermissionRequired.spec.js  (9 tests) 12ms
+ ✓ tests/js/v1HiddenMenuModules.spec.js  (6 tests) 3ms
+ ✓ tests/js/kdsSyncCadence.spec.js  (3 tests) 4ms
+ ✓ tests/js/kdsRemediationOrchestrator.spec.js  (2 tests) 30ms
+ ✓ tests/js/kioskLegacyRedirect.spec.js  (2 tests) 3ms
+ ✓ tests/js/posStockOutflowModal.spec.js  (4 tests) 26ms
+ ✓ tests/js/kioskCashAutoPrint.spec.js  (3 tests) 2ms
+ ✓ tests/js/kdsNoDuplicateLabel.spec.js  (4 tests) 4ms
+ ✓ tests/js/kdsStationFilter.spec.js  (6 tests) 3ms
+ ✓ tests/js/adminAvailabilityToggle.spec.js  (3 tests) 23ms
+ ✓ tests/js/posDrawerBridgeFallback.spec.js  (3 tests) 4ms
+ ✓ tests/js/kdsV2KillSwitch.spec.js  (4 tests) 1ms
+ ✓ tests/js/kdsLegacyDeliveryAllLanes.spec.js  (4 tests) 2ms
+ ✓ tests/js/metricsBatcherEvents.spec.js  (3 tests) 3ms
+ ✓ tests/js/kioskConfirmationCountdown.spec.js  (1 test) 32ms
+ ✓ tests/js/kioskCartSendPayload.spec.js  (1 test) 2ms
+ ✓ tests/js/caisseZoom.spec.js  (7 tests) 2ms
+ ✓ tests/js/posComponentNoSaleTrace.spec.js  (3 tests) 3ms
+ ✓ tests/js/sentinels/labelSplitPaymentI18nKey.spec.js  (3 tests) 2ms
+ ✓ tests/js/ingredientToggleA11y.spec.js  (4 tests) 19ms
+ ✓ tests/js/kdsV2OosBadge.spec.js  (3 tests) 36ms
+ ✓ tests/js/kioskAllergenMerge.spec.js  (11 tests) 3ms
+ ✓ tests/js/sentinels/kioskOfflineIdPrefix.spec.js  (3 tests) 3ms
+ ✓ tests/js/kioskOfflineQueueSyncRace.spec.js  (2 tests) 8ms
+ ✓ tests/js/kioskConfirmationFallback.spec.js  (1 test) 30ms
+ ✓ tests/js/kioskPaidCruditesGarnitures.spec.js  (4 tests) 2ms
+ ✓ tests/js/sentinels/axiosGlobalTimeoutSentinel.spec.js  (3 tests) 1ms
+ ✓ tests/js/posA11y.spec.js  (5 tests) 8ms
+ ✓ tests/js/kioskLoyaltyConsentWiring.spec.js  (3 tests) 3ms
+ ✓ tests/js/availabilityToggleErrorSurfacing.spec.js  (3 tests) 19ms
+ ✓ tests/js/posCartLineMathMenuDisplay.spec.js  (5 tests) 2ms
+ ✓ tests/js/backendMenuStockDeepLink.spec.js  (3 tests) 28ms
+ ✓ tests/js/posCounterCompositionLabels.spec.js  (5 tests) 2ms
+ ✓ tests/js/ingredientListComponent.spec.js  (3 tests) 21ms
+ ✓ tests/js/sentinels/kdsRecallIdempotencyHeaderSentinel.spec.js  (2 tests) 1ms
+ ✓ tests/js/posWizardBridgeExtraQuantity.spec.js  (4 tests) 1ms
+ ✓ tests/js/kdsBumpRecall.spec.js  (4 tests) 4ms
+ ✓ tests/js/sentinels/menuParentGroupI18nKeysSentinel.spec.js  (30 tests) 4ms
+ ✓ tests/js/posFloorplan.spec.js  (4 tests) 3ms
+ ✓ tests/js/posReceiptDuplicataMarker.spec.js  (7 tests) 15ms
+ ✓ tests/js/catalogStudioQuickCreateUniversal.spec.js  (6 tests) 2ms
+ ✓ tests/js/sentinels/counterCollectKeypadFreshEntrySentinel.spec.js  (6 tests) 2ms
+ ✓ tests/js/kioskCartClampTotal.spec.js  (4 tests) 2ms
+ ✓ tests/js/sentinels/i18nForceFRForAdminSurfaces.spec.js  (3 tests) 2ms
+ ✓ tests/js/composerStepFormHelp.spec.js  (1 test) 25ms
+ ✓ tests/js/sentinels/kioskBannerNoSuppressSessionInvalid.spec.js  (3 tests) 2ms
+ ✓ tests/js/sentinels/cspMigratedToHttpHeader.spec.js  (3 tests) 2ms
+ ✓ tests/js/sentinels/paymentComponentEmitsJsdocList.spec.js  (4 tests) 3ms
+ ✓ tests/js/sentinels/bypassPrintingMarkerHiddenPrint.spec.js  (5 tests) 2ms
+ ✓ tests/js/kioskFritesCatsConfig.spec.js  (3 tests) 1ms
+ ✓ tests/js/kioskRtl.spec.js  (6 tests) 5ms
+ ✓ tests/js/itemListBranchAvailability.spec.js  (3 tests) 3ms
+ ✓ tests/js/demoV2FeatureFlag.spec.js  (4 tests) 19ms
+ ✓ tests/js/versionBeacon.spec.js  (3 tests) 16ms
+ ✓ tests/js/kioskWizardComposerProfile.spec.js  (3 tests) 3ms
+ ✓ tests/js/posCashDrawerOpen.spec.js  (5 tests) 4ms
+ ✓ tests/js/sentinels/connectionBannerNavigatorOnlineListener.spec.js  (5 tests) 2ms
+ ✓ tests/js/sentinels/f002KioskPaymentAmountEcho.spec.js  (5 tests) 2ms
+ ✓ tests/js/kioskCartOfflinePaymentScope.spec.js  (2 tests) 4ms
+ ✓ tests/js/sentinels/posOrderIdempotency409Handler.spec.js  (4 tests) 1ms
+ ✓ tests/js/safeHtml.spec.js  (9 tests) 50ms
+stderr | tests/js/safeHtml.spec.js > safeHtml() > strips <iframe> / <object> / <embed>
+Error: Failed to execute 'startTask()' on 'AsyncTaskManager': The asynchronous task manager has been destroyed. This error can be thrown if scripts continue to run while a browser frame is closed.
+    at AsyncTaskManager.startTask (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/async-task-manager/AsyncTaskManager.ts:168:10)
+    at file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:544:71
+    at new Promise (<anonymous>)
+    at Fetch.sendRequest (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:543:10)
+    at Fetch.send (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:257:21)
+    at Function.navigate (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/browser/utilities/BrowserFrameNavigator.ts:256:15)
+
+stderr | Fetch.onError (file:/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:698:35)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:711:17)
+    at Object.<anonymous> (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:545:10)
+    at AsyncTaskManager.abortAll (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/async-task-manager/AsyncTaskManager.ts:331:21)
+    at AsyncTaskManager.abort (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/async-task-manager/AsyncTaskManager.ts:61:15)
+    at DetachedBrowserFrame.abort (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/browser/detached-browser/DetachedBrowserFrame.ts:139:49)
+    at file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/browser/detached-browser/DetachedBrowserFrame.ts:145:28
+    at Array.map (<anonymous>)
+    at file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/browser/detached-browser/DetachedBrowserFrame.ts:145:7
+    at new Promise (<anonymous>)
+    at DetachedBrowserFrame.abort (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/browser/detached-browser/DetachedBrowserFrame.ts:141:10)
+
+stderr | file:/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/nodes/html-iframe-element/HTMLIFrameElement.ts:440:31
+DOMException [NetworkError]: Failed to execute "fetch()" on "Window" with URL "https://evil.tld/": The operation was aborted.
+    at Fetch.onError (file:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/happy-dom/src/fetch/Fetch.ts:700:4)
+    at ClientRequest.emit (node:events:517:28)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at processTicksAndRejections (node:internal/process/task_queues:82:21)
+
+ ✓ tests/js/kioskAuthInterceptor.spec.js  (2 tests) 2ms
+ ✓ tests/js/posCentsArith.spec.js  (12 tests) 3ms
+ ✓ tests/js/kioskCounterPaymentFlow.spec.js  (3 tests) 3ms
+ ✓ tests/js/caisseSecondaryNav.spec.js  (4 tests) 26ms
+ ✓ tests/js/sentinels/kioskCartAriaLive.spec.js  (3 tests) 2ms
+ ✓ tests/js/sentinels/trackerEncaisserModalWiredSentinel.spec.js  (5 tests) 2ms
+ ✓ tests/js/itemCategoryShowRedirect.spec.js  (4 tests) 2ms
+ ✓ tests/js/posWizardComposerProfile.spec.js  (3 tests) 3ms
+ ✓ tests/js/kioskMenuBundledExtras.spec.js  (7 tests) 2ms
+ ✓ tests/js/kioskWaitingAudioFallback.spec.js  (1 test) 25ms
+ ✓ tests/js/posFormatCents.spec.js  (12 tests) 3ms
+ ✓ tests/js/kioskSandwichSplit.spec.js  (3 tests) 3ms
+ ✓ tests/js/posPrinter.spec.js  (3 tests) 2ms
+ ✓ tests/js/cuissonPhpJsParityFixture.spec.js  (43 tests) 7ms
+ ✓ tests/js/itemCategoryCreateAdvancedSection.spec.js  (5 tests) 2ms
+ ✓ tests/js/kdsSymbolicRender.spec.js  (1 test) 12ms
+ ✓ tests/js/realtimeBroadcastFallback.spec.js  (3 tests) 1ms
+ ✓ tests/js/kioskIdleWarningEvent.spec.js  (2 tests) 3ms
+ ✓ tests/js/sentinels/kdsAllergenPillLegibilitySentinel.spec.js  (4 tests) 2ms
+ ✓ tests/js/kioskPerfChunks.spec.js  (4 tests) 155ms
+ ✓ tests/js/itemPreviewSteps.spec.js  (1 test) 21ms
+ ✓ tests/js/wsAuthExpired.spec.js  (3 tests) 3ms
+ ✓ tests/js/sentinels/loginEmailAutocomplete.spec.js  (2 tests) 1ms
+ ✓ tests/js/posOrderIdempotency.spec.js  (2 tests) 2ms
+ ✓ tests/js/kdsDedupeByIdVersion.spec.js  (1 test) 8ms
+ ✓ tests/js/posOfflineReplayUrlSentinel.spec.js  (1 test) 1ms
+ ✓ tests/js/kioskItemDisplayOrder.spec.js  (4 tests) 2ms
+ ✓ tests/js/kioskSauceCatalog.spec.js  (4 tests) 2ms
+ ✓ tests/js/axiosSurfaceTokenSelection.spec.js  (3 tests) 2ms
+ ✓ tests/js/KioskLogin.spec.js  (1 test) 19ms
+ ✓ tests/js/kioskCategoryOrder.spec.js  (4 tests) 2ms
+ ✓ tests/js/paymentComponentPropMutation.spec.js  (2 tests) 3ms
+ ✓ tests/js/composerVersionConflictBanner.spec.js  (3 tests) 16ms
+ ✓ tests/js/productComposerSummary.spec.js  (3 tests) 2ms
+ ✓ tests/js/sentinels/kdsNewOrderChimeIdBased.spec.js  (2 tests) 2ms
+ ✓ tests/js/checkoutGeocodeError.spec.js  (2 tests) 2ms
+ ✓ tests/js/sentinels/PaymentComponentPropMutationSentinelTest.spec.js  (1 test) 2ms
+ ✓ tests/js/sentinels/ossFullscreenNoUndefinedRefSentinel.spec.js  (2 tests) 1ms
+ ✓ tests/js/correlationDedupeCapacity.spec.js  (1 test) 14ms
+ ✓ tests/js/posNfc.spec.js  (3 tests) 3ms
+ ✓ tests/js/kioskDrinkAddons.spec.js  (3 tests) 3ms
+ ✓ tests/js/ksVirtualKeyboardShift.spec.js  (3 tests) 25ms
+ ✓ tests/js/kioskPaymentDisplayBilledConsistency.spec.js  (2 tests) 1ms
+ ✓ tests/js/posDrinksCatalogPersistence.spec.js  (3 tests) 2ms
+ ✓ tests/js/kdsLineSemantics.spec.js  (5 tests) 3ms
+ ✓ tests/js/kioskRouterLockdown.spec.js  (1 test) 2ms
+ ✓ tests/js/catalogStudioAddCategoryUx.spec.js  (3 tests) 3ms
+ ✓ tests/js/runtimeSyncFlagsWiring.spec.js  (1 test) 2ms
+ ✓ tests/js/kdsTimerEscalation.spec.js  (3 tests) 2ms
+ ✓ tests/js/catalogStudioCategoryQuery.spec.js  (2 tests) 2ms
+ ✓ tests/js/sentinels/eventContractPaymentStatusMappedSentinel.spec.js  (2 tests) 1ms
+ ✓ tests/js/posSkeletonGrid.spec.js  (3 tests) 14ms
+ ✓ tests/js/kioskPaymentTpeTimeout.spec.js  (2 tests) 2ms
+ ✓ tests/js/deliveryCharge.spec.js  (14 tests) 3ms
+ ✓ tests/js/kioskUpsellFlow.spec.js  (4 tests) 1ms
+ ✓ tests/js/sentinels/paymentComponentPropMutation.spec.js  (1 test) 2ms
+ ✓ tests/js/kioskFormatPrice.spec.js  (3 tests) 3ms
+ ✓ tests/js/kioskNoteLabelI18n.spec.js  (3 tests) 1ms
+ ✓ tests/js/posParkedDeliveryNullAddressGuard.spec.js  (2 tests) 1ms
+ ✓ tests/js/orderStatusScreenOssSync.spec.js  (1 test) 2ms
+ ✓ tests/js/backendMenuHidesItemsLegacy.spec.js  (4 tests) 2ms
+ ✓ tests/js/sentinels/PosDiscountReasonBindingSentinelTest.spec.js  (1 test) 2ms
+ ✓ tests/js/kioskMedia.spec.js  (3 tests) 1ms
+ ✓ tests/js/stockRuptureRoute.spec.js  (2 tests) 2ms
+ ✓ tests/js/staffOnlyLandingRedirect.spec.js  (1 test) 2ms
+ ✓ tests/js/kioskDisplayText.spec.js  (2 tests) 2ms
+ ✓ tests/js/authLogoutInterceptor.spec.js  (1 test) 2ms
+ ✓ tests/js/articleListLegacyRedirect.spec.js  (1 test) 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js > Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12) > admin-kds.js bundle is not stale relative to KDS sources
+AssertionError: KDS bundle stale: source resources/js/helpers/kdsSymbolic.js (mtime 2026-08-10T19:47:15.345Z, group "kds-helpers") is newer than public/js/admin-kds.cddea678.js (mtime 2026-08-10T12:44:29.437Z). Run 'npm run development' or 'npm run production' to rebuild.: expected 'KDS bundle stale: source resources/js…' to be null
+ ❯ tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js:204:66
+    202|         const result = assertBundleFresh(bundlePath, sourceGroups);
+    203|         // null message == fresh bundle.
+    204|         expect(result.message, result.message ?? 'bundle fresh').toBeN…
+       |                                                                  ^
+    205|     });
+    206| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 396 passed (397)
+      Tests  1 failed | 2878 passed | 3 skipped (2882)
+   Start at  18:49:06
+   Duration  143.78s (transform 5.61s, setup 1.41s, collect 25.18s, tests 14.82s, environment 57.61s, prepare 16.05s)
+

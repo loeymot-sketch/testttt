@@ -1,0 +1,45 @@
+
+> production
+> mix --production
+
+
+[1;1H[0J
+                         
+   Laravel Mix v6.0.49   
+                         
+
+✔ Compiled Successfully in 25814ms
+[90m┌───────────────────────────────────[39m[90m┬───────────┐[39m
+[90m│[39m                              File [90m│[39m Size      [90m│[39m
+[90m├───────────────────────────────────[39m[90m┼───────────┤[39m
+[90m│[39m                        /js/app.js [90m│[39m 2.25 MiB  [90m│[39m
+[90m│[39m            /js/app.js.LICENSE.txt [90m│[39m 4.62 KiB  [90m│[39m
+[90m│[39m                 /js/daily-book.js [90m│[39m 195 KiB   [90m│[39m
+[90m│[39m     /js/daily-book.js.LICENSE.txt [90m│[39m 803 bytes [90m│[39m
+[90m│[39m                   /js/manifest.js [90m│[39m 3.01 KiB  [90m│[39m
+[90m│[39m                    /js/pos-app.js [90m│[39m 2.17 MiB  [90m│[39m
+[90m│[39m        /js/pos-app.js.LICENSE.txt [90m│[39m 4.62 KiB  [90m│[39m
+[90m│[39m                     /js/vendor.js [90m│[39m 952 KiB   [90m│[39m
+[90m│[39m         /js/vendor.js.LICENSE.txt [90m│[39m 1.03 KiB  [90m│[39m
+[90m│[39m                       css/app.css [90m│[39m 203 KiB   [90m│[39m
+[90m│[39m                css/daily-book.css [90m│[39m 3.88 KiB  [90m│[39m
+[90m│[39m                js/325.4417a286.js [90m│[39m 18.7 KiB  [90m│[39m
+[90m│[39m    js/325.4417a286.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m│[39m          js/admin-kds.cddea678.js [90m│[39m 299 KiB   [90m│[39m
+[90m│[39m  …min-kds.cddea678.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m│[39m          js/admin-oss.046fc4ee.js [90m│[39m 30.1 KiB  [90m│[39m
+[90m│[39m  …min-oss.046fc4ee.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m│[39m      js/admin-reports.56dd0bc0.js [90m│[39m 89.6 KiB  [90m│[39m
+[90m│[39m  …reports.56dd0bc0.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m│[39m        js/admin-shell.bbd4eae0.js [90m│[39m 2.25 MiB  [90m│[39m
+[90m│[39m  …n-shell.bbd4eae0.js.LICENSE.txt [90m│[39m 500 bytes [90m│[39m
+[90m│[39m       js/kiosk-errors.a20de607.js [90m│[39m 19.3 KiB  [90m│[39m
+[90m│[39m  …-errors.a20de607.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m│[39m        js/kiosk-shell.ead8acf9.js [90m│[39m 271 KiB   [90m│[39m
+[90m│[39m  …k-shell.ead8acf9.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m│[39m  js/kiosk-wizard-step.afeaa93f.js [90m│[39m 130 KiB   [90m│[39m
+[90m│[39m       js/kiosk-wizard.c281e000.js [90m│[39m 459 bytes [90m│[39m
+[90m│[39m          js/pos-shell.cd1c1cf6.js [90m│[39m 766 KiB   [90m│[39m
+[90m│[39m  …s-shell.cd1c1cf6.js.LICENSE.txt [90m│[39m 163 bytes [90m│[39m
+[90m└───────────────────────────────────[39m[90m┴───────────┘[39m
+webpack compiled successfully

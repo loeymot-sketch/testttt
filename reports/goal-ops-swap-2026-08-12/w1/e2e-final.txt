@@ -1,0 +1,153 @@
+
+Running 10 tests using 1 worker
+
+  ✓   1 [chromium] › tests/e2e/01-auth-refresh.spec.js:13:3 › Auth Refresh — F5 sur POS › login POS → F5 → reste sur /admin/pos (8.2s)
+  ✓   2 [chromium] › tests/e2e/01-auth-refresh.spec.js:32:3 › Auth Refresh — F5 sur POS › user info preserved after F5 (8.2s)
+  ✓   3 [chromium] › tests/e2e/02-pos-cash.spec.js:26:3 › POS Cash — commande complète › surface POS chargée sur /admin/pos (3.4s)
+  ✓   4 [chromium] › tests/e2e/02-pos-cash.spec.js:33:3 › POS Cash — commande complète › panier démarre vide — pas de commande fantôme (3.5s)
+  ✓   5 [chromium] › tests/e2e/02-pos-cash.spec.js:41:3 › POS Cash — commande complète › pas de crash JavaScript visible sur la surface POS (5.4s)
+  ✘   6 [chromium] › tests/e2e/02-pos-cash.spec.js:74:3 › POS Cash — commande complète › full POS cash order cycle — adversarial (16.8s)
+  ✘   7 [chromium] › tests/e2e/02-pos-cash.spec.js:74:3 › POS Cash — commande complète › full POS cash order cycle — adversarial (retry #1) (17.0s)
+  ✓   8 [chromium] › tests/e2e/04-kds-status.spec.js:22:3 › KDS — interface cuisine › page /kds accessible — redirige vers login si non authentifié (350ms)
+  ✓   9 [chromium] › tests/e2e/04-kds-status.spec.js:32:3 › KDS — interface cuisine › login chef via /login → redirection vers surface chef (3.5s)
+  ✓  10 [chromium] › tests/e2e/04-kds-status.spec.js:44:3 › KDS — interface cuisine › KDS surface loads order list without crash (8.3s)
+  ✘  11 [chromium] › tests/e2e/04-kds-status.spec.js:83:3 › KDS — interface cuisine › KDS adversarial — filter clicks + status transition attempt (21.4s)
+  ✘  12 [chromium] › tests/e2e/04-kds-status.spec.js:83:3 › KDS — interface cuisine › KDS adversarial — filter clicks + status transition attempt (retry #1) (21.9s)
+
+
+  1) [chromium] › tests/e2e/02-pos-cash.spec.js:74:3 › POS Cash — commande complète › full POS cash order cycle — adversarial 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.pos-v5-tile, .pos-item-tile').filter({ hasNot: locator('.pos-item-86-badge, .pos-v5-tile__overlay') }).first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('.pos-v5-tile, .pos-item-tile').filter({ hasNot: locator('.pos-item-86-badge, .pos-v5-tile__overlay') }).first()[22m
+
+
+      112 |       hasNot: page.locator('.pos-item-86-badge, .pos-v5-tile__overlay'),
+      113 |     });
+    > 114 |     await expect(tiles.first()).toBeVisible({ timeout: 10_000 });
+          |                                 ^
+      115 |     await tiles.first().click({ timeout: 5_000 });
+      116 |     await page.waitForTimeout(1_500);
+      117 |
+        at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:114:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.pos-v5-tile, .pos-item-tile').filter({ hasNot: locator('.pos-item-86-badge, .pos-v5-tile__overlay') }).first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('.pos-v5-tile, .pos-item-tile').filter({ hasNot: locator('.pos-item-86-badge, .pos-v5-tile__overlay') }).first()[22m
+
+
+      112 |       hasNot: page.locator('.pos-item-86-badge, .pos-v5-tile__overlay'),
+      113 |     });
+    > 114 |     await expect(tiles.first()).toBeVisible({ timeout: 10_000 });
+          |                                 ^
+      115 |     await tiles.first().click({ timeout: 5_000 });
+      116 |     await page.waitForTimeout(1_500);
+      117 |
+        at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:114:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/04-kds-status.spec.js:83:3 › KDS — interface cuisine › KDS adversarial — filter clicks + status transition attempt 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first()[22m
+
+
+      92 |     // KDS aria-live region OU sync-mode banner OU grid columns selon état WS.
+      93 |     const kdsRoot = page.locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first();
+    > 94 |     await expect(kdsRoot).toBeVisible({ timeout: 15_000 });
+         |                           ^
+      95 |
+      96 |     // Step 3-5 — Click NON-conditional sur 3 filtres status (chips dans header KDS).
+      97 |     // Les filtres sont des <button> avec text "Toutes / Confirmées / En préparation / Prêtes".
+        at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:94:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-04-kds-status-KDS-—-in-77ab6-s-status-transition-attempt-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-04-kds-status-KDS-—-in-77ab6-s-status-transition-attempt-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first()[22m
+
+
+      92 |     // KDS aria-live region OU sync-mode banner OU grid columns selon état WS.
+      93 |     const kdsRoot = page.locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first();
+    > 94 |     await expect(kdsRoot).toBeVisible({ timeout: 15_000 });
+         |                           ^
+      95 |
+      96 |     // Step 3-5 — Click NON-conditional sur 3 filtres status (chips dans header KDS).
+      97 |     // Les filtres sont des <button> avec text "Toutes / Confirmées / En préparation / Prêtes".
+        at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:94:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-04-kds-status-KDS-—-in-77ab6-s-status-transition-attempt-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-04-kds-status-KDS-—-in-77ab6-s-status-transition-attempt-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-04-kds-status-KDS-—-in-77ab6-s-status-transition-attempt-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-04-kds-status-KDS-—-in-77ab6-s-status-transition-attempt-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests/e2e/02-pos-cash.spec.js:74:3 › POS Cash — commande complète › full POS cash order cycle — adversarial 
+    [chromium] › tests/e2e/04-kds-status.spec.js:83:3 › KDS — interface cuisine › KDS adversarial — filter clicks + status transition attempt 
+  8 passed (2.1m)

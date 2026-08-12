@@ -62,8 +62,8 @@ class UberPhotoCaptureController extends AdminController
         UberPhotoOrderMapper $mapper,
         UberTicketPreviewBuilder $preview
     ): JsonResponse {
-        $max = max(1, (int) config('uber.photo_max_files', 6));
-        $maxKb = max(256, (int) config('uber.photo_max_kb', 12288));
+        $max = max(1, (int) config('uber_photo.max_files', 6));
+        $maxKb = max(256, (int) config('uber_photo.max_kb', 12288));
 
         $request->validate([
             'photos' => ['required', 'array', 'min:1', 'max:'.$max],

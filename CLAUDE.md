@@ -422,7 +422,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur **22 models** (baseline locked par
+- `BranchScope` global appliqué sur **24 models** (baseline locked par
   `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
   Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
   PosParkedOrder, KioskMachine, StockLevel, StockMovement,
@@ -431,7 +431,10 @@ Loi de Finance France — non-négociable, prison time si violé.
   PendingPaymentConfirmation, PaymentTerminal, PushNotification,
   DiningTable, Printer, **User**, StockOutflow (module repas/pertes 2026-07-31),
   PromoFlyer (ticket promo nominatif 2026-08-07 — un ordre d'impression
-  appartient à SA caisse, jamais à une autre).
+  appartient à SA caisse, jamais à une autre),
+  WheelSpin (roue de la fortune 2026-08-09),
+  UberTicketCapture (ticket Uber photographié 2026-08-10 — une capture
+  appartient à la caisse qui l'a prise, jamais à une autre).
 - Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
 - **Exemptions documentées** (sentinel `EXEMPTED_MODELS`) :
   - `Branch` — self-reference (BranchScope sur Branch serait circulaire)
