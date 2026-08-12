@@ -20,9 +20,10 @@
                         </div>
                     </div>
                     <div class="uber-cap-done-actions">
-                        <button type="button" class="uber-cap-btn uber-cap-btn--ghost" :disabled="busy"
+                        <button type="button" class="uber-cap-btn uber-cap-btn--ghost"
+                                :disabled="busy || reimprimees.includes(envoyee.id)"
                                 data-testid="uber-photo-reprint-done" @click="reimprimer(envoyee)">
-                            🖨 Réimprimer
+                            {{ reimprimees.includes(envoyee.id) ? "✓ Demandé" : "🖨 Réimprimer" }}
                         </button>
                         <button v-if="compte_a_rebours > 0" type="button" class="uber-cap-btn uber-cap-btn--ghost"
                                 @click="rester">
@@ -217,9 +218,10 @@
                                     <!-- Pas de commande, pas de papier : le bouton n'existe pas
                                          plutôt que d'exister et de refuser. -->
                                     <button v-if="r.order_id" type="button" class="uber-cap-btn uber-cap-btn--ghost"
-                                            :disabled="busy" :data-testid="`uber-photo-reprint-${r.id}`"
+                                            :disabled="busy || reimprimees.includes(r.id)"
+                                            :data-testid="`uber-photo-reprint-${r.id}`"
                                             @click="reimprimer(r)">
-                                        🖨 Réimprimer le ticket cuisine
+                                        {{ reimprimees.includes(r.id) ? "✓ Demandé — le ticket sort" : "🖨 Réimprimer le ticket cuisine" }}
                                     </button>
                                     <span v-else class="uber-cap-recent-note">
                                         Jamais envoyée en cuisine — rien à réimprimer.
@@ -267,6 +269,8 @@ export default {
             // Ligne d'historique dépliée (une seule : deux détails ouverts sur une tablette,
             // c'est un écran qu'on ne lit plus).
             ouverte: null,
+            // Réimpressions demandées à l'instant : le bouton se tait un moment (voir reimprimer()).
+            reimprimees: [],
         };
     },
     mounted() {
@@ -482,11 +486,18 @@ export default {
          * plat — c'est précisément ce que ce bouton évite.
          */
         async reimprimer(cible) {
-            if (!cible || this.busy) return;
+            if (!cible || this.busy || this.reimprimees.includes(cible.id)) return;
             this.busy = true;
             try {
                 const { data } = await axios.post(`admin/uber/photo/${cible.id}/reprint`);
                 alertService.success(data.message || "Réimpression demandée.");
+                // Le pont met jusqu'à 5 s à venir chercher le papier. Sans cette pause, un doigt
+                // impatient tape trois fois et sort trois tickets — c'est arrivé pendant les
+                // essais. Le bouton dit ce qu'il a fait, puis redevient disponible.
+                this.reimprimees.push(cible.id);
+                setTimeout(() => {
+                    this.reimprimees = this.reimprimees.filter((id) => id !== cible.id);
+                }, 12000);
             } catch (e) {
                 alertService.error(this.message(e, "La réimpression n'a pas pu être demandée."));
             } finally {
