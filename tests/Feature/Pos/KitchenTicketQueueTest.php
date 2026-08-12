@@ -10,6 +10,7 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -59,24 +60,26 @@ class KitchenTicketQueueTest extends TestCase
         ], $overrides));
     }
 
-    private function reclamer(): array
+    private function reclamer(?string $destination = null): array
     {
         $res = $this->actingAs($this->cashier, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos/kitchen-tickets/pending');
+            ->postJson('/api/admin/pos/kitchen-tickets/pending',
+                $destination === null ? [] : ['destination' => $destination]);
         $res->assertOk();
 
         return collect($res->json('orders'))->pluck('id')->all();
     }
 
-    private function accuser(int $orderId, bool $success, ?string $error = null): void
+    private function accuser(int $orderId, bool $success, ?string $error = null, ?string $destination = null): void
     {
         $this->actingAs($this->cashier, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson("/api/admin/pos/kitchen-tickets/{$orderId}/ack", [
-                'success' => $success,
-                'error'   => $error,
-            ])->assertOk();
+            ->postJson("/api/admin/pos/kitchen-tickets/{$orderId}/ack", array_filter([
+                'success'     => $success,
+                'error'       => $error,
+                'destination' => $destination,
+            ], fn ($v) => $v !== null))->assertOk();
     }
 
     /** @test */
@@ -95,10 +98,9 @@ class KitchenTicketQueueTest extends TestCase
         $this->assertContains($web->id, $this->reclamer(), 'premier sondage : le ticket doit sortir');
         $this->assertNotContains($web->id, $this->reclamer(), 'second sondage : le ticket ne doit PAS sortir deux fois');
 
-        $this->assertNotNull(
-            Order::withoutGlobalScopes()->find($web->id)->kitchen_ticket_printed_at,
-            'la réclamation doit être inscrite en base — c\'est elle qui arbitre entre deux postes'
-        );
+        $this->assertDatabaseHas('kitchen_ticket_claims', [
+            'order_id' => $web->id, 'destination' => 'counter',
+        ]);
     }
 
     /** @test Le filet : si le papier n'est pas sorti, la commande RETOURNE en file. */
@@ -109,10 +111,9 @@ class KitchenTicketQueueTest extends TestCase
 
         $this->accuser($web->id, false, 'Pont d\'impression indisponible');
 
-        $this->assertNull(
-            Order::withoutGlobalScopes()->find($web->id)->kitchen_ticket_printed_at,
-            'un échec doit effacer la réclamation, sinon le ticket est perdu pour toujours'
-        );
+        $this->assertDatabaseMissing('kitchen_ticket_claims', [
+            'order_id' => $web->id, 'destination' => 'counter',
+        ]);
         $this->assertContains($web->id, $this->reclamer(), 'la commande doit être re-proposée après un échec');
     }
 
@@ -124,8 +125,69 @@ class KitchenTicketQueueTest extends TestCase
 
         $this->accuser($web->id, true);
 
-        $this->assertNotNull(Order::withoutGlobalScopes()->find($web->id)->kitchen_ticket_printed_at);
+        $this->assertNotNull(
+            DB::table('kitchen_ticket_claims')
+                ->where('order_id', $web->id)->where('destination', 'counter')->value('printed_at'),
+            'un succès doit horodater la sortie papier, pas seulement la réclamation'
+        );
         $this->assertNotContains($web->id, $this->reclamer());
+    }
+
+    /**
+     * @test
+     * LE test de cette vague — l'owner veut un papier à la caisse ET un en cuisine.
+     *
+     * Avec l'ancienne garde (une seule colonne « déjà imprimé »), le premier poste à réclamer
+     * privait l'autre : chacun n'aurait sorti qu'un ticket sur deux, en alternance, et personne
+     * n'aurait compris pourquoi. C'est cette propriété-là qu'il faut verrouiller.
+     */
+    public function les_deux_postes_reclament_chacun_leur_papier(): void
+    {
+        $web = $this->commandeWeb();
+
+        $this->assertContains($web->id, $this->reclamer('counter'), 'la caisse doit avoir son papier');
+        $this->assertContains($web->id, $this->reclamer('kitchen'), 'la cuisine doit avoir le sien — la caisse ne le lui vole pas');
+
+        // …et aucun des deux ne ressort une seconde fois.
+        $this->assertNotContains($web->id, $this->reclamer('counter'));
+        $this->assertNotContains($web->id, $this->reclamer('kitchen'));
+
+        $this->assertSame(2, DB::table('kitchen_ticket_claims')->where('order_id', $web->id)->count());
+    }
+
+    /** @test Un échec en cuisine ne doit pas faire ressortir le papier déjà sorti à la caisse. */
+    public function un_echec_sur_un_poste_ne_touche_pas_le_papier_de_l_autre(): void
+    {
+        $web = $this->commandeWeb();
+        $this->reclamer('counter');
+        $this->reclamer('kitchen');
+        $this->accuser($web->id, true, null, 'counter');
+
+        $this->accuser($web->id, false, 'papier épuisé', 'kitchen');
+
+        $this->assertNotContains($web->id, $this->reclamer('counter'), 'le papier caisse est sorti, il ne doit pas ressortir');
+        $this->assertContains($web->id, $this->reclamer('kitchen'), 'le papier cuisine a échoué, il doit être re-proposé');
+    }
+
+    /** @test Un poste qui n'annonce pas sa destination est traité comme la caisse (ancien paquet en cache). */
+    public function une_reclamation_sans_destination_vaut_pour_la_caisse(): void
+    {
+        $web = $this->commandeWeb();
+
+        $this->assertContains($web->id, $this->reclamer(null));
+
+        $this->assertDatabaseHas('kitchen_ticket_claims', [
+            'order_id' => $web->id, 'destination' => 'counter',
+        ]);
+    }
+
+    /** @test Une destination inventée est refusée — pas de file fantôme qui avale des tickets. */
+    public function une_destination_inconnue_est_refusee(): void
+    {
+        $this->actingAs($this->cashier, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos/kitchen-tickets/pending', ['destination' => 'bureau'])
+            ->assertStatus(422);
     }
 
     /** @test Le garde-fou anti-rouleau : sans lui, la première mise en service vide l'historique. */

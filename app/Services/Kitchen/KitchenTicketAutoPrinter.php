@@ -145,32 +145,63 @@ final class KitchenTicketAutoPrinter
     }
 
     /**
-     * [PONT-CAISSE 2026-08-10] Même garde, pour le chemin où l'imprimante est INATTEIGNABLE
-     * depuis le serveur.
+     * [PONT-CAISSE 2026-08-10 → DEUX POSTES 2026-08-12] La garde du chemin où l'imprimante est
+     * INATTEIGNABLE depuis le serveur.
      *
-     * En production le serveur applicatif est chez l'hébergeur et l'imprimante est au bout du
+     * En production le serveur applicatif est chez l'hébergeur et les imprimantes sont au bout du
      * réseau local du restaurant : `printOnce()` ci-dessus sort en `no_printer` et rien ne sort
      * jamais (mesuré — la table `printers` est vide, zéro ligne de journal depuis l'origine).
-     * C'est le PC caisse qui doit tirer le ticket, exactement comme pour le ticket promo.
+     * Ce sont les PC caisse et cuisine qui tirent le ticket, comme pour le ticket promo.
      *
-     * Ce chemin réclame donc SANS exiger de row `Printer` — le pont local EST l'imprimante. La
-     * garde reste celle-ci, une seule, partagée : un jour où une imprimante serveur serait
-     * enfin configurée, les deux chemins se disputeraient la même colonne et la base
-     * trancherait. C'est précisément pour ça que la garde ne doit pas être recopiée ailleurs.
+     * POURQUOI CETTE GARDE N'EST PAS CELLE DE `printOnce()`
+     * -----------------------------------------------------
+     * `printOnce()` s'appuie sur `orders.kitchen_ticket_printed_at`, une colonne qui répond à UNE
+     * question binaire : « ce ticket est-il sorti ? ». Elle ne peut donc servir qu'UN poste. Or
+     * l'owner veut un papier à la caisse ET un en cuisine : le PC caisse et le PC cuisine se
+     * seraient volé les tickets à tour de rôle, chacun n'en sortant qu'un sur deux.
+     *
+     * La réclamation du pont vit donc dans `kitchen_ticket_claims`, clé (commande, destination).
+     * Même doctrine, même arbitre : c'est un INSERT protégé par une contrainte d'unicité, pas un
+     * « si absent alors insérer » écrit en PHP — deux onglets ne peuvent pas gagner tous les deux.
+     *
+     * Les deux gardes sont indépendantes parce que les deux CHEMINS le sont : le jour où une
+     * imprimante serveur serait enfin joignable, elle garderait sa colonne, le pont garderait sa
+     * table, et aucun des deux ne ferait taire l'autre par accident.
+     *
+     * @param  string  $destination  'counter' (pont caisse 9100) ou 'kitchen' (pont cuisine 9101)
      */
-    public function claimForBridge(int $orderId): bool
+    public function claimForBridge(int $orderId, string $destination): bool
     {
-        return $this->claim($orderId);
+        return DB::table('kitchen_ticket_claims')->insertOrIgnore([
+            'order_id'    => $orderId,
+            'destination' => $destination,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]) === 1;
     }
 
     /**
-     * Rend la commande à la file. Appelé quand le pont n'a rien pu sortir (papier, hors tension,
-     * pont arrêté) : sans ça, une commande réclamée puis non imprimée serait perdue pour de bon,
-     * marquée « imprimée » alors qu'aucun papier n'est sorti — le pire des deux mondes.
+     * Rend la commande à la file POUR CETTE DESTINATION. Appelé quand le pont n'a rien pu sortir
+     * (papier, hors tension, pont arrêté) : sans ça, une commande réclamée puis non imprimée
+     * serait perdue pour de bon, comptée « imprimée » alors qu'aucun papier n'est sorti — le pire
+     * des deux mondes. La destination jumelle n'est pas touchée : le papier sorti à la caisse
+     * reste sorti même si celui de la cuisine a échoué.
      */
-    public function releaseClaim(int $orderId): void
+    public function releaseClaim(int $orderId, string $destination): void
     {
-        $this->release($orderId);
+        DB::table('kitchen_ticket_claims')
+            ->where('order_id', $orderId)
+            ->where('destination', $destination)
+            ->delete();
+    }
+
+    /** Confirme la sortie papier : la réclamation devient une impression avérée. */
+    public function markClaimPrinted(int $orderId, string $destination): void
+    {
+        DB::table('kitchen_ticket_claims')
+            ->where('order_id', $orderId)
+            ->where('destination', $destination)
+            ->update(['printed_at' => now(), 'updated_at' => now()]);
     }
 
     /** Imprimante cuisine ACTIVE de la branche, station chaude en priorité. */

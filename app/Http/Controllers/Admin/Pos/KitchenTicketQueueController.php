@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Services\Kitchen\KitchenTicketAutoPrinter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -58,6 +59,18 @@ class KitchenTicketQueueController extends Controller
     private const MAX_PAR_CYCLE = 5;
 
     /**
+     * [TICKET-CUISINE-DEUX-POSTES 2026-08-12 · owner « les deux »] Les deux sorties papier.
+     *
+     * 'counter' = pont caisse (127.0.0.1:9100 sur le PC caisse)
+     * 'kitchen' = pont cuisine (127.0.0.1:9101 sur le PC cuisine)
+     *
+     * Chaque poste réclame POUR SA destination. Sans cette séparation, le premier arrivé prive
+     * l'autre : c'est la raison d'être de la table `kitchen_ticket_claims`.
+     */
+    private const DESTINATION_COMPTOIR = 'counter';
+    private const DESTINATIONS = [self::DESTINATION_COMPTOIR, 'kitchen'];
+
+    /**
      * Réclame les tickets cuisine à sortir sur CE poste. Chaque commande renvoyée est déjà
      * réclamée : l'appelant DOIT accuser réception (`ack`), sinon rien ne la remettra en file.
      */
@@ -71,13 +84,22 @@ class KitchenTicketQueueController extends Controller
             403
         );
 
+        $destination = $this->destination($request);
         $branchId = (int) ($request->user()->branch_id ?? 0);
 
         $fenetreMinutes = max(1, (int) config('kds.bridge_print_window_minutes', 30));
 
         $query = Order::query()
             ->select(['id', 'order_serial_no', 'queue_number', 'branch_id', 'source_surface', 'created_at'])
-            ->whereNull('kitchen_ticket_printed_at')
+            // « Pas encore réclamé POUR CETTE DESTINATION » — et non « pas encore imprimé » tout
+            // court. C'est toute la différence entre deux postes qui impriment chacun leur papier
+            // et deux postes qui se volent les tickets à tour de rôle.
+            ->whereNotExists(function ($sub) use ($destination) {
+                $sub->select(DB::raw(1))
+                    ->from('kitchen_ticket_claims')
+                    ->whereColumn('kitchen_ticket_claims.order_id', 'orders.id')
+                    ->where('kitchen_ticket_claims.destination', $destination);
+            })
             ->whereIn('source_surface', self::SURFACES)
             ->whereIn('status', KitchenReleaseRule::visibleStatuses())
             ->where('created_at', '>=', now()->subMinutes($fenetreMinutes))
@@ -91,7 +113,7 @@ class KitchenTicketQueueController extends Controller
         $reclamees = [];
         foreach ($candidates as $order) {
             // La base arbitre : si un autre onglet a gagné la course, on passe.
-            if (! $printer->claimForBridge((int) $order->id)) {
+            if (! $printer->claimForBridge((int) $order->id, $destination)) {
                 continue;
             }
 
@@ -103,7 +125,24 @@ class KitchenTicketQueueController extends Controller
             ];
         }
 
-        return response()->json(['orders' => $reclamees]);
+        return response()->json(['orders' => $reclamees, 'destination' => $destination]);
+    }
+
+    /**
+     * Destination demandée par le poste appelant.
+     *
+     * Défaut 'counter' À DESSEIN : pendant la fenêtre de déploiement, un navigateur peut encore
+     * exécuter l'ancien paquet, qui n'envoie aucune destination. Le faire échouer priverait la
+     * caisse de ses tickets le temps qu'elle recharge ; on le traite donc comme ce qu'il est —
+     * un poste caisse.
+     */
+    private function destination(Request $request): string
+    {
+        $valide = $request->validate([
+            'destination' => ['nullable', 'string', 'in:'.implode(',', self::DESTINATIONS)],
+        ]);
+
+        return $valide['destination'] ?? self::DESTINATION_COMPTOIR;
     }
 
     /**
@@ -119,10 +158,12 @@ class KitchenTicketQueueController extends Controller
         );
 
         $validated = $request->validate([
-            'success' => ['required', 'boolean'],
-            'error'   => ['nullable', 'string', 'max:255'],
+            'success'     => ['required', 'boolean'],
+            'error'       => ['nullable', 'string', 'max:255'],
+            'destination' => ['nullable', 'string', 'in:'.implode(',', self::DESTINATIONS)],
         ]);
 
+        $destination = $validated['destination'] ?? self::DESTINATION_COMPTOIR;
         $branchId = (int) ($request->user()->branch_id ?? 0);
 
         // Portée branche : un poste ne libère que des commandes de SA caisse.
@@ -132,20 +173,28 @@ class KitchenTicketQueueController extends Controller
             ->firstOrFail(['id', 'branch_id']);
 
         if (! $validated['success']) {
-            $printer->releaseClaim((int) $found->id);
+            $printer->releaseClaim((int) $found->id, $destination);
 
             Log::warning('[KitchenTicketQueue] ticket cuisine non sorti — commande remise en file', [
-                'order_id' => (int) $found->id,
-                'error'    => $validated['error'] ?? null,
+                'order_id'    => (int) $found->id,
+                'destination' => $destination,
+                'error'       => $validated['error'] ?? null,
             ]);
 
-            return response()->json(['order_id' => (int) $found->id, 'requeued' => true]);
+            return response()->json([
+                'order_id' => (int) $found->id, 'destination' => $destination, 'requeued' => true,
+            ]);
         }
 
-        Log::info('[KitchenTicketQueue] ticket cuisine imprimé par le pont caisse', [
-            'order_id' => (int) $found->id,
+        $printer->markClaimPrinted((int) $found->id, $destination);
+
+        Log::info('[KitchenTicketQueue] ticket cuisine imprimé par le pont local', [
+            'order_id'    => (int) $found->id,
+            'destination' => $destination,
         ]);
 
-        return response()->json(['order_id' => (int) $found->id, 'requeued' => false]);
+        return response()->json([
+            'order_id' => (int) $found->id, 'destination' => $destination, 'requeued' => false,
+        ]);
     }
 }

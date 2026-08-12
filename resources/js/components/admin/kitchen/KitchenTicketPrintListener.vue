@@ -36,7 +36,30 @@
  *    rien ne le lui donnera.
  */
 import axios from "axios";
-import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
+import {
+    isCaisseBridgeAvailable,
+    printEscPosViaCaisseBridge,
+    isKitchenBridgeAvailable,
+    printEscPosViaKitchenBridge,
+} from "../../../helpers/posLocalPrinter";
+
+/**
+ * [TICKET-CUISINE-DEUX-POSTES 2026-08-12 · owner « les deux »] Les deux sorties papier.
+ *
+ * Ce composant tourne sur TOUS les postes admin. Il ne décide pas de sa destination par une
+ * configuration ni par un rôle : il regarde QUEL PONT répond sur la machine où il s'exécute.
+ * C'est la seule information fiable — le pont caisse n'existe que sur le PC caisse, le pont
+ * cuisine que sur le PC cuisine, et depuis l'un on ne voit jamais l'autre (127.0.0.1 est
+ * strictement local). Un poste bureau ou un téléphone ne répond ni à l'un ni à l'autre et
+ * reste donc inerte, ce qui est exactement ce qu'on veut.
+ *
+ * Un poste qui hébergerait les DEUX ponts imprimerait les deux papiers : c'est cohérent, la
+ * réclamation étant faite par destination.
+ */
+const POSTES = [
+    { destination: 'counter', disponible: isCaisseBridgeAvailable, imprimer: printEscPosViaCaisseBridge },
+    { destination: 'kitchen', disponible: isKitchenBridgeAvailable, imprimer: printEscPosViaKitchenBridge },
+];
 
 // 5 s : même cadence que le ticket promo et que le sondage caisse. Une commande qui tombe
 // sort donc en cuisine en moins de 5 secondes, sans dépendre d'aucun temps réel.
@@ -55,8 +78,9 @@ export default {
         return {
             _timer: null,
             _running: false,
-            _bridgeCheckedAt: 0,
-            _bridgeAvailable: false,
+            // Un état de disponibilité PAR poste : un pont cuisine éteint ne doit jamais faire
+            // croire que le pont caisse l'est aussi.
+            _bridgeState: { counter: { checkedAt: 0, available: false }, kitchen: { checkedAt: 0, available: false } },
         };
     },
     mounted() {
@@ -86,13 +110,19 @@ export default {
             this._running = true;
 
             try {
-                if (!(await this._hasBridge())) return;
+                for (const poste of POSTES) {
+                    // Chaque poste est traité indépendamment : si le pont cuisine est éteint, la
+                    // caisse continue d'imprimer, et inversement.
+                    if (!(await this._hasBridge(poste))) continue;
 
-                const { data } = await axios.post("admin/pos/kitchen-tickets/pending");
-                const orders = (data && data.orders) || [];
+                    const { data } = await axios.post("admin/pos/kitchen-tickets/pending", {
+                        destination: poste.destination,
+                    });
+                    const orders = (data && data.orders) || [];
 
-                for (const order of orders) {
-                    await this._printOne(order);
+                    for (const order of orders) {
+                        await this._printOne(order, poste);
+                    }
                 }
             } catch (_) {
                 // Silence volontaire : cet écran peut être ouvert par un compte sans droit
@@ -108,25 +138,26 @@ export default {
          * périodiquement : le conclure une fois pour toutes condamnerait au silence la seule
          * machine capable d'atteindre l'imprimante si elle démarre après l'écran.
          */
-        async _hasBridge() {
+        async _hasBridge(poste) {
             const now = Date.now();
+            const etat = this._bridgeState[poste.destination];
 
-            if (this._bridgeAvailable) return true;
-            if (this._bridgeCheckedAt && (now - this._bridgeCheckedAt) < BRIDGE_RECHECK_MS) {
+            if (etat.available) return true;
+            if (etat.checkedAt && (now - etat.checkedAt) < BRIDGE_RECHECK_MS) {
                 return false;
             }
 
             try {
-                this._bridgeAvailable = await isCaisseBridgeAvailable();
+                etat.available = await poste.disponible();
             } catch (_) {
-                this._bridgeAvailable = false;
+                etat.available = false;
             }
 
-            this._bridgeCheckedAt = now;
-            return this._bridgeAvailable;
+            etat.checkedAt = now;
+            return etat.available;
         },
 
-        async _printOne(order) {
+        async _printOne(order, poste) {
             let success = false;
             let error = null;
 
@@ -143,7 +174,7 @@ export default {
                 if (!b64) {
                     error = "Aucun contenu à imprimer";
                 } else {
-                    const result = await printEscPosViaCaisseBridge(b64);
+                    const result = await poste.imprimer(b64);
                     success = !!(result && result.ok);
                     if (!success) error = (result && result.error) || "Pont d'impression indisponible";
                 }
@@ -155,6 +186,7 @@ export default {
             try {
                 await axios.post(`admin/pos/kitchen-tickets/${order.id}/ack`, {
                     success,
+                    destination: poste.destination,
                     error: error ? String(error).slice(0, 255) : null,
                 });
             } catch (_) {

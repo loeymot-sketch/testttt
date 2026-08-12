@@ -105,6 +105,69 @@ export async function printEscPosViaCaisseBridge(escposB64, opts = {}) {
   } catch (_) { return null; }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+ * [TICKET-CUISINE-DEUX-POSTES 2026-08-12 · owner « les deux »] Le pont CUISINE.
+ *
+ * Il existe DEUX ponts d'impression, sur deux machines différentes :
+ *   - le pont CAISSE   écoute 127.0.0.1:9100 sur le PC de la caisse ;
+ *   - le pont CUISINE  écoute 127.0.0.1:9101 sur le PC de la cuisine.
+ *
+ * Chacun ne voit que SA machine : depuis le PC caisse, 127.0.0.1:9101 n'est pas
+ * l'imprimante de la cuisine, c'est un port vide du PC caisse. C'est pourquoi il
+ * faut un écouteur sur chaque poste, et une réclamation PAR DESTINATION côté
+ * serveur — sinon le premier poste qui réclame prive l'autre de son papier.
+ *
+ * Les deux jeux de fonctions sont volontairement séparés plutôt que paramétrés
+ * par une URL : chacun a son propre cache de disponibilité, et un pont cuisine
+ * éteint ne doit jamais faire croire que le pont caisse l'est aussi.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+function kitchenBridgeUrl() {
+  try {
+    const u = window.foodkingConfig && window.foodkingConfig.kitchenBridgeUrl;
+    if (typeof u === 'string' && u) return u.replace(/\/+$/, '');
+  } catch (_) { /* défaut ci-dessous */ }
+  return 'http://127.0.0.1:9101';
+}
+export const KITCHEN_BRIDGE_URL = kitchenBridgeUrl();
+
+let _kitchenHealthCache = { ok: false, at: 0 };
+/** Test-only : purge le cache health du pont cuisine. */
+export function _resetKitchenBridgeHealthCache() { _kitchenHealthCache = { ok: false, at: 0 }; }
+
+/** True si le pont CUISINE répond /health → "UP". Mêmes garanties que son jumeau caisse. */
+export async function isKitchenBridgeAvailable(timeoutMs = 800, opts = {}) {
+  const now = Date.now();
+  const ttl = _kitchenHealthCache.ok ? HEALTH_TTL_OK_MS : HEALTH_TTL_KO_MS;
+  if (!opts.force && _kitchenHealthCache.at && (now - _kitchenHealthCache.at) < ttl) {
+    return _kitchenHealthCache.ok;
+  }
+  let ok = false;
+  try {
+    const res = await fetchWithTimeout(kitchenBridgeUrl() + '/health', {}, timeoutMs);
+    if (res && res.ok) {
+      const txt = await res.text();
+      ok = /UP/i.test(txt);
+    }
+  } catch (_) { ok = false; }
+  _kitchenHealthCache = { ok, at: Date.now() };
+  return ok;
+}
+
+/** POSTe les octets ESC/POS au pont CUISINE. Jumeau strict de la version caisse. */
+export async function printEscPosViaKitchenBridge(escposB64, opts = {}) {
+  try {
+    if (!escposB64) return null;
+    const bytes = b64ToBytes(escposB64);
+    const res = await fetchWithTimeout(kitchenBridgeUrl() + '/raw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: bytes,
+    }, rawTimeoutMs(opts));
+    return res && res.ok ? { ok: true, method: 'kitchen-bridge' } : null;
+  } catch (_) { return null; }
+}
+
 // [ANTI-DOUBLE 2026-06-28] Garde 1-ticket-par-(commande,type) persistée localStorage
 // (survit au F5 / re-montage). Clé = orderRef|ticket|jour.
 const PRINTED_LS_KEY = 'pos_printed_tickets_v1';
