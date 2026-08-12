@@ -47,20 +47,6 @@ return [
     // Branche cible (V1 = single restaurant).
     'branch_id' => (int) env('UBER_BRANCH_ID', 1),
 
-    // ── [UBER-PHOTO 2026-08-10 · owner] Commandes prises EN PHOTO sur la tablette ────────────
-    // Tant qu'Uber n'accorde pas l'accès production (statut ci-dessus), le restaurant recopie les
-    // commandes à la main. L'owner photographie donc le ticket sur la tablette et le système le
-    // lit. Ce canal est INDÉPENDANT du webhook : il fonctionne aujourd'hui, sans Uber.
-    //
-    // `vision_enabled` = true + OPENAI_API_KEY renseignée → lecture réelle par un modèle de
-    // vision. Sinon → doublure locale : le parcours complet fonctionne, mais la lecture rend le
-    // ticket d'exemple ; le personnel corrige alors les lignes à l'écran avant d'envoyer.
-    'vision_enabled' => (bool) env('UBER_VISION_ENABLED', false),
-    // Nombre maximal de photos pour UN ticket (l'owner en prend 1 à 3 selon la longueur).
-    'photo_max_files' => (int) env('UBER_PHOTO_MAX_FILES', 6),
-    // Taille maximale par photo, en kilo-octets (12 Mo — une photo de tablette pèse 2 à 5 Mo).
-    'photo_max_kb' => (int) env('UBER_PHOTO_MAX_KB', 12288),
-
     // [GO-LIVE UBER 2026-07-04] Item d'ancrage pour les lignes NON MAPPÉES (dégradation
     // gracieuse — une commande payée ne se perd JAMAIS). 0/absent = le mapper crée/réutilise
     // un placeholder technique inactif hors canaux ('uber-article-non-mappe'). L'owner peut
