@@ -164,6 +164,14 @@ final class UberPhotoOrderMapper
                     ];
                     break;
 
+                case UberTicketOptionClassifier::RETRAIT:
+                    // [RETRAIT 2026-08-12] Un refus se lit EN TOUTES LETTRES, sur la ligne de
+                    // note — jamais en symbole. On garde le texte BRUT (« Retirer : Tomate »),
+                    // pas le libellé nettoyé (« Tomate ») : amputé de sa négation, il dirait
+                    // exactement le contraire de ce que le client a demandé.
+                    $notes[] = $o['raw'];
+                    break;
+
                 case UberTicketOptionClassifier::SAUCE_FRITES:
                     // Canal dédié : la cuisine la rend sur la ligne du menu (« MENU : KTP »),
                     // jamais dans la sauce du produit. Elle ne vit que dans le texte libre —

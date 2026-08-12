@@ -140,6 +140,24 @@ final class KitchenTicketSymbolicFormatter
     public function cruditeSymbol(?string $name): string
     {
         $n = $this->norm($name);
+
+        // [RETRAIT 2026-08-12] « Sans oignons » n'est PAS une garniture d'oignons. Nos canaux
+        // maison sont additifs — ce qu'on ne coche pas n'apparaît pas — mais un ticket Uber, lui,
+        // s'écrit en négatif. Sans cette garde, la table trouvait « oignon » dans « Sans oignons »
+        // et le repliait en « O » : la cuisine en mettait, à quelqu'un qui venait de les refuser.
+        // Mesuré sur une vraie photo en production : `CHEESE BURGER | O`.
+        //
+        // Rendre la chaîne vide ici fait DEUX choses justes d'un coup : le refus n'entre pas dans
+        // le groupe de crudités, et l'extra cesse d'être masqué (§ lignes « + … ») — il ressort
+        // donc écrit en toutes lettres. Un refus effacé serait aussi grave qu'un refus inversé.
+        //
+        // La négation n'est reconnue qu'en TÊTE : « Sauce sans gluten » reste un ajout. Vérifié
+        // sur les 511 noms de composants du corpus réel : une seule négation (« Sans sauce »),
+        // qui n'a jamais été une crudité — impact mesuré nul.
+        if (preg_match('/^(sans|pas\s+d[eu\']|no|without|w\/o)\b/u', $n)) {
+            return '';
+        }
+
         foreach (self::CRUDITE_TABLE as [$re, $sym]) {
             if (preg_match($re, $n)) {
                 return $sym;

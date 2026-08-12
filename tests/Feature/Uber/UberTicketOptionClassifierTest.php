@@ -75,6 +75,21 @@ class UberTicketOptionClassifierTest extends TestCase
             // cuisine fait déjà cette distinction pour les commandes maison.
             'oignons frits payants' => ['Oignons frits (+0,90 €)', C::SUPPLEMENT, 'Oignons frits', 1, 0.9],
 
+            // [RETRAIT 2026-08-12] Un ticket Uber s'écrit en NÉGATIF là où nos canaux maison
+            // s'écrivent en positif : on ne coche pas « oignons », donc il n'y en a pas. Sur
+            // Uber le client écrit « Sans oignons » — et la table des crudités, qui cherche
+            // « oignon », le rangeait en garniture. Le ticket cuisine annonçait alors des
+            // oignons à quelqu'un qui venait EXPRESSÉMENT de les refuser. Un refus ne doit
+            // jamais devenir un ajout.
+            'retrait oignons' => ['Sans oignons', C::RETRAIT, 'Sans oignons'],
+            'retrait salade' => ['sans salade', C::RETRAIT, 'sans salade'],
+            'retrait sans apostrophe' => ["Pas d'oignons", C::RETRAIT, "Pas d'oignons"],
+            'retrait pas de' => ['Pas de sauce', C::RETRAIT, 'Pas de sauce'],
+            'retrait anglais' => ['No onions', C::RETRAIT, 'No onions'],
+            'retrait étiqueté' => ['Retirer : Tomate', C::RETRAIT, 'Tomate'],
+            // ⚠️ Le mot « sans » au MILIEU d'un libellé ne retire rien : c'est le nom du produit.
+            'sans au milieu n est pas un retrait' => ['Sauce sans gluten', C::SUPPLEMENT, 'Sauce sans gluten'],
+
             // Repli : inconnu de tous, donc écrit en toutes lettres — jamais perdu.
             'inconnu' => ['Emballage cadeau', C::SUPPLEMENT, 'Emballage cadeau'],
         ];

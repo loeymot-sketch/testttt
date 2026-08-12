@@ -108,6 +108,11 @@ export function sauceSymbol(name) {
 
 export function cruditeSymbol(name) {
     const n = normalize(name);
+    // [RETRAIT 2026-08-12] Jumeau STRICT de KitchenTicketSymbolicFormatter::cruditeSymbol.
+    // « Sans oignons » n'est pas une garniture d'oignons : sans cette garde la table trouvait
+    // « oignon » dans le refus et le repliait en « O », donc la cuisine en mettait. La négation
+    // n'est reconnue qu'en TÊTE — « Sauce sans gluten » reste un ajout.
+    if (/^(sans|pas\s+d[eu'])\b/.test(n) || /^(no|without|w\/o)\b/.test(n)) return '';
     for (const [re, sym] of CRUDITE_TABLE) {
         if (re.test(n)) return sym;
     }

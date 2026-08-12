@@ -52,6 +52,16 @@ final class UberTicketOptionClassifier
     /** Frites servies en accompagnement, hors formule — une portion de plus au bain de friture. */
     public const FRITES = 'frites';
     public const SUPPLEMENT = 'supplement';
+    /**
+     * [RETRAIT 2026-08-12] Un RETRAIT : « Sans oignons », « Pas de sauce », « Retirer : Tomate ».
+     *
+     * Nos canaux maison sont ADDITIFS — on ne coche pas « oignons », donc il n'y en a pas ; le mot
+     * « sans » n'y existe même pas. Le ticket Uber, lui, s'écrit en NÉGATIF. Sans cette case, la
+     * table des crudités trouvait « oignon » dans « Sans oignons » et le repliait en garniture :
+     * la cuisine lisait « O » et en mettait, à quelqu'un qui venait EXPRESSÉMENT de les refuser.
+     * Mesuré en production sur une vraie photo : `CHEESE BURGER | O`.
+     */
+    public const RETRAIT = 'retrait';
 
     public function __construct(
         private readonly KitchenTicketSymbolicFormatter $formatter = new KitchenTicketSymbolicFormatter,
@@ -109,9 +119,32 @@ final class UberTicketOptionClassifier
         return ['kind' => $kind, 'label' => $label, 'quantity' => $quantity, 'price' => $price, 'raw' => $raw];
     }
 
+    /**
+     * Le client refuse-t-il quelque chose ?
+     *
+     * La négation n'est reconnue qu'en TÊTE de libellé, jamais au milieu : « Sauce sans gluten »
+     * est le nom d'un produit qu'on ajoute, pas un retrait. Un `str_contains('sans')` aurait
+     * supprimé la sauce demandée — l'erreur inverse, aussi fausse.
+     */
+    private function estRetrait(string $etiquette, string $valeur): bool
+    {
+        if ($etiquette !== '' && preg_match('/^(retir|enlev|supprim|sans|no|remove|without)/u', $etiquette)) {
+            return true;
+        }
+
+        return (bool) preg_match('/^(sans|pas\s+d[eu\']|no|without|w\/o)\b/u', $this->norm($valeur));
+    }
+
     /** Décide la case, étiquette d'abord, tables de la cuisine ensuite. */
     private function kindFromLabel(string $etiquette, string $valeur, float $price): string
     {
+        // ── (0) Un REFUS n'est jamais un composant, et se teste AVANT tout le reste.
+        // L'ordre n'est pas cosmétique : « Sans oignons » contient « oignons », donc n'importe
+        // quelle table interrogée d'abord l'attraperait et transformerait le refus en ajout.
+        if ($this->estRetrait($etiquette, $valeur)) {
+            return self::RETRAIT;
+        }
+
         // ── (1) Étiquette explicite : l'information la plus fiable du ticket.
         if ($etiquette !== '') {
             // AVANT « sauce » tout court : « Sauce frites » n'est pas la sauce du produit.

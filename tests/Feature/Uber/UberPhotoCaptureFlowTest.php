@@ -114,6 +114,53 @@ class UberPhotoCaptureFlowTest extends TestCase
         $this->assertSame(0, Order::query()->withoutGlobalScopes()->count(), 'Rien ne doit partir en cuisine avant validation.');
     }
 
+    /**
+     * [RETRAIT 2026-08-12] Un REFUS ne doit jamais devenir un AJOUT.
+     *
+     * Nos canaux maison sont additifs : on ne coche pas « oignons », donc il n'y en a pas. Le
+     * ticket Uber, lui, s'écrit en négatif — « Sans oignons ». La table des crudités cherchait
+     * « oignon » dans le libellé et le rangeait en garniture : le ticket cuisine annonçait alors
+     * des oignons à quelqu'un qui venait EXPRESSÉMENT de les refuser. Mesuré en production sur
+     * une vraie photo avant correction : `CHEESE BURGER | O`.
+     *
+     * @test
+     */
+    public function un_refus_ne_devient_jamais_un_ajout(): void
+    {
+        $this->actingCaisse();
+
+        $photo = $this->photo('retrait.json', [
+            'customer_name' => 'Lucas P.',
+            'display_id' => '#7B3C1',
+            'order_type' => 'delivery',
+            'total' => 12.0,
+            'items' => [[
+                'title' => 'Cayenne',
+                'quantity' => 1,
+                'options' => ['Sans oignons'],
+                'note' => '',
+            ]],
+        ]);
+
+        $ligne = $this->postJson('/api/admin/uber/photo/scan', ['photos' => [$photo]])
+            ->assertOk()
+            ->json('apercu.lignes.0');
+
+        // Aucun groupe de crudités ne doit porter le O des oignons.
+        $this->assertDoesNotMatchRegularExpression(
+            '/\|\s*[STO]*O[STO]*\s*(\||$)/u',
+            $ligne['symbolique'],
+            'Le refus « Sans oignons » a été replié en garniture : la cuisine en mettrait. Symbolique lue : '.$ligne['symbolique']
+        );
+
+        // …et le refus reste LISIBLE : l'effacer serait aussi grave que l'inverser.
+        $this->assertStringContainsString(
+            'Sans oignons',
+            $ligne['note'].' '.implode(' ', $ligne['supplements']),
+            'Le refus a disparu de la vue du cuisinier.'
+        );
+    }
+
     /** @test */
     public function la_validation_cree_la_commande_avec_le_canal_uber_et_le_nom_du_client(): void
     {
