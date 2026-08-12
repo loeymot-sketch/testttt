@@ -156,6 +156,43 @@ class UberTicketOptionClassifierTest extends TestCase
         }
     }
 
+    /**
+     * [RUBRIQUES 2026-08-12] Les en-têtes arrivent AUSSI comme options — mesuré sur la commande
+     * réelle E63F5 : « PAIN », « SAUCE », « CRUDITÉS », « BOISSON » venaient s'ajouter à leurs
+     * propres valeurs, et la cuisine lisait « + SAUCE + CRUDITÉS » : deux suppléments fantômes
+     * par ligne. On ne jette QUE l'étiquette nue ; la valeur, elle, ne bouge pas.
+     */
+    public function test_une_etiquette_de_rubrique_nue_ne_devient_pas_un_supplement(): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [[
+                'title' => 'Menu sandwich Cayenne',
+                'quantity' => 1,
+                'options' => ['PAIN', '1x Galette', 'SAUCE', '1x Barbecue', 'CRUDITÉS', '1x Salade', 'BOISSON', '1x Lipton Ice Tea'],
+                'note' => '',
+            ]],
+        ]);
+
+        $this->assertSame(
+            ['1x Galette', '1x Barbecue', '1x Salade', '1x Lipton Ice Tea'],
+            $t['items'][0]['options'],
+            'Les étiquettes nues sont restées et deviendraient des suppléments fantômes.'
+        );
+    }
+
+    /** ⚠️ Une étiquette QUI PORTE UNE VALEUR n'est pas nue : la jeter effacerait le choix du client. */
+    public function test_une_etiquette_avec_sa_valeur_survit(): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [[
+                'title' => 'Cayenne', 'quantity' => 1,
+                'options' => ['PAIN: Galette', 'Sauce : Harissa'], 'note' => '',
+            ]],
+        ]);
+
+        $this->assertSame(['PAIN: Galette', 'Sauce : Harissa'], $t['items'][0]['options']);
+    }
+
     /** Sans produit au-dessus, on ne replie pas : une ligne visible vaut mieux qu'un choix effacé. */
     public function test_une_rubrique_en_tete_de_ticket_reste_visible(): void
     {

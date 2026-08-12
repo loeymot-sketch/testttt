@@ -114,6 +114,15 @@ TXT;
         return $sortie;
     }
 
+    /** Une étiquette de rubrique SANS valeur — « CRUDITÉS » seul, pas « CRUDITÉS : Salade ». */
+    private static function estEtiquetteNue(string $texte): bool
+    {
+        return (bool) preg_match(
+            '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
+            self::sansAccents(mb_strtolower(trim($texte)))
+        );
+    }
+
     /** Minuscules ASCII : « CRUDITÉS » et « crudites » doivent se reconnaître. */
     private static function sansAccents(string $s): string
     {
@@ -219,9 +228,19 @@ TXT;
             $options = [];
             foreach ((array) ($line['options'] ?? []) as $opt) {
                 $opt = trim((string) (is_array($opt) ? ($opt['title'] ?? $opt['name'] ?? '') : $opt));
-                if ($opt !== '') {
-                    $options[] = $opt;
+                if ($opt === '') {
+                    continue;
                 }
+                // [RUBRIQUES 2026-08-12] Un en-tête SEUL n'est pas un choix du client. Mesuré sur
+                // la commande réelle E63F5 : la lecture rendait « PAIN », « SAUCE », « CRUDITÉS »,
+                // « BOISSON » en plus de leurs valeurs, et la cuisine recevait « + SAUCE
+                // + CRUDITÉS » — deux suppléments fantômes par ligne, à côté des vrais.
+                // On ne jette QUE l'étiquette nue : « PAIN: Galette » porte une valeur, il reste.
+                // Aucune information ne se perd, la valeur suit toujours sur la ligne d'après.
+                if (self::estEtiquetteNue($opt)) {
+                    continue;
+                }
+                $options[] = $opt;
             }
             $quantity = max(1, (int) ($line['quantity'] ?? 1));
 
