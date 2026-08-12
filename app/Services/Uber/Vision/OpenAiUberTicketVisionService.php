@@ -49,7 +49,11 @@ Règles impératives :
 - order_type = "delivery" si livraison, "pickup" si retrait au comptoir, sinon "".
 - title = le nom du produit RECOPIÉ MOT POUR MOT depuis le ticket. Ne traduis pas, ne corrige
   pas, ne remplace pas par un produit approchant.
-- quantity = le nombre d'exemplaires de cette ligne (1 si non écrit).
+- quantity = le nombre d'exemplaires de cette ligne. ATTENTION : le ticket l'écrit EN TÊTE de la
+  ligne produit, sous la forme « 2 x Cheese Burger ». Ce nombre va dans quantity, et le title ne
+  le garde pas. L'oublier fait manquer un plat au client : c'est l'erreur la plus grave possible.
+  Ne le confonds pas avec les « 1x » des lignes d'options en dessous, qui décrivent les choix.
+  1 seulement si aucun nombre n'est écrit devant le produit.
 - options = la liste des choix/suppléments/sauces/boissons imprimés SOUS le produit, un par
   entrée, recopiés tels quels.
 - note = l'instruction libre du client pour cette ligne ("sans oignons"...). Vide si absente.
@@ -159,9 +163,22 @@ TXT;
                     $options[] = $opt;
                 }
             }
+            $quantity = max(1, (int) ($line['quantity'] ?? 1));
+
+            // [QUANTITÉ EN TÊTE 2026-08-12] Filet de sécurité : le ticket Uber écrit la quantité
+            // DEVANT le produit (« 2 x Cheese Burger »). Sur une vraie commande, la lecture a
+            // retiré le « 2 x » du titre sans le reporter dans quantity — un burger manquait, et
+            // rien à l'écran ne le signalait. On rattrape donc le préfixe s'il survit dans le
+            // titre, sans jamais écraser une quantité déjà lue plus grande (pas de doublement
+            // quand la lecture a fait son travail).
+            if (preg_match('/^\s*(\d{1,2})\s*[x×]\s*(.+)$/iu', $title, $m)) {
+                $quantity = max($quantity, (int) $m[1]);
+                $title = trim($m[2]);
+            }
+
             $items[] = [
                 'title' => $title,
-                'quantity' => max(1, (int) ($line['quantity'] ?? 1)),
+                'quantity' => $quantity,
                 'options' => $options,
                 'note' => trim((string) ($line['note'] ?? $line['special_instructions'] ?? '')),
             ];

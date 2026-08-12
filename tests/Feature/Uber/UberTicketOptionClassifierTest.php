@@ -95,6 +95,36 @@ class UberTicketOptionClassifierTest extends TestCase
         ];
     }
 
+    /**
+     * [QUANTITÉ EN TÊTE 2026-08-12] Le ticket écrit « 2 x Cheese Burger ». Sur une VRAIE commande,
+     * la lecture a retiré le « 2 x » du titre sans le reporter : un burger manquait, et rien à
+     * l'écran ne le signalait. Le filet rattrape le préfixe s'il survit dans le titre.
+     *
+     * @dataProvider casQuantite
+     */
+    public function test_la_quantite_ecrite_en_tete_du_produit_n_est_jamais_perdue(string $titre, int $qteLue, int $attendue, string $titreAttendu): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [['title' => $titre, 'quantity' => $qteLue, 'options' => [], 'note' => '']],
+        ]);
+
+        $this->assertSame($attendue, $t['items'][0]['quantity'], "Mauvaise quantité pour « {$titre} »");
+        $this->assertSame($titreAttendu, $t['items'][0]['title'], "Le préfixe doit quitter le titre pour « {$titre} »");
+    }
+
+    /** @return array<string, array<int, mixed>> */
+    public static function casQuantite(): array
+    {
+        return [
+            'prefixe survivant, quantite ratee' => ['2 x Cheese Burger', 1, 2, 'Cheese Burger'],
+            'prefixe collé' => ['3x Tacos M', 1, 3, 'Tacos M'],
+            'prefixe et quantite deja lues — pas de doublement' => ['2 x Cheese Burger', 2, 2, 'Cheese Burger'],
+            'aucun prefixe' => ['Cheese Burger', 1, 1, 'Cheese Burger'],
+            // ⚠️ Un nom de produit qui COMMENCE par un chiffre ne doit pas être amputé.
+            'produit chiffre' => ['4 Fromages', 1, 1, '4 Fromages'],
+        ];
+    }
+
     /** @test */
     public function une_option_reduite_a_son_etiquette_reste_visible_en_entier(): void
     {

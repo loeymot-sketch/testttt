@@ -2,6 +2,8 @@
 
 namespace App\Services\Uber;
 
+use App\Models\Item;
+
 /**
  * [UBER-PHOTO 2026-08-10 · owner] Transforme un ticket Uber LU SUR PHOTO en une commande interne
  * ordinaire — celle que la cuisine, la caisse et l'imprimante savent déjà traiter.
@@ -80,8 +82,14 @@ final class UberPhotoOrderMapper
         $title = trim((string) ($line['title'] ?? ''));
         $quantity = max(1, (int) ($line['quantity'] ?? 1));
 
-        $itemId = $this->catalog->resolveItemId($title);
+        [$itemId, $estMenu] = $this->resoudreArticle($title);
         $unmapped = ($itemId === null);
+        // Le libellé d'Uber reste la référence pour tout ce qui décrit la FORMULE (« grande »
+        // frites), que le nom de notre carte ne porte pas.
+        $titreUber = $title;
+        // Reconnu → la ligne prend le nom de NOTRE carte : c'est lui que la cuisine sait lire, et
+        // c'est ce qui met l'écran de validation et le papier d'accord (voir nomDeLaCarte()).
+        $title = $this->nomDeLaCarte($itemId, $title);
         if ($unmapped) {
             // Dégradation gracieuse, identique au webhook : une commande déjà payée ne se perd
             // JAMAIS parce qu'un nom de produit n'a pas été reconnu. Elle s'ancre sur un article
@@ -194,6 +202,18 @@ final class UberPhotoOrderMapper
             }
         }
 
+        // [CARTE UBER 2026-08-12] Le titre annonce une FORMULE (« Menu sandwich Cayenne ») mais
+        // le ticket Uber ne liste pas les frites — seulement la boisson. Sans cette ligne, deux
+        // menus passaient au bandeau de cuisson sans AUCUNE frite à plonger. On ne l'ajoute que
+        // si les options n'en ont pas déjà apporté une : le double comptage servirait deux
+        // portions pour une vendue.
+        if ($estMenu && ! $this->porteDejaUneFormule($addons)) {
+            $addons[] = [
+                'role' => 'menu_full', 'addon_name' => $this->menuAddonName($titreUber),
+                'quantity' => 1, 'unit_price' => 0.0, 'line_total' => 0.0,
+            ];
+        }
+
         // La sauce des frites s'écrit dans le format EXACT que lisent le ticket et l'écran
         // (`fritesSauceSymbol`) : « Sauce frites : Ketchup, Mayonnaise ». Un autre libellé ne
         // serait tout simplement pas vu.
@@ -237,6 +257,80 @@ final class UberPhotoOrderMapper
      * ce nom que lisent le bandeau de cuisson et la ligne « MENU » de l'écran cuisine. On garde
      * cependant la mention « Grande » du ticket, parce qu'une grande frite compte double au bain.
      */
+    /**
+     * [CARTE UBER 2026-08-12] Retrouve l'article de NOTRE carte derrière le nom d'Uber.
+     *
+     * La carte Uber préfixe ses produits par leur RAYON : elle vend « Menu sandwich Cayenne » là
+     * où notre catalogue s'appelle « Cayenne ». Le résolveur ne testait que le titre entier :
+     * mesuré sur une vraie commande, 2 lignes sur 3 tombaient sur l'article bouche-trou, le ticket
+     * imprimait « ART », aucune frite n'était comptée et aucun stock décompté.
+     *
+     * On retire donc les mots de tête un par un, en essayant à chaque fois le reste — donc le nom
+     * le PLUS LONG d'abord. Cet ordre n'est pas un détail : « Menu galette Cayenne » doit trouver
+     * « Galette Cayenne », pas « Cayenne ». Servir un sandwich à qui a commandé une galette serait
+     * une erreur de plus, pas une correction.
+     *
+     * On ne descend jamais jusqu'au dernier mot seul en dessous de 3 caractères, et un titre déjà
+     * reconnu tel quel n'est jamais réduit.
+     *
+     * @return array{0: int|null, 1: bool}  [id de l'article, le titre annonce-t-il une formule]
+     */
+    private function resoudreArticle(string $title): array
+    {
+        $estMenu = (bool) preg_match('/\b(menus?|formules?)\b/iu', $title);
+
+        $direct = $this->catalog->resolveItemId($title);
+        if ($direct !== null) {
+            return [$direct, $estMenu];
+        }
+
+        $mots = preg_split('/\s+/u', trim($title)) ?: [];
+        for ($i = 1; $i < count($mots); $i++) {
+            $candidat = trim(implode(' ', array_slice($mots, $i)));
+            if (mb_strlen($candidat) < 3) {
+                break;
+            }
+            $id = $this->catalog->resolveItemId($candidat);
+            if ($id !== null) {
+                return [$id, $estMenu];
+            }
+        }
+
+        return [null, $estMenu];
+    }
+
+    /**
+     * [CARTE UBER 2026-08-12] Le nom porté par la ligne est celui de NOTRE carte, pas celui d'Uber.
+     *
+     * C'est ce nom qui produit le symbole lu en cuisine. Tant que la ligne gardait « Menu sandwich
+     * Cayenne », le moteur en tirait « SAN » — un code qui ne désigne rien. Pire : l'écran de
+     * validation lisait ce titre (« SAN ») pendant que le papier lisait le nom de l'ARTICLE
+     * (« ART »), si bien que l'aperçu validé n'était pas ce que la cuisine recevait. Aligner les
+     * deux sur le nom de la carte referme l'écart d'un seul geste.
+     */
+    private function nomDeLaCarte(?int $itemId, string $defaut): string
+    {
+        if ($itemId === null) {
+            return $defaut;
+        }
+
+        $nom = Item::query()->withoutGlobalScopes()->whereKey($itemId)->value('name');
+
+        return is_string($nom) && $nom !== '' ? $nom : $defaut;
+    }
+
+    /** Les options ont-elles déjà apporté une formule (menu complet ou frites) ? */
+    private function porteDejaUneFormule(array $addons): bool
+    {
+        foreach ($addons as $a) {
+            if (in_array($a['role'] ?? '', ['menu_full', 'menu_frites'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function menuAddonName(string $label): string
     {
         return preg_match('/\bgrande?\b|\bxl\b|\blarge\b/iu', $label)

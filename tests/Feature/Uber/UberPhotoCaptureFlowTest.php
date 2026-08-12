@@ -52,7 +52,7 @@ class UberPhotoCaptureFlowTest extends TestCase
             'status' => Status::ACTIVE,
         ]);
 
-        foreach (['Tacos M', 'Cayenne', 'Grande Frites'] as $nom) {
+        foreach (['Tacos M', 'Cayenne', 'Galette Cayenne', 'Cheese Burger', 'Grande Frites'] as $nom) {
             Item::forceCreate([
                 'name' => $nom,
                 'slug' => Str::slug($nom).'-'.Str::random(6),
@@ -159,6 +159,54 @@ class UberPhotoCaptureFlowTest extends TestCase
             $ligne['note'].' '.implode(' ', $ligne['supplements']),
             'Le refus a disparu de la vue du cuisinier.'
         );
+    }
+
+    /**
+     * [CARTE UBER 2026-08-12] La carte Uber ne nomme pas les produits comme la nôtre.
+     *
+     * Mesuré sur une VRAIE commande (E63F5, Olivier H.) : Uber vend « Menu sandwich Cayenne »,
+     * notre catalogue s'appelle « Cayenne ». Le résolveur ne testait que le titre ENTIER, donc
+     * 2 lignes sur 3 tombaient sur l'article bouche-trou « Article Uber (non mappé) » — le ticket
+     * cuisine imprimait « ART », le bandeau de cuisson ne comptait AUCUNE frite pour deux menus,
+     * et aucun stock n'était décompté.
+     *
+     * Le piège à ne pas créer en corrigeant : « Menu galette Cayenne » ne doit PAS devenir
+     * « Cayenne ». On essaie donc le nom le plus LONG d'abord, mot à mot.
+     *
+     * @test
+     */
+    public function la_carte_uber_prefixe_ses_noms_et_le_plus_long_gagne(): void
+    {
+        $this->actingCaisse();
+
+        $photo = $this->photo('carte-uber.json', [
+            'customer_name' => 'Olivier H.',
+            'display_id' => 'E63F5',
+            'order_type' => 'delivery',
+            'total' => 25.8,
+            'items' => [
+                ['title' => 'Menu sandwich Cayenne', 'quantity' => 1, 'options' => ['1x Barbecue'], 'note' => ''],
+                ['title' => 'Menu galette Cayenne', 'quantity' => 1, 'options' => [], 'note' => ''],
+                ['title' => 'Cheese Burger', 'quantity' => 2, 'options' => [], 'note' => ''],
+            ],
+        ]);
+
+        $res = $this->postJson('/api/admin/uber/photo/scan', ['photos' => [$photo]])->assertOk();
+
+        $this->assertSame(0, $res->json('articles_non_reconnus'), 'Des produits de la carte réelle sont restés « non mappés ».');
+
+        $lignes = $res->json('apercu.lignes');
+
+        // « Menu sandwich Cayenne » → le sandwich Cayenne, et c'est bien un MENU (donc une frite).
+        $this->assertStringNotContainsString('ART', $lignes[0]['symbolique']);
+        $this->assertStringContainsString('CAY', $lignes[0]['symbolique']);
+        $this->assertNotSame('', $lignes[0]['menu'], 'Un « Menu … » doit porter la formule, sinon la friteuse ne voit rien.');
+
+        // Le plus LONG d'abord : « Menu galette Cayenne » est la GALETTE, pas le sandwich.
+        $this->assertSame('Galette Cayenne', $lignes[1]['titre'], 'Servir un sandwich à qui a commandé une galette serait une erreur de plus.');
+
+        // Le bandeau de cuisson compte enfin les frites des deux menus.
+        $this->assertStringContainsString('F', $res->json('apercu.cuisson'), 'Aucune frite comptée pour deux menus.');
     }
 
     /** @test */
