@@ -707,3 +707,95 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     tinkerExec(`\\App\\Models\\PaymentTerminal::where('name', '${uniq}EDITED')->delete();`);
   });
 });
+
+test.describe.serial('Real functional CRUD — Printers (physical device metadata, safe: bypass transport confirmed active)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Printers: create -> appears in table -> "Test print" fires a real (bypassed) print call -> edit -> "delete" (real, no confirm dialog) -> gone', async () => {
+    // Own local modal (:class="{active: modalActive}", no shared #modal id,
+    // no [data-modal] trigger attribute) -- opened via its own
+    // data-testid="printer-add-btn" button.
+    //
+    // REAL FINDING, not a bug: the placeholder host "192.168.1.50" shown in
+    // the field, and the exact host format the app's own real printers use
+    // (127.0.0.1:9100/9101, "bridge" processes local to each till per
+    // CLAUDE.md's documented architecture), are BOTH rejected by
+    // PrinterRequest's SafeRemoteHost SSRF guard (added deliberately,
+    // 2026-05-24, GOAL-L2-HEAL-03 -- blocks fsockopen() to
+    // loopback/link-local/RFC1918 ranges to stop the printer-host field
+    // being used as a LAN/cloud-metadata port-scan primitive). The rule
+    // ships with an owner-configurable escape hatch
+    // (SAFE_REMOTE_HOST_ALLOWLIST env var / config('security.safe_remote_
+    // host_allowlist')) specifically for this LAN-printer case, but it is
+    // confirmed EMPTY in this environment (checked .env + tinker). Net
+    // effect: creating a NEW printer, or editing an EXISTING one's host,
+    // with the only host format this V1 single-restaurant architecture
+    // actually uses is currently blocked by validation; the 2 real rows
+    // visible in this table are grandfathered in only because validation
+    // doesn't re-run against existing DB rows. This is a real
+    // security-vs-functionality gap worth owner attention, NOT something
+    // to silently patch here (widening the allowlist is an owner opt-in
+    // by design, not a scope-minimal test fix). Using a hostname instead
+    // of an IP literal for this test (hostnames pass SafeRemoteHost
+    // unconditionally) to still prove the rest of the CRUD cycle for real.
+    const uniq = `E2EPrinter${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/printers', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await page.click('[data-testid="printer-add-btn"]');
+    const modal = page.locator('.modal.active');
+    await expect(modal).toBeVisible({ timeout: 8000 });
+    await page.fill('#p_name', uniq);
+    await page.fill('#p_host', 'e2e-printer-test.invalid');
+    await modal.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Printers CREATE: "${uniq}" appears in table — REAL, not just a toast.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    const testBtn = row.locator('[data-testid^="printer-test-"]');
+    const testPrintResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/printers\/\d+\/test-print$/.test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await testBtn.click();
+    const testRes = await testPrintResponse;
+    expect(testRes.status()).toBe(200);
+    console.log('[CRUD-FUNCTIONAL] Printers TEST PRINT: real POST .../test-print (200), bypassed to NullPrinterTransport (confirmed via config) -- no real socket touched, no hang.');
+
+    await row.locator('.lab-edit').first().click();
+    await expect(modal).toBeVisible({ timeout: 8000 });
+    const nameInput = page.locator('#p_name');
+    await expect(nameInput).toHaveValue(uniq, { timeout: 8000 });
+    await nameInput.fill(`${uniq}EDITED`);
+    await modal.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Printers EDIT: rename reflected in table — REAL persistence.');
+
+    // destroy() calls axios.delete directly with no SweetAlert confirm
+    // step (confirmed by reading the component) -- unlike every other
+    // Delete button in this suite, no confirmDelete() step here.
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.locator('.lab-delete').first().click();
+    await page.waitForTimeout(1500);
+
+    await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Printers DELETE: row gone from table immediately after click (no confirm dialog on this page, confirmed by reading destroy() -- unlike every other Delete flow in this suite) — REAL removal.');
+  });
+});
