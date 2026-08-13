@@ -421,4 +421,52 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Kiosk Setup: restored to original value.');
   });
+
+  test('Mail: from-name edit -> save -> reload -> persisted -> restored (real credentials untouched)', async () => {
+    // mail_from_name is the one field on this form with zero credential
+    // weight (display name on outgoing email, e.g. "Le Cayenne") -- the
+    // other 6 fields (host/port/username/password/encryption/from_email)
+    // are real SMTP credentials, deliberately never mutated here.
+    //
+    // Verified safe to submit the WHOLE form (this component's save()
+    // always resubmits every field, not just the changed one) before
+    // writing this test: MailController's own code comment confirms
+    // GET returns mail_password in CLEARTEXT (no masking), and
+    // MailService::update() is a pure passthrough -- Settings::group(
+    // 'mail')->set($request->validated()) + EnvEditor::addData() write
+    // the exact validated values with zero re-encryption/transformation.
+    // So resubmitting the untouched credential fields alongside the one
+    // real edit is lossless, not a risk of corrupting them with a masked
+    // placeholder -- confirmed via code, not assumed.
+    //
+    // Every field here (including mail_from_name) is also written
+    // verbatim into .env by EnvEditor -- same class of real, on-disk
+    // mutation as Company/Site, both already proven safe with this same
+    // pattern elsewhere in this file.
+    const url = '/admin/settings/mail';
+    const fieldId = 'mail_from_name';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator(`#${fieldId}`);
+    await expect(field).toBeVisible({ timeout: 10_000 });
+
+    const original = await field.inputValue();
+    const mutated = `E2E Mail ${Date.now() % 100000}`;
+    await field.fill(mutated);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(mutated, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Mail: from-name "${original}" -> "${mutated}", reload confirms persistence.`);
+
+    await page.locator(`#${fieldId}`).fill(original);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Mail: restored to original value.');
+  });
 });
