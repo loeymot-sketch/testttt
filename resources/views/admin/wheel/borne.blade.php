@@ -159,7 +159,7 @@
      ELLE qui rétrécit quand l'écran est court, jamais le texte : un lot annoncé à moitié caché
      est un lot qu'on ne lit pas. */
   .gauche{
-    display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:1.2vmin;
+    display:grid; grid-template-rows:auto auto auto minmax(0,1fr) auto; gap:1vmin;
     justify-items:center; align-items:center; min-height:0; min-width:0;
   }
 
@@ -217,7 +217,7 @@
      borne PAS, parce que la ligne de grille peut déborder. Toute hausse future se paie d'abord en
      hauteur rendue ailleurs, et se vérifie sur une capture. */
   .roue{
-    height:min(58vmin,760px,100%); width:auto; display:block;
+    height:min(66vmin,880px,100%); width:auto; display:block;
     filter:drop-shadow(0 2.5vmin 5vmin rgba(0,0,0,.55));
   }
 
@@ -238,8 +238,10 @@
 
   h1{
     /* [PROPRIÉTAIRE 2026-08-13] Le titre prenait plus de place que la roue. Il reste l'accroche
-       lisible à trois mètres, mais il cesse d'être le sujet : c'est la roue qu'on vient regarder. */
-    margin:0; font-size:min(8.2vmin,96px); line-height:.92; font-weight:900; letter-spacing:-.025em;
+       lisible à trois mètres, mais il cesse d'être le sujet : c'est la roue qu'on vient regarder.
+       Remonté au-dessus de la roue, il passe sur UNE ligne — deux lignes y coûteraient à la roue
+       exactement ce qu'on vient de lui rendre. */
+    margin:0; font-size:min(6.4vmin,74px); line-height:1; font-weight:900; letter-spacing:-.025em;
     background:linear-gradient(100deg,var(--jaune2),var(--orange2) 62%,var(--jaune));
     -webkit-background-clip:text; background-clip:text; color:transparent;
   }
@@ -365,6 +367,7 @@
      la colonne et pousse le QR hors de l'écran, exactement le défaut déjà payé en haut de ce
      fichier avec les boîtes de hauteur devinée. */
   /* LA CONSIGNE AU-DESSUS DE LA ROUE — elle dit le geste, donc elle passe avant le décor. */
+  .promesse b{color:var(--jaune2)}
   .consigne{
     margin:0; text-align:center; line-height:1.2;
     font-size:clamp(15px,2.5vmin,30px); font-weight:700; letter-spacing:-.01em;
@@ -539,6 +542,15 @@
            La phrase est posée AU-DESSUS de la roue, donc sur le trajet naturel du regard (logo →
            consigne → roue), et elle nomme les deux gestes dans l'ordre où ils arrivent : scanner
            d'abord, tourner ensuite. --}}
+      {{-- [PROPRIÉTAIRE 2026-08-13] « "Tu gagnes à 100 %", vaut mieux la mettre au-dessus de la
+           roue ». Elle était en bas, dans la rotation des actes — donc VISIBLE UN TIERS DU TEMPS
+           seulement, et sous l'objet qu'elle est censée annoncer.
+
+           C'est la promesse : elle doit arriver AVANT le geste et avant la roue. L'ordre de lecture
+           devient promesse → action → objet, qui est l'ordre dans lequel un passant décide :
+           « qu'est-ce que j'y gagne ? », « qu'est-ce que je dois faire ? », « avec quoi ? ».
+           Elle est désormais permanente : une promesse qui clignote n'est pas une promesse. --}}
+      <h1 class="promesse">Tu gagnes <b>à 100 %</b></h1>
       <p class="consigne">Scanne le QR code<br><b>pour tourner la roue</b></p>
 
       {{-- Le repère qui désigne le lot gagnant est DESSINÉ dans le canvas (voir plus bas) : la
@@ -549,24 +561,6 @@
               aria-label="Roue des lots : {{ implode(', ', array_column($segments ?? [], 'label')) ?: 'à découvrir' }}"></canvas>
 
       <div class="actes">
-        {{-- ACTE 1 — L'ACCROCHE. Une promesse, lisible à trois mètres. --}}
-        <div class="acte on" data-acte="0">
-          <h1>Tu gagnes<br>à 100 %</h1>
-          {{-- [PROPRIÉTAIRE 2026-08-13] LA CONDITION D'ACHAT A ÉTÉ RETIRÉE DE CET ÉCRAN.
-               Il y avait ici « Un lot pour ta prochaine commande, dès 10,00 € ». Sa consigne, mot
-               pour mot : « une condition d'achat, vaut mieux pas le dire, je veux pas le mettre
-               ici ; juste à la fin lorsqu'il termine de jouer, ça va s'afficher dans son mail ».
-
-               Et il a raison sur le fond : cet écran sert à donner ENVIE de scanner. Une condition
-               annoncée avant même que le client ait joué transforme un cadeau en contrat, et il
-               passe son chemin. La condition n'est pas perdue pour autant — elle est portée par le
-               mail du lot (`WheelPrizeMail` reçoit `wheel.min_order_amount`) et par l'écran de fin
-               de parcours, c'est-à-dire au moment où elle devient une information utile.
-
-               ⛔ Ne pas la remettre ici « pour être transparent » : la transparence est déjà
-               assurée à l'endroit où le client peut agir dessus. --}}
-        </div>
-
         {{-- ACTE 2 — CE QUI VIENT D'ÊTRE GAGNÉ.
              [2026-08-13 · propriétaire : « tu affiches la roue avec les produits à gagner et en bas
              tu affiches ENCORE les photos ainsi que leur nom — c'est catastrophique, faire lire
