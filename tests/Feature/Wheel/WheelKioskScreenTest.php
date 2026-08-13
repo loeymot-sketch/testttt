@@ -64,15 +64,29 @@ class WheelKioskScreenTest extends TestCase
     }
 
 
-    public function test_il_affiche_la_roue_le_QR_et_le_minimum_d_achat(): void
+    /**
+     * [test-e2e fix round-2 2026-08-13] Assertions mises à jour suite à
+     * `10da3eba6` (« roue plus grande, conditions d'achat retirées ») — changement délibéré,
+     * consigne owner citée mot pour mot dans ce commit : « scanne le QR code » remplace
+     * « scanne avec ton téléphone », et la mention du minimum d'achat est volontairement
+     * retirée de cet écran (portée désormais par le mail du lot + l'écran de fin de parcours).
+     * Ce test protège maintenant l'invariant RÉEL plutôt qu'un texte périmé.
+     */
+    public function test_il_affiche_la_roue_le_QR_et_invite_a_scanner(): void
     {
         $r = $this->actingAs($this->caissier, 'web')->get('/admin/roue-borne')->assertOk();
 
         $html = $r->getContent();
         $this->assertStringContainsString('<svg', $html, 'aucun QR : rien à scanner');
-        $this->assertStringContainsString('Scanne avec ton téléphone', $html);
-        $this->assertStringContainsString('10,00', $html,
-            'le minimum d\'achat doit être annoncé DÈS la tablette, pas découvert plus tard');
+        $this->assertStringContainsString('Scanne le QR code', $html);
+        // [test-e2e fix round-2 2026-08-13] Une simple recherche de « 10,00 » matche aussi les
+        // commentaires CSS internes du fichier (raisonnement historique conservé dans <style>,
+        // jamais visible du client) — on cible donc la phrase VISIBLE exacte qui portait la
+        // condition d'achat, pas un fragment numérique que le code source peut légitimement
+        // contenir ailleurs à titre de documentation.
+        $this->assertStringNotContainsString('Un lot pour ta prochaine commande, dès 10,00', $html,
+            'la condition d\'achat a été délibérément retirée de cet écran (consigne owner '
+            . '2026-08-13) — elle ne doit pas revenir silencieusement');
         $this->assertStringContainsString('id="roue"', $html, 'la roue doit être visible : c\'est elle qui fait lever les yeux');
 
         // Pas avalé par l'attrape-tout de l'application.
