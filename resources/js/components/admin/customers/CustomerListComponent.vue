@@ -76,6 +76,12 @@
                             <th class="db-table-head-th">{{ $t("label.name") }}</th>
                             <th class="db-table-head-th">{{ $t("label.email") }}</th>
                             <th class="db-table-head-th">{{ $t("label.phone") }}</th>
+                            <!-- [FIDÉLITÉ 2026-08-13] 25 adhérents en production, et aucun endroit
+                                 dans l'administration pour voir ce qu'ils ont. Sans cette colonne,
+                                 impossible de répondre à un client qui conteste son solde au
+                                 comptoir, ni de piloter la fidélité — on ne pilote pas ce qu'on ne
+                                 voit pas. -->
+                            <th class="db-table-head-th">Points</th>
                             <th class="db-table-head-th">{{ $t("label.status") }}</th>
                             <th class="db-table-head-th hidden-print"
                                 v-if="permissionChecker('customers_show') || permissionChecker('customers_edit') || permissionChecker('customers_delete')">
@@ -92,6 +98,16 @@
                             </td>
                             <td class="db-table-body-td">
                                 {{ customer.phone ? (customer.country_code || '') + customer.phone : '' }}
+                            </td>
+                            <td class="db-table-body-td">
+                                <!-- Un solde absent s'affiche « — » plutôt que « 0 » : zéro point
+                                     gagné et pas de compte fidélité sont deux choses différentes,
+                                     et le caissier doit pouvoir les distinguer d'un coup d'œil. -->
+                                <span v-if="customer.loyalty_code" class="db-table-body-td-txt">
+                                    <b>{{ customer.loyalty_points }}</b>
+                                    <small style="opacity:.6"> · {{ customer.loyalty_code }}</small>
+                                </span>
+                                <span v-else style="opacity:.45">—</span>
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(customer.status)">
