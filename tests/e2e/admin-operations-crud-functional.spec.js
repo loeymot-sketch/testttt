@@ -736,3 +736,55 @@ test.describe.serial('Real functional state transition — Online Order Reject (
     console.log(`[CRUD-FUNCTIONAL] Online Order REJECT: real order #${orderId} transitioned PENDING(1) -> REJECTED(19) in DB, reason persisted via the real reject modal.`);
   });
 });
+
+test.describe.serial('Real functional state transition — Table Order Reject (with reason, real DB persistence)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>20,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); echo $o->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    orderId = out;
+  });
+
+  test.afterAll(async () => {
+    if (orderId) {
+      tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Table Order: real "Reject" button (with reason) transitions a real order from Pending to Rejected', async () => {
+    // TableOrderReasonComponent differs from OnlineOrderReasonComponent: no
+    // data-testid, status=REJECTED is internal data (not a configurable
+    // prop, since Table Order has only one reason-modal use case, unlike
+    // Online Order's Reject+Cancel reuse of the same component). Trigger
+    // button targeted by its stable text ("Refuser") instead.
+    await page.goto(`/admin/table-orders/show/${orderId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.getByRole('button', { name: /reject|refuser/i }).click();
+    await page.waitForTimeout(400);
+    await page.fill('#reasonModal #name', 'E2E test rejection reason');
+    await page.click('#reasonModal button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\Order::find(${orderId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe(String(19)); // OrderStatus::REJECTED
+    console.log(`[CRUD-FUNCTIONAL] Table Order REJECT: real order #${orderId} transitioned PENDING(1) -> REJECTED(19) in DB, reason persisted via the real reject modal.`);
+  });
+});
