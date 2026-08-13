@@ -347,4 +347,38 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(page.locator('form input[type="text"]').first()).toHaveValue(original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Promo Flyer Settings: restored to original value.');
   });
+
+  test('Admin Profile: first_name edit -> save -> reload -> persisted -> restored', async () => {
+    // The logged-in admin's OWN account (admin@lecayenne.fr) -- email and
+    // phone are deliberately NEVER touched, since login.js's loginAsAdmin()
+    // hardcodes that email for every e2e spec in this repo, this session
+    // and future ones. email/phone/country_code are all required fields
+    // resubmitted verbatim from the form's own pre-filled values (loaded
+    // from the real user on mount), so the payload includes them but their
+    // value never changes -- only first_name is mutated.
+    const url = '/admin/profile/edit-profile';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator('#first_name');
+    await expect(field).toBeVisible({ timeout: 10_000 });
+
+    const original = await field.inputValue();
+    const mutated = `E2E${Date.now() % 100000}`;
+    await field.fill(mutated);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('#first_name')).toHaveValue(mutated, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Admin Profile: first_name "${original}" -> "${mutated}", reload confirms persistence.`);
+
+    await page.locator('#first_name').fill(original);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('#first_name')).toHaveValue(original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Admin Profile: restored to original value.');
+  });
 });
