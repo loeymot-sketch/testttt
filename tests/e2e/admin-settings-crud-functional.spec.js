@@ -195,6 +195,72 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     console.log('[CRUD-FUNCTIONAL] Role DELETE: row gone after confirm — REAL removal.');
   });
 
+  test('Role permissions (show/:id page): "Autorisations" -> toggle a real permission checkbox -> save -> persisted -> restored', async () => {
+    // A genuinely SEPARATE feature from the Role list's "Modifier" modal
+    // above (which only renames the role): the "Autorisations" button
+    // navigates to RoleShowComponent.vue (admin.settings.role.show), a
+    // full-page permission matrix (create/update/delete/view checkboxes
+    // per admin page) that dispatches its own permission/lists +
+    // permission/save actions -- confirmed via source read, not assumed
+    // to be redundant with the modal just because both live under "Role".
+    // Uses a fresh throwaway role (created here, deleted at the end) so
+    // toggling a real permission never touches real staff RBAC.
+    const uniq = `E2ERolePerm${Date.now() % 100000}`;
+    const list = page.locator('#role');
+
+    await page.goto('/admin/settings/role', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await openCreateModal(page);
+    await page.fill('#name', uniq);
+    await submitModal(page);
+
+    const nextBtn = page.getByRole('button', { name: /^next$/i }).or(page.getByText('Next', { exact: true }));
+    if (await nextBtn.count()) {
+      await nextBtn.last().click().catch(() => {});
+      await page.waitForTimeout(800);
+    }
+    await expect(list).toContainText(uniq, { timeout: 10_000 });
+
+    const row = list.locator('li', { hasText: uniq });
+    await row.getByRole('link', { name: /autorisations|permissions/i }).click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('table.db-table')).toBeVisible({ timeout: 10_000 });
+
+    // A fresh role has zero permissions checked -- pick the FIRST checkbox
+    // (unchecked by construction) rather than assuming a specific feature.
+    const firstCheckbox = page.locator('input[type="checkbox"][id^="feature_"]').first();
+    await expect(firstCheckbox).not.toBeChecked({ timeout: 8000 });
+    await firstCheckbox.check();
+
+    const saveResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/permission\/\d+$/.test(res.url()) && res.request().method() === 'PUT',
+      { timeout: 10_000 }
+    );
+    await page.locator('button[type="submit"], form button:has-text("Enregistrer")').first().click();
+    const res = await saveResponse;
+    expect(res.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('input[type="checkbox"][id^="feature_"]').first()).toBeChecked({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Role permissions: real PUT /api/admin/setting/permission/:id (200) persisted a checked permission on throwaway role "${uniq}", survives reload — REAL, not a client-side-only checkbox.`);
+
+    // Cleanup: delete the throwaway role via the list page (cascades its
+    // permission rows), never touches any real role.
+    await page.goto('/admin/settings/role', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const nextBtn2 = page.getByRole('button', { name: /^next$/i }).or(page.getByText('Next', { exact: true }));
+    if (await nextBtn2.count()) {
+      await nextBtn2.last().click().catch(() => {});
+      await page.waitForTimeout(800);
+    }
+    await list.locator('li', { hasText: uniq }).getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+    await expect(list).not.toContainText(uniq, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Role permissions: throwaway role deleted — cleanup confirmed.');
+  });
+
   test('Item Category: create -> appears in table -> edit -> delete -> gone', async () => {
     // Uses its own modal id (#categoryModal, not the generic #modal) --
     // SmModalCreateComponent's data-modal attribute is actually IGNORED by
