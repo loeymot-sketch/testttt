@@ -182,7 +182,7 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('kiosk-menu', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(60)->by($this->throttleKeyParAppareil($request));
         });
 
         // [Wave Y RATE-LIMIT 2026-05-21] env-configurable admin-mutation ceiling.
@@ -204,7 +204,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('admin-mutation', function (Request $request) {
             $adminMutationCap = max(1, (int) config('app.admin_mutation_rate_limit', 60));
             if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
-                return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
+                return Limit::perMinute(300)->by($this->throttleKeyParAppareil($request));
             }
 
             // POS = high-frequency cashier ops (SSOT preview / encaissement / payment / split / tip).
@@ -224,7 +224,7 @@ class RouteServiceProvider extends ServiceProvider
             // admin-mutation ceiling here is the safety net against accidental
             // burst, not the primary cap.
             if ($request->is('api/admin/pos/*') || $request->is('api/admin/pos')) {
-                return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
             }
 
             // [Wave R-1 P-OWNER 2026-05-20] KDS chef bump CTA hits
@@ -237,7 +237,7 @@ class RouteServiceProvider extends ServiceProvider
             // dedicated `kds-bump` limiter below is the primary cap;
             // admin-mutation here is the safety net against accidental burst.
             if ($request->is('api/admin/kds-order/change-status/*')) {
-                return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
             }
 
             // [Wave Y RATE-LIMIT 2026-05-21] Owner-facing rapid CTA family —
@@ -251,10 +251,10 @@ class RouteServiceProvider extends ServiceProvider
             // chain insert is inside controller TX, not in the throttle).
             if ($request->is('api/admin/online-order/change-status/*')
                 || $request->is('api/admin/table-order/change-status/*')) {
-                return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
             }
 
-            return Limit::perMinute($adminMutationCap)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($adminMutationCap)->by($this->throttleKeyParAppareil($request));
         });
 
         // [Wave O O-5 P-OWNER-5 2026-05-20] env-configurable ceilings
@@ -265,17 +265,17 @@ class RouteServiceProvider extends ServiceProvider
         // burned the 60/min order-create bucket → blanket 429).
         RateLimiter::for('pos-quote', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.quote', 120));
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         RateLimiter::for('pos-order-create', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.order_create', 60));
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         RateLimiter::for('pos-order-update', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.order_update', 120));
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         // [2026-08-10] Recherche d'un client au comptoir : la route dit si un numéro possède un
@@ -315,13 +315,13 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('print-queue-poll', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.print_queue_poll', 240));
 
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         RateLimiter::for('pos-loyalty-lookup', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.loyalty_lookup', 30));
 
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         // [GOAL Phase F.1 2026-05-23] Menu availability toggle dedicated limiter.
@@ -337,7 +337,7 @@ class RouteServiceProvider extends ServiceProvider
         // MENU_AVAILABILITY_RATE_LIMIT=1000 in .env.
         RateLimiter::for('menu-availability', function (Request $request) {
             $perMinute = max(1, (int) config('app.menu_availability_rate_limit', 60));
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         // [Wave R-1 P-OWNER 2026-05-20] KDS chef bump CTA dedicated limiter.
@@ -349,7 +349,7 @@ class RouteServiceProvider extends ServiceProvider
         // for any realistic fast-food kitchen pace while still capping abuse.
         RateLimiter::for('kds-bump', function (Request $request) {
             $perMinute = max(1, (int) config('kds.rate_limit_bump', 120));
-            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
         // [iter15-mega-fix D-001 2026-05-10] Kiosk-machine login uses a dedicated
@@ -453,4 +453,52 @@ class RouteServiceProvider extends ServiceProvider
             }
         }
     }
+
+    /**
+     * [GOAL-OPS-SWAP W4 2026-08-13] DÉFINITION UNIQUE de la clé de comptage.
+     *
+     * LE DÉFAUT CORRIGÉ : treize compteurs répétaient
+     * `by($request->user()?->id ?: $request->ip())`. Un compte, une clé — donc
+     * la caisse, l'écran cuisine, l'écran client et les ponts d'impression
+     * connectés sous le MÊME login se partageaient chaque budget. Relevé en
+     * production : `pos-order-create` = 60/min PARTAGÉS, soit l'encaissement
+     * lui-même ; `pos-loyalty-lookup` = 30/min partagés.
+     *
+     * Le caissier voyait « Trop de requêtes » sans que personne n'ait rien fait
+     * de mal — et le message s'affiche sur N'IMPORTE QUEL 429, pas seulement
+     * celui de `throttle:api`. Corriger un seul compteur ne suffisait donc pas.
+     *
+     * UNE seule définition, parce que treize copies de la même règle, c'est
+     * treize occasions d'en oublier une à la prochaine correction.
+     *
+     * L'identité d'appareil n'est pas inventée ici : `X-Device-Id` part sur
+     * CHAQUE requête (`resources/js/shared/axios-setup.js:90`) et
+     * `DeviceTokenService::resolveDeviceId()` la valide déjà par liste blanche
+     * stricte, avec repli déterministe pour les clients anciens.
+     *
+     * ANONYMES : clé par IP, strictement inchangée. Un client sans compte ne
+     * doit jamais s'offrir un budget neuf en inventant un en-tête.
+     *
+     * PAS DE PLAFOND GLOBAL ICI : `throttle:api` s'applique à TOUTES les routes
+     * `/api/*` et porte déjà 600/min par compte tous appareils confondus. C'est
+     * lui qui borne la rotation d'identifiant, quel que soit le compteur
+     * spécifique traversé ensuite.
+     *
+     * ⛔ NE PAS l'employer sur les compteurs anti-bruteforce de PIN
+     * (`wheel-pin`, `daily-book-pin`, `mobile-stock-pin`) : là, un budget neuf
+     * par appareil offrirait un code à deviner à volonté. Ils restent par IP.
+     * Garde : tests/Feature/Security/ThrottleKeysArePerDeviceTest.php
+     */
+    private function throttleKeyParAppareil(Request $request): string
+    {
+        $user = $request->user();
+        if (! $user) {
+            return (string) $request->ip();
+        }
+
+        $deviceId = app(\App\Services\Auth\DeviceTokenService::class)->resolveDeviceId($request);
+
+        return 'u'.$user->id.'|d'.$deviceId;
+    }
+
 }
