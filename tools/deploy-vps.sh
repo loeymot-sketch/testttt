@@ -46,23 +46,38 @@ php artisan view:clear || true
 php artisan route:clear || true
 
 # --- VÉRIF 1 : JEU COMPLET de bundles (leçon écran-blanc 2026-06-29) -------------------
-# Chaque fichier référencé par mix-manifest.json doit exister ET dater de CE build.
+# Chaque fichier référencé par mix-manifest.json doit exister. La fraîcheur, elle, se
+# vérifie sur le MANIFESTE lui-même — pas sur chaque bundle un par un.
+#
+# [CORRIGÉ 2026-08-14 — faux positif STALE constaté en prod] L'ancienne version comparait
+# le mtime de CHAQUE bundle à $DEPLOY_START. Faux : webpack (output.compareBeforeEmit,
+# actif par défaut dans Mix) saute l'écriture d'un asset dont le contenu est BYTE-IDENTIQUE
+# à la version précédente — un déploiement sans aucun changement JS/CSS peut donc produire
+# un jeu de bundles parfaitement cohérent où `app.js` date de 150 s pendant que `vendor.js`
+# (contenu inchangé depuis des jours) garde son ancien mtime. Ce n'est PAS un écran-blanc
+# (le build a tourné en un seul bloc, tout est cohérent) — c'était un ROLLBACK inutile qui,
+# en plus, sautait l'attestation NF525 (elle vit après cette vérif dans le script). Vérifié
+# sur `lecayenne` : mix-manifest.json, lui, est TOUJOURS réécrit par le build (même quand
+# aucun bundle référencé ne change de contenu) — c'est donc lui, seul, qui prouve « le build
+# a tourné », pas les bundles qu'il référence.
 MANIFEST="public/mix-manifest.json"
 if [ ! -f "$MANIFEST" ]; then
   echo "XX ÉCHEC : $MANIFEST absent après build."
   rollback
 fi
-MISSING=0; STALE=0
+if [ "$(stat -c %Y "$MANIFEST" 2>/dev/null || stat -f %m "$MANIFEST")" -lt "$DEPLOY_START" ]; then
+  echo "XX ÉCHEC : $MANIFEST antérieur au build → le build n'a pas régénéré le manifeste."
+  rollback
+fi
+MISSING=0
 while IFS= read -r rel; do
   f="public${rel%%\?*}"
   if [ ! -f "$f" ]; then
     echo "XX bundle MANQUANT : $f"; MISSING=1
-  elif [ "$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f")" -lt "$DEPLOY_START" ]; then
-    echo "XX bundle STALE (antérieur au build) : $f"; STALE=1
   fi
 done < <(php -r '$m=json_decode(file_get_contents("public/mix-manifest.json"),true);foreach($m as $k=>$v){echo $k,"\n";}')
-if [ "$MISSING" -ne 0 ] || [ "$STALE" -ne 0 ]; then
-  echo "XX ÉCHEC : jeu de bundles incomplet/périmé → app+vendor incohérents = écran blanc."
+if [ "$MISSING" -ne 0 ]; then
+  echo "XX ÉCHEC : jeu de bundles incomplet → un fichier référencé par le manifeste manque."
   rollback
 fi
 
