@@ -1,0 +1,60 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 0,
+  "reviewer_note": "0 states reviewed via the artifact quartet because ZERO Wave D artifacts exist on disk in either repo (no .png/.dom.html/.console.json/.network.json, no committed spec file tests-e2e/roue-account-cross-cutting-2026-08-13.spec.js, no findings file from the GStack agent). This review was conducted by independent re-derivation: reading roue.html/backend source directly, running the actual WheelUnlockService/WheelStepService/WheelService round-trip inside a rolled-back DB transaction with Mail::fake(), and grepping git history for the claimed rationale/commits.",
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "NONE — no Wave D artifact quartet exists anywhere in either repo (searched exhaustively: tests/e2e/__screenshots__, tests-e2e/, reports/test-e2e/roue-account-e2e-2026-08-13/round-1/ was empty before this file)",
+      "category": "audit_integrity_missing_artifacts",
+      "severity": "P1",
+      "evidence": "REVIEWER_PROTOCOL.md mandates a 4-file quartet (.png/.dom.html/.console.json/.network.json) per visual state for every wave. Wave D produced none: no new spec file was committed (git log/status show only Wave A's roue-qr-logo work, commit f7647c399), no screenshots directory for wave D, round-1/ was empty on start. The GStack Wave D report's specific claims (config 200, 'Content de te revoir, Dorian!' DOM snippet, a11y-clean) are therefore evaluated purely on the agent's prose with zero corroborating file — the exact failure mode the artifact-quartet rule exists to prevent.",
+      "fix_hint": "Re-run Wave D with an actual committed spec (tests-e2e/roue-account-cross-cutting-2026-08-13.spec.js per AUDIT_PLAN.md) that emits the quartet for at least: /admin/roue-borne keyboard pass, the cross-surface config fetch, and the account-modal state that produced the 'Dorian' DOM. Until then this wave cannot be closed GREEN on protocol grounds alone, independent of whether the underlying claims are true."
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "N/A — service-layer verification, not a screenshot state",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "GStack's round-trip claim stopped at '/api/frontend/wheel/config returned 200' and explicitly did not click spin/claim — that only proves the CONFIG read path works, not the gameplay write path (spin draw, claim persistence, prize award, account creation). I pushed further SAFELY: wrapped a direct call to WheelUnlockService::issue() -> WheelStepService::open()x2 (backdated dwell timestamps, since that timer is an anti-fraud control unrelated to what's being tested) -> WheelService::drawPending() -> WheelService::claimPending() inside DB::beginTransaction()/DB::rollBack() with Mail::fake() to suppress the real WheelPrizeMail send. Result: real weighted draw returned {\"key\":\"cheeseburger\",\"type\":\"free_item\"}, WheelSpin id 4180 persisted with award() logic executing cleanly, then verified via tinker that App\\Models\\WheelSpin::find(4180) and the seeded email both return NO ROWS post-rollback (CONFIRMED_ROLLED_BACK_CLEAN / NO_USER_LEAK). This is materially stronger evidence than a 200 on /config and closes most of the depth gap GStack left open.",
+      "fix_hint": "Not a code fix — a report-writing fix. GStack's Wave D report should not have characterized '/config returns 200, segments render' as proving the round-trip 'worked' without qualifying that gameplay (spin/claim) was unverified. Recommend the standing playbook for this kind of check become: exercise the real service methods inside a rolled-back DB::transaction() + Mail::fake(), exactly as done here — it is safe (verified zero residue) and far more convincing than a config-only check. Residual gap even after this: the actual browser-side fetch() calls for spin/claim across the live 8899->8000 cross-origin boundary were still never clicked by anyone. This is very likely fine (config/cors.php paths=['api/*'] covers the whole API surface including spin/claim, allowed_origins_patterns explicitly matches any localhost/127.0.0.1 port including 8899, and roue.html uses one shared fetch(API + chemin) wrapper for config/step/spin/claim alike — verified at roue.html:555,999) but that is inference from code reading, not an observed click-through, and should be labeled as such rather than as 'proven live'."
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "roue.html (web repo), tests-e2e/roue-2026-08-09.regression.js:85",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Verified the 'intentional redesign' claim is TRUE, not a rationalization: commit d434e2b (2026-08-09, same day the regression spec is dated) deleted the actual `<ol class=\"etapes\" id=\"etapes\">` markup and replaced it with a code comment stating 'On n'annonce JAMAIS « 3 étapes » : un client debout au comptoir qui lit ça repose son téléphone' (roue.html:397-404, still present verbatim today). The regression spec's failing assertion `check(rendu.etapes === 3, ...)` at line 85 counts `.etapes li` DOM nodes that were deliberately removed in the very commit that also wrote the rationale comment. GStack's out-of-scope call is correctly substantiated. Residual issue GStack didn't flag: the `.etapes`/`.etapes li`/`.etapes em` CSS rules (roue.html:153-163) are now 100% dead/unused styling left behind by the same commit, and the whole regression.js file has been permanently red since Aug 9 testing a feature that no longer exists.",
+      "fix_hint": "Delete the dead `.etapes` CSS block (lines 153-163) and either retire tests-e2e/roue-2026-08-09.regression.js or strip the etapes==3 assertion — leaving a spec permanently red trains the team to ignore red, which is a bigger risk than the stale assertion itself."
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "N/A — investigation of GStack's DOM claim, no artifact to inspect",
+      "category": "audit_integrity_weak_evidence",
+      "severity": "P1",
+      "evidence": "Traced the name 'Dorian' cited in GStack's 'Content de te revoir, Dorian !' DOM snippet. It does NOT match the only known localStorage-seeding fixture for that exact screen (tests-e2e/account-retour-connu-2026-08-13.spec.js seeds FIRST='Julie', PHONE='0612345678' — confirmed by reading the spec). 'Dorian' does NOT appear anywhere in the static web repo except as an unrelated placeholder attribute on roue.html:515 (`placeholder=\"Dorian\"` on the name input, decorative ghost text, never persisted). It DOES appear as a recurring test-customer name across several backend PHPUnit fixtures (tests/Feature/Wheel/WheelClaimAccountTest.php, WheelDrawSecurityTest.php, WheelHistoryTest.php, tests/Feature/Promo/PromoFlyerTicketLayoutTest.php) — a plausible coincidental reuse, not proof either way. Because no DOM/console/network artifact for that screen exists (see D-001), I cannot determine whether this reflects a genuinely fresh, isolated test run or contamination from a shared browser profile/localStorage across the 4 concurrent Wave A-D agents mentioned in the mission brief. account-retour-connu-2026-08-13.spec.js itself uses correct isolation (`chromium.launch()` fresh incognito context per run); the risk is specifically if Wave D used a persistent/shared Chrome profile (e.g. an interactive extension-driven session) instead.",
+      "fix_hint": "Re-run the exact scenario that produced the Dorian greeting with a fresh incognito `chromium.launch()` context (not a shared/reused browser profile) and save the .dom.html + a `localStorage` dump alongside the screenshot, so the seed origin is traceable. Until then, treat this specific DOM claim as unverified rather than confirmed."
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "/admin/roue-borne (config/debugbar.php, app/Http/Controllers/Admin/Wheel/WheelCounterController.php)",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Confirmed Debugbar is active on this route in local dev: `config('debugbar.enabled')` resolves to `env('DEBUGBAR_ENABLED', null)` -> null -> follows APP_DEBUG, and .env has APP_DEBUG=true; no `Debugbar::disable()` call found in WheelCounterController@kiosk. So the claim 'Debugbar is present in tab order' is accurate. However the framing 'zero real focusable elements, only Debugbar' undersells that Laravel Debugbar's own toolbar DOES inject genuinely tabbable `<a>` elements (its tab UI) — those are real, reachable tab-stops for a keyboard user on this screen today, not inert noise. That said, GStack's dismissal as dev-only is directionally correct for the audit's purpose: config/debugbar.php hard-disables it in production (`'enabled' => $isProduction ? false : ...`, verified), so this specific instance cannot reach production regardless of APP_DEBUG drift. Whether a fully keyboard-inert kiosk display (0 focusable elements once Debugbar is excluded) is itself acceptable depends on whether staff ever need keyboard-only recovery on this tablet — plausibly fine for a passive customer-facing display, but not verified either way.",
+      "fix_hint": "No code fix required for production. If this needs re-checking, do it with APP_DEBUG=false locally (matching prod parity) rather than accepting Debugbar's tab-stops as the answer to 'is the real kiosk UI keyboard-navigable end to end'."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 3,
+    "P2": 1,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 3,
+    "open_P2": 1,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER"
+}

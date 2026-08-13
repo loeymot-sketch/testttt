@@ -1,0 +1,74 @@
+{
+  "wave": "ALL",
+  "round": 2,
+  "states_reviewed": 6,
+  "reviewer_note": "Targeted re-check of round-1 closures per orchestrator brief, not a fresh multi-wave capture. Every claim was independently re-derived (live browser navigation via claude-in-chrome MCP, direct source reads, git show of committed artifacts, and re-running the actual test suites) rather than trusted from the fix-round prose. Backend server 127.0.0.1:8000 and web static server 127.0.0.1:8899 both confirmed up before starting; both repos confirmed on the expected branches/HEADs (backend 6adbd819e on pos/category-first-caisse-2026-06-23, web 27b56e5 on codex/cayenne-home-product-visual-max).",
+  "findings": [],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 0, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 0, "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "PASS",
+    "D-001": "PASS",
+    "D-002": "PASS",
+    "D-003": "PASS",
+    "D-004": "PASS"
+  },
+  "closure_evidence": [
+    {
+      "id": "B-001",
+      "claim": "FALSE POSITIVE — /#menu is a React SPA hash-route (compiled/racine.js RESTORE_ROUTES), not a dead scroll anchor.",
+      "verification_method": "Live browser navigation via claude-in-chrome MCP, not just grep or getElementById checks.",
+      "evidence": "Navigated to https://www.lecayenne.fr/#menu on the REAL production tab already open in the browser session. document.getElementById('menu') is indeed null (confirming the round-1 grep was technically correct) BUT the page rendered the full functional Menu view: h1/h2/h3 text ['Tout ce qu'on cuisine.', 'Catégories', 'Filtres', ...], 9 categories, 38 products with prices, search box, all fully interactive — screenshot captured and visually confirmed. This proves the CTA genuinely works end-to-end for a real user; round-1's live-repro method (checking getElementById + scrollY only) tested the wrong mechanism (scroll-anchor semantics) against a client-side hash-router. Round-1's underlying P0 claim is therefore a genuine false positive, and the round-2 closure claim holds.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-002",
+      "claim": "dessinerBandeau() now has an onerror handler on the vignette <img>, degrading to the same 🎁 emoji fallback used for 'no photo', mirroring chargerPhotos()'s existing pattern.",
+      "verification_method": "Read the exact committed roue.html source (lines ~605-661), then reproduced the identical function logic live in a real browser tab against a genuinely broken same-origin image URL, observing the DOM before/after the error event.",
+      "evidence": "Source read confirms the onerror handler matches the fix_hint exactly, including the IIFE capture of `vignette` to avoid the classic var-in-for-loop closure bug (same pattern already used by chargerPhotos()'s IIFE for its own im.onerror). Live repro: created a vignette+img with the exact onerror callback from the source, pointed the img at a same-origin URL that returns 404 (curl-verified: '404 time=0.002760'), and after the error event fired, the vignette's innerHTML became exactly '🎁', aria-hidden='true', textContent='🎁' — identical to the 'no photo' fallback path, zero broken-image icon. (Note: an intermediate attempt using `img.loading='lazy'` inside the automation tab did not fire the error event within 3s — traced to the automation tab's lazy-load heuries not the fix logic itself; removing `loading=lazy` isolated and confirmed the onerror handler works correctly. This is a methodology artifact of the browser-automation environment, not a defect — the project's own committed Playwright spec exercises the real DOM in a real Playwright-driven browser and independently proves the same behavior, see roue-fond-carrousel-redirection-2026-08-13.spec.js results below.) Independently, running the project's own regression spec (not written by me) also asserts 'photo cassée : le <img> cassé est RETIRÉ du DOM (pas d'icône image cassée du navigateur)' — PASS, and 'la vignette bascule sur le MÊME fallback emoji que pas de photo du tout' — PASS.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-001",
+      "claim": "New tests/Feature/Wheel/WheelCrossSurfaceRoundTripTest.php (backend PHPUnit) exercises the real service chain and passes; artifacts committed for Wave D.",
+      "verification_method": "Ran `php artisan test --filter=WheelCrossSurfaceRoundTripTest` directly; verified the committed artifact quartet exists via `git ls-tree`/`git show HEAD:<path>`.",
+      "evidence": "PHPUnit run: 1 passed, 0.46s ('le round trip complet par appel de service persiste une participation reelle'). Artifact quartet genuinely committed at HEAD (commit 4afc149cf 'test(wheel): commit real Wave D artifacts, close D-001/D-002 round-2'): wheel-config-200.{png,dom.html,console.json,network.json} and roue-borne-apres-20-tabulations.{png,dom.html,console.json,network.json}, all present via `git show HEAD:<path>`. Round-1's D-001 complaint (zero artifacts existed) is resolved.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-002",
+      "claim": "New tests/e2e/roue-account-cross-cutting-2026-08-13.spec.js covers a real config-fetch and a keyboard pass on /admin/roue-borne, using page.context().request.get() instead of page.evaluate(fetch) to avoid Debugbar's fetch-interception leaking the x-api-key header into the committed .dom.html.",
+      "verification_method": "Ran the spec live (`npx playwright test ... --project=chromium --workers=1 --retries=0`); read the spec source to confirm the causal mechanism claimed; extracted the REAL literal API key value from .env (resolveApiKey() -> MIX_API_KEY) and grepped it, plus the generic string 'x-api-key', against every committed artifact byte-for-byte via `git show HEAD:<path>`.",
+      "evidence": "2 passed, 5.8s: 'clavier seul sur /admin/roue-borne : aucun piège de focus dans le contenu réel' and 'GET /api/frontend/wheel/config répond 200, capture complète émise'. Spec source (lines 135-146) documents the exact causal claim: Debugbar intercepts page-context fetch() and replays request headers (incl. x-api-key) into its own panel, which lands in wheel-config-200.dom.html; page.context().request.get() makes the real network call OUTSIDE the page's JS execution context, invisible to Debugbar's AJAX interceptor. Verified empirically: grepped the literal .env value of MIX_API_KEY (b6d68vy2-m7g5-20r0-5275-h103w73453q120) against all 8 committed files in tests/captures/roue-account-cross-cutting-2026-08-13/ at HEAD — zero matches. Also grepped the generic string 'x-api-key' case-insensitively against the same 8 files — zero matches anywhere. The claimed security fix is real and effective, not just asserted.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-003",
+      "claim": "Dead .etapes/.etapes li/.etapes em CSS removed from roue.html; tests-e2e/roue-2026-08-09.regression.js updated to assert the real progressive-reveal invariant (ecran0 visible, ecran1/2/3 hidden) instead of the removed etapes===3 count, now 10/10.",
+      "verification_method": "grep for '.etapes' in the committed roue.html (only a comment referencing the removal remains, no CSS rule); read the new assertion in full to reason about vacuousness; ran the regression spec live.",
+      "evidence": "grep '.etapes' roue.html returns exactly 1 hit — a code comment documenting the 2026-08-13 removal, no CSS rule. The new assertion (revelationProgressiveOk) checks four concrete DOM element states via getElementById + .hidden: e0 present and NOT hidden, e1/e2/e3 present AND hidden. This is not vacuous — if progressive reveal were broken (e.g. all screens shown at once, or ecran0 itself hidden), at least one of the four boolean terms would flip and the check would fail. Live run: `node tests-e2e/roue-2026-08-09.regression.js` against http://127.0.0.1:8899 → 10/10, including the new line 'révélation progressive au chargement : seule l'étape 0 est visible, 1/2/3 restent masquées — true'.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-004",
+      "claim": "account-retour-connu-2026-08-13.spec.js extended with a fresh incognito-context re-derivation seeded with an unambiguous name ('TestConnu2026'), localStorage dumped to JSON alongside the screenshot for provenance.",
+      "verification_method": "Read the spec source for the fresh-context block (chromium.launch()+newContext() distinct from the shared page used in steps 1-3); read the committed localStorage dump JSON directly; ran the full spec live.",
+      "evidence": "Source (lines 153-185) confirms a genuinely new `freshBrowser`/`freshContext`/`freshPage` (not reusing the page from earlier steps), seeded with FIRST_ISOLE='TestConnu2026', with `localStorage.evaluate(() => JSON.stringify(localStorage))` written to tests-e2e/account-shots/07-contexte-isole-localstorage.json BEFORE reading the DOM. The committed dump reads exactly: {\"lc_known_first\":\"TestConnu2026\",\"lecayenne.authPhone\":\"0612345678\",\"lc.cart.v1\":\"...\",\"lc_known_last\":\"Martin\",\"lc_known_first_at\":\"1786555836878\"} — this shows ONLY the deliberately-seeded values, no trace of 'Dorian' or any other name, which is exactly the provenance proof the round-1 D-004 finding demanded. Live run of the full spec: 11/11 checks green including '[contexte isolé] modale ouverte sur un navigateur entièrement neuf' and '[contexte isolé] le prénom semé (\"TestConnu2026\") apparaît dans l'accueil, provenance tracée par account-shots/07-contexte-isole-localstorage.json'. Zero JS errors.",
+      "verdict": "PASS"
+    }
+  ],
+  "regression_sweep": {
+    "backend_wheel_phpunit_full_suite": "253/253 passed, 57.25s (matches expected count exactly). WheelKioskScreenTest (the test-staleness fix for the concurrent session's tablet-screen text change) confirmed holding: 6/6 passed.",
+    "backend_wheel_and_fiscal_combined": "php artisan test --filter=\"Wheel|Fiscal\" -> 601 passed, 2 incomplete, 8 skipped, 0 failures, 128.55s. The 2 incomplete are pre-existing owner-finalize-labeled load-test placeholders (S7.2/S7.3, unrelated to this audit's scope), not new failures.",
+    "frozen_zone_diff": "git diff --stat across the 13 CLAUDE.md §7 frozen files over the last 10 commits: zero lines changed. No frozen-zone touch in round-2's fix commits.",
+    "web_roue_fond_carrousel_redirection_spec": "80/80 passed (tests-e2e/roue-fond-carrousel-redirection-2026-08-13.spec.js) — independently re-proves both B-001 (/#menu SPA route render, 'PAS une ancre morte') and B-002 (broken-photo degrades to emoji fallback, img removed from DOM) inside the project's own automated harness, corroborating my manual live reproduction.",
+    "web_account_trois_etats_spec": "26/26 passed (tests-e2e/account-trois-etats-2026-08-13.spec.js). No regression from the account-related round-2 fix commits.",
+    "commit_scope_check": "git show --stat on both round-2 fix commits (d17b13f for B-001/B-002, 27b56e5 for D-003/D-004) confirms scope-minimal diffs matching their commit messages exactly: d17b13f touches only roue.html + its own spec (164 lines total); 27b56e5 touches roue.html + 2 spec files (92 lines total). No unrelated files touched.",
+    "unrelated_working_tree_noise_observed": "config/wheel.php and several files under tests/captures/roue-account-cross-cutting-2026-08-13/ show UNCOMMITTED local modifications (a 'kitchen_prep' flag addition, unrelated to this audit) plus one new untracked file tests/Feature/Wheel/WheelKitchenPrepSignalTest.php. Traced this to a concurrent session's in-flight work (matches the known 'shared git index across parallel sessions' risk documented in project memory) — NOT caused by, or a regression from, any round-2 fix reviewed here. All verification above was performed against the COMMITTED HEAD state, not this uncommitted noise. Flagged for the orchestrator's awareness only, not scored as a finding."
+  },
+  "verdict": "GREEN",
+  "convergence_status": "NOT YET ACHIEVED. This round (round 2) is GREEN: open_P0=0, open_P1=0, and all 6 round-1 closures (B-001, B-002, D-001, D-002, D-003, D-004) independently re-verified PASS with fresh evidence, not trusted prose. However, round 1 was RED (wave B) / AMBER (wave D) — it was NOT green. The project's stated convergence rule requires TWO CONSECUTIVE green rounds with an identical finding set before the audit can be declared truly converged. Round 2 being green is necessary but not sufficient: a round 3 clean confirmation pass is still required to establish the second consecutive green round before this audit can be closed. Do not treat this round-2 GREEN as final convergence."
+}

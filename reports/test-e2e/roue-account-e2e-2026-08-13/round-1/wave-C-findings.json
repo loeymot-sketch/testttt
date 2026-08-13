@@ -1,0 +1,60 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 3,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "tests-e2e/account-shots/name-whitespace-only.png (adversarial repro, not in original GStack quartet)",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "account-v2.jsx:467 `<h1 className=\"lc-acc-title\">Content de<br/>te revoir,<br/><span>{knownFirstDisplay || 'chef'} !</span></h1>` — knownFirstDisplay derives from `lcReadKnownFirst()`, which is `localStorage.getItem(LC_KNOWN_FIRST_KEY) || null`. If lc_known_first is a whitespace-only string (e.g. '   '), it is truthy in JS, so the `|| 'chef'` fallback never triggers. Reproduced by seeding lc_known_first='   ' directly and loading state (c): heading renders 'CONTENT DE / TE REVOIR, / !' — a bare orange exclamation mark with a visible gap where the name should be. Screenshot captured independently (not part of the original 26/26 run, which only ever exercises FIRST='Julie').",
+      "fix_hint": "account-v2.jsx:449 — change `lcReadKnownFirst() || form.first || ''` to trim before the truthiness check, e.g. `(lcReadKnownFirst() || form.first || '').trim()`, so downstream `|| 'chef'` catches whitespace-only values too. NOT currently reachable through the app's own write path: the sole writer, lcWriteKnown() at account-v2.jsx:307, is always called with `.trim()`-ed values (`(form.first || '').trim()`), and grep confirms it is the only setItem site for LC_KNOWN_FIRST_KEY across source + compiled bundles. Only reachable via direct localStorage tampering (devtools/extension) today — same 'defensive gap, not a live bug' status the GStack team already assigned to the lc:auth-changed listener-atomicity finding. Recorded for parity/consistency, not blocking."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "tests-e2e/account-shots/etat-C-login-connu.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Independent keyboard-only pass (Playwright Tab-press trace) on state (c): on modal open, document.activeElement is `button.lc-modal-close` (aria-label='Fermer'), NOT `#acc-email-connu`. One further Tab press reaches the email input. This corrects the audit brief's working assumption ('confirm focus genuinely lands on the email input first') — it does not, focus lands on the close button first. This is the generic WebModal component's documented behavior (components.jsx:339-352, `node.querySelector(focusable selector)` picks the first focusable DOM descendant, and the close button is rendered before {children}) — a standard WAI-ARIA APG-compliant pattern (focus moves into the dialog on open), not a defect. 'Ce n'est pas moi' IS reachable via keyboard (5 Tab presses from modal-open) and DOES activate via Enter (account-v2.jsx:513, onKeyDown handles both Enter and Space) — verified: after pressing Enter on it, both lecayenne.authPhone and lc_known_first read back null.",
+      "fix_hint": "No fix required — behavior is correct and standard. Flag only because neither account-trois-etats-2026-08-13.spec.js nor account-retour-connu-2026-08-13.spec.js contains any focus-order assertion at all (grep for 'focus'/'activeElement' in the latter returns zero hits) — this is a coverage gap worth closing in a future pass, not a defect today."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "tests-e2e/account-trois-etats-2026-08-13.spec.js:197-226 (TTL boundary block)",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "account-v2.jsx lcKnownFresh(): `isFinite(at) && (Date.now() - at) <= LC_KNOWN_TTL_MS` — confirmed via direct source read that the 90-day boundary is INCLUSIVE (<=). The spec's two TTL cases seed at TTL_MS-1000 ('valid') and TTL_MS+1000 ('expired'). Neither lands ON the literal boundary (diff === TTL_MS exactly). Because both offsets sit strictly inside/outside the boundary, the test cannot actually distinguish `<=` from `<`: if a future edit silently tightened the comparison to strict `<`, both existing assertions would still pass unchanged (TTL_MS-1000 < TTL_MS either way; TTL_MS+1000 > TTL_MS either way). So the report's framing ('TTL boundary correct, ±1s around 90 days') is true of the current code (verified independently by reading the operator directly, not just by re-running the same class of offset test) but the spec itself does not operationally prove which operator is in effect at the exact edge.",
+      "fix_hint": "Add a 3rd TTL case seeding lc_known_first_at at exactly `Date.now() - TTL_MS` (diff === TTL_MS) and assert state (c) still shows (per current inclusive `<=`). That is the only offset that actually pins the operator. Not blocking — current behavior is correct by direct code inspection, this is a test-rigor gap, not a live bug."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 1, "P3": 2,
+    "open_P0": 0, "open_P1": 0, "open_P2": 1, "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "adversarial_checks": {
+    "lc_auth_changed_3rd_emitter_hunt": {
+      "method": "grep -rn \"dispatchEvent.*lc:auth-changed\" and \"addEventListener.*lc:auth-changed\" and a broader grep -rl \"lc:auth-changed\" across the ENTIRE repo (source + compiled/ + tools/seo/precompilation/compiled/), not limited to api.js/account-v2.jsx as the brief warned GStack might have missed a bundle or inline script.",
+      "result": "CONFIRMED — exactly ONE emitter site exists: api.js:170 inside setToken(). Exactly TWO addEventListener sites in source (racine.jsx:519, account-v2.jsx:194), each duplicated once in a compiled twin (compiled/racine.js:864, compiled/account-v2.js:337, plus tools/seo/precompilation/compiled/_racine.js:860 / _racine.jsx:516 — same racine.jsx listener, triplicated by the SEO precompilation pipeline, not a distinct 3rd independent listener). No service worker, no inline <script> in index.html references the event at all. Read both setToken(null) call sites directly (api.js:249 inside the 401 handler, api.js:343 inside logout()): both are immediately followed by `setPhone(null)` on the SAME statement. GStack's '0 orphan call sites, architecture fragility not a live bug' verdict is VERIFIED TRUE, not just re-asserted."
+    },
+    "ttl_off_by_one": {
+      "method": "Read lcKnownFresh() operator directly (account-v2.jsx) instead of only re-running variants of the same ±1s test class.",
+      "result": "Boundary is INCLUSIVE (<=) by direct source inspection — 90 days exactly is still 'known'. No off-by-one bug found. See finding C-003 for the test-rigor caveat (the spec's own ±1s cases don't actually prove which operator is active)."
+    },
+    "structural_signature_vacuity_check": {
+      "method": "Independently reproduced SIG_FN(.lc-acc-fields) output for state (b) via a standalone script.",
+      "result": "sigB = 171-char non-empty structural fingerprint: div(div(label,input#acc-first[type=text],label,input#acc-last[type=text],div),div(label,input#acc-email[type=email],div),div(label,div(div,input#acc-phone[type=tel]),div)). NOT vacuous. Confirmed account-v2.jsx:567-611 is the SAME shared JSX block rendered for both mode='login' and mode='signup' (title/subtitle at lines 546/561 are the only mode-conditional parts), so (a) vs (b) genuinely exercises one shared structure with two different text passes, not two independently-empty selectors."
+    },
+    "26_of_26_reproduction": {
+      "method": "Re-ran tests-e2e/account-trois-etats-2026-08-13.spec.js myself, fresh, against the live :8899 server.",
+      "result": "Reproduced independently: 26/26 assertions green, 0 pageerrors, identical output to the GStack report's claim."
+    }
+  },
+  "notes": [
+    "State (b) subtitle ('Retrouve ton compte avec ton numéro : s'il est déjà connu ici...') is mildly misleading since the SAME form still collects prénom/nom/email, not just numéro — a real user reading literally might expect a phone-only field. Does not map cleanly to any of the 12 REVIEWER_PROTOCOL categories (not i18n leak, not truncation, not aria) so not filed as a scored finding — informational only, owner/copy call.",
+    "Masked phone hint '06 •• •• •• 78' and the long/accented-name variants (Marie-Charlotte-Alexandra, Zoé-Amélie) were visually checked with independent repro screenshots: both wrap correctly across 2-3 lines with no clipping, no overflow:hidden truncation, no i18n leak, no overlap. No defect found there.",
+    "No .dom.html/.console.json/.network.json artifact quartet exists for Wave C (only .png screenshots) — the spec is a bespoke Node/Playwright script, not the standard mega-audit capture harness the REVIEWER_PROTOCOL quartet describes. Console/pageerror coverage was instead confirmed by re-running the spec live (0 pageerrors) rather than reading a sink file."
+  ],
+  "verdict": "GREEN"
+}

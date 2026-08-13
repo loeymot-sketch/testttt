@@ -1,0 +1,35 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 11,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "reveal-free_item.png, reveal-points.png, reveal-coupon_percent.png, reveal-coupon_fixed.png",
+      "category": "silent_failure_dead_anchor_cta",
+      "severity": "P0",
+      "evidence": "The GStack report closed gate G3 by verifying `commander.html` reads no `?code=`/URLSearchParams (grep confirmed independently, 0 hits) and concluded all 4 prize CTAs safely point to `/#menu`. That verification only checked HALF the URL. Independently grepped the ENTIRE static site (`grep -rn 'id=\"[a-zA-Z_-]*menu[a-zA-Z_-]*\"' *.html` across index.html, carte.html, commander.html, roue.html, and all other pages): there is NO element with `id=\"menu\"` anywhere on the site — carte.html only has `id=\"menu-enfant\"` (unrelated). Confirmed live with a real browser navigation (not just static grep): `page.goto('http://127.0.0.1:8899/#menu')` on the actual homepage → `document.getElementById('menu')` is null, `window.scrollY` stays 0. So every one of the 4 prize-reveal CTAs (`roue.html:538 <a id=\"gainLien\" href=\"/#menu\">Commander maintenant</a>`, href set dynamically by `destinationCta()` at roue.html:1369-1376) is a completely dead anchor sitewide, not just from roue.html's cross-page context as the audit brief hypothesized — the target element does not exist even on the page `/#menu` itself resolves to. Clicking 'Commander maintenant' after ANY win (100% of the wheel's conversions, all 4 prize types) silently loads the homepage at the top with zero visual acknowledgment that anything happened — no scroll, no highlight, no toast. This is the terminal step of the wheel's entire monetization funnel.",
+      "fix_hint": "Either add `id=\"menu\"` (or the correct existing selector, e.g. the carte/menu section's real anchor if it has a different id/class) to the target section on index.html/commander.html, or change `destinationCta()` in roue.html (~line 1369-1376) to point at whatever anchor actually exists. Re-verify with a live `page.goto('/#menu')` + `getElementById` check, not just a grep of the destination file for query-param handling — the GStack spec's own gate-closure comment (roue.html:1353-1362, spec.js lines 372-378) only proved the ABSENCE of `?code=` handling, never the PRESENCE of a `#menu` scroll target, and the spec's own assertion (`etat.gainLienHref === '/#menu'`) only checks the href STRING, never that it resolves to anything on the live page."
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "375x667-idle.png, 375x812-idle.png, 1024x768-idle.png, 375x812-carrousel-scroll-manuel.png",
+      "category": "broken_image_no_graceful_degradation",
+      "severity": "P2",
+      "evidence": "In all 3 idle viewport screenshots and the manual-scroll screenshot, every carousel thumbnail (`.bandeau-item .vignette`) shows the browser's broken-image glyph overlapping large fallback alt-text ('Frites offertes', '-10% la comma[nde]', 'Boisson offerte', '100 points fidélité') crammed illegibly inside the 88x88px box, duplicated by the correct `.lot-nom` caption directly below it — so each lot's name effectively renders twice, once broken/cramped and once clean. Root cause confirmed by reading `dessinerBandeau()` (roue.html:611-648): the function explicitly handles the 'no photo supplied' case gracefully (falls back to a neutral 🎁 emoji, comment at line 633-636 says this is deliberately done 'plutôt que de montrer une icône d'image cassée du navigateur' — i.e. the author already anticipated and defended against broken-image UI for ONE case) but has NO `img.onerror` handler for the 'photo supplied but fails to load' case — unlike `chargerPhotos()` (roue.html:599) which does have `im.onerror = function(){IMAGES[idx]=null}` for the wheel's own background segment images. Confirmed live via Playwright: `img.complete===true, img.naturalWidth===0` after the mocked photo URLs fail to resolve (`net::ERR_NAME_NOT_RESOLVED`), i.e. a genuine broken-image state, not a test-harness quirk in how the assertion reads the DOM. This is reproducible any time a photo URL is unreachable in production (deleted media file, malformed admin-entered URL, CDN outage) — the same defensive pattern the author already applied for the 'missing photo' case was not applied for the 'broken photo' case.",
+      "fix_hint": "Add `img.onerror = function(){ vignette.removeChild(img); vignette.setAttribute('aria-hidden','true'); vignette.textContent='🎁'; }` in `dessinerBandeau()` (roue.html ~line 627-631), mirroring the existing `im.onerror` pattern at line 599, so a broken photo URL degrades to the same clean emoji fallback already used for 'no photo'."
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 0, "P2": 1, "P3": 0,
+    "open_P0": 1, "open_P1": 0, "open_P2": 1, "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "self_fix_causality_verification": {
+    "claim": "GStack report claims backdrop-filter on .gain created a containing block for its own position:fixed ::before halo, causing horizontal scroll drift after keyboard focus on #tel/#mail, pushing the reveal card off-screen; fixed via overflow-x:hidden + scrollLeft=0 reset in revelerLot() (commit 3f97ebe).",
+    "spec_theory_check": "Verified via web search: Filter Effects Module Level 2 confirms a computed value other than 'none' for backdrop-filter DOES create a stacking context and containing block for fixed/absolutely positioned descendants (same family of behavior as transform/filter/perspective). The GStack agent's CSS theory is correct, not a coincidental fix.",
+    "empirical_reproduction": "Reverted both fix lines locally on the live-served file (NOT committed, restored immediately after from a pre-edit backup, git diff confirmed clean after restore): removed `overflow-x:hidden` from `.gain` (roue.html:252) and removed `$('gain').scrollLeft = 0;` from `revelerLot()` (roue.html:1393). Ran a real keyboard-driven repro (page.click + page.keyboard.type into #tel/#mail, not .fill()) through the full mocked spin->claim->reveal flow at 390x844 viewport. WITHOUT fix: gain.scrollLeft jumped to 43px immediately after focusing #tel and stayed there; final reveal card bounding box was carteLeft=-21, carteRight=325 (viewportW=390) — card clipped off-screen on the left, exactly the reported symptom. WITH fix (original file restored): gain.scrollLeft stayed 0 throughout; card was carteLeft=22, carteRight=368 (390-368=22, symmetric, genuinely centered). Causality is proven, not just plausible.",
+    "verdict": "CONFIRMED — self-fix is real, correctly reasoned, and effective."
+  },
+  "verdict": "RED"
+}

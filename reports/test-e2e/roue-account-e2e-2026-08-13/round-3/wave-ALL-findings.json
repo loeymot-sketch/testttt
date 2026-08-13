@@ -1,0 +1,94 @@
+{
+  "wave": "ALL",
+  "round": 3,
+  "states_reviewed": 9,
+  "reviewer_note": "CONFIRMATION round per the convergence rule. Ran a genuinely fresh, skeptical pass rather than re-reading round-2's prose: re-ran every regression spec listed in the brief from a clean state, re-derived the 6 round-1 closures (B-001, B-002, D-001, D-002, D-003, D-004) independently again via live spec execution, did a fresh-eyes visual pass (own new Playwright probe scripts + Read-tool screenshot inspection + direct getComputedStyle/WCAG-luminance measurement, not a re-read of old PNGs) on 3 states (QR+logo /admin/roue-borne landscape+portrait, prize-reveal /#menu CTA screen replicated live from the project's own jouerEtGagner() mock flow, and the account login-connu screen replicated live from the project's own account-retour-connu spec setup), and specifically hunted for drift from the concurrent session that has been actively committing to borne.blade.php throughout this audit. Backend server 127.0.0.1:8000 and web static server 127.0.0.1:8899 both confirmed up. Backend repo moved THREE commits past round-2's confirmed HEAD during this round's own execution window (6adbd819e -> 147e3650c -> b8c3f610d -> ed9f88d69, the last one landing mid-review while this round was already in progress) — re-verified against the final HEAD, not a stale earlier one. Web repo unchanged at 27b56e5 (matches round-2).",
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "tests/e2e/roue-qr-logo-2026-08-13.spec.js -> 01-borne-paysage (and independently reproduced 02-borne-portrait, which never ran in the suite because test.describe.configure({mode:'serial'}) aborts the group after the first failure)",
+      "category": "audit_integrity_test_currently_red / visual_regression_safety_margin",
+      "severity": "P1",
+      "evidence": "`npx playwright test tests/e2e/roue-qr-logo-2026-08-13.spec.js --project=chromium --workers=1 --retries=0` FAILS at current HEAD: 'le logo occupe 26.0% du QR, hors de la fourchette sure 15-22%' (assertOverlayLogo, spec line 107, ceiling 0.22). Root cause read directly from source: commit 5253256c2 (2026-08-13 19:19:04, 'logo QR agrandi') bumped borne.blade.php's `.qr-logo` CSS width from 20% to 26% in response to an explicit owner request to make the logo bigger, but (a) never updated the spec's declared safe ceiling (22%) that this exact commit's own predecessor had calibrated, and (b) never updated validation.blade.php's sibling `.qr-logo` (still width:20%, confirmed by direct grep), even though the spec's own comment states the two screens 'posent exactement le meme balisage' -- this is why 03-validation-issue-1/04-validation-issue-2 in the SAME spec run still PASS while 01/02 (borne) FAIL. CRITICALLY: commit 5253256c2 landed at 19:19:04, BEFORE round-2's own confirmed checkpoint HEAD 6adbd819e (19:29:44) and before round-2's report timestamp (19:44:11) -- meaning this regression test was already broken throughout round-2's entire evaluation window, and round-2's regression_sweep (which explicitly listed 5 other specs it re-ran) never re-ran this Wave-A-owned spec, so round-2 declared GREEN without noticing a currently-red committed test. Re-confirmed still red at the round-3 final HEAD (ed9f88d69, which landed two more concurrent-session commits mid-review, neither touching .qr-logo). GROUND TRUTH CHECK (went beyond the failing assertion itself): wrote an independent Playwright probe replicating the exact PIN-login + navigate + screenshot flow, decoded the resulting QR crop with the project's own tests/e2e/helpers/decode-qr.php (same GD decoder the spec uses) for BOTH orientations -- the QR decoded successfully in both landscape (ratio 0.2600) and portrait (ratio 0.2600), returning a well-formed https://www.lecayenne.fr/roue.html?t=... payload each time. So there is no PROVEN real-world scan failure today, but the code's own comment (borne.blade.php, right above .qr-logo) explicitly states 'Toute hausse future se teste avec un vrai telephone, pas a l'oeil' (any future increase must be tested with a real phone, not by eye) -- that real-device validation was never done, and the test's own declared safety margin was silently exceeded and left red.",
+      "fix_hint": "Either (a) raise the spec's ceiling from 0.22 to something that covers 0.26 AFTER validating real-phone scannability at that coverage (the comment's own bar), and also bump validation.blade.php's .qr-logo to the same 26% for consistency between the two screens that are documented as sharing identical markup, or (b) revert borne.blade.php's .qr-logo width back toward the tested-safe 20-22% range. Either way, this file's CI signal has been silently red since 19:19 today and should be the very next thing fixed before any further vitrine iteration."
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "account modal heading, ALL states (fresh live capture of the login-connu state: /index.html with lc_known_first/lc_known_last/lc_known_first_at/lecayenne.authPhone seeded exactly as account-retour-connu-2026-08-13.spec.js does; same element/rule also renders 'Bienvenue, chef.' / 'Salut, chef.' on the two other account-v2.jsx states and 'Entre ton code.' on the OTP screen, per shared .lc-acc-title CSS class with no per-state override)",
+      "category": "color_contrast_wcag_aa",
+      "severity": "P2",
+      "evidence": "Visual fresh-eyes pass flagged the heading 'Content de / te revoir,' as looking almost invisible against the white modal, with only the orange 'Julie !' span legible -- verified this was a real bug, not a screenshot-viewing artifact, via direct getComputedStyle(): the h1.lc-acc-title element's OWN text color computes to rgb(251,247,240) (#fbf7f0, the --creme design token), while its rendered background (the nearest ancestor with a non-transparent background-color, div.lc-modal.lc-modal--full) is rgb(255,255,255). Computed WCAG relative-luminance contrast ratio = 1.07:1 (formula per WCAG 2.1, verified by script), against the 4.5:1 minimum for normal text / 3:1 for large bold text. Root cause read in styles.css: `.lc-acc-title` (line 899) has NO color rule at all -- only `.lc-acc-title span { color: var(--orange) }` (line 900) styles the name/keyword span. The plain text nodes therefore inherit color from the DOM ancestor chain, which resolves to `body.lcx-nuit { color: #fbf7f0 }` -- the dark 'night theme' homepage class (added by the 2026-08-08 vitrine V7 redesign) -- because the white `.lc-modal--full` box never resets `color` back to `var(--ink)` for content painted on its own white surface. Confirmed the paragraph text below the heading ('On te reconnait sur cet appareil...') IS legible/dark in the same screenshot, so only this specific un-styled h1 text is affected, not the whole modal. Does not block the primary task path: the email input, the 'Recevoir mon code' button, and the recognition copy remain fully legible and the flow is completable by a sighted user with normal contrast perception; a low-vision user would lose the greeting line specifically. Per REVIEWER_PROTOCOL.md category 4, WCAG contrast defects default to P2 (P1 only if blocking a primary task path, which this is not) -- non-blocking, disclosed only.",
+      "fix_hint": "Add an explicit `.lc-acc-title { color: var(--ink); }` rule (or scope it under `.lc-modal .lc-acc-title`) so the heading text no longer inherits the dark-theme homepage's cream color when rendered inside the white modal. One-line CSS fix, no JS change needed."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 1, "P2": 1, "P3": 0,
+    "open_P0": 0, "open_P1": 1, "open_P2": 1, "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "PASS",
+    "D-001": "PASS",
+    "D-002": "PASS",
+    "D-003": "PASS",
+    "D-004": "PASS"
+  },
+  "closure_evidence": [
+    {
+      "id": "B-001",
+      "claim": "/#menu CTA on all 4 prize-reveal types genuinely renders the SPA Menu view (previously proven false-positive P0 in round 1, PASS in round 2).",
+      "verification_method": "Re-ran tests-e2e/roue-fond-carrousel-redirection-2026-08-13.spec.js fresh, plus a fresh live Playwright reproduction of the exact prize-reveal flow (own probe script replicating jouerEtGagner()) with a Read-tool visual inspection of the resulting screenshot.",
+      "evidence": "Spec: 80/80 passed including all 4 prize-type CTA-href and /#menu SPA-render assertions. Fresh visual: captured a live free_item reveal screen ('TU AS GAGNE / Sandwich Cayenne offert', CTA 'Commander maintenant') -- clean layout, legible text, centered card, no overlap, no i18n leak, no truncation.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-002",
+      "claim": "Broken carousel photo degrades to the same emoji fallback as 'no photo', img removed from DOM.",
+      "verification_method": "Re-ran the same spec (contains the dedicated broken-photo assertions).",
+      "evidence": "'photo cassee : le <img> casse est RETIRE du DOM' and 'la vignette bascule sur le MEME fallback emoji' both PASS again.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-001",
+      "claim": "tests/Feature/Wheel/WheelCrossSurfaceRoundTripTest.php exercises the real service chain.",
+      "verification_method": "Ran `php artisan test --filter=WheelCrossSurfaceRoundTripTest` directly at the final round-3 HEAD.",
+      "evidence": "1 passed, 0.60s.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-002",
+      "claim": "tests/e2e/roue-account-cross-cutting-2026-08-13.spec.js covers a real config-fetch + keyboard pass without leaking x-api-key.",
+      "verification_method": "Ran `npx playwright test tests/e2e/roue-account-cross-cutting-2026-08-13.spec.js --project=chromium --workers=1 --retries=0` at the final round-3 HEAD.",
+      "evidence": "2 passed, 5.4s.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-003",
+      "claim": "Dead .etapes CSS removed, regression spec asserts real progressive-reveal invariant.",
+      "verification_method": "Ran tests-e2e/roue-2026-08-09.regression.js fresh.",
+      "evidence": "10/10, including 'revelation progressive au chargement : seule l'etape 0 est visible, 1/2/3 restent masquees -- true'.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "D-004",
+      "claim": "account-retour-connu-2026-08-13.spec.js fresh-context re-derivation with provenance dump.",
+      "verification_method": "Ran tests-e2e/account-retour-connu-2026-08-13.spec.js fresh.",
+      "evidence": "11/11 passed, including both the base-context and fresh-incognito-context assertions.",
+      "verdict": "PASS"
+    }
+  ],
+  "regression_sweep": {
+    "backend_wheel_phpunit_full_suite": "253/253 passed, 54.90s -- exact count matches round-2 exactly, re-run at final round-3 HEAD (ed9f88d69).",
+    "web_roue_fond_carrousel_redirection_spec": "80/80 passed.",
+    "web_account_trois_etats_spec": "26/26 passed.",
+    "web_roue_2026-08-09_regression": "10/10 passed.",
+    "web_account_retour_connu_spec": "11/11 passed.",
+    "backend_roue_qr_logo_spec": "FAILED -- 1 failed (01-borne-paysage), 1 did not run (02-borne-portrait, serial-mode abort after the first failure), 2 passed (03/04 validation-comptoir screens). NEW finding E-001, see above. This spec was NOT in round-2's regression_sweep list and round-2 did not catch that it was already red.",
+    "backend_wheel_cross_surface_round_trip_test": "1 passed, 0.60s.",
+    "backend_roue_account_cross_cutting_spec": "2 passed, 5.4s.",
+    "frozen_zone_diff": "git diff --stat across the 13 CLAUDE.md Section-7 frozen files, from round-2's checkpoint (6adbd819e) all the way to the final round-3 HEAD (ed9f88d69): zero lines changed. Confirmed with the branch's full commit list in that range (147e3650c, 4afc149cf, 5253256c2*, 10da3eba6*, f7647c399*, b8c3f610d, ed9f88d69 -- *note 5253256c2/10da3eba6/f7647c399 predate 6adbd819e in commit order despite the vitrine work continuing after, all confined to resources/views/admin/wheel/borne.blade.php and test files, never a frozen file).",
+    "concurrent_session_drift_check": "The backend repo moved THREE commits past round-2's own confirmed HEAD (147e3650c, b8c3f610d, ed9f88d69) DURING this round's execution -- the last landed mid-review, requiring a full re-run of the affected spec and a fresh screenshot pass against the true final HEAD rather than a stale earlier one. All three are confined to resources/views/admin/wheel/borne.blade.php (vitrine CSS/layout: shrink-then-recenter the prize carousel, add a 3-layer ambient background, add an 'above the wheel' scan-then-spin instruction, add a fixed 'A GAGNER' carousel title, and fix a genuine portrait-orientation overlap where the QR was covering the Scan/Spin/Win pills). Visually re-inspected both orientations fresh (own live screenshots, not re-reading old PNGs): the portrait fix is real and verified -- the instruction text and wheel no longer overlap the pills, matching the commit's stated intent. None of these three commits touch .qr-logo (E-001's root cause predates all three, from 5253256c2 at 19:19:04) and none touch account-v2.jsx/styles.css (E-002's root cause, unrelated repo). Debugbar's footer toolbar is visible at the bottom of both fresh /admin/roue-borne screenshots -- this matches round-1's already-assessed D-005 (dev-only, config/debugbar.php hard-disables it in production regardless of APP_DEBUG) -- confirmed still present, NOT re-scored as a new finding, consistent with the prior round's disposition."
+  },
+  "verdict": "AMBER",
+  "convergence_status": "NOT ACHIEVED. Round 3 open-findings set is NOT identical to round-2's empty set: found 1 new P1 (E-001, a committed regression spec -- tests/e2e/roue-qr-logo-2026-08-13.spec.js -- that has been silently red since 19:19:04 today, i.e. it was ALREADY broken throughout round-2's entire evaluation window and round-2 never re-ran it, so round-2's GREEN verdict was not actually a clean pass of the full committed test surface) and 1 new non-blocking P2 (E-002, a real WCAG contrast failure on the account modal's primary heading across all its states, ratio 1.07:1, found via fresh-eyes visual inspection + independent computed-style/luminance verification, not previously flagged by any of the 3 prior rounds' waves). Per the stated severity gates, P0/P1 block convergence -- E-001 alone is sufficient to block. This is exactly the kind of gap the round-3 skeptical-confirmation mandate exists to catch: round 2's GREEN was real for everything it actually re-ran, but its regression_sweep coverage was narrower than the full committed Wave-A+D artifact set, and a live-since-round-2 regression slipped through. Recommend: fix E-001 (reconcile borne.blade.php's 26% .qr-logo with either the test's ceiling after real-phone validation, or with validation.blade.php's still-20% sibling), fix E-002 (one-line CSS), then run a round 4 confirmation covering the now-corrected full spec list (including tests/e2e/roue-qr-logo-2026-08-13.spec.js explicitly, which must be added to the standing regression_sweep checklist for all future rounds) before declaring two-consecutive-clean-rounds convergence."
+}

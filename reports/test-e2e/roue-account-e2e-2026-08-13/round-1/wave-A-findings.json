@@ -1,0 +1,29 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 4,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "roue-qr-logo-2026-08-13/01-borne-paysage.png + 02-borne-portrait.png + 03-validation-issue-1.png + 04-validation-issue-2.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "The `.qr` container that hosts the injected QR `<svg>` (borne.blade.php:414, validation.blade.php:138) carries no `role=\"img\"`/`aria-label`/`<title>`, unlike the wheel canvas on the SAME borne screen which does (`<canvas class=\"roue\" ... role=\"img\" aria-label=\"Roue des lots: ...\">`, borne.blade.php:342-343) — an inconsistent a11y pattern within one file. INVESTIGATED, not a blank hole in practice: (1) inline SVG with no focusable descendants and no accessible-name source is excluded from the accessibility tree by Chromium — a screen reader will silently skip it, not read raw path data; (2) the adjacent visible copy already conveys the QR's purpose without a formal aria association — borne: \"Scanne avec ton téléphone / Aucune application à installer\"; validation: \"À lui de tourner / Fais-lui scanner ce QR maintenant, devant toi\" (both confirmed present in the .dom.html snapshots). The `.qr-logo img alt=\"\"` decorative choice (borne.blade.php:233-234 comment) is correct and is NOT the gap — the gap, if any, is the unlabeled SVG wrapper, and it is covered by surrounding prose, not left blank.",
+      "fix_hint": "Optional robustness improvement, not a regression: add `role=\"img\" aria-label=\"QR code — {{ scan instruction }}\"` to `.qr` in borne.blade.php:414 and validation.blade.php:138, mirroring the existing `.roue` canvas pattern, so the accessible name is explicit rather than relying on DOM-order proximity to unassociated text."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 1, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 1, "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "verification_notes": {
+    "spec_rerun": "Re-ran tests/e2e/roue-qr-logo-2026-08-13.spec.js live (chromium, workers=1, retries=0) from a clean rate-limit window: 4/4 passed, matching the GStack report. Also independently re-ran tests/e2e/roue-2026-08-13.spec.js: 9/9 passed on a clean run (a same-session earlier attempt showed 1 failure at ouvrirLaPorte() — traced to MY OWN prior test runs having consumed the 5-attempts/min/IP wheel-pin rate limit, per RouteServiceProvider.php `wheel-pin` limiter; not a real regression, confirmed by rerunning after the window cleared).",
+    "decode_authenticity": "Confirmed the spec decodes the actual rendered browser artifact, not the controller's raw SVG string: `page.locator('.qr-boite'|'.qr').screenshot({path: cropPath})` writes a real PNG, then `decode-qr.php` runs `Zxing\\QrReader` (GD mode) against that PNG file. Not a shortcut/cheat.",
+    "dpr2_claim": "Verified by direct reproduction, not by trusting the code comment: duplicated the spec with deviceScaleFactor forced to 1 and reran against a scratch captures dir. Result: the two borne screens (larger QR) still decoded fine at DPR:1, but the validation screen's smaller 260px-CSS QR genuinely failed to decode ('decode-qr: aucun QR décodable dans ...03-validation-issue-1.qr-crop.png') — exactly the failure mode described in the spec's comment (roue-qr-logo-2026-08-13.spec.js:159-167). The DPR:2/Retina justification is real, not pretext for hiding a fragile decode.",
+    "token_leak_check": "Grepped all 4 .dom.html snapshots for a `t=<token>` pattern and for the exact token strings returned by decode: zero matches. `.lien` text content is exactly 'www.lecayenne.fr — scanne le QR ci-dessus' (domain-only, via PHP_URL_HOST per the 2026-08-09 fix) on both validation captures, confirmed independently of the spec's own assertion.",
+    "visual_review": "Opened all 4 full-page PNGs and all 4 .qr-crop.png crops with vision. Logo disc is visually centered, adequate white-background contrast against the QR modules, not pixelated at either capture size (776x776 down to 584x584, both already 2x DPR). No layout shift/overlap from the label-sizing fix (73d34ae84) — wheel segment labels (Cheese Burger, Cayenne, Terminator, Tarte Daim, Tiramisu, Frites, Boisson) render at one uniform size in both orientations, matching the fix's stated intent and its file-scoped diff (borne.blade.php only, +21 lines, no unrelated changes).",
+    "console_network": "console.json entries are CSP-report-only 'info' level (media-library thumbnail img-src, http://127.0.0.1:8766) — not 'error'/'pageerror', not in scope of this wave (unrelated to QR/logo), and not blocking per protocol category 9. network.json has zero status>=400 outside the allowlisted 302 door-redirect and 204 csp-report noop."
+  }
+}
