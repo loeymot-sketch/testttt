@@ -67,7 +67,11 @@ Plateforme restaurant fast-food complète :
 >
 > **⚠️ NON POUSSÉ / NON DÉPLOYÉ** — `f5fc35235` (grand-livre de la roue), `19ca124a7` + `550a5808a` (banc rouvrir), `74106df31` (register), `e6ae04311` (plancher unifié). Le déploiement demande un geste owner explicite.
 >
-> **CONVERGENCE : PAS ENCORE DEUX CYCLES PROPRES IDENTIQUES.** Cycles 4 et 5 à P0+P1=0, mais avec des jeux de constats DIFFÉRENTS (cycle 4 : 1 P3 ; cycle 5 : 1 doublon structurel corrigé). Un 6ᵉ cycle de confirmation reste dû avant de déclarer la convergence.
+> **CONVERGENCE ATTEINTE aux cycles 6 et 7** — `reports/test-e2e/audit-soldes-2026-08-13/CONVERGENCE_FINAL.md`. Aux cycles 4-5 elle ne l'était PAS (P0+P1=0 des deux côtés, mais jeux de constats DIFFÉRENTS) : deux cycles de plus ont été exécutés. Les cycles 6 et 7 rejouent la **batterie identique** — 6 parcours réels + 11 suites (**1787 tests**) — et rendent des constats **identiques ligne à ligne**. Zones gelées 0 ligne · NF525 CHAIN OK sur 4 branches · 11 `skip` tous préexistants.
+>
+> **DEUX ANGLES NEUFS DU CYCLE 6, tous deux propres** : (a) **le quota de la roue tient** — 3 tours sur un quota de 3 rendent le lot non tirable, et le plafond/jour bloque aussi ; (b) **des points rachetés puis la vente ANNULÉE reviennent** (1500 rendus : `redeem -1500` puis `manual_add +1500`), rejeu idempotent, et le reaper d'orphelins n'y touche pas (il ne prend que `order_id IS NULL`, donc jamais un rachat de caisse).
+>
+> **2 CONSTATS DIVULGUÉS, NON CORRIGÉS** (barème : P2/P3 = divulguer, ne pas boucler) : **P2** le quota de la roue compte les tours GAGNANTS et non les lots REMIS — mesuré, 3 tours épuisent le lot alors que 0 a été remis, donc « 50 tiramisu » = 50 tours gagnants ; conservateur (jamais plus que le quota) → **décision owner**. **P3** codes d'erreur QR doublement préfixés (`QR_QR_REPLAY`) — aucun consommateur ne matche dessus, le caissier lit la bonne phrase.
 
 > **2026-08-13 (GOAL_ADMIN_NAV_BREADTH_CONVERGENCE — 8 défauts réels healés dans la partie jamais auditée de l'admin : Settings/Users-RBAC/Notifications, HEAD `064fc1fce`)**
 >
