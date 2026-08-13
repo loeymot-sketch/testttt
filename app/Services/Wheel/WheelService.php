@@ -127,10 +127,88 @@ class WheelService
             $segments = $tirables !== [] ? $tirables : $segments;
         }
 
+        $photos = $this->photosParLot();
+
         return array_values(array_map(
-            fn ($s) => ['key' => (string) $s['key'], 'label' => (string) $s['label']],
+            fn ($s) => [
+                'key' => (string) $s['key'],
+                'label' => (string) $s['label'],
+                // Absente quand le produit n'a pas de photo : l'affichage retombe alors sur le
+                // libellé seul. Mieux vaut un nom qu'une vignette « produit par défaut », qui dit
+                // au client « on n'a pas pris la peine ».
+                'photo' => $photos[(string) $s['key']] ?? null,
+            ],
             $segments
         ));
+    }
+
+    /**
+     * LA PHOTO DE CHAQUE LOT, RÉSOLUE PAR LE CHEMIN DE LA MAISON.
+     *
+     * [2026-08-13 · propriétaire : « tu ajoutes les photos, les dernières versions des photos, pas
+     * les anciennes »] La tentation était d'écrire ici une petite table « lot → fichier ». Ç'aurait
+     * été un cinquième endroit où vit la vérité des images, à côté des médias Spatie, de
+     * `config/menu_images.php`, des vignettes WebP et du repli par défaut — et le premier à dériver.
+     *
+     * On passe donc par `Item::getThumbAttribute()`, exactement comme la caisse et la borne : média
+     * Spatie s'il existe, sinon `menu_images` par slug, sinon la vignette WebP ≤320 px, sinon le PNG
+     * avec son anti-cache `?v=<date du fichier>`. Une photo remplacée sur le disque change donc ici
+     * le jour même, sans rien toucher à la roue.
+     *
+     * UNE SEULE REQUÊTE pour tous les lots, médias compris : cette méthode est appelée à CHAQUE
+     * rendu de la vitrine (toutes les quelques secondes, toute la journée, en salle) et à chaque
+     * appel de `/wheel/config`. Sept `find()` en boucle y auraient fait sept requêtes, plus sept
+     * autres pour les médias.
+     *
+     * Un échec de lecture ne doit JAMAIS empêcher la roue de s'afficher : on rend un tableau vide et
+     * les libellés suffisent. Mais on le SIGNALE — une roue silencieusement sans photos est
+     * exactement le genre de panne qu'on ne découvre qu'en salle.
+     *
+     * @return array<string, string> clé du lot => URL de la photo
+     */
+    public function photosParLot(): array
+    {
+        $parCle = [];
+        foreach ($this->segments() as $s) {
+            $id = (int) ($s['cost_item_id'] ?? 0);
+            if ($id > 0 && ($s['key'] ?? '') !== '') {
+                $parCle[(string) $s['key']] = $id;
+            }
+        }
+
+        if ($parCle === []) {
+            return [];
+        }
+
+        try {
+            $items = \App\Models\Item::with('media')
+                ->whereIn('id', array_values(array_unique($parCle)))
+                ->get()
+                ->keyBy('id');
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [];
+        }
+
+        $out = [];
+        foreach ($parCle as $cle => $id) {
+            $item = $items->get($id);
+            if ($item === null) {
+                continue;
+            }
+
+            $url = (string) $item->thumb;
+            // La vignette « produit par défaut » n'est pas une photo : la publier ferait dessiner
+            // une case grise au milieu de six vraies photos, ce qui est pire que le libellé seul.
+            if ($url === '' || str_contains($url, 'item-default') || str_contains($url, 'item/thumb.png')) {
+                continue;
+            }
+
+            $out[$cle] = $url;
+        }
+
+        return $out;
     }
 
     /**

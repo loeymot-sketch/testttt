@@ -75,6 +75,63 @@ class WheelReportService
     }
 
     /** @return \Illuminate\Database\Eloquent\Builder<WheelSpin> */
+    /**
+     * LES DERNIERS GAGNANTS — la seule chose NEUVE qu'on ait le droit d'afficher sur la vitrine.
+     *
+     * [2026-08-13 · propriétaire : « tu affiches la roue avec les produits à gagner et en bas tu
+     * affiches ENCORE les photos ainsi que leur nom, c'est catastrophique, faire lire deux fois la
+     * même chose »] Il a raison. La roue porte déjà le nom et la photo de chaque lot ; l'acte qui
+     * les réimprimait juste en dessous ne disait rien de plus. Il est supprimé. Ce qui prend sa
+     * place doit apporter une information que la roue ne donne pas — et il n'y en a qu'une qui
+     * compte pour quelqu'un qui hésite : **ça donne vraiment, et ça vient de donner**.
+     *
+     * ── CE QU'ON N'AFFICHE PAS ───────────────────────────────────────────────────────────────
+     * Jamais le numéro de téléphone. Jamais un nom complet. Le prénom seul, et seulement s'il a été
+     * donné : les comptes créés par la roue sont des invités clés par le téléphone, `customer_name`
+     * est souvent vide. Sans prénom on écrit « quelqu'un » — c'est vrai, et ça marche aussi bien.
+     *
+     * ── POURQUOI ON REND UN HORODATAGE ET NON « IL Y A 4 MIN » ───────────────────────────────
+     * Cette page reste allumée des heures sur le comptoir. Une phrase « il y a 4 min » calculée au
+     * rendu deviendrait fausse à la minute suivante et resterait fausse toute la journée. On rend
+     * donc l'instant, et la page recalcule l'écart en continu.
+     *
+     * @return array<int, array{lot: string, prenom: string, instant: int}>
+     */
+    public function derniersGagnants(int $branchId, int $limite = 6, int $heures = 48): array
+    {
+        $depuis = Carbon::now()->subHours(max(1, $heures));
+
+        $tours = WheelSpin::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('created_at', '>=', $depuis)
+            // Un tour sans lot nommé n'a rien à raconter.
+            ->whereNotNull('prize_label')
+            ->where('prize_label', '!=', '')
+            ->orderByDesc('created_at')
+            ->limit(max(1, $limite))
+            ->get(['prize_label', 'customer_name', 'created_at']);
+
+        return $tours->map(function ($t) {
+            // Le PRÉNOM seul : on coupe au premier espace. « Marie Dupont » affiché en salle sur un
+            // écran que tout le monde voit, c'est une donnée personnelle exposée sans raison.
+            $nom = trim((string) ($t->customer_name ?? ''));
+            $prenom = $nom !== '' ? trim(explode(' ', $nom)[0]) : '';
+
+            // Un « prénom » de 1 caractère ou purement numérique n'en est pas un (saisies de
+            // comptoir, numéros collés dans le champ). On préfère l'anonyme au ridicule.
+            if (mb_strlen($prenom) < 2 || preg_match('/^\d+$/', $prenom)) {
+                $prenom = '';
+            }
+
+            return [
+                'lot' => (string) $t->prize_label,
+                'prenom' => $prenom,
+                'instant' => (int) $t->created_at->getTimestamp(),
+            ];
+        })->all();
+    }
+
     private function tours(int $branchId, Carbon $depuis)
     {
         return WheelSpin::query()

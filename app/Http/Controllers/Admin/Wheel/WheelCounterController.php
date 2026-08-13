@@ -55,6 +55,15 @@ class WheelCounterController extends Controller
             // la tablette s'arrêtait dessus 1 fois sur 7, toutes les dix secondes, en salle.
             'spinnable' => app(\App\Services\Wheel\WheelService::class)->spinnableKeys($branchId),
             'minOrder' => (float) config('wheel.min_order_amount', 0),
+            // [2026-08-13] Ce qui REMPLACE l'acte qui réimprimait la liste des lots déjà portée par
+            // la roue. Une information neuve — « ça vient de donner » — ou rien du tout : si
+            // personne n'a joué depuis deux jours, l'acte est sauté plutôt que d'afficher un cadre
+            // vide qui dirait au client que le jeu ne prend pas.
+            // QUATRE, pas six : au-delà, la ligne des actes devient plus haute que la roue, et
+            // c'est la roue qui rétrécit — or c'est elle le spectacle. Quatre suffisent à dire
+            // « ça tombe souvent ».
+            'gagnants' => app(\App\Services\Wheel\WheelReportService::class)
+                ->derniersGagnants($branchId, 4),
             // On recharge à la MOITIÉ de la durée de vie : le QR affiché est ainsi toujours valable
             // au moins autant de temps qu'il en reste à l'écran. Recharger à l'expiration exacte
             // laisserait une fenêtre où le client scanne un jeton déjà mort.

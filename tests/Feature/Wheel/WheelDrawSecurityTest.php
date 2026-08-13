@@ -76,9 +76,18 @@ class WheelDrawSecurityTest extends TestCase
 
         $this->assertCount(2, $publics, 'la roue doit rester dessinable');
         foreach ($publics as $s) {
-            $this->assertSame(['key', 'label'], array_keys($s),
-                'un segment public expose autre chose que sa clé et son libellé : publier le poids, '
-                . "c'est publier la probabilité de chaque case — " . json_encode($s));
+            /*
+             * [2026-08-13] `photo` REJOINT LA LISTE BLANCHE, et elle reste une liste blanche.
+             *
+             * L'URL d'une photo produit est un fichier public servi par le site : elle ne dit rien
+             * de la probabilité ni des plafonds, et c'est ce qui permet de dessiner un vrai lot
+             * plutôt qu'un mot. Ce test garde donc toute sa sévérité — il continue d'échouer le
+             * jour où quelqu'un ajoute `weight`, `daily_cap` ou `quantity` à ce qui part vers le
+             * navigateur. On élargit la porte d'un champ nommé, on ne la retire pas.
+             */
+            $this->assertSame(['key', 'label', 'photo'], array_keys($s),
+                'un segment public expose autre chose que sa clé, son libellé et sa photo : publier '
+                . "le poids, c'est publier la probabilité de chaque case — " . json_encode($s));
         }
 
         $brut = json_encode($publics);

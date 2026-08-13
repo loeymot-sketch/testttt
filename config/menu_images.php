@@ -99,7 +99,11 @@ return [
         'sandwich-classique' => 'sandwich-classique.png',
 
         // ── Burgers (cat 4)
-        'chicken-burger' => 'burger-cheese.png',
+        // [2026-08-13] `chicken-burger` retiré d'ici : il pointait sur la photo du
+        // CHEESE burger, et il est redéfini plus bas sur `chicken_burger.png`. Seule
+        // la seconde comptait ; celle-ci se contentait d'être fausse et crédible.
+        // `big-chicken` reste sur un visuel générique faute de fichier dédié dans le
+        // pack — c'est un repli assumé, pas un doublon.
         'big-chicken'    => 'burger-big.png',
 
         // ── Tacos (cat 5)
@@ -187,11 +191,14 @@ return [
         'le-supreme-1-viande'       => 'sandwich-classique.png',
         'le-cayenne-1-viande'       => 'sandwich-cayenne.png',
         'panini-1-viande'           => 'sandwich-classique.png',
-        'cheese-burger'             => 'burger-cheese.png',
-        'double-cheese'             => 'burger-big.png',
-        'fish-burger'               => 'burger-cheese.png',
-        'grill-burger'              => 'burger-big.png',
-        'big-burger'                => 'burger-big.png',
+        // [2026-08-13] LES CINQ BURGERS ONT ÉTÉ RETIRÉS D'ICI, PAS PERDUS.
+        // Ils étaient définis une PREMIÈRE fois sur des visuels génériques
+        // (`burger-cheese.png` servait AUSSI au chicken et au fish ; `burger-big.png`
+        // au double-cheese, au grill et au big), puis une SECONDE fois 25 lignes plus
+        // bas sur leur photo propre. PHP garde la dernière : les lignes d'ici ne
+        // servaient plus à rien depuis le 2026-06-24 — elles avaient seulement l'air
+        // de faire autorité. Déplacer un bloc, et cinq burgers reprenaient en silence
+        // la photo d'un autre sandwich. Une seule définition par produit, plus bas.
         'frites-moyenne'            => 'frites.png',
         'frites-grande'             => 'frites.png',
         'tiramisu-speculoos'        => 'tiramisu.png',

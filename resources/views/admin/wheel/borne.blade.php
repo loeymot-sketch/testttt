@@ -122,7 +122,16 @@
        d'un canvas : la roue est devenue une ELLIPSE de 434 × 295. Le `100%` est donc DANS le
        `min()` de la hauteur — l'axe imposé est celui qu'on borne, la largeur suit toute seule.
      Le canvas est posé directement sur la ligne élastique : dans un conteneur intermédiaire dont
-     la ligne de grille est en `auto`, le pourcentage ne se résout pas. */
+     la ligne de grille est en `auto`, le pourcentage ne se résout pas.
+
+     [2026-08-13] J'AI ESSAYÉ D'AGRANDIR LA ROUE À 54vmin ET C'ÉTAIT FAUX — capture à l'appui :
+     le repère était rogné en haut, le logo chassé hors de l'écran, et « Tu gagnes à 100 % »
+     passait SOUS la roue. Le `100%` de la ligne élastique ne borne pas ce que `54vmin` réclame :
+     c'est le plus GRAND des trois termes qui gagne quand la ligne, elle, peut déborder.
+     Le raisonnement « les photos coûtent du rayon, donc je rends de la taille » était juste ;
+     la conclusion ne l'était pas. On garde 48vmin — la valeur mesurée comme sûre le 10/08 — et
+     la place perdue par le texte est récupérée AUTREMENT : les vignettes sont posées en médaillon
+     (voir le script), ce qui les rend lisibles bien plus petites qu'une photo posée à nu. */
   .roue{
     height:min(48vmin,620px,100%); width:auto; display:block;
     filter:drop-shadow(0 2.5vmin 5vmin rgba(0,0,0,.55));
@@ -154,18 +163,33 @@
     margin:0 0 2vmin; font-size:min(5.2vmin,54px); font-weight:900; letter-spacing:-.015em; line-height:1.05;
   }
 
-  /* Acte 2 — les lots, en pastilles qui entrent une par une. */
-  .lots{display:flex; flex-wrap:wrap; gap:1.4vmin; justify-content:center; max-width:min(88vmin,860px)}
-  .pastille{
-    padding:1.4vmin 2.4vmin; border-radius:99px; font-size:min(3.4vmin,34px); font-weight:900;
-    background:rgba(255,255,255,.07); border:1px solid rgba(255,184,0,.42); color:var(--creme);
-    /* Les pastilles se posent depuis le HAUT et non depuis le bas : leur position de départ, même
-       invisible, agrandissait la zone de défilement de la ligne des actes de 10 à 13 px — vers le
-       haut elle ne compte pas, et la seule règle qui vaille ici reste vérifiable à zéro. */
-    opacity:0; transform:translateY(-1.4vmin) scale(.94);
+  /* ── Acte 2 — CE QUI VIENT D'ÊTRE GAGNÉ ────────────────────────────────────────────────────
+     Remplace la liste des lots, qui répétait mot pour mot ce que la roue affiche déjà.
+     Deux colonnes au plus : au-delà, la ligne des actes devient plus haute que la roue et c'est
+     la roue qui rétrécit — or c'est elle le spectacle. Quatre lignes suffisent à dire « ça
+     tombe souvent » ; une cinquième ne dit rien de plus et coûte de la hauteur. */
+  .gagnants{
+    list-style:none; margin:0; padding:0; display:grid; gap:1.1vmin;
+    grid-template-columns:repeat(auto-fit,minmax(min(38vmin,330px),1fr));
+    max-width:min(86vmin,820px); width:100%;
   }
-  .acte.on .pastille{animation:entrePastille .5s cubic-bezier(.2,1.5,.4,1) forwards}
-  @keyframes entrePastille{to{opacity:1; transform:none}}
+  .gagnant{
+    display:flex; align-items:baseline; justify-content:center; gap:1.2vmin;
+    padding:1.1vmin 2vmin; border-radius:99px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,184,0,.34);
+    /* Entrée depuis le HAUT, jamais depuis le bas : une position de départ vers le bas, même
+       invisible, agrandit la zone de défilement de la ligne des actes (10 à 13 px mesurés le
+       10/08). Vers le haut elle ne compte pas, et la règle « rien ne sort de sa boîte » reste
+       vérifiable à zéro. */
+    opacity:0; transform:translateY(-1.2vmin) scale(.96);
+  }
+  .acte.on .gagnant{animation:entreGagnant .5s cubic-bezier(.2,1.5,.4,1) forwards}
+  @keyframes entreGagnant{to{opacity:1; transform:none}}
+  .g-lot{font-size:min(3.2vmin,32px); font-weight:900; color:var(--jaune2); white-space:nowrap}
+  .g-qui{font-size:min(2.2vmin,22px); font-weight:700; opacity:.78; white-space:nowrap}
+  /* Le délai est écrit par le script et reste VIDE tant qu'il n'a pas tourné : « · » suivi de rien
+     vaut mieux qu'un « il y a 0 min » figé, et la puce n'apparaît qu'avec son texte. */
+  .g-quand:not(:empty)::before{content:' · '; opacity:.6}
 
   /* Acte 3 — le geste. */
   .geste{display:flex; align-items:center; justify-content:center; gap:2.4vmin; flex-wrap:wrap}
@@ -259,9 +283,12 @@
   }
 
   @media (prefers-reduced-motion:reduce){
-    .fond,.fleche,.qr-boite::before,.acte.on .pastille{animation:none}
+    .fond,.fleche,.qr-boite::before,.acte.on .gagnant{animation:none}
     .acte{transition:none}
-    .pastille{opacity:1; transform:none}
+    /* Sans l'animation, l'état de DÉPART reste appliqué : les gagnants resteraient invisibles.
+       C'est le piège classique du mouvement réduit — on retire l'animation et on oublie que
+       l'élément était masqué en attendant qu'elle le révèle. */
+    .gagnant{opacity:1; transform:none}
   }
 </style>
 </head>
@@ -315,23 +342,41 @@
           </p>
         </div>
 
-        {{-- ACTE 2 — CE QU'IL Y A À GAGNER. On montre les lots : une promesse sans contenu ne
-             déclenche rien, et les libellés viennent du serveur, jamais d'une liste écrite ici.
-             C'est aussi l'endroit où les lots sont VRAIMENT lisibles : sur la roue, la géométrie
-             d'un secteur limite la taille du texte, ici non. --}}
+        {{-- ACTE 2 — CE QUI VIENT D'ÊTRE GAGNÉ.
+             [2026-08-13 · propriétaire : « tu affiches la roue avec les produits à gagner et en bas
+             tu affiches ENCORE les photos ainsi que leur nom — c'est catastrophique, faire lire
+             deux fois la même chose »]
+
+             Il avait raison, et le code le disait noir sur blanc : le canvas dessine les sept
+             libellés, puis cet acte réimprimait LES MÊMES SEPT, en pastilles, trois secondes plus
+             tard, sur le même écran. Aucune information ajoutée — juste la même liste, deux fois.
+             Elle est supprimée. La roue porte désormais le nom ET la photo de chaque lot : c'est
+             UN endroit, et c'est le bon.
+
+             Ce qui prend la place doit dire quelque chose que la roue ne dit pas. Pour quelqu'un
+             qui hésite devant un comptoir, il n'y a qu'une information qui compte : **ça donne
+             vraiment, et ça vient de donner.** D'où les derniers gagnants, réels, lus en base.
+
+             S'il n'y a personne (jeu neuf, journée creuse, deux jours sans tour), l'acte n'est PAS
+             rendu : la vitrine repasse à deux actes. Un cadre « aucun gagnant » sur un écran de
+             comptoir dit au client que le jeu ne prend pas — c'est exactement l'inverse du but. --}}
+        @if (! empty($gagnants))
         <div class="acte" data-acte="1">
-          <p class="titre2">Aujourd'hui, on distribue</p>
-          <div class="lots">
-            {{-- TOUS les lots, sans coupe — et désormais sans coupe POUR DE VRAI : la ligne des
-                 actes n'est plus une boîte de hauteur devinée, et le QR n'est plus posé par-dessus.
-                 En tronquer un ferait dire à l'écran « on distribue ceci » pendant que la roue en
-                 montre un de plus juste au-dessus — le client remarque l'écart, et c'est le genre
-                 de détail qui fait douter du reste. --}}
-            @foreach ($segments ?? [] as $i => $s)
-              <span class="pastille" style="animation-delay:{{ 0.12 * $i }}s">{{ $s['label'] }}</span>
+          <p class="titre2">Ça vient de tomber</p>
+          <ul class="gagnants">
+            @foreach ($gagnants as $i => $g)
+              <li class="gagnant" style="animation-delay:{{ number_format(0.11 * $i, 2, '.', '') }}s">
+                <span class="g-lot">{{ $g['lot'] }}</span>
+                {{-- Le prénom SEUL, jamais le nom complet ni le numéro : cet écran est face à la
+                     salle, tout le monde le lit. Sans prénom donné, « quelqu'un » — c'est vrai, et
+                     ça raconte la même chose. --}}
+                <span class="g-qui">{{ $g['prenom'] !== '' ? $g['prenom'] : 'quelqu\'un' }}<span
+                      class="g-quand" data-instant="{{ $g['instant'] }}"></span></span>
+              </li>
             @endforeach
-          </div>
+          </ul>
         </div>
+        @endif
 
         {{-- ACTE 3 — LE GESTE. Trois pastilles, mais DEUX gestes seulement : « scanne » puis
              « tourne ». La troisième est la récompense, pas une corvée de plus — c'est la
@@ -383,10 +428,39 @@
   // l'animation a le droit de s'arrêter.
   var LOTS_CLES = @json(array_column($segments ?? [], 'key'));
   var LOTS_ARRET = @json($spinnable ?? []);
+  /* LES PHOTOS, dans le même ordre. Résolues par le SERVEUR via le chemin de la maison
+     (média téléversé → pack détouré → vignette WebP), jamais par une table écrite ici : c'est
+     ainsi qu'une photo remplacée sur le disque arrive à la roue le jour même. `null` quand le
+     produit n'a pas de vraie photo — le secteur retombe alors sur son libellé, en plus grand. */
+  var PHOTOS = @json(array_column($segments ?? [], 'photo'));
   // LISTE DE SECOURS, si le serveur n'a pas répondu. Elle doit rester le REFLET des lots réels :
   // le 12 août elle annonçait encore « -10% » et « 50 points », des lots que la roue ne donne plus.
   // Une roue de secours qui promet autre chose que la vraie est un mensonge de plus, pas un filet.
   if (!LOTS.length) { LOTS = ['Boisson', 'Frites', 'Tiramisu', 'Tarte Daim', 'Cheese Burger', 'Cayenne', 'Terminator']; }
+  /* Le tableau des photos doit rester EXACTEMENT aligné sur celui des libellés, y compris quand
+     ce dernier vient de retomber sur la liste de secours. Un décalage d'un cran collerait la
+     photo du Cayenne sur le Terminator — une erreur qu'on ne voit pas en test et que le client
+     voit tout de suite. */
+  while (PHOTOS.length < LOTS.length) { PHOTOS.push(null); }
+  PHOTOS.length = LOTS.length;
+
+  /* ── LE CHARGEMENT DES PHOTOS ─────────────────────────────────────────────────────────────
+     Chaque image est chargée une fois et gardée. Tant qu'elle n'est pas prête, le secteur est
+     dessiné sans elle : la roue tourne dès la première image affichée, elle n'attend pas le
+     réseau. Une image en échec reste `null` pour toujours — on ne réessaie pas en boucle sur un
+     écran allumé douze heures, ce serait une requête perdue toutes les 16 ms. */
+  var IMAGES = new Array(LOTS.length);
+  (function chargerPhotos() {
+    for (var i = 0; i < PHOTOS.length; i++) {
+      if (!PHOTOS[i]) { continue; }
+      (function (idx, url) {
+        var im = new Image();
+        im.onload = function () { IMAGES[idx] = im; cache = null; cacheEchelle = -1; };
+        im.onerror = function () { IMAGES[idx] = null; };
+        im.src = url;
+      })(i, PHOTOS[i]);
+    }
+  })();
 
   var cv = document.getElementById('roue');
   var ctx = cv && cv.getContext ? cv.getContext('2d') : null;
@@ -421,9 +495,33 @@
      long du rayon, et l'épaisseur de ses deux lignes en travers. Le résultat est mis en cache,
      il ne dépend que de l'échelle d'affichage. */
   var VISEE = 30;              // hauteur de police voulue à l'écran, en px CSS
-  var R_TEXTE = R * 0.615;     // milieu du mot, sur le rayon
-  var R_MIN = 80, R_MAX = 316; // bande utile : après le moyeu, avant le repère et les ampoules
+  var R_MIN = 80;              // après le moyeu
+  var R_MAX_NU = 316;          // sans photo : toute la bande, jusqu'avant le repère et les ampoules
+
+  /* ── OÙ SE POSE LA PHOTO, ET CE QU'ELLE COÛTE AU TEXTE ────────────────────────────────────
+     [2026-08-13 · propriétaire : « tu ajoutes les photos »] La photo prend de la place SUR LE
+     RAYON, et le rayon est précisément ce qui donne sa taille au libellé. Ce n'est pas gratuit,
+     et le chiffre a été posé avant d'écrire la ligne :
+
+       · photo centrée à r = 286, côté 104 → elle occupe la bande [234, 338] ;
+       · le texte se replie donc sur [80, 226], soit 146 px au lieu de 236.
+
+     « Terminator » — le mot le plus long, insécable — passe ainsi de ~33 à ~24 px de canvas.
+     Pour que la LISIBILITÉ ne recule pas, la roue récupère en CSS la hauteur libérée par l'acte
+     supprimé : plus grande à l'écran, son échelle compense la réduction. C'est le seul échange
+     qui rendait les photos acceptables ici.
+
+     Un secteur SANS photo garde toute sa bande : il n'a aucune raison d'être puni. */
+  var R_PHOTO = R * 0.795;     // centre de la vignette, sur le rayon
+  var R_MAX_PHOTO = 226;       // le texte s'arrête avant la vignette
   var echelle = 1, cache = null, cacheEchelle = -1;
+
+  /* Côté de la vignette : bornée à la fois par la bande radiale qui lui est réservée et par la
+     largeur du secteur À CET ENDROIT — sans la seconde borne, une roue à 10 lots verrait ses
+     vignettes se chevaucher d'un secteur sur l'autre. */
+  function photoCote(N) {
+    return Math.min(104, (TAU * R_PHOTO / N) * 0.55);
+  }
 
   function police(t) { return '900 ' + t.toFixed(1) + 'px -apple-system,Segoe UI,Roboto,sans-serif'; }
 
@@ -435,24 +533,30 @@
   function libelles() {
     if (cache && cacheEchelle === echelle) { return cache; }
     var N = LOTS.length;
-    cache = LOTS.map(function (brut) {
+    cache = LOTS.map(function (brut, idx) {
       // Deux lignes pour les libellés longs : « Frites + Boisson » sur une seule ligne sort du
       // secteur et se fait rogner par le bord de la roue.
       var mots = String(brut).split(' ');
       var coupe = Math.ceil(mots.length / 2);
       var l1 = mots.length > 1 ? mots.slice(0, coupe).join(' ') : mots[0];
       var l2 = mots.length > 1 ? mots.slice(coupe).join(' ') : '';
+      // La bande dépend de CE secteur : une vignette réellement chargée le rétrécit, une photo
+      // absente ou en échec lui rend tout l'espace. On regarde `IMAGES`, pas `PHOTOS` — une URL
+      // annoncée mais jamais chargée ne doit pas voler sa place au texte.
+      var avecPhoto = !!IMAGES[idx];
+      var rMax = avecPhoto ? R_MAX_PHOTO : R_MAX_NU;
+      var rTexte = (R_MIN + rMax) / 2;
       var t = VISEE * echelle;
       for (var k = 0; k < 14; k++) {
         ctx.font = police(t);
         var demi = Math.max(ctx.measureText(l1).width, l2 ? ctx.measureText(l2).width : 0) / 2;
-        var interne = R_TEXTE - demi;
+        var interne = rTexte - demi;
         var epais = l2 ? 1.95 * t : 0.8 * t;                 // encre en travers du rayon
         var place = TAU * Math.max(interne, 30) / N * 0.86;   // largeur du secteur à cet endroit
-        if (interne >= R_MIN && R_TEXTE + demi <= R_MAX && epais <= place) { break; }
+        if (interne >= R_MIN && rTexte + demi <= rMax && epais <= place) { break; }
         t *= 0.94;
       }
-      return { l1: l1, l2: l2, t: t };
+      return { l1: l1, l2: l2, t: t, r: rTexte };
     });
     cacheEchelle = echelle;
     return cache;
@@ -488,19 +592,87 @@
          doit porter sur l'angle ABSOLU — rotation de la roue COMPRISE. La tester sur le seul angle
          du secteur (`cos(am)`) donne une réponse figée pendant que la roue tourne : c'était le
          défaut vu en capture, la moitié des lots s'affichait à l'envers. */
-      ctx.save();
       var am = a0 + pas / 2;
-      ctx.rotate(am);
       var abs = ((am + angle) % TAU + TAU) % TAU;
       var retourne = abs > Math.PI / 2 && abs < Math.PI * 1.5;
-      ctx.translate(R_TEXTE, 0);
+      var L = libs[i];
+
+      /* ── LA PHOTO DU LOT ────────────────────────────────────────────────────────────────
+         Elle est posée AVANT le texte et sur un autre rayon : les deux ne se recouvrent
+         jamais, la bande de chacun est calculée pour ça (voir R_MAX_PHOTO).
+
+         Le quart de tour supplémentaire met le HAUT de la photo vers l'EXTÉRIEUR de la roue :
+         sans lui, la canette de Coca est couchée sur le flanc. Et la photo subit le MÊME
+         retournement que son libellé — sinon un secteur de la moitié gauche montrerait une
+         photo droite sous un nom à l'envers, ce qui a l'air d'un bug plutôt que d'une roue.
+
+         Le rapport largeur/hauteur est PRÉSERVÉ : une frite écrasée dans un carré, c'est
+         exactement la négligence qu'on nous reproche. */
+      var im = IMAGES[i];
+      if (im && im.width > 0 && im.height > 0) {
+        var cote = photoCote(N);
+        ctx.save();
+        // ON SE PLACE D'ABORD, ON S'ORIENTE ENSUITE. Fondre le quart de tour dans la rotation
+        // qui précède la translation change la DIRECTION de cette translation : les secteurs
+        // retournés envoyaient alors leur photo à l'opposé de la roue. Une fois le repère posé
+        // sur la vignette, les deux rotations tournent autour d'elle et commutent sans risque.
+        ctx.rotate(am);
+        ctx.translate(R_PHOTO, 0);
+        if (retourne) { ctx.rotate(Math.PI); }
+        ctx.rotate(Math.PI / 2);
+
+        /* ── LE MÉDAILLON, ET POURQUOI IL EXISTE ────────────────────────────────────────
+           Le pack de photos est MIXTE, constaté en capture : Frites, Coca et Tarte sont
+           détourées sur fond transparent, tandis que Cheese Burger, Cayenne et Terminator
+           sont des photos PLEINE CADRE à fond noir. Posées à nu côte à côte sur la roue,
+           les secondes deviennent des rectangles sombres collés sur des cases orange —
+           trois lots ont l'air d'un bug, quatre ont l'air d'un produit.
+
+           Le médaillon règle les deux cas d'un coup : un disque clair, la photo RECADRÉE
+           dedans (recouvrement, jamais de déformation), un anneau doré. Le fond noir est
+           découpé, le détourage gagne une assise, et les sept lots deviennent la même
+           famille visuelle. Un disque se lit aussi de plus loin qu'un rectangle : c'est
+           ce qui permet de garder la roue à 48vmin sans rien perdre. */
+        var rp = cote / 2;
+        ctx.shadowColor = 'rgba(0,0,0,.55)';
+        ctx.shadowBlur = 16;
+        ctx.shadowOffsetY = 5;
+        ctx.beginPath();
+        ctx.arc(0, 0, rp, 0, TAU);
+        ctx.fillStyle = '#FFF6EC';
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, rp, 0, TAU);
+        ctx.clip();
+        /* RECOUVREMENT : on met à l'échelle par le plus GRAND des deux rapports, donc le
+           disque est toujours entièrement couvert et la photo garde ses proportions. Le
+           trop-plein est découpé par le masque — jamais un produit écrasé. */
+        var k = Math.max((rp * 2) / im.width, (rp * 2) / im.height);
+        ctx.drawImage(im, -im.width * k / 2, -im.height * k / 2, im.width * k, im.height * k);
+        ctx.restore();
+
+        // L'anneau : il détache le médaillon de sa case et rattrape les photos très claires,
+        // qui sans lui se confondraient avec le disque crème.
+        ctx.beginPath();
+        ctx.arc(0, 0, rp, 0, TAU);
+        ctx.lineWidth = Math.max(2.5, cote * 0.045);
+        ctx.strokeStyle = 'rgba(255,211,77,.92)';
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.rotate(am);
+      ctx.translate(L.r, 0);
       if (retourne) { ctx.rotate(Math.PI); }
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fff';
       ctx.shadowColor = 'rgba(0,0,0,.55)';
       ctx.shadowBlur = 7;
-      var L = libs[i];
       ctx.font = police(L.t);
       /* Un cerne sombre sous le blanc : une case jaune de fête foraine est presque aussi claire
          que le texte posé dessus (1,5:1). Le cerne rend le mot lisible sans assombrir la case,
@@ -685,15 +857,41 @@
       var el = actes[courant];
       setTimeout(function () {
         el.classList.add('on');
-        // On relance l'entrée des pastilles à chaque passage : sinon l'acte 2 n'est animé qu'une
-        // fois, et paraît figé aux passages suivants.
-        [].forEach.call(el.querySelectorAll('.pastille'), function (p) {
+        // On relance l'entrée à chaque passage : sinon l'acte n'est animé qu'une fois, et paraît
+        // figé aux passages suivants.
+        [].forEach.call(el.querySelectorAll('.gagnant'), function (p) {
           p.style.animation = 'none';
           void p.offsetWidth;
           p.style.animation = '';
         });
       }, FONDU);
     }, 6500);
+  }
+
+  /* ── « IL Y A COMBIEN DE TEMPS » — RECALCULÉ, JAMAIS FIGÉ ───────────────────────────────────
+     Cette page reste allumée des heures sur un comptoir. Un « il y a 4 min » écrit au rendu
+     serait faux à la minute suivante et le resterait toute la journée — et un écran qui ment sur
+     un détail vérifiable fait douter du reste. Le serveur donne l'INSTANT, la page calcule
+     l'écart, et le refait toutes les 30 s.
+
+     Au-delà de quelques heures on cesse de compter : « il y a 1 743 min » ne se lit pas à trois
+     mètres, et ne veut rien dire à quelqu'un qui attend sa commande. */
+  var quands = [].slice.call(document.querySelectorAll('.g-quand'));
+  if (quands.length) {
+    var direDelai = function () {
+      var maintenant = Date.now() / 1000;
+      quands.forEach(function (el) {
+        var t = parseInt(el.getAttribute('data-instant'), 10);
+        if (!t) { el.textContent = ''; return; }
+        var s = Math.max(0, maintenant - t);
+        el.textContent = s < 90 ? 'à l’instant'
+          : s < 5400 ? 'il y a ' + Math.round(s / 60) + ' min'
+          : s < 86400 ? 'il y a ' + Math.round(s / 3600) + ' h'
+          : 'hier';
+      });
+    };
+    direDelai();
+    setInterval(direDelai, 30000);
   }
 
   /* Renouvellement du jeton : la page se recharge à la MOITIÉ de la durée de vie, pour que le QR
