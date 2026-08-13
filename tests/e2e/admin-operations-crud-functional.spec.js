@@ -1395,3 +1395,59 @@ test.describe.serial('Real functional CRUD — Promo Flyer (create real coupon c
     console.log(`[CRUD-FUNCTIONAL] Promo Flyer REVOKE: real code "${code}" marked revoked via the native confirm dialog, not a client-side-only toast.`);
   });
 });
+
+test.describe.serial('Real functional interaction — Ingredients (read-only by design, usage-drawer proof)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Ingredients: "View details" opens the usage drawer with a real fetched usage payload, not a static/mocked panel', async () => {
+    // Read-only page by design (post stock-mgmt-M1 consolidation, commit
+    // 5037203f1: "collapse duplicate stock-rupture entry points — single
+    // SSOT page /admin/stock/rupture V2"). A real toggle component
+    // (IngredientAvailabilityToggleComponent.vue) + a wired Vuex action
+    // (ingredients/toggleAvailability) + a real backend route
+    // (PUT /admin/ingredients/{id}/availability) all still exist and are
+    // fully built, but the component is NEVER imported/rendered anywhere
+    // in the app (confirmed via grep across resources/js) -- dead code
+    // left over from the consolidation, not a broken button (there is no
+    // button to click at all). The mutation surface now lives at
+    // /admin/stock/rupture instead. The only real interactive element on
+    // THIS page is the "View details" usage drawer, proven here via a
+    // real network fetch, matching the read-only-page proof pattern used
+    // for the Report screens above.
+    await page.goto('/admin/ingredients', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('[data-testid="ingredient-list"]')).toBeVisible({ timeout: 10_000 });
+
+    const firstRow = page.locator('tbody tr[data-global-id]').first();
+    await expect(firstRow).toBeVisible({ timeout: 10_000 });
+    const rowName = (await firstRow.locator('th p').first().innerText()).trim();
+
+    const usageResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/ingredients\/[^/]+\/usage$/.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 10_000 }
+    );
+    await firstRow.getByRole('button', { name: /view details|voir les détails/i }).click();
+    const res = await usageResponse;
+    expect(res.status()).toBe(200);
+
+    const drawer = page.locator('[data-testid="ingredient-usage-drawer"]');
+    await expect(drawer).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="ingredient-usage-name"]')).toContainText(rowName, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Ingredients: "View details" on "${rowName}" fired a real GET .../usage (200) and rendered its real payload in the drawer -- not a static panel.`);
+
+    await page.locator('[data-testid="ingredient-usage-backdrop"]').click();
+    await expect(drawer).not.toBeVisible({ timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Ingredients: usage drawer closes via backdrop click -- real interaction, not a decorative overlay.');
+  });
+});
