@@ -47,6 +47,37 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-13 — GOAL COMMERÇANT+BACKEND+ACCÈS : Wave 2 close, 1 vrai bug corrigé, 5 décisions
+> présentées à l'owner — HEAD `bd17406f1`**
+>
+> Owner : "audit et améliore la gestion et tout le parcours de commerçant et backend et accès,
+> pense à tout". Scope volontairement resserré (`plans/GOAL_COMMERCANT_BACKEND_ACCES_2026-08-13.md`)
+> sur les gaps réels au-delà de ce qui était déjà couvert le même jour (70/71 pages admin,
+> `goal_admin_nav_breadth_convergence_2026-08-13.md`) — décision validée par revue Architect
+> avant exécution.
+>
+> **Vrai bug de production trouvé ET corrigé** : `SloMetricCollector::collectPaymentSuccessRate()`
+> comparait `payment_status` (entier, cast `'integer'`) à la CHAÎNE `'paid'` — aucune ligne ne
+> matchait jamais, `slo_breach` journalisé toutes les 5 min en continu depuis au moins 21:20 ce
+> jour (`payment_success_rate=0.0`), invisible car le canal d'alerte Slack est LUI-MÊME cassé
+> (`LOG_SLACK_WEBHOOK_URL` absent du `.env` prod — même point aveugle exact que le P0 fiscal des
+> 17 jours résolu plus tôt ce mois). Corrigé, red-then-green vérifié (`git stash` sur le seul
+> fichier fix → 0.0 reproduit → restauré → 0.75 confirmé), 73/73 Observability verts.
+> **Non déployé** — fix local uniquement, en attente de confirmation owner pour le push (comme le
+> reste du travail de ce jour).
+>
+> **RBAC enforcement direct-API prouvé** (pas juste navigable) : 4 endpoints sensibles
+> (permission-set, création admin, X-report fiscal, clôture Z) appelés directement (sans passer
+> par l'UI) avec un rôle Chef — 401/403 réel confirmé sur les 4, contrôle positif confirmé (rôle
+> légitime → 200/201). 235/235 Security verts.
+>
+> **5 décisions owner présentées, aucune tranchée unilatéralement** (cf. §G du GOAL) : G1 allowlist
+> imprimante LAN (2 options, risque de scan de port si mal choisie — revue Architect a corrigé le
+> risque sous-évalué de la 1ʳᵉ proposition) ; G2 CLAUDE.md §9 vs comportement réel de `User`/
+> BranchScope (doc à corriger OU code à muter, pas les deux à la fois silencieusement) ; G3/G4/G5
+> = les 3 trouvailles de la session nav-breadth jamais tranchées (OrderSetup frais de livraison
+> cosmétique, KioskSetup PIN sans porte réelle, LoyaltySetup valeur rétroactive des points).
+
 > **📋 2026-08-13 soir — GOAL de finition écrit et VAGUES 1-2 entamées (prod `f3d853b3`)**
 >
 > Plan : `plans/GOAL_CAYENNE_FINITION_2026-08-13.md` — 11 ancrages vérifiés fichier par fichier, chaque chantier chiffré sur la PRODUCTION.
