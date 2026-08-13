@@ -176,6 +176,81 @@ class WheelParcoursCompletTest extends TestCase
     }
 
     /**
+     * ON NE PEUT PAS « RETOURNER LA ROUE JUSQU'À GAGNER ».
+     *
+     * ── CE QUE J'AI CRU, ET QUI ÉTAIT FAUX ───────────────────────────────────────────────────
+     * [2026-08-13] J'ai annoncé au propriétaire un P1 : « quelqu'un qui rejoue l'appel du tour
+     * avant de réclamer peut relancer la roue jusqu'au lot qui lui plaît ». C'ÉTAIT FAUX. Le
+     * second appel rend bien 200 — mais il rend LE MÊME LOT. La garde est dans
+     * {@see \App\Services\Wheel\WheelService::drawPending()}, et son commentaire nomme
+     * l'attaque mot pour mot depuis le premier jour.
+     *
+     * J'avais lu un CODE DE RETOUR au lieu de comparer un RÉSULTAT. Un 200 ne dit rien de ce qui
+     * s'est passé derrière.
+     *
+     * ── POURQUOI CE TEST N'APPELLE PAS L'API EN BOUCLE ───────────────────────────────────────
+     * Ma première tentative rejouait 20 fois `POST /wheel/spin`. Elle échouait en « Too Many
+     * Attempts » : le tour est limité à 10 appels par minute, et le compteur est partagé par
+     * toute la classe. J'aurais pu lire ce rouge comme un défaut de plus — c'est la troisième
+     * fois de la session qu'une garde saine fait échouer mon banc.
+     *
+     * On éprouve donc la garde LÀ OÙ ELLE VIT. Le tour est joué une fois par l'API, comme un vrai
+     * client ; la répétition, elle, appelle directement la méthode qui décide. C'est
+     * déterministe, ça ne dépend d'aucun quota, et ça teste exactement la ligne qui protège.
+     */
+    public function test_on_ne_peut_pas_retourner_la_roue_jusqu_a_gagner(): void
+    {
+        // SEPT lots ÉQUIPROBABLES : avec un seul lot, ce test passerait quoi qu'il arrive et ne
+        // prouverait rien. C'est la diversité des tirages possibles qui lui donne sa force.
+        $lots = [];
+        foreach (['a', 'b', 'c', 'd', 'e', 'f', 'g'] as $k) {
+            $lots[] = ['key' => $k, 'label' => 'Lot '.$k, 'type' => 'points', 'value' => 10,
+                       'weight' => 100, 'daily_cap' => 0, 'quantity' => 0];
+        }
+        Config::set('wheel.segments', $lots);
+
+        $caissier = User::factory()->create(['branch_id' => $this->branche->id]);
+        $caissier->givePermissionTo('pos');
+        $jeton = app(WheelUnlockService::class)->issue($this->branche->id, $caissier->id);
+
+        foreach (['review', 'follow'] as $etape) {
+            $this->postJson('/api/frontend/wheel/step', [
+                'branch_id' => $this->branche->id, 'step' => $etape,
+                'unlock_token' => $jeton['token'],
+            ]);
+        }
+
+        // Le tour, joué UNE fois comme un vrai client.
+        $this->postJson('/api/frontend/wheel/spin', [
+            'branch_id' => $this->branche->id, 'unlock_token' => $jeton['token'],
+        ])->assertOk();
+
+        // La colonne s'appelle `unlock_token_hash` (pas `token_hash`), et ce modèle porte un
+        // BranchScope : sans le retirer, la ligne reste invisible depuis un test qui n'a pas de
+        // caisse en contexte. Deux détails, deux faux « aucune trace » avant de tomber juste.
+        $progres = \App\Models\WheelStepProgress::withoutGlobalScope(BranchScope::class)
+            ->where('unlock_token_hash', hash('sha256', $jeton['token']))
+            ->first();
+        $this->assertNotNull($progres, 'le tour n\'a laissé aucune trace pour ce jeton');
+        $this->assertNotNull($progres->prize_key, 'aucun lot mis en attente');
+
+        $premier = (string) $progres->prize_key;
+
+        /*
+         * TRENTE relances de la méthode qui décide. Si elle retirait à chaque appel, obtenir
+         * trente fois le même lot parmi sept équiprobables aurait une chance sur 7^29 — autant
+         * dire jamais. Trente résultats identiques ne laissent aucune place au hasard.
+         */
+        $roue = app(\App\Services\Wheel\WheelService::class);
+        for ($i = 0; $i < 30; $i++) {
+            $encore = $roue->drawPending($this->branche->id, $progres->fresh());
+            $this->assertSame($premier, (string) $encore['key'],
+                'le même jeton a produit un lot DIFFÉRENT au '.($i + 1).'e appel : on peut '
+                . 'retourner la roue jusqu\'à obtenir celui qu\'on veut');
+        }
+    }
+
+    /**
      * UN JETON NE DONNE QU'UNE SEULE PARTICIPATION — et ce banc dit exactement OÙ est la serrure.
      *
      * ── CE QUE J'AI CRU, ET CE QUE J'AI TROUVÉ ───────────────────────────────────────────────
