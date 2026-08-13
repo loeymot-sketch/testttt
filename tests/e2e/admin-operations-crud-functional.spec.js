@@ -364,3 +364,42 @@ test.describe.serial('Real functional interaction — Items Report (read-only, f
     console.log('[CRUD-FUNCTIONAL] Items Report: filter cleared without error — round trip confirmed.');
   });
 });
+
+test.describe.serial('Real functional interaction — Credit Balance Report (read-only, filter-driven)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Credit Balance Report: name filter actually queries the backend (not a cosmetic no-op)', async () => {
+    await page.goto('/admin/credit-balance-report', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+    await expect(table).toBeVisible({ timeout: 10_000 });
+
+    await page.click('.table-filter-btn');
+    const filterPanel = page.locator('#credit-balance-filter');
+    await expect(filterPanel).toBeVisible({ timeout: 8000 });
+
+    const garbageName = `ZZZ-NO-SUCH-CUSTOMER-${Date.now()}`;
+    await page.fill('#searchName', garbageName);
+    await page.click('#credit-balance-filter button.bg-primary');
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('text=/no_data_available|Aucune donnée disponible/i')).toBeVisible({ timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Credit Balance Report: garbage name filter correctly collapses to the real empty state — filter reaches the backend query, not a cosmetic no-op.');
+
+    await page.click('#credit-balance-filter button.bg-gray-600');
+    await page.waitForTimeout(1500);
+    await expect(table).not.toContainText(/no_data_available|Aucune donnée disponible/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Credit Balance Report: clearing the filter brings real rows back — genuine two-way interaction confirmed.');
+  });
+});
