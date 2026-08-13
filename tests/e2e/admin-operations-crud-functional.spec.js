@@ -403,3 +403,47 @@ test.describe.serial('Real functional interaction — Credit Balance Report (rea
     console.log('[CRUD-FUNCTIONAL] Credit Balance Report: clearing the filter brings real rows back — genuine two-way interaction confirmed.');
   });
 });
+
+test.describe.serial('Real functional interaction — Cash Sessions Report (read-only, date-filter-driven)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Cash Sessions Report: date-range filter actually queries the backend (not a cosmetic no-op)', async () => {
+    // Structurally different from Sales/Items/Credit-Balance Report: no
+    // table.db-table (grouped-by-day divs instead), no collapsible filter
+    // panel (inline date inputs), and its submit button DOES carry an
+    // explicit type="submit" here (unlike Sales/Items Report's buttons).
+    await page.goto('/admin/cash-sessions-report', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // A date range far in the future is guaranteed to have zero real cash
+    // sessions -- deterministic empty-state proof, no dependency on what
+    // real data happens to exist today.
+    await page.fill('#cashFrom', '2099-01-01');
+    await page.fill('#cashTo', '2099-01-02');
+    await page.click('button[type="submit"].bg-primary');
+    await page.waitForTimeout(1500);
+
+    // This screen's empty state uses i18n key label.no_data_available,
+    // which renders "Aucune donnée" -- shorter than the message.no_data_available
+    // key used elsewhere in this file ("Aucune donnée disponible"). Confirmed
+    // via screenshot from a failed run using the longer regex.
+    await expect(page.locator('text=/no_data_available|Aucune donnée/i')).toBeVisible({ timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Cash Sessions Report: 2099 date range correctly collapses to the real empty state — filter reaches the backend query, not a cosmetic no-op.');
+
+    await page.click('button.bg-gray-600');
+    await page.waitForTimeout(1500);
+    await expect(page.locator('text=/no_data_available|Aucune donnée/i')).not.toBeVisible({ timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Cash Sessions Report: clearing the filter brings real data back — genuine two-way interaction confirmed.');
+  });
+});
