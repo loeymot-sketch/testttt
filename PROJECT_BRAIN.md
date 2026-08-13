@@ -168,6 +168,10 @@ Plateforme restaurant fast-food complète :
 > **Défaut mineur documenté, PAS corrigé** : 13 commandes sur 3201 (toutes `source=5`/Uber) ont un `order_serial_no` qui commence DÉJÀ par `#` en base, et le template préfixe un second `#` (`##MSQJH2RZa`) — cosmétique, hors scope de ce correctif, à traiter séparément si l'owner le juge utile.
 >
 > **Défaut pré-existant CONFIRMÉ SANS LIEN avec ce correctif** : `multi-branch-isolation.spec.js` S8.2 (« Cross-branch GET show via SPA fetch retourne 403/404 ») échoue en recevant 401 au lieu de [403,404,422] — reproduit à l'identique AVANT et APRÈS le correctif ci-dessus (vérifié via `git stash` sur le seul fichier touché), donc non introduit par ce correctif. Probable expiration/désynchronisation de session dans le scénario du test lui-même. Documenté pour triage séparé, pas creusé plus loin (hors scope de cette investigation).
+>
+> **5ᵉ confirmation consolidée (jalon 63/71, 89%)** : les 4 fichiers CRUD fonctionnels relancés ENSEMBLE après l'ajout Rôle-Autorisations = **60/60 tests verts, 0 régression croisée**, 13,5 min. Confirme que le correctif Uber Eats (fichier hors des 4, touché séparément) et tous les ajouts de cette reprise (Printers, Kiosk Setup, Time Slots, Mail, Rôle-Autorisations) coexistent sans interférence.
+>
+> **Encaissement — vérification directe (reprise en main d'un sous-agent bloqué)** : `s2-v2-encaissement-cash-2026-07-29.spec.js` échoue avec `net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8010/login` — port codé en dur depuis une session antérieure, alors que CET environnement sert sur `127.0.0.1:8766` (confirmé `.env` `APP_URL`). Dérive d'environnement, pas un défaut produit — même famille que le chemin scratchpad codé en dur trouvé plus tôt sur Scan Facture. Pas corrigé (hors scope), documenté pour ne pas re-halluciner « Encaissement testé et vert » sans vérification directe.
 
 ---
 
