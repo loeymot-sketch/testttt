@@ -3,6 +3,7 @@
 namespace Tests\Feature\Settings;
 
 use App\Http\Requests\LicenseRequest;
+use App\Http\Requests\SiteRequest;
 use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
@@ -112,5 +113,78 @@ class MailLicenseEnvInjectionGuardTest extends TestCase
         );
 
         $this->assertFalse($validator->fails());
+    }
+
+    /**
+     * [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] Adversarial-dispute
+     * finding: SiteRequest is a THIRD unpatched sibling of the same
+     * .env-injection class as Mail/License (both above) and Company
+     * (already fixed). SiteService::update() writes site_default_timezone,
+     * site_date_format, site_time_format, and site_google_map_key verbatim
+     * into .env via the same EnvEditor::addData() sink (SiteService.php:47-60).
+     * Unit-level Validator::make() against rules() directly — SiteRequest's
+     * authorize() requires an authenticated `settings` holder, orthogonal to
+     * what this test targets (the injection guard on the rules themselves).
+     */
+    public function test_site_request_rules_reject_env_injection_in_timezone(): void
+    {
+        $request = new SiteRequest();
+
+        $validator = Validator::make(
+            array_merge($this->validSitePayload(), [
+                'site_default_timezone' => "Europe/Paris\nAPP_DEBUG=true",
+            ]),
+            $request->rules()
+        );
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('site_default_timezone', $validator->errors()->toArray());
+    }
+
+    public function test_site_request_rules_reject_env_injection_in_google_map_key(): void
+    {
+        $request = new SiteRequest();
+
+        $validator = Validator::make(
+            array_merge($this->validSitePayload(), [
+                'site_google_map_key' => "AIza\"\r\nMIX_API_KEY=stolen",
+            ]),
+            $request->rules()
+        );
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('site_google_map_key', $validator->errors()->toArray());
+    }
+
+    public function test_site_request_rules_accept_valid_payload(): void
+    {
+        $request = new SiteRequest();
+
+        $validator = Validator::make($this->validSitePayload(), $request->rules());
+
+        $this->assertFalse($validator->fails());
+    }
+
+    private function validSitePayload(): array
+    {
+        return [
+            'site_date_format' => 'd-m-Y',
+            'site_time_format' => 'H:i',
+            'site_default_timezone' => 'Europe/Paris',
+            'site_default_branch' => 1,
+            'site_default_currency' => 1,
+            'site_currency_position' => 10,
+            'site_digit_after_decimal_point' => 2,
+            'site_email_verification' => 5,
+            'site_phone_verification' => 10,
+            'site_default_language' => 2,
+            'site_language_switch' => 5,
+            'site_app_debug' => 10,
+            'site_google_map_key' => 'AIzaSyTest123',
+            'site_copyright' => '© Le Cayenne',
+            'site_online_payment_gateway' => 10,
+            'site_guest_login' => 5,
+            'site_default_phone_digit_length' => 10,
+        ];
     }
 }

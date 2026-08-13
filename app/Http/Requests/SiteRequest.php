@@ -26,10 +26,19 @@ class SiteRequest extends FormRequest
      */
     public function rules(): array
     {
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] adversarial-dispute
+        // finding: site_default_timezone, site_date_format, site_time_format
+        // and site_google_map_key are written verbatim into .env
+        // (SiteService.php:47-60, same EnvEditor::addData sink as
+        // Mail/License/Company) but never got the injection guard those
+        // siblings received — a raw \r/\n/" lets the value inject an
+        // independent .env line (e.g. APP_DEBUG=true).
+        $noEnvInjection = 'regex:/^[^\r\n"]*$/';
+
         return [
-            'site_date_format'               => ['required', 'string', 'max:190'],
-            'site_time_format'               => ['required', 'string', 'max:190'],
-            'site_default_timezone'          => ['required', 'string', 'max:190'],
+            'site_date_format'               => ['required', 'string', 'max:190', $noEnvInjection],
+            'site_time_format'               => ['required', 'string', 'max:190', $noEnvInjection],
+            'site_default_timezone'          => ['required', 'string', 'max:190', $noEnvInjection],
             'site_default_branch'            => ['required', 'numeric'],
             'site_default_currency'          => ['required', 'numeric'],
             'site_currency_position'         => ['required', 'numeric'],
@@ -40,7 +49,7 @@ class SiteRequest extends FormRequest
             'site_language_switch'           => ['required', 'numeric'],
             'site_app_debug'                 => ['required', 'numeric'],
             'site_auto_update'               => ['nullable', 'numeric'],
-            'site_google_map_key'            => ['required', 'string', 'max:190'],
+            'site_google_map_key'            => ['required', 'string', 'max:190', $noEnvInjection],
             'site_android_app_link'          => ['nullable', 'string', 'max:190'],
             'site_ios_app_link'              => ['nullable', 'string', 'max:190'],
             'site_copyright'                 => ['required', 'string', 'max:190'],
