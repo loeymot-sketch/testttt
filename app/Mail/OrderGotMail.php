@@ -27,6 +27,9 @@ class OrderGotMail extends Mailable
 
     public function build()
     {
-        return $this->subject("You got a new order")->markdown('emails.orderGot');
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] adversarial-dispute
+        // finding on the SubscriberMail subject fix: same bug — see
+        // OrderMail.php for the full rationale.
+        return $this->subject("Nouvelle commande #{$this->orderId} — Le Cayenne")->markdown('emails.orderGot');
     }
 }

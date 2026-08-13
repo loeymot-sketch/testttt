@@ -29,6 +29,11 @@ class OrderMail extends Mailable
 
     public function build()
     {
-        return $this->subject("Order Notification")->markdown('emails.order');
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] adversarial-dispute
+        // finding on the SubscriberMail subject fix: same bug — a hardcoded,
+        // non-identifying subject while the order id only appears in the
+        // body. An inbox full of "Order Notification" is unusable for
+        // telling which order a message concerns. Also ADR-007 FR-lock.
+        return $this->subject("Commande #{$this->orderId} — Le Cayenne")->markdown('emails.order');
     }
 }
