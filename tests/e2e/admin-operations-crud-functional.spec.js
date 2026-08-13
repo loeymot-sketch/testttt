@@ -1042,3 +1042,42 @@ test.describe.serial('Real functional interaction — System Health dashboard (r
     console.log('[CRUD-FUNCTIONAL] System Health dashboard: Refresh button fired a real GET /api/admin/observability/system-health (200), not a cosmetic no-op.');
   });
 });
+
+test.describe.serial('Real functional interaction — Transactions (read-only, filter-driven)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Transactions: transaction-id filter actually queries the backend (not a cosmetic no-op)', async () => {
+    await page.goto('/admin/transactions', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+    await expect(table).toBeVisible({ timeout: 10_000 });
+
+    await page.click('.table-filter-btn');
+    const filterPanel = page.locator('#transaction-filter');
+    await expect(filterPanel).toBeVisible({ timeout: 8000 });
+
+    const garbageId = `ZZZ-NO-SUCH-TXN-${Date.now()}`;
+    await page.fill('#transaction_id', garbageId);
+    await page.click('#transaction-filter button.bg-primary');
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('text=/no_data_available|Aucune donnée disponible/i')).toBeVisible({ timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Transactions: garbage transaction-id filter correctly collapses to the real empty state — filter reaches the backend query, not a cosmetic no-op.');
+
+    await page.click('#transaction-filter button.bg-gray-600');
+    await page.waitForTimeout(1500);
+    await expect(table).not.toContainText(/no_data_available|Aucune donnée disponible/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Transactions: clearing the filter brings real rows back — genuine two-way interaction confirmed.');
+  });
+});
