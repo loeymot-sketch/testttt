@@ -47,6 +47,38 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-14 — Déploiement VPS lancé (`ac5ab47f5`) : site sain + NF525 OK, mais deux points à
+> traiter avant le prochain déploiement**
+>
+> `bash tools/deploy-vps.sh` lancé sur `lecayenne` (51.210.111.124, `/var/www/lecayenne`) à la
+> demande owner. AVANT de lancer : `git status` sur le VPS révélait **141 changements non
+> commités**, dont une intégration Uber entière STAGED-mais-jamais-commitée (`UberMenuPushCommand`,
+> `UberOrderCommand`, `PushUberMenuJob`, listeners, `UberMenuBuilder`, `config/uber.php` — déjà
+> signalée la veille dans `deploy_fidelite_roue_live_2026-08-12.md`). Le script fait
+> `git reset --hard` : ça les aurait détruits. **Mis en sécurité** : `git stash push -u -m
+> "pre-deploy-2026-08-14-uber-wip-safety-stash"` sur le VPS AVANT le déploiement, contenu vérifié
+> fichier par fichier (`git show stash@{0}:<path>`) avant de continuer. **`stash@{0}` reste sur le
+> VPS, PAS restauré** — ce travail Uber attend un arbitrage séparé (le committer proprement ou le
+> jeter, à trancher par l'owner).
+>
+> **Le script a rendu un verdict ÉCHEC (rollback auto) qui est un FAUX POSITIF** — sa vérif
+> « chaque bundle doit dater de CE build » (comparaison mtime vs `$DEPLOY_START`) suppose qu'un
+> build complet réécrit TOUS les fichiers référencés par `mix-manifest.json`. Faux : quand le
+> contenu d'un chunk hashé webpack n'a pas changé (normal ici, HEAD n'avait pas bougé — aucun
+> JS/CSS neuf), webpack NE RÉÉCRIT PAS le fichier → son mtime reste celui d'un ancien build
+> (`vendor.js` retrouvé à 6,3 jours, `admin-kds.*.js` à 20,8 h) pendant qu'`app.js` (réécrit) datait
+> de 150 s. Rollback inutile déclenché (2 rebuilds pour rien, aucune casse), MAIS **l'attestation
+> NF525 (`fiscal:verify-chain`) vit APRÈS ce check dans le script → sautée par le rollback**.
+> Reproduite manuellement post-coup : `CHAIN OK` sur la seule branche active. Site `200`, worker
+> `queue:work high,default` vivant, `HEAD` VPS = `ac5ab47f5` (contient le fix cuisine du dessous).
+> **Corrigé (`72cf928d4`, 2026-08-14)** : la vérif de fraîcheur porte désormais sur
+> `mix-manifest.json` seul (toujours réécrit par le build, quel que soit le contenu des bundles
+> qu'il référence) au lieu de chaque bundle individuellement. Revalidé en rejouant la logique
+> contre l'état réel du VPS qui avait déclenché le faux positif (`vendor.js` à 6,3 jours) —
+> passe maintenant. NF525 reste techniquement APRÈS cette vérif dans le script (pas réordonné,
+> hors scope de ce fix) ; si un AUTRE check venait à false-positiver un jour, l'attestation
+> serait de nouveau sautée par le rollback — non traité, scope-minimal respecté.
+
 > **2026-08-14 — Pont cuisine (9101) : nom d'imprimante repli corrigé, service persistant PAS
 > ENCORE installé sur le PC cuisine**
 >
