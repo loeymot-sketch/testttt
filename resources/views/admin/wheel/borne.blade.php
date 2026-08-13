@@ -175,7 +175,12 @@
        rare ici), et on retire le plancher : chacun prend une part mesurée du même budget. */
     .gauche{min-height:0}
     .actes{display:none}
-    .roue{height:min(30vh,74vmin)}
+    /* SUR UN CANEVAS, L'AXE IMPOSÉ DOIT ÊTRE CELUI QU'ON BORNE — c'est écrit plus haut dans ce
+       fichier, et je viens de me le reprendre. En paysage on borne la HAUTEUR (la ressource rare
+       là-bas) et la largeur suit. En portrait, la ressource rare est la LARGEUR : borner la hauteur
+       laissait la largeur se résoudre à zéro, et la roue occupait sa place sans rien dessiner —
+       un trou parfaitement dimensionné. On borne donc la largeur, la hauteur suit. */
+    .roue{width:min(62vmin,30vh,300px); height:auto}
     h1{font-size:min(6vmin,58px)}
     .consigne{font-size:clamp(13px,2vmin,22px)}
     .qr svg{width:min(26vh,48vmin,260px)}
