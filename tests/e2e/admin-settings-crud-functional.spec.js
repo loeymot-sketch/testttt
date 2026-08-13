@@ -212,4 +212,45 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Item Category DELETE: row gone after confirm — REAL removal.');
   });
+
+  test('Language: create -> appears in table -> edit -> delete -> gone', async () => {
+    const uniq = `E2ELang${Date.now() % 100000}`;
+    // code is validated as /^[A-Za-z_-]+$/ (letters only, no digits) --
+    // discovered live via the "Le format du champ code n'est pas valide"
+    // error after a first attempt used a numeric suffix.
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    const code = `zz${letters[Date.now() % 26]}${letters[Math.floor(Date.now() / 26) % 26]}`;
+    const table = page.locator('table.db-table');
+
+    await page.goto('/admin/settings/languages', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await openCreateModal(page);
+    await page.fill('#name', uniq);
+    await page.fill('#code', code);
+    await page.locator('#modal #ltr').check();
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Language CREATE: "${uniq}" appears in table — REAL.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+    const nameInput = page.locator('#modal #name');
+    await expect(nameInput).toBeVisible({ timeout: 8000 });
+    await nameInput.fill(`${uniq}EDITED`);
+    await submitModal(page);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Language EDIT: rename reflected in table — REAL persistence.');
+
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+
+    await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Language DELETE: row gone after confirm — REAL removal.');
+  });
 });
