@@ -124,17 +124,42 @@
   }
   /* En portrait, une colonne du milieu n'a plus de sens : les trois blocs s'empilent, et le ruban
      passe en dernier — il illustre, il ne commande pas le geste. */
+  /* ── PORTRAIT ────────────────────────────────────────────────────────────────────────────
+     [PROPRIÉTAIRE 2026-08-13 : « corrige le portrait aussi »] Défaut RÉEL, vu en capture : le QR
+     recouvrait les pastilles « Scanne / Tourne / Gagne ».
+
+     La cause : en portrait, `vmin` vaut la LARGEUR. Une roue à 58vmin réclamait donc 58 % de la
+     largeur en HAUTEUR, plus le logo, la consigne et les trois pastilles — le tout dans une seule
+     ligne de grille. La ligne débordait, et le bloc suivant se posait par-dessus. C'est le même
+     mécanisme que les deux pannes déjà consignées en tête de fichier : une hauteur réclamée sans
+     être bornée.
+
+     On borne donc explicitement chaque étage en portrait, au lieu d'espérer que la grille s'en
+     charge : la roue cède la première (c'est du décor, pas de l'information), la consigne et les
+     pastilles ne bougent pas (c'est le geste). */
   @media (max-aspect-ratio:1/1){
-    .scene{grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto auto; gap:2vmin}
-    .defile{order:3; max-height:26vh}
+    .scene{
+      grid-template-columns:1fr;
+      grid-template-rows:minmax(0,1fr) auto auto;
+      gap:1.6vmin; padding:2.4vmin;
+    }
+    .gauche{min-height:0; overflow:hidden}
+    .roue{height:min(40vmin,100%)}
+    h1{font-size:min(7vmin,74px)}
+    .defile{order:3; max-height:24vh}
+    /* En portrait le ruban se couche : une colonne verticale y volerait la hauteur du QR. */
+    .defile-fenetre{overflow:hidden}
+    .defile-bande{flex-direction:row; gap:2vmin; animation:defiler-h 46s linear infinite}
+    .defile-item img{width:min(16vmin,110px); height:min(16vmin,110px)}
   }
+  @keyframes defiler-h{from{transform:translateX(0)} to{transform:translateX(-50%)}}
 
   /* ── CÔTÉ GAUCHE : LE SPECTACLE ─────────────────────────────────────────────────────────── */
   /* Trois étages : le logo, la roue, le message. La roue est sur la ligne élastique — c'est
      ELLE qui rétrécit quand l'écran est court, jamais le texte : un lot annoncé à moitié caché
      est un lot qu'on ne lit pas. */
   .gauche{
-    display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:1.4vmin;
+    display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:1.2vmin;
     justify-items:center; align-items:center; min-height:0; min-width:0;
   }
 
@@ -325,13 +350,37 @@
      `min-height:0` est indispensable — sans lui, un enfant en flux impose sa hauteur naturelle à
      la colonne et pousse le QR hors de l'écran, exactement le défaut déjà payé en haut de ce
      fichier avec les boîtes de hauteur devinée. */
+  /* LA CONSIGNE AU-DESSUS DE LA ROUE — elle dit le geste, donc elle passe avant le décor. */
+  .consigne{
+    margin:0; text-align:center; line-height:1.2;
+    font-size:clamp(15px,2.5vmin,30px); font-weight:700; letter-spacing:-.01em;
+    color:var(--creme); opacity:.92;
+  }
+  .consigne b{color:var(--jaune2); font-weight:900}
+
+  /* LE TITRE DU RUBAN — il transforme des photos en promesse. Il ne défile pas : un en-tête qui
+     bouge avec son contenu cesse d'être un en-tête. */
+  .defile-titre{
+    margin:0 0 1vmin; text-align:center; flex:0 0 auto;
+    font-size:clamp(13px,1.9vmin,23px); font-weight:900; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--jaune2); opacity:.95;
+  }
+
+  /* Le ruban est maintenant DEUX étages : le titre (fixe) et la bande (qui défile). Sans cette
+     grille, le titre entrait dans le flux animé et remontait avec les photos. */
   .defile{
     position:relative; min-height:0; height:100%; overflow:hidden;
-    width:100%;
+    width:100%; display:grid; grid-template-rows:auto minmax(0,1fr);
     /* Fondu haut et bas : la bande n'apparaît pas d'un coup et ne se coupe pas net — elle émerge
        et s'efface, ce qui donne l'impression d'un ruban continu plutôt que d'une liste tronquée. */
-    -webkit-mask-image:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-            mask-image:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  }
+  /* Le fondu porte sur la BANDE seule : appliqué au bloc entier, il effaçait aussi le haut du
+     titre. Fondu court (8 %) — au-delà, les produits du haut et du bas paraissent effacés plutôt
+     qu'en mouvement, et le propriétaire l'a vu tout de suite sur sa photo. */
+  .defile-fenetre{
+    position:relative; min-height:0; overflow:hidden;
+    -webkit-mask-image:linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+            mask-image:linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
   }
   .defile-bande{
     display:flex; flex-direction:column; align-items:center; gap:2.2vmin;
@@ -465,6 +514,19 @@
            reconnaître l'écran comme celui du restaurant et non une publicité quelconque. --}}
       <img class="logo" src="{{ asset('images/kiosk-attract/logo.png') }}" alt="Le Cayenne">
 
+      {{-- [PROPRIÉTAIRE 2026-08-13] « au-dessus de la roue, c'est bien de mentionner : scanne le QR
+           code pour jouer / tourner la roue ».
+
+           C'est la correction la plus utile de tout l'écran. Jusqu'ici la page montrait un jeu et un
+           QR, mais ne disait JAMAIS que l'un ouvre l'autre — le client devait le deviner. Un
+           passant a environ trois secondes d'attention : s'il doit inférer le lien entre deux
+           objets éloignés de l'écran, il ne le fait pas, il regarde ailleurs.
+
+           La phrase est posée AU-DESSUS de la roue, donc sur le trajet naturel du regard (logo →
+           consigne → roue), et elle nomme les deux gestes dans l'ordre où ils arrivent : scanner
+           d'abord, tourner ensuite. --}}
+      <p class="consigne">Scanne le QR code<br><b>pour tourner la roue</b></p>
+
       {{-- Le repère qui désigne le lot gagnant est DESSINÉ dans le canvas (voir plus bas) : la
            roue change de taille pour laisser la place au texte, et un triangle posé à côté en
            HTML se décrochait de son sommet. Le `aria-label` donne la liste des lots hors de
@@ -560,16 +622,23 @@
 
          Ordre de lecture voulu : la roue dit « il y a un jeu », le ruban dit « voilà TOUT ce que
          tu peux gagner », le QR dit « voilà comment ». --}}
+    {{-- [PROPRIÉTAIRE 2026-08-13] « les images, on comprend rien si on met pas de titre comme
+         "produits à gagner" ». Exact, et c'est un défaut de sens, pas de style : sans en-tête, ces
+         photos sont juste de la nourriture qui défile — le cerveau les classe en décor et les
+         ignore. Nommées « À GAGNER », les mêmes photos deviennent une promesse. --}}
     <div class="defile" aria-hidden="true">
-      <div class="defile-bande">
-        @foreach(array_merge($segments, $segments) as $seg)
-          @if(!empty($seg['photo']))
-          <figure class="defile-item">
-            <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
-            <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
-          </figure>
-          @endif
-        @endforeach
+      <p class="defile-titre">À gagner</p>
+      <div class="defile-fenetre">
+        <div class="defile-bande">
+          @foreach(array_merge($segments, $segments) as $seg)
+            @if(!empty($seg['photo']))
+            <figure class="defile-item">
+              <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
+              <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
+            </figure>
+            @endif
+          @endforeach
+        </div>
       </div>
     </div>
     @endif
