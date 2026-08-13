@@ -39,8 +39,9 @@ bridgeJs  = scriptDir & "\kitchen-bridge.js"
 '   nodeExe = "C:\Program Files\nodejs\node.exe"
 nodeExe = "node"
 
-' NOM EXACT de l'imprimante CUISINE (a adapter) — passe en argument au pont.
-printerName = "Epson TM-m30II"
+' NOM EXACT de l'imprimante CUISINE (a adapter si la file Windows a ete recreee sous un
+' autre nom) — passe en argument au pont. Verifie sur site 2026-08-14 : "Epson TM-m30 Cuisine".
+printerName = "Epson TM-m30 Cuisine"
 
 ' Guillemets autour des chemins + du nom d'imprimante (espaces eventuels).
 cmd = """" & nodeExe & """ """ & bridgeJs & """ """ & printerName & """"

@@ -28,7 +28,7 @@
 
   EXEMPLE :
     powershell -ExecutionPolicy Bypass -File install-kitchen-service.ps1 `
-      -BridgePath "C:\kitchen-bridge\kitchen-bridge.js" -Printer "Epson TM-m30II"
+      -BridgePath "C:\kitchen-bridge\kitchen-bridge.js" -Printer "Epson TM-m30 Cuisine"
 
   DESINSTALLER :  nssm stop FoodKingCuisineBridge ; nssm remove FoodKingCuisineBridge confirm
 
@@ -45,7 +45,7 @@
 param(
   [string]$ServiceName = "FoodKingCuisineBridge",
   [string]$BridgePath  = "C:\kitchen-bridge\kitchen-bridge.js",
-  [string]$Printer     = "Epson TM-m30II",
+  [string]$Printer     = "Epson TM-m30 Cuisine",
   [int]   $Port        = 9101,
   [string]$NodePath    = "node",
   [string]$NssmPath    = "nssm",

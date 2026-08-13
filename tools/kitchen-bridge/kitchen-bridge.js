@@ -36,12 +36,15 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const PORT = parseInt(process.env.KITCHEN_BRIDGE_PORT || '9101', 10);
-// [KITCHEN-AUTOSTART 2026-08-09] Défaut de repli aligné sur l'imprimante réellement
-// installée en cuisine. Ce n'est QU'UN REPLI : le lanceur (start-kitchen-bridge-hidden.vbs
-// ou le service NSSM) passe le nom en ARGUMENT, ce qui écrase cette valeur. Le nom doit
-// correspondre AU CARACTÈRE PRÈS à `Get-Printer | Select-Object Name` — un nom erroné
-// n'échoue PAS bruyamment, il empile les tickets dans une file Windows morte.
-const PRINTER = process.argv[2] || process.env.KITCHEN_PRINTER || 'Epson TM-m30II';
+// [KITCHEN-AUTOSTART 2026-08-09, nom corrigé 2026-08-14] Défaut de repli aligné sur
+// l'imprimante réellement installée en cuisine. Ce n'est QU'UN REPLI : le lanceur
+// (start-kitchen-bridge-hidden.vbs ou le service NSSM) passe le nom en ARGUMENT, ce qui
+// écrase cette valeur. Le nom doit correspondre AU CARACTÈRE PRÈS à
+// `Get-Printer | Select-Object Name` — un nom erroné n'échoue PAS bruyamment, il empile
+// les tickets dans une file Windows morte. Vérifié sur site 2026-08-14 : la file cuisine
+// s'appelle "Epson TM-m30 Cuisine" (PAS "Epson TM-m30II", qui est le nom de la file
+// COMPTOIR — les deux ponts ne doivent jamais partager le même nom de repli).
+const PRINTER = process.argv[2] || process.env.KITCHEN_PRINTER || 'Epson TM-m30 Cuisine';
 
 // [2026-07-13 CLUSTER B] Anti-trou-noir : un worker VIVANT mais FIGÉ (WritePrinter
 // bloqué sur un port USB coincé/spouleur figé) ne répond jamais sur stdout → sans

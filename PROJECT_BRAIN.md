@@ -47,6 +47,38 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-14 — Pont cuisine (9101) : nom d'imprimante repli corrigé, service persistant PAS
+> ENCORE installé sur le PC cuisine**
+>
+> Rapport terrain (technicien on-site, pas un dev) : imprimante Epson cuisine détectée en USB,
+> file Windows créée et mise par défaut sous le nom **`Epson TM-m30 Cuisine`** (différent de la
+> file comptoir `Epson TM-m30II`). Test manuel réussi (clic bouton réimpression KDS → ticket
+> sorti). MAIS le rapport confirme explicitement **aucun bridge persistant** sur ce PC (pas de
+> service, rien sur `127.0.0.1:9101`) — le test manuel a donc marché parce qu'un `node
+> kitchen-bridge.js` tournait temporairement pendant l'intervention, pas parce que l'auto-print
+> est câblé différemment (le bouton manuel ET l'auto-print appellent tous les deux
+> `printEscPosViaKitchenBridge` → même pont 9101, vérifié dans
+> `KitchenDisplaySystemComponent.vue`). Auto-print déjà ON par défaut côté code
+> (`autoPrintKitchen: true`), donc rien à changer côté logique KDS.
+>
+> **Corrigé côté repo** (defaults de repli seulement — le nom réel doit de toute façon être passé
+> en argument à l'install) : `tools/kitchen-bridge/kitchen-bridge.js`,
+> `tools/bridge-service/install-kitchen-service.ps1`,
+> `tools/bridge-service/start-kitchen-bridge-hidden.vbs` — le repli `Epson TM-m30II` (copié de la
+> caisse, jamais adapté à la cuisine) devient `Epson TM-m30 Cuisine`. Tests verts :
+> `kitchen-bridge.test.js` 7/7, `kitchenLocalPrinter.spec.js` 12/12.
+>
+> **PAS déployé côté PC cuisine** (action physique, hors portée de cette session) : reste à
+> exécuter sur place `install-kitchen-service.ps1 -Printer "Epson TM-m30 Cuisine"` (admin,
+> nécessite NSSM) pour que le pont survive à un redémarrage — sinon l'auto-print s'arrêtera à la
+> prochaine coupure/redémarrage du PC, exactement comme observé.
+>
+> Point 3 du même rapport terrain (tiroir-caisse « en attente de dev », suggérant de modifier
+> `caisse-bridge.js`) est un diagnostic **obsolète** : déjà résolu et déployé la veille (cf. §2
+> entrée 2026-08-13 « 429 sondage + tiroir-caisse muet ») — l'impulsion voyage avec les octets du
+> ticket, `caisse-bridge.js` n'a jamais eu besoin d'être modifié. Aucune action prise dessus pour
+> éviter une double-impulsion.
+
 > **2026-08-13 — GOAL COMMERÇANT+BACKEND+ACCÈS : Wave 2 close, 1 vrai bug corrigé, 5 décisions
 > présentées à l'owner — HEAD `bd17406f1`**
 >
