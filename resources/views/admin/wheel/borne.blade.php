@@ -143,14 +143,23 @@
       grid-template-rows:minmax(0,1fr) auto auto;
       gap:1.6vmin; padding:2.4vmin;
     }
-    .gauche{min-height:0; overflow:hidden}
-    .roue{height:min(40vmin,100%)}
-    h1{font-size:min(7vmin,74px)}
-    .defile{order:3; max-height:24vh}
-    /* En portrait le ruban se couche : une colonne verticale y volerait la hauteur du QR. */
-    .defile-fenetre{overflow:hidden}
-    .defile-bande{flex-direction:row; gap:2vmin; animation:defiler-h 46s linear infinite}
-    .defile-item img{width:min(16vmin,110px); height:min(16vmin,110px)}
+    /* ⚠️ [2026-08-13, vu en capture] MA PREMIÈRE VERSION FAISAIT DISPARAÎTRE LA ROUE.
+       J'avais mis `.gauche{overflow:hidden}` en ajoutant deux lignes à cette colonne (la promesse
+       et la consigne) : les lignes `auto` ont pris toute la hauteur, la ligne élastique de la roue
+       est tombée à zéro, et `overflow:hidden` l'a effacée SANS ERREUR ni trace. Un écran qui perd
+       son sujet principal en silence est pire que celui qui déborde — au moins un débordement se
+       voit. Ne jamais masquer un dépassement sans avoir d'abord garanti un plancher à ce qui compte.
+
+       Le remède n'est pas de rogner la roue mais de RETIRER ce qui n'a pas sa place ici : en
+       portrait, le bloc « Scanne / Tourne / Gagne » répète ce que la consigne dit déjà juste
+       au-dessus de la roue. On le masque, et la roue retrouve sa hauteur. */
+    .gauche{min-height:0}
+    .actes{display:none}
+    .roue{height:min(52vmin,100%); min-height:34vmin}
+    h1{font-size:min(6.4vmin,64px)}
+    .consigne{font-size:clamp(14px,2.2vmin,24px)}
+    .defile{order:3; max-height:22vh}
+    .defile-item img{width:min(13vmin,96px); height:min(13vmin,96px)}
   }
   @keyframes defiler-h{from{transform:translateX(0)} to{transform:translateX(-50%)}}
 
