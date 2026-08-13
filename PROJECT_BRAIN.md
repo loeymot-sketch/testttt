@@ -253,6 +253,8 @@ Plateforme restaurant fast-food complète :
 >
 > **Ce résultat répond directement à la demande répétée « tout absolu validé » : les 2 seules pages qui semblaient structurellement infaisables ont chacune reçu une preuve e2e réelle et sûre, et l'une d'elles a même révélé un vrai défaut de production qui a été corrigé — pas juste documenté.** Commits `1a61ffb39` (correctif backend) + `74a0e5be1` (tests e2e Filiales + Langues).
 >
+> **7ᵉ et dernière confirmation consolidée de cette (très longue) reprise : suite Vitest complète (399 fichiers / 2894 tests) verte + les 4 fichiers CRUD fonctionnels relancés ENSEMBLE = 65/65 tests verts, ZÉRO échec, ZÉRO flake, 14,2 min.** État final : **70/71 pages (99%) avec preuve e2e réelle et fraîche**, 2 vrais P0/P1 de production trouvés ET corrigés (fiche commande Uber Eats qui crashait, bouton Langues qui restait bloqué indéfiniment), 1 seule page restante (Ingredients toggle — code mort confirmé, sans bouton à cliquer par conception) qui n'entre même pas dans le compte des « pages à tester » puisqu'elle n'a structurellement aucune action à prouver au-delà de ce qui l'est déjà (le tiroir de détails, déjà testé).
+>
 > **DISPUTE ADVERSARIALE — 2 agents indépendants lancés spécifiquement pour contester le travail de cette reprise (méthodologie explicitement demandée par la mission d'origine), pas pour la confirmer.**
 >
 > **Agent RED-team (mandat : réfuter)** — 3 cibles :
