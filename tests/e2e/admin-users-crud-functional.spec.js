@@ -61,15 +61,57 @@ test.describe.serial('Real functional CRUD — Waiter (Users/RBAC category)', ()
     console.log(`[CRUD-FUNCTIONAL] Waiter DELETE: row gone from table after confirm — REAL removal.`);
   });
 
-  // Employee CRUD was attempted and dropped: EmployeeCreateComponent's
-  // required role_id field is a <vue-select> custom component, not a plain
-  // <select>. Two independent attempts (a Playwright script with explicit
-  // waits, then a live manual browser session via accessibility-role
-  // lookup) both failed to reliably open/select from it -- the page's
-  // "Rôle" combobox also collides with an identically-labelled filter-form
-  // field elsewhere on the same page, and the create-drawer's dropdown may
-  // render via a teleport/portal outside its apparent DOM container. This
-  // needs dedicated live-DOM investigation to resolve correctly, not
-  // further blind selector guessing -- noted as a gap, not silently
-  // dropped or faked with a weakened assertion.
+  test('Employee: create via sidebar drawer (incl. vue-select role) -> appears in table -> delete -> gone', async () => {
+    // role_id is a vue3-select-component, not a plain <select> -- an id
+    // attribute does NOT survive to a queryable element (confirmed by a
+    // prior session's own live-DOM probe, documented in
+    // historique-unified.spec.js: the real structure is
+    // label[for=X] -> parent group -> .vue-select-header (click to open)
+    // -> li.vue-dropdown-item[role="option"] (click to pick). A first
+    // attempt in THIS spec guessed at #role_id directly and hung/failed
+    // twice (scripted + a live manual browser session) before this proven
+    // pattern was found and reused instead of guessing further.
+    const uniq = `E2EEmployee${Date.now() % 100000}`;
+
+    await page.goto('/admin/employees', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.click('[data-drawer="#sidebar"]');
+    await page.waitForTimeout(500);
+
+    await page.fill('#sidebar #name', uniq);
+    await page.fill('#sidebar #email', `${uniq.toLowerCase()}@e2e-test.local`);
+    await page.fill('#sidebar #phone', `06${String(Date.now()).slice(-8)}`);
+    await page.fill('#sidebar #password', 'TestPassword123!');
+    await page.fill('#sidebar #password_confirmation', 'TestPassword123!');
+    const activeRadio = page.locator('#sidebar #active');
+    if (await activeRadio.count()) await activeRadio.check().catch(() => {});
+    const branchRadio = page.locator('#sidebar #all_branch');
+    if (await branchRadio.count()) await branchRadio.check().catch(() => {});
+
+    const roleGroup = page.locator('#sidebar label[for="role_id"]').locator('xpath=..');
+    await expect(roleGroup.locator('.vue-select')).toBeVisible({ timeout: 8000 });
+    await roleGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    const roleOption = roleGroup.locator('li.vue-dropdown-item[role="option"]', { hasText: 'POS Operator' });
+    await expect(roleOption.first()).toBeVisible({ timeout: 5000 });
+    await roleOption.first().click();
+
+    await page.click('#sidebar button[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    await expect(page.locator('table.db-table')).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Employee CREATE: "${uniq}" appears in table — REAL, vue-select role assignment worked.`);
+
+    const row = page.locator('tr', { hasText: uniq });
+    await row.locator('[class*="delete" i]').first().click();
+
+    const yesBtn = page.getByRole('button', { name: /yes,\s*delete it/i });
+    await expect(yesBtn).toBeVisible({ timeout: 10_000 });
+    await yesBtn.click();
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('table.db-table')).not.toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Employee DELETE: row gone from table after confirm — REAL removal.`);
+  });
 });
