@@ -591,4 +591,73 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Item Attribute DELETE: row gone after confirm — REAL removal.');
   });
+
+  test('Payment Terminals: create -> appears in table -> edit -> update reflected -> "delete" (real soft-archive) -> gone from active list', async () => {
+    // Despite the name, this is device METADATA (name, gateway type from a
+    // fixed enum, fee config, serial number, status) -- confirmed via
+    // PaymentTerminalRequest.php: no API key/secret field at all. Genuinely
+    // different risk class from PaymentGateway settings (real Mollie/Stripe
+    // credentials, correctly declined elsewhere this session). name is
+    // unique (scoped per branch). Own modal (#modalTerminal, opened via
+    // @click="openCreate", not the shared [data-modal="#modal"] pattern
+    // used by every other Settings CRUD test in this file).
+    //
+    // REAL FINDING, not a bug: unlike every other "Delete" button in this
+    // suite, PaymentTerminalController::destroy() does NOT remove the row
+    // -- it soft-archives it (`status = STATUS_ARCHIVED`), by design
+    // (financial audit trail: a payment device record may be linked to
+    // historical transactions, so it's kept, just hidden from the active
+    // set and its Delete button). A first attempt assumed the generic
+    // row-disappears pattern used everywhere else in this file and failed
+    // reproducibly; root-caused by reading PaymentTerminalController.php
+    // rather than guessing at a selector fix. The archived row has no
+    // UI-driven path back to active (no "restore" button), so cleanup here
+    // hard-deletes via tinker instead of relying on a UI action.
+    const uniq = `E2ETerminal${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/payment-terminals', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await page.getByRole('button', { name: /add|ajouter/i }).click();
+    const modal = page.locator('#modalTerminal');
+    await expect(modal).toBeVisible({ timeout: 8000 });
+    await page.fill('#t_name', uniq);
+    await page.selectOption('#t_gateway', 'manual');
+    await page.fill('#t_serial', 'E2E-SERIAL-001');
+    await page.locator('#t_active').check();
+    await modal.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Payment Terminals CREATE: "${uniq}" appears in table — REAL.`);
+
+    // Edit/Delete buttons here have no accessible text/aria-label (icon-only)
+    // -- targeted by their icon class instead of role/name.
+    const row = table.locator('tr', { hasText: uniq });
+    await row.locator('.lab-edit').first().click();
+    await expect(modal).toBeVisible({ timeout: 8000 });
+    const nameInput = page.locator('#t_name');
+    await expect(nameInput).toHaveValue(uniq, { timeout: 8000 });
+    await nameInput.fill(`${uniq}EDITED`);
+    await modal.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Payment Terminals EDIT: rename reflected in table — REAL persistence.');
+
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.locator('.lab-delete').first().click();
+    await confirmDelete(page);
+    await page.waitForTimeout(1000);
+
+    // The row stays visible (soft-archive, not removal) but its Delete
+    // button disappears (v-if="terminal.status === 1") and its status
+    // column now reads "Archivé" -- that's the real, correct proof here.
+    await expect(editedRow.locator('.lab-delete')).toHaveCount(0, { timeout: 10_000 });
+    await expect(editedRow).toContainText(/archiv/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Payment Terminals DELETE: real soft-archive confirmed (status -> Archivé, Delete button gone), not a hard row removal like every other page in this suite.');
+
+    tinkerExec(`\\App\\Models\\PaymentTerminal::where('name', '${uniq}EDITED')->delete();`);
+  });
 });
