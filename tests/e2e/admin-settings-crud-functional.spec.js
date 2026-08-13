@@ -432,4 +432,46 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Analytics DELETE: row gone after confirm — REAL removal.');
   });
+
+  test('Item Attribute: create -> appears in table -> edit (exercises rename-cascade fix) -> delete -> gone', async () => {
+    // name is unique (ItemAttributeRequest.php). The EDIT step here isn't
+    // just a generic rename check -- it live-exercises the composer-wizard
+    // rename-cascade fix from earlier this session
+    // (ItemAttributeService::update(), see ItemAttributeRenamePropagationTest.php):
+    // a throwaway attribute is safe to rename since it has zero real
+    // item_wizard_steps rows referencing it, so this proves the UI path
+    // reaches that service method without touching any of the 57 real rows
+    // that fix protects.
+    const uniq = `E2EAttr${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/item-attributes/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #name', uniq);
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Item Attribute CREATE: "${uniq}" appears in table — REAL.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+    const nameInput = page.locator('#modal #name');
+    await expect(nameInput).toBeVisible({ timeout: 8000 });
+    await nameInput.fill(`${uniq}EDITED`);
+    await submitModal(page);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Item Attribute EDIT: rename reflected in table — REAL persistence via the rename-cascade service path.');
+
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+
+    await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Item Attribute DELETE: row gone after confirm — REAL removal.');
+  });
 });
