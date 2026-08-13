@@ -327,18 +327,32 @@
      rognait l'intérieur et l'image ajoutait sa propre marge — le pictogramme réel occupait environ
      17 % du QR, et visuellement bien moins.
 
-     On agrandit le disque à 26 % et on réduit la marge intérieure à 4 %, ce qui porte le logo lui-
-     même à ~24 % du QR : nettement visible, et TOUJOURS dans ce que la correction d'erreur peut
-     absorber. Le QR est généré en `errorCorrection('H')` (≈30 % de récupération) avec `margin(2)`
-     précisément pour tolérer ce recouvrement central.
+     Commit 5253256c2 avait agrandi le disque à 26 % (+ marge réduite à 4 %). Validé À L'ŒIL par une
+     seule capture PNG sans perte décodée avec succès — mais un vrai scan client n'est JAMAIS un PNG
+     sans perte : c'est une photo (recompression JPEG, mise au point imparfaite, distance/résolution
+     de l'appareil). [test-e2e fix E-001 round-4 2026-08-13] Round 4 a rejoué le décodage sous
+     conditions dégradées réalistes (redimensionnement bas/haut + flou gaussien + recompression JPEG,
+     plusieurs variantes) sur le rendu RÉEL des deux écrans : à 26 % le décodage échoue sur 2/4
+     variantes (dont exactement celle qui passe à 20 %) ; à 20 % — largeur identique à
+     validation.blade.php, marge toujours réduite à 4 % pour garder le pictogramme visible — LES
+     4/4 variantes décodent, y compris celle qui casse le 26 %. Le disque revient donc à 20 % (le
+     paramètre qui compte pour l'occlusion du QR est sa LARGEUR, pas la marge intérieure ; la marge
+     à 4 % est conservée car elle ne change pas l'empreinte occultée et répond toujours à la demande
+     propriétaire d'un logo plus visible — le pictogramme réel occupe désormais ~18,4 % du QR contre
+     17 % avant commit 5253256c2).
 
-     ⛔ NE PAS MONTER PLUS HAUT. Au-delà de ~30 % le QR devient illisible sur certains téléphones,
-     et un QR qu'on ne scanne pas ne casse pas « un peu » l'écran : il casse TOUT le parcours, sans
-     que personne s'en aperçoive — le client s'en va, il ne vient pas se plaindre. Toute hausse
-     future se teste avec un vrai téléphone, pas à l'œil. */
+     Le QR est généré en `errorCorrection('H')` (≈30 % de récupération) avec `margin(2)` précisément
+     pour tolérer ce recouvrement central.
+
+     ⛔ NE PAS MONTER AU-DESSUS DE 20-22 % SANS REFAIRE CETTE VALIDATION. Un décodage réussi sur UNE
+     capture PNG sans perte ne prouve rien — il faut rejouer le décodage sous dégradation réaliste
+     (JPEG + flou + redimensionnement) avant toute hausse, sur les DEUX écrans (borne + validation
+     restent à la MÊME largeur, sans quoi la dérive se reproduit). Un QR qu'on ne scanne pas ne casse
+     pas « un peu » l'écran : il casse TOUT le parcours, sans que personne s'en aperçoive — le client
+     s'en va, il ne vient pas se plaindre. */
   .qr-logo{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:26%; aspect-ratio:1; border-radius:50%; background:#fff;
+    width:20%; aspect-ratio:1; border-radius:50%; background:#fff;
     padding:4%; box-sizing:border-box; pointer-events:none;
     box-shadow:0 0 0 2px rgba(0,0,0,.10);
   }
