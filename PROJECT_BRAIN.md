@@ -47,6 +47,54 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-13 — GOAL ROUE UX+IDENTITÉ CONVERGÉ (4/4 sous-systèmes, 0 P0/P1 après 3 cycles RED-team) · HEAD `b575b4419` (testttt) + `e74c51b` (web)**
+>
+> **Demande owner** (`/goal`, raisonnement max + agents adversaires) : logo intégré au QR de la
+> roue, arrière-plan enrichi + bandeau des lots à gagner, redirection post-gain organisée, et un
+> bug d'identité (2ᵉ connexion redemandait prénom+nom+téléphone comme la 1ʳᵉ). Plan écrit dans
+> `plans/GOAL_ROUE_UX_IDENTITE_2026-08-13.md` après ancrage anti-hallucination, révisé par 3
+> agents lecture-seule (Architect/Security/UX) AVANT toute implémentation, puis RED-team sur
+> chaque diff avant commit — méthode demandée explicitement par l'owner.
+>
+> **Découverte Architect qui a changé le plan** : `format('png')->merge()` (fusion logo binaire)
+> est IMPRATICABLE sur cette machine — `imagick` absent (vérifié par exécution réelle,
+> `RuntimeException`), seul `gd` est chargé. Pivot vers un overlay CSS/SVG (logo `<img>` posé en
+> `position:absolute` par-dessus le SVG existant, `errorCorrection('H')` + `margin(2)` côté
+> générateur). **Preuve de scannabilité RÉELLE, pas simulée** : `/admin/roue-borne` et
+> `/admin/roue-validation` capturés via un vrai Chrome, puis décodés avec
+> `khanamiryan/qrcode-detector-decoder` — les deux résolvent l'URL attendue avec le logo au centre.
+>
+> **Découverte Security qui a évité un « jumeau oublié »** : le plan initial pour l'écran de
+> connexion allégé proposait une NOUVELLE clé `localStorage` pour le téléphone — la revue a trouvé
+> qu'`api.js` porte déjà `PHONE_KEY`/`getPhone()`/`setPhone()`, purgé automatiquement au
+> logout/401. Réutilisé tel quel ; seule `lc_known_first`/`lc_known_last` (TTL 90j) est nouvelle.
+>
+> **4 commits, 0 zone gelée §7 touchée, 0 régression** :
+> - `b575b4419` (testttt) — QR+logo, `WheelQrLogoTest` (5✓), suite Wheel 252/252 verte.
+> - `8fab2e7` (web) — écran "Content de te revoir, {prénom}" (email seul + 2 derniers chiffres du
+>   tél. mémorisé), échappatoire "Ce n'est pas moi". 9/9 nouveau spec vert.
+> - `ac6cd2a` (web) — bandeau horizontal des lots (réutilise `segments`, 0 appel réseau
+>   supplémentaire), redirection post-gain honnête (gate G3 vérifié : `commander.html` ne lit
+>   aucun `?code=`, donc pas de lien mort construit). 17/17 nouveau spec vert.
+> - `e74c51b` (web) — texte du mode connexion classique reformulé pour ne pas se confondre avec
+>   l'écran allégé.
+>
+> **Non-régression prouvée, pas supposée** : `roue-2026-08-09.regression.js` 9/10 — l'échec
+> ("les 3 étapes affichées — 0") est PRÉ-EXISTANT, confirmé par `git stash` + re-run sur le fichier
+> original (vérifié indépendamment par l'Implementer, le RED-team, ET moi). Idem
+> `account-email-otp-2026-07-28.spec.js` : rouge pour 3 causes antérieures au 2026-08-13 (sélecteur
+> périmé depuis le 2026-08-07, champ `#acc-last` jamais rempli par le spec, `MAIL_MAILER=smtp`
+> local sans serveur joignable) — non corrigées (hors périmètre confié).
+>
+> **Gates owner NON levés, volontairement** : G1 (illustration enfant/famille pour le fond —
+> aucun asset approprié trouvé dans `assets/`, rien fabriqué) ; G2 (fusion `codex/cayenne-home-
+> product-visual-max` → `main` + déploiement — décision owner séparée) ; G3 (redirection panier
+> avec code pré-appliqué — `commander.html` ne le supporte pas encore).
+>
+> Working tree des deux repos **committé, PAS poussé** (CLAUDE.md §10 : push attend le GO
+> explicite owner).
+
+
 > **✅ 2026-08-13 — P0 RÉSOLU, DÉPLOYÉ ET PROUVÉ : LE RAPPORT Z S'OUVRE DE NOUVEAU (HEAD prod `f00cbfde`)**
 >
 > **Preuve réelle** : `fiscal:open-all-active-branches` → `scanned=1 **opened=1** skipped=0 failed=0`, après 17 jours de `failed=1` quotidien. **Z id=4, séquence 2, ouvert le 2026-08-13 15:25.** Les **189 ventes / 3 344,80 €** sont dans son périmètre ; clôture planifiée à 23h59 (vérifiée au planificateur), réouverture juste après — le cycle est rétabli.
