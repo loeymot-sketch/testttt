@@ -47,6 +47,21 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **🚨 2026-08-13 — P0 PRODUCTION OUVERT : LE RAPPORT Z NE PEUT PLUS S'OUVRIR DEPUIS 17 JOURS (gate propriétaire)**
+>
+> **Fait mesuré** : dernier Z clos le **2026-07-27 23:59:03**, **0 Z ouvert** depuis. **189 ventes numérotées, 3 344,80 €, hors de tout Z signé** — et le compteur monte chaque jour. Le filet de nuit journalise `opened=0 skipped=0 **failed=1**` à chaque passage (`storage/logs/fiscal-open-safety-net.log`), avec `FiscalChainCorruptedException: chain verification failed for branch 1 (window=500, errors=183)`.
+>
+> **CAUSE RACINE — un JUMEAU OUBLIÉ, pas une altération.** Le correctif d'agilité de clé du 2026-08-08 (`LOCK_FISCAL_VERIFYCHAIN_AGILITE_SECRETS`) a été posé sur `AuditLogService::verifyChain` **et pas** sur `FiscalChainValidator`, qui est justement celui qui garde l'ouverture du Z. Vérifié : `grep -c candidateVerificationBranches` → **AuditLogService 2, FiscalChainValidator 0**. Le validateur recalcule avec UN SEUL secret (`FiscalChainValidator.php:160`), donc les lignes signées AVANT l'apparition de `FISCAL_AUDIT_SECRET_BRANCH_1` ne se reproduisent plus et sont comptées comme altérées.
+>
+> **LA CHAÎNE N'EST PAS CORROMPUE** : `fiscal:verify-chain --all` répond **CHAIN OK** sur les mêmes données, parce que lui essaie tous les secrets connus. Mesure déjà consignée dans `AuditLogService:219-221` : 360 lignes se reproduisent avec le secret de branche, 423 avec le défaut, **aucune irréductible**, chaînage `prev_hash` intact, aucun trou d'id. C'est un **FAUX POSITIF**, même famille que celui du 2026-08-08.
+>
+> ⚠️ **CE N'ÉTAIT PAS UN RÉSIDU DE `config:cache`** — hypothèse testée et ÉCARTÉE : `bootstrap/cache/config.php` absent, et le validateur échoue quand même (181 erreurs en direct).
+>
+> **CORRECTIF PROPOSÉ, NON APPLIQUÉ — GATE PROPRIÉTAIRE** : donner à `FiscalChainValidator` la même agilité de clé que son jumeau. ⛔ Ça **assouplit un détecteur d'altération fiscale** : ne JAMAIS le faire en silence. Attendre le feu vert explicite du propriétaire.
+>
+> **⚠️ CORRECTION D'UNE AFFIRMATION QUE J'AI FAITE AUJOURD'HUI** : j'ai annoncé « NF525 CHAIN OK » deux fois comme preuve de déploiement. C'était **vrai mais incomplet** — `fiscal:verify-chain` ne teste PAS le chemin qui bloque l'ouverture du Z. Un vert sur cette commande ne prouve pas que la clôture fiscale fonctionne.
+
+
 > **2026-08-13 (AUDIT « qui d'autre bouge un solde ? » — 1 piège argent désamorcé, 1 définition dupliquée unifiée, 1 fausse affirmation de ma part corrigée · HEAD `e6ae04311`)**
 >
 > **DEMANDE OWNER** — `/goal ultra plan audit and fix with test-e2e`, à la suite des 3 missions fidélité/roue/caisse livrées et déployées plus tôt le même jour (VPS `d740a577b`, site `da77a4a`).
