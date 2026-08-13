@@ -179,4 +179,38 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
       tinkerExec(`\\Smartisan\\Settings\\Facades\\Settings::group('cookies')->set(['cookies_summary' => '', 'cookies_details_page_id' => null]);`);
     }
   });
+
+  test('Order setup: food preparation time edit -> save -> reload -> persisted -> restored', async () => {
+    // order_setup_food_preparation_time is one of the CONFIRMED-WIRED fields
+    // on this page per the wave-3 adversarial audit (WaitEstimateService
+    // actually reads it) -- deliberately NOT touching the sibling delivery-
+    // charge fields on this same form, which that same audit found are
+    // dead/cosmetic (never read anywhere) and are documented as an open
+    // owner-decision item, not something to silently validate as if fine.
+    const url = '/admin/settings/order-setup';
+    const fieldId = 'order_setup_food_preparation_time';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator(`#${fieldId}`);
+    await expect(field).toBeVisible({ timeout: 10_000 });
+
+    const original = await field.inputValue();
+    const mutated = String((parseFloat(original) || 30) + 1);
+    await field.fill(mutated);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(mutated, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Order setup: food prep time ${original} -> ${mutated}, reload confirms persistence.`);
+
+    await page.locator(`#${fieldId}`).fill(original);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Order setup: restored to original value.');
+  });
 });
