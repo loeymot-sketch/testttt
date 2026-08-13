@@ -15,7 +15,17 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { loginAsAdmin } = require('./helpers/login');
+
+function tinkerExec(php) {
+  execFileSync('php', ['artisan', 'tinker', `--execute=${php}`], {
+    cwd: path.resolve(__dirname, '../..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 15_000,
+  });
+}
 
 const uploadDir = path.resolve(__dirname, '../../storage/framework/testing/playwright');
 const pngPath = path.join(uploadDir, 'admin-settings-crud-functional.png');
@@ -361,6 +371,62 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
 
     await expect(table).not.toContainText(uniq, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Kiosk Machine DELETE: row gone after confirm — REAL removal.');
+  });
+
+  test('Kiosk Machine: real "Logout" button flips is_login to NO in DB', async () => {
+    // The Logout button only renders when is_login=YES(5)
+    // (KioskMachineListComponent.vue: v-if="kioskMachine.is_login ===
+    // enums.askEnum.YES") -- a throwaway machine created via the UI starts
+    // at is_login=NO(10) by default, so it's flipped to YES via tinker
+    // first (simulating "a kiosk is currently signed in", not a real
+    // device session). KioskMachineService::logout() also fires a push
+    // notification, but only if device_token is set -- this throwaway
+    // machine has none, so the fan-out array is empty (same safe pattern
+    // already verified for the Push Notification page: 0 real devices,
+    // 0 risk of reaching one).
+    const uniq = `E2EKMLogout${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/kiosk-machines/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #machine_id', uniq);
+    await page.fill('#modal #username', uniq.toLowerCase());
+    await page.fill('#modal #password', 'TestPassword123!');
+    const userGroup = page.locator('#modal label[for="user_id"]').locator('xpath=..');
+    await userGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await userGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+    const branchGroup = page.locator('#modal label[for="branch_id"]').locator('xpath=..');
+    await branchGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await branchGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+
+    tinkerExec(`\\App\\Models\\KioskMachine::where('machine_id', '${uniq}')->update(['is_login' => 5]);`);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.getByRole('button', { name: /log ?out|d[ée]connexion/i }).click();
+    await page.getByRole('button', { name: /yes, log out/i }).click();
+    await page.waitForTimeout(1500);
+
+    const dbIsLogin = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\KioskMachine::where('machine_id', '${uniq}')->first()->is_login;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbIsLogin).toBe('10'); // Ask::NO
+    console.log(`[CRUD-FUNCTIONAL] Kiosk Machine LOGOUT: real is_login flipped YES(5) -> NO(10) in DB via the real Logout button, 0 real devices reached.`);
+
+    await row.locator('[class*="delete" i]').first().click();
+    await confirmDelete(page);
+    await expect(table).not.toContainText(uniq, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Kiosk Machine LOGOUT test cleanup: row deleted.');
   });
 
   test('Slider: create (incl. required image upload) -> appears in table -> delete -> gone', async () => {
