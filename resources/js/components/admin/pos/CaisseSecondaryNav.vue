@@ -45,6 +45,32 @@
                 <span class="csn-ico" aria-hidden="true">🖥️</span>
                 <span>{{ $t('pos.tracker.customer_screen') }}</span>
             </router-link>
+            <!-- [2026-08-13 · propriétaire : « accès admin caisse »] Les cinq écrans de la roue
+                 existaient et fonctionnaient, mais AUCUN lien n'y menait : il fallait taper les
+                 URL de mémoire. Un écran de service qu'on ne peut pas trouver n'existe pas.
+
+                 C'est un `<a>` et non un `router-link` : la roue est une page Blade autonome,
+                 hors de l'application Vue. Un `router-link` chercherait une route qui n'existe
+                 pas dans le routeur et resterait muet.
+
+                 `target="_blank"` : le caissier ne doit JAMAIS perdre sa caisse de vue pour
+                 aller valider un tour. Il revient d'un geste, sa commande en cours intacte.
+
+                 Libellé écrit en clair et non en `$t(...)` : `fr.json` porte au moment où
+                 j'écris des modifications non committées d'une autre session, et y ajouter une
+                 clé m'obligerait à committer son travail inachevé. V1 est FR-only (ADR-007) donc
+                 rien n'est cassé — à remonter en i18n quand le fichier sera propre. -->
+            <a
+                href="/admin/roue"
+                target="_blank"
+                rel="noopener"
+                class="csn-link"
+                data-testid="csn-roue"
+                @click="ouvrirRoue"
+            >
+                <span class="csn-ico" aria-hidden="true">🎡</span>
+                <span>La roue</span>
+            </a>
         </div>
         <router-link
             :to="{ name: 'admin.pos' }"
@@ -63,6 +89,47 @@ export default {
     props: {
         // 'encaissement' | 'suivi' | 'historique' — met en surbrillance la page courante.
         current: { type: String, default: '' },
+    },
+    methods: {
+        /**
+         * OUVRIR LA ROUE SANS RETAPER LE CODE DE LA MAISON.
+         *
+         * Le `href` du lien reste `/admin/roue` et ce n'est pas un détail : si JavaScript échoue,
+         * si la méthode n'est pas montée, si un clic-milieu contourne le gestionnaire, le lien
+         * mène quand même quelque part d'utile — la porte à code, qui marche toujours. On ne
+         * remplace pas un chemin, on en ajoute un plus court.
+         *
+         * L'ONGLET EST OUVERT AVANT LE MOINDRE `await`. Un `window.open` appelé après une
+         * promesse n'est plus rattaché au clic de l'utilisateur : le navigateur le bloque comme
+         * une fenêtre surgissante. C'est le piège classique de ce motif, et il ne se voit qu'en
+         * conditions réelles — jamais dans un test qui appelle la méthode directement.
+         *
+         * Pas de `noopener` dans l'appel : avec cette option, `window.open` rend `null` et il
+         * devient impossible de poser l'adresse ensuite. On coupe donc le lien d'ouverture
+         * APRÈS coup, ce qui donne la même protection.
+         */
+        async ouvrirRoue(evenement) {
+            evenement.preventDefault();
+
+            const onglet = window.open('about:blank', '_blank');
+            if (!onglet) {
+                // Fenêtre bloquée : on n'insiste pas, on navigue dans l'onglet courant plutôt que
+                // de ne rien faire — un bouton qui ne fait rien est vécu comme une panne.
+                window.location.href = '/admin/roue';
+                return;
+            }
+
+            try {
+                const { data } = await axios.post('/admin/wheel/screen-pass', { ecran: 'accueil' });
+                onglet.location = (data && data.url) ? data.url : '/admin/roue';
+            } catch (e) {
+                // Compte sans droit caisse, réseau coupé, route absente : dans tous les cas la
+                // porte à code reste ouverte. Jamais d'impasse.
+                onglet.location = '/admin/roue';
+            } finally {
+                try { onglet.opener = null; } catch (e) { /* déjà navigué : sans conséquence */ }
+            }
+        },
     },
 };
 </script>

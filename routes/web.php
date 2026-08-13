@@ -163,6 +163,22 @@ Route::middleware(['installed'])->group(function () {
         ->middleware('throttle:wheel-pin')->name('admin.wheel.unlock');
     Route::post('/admin/roue/fermer', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'lock'])
         ->name('admin.wheel.lock');
+
+    /*
+    | ROUE — ENTRÉE PAR PASSE SIGNÉE (le pendant de POST /api/admin/wheel/screen-pass).
+    |
+    | Hors du groupe `wheel.access` : c'est précisément cette route qui OUVRE l'accès. La l'y
+    | mettre créerait la boucle classique — pour entrer, il faudrait déjà être entré.
+    |
+    | La garde est `signed` : l'adresse porte sa propre preuve, ce qu'aucun en-tête ne peut faire
+    | sur une navigation de document. L'usage unique est traité dans le contrôleur (`Cache::pull`),
+    | et l'écran demandé est choisi dans une liste fermée — sans quoi cette route deviendrait une
+    | redirection ouverte, signée par nos soins.
+    */
+    Route::get('/admin/roue/passe/{jeton}/{ecran}', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'enterWithPass'])
+        ->middleware('signed')
+        ->where(['jeton' => '[a-f0-9]{32}', 'ecran' => '[a-z]{1,20}'])
+        ->name('admin.wheel.pass');
 });
 
 Route::middleware(['installed', 'wheel.access'])->group(function () {
