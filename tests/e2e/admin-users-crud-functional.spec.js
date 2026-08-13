@@ -189,4 +189,41 @@ test.describe.serial('Real functional CRUD — Waiter (Users/RBAC category)', ()
     await expect(page.locator('table.db-table')).not.toContainText(uniq, { timeout: 10_000 });
     console.log(`[CRUD-FUNCTIONAL] Delivery Boy DELETE: row gone from table after confirm — REAL removal.`);
   });
+
+  test('Chef: create via sidebar drawer -> appears in table -> delete -> gone', async () => {
+    const uniq = `E2EChef${Date.now() % 100000}`;
+
+    await page.goto('/admin/chefs', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.click('[data-drawer="#sidebar"]');
+    await page.waitForTimeout(500);
+
+    await page.fill('#sidebar #name', uniq);
+    await page.fill('#sidebar #email', `${uniq.toLowerCase()}@e2e-test.local`);
+    await page.fill('#sidebar #phone', `06${String(Date.now()).slice(-8)}`);
+    await page.fill('#sidebar #password', 'TestPassword123!');
+    await page.fill('#sidebar #password_confirmation', 'TestPassword123!');
+    const activeRadio = page.locator('#sidebar #active');
+    if (await activeRadio.count()) await activeRadio.check().catch(() => {});
+    const branchRadio = page.locator('#sidebar #all_branch');
+    if (await branchRadio.count()) await branchRadio.check().catch(() => {});
+
+    await page.click('#sidebar button[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    await expect(page.locator('table.db-table')).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Chef CREATE: "${uniq}" appears in table — REAL, not just a toast.`);
+
+    const row = page.locator('tr', { hasText: uniq });
+    await row.locator('[class*="delete" i]').first().click();
+
+    const yesBtn = page.getByRole('button', { name: /yes,\s*delete it/i });
+    await expect(yesBtn).toBeVisible({ timeout: 10_000 });
+    await yesBtn.click();
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('table.db-table')).not.toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Chef DELETE: row gone from table after confirm — REAL removal.`);
+  });
 });
