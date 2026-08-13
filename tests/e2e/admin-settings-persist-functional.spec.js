@@ -213,4 +213,56 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Order setup: restored to original value.');
   });
+
+  test('Otp: digit-limit vue-select edit -> save -> reload -> persisted -> restored', async () => {
+    // otp_digit_limit is a vue3-select-component (not a plain <select>), same
+    // proven pattern as the Employee role_id field: label[for=X] -> parent
+    // group -> .vue-select-header (click to open) -> li.vue-dropdown-item
+    // (click to pick). Enum is a closed 3-value set (4/6/8) per
+    // resources/js/enums/modules/otpDigitLimitEnum.js -- live prod value
+    // verified via tinker as "4" before this test, so toggling to "6" and
+    // back stays inside the valid enum the whole time.
+    const url = '/admin/settings/otp';
+    const fieldId = 'otp_digit_limit';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // The searchable vue-select renders its selected value as the
+    // PLACEHOLDER attribute of an inner <input>, not as visible text content
+    // -- confirmed via a failed run's accessibility snapshot (combobox >
+    // textbox with /placeholder: "6"). innerText()/toContainText() on the
+    // header see empty string; must read/assert the placeholder attribute.
+    async function selectedValue(scope) {
+      return scope.locator('.vue-select-header input').getAttribute('placeholder');
+    }
+
+    const group = page.locator(`label[for="${fieldId}"]`).locator('xpath=..');
+    await expect(group.locator('.vue-select')).toBeVisible({ timeout: 10_000 });
+
+    const original = (await selectedValue(group)) || '4';
+    const target = original === '6' ? '4' : '6';
+
+    await group.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await group.locator('li.vue-dropdown-item[role="option"]', { hasText: target }).first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    let reloadedGroup = page.locator(`label[for="${fieldId}"]`).locator('xpath=..');
+    await expect(reloadedGroup.locator('.vue-select-header input')).toHaveAttribute('placeholder', target, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Otp: digit limit ${original} -> ${target}, reload confirms persistence.`);
+
+    await reloadedGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await reloadedGroup.locator('li.vue-dropdown-item[role="option"]', { hasText: original }).first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    reloadedGroup = page.locator(`label[for="${fieldId}"]`).locator('xpath=..');
+    await expect(reloadedGroup.locator('.vue-select-header input')).toHaveAttribute('placeholder', original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Otp: restored to original value.');
+  });
 });
