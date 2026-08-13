@@ -253,4 +253,47 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Language DELETE: row gone after confirm — REAL removal.');
   });
+
+  test('Page (CMS): create -> appears in table -> edit -> update reflected -> delete -> gone', async () => {
+    // title is required|string|max:190|unique (PageRequest.php) -- unique
+    // suffix per run, same discipline as Currency/Language. description is
+    // a Quill rich-text editor (vue3-quill), not a plain <textarea> -- the
+    // id="description" attribute lands on the outer non-editable <section>;
+    // the actual contenteditable surface is the child ".ql-editor" div
+    // (confirmed via component source, resources/js/components/admin/
+    // settings/Page/PageCreateComponent.vue).
+    const uniq = `E2EPage${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/pages/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #title', uniq);
+    await page.locator('#modal #description .ql-editor').click();
+    await page.keyboard.type(`E2E test page body ${uniq}`);
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Page CREATE: "${uniq}" appears in table — REAL, Quill description accepted.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+    const titleInput = page.locator('#modal #title');
+    await expect(titleInput).toBeVisible({ timeout: 8000 });
+    await titleInput.fill(`${uniq}EDITED`);
+    await submitModal(page);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Page EDIT: rename reflected in table — REAL persistence.');
+
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+
+    await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Page DELETE: row gone after confirm — REAL removal.');
+  });
 });
