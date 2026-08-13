@@ -903,6 +903,22 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->middleware('throttle:60,1')
         ->name('wheel.unlockToken');
 
+    /*
+    | ROUE — LA PASSE VERS LES ÉCRANS, depuis une caisse DÉJÀ connectée.
+    |
+    | [2026-08-13 · propriétaire : « ce n'est pas le bouton, c'est le code PIN »] Le caissier a une
+    | session applicative valide, mais elle vit dans un jeton Bearer que le navigateur n'attache
+    | JAMAIS à une navigation de document. Cliquer un lien vers un écran de la roue arrivait donc
+    | anonyme, et redemandait le code — plusieurs fois par service.
+    |
+    | L'application, elle, PEUT appeler cette route : elle a le jeton. On lui rend une adresse
+    | signée, courte et à usage unique. Le débit est limité serré : cette route fabrique des
+    | laissez-passer, on n'en distribue pas en rafale.
+    */
+    Route::post('/wheel/screen-pass', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'screenPass'])
+        ->middleware('throttle:20,1')
+        ->name('wheel.screenPass');
+
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('/walk-in-customer', [PosController::class, 'walkInCustomer'])
             ->middleware('throttle:pos-quote')
@@ -1563,6 +1579,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/recall/{order}', [KitchenDisplaySystemController::class, 'recall'])
             ->middleware(['idempotency', 'throttle:kds-bump'])
             ->name('recall');
+        // [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] « Au cas où je valide une commande alors
+        // qu'elle n'est pas terminée. » Distinct de `recall` juste au-dessus, qui ne touche
+        // JAMAIS au statut (contrat verrouillé) et expire en 60 s : celui-ci fait réellement
+        // REVENIR la commande en préparation, sans fenêtre de temps — la borne est le statut
+        // (seule une commande PRÊTE se rouvre), pas un minuteur.
+        Route::post('/reopen/{order}', [KitchenDisplaySystemController::class, 'reopen'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('reopen');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.

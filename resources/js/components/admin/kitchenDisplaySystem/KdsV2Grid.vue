@@ -65,7 +65,22 @@
     <!-- [KDS-COLONNES 2026-08-07 owner] Sélecteur « combien de commandes à la fois ».
          Discret, en haut à droite, cible tactile large : l'écran cuisine est en plein
          écran et se pilote au doigt. -->
-    <div v-if="activeOrders.length > 0" class="kds-cols-picker" role="group" aria-label="Nombre de commandes affichées">
+    <!-- [KDS-BARRE-UNIQUE 2026-08-13 · owner] Ce sélecteur créait sa PROPRE rangée sous celle des
+         boutons du parent : deux bandes pour quelques boutons, avant la première commande. Il est
+         désormais PROJETÉ dans la barre unique du parent (#kds-toolbar-slot) plutôt que déplacé —
+         son état et sa persistance restent ici, où ils vivent depuis toujours.
+
+         `:disabled` est un filet : si la barre n'est pas montée (mode legacy, test isolé du
+         composant, cible absente), le Teleport se neutralise et le sélecteur s'affiche là où il
+         était. Mieux vaut une rangée de trop qu'un sélecteur qui disparaît. -->
+    <Teleport to="#kds-toolbar-slot" :disabled="!barreUniquePresente">
+    <div
+      v-if="activeOrders.length > 0"
+      class="kds-cols-picker"
+      :class="{ 'kds-cols-picker--dans-barre': barreUniquePresente }"
+      role="group"
+      aria-label="Nombre de commandes affichées"
+    >
       <!-- [KDS-UI-MULTI 2026-08-07] La pastille « +N en attente » vivait en absolu au-dessus
            de la grille et RECOUVRAIT une carte entière (mesuré : carte [D] masquée à 4
            colonnes). Elle est rapatriée ici, dans la barre de réglage, où elle ne cache rien. -->
@@ -83,6 +98,7 @@
         @click="choisirCartesParEcran(n)"
       >{{ n }}</button>
     </div>
+    </Teleport>
 
     <div
       v-if="activeOrders.length > 0"
@@ -136,6 +152,24 @@
         >
           <span class="kds-v2__served-pill-num">N°{{ o.queue_number || o.id }}</span>
           <span class="kds-v2__served-pill-ago">{{ servedAgoLabel(o) }}</span>
+          <!-- [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] « Au cas où je valide une commande
+               alors qu'elle n'est pas terminée. » C'est ICI que la commande se trouve quand le
+               cuisinier s'en aperçoit : dès le « Prêt », elle quitte la grille active pour cette
+               bande. Le bouton devait donc être sur la pastille, pas sur la carte — une carte
+               PRÊTE n'existe jamais dans la grille, le bouton n'y aurait rien affiché. -->
+          <button
+            type="button"
+            class="kds-v2__served-pill-reopen"
+            :aria-label="$t('label.kds_reopen_aria', { queue: o.queue_number || o.id })"
+            :title="$t('label.kds_reopen_aria', { queue: o.queue_number || o.id })"
+            :data-testid="`kds-served-reopen-${o.id}`"
+            @click.prevent.stop="$emit('reopen', o)"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7" />
+              <polyline points="3 4 3 10 9 10" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -217,12 +251,17 @@ export default {
         // to decide whether to render the RAPPELÉ badge overlay.
         recallActiveIds: { type: Array, default: () => [] },
     },
-    emits: ['change-status', 'auto-promote', 'reprint'],
+    emits: ['change-status', 'auto-promote', 'reprint', 'reopen'],
     data() {
         return {
             // [KDS-COLONNES 2026-08-07 owner] Combien de commandes le cuisinier voit d'un
             // coup. Persisté sur le poste : l'écran cuisine démarre en plein écran sans
             // qu'on le reconfigure chaque matin.
+            // [KDS-BARRE-UNIQUE 2026-08-13] La barre unique du parent existe-t-elle dans le DOM ?
+            // Évalué au montage : en mode legacy, en test isolé, ou si la cible disparaît, le
+            // Teleport se neutralise et le sélecteur reste à sa place d'origine. Une cible
+            // absente ne doit JAMAIS faire disparaître le réglage — le chef s'en sert.
+            barreUniquePresente: false,
             cartesParEcran: KDS_CARTES_PAR_ECRAN_DEFAUT,
             choixCartes: KDS_CHOIX_CARTES,
             now: Date.now(),
@@ -361,6 +400,13 @@ export default {
             const memo = Number(window.localStorage.getItem(KDS_PREF_CARTES));
             if (KDS_CHOIX_CARTES.includes(memo)) this.cartesParEcran = memo;
         } catch (e) { /* stockage indisponible : on garde le défaut */ }
+
+        // [KDS-BARRE-UNIQUE 2026-08-13] La barre du parent est-elle là pour accueillir le
+        // sélecteur ? Vérifié APRÈS le montage du parent : sinon le Teleport viserait une cible
+        // qui n'existe pas encore. Absente → on retombe sur le rendu d'origine, jamais sur rien.
+        try {
+            this.barreUniquePresente = !!document.getElementById('kds-toolbar-slot');
+        } catch (e) { this.barreUniquePresente = false; }
 
         // Single global ticker — all cards read `this.now` reactively, no
         // per-card setInterval.
@@ -594,6 +640,33 @@ export default {
     border-radius: 10px;
     background: rgba(26, 26, 26, 0.72);
 }
+/* [KDS-BARRE-UNIQUE 2026-08-13] Projeté dans la barre unique du parent, ce sélecteur doit
+   redevenir un élément ORDINAIRE. Le `position: absolute` ci-dessus se calcule alors par rapport
+   à la fenêtre : mesuré, il se posait PAR-DESSUS la barre d'administration et masquait
+   « Tableau de bord » et le nom du chef. Un composant déplacé emporte son positionnement — il
+   faut le neutraliser explicitement à l'arrivée.
+   La règle vit ICI, dans le style du composant qui la pose, pour que la spécificité soit
+   décidée et non laissée au hasard de l'ordre des feuilles. */
+.kds-cols-picker--dans-barre {
+    position: static;
+    top: auto;
+    right: auto;
+    z-index: auto;
+    padding: 2px;
+    background: rgba(26, 26, 26, 0.72);
+}
+/* Dans la barre, ces boutons n'ont plus à porter la hauteur d'une cible flottante isolée : ce
+   sont eux qui dictaient la hauteur de toute la bande (54 px pour trois chiffres). 34 px reste
+   une cible confortable au doigt sur un écran tactile, et rend 20 px aux commandes. */
+.kds-cols-picker--dans-barre .kds-cols-picker__btn {
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 15px;
+}
+.kds-cols-picker--dans-barre .kds-cols-picker__waiting {
+    font-size: 12px;
+    padding: 3px 8px;
+}
 .kds-cols-picker__waiting {
     display: inline-flex;
     align-items: center;
@@ -733,6 +806,19 @@ export default {
     font-weight: 800;
     letter-spacing: -0.02em;
 }
+.kds-v2__served-pill-reopen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: 6px;
+    padding: 3px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(17, 17, 17, 0.08);
+    color: #111111;
+    cursor: pointer;
+}
+.kds-v2__served-pill-reopen:hover { background: rgba(17, 17, 17, 0.18); }
 .kds-v2__served-pill-ago {
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 11px;

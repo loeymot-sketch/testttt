@@ -222,6 +222,12 @@
           <rect x="6" y="14" width="12" height="8" />
         </svg>
       </button>
+      <!-- [REMETTRE-EN-PRÉPARATION 2026-08-13] Le bouton NE VIT PAS ICI, et c'est délibéré.
+           La grille active ne contient que les commandes ACCEPTÉE et EN PRÉPARATION : dès qu'une
+           commande passe à PRÊTE elle QUITTE la grille pour la bande « Récemment servies ». Un
+           bouton posé sur cette carte n'aurait donc jamais pu s'afficher — de l'interface morte,
+           vérifié avant de l'écrire. Il vit sur la pastille de la bande servie (KdsV2Grid), là où
+           la commande se trouve réellement au moment où le cuisinier s'aperçoit de son erreur. -->
     </div>
   </div>
 </template>
@@ -289,6 +295,10 @@ export default {
     },
     emits: ['ready', 'reprint'],
     computed: {
+        // [REMETTRE-EN-PRÉPARATION 2026-08-13] Le bouton « remettre en préparation » n'a de sens
+        // que sur une commande déjà déclarée prête. On lit l'état dérivé du statut plutôt que le
+        // code brut : c'est la même source que le reste de la carte, donc pas de divergence
+        // possible entre ce que la carte AFFICHE et ce que le bouton PROPOSE.
         kdsState() {
             return kdsStateFromStatus(this.order.status) || 'NEW';
         },

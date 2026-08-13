@@ -324,7 +324,13 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
        `flex:1` de .kds-v2 était inerte → la grille prenait la hauteur de son contenu (~514px)
        au lieu du viewport. En flex-column, .kds-v2 remplit toute la hauteur restante (h-screen
        - paddings - bande historique) → 3 cartes plein écran, zéro vide en dessous. */
-    .db-main.db-main--kds { @apply flex flex-col }
+    /* [KDS-BARRE-UNIQUE 2026-08-13 · owner « maximiser l'espace pour les commandes »] Le padding
+       haut générique réserve 84 px pour un en-tête qui n'en mesure que 59 : 25 px de vide mort
+       au-dessus de la première commande, mesurés à la sonde. Sur un écran de cuisine, cet espace
+       n'est pas décoratif, c'est de la place en moins pour voir ce qu'il faut préparer. On le
+       réduit UNIQUEMENT ici — la classe est posée/retirée par l'écran cuisine, le reste de
+       l'administration garde sa respiration. */
+    .db-main.db-main--kds { @apply flex flex-col lg:pt-[62px] pt-[62px] }
 
     /* BACKLDROP */
     .backdrop { @apply w-full h-full fixed top-0 left-0 z-40 invisible opacity-0 bg-black/60 transition }

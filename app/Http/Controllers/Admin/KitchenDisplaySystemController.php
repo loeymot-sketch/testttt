@@ -129,4 +129,42 @@ class KitchenDisplaySystemController extends AdminController
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
+
+    /**
+     * [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] Faire REVENIR une commande validée trop tôt.
+     *
+     * POURQUOI CE N'EST PAS `recall()` CI-DESSUS
+     * -------------------------------------------
+     * Deux mécanismes existaient déjà, et AUCUN ne rend le service demandé :
+     *  - le bandeau « Annuler » de l'écran dure 3 SECONDES et se contente d'annuler l'envoi ;
+     *  - `recall()` dure 60 s et, par contrat explicite, NE TOUCHE PAS au statut : la commande
+     *    reste PRÊTE, elle reçoit seulement un badge « RAPPELÉ ». C'est une action compensatoire
+     *    de traçabilité, pas un retour en arrière.
+     *
+     * Or le besoin réel est celui-ci : le cuisinier appuie sur « Prêt » alors que le plat ne l'est
+     * pas, s'en aperçoit une ou deux minutes plus tard, et veut que la commande REDEVIENNE en
+     * préparation. Sans ça, elle part au comptoir comme terminée et le client reçoit un plat
+     * incomplet — ou attend devant une commande que plus personne ne prépare.
+     *
+     * On ajoute donc une action DISTINCTE plutôt que d'élargir `recall()` : son invariant
+     * « le statut ne bouge jamais » est verrouillé par une assertion et par ses tests, et le
+     * casser pour élargir son usage reviendrait à détruire une garantie pour en offrir une autre.
+     */
+    public function reopen(Order $order): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $result = $this->kitchenDisplaySystemOrderService->reopen($order);
+
+            return response([
+                'status'       => true,
+                'message'      => trans('all.message.kds_reopen_success'),
+                'queue_number' => $result['queue_number'],
+                'reopened_at'  => $result['reopened_at'],
+            ], 200);
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
 }

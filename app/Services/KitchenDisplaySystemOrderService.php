@@ -529,6 +529,92 @@ class KitchenDisplaySystemOrderService
     }
 
     /**
+     * [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] La commande validée trop tôt REDEVIENT en
+     * préparation.
+     *
+     * LE BESOIN, MOT POUR MOT : « au cas où je valide une commande alors qu'elle n'est pas
+     * terminée ». Le cuisinier appuie sur « Prêt », s'en aperçoit une ou deux minutes plus tard.
+     * Sans retour possible, la commande part au comptoir comme terminée : le client repart avec un
+     * plat incomplet, ou attend devant une commande que plus personne ne prépare.
+     *
+     * POURQUOI PAS `recall()` — et pourquoi il ne fallait PAS l'élargir
+     * ------------------------------------------------------------------
+     * `recall()` porte un contrat explicite et verrouillé par assertion : le statut NE BOUGE
+     * JAMAIS (action compensatoire de traçabilité, 60 s, badge « RAPPELÉ »). L'élargir pour qu'il
+     * remette en préparation aurait détruit cette garantie-là pour en offrir une autre. Deux
+     * besoins distincts, deux actions distinctes.
+     *
+     * CE QUI EST GARDÉ, ET POURQUOI
+     * -----------------------------
+     *  - **Seule une commande PRÊTE se rouvre.** Une commande déjà REMISE au client, annulée ou
+     *    partie en livraison n'est plus l'affaire de la cuisine ; la rouvrir donnerait un plat à
+     *    refaire pour un client parti. Le statut est relu SOUS VERROU, pas avant.
+     *  - **Pas de fenêtre de quelques secondes.** C'est la raison d'être de cette action : on
+     *    s'aperçoit d'un « Prêt » prématuré en regardant le plat, pas en regardant l'horloge.
+     *    La borne est le statut, qui dit la vérité, pas un minuteur qui l'approxime.
+     *  - **Isolation de branche sous verrou**, comme `recall()`.
+     *  - **La transition est INSCRITE** au registre append-only (`kitchen_reopen`) : une commande
+     *    qui redevient en préparation est un fait d'exploitation, il doit rester lisible après
+     *    coup. Aucun impact NF525 — le registre fiscal ne connaît que l'encaissement.
+     *
+     * @throws HttpException 422 (mauvais statut), 403 (autre branche)
+     */
+    public function reopen(Order $order): array
+    {
+        $user = auth()->user();
+        $actorId = $user ? (int) $user->getAuthIdentifier() : 0;
+        $userBranchId = (int) ($user->branch_id ?? 0);
+        $correlationId = request()?->header('X-Correlation-ID') ?? (string) Str::uuid();
+
+        return DB::transaction(function () use ($order, $actorId, $userBranchId, $correlationId) {
+            /** @var Order $locked */
+            $locked = Order::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
+            }
+
+            // La seule commande qu'on peut « remettre en préparation » est celle que la cuisine
+            // vient de déclarer prête. Tout le reste est déjà sorti de son périmètre.
+            if ((int) $locked->status !== OrderStatus::PREPARED) {
+                abort(422, trans('all.message.kds_reopen_invalid_state'));
+            }
+
+            $now = Carbon::now();
+
+            $locked->status = OrderStatus::PREPARING;
+            // `prepared_at` est le moment où la cuisine a DIT que c'était prêt. Puisque ce n'était
+            // pas vrai, on l'efface : le laisser en place ferait mentir tous les calculs de durée
+            // de préparation, et l'écran client afficherait une commande « prête » depuis 10 min
+            // alors qu'elle est en train d'être refaite.
+            $locked->prepared_at = null;
+            $locked->save();
+
+            OrderStatusTransition::query()->create([
+                'order_id'       => (int) $locked->id,
+                'order_type'     => Order::class,
+                'from_status'    => OrderStatus::PREPARED,
+                'to_status'      => OrderStatus::PREPARING,
+                'actor_id'       => $actorId ?: null,
+                'actor_type'     => $actorId ? 'user' : null,
+                'reason'         => 'kitchen_reopen',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => $now,
+            ]);
+
+            return [
+                'order_id'     => (int) $locked->id,
+                'branch_id'    => (int) $locked->branch_id,
+                'queue_number' => $locked->queue_number,
+                'reopened_at'  => $now->toIso8601String(),
+            ];
+        });
+    }
+
+    /**
      * @throws Exception
      */
     public function changeStatus(Order $order, Request $request)

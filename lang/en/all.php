@@ -119,6 +119,8 @@ return [
         'kds_recall_confirm_title' => 'Undo this "Ready"?',
         'kds_recall_warning_60s'   => 'Available 60 seconds after bump',
         'kds_recall_success'       => 'Order recalled ✓',
+        'kds_reopen_invalid_state'     => 'Only an order marked Ready can be put back in preparation.',
+        'kds_reopen_success'           => 'Order put back in preparation.',
         'kds_recall_too_late'      => '60s window expired — contact cashier',
         'kds_recall_already_recalled' => 'This order has already been recalled',
         'configure_wizard' => 'Configure wizard',

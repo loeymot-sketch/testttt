@@ -6,7 +6,21 @@
     "Récemment servies" strip in KdsV2Grid remains independent (short-term
     recents in active grid vs. full-day history viewer in drawer).
   -->
-  <div class="kds-history-trigger-row">
+  <!--
+    [KDS-BARRE-UNIQUE 2026-08-13 · owner] UNE SEULE barre, tout en haut, tous les boutons.
+    L'écran cuisine empilait QUATRE bandes avant la première commande : cette rangée, un bandeau
+    d'information permanent, et le sélecteur de colonnes vivant dans la grille. Mesuré au pixel
+    sur l'écran réel : la première carte ne commençait qu'à 165 px sur 720, soit près d'un quart
+    de la hauteur perdue avant d'avoir vu une seule commande.
+
+    Le sélecteur de colonnes est PROJETÉ ici depuis la grille (Teleport) plutôt que déplacé : il
+    garde son état et sa persistance là où ils vivent, et la barre reste unique. Le bandeau
+    « les pastilles sont locales » devient un bouton ⓘ : l'information reste accessible, elle ne
+    mange plus une ligne entière à chaque service.
+
+    `id` indispensable — c'est la cible du Teleport de KdsV2Grid.
+  -->
+  <div class="kds-history-trigger-row kds-toolbar" id="kds-toolbar" data-testid="kds-toolbar">
     <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3 + W6 heal P2] Bouton « Rupture »
          cuisine — rendu au-dessus des DEUX layouts (V2 + legacy), gate miroir du
          serveur (Stuff/Waiter sans availability_toggle ne voient pas un bouton
@@ -48,6 +62,25 @@
       <span aria-hidden="true">🔑</span>
       <span class="kds-history-trigger__label">{{ showSymbolLegend ? 'Masquer les noms' : 'Afficher les noms' }}</span>
     </button>
+    <!-- [KDS-BARRE-UNIQUE 2026-08-13] L'avertissement « les pastilles Prêt sont mémorisées sur
+         ce poste » occupait une LIGNE ENTIÈRE en permanence. L'information reste utile (deux
+         écrans cuisine ne partagent pas leurs pastilles) mais elle se lit une fois : elle devient
+         un ⓘ qui la déplie à la demande. -->
+    <button
+      type="button"
+      class="kds-history-trigger kds-toolbar__info"
+      :aria-expanded="showBumpInfo ? 'true' : 'false'"
+      aria-controls="kds-status-banner"
+      data-testid="kds-bump-info-toggle"
+      :title="$t('label.kds_bump_local_only_notice')"
+      @click="showBumpInfo = !showBumpInfo"
+    >
+      <span aria-hidden="true">ⓘ</span>
+    </button>
+    <!-- Cible du Teleport : le sélecteur « combien de commandes » de la grille atterrit ici,
+         à droite de la barre, au lieu de créer sa propre rangée sous celle-ci. -->
+    <div class="kds-toolbar__spacer"></div>
+    <div id="kds-toolbar-slot" class="kds-toolbar__slot"></div>
   </div>
   <!-- [F2 2026-07-24] Panneau légende repliable — RACINE (visible en V2 + legacy).
        Clé des symboles groupée par rôle (Support / Viande / Sauce / Crudités /
@@ -103,7 +136,7 @@
     :list-at-cap="kdsOrderListAtCap"
     :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
     :admin-polling-hint="kdsIsCentralAdmin"
-    :bump-local-only-notice="!kdsHideBumpInfo"
+    :bump-local-only-notice="showBumpInfo && !kdsHideBumpInfo"
     :sync-uncertain="syncBadgeUncertain"
     :error-message="kdsErrorBanner.visible ? kdsErrorBanner.message : ''"
     :auto-transition-enabled="v2AutoTransitionEnabled"
@@ -111,6 +144,7 @@
     @change-status="onV2ChangeStatus"
     @auto-promote="onV2AutoPromote"
     @reprint="reprintKitchenTicket"
+    @reopen="reopenOrder"
   />
   <template v-else>
   <!--
@@ -182,20 +216,12 @@
     <span>{{ $t("label.kds_order_list_full_warning", { n: orders.length }) }}</span>
     <button type="button" class="kds-hint-link" @click="kdsOverflowSeeMore">{{ $t('label.kds_see_more') }}</button>
   </div>
-  <div
-    v-if="!kdsHideBumpInfo"
-    class="kds-hint-banner kds-hint-banner--neutral flex flex-wrap items-center justify-between gap-2 text-left"
-    role="note"
-  >
-    <span class="min-w-0 flex-1">{{ $t("label.kds_bump_local_only_notice") }}</span>
-    <button
-      type="button"
-      class="shrink-0 text-xs font-medium underline text-[#4b5563]"
-      @click="dismissKdsBumpNotice"
-    >
-      {{ $t("label.kds_dismiss_hint") }}
-    </button>
-  </div>
+  <!-- [KDS-BARRE-UNIQUE 2026-08-13] JUMEAU RETIRÉ.
+       Cet avertissement était rendu par DEUX chemins indépendants : ce bloc, et le bandeau de
+       statut `KdsStatusBanner` (propriété `bump-local-only-notice`). N'en fermer qu'un ne changeait
+       RIEN à l'écran — mesuré sur capture après ma première passe : les cartes commençaient
+       toujours au même pixel. Le bloc en double est supprimé ; le bandeau de statut reste la
+       SEULE source, et le ⓘ de la barre le pilote. Une information, un rendu, un interrupteur. -->
   <div class="row md:mt-4 lg:mt-0">
     <div class="lg:hidden flex items-center w-full px-4">
       <button
@@ -1290,6 +1316,10 @@ export default {
       // KDS change-status self-heal (see mounted/beforeUnmount).
       _kdsStatusInterceptorId: null,
       kdsHideBumpInfo: false,
+      // [KDS-BARRE-UNIQUE 2026-08-13] L'avertissement « pastilles locales » n'est plus affiché
+      // d'office : il se déplie par le ⓘ de la barre. Défaut fermé — l'écran cuisine doit montrer
+      // des commandes, pas du texte.
+      showBumpInfo: false,
       // [F-03 / Lot 1.C] Adaptive polling fallback metadata: keep listener
       // unsubscribers and the per-second tick used to update the "Synchronized
       // Xs ago" badge. The KdsSyncService itself manages cadence based on
@@ -2298,6 +2328,37 @@ export default {
           .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); releaseKitchenPrint(order.id); });
       });
     },
+    /**
+     * [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] « Au cas où je valide une commande alors
+     * qu'elle n'est pas terminée. »
+     *
+     * Déclenché depuis la pastille de la bande « Récemment servies » — c'est là que la commande
+     * se trouve dès qu'on a appuyé sur « Prêt », puisqu'elle quitte aussitôt la grille active.
+     *
+     * Le serveur reste seul juge (seule une commande PRÊTE se rouvre, isolation de branche sous
+     * verrou) ; on se contente d'appeler, de dire ce qui s'est passé, et de rafraîchir la liste
+     * pour que la commande réapparaisse parmi les actives. En cas de refus, on montre le message
+     * du serveur plutôt qu'un texte inventé ici : c'est lui qui sait pourquoi.
+     */
+    async reopenOrder(order) {
+      if (!order || order.id == null) return;
+      const key = `reopen-${order.id}`;
+      if (this._reopenInFlight && this._reopenInFlight.has(key)) return;
+      if (!this._reopenInFlight) this._reopenInFlight = new Set();
+      this._reopenInFlight.add(key);
+      try {
+        await axios.post(`admin/kds-order/reopen/${order.id}`, {}, {
+          headers: { 'X-Idempotency-Key': `reopen-${order.id}-${Math.floor(Date.now() / 1000)}` },
+        });
+        alertService.info(this.$t('message.kds_reopen_success'));
+        await this.list();
+      } catch (e) {
+        const msg = e?.response?.data?.message || this.$t('message.kds_reopen_invalid_state');
+        try { alertService.error(msg); } catch (_) { /* jamais bloquer la cuisine */ }
+      } finally {
+        this._reopenInFlight.delete(key);
+      }
+    },
     // [KDS-REPRINT 2026-07-13] Réimpression MANUELLE du ticket cuisine, déclenchée
     // par le bouton 🖨️ (carte V2 + lanes legacy). Contrairement à l'auto-print
     // (autoPrintNewKitchenTickets) :
@@ -3022,6 +3083,33 @@ export default {
   min-height: 0;
   flex-shrink: 0;
 }
+/* [KDS-BARRE-UNIQUE 2026-08-13 · owner] UNE barre, UNE ligne, tout en haut.
+   `flex-wrap: nowrap` est le cœur du réglage : sans lui, la barre se rompt sur un écran étroit
+   et on retrouve les deux rangées qu'on vient de supprimer. Les libellés se réduisent avant que
+   la ligne ne casse — mieux vaut un mot tronqué qu'une bande de plus volée aux commandes. */
+.kds-toolbar {
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 3px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.kds-toolbar::-webkit-scrollbar { display: none; }
+/* Pousse le sélecteur de colonnes à droite, les actions restant groupées à gauche. */
+.kds-toolbar__spacer { flex: 1 1 auto; min-width: 8px; }
+.kds-toolbar__slot { display: flex; align-items: center; flex-shrink: 0; }
+/* Le sélecteur projeté ne doit plus se comporter comme une rangée autonome. */
+.kds-toolbar__slot .kds-cols-picker {
+  margin: 0;
+  padding: 0;
+  justify-content: flex-end;
+}
+.kds-toolbar__info {
+  padding: 4px 9px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.kds-toolbar .kds-history-trigger { flex-shrink: 0; white-space: nowrap; }
 .kds-history-trigger {
   display: inline-flex;
   align-items: center;

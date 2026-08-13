@@ -128,6 +128,8 @@ return [
         'kds_recall_confirm_title' => 'إلغاء حالة "جاهز" هذه؟',
         'kds_recall_warning_60s'   => 'متاح لمدة 60 ثانية بعد التأكيد',
         'kds_recall_success'       => 'تم استرداد الطلب ✓',
+        'kds_reopen_invalid_state'     => 'Only an order marked Ready can be put back in preparation.',
+        'kds_reopen_success'           => 'Order put back in preparation.',
         'kds_recall_too_late'      => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق',
         'kds_recall_already_recalled' => 'تم استرداد هذا الطلب بالفعل',
     ],

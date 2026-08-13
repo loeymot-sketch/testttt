@@ -1492,7 +1492,8 @@
         "flyer_used": "Commande",
         "flyer_revoked": "annule",
         "flyer_confirm_revoke": "Annuler le code {code} de {name} ? Il ne sera plus utilisable.",
-        "flyer_duplicate_warning": "Un code vient deja d'etre cree pour ce prenom :"
+        "flyer_duplicate_warning": "Un code vient deja d'etre cree pour ce prenom :",
+        "kds_reopen_aria": "Remettre la commande N°{queue} en préparation"
     },
     "button": {
         "refresh": "Actualiser",
@@ -1737,7 +1738,9 @@
         },
         "kds_sync_forbidden": "Accès à l'écran cuisine refusé (session ou permission serveur). Le tableau ne peut pas se charger — prévenez l'administrateur.",
         "kds_reprint_sent": "Réimpression envoyée (commande :queue).",
-        "kds_reprint_failed": "Échec de la réimpression."
+        "kds_reprint_failed": "Échec de la réimpression.",
+        "kds_reopen_success": "Commande remise en préparation.",
+        "kds_reopen_invalid_state": "Seule une commande marquée Prête peut être remise en préparation."
     },
     "kiosk": {
         "dine_in": "Sur place",

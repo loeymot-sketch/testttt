@@ -239,6 +239,11 @@ return [
         'kds_recall_window_expired'    => 'Délai 60s dépassé — contacter le caissier pour annuler manuellement.',
         'kds_recall_already_recalled'  => 'Cette commande a déjà été rappelée.',
         'kds_recall_success'           => 'Commande rappelée en cuisine.',
+        // [REMETTRE-EN-PRÉPARATION 2026-08-13] Distinct du « rappel » ci-dessus : ici la commande
+        // REDEVIENT réellement en préparation. Le message le dit sans ambiguïté, pour que le
+        // cuisinier sache que le plat est reparti en production et pas seulement signalé.
+        'kds_reopen_invalid_state'     => 'Seule une commande marquée Prête peut être remise en préparation.',
+        'kds_reopen_success'           => 'Commande remise en préparation.',
         'unauthorized'        => "Vous n'avez pas les permissions nécessaires.",
         'method_not_supported' => "Méthode non prise en charge pour cette route.",
         'url_not_found'       => "L'URL spécifiée est introuvable.",
