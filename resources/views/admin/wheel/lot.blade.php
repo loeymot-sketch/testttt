@@ -70,7 +70,11 @@
 @endphp
 <main class="carte">
   <h1>Remettre un lot</h1>
-  <p class="sous">Le client donne son numéro. Tu vérifies, tu remets, tu appuies.</p>
+  {{-- [2026-08-13] Ce sous-titre disait encore « le client donne son numéro » alors que le chemin
+       principal est devenu son CODE. Un écran qui décrit un geste qu'on ne fait plus apprend le
+       mauvais réflexe à l'équipe — et c'est le genre de détail qu'on laisse traîner parce qu'il ne
+       casse rien. Il dit maintenant ce que l'écran fait vraiment. --}}
+  <p class="sous">Le client montre son code, ou donne son numéro. Tu vérifies, tu remets, tu appuies.</p>
 
   {{-- Le message vient AVANT le formulaire : chaque geste recharge la page, et le résultat de ce
        geste est ce qu'il faut lire en premier — y compris à la synthèse vocale. --}}
@@ -79,11 +83,32 @@
        role="{{ ($messageType ?? 'info') === 'err' ? 'alert' : 'status' }}">{{ $message }}</p>
   @endif
 
+  {{-- ── DEUX FAÇONS DE RETROUVER UN CLIENT, ET LE CODE D'ABORD ─────────────────────────────
+       [2026-08-13 · propriétaire : « valider le code promo au cas où, ou bien dans la caisse »]
+       Cet écran ne savait chercher que par NUMÉRO. Or ce que le client tend au comptoir, c'est
+       son code — sur sa page, dans son mail, sur une capture. Le seul objet que le jeu lui remet
+       était le seul avec lequel l'équipe ne pouvait rien faire.
+
+       Le code est mis EN PREMIER parce que c'est le geste le plus fréquent et le plus sûr : il
+       désigne UN tour précis, là où un numéro peut en porter plusieurs. Le numéro reste juste en
+       dessous, pour le client qui a perdu son message — on n'enlève rien, on ajoute.
+
+       Deux formulaires séparés et non un seul à deux champs : un formulaire unique obligerait
+       l'équipe à vider l'autre case avant de chercher, debout, pendant un service. Chaque bouton
+       fait exactement une chose. --}}
   <form method="GET" action="{{ url('/admin/roue-lot') }}">
-    <label for="phone">Numéro du client</label>
+    <label for="code">Code du client</label>
+    <input id="code" name="code" type="text" inputmode="latin" placeholder="ROUE-FLZ5EN"
+           value="{{ $code ?? '' }}" maxlength="32" autocomplete="off" autocapitalize="characters"
+           spellcheck="false" autofocus>
+    <button type="submit">Chercher par le code</button>
+  </form>
+
+  <form method="GET" action="{{ url('/admin/roue-lot') }}" style="margin-top:22px">
+    <label for="phone">Ou son numéro de téléphone</label>
     <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="06 12 34 56 78"
-           value="{{ $phone ?? '' }}" maxlength="20" autofocus>
-    <button type="submit">Chercher son lot</button>
+           value="{{ $phone ?? '' }}" maxlength="20" autocomplete="off">
+    <button type="submit">Chercher par le numéro</button>
   </form>
 
   @if (! empty($spin))

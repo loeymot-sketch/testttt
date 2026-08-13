@@ -28,9 +28,44 @@ class WheelPrizeController extends Controller
     {
         $branchId = $this->branchId($request);
         $phone = trim((string) $request->query('phone', ''));
+        $code = trim((string) $request->query('code', ''));
+
+        /*
+         * ── LA RECHERCHE PAR CODE ────────────────────────────────────────────────────────────
+         * [2026-08-13 · propriétaire : « valider le code promo au cas où, ou bien dans la caisse »]
+         * Ce que le client MONTRE au comptoir, c'est son code, pas son numéro. Cet écran ne savait
+         * partir que du numéro : le seul objet remis au client était le seul inutilisable ici.
+         *
+         * Le code passe EN PREMIER quand il est saisi : s'il a été tapé, c'est qu'il est sous les
+         * yeux de l'équipe, et il désigne UN tour précis là où un numéro peut en avoir plusieurs.
+         * Le numéro reste le chemin de secours — pour le client qui a perdu son message.
+         *
+         * On repart ensuite du téléphone DU TOUR TROUVÉ, pas de la saisie : c'est ce qui donne à
+         * l'écran son historique complet et permet à la remise (qui travaille par numéro) de
+         * fonctionner sans qu'on lui apprenne un second langage.
+         */
+        if ($code !== '') {
+            $spin = \App\Models\WheelSpin::parCode($branchId, $code);
+
+            if ($spin === null) {
+                return view('admin.wheel.lot', $this->commun() + [
+                    'phone' => $phone,
+                    'code' => $code,
+                    'spin' => null,
+                    'history' => [],
+                    'message' => 'Aucun lot ne correspond à ce code dans cette caisse. Vérifie la '
+                        . 'saisie, ou cherche par le numéro de téléphone du client.',
+                    'messageType' => 'info',
+                ]);
+            }
+
+            $phone = (string) $spin->phone;
+        }
 
         if ($phone === '') {
-            return view('admin.wheel.lot', $this->commun() + ['phone' => '', 'spin' => null, 'history' => []]);
+            return view('admin.wheel.lot', $this->commun() + [
+                'phone' => '', 'code' => '', 'spin' => null, 'history' => [],
+            ]);
         }
 
         /*
@@ -41,6 +76,7 @@ class WheelPrizeController extends Controller
         if (strlen(app(WheelService::class)->normalizePhone($phone)) < 9) {
             return view('admin.wheel.lot', $this->commun() + [
                 'phone' => $phone,
+                'code' => $code,
                 'spin' => null,
                 'history' => [],
                 'message' => 'Numéro incomplet : il faut les 10 chiffres. Retape-le en entier.',
@@ -59,6 +95,7 @@ class WheelPrizeController extends Controller
 
         return view('admin.wheel.lot', $this->commun() + [
             'phone' => $phone,
+            'code' => $code,
             'spin' => $spin,
             'history' => $history,
             'message' => $message,
