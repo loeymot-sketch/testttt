@@ -799,3 +799,79 @@ test.describe.serial('Real functional CRUD — Printers (physical device metadat
     console.log('[CRUD-FUNCTIONAL] Printers DELETE: row gone from table immediately after click (no confirm dialog on this page, confirmed by reading destroy() -- unlike every other Delete flow in this suite) — REAL removal.');
   });
 });
+
+test.describe.serial('Real functional CRUD — Time Slots (per-day time-picker create, real delete)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Time Slots: create (Monday, time-picker overlay) -> appears under Monday -> delete (SweetAlert confirm) -> gone', async () => {
+    // REAL FINDING, cosmetic not functional: TimeSlotCreateComponent is
+    // rendered once PER WEEKDAY (7 instances), and each one hard-codes
+    // id="modal" -- confirmed via a live DOM probe that querying #modal
+    // returns 7 duplicate ids. Despite the invalid markup, functionality
+    // is unaffected: the form payload (including `day`) lives in a single
+    // reactive object shared across all 7 instances (:props="props" on
+    // the parent), set via @click on the day's own "Ajouter" button
+    // BEFORE the modal opens -- so clicking any day's button still
+    // submits the correct day, confirmed below by checking the created
+    // slot lands under Monday specifically, not just "somewhere". Using
+    // Monday (the first "Ajouter" button) to sidestep any ambiguity about
+    // which DOM #modal a later day's click would visually resolve to.
+    //
+    // The time fields are @vuepic/vue-datepicker in time-picker mode, a
+    // DIFFERENT interaction pattern than the date-mode calendar already
+    // proven on Coupons: readonly text input -> click opens an overlay
+    // with inc/dec buttons per column (data-test="time-inc-btn"/"time-dec
+    // -btn", aria-label "Increment/Decrement hours|minutes") and a
+    // data-test="select-button" to commit. Confirmed via tinker that this
+    // environment has ZERO existing time_slots rows, so there's no
+    // overlap-validation risk from TimeSlotService's overlap formula
+    // (already reviewed as sound elsewhere this session) regardless of
+    // which time is picked.
+    await page.goto('/admin/settings/time-slots', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const mondayRow = page.locator('li', { hasText: 'Monday' }).first();
+    await mondayRow.getByText(/ajouter|add/i).first().click();
+    const modal = page.locator('#modal').first();
+    await expect(modal).toBeVisible({ timeout: 8000 });
+
+    // Opening time: accept the default (current time) by opening the
+    // overlay and clicking Select immediately.
+    await modal.locator('#opening_time, label[for="opening_time"] + div input').first().click();
+    await page.locator('[data-test="select-button"]').first().click();
+    await page.waitForTimeout(300);
+
+    // Closing time: open overlay, bump the hour forward once so
+    // closing > opening (avoids a same-instant edge case), then Select.
+    await modal.locator('#closing_time, label[for="closing_time"] + div input').first().click();
+    await page.locator('[data-test="time-inc-btn"][aria-label="Increment hours"]').first().click();
+    await page.locator('[data-test="select-button"]').first().click();
+    await page.waitForTimeout(300);
+
+    await modal.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+
+    await expect(mondayRow).toContainText(/\d{2}:\d{2}/, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Time Slots CREATE: real slot appears under Monday specifically (not just "somewhere") — REAL, time-picker overlay interaction confirmed wired end-to-end.');
+
+    const yesBtn = page.getByRole('button', { name: /yes,\s*delete it/i });
+    await mondayRow.locator('.lab-close').first().click();
+    await expect(yesBtn).toBeVisible({ timeout: 10_000 });
+    await yesBtn.click();
+    await page.waitForTimeout(1200);
+
+    await expect(mondayRow).not.toContainText(/\d{2}:\d{2}/, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Time Slots DELETE: slot gone from Monday row after SweetAlert confirm — REAL removal.');
+  });
+});
