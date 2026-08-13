@@ -500,3 +500,73 @@ test.describe.serial('Real functional interaction — Cash Overview (read-only, 
     console.log(`[CRUD-FUNCTIONAL] Cash Overview: 2020-today range shows "${widRangeText.replace(/\s+/g, ' ').trim()}" — genuinely different from the 2099 empty case, filter reaches the backend.`);
   });
 });
+
+test.describe.serial('Real functional state-machine — Delivery Boy Cash Session (open -> close -> reconcile)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let deliveryBoyId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    // deliveryBoyId is a raw numeric input on this form (not a dropdown) --
+    // needs a real delivery-boy user id. Seeded via tinker rather than the
+    // full UI create flow (already proven separately in
+    // admin-users-crud-functional.spec.js) since this test's focus is the
+    // cash-session state machine, not delivery-boy creation.
+    const uniq = Date.now();
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=$u = \\App\\Models\\User::create(["name"=>"E2E DeliveryBoy CashSession","email"=>"e2e-dbcs-${uniq}@e2e-test.local","username"=>"e2edbcs${uniq}","phone"=>"06" . substr((string) time(), -8),"password"=>bcrypt("TestPassword123!"),"branch_id"=>1,"status"=>5,"email_verified_at"=>now()]); $u->assignRole(\\App\\Enums\\Role::DELIVERY_BOY); echo $u->id;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    deliveryBoyId = out;
+  });
+
+  test.afterAll(async () => {
+    if (deliveryBoyId) {
+      tinkerExec(`\\App\\Models\\DeliveryBoyCashSession::where('delivery_boy_id', ${deliveryBoyId})->delete(); \\App\\Models\\User::where('id', ${deliveryBoyId})->delete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Delivery Boy Cash Session: open -> close (zero variance) -> reconcile, real state transitions', async () => {
+    await page.goto('/admin/delivery-boy-cash-sessions', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.click('[data-testid="delivery-cash-open-session-btn"]');
+    await page.waitForTimeout(400);
+    await page.fill('[data-testid="delivery-cash-form-livreur-input"]', String(deliveryBoyId));
+    await page.fill('#openingAmount', '50');
+    await page.click('[data-testid="delivery-cash-form-open-submit"]');
+    await page.waitForTimeout(1500);
+
+    // Status badges render the TRANSLATED French label ("Ouverte"/"Fermée"/
+    // "Réconciliée"), not an English status code -- a first attempt with
+    // an English-only regex failed against the real rendered text
+    // (confirmed via the failed run's DOM: <span ...>Ouverte</span>).
+    await expect(page).toHaveURL(/\/admin\/delivery-boy-cash-sessions\/\d+/, { timeout: 10_000 });
+    await expect(page.locator('[data-testid="delivery-cash-session-status"]')).toContainText(/open|ouverte/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Delivery Boy Cash Session OPEN: real session created, status=open, real navigation to its show page.');
+
+    await page.click('[data-testid="delivery-cash-action-close"]');
+    await page.waitForTimeout(400);
+    await page.fill('#closingAmount', '50');
+    await page.click('[data-testid="delivery-cash-form-close-submit"]');
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('[data-testid="delivery-cash-session-status"]')).toContainText(/closed|fermée/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Delivery Boy Cash Session CLOSE: status transitioned to closed, zero variance (50 in, 50 out).');
+
+    await page.click('[data-testid="delivery-cash-action-reconcile"]');
+    await page.waitForTimeout(400);
+    await page.fill('#varianceReason', 'E2E test reconciliation, zero variance');
+    await page.click('[data-testid="delivery-cash-form-reconcile-submit"]');
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('[data-testid="delivery-cash-session-status"]')).toContainText(/reconcil|réconcili/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Delivery Boy Cash Session RECONCILE: status transitioned to reconciled — full real state machine open->close->reconcile proven end-to-end.');
+  });
+});
