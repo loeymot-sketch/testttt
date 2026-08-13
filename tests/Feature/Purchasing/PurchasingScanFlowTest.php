@@ -180,4 +180,23 @@ class PurchasingScanFlowTest extends TestCase
         $this->postJson('/api/admin/purchasing/scan', ['photo' => $this->photo('X')])
             ->assertForbidden();
     }
+
+    /**
+     * [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] Every other upload
+     * FormRequest in this codebase (Item photos, Message/PushNotification
+     * images) applies NoDangerousFileExtension — the codebase-wide answer to
+     * a documented .pht polyglot RCE finding (GOAL-L2-HEAL-02 2026-05-24).
+     * This scan endpoint's inline Request::validate() array never got it.
+     */
+    public function test_scan_rejects_a_dangerous_file_extension(): void
+    {
+        $this->actingAdmin();
+
+        $dangerous = \Illuminate\Http\UploadedFile::fake()->createWithContent('shell.pht', 'anything');
+
+        $response = $this->postJson('/api/admin/purchasing/scan', ['photo' => $dangerous]);
+
+        $response->assertStatus(422);
+        $this->assertSame(0, PurchaseDocument::query()->count());
+    }
 }

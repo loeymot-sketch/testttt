@@ -49,7 +49,16 @@ class PurchasingScanController extends AdminController
         InvoiceClassificationService $classifier
     ): JsonResponse {
         $validated = $request->validate([
-            'photo' => ['required', 'file', 'max:12288'],
+            // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] every other
+            // upload FormRequest in this codebase applies
+            // NoDangerousFileExtension (GOAL-L2-HEAL-02 2026-05-24 .pht
+            // polyglot RCE finding) — this endpoint's inline validate()
+            // never got it. `image`/`mimes:` deliberately NOT added here:
+            // the stored disk is `local` (non-web-servable, per audit), and
+            // real invoice photos legitimately vary in format/size more
+            // than the catalogue-photo endpoints this pattern was written
+            // for.
+            'photo' => ['required', 'file', 'max:12288', new \App\Rules\NoDangerousFileExtension()],
             'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'doc_date' => ['nullable', 'date'],
             'source' => ['nullable', 'in:facture,ticket'],

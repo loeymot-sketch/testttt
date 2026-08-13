@@ -1,11 +1,10 @@
 @component('mail::message')
-    # Subscriber Notification
+    # {{ $title }}
 
-    Hello,
+    Bonjour,
 
-    Subject : {{ $title }}
     {{ $message }}
 
-    Thanks,
+    Merci,
     {{ config('app.name') }}
 @endcomponent

@@ -52,11 +52,15 @@ class TimeSlotService
             $status = true;
             $timeSlots = TimeSlot::where('day', $request->day)->get();
             foreach ($timeSlots as $timeSlot) {
-                if ($request->opening_time > $timeSlot->opening_time && $request->closing_time < $timeSlot->closing_time) {
-                    $status = false;
-                } elseif ($request->opening_time > $timeSlot->opening_time && $request->opening_time < $timeSlot->closing_time) {
-                    $status = false;
-                } elseif ($request->closing_time > $timeSlot->opening_time && $request->closing_time < $timeSlot->closing_time) {
+                // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] Standard
+                // half-open interval overlap check ([a,b) overlaps [c,d) iff
+                // a < d && c < b). The previous 3-branch check only tested
+                // the NEW slot's edges against the existing one and missed:
+                // the new slot fully CONTAINING an existing one, and exact
+                // duplicate boundaries. Strict `<` (not `<=`) still allows
+                // legitimate back-to-back adjacent slots (10:00-11:00 then
+                // 11:00-12:00).
+                if ($request->opening_time < $timeSlot->closing_time && $timeSlot->opening_time < $request->closing_time) {
                     $status = false;
                 }
             }

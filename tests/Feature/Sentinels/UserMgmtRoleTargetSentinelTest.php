@@ -373,4 +373,71 @@ class UserMgmtRoleTargetSentinelTest extends TestCase
             $this->assertSame(403, $e->getStatusCode());
         }
     }
+
+    // ───────────────────────────────────────────────
+    // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] show() never got the
+    // WAVE5-SEC-001 guard applied to update/changePassword/changeImage — it
+    // still ran the original tautological `!in_array(EnumRole::X, [ADMIN])`
+    // predicate, which is always true for X != ADMIN regardless of the
+    // route-bound user's actual role. Any staff holding e.g. customers_show
+    // could read an Admin/Waiter/Chef/DeliveryBoy account's PII through the
+    // wrong endpoint. 4 negative + 1 happy-path case.
+    // ───────────────────────────────────────────────
+
+    public function test_customer_show_rejects_non_customer_target(): void
+    {
+        $admin = $this->makeUserWithRole(EnumRole::ADMIN);
+
+        try {
+            app(CustomerService::class)->show($admin);
+            $this->fail('CustomerService::show must throw on non-Customer target.');
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+        }
+    }
+
+    public function test_waiter_show_rejects_non_waiter_target(): void
+    {
+        $admin = $this->makeUserWithRole(EnumRole::ADMIN);
+
+        try {
+            app(WaiterService::class)->show($admin);
+            $this->fail('WaiterService::show must throw on non-Waiter target.');
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+        }
+    }
+
+    public function test_chef_show_rejects_non_chef_target(): void
+    {
+        $admin = $this->makeUserWithRole(EnumRole::ADMIN);
+
+        try {
+            app(ChefService::class)->show($admin);
+            $this->fail('ChefService::show must throw on non-Chef target.');
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+        }
+    }
+
+    public function test_delivery_boy_show_rejects_non_delivery_boy_target(): void
+    {
+        $admin = $this->makeUserWithRole(EnumRole::ADMIN);
+
+        try {
+            app(DeliveryBoyService::class)->show($admin);
+            $this->fail('DeliveryBoyService::show must throw on non-DeliveryBoy target.');
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+        }
+    }
+
+    public function test_chef_show_allows_chef_target(): void
+    {
+        $chef = $this->makeUserWithRole(EnumRole::CHEF);
+
+        $result = app(ChefService::class)->show($chef);
+
+        $this->assertSame($chef->id, $result->id);
+    }
 }

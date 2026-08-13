@@ -127,6 +127,14 @@ class CustomerService
      */
     public function show(User $customer): User
     {
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13 / WAVE5-SEC-001]
+        // show() never received the role-target guard applied to
+        // update/changePassword/changeImage — the check below is a
+        // tautology (CUSTOMER is never in blockRoles=[ADMIN]), so any caller
+        // with customers_show could read ANY user's record through this
+        // endpoint. Must run before the try/catch (which rewrites to 422).
+        $this->assertTargetRole($customer);
+
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
                 return $customer;

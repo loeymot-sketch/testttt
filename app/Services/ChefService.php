@@ -128,6 +128,14 @@ class ChefService
      */
     public function show(User $chef): User
     {
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13 / WAVE5-SEC-001]
+        // show() never received the role-target guard applied to
+        // update/changePassword/changeImage — the check below is a
+        // tautology (CHEF is never in blockRoles=[ADMIN]), so any caller
+        // with chefs_show could read ANY user's record through this
+        // endpoint. Must run before the try/catch (which rewrites to 422).
+        $this->assertTargetRole($chef);
+
         try {
             if (!in_array(EnumRole::CHEF, $this->blockRoles)) {
                 return $chef;

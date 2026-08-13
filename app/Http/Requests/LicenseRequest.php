@@ -26,7 +26,12 @@ class LicenseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'license_key' => ['required', 'string', 'max:500'],
+            // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] license_key is
+            // written verbatim into .env as MIX_API_KEY (withValidator below,
+            // EnvEditor::addData) — same injection vector guarded on
+            // company_name ([ULTRA-AUDIT V4-DEPLOY 2026-07-02]): a raw
+            // \r/\n/" lets the value inject an independent .env line.
+            'license_key' => ['required', 'string', 'max:500', 'regex:/^[^\r\n"]+$/'],
         ];
     }
 

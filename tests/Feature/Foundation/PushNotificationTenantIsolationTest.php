@@ -76,6 +76,14 @@ class PushNotificationTenantIsolationTest extends TestCase
         $request->user_id     = $userId;
         $request->branch_id   = $branchId;
         $request->shouldReceive('hasFile')->andReturn(false);
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] store() now calls
+        // $request->user() to clamp branch_id server-side for non-`settings`
+        // callers (see PushNotificationBranchIdSpoofTest for that behavior).
+        // null here preserves this test's original intent: it exercises the
+        // FAN-OUT logic given an already-determined branch_id, not the
+        // input-side clamp — with no caller, effectiveBranchId() passes the
+        // requested value through unchanged.
+        $request->shouldReceive('user')->andReturn(null);
 
         $service = new PushNotificationService();
         $service->store($request);

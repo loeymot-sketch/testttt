@@ -27,6 +27,10 @@ class SubscriberMail extends Mailable
 
     public function build()
     {
-        return $this->subject("Subscriber Notification")->markdown('emails.subscriber');
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] NC-06: the real
+        // Subject header must carry what the admin actually typed — it was
+        // hardcoded to a generic English string (ADR-007 FR-lock violation)
+        // while the entered title only ever appeared as body text.
+        return $this->subject($this->title)->markdown('emails.subscriber');
     }
 }

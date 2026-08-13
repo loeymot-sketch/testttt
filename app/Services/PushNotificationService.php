@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use App\Http\Requests\PushNotificationRequest;
 
 class PushNotificationService
 {
+    use EnforcesOwnBranchScope;
+
     public object $pushNotification;
     protected array $pushNotificationFilter = [
         'title',
@@ -60,7 +63,14 @@ class PushNotificationService
             $pushNotification->description = strip_tags($request->description);
             $pushNotification->role_id     = $request->role_id ?? 0;
             $pushNotification->user_id     = $request->user_id ?? 0;
-            $pushNotification->branch_id   = $request->branch_id;
+            // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] NC-03: branch_id
+            // used to come straight from request input. [Foundation
+            // F-8-RED-001 2026-05-18] hardened the FAN-OUT to respect
+            // whatever branch_id is stored, but a branch-scoped (non-
+            // `settings`) caller could still submit branch_id=0 and have it
+            // stored verbatim, forcing a global broadcast. Same own-branch
+            // clamp used by Employee/Chef/Waiter/DeliveryBoy creation.
+            $pushNotification->branch_id   = $this->effectiveBranchId($request->user(), $request->branch_id);
             $pushNotification->save();
 
             if ($request->hasFile('image') && $request->file('image')->isValid()) {
