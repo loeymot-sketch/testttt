@@ -47,6 +47,28 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-13 (AUDIT « qui d'autre bouge un solde ? » — 1 piège argent désamorcé, 1 définition dupliquée unifiée, 1 fausse affirmation de ma part corrigée · HEAD `e6ae04311`)**
+>
+> **DEMANDE OWNER** — `/goal ultra plan audit and fix with test-e2e`, à la suite des 3 missions fidélité/roue/caisse livrées et déployées plus tôt le même jour (VPS `d740a577b`, site `da77a4a`).
+>
+> **LA MÉTHODE QUI A PAYÉ** — après avoir trouvé que le crédit de la roue déplaçait un solde sans rien inscrire au grand-livre, ne pas s'arrêter au correctif mais recenser **QUI D'AUTRE répond à la même question**. 10 sites déplacent `users.loyalty_points` : neuf écrivaient leur ligne, **un seul écrivait un solde sans trace**. Même balayage sur le stock : les 5 sites qui bougent `on_hand` écrivent tous leur mouvement (dont les matières premières via `RawMaterialMovement` — nom sans « Stock », que mon premier motif de recherche avait manqué). **Stock : rien à corriger, et c'est un résultat, pas une absence de recherche.**
+>
+> **CE QUI A ÉTÉ CORRIGÉ**
+> 1. **`/loyalty/register` remettait un solde à ZÉRO** (`74106df31`). Endpoint PUBLIC non authentifié : `if (!$user->loyalty_code) { …; $user->loyalty_points = 0; }` s'appliquait aussi à un compte EXISTANT retrouvé par téléphone. Reproduit : 500 points → 0. **Sans ligne au grand-livre, la perte aurait été invisible.** Gravité honnête : **piège armé, pas fuite en cours** — l'état nécessaire (des points AVEC un code NULL) n'existe ni en dév ni **en production** (0 compte, mesuré ; 25 adhérents ont tous un code), et aucun chemin de crédit ne peut le créer (tous résolvent le client PAR son code). Refermé quand même : « personne ne peut créer cet état aujourd'hui » n'est pas une garde, c'est un accident.
+> 2. **Plancher de rachat : deux définitions unifiées** (`e6ae04311`). Le comptoir ANNONÇAIT `LoyaltyRules::effectiveFloor()`, l'encaissement APPLIQUAIT le réglage brut — doublon que **j'avais moi-même introduit** en ajoutant la garde sans utiliser la définition unique créée pour ça. Divergence NOMINALE (la garde du multiple élimine tout écart avant le plancher) ; unifiée pour que le refus nomme le chiffre que le client a sous les yeux.
+>
+> **UNE FAUSSE AFFIRMATION DE MA PART, CORRIGÉE** (`550a5808a`) — le commit `19ca124a7` annonçait que « rouvrir une commande » avait été déployée « sans aucun test ». **FAUX** : `tests/Feature/Kitchen/KdsReopenOrderTest.php` existait, vert, 9 tests. Cause nommée : mon relevé `grep -rln reopen tests/ | head -4` avait TRONQUÉ la sortie. Mon banc de 8 tests recoupait le leur à 60 % → réduit à **4 tests réellement additifs** (pas de 2ᵉ ticket cuisine, pas de double crédit, REJETÉE/EN-LIVRAISON, refus sans fuite interne). *Un inventaire tronqué produit exactement la conclusion « ce n'est pas couvert » qu'on croyait vérifier.*
+>
+> **FAIT STRUCTURANT APPRIS PAR MUTATION** — le non-double-crédit des points tient sur **DEUX** couches, pas sur la seule sentinelle atomique : `orders.loyalty_points_awarded` **et** l'index UNIQUE `loyalty_transactions (user_id, order_id, type)`, ce dernier ne protégeant le solde **que parce que l'incrément est DANS la même transaction** que l'écriture au grand-livre. ⛔ Sortir `increment('loyalty_points')` de cette transaction rendrait l'index incapable de rembobiner le solde. Chaque couche seule suffit → aucune mutation d'une seule ligne ne peut le mettre en rouge.
+>
+> **PREUVES** — parcours réels joués : fidélité caisse de bout en bout (recherche téléphone → rattachement → 185 pts → ligne au grand-livre → historique lu → double-clic idempotent) ; QR signé `lqr.*` minté puis scanné (replay refusé `QR_REPLAY`, signature falsifiée refusée, jeton de 30 min refusé) ; plancher owner à 1000 pts = 10 € conforme sur 5 soldes ; roue = 7 vrais produits avec poids/quantité/plafond-jour, Terminator poids 0 **non tirable**. Suites : Pos 305 · Loyalty 56 · KDS 81 · Kitchen 108 · Payment 84 · Order 88 · Fiscal 296 (8 skip préexistants) · Sentinels 364 (3 skip préexistants). Zones gelées **0 ligne**. NF525 **CHAIN OK** sur 4 branches. 12 mutations posées, **12 détectées par le test visé**.
+>
+> **P3 DIVULGUÉ, NON CORRIGÉ** — les codes d'erreur QR sortent doublement préfixés (`QR_QR_REPLAY`, `QR_QR_EXPIRED`) : `byQr()` ajoute `QR_` à un code qui commence déjà par `QR_`. **Aucun consommateur** ne matche dessus (la fenêtre de caisse branche sur `status` puis affiche `message`), donc le caissier lit la bonne phrase française. Champ machine sans lecteur → divulgué, pas touché.
+>
+> **⚠️ NON POUSSÉ / NON DÉPLOYÉ** — `f5fc35235` (grand-livre de la roue), `19ca124a7` + `550a5808a` (banc rouvrir), `74106df31` (register), `e6ae04311` (plancher unifié). Le déploiement demande un geste owner explicite.
+>
+> **CONVERGENCE : PAS ENCORE DEUX CYCLES PROPRES IDENTIQUES.** Cycles 4 et 5 à P0+P1=0, mais avec des jeux de constats DIFFÉRENTS (cycle 4 : 1 P3 ; cycle 5 : 1 doublon structurel corrigé). Un 6ᵉ cycle de confirmation reste dû avant de déclarer la convergence.
+
 > **2026-08-13 (GOAL_ADMIN_NAV_BREADTH_CONVERGENCE — 8 défauts réels healés dans la partie jamais auditée de l'admin : Settings/Users-RBAC/Notifications, HEAD `064fc1fce`)**
 >
 > **DEMANDE OWNER** — `/goal` : audit + correction complète du Dashboard admin et de toute la barre de navigation, bouton par bouton, jusqu'à fonctionnalité réelle (pas juste « la page s'ouvre »), avec boucle audit→dispute(agents adversaires+logique)→fix→re-audit, livraison seulement après e2e navigateur réel. Plan écrit : `plans/GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13.md`.
