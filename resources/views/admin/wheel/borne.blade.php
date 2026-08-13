@@ -221,8 +221,13 @@
   /* ── CÔTÉ DROIT : LE QR, IMMOBILE ───────────────────────────────────────────────────────── */
   /* `align-content:center` garde le trio flèche / QR / phrase SOUDÉ : réparti sur la hauteur, la
      flèche se retrouvait à un demi-écran du QR qu'elle est censée désigner. */
+  /* [2026-08-13] Quatre étages : la flèche, le QR, les mots, puis LE DÉFILÉ qui prend tout ce qui
+     reste. `align-content:center` centrait les lignes sans jamais les étirer — le défilé n'aurait
+     alors eu aucune hauteur, donc rien à montrer. La dernière ligne est élastique et bornée par
+     `minmax(0,1fr)` : elle occupe le vide, sans jamais pousser le QR hors de l'écran. */
   .droite{
-    display:grid; place-items:center; align-content:center; text-align:center;
+    display:grid; grid-template-rows:auto auto auto minmax(0,1fr);
+    justify-items:center; align-content:stretch; text-align:center;
     gap:1.6vmin; min-width:0; min-height:0;
   }
   /* Anneau qui pulse autour du QR : il désigne l'endroit sans rien recouvrir. L'espace qu'il
@@ -249,13 +254,69 @@
      revue UX) ; le disque blanc derrière garantit un contraste net même si le PNG du logo a des
      zones transparentes. `pointer-events:none` + `alt=""` : purement visuel, le contenu utile
      (le QR) est déjà annoncé par le texte autour, pas par ce logo. */
+  /* [PROPRIÉTAIRE 2026-08-13] « le logo sur le QR code, affiche-le plus grand — là c'est un point
+     dans un cercle, vraiment ridicule ». Vérifié : le disque faisait bien 20 %, mais `padding:8%`
+     rognait l'intérieur et l'image ajoutait sa propre marge — le pictogramme réel occupait environ
+     17 % du QR, et visuellement bien moins.
+
+     On agrandit le disque à 26 % et on réduit la marge intérieure à 4 %, ce qui porte le logo lui-
+     même à ~24 % du QR : nettement visible, et TOUJOURS dans ce que la correction d'erreur peut
+     absorber. Le QR est généré en `errorCorrection('H')` (≈30 % de récupération) avec `margin(2)`
+     précisément pour tolérer ce recouvrement central.
+
+     ⛔ NE PAS MONTER PLUS HAUT. Au-delà de ~30 % le QR devient illisible sur certains téléphones,
+     et un QR qu'on ne scanne pas ne casse pas « un peu » l'écran : il casse TOUT le parcours, sans
+     que personne s'en aperçoive — le client s'en va, il ne vient pas se plaindre. Toute hausse
+     future se teste avec un vrai téléphone, pas à l'œil. */
   .qr-logo{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:20%; aspect-ratio:1; border-radius:50%; background:#fff;
-    padding:8%; box-sizing:border-box; pointer-events:none;
+    width:26%; aspect-ratio:1; border-radius:50%; background:#fff;
+    padding:4%; box-sizing:border-box; pointer-events:none;
+    box-shadow:0 0 0 2px rgba(0,0,0,.10);
   }
   .qr-logo img{display:block; width:100%; height:100%; object-fit:contain}
   .qr-mots{display:grid; gap:.6vmin}
+
+  /* ── LE DÉFILÉ DES LOTS ───────────────────────────────────────────────────────────────────
+     Une fenêtre à hauteur ÉLASTIQUE : elle prend ce qui reste sous le QR, jamais un pixel de plus.
+     `min-height:0` est indispensable — sans lui, un enfant en flux impose sa hauteur naturelle à
+     la colonne et pousse le QR hors de l'écran, exactement le défaut déjà payé en haut de ce
+     fichier avec les boîtes de hauteur devinée. */
+  .defile{
+    position:relative; min-height:0; height:100%; overflow:hidden;
+    width:100%;
+    /* Fondu haut et bas : la bande n'apparaît pas d'un coup et ne se coupe pas net — elle émerge
+       et s'efface, ce qui donne l'impression d'un ruban continu plutôt que d'une liste tronquée. */
+    -webkit-mask-image:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+            mask-image:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  }
+  .defile-bande{
+    display:flex; flex-direction:column; align-items:center; gap:1.6vmin;
+    animation:defiler 42s linear infinite; will-change:transform;
+  }
+  /* La liste est écrite DEUX fois ; on remonte d'exactement la moitié de la bande, donc la boucle
+     retombe sur une image identique. Aucun saut. */
+  @keyframes defiler{from{transform:translateY(0)} to{transform:translateY(-50%)}}
+
+  .defile-item{
+    margin:0; display:grid; justify-items:center; gap:.5vmin; flex:0 0 auto;
+  }
+  .defile-item img{
+    width:min(15vmin,150px); height:min(15vmin,150px); object-fit:cover;
+    border-radius:50%; display:block;
+    background:var(--creme);
+    /* Le même anneau chaud que les médaillons de la roue : deux surfaces, une seule identité. */
+    box-shadow:0 0 0 .35vmin rgba(255,211,77,.92), 0 1vmin 2.6vmin rgba(0,0,0,.55);
+  }
+  .defile-item figcaption{
+    font-size:clamp(14px,1.9vmin,22px); font-weight:900; letter-spacing:-.01em;
+    color:var(--creme); opacity:.92; text-align:center; max-width:20ch;
+  }
+
+  /* Un écran de comptoir tourne toute la journée : on respecte la préférence système. */
+  @media (prefers-reduced-motion:reduce){
+    .defile-bande{animation:none}
+  }
   .scanne{margin:0; font-size:min(4.4vmin,46px); font-weight:900; letter-spacing:-.01em}
   /* Plancher en px : à 2,4vmin cette phrase tombait à 18 px sur une petite tablette, soit
      3,5 mm de haut — sous la limite de lecture debout à trois mètres. */
@@ -445,6 +506,37 @@
              en une vingtaine de secondes — et moins coûteux à décider. --}}
         <p class="detail">Aucune application à installer.<br>Ça prend quelques secondes.</p>
       </div>
+
+      {{-- ── LE DÉFILÉ DES LOTS ──────────────────────────────────────────────────────────────
+           [PROPRIÉTAIRE 2026-08-13] « un truc vertical avec animation, avec les images de tous les
+           produits à gagner, ça serait beaucoup mieux que juste la roue qui tourne », et « profiter
+           et utiliser l'espace pour les choses qui ont de la valeur ».
+
+           Ce défilé occupe exactement le vide qui restait sous le QR. Il montre les produits À PLAT,
+           l'un après l'autre, gros et bien posés — ce que la roue ne peut pas faire, puisqu'elle les
+           montre tous en même temps, petits et inclinés. Les deux se complètent : la roue dit « il y
+           a un jeu », le défilé dit « voilà ce que tu peux gagner ».
+
+           Il boucle SANS COUTURE : la liste est écrite deux fois et la bande remonte exactement de
+           la hauteur d'une liste, si bien que le retour au début tombe sur une image identique.
+           Aucun saut visible, donc aucun clignotement — la règle de cette page depuis le début.
+
+           Le mouvement est LENT et CONTINU. Un défilé rapide se lit comme une publicité et l'équipe
+           finit par éteindre l'écran ; un défilé lent se regarde sans y penser. --}}
+      @if(!empty($segments))
+      <div class="defile" aria-hidden="true">
+        <div class="defile-bande">
+          @foreach(array_merge($segments, $segments) as $seg)
+            @if(!empty($seg['photo']))
+            <figure class="defile-item">
+              <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
+              <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
+            </figure>
+            @endif
+          @endforeach
+        </div>
+      </div>
+      @endif
     </div>
 
   </main>
@@ -519,6 +611,32 @@
      léger glissement en fonction du rang. C'est ce glissement qui sauve le raccord du tour quand
      le nombre de lots est impair : les deux cases qui se rejoignent appartiennent alors à la même
      famille, et sans lui elles seraient identiques. */
+  /* ── LA PALETTE DE L'ÉCRAN DU CLIENT, REPRISE ICI ──────────────────────────────────────────
+     [PROPRIÉTAIRE 2026-08-13] « sur l'écran client, la roue avec un couleur noir avec une couleur,
+     c'était beaucoup mieux — ton design et la lumière, remets ça dans l'écran de la tablette. »
+
+     Il a raison, et la raison est structurelle : l'ancienne teinte de la tablette faisait alterner
+     jaune clair et orange, deux couleurs CLAIRES. Le texte devait alors être blanc partout, cerné
+     de sombre pour survivre sur le jaune. En alternant NOIR PROFOND et couleur de marque, chaque
+     secteur porte sa propre couleur de texte — le contraste est réglé par construction, plus par
+     rattrapage. C'est la palette de `roue.html` (page téléphone), copiée telle quelle : deux écrans
+     du même jeu ne doivent pas avoir deux identités.
+
+     Chaque entrée est [FOND, TEXTE]. */
+  var PALETTE = [
+    ['#F4501E', '#FFF6EC'], ['#17140F', '#FFB800'],
+    ['#FFB800', '#3A1C00'], ['#241A12', '#FFD34D'],
+    ['#FF6A3D', '#2A1508'], ['#0F0D0A', '#FFF6EC'],
+    ['#FFD34D', '#3A1C00'], ['#C93A12', '#FFF6EC']
+  ];
+
+  function ombrer(hex, t) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex); if (!m) return hex;
+    var v = parseInt(m[1], 16), r = (v >> 16) & 255, g = (v >> 8) & 255, b = v & 255;
+    function f(x) { return Math.max(0, Math.min(255, Math.round(t < 0 ? x * (1 + t) : x + (255 - x) * t))); }
+    return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+  }
+
   function teinte(i, N, dl) {
     var jaune = i % 2 === 1, glisse = i / N;
     var h = jaune ? 40 + 6 * glisse : 11 + 11 * glisse;
@@ -634,9 +752,11 @@
     for (var i = 0; i < N; i++) {
       var a0 = i * pas - Math.PI / 2, a1 = a0 + pas;
 
+      var pal = PALETTE[i % PALETTE.length];
       var g = ctx.createRadialGradient(0, 0, RAYON * 0.18, 0, 0, RAYON);
-      g.addColorStop(0, teinte(i, N, 10));
-      g.addColorStop(1, teinte(i, N, -12));
+      g.addColorStop(0, ombrer(pal[0], -0.22));
+      g.addColorStop(0.55, pal[0]);
+      g.addColorStop(1, ombrer(pal[0], 0.10));
 
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -708,6 +828,26 @@
         ctx.beginPath();
         ctx.arc(0, 0, rp, 0, TAU);
         ctx.clip();
+
+        /* ── LA PHOTO NE TOURNE PAS AVEC LA ROUE ────────────────────────────────────────────
+           [PROPRIÉTAIRE 2026-08-13] « les images, on dirait que ça tourne avec la roue ; je veux
+           que ce soit vraiment tout en face correctement — pas si elle est à gauche, elle va être
+           inclinée de 90°. Toujours bien posée, comme sur une table, tout bien visible à l'œil. »
+
+           Il décrit un vrai défaut : un plat photographié de face devient illisible dès que son
+           secteur passe sur le côté, parce que le repère hérite de TOUTES les rotations empilées
+           au-dessus — celle de la roue (`angle`), celle du secteur (`am`), le demi-tour des
+           libellés de gauche, et le quart de tour du médaillon. Un tiramisu couché n'est plus un
+           tiramisu, c'est une tache brune.
+
+           On annule donc EXACTEMENT la somme de ces rotations avant de poser l'image. Le disque
+           de découpe est centré sur l'origine : il est insensible à la rotation, la photo reste
+           donc parfaitement inscrite dans son médaillon.
+
+           ⛔ Ne pas « simplifier » en retirant un des termes : ils s'empilent réellement, et en
+           oublier un fait pencher les photos d'un côté seulement — le défaut est alors visible
+           une fois sur deux et passe pour un hasard d'affichage. */
+        ctx.rotate(-(angle + am + (retourne ? Math.PI : 0) + Math.PI / 2));
         /* RECOUVREMENT : on met à l'échelle par le plus GRAND des deux rapports, donc le
            disque est toujours entièrement couvert et la photo garde ses proportions. Le
            trop-plein est découpé par le masque — jamais un produit écrasé. */
@@ -731,7 +871,11 @@
       if (retourne) { ctx.rotate(Math.PI); }
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#fff';
+      /* [PROPRIÉTAIRE 2026-08-13] Chaque secteur porte SA couleur de texte (2e terme de la
+         palette), au lieu d'un blanc unique rattrapé par un cerne. Le contraste est ainsi réglé
+         par construction : crème sur les secteurs noirs, brun foncé sur les jaunes. */
+      var palT = PALETTE[i % PALETTE.length];
+      ctx.fillStyle = palT[1];
       ctx.shadowColor = 'rgba(0,0,0,.55)';
       ctx.shadowBlur = 7;
       ctx.font = police(L.t);
@@ -739,7 +883,12 @@
          que le texte posé dessus (1,5:1). Le cerne rend le mot lisible sans assombrir la case,
          donc sans perdre la couleur de la marque. */
       ctx.lineWidth = Math.max(2, L.t * 0.1);
-      ctx.strokeStyle = 'rgba(60,24,0,.62)';
+      var clair = (function (h) {
+        var m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) { return true; }
+        var v = parseInt(m[1], 16);
+        return (((v >> 16) & 255) * 0.299 + ((v >> 8) & 255) * 0.587 + (v & 255) * 0.114) > 140;
+      })(palT[1]);
+      ctx.strokeStyle = clair ? ombrer(palT[0], -0.55) : ombrer(palT[0], 0.55);
       ctx.lineJoin = 'round';
       var lignes = L.l2 ? [[L.l1, -L.t * 0.56], [L.l2, L.t * 0.56]] : [[L.l1, 0]];
       for (var m = 0; m < lignes.length; m++) { ctx.strokeText(lignes[m][0], 0, lignes[m][1]); }
