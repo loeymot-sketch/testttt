@@ -114,4 +114,55 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(page.locator('table.db-table')).not.toContainText(uniq, { timeout: 10_000 });
     console.log(`[CRUD-FUNCTIONAL] Tax DELETE: row gone after confirm — REAL removal.`);
   });
+
+  test('Role: create -> appears in list -> edit -> delete -> gone', async () => {
+    // Role & Permissions renders as <li> rows inside #role (RoleListComponent.vue),
+    // NOT a <table> like Currency/Tax/Purchasing -- a genuinely different list
+    // pattern in this codebase, confirmed by inspecting the source directly
+    // rather than assuming the table.db-table selector would carry over.
+    const uniq = `E2ERole${Date.now() % 100000}`;
+    const list = page.locator('#role');
+
+    await page.goto('/admin/settings/role', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await openCreateModal(page);
+    await page.fill('#name', uniq);
+    await submitModal(page);
+
+    // The role list paginates at 10/page and a freshly-created role sorts to
+    // the end -- go to the last page before asserting, rather than assuming
+    // page 1 (discovered live: a first attempt at this test failed here
+    // because the new role landed on page 2 of a 12-role list).
+    const nextBtn = page.getByRole('button', { name: /^next$/i }).or(page.getByText('Next', { exact: true }));
+    if (await nextBtn.count()) {
+      await nextBtn.last().click().catch(() => {});
+      await page.waitForTimeout(800);
+    }
+
+    await expect(list).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Role CREATE: "${uniq}" appears in list — REAL.`);
+
+    const row = list.locator('li', { hasText: uniq });
+    // .modal-btn is shared by BOTH the "Autorisations" (permissions) link
+    // and the real edit button (SmModalEditComponent) -- discovered live via
+    // source inspection after a class-based selector clicked the wrong one.
+    // The visible French label ("Modifier") is the unambiguous target.
+    await row.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+    const nameInput = page.locator('#modal #name, #modal input#name');
+    await expect(nameInput).toBeVisible({ timeout: 8000 });
+    await nameInput.fill(`${uniq}EDITED`);
+    await submitModal(page);
+
+    await expect(list).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Role EDIT: rename reflected in list — REAL persistence.');
+
+    const editedRow = list.locator('li', { hasText: `${uniq}EDITED` });
+    await editedRow.getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+
+    await expect(list).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Role DELETE: row gone after confirm — REAL removal.');
+  });
 });
