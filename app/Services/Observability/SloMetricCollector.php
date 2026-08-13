@@ -2,6 +2,7 @@
 
 namespace App\Services\Observability;
 
+use App\Enums\PaymentStatus;
 use App\Models\ActionLog;
 use App\Models\Branch;
 use App\Models\Order;
@@ -123,9 +124,15 @@ class SloMetricCollector
             ->where('created_at', '>=', $since)
             ->count();
         if ($attempted === 0) return 1.0;
+        // [GOAL-COMMERCANT-BACKEND-ACCES Sub-2.3 2026-08-13] `payment_status` est un entier
+        // (cast 'integer' sur Order, valeurs réelles observées : 5/10/15/20) — la comparaison à
+        // la CHAÎNE 'paid' ne matchait donc JAMAIS aucune ligne. Ce metric renvoyait 0.0 en
+        // continu depuis au moins ce jour (observability-2026-08-13.log, slo_breach toutes les
+        // 5 min dès 21:20), masqué par un second défaut indépendant (webhook Slack absent de
+        // .env prod, cf. même investigation) qui empêchait même l'alerte de partir.
         $paid = Order::query()
             ->where('branch_id', $branch->id)
-            ->where('payment_status', 'paid')
+            ->where('payment_status', PaymentStatus::PAID)
             ->where('created_at', '>=', $since)
             ->count();
         $ratio = min(1.0, $paid / max(1, $attempted));

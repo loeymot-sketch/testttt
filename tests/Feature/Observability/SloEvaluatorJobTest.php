@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Observability;
 
+use App\Enums\PaymentStatus;
 use App\Jobs\Observability\SloEvaluatorJob;
 use App\Models\ActionLog;
 use App\Models\Branch;
+use App\Models\Order;
 use App\Services\Observability\SloMetricCollector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -112,5 +114,39 @@ class SloEvaluatorJobTest extends TestCase
 
         $this->assertSame(2, ActionLog::where('action', 'slo_evaluation')->count(),
             'Les 2 branches actives doivent avoir leur snapshot.');
+    }
+
+    /**
+     * [GOAL-COMMERCANT-BACKEND-ACCES Sub-2.3 2026-08-13] Régression du vrai défaut trouvé en
+     * production le 2026-08-13 : `collectPaymentSuccessRate()` comparait `payment_status` (colonne
+     * ENTIÈRE, cast 'integer') à la CHAÎNE 'paid' — aucune ligne ne matchait jamais, le ratio
+     * rendait 0.0 en continu quel que soit le nombre réel de commandes payées. Les 2 tests
+     * existants ci-dessus ne l'exerçaient pas : `test_metric_collector_classifies_no_data_status`
+     * ne crée AUCUNE commande (court-circuite avant la comparaison cassée, `$attempted === 0`).
+     * Ce test crée de VRAIES commandes payées ET impayées pour exercer la comparaison réelle.
+     */
+    public function test_payment_success_rate_counts_real_paid_orders_not_a_string_literal(): void
+    {
+        $branch = Branch::forceCreate([
+            'name' => 'PaymentRate', 'city' => 'Paris', 'state' => 'IDF',
+            'zip_code' => '75000', 'address' => 'x', 'status' => 1,
+            'available_locales' => ['fr'],
+        ]);
+
+        Order::factory()->count(3)->create([
+            'branch_id' => $branch->id,
+            'payment_status' => PaymentStatus::PAID,
+        ]);
+        Order::factory()->count(1)->create([
+            'branch_id' => $branch->id,
+            'payment_status' => PaymentStatus::UNPAID,
+        ]);
+
+        $rate = (new SloMetricCollector())->collectPaymentSuccessRate($branch, 7);
+
+        // Avant le correctif : 0.0 (0 ligne ne matchait jamais 'paid' en chaîne). Après : 3/4.
+        $this->assertSame(0.75, $rate,
+            '3 commandes payées sur 4 doit donner 0.75 — un 0.0 ici signale le retour du bug '
+            . "comparaison entier/chaîne sur payment_status.");
     }
 }
