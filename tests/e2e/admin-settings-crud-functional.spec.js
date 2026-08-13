@@ -13,7 +13,26 @@
  * READ-ONLY on everything else. No frozen-zone touch.
  */
 const { test, expect } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
 const { loginAsAdmin } = require('./helpers/login');
+
+const uploadDir = path.resolve(__dirname, '../../storage/framework/testing/playwright');
+const pngPath = path.join(uploadDir, 'admin-settings-crud-functional.png');
+
+function ensureUploadFile() {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  if (!fs.existsSync(pngPath)) {
+    fs.writeFileSync(
+      pngPath,
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l0qbWQAAAABJRU5ErkJggg==',
+        'base64'
+      )
+    );
+  }
+  return pngPath;
+}
 
 async function openCreateModal(page) {
   await page.click('[data-modal="#modal"]');
@@ -342,5 +361,37 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
 
     await expect(table).not.toContainText(uniq, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Kiosk Machine DELETE: row gone after confirm — REAL removal.');
+  });
+
+  test('Slider: create (incl. required image upload) -> appears in table -> delete -> gone', async () => {
+    // title is unique (SliderRequest.php) -- unique suffix per run, like
+    // Currency/Language. image is REQUIRED on create (unlike Page/Theme
+    // where it's optional/the-only-field) -- uses a real 1x1 PNG fixture,
+    // same technique already proven in
+    // tests/e2e/central-management-dashboard-crud.spec.js. description is
+    // a plain <textarea> here (not Quill like Page) -- ordinary .fill().
+    const uniq = `E2ESlider${Date.now() % 100000}`;
+    const imagePath = ensureUploadFile();
+
+    await page.goto('/admin/settings/sliders/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #name', uniq);
+    await page.fill('#modal #description', `E2E test slider body ${uniq}`);
+    await page.setInputFiles('#modal #image', imagePath);
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Slider CREATE: "${uniq}" appears in table — REAL, required image upload accepted.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.locator('[class*="delete" i]').first().click();
+    await confirmDelete(page);
+
+    await expect(table).not.toContainText(uniq, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Slider DELETE: row gone after confirm — REAL removal.');
   });
 });
