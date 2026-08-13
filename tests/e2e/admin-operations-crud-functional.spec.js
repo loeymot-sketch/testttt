@@ -232,3 +232,67 @@ test.describe.serial('Real functional CRUD — Coupons (incl. vue-datepicker)', 
     console.log('[CRUD-FUNCTIONAL] Coupon DELETE: row gone from table after confirm — REAL removal.');
   });
 });
+
+// Reports are read-only by design (no create/edit/delete) -- CRUD proof
+// doesn't apply. The equivalent "real interaction, not just page load" proof
+// for a filter/report screen is: does the filter form actually change what
+// the backend returns, not just decorate the page. Proven by searching for
+// a garbage order id that cannot match any real order and asserting the
+// table collapses to the real empty-state (not silently ignoring the filter
+// and still showing all rows), then clearing the filter and confirming rows
+// return -- a genuine round trip through the real query, not a cosmetic
+// no-op.
+test.describe.serial('Real functional interaction — Sales Report (read-only, filter-driven)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Sales Report: order-id filter actually queries the backend (not a cosmetic no-op)', async () => {
+    await page.goto('/admin/sales-report', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+    await expect(table).toBeVisible({ timeout: 10_000 });
+
+    const beforeText = await table.innerText();
+    console.log(`[CRUD-FUNCTIONAL] Sales Report: unfiltered table has ${beforeText.length} chars of content.`);
+
+    // FilterComponent.vue's toggle button carries the stable class
+    // .table-filter-btn; clicking it calls handleSlide('sales-report-filter')
+    // which reveals the filter panel with that same id.
+    await page.click('.table-filter-btn');
+    const filterPanel = page.locator('#sales-report-filter');
+    await expect(filterPanel).toBeVisible({ timeout: 8000 });
+
+    // Neither button in this filter form has an explicit type="submit"
+    // attribute in markup (confirmed via component source) -- they rely on
+    // the browser's implicit default, which a `button[type="submit"]` CSS
+    // attribute selector does NOT match (it only matches an explicit
+    // attribute). A first attempt using that selector hung to test timeout
+    // waiting on a locator matching zero elements. Fixed by targeting the
+    // search button's distinguishing class (bg-primary) vs. clear's
+    // (bg-gray-600) instead.
+    const garbageOrderId = `ZZZ-NO-SUCH-ORDER-${Date.now()}`;
+    await page.fill('#order_id', garbageOrderId);
+    await page.click('#sales-report-filter button.bg-primary');
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('text=/no_data_available|Aucune donnée disponible/i')).toBeVisible({ timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Sales Report: garbage order-id filter correctly collapses to the real empty state — filter reaches the backend query, not a cosmetic no-op.');
+
+    // Clear the filter and confirm real rows return -- proves the round trip,
+    // not just that "empty" is the permanent state of this environment.
+    await page.click('#sales-report-filter button.bg-gray-600');
+    await page.waitForTimeout(1500);
+    await expect(table).not.toContainText(/no_data_available|Aucune donnée disponible/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Sales Report: clearing the filter brings real rows back — genuine two-way interaction confirmed.');
+  });
+});
