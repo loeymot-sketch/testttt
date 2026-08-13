@@ -221,10 +221,23 @@
     0%,100%{transform:scale(.972); opacity:.5}
     50%{transform:scale(1); opacity:1}
   }
-  .qr{background:#fff; border-radius:3vmin; padding:2.2vmin; display:block;
+  .qr{background:#fff; border-radius:3vmin; padding:2.2vmin; display:block; position:relative;
       box-shadow:0 2vmin 6vmin rgba(0,0,0,.5)}
   /* Le terme en `vh` empêche le QR de manger la hauteur du message sur un écran bas. */
   .qr svg{display:block; width:min(38vmin,46vh,480px); height:auto}
+  /* [2026-08-13] LE LOGO AU CENTRE DU QR — posé en CSS par-dessus le SVG, pas fusionné dans le
+     binaire (Imagick absent de cette machine, cf. GOAL_ROUE_UX_IDENTITE_2026-08-13.md §1.1). Le
+     SVG généré par le contrôleur est en errorCorrection('H') + margin(2) précisément pour
+     tolérer ce recouvrement central. 20% de la largeur du QR = dans la fourchette sûre (15-22%,
+     revue UX) ; le disque blanc derrière garantit un contraste net même si le PNG du logo a des
+     zones transparentes. `pointer-events:none` + `alt=""` : purement visuel, le contenu utile
+     (le QR) est déjà annoncé par le texte autour, pas par ce logo. */
+  .qr-logo{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:20%; aspect-ratio:1; border-radius:50%; background:#fff;
+    padding:8%; box-sizing:border-box; pointer-events:none;
+  }
+  .qr-logo img{display:block; width:100%; height:100%; object-fit:contain}
   .qr-mots{display:grid; gap:.6vmin}
   .scanne{margin:0; font-size:min(4.4vmin,46px); font-weight:900; letter-spacing:-.01em}
   /* Plancher en px : à 2,4vmin cette phrase tombait à 18 px sur une petite tablette, soit
@@ -398,7 +411,7 @@
     <div class="droite">
       <div class="fleche" aria-hidden="true">↓</div>
       <div class="qr-boite">
-        <div class="qr" id="qr">{!! $qr !!}</div>
+        <div class="qr" id="qr">{!! $qr !!}@if($qr)<div class="qr-logo"><img src="{{ asset('images/wheel/logo-mark.png') }}" alt=""></div>@endif</div>
       </div>
       <div class="qr-mots">
         <p class="scanne">Scanne avec ton téléphone</p>

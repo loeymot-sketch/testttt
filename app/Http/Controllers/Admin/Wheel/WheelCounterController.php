@@ -91,7 +91,11 @@ class WheelCounterController extends Controller
         }
 
         return view('admin.wheel.borne', $commun + [
-            'qr' => QrCode::format('svg')->size(560)->margin(1)->errorCorrection('M')->generate($url),
+            // errorCorrection H + margin 2 : le logo posé par-dessus en CSS (borne.blade.php)
+            // recouvre visuellement le centre du QR sans toucher au SVG généré ici — le niveau H
+            // (~30% de tolérance) et une zone tranquille plus large compensent cette occupation
+            // visuelle pour que le QR reste décodable (cf. WheelQrScannabilityTest).
+            'qr' => QrCode::format('svg')->size(560)->margin(2)->errorCorrection('H')->generate($url),
         ]);
     }
 
@@ -133,7 +137,8 @@ class WheelCounterController extends Controller
 
         return view('admin.wheel.validation', [
             'token' => $jeton['token'],
-            'qr'    => QrCode::format('svg')->size(520)->margin(1)->errorCorrection('M')->generate($url),
+            // Même raisonnement que kiosk() : errorCorrection H + margin 2 pour le logo overlay.
+            'qr'    => QrCode::format('svg')->size(520)->margin(2)->errorCorrection('H')->generate($url),
             'url'   => $url,
             'ttl'   => (int) config('wheel.unlock_token_ttl_minutes', 15),
         ]);

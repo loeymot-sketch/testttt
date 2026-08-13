@@ -70,8 +70,16 @@
   button{width:100%;min-height:66px;border:0;border-radius:16px;cursor:pointer;
     font-size:19px;font-weight:900;color:#2a1508;
     background:linear-gradient(100deg,var(--jaune),#FF6A3D);box-shadow:0 8px 22px rgba(244,80,30,.4)}
-  .qr{background:#fff;border-radius:18px;padding:16px;display:inline-block;margin:6px 0 12px}
+  .qr{background:#fff;border-radius:18px;padding:16px;display:inline-block;margin:6px 0 12px;position:relative}
   .qr svg{display:block;width:min(62vw,260px);height:auto}
+  /* Même logo qu'en tablette (borne.blade.php) — voir ce fichier pour le raisonnement complet
+     (Imagick absent, overlay CSS plutôt que merge binaire, H+margin(2) déjà posés au contrôleur). */
+  .qr-logo{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:20%;aspect-ratio:1;border-radius:50%;background:#fff;
+    padding:8%;box-sizing:border-box;pointer-events:none;
+  }
+  .qr-logo img{display:block;width:100%;height:100%;object-fit:contain}
   .lien{font-family:ui-monospace,Menlo,monospace;font-size:11px;word-break:break-all;opacity:.6;margin:8px 0 14px}
   .expire{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.4);border-radius:12px;
     padding:11px 13px;font-size:14px;margin-bottom:16px}
@@ -127,7 +135,7 @@
   @else
     <h1>À lui de tourner</h1>
     <p class="sous">Fais-lui scanner ce QR maintenant, devant toi.</p>
-    <div class="qr">{!! $qr !!}</div>
+    <div class="qr">{!! $qr !!}<div class="qr-logo"><img src="{{ asset('images/wheel/logo-mark.png') }}" alt=""></div></div>
     <p class="expire">Valable {{ $ttl }} minutes — une seule fois.</p>
     {{-- [P1 2026-08-09] L'adresse COMPLÈTE, jeton compris, était affichée en clair : n'importe qui
          dans la file pouvait la photographier et consommer la validation avec SON numéro — le client
