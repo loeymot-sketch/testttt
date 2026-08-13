@@ -91,6 +91,14 @@ return [
         // Identique au pattern change-status/* ci-dessus + même defense-in-depth
         // (idempotency + throttle:kds-bump) au router.
         'api/admin/kds-order/recall/*',
+        // [REMETTRE-EN-PRÉPARATION 2026-08-13] Même oubli que `recall/*` juste au-dessus, à cinq
+        // ans d'écart : la route est câblée avec l'intergiciel d'idempotence dans routes/api.php
+        // mais je ne l'avais pas déclarée ici. La sentinelle l'a attrapée — c'est précisément son
+        // travail, et elle avait déjà servi pour `recall`. Sans cette ligne, l'en-tête
+        // d'idempotence n'est pas EXIGÉ : un double appui du cuisinier sur « remettre en
+        // préparation » passerait deux fois, écrivant deux transitions au registre pour un seul
+        // geste.
+        'api/admin/kds-order/reopen/*',
         'api/frontend/order/change-status/*',
         'api/frontend/delivery-boy-order/change-status/*',
         // Livreur cash-session routes (new V1.0.2-sub6-3 NF525 cash session
