@@ -429,6 +429,57 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     console.log('[CRUD-FUNCTIONAL] Kiosk Machine LOGOUT test cleanup: row deleted.');
   });
 
+  test('Kiosk Machine: real status toggle switch flips status in DB', async () => {
+    // A distinct interaction from create/delete/logout: the active/inactive
+    // toggle switch in the list row (KioskMachineService::changeStatus()).
+    // Same safe empty-fan-out pattern (no device_token on a throwaway
+    // machine, so the push notification call reaches 0 real devices).
+    const uniq = `E2EKMToggle${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/kiosk-machines/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #machine_id', uniq);
+    await page.fill('#modal #username', uniq.toLowerCase());
+    await page.fill('#modal #password', 'TestPassword123!');
+    const userGroup = page.locator('#modal label[for="user_id"]').locator('xpath=..');
+    await userGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await userGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+    const branchGroup = page.locator('#modal label[for="branch_id"]').locator('xpath=..');
+    await branchGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await branchGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+
+    const machineId = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\KioskMachine::where('machine_id', '${uniq}')->first()->id;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.locator(`#switcher-${machineId}`).click({ force: true });
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\KioskMachine::find(${machineId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe('10'); // Status::INACTIVE, was ACTIVE(5) at create
+    console.log(`[CRUD-FUNCTIONAL] Kiosk Machine STATUS TOGGLE: real status flipped ACTIVE(5) -> INACTIVE(10) in DB via the switch, not a cosmetic UI-only toggle.`);
+
+    await row.locator('[class*="delete" i]').first().click();
+    await confirmDelete(page);
+    await expect(table).not.toContainText(uniq, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Kiosk Machine STATUS TOGGLE test cleanup: row deleted.');
+  });
+
   test('Slider: create (incl. required image upload) -> appears in table -> delete -> gone', async () => {
     // title is unique (SliderRequest.php) -- unique suffix per run, like
     // Currency/Language. image is REQUIRED on create (unlike Page/Theme
