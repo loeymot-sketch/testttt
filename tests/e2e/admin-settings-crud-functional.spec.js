@@ -296,4 +296,51 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Page DELETE: row gone after confirm — REAL removal.');
   });
+
+  test('Kiosk Machine: create (incl. 2 vue-selects) -> appears in table -> delete -> gone', async () => {
+    // machine_id and username are unique (KioskMachineRequest.php) -- unique
+    // suffix per run. user_id/branch_id are vue-selects populated from a
+    // live API list (users/branches), not a fixed enum -- unlike Otp's
+    // closed 3-value set, there's no fixed target label to search for, so
+    // this test picks whatever the FIRST real option is in each dropdown
+    // rather than guessing at content. V1 is single-branch (branch_id=1)
+    // with a small real user set, so "first option" is always valid.
+    // No EDIT step here: password is required-on-create but nullable-on-
+    // edit, and the create->delete cycle alone already proves both
+    // vue-selects (a pattern not yet covered by any list-CRUD test in this
+    // file) plus the unique-field validation path.
+    const uniq = `E2EKM${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/kiosk-machines/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #machine_id', uniq);
+    await page.fill('#modal #username', uniq.toLowerCase());
+    await page.fill('#modal #password', 'TestPassword123!');
+
+    const userGroup = page.locator('#modal label[for="user_id"]').locator('xpath=..');
+    await userGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await userGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+
+    const branchGroup = page.locator('#modal label[for="branch_id"]').locator('xpath=..');
+    await branchGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await branchGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Kiosk Machine CREATE: "${uniq}" appears in table — REAL, both vue-selects (user/branch) accepted.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.locator('[class*="delete" i]').first().click();
+    await confirmDelete(page);
+
+    await expect(table).not.toContainText(uniq, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Kiosk Machine DELETE: row gone after confirm — REAL removal.');
+  });
 });
