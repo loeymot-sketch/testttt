@@ -175,12 +175,25 @@
        rare ici), et on retire le plancher : chacun prend une part mesurée du même budget. */
     .gauche{min-height:0}
     .actes{display:none}
-    /* SUR UN CANEVAS, L'AXE IMPOSÉ DOIT ÊTRE CELUI QU'ON BORNE — c'est écrit plus haut dans ce
-       fichier, et je viens de me le reprendre. En paysage on borne la HAUTEUR (la ressource rare
-       là-bas) et la largeur suit. En portrait, la ressource rare est la LARGEUR : borner la hauteur
-       laissait la largeur se résoudre à zéro, et la roue occupait sa place sans rien dessiner —
-       un trou parfaitement dimensionné. On borne donc la largeur, la hauteur suit. */
-    .roue{width:min(62vmin,30vh,300px); height:auto}
+    /* ⛔ LA ROUE EST MASQUÉE EN PORTRAIT — DÉCISION ASSUMÉE, PAS UN OUBLI.
+       QUATRE tentatives pour la faire tenir ici : masquer le dépassement (elle a disparu sans
+       trace), lui poser un plancher (elle a chevauché le titre et le QR), passer les lignes en
+       hauteur déclarée (elle a réservé sa place sans rien dessiner), borner la largeur plutôt que
+       la hauteur (idem). Je n'ai pas trouvé la cause du canevas qui ne peint pas dans cette
+       orientation, et je préfère l'écrire que de laisser croire que c'est réglé.
+
+       Ce que ça coûte est FAIBLE et connu : la tablette du comptoir est en PAYSAGE — c'est
+       l'orientation vérifiée en capture, celle du propriétaire — et le portrait n'y sert que de
+       filet. Ce que ça évite est réel : un trou de 180 px au milieu de l'écran, que le client lit
+       comme une page cassée.
+
+       La doctrine de ce fichier le dit d'ailleurs depuis le début : « c'est la ROUE qui cède la
+       place quand l'écran est court, jamais le texte qui dit ce qu'on gagne ». Ici elle cède
+       entièrement, et le ruban « À GAGNER » continue de montrer les lots.
+
+       ⛔ Avant de la réactiver : reproduire d'abord le canevas vide en portrait dans un cas isolé.
+       Régler des valeurs sans avoir la cause a échoué quatre fois. */
+    .roue{display:none}
     h1{font-size:min(6vmin,58px)}
     .consigne{font-size:clamp(13px,2vmin,22px)}
     .qr svg{width:min(26vh,48vmin,260px)}
