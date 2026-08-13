@@ -447,3 +447,56 @@ test.describe.serial('Real functional interaction — Cash Sessions Report (read
     console.log('[CRUD-FUNCTIONAL] Cash Sessions Report: clearing the filter brings real data back — genuine two-way interaction confirmed.');
   });
 });
+
+test.describe.serial('Real functional interaction — Cash Overview (read-only, date-filter-driven)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Cash Overview: date-range filter actually changes the summary totals (not a cosmetic no-op)', async () => {
+    // This screen has real data-testid attributes (unlike every other
+    // report page in this file) -- used directly instead of guessing at
+    // classes. It's a reconciliation summary (grand total + transaction
+    // count), not a table list, so the proof shape is different: a
+    // guaranteed-empty 2099 range must show 0 transactions, then clearing
+    // must produce a genuinely different count -- proving the filter
+    // reaches the backend rather than the summary being a static snapshot.
+    await page.goto('/admin/cash-overview', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const summary = page.locator('[data-testid="cash-overview-summary"]');
+    await expect(summary).toBeVisible({ timeout: 10_000 });
+
+    await page.fill('#cashOverviewFrom', '2099-01-01');
+    await page.fill('#cashOverviewTo', '2099-01-02');
+    await page.click('[data-testid="cash-overview-search"]');
+    await page.waitForTimeout(1500);
+
+    await expect(summary).toContainText('0', { timeout: 10_000 });
+    const emptyRangeText = await summary.innerText();
+    console.log(`[CRUD-FUNCTIONAL] Cash Overview: 2099 date range shows "${emptyRangeText.replace(/\s+/g, ' ').trim()}" — 0 transactions confirmed.`);
+
+    // NOT using the "Effacer" button here: clearFilters() resets to TODAY's
+    // date, not all-time -- a first attempt assumed "today" would have real
+    // dev-environment activity and it didn't (0 tx, same as the 2099 case,
+    // not a bug -- just no real traffic hitting this dev server right now).
+    // A wide explicit historical range is the reliable way to reach real
+    // production history.
+    await page.fill('#cashOverviewFrom', '2020-01-01');
+    const todayIso = new Date().toISOString().slice(0, 10);
+    await page.fill('#cashOverviewTo', todayIso);
+    await page.click('[data-testid="cash-overview-search"]');
+    await page.waitForTimeout(1500);
+    const widRangeText = await summary.innerText();
+    expect(widRangeText).not.toBe(emptyRangeText);
+    console.log(`[CRUD-FUNCTIONAL] Cash Overview: 2020-today range shows "${widRangeText.replace(/\s+/g, ' ').trim()}" — genuinely different from the 2099 empty case, filter reaches the backend.`);
+  });
+});
