@@ -1590,8 +1590,21 @@ test.describe.serial('Real functional state-machine — POS Floorplan (assign ->
   });
 
   test.afterAll(async () => {
-    if (tableId) tinkerExec(`\\App\\Models\\DiningTable::where('id', ${tableId})->forceDelete();`);
-    if (orderId) tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13 / RED-team dispute]
+    // Two separate un-guarded tinkerExec calls repeat the exact failure
+    // shape already documented and fixed for Messages/MessageHistory
+    // cleanup earlier in this file: if the first call ever throws (no FK
+    // forces it here today, but any transient DB/tinker error would),
+    // the second delete AND page.context().close() below are both
+    // skipped, leaking the order row and the browser context. Merged
+    // into one tinkerExec call so a failure can't strand the second
+    // delete, matching the established pattern.
+    if (tableId || orderId) {
+      const parts = [];
+      if (tableId) parts.push(`\\App\\Models\\DiningTable::where('id', ${tableId})->forceDelete();`);
+      if (orderId) parts.push(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+      tinkerExec(parts.join(' '));
+    }
     if (page) await page.context().close().catch(() => {});
   });
 
