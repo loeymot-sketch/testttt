@@ -338,7 +338,10 @@ async function updateProductPhoto(page, itemId, imagePath) {
 async function createVariation(page, { itemId, name, price, attributeName }) {
   clearFoodKingRateLimits();
   await page.goto(`/admin/items/show/${itemId}`);
-  await page.getByRole('button', { name: /variation/i }).click();
+  // Tab renders as "Variante" in the live French UI, not "Variation" --
+  // confirmed via a failed run's screenshot (i18n drift since this test
+  // was authored). Matches both so this survives a future locale switch.
+  await page.getByRole('button', { name: /variation|variante/i }).click();
   await page.getByTestId('admin-variation-add').locator('button').first().click();
   const modal = page.locator('#modal');
   await expect(modal).toBeVisible({ timeout: 20_000 });
@@ -366,7 +369,9 @@ async function createExtra(page, { itemId, name, price, groupLabel }) {
 
 async function createAddon(page, { itemId, addonItemName }) {
   await page.goto(`/admin/items/show/${itemId}`);
-  await page.getByRole('button', { name: /addon/i }).click();
+  // Same i18n drift as the variation tab -- renders as "Supplément" in the
+  // live French UI, not "Addon".
+  await page.getByRole('button', { name: /addon|supplément/i }).click();
   await page.getByTestId('admin-addon-add-button').click();
   const modal = page.locator('#addonModal');
   await expect(modal).toBeVisible({ timeout: 20_000 });
