@@ -29,6 +29,14 @@ export const cashDrawer = {
         error: (state) => state.error,
         openingAmount: (state) => (state.session ? Number(state.session.opening_amount) || 0 : 0),
         sessionId: (state) => (state.session ? state.session.id : null),
+
+        /* [CAISSE 2026-08-13] L'ANCIENNETÉ DE LA SESSION, LUE DEPUIS LE SERVEUR.
+           Mesuré en production : deux sessions ouvertes depuis 49 et 36 jours, jamais clôturées,
+           3 818,30 € de mouvements dessous — et rien ne le disait à personne.
+           Le serveur calcule `stale` et `open_since_hours` ; l'écran se contente de les montrer,
+           pour que le seuil reste réglable à un seul endroit. */
+        isStale: (state) => !!(state.session && state.session.stale),
+        openSinceHours: (state) => (state.session ? Number(state.session.open_since_hours) || 0 : 0),
     },
     mutations: {
         setCashDrawerSession(state, session) {

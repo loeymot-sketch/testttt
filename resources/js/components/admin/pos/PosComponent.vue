@@ -254,11 +254,27 @@
                             class="pos-v4-cash-session-btn"
                             data-testid="pos-cash-session-open"
                             :tone="cashSessionActive ? 'ready' : 'neutral'"
-                            :title="$t('label.cash_session_dialog_title')"
+                            :title="cashSessionStale
+                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôture-la pour connaître ton écart.'
+                                : $t('label.cash_session_dialog_title')"
                             @click="openCashSessionDialog"
                         >
                             <template #icon>🏦</template>
                             <span class="hidden lg:inline">{{ $t('label.cash_session_header_btn') }}</span>
+                            <!--
+                              [CAISSE 2026-08-13] LE REPÈRE QUI MANQUAIT — et qui a bien failli
+                              manquer une seconde fois. J'ai d'abord ajouté `stale` à la réponse du
+                              serveur, vu mes tests verts, et écrit « rendu visible ». C'était FAUX :
+                              le champ n'était affiché NULLE PART. Exactement le défaut que je
+                              venais de diagnostiquer sur ce projet — une fonction livrée, testée,
+                              et que personne ne voit — reproduit dans l'heure.
+
+                              Mesuré en production : deux sessions ouvertes depuis 49 et 36 jours,
+                              3 818,30 € de mouvements dessous, aucun écart jamais calculé. Une
+                              pastille sur le bouton que le caissier a déjà sous les yeux vaut mieux
+                              qu'un écran de plus qu'il n'ouvrira pas.
+                            -->
+                            <span v-if="cashSessionStale" class="pos-v4-cash-stale" aria-hidden="true">!</span>
                         </PosV5Button>
                         <!--
                           [GOAL RUPTURE-CARNET 2026-07-15 / W2] Bouton « Rupture » — ouvre le
@@ -2433,6 +2449,16 @@ export default {
         },
         // [Sprint 1A 2026-05-16] Indicateur visuel — bouton "Caisse" en tone "ready"
         // si une session est OPEN pour le caissier courant.
+        /* Ces deux-là ne calculent rien : le serveur a déjà tranché (`stale`), l'écran ne fait que
+           l'afficher. Recalculer le seuil ici créerait une seconde vérité qui divergerait le jour
+           où l'exploitant le change. */
+        cashSessionStale: function () {
+            try { return !!this.$store.getters['cashDrawer/isStale']; } catch (_e) { return false; }
+        },
+        cashSessionDays: function () {
+            try { return Math.floor((this.$store.getters['cashDrawer/openSinceHours'] || 0) / 24); }
+            catch (_e) { return 0; }
+        },
         cashSessionActive: function () {
             try {
                 return !!this.$store.getters['cashDrawer/isOpen'];
@@ -5896,6 +5922,25 @@ export default {
 </script>
 
 <style scoped>
+/* [CAISSE 2026-08-13] La pastille d'alerte du bouton « Caisse ».
+   Petite, ambrée, et POSÉE SUR le bouton que le caissier a déjà sous les yeux : une alerte qui
+   demande d'ouvrir un écran pour être vue n'est pas une alerte. Elle ne bloque rien — clôturer
+   suppose de compter l'argent, et aucun logiciel ne peut le faire à la place d'un humain. */
+.pos-v4-cash-stale {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #FFB800;
+    color: #241a06;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+}
+
 /* =============================================================================
    PosComponent — POS V5 Design Convergence (refonte 2026-05-02)
    -----------------------------------------------------------------------------
