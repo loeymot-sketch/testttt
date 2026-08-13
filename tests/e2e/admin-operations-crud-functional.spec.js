@@ -570,3 +570,65 @@ test.describe.serial('Real functional state-machine — Delivery Boy Cash Sessio
     console.log('[CRUD-FUNCTIONAL] Delivery Boy Cash Session RECONCILE: status transitioned to reconciled — full real state machine open->close->reconcile proven end-to-end.');
   });
 });
+
+test.describe.serial('Real functional state transition — Online Order status (Accept, via admin show page)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    // Seeded directly via tinker (mirrors the exact field set already
+    // proven safe/valid in red-team-r4-kds-reception-2026-05-07.spec.js's
+    // own throwaway-order pattern) -- bypasses the real checkout flow so
+    // no fiscal_sequence_no is consumed and no real customer/webhook is
+    // touched. order_type=TAKEAWAY (10), not DELIVERY (5): a first attempt
+    // used DELIVERY and the show page threw "Cannot read properties of
+    // null (reading 'apartment')" -- it dereferences a delivery address
+    // unconditionally, which a real DELIVERY order always has (set at
+    // checkout) but this minimal seed didn't. TAKEAWAY has no address
+    // requirement and still appears in Online Orders (excludes only
+    // order_type=POS). status=PENDING (1) so the real "Accepter" button
+    // is visible on its show page (confirmed via a screenshot probe).
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>10,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); echo $o->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    orderId = out;
+  });
+
+  test.afterAll(async () => {
+    if (orderId) {
+      tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Online Order: real "Accept" button transitions a real order from Pending to Accepted', async () => {
+    await page.goto(`/admin/online-orders/show/${orderId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // Clicking "Accepter" only opens a SweetAlert2 confirmation ("Are you
+    // sure? You will not be able to cancel the order!") -- changeStatus()
+    // doesn't dispatch until that's confirmed too. A first attempt without
+    // this step left the click registering but the status unchanged in DB
+    // (confirmed via the failed run: status stayed at "1"/PENDING).
+    await page.getByRole('button', { name: /accept|accepter/i }).click();
+    await page.getByRole('button', { name: /yes, accept it/i }).click();
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\Order::find(${orderId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe(String(4)); // OrderStatus::ACCEPT
+    console.log(`[CRUD-FUNCTIONAL] Online Order ACCEPT: real order #${orderId} transitioned PENDING(1) -> ACCEPT(4) in DB via the real "Accept" button, not a client-side-only toast.`);
+  });
+});
