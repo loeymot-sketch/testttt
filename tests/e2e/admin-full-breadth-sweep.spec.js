@@ -20,8 +20,18 @@ const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 
 const DIR = path.resolve(__dirname, '__screenshots__/admin-full-breadth-sweep');
 
-const I18N_LEAK_RE = /^[a-z]+(\.[a-z_]+){1,4}$/;
-const ERROR_PAGE_RE = /whoops|server error|ignition|exception|stack trace|419\b|page expired|not found|introuvable|404|500\b/i;
+// [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13 adversarial-dispute fix]
+// Case-INsensitive + allows mixed/camelCase segments — the original
+// lowercase-only pattern would never flag "Label.X", the canonical raw-leak
+// example named in CLAUDE.md §6, nor camelCase keys like "orderStatus.pending".
+const I18N_LEAK_RE = /^[a-zA-Z]+(\.[a-zA-Z_]+){1,4}$/;
+
+// [adversarial-dispute fix] Split into a HARD signature (unambiguous crash
+// markers — a real Whoops/Ignition page is always long, so it must NOT be
+// length-gated) and a SOFT signature (generic words that could appear
+// benignly in legitimate short FR copy, e.g. a "not found" empty-state).
+const ERROR_PAGE_HARD_RE = /whoops|ignition|stack trace|symfony\\component\\|illuminate\\/i;
+const ERROR_PAGE_SOFT_RE = /server error|exception|419\b|page expired|not found|introuvable|404|500\b/i;
 
 // Every Settings tab-bar sub-page (settingRoutes.js) — includes the 12 pages
 // that are V1_HIDDEN_MENU_MODULES (mail, theme, languages, otp, notification,
@@ -63,6 +73,11 @@ test.describe.serial('Admin full-breadth sweep — every Settings sub-page + RBA
 
   let snap, dispose, page;
   let routeErrors = [];
+  // [adversarial-dispute fix] Track failed XHR/fetch responses per route —
+  // the original spec had NO network-response assertion at all, so a page
+  // whose data-fetch 500s/404s and is swallowed by a `.catch()` (e.g. an
+  // empty-state render) would sail through every other guard undetected.
+  let routeFailedResponses = [];
 
   test.beforeAll(async ({ browser }) => {
     const context = await browser.newContext();
@@ -72,6 +87,14 @@ test.describe.serial('Admin full-breadth sweep — every Settings sub-page + RBA
     dispose = rec.dispose;
     page.on('pageerror', (err) => {
       routeErrors.push(String(err && err.message ? err.message : err).slice(0, 300));
+    });
+    page.on('response', (res) => {
+      const url = res.url();
+      if (!/\/api\/admin\//.test(url)) return;
+      const status = res.status();
+      if (status >= 500) {
+        routeFailedResponses.push(`${status} ${url}`);
+      }
     });
     await loginAsAdmin(page);
     await expect(page).toHaveURL(/\/admin/, { timeout: 25_000 });
@@ -134,6 +157,7 @@ test.describe.serial('Admin full-breadth sweep — every Settings sub-page + RBA
 
     for (const href of ALL_PAGES) {
       routeErrors = [];
+      routeFailedResponses = [];
       const name = slug(href);
       let finalUrl = href;
       let ok = true;
@@ -156,11 +180,18 @@ test.describe.serial('Admin full-breadth sweep — every Settings sub-page + RBA
       }
 
       const routed = await readRoutedContent();
-      if (!routed.mainPresent && ok) {
-        const blen = (routed.text || '').length;
-        if (blen < 40) { ok = false; reasons.push('admin shell (main.db-main) never mounted; body near-empty'); }
-        else { reasons.push('main.db-main absent but body had content (recorded)'); }
-      } else if (routed.mainPresent && (routed.len == null || routed.len < 40)) {
+      // [adversarial-dispute fix] main.db-main is ALWAYS expected to mount on
+      // an authenticated /admin/* route (per readRoutedContent's own doc
+      // comment: even KDS/OSS full-screen surfaces still render inside it,
+      // they just hide the sidebar). The original "record but pass" branch
+      // was a silent no-op for exactly the "shell never mounted" failure
+      // mode it appeared to guard against — a wrong-template/crashed route
+      // with >=40 chars of body text would pass undetected. Absence is now
+      // always a hard failure, never conditionally forgiven.
+      if (!routed.mainPresent) {
+        ok = false;
+        reasons.push('admin shell (main.db-main) never mounted');
+      } else if (routed.len == null || routed.len < 40) {
         ok = false;
         reasons.push(`routed content blank/near-empty (len=${routed.len}) — shell present but page area empty`);
       }
@@ -170,8 +201,20 @@ test.describe.serial('Admin full-breadth sweep — every Settings sub-page + RBA
         reasons.push(`JS pageerror(s): ${JSON.stringify(routeErrors.slice(0, 3))}`);
       }
 
+      // [adversarial-dispute fix] server-side 5xx on any admin API call this
+      // route triggered — catches the "data fetch failed, swallowed by a
+      // .catch(), empty-state rendered" scenario that no other guard here
+      // can see (the page LOOKS fine: real shell, real text, no JS error).
+      if (routeFailedResponses.length) {
+        ok = false;
+        reasons.push(`server error response(s): ${JSON.stringify(routeFailedResponses.slice(0, 3))}`);
+      }
+
       const routedText = routed.text || '';
-      if (ok && ERROR_PAGE_RE.test(routedText) && routedText.length < 200) {
+      if (ok && ERROR_PAGE_HARD_RE.test(routedText)) {
+        ok = false;
+        reasons.push(`hard error-page signature: "${routedText.slice(0, 160)}"`);
+      } else if (ok && ERROR_PAGE_SOFT_RE.test(routedText) && routedText.length < 200) {
         ok = false;
         reasons.push(`error-page signature on short content: "${routedText.slice(0, 120)}"`);
       }
