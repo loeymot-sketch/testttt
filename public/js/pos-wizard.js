@@ -1150,6 +1150,18 @@
             html += '<h2>' + lastItemData.name + '</h2>';
             html += '<p class="wizard-item-price">' + fmtPrice(basePrice) + '</p>';
             html += '</div>';
+            /* [ROUE 2026-08-13 - sous LOCK docs/locks/LOCK_ROUE_WIZARD_2026-08-13.md]
+               Acces aux ecrans de la roue depuis le popup caisse. Pose DANS L'EN-TETE et nulle
+               part ailleurs : la barre du bas est le fil d'encaissement, la navigation est le fil
+               de composition, et le LOCK interdit les deux. Ici il n'y a qu'une photo, un nom et
+               un prix : aucune decision de commande.
+               Nouvel onglet : le caissier ne doit jamais perdre sa commande en cours.
+               Emoji plutot qu'une icone Font Awesome : `fa-ferris-wheel` n'existe pas dans toutes
+               les versions de la police, et une icone absente rend un carre vide. Le libelle
+               accessible porte le sens ; l'emoji est decoratif. */
+            html += '<a href="/admin/roue" target="_blank" rel="noopener" class="wizard-roue-link"'
+                 + ' title="Ouvrir les ecrans de la roue" aria-label="Ouvrir les ecrans de la roue">'
+                 + '<span aria-hidden="true">🎡</span></a>';
             
             // [PLAN_07 UX-03] Badge étape X/Y — affiché sauf sur le récap
             // [S24 FIX] Use forProgressBar=true to exclude inline steps from badge count
