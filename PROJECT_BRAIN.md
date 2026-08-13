@@ -47,7 +47,19 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **🚨 2026-08-13 — P0 PRODUCTION OUVERT : LE RAPPORT Z NE PEUT PLUS S'OUVRIR DEPUIS 17 JOURS (gate propriétaire)**
+> **✅ 2026-08-13 — P0 RÉSOLU, DÉPLOYÉ ET PROUVÉ : LE RAPPORT Z S'OUVRE DE NOUVEAU (HEAD prod `f00cbfde`)**
+>
+> **Preuve réelle** : `fiscal:open-all-active-branches` → `scanned=1 **opened=1** skipped=0 failed=0`, après 17 jours de `failed=1` quotidien. **Z id=4, séquence 2, ouvert le 2026-08-13 15:25.** Les **189 ventes / 3 344,80 €** sont dans son périmètre ; clôture planifiée à 23h59 (vérifiée au planificateur), réouverture juste après — le cycle est rétabli.
+>
+> **Correctif** (`82e77344b`) : `FiscalChainValidator` essaie désormais les secrets connus (`[branche, 0]`), comme son jumeau `AuditLogService` depuis le 2026-08-08. ⚠️ La garde n'existait QUE sur l'**ouverture** (`ZReportService:103`) — la clôture n'a jamais été bloquée, elle n'avait simplement plus rien à clôturer.
+>
+> **ATTAQUE ADVERSAIRE MENÉE À LA MAIN** (l'agent est mort sur une limite de session sans rendre de verdict — je n'ai pas déclaré « validé » sur un rapport absent) : recalcul en lecture seule de **902 lignes** de production contre tous les secrets → **431 par le secret de branche, 471 par le défaut, 0 IRRÉDUCTIBLE, 0 chaînage rompu, 0 trou d'identifiant**. Aucune ligne n'est acceptée « par tolérance ». **5 mutations sur 5 détectées.**
+>
+> **CE QUE LE CORRECTIF ÉLARGIT VRAIMENT, dit sans enjoliver** : le porteur du secret par DÉFAUT peut signer pour n'importe quelle branche (`0` est candidat de toute ligne). C'est l'élargissement assumé du LOCK du 2026-08-08. Le secret d'une branche, lui, ne forge PAS pour une autre (verrouillé par test). En V1 mono-poste les deux secrets sont dans le même `.env` : à rejuger le jour d'un vrai multi-succursales.
+>
+> ── ci-dessous, l'état au moment de la découverte ──
+>
+> **🚨 P0 (historique) : LE RAPPORT Z NE POUVAIT PLUS S'OUVRIR DEPUIS 17 JOURS**
 >
 > **Fait mesuré** : dernier Z clos le **2026-07-27 23:59:03**, **0 Z ouvert** depuis. **189 ventes numérotées, 3 344,80 €, hors de tout Z signé** — et le compteur monte chaque jour. Le filet de nuit journalise `opened=0 skipped=0 **failed=1**` à chaque passage (`storage/logs/fiscal-open-safety-net.log`), avec `FiscalChainCorruptedException: chain verification failed for branch 1 (window=500, errors=183)`.
 >
