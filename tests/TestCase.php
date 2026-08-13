@@ -149,6 +149,8 @@ abstract class TestCase extends BaseTestCase
             'cash.reconcile.variance.override',
             // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
             'cash-sessions-report',
+            // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Ticket promo plateformes/Uber.
+            'pos-flyer-print',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
@@ -174,6 +176,9 @@ abstract class TestCase extends BaseTestCase
                 // accepte/gère les commandes web (bouton « Accepter » du tracker). Le refund reste
                 // gardé `pos-refund` (hors de ce set) → frontière de permission préservée.
                 'online-orders',
+                // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Ticket promo plateformes/Uber :
+                // creer / reimprimer / annuler depuis le comptoir.
+                'pos-flyer-print',
             ]);
         }
 
@@ -194,6 +199,8 @@ abstract class TestCase extends BaseTestCase
                 // [Wave O — O4 2026-05-20] Branch Manager voit le rapport caisses
                 // quotidien (scoped à sa branche via BranchScope du model).
                 'cash-sessions-report',
+                // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Ticket promo plateformes/Uber.
+                'pos-flyer-print',
             ]);
         }
 

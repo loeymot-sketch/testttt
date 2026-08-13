@@ -77,6 +77,7 @@
                      changer d'écran. Le nom se pré-remplit depuis la commande quand on
                      part de sa carte (bouton 🎟️ sur la carte). -->
                 <button
+                    v-if="canPrintFlyer"
                     type="button"
                     class="pos-tracker-history-link"
                     @click="openPromoFlyer('')"
@@ -354,7 +355,7 @@
                                       la fenêtre — un geste au lieu de trois, en plein service.
                                     -->
                                     <button
-                                        v-if="isPlatformOrder(order)"
+                                        v-if="isPlatformOrder(order) && canPrintFlyer"
                                         type="button"
                                         class="pos-tracker-card-btn"
                                         title="Imprimer un ticket promo pour ce client"
@@ -784,6 +785,18 @@ export default {
             const raw = this.$store.getters.authPermission;
             const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
             const entry = perms.find((p) => p && p.url === 'online-orders');
+            return !!(entry && entry.access === true);
+        },
+        // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Même défaut que
+        // `canProcessWebOrders` ci-dessus : le bouton « Ticket promo » s'affichait pour tout
+        // le monde alors que l'endpoint (`store`/`reprint`) était gardé `coupons_create|settings`
+        // (Admin uniquement) — clic → 403 silencieux. La permission `pos-flyer-print` est
+        // désormais accordée au rôle Caissier (POS Operator) et Branch Manager (seeder +
+        // migration) ; ce garde protège tout futur rôle qui ne l'aurait pas.
+        canPrintFlyer() {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+            const entry = perms.find((p) => p && p.url === 'pos-flyer-print');
             return !!(entry && entry.access === true);
         },
         // [iter15-mega-fix B-003/C-008 2026-05-10] Hide the local

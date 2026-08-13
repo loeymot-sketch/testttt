@@ -87,6 +87,9 @@ class RolePermissionTableSeeder extends Seeder
                 // Admin gets this via Permission::all() above. POS Operator does
                 // NOT get it by default (mass-refund vector mitigation).
                 'pos-refund',
+                // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Ticket promo
+                // plateformes/Uber : creer / reimprimer / annuler depuis le comptoir.
+                'pos-flyer-print',
             ];
             $branchManager->givePermissionTo(
                 Permission::whereIn('name', $branchManagerPermissionNames)->get()
@@ -110,6 +113,12 @@ class RolePermissionTableSeeder extends Seeder
                 // reste gardé `pos-refund` (NON accordé ici) → le caissier accepte + encaisse mais
                 // ne peut pas rembourser seul. Cf. OnlineOrderController::changeStatus.
                 'online-orders',
+                // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Ticket promo
+                // plateformes/Uber : creer / reimprimer / annuler depuis le comptoir. Voir
+                // PromoFlyerController et migration 2026_08_13_190000_grant_pos_flyer_print_to_cashier
+                // — un plafond quotidien (PromoFlyerService::DAILY_CAP_PER_USER) remplace le
+                // blocage total de role qui existait avant.
+                'pos-flyer-print',
             ];
             $posOperatorManager->givePermissionTo(
                 Permission::whereIn('name', $posOperatorManagerPermissionNames)->get()

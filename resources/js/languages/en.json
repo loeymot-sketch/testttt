@@ -1526,6 +1526,7 @@
         "sending": "Sending…",
         "flyer_history": "Recent flyers",
         "flyer_history_empty": "No flyer yet.",
+        "flyer_permission_missing": "Your account does not have access to printing promo flyers yet. Ask a manager to grant this access.",
         "flyer_printed": "Printed",
         "flyer_failed": "Failed",
         "flyer_pending": "Pending",

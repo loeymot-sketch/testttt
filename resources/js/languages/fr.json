@@ -1457,6 +1457,7 @@
         "sending": "Envoi…",
         "flyer_history": "Derniers tickets",
         "flyer_history_empty": "Aucun ticket pour le moment.",
+        "flyer_permission_missing": "Votre compte n'a pas encore accès à l'impression du ticket promo. Demandez à un responsable de vous accorder cet accès.",
         "flyer_printed": "Imprimé",
         "flyer_failed": "Échec",
         "flyer_pending": "En attente",

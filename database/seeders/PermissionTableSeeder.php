@@ -124,6 +124,17 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Ticket promo (plateformes/Uber) :
+            // creer / reimprimer / annuler depuis le comptoir, sans deverrouiller `coupons_create`
+            // (CRUD coupons generique). Voir migration 2026_08_13_190000_grant_pos_flyer_print_to_cashier.
+            [
+                'title'      => 'POS Flyer Print',
+                'name'       => 'pos-flyer-print',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos-flyer-print',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             // [POS-9.1.1] Discount permission gate: cap cashier at 10%, manager up to 50%, owner beyond
             [
                 'title'      => 'POS Discount up to 10%',

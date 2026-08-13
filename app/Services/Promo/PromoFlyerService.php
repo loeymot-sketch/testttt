@@ -244,6 +244,32 @@ class PromoFlyerService
     public const DOUBLON_MINUTES = 10;
 
     /**
+     * [OWNER 2026-08-13 « ameliore l'acces du caissier »] Plafond quotidien PAR CAISSIER.
+     *
+     * `store` était derrière `coupons_create|settings` (Admin uniquement) précisément pour
+     * empêcher un caissier de frapper des codes −10 % sans limite (commit a4b9a2b46). En rendant
+     * l'écran réellement utilisable par le rôle POS Operator (permission `pos-flyer-print`), ce
+     * garde-fou disparaissait — il fallait le reprendre ailleurs plutôt que de le supprimer.
+     *
+     * 40 = large pour un usage normal (un ticket par commande plateforme, sur tout un service),
+     * suffisamment bas pour rendre un abus délibéré visible et lent à exploiter. Ce n'est PAS un
+     * blocage dur du métier : un plafond dépassé se voit dans les logs et peut être ajusté.
+     */
+    public const DAILY_CAP_PER_USER = 40;
+
+    /**
+     * Nombre de tickets déjà créés AUJOURD'HUI par ce caissier, toutes branches confondues
+     * (un utilisateur n'appartient qu'à une branche en V1 mono-poste, mais on ne suppose pas).
+     */
+    public function dailyCountForUser(int $userId): int
+    {
+        return PromoFlyer::withoutGlobalScope(BranchScope::class)
+            ->where('created_by_user_id', $userId)
+            ->where('created_at', '>=', Carbon::now()->startOfDay())
+            ->count();
+    }
+
+    /**
      * Un code a-t-il déjà été créé pour ce prénom, à l'instant ?
      *
      * [DÉTAIL 2026-08-09] Deux appuis sur « Imprimer » — un doigt qui insiste, un écran qui

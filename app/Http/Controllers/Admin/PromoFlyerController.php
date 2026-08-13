@@ -47,7 +47,15 @@ class PromoFlyerController extends Controller
         // coupon exige `coupons_create` (CouponController:26). Laisser ce
         // pouvoir derrière `pos` permettait à n'importe quel caissier de
         // frapper autant de codes −10 % qu'il le souhaite, un POST à la fois.
-        $this->middleware('permission:coupons_create|settings')->only('store');
+        //
+        // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Le verrou ci-dessus a fermé
+        // l'écran à TOUT LE MONDE sauf l'Admin — y compris le caissier pour qui il a été
+        // construit (le bouton du tracker caisse existait, cliquer dessus rendait 403).
+        // `pos-flyer-print` est une permission dédiée, distincte de `coupons_create` : elle
+        // ne déverrouille RIEN d'autre (pas le CRUD coupons générique de CouponController).
+        // Le risque de mint illimité que `coupons_create` bloquait est repris par un plafond
+        // applicatif dans PromoFlyerService::create (voir DAILY_CAP_PER_USER).
+        $this->middleware('permission:pos-flyer-print|coupons_create|settings')->only('store');
 
         // `updateSettings` écrit le POURCENTAGE de remise (jusqu'à 50 %) et
         // surtout l'ADRESSE encodée dans le QR imprimé sur des tickets remis
@@ -57,8 +65,8 @@ class PromoFlyerController extends Controller
         $this->middleware('permission:settings')->only('updateSettings');
 
         // Annuler un code et relancer une impression engagent de l'argent et du papier :
-        // même barrière que la création.
-        $this->middleware('permission:coupons_create|settings')->only(['revoke', 'reprint']);
+        // même barrière que la création — voir la note [OWNER 2026-08-13] ci-dessus.
+        $this->middleware('permission:pos-flyer-print|coupons_create|settings')->only(['revoke', 'reprint']);
     }
 
     /**
@@ -131,6 +139,18 @@ class PromoFlyerController extends Controller
 
         $user = $request->user();
         $branchId = (int) ($user->branch_id ?: 1);
+
+        // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Le plafond quotidien remplace le
+        // verrou de rôle qui bloquait TOUT LE MONDE : un usage normal (un ticket par commande
+        // plateforme) ne l'atteint jamais ; un abus délibéré devient lent et visible au lieu
+        // d'être illimité. Admin non plafonné (compte de service / secours).
+        if (! $user->hasRole('Admin') && $this->service->dailyCountForUser((int) $user->id) >= PromoFlyerService::DAILY_CAP_PER_USER) {
+            Log::warning('[FLYER] plafond quotidien atteint', ['user' => (int) $user->id, 'branch' => $branchId]);
+
+            return new JsonResponse([
+                'message' => "Limite de tickets promo atteinte pour aujourd'hui. Demandez à un responsable.",
+            ], 429);
+        }
 
         // [DÉTAIL 2026-08-09] Deux appuis sur « Imprimer » — un doigt qui insiste, un écran qui
         // rame — et le client repartait avec DEUX codes : deux fois 10 % offerts, deux tickets,

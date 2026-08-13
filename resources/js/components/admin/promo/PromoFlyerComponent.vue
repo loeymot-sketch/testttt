@@ -20,7 +20,13 @@
                     <div>{{ $t("label.flyer_codes_disabled_body") }}</div>
                 </div>
 
-                <form @submit.prevent="createFlyer(false)">
+                <!-- [OWNER 2026-08-13 « ameliore l'acces du caissier »] Le formulaire postait vers un
+                     endpoint gardé Admin-only (`coupons_create|settings`) : un caissier le voyait,
+                     le remplissait, et recevait un 403 silencieux au clic. `pos-flyer-print` est
+                     maintenant accordé au rôle Caissier/Branch Manager — ce v-if reste comme filet
+                     pour tout futur rôle qui ne l'aurait pas, avec un message clair au lieu d'un
+                     bouton mort. -->
+                <form v-if="canPrintFlyer" @submit.prevent="createFlyer(false)">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-4">
                             <label for="customer_name" class="db-field-title required">
@@ -68,6 +74,9 @@
                         </div>
                     </div>
                 </form>
+                <div v-else class="rounded border border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+                    {{ $t("label.flyer_permission_missing") }}
+                </div>
 
                 <div v-if="duplicate"
                     class="mt-5 rounded border border-amber-400 bg-amber-50 p-4">
@@ -179,7 +188,7 @@
                                     <!-- Un ticket déjà utilisé ne se réimprime pas et ne s'annule
                                          plus : le client a été servi, l'action n'aurait aucun sens
                                          et ne ferait que semer le doute. -->
-                                    <template v-if="!flyer.used">
+                                    <template v-if="!flyer.used && canPrintFlyer">
                                         <button
                                             v-if="flyer.status !== 'pending'"
                                             type="button"
@@ -244,6 +253,16 @@ export default {
             stats: { total: 0, printed: 0, used: 0, rate: null, revenue: 0, given_away: 0 },
             busyRow: null,
         };
+    },
+    computed: {
+        // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Même garde que
+        // PosOrdersTrackerComponent.canPrintFlyer — voir sa note pour le contexte complet.
+        canPrintFlyer() {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+            const entry = perms.find((p) => p && p.url === 'pos-flyer-print');
+            return !!(entry && entry.access === true);
+        },
     },
     mounted() {
         this.fetchSettings();
