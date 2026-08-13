@@ -20,7 +20,15 @@
                 </li>
 
                 <li class="db-sidebar-nav-item" v-else-if="menu.url !== '#' && showSidebarParentNavRow(menu)" @click.prevent="sidebarActive($event)">
-                    <a v-if="isPosV4Shell" :href="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu">
+                    <!-- `menu.external` : l'entrée pointe une page HORS de l'application Vue
+                         (la roue est une page Blade autonome). Un `router-link` y chercherait une
+                         route inexistante et rendrait un lien mort. On ouvre dans un nouvel onglet
+                         pour ne pas faire perdre au gérant l'écran d'où il vient. -->
+                    <a v-if="isPosV4Shell || menu.external"
+                       :href="'/admin/' + menu.url + (menu.query || '')"
+                       :target="menu.external ? '_blank' : null"
+                       :rel="menu.external ? 'noopener' : null"
+                       class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </a>
@@ -138,6 +146,21 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // cuisine. Même gate réutilisée (`pos-orders`) et même raison qu'au-dessus : une permission
     // neuve ne serait portée par aucun rôle, l'écran serait inaccessible à tout le monde.
     Object.freeze({ url: 'uber-photo', language: 'uber_photo', icon: 'fa-solid fa-camera' }),
+    /*
+     * [ROUE 2026-08-13 · propriétaire : « accès admin caisse »] Les écrans de la roue existaient
+     * et fonctionnaient, mais aucun lien n'y menait depuis le back-office.
+     *
+     * `external: true` N'EST PAS UN DÉTAIL. Toutes les autres entrées de cette liste sont des
+     * routes de l'application Vue, rendues par un `router-link`. `/admin/roue` est une page Blade
+     * AUTONOME, hors du routeur : un `router-link` y chercherait une route qui n'existe pas et
+     * produirait un lien MORT — une entrée de menu qui ne mène nulle part est pire que pas
+     * d'entrée du tout. Le drapeau bascule le rendu sur une vraie ancre (voir le gabarit).
+     *
+     * Gate `pos-orders` réutilisée, exactement pour la raison écrite au-dessus pour le ticket
+     * promo et la photo Uber : une permission neuve ne serait portée par aucun rôle tant qu'un
+     * seeder ne l'aurait pas distribuée, et l'écran serait inaccessible à tout le monde.
+     */
+    Object.freeze({ url: 'roue', language: 'roue', icon: 'lab lab-pos-orders', external: true }),
 ]);
 
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
@@ -154,6 +177,8 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     encaissement: 'pos-orders',
     // [FLYER PROMO 2026-08-07] Même gate que la caisse — voir l'entrée de menu.
     'promo-flyer': 'pos-orders',
+    // [ROUE 2026-08-13] Même gate que la caisse — voir l'entrée de menu.
+    roue: 'pos-orders',
     'promo-flyer/settings': 'pos-orders',
     // [UBER-PHOTO 2026-08-10] Même gate que la caisse — voir l'entrée de menu.
     'uber-photo': 'pos-orders',

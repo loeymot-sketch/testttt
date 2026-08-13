@@ -83,7 +83,28 @@ describe('V1 admin sidebar cleanup', () => {
         expect(text).toContain('menu.encaissement');
         expect(text).toContain('menu.stock_unified');
         expect(text).toContain('menu.promo_flyer');
+        // [ROUE 2026-08-13] +1 : « La roue ». Les cinq écrans du jeu existaient et
+        // fonctionnaient, mais aucun lien n'y menait depuis le back-office — il fallait
+        // taper les URL de mémoire. Même porte que la caisse (`pos-orders`), donc le
+        // même personnel, → 17 rows.
+        //
+        // Cette entrée est la SEULE de la barre à porter `external: true` : elle mène à
+        // une page Blade autonome, hors du routeur Vue. Le test ci-dessous le vérifie —
+        // sans ce drapeau, l'entrée rendrait un `router-link` vers une route inexistante,
+        // c'est-à-dire un lien mort dans le menu.
+        //
+        // Compteur remonté DANS la session qui livre l'entrée, pas découvert plus tard.
         expect(text).toContain('menu.uber_photo');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(16);
+        expect(text).toContain('menu.roue');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(17);
+
+        // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
+        // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.
+        const roue = wrapper.findAll('a.db-sidebar-nav-menu')
+            .find((a) => a.attributes('href') === '/admin/roue');
+        expect(roue, "l'entrée « La roue » n'est pas rendue comme une ancre : "
+            + 'un router-link vers /admin/roue serait un lien mort').toBeTruthy();
+        expect(roue.attributes('target')).toBe('_blank');
+        expect(roue.attributes('rel')).toBe('noopener');
     });
 });
