@@ -118,6 +118,37 @@ class PrinterControllerTest extends TestCase
         ]);
     }
 
+    /**
+     * [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] Adversarial-audit
+     * finding: PrintersComponent.vue's "ESC/POS réseau" dropdown option (and
+     * its EMPTY_FORM default, and its edit-form fallback) send
+     * type=escpos_network, but PrinterRequest::rules() only accepts
+     * escpos_tcp/escpos_usb/browser_html. The frontend never binds
+     * errors.type in the template, so every save with the default option
+     * silently 422s with no visible field error — an admin configuring a
+     * network printer (the most common real setup) cannot save at all.
+     */
+    public function test_create_rejects_the_stale_frontend_network_type_value(): void
+    {
+        $response = $this->actingAs($this->user, 'sanctum')->postJson(
+            '/api/admin/printers',
+            $this->printerData($this->branch->id, ['type' => 'escpos_network'])
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['type']);
+    }
+
+    public function test_create_accepts_the_corrected_network_type_value(): void
+    {
+        $response = $this->actingAs($this->user, 'sanctum')->postJson(
+            '/api/admin/printers',
+            $this->printerData($this->branch->id, ['type' => 'escpos_tcp'])
+        );
+
+        $response->assertCreated();
+    }
+
     private function printerData(int $branchId, array $overrides = []): array
     {
         return array_merge([

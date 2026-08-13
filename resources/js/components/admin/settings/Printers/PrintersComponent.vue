@@ -99,9 +99,15 @@
                         <div class="form-col-12 sm:form-col-6">
                             <label for="p_type" class="db-field-title">{{ $t("label.type") }}</label>
                             <select v-model="form.type" id="p_type" class="db-field-control">
-                                <option value="escpos_network">ESC/POS réseau</option>
+                                <!-- [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] this option's
+                                     value was "escpos_network" -- PrinterRequest::rules() only
+                                     accepts escpos_tcp/escpos_usb/browser_html, so every save with
+                                     this (the default, most common) option silently 422'd with no
+                                     visible error, because errors.type was never bound below. -->
+                                <option value="escpos_tcp">ESC/POS réseau</option>
                                 <option value="escpos_usb">ESC/POS USB</option>
                             </select>
+                            <small class="db-field-alert" v-if="errors.type">{{ errors.type[0] }}</small>
                         </div>
 
                         <div class="form-col-12 sm:form-col-6">
@@ -180,7 +186,7 @@ import alertService from "../../../../services/alertService";
  * d'impression par imprimante (stations : ticket caisse / cuisine chaud/froid).
  */
 const EMPTY_FORM = {
-    name: '', station: 'kitchen_hot', type: 'escpos_network',
+    name: '', station: 'kitchen_hot', type: 'escpos_tcp',
     host: '', port: 9100, width_chars: 48, status: 1,
 };
 
@@ -233,7 +239,7 @@ export default {
             this.isEditing = true;
             this.editingId = printer.id;
             this.form = {
-                name: printer.name, station: printer.station, type: printer.type || 'escpos_network',
+                name: printer.name, station: printer.station, type: printer.type || 'escpos_tcp',
                 host: printer.host, port: Number(printer.port) || 9100,
                 width_chars: Number(printer.width_chars) || 48, status: Number(printer.status) || 1,
             };
