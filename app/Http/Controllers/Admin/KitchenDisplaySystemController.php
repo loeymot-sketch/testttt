@@ -10,6 +10,7 @@ use App\Http\Requests\Kds\KdsOrderStatusRequest;
 use App\Http\Resources\KDSOrderItemsResource;
 use App\Http\Resources\KDSOrderDetailsResource;
 use App\Services\KitchenDisplaySystemOrderService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KitchenDisplaySystemController extends AdminController
@@ -163,6 +164,37 @@ class KitchenDisplaySystemController extends AdminController
             ], 200);
         } catch (HttpException $e) {
             return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
+        } catch (ModelNotFoundException $e) {
+            /*
+             * [2026-08-13 · audit] FILET DE PROFONDEUR, ET RIEN DE PLUS — je dis ce qu'il couvre
+             * vraiment, parce que mon premier diagnostic était FAUX et que le test m'a corrigé.
+             *
+             * Ce que je croyais : une commande d'une autre caisse atteignait `firstOrFail()` sous
+             * verrou, levait `ModelNotFoundException`, et le filet générique renvoyait son message
+             * TEL QUEL — « No query results for model [App\Models\Order] », en anglais, à la cuisine.
+             *
+             * Ce que le test a montré : la route utilise la LIAISON IMPLICITE de modèle, et `Order`
+             * porte `BranchScope`. Une commande d'une autre caisse échoue donc à la LIAISON et
+             * renvoie un 404 standard, avant que ce contrôleur ne s'exécute. Aucune fuite : rien à
+             * réparer sur ce chemin.
+             *
+             * Ce filet reste utile pour la fenêtre ÉTROITE qu'il couvre réellement : la ligne
+             * disparaît (ou change de caisse) ENTRE la liaison et la relecture sous verrou. Là,
+             * `firstOrFail()` lève, et la cuisine lirait le message interne. Une phrase française
+             * coûte deux lignes ; l'anglais sur un écran de service, non.
+             *
+             * À NOTER par ailleurs : l'`abort(403)` « autre succursale » de `reopen()` est
+             * INATTEIGNABLE — un compte de caisse ne voit pas la ligne, et un compte administrateur
+             * (`branch_id = 0`) passe la condition `$userBranchId > 0` sans s'arrêter. La protection
+             * tient, mais par le SCOPE et la LIAISON, pas par ce `abort`. Ne pas le lire comme la
+             * garde active.
+             *
+             * Sentinelle : tests/Feature/KDS/KdsReopenPreparedOrderTest.php
+             */
+            return response([
+                'status'  => false,
+                'message' => trans('all.message.kds_reopen_invalid_state'),
+            ], 422);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

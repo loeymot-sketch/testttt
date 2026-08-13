@@ -303,8 +303,13 @@ class WheelDeliveryService
          *
          * L'ÉCRITURE VIT DANS LA MÊME TRANSACTION QUE L'INCRÉMENT. Séparées, un incident entre les
          * deux laisse soit un solde sans sa ligne (le client a ses points, l'histoire est fausse),
-         * soit une ligne sans son solde — et ça, c'est un grand-livre qui MENT. Une seule transaction :
-         * les deux vivent ou aucune.
+         * soit une ligne sans son solde — et ça, c'est un grand-livre qui MENT.
+         *
+         * PRÉCISION HONNÊTE (relecture de mon propre correctif) : `deliver()` enveloppe DÉJÀ tout
+         * l'appel dans une transaction avec `lockForUpdate`, donc l'atomicité était acquise avant
+         * cette ligne. La transaction interne n'est qu'un point de reprise ; elle est conservée pour
+         * que `creditPoints()` reste sûre par elle-même si un jour on l'appelle d'ailleurs. Ne pas
+         * lire ce bloc comme « la protection est arrivée avec le grand-livre » — elle existait.
          *
          * `type = earn` parce que la colonne est un ENUM à cinq valeurs
          * (`earn, redeem, manual_add, manual_deduct, expire`) et qu'un cadeau est un GAIN ; inventer
