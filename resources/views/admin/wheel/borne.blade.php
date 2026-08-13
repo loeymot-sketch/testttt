@@ -230,7 +230,7 @@
      une marge intérieure pour qu'il ne touche pas les bords. C'est ce que fait n'importe quelle
      marque sur un fond sombre — et la mascotte, qui est ce qu'on reconnaît de loin, revient. */
   .logo{
-    height:min(9vmin,92px); width:auto; display:block;
+    height:min(6.4vmin,66px); width:auto; display:block;
     background:var(--creme);
     padding:min(1.1vmin,11px) min(1.8vmin,18px);
     border-radius:min(2vmin,18px);
@@ -295,7 +295,7 @@
        lisible à trois mètres, mais il cesse d'être le sujet : c'est la roue qu'on vient regarder.
        Remonté au-dessus de la roue, il passe sur UNE ligne — deux lignes y coûteraient à la roue
        exactement ce qu'on vient de lui rendre. */
-    margin:0; font-size:min(6.4vmin,74px); line-height:1; font-weight:900; letter-spacing:-.025em;
+    margin:0; font-size:min(5.2vmin,58px); line-height:1; font-weight:900; letter-spacing:-.025em;
     background:linear-gradient(100deg,var(--jaune2),var(--orange2) 62%,var(--jaune));
     -webkit-background-clip:text; background-clip:text; color:transparent;
   }
@@ -424,7 +424,7 @@
   .promesse b{color:var(--jaune2)}
   .consigne{
     margin:0; text-align:center; line-height:1.2;
-    font-size:clamp(15px,2.5vmin,30px); font-weight:700; letter-spacing:-.01em;
+    font-size:clamp(13px,1.8vmin,22px); font-weight:700; letter-spacing:-.01em;
     color:var(--creme); opacity:.92;
   }
   .consigne b{color:var(--jaune2); font-weight:900}
@@ -487,10 +487,10 @@
   @media (prefers-reduced-motion:reduce){
     .defile-bande{animation:none}
   }
-  .scanne{margin:0; font-size:min(4.4vmin,46px); font-weight:900; letter-spacing:-.01em}
+  .scanne{margin:0; font-size:min(3.1vmin,32px); font-weight:900; letter-spacing:-.01em}
   /* Plancher en px : à 2,4vmin cette phrase tombait à 18 px sur une petite tablette, soit
      3,5 mm de haut — sous la limite de lecture debout à trois mètres. */
-  .detail{margin:0; font-size:clamp(22px,2.4vmin,28px); opacity:.78; line-height:1.45}
+  .detail{margin:0; font-size:clamp(14px,1.6vmin,19px); opacity:.7; line-height:1.4}
   .fleche{font-size:min(5vmin,52px); line-height:1; animation:pointe 2.2s ease-in-out infinite}
   @keyframes pointe{0%,100%{transform:translateY(0)}50%{transform:translateY(1.1vmin)}}
 
@@ -634,6 +634,16 @@
              rendu : la vitrine repasse à deux actes. Un cadre « aucun gagnant » sur un écran de
              comptoir dit au client que le jeu ne prend pas — c'est exactement l'inverse du but. --}}
         @if (! empty($gagnants))
+        {{-- [PROPRIÉTAIRE 2026-08-13 : « là maintenant y a plus rien au-dessous »] Il avait raison,
+             et la cause était ici : cet acte liste les gagnants RÉCENTS. Le jeu n'ayant qu'un seul
+             tour en production, la liste est vide — la rotation tombait donc une fois sur deux sur
+             un bloc SANS RIEN, et le bas de l'écran clignotait vers le néant.
+
+             Un carrousel ne doit jamais présenter une case vide : il vaut mieux montrer moins
+             souvent quelque chose que souvent rien. L'acte n'existe donc que s'il a de quoi
+             remplir ; sinon les trois étapes restent affichées en permanence, ce qui est
+             exactement ce que le propriétaire attend à cet endroit. --}}
+        @if (! empty($gagnants))
         <div class="acte" data-acte="1">
           <p class="titre2">Ça vient de tomber</p>
           <ul class="gagnants">
@@ -655,7 +665,9 @@
              « tourne ». La troisième est la récompense, pas une corvée de plus — c'est la
              différence entre annoncer un parcours long (qui fait reposer le téléphone) et
              annoncer une fin heureuse. Ne pas la relire comme une étape à supprimer. --}}
-        <div class="acte" data-acte="2">
+        @endif
+
+        <div class="acte on" data-acte="2">
           <p class="titre2">C'est tout de suite</p>
           <div class="geste">
             <div class="pas"><div class="rond">📱</div><div class="mot">Scanne</div></div>
