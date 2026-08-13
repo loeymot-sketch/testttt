@@ -10,7 +10,18 @@
  * READ-ONLY on everything else. No frozen-zone touch.
  */
 const { test, expect } = require('@playwright/test');
+const path = require('path');
+const { execFileSync } = require('child_process');
 const { loginAsAdmin } = require('./helpers/login');
+
+function tinkerExec(php) {
+  execFileSync('php', ['artisan', 'tinker', `--execute=${php}`], {
+    cwd: path.resolve(__dirname, '../..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 15_000,
+  });
+}
 
 test.describe.serial('Real functional CRUD — Dining Tables (operational category)', () => {
   test.setTimeout(120_000);
@@ -71,5 +82,52 @@ test.describe.serial('Real functional CRUD — Dining Tables (operational catego
 
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Dining Table DELETE: row gone from table after confirm — REAL removal.');
+  });
+});
+
+test.describe.serial('Real functional CRUD — Subscribers (delete-only screen)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Subscriber: DB-seeded row -> appears in table -> delete via UI -> gone', async () => {
+    // Unlike every other CRUD test in this suite, Subscribers has NO create
+    // form in the admin UI -- subscribers self-register from the public
+    // website newsletter box (Subscriber model: fillable = ['email'] only).
+    // Proving the real destroy() flow still requires a real row to delete,
+    // so this seeds one directly via tinker (not the UI, which has no way
+    // to create one) and then drives the actual UI delete + confirm cycle.
+    const uniq = `e2e-subscriber-${Date.now() % 100000}@e2e-test.local`;
+    tinkerExec(`\\App\\Models\\Subscriber::create(['email' => '${uniq}']);`);
+
+    try {
+      await page.goto('/admin/subscribers', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      const table = page.locator('table.db-table');
+      await expect(table).toContainText(uniq, { timeout: 10_000 });
+      console.log(`[CRUD-FUNCTIONAL] Subscriber SEED: "${uniq}" appears in table (DB-seeded, no UI create path exists).`);
+
+      const row = table.locator('tr', { hasText: uniq });
+      await row.locator('[class*="delete" i]').first().click();
+
+      const yesBtn = page.getByRole('button', { name: /yes,\s*delete it/i });
+      await expect(yesBtn).toBeVisible({ timeout: 10_000 });
+      await yesBtn.click();
+      await page.waitForTimeout(1500);
+
+      await expect(table).not.toContainText(uniq, { timeout: 10_000 });
+      console.log('[CRUD-FUNCTIONAL] Subscriber DELETE: row gone from table after confirm — REAL removal via the actual destroy() endpoint.');
+    } finally {
+      tinkerExec(`\\App\\Models\\Subscriber::where('email', '${uniq}')->delete();`);
+    }
   });
 });
