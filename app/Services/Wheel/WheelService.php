@@ -205,6 +205,24 @@ class WheelService
                 continue;
             }
 
+            /*
+             * ── L'ADRESSE DOIT ÊTRE ABSOLUE, ET CE N'EST PAS UN DÉTAIL ────────────────────────
+             * [2026-08-13, constaté en capture] `Item::getThumbAttribute()` rend une adresse
+             * ABSOLUE quand elle vient du pack détouré (`asset(...)`), mais RELATIVE quand elle
+             * vient d'un média téléversé : « /storage/8/conversions/coca-thumb.png ».
+             *
+             * Sur la caisse et la borne, servies par ce serveur, les deux fonctionnent — le défaut
+             * y est donc totalement invisible. Mais la roue du CLIENT est servie par le site, sur
+             * un autre domaine : la forme relative y pointe sur le site, qui n'a pas ce fichier.
+             * Mesuré : cinq lots avec leur photo, et deux — Boisson et Frites, précisément les
+             * deux qui passent par un média téléversé — sans rien.
+             *
+             * Une adresse publiée hors du serveur qui la sert doit toujours porter son domaine.
+             */
+            if (str_starts_with($url, '/')) {
+                $url = rtrim((string) config('app.url'), '/').$url;
+            }
+
             $out[$cle] = $url;
         }
 

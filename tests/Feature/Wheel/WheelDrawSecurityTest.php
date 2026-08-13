@@ -97,6 +97,70 @@ class WheelDrawSecurityTest extends TestCase
     }
 
     /**
+     * TOUTE PHOTO PUBLIÉE DOIT PORTER SON DOMAINE — un défaut INVISIBLE depuis ce serveur.
+     *
+     * [2026-08-13, constaté en capture, pas en test] `Item::getThumbAttribute()` rend une adresse
+     * absolue quand elle vient du pack détouré (`asset(...)`), mais RELATIVE quand elle vient d'un
+     * média téléversé : « /storage/8/conversions/coca-thumb.png ».
+     *
+     * Sur la caisse et sur la borne — servies par ce serveur — les deux formes fonctionnent. Le
+     * défaut y est donc rigoureusement invisible. Mais la roue du CLIENT est servie par le site,
+     * sur un autre domaine : la forme relative y désigne le site, qui n'a pas ce fichier. Mesuré
+     * en capture : cinq lots illustrés, et deux — Boisson et Frites, précisément ceux dont la
+     * photo est un média téléversé — sans rien.
+     *
+     * Ce test regarde la SORTIE PUBLIQUE, seul endroit où la règle a un sens : peu importe d'où
+     * vient l'image, ce qui part vers un autre domaine doit être joignable depuis ce domaine.
+     */
+    public function test_les_photos_publiees_portent_toujours_leur_domaine(): void
+    {
+        /*
+         * ON FABRIQUE LE CAS PLUTÔT QUE DE L'ESPÉRER — et il a fallu s'y reprendre à deux fois.
+         *
+         * 1er jet : je parcourais les segments existants. Aucun n'avait de photo dans la base de
+         *    test, la boucle ne s'exécutait pas, PHPUnit l'a signalé « risky » — un test sans
+         *    assertion, donc incapable d'échouer.
+         * 2e jet : j'ai créé un article résolu par le pack d'images. Le test est passé au vert…
+         *    ET IL EST RESTÉ VERT quand j'ai retiré le correctif. Normal : le pack rend déjà une
+         *    adresse absolue (`asset(...)`). Je testais le chemin qui n'a jamais eu le défaut.
+         *
+         * Le défaut ne vit QUE sur le chemin du média TÉLÉVERSÉ, seul à rendre « /storage/… ».
+         * C'est donc celui-là qu'il faut fabriquer. Vérifié par mutation : correctif retiré, ce
+         * test devient rouge.
+         */
+        $item = \App\Models\Item::factory()->create(['name' => 'Tiramisu', 'slug' => 'tiramisu']);
+
+        $fichier = tempnam(sys_get_temp_dir(), 'roue-photo').'.png';
+        // 1 pixel PNG : on éprouve le CHEMIN de résolution, pas la qualité de l'image.
+        file_put_contents($fichier, base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+        ));
+        $item->addMedia($fichier)->toMediaCollection('item');
+        $item->refresh();
+
+        $this->segments([
+            ['key' => 'illustre', 'label' => 'Tiramisu', 'type' => 'free_item', 'value' => 0,
+             'weight' => 5, 'daily_cap' => 0, 'cost_item_id' => $item->id],
+        ]);
+
+        $verifiees = 0;
+        foreach ($this->roue->publicSegments() as $s) {
+            $photo = $s['photo'] ?? null;
+            if ($photo === null) {
+                continue; // pas de photo : le libellé suffit, rien à vérifier
+            }
+
+            $verifiees++;
+            $this->assertMatchesRegularExpression('#^https?://#', (string) $photo,
+                "une photo est publiée en adresse RELATIVE (« {$photo} ») : elle sera introuvable "
+                . 'depuis le site du client, qui vit sur un autre domaine');
+        }
+
+        $this->assertGreaterThan(0, $verifiees,
+            'aucune photo publiée : ce test ne prouve rien et doit être réparé, pas ignoré');
+    }
+
+    /**
      * GARDE STRUCTURELLE : il ne doit exister AUCUN moyen de passer un lot depuis l'extérieur.
      * Une assertion sur la signature vaut mieux qu'une assertion sur un comportement : elle
      * échoue au moment où quelqu'un ajoute le paramètre, pas des mois plus tard.
