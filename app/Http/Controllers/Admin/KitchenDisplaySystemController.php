@@ -21,7 +21,27 @@ class KitchenDisplaySystemController extends AdminController
     {
         parent::__construct();
         $this->kitchenDisplaySystemOrderService = $kitchenDisplaySystemOrderService;
-        $this->middleware(['permission:kitchen-display-system'])->only('index', 'changeStatus', 'orderItems', 'historyToday', 'recall');
+        /*
+         * [P1 SÉCU 2026-08-13] `reopen` MANQUAIT ICI, et rien d'autre ne la rattrapait.
+         *
+         * Cette liste est une liste d'INCLUSION : une action livrée après elle n'est pas refusée,
+         * elle est simplement NON GARDÉE. L'échec est silencieux ET ouvert. `reopen` a été livrée
+         * le matin même sans être ajoutée — six routes sur sept portaient le droit, la septième non
+         * (le constructeur parent est vide, la route ne porte que `idempotency` + `throttle`).
+         *
+         * Exploitabilité MESURÉE, pas supposée : tous les rôles du personnel ont déjà ce droit, et
+         * « Delivery Boy » compte 0 compte. Le seul rôle dépourvu du droit qui possède des comptes
+         * est **Customer — 26 comptes en production**. Reproduit : un compte client porteur d'un
+         * jeton valide obtenait **200** et faisait repasser une commande PRÊTE en préparation ; le
+         * plat quitte la colonne « PRÊT » du mur client sous les yeux du client qu'on vient
+         * d'appeler, et `prepared_at` est effacé — toutes les durées de préparation deviennent
+         * fausses. La portée de succursale ne l'arrêtait pas : un compte client a `branch_id = 0`,
+         * la même valeur que l'administrateur.
+         *
+         * ⛔ TOUTE action ajoutée à ce contrôleur qui MUTE une commande doit être ajoutée ici DANS
+         * LE MÊME GESTE. Sentinelle : tests/Feature/KDS/KdsReopenPermissionGuardTest.php
+         */
+        $this->middleware(['permission:kitchen-display-system'])->only('index', 'changeStatus', 'orderItems', 'historyToday', 'recall', 'reopen');
     }
 
     public function index(Request $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
