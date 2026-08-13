@@ -9,6 +9,7 @@ use App\Models\Scopes\BranchScope;
 use App\Models\StockOutflow;
 use App\Models\WheelSpin;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CE QUE LA ROUE A DONNÉ, ET CE QU'ELLE A COÛTÉ.
@@ -164,6 +165,73 @@ class WheelReportService
      *
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * LES PARCOURS COMMENCÉS ET JAMAIS TERMINÉS, avec l'étape exacte où la personne s'est arrêtée.
+     *
+     * [PROPRIÉTAIRE 2026-08-13] « voir la liste des clients qui ont joué et qui n'ont pas complété,
+     * et à quelle étape ».
+     *
+     * ── POURQUOI CETTE LISTE VAUT PLUS QUE CELLE DES GAGNANTS ────────────────────────────────
+     * Les gagnants, on les voit déjà : ils viennent chercher leur lot. Ceux qui abandonnent ne
+     * laissent aucune trace visible, et ce sont EUX qui disent si le parcours coince — un écran qui
+     * perd tout le monde à l'abonnement ne se voit nulle part ailleurs que dans ce tableau.
+     *
+     * ── CE QU'ON PEUT DIRE, ET CE QU'ON NE PEUT PAS ──────────────────────────────────────────
+     * `wheel_step_progress` suit un JETON, pas une personne : tant que le tour n'est pas réclamé,
+     * on n'a ni nom ni téléphone — c'est voulu, on ne demande l'identité qu'à la fin. Cette liste
+     * est donc anonyme par construction, et elle le RESTE : elle sert à mesurer où ça bloque, pas
+     * à rappeler quelqu'un. Ne pas essayer d'y raccrocher une identité, il n'y en a pas.
+     *
+     * Un parcours est « terminé » quand un `wheel_spins` porte le même jeton — c'est-à-dire quand
+     * la personne a donné ses coordonnées et reçu son lot.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function parcoursIncomplets(int $branchId, int $jours = 7, int $limite = 100): array
+    {
+        $depuis = Carbon::now()->subDays(max(1, $jours));
+
+        $lignes = DB::table('wheel_step_progress as p')
+            ->leftJoin('wheel_spins as s', 's.unlock_token_hash', '=', 'p.unlock_token_hash')
+            ->where('p.branch_id', $branchId)
+            ->where('p.created_at', '>=', $depuis)
+            ->whereNull('s.id')
+            ->orderByDesc('p.created_at')
+            ->limit(max(1, $limite))
+            ->get([
+                'p.created_at', 'p.updated_at', 'p.review_opened_at',
+                'p.follow_opened_at', 'p.spun_at', 'p.prize_label',
+            ]);
+
+        return $lignes->map(function ($p) {
+            /*
+             * L'ÉTAPE ATTEINTE se lit à l'envers — de la plus avancée à la plus timide. Lire dans
+             * l'autre sens dirait « a ouvert l'avis » de quelqu'un qui a déjà fait tourner la roue.
+             */
+            if ($p->spun_at !== null) {
+                $etape = 'a gagné, mais n\'a pas donné ses coordonnées';
+                $rang  = 3;
+            } elseif ($p->follow_opened_at !== null) {
+                $etape = 'est parti s\'abonner et n\'est pas revenu';
+                $rang  = 2;
+            } elseif ($p->review_opened_at !== null) {
+                $etape = 'est parti laisser un avis et n\'est pas revenu';
+                $rang  = 1;
+            } else {
+                $etape = 'a scanné, puis s\'est arrêté tout de suite';
+                $rang  = 0;
+            }
+
+            return [
+                'quand'   => $p->created_at,
+                'dernier' => $p->updated_at,
+                'etape'   => $etape,
+                'rang'    => $rang,
+                'lot'     => $p->prize_label,
+            ];
+        })->all();
+    }
+
     public function historique(int $branchId, int $jours = 30, int $limite = 200): array
     {
         $depuis = Carbon::now()->subDays(max(1, $jours));

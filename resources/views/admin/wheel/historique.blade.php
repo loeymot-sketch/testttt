@@ -66,6 +66,12 @@
   .etat-du{background:rgba(255,184,0,.14);border:1px solid rgba(255,184,0,.5);color:var(--jaune2)}
   .etat-expire{background:rgba(217,48,37,.16);border:1px solid rgba(217,48,37,.5);color:#FFB4AC}
   .etat-code{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);opacity:.85}
+  /* Les trois degrés d'un abandon : plus la personne était allée loin, plus il coûte cher. */
+  .etat-chaud{background:rgba(217,48,37,.16);border:1px solid rgba(217,48,37,.5);color:#FFB4AC}
+  .etat-tiede{background:rgba(255,184,0,.14);border:1px solid rgba(255,184,0,.5);color:var(--jaune2)}
+  .etat-froid{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);opacity:.8}
+  .titre-bloc{margin:26px 0 12px; font-size:16px; letter-spacing:.08em; text-transform:uppercase;
+              color:var(--jaune2); font-weight:900}
 
   /* L'avertissement « remis sans que le stock bouge » : le défaut du 10 août, qui doit rester
      VISIBLE ligne par ligne et pas seulement dans un total. */
@@ -170,6 +176,59 @@
     <p class="note">
       Le numéro du client n'est jamais affiché en entier : seuls ses quatre derniers chiffres le
       sont, de quoi confirmer une identité qu'il vient d'annoncer. Au plus 200 lignes par période.
+    </p>
+  @endif
+
+  {{-- ── LES PARCOURS COMMENCÉS ET JAMAIS TERMINÉS ────────────────────────────────────────
+       [PROPRIÉTAIRE 2026-08-13] « voir la liste des clients qui ont joué et qui n'ont pas complété,
+       et à quelle étape ».
+
+       Pourquoi cette liste vaut plus que celle des gagnants : les gagnants, on les voit déjà — ils
+       viennent chercher leur lot. Ceux qui abandonnent ne laissent AUCUNE trace visible, et ce sont
+       eux qui disent si le parcours coince. Un jeu qui perd tout le monde à l'abonnement ne se voit
+       nulle part ailleurs que dans ce tableau.
+
+       Elle est ANONYME, et ce n'est pas un manque : tant que le tour n'est pas réclamé, on n'a ni
+       nom ni téléphone — on ne demande l'identité qu'à la fin, exprès. Elle sert à mesurer OÙ ça
+       bloque, jamais à rappeler quelqu'un. --}}
+  <h2 class="titre-bloc">Parcours commencés et non terminés</h2>
+
+  @if (empty($incomplets))
+    <p class="note">
+      Aucun parcours abandonné sur la période. Tous ceux qui ont scanné sont allés au bout.
+    </p>
+  @else
+    <div class="enveloppe">
+      <table>
+        <thead>
+          <tr>
+            <th>Quand</th>
+            <th>Jusqu'où il est allé</th>
+            <th>Lot tombé</th>
+            <th>Dernier signe</th>
+          </tr>
+        </thead>
+        <tbody>
+        @foreach ($incomplets as $i)
+          <tr>
+            <td>{{ \Illuminate\Support\Carbon::parse($i['quand'])->format('d/m/Y H:i') }}</td>
+            <td>
+              {{-- Le rang colore l'étape : plus il est allé loin, plus l'abandon est coûteux. --}}
+              <span class="etat etat-{{ $i['rang'] >= 3 ? 'chaud' : ($i['rang'] >= 1 ? 'tiede' : 'froid') }}">
+                {{ $i['etape'] }}
+              </span>
+            </td>
+            <td>{{ $i['lot'] ?: '—' }}</td>
+            <td>{{ \Illuminate\Support\Carbon::parse($i['dernier'])->diffForHumans() }}</td>
+          </tr>
+        @endforeach
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      Ces lignes n'ont ni nom ni numéro : l'identité n'est demandée qu'à la toute fin du parcours.
+      C'est une mesure de l'endroit où ça bloque, pas une liste de gens à rappeler.
+      <b>« A gagné mais n'a pas donné ses coordonnées »</b> est le plus coûteux : le lot était acquis.
     </p>
   @endif
 

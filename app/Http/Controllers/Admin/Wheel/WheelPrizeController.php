@@ -132,6 +132,14 @@ class WheelPrizeController extends Controller
             'periodes' => $permis,
             'lignes' => app(\App\Services\Wheel\WheelReportService::class)
                 ->historique($branchId, $jours),
+            /*
+             * [PROPRIÉTAIRE 2026-08-13] « voir la liste des clients qui n'ont pas complété et à
+             * quelle étape ». Fenêtre volontairement plus COURTE que celle de l'historique : un
+             * parcours abandonné il y a trois semaines n'apprend plus rien, alors qu'un abandon
+             * d'hier dit peut-être qu'une étape coince en ce moment.
+             */
+            'incomplets' => app(\App\Services\Wheel\WheelReportService::class)
+                ->parcoursIncomplets($branchId, min($jours, 7)),
         ]);
     }
 
