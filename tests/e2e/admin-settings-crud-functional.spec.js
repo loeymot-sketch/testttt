@@ -165,4 +165,51 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(list).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Role DELETE: row gone after confirm — REAL removal.');
   });
+
+  test('Item Category: create -> appears in table -> edit -> delete -> gone', async () => {
+    // Uses its own modal id (#categoryModal, not the generic #modal) --
+    // SmModalCreateComponent's data-modal attribute is actually IGNORED by
+    // its click handler (appService.modalShow() takes no argument and
+    // defaults to the '.modal' CLASS selector, confirmed by reading
+    // appService.js directly) so the button still opens the right modal,
+    // but the submit-button/field selectors below must scope to
+    // #categoryModal specifically since a generic #modal id doesn't exist
+    // on this page. This page also ships clean data-testid attributes
+    // (admin-category-row-{id}, -edit-{id}, -delete-{id}) -- used here in
+    // preference to text/class matching after earlier pages on this page
+    // taught the lesson that shared CSS classes are not reliable targets.
+    const uniq = `E2ECategory${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/item-categories', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.getByRole('button', { name: /ajouter/i }).click();
+    await page.waitForTimeout(400);
+    await page.fill('#categoryModal #name', uniq);
+    await page.click('#categoryModal button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    const table = page.locator('table.db-table');
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Item Category CREATE: "${uniq}" appears in table — REAL.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    const rowId = await row.getAttribute('data-testid').then((v) => (v || '').replace('admin-category-row-', ''));
+    await page.click(`[data-testid="admin-category-edit-${rowId}"] button, [data-testid="admin-category-edit-${rowId}"]`);
+    await page.waitForTimeout(600);
+    const nameInput = page.locator('#categoryModal #name');
+    await expect(nameInput).toBeVisible({ timeout: 8000 });
+    await nameInput.fill(`${uniq}EDITED`);
+    await page.click('#categoryModal button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Item Category EDIT: rename reflected in table — REAL persistence.');
+
+    await page.click(`[data-testid="admin-category-delete-${rowId}"] button, [data-testid="admin-category-delete-${rowId}"]`);
+    await confirmDelete(page);
+
+    await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Item Category DELETE: row gone after confirm — REAL removal.');
+  });
 });
