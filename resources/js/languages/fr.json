@@ -391,6 +391,7 @@
     "menu": {
         "historique": "Historique",
         "encaissement": "Encaissement",
+        "roue": "La roue",
         "dashboard": "Tableau de bord",
         "change_password": "Changer le mot de passe",
         "settings": "Paramètres",

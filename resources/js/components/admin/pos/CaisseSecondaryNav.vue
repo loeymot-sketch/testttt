@@ -56,10 +56,10 @@
                  `target="_blank"` : le caissier ne doit JAMAIS perdre sa caisse de vue pour
                  aller valider un tour. Il revient d'un geste, sa commande en cours intacte.
 
-                 Libellé écrit en clair et non en `$t(...)` : `fr.json` porte au moment où
-                 j'écris des modifications non committées d'une autre session, et y ajouter une
-                 clé m'obligerait à committer son travail inachevé. V1 est FR-only (ADR-007) donc
-                 rien n'est cassé — à remonter en i18n quand le fichier sera propre. -->
+                 [2026-08-13, second passage] Le libellé était écrit en clair : `fr.json` portait
+                 alors des modifications non committées d'une autre session, et y ajouter une clé
+                 m'aurait obligé à committer son travail inachevé. Ce fichier est maintenant
+                 propre, la clé est posée, et le libellé passe par `$t(...)` comme ses voisins. -->
             <a
                 href="/admin/roue"
                 target="_blank"
@@ -69,7 +69,7 @@
                 @click="ouvrirRoue"
             >
                 <span class="csn-ico" aria-hidden="true">🎡</span>
-                <span>La roue</span>
+                <span>{{ $t('menu.roue') }}</span>
             </a>
         </div>
         <router-link
