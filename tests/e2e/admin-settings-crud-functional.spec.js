@@ -480,6 +480,52 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     console.log('[CRUD-FUNCTIONAL] Kiosk Machine STATUS TOGGLE test cleanup: row deleted.');
   });
 
+  test('Kiosk Machine: edit (rename machine_id) -> appears in table -> delete -> gone', async () => {
+    // Standard #modal edit pattern (SmModalEditComponent), same shape as
+    // Currency/Language edit already proven -- password is required on
+    // create but nullable on edit (KioskMachineRequest.php), so editing
+    // doesn't need to re-enter it.
+    const uniq = `E2EKMEdit${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/kiosk-machines/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #machine_id', uniq);
+    await page.fill('#modal #username', uniq.toLowerCase());
+    await page.fill('#modal #password', 'TestPassword123!');
+    const userGroup = page.locator('#modal label[for="user_id"]').locator('xpath=..');
+    await userGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await userGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+    const branchGroup = page.locator('#modal label[for="branch_id"]').locator('xpath=..');
+    await branchGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    await branchGroup.locator('li.vue-dropdown-item[role="option"]').first().click();
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Kiosk Machine (edit test) CREATE: "${uniq}" appears in table.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+    const machineIdInput = page.locator('#modal #machine_id');
+    await expect(machineIdInput).toHaveValue(uniq, { timeout: 8000 });
+    await machineIdInput.fill(`${uniq}EDITED`);
+    await submitModal(page);
+
+    await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Kiosk Machine EDIT: machine_id rename reflected in table — REAL persistence.');
+
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.locator('[class*="delete" i]').first().click();
+    await confirmDelete(page);
+    await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Kiosk Machine EDIT test cleanup: row deleted.');
+  });
+
   test('Slider: create (incl. required image upload) -> appears in table -> delete -> gone', async () => {
     // title is unique (SliderRequest.php) -- unique suffix per run, like
     // Currency/Language. image is REQUIRED on create (unlike Page/Theme
