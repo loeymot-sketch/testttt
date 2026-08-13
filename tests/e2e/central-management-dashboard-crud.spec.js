@@ -92,19 +92,23 @@ function cleanupDashboardCrud(prefix = PREFIX) {
     }
 
     if ($itemIds->isNotEmpty()) {
-      if (Schema::hasTable('stock_movements')) {
-        $movements = DB::table('stock_movements')->whereIn('stockable_id', $itemIds);
-        if (Schema::hasColumn('stock_movements', 'stockable_type')) {
-          $movements->where('stockable_type', App\\Models\\Item::class);
-        }
-        $movements->delete();
-      }
+      // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] stock_movements no
+      // longer has stockable_id/stockable_type (schema now keys it by
+      // stock_level_id) -- this delete was silently throwing a
+      // QueryException on every run that reached here, which meant
+      // afterEach's cleanup never got past this line, leaving PW-DASH-CRUD
+      // items/categories/attributes permanently orphaned in the DB on
+      // every failed run of this test (confirmed live: found 10 leftover
+      // items + 5 categories + 5 attributes from a prior run before this
+      // fix, deleted by hand once via the corrected query below).
       if (Schema::hasTable('stock_levels')) {
-        $levels = DB::table('stock_levels')->whereIn('stockable_id', $itemIds);
-        if (Schema::hasColumn('stock_levels', 'stockable_type')) {
-          $levels->where('stockable_type', App\\Models\\Item::class);
+        $levelIds = DB::table('stock_levels')->whereIn('stockable_id', $itemIds)
+          ->where('stockable_type', App\\Models\\Item::class)
+          ->pluck('id');
+        if (Schema::hasTable('stock_movements') && Schema::hasColumn('stock_movements', 'stock_level_id') && $levelIds->isNotEmpty()) {
+          DB::table('stock_movements')->whereIn('stock_level_id', $levelIds)->delete();
         }
-        $levels->delete();
+        DB::table('stock_levels')->whereIn('id', $levelIds)->delete();
       }
       if (Schema::hasTable('item_branch_availability')) DB::table('item_branch_availability')->whereIn('item_id', $itemIds)->delete();
       if (Schema::hasTable('item_wizard_steps')) {
