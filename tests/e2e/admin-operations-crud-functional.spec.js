@@ -788,3 +788,74 @@ test.describe.serial('Real functional state transition — Table Order Reject (w
     console.log(`[CRUD-FUNCTIONAL] Table Order REJECT: real order #${orderId} transitioned PENDING(1) -> REJECTED(19) in DB, reason persisted via the real reject modal.`);
   });
 });
+
+test.describe.serial('Real functional state transition — Online Order status dropdown (Accept -> Delivered)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>10,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); echo $o->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    orderId = out;
+  });
+
+  test.afterAll(async () => {
+    if (orderId) {
+      tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Online Order: the status dropdown (a third, different UI control) jumps a real order to Delivered', async () => {
+    // A third distinct status-change mechanism on this same page, after
+    // the Accept button+SweetAlert2-confirm and the Reject modal+reason:
+    // a dropdown list (<li> items, orderStatus(status.value)) with NO
+    // confirmation step at all (confirmed via component source: orderStatus()
+    // dispatches directly, unlike changeStatus() which gates through
+    // appService.acceptOrder()). Only reachable once the order is no longer
+    // PENDING, so Accept first via the already-proven button+confirm flow.
+    await page.goto(`/admin/online-orders/show/${orderId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.getByRole('button', { name: /accept|accepter/i }).click();
+    await page.getByRole('button', { name: /yes, accept it/i }).click();
+    await page.waitForTimeout(1500);
+
+    // .dropdown-group is CSS :hover-driven (no JS toggle) -- confirmed via
+    // an existing proven pattern elsewhere in this suite
+    // (wave-t-r1-f5-delivery-ui.spec.js). A plain .click() on the button
+    // never opens it (scale-y-0 stays applied), so a first attempt here
+    // timed out waiting on a permanently-invisible <li>. hover() + a real
+    // click still leaves the panel's computed visibility ambiguous
+    // (animation-driven), so dispatchEvent('click') is used to fire the
+    // Vue handler directly, same as that proven pattern.
+    // .dropdown-group is reused across this page (nav avatar menu, payment
+    // status dropdown, order status dropdown) -- a first attempt's bare
+    // locator hit a 4-way strict-mode violation. The order-status one is
+    // last in DOM order (confirmed via the violation's own element list:
+    // avatar menu, payment status "Payé/Non payé", THEN order status
+    // "Acceptée/En pré...").
+    const dropdownGroup = page.locator('.dropdown-group').last();
+    await dropdownGroup.hover();
+    await page.waitForTimeout(300);
+    await dropdownGroup.locator('.dropdown-list li', { hasText: /delivered|livrée|livré/i }).dispatchEvent('click');
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\Order::find(${orderId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe(String(13)); // OrderStatus::DELIVERED
+    console.log(`[CRUD-FUNCTIONAL] Online Order DROPDOWN: real order #${orderId} transitioned ACCEPT(4) -> DELIVERED(13) in DB via the status dropdown, a 3rd distinct UI control on this page proven functional.`);
+  });
+});
