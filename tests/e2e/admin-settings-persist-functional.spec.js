@@ -469,4 +469,34 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Mail: restored to original value.');
   });
+
+  test('Change Password: real backend rejects a wrong current password (never risks the real admin credential)', async () => {
+    // Deliberately does NOT attempt a successful password change -- every
+    // other test in this session (and every other spec file) logs in as
+    // this exact admin via loginAsAdmin(), which hardcodes the current
+    // real password. A successful change here, even if "restored"
+    // afterward, risks a race with concurrent test workers/sessions
+    // reading a mid-flight credential and locking every other test out.
+    // Instead proves the real thing worth proving: the form is wired to a
+    // real backend call with real validation, not a client-side no-op --
+    // submit a deliberately WRONG old_password and confirm the backend
+    // rejects it (real PUT, real 422, real error message rendered), which
+    // can never succeed in mutating the real credential.
+    await page.goto('/admin/profile/change-password', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.fill('#old_password', `definitely-wrong-${Date.now()}`);
+    await page.fill('#password', 'E2ENewPassword123!');
+    await page.fill('#confirm_password', 'E2ENewPassword123!');
+
+    const saveResponse = page.waitForResponse(
+      (res) => /profile\/change-password$/.test(res.url()) && res.request().method() === 'PUT',
+      { timeout: 10_000 }
+    );
+    await page.click('button[type="submit"]');
+    const res = await saveResponse;
+    expect(res.status()).toBe(422);
+
+    await expect(page.locator('small.db-field-alert')).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Change Password: real PUT ${res.url()} rejected a wrong old_password with a real 422 + rendered field error -- not a client-side-only form, and the real admin credential was never at risk.`);
+  });
 });
