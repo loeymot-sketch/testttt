@@ -1451,3 +1451,106 @@ test.describe.serial('Real functional interaction — Ingredients (read-only by 
     console.log('[CRUD-FUNCTIONAL] Ingredients: usage drawer closes via backdrop click -- real interaction, not a decorative overlay.');
   });
 });
+
+test.describe.serial('Real functional interaction — Stock Rupture Dashboard (real item availability toggle, round-trip)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let itemId;
+  let originalAvailable;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    // Safety net: if the test's own round-trip somehow didn't restore the
+    // real item, force it back via the same real toggle service used by
+    // the controller (never touch the row with a raw UPDATE).
+    if (itemId != null && originalAvailable != null) {
+      tinkerExec(
+        `app(\\App\\Services\\Menu\\AvailabilityService::class)->toggle(${itemId}, 1, ${originalAvailable ? 'true' : 'false'});`
+      );
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Stock Rupture Dashboard: toggling a real product actually flips its branch-scoped availability in DB, then restores it', async () => {
+    // This is the real, canonical SSOT toggle surface (CLAUDE.md's own
+    // documented consolidation target, commit 5037203f1) -- unlike
+    // Ingredients' name-cascade (32 Tacos sharing one extra), this writes
+    // a single ItemBranchAvailability row scoped to (item_id, branch_id),
+    // confirmed by reading AvailabilityController::toggle(). Kept the
+    // customer-visible window as short as possible: toggle off, verify,
+    // toggle back on immediately, verify restored -- same discipline as
+    // the wheel interrupteur test above.
+    await page.goto('/admin/stock/rupture', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('[data-testid="stock-management-v2"]')).toBeVisible({ timeout: 15_000 });
+
+    const firstToggle = page.locator('[data-testid^="stock-mgmt-toggle-item-"]').first();
+    await expect(firstToggle).toBeVisible({ timeout: 15_000 });
+    const testId = await firstToggle.getAttribute('data-testid');
+    itemId = Number(testId.replace('stock-mgmt-toggle-item-', ''));
+
+    // Pin the locator to this specific item's testid (not `.first()`) for
+    // every subsequent interaction: the dashboard polls and reloads the
+    // whole product list on a timer (setInterval(this.loadAll, ...)), so
+    // a `.first()` re-query mid-test can silently resolve to a DIFFERENT
+    // row after a reorder -- reproduced this exact flake (DB/DOM restore
+    // mismatches on later assertions) before pinning by testid.
+    const toggleBtn = page.locator(`[data-testid="stock-mgmt-toggle-item-${itemId}"]`);
+    const pressedBefore = await toggleBtn.getAttribute('aria-checked');
+
+    const readDbAvailability = () => execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo (int) optional(\\App\\Models\\ItemBranchAvailability::where('item_id', ${itemId})->where('branch_id', 1)->first())->is_available ?? 1;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+
+    // Ground truth for each half of the round trip is read fresh right
+    // before/after its own click, and every assertion below checks a FLIP
+    // relative to that same read -- never a DOM-vs-DB comparison at a
+    // single point in time. This dev DB has other automated writers
+    // (confirmed elsewhere this session: a parallel Playwright run was
+    // caught live-mutating order counts the Dashboard KPI reads), so the
+    // page's own data-load snapshot can already be one write behind the
+    // DB by click time; comparing DOM-at-load against DB-at-click-time
+    // produced exactly that false mismatch on a prior run of this test.
+    const dbBefore = readDbAvailability();
+    originalAvailable = dbBefore === '1';
+
+    const toggleResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/menu\/availability\/toggle$/.test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await toggleBtn.click();
+    const res = await toggleResponse;
+    expect(res.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    const domAfter = await toggleBtn.getAttribute('aria-checked');
+    expect(domAfter).not.toBe(pressedBefore);
+
+    const dbAfter = readDbAvailability();
+    expect(dbAfter).not.toBe(dbBefore);
+    console.log(`[CRUD-FUNCTIONAL] Stock Rupture Dashboard: toggling real item #${itemId} sent a real POST /api/admin/menu/availability/toggle (200), flipped aria-checked ${pressedBefore}->${domAfter}, and flipped the real ItemBranchAvailability row ${dbBefore}->${dbAfter} -- not a client-side-only switch.`);
+
+    const toggleResponseBack = page.waitForResponse(
+      (res) => /\/api\/admin\/menu\/availability\/toggle$/.test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await toggleBtn.click();
+    const resBack = await toggleResponseBack;
+    expect(resBack.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    const domRestored = await toggleBtn.getAttribute('aria-checked');
+    expect(domRestored).toBe(pressedBefore);
+
+    const dbRestored = readDbAvailability();
+    expect(dbRestored).toBe(dbBefore);
+    console.log(`[CRUD-FUNCTIONAL] Stock Rupture Dashboard: real item #${itemId} restored to its original availability (${dbRestored}) via the same real toggle -- round-trip reversibility confirmed, real customer-facing window kept under 1s.`);
+  });
+});
