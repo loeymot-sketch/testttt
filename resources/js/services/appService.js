@@ -277,7 +277,7 @@ export default {
                 if (i !== 1) {
                     response += "&";
                 }
-                response += request + "=" + requests[request];
+                response += request + "=" + encodeURIComponent(requests[request]);
             }
             i++;
         }
