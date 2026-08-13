@@ -381,4 +381,44 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(page.locator('#first_name')).toHaveValue(original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Admin Profile: restored to original value.');
   });
+
+  test('Kiosk Setup: welcome title edit -> save -> reload -> persisted -> restored', async () => {
+    // kiosk_welcome_title is CONFIRMED-WIRED -- KioskIdleScreenComponent.vue
+    // (the real customer-facing kiosk idle screen) reads it directly
+    // ("if (data.kiosk_welcome_title) this.welcomeTitle = ..."). Deliberately
+    // NOT touching kiosk_admin_pin on this same form: (a) it's a
+    // type="password" field the server never echoes back in plaintext
+    // (kiosk_admin_pin_set boolean instead), so there's no simple
+    // read-mutate-restore cycle for it, and (b) it's already a documented
+    // open owner-decision item (label implies a security gate that no
+    // controller/middleware actually enforces) from an earlier wave of this
+    // same session -- not something to touch incidentally here. Confirmed
+    // via the component's own save() that an empty PIN is excluded from the
+    // payload, so this test never risks overwriting it.
+    const url = '/admin/settings/kiosk-setup';
+    const fieldId = 'kiosk_welcome_title';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator(`#${fieldId}`);
+    await expect(field).toBeVisible({ timeout: 10_000 });
+
+    const original = await field.inputValue();
+    const mutated = `E2E Welcome ${Date.now() % 100000}`;
+    await field.fill(mutated);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(mutated, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Kiosk Setup: welcome title "${original}" -> "${mutated}", reload confirms persistence.`);
+
+    await page.locator(`#${fieldId}`).fill(original);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Kiosk Setup: restored to original value.');
+  });
 });
