@@ -153,13 +153,30 @@
        Le remède n'est pas de rogner la roue mais de RETIRER ce qui n'a pas sa place ici : en
        portrait, le bloc « Scanne / Tourne / Gagne » répète ce que la consigne dit déjà juste
        au-dessus de la roue. On le masque, et la roue retrouve sa hauteur. */
+    /* ⚠️ DEUXIÈME CORRECTION DU MÊME ÉCRAN — la première ne suffisait pas, et je le note pour
+       qui reprendra ce fichier. Après avoir rendu la roue visible, elle CHEVAUCHAIT le titre et le
+       QR : je lui avais donné un plancher (`min-height`) sans réduire ce qui l'entoure. Un plancher
+       sur un élément d'une ligne élastique ne crée pas de place — il fait déborder l'élément par-
+       dessus ses voisins. C'est le même mécanisme, à l'envers, que la disparition d'avant.
+
+       La vraie cause était AILLEURS et je l'avais ratée : en portrait `vmin` vaut la LARGEUR, donc
+       le QR à 38vmin réclamait 38 % de la largeur — énorme sur un écran étroit — et ne laissait
+       rien à la roue. On borne donc le QR ET la roue en `vh` (la hauteur, la ressource réellement
+       rare ici), et on retire le plancher : chacun prend une part mesurée du même budget. */
     .gauche{min-height:0}
     .actes{display:none}
-    .roue{height:min(52vmin,100%); min-height:34vmin}
-    h1{font-size:min(6.4vmin,64px)}
-    .consigne{font-size:clamp(14px,2.2vmin,24px)}
-    .defile{order:3; max-height:22vh}
-    .defile-item img{width:min(13vmin,96px); height:min(13vmin,96px)}
+    .roue{height:min(34vh,86vmin,100%)}
+    h1{font-size:min(6vmin,58px)}
+    .consigne{font-size:clamp(13px,2vmin,22px)}
+    .qr svg{width:min(30vh,52vmin,300px)}
+    .qr{padding:1.6vmin; border-radius:2.4vmin}
+    .qr-boite{padding:1.6vmin}
+    .scanne{font-size:min(3.4vmin,30px)}
+    .detail{font-size:clamp(15px,2vmin,20px)}
+    .fleche{display:none}
+    .defile{order:3; max-height:19vh}
+    .defile-titre{margin-bottom:.4vmin}
+    .defile-item img{width:min(11vh,84px); height:min(11vh,84px)}
   }
   @keyframes defiler-h{from{transform:translateX(0)} to{transform:translateX(-50%)}}
 
