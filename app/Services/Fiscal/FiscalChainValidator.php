@@ -158,19 +158,71 @@ class FiscalChainValidator
                 }
             }
 
-            $recomputed = $this->auditLogService()->computeHash(
-                (int) ($row->branch_id ?? 0),
-                $rowPrev,
-                (string) $row->action,
-                (array) ($row->payload ?? [])
-            );
+            /*
+             * [P0 2026-08-13] AGILITÉ DE CLÉ — LE JUMEAU OUBLIÉ DU LOCK DU 2026-08-08.
+             *
+             * CE QUE ÇA A COÛTÉ : ce vérificateur garde l'ouverture du rapport Z. En n'essayant
+             * qu'UN SEUL secret, il comptait comme « altérées » les lignes signées AVANT
+             * l'apparition de `FISCAL_AUDIT_SECRET_BRANCH_1`. Résultat en production : le Z n'a
+             * PAS PU S'OUVRIR PENDANT 17 JOURS (dernier clos le 2026-07-27), laissant
+             * **189 ventes numérotées et 3 344,80 € hors de tout Z signé**, en augmentation
+             * quotidienne. Le filet de nuit journalisait `opened=0 … failed=1` sans que personne
+             * ne le voie.
+             *
+             * LE SIGNE QUI A TRANCHÉ : deux vérificateurs, mêmes données, verdicts OPPOSÉS —
+             * `fiscal:verify-chain --all` répondait « CHAIN OK » (lui essaie les secrets connus
+             * depuis le LOCK) pendant qu'ici on comptait 181 altérations. Quand deux juges
+             * regardent la même chose et ne disent pas la même chose, c'est le juge qu'il faut
+             * examiner, pas la preuve.
+             *
+             * LA CHAÎNE N'A JAMAIS ÉTÉ ALTÉRÉE : mesuré et consigné dans `AuditLogService:219-221`
+             * — 360 lignes se reproduisent avec le secret de branche, 423 avec le défaut,
+             * **aucune irréductible**, chaînage `prev_hash` intact, aucun trou d'identifiant.
+             *
+             * ⛔ CECI N'AFFAIBLIT RIEN. On n'essaie que les secrets que la configuration COURANTE
+             * connaît — aucune valeur devinée. Sans posséder l'un d'eux, une signature reste
+             * impossible à forger, et une ligne qui ne se reproduit avec AUCUN d'eux demeure une
+             * ALTÉRATION qui bloque. C'est la propriété essentielle, éprouvée par
+             * `test_une_signature_forgee_reste_DETECTEE_et_bloque_toujours`.
+             *
+             * ⚠️ FAUSSE PISTE À NE PAS REPRENDRE : ce n'était PAS un résidu de `config:cache`
+             * (piège connu qui rend `env()` nul). Vérifié en production — aucun
+             * `bootstrap/cache/config.php`, et le validateur échouait quand même.
+             *
+             * La règle des candidats est celle du jumeau (`AuditLogService::candidateVerificationBranches`,
+             * privée dans un fichier GELÉ §7, donc non appelable ici) : la branche de la ligne
+             * d'abord — le cas normal doit rester le premier essayé — puis `0`, qui retombe sur le
+             * secret par défaut via `secretFor()`. L'égalité des deux vérificateurs est verrouillée
+             * par `test_les_deux_verificateurs_rendent_le_meme_verdict`.
+             *
+             * Sentinelle : tests/Feature/Fiscal/FiscalChainValidatorSecretAgilityTest.php
+             */
+            $brancheDeLaLigne = (int) ($row->branch_id ?? 0);
+            $candidats = $brancheDeLaLigne === 0 ? [0] : [$brancheDeLaLigne, 0];
 
             $stored = trim((string) $row->current_hash);
-            if (!hash_equals($stored, $recomputed)) {
+            $recomputed = null;
+            $reproduite = false;
+
+            foreach ($candidats as $brancheCandidate) {
+                $recomputed = $this->auditLogService()->computeHash(
+                    $brancheCandidate,
+                    $rowPrev,
+                    (string) $row->action,
+                    (array) ($row->payload ?? [])
+                );
+
+                if (hash_equals($stored, $recomputed)) {
+                    $reproduite = true;
+                    break;
+                }
+            }
+
+            if (!$reproduite) {
                 $errors[] = [
                     'audit_log_id' => (int) $row->id,
                     'kind'         => 'signature_mismatch',
-                    'expected'     => $recomputed,
+                    'expected'     => (string) $recomputed,
                     'actual'       => $stored,
                 ];
             }
