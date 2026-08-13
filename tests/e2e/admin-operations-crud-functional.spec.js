@@ -1205,3 +1205,44 @@ test.describe.serial('Real functional CRUD — Messages (admin-to-customer chat,
     console.log(`[CRUD-FUNCTIONAL] Messages: real chat message sent to throwaway customer "${customerName}" and appears in the thread — REAL admin-to-customer send, not a client-side-only echo.`);
   });
 });
+
+test.describe.serial('Real functional interaction — Z-Reports (X-Report, read-only fiscal snapshot)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Z-Reports: "X Report" button fetches a real live fiscal snapshot (GET, no mutation)', async () => {
+    // Frozen-zone-adjacent territory (NF525 fiscal), but this specific
+    // button is NOT the frozen Z-report close/sequence logic -- an
+    // "X report" is the fiscal-terminology READ-ONLY reconciliation
+    // snapshot (GET /admin/fiscal/x-report, confirmed via component
+    // source), distinct from closing/creating a Z-report which IS
+    // append-only/irreversible and correctly out of scope. No frozen
+    // file touched, no mutation, no NF525 chain risk.
+    await page.goto('/admin/settings/z-reports', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const xReportResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/fiscal\/x-report(\?|$)/.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 10_000 }
+    );
+    await page.click('[data-testid="fiscal-x-report-btn"]');
+    const res = await xReportResponse;
+    expect(res.status()).toBe(200);
+
+    const body = page.locator('[data-testid="fiscal-x-report-body"]');
+    await expect(body).toBeVisible({ timeout: 10_000 });
+    const text = (await body.innerText()).trim();
+    expect(text.length).toBeGreaterThan(0);
+    console.log(`[CRUD-FUNCTIONAL] Z-Reports X-Report: real GET /api/admin/fiscal/x-report (200) fetched a real fiscal snapshot (${text.length} chars), not a cosmetic no-op.`);
+  });
+});
