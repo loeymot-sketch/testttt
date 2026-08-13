@@ -632,3 +632,54 @@ test.describe.serial('Real functional state transition — Online Order status (
     console.log(`[CRUD-FUNCTIONAL] Online Order ACCEPT: real order #${orderId} transitioned PENDING(1) -> ACCEPT(4) in DB via the real "Accept" button, not a client-side-only toast.`);
   });
 });
+
+test.describe.serial('Real functional state transition — Table Order status (Accept, via admin show page)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    // Same throwaway-order pattern proven for Online Orders just above,
+    // order_type=DINING_TABLE (20) this time. No address dereference found
+    // in TableOrderShowComponent.vue's template (unlike OnlineOrder's
+    // DELIVERY-address crash), so no special type substitution needed here.
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>20,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); echo $o->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    orderId = out;
+  });
+
+  test.afterAll(async () => {
+    if (orderId) {
+      tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Table Order: real "Accept" button transitions a real order from Pending to Accepted', async () => {
+    await page.goto(`/admin/table-orders/show/${orderId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // Same appService.acceptOrder() SweetAlert2 confirmation gate as
+    // OnlineOrder's changeStatus() -- confirmed from the start this time.
+    await page.getByRole('button', { name: /accept|accepter/i }).click();
+    await page.getByRole('button', { name: /yes, accept it/i }).click();
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\Order::find(${orderId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe(String(4)); // OrderStatus::ACCEPT
+    console.log(`[CRUD-FUNCTIONAL] Table Order ACCEPT: real order #${orderId} transitioned PENDING(1) -> ACCEPT(4) in DB via the real "Accept" button, not a client-side-only toast.`);
+  });
+});
