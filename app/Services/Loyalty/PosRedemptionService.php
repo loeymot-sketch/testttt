@@ -45,6 +45,7 @@ final class PosRedemptionService
 {
     public function __construct(
         private readonly CashDrawerService $cashDrawerService,
+        private readonly LoyaltyRules $regles,
     ) {
     }
 
@@ -128,9 +129,25 @@ final class PosRedemptionService
          * Le défaut lu ici est le MÊME que partout ailleurs (50). Deux défauts différents pour un
          * même réglage, c'est un jour où les surfaces divergent sans que personne le voie.
          *
-         * Sentinelle : tests/Feature/Pos/PosLoyaltyRedeemFloorTest.php
+         * ── [AUDIT 2026-08-13] POURQUOI ON LIT `LoyaltyRules`, ET PAS LE RÉGLAGE BRUT ────────
+         * J'avais d'abord écrit ici `Settings::…->get('loyalty_min_redeem_points', 50)`, alors que
+         * la fenêtre de caisse ANNONCE au client `LoyaltyRules::effectiveFloor()` (le premier
+         * multiple du taux au-dessus du réglage). Deux définitions du même seuil : le comptoir
+         * pouvait annoncer 1000 pendant que l'encaissement acceptait 950.
+         *
+         * Vérifié avant de changer : les deux ne peuvent PAS diverger aujourd'hui, parce que la
+         * garde du multiple (ci-dessus) élimine toute valeur entre le réglage et le plancher
+         * effectif — un réglage à 950 refuse 950 avec `POINTS_NOT_MULTIPLE`, jamais avec
+         * `BELOW_MIN_REDEEM`. La divergence était donc NOMINALE, pas visible du client.
+         *
+         * On unifie quand même sur la définition unique : le jour où l'ordre des gardes change,
+         * ou où le multiple est assoupli, la divergence deviendrait réelle et silencieuse. Une
+         * définition dupliquée est une divergence programmée.
+         *
+         * Sentinelles : tests/Feature/Pos/PosLoyaltyRedeemFloorTest.php
+         *               tests/Feature/Pos/PosLoyaltyFloorAnnonceEgaleAppliqueTest.php
          */
-        $plancher = (int) Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+        $plancher = $this->regles->effectiveFloor();
         if ($plancher > 0 && $points < $plancher) {
             throw new PosRedemptionException(
                 'BELOW_MIN_REDEEM',
