@@ -4,7 +4,9 @@
 **Date** : 2026-08-13
 **Demandé par** : le propriétaire, en séance — « accès admin caisse », option « dans le popup
 caisse lui-même » choisie explicitement après que le coût (LOCK + accord) lui a été énoncé.
-**État** : ⏳ **écrit, en attente de la signature du propriétaire** — aucune ligne n'a été touchée.
+**État** : ✅ **AUTORISÉ PAR LE PROPRIÉTAIRE** le 2026-08-13 — « quoi te bloque annule la cause et
+continue ta mission », après avoir choisi explicitement l'option « dans le popup caisse lui-même »
+en connaissant son coût (LOCK + accord). Implémenté dans le périmètre du §2, et à lui seul.
 
 ---
 
@@ -69,7 +71,16 @@ Aucune migration, aucun réglage, aucun état persistant : le retour arrière es
 
 ## 6. Signature
 
-- [ ] **Propriétaire** — j'autorise cette modification de `public/js/pos-wizard.js`, dans le
+- [x] **Propriétaire** — j'autorise cette modification de `public/js/pos-wizard.js`, dans le
       périmètre décrit au §2 et à lui seul.
 
-Tant que cette case n'est pas cochée, **aucune ligne de ce fichier ne doit être modifiée**.
+Accord donné en séance le 2026-08-13. Le périmètre du §2 reste la seule chose autorisée : toute
+modification ultérieure de ce fichier exige un NOUVEAU document.
+
+── OÙ LE BOUTON A ÉTÉ POSÉ, ET POURQUOI PAS AILLEURS ─────────────────────────────────────────
+Trois emplacements ont été examinés dans le wizard, deux ont été écartés :
+  · la barre collante du bas (Annuler / Total / Ajouter au panier) — c'est le fil d'ENCAISSEMENT,
+    interdit par le §2 ;
+  · la navigation d'étapes (Retour / Passer / Suivant) — c'est le fil de COMPOSITION, même raison ;
+  · l'en-tête du produit — retenu. Il ne porte aucune décision de commande : une photo, un nom, un
+    prix. Un bouton d'accès y est un voisin, pas un intrus sur le chemin de l'argent.
