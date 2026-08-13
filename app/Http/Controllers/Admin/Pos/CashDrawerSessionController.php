@@ -282,6 +282,22 @@ class CashDrawerSessionController extends AdminController
      *
      * @return array<string,mixed>
      */
+    /**
+     * Depuis combien d'HEURES cette session est-elle ouverte ? 0 si elle est close ou sans date.
+     *
+     * En heures et non en jours : une caisse qui a passé UNE nuit n'a pas été comptée, et c'est
+     * déjà le fait qu'on veut voir — attendre le lendemain pour le dire laisserait passer
+     * exactement le cas qu'on cherche.
+     */
+    private function ancienneteEnHeures($session): int
+    {
+        if ($session->closed_at !== null || $session->opened_at === null) {
+            return 0;
+        }
+
+        return (int) $session->opened_at->diffInHours(now());
+    }
+
     private function serialize(CashDrawerSession $session): array
     {
         return [
@@ -298,6 +314,32 @@ class CashDrawerSessionController extends AdminController
             // displayed in admin reconciliation screen and Z-report drilldown.
             'variance_reason'         => $session->variance_reason,
             'status'                  => $session->status,
+
+            /*
+             * [CAISSE 2026-08-13] L'ANCIENNETÉ DE LA SESSION, ET SON ALERTE.
+             *
+             * MESURÉ EN PRODUCTION : deux sessions ouvertes depuis **49 jours** et **36 jours**,
+             * zéro session close depuis l'installation, 237 mouvements et 3 818,30 € accumulés.
+             *
+             * Pourquoi c'est pire que « pas encore clôturé » : une session existe pour comparer ce
+             * qu'on ATTEND dans le tiroir à ce qu'on y TROUVE. Sur 49 jours, cette comparaison ne
+             * veut plus rien dire — l'écart d'un mardi se noie dans celui d'un samedi, et un vol de
+             * 20 € disparaît dans le bruit de sept semaines. La fonction n'est pas « en attente »,
+             * elle est devenue INUTILISABLE, et c'est arrivé en silence.
+             *
+             * ⛔ On ne clôture surtout PAS automatiquement : clôturer, c'est compter physiquement
+             * l'argent. Un logiciel qui le fait à la place d'un humain invente un montant, donc un
+             * écart faux — pire que pas d'écart du tout.
+             *
+             * On rend l'ancienneté visible là où la caisse regarde DÉJÀ (`/current`, appelée à
+             * chaque ouverture d'écran). Un problème invisible ne se corrige jamais ; un problème
+             * affiché finit par agacer quelqu'un, et c'est précisément ce qu'on veut.
+             *
+             * Sentinelle : tests/Feature/Cash/CashSessionStaleWarningTest.php
+             */
+            'open_since_hours'        => $this->ancienneteEnHeures($session),
+            'stale'                   => $this->ancienneteEnHeures($session)
+                                            >= (int) config('pos.cash_session_stale_hours', 24),
         ];
     }
 

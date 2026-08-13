@@ -303,4 +303,19 @@ return [
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE,
     ) ?? false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | ANCIENNETÉ AU-DELÀ DE LAQUELLE UNE SESSION DE CAISSE SE SIGNALE
+    |--------------------------------------------------------------------------
+    | En HEURES. Le défaut (24) vaut une journée de service : une caisse qui a passé la nuit
+    | n'a pas été comptée, et c'est déjà le fait qu'on veut voir.
+    |
+    | Réglable parce que tous les commerces n'ont pas le même rythme — une brasserie de nuit
+    | n'a pas la journée d'un midi. Ce n'est PAS une garde de sécurité : ça n'empêche rien,
+    | ça rend seulement visible. Mesuré en production le 2026-08-13 : deux sessions ouvertes
+    | depuis 49 et 36 jours, sans que rien ne le signale.
+    */
+    'cash_session_stale_hours' => (int) env('POS_CASH_SESSION_STALE_HOURS', 24),
+
 ];
