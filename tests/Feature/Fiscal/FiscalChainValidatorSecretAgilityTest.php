@@ -133,6 +133,48 @@ class FiscalChainValidatorSecretAgilityTest extends TestCase
         $this->valider();
     }
 
+    /**
+     * ⛔ L'ATTAQUE PRÉCISE : LE SECRET D'UNE BRANCHE NE FORGE PAS POUR UNE AUTRE.
+     *
+     * C'est la vraie question que pose un assouplissement : élargir la liste des secrets acceptés
+     * élargit-il aussi ce qu'un porteur de secret PARTIEL peut fabriquer ? On éprouve donc le cas
+     * hostile le plus réaliste — une ligne qui se présente comme appartenant à la branche 2 mais
+     * signée avec le secret de la branche 1, que l'attaquant possède.
+     *
+     * Elle DOIT être refusée : les candidats d'une ligne de branche 2 sont [2, 0], jamais 1.
+     *
+     * ⚠️ CE QUE CE BANC N'AFFIRME PAS, ET QU'IL FAUT DIRE : le porteur du secret par DÉFAUT peut,
+     * lui, signer pour n'importe quelle branche — puisque `0` est candidat de TOUTE ligne. C'est
+     * l'élargissement réel et assumé du LOCK du 2026-08-08, pas un oubli. En V1 mono-poste les deux
+     * secrets vivent dans le même `.env` sur la même machine : qui tient l'un tient déjà l'autre.
+     * Le jour d'un vrai multi-succursales, ce compromis doit être rejugé.
+     */
+    public function test_le_secret_d_une_autre_branche_ne_forge_PAS(): void
+    {
+        // La branche 2 a SON PROPRE secret : sans ça on éprouverait le refus « secret absent »
+        // (une autre voie, qui masquerait la question posée) au lieu de l'usurpation elle-même.
+        Config::set('fiscal.audit_secret', [
+            0 => self::SECRET_DEFAUT,
+            1 => self::SECRET_BRANCHE_1,
+            2 => 'secret-de-la-branche-2-suffisamment-long-0003',
+        ]);
+
+        $h1 = $this->inserer(1, 'a', null);
+
+        // Une ligne de branche 2, signée avec le secret de la branche 1.
+        $payload = ['n' => 'usurpation'];
+        $hash = $this->signerPour(1, $h1, 'usurpation', $payload);
+        DB::table('audit_logs')->insert([
+            'branch_id' => 2, 'user_id' => null, 'action' => 'usurpation', 'resource' => 'test',
+            'resource_id' => null, 'payload' => json_encode($payload), 'prev_hash' => $h1,
+            'current_hash' => $hash, 'ip' => null, 'user_agent' => null, 'session_id' => null,
+            'created_at' => now(),
+        ]);
+
+        $this->expectException(FiscalChainCorruptedException::class);
+        app(FiscalChainValidator::class)->assertChainIntegrity(2, 500);
+    }
+
     /** Et un chaînage rompu reste détecté : on n'a touché qu'à la reproduction de signature. */
     public function test_un_chainage_rompu_reste_DETECTE(): void
     {
