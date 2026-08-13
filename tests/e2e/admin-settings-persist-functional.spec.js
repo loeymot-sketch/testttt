@@ -311,4 +311,40 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
       console.log('[CRUD-FUNCTIONAL] Notification Alert: DB-verified restore to original value.');
     }
   });
+
+  test('Promo Flyer Settings: headline edit -> save -> reload -> persisted -> restored', async () => {
+    // Unlike every other page in this file, PromoFlyerSettingsComponent.vue
+    // has NO id/for attributes on its fields at all -- `input[type="text"]`
+    // (first match) is headline: number fields (discount_percent,
+    // validity_days) and textareas (intro/savings_note/strengths) come
+    // before/between it in DOM order but aren't type="text", so this is a
+    // stable positional selector, confirmed by reading the component source.
+    // headline is required (max 40, PromoFlyerController::updateSettings) --
+    // all other required fields (intro, discount_percent, validity_days,
+    // site_url, qr_url) are left at their existing values, submitted as-is.
+    const url = '/admin/promo-flyer/settings';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator('form input[type="text"]').first();
+    await expect(field).toBeVisible({ timeout: 10_000 });
+
+    const original = await field.inputValue();
+    const mutated = `E2E ${Date.now() % 100000}`.slice(0, 40);
+    await field.fill(mutated);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('form input[type="text"]').first()).toHaveValue(mutated, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Promo Flyer Settings: headline "${original}" -> "${mutated}", reload confirms persistence.`);
+
+    await page.locator('form input[type="text"]').first().fill(original);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('form input[type="text"]').first()).toHaveValue(original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Promo Flyer Settings: restored to original value.');
+  });
 });
