@@ -219,7 +219,7 @@ final class PosCustomerLookupService
                 'when'     => optional($l->created_at ? Carbon::parse($l->created_at) : null)->format('d/m/Y H:i'),
                 'type'     => (string) $l->type,
                 // Un mot que le comptoir comprend, pas l'étiquette technique du grand-livre.
-                'label'    => self::LIBELLES_TYPE[(string) $l->type] ?? (string) $l->type,
+                'label'    => $this->libelle($l),
                 'points'   => $points,
                 // Le signe est PORTÉ par la donnée (les débits sont négatifs en base) : on ne le
                 // recalcule pas depuis le type, sinon un type inconnu afficherait un gain à la place
@@ -230,6 +230,37 @@ final class PosCustomerLookupService
                 'order_id' => $l->order_id ? (int) $l->order_id : null,
             ];
         })->all();
+    }
+
+    /**
+     * L'ÉTIQUETTE D'UNE LIGNE — le type NE SUFFIT PAS.
+     *
+     * [2026-08-13] `earn` était traduit « Gagné sur une commande » quel que soit le contexte. Or un
+     * cadeau de la roue est aussi un `earn` (la colonne est un ENUM à cinq valeurs, on n'en invente
+     * pas une sixième pour une table comptable) — il n'a simplement AUCUNE commande. Le comptoir
+     * aurait donc lu « Gagné sur une commande » sous un cadeau qui n'en a pas, et un client qui
+     * demande « d'où vient ce point ? » aurait reçu une réponse fausse.
+     *
+     * On regarde donc la SURFACE et la présence d'une commande, pas seulement le type. C'est le même
+     * motif que partout ailleurs : une question posée à un seul champ quand la réponse en demande
+     * deux.
+     */
+    private function libelle(object $l): string
+    {
+        $type = (string) $l->type;
+        $surface = (string) ($l->source_surface ?? '');
+
+        if ($type === 'earn' && $surface === 'wheel') {
+            return 'Gagné à la roue';
+        }
+
+        if ($type === 'earn' && $l->order_id === null) {
+            // Un gain sans commande dont la surface ne dit rien : on ne prétend pas savoir d'où il
+            // vient. Mieux vaut vague et vrai que précis et faux.
+            return 'Gagné';
+        }
+
+        return self::LIBELLES_TYPE[$type] ?? $type;
     }
 
     /** Les étiquettes du grand-livre, dites comme au comptoir. */

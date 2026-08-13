@@ -168,13 +168,18 @@ class PosLoyaltyLookupEndpointTest extends TestCase
     {
         $c = $this->client('0612345678', 350, 'HISTO001');
 
+        // [CORRIGÉ 2026-08-13] Ce fixture posait un gain de commande SANS `order_id` — un état que le
+        // guetteur ne produit jamais (`AwardLoyaltyPointsOnDelivery:131` écrit toujours l'identifiant),
+        // et vérifié en base : les 5 gains de commande réels en portent un. Les 7 gains réels SANS
+        // identifiant sont autre chose (« Bonus de bienvenue » à la borne). Un fixture irréaliste
+        // éprouve un cas impossible — et c'est lui qui a rougi quand l'étiquette est devenue juste.
         foreach ([
-            ['type' => 'earn',   'points' => 500,  'balance_after' => 500, 'surface' => 'pos'],
-            ['type' => 'redeem', 'points' => -200, 'balance_after' => 300, 'surface' => 'pos'],
-            ['type' => 'earn',   'points' => 50,   'balance_after' => 350, 'surface' => 'kiosk'],
+            ['type' => 'earn',   'points' => 500,  'balance_after' => 500, 'surface' => 'pos',   'order' => 9001],
+            ['type' => 'redeem', 'points' => -200, 'balance_after' => 300, 'surface' => 'pos',   'order' => 9001],
+            ['type' => 'earn',   'points' => 50,   'balance_after' => 350, 'surface' => 'kiosk', 'order' => 9002],
         ] as $i => $l) {
             DB::table('loyalty_transactions')->insert([
-                'user_id' => $c->id, 'loyalty_code' => 'HISTO001', 'order_id' => null,
+                'user_id' => $c->id, 'loyalty_code' => 'HISTO001', 'order_id' => $l['order'],
                 'type' => $l['type'], 'points' => $l['points'], 'balance_after' => $l['balance_after'],
                 'source_surface' => $l['surface'], 'description' => 'ligne '.$i,
                 'created_at' => now()->subMinutes(10 - $i), 'updated_at' => now(),
@@ -222,6 +227,70 @@ class PosLoyaltyLookupEndpointTest extends TestCase
             ->assertStatus(404);
 
         $this->assertStringNotContainsString('ne doit pas fuiter', $r->getContent());
+    }
+
+    /**
+     * UN CADEAU DE ROUE NE SE LIT PAS « Gagné sur une commande ».
+     *
+     * [2026-08-13] La roue écrit désormais au grand-livre (elle était le seul mouvement de solde à ne
+     * rien écrire). Son cadeau est un `earn` — la colonne est un ENUM à cinq valeurs — mais SANS
+     * commande. L'étiquette dérivée du type seul aurait donc affiché « Gagné sur une commande » sous
+     * un cadeau qui n'en a aucune, et un client demandant « d'où vient ce point ? » aurait reçu une
+     * réponse fausse par l'écran même construit pour le lui expliquer.
+     */
+    public function test_un_cadeau_de_roue_est_nomme_comme_tel_dans_l_historique(): void
+    {
+        $c = $this->client('0612345690', 170, 'ROUEHIST');
+
+        DB::table('loyalty_transactions')->insert([
+            ['user_id' => $c->id, 'loyalty_code' => 'ROUEHIST', 'order_id' => null,
+             'type' => 'earn', 'points' => 50, 'balance_after' => 170,
+             'source_surface' => 'wheel', 'description' => 'Roue — 50 points (tour #7)',
+             'created_at' => now()->subMinute(), 'updated_at' => now()],
+            ['user_id' => $c->id, 'loyalty_code' => 'ROUEHIST', 'order_id' => 4242,
+             'type' => 'earn', 'points' => 120, 'balance_after' => 120,
+             'source_surface' => 'pos', 'description' => 'Commande #4242',
+             'created_at' => now()->subMinutes(5), 'updated_at' => now()],
+        ]);
+
+        $e = $this->actingAs($this->caissier, 'sanctum')
+            ->getJson('/api/admin/pos-loyalty/history?loyalty_code=ROUEHIST')
+            ->assertOk()
+            ->json('data.entries');
+
+        $roue = collect($e)->firstWhere('surface', 'wheel');
+        $vente = collect($e)->firstWhere('surface', 'pos');
+
+        $this->assertSame('Gagné à la roue', $roue['label'],
+            'un cadeau de roue affiché comme un gain de commande : la réponse est fausse');
+        $this->assertNull($roue['order_id']);
+        $this->assertSame('Gagné sur une commande', $vente['label'],
+            'et le gain de commande, lui, garde son libellé');
+    }
+
+    /**
+     * UN GAIN SANS COMMANDE ET SANS SURFACE CONNUE reste VAGUE plutôt que FAUX.
+     *
+     * Mieux vaut « Gagné » que « Gagné sur une commande » quand on ne sait pas : une étiquette qui
+     * affirme ce qu'elle ignore est pire qu'une étiquette prudente.
+     */
+    public function test_un_gain_sans_commande_ni_surface_reste_vague_plutot_que_faux(): void
+    {
+        $c = $this->client('0612345691', 40, 'VAGUE001');
+
+        DB::table('loyalty_transactions')->insert([
+            'user_id' => $c->id, 'loyalty_code' => 'VAGUE001', 'order_id' => null,
+            'type' => 'earn', 'points' => 40, 'balance_after' => 40,
+            'source_surface' => '', 'description' => 'origine inconnue',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $e = $this->actingAs($this->caissier, 'sanctum')
+            ->getJson('/api/admin/pos-loyalty/history?loyalty_code=VAGUE001')
+            ->assertOk()
+            ->json('data.entries');
+
+        $this->assertSame('Gagné', $e[0]['label']);
     }
 
     /** Un client sans mouvement rend une liste vide, pas une erreur. */

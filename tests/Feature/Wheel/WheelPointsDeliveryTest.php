@@ -71,6 +71,79 @@ class WheelPointsDeliveryTest extends TestCase
      *
      * C'est le cœur du défaut. Le message d'attente et la marque de remise ne peuvent pas coexister.
      */
+    /**
+     * LE GRAND-LIVRE DOIT PORTER LE CADEAU — sinon le solde monte sans explication.
+     *
+     * ── LE DÉFAUT, MESURÉ ────────────────────────────────────────────────────────────────────
+     * `WheelDeliveryService` est le SEUL mouvement de solde de toute l'application qui n'écrit rien
+     * dans `loyalty_transactions` : zéro occurrence de la table ET du modèle dans le fichier, alors
+     * que les six autres chemins (gain sur commande, débit caisse, débit site/borne, ajout par
+     * l'équipe, remboursement, reprise) en écrivent tous.
+     *
+     * ── POURQUOI ÇA COMPTE MAINTENANT ────────────────────────────────────────────────────────
+     * L'écran de fidélité du comptoir affiche désormais l'HISTORIQUE des points, lu dans ce
+     * grand-livre. Un client qui gagne 50 points à la roue voit donc son solde monter de 50 sans
+     * qu'aucune ligne l'explique — et le caissier, à qui le client demande « d'où viennent ces
+     * points ? », n'a rien à lui montrer. C'est exactement le « solde sans histoire » que cet écran
+     * a été construit pour supprimer.
+     *
+     * ── CE QUE CE BANC EXIGE ─────────────────────────────────────────────────────────────────
+     * Une ligne, avec le solde APRÈS (pour pouvoir rejouer la suite), la surface « wheel » (pour
+     * qu'on sache d'où ça vient), aucun identifiant de commande (un cadeau de roue n'en a pas), et
+     * une description qui NOMME la roue.
+     */
+    public function test_le_cadeau_en_points_laisse_une_ligne_au_GRAND_LIVRE(): void
+    {
+        $spin = $this->tour('0611002200', 'grandlivre@exemple.fr');
+
+        $u = User::factory()->create(['phone' => '0611002200', 'is_guest' => Ask::YES]);
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $u->id)
+            ->update(['loyalty_code' => 'GLIVRE01', 'loyalty_points' => 120]);
+
+        $r = app(WheelDeliveryService::class)->deliver($spin->id, null);
+        $this->assertTrue($r['points_credited'], 'le crédit lui-même a échoué : le banc ne parle pas de ça');
+        $this->assertSame(170, (int) $u->fresh()->loyalty_points, '120 + 50');
+
+        $lignes = \Illuminate\Support\Facades\DB::table('loyalty_transactions')
+            ->where('user_id', $u->id)->get();
+
+        $this->assertCount(1, $lignes,
+            'aucune ligne au grand-livre : le solde du client monte sans explication, et l\'historique '
+            . 'du comptoir ne peut rien lui montrer');
+
+        $l = $lignes->first();
+        $this->assertSame('earn', $l->type, 'un cadeau est un GAIN');
+        $this->assertSame(50, (int) $l->points);
+        $this->assertSame(170, (int) $l->balance_after, 'le solde APRÈS, pour pouvoir rejouer la suite');
+        $this->assertSame('wheel', $l->source_surface, 'la surface dit d\'où vient le point');
+        $this->assertNull($l->order_id, 'un cadeau de roue n\'est rattaché à aucune commande');
+        $this->assertMatchesRegularExpression('/roue/i', (string) $l->description,
+            'la description doit NOMMER la roue : « earn » seul se lit « gagné sur une commande »');
+    }
+
+    /**
+     * ET UNE SEULE LIGNE, même si l'équipe appuie deux fois sur « remettre ».
+     *
+     * Le crédit est déjà protégé par sa garde atomique ; l'écriture au grand-livre doit vivre DANS
+     * la même transaction, sinon un incident entre les deux laisse un solde sans sa ligne — ou une
+     * ligne sans son solde, ce qui est pire : le grand-livre deviendrait faux.
+     */
+    public function test_une_double_remise_ne_laisse_pas_deux_lignes(): void
+    {
+        $spin = $this->tour('0611002201', 'glivre2@exemple.fr');
+
+        $u = User::factory()->create(['phone' => '0611002201', 'is_guest' => Ask::YES]);
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $u->id)
+            ->update(['loyalty_code' => 'GLIVRE02', 'loyalty_points' => 0]);
+
+        app(WheelDeliveryService::class)->deliver($spin->id, null);
+        app(WheelDeliveryService::class)->deliver($spin->id, null);
+
+        $this->assertSame(1, (int) \Illuminate\Support\Facades\DB::table('loyalty_transactions')
+            ->where('user_id', $u->id)->count(), 'deux lignes pour un seul cadeau');
+        $this->assertSame(50, (int) $u->fresh()->loyalty_points, 'et le solde n\'a pas doublé');
+    }
+
     public function test_sans_compte_les_points_sont_CONSERVES_et_le_lot_n_est_PAS_marque_remis(): void
     {
         $spin = $this->tour('0611000901', 'sanscompte@exemple.fr');

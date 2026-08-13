@@ -288,8 +288,55 @@ class WheelDeliveryService
             return false;
         }
 
-        User::withoutGlobalScope(BranchScope::class)->whereKey($user->id)
-            ->increment('loyalty_points', $points);
+        /*
+         * [2026-08-13] LE GRAND-LIVRE PORTE MAINTENANT LE CADEAU. C'était le SEUL mouvement de solde
+         * de toute l'application qui n'écrivait rien dans `loyalty_transactions` : mesuré, zéro
+         * occurrence de la table ET du modèle dans ce fichier, alors que les six autres chemins
+         * (gain sur commande, débit caisse, débit site/borne, ajout par l'équipe, remboursement,
+         * reprise) en écrivent tous.
+         *
+         * POURQUOI CE TROU S'EST MIS À COÛTER. L'écran de fidélité du comptoir affiche désormais
+         * l'HISTORIQUE des points, lu dans ce grand-livre. Un client qui gagnait 50 points à la roue
+         * voyait son solde monter sans qu'aucune ligne l'explique — et le caissier à qui il demandait
+         * « d'où viennent ces points ? » n'avait rien à montrer. C'est précisément le « solde sans
+         * histoire » que cet écran a été construit pour supprimer.
+         *
+         * L'ÉCRITURE VIT DANS LA MÊME TRANSACTION QUE L'INCRÉMENT. Séparées, un incident entre les
+         * deux laisse soit un solde sans sa ligne (le client a ses points, l'histoire est fausse),
+         * soit une ligne sans son solde — et ça, c'est un grand-livre qui MENT. Une seule transaction :
+         * les deux vivent ou aucune.
+         *
+         * `type = earn` parce que la colonne est un ENUM à cinq valeurs
+         * (`earn, redeem, manual_add, manual_deduct, expire`) et qu'un cadeau est un GAIN ; inventer
+         * une sixième valeur exigerait une migration sur une table à vocation comptable. La
+         * provenance est donc portée par `source_surface = wheel` et par une description qui NOMME
+         * la roue — sans quoi l'historique du comptoir afficherait « Gagné sur une commande » pour un
+         * cadeau qui n'a aucune commande.
+         *
+         * `order_id` reste NUL : un cadeau de roue n'est rattaché à aucune vente.
+         *
+         * Sentinelle : tests/Feature/Wheel/WheelPointsDeliveryTest.php
+         */
+        DB::transaction(function () use ($user, $points, $spin) {
+            User::withoutGlobalScope(BranchScope::class)->whereKey($user->id)
+                ->increment('loyalty_points', $points);
+
+            $soldeApres = (int) DB::table('users')->where('id', $user->id)->value('loyalty_points');
+
+            DB::table('loyalty_transactions')->insert([
+                'user_id'        => $user->id,
+                'loyalty_code'   => $user->loyalty_code,
+                'order_id'       => null,
+                'type'           => 'earn',
+                'points'         => $points,
+                'balance_after'  => $soldeApres,
+                'source_surface' => 'wheel',
+                'description'    => 'Roue — ' . ($spin->prize_label ?: 'cadeau') . ' (tour #' . $spin->id . ')',
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        });
+
         $spin->points_credited_user_id = $user->id;
 
         return true;
@@ -427,6 +474,37 @@ class WheelDeliveryService
                 . 'l\'inventaire si besoin.)';
         }
 
+        /*
+         * [AUDIT-5SYS 2026-08-12 P1 — « des lots cuisine sans aucun signal cuisine »] Depuis que la
+         * roue distribue de vrais plats préparés (Cheese Burger, Cayenne, Terminator — config du
+         * 2026-08-12), rien ne disait à l'équipe qu'un cadeau REMIS devait aussi être PRÉPARÉ.
+         *
+         * Créer une fausse commande interne (Order/OrderItem/carte KDS) pour porter ce signal a été
+         * délibérément écarté : ça contredirait la décision de conception documentée en tête de ce
+         * fichier (« un produit offert n'est pas une commande »), ET ça décrémenterait le stock une
+         * SECONDE fois (recordCost() le fait déjà juste au-dessus, par le chemin canonique caisse).
+         *
+         * Le fix emprunte donc le SEUL canal qui existe déjà et qui atteint la bonne personne au bon
+         * moment : le message affiché à l'écran comptoir au moment précis du "remis"
+         * (WheelPrizeController::deliver → vue admin.wheel.lot). C'est exactement le même geste tracé
+         * que le reste de ce fichier documente — un humain regarde l'écran, agit en conséquence.
+         */
+        if ($this->requiertPreparationCuisine($spin)) {
+            $message .= ' ⚠️ À PRÉPARER EN CUISINE — préviens l\'équipe cuisine MAINTENANT.';
+        }
+
         return $message;
+    }
+
+    /** Le lot remis est-il un plat préparé, marqué `kitchen_prep` dans sa configuration ? */
+    private function requiertPreparationCuisine(WheelSpin $spin): bool
+    {
+        foreach (app(WheelService::class)->segments() as $s) {
+            if ((string) ($s['key'] ?? '') === (string) $spin->prize_key) {
+                return (bool) ($s['kitchen_prep'] ?? false);
+            }
+        }
+
+        return false;
     }
 }
