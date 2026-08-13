@@ -266,7 +266,24 @@ export default {
         modelValue: {
             deep: true,
             handler(value) {
-                this.draft = this.clone(value);
+                // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] commit() emits
+                // the cloned draft up to the parent, which round-trips it right
+                // back down through this same watcher (the parent's
+                // selectedStepDraft getter always returns a fresh `{...step}`
+                // copy, so the incoming reference never matches, only the
+                // content). Replacing `draft` wholesale on that echo forces
+                // Vue to rebuild the <select>'s bound option list mid-tick,
+                // which a real Playwright run caught as the element detaching
+                // from the DOM during its own selectOption() call. Skipping the
+                // replacement when the incoming value is content-identical to
+                // the current draft leaves genuine external changes (switching
+                // to a different step, same watcher, real different data)
+                // fully unaffected.
+                const next = this.clone(value);
+                if (JSON.stringify(next) === JSON.stringify(this.draft)) {
+                    return;
+                }
+                this.draft = next;
             },
         },
     },
