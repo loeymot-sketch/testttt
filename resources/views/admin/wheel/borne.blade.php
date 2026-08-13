@@ -138,10 +138,20 @@
      charge : la roue cède la première (c'est du décor, pas de l'information), la consigne et les
      pastilles ne bougent pas (c'est le geste). */
   @media (max-aspect-ratio:1/1){
+    /* ⚠️ TROISIÈME APPROCHE, et c'est un CHANGEMENT DE MÉTHODE, pas un nouveau réglage.
+       Les deux précédentes réglaient des valeurs sur une ligne ÉLASTIQUE (`minmax(0,1fr)`) : la
+       roue y recevait « ce qui reste », et ce reste était tantôt négatif (elle débordait sur ses
+       voisins), tantôt nul (elle disparaissait). Régler des tailles ne pouvait pas résoudre ça —
+       le problème était la RÈGLE de répartition, pas les nombres.
+
+       En portrait, chaque étage prend donc une hauteur DÉCLARÉE (`auto`) et rien n'est distribué :
+       il n'y a plus de « reste » à se disputer, donc plus de disparition silencieuse ni de
+       chevauchement. Le budget est explicite et vérifiable à la lecture :
+       en-tête ≈18vh + roue 30vh + QR ≈32vh + ruban 15vh, sous les 100vh disponibles. */
     .scene{
       grid-template-columns:1fr;
-      grid-template-rows:minmax(0,1fr) auto auto;
-      gap:1.6vmin; padding:2.4vmin;
+      grid-template-rows:auto auto auto;
+      gap:1.2vmin; padding:2vmin; align-content:start;
     }
     /* ⚠️ [2026-08-13, vu en capture] MA PREMIÈRE VERSION FAISAIT DISPARAÎTRE LA ROUE.
        J'avais mis `.gauche{overflow:hidden}` en ajoutant deux lignes à cette colonne (la promesse
@@ -165,16 +175,16 @@
        rare ici), et on retire le plancher : chacun prend une part mesurée du même budget. */
     .gauche{min-height:0}
     .actes{display:none}
-    .roue{height:min(34vh,86vmin,100%)}
+    .roue{height:min(30vh,74vmin)}
     h1{font-size:min(6vmin,58px)}
     .consigne{font-size:clamp(13px,2vmin,22px)}
-    .qr svg{width:min(30vh,52vmin,300px)}
+    .qr svg{width:min(26vh,48vmin,260px)}
     .qr{padding:1.6vmin; border-radius:2.4vmin}
     .qr-boite{padding:1.6vmin}
     .scanne{font-size:min(3.4vmin,30px)}
     .detail{font-size:clamp(15px,2vmin,20px)}
     .fleche{display:none}
-    .defile{order:3; max-height:19vh}
+    .defile{order:3; max-height:15vh}
     .defile-titre{margin-bottom:.4vmin}
     .defile-item img{width:min(11vh,84px); height:min(11vh,84px)}
   }
