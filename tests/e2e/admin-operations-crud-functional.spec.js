@@ -915,3 +915,56 @@ test.describe.serial('Real functional state transition — Online Order Cancel (
     console.log(`[CRUD-FUNCTIONAL] Online Order CANCEL: real order #${orderId} transitioned ACCEPT(4) -> CANCELED(16) in DB via the real cancel-active-order modal, distinct from Reject.`);
   });
 });
+
+test.describe.serial('Real functional CRUD — Push Notification (send flow, zero real devices registered)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Push Notification: create (real FCM fan-out call, 0 registered devices) -> appears in table -> delete -> gone', async () => {
+    // Confirmed via tinker before writing this test: 0 users have a
+    // web_token or device_token in this environment, so the real
+    // PushNotificationService::store() fan-out call (FirebaseService::
+    // sendNotification) resolves to an empty token array -- safe to drive
+    // the real create flow without risking a notification reaching any
+    // real device. role_id/image are both optional; only title+description
+    // are required.
+    const uniq = `E2EPush${Date.now() % 100000}`;
+
+    await page.goto('/admin/push-notifications', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.click('[data-drawer="#sidebar"]');
+    await page.waitForTimeout(500);
+
+    await page.fill('#sidebar #title', uniq);
+    await page.fill('#sidebar #description', `E2E test push notification body ${uniq}`);
+
+    await page.click('#sidebar button[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    const table = page.locator('table.db-table');
+    await expect(table).toContainText(uniq, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Push Notification CREATE: "${uniq}" appears in table — REAL, real FCM fan-out call completed with 0 real devices reached.`);
+
+    const row = table.locator('tr', { hasText: uniq });
+    await row.locator('[class*="delete" i]').first().click();
+
+    const yesBtn = page.getByRole('button', { name: /yes,\s*delete it/i });
+    await expect(yesBtn).toBeVisible({ timeout: 10_000 });
+    await yesBtn.click();
+    await page.waitForTimeout(1500);
+
+    await expect(table).not.toContainText(uniq, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Push Notification DELETE: row gone from table after confirm — REAL removal.');
+  });
+});
