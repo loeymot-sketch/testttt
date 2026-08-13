@@ -1149,3 +1149,59 @@ test.describe.serial('Real functional CRUD — Connected Devices (rename only, n
     console.log('[CRUD-FUNCTIONAL] Connected Devices RENAME: restored to original label.');
   });
 });
+
+test.describe.serial('Real functional CRUD — Messages (admin-to-customer chat, real send)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let customerId;
+  let customerName;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    // A throwaway customer, not a real one -- sending a real chat message
+    // here would otherwise be visible to an actual person via their
+    // mobile/web account. Mirrors DeliveryBoyService::store()'s exact
+    // User::create + assignRole pattern (role=CUSTOMER instead).
+    customerName = `E2E Msg Customer ${Date.now() % 100000}`;
+    const uniq = Date.now();
+    customerId = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=$u = \\App\\Models\\User::create(["name"=>"${customerName}","email"=>"e2e-msg-${uniq}@e2e-test.local","username"=>"e2emsg${uniq}","phone"=>"06" . substr((string) time(), -8),"password"=>bcrypt("TestPassword123!"),"branch_id"=>1,"status"=>5,"email_verified_at"=>now()]); $u->assignRole(\\App\\Enums\\Role::CUSTOMER); echo $u->id;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+  });
+
+  test.afterAll(async () => {
+    if (customerId) {
+      // message_histories has a FK on messages.id -- a first attempt's
+      // cleanup deleted messages directly and threw a foreign-key
+      // constraint violation, which failed silently inside afterAll and
+      // left both a stray message and a stray user behind (confirmed via
+      // a follow-up tinker query; cleaned up by hand and fixed here).
+      tinkerExec(`$ids = \\App\\Models\\Message::where('user_id', ${customerId})->pluck('id'); \\App\\Models\\MessageHistory::whereIn('message_id', $ids)->delete(); \\App\\Models\\Message::where('user_id', ${customerId})->delete(); \\App\\Models\\User::where('id', ${customerId})->delete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Messages: send a real chat message to a customer, appears in the thread', async () => {
+    await page.goto('/admin/messages', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.fill('#name', customerName);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(1000);
+    await page.click(`li:has-text("${customerName}")`);
+    await page.waitForTimeout(800);
+
+    const messageText = `E2E test message ${Date.now()}`;
+    await page.fill('input.chat-footer-data-input', messageText);
+    await page.click('button.chat-footer-sent');
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator('body')).toContainText(messageText, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Messages: real chat message sent to throwaway customer "${customerName}" and appears in the thread — REAL admin-to-customer send, not a client-side-only echo.`);
+  });
+});
