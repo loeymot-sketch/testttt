@@ -120,7 +120,7 @@
   .scene{
     position:relative; flex:1 1 auto; min-height:0; display:grid;
     grid-template-columns:1.06fr minmax(0,.34fr) .8fr; grid-template-rows:minmax(0,1fr);
-    gap:2.4vmin; align-items:stretch; padding:3.5vmin;
+    gap:2vmin; align-items:stretch; padding:2.2vmin;
   }
   /* En portrait, une colonne du milieu n'a plus de sens : les trois blocs s'empilent, et le ruban
      passe en dernier — il illustre, il ne commande pas le geste. */
@@ -302,7 +302,7 @@
   .sous{margin:1.8vmin 0 0; font-size:min(3.3vmin,34px); opacity:.9; line-height:1.35}
   .sous b{color:var(--jaune2)}
   .titre2{
-    margin:0 0 2vmin; font-size:min(5.2vmin,54px); font-weight:900; letter-spacing:-.015em; line-height:1.05;
+    margin:0 0 1.1vmin; font-size:min(3.6vmin,38px); font-weight:900; letter-spacing:-.015em; line-height:1.05;
   }
 
   /* ── Acte 2 — CE QUI VIENT D'ÊTRE GAGNÉ ────────────────────────────────────────────────────
@@ -334,13 +334,13 @@
   .g-quand:not(:empty)::before{content:' · '; opacity:.6}
 
   /* Acte 3 — le geste. */
-  .geste{display:flex; align-items:center; justify-content:center; gap:2.4vmin; flex-wrap:wrap}
+  .geste{display:flex; align-items:center; justify-content:center; gap:1.6vmin; flex-wrap:wrap}
   .pas{display:grid; place-items:center; gap:.8vmin}
   .pas .rond{
-    width:min(11vmin,110px); height:min(11vmin,110px); border-radius:50%; display:grid; place-items:center;
-    font-size:min(5vmin,52px); background:rgba(255,184,0,.14); border:2px solid rgba(255,184,0,.5);
+    width:min(7vmin,72px); height:min(7vmin,72px); border-radius:50%; display:grid; place-items:center;
+    font-size:min(3.4vmin,34px); background:rgba(255,184,0,.14); border:2px solid rgba(255,184,0,.5);
   }
-  .pas .mot{font-size:min(3.1vmin,32px); font-weight:900}
+  .pas .mot{font-size:min(2.1vmin,22px); font-weight:900}
   .fleche-h{font-size:min(4.4vmin,46px); opacity:.55}
 
   /* ── CÔTÉ DROIT : LE QR, IMMOBILE ───────────────────────────────────────────────────────── */
