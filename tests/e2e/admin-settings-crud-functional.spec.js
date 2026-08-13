@@ -301,6 +301,25 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Item Category EDIT: rename reflected in table — REAL persistence.');
 
+    // REAL FINDING, not a bug: "Voir" targets admin.settings.itemCategory.show,
+    // but that route's own definition (settingRoutes.js) is a `redirect`
+    // function straight to admin.items.studio (Catalog Hub) with
+    // `item_category_id` as a query param -- ItemCategoryShowComponent.vue
+    // is confirmed genuinely read-only AND confirmed DEAD CODE, never
+    // actually reached by real navigation (same "consolidation left a
+    // component orphaned" pattern already found on Ingredients this
+    // session, but at the router level this time). Testing the REAL
+    // behavior instead of the stale assumption: the category should land
+    // filtered in the Catalog Hub, not on a standalone detail page.
+    const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
+    await editedRow.getByRole('link', { name: /voir/i }).click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page).toHaveURL(/item_category_id=/, { timeout: 10_000 });
+    await expect(page.locator('body')).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Item Category "Voir": redirects to Catalog Hub filtered by item_category_id (REAL router redirect, not a broken/dead link) -- "${uniq}EDITED" visible in the filtered category sidebar.`);
+
+    await page.goto('/admin/settings/item-categories', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
     await page.click(`[data-testid="admin-category-delete-${rowId}"] button, [data-testid="admin-category-delete-${rowId}"]`);
     await confirmDelete(page);
 
@@ -384,8 +403,18 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).toContainText(`${uniq}EDITED`, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Page EDIT: rename reflected in table — REAL persistence.');
 
+    // PageShowComponent.vue confirmed read-only (no form, no mutation)
+    // after a full read -- proven with its own real GET/render rather
+    // than skipped without evidence.
     const editedRow = table.locator('tr', { hasText: `${uniq}EDITED` });
-    await editedRow.getByRole('button', { name: /supprimer/i }).click();
+    await editedRow.getByRole('link', { name: /voir/i }).click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('h3.text-lg', { hasText: `${uniq}EDITED` })).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Page show/:id: real title "${uniq}EDITED" rendered in heading -- REAL GET, not a static/mocked panel.`);
+
+    await page.goto('/admin/settings/pages/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await table.locator('tr', { hasText: `${uniq}EDITED` }).getByRole('button', { name: /supprimer/i }).click();
     await confirmDelete(page);
 
     await expect(table).not.toContainText(`${uniq}EDITED`, { timeout: 10_000 });
@@ -616,7 +645,19 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     await expect(table).toContainText(uniq, { timeout: 10_000 });
     console.log(`[CRUD-FUNCTIONAL] Slider CREATE: "${uniq}" appears in table — REAL, required image upload accepted.`);
 
+    // SliderShowComponent.vue is confirmed read-only (no form, no mutation
+    // action) after a full read -- proven here via its own real GET/render
+    // rather than skipped as "redundant" without evidence: click "Voir",
+    // confirm the real title fetched from the backend renders in the
+    // heading (not a static shell), then continue to delete as before.
     const row = table.locator('tr', { hasText: uniq });
+    await row.getByRole('link', { name: /voir/i }).click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('h3.text-lg', { hasText: uniq })).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Slider show/:id: real title "${uniq}" rendered in heading -- REAL GET, not a static/mocked panel.`);
+
+    await page.goto('/admin/settings/sliders/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
     await row.locator('[class*="delete" i]').first().click();
     await confirmDelete(page);
 
