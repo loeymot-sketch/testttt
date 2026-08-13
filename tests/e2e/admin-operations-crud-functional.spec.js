@@ -859,3 +859,59 @@ test.describe.serial('Real functional state transition — Online Order status d
     console.log(`[CRUD-FUNCTIONAL] Online Order DROPDOWN: real order #${orderId} transitioned ACCEPT(4) -> DELIVERED(13) in DB via the status dropdown, a 3rd distinct UI control on this page proven functional.`);
   });
 });
+
+test.describe.serial('Real functional state transition — Online Order Cancel (active order, real DB persistence)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>10,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); echo $o->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    orderId = out;
+  });
+
+  test.afterAll(async () => {
+    if (orderId) {
+      tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Online Order: real "Cancel" button (with reason) cancels an already-ACCEPTED order, distinct from Reject', async () => {
+    // Genuinely different business scenario from Reject: Reject only
+    // applies to a still-PENDING order (never confirmed to the kitchen);
+    // Cancel applies to an order already ACCEPT/PREPARING/PREPARED/
+    // OUT_FOR_DELIVERY (canCancelActiveOrder(), OnlineOrderShowComponent.vue)
+    // -- reuses OnlineOrderReasonComponent with status=CANCELED,
+    // modal-id="cancelReasonModal" instead of the default "reasonModal".
+    await page.goto(`/admin/online-orders/show/${orderId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.getByRole('button', { name: /accept|accepter/i }).click();
+    await page.getByRole('button', { name: /yes, accept it/i }).click();
+    await page.waitForTimeout(1500);
+
+    await page.getByRole('button', { name: /cancel|annuler/i }).click();
+    await page.waitForTimeout(400);
+    await page.fill('#cancelReasonModal #name', 'E2E test cancellation reason');
+    await page.click('#cancelReasonModal button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\Order::find(${orderId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe(String(16)); // OrderStatus::CANCELED
+    console.log(`[CRUD-FUNCTIONAL] Online Order CANCEL: real order #${orderId} transitioned ACCEPT(4) -> CANCELED(16) in DB via the real cancel-active-order modal, distinct from Reject.`);
+  });
+});
