@@ -1005,3 +1005,40 @@ test.describe.serial('Real functional interaction — Observability Outbox dashb
     console.log('[CRUD-FUNCTIONAL] Outbox dashboard: Refresh button fired a real GET /api/admin/observability/outbox (200), not a cosmetic no-op.');
   });
 });
+
+test.describe.serial('Real functional interaction — System Health dashboard (read-only, refresh-driven)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('System Health dashboard: "Refresh" button fires a real GET, not a decorative no-op', async () => {
+    // This page also has real feature-flag toggles ("interrupteurs",
+    // PUT /admin/observability/interrupteurs/:nom) -- deliberately NOT
+    // exercised here: they control real system behavior (schedulers,
+    // safety checks) whose exact effect isn't known without reading each
+    // one individually, same risk class as Ingredients/Printers. Only the
+    // read-only Refresh button (health-check re-fetch) is proven, same
+    // pattern as the Outbox dashboard.
+    await page.goto('/admin/observability/system', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('[data-testid="system-health"]')).toBeVisible({ timeout: 10_000 });
+
+    const refreshResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/observability\/system-health(\?|$)/.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 10_000 }
+    );
+    await page.click('[data-testid="system-health-refresh"]');
+    const res = await refreshResponse;
+    expect(res.status()).toBe(200);
+    console.log('[CRUD-FUNCTIONAL] System Health dashboard: Refresh button fired a real GET /api/admin/observability/system-health (200), not a cosmetic no-op.');
+  });
+});
