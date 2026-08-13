@@ -47,6 +47,36 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-13 — SUPERVISION test-e2e CONVERGÉE (5 rounds, 0 P0/P1) sur le GOAL roue — HEAD `f2dce23ea` (testttt) + `416c798` (web)**
+>
+> Suite au GOAL ci-dessous, owner : « agis en superviseur test-e2e et améliore le tout, t'es libre ».
+> GStack main team + adversarial supervisor, boucle jusqu'à 2 cycles consécutifs propres
+> (`reports/test-e2e/roue-account-e2e-2026-08-13/CONVERGENCE_FINAL.md`).
+>
+> **Round 1** a trouvé 1 P0 (CTA de gain apparemment mort vers `/#menu`) qui s'est avéré **faux
+> positif** — le site utilise un routage hash côté SPA (`compiled/racine.js`) jamais testé en
+> direct par le premier passage ; vérifié moi-même sur la PROD réelle (`lecayenne.fr/#menu` rend
+> bien le menu, 38 produits). Plus 3 P1 sur la vague D (preuves prose-only sans artefact commité).
+>
+> **Round 3** a détecté une **dérive externe réelle** : une session concurrente sur ce même repo
+> (travail indépendant sur `borne.blade.php`, consignes owner citées mot pour mot dans ses commits)
+> a élargi le logo du QR de 20% à 26% sans revalider la scannabilité, et a laissé un titre de
+> modale de compte quasi invisible (contraste 1.07:1, couleur de thème sombre héritée dans une
+> modale blanche). Les deux corrigés round 4 : le logo est retesté sous DÉGRADATION RÉALISTE
+> (flou + recompression JPEG simulant une vraie photo de téléphone, pas une capture sans perte) —
+> 26% échoue réellement, 20% tient, revenu à 20% sur les deux écrans (tablette + staff, cohérents).
+>
+> **Ce que ça dit sur le travail multi-session concurrent** : deux sessions actives sur le même
+> repo peuvent produire un travail de bonne qualité chacune de son côté (l'autre session a bien
+> amélioré la vitrine sur consigne owner directe), mais SANS coordination, l'une peut dégrader
+> silencieusement ce que l'autre vient de valider (ici : la marge de sécurité du QR). Aucun conflit
+> git — les commits s'intercalent proprement — mais la validation croisée (cette supervision
+> test-e2e) est ce qui a rattrapé la dérive, pas la CI ni personne d'autre.
+>
+> **10 correctifs fermés au total** (détail + commit sha dans CONVERGENCE_FINAL.md), suite Wheel
+> 253/253, 8 specs e2e (backend + web) toutes vertes aux rounds 4 ET 5, 0 ligne de zone gelée §7.
+> Rien poussé (gate owner §10/§3quater).
+
 > **2026-08-13 — GOAL ROUE UX+IDENTITÉ CONVERGÉ (4/4 sous-systèmes, 0 P0/P1 après 3 cycles RED-team) · HEAD `b575b4419` (testttt) + `e74c51b` (web)**
 >
 > **Demande owner** (`/goal`, raisonnement max + agents adversaires) : logo intégré au QR de la
