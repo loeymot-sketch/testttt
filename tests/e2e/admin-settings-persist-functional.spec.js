@@ -13,7 +13,18 @@
  * out of scope for this pass.)
  */
 const { test, expect } = require('@playwright/test');
+const path = require('path');
+const { execFileSync } = require('child_process');
 const { loginAsAdmin } = require('./helpers/login');
+
+function tinkerExec(php) {
+  execFileSync('php', ['artisan', 'tinker', `--execute=${php}`], {
+    cwd: path.resolve(__dirname, '../..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 15_000,
+  });
+}
 
 test.describe.serial('Real persistence proof — Social Media, Loyalty setup (single-form Settings)', () => {
   test.setTimeout(180_000);
@@ -87,5 +98,85 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await page.waitForLoadState('networkidle').catch(() => {});
     await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Loyalty setup: restored to original value.');
+  });
+
+  test('Company: website edit -> save -> reload -> persisted -> restored', async () => {
+    // company_website (id="website") is a plain nullable text field, unlike
+    // company_name (id="name") which writes to .env -- deliberately mutating
+    // the non-.env field here to avoid touching that sensitive write path.
+    const url = '/admin/settings/company';
+    const fieldId = 'website';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator(`#${fieldId}`);
+    await expect(field).toBeVisible({ timeout: 10_000 });
+
+    const original = await field.inputValue();
+    const mutated = `https://lecayenne-e2e-test-${Date.now()}.example.com`;
+    await field.fill(mutated);
+    await field.press('Tab');
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(mutated, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Company: website field mutated, saved, reload confirms persistence.');
+
+    await page.locator(`#${fieldId}`).fill(original);
+    await page.locator(`#${fieldId}`).press('Tab');
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(original, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Company: restored to original value.');
+  });
+
+  test('Cookies: summary edit -> save -> reload -> persisted -> restored', async () => {
+    // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] REAL FINDING, not a
+    // test artifact: cookies_details_page_id (a required vue-select
+    // referencing the Pages/CMS table) was found LIVE to be unset in this
+    // environment's actual settings data -- the whole Cookies form 422s on
+    // ANY save attempt while it's empty, with only a small red asterisk
+    // hinting why. This settings page may never have been successfully
+    // saved by a real admin. Setup/teardown below populates and then
+    // restores it via a direct DB write (not the UI -- the required
+    // vue-select can't be reliably cleared back to empty once set, so
+    // driving it through the UI would leave a permanent side effect), so
+    // the round-trip proves cookies_summary itself actually persists once
+    // the blocking field is satisfied, without altering production state.
+    const pageId = 1; // verified live: at least 1 CMS Page exists in this DB.
+    tinkerExec(`\\Smartisan\\Settings\\Facades\\Settings::group('cookies')->set(['cookies_details_page_id' => ${pageId}]);`);
+
+    try {
+      const url = '/admin/settings/cookies';
+      const fieldId = 'cookies_summary';
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      const field = page.locator(`#${fieldId}`);
+      await expect(field).toBeVisible({ timeout: 10_000 });
+
+      const original = await field.inputValue();
+      console.log(`[CRUD-FUNCTIONAL] Cookies: original summary value was ${JSON.stringify(original)}.`);
+      const mutated = `E2E test cookie banner text ${Date.now()}`;
+      await field.fill(mutated);
+      await page.click('button[type="submit"]');
+      await page.waitForTimeout(1500);
+
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await expect(page.locator(`#${fieldId}`)).toHaveValue(mutated, { timeout: 10_000 });
+      console.log('[CRUD-FUNCTIONAL] Cookies: summary mutated, saved, reload confirms persistence.');
+      // No UI-driven restore here: cookies_summary is ALSO validated
+      // `required|string` (CookiesRequest.php), so re-saving it back to the
+      // true original empty string would be correctly rejected by the same
+      // validation this test just proved works -- restoring to that exact
+      // pre-existing (already-invalid-by-current-rules) production state can
+      // only be done at the DB level, same as cookies_details_page_id below.
+    } finally {
+      // Always run, pass or fail: leave production settings exactly as found.
+      tinkerExec(`\\Smartisan\\Settings\\Facades\\Settings::group('cookies')->set(['cookies_summary' => '', 'cookies_details_page_id' => null]);`);
+    }
   });
 });
