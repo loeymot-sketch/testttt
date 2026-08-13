@@ -47,6 +47,19 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **📋 2026-08-13 soir — GOAL de finition écrit et VAGUES 1-2 entamées (prod `f3d853b3`)**
+>
+> Plan : `plans/GOAL_CAYENNE_FINITION_2026-08-13.md` — 11 ancrages vérifiés fichier par fichier, chaque chantier chiffré sur la PRODUCTION.
+>
+> **CE QUE LES CHIFFRES DISENT** : le logiciel n'a pas de problème de CODE majeur, il a un problème d'**USAGE**. 25 adhérents fidélité / **0 vente rattachée** ; tiroir-caisse **2 sessions ouvertes, 0 close** (aucune variance jamais calculée) ; 1 borne en base mais identifiants serveur absents ; roue fermée au public.
+>
+> **DÉFAUT RÉEL TROUVÉ ET CORRIGÉ EN EXÉCUTANT LE PLAN** — collision d'énumérations invisible à tout contrôle de somme : `PaymentGateway::CARD = 4` mais `PosPaymentMethod::OTHER = 4`. Le Z se rabat sur `payment_method` quand `pos_payment_method` est nul → **une vente web par CARTE était ventilée en « Autre »** dans un document signé archivé 6 ans. Mesuré : **3 ventes, 49,20 €**. Le TOTAL restait juste, seule la RÉPARTITION mentait. Corrigé À LA SOURCE (`app/Services/Payments/PosMethodFromGateway.php`) parce que `ZReportService` est gelé §7 — et parce que c'est là qu'on SAIT comment le client a payé. Traduction volontairement INCOMPLÈTE : seules les passerelles au sens certain (carte, titre-restaurant) ; inventer une correspondance écrirait un chiffre faux dans un document fiscal.
+>
+> **JUMEAU OUBLIÉ, 3ᵉ FOIS DANS LA JOURNÉE** : le solde fidélité était servi par `UserResource:38` mais **pas** par `CustomerResource` — l'écran « Clients » n'affichait donc aucun point malgré 25 adhérents. Corrigé + colonne ajoutée. (Les deux autres : agilité de clé fiscale posée sur un seul des deux vérificateurs ; `reopen` absent de la liste des permissions.)
+>
+> **RESTE DU PLAN** : clôture de tiroir, parcours de la roue (abonnement + fin de parcours), matières premières sans écran d'inventaire. **6 portes propriétaire**, la plus urgente étant de vérifier que `facebook.com/LeCayenne` est bien SON compte — sinon la roue offre un cheeseburger pour faire gagner des abonnés à un tiers.
+
+
 > **2026-08-13 — SUPERVISION test-e2e CONVERGÉE (5 rounds, 0 P0/P1) sur le GOAL roue — HEAD `f2dce23ea` (testttt) + `416c798` (web)**
 >
 > Suite au GOAL ci-dessous, owner : « agis en superviseur test-e2e et améliore le tout, t'es libre ».
