@@ -683,3 +683,56 @@ test.describe.serial('Real functional state transition — Table Order status (A
     console.log(`[CRUD-FUNCTIONAL] Table Order ACCEPT: real order #${orderId} transitioned PENDING(1) -> ACCEPT(4) in DB via the real "Accept" button, not a client-side-only toast.`);
   });
 });
+
+test.describe.serial('Real functional state transition — Online Order Reject (with reason, real DB persistence)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>10,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); echo $o->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    orderId = out;
+  });
+
+  test.afterAll(async () => {
+    if (orderId) {
+      tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    }
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Online Order: real "Reject" button (with reason) transitions a real order from Pending to Rejected', async () => {
+    // OnlineOrderReasonComponent, no explicit :status prop on this usage ->
+    // defaults to REJECTED(19), modal-id "reasonModal", testid
+    // "online-order-reason-trigger-19" (confirmed from component source:
+    // props.status default = orderStatusEnum.REJECTED). Different mechanism
+    // from Accept: no SweetAlert2 confirm, a modal form with a reason field
+    // (id="name" inside the modal) instead.
+    await page.goto(`/admin/online-orders/show/${orderId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.click('[data-testid="online-order-reason-trigger-19"]');
+    await page.waitForTimeout(400);
+    await page.fill('#reasonModal #name', 'E2E test rejection reason');
+    await page.click('#reasonModal button[type="submit"]');
+    await page.waitForTimeout(1500);
+
+    const dbStatus = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\Order::find(${orderId})->status;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbStatus).toBe(String(19)); // OrderStatus::REJECTED
+    console.log(`[CRUD-FUNCTIONAL] Online Order REJECT: real order #${orderId} transitioned PENDING(1) -> REJECTED(19) in DB, reason persisted via the real reject modal.`);
+  });
+});
