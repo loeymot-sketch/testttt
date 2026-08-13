@@ -213,7 +213,29 @@ class LoyaltyController extends Controller
             // Génération d'un code de fidélité s'il n'en a pas
             if (!$user->loyalty_code) {
                 $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8)); // ex: A1B2C3D4
-                $user->loyalty_points = 0;
+
+                /*
+                 * [AUDIT SOLDES 2026-08-13] LA REMISE À ZÉRO NE VAUT QUE POUR UN COMPTE NEUF.
+                 *
+                 * Avant : `$user->loyalty_points = 0;` était inconditionnel. L'intention était « un
+                 * nouveau compte part de zéro » ; l'effet écrit était « TOUT compte sans code repart
+                 * de zéro » — y compris un compte EXISTANT retrouvé par téléphone, depuis cet
+                 * endpoint PUBLIC et NON AUTHENTIFIÉ. Et comme aucune ligne `loyalty_transactions`
+                 * n'est écrite ici, la perte aurait été INVISIBLE : personne n'aurait pu dire où
+                 * étaient passés les points.
+                 *
+                 * Mesuré avant de corriger : l'état nécessaire (des points AVEC un code NULL)
+                 * n'existait ni en dév ni en PRODUCTION (0 compte), et aucun chemin de crédit ne
+                 * peut le créer aujourd'hui — tous résolvent le client PAR son code. Ce n'était donc
+                 * pas un défaut actif, mais un piège armé qui n'attendait que le premier chemin
+                 * créditant un compte sans code. « Personne ne peut créer cet état aujourd'hui »
+                 * n'est pas une garde, c'est un accident.
+                 *
+                 * Sentinelle : tests/Feature/Loyalty/LoyaltyRegisterNeRemetPasLeSoldeAZeroTest.php
+                 */
+                if (!$user->exists) {
+                    $user->loyalty_points = 0;
+                }
             }
             $user->save();
 
