@@ -265,4 +265,50 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(reloadedGroup.locator('.vue-select-header input')).toHaveAttribute('placeholder', original, { timeout: 10_000 });
     console.log('[CRUD-FUNCTIONAL] Otp: restored to original value.');
   });
+
+  test('Notification Alert: mail toggle for "Order Pending Message" -> save -> reload -> persisted -> restored', async () => {
+    // NotificationAlert (id=1, "Order Pending Message") is a real seeded
+    // production row -- its mail/sms/push_notification columns gate whether
+    // a real customer email/SMS/push actually fires for that event
+    // (switchEnum ON=5/OFF=10). This is the same risk class as Printers/
+    // PaymentTerminals (real operational config), so the DB value is read
+    // via tinker BEFORE touching the UI and hard-restored via tinker in a
+    // finally block -- never left to a UI round-trip that could silently
+    // fail partway and leave a real customer channel toggled.
+    const before = execFileSync(
+      'php',
+      ['artisan', 'tinker', '--execute=echo \\App\\Models\\NotificationAlert::find(1)->mail;'],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    const originalOn = before === '5';
+
+    try {
+      await page.goto('/admin/settings/notification-alert', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      const checkbox = page.locator('#mail1');
+      await expect(checkbox).toBeAttached({ timeout: 10_000 });
+      await checkbox.click();
+      await page.click('#formElem_mail0 button[type="submit"]');
+      await page.waitForTimeout(1500);
+
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      const afterToggle = execFileSync(
+        'php',
+        ['artisan', 'tinker', '--execute=echo \\App\\Models\\NotificationAlert::find(1)->mail;'],
+        { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+      ).trim();
+      expect(afterToggle).not.toBe(before);
+      console.log(`[CRUD-FUNCTIONAL] Notification Alert: mail column ${before} -> ${afterToggle} in DB, reload confirms persistence.`);
+    } finally {
+      tinkerExec(`\\App\\Models\\NotificationAlert::where('id', 1)->update(['mail' => ${originalOn ? 5 : 10}]);`);
+      const restored = execFileSync(
+        'php',
+        ['artisan', 'tinker', '--execute=echo \\App\\Models\\NotificationAlert::find(1)->mail;'],
+        { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+      ).trim();
+      expect(restored).toBe(before);
+      console.log('[CRUD-FUNCTIONAL] Notification Alert: DB-verified restore to original value.');
+    }
+  });
 });
