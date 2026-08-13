@@ -1081,3 +1081,71 @@ test.describe.serial('Real functional interaction — Transactions (read-only, f
     console.log('[CRUD-FUNCTIONAL] Transactions: clearing the filter brings real rows back — genuine two-way interaction confirmed.');
   });
 });
+
+test.describe.serial('Real functional CRUD — Connected Devices (rename only, never revoke)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Connected Devices: rename the current session\'s device label -> persists -> restored', async () => {
+    // This screen also has a "Disconnect"/"Logout" (revoke) action --
+    // deliberately NEVER clicked: revoking THIS test's own current device
+    // token would immediately invalidate its own authenticated session
+    // mid-test (and potentially other concurrent sessions using the same
+    // admin login). Only Rename is exercised: it relabels a device with
+    // zero security/session impact. Targets the row carrying the
+    // "this_device" badge (this Playwright session's own token) since
+    // that's guaranteed to exist and be safe to touch.
+    await page.goto('/admin/profile/devices', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // A locator FILTERED by the "this device" badge text stops matching its
+    // own row the moment that row enters rename mode: the badge lives in
+    // the v-else display branch, which the v-if edit branch (input+Save+
+    // Cancel, no badge) replaces entirely. A first attempt reused the
+    // filtered locator across the click->fill sequence and hung to test
+    // timeout waiting on an input inside a row the locator could no longer
+    // see. Fixed by resolving the row's stable INDEX once up front (Vue's
+    // :key="device.id" keeps the same <tr> DOM node across re-renders, so
+    // nth() stays valid regardless of which branch is showing), then using
+    // plain `tbody tr` + nth() for every step instead of a content filter.
+    const badgeRow = page.locator('tbody tr', { has: page.getByText(/this device|cet appareil/i) }).first();
+    await expect(badgeRow).toBeVisible({ timeout: 10_000 });
+    const allRows = page.locator('tbody tr');
+    const rowCount = await allRows.count();
+    let rowIndex = 0;
+    for (let i = 0; i < rowCount; i++) {
+      if (await allRows.nth(i).getByText(/this device|cet appareil/i).count()) {
+        rowIndex = i;
+        break;
+      }
+    }
+    const row = allRows.nth(rowIndex);
+    const original = (await row.locator('span.font-medium').innerText()).trim();
+    const mutated = `E2E Test Device ${Date.now() % 100000}`;
+
+    await row.getByRole('button', { name: /rename|renommer/i }).click();
+    await row.locator('input').fill(mutated);
+    await row.getByRole('button', { name: /save|enregistrer/i }).click();
+    await page.waitForTimeout(1000);
+
+    await expect(row.locator('span.font-medium')).toHaveText(mutated, { timeout: 8000 });
+    console.log(`[CRUD-FUNCTIONAL] Connected Devices RENAME: "${original}" -> "${mutated}", REAL persistence, never touched Disconnect/Logout.`);
+
+    await row.getByRole('button', { name: /rename|renommer/i }).click();
+    await row.locator('input').fill(original);
+    await row.getByRole('button', { name: /save|enregistrer/i }).click();
+    await page.waitForTimeout(1000);
+    await expect(row.locator('span.font-medium')).toHaveText(original, { timeout: 8000 });
+    console.log('[CRUD-FUNCTIONAL] Connected Devices RENAME: restored to original label.');
+  });
+});
