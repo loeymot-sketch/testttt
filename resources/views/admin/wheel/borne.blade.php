@@ -571,6 +571,27 @@
       }
       return { l1: l1, l2: l2, t: t, r: rTexte };
     });
+
+    /* ── UNE SEULE TAILLE POUR TOUTE LA ROUE ────────────────────────────────────────────────
+       [SUPERVISION VISUELLE 2026-08-13] Constaté en regardant l'écran, pas le code : « Frites »
+       s'affichait environ 2,5 fois plus gros que « Terminator ». Ce n'était pas un choix — c'est
+       l'effet de bord de la boucle ci-dessus, où CHAQUE libellé rétrécit dans son coin jusqu'à
+       tenir dans son secteur. Un mot court ne rétrécit jamais, un mot long rétrécit beaucoup, et
+       la roue prend un air brouillon : le client lit d'abord la taille, et une taille qui varie
+       lui dit que « Frites » vaut plus que « Terminator », ce qui est faux.
+
+       On garde donc la mesure par secteur — c'est elle qui garantit qu'aucun mot ne déborde — mais
+       on retient la PLUS PETITE taille trouvée et on l'applique à tous. La roue devient régulière,
+       et la règle reste sûre : si la plus petite tient partout, toutes tiennent.
+
+       ⛔ Ne pas « optimiser » en rendant sa taille à chaque mot : ce serait revenir au défaut.
+       Un libellé long ajouté à `config/wheel.php` réduira toute la roue — c'est voulu, et c'est le
+       signal qu'il faut un nom plus court, pas une exception. */
+    var tUniforme = cache.reduce(function (mini, l) { return Math.min(mini, l.t); }, Infinity);
+    if (isFinite(tUniforme)) {
+      cache.forEach(function (l) { l.t = tUniforme; });
+    }
+
     cacheEchelle = echelle;
     return cache;
   }
