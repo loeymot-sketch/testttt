@@ -64,6 +64,28 @@ class PaymentService
         $order->payment_status = PaymentStatus::PAID;
         $order->save();
 
+        /*
+         * [FISCAL 2026-08-13] LA VENTILATION DU Z A BESOIN DE SAVOIR COMMENT ON A ÉTÉ PAYÉ.
+         *
+         * Sans cette ligne, une vente réglée EN LIGNE arrivait dans le rapport Z sans
+         * `pos_payment_method`. Le Z se rabat alors sur `payment_method` — un repli raisonnable,
+         * sauf que les deux énumérations utilisent les MÊMES NOMBRES pour des sens DIFFÉRENTS :
+         * `PaymentGateway::CARD = 4` et `PosPaymentMethod::OTHER = 4`. Une vente par CARTE était
+         * donc comptée sous « Autre » dans un document signé et archivé six ans.
+         *
+         * Mesuré avant correction : 3 ventes, 49,20 €. Petit, réel, et qui grossit à chaque
+         * commande web payée en ligne. Le total du Z restait juste — c'est la RÉPARTITION qui
+         * mentait, ce qui ne déclenche aucune alerte et ne se voit dans aucun contrôle de somme.
+         *
+         * Le correctif est ICI et non dans `ZReportService`, qui est en ZONE GELÉE (§7) — et c'est
+         * aussi le bon endroit sur le fond : c'est au moment où la passerelle confirme le règlement
+         * qu'on SAIT comment le client a payé.
+         *
+         * La traduction ne touche jamais une valeur déjà posée au comptoir, et ne convertit que les
+         * passerelles dont l'équivalent caisse est certain (voir `PosMethodFromGateway`).
+         */
+        app(\App\Services\Payments\PosMethodFromGateway::class)->appliquer($order);
+
         return $transaction;
     }
 
