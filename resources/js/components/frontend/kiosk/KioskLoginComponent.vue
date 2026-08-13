@@ -36,7 +36,21 @@
       <p v-if="showDevSeedHint" class="kiosk-login-devhint">
         {{ $t('kiosk.login_screen.devhint') }}
       </p>
-      <p class="kiosk-login-footer">
+      <!--
+        [SUPERVISION VISUELLE 2026-08-13] CE PIED DE PAGE EST UNE CONSIGNE D'EXPLOITANT, JAMAIS
+        UNE INFORMATION CLIENT — et il s'affichait SANS AUCUNE CONDITION, donc en permanence, y
+        compris borne en parfait état de marche. Un client debout devant la borne lisait
+        « Configurez cette borne dans l'espace administration, rubrique Bornes. »
+
+        C'est la même règle que le commentaire [SEC/UX 2026-07-04] plus bas dans ce fichier :
+        « L'écran /kiosk est PUBLIC (client) […] Le client voit un message propre ; les
+        instructions dev vont en CONSOLE seulement. » Cette correction-là avait nettoyé le message
+        d'ERREUR ; le pied de page, lui, était resté. Vu seulement en ouvrant la page.
+
+        On le réserve donc au développement, comme l'astuce juste au-dessus. L'exploitant garde son
+        diagnostic complet dans la console du navigateur (voir le `console.warn` de `autoLogin`).
+      -->
+      <p v-if="showDevSeedHint" class="kiosk-login-footer">
         {{ $t('kiosk.login_screen.footer') }}
       </p>
     </div>

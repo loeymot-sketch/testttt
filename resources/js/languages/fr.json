@@ -1983,7 +1983,7 @@
             "title": "Borne de commande",
             "sub": "Connexion automatique",
             "status_loading": "Connexion de la borne en cours…",
-            "status_missing_env": "Connexion machine non configurée côté serveur.",
+            "status_missing_env": "Borne indisponible pour le moment.",
             "status_retrying": "La borne retente la connexion automatiquement.",
             "public_hint": "Cette borne est publique : aucun mot de passe ne doit être saisi à l'écran.",
             "retry": "Réessayer",
