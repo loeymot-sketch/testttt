@@ -291,7 +291,7 @@
             mask-image:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%);
   }
   .defile-bande{
-    display:flex; flex-direction:column; align-items:center; gap:1.6vmin;
+    display:flex; flex-direction:column; align-items:center; gap:1vmin;
     animation:defiler 42s linear infinite; will-change:transform;
   }
   /* La liste est écrite DEUX fois ; on remonte d'exactement la moitié de la bande, donc la boucle
@@ -301,15 +301,19 @@
   .defile-item{
     margin:0; display:grid; justify-items:center; gap:.5vmin; flex:0 0 auto;
   }
+  /* [2026-08-13, vérifié à l'écran] À 15vmin, la fenêtre du défilé ne montrait QU'UN produit à la
+     fois, coupé en haut et en bas : en paysage, le QR et ses deux phrases prennent l'essentiel de
+     la colonne et il ne restait qu'environ 150 px. Un défilé qui montre un seul article n'est plus
+     un défilé, c'est une image qui saute. On réduit la vignette pour en faire tenir trois. */
   .defile-item img{
-    width:min(15vmin,150px); height:min(15vmin,150px); object-fit:cover;
+    width:min(9.5vmin,104px); height:min(9.5vmin,104px); object-fit:cover;
     border-radius:50%; display:block;
     background:var(--creme);
     /* Le même anneau chaud que les médaillons de la roue : deux surfaces, une seule identité. */
     box-shadow:0 0 0 .35vmin rgba(255,211,77,.92), 0 1vmin 2.6vmin rgba(0,0,0,.55);
   }
   .defile-item figcaption{
-    font-size:clamp(14px,1.9vmin,22px); font-weight:900; letter-spacing:-.01em;
+    font-size:clamp(12px,1.5vmin,18px); font-weight:900; letter-spacing:-.01em;
     color:var(--creme); opacity:.92; text-align:center; max-width:20ch;
   }
 
