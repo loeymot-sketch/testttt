@@ -1246,3 +1246,81 @@ test.describe.serial('Real functional interaction — Z-Reports (X-Report, read-
     console.log(`[CRUD-FUNCTIONAL] Z-Reports X-Report: real GET /api/admin/fiscal/x-report (200) fetched a real fiscal snapshot (${text.length} chars), not a cosmetic no-op.`);
   });
 });
+
+test.describe.serial('Real functional CRUD — Promo Flyer (create real coupon code, revoke)', () => {
+  test.setTimeout(120_000);
+  let page;
+  const flyerNamePrefix = `E2EFlyer${Date.now() % 100000}`;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    // A PromoFlyer create also auto-creates a REAL linked Coupon record
+    // (confirmed via tinker: coupon_id on the flyer, a genuine Coupon row).
+    // revoke() correctly deactivates it (status->INACTIVE) but doesn't
+    // delete either row, so both need explicit cleanup here. The coupon's
+    // `code` is a TRUNCATED/randomized slug (e.g. customer "E2EFlyer41685"
+    // -> code "E2EFLYER4168-3ES3", one character short of a full prefix
+    // match) -- a first cleanup attempt matched on `code LIKE` and missed
+    // it, confirmed via tinker leaving 1 stray coupon after a run despite
+    // the flyer itself being cleaned. Fixed by matching on the coupon's
+    // `name` field instead ("Flyer <customer_name>"), which embeds the
+    // full un-truncated customer name.
+    tinkerExec(`\\App\\Models\\Coupon::where('name', 'like', 'Flyer ${flyerNamePrefix}%')->forceDelete(); \\App\\Models\\PromoFlyer::where('customer_name', 'like', '${flyerNamePrefix}%')->delete();`);
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Promo Flyer: create a real coupon code -> appears in history -> revoke (native confirm dialog)', async () => {
+    // customer_name is free text (not linked to a real user account) -- the
+    // flyer print itself routes through a local print-bridge (same pattern
+    // as kitchen tickets, per this project's established architecture: the
+    // server can't reach in-restaurant printers directly), so triggering
+    // "print" in this dev/test environment has no physical side effect.
+    // revoke() uses a NATIVE window.confirm(), not a SweetAlert2 modal like
+    // every other confirm in this codebase -- handled via Playwright's
+    // page.on('dialog') (safe/standard for Playwright automation, unlike
+    // browser-extension automation where native dialogs are a known hazard).
+    const customerName = flyerNamePrefix;
+
+    await page.goto('/admin/promo-flyer', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.fill('#customer_name', customerName);
+    await page.getByRole('button', { name: /print flyer|imprimer/i }).click();
+    await page.waitForTimeout(1500);
+
+    // button.refresh renders "Actualiser" in French here (confirmed via
+    // languages/fr.json button.refresh -- a DIFFERENT French word than
+    // "Rafraîchir" used by button.refresh in other namespaces of the same
+    // file, e.g. the Outbox/System Health dashboards tested earlier).
+    await page.getByRole('button', { name: /refresh|actualiser/i }).click();
+    await page.waitForTimeout(1000);
+
+    const row = page.locator('tbody tr', { hasText: customerName });
+    await expect(row).toBeVisible({ timeout: 10_000 });
+    const code = (await row.locator('td').nth(1).innerText()).split('\n')[0].trim();
+    console.log(`[CRUD-FUNCTIONAL] Promo Flyer CREATE: real coupon code "${code}" issued for throwaway customer "${customerName}", appears in history.`);
+
+    // button.cancel_code renders just "Annuler" in French (confirmed via
+    // languages/fr.json), not "Revoke"/"Annuler le code" -- targeted by its
+    // distinguishing class instead of guessing at exact text.
+    page.once('dialog', (dialog) => dialog.accept());
+    await row.locator('button.bg-rose-700').click();
+    await page.waitForTimeout(1500);
+
+    // button.refresh renders "Actualiser" in French here (confirmed via
+    // languages/fr.json button.refresh -- a DIFFERENT French word than
+    // "Rafraîchir" used by button.refresh in other namespaces of the same
+    // file, e.g. the Outbox/System Health dashboards tested earlier).
+    await page.getByRole('button', { name: /refresh|actualiser/i }).click();
+    await page.waitForTimeout(1000);
+    // label.flyer_revoked renders "annule" in French (confirmed via
+    // languages/fr.json), not "revoked"/"révoqué".
+    await expect(page.locator('tbody tr', { hasText: customerName })).toContainText(/revoked|annule/i, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Promo Flyer REVOKE: real code "${code}" marked revoked via the native confirm dialog, not a client-side-only toast.`);
+  });
+});
