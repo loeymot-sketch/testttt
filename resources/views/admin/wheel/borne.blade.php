@@ -66,6 +66,21 @@
 
   /* Lueur de fond qui respire très lentement : la scène a l'air VIVANTE même quand rien ne se
      passe, sans jamais attirer l'œil au détriment du texte. */
+  /* [PROPRIÉTAIRE 2026-08-13] « ajoute un truc en arrière-plan qui donne plus de qualité et
+     attire l'œil, pour donner le sentiment que c'est vraiment à ne pas rater ».
+
+     Trois couches, et AUCUNE ne clignote — un écran de comptoir qui clignote est éteint par
+     l'équipe au bout d'un service, c'est la règle de cette page depuis le début :
+
+       1. les lueurs chaudes de la marque, qui respirent très lentement (déjà là) ;
+       2. une VIGNETTE qui assombrit les bords : elle ne s'ajoute pas, elle RETIRE — l'œil est
+          conduit vers le centre, donc vers la roue et le QR, sans qu'on lui montre rien de neuf ;
+       3. un halo doré qui balaie très lentement l'écran en diagonale, comme la lumière qui glisse
+          sur une vitrine. C'est ce qui donne le « fini » : un fond parfaitement fixe se lit comme
+          une image morte, un fond qui bouge un peu se lit comme un objet allumé.
+
+     Tout est en CSS : aucune image à charger, rien à recompiler, aucun coût sur une tablette
+     d'entrée de gamme qui tourne douze heures. */
   .fond{
     position:fixed; inset:0; pointer-events:none;
     background:
@@ -76,13 +91,42 @@
   }
   @keyframes respireFond{0%,100%{opacity:.85}50%{opacity:1}}
 
+  /* La vignette : elle CREUSE les bords au lieu d'ajouter du décor. */
+  .fond-vignette{
+    position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(115% 85% at 50% 45%, transparent 42%, rgba(0,0,0,.55) 100%);
+  }
+
+  /* Le balayage doré : très large, très lent, très discret. */
+  .fond-halo{
+    position:fixed; inset:-40%; pointer-events:none; opacity:.5;
+    background:linear-gradient(104deg,
+      transparent 38%, rgba(255,211,77,.13) 47%, rgba(255,246,236,.07) 51%,
+      rgba(255,184,0,.11) 55%, transparent 64%);
+    animation:balayer 26s ease-in-out infinite;
+  }
+  @keyframes balayer{
+    0%,100%{transform:translate3d(-14%,-6%,0)}
+    50%{transform:translate3d(14%,6%,0)}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .fond,.fond-halo{animation:none}
+  }
+
+  /* [2026-08-13] TROIS colonnes : le spectacle, le ruban des lots, le geste à faire.
+     La colonne du milieu est étroite et fixe en proportion — elle ne doit jamais voler de la
+     place à la roue ni au QR, seulement occuper le vide qui existait entre eux. */
   .scene{
     position:relative; flex:1 1 auto; min-height:0; display:grid;
-    grid-template-columns:1.15fr .85fr; grid-template-rows:minmax(0,1fr);
-    gap:3vmin; align-items:stretch; padding:3.5vmin;
+    grid-template-columns:1.06fr minmax(0,.34fr) .8fr; grid-template-rows:minmax(0,1fr);
+    gap:2.4vmin; align-items:stretch; padding:3.5vmin;
   }
+  /* En portrait, une colonne du milieu n'a plus de sens : les trois blocs s'empilent, et le ruban
+     passe en dernier — il illustre, il ne commande pas le geste. */
   @media (max-aspect-ratio:1/1){
-    .scene{grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; gap:2vmin}
+    .scene{grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto auto; gap:2vmin}
+    .defile{order:3; max-height:26vh}
   }
 
   /* ── CÔTÉ GAUCHE : LE SPECTACLE ─────────────────────────────────────────────────────────── */
@@ -226,8 +270,7 @@
      alors eu aucune hauteur, donc rien à montrer. La dernière ligne est élastique et bornée par
      `minmax(0,1fr)` : elle occupe le vide, sans jamais pousser le QR hors de l'écran. */
   .droite{
-    display:grid; grid-template-rows:auto auto auto minmax(0,1fr);
-    justify-items:center; align-content:stretch; text-align:center;
+    display:grid; place-items:center; align-content:center; text-align:center;
     gap:1.6vmin; min-width:0; min-height:0;
   }
   /* Anneau qui pulse autour du QR : il désigne l'endroit sans rien recouvrir. L'espace qu'il
@@ -291,8 +334,8 @@
             mask-image:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%);
   }
   .defile-bande{
-    display:flex; flex-direction:column; align-items:center; gap:1vmin;
-    animation:defiler 42s linear infinite; will-change:transform;
+    display:flex; flex-direction:column; align-items:center; gap:2.2vmin;
+    animation:defiler 52s linear infinite; will-change:transform;
   }
   /* La liste est écrite DEUX fois ; on remonte d'exactement la moitié de la bande, donc la boucle
      retombe sur une image identique. Aucun saut. */
@@ -305,15 +348,18 @@
      fois, coupé en haut et en bas : en paysage, le QR et ses deux phrases prennent l'essentiel de
      la colonne et il ne restait qu'environ 150 px. Un défilé qui montre un seul article n'est plus
      un défilé, c'est une image qui saute. On réduit la vignette pour en faire tenir trois. */
+  /* Le ruban occupe maintenant toute la hauteur : la vignette peut redevenir grande. C'est
+     l'inverse du compromis d'avant — on ne rétrécit plus le produit pour le faire entrer, c'est
+     la colonne qui lui donne la place. */
   .defile-item img{
-    width:min(9.5vmin,104px); height:min(9.5vmin,104px); object-fit:cover;
+    width:min(13vmin,146px); height:min(13vmin,146px); object-fit:cover;
     border-radius:50%; display:block;
     background:var(--creme);
     /* Le même anneau chaud que les médaillons de la roue : deux surfaces, une seule identité. */
     box-shadow:0 0 0 .35vmin rgba(255,211,77,.92), 0 1vmin 2.6vmin rgba(0,0,0,.55);
   }
   .defile-item figcaption{
-    font-size:clamp(12px,1.5vmin,18px); font-weight:900; letter-spacing:-.01em;
+    font-size:clamp(13px,1.8vmin,21px); font-weight:900; letter-spacing:-.01em;
     color:var(--creme); opacity:.92; text-align:center; max-width:20ch;
   }
 
@@ -409,6 +455,8 @@
 @else
 
   <div class="fond" aria-hidden="true"></div>
+  <div class="fond-halo" aria-hidden="true"></div>
+  <div class="fond-vignette" aria-hidden="true"></div>
 
   <main class="scene">
 
@@ -496,6 +544,36 @@
       </div>
     </div>
 
+    @if(!empty($segments))
+    {{-- ── LA COLONNE DU MILIEU : TOUS LES LOTS, SUR TOUTE LA HAUTEUR ─────────────────────
+         [PROPRIÉTAIRE 2026-08-13] « rends la barre des images verticale au milieu, on verra tous
+         les produits, c'est sa place au milieu de la tablette, qui prend toute la hauteur. »
+
+         Elle était d'abord sous le QR, et c'était trop juste : mesuré à l'écran, il ne restait
+         qu'environ 150 px après le QR et ses deux phrases — un produit et demi, coupé. Le vide
+         réel était AILLEURS, entre la roue et le QR, sur toute la hauteur de l'écran.
+
+         La scène passe donc à trois colonnes. Ce n'est pas un déplacement cosmétique : la colonne
+         du milieu occupe la ligne élastique de la grille, donc le ruban court du haut de l'écran
+         au bas sans qu'aucune hauteur ne soit devinée — la faute déjà payée deux fois dans ce
+         fichier (boîtes de hauteur estimée, contenu qui déborde par-dessus le QR).
+
+         Ordre de lecture voulu : la roue dit « il y a un jeu », le ruban dit « voilà TOUT ce que
+         tu peux gagner », le QR dit « voilà comment ». --}}
+    <div class="defile" aria-hidden="true">
+      <div class="defile-bande">
+        @foreach(array_merge($segments, $segments) as $seg)
+          @if(!empty($seg['photo']))
+          <figure class="defile-item">
+            <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
+            <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
+          </figure>
+          @endif
+        @endforeach
+      </div>
+    </div>
+    @endif
+
     <div class="droite">
       <div class="fleche" aria-hidden="true">↓</div>
       <div class="qr-boite">
@@ -527,20 +605,6 @@
 
            Le mouvement est LENT et CONTINU. Un défilé rapide se lit comme une publicité et l'équipe
            finit par éteindre l'écran ; un défilé lent se regarde sans y penser. --}}
-      @if(!empty($segments))
-      <div class="defile" aria-hidden="true">
-        <div class="defile-bande">
-          @foreach(array_merge($segments, $segments) as $seg)
-            @if(!empty($seg['photo']))
-            <figure class="defile-item">
-              <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
-              <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
-            </figure>
-            @endif
-          @endforeach
-        </div>
-      </div>
-      @endif
     </div>
 
   </main>
