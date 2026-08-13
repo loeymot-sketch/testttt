@@ -499,4 +499,95 @@ test.describe.serial('Real persistence proof — Social Media, Loyalty setup (si
     await expect(page.locator('small.db-field-alert')).toBeVisible({ timeout: 10_000 });
     console.log(`[CRUD-FUNCTIONAL] Change Password: real PUT ${res.url()} rejected a wrong old_password with a real 422 + rendered field error -- not a client-side-only form, and the real admin credential was never at risk.`);
   });
+
+  test('Notification (FCM settings): clearing a required key and saving is rejected by the real backend, real credentials never touched', async () => {
+    // notification_fcm_* are real Firebase credentials written to real
+    // config -- same risk class as Mail's host/port/username/password,
+    // declined earlier this session for a full mutate-restore cycle.
+    // NotificationRequest.php marks every field ['required', ...] with no
+    // conditional/external-call side effect in its withValidator() (only
+    // checks a local DB row for the optional JSON file, no live Firebase
+    // API call) -- confirmed via source read before writing this test, the
+    // same discipline that ruled OUT the equivalent test for Payment
+    // Gateway/SMS Gateway (their dynamic per-provider Request classes make
+    // `required` CONDITIONAL on an enable-status flag also present in the
+    // same payload, and update a REAL, LIVE, revenue-critical integration
+    // (Mollie) -- too easy to get the conditional wrong and land a real
+    // write, so those stay declined). Clearing one required field here can
+    // never write anything: Laravel's FormRequest validation rejects the
+    // whole request atomically before the controller body (and any
+    // .env/DB write) ever runs.
+    await page.goto('/admin/settings/notification', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const field = page.locator('#notification_fcm_api_key');
+    await expect(field).toBeVisible({ timeout: 10_000 });
+    const original = await field.inputValue();
+    await field.fill('');
+
+    const saveResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/notification$/.test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await page.click('button[type="submit"]');
+    const res = await saveResponse;
+    expect(res.status()).toBe(422);
+    // NotificationRequest marks every FCM field required, so an empty form
+    // (FCM push isn't configured for this single-branch local restaurant)
+    // renders one alert per field -- assert the one tied to the field we
+    // actually cleared, not just "some alert exists somewhere".
+    await expect(page.getByText('Le champ notification fcm api key est obligatoire.')).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Notification (FCM): real POST /api/admin/setting/notification (422) rejected an empty required "notification_fcm_api_key" with a real rendered error -- proves real backend wiring without ever writing to the real Firebase credentials.`);
+
+    // Restore the field to its original value in the DOM (never submitted)
+    // and leave without saving -- nothing was ever written, so there is
+    // nothing to restore server-side.
+    await field.fill(original);
+  });
+
+  test('Site: clearing a required field and saving is rejected by the real backend, real settings never touched', async () => {
+    // SiteRequest.php requires site_copyright (plus many others) with no
+    // external-call side effect -- purely local field validation. This
+    // page was previously dropped entirely ("mixes plain inputs with
+    // custom multiselect components... out of scope for [the mutate-
+    // restore] pass") -- the negative-path pattern sidesteps the
+    // multiselect fields (never interacted with) by using the one plain
+    // required text field that's simplest: site_copyright.
+    // SiteComponent.vue's mounted() chains 5 AWAITED store dispatches
+    // (smsGateway/timezone/branch/currency/language) before it ever
+    // fetches `admin/setting/site` -- `networkidle` can resolve in the
+    // brief gap between two of those sequential requests and leave the
+    // form field still empty when the test reads it. Wait for the exact
+    // response that populates site_copyright instead of a generic
+    // network-quiet heuristic.
+    const listsResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/site$/.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 15_000 }
+    );
+    await page.goto('/admin/settings/site', { waitUntil: 'domcontentloaded' });
+    await listsResponse;
+    const field = page.locator('#site_copyright');
+    await expect(field).toBeVisible({ timeout: 10_000 });
+    // The real value can legitimately be empty already (this single-branch
+    // restaurant may never have set a copyright line) -- don't assert
+    // non-empty about real, unpredictable data state. Force it empty
+    // either way so the required-field rejection is guaranteed regardless.
+    const original = await field.inputValue();
+    await field.fill('');
+
+    const saveResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/site$/.test(res.url()) && res.request().method() === 'PUT',
+      { timeout: 10_000 }
+    );
+    await page.click('button[type="submit"]');
+    const res = await saveResponse;
+    expect(res.status()).toBe(422);
+    // Other required Site fields (e.g. Google Maps key) are also genuinely
+    // empty in this real single-branch restaurant's data, so a generic
+    // "some alert exists" locator hits the same strict-mode multi-match
+    // trap as the Notification test above -- target the exact message.
+    await expect(page.getByText('Le champ site copyright est obligatoire.')).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Site: real PUT /api/admin/setting/site (422) rejected an empty required "site_copyright" with a real rendered error -- proves real backend wiring for a page previously dropped entirely, without ever writing to real site settings.`);
+
+    await field.fill(original);
+  });
 });
