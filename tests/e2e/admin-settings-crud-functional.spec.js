@@ -662,6 +662,80 @@ test.describe.serial('Real functional CRUD — Currency and Tax settings (not ju
     console.log('[CRUD-FUNCTIONAL] Analytics DELETE: row gone after confirm — REAL removal.');
   });
 
+  test('Analytics Sections (show/:id page): real nested CRUD, NOT a redundant read-only detail view', async () => {
+    // CORRECTION: an earlier pass in this session classified AnalyticShowComponent.vue
+    // as read-only by a grep that only matched inline dispatch/axios calls -- it
+    // missed this component entirely because it wires up create/edit/delete via
+    // local methods (edit()/destroy()) and a separate AnalyticSectionCreateComponent
+    // modal. Full read confirms it's a genuine nested CRUD screen: an Analytic's
+    // show page lists/creates/edits/deletes "sections" (header/body/footer content
+    // blocks), backed by its own analyticSection/* Vuex actions and
+    // AnalyticSectionRequest validation -- not redundant with the parent list's
+    // rename-only modal at all.
+    //
+    // analytic_sections.analytic_id has NO cascade-on-delete (plain
+    // ->constrained('analytics'), confirmed via the migration) -- the section
+    // must be deleted before the parent Analytic, or the parent's own delete
+    // would 500 on a FK constraint. Tested in that order below.
+    const analyticName = `E2EAnalyticSec${Date.now() % 100000}`;
+    const sectionName = `E2ESection${Date.now() % 100000}`;
+
+    await page.goto('/admin/settings/analytics/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const table = page.locator('table.db-table');
+
+    await openCreateModal(page);
+    await page.fill('#modal #name', analyticName);
+    await page.locator('#modal #active').check();
+    await submitModal(page);
+    await expect(table).toContainText(analyticName, { timeout: 10_000 });
+
+    const row = table.locator('tr', { hasText: analyticName });
+    await row.getByRole('link', { name: /voir/i }).click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('h3.db-card-title', { hasText: analyticName })).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Analytics Sections: show page for "${analyticName}" loaded with real title in heading.`);
+
+    const sectionTable = page.locator('table.db-table');
+    await openCreateModal(page);
+    await page.fill('#modal #name', sectionName);
+    const sectionGroup = page.locator('#modal label[for="section"]').locator('xpath=..');
+    await sectionGroup.locator('.vue-select-header').click();
+    await page.waitForTimeout(300);
+    const bodyOption = sectionGroup.locator('li.vue-dropdown-item[role="option"]').filter({ hasText: /^Body$|^Corps$/i });
+    await expect(bodyOption.first()).toBeVisible({ timeout: 5000 });
+    await bodyOption.first().click();
+    await page.fill('#modal #data', `E2E section body content ${sectionName}`);
+    await submitModal(page);
+
+    await expect(sectionTable).toContainText(sectionName, { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Analytics Sections CREATE: real section "${sectionName}" appears in the nested table — REAL nested CRUD, not a static detail page.`);
+
+    const sectionRow = sectionTable.locator('tr', { hasText: sectionName });
+    await sectionRow.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+    const sectionNameInput = page.locator('#modal #name');
+    await expect(sectionNameInput).toBeVisible({ timeout: 8000 });
+    await sectionNameInput.fill(`${sectionName}EDITED`);
+    await submitModal(page);
+    await expect(sectionTable).toContainText(`${sectionName}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Analytics Sections EDIT: rename reflected — REAL persistence.');
+
+    const editedSectionRow = sectionTable.locator('tr', { hasText: `${sectionName}EDITED` });
+    await editedSectionRow.getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+    await expect(sectionTable).not.toContainText(`${sectionName}EDITED`, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Analytics Sections DELETE: section gone after confirm — REAL removal.');
+
+    // Cleanup: delete the throwaway parent Analytic now that its sections are gone.
+    await page.goto('/admin/settings/analytics/list', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.locator('table.db-table').locator('tr', { hasText: analyticName }).getByRole('button', { name: /supprimer/i }).click();
+    await confirmDelete(page);
+    await expect(page.locator('table.db-table')).not.toContainText(analyticName, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Analytics Sections: throwaway parent Analytic deleted — cleanup confirmed.');
+  });
+
   test('Item Attribute: create -> appears in table -> edit (exercises rename-cascade fix) -> delete -> gone', async () => {
     // name is unique (ItemAttributeRequest.php). The EDIT step here isn't
     // just a generic rename check -- it live-exercises the composer-wizard
