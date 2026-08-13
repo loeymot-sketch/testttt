@@ -252,10 +252,29 @@ class LanguageService
             $explodeName = explode('.', $request->name);
             if ($explodeName > 0) {
                 if ($explodeName[1] == 'json') {
-                    include($resolvedPath);
-                } else {
-                    return include($resolvedPath);
+                    // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] include()
+                    // on a .json file has no <?php tag, so PHP treats the raw
+                    // JSON text as literal output and echoes it straight into
+                    // the response body during the include() call itself —
+                    // then, with no `return` here, this method (and the
+                    // controller, which also didn't `return` this branch)
+                    // implicitly returns null, so Laravel tries to send its
+                    // own response on top of the already-echoed raw content.
+                    // The resulting malformed response never resolves
+                    // cleanly: confirmed live, the "Récupérer le contenu du
+                    // fichier" button hangs indefinitely (no response event
+                    // at all) whenever a .json language file is selected —
+                    // which is *every* language's first/default file
+                    // ({code}.json, always listed first by fileList()).
+                    // .php files were never affected (return include(...)
+                    // there correctly returns the file's `return [...]`
+                    // array). Fixed by reading + decoding the JSON file
+                    // properly instead of include()-ing it as if it were PHP.
+                    $json = file_get_contents($resolvedPath);
+                    return json_decode($json, true) ?? [];
                 }
+
+                return include($resolvedPath);
             }
         } catch (\RuntimeException $exception) {
             Log::info($exception->getMessage());

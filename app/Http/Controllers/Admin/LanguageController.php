@@ -86,14 +86,13 @@ class LanguageController extends AdminController
     public function fileText(LanguageFileTextGetRequest $request)
     {
         try {
-            $explodeName = explode('.', $request->name);
-            if ($explodeName > 0) {
-                if ($explodeName[1] == 'json') {
-                    $this->languageService->fileText($request);
-                } else {
-                    return $this->languageService->fileText($request);
-                }
-            }
+            // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] the .json branch
+            // used to call the service without `return`, discarding its
+            // result -- paired with the same bug in LanguageService::fileText()
+            // (fixed separately), this meant every .json file request hung
+            // with no clean response. The service now returns a proper value
+            // for both .json and .php uniformly, so this always returns it.
+            return $this->languageService->fileText($request);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
