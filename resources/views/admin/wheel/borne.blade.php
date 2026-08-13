@@ -213,7 +213,7 @@
      ELLE qui rétrécit quand l'écran est court, jamais le texte : un lot annoncé à moitié caché
      est un lot qu'on ne lit pas. */
   .gauche{
-    display:grid; grid-template-rows:auto auto auto minmax(0,1fr) auto; gap:1vmin;
+    display:grid; grid-template-rows:auto auto auto minmax(0,1fr); gap:1vmin;
     justify-items:center; align-items:center; min-height:0; min-width:0;
   }
 
@@ -350,10 +350,19 @@
      reste. `align-content:center` centrait les lignes sans jamais les étirer — le défilé n'aurait
      alors eu aucune hauteur, donc rien à montrer. La dernière ligne est élastique et bornée par
      `minmax(0,1fr)` : elle occupe le vide, sans jamais pousser le QR hors de l'écran. */
+  /* [2026-08-13] La colonne droite porte maintenant QUATRE blocs : les trois étapes, la flèche,
+     le QR et ses mots. `align-content:center` les garde groupés au centre — c'est voulu : posés en
+     haut, ils laisseraient un vide sous le QR, et c'est justement ce vide que le propriétaire a
+     demandé de supprimer. */
   .droite{
     display:grid; place-items:center; align-content:center; text-align:center;
-    gap:1.6vmin; min-width:0; min-height:0;
+    gap:1.2vmin; min-width:0; min-height:0;
   }
+  /* Les étapes sont ici l'INTRODUCTION du QR, pas un titre de colonne : un peu plus discrètes que
+     lorsqu'elles vivaient seules sous la roue. */
+  .droite .actes .titre2{font-size:min(3.1vmin,32px); margin-bottom:.9vmin}
+  .droite .actes .rond{width:min(6vmin,62px); height:min(6vmin,62px); font-size:min(2.9vmin,30px)}
+  .droite .actes .mot{font-size:min(1.9vmin,20px)}
   /* Anneau qui pulse autour du QR : il désigne l'endroit sans rien recouvrir. L'espace qu'il
      occupe est RÉSERVÉ (padding) et sa respiration se fait vers l'intérieur : en débordant de sa
      boîte il sortait de la mise en page de 18 px, et rien ne garantissait qu'un écran plus court
@@ -614,8 +623,59 @@
       <canvas class="roue" id="roue" width="720" height="720" role="img"
               aria-label="Roue des lots : {{ implode(', ', array_column($segments ?? [], 'label')) ?: 'à découvrir' }}"></canvas>
 
-      <div class="actes">
-        {{-- ACTE 2 — CE QUI VIENT D'ÊTRE GAGNÉ.
+    </div>
+
+    @if(!empty($segments))
+    {{-- ── LA COLONNE DU MILIEU : TOUS LES LOTS, SUR TOUTE LA HAUTEUR ─────────────────────
+         [PROPRIÉTAIRE 2026-08-13] « rends la barre des images verticale au milieu, on verra tous
+         les produits, c'est sa place au milieu de la tablette, qui prend toute la hauteur. »
+
+         Elle était d'abord sous le QR, et c'était trop juste : mesuré à l'écran, il ne restait
+         qu'environ 150 px après le QR et ses deux phrases — un produit et demi, coupé. Le vide
+         réel était AILLEURS, entre la roue et le QR, sur toute la hauteur de l'écran.
+
+         La scène passe donc à trois colonnes. Ce n'est pas un déplacement cosmétique : la colonne
+         du milieu occupe la ligne élastique de la grille, donc le ruban court du haut de l'écran
+         au bas sans qu'aucune hauteur ne soit devinée — la faute déjà payée deux fois dans ce
+         fichier (boîtes de hauteur estimée, contenu qui déborde par-dessus le QR).
+
+         Ordre de lecture voulu : la roue dit « il y a un jeu », le ruban dit « voilà TOUT ce que
+         tu peux gagner », le QR dit « voilà comment ». --}}
+    {{-- [PROPRIÉTAIRE 2026-08-13] « les images, on comprend rien si on met pas de titre comme
+         "produits à gagner" ». Exact, et c'est un défaut de sens, pas de style : sans en-tête, ces
+         photos sont juste de la nourriture qui défile — le cerveau les classe en décor et les
+         ignore. Nommées « À GAGNER », les mêmes photos deviennent une promesse. --}}
+    <div class="defile" aria-hidden="true">
+      <p class="defile-titre">À gagner</p>
+      <div class="defile-fenetre">
+        <div class="defile-bande">
+          @foreach(array_merge($segments, $segments) as $seg)
+            @if(!empty($seg['photo']))
+            <figure class="defile-item">
+              <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
+              <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
+            </figure>
+            @endif
+          @endforeach
+        </div>
+      </div>
+    </div>
+    @endif
+
+    <div class="droite">
+      {{-- [PROPRIÉTAIRE 2026-08-13] « ce qui est au-dessus de la roue actuellement — c'est tout de
+           suite, scanne / tourne / gagne — je demande de le mettre au-dessus du QR code, parce que
+           là il reste encore de l'espace ; et la roue, je veux qu'elle prenne le maximum d'espace
+           possible ».
+
+           Deux gains d'un seul geste, et le second est le vrai : ces trois étapes décrivent CE
+           QU'ON FAIT AVEC LE QR — les poser à côté de lui les met enfin en face de leur objet,
+           alors qu'elles vivaient sous la roue, loin de ce qu'elles expliquent. Et la colonne de
+           gauche, libérée, n'a plus qu'un seul sujet : la roue, qui prend tout le reste.
+
+           C'est la même règle qu'à chaque fois sur cet écran : on n'agrandit pas la roue en
+           montant son plafond, on lui rend la place que d'autres prenaient. --}}
+      <div class="actes">        {{-- ACTE 2 — CE QUI VIENT D'ÊTRE GAGNÉ.
              [2026-08-13 · propriétaire : « tu affiches la roue avec les produits à gagner et en bas
              tu affiches ENCORE les photos ainsi que leur nom — c'est catastrophique, faire lire
              deux fois la même chose »]
@@ -678,46 +738,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    @if(!empty($segments))
-    {{-- ── LA COLONNE DU MILIEU : TOUS LES LOTS, SUR TOUTE LA HAUTEUR ─────────────────────
-         [PROPRIÉTAIRE 2026-08-13] « rends la barre des images verticale au milieu, on verra tous
-         les produits, c'est sa place au milieu de la tablette, qui prend toute la hauteur. »
-
-         Elle était d'abord sous le QR, et c'était trop juste : mesuré à l'écran, il ne restait
-         qu'environ 150 px après le QR et ses deux phrases — un produit et demi, coupé. Le vide
-         réel était AILLEURS, entre la roue et le QR, sur toute la hauteur de l'écran.
-
-         La scène passe donc à trois colonnes. Ce n'est pas un déplacement cosmétique : la colonne
-         du milieu occupe la ligne élastique de la grille, donc le ruban court du haut de l'écran
-         au bas sans qu'aucune hauteur ne soit devinée — la faute déjà payée deux fois dans ce
-         fichier (boîtes de hauteur estimée, contenu qui déborde par-dessus le QR).
-
-         Ordre de lecture voulu : la roue dit « il y a un jeu », le ruban dit « voilà TOUT ce que
-         tu peux gagner », le QR dit « voilà comment ». --}}
-    {{-- [PROPRIÉTAIRE 2026-08-13] « les images, on comprend rien si on met pas de titre comme
-         "produits à gagner" ». Exact, et c'est un défaut de sens, pas de style : sans en-tête, ces
-         photos sont juste de la nourriture qui défile — le cerveau les classe en décor et les
-         ignore. Nommées « À GAGNER », les mêmes photos deviennent une promesse. --}}
-    <div class="defile" aria-hidden="true">
-      <p class="defile-titre">À gagner</p>
-      <div class="defile-fenetre">
-        <div class="defile-bande">
-          @foreach(array_merge($segments, $segments) as $seg)
-            @if(!empty($seg['photo']))
-            <figure class="defile-item">
-              <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
-              <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
-            </figure>
-            @endif
-          @endforeach
-        </div>
-      </div>
-    </div>
-    @endif
-
-    <div class="droite">
       <div class="fleche" aria-hidden="true">↓</div>
       <div class="qr-boite">
         <div class="qr" id="qr">{!! $qr !!}@if($qr)<div class="qr-logo"><img src="{{ asset('images/wheel/logo-mark.png') }}" alt=""></div>@endif</div>
