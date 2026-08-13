@@ -384,7 +384,7 @@
                                     }}</span>
                             </li>
                         </ul>
-                        <div v-if="order.order_type === enums.orderTypeEnum.DELIVERY" class="flex items-start gap-3">
+                        <div v-if="order.order_type === enums.orderTypeEnum.DELIVERY && orderAddress" class="flex items-start gap-3">
                             <i class="lab lab-location lab-font-size-20 leading-6 font-fill-black"></i>
                             <span class="text-sm w-full max-w-[200px] leading-6 text-[#374151]">
                                 {{ orderAddress.apartment ? orderAddress.apartment + ', ' : '' }} {{
