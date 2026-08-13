@@ -132,8 +132,23 @@
      la conclusion ne l'était pas. On garde 48vmin — la valeur mesurée comme sûre le 10/08 — et
      la place perdue par le texte est récupérée AUTREMENT : les vignettes sont posées en médaillon
      (voir le script), ce qui les rend lisibles bien plus petites qu'une photo posée à nu. */
+  /* [PROPRIÉTAIRE 2026-08-13, photo de la tablette à l'appui] « la roue on la voit trop trop
+     petite ». Vérifié sur sa photo : la roue tenait dans un quart de l'écran pendant que le titre
+     en dévorait la moitié. La roue EST le produit — c'est elle qui donne envie de scanner.
+
+     ⚠️ ON REMONTE MALGRÉ L'AVERTISSEMENT CI-DESSUS, ET VOICI POURQUOI CE N'EST PAS LA MÊME
+     SITUATION. La tentative à 54vmin a échoué parce qu'elle réclamait de la place SANS EN LIBÉRER :
+     le titre valait alors 11.5vmin et la ligne « dès 10,00 € » occupait encore l'écran. Ici, dans
+     le même geste, on a rendu de la hauteur — titre 11.5 → 8.2vmin, mention d'achat SUPPRIMÉE,
+     bandeau du bas 26 → 17px. Environ 8vmin repris au texte, avant d'en demander à la roue.
+
+     On monte donc PRUDEMMENT à 58vmin — pas aux 66 que j'avais posés d'abord, qui auraient rejoué
+     l'échec en pire — et la valeur est VÉRIFIÉE À L'ÉCRAN après déploiement, pas supposée.
+     La règle de l'avertissement reste vraie et ne doit jamais être oubliée : `min(..., 100%)` ne
+     borne PAS, parce que la ligne de grille peut déborder. Toute hausse future se paie d'abord en
+     hauteur rendue ailleurs, et se vérifie sur une capture. */
   .roue{
-    height:min(48vmin,620px,100%); width:auto; display:block;
+    height:min(58vmin,760px,100%); width:auto; display:block;
     filter:drop-shadow(0 2.5vmin 5vmin rgba(0,0,0,.55));
   }
 
@@ -153,7 +168,9 @@
   .acte.on{opacity:1}
 
   h1{
-    margin:0; font-size:min(11.5vmin,132px); line-height:.92; font-weight:900; letter-spacing:-.025em;
+    /* [PROPRIÉTAIRE 2026-08-13] Le titre prenait plus de place que la roue. Il reste l'accroche
+       lisible à trois mètres, mais il cesse d'être le sujet : c'est la roue qu'on vient regarder. */
+    margin:0; font-size:min(8.2vmin,96px); line-height:.92; font-weight:900; letter-spacing:-.025em;
     background:linear-gradient(100deg,var(--jaune2),var(--orange2) 62%,var(--jaune));
     -webkit-background-clip:text; background-clip:text; color:transparent;
   }
@@ -267,7 +284,7 @@
     flex:0 0 auto; padding:1.2vmin 3vmin; text-align:center;
     border-top:1px solid rgba(255,184,0,.14);
     background:linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-    font-size:clamp(20px,2.2vmin,26px); opacity:.8;
+    font-size:clamp(13px,1.35vmin,17px); opacity:.55;
   }
 
   /* ── QUAND LE QR NE PEUT PAS ÊTRE FABRIQUÉ ─────────────────────────────────────────────────
@@ -346,13 +363,19 @@
         {{-- ACTE 1 — L'ACCROCHE. Une promesse, lisible à trois mètres. --}}
         <div class="acte on" data-acte="0">
           <h1>Tu gagnes<br>à 100 %</h1>
-          <p class="sous">
-            {{-- Un `@if` COLLÉ à un mot (« commande@if ») n'est pas reconnu comme directive par
-                 Blade : le `@endif` devient orphelin et la vue ne compile plus. D'où l'expression. --}}
-            Un lot pour ta prochaine commande{!! ! empty($minOrder)
-                ? ', <b>dès ' . number_format($minOrder, 2, ',', ' ') . ' €</b>'
-                : '' !!}.
-          </p>
+          {{-- [PROPRIÉTAIRE 2026-08-13] LA CONDITION D'ACHAT A ÉTÉ RETIRÉE DE CET ÉCRAN.
+               Il y avait ici « Un lot pour ta prochaine commande, dès 10,00 € ». Sa consigne, mot
+               pour mot : « une condition d'achat, vaut mieux pas le dire, je veux pas le mettre
+               ici ; juste à la fin lorsqu'il termine de jouer, ça va s'afficher dans son mail ».
+
+               Et il a raison sur le fond : cet écran sert à donner ENVIE de scanner. Une condition
+               annoncée avant même que le client ait joué transforme un cadeau en contrat, et il
+               passe son chemin. La condition n'est pas perdue pour autant — elle est portée par le
+               mail du lot (`WheelPrizeMail` reçoit `wheel.min_order_amount`) et par l'écran de fin
+               de parcours, c'est-à-dire au moment où elle devient une information utile.
+
+               ⛔ Ne pas la remettre ici « pour être transparent » : la transparence est déjà
+               assurée à l'endroit où le client peut agir dessus. --}}
         </div>
 
         {{-- ACTE 2 — CE QUI VIENT D'ÊTRE GAGNÉ.
@@ -414,7 +437,7 @@
         <div class="qr" id="qr">{!! $qr !!}@if($qr)<div class="qr-logo"><img src="{{ asset('images/wheel/logo-mark.png') }}" alt=""></div>@endif</div>
       </div>
       <div class="qr-mots">
-        <p class="scanne">Scanne avec ton téléphone</p>
+        <p class="scanne">Scanne le QR code</p>
         {{-- [2026-08-12 · propriétaire : « ça va prendre moins d'une minute, c'est pas bien vu que
              ça va prendre quelques secondes »] Il a raison, et pas seulement sur la durée : annoncer
              « moins d'une minute » à quelqu'un qui attend sa commande, c'est lui donner une raison de
@@ -426,7 +449,11 @@
 
   </main>
 
-  <p class="bandeau">Un tour par personne — le lot est à utiliser sur une prochaine commande.</p>
+  {{-- [PROPRIÉTAIRE 2026-08-13] « la petite phrase en bas, c'est mieux de la mettre beaucoup plus
+       petit, là c'est trop grand, ça prend beaucoup d'espace ». Elle disait en plus « le lot est à
+       utiliser sur une prochaine commande » — la même condition d'achat qu'il ne veut pas sur cet
+       écran. Il reste la seule règle qui doit être connue AVANT de jouer : un tour par personne. --}}
+  <p class="bandeau">Un tour par personne.</p>
 
 @endif
 
