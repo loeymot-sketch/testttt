@@ -1554,3 +1554,97 @@ test.describe.serial('Real functional interaction — Stock Rupture Dashboard (r
     console.log(`[CRUD-FUNCTIONAL] Stock Rupture Dashboard: real item #${itemId} restored to its original availability (${dbRestored}) via the same real toggle -- round-trip reversibility confirmed, real customer-facing window kept under 1s.`);
   });
 });
+
+test.describe.serial('Real functional state-machine — POS Floorplan (assign -> release, real dining table)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let orderId;
+  let tableId;
+  let tableName;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    // Its existing e2e coverage (audit-pos-cycle5-2026-05-06.spec.js C5-02)
+    // is reachability-only: page loads without error + an a11y scan, zero
+    // real click. FloorplanController::assign only requires the order to
+    // exist in the same branch (confirmed via DiningTableService::occupy) --
+    // no status/type constraint -- so the same minimal throwaway-order seed
+    // proven safe elsewhere in this file (order_type=TAKEAWAY, no fiscal
+    // sequence consumed) is reused here. Table seeded directly via tinker
+    // with occupancy_status='free' so it starts in the exact state the UI
+    // needs to expose the "click to assign" prompt flow.
+    tableName = `E2EFloorTable${Date.now() % 100000}`;
+    const out = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=" +
+        "$u = \\App\\Models\\User::role('customer')->first(); " +
+        "$o = \\App\\Models\\Order::create(['order_serial_no'=>'E2ETEST-'.substr(uniqid(),-8),'branch_id'=>1,'user_id'=>$u->id,'order_type'=>10,'status'=>1,'payment_status'=>5,'order_datetime'=>now()->toDateTimeString(),'is_advance_order'=>10,'total'=>0,'subtotal'=>0]); " +
+        `$t = \\App\\Models\\DiningTable::create(['name'=>'${tableName}','slug'=>strtolower('${tableName}'),'size'=>4,'branch_id'=>1,'status'=>5,'occupancy_status'=>'free']); ` +
+        "echo $o->id . '|' . $t->id;"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    [orderId, tableId] = out.split('|');
+  });
+
+  test.afterAll(async () => {
+    if (tableId) tinkerExec(`\\App\\Models\\DiningTable::where('id', ${tableId})->forceDelete();`);
+    if (orderId) tinkerExec(`\\App\\Models\\Order::where('id', ${orderId})->forceDelete();`);
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Floorplan: click a free table -> assign a real order via the native prompt -> release -> back to free', async () => {
+    await page.goto('/admin/pos/floorplan', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const tableCard = page.locator('.pos-v5-floorplan-table', { hasText: tableName });
+    await expect(tableCard).toBeVisible({ timeout: 15_000 });
+    await expect(tableCard).toContainText(/free|libre/i, { timeout: 10_000 });
+
+    // handleTableClick() on a free table fires window.prompt("N° commande", ...)
+    // -- a native dialog, not a Vue modal. Provide the real throwaway order id.
+    page.once('dialog', (dialog) => dialog.accept(String(orderId)));
+    const assignResponse = page.waitForResponse(
+      (res) => new RegExp(`floorplan/${tableId}/assign$`).test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await tableCard.click();
+    const assignRes = await assignResponse;
+    expect(assignRes.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    await expect(tableCard).toContainText(/occup/i, { timeout: 10_000 });
+    await expect(tableCard).toContainText(String(orderId), { timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Floorplan ASSIGN: real POST .../assign (200) on table "${tableName}" -- native prompt flow, table now shows real order #${orderId} occupying it, not a cosmetic state flip.`);
+
+    const dbOccupied = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\DiningTable::find(${tableId})->occupancy_status . '|' . \\App\\Models\\DiningTable::find(${tableId})->occupied_order_id;`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbOccupied).toBe(`occupied|${orderId}`);
+    console.log(`[CRUD-FUNCTIONAL] Floorplan ASSIGN: DB confirms occupancy_status=occupied, occupied_order_id=${orderId} -- real persistence, not just an optimistic UI update.`);
+
+    const releaseResponse = page.waitForResponse(
+      (res) => new RegExp(`floorplan/${tableId}/release$`).test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await tableCard.getByRole('button', { name: /release_table|libérer/i }).click();
+    const releaseRes = await releaseResponse;
+    expect(releaseRes.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    await expect(tableCard).toContainText(/free|libre/i, { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] Floorplan RELEASE: real POST .../release (200), table back to free in the UI -- REAL round trip.');
+
+    const dbReleased = execFileSync(
+      'php',
+      ['artisan', 'tinker', `--execute=echo \\App\\Models\\DiningTable::find(${tableId})->occupancy_status . '|' . (\\App\\Models\\DiningTable::find(${tableId})->occupied_order_id ?? 'null');`],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbReleased).toBe('free|null');
+    console.log('[CRUD-FUNCTIONAL] Floorplan RELEASE: DB confirms occupancy_status=free, occupied_order_id=null -- real release, not a cosmetic flip.');
+  });
+});
