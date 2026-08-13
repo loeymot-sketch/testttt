@@ -1022,12 +1022,15 @@ test.describe.serial('Real functional interaction — System Health dashboard (r
 
   test('System Health dashboard: "Refresh" button fires a real GET, not a decorative no-op', async () => {
     // This page also has real feature-flag toggles ("interrupteurs",
-    // PUT /admin/observability/interrupteurs/:nom) -- deliberately NOT
-    // exercised here: they control real system behavior (schedulers,
-    // safety checks) whose exact effect isn't known without reading each
-    // one individually, same risk class as Ingredients/Printers. Only the
-    // read-only Refresh button (health-check re-fetch) is proven, same
-    // pattern as the Outbox dashboard.
+    // PUT /admin/observability/interrupteurs/:nom). Only the read-only
+    // Refresh button (health-check re-fetch) is proven here; the
+    // interrupteurs themselves are exercised in the dedicated test below
+    // now that InterrupteurService.php has been read and confirmed as a
+    // deliberately safe, reversible, owner-facing whitelist of exactly 2
+    // toggles (split_payment, wheel) -- the genuinely dangerous switch
+    // (idempotency.enabled, an NF525 fiscal safety guard) is permanently
+    // excluded from that whitelist by the original developer's own design
+    // comment, so it was never in scope for a "risky toggle" concern.
     await page.goto('/admin/observability/system', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle').catch(() => {});
     await expect(page.locator('[data-testid="system-health"]')).toBeVisible({ timeout: 10_000 });
@@ -1040,6 +1043,74 @@ test.describe.serial('Real functional interaction — System Health dashboard (r
     const res = await refreshResponse;
     expect(res.status()).toBe(200);
     console.log('[CRUD-FUNCTIONAL] System Health dashboard: Refresh button fired a real GET /api/admin/observability/system-health (200), not a cosmetic no-op.');
+  });
+});
+
+test.describe.serial('Real functional interaction — System Health interrupteur (wheel toggle, deliberately safe by design)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let originalValue;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    originalValue = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=echo (new \\App\\Services\\Pilotage\\InterrupteurService())->valeur('wheel') ? '1' : '0';"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+  });
+
+  test.afterAll(async () => {
+    // Restore to the exact pre-test DB value regardless of what the test left it at.
+    tinkerExec(`(new \\App\\Services\\Pilotage\\InterrupteurService())->regler('wheel', ${originalValue === '1' ? 'true' : 'false'});`);
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('wheel interrupteur: clicking the toggle flips real Settings-backed state, not a cosmetic switch', async () => {
+    await page.goto('/admin/observability/system', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('[data-testid="system-interrupteurs"]')).toBeVisible({ timeout: 10_000 });
+
+    const toggleBtn = page.locator('[data-testid="interrupteur-bouton-wheel"]');
+    await expect(toggleBtn).toBeVisible({ timeout: 10_000 });
+    const pressedBefore = await toggleBtn.getAttribute('aria-pressed');
+    expect(pressedBefore).toBe(originalValue === '1' ? 'true' : 'false');
+
+    const putResponse = page.waitForResponse(
+      (res) => /\/admin\/observability\/interrupteurs\/wheel$/.test(res.url()) && res.request().method() === 'PUT',
+      { timeout: 10_000 }
+    );
+    await toggleBtn.click();
+    const res = await putResponse;
+    expect(res.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    const expectedAfter = originalValue === '1' ? 'false' : 'true';
+    await expect(toggleBtn).toHaveAttribute('aria-pressed', expectedAfter, { timeout: 10_000 });
+
+    const dbAfter = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=echo (new \\App\\Services\\Pilotage\\InterrupteurService())->valeur('wheel') ? '1' : '0';"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(dbAfter).toBe(expectedAfter === 'true' ? '1' : '0');
+    console.log(`[CRUD-FUNCTIONAL] System Health interrupteur "wheel": clicking the toggle sent a real PUT /admin/observability/interrupteurs/wheel (200) and flipped the real Settings-backed value in DB from ${originalValue} to ${dbAfter} -- not a client-side-only switch.`);
+
+    // Flip back within the test itself (in addition to the afterAll safety net) so the
+    // proof includes round-trip reversibility, matching the page's own documented promise.
+    const putResponseBack = page.waitForResponse(
+      (res) => /\/admin\/observability\/interrupteurs\/wheel$/.test(res.url()) && res.request().method() === 'PUT',
+      { timeout: 10_000 }
+    );
+    await toggleBtn.click();
+    const resBack = await putResponseBack;
+    expect(resBack.status()).toBe(200);
+    await page.waitForTimeout(500);
+    await expect(toggleBtn).toHaveAttribute('aria-pressed', originalValue === '1' ? 'true' : 'false', { timeout: 10_000 });
+    console.log('[CRUD-FUNCTIONAL] System Health interrupteur "wheel": restored to its original value via the same real toggle button -- round-trip reversibility confirmed.');
   });
 });
 
