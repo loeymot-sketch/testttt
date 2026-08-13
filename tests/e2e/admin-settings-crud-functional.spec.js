@@ -1056,3 +1056,171 @@ test.describe.serial('Real functional CRUD — Time Slots (per-day time-picker c
     console.log('[CRUD-FUNCTIONAL] Time Slots DELETE: slot gone from Monday row after SweetAlert confirm — REAL removal.');
   });
 });
+
+test.describe.serial('Real functional interaction — Branches (real backend rejection, never risks the real branch record)', () => {
+  test.setTimeout(120_000);
+  let page;
+  let baselineBefore;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+
+    // V1 is mono-tenant (branch_id=1 is the only real branch, underlying
+    // BranchScope on 24+ models) -- a successful mutate-and-restore test
+    // was explicitly considered and rejected this session (an adversarial
+    // dispute agent argued city/zip_code have zero code consumers and
+    // recommended it as "safe"; rejected anyway because "no grep hit in
+    // the Laravel backend" doesn't rule out external consumers like a
+    // real Google Business listing or delivery-platform integration for
+    // this real, currently-operating restaurant). This test proves the
+    // real thing worth proving -- the edit form is wired to a real
+    // backend endpoint with real server-side validation -- via a path
+    // that can NEVER succeed in writing to the real record: clear a
+    // required field and submit, expect a real 422. Capture the exact
+    // current real values first so a failed assertion can be diffed
+    // against ground truth, not assumed unaffected.
+    baselineBefore = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=echo json_encode(\\App\\Models\\Branch::find(1)->only(['name','email','phone','city','state','zip_code','address','status','latitude','longitude']));"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Branches: clearing a required field and saving is rejected by the real backend, real record never touched', async () => {
+    await page.goto('/admin/settings/branches', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const row = page.locator('table.db-table tr', { hasText: 'Cayenne' });
+    await row.getByRole('button', { name: /modifier/i }).click();
+    await page.waitForTimeout(600);
+
+    const cityInput = page.locator('#modal #city');
+    await expect(cityInput).toBeVisible({ timeout: 8000 });
+    const realCity = await cityInput.inputValue();
+    expect(realCity.length).toBeGreaterThan(0);
+    await cityInput.fill('');
+
+    const saveResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/branch\/\d+$/.test(res.url()) && res.request().method() === 'PUT',
+      { timeout: 10_000 }
+    );
+    await page.locator('#modal button[type="submit"]').click();
+    const res = await saveResponse;
+    expect(res.status()).toBe(422);
+    await expect(page.locator('#modal small.db-field-alert')).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Branches: real PUT /api/admin/setting/branch/1 (422) rejected an empty required "city" field with a real rendered error -- proves the edit form is wired to a real backend with real server-side validation, WITHOUT ever completing a write to the real branch record.`);
+
+    // Close without ever submitting valid data -- no save ever succeeds
+    // in this test, so there is nothing to "restore".
+    await page.locator('#modal .modal-close').first().click();
+    await page.waitForTimeout(500);
+
+    const baselineAfter = execFileSync(
+      'php',
+      ['artisan', 'tinker', "--execute=echo json_encode(\\App\\Models\\Branch::find(1)->only(['name','email','phone','city','state','zip_code','address','status','latitude','longitude']));"],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 15_000 }
+    ).trim();
+    expect(baselineAfter).toBe(baselineBefore);
+    console.log('[CRUD-FUNCTIONAL] Branches: real branch record confirmed byte-for-byte unchanged in DB after this test -- verified, not assumed.');
+  });
+});
+
+test.describe.serial('Real functional interaction — Language file editor (read-only proof, save deliberately never touched)', () => {
+  test.setTimeout(120_000);
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    page = await context.newPage();
+    await loginAsAdmin(page);
+  });
+
+  test.afterAll(async () => {
+    if (page) await page.context().close().catch(() => {});
+  });
+
+  test('Language show/:id: "Récupérer le contenu du fichier" fetches real translation content -- save deliberately never clicked', async () => {
+    // LanguageShowComponent.vue's file editor is a raw i18n-file editor
+    // whose SAVE path (language/fileTextStore -> LanguageController::
+    // fileTextStore -> LanguageService.php) does a global string-replace
+    // keyed by the CURRENT translation VALUE, not the key -- confirmed
+    // via an adversarial dispute this session: 176 distinct values repeat
+    // across multiple unrelated keys in en.json alone (e.g. "Cancel" x9),
+    // so editing any one occurrence would silently corrupt every sibling
+    // key sharing that value. No safe single-key edit exists, and this
+    // session's Branches negative-path pattern (submit-and-expect-422)
+    // doesn't apply here: the file endpoint has no comparable required-
+    // field validation to trigger a guaranteed-safe rejection.
+    //
+    // What IS safe and worth proving: the "load a file" READ path.
+    // language/fileText -> LanguageController::fileText ->
+    // LanguageService::fileText() is confirmed via source read to be a
+    // pure `include($resolvedPath)` with zero writes -- a genuinely
+    // different backend route (POST admin/setting/language/file-text)
+    // than the dangerous save (POST .../file-text/store), never called
+    // here.
+    await page.goto('/admin/settings/languages', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    const row = page.locator('table.db-table tr', { hasText: 'Français' });
+
+    // language/fileList only dispatches AFTER language/show resolves
+    // (chained in mounted()), so it's a real, separate, later network
+    // call -- wait for it explicitly rather than racing it (a first
+    // attempt without this wait hit a real 0-options/422 failure here,
+    // confirmed via a live probe to be exactly this timing gap, not a
+    // product bug).
+    const fileListResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/language\/file-list\//.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 15_000 }
+    );
+    await row.getByRole('link', { name: /voir/i }).click();
+    await fileListResponse;
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.locator('h3.text-lg', { hasText: 'Français' })).toBeVisible({ timeout: 10_000 });
+
+    const fileSelect = page.locator('select.db-field-control').first();
+    await expect(fileSelect).toBeVisible({ timeout: 10_000 });
+    const fileCount = await fileSelect.locator('option').count();
+    expect(fileCount).toBeGreaterThan(0);
+    const firstFileName = await fileSelect.locator('option').first().textContent();
+
+    // The native <select> visually defaults to showing the first option,
+    // but Vue's v-model="form.name" starts as an empty string and only
+    // updates on an EXPLICIT selection -- a first attempt without this
+    // call submitted name:"" and got a real 422, confirmed via a live
+    // probe that the select's options were correctly populated all along
+    // (a test bug, not a product bug).
+    //
+    // REAL FINDING fixed separately (LanguageService.php +
+    // LanguageController.php): option index 0 is always "{code}.json" per
+    // fileList()'s ordering -- selecting it used to hang this exact
+    // request indefinitely (include() on a .json file echoes the raw
+    // file as literal output with no `return`, confirmed via a live
+    // probe showing the request fire but never receive a response).
+    // Fixed to properly json_decode() .json files instead of include()-
+    // ing them. This test exercises the fixed default/first-listed file
+    // on purpose, not a safer alternative.
+    await fileSelect.selectOption({ index: 0 });
+
+    const fileTextResponse = page.waitForResponse(
+      (res) => /\/api\/admin\/setting\/language\/file-text$/.test(res.url()) && res.request().method() === 'POST',
+      { timeout: 10_000 }
+    );
+    await page.getByRole('button', { name: /récupérer le contenu/i }).click();
+    const res = await fileTextResponse;
+    expect(res.status()).toBe(200);
+    await page.waitForTimeout(500);
+
+    // The file-content card only renders once fileText has real keys
+    // (v-if="Object.keys(fileText).length > 0") -- its appearance alone
+    // proves real content came back, not an empty/mocked response.
+    await expect(page.locator('input.db-field-control, .form-row input[type="text"]').first()).toBeVisible({ timeout: 10_000 });
+    console.log(`[CRUD-FUNCTIONAL] Language file editor: real POST /api/admin/setting/language/file-text (200) loaded real content for "${(firstFileName || '').trim()}" -- real fields rendered from the actual file, not a static shell. Save (the risky global-replace-by-value path) deliberately never clicked -- no mutation possible from this test.`);
+  });
+});
