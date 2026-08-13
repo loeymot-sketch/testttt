@@ -78,7 +78,17 @@ class PushNotificationBranchIdSpoofTest extends TestCase
         $adminRole = Role::where('name', 'Admin')->where('guard_name', 'sanctum')->first();
         $adminRole->givePermissionTo(['push-notifications', 'push-notifications_create']);
 
-        $admin = User::factory()->create(['branch_id' => 0]);
+        // [GOAL_ADMIN_NAV_BREADTH_CONVERGENCE_2026-08-13] adversarial-dispute
+        // finding: the original version of this test created the admin with
+        // branch_id=0 AND requested branch_id=0 — both branches of
+        // effectiveBranchId() (settings-holder passthrough vs non-settings
+        // own-branch clamp) yield 0, so the test could not have failed even
+        // if the "settings holder keeps cross-branch discretion" guarantee
+        // had regressed. Using a non-zero own branch while requesting a
+        // DIFFERENT value (0, global) makes the two code paths actually
+        // diverge: only the correct (passthrough) behavior stores 0.
+        $ownBranch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => $ownBranch->id]);
         $admin->assignRole('Admin');
 
         $resp = $this->actingAs($admin, 'sanctum')
@@ -91,7 +101,13 @@ class PushNotificationBranchIdSpoofTest extends TestCase
         $resp->assertStatus(201);
         $this->assertDatabaseHas('push_notifications', [
             'title' => 'Annonce globale',
+            // Pre-regression-risk: a broken clamp would store $ownBranch->id
+            // (the caller's own branch) instead of the requested 0.
             'branch_id' => 0,
+        ]);
+        $this->assertDatabaseMissing('push_notifications', [
+            'title' => 'Annonce globale',
+            'branch_id' => $ownBranch->id,
         ]);
     }
 }
