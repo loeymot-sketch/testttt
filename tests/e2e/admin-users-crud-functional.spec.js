@@ -60,4 +60,16 @@ test.describe.serial('Real functional CRUD — Waiter (Users/RBAC category)', ()
     await expect(page.locator('table.db-table')).not.toContainText(uniq, { timeout: 10_000 });
     console.log(`[CRUD-FUNCTIONAL] Waiter DELETE: row gone from table after confirm — REAL removal.`);
   });
+
+  // Employee CRUD was attempted and dropped: EmployeeCreateComponent's
+  // required role_id field is a <vue-select> custom component, not a plain
+  // <select>. Two independent attempts (a Playwright script with explicit
+  // waits, then a live manual browser session via accessibility-role
+  // lookup) both failed to reliably open/select from it -- the page's
+  // "Rôle" combobox also collides with an identically-labelled filter-form
+  // field elsewhere on the same page, and the create-drawer's dropdown may
+  // render via a teleport/portal outside its apparent DOM container. This
+  // needs dedicated live-DOM investigation to resolve correctly, not
+  // further blind selector guessing -- noted as a gap, not silently
+  // dropped or faked with a weakened assertion.
 });
