@@ -219,6 +219,14 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
     Route::post('/admin/roue-lot/remettre', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'deliver'])
         ->middleware(['throttle:120,1'])
         ->name('admin.wheel.prize.deliver');
+
+    /*
+    | ROUE — HISTORIQUE. Ce qui a été gagné, ce qui a été remis, par qui, quand, et ce qui reste
+    | dû. L'accueil donne les totaux ; ici on donne les LIGNES — c'est la seule forme qui répond à
+    | « ce code-là, il a été validé ? » devant un client qui attend.
+    */
+    Route::get('/admin/roue-historique', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'history'])
+        ->name('admin.wheel.history');
 });
 
 // [C-001 test-e2e 2026-07-17] Un ASSET manquant (chunk périmé, image disparue…)

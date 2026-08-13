@@ -144,6 +144,13 @@
         <p class="d">Les liens (avis Google, réseaux), les temps d'attente et le minimum d'achat.
           C'est ici que le jeu s'active.</p>
       </a>
+      {{-- [2026-08-13] L'écran qui répond à « ce code-là, il a été validé ? ». Les chiffres du
+           panneau plus bas disent COMBIEN ; seule une ligne dit QUI, QUAND et PAR QUI. --}}
+      <a class="carte" href="{{ route('admin.wheel.history') }}">
+        <p class="t"><span aria-hidden="true">🧾</span> Historique</p>
+        <p class="d">Ligne par ligne : ce qui a été gagné, ce qui a été remis, par qui, et ce qui
+          reste dû ou a expiré.</p>
+      </a>
     </div>
 
     {{-- L'ÉTAT DU JEU, dit en une fois. Sans ça, il faut ouvrir trois écrans pour savoir si le jeu

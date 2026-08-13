@@ -132,6 +132,94 @@ class WheelReportService
         })->all();
     }
 
+    /**
+     * L'HISTORIQUE, LIGNE PAR LIGNE — ce qui manquait pour EXPLIQUER.
+     *
+     * [2026-08-13 · propriétaire : « toutes les fonctionnalités d'historique, de la gestion, de la
+     * validation, de l'utilisation — par exemple quel code promo a été validé »]
+     *
+     * ── CE QUI EXISTAIT, ET CE QUI MANQUAIT ──────────────────────────────────────────────────
+     * `tableau()` donne des AGRÉGATS : combien de tours, combien de cadeaux, quelle valeur. C'est
+     * ce qu'il faut pour régler des plafonds. Ça ne répond à AUCUNE des questions qu'on se pose
+     * réellement devant un client ou un livre de comptes : « ce code, il a été validé ? », « qui
+     * l'a remis ? », « pourquoi celui-là n'a jamais rien reçu ? ».
+     *
+     * Un chiffre agrégé ne se conteste pas et ne s'explique pas. Une ligne, si.
+     *
+     * ── L'ÉTAT EST CALCULÉ ICI, UNE FOIS ─────────────────────────────────────────────────────
+     * Quatre états, et ils sont exclusifs :
+     *   · `remis`    — un humain a appuyé sur « remis », `delivered_at` en fait foi ;
+     *   · `du`       — gagné, jamais remis, encore dans sa durée de validité ;
+     *   · `expire`   — gagné, jamais remis, hors délai : le client n'y a plus droit et l'équipe
+     *                  doit pouvoir le lui dire sans hésiter ;
+     *   · `code`     — un lot en remise : rien à tendre, le code fait le travail sur le site.
+     *
+     * Les calculer dans le gabarit aurait dispersé la règle dans du HTML, où personne ne la relit.
+     *
+     * ── CE QU'ON N'AFFICHE PAS ───────────────────────────────────────────────────────────────
+     * Le numéro complet ne sort pas d'ici : cet écran s'ouvre avec le code de la maison, sur une
+     * tablette de comptoir que d'autres regardent. On rend les quatre derniers chiffres, qui
+     * suffisent à confirmer une identité déjà annoncée par le client, et jamais à en constituer
+     * une liste.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function historique(int $branchId, int $jours = 30, int $limite = 200): array
+    {
+        $depuis = Carbon::now()->subDays(max(1, $jours));
+        $validite = (int) config('wheel.prize_validity_days', 30);
+
+        $tours = WheelSpin::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->with('coupon')
+            ->where('branch_id', $branchId)
+            ->where('created_at', '>=', $depuis)
+            ->orderByDesc('created_at')
+            ->limit(max(1, $limite))
+            ->get();
+
+        // Les noms des personnes qui ont remis, en UNE requête : sans ça l'écran en réclamait une
+        // par ligne, et un historique de 200 lignes rendait 200 requêtes pendant un service.
+        $auteurs = \App\Models\User::query()
+            ->whereIn('id', $tours->pluck('delivered_by_user_id')->filter()->unique()->all())
+            ->pluck('name', 'id');
+
+        return $tours->map(function ($t) use ($validite, $auteurs) {
+            $estRemise = str_starts_with((string) $t->prize_type, 'coupon_');
+            $limite = $t->created_at?->copy()->addDays($validite);
+
+            if ($t->delivered_at !== null) {
+                $etat = 'remis';
+            } elseif ($estRemise) {
+                $etat = 'code';
+            } elseif ($limite !== null && $limite->isPast()) {
+                $etat = 'expire';
+            } else {
+                $etat = 'du';
+            }
+
+            $tel = (string) $t->phone;
+
+            return [
+                'quand' => $t->created_at,
+                'lot' => (string) $t->prize_label,
+                'type' => (string) $t->prize_type,
+                'etat' => $etat,
+                // Quatre chiffres : de quoi confirmer une identité annoncée, jamais de quoi
+                // constituer un fichier depuis un écran de comptoir.
+                'tel_fin' => $tel !== '' ? substr($tel, -4) : '',
+                'prenom' => trim(explode(' ', trim((string) $t->customer_name))[0] ?? ''),
+                'code' => trim((string) ($t->coupon->code ?? '')),
+                'remis_le' => $t->delivered_at,
+                'remis_par' => $auteurs[$t->delivered_by_user_id] ?? null,
+                // Le cadeau a-t-il bougé le stock ? C'est la question comptable, et elle a déjà eu
+                // sa réponse fausse une fois (10/08 : « cadeau remis, stock inchangé »).
+                'stock_bouge' => $t->cost_outflow_id !== null,
+                'expire_le' => $limite,
+            ];
+        })->all();
+    }
+
     private function tours(int $branchId, Carbon $depuis)
     {
         return WheelSpin::query()

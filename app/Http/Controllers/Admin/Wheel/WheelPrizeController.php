@@ -103,6 +103,38 @@ class WheelPrizeController extends Controller
         ]);
     }
 
+    /**
+     * L'HISTORIQUE — la lecture qui manquait au dispositif.
+     *
+     * [2026-08-13 · propriétaire : « toutes les fonctionnalités d'historique, de la gestion, de la
+     * validation, de l'utilisation — par exemple quel code promo a été validé »]
+     *
+     * L'accueil de la roue donne des AGRÉGATS : combien de tours, quelle valeur offerte. Utile pour
+     * régler des plafonds, inutile pour répondre à la seule question qu'on se pose devant un
+     * client : « ce code-là, il a été validé, oui ou non ? ». Un chiffre ne s'explique pas ; une
+     * ligne, si.
+     *
+     * La période est bornée à des valeurs CHOISIES, pas librement saisie : un `?jours=100000` sur
+     * un écran de comptoir sortirait la totalité de la table dans une page HTML.
+     */
+    public function history(Request $request)
+    {
+        $branchId = $this->branchId($request);
+
+        $permis = [1, 7, 30, 90];
+        $jours = (int) $request->query('jours', 7);
+        if (! in_array($jours, $permis, true)) {
+            $jours = 7;
+        }
+
+        return view('admin.wheel.historique', $this->commun() + [
+            'jours' => $jours,
+            'periodes' => $permis,
+            'lignes' => app(\App\Services\Wheel\WheelReportService::class)
+                ->historique($branchId, $jours),
+        ]);
+    }
+
     public function deliver(Request $request)
     {
         $branchId = $this->branchId($request);
