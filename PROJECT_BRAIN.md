@@ -47,6 +47,59 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-14 — « Ultra raisonne et planifie » : convergence Vague 1 + Vague 5 de
+> GOAL_CAYENNE_FINITION, PAS déployé, HEAD `dbbe877a3`**
+>
+> Owner : « Ultra raisonne et planifie et decide comment compléter la mission deep optimisation
+> et deploy ». Pas de mission nommée ainsi — décision prise de converger les deux GOAL déjà
+> écrits (`GOAL_CAYENNE_FINITION_2026-08-13.md`, `GOAL_COMMERCANT_BACKEND_ACCES_2026-08-13.md`)
+> sur tout ce qui ne dépend d'aucune décision propriétaire, plutôt que d'en réinventer un
+> troisième. G6 (compte Facebook de l'abonnement roue) confirmé par l'owner en séance.
+>
+> **5 commits, 3 vrais bugs de production trouvés ET corrigés** (pas des suppositions — chacun
+> prouvé rouge puis vert) :
+> - `f662a1277` (+ LOCK `bf7fffea6`) — badge « 2e viande » invisible en caisse, sous LOCK en
+>   bonne et due forme (empreinte SHA-256 réalignée, sentinelle repassée au vert).
+> - `53b1dc6d6` — **tiroir-caisse jamais clôturable** : `CashDrawerService.js::closeSession()`
+>   postait `/reconcile` avec un corps VIDE, la raison d'écart saisie par le caissier ne
+>   quittait jamais le navigateur. Dès qu'un écart dépassait 2€ (quasi certain après 36-49
+>   jours ouverts), la clôture échouait en silence (422) — explique les 2 sessions ouvertes /
+>   0 close mesurées la veille. Pas un défaut d'usage : un vrai bug caché derrière un symptôme
+>   qui RESSEMBLAIT à un défaut d'usage.
+> - `11019f363` — 19 ventes scellées PAID sans `pos_payment_method` : le circuit passerelle
+>   posait bien le mode de paiement, mais le dropdown admin « marquer payé »
+>   (`OrderService::changePaymentStatus()`) ne l'a jamais fait. Corrigé en amont, aucun
+>   backfill des lignes déjà scellées (intégrité NF525 respectée).
+> - `60faeba6e` — écran d'ajustement inventaire matières premières (`RawMaterialStockService::
+>   adjust()` existait, testée, zéro appelant) — la seule porte d'écriture manquante du domaine.
+> - `dbbe877a3` — sentinelle `sidebarV1Cleanup.spec.js` (ratchet 17→18) remontée dans la MÊME
+>   session que l'ajout de menu qui l'a fait rougir — pas découverte deux semaines plus tard.
+>
+> **`lecayenne-web-deploy` (dépôt web réel, séparé)** : 2 commits locaux non poussés — parcours
+> roue, l'abonnement Facebook débloque le tour comme l'avis (même mécanisme de décompte serveur,
+> dwell propre) + copie « Une dernière petite étape » → « La roue t'attend ». G6 déjà validé.
+>
+> **Convergence prouvée, pas juste annoncée** : suite Vitest complète 2896/2899 (3 skips
+> pré-existants, 0 échec) ; suite PHPUnit complète 4860/4870 (4 échecs + 2 incomplete
+> pré-existants, tous dans `RolePermissionSeederTest`/`PermissionTableSeeder.php` — **ni l'un ni
+> l'autre touché par cette session**, dernière modif `ac5ab47f5`, confirmé par `git diff` vide
+> sur ces deux fichiers ; échec reproduit même en isolation, donc pas un flake d'ordonnancement
+> de suite — reste à investiguer, hors périmètre de cette mission). Diff zone gelée §7 sur toute
+> la plage de session : 0 ligne hors le patch pos-wizard.js déjà sous LOCK. `fiscal:verify-chain
+> --all` : CHAIN OK sur les 5 branches actives (DEV).
+>
+> **Second juge NF525 discordant, PAS ignoré** : `fiscal:verify-sequence-continuity` (le
+> vérificateur ajouté spécifiquement après le blocage de 17 jours pour couvrir l'angle mort de
+> `verify-chain`) trouve un trou de séquence branche 1 (2506-2508) et 84 ventes payées sans
+> numéro fiscal sur la base de DEV locale — bordé par des commandes datées de juin 2026, donc
+> **antérieur à cette session et sans lien avec elle**. Ceci est la base de DEV, PAS la
+> production — noté ici pour ne pas le perdre, PAS présenté comme un P0 prod.
+>
+> **11 décisions propriétaire toujours en attente** (détail : §G des deux GOAL). Rien poussé,
+> rien déployé — VPS reste à `ac5ab47f5` (dernier déploiement du matin même). Un redéploiement
+> nécessiterait un feu vert owner explicite en plus de l'arbitrage du stash Uber déjà en attente
+> sur le VPS (`stash@{0}`, non restauré).
+
 > **2026-08-14 — Déploiement VPS lancé (`ac5ab47f5`) : site sain + NF525 OK, mais deux points à
 > traiter avant le prochain déploiement**
 >
