@@ -3123,7 +3123,14 @@
             h += '<div class="wizard-section viande-section">';
             h += '<div class="section-header">';
             h += '<h4>🥩 Viande' + (maxViandes > 1 ? 's' : '') + '</h4>';
-            h += '<span class="quota-badge ' + (totalV >= maxViandes ? 'complete' : '') + '">' + totalV + '/' + maxViandes + ' incluse' + (maxViandes > 1 ? 's' : '') + '</span>';
+            // [VIANDE-BADGE-CLAIR 2026-08-14 · owner gate] Un supplément ajouté (2e viande
+            // différente au-delà du quota gratuit) affichait TOUJOURS « 1/1 incluse » — le
+            // badge principal ne bougeait pas, donnant l'impression que le clic n'avait rien
+            // fait (le prix changeait bien, mais discrètement). Badge combiné dès qu'il y a
+            // un supplément : « 1 incluse + 1 supp. » — jumeau avec updateSinglePageUI ligne ~3459.
+            h += '<span class="quota-badge ' + (totalV >= maxViandes ? 'complete' : '') + '">' + (totalVSupplTop > 0
+                ? (totalV + ' incluse' + (totalV > 1 ? 's' : '') + ' + ' + totalVSupplTop + ' supp.')
+                : (totalV + '/' + maxViandes + ' incluse' + (maxViandes > 1 ? 's' : ''))) + '</span>';
             if (totalVSupplTop > 0) {
                 h += '<span class="viande-suppl-badge">+' + totalVSupplTop + ' supp. (+' + fmtPrice(totalVSupplTop * VIANDE_SUPPL_PRICE) + ')</span>';
             }
@@ -3144,7 +3151,10 @@
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
                 h += '<div class="wizard-viande-tile' + (count > 0 ? ' active' : '') + (sup > 0 ? ' has-suppl' : '') + '">';
                 h += '<button type="button" class="viande-btn viande-tile-add plus' + (willSuppl && count === 0 ? ' suppl-next' : '') + '" data-viande="' + key + '" data-action="plus" aria-label="Ajouter ' + variation.name + (willSuppl ? ' (supplément +' + fmtPrice(VIANDE_SUPPL_PRICE) + ')' : '') + '">';
-                if (count > 0) h += '<span class="viande-tile-count' + (sup > 0 ? ' suppl' : '') + '">' + count + '</span>';
+                // [VIANDE-BADGE-CLAIR 2026-08-14 · owner gate] Coche visible sur la tuile même
+                // (gratuite ou supplément) — confirmation immédiate au clic, jumeau avec
+                // updateSinglePageUI ligne ~3494.
+                if (count > 0) h += '<span class="viande-tile-count' + (sup > 0 ? ' suppl' : '') + '">✓' + count + '</span>';
                 h += '<span class="viande-tile-img">' + _renderViandeVisual(variation, emoji) + '</span>';
                 h += '<span class="viande-tile-name">' + variation.name + '</span>';
                 if (sup > 0) h += '<span class="viande-tile-suppl-tag">+' + fmtPrice(sup * VIANDE_SUPPL_PRICE) + '</span>';
@@ -3456,7 +3466,10 @@
         }
         var quotaBadge = wizardEl.querySelector('.viande-section .quota-badge');
         if (quotaBadge) {
-            quotaBadge.textContent = total + '/' + maxViandes + ' incluse' + (maxViandes > 1 ? 's' : '');
+            // [VIANDE-BADGE-CLAIR 2026-08-14 · owner gate] Jumeau du render initial (~L3126).
+            quotaBadge.textContent = totalSuppl > 0
+                ? (total + ' incluse' + (total > 1 ? 's' : '') + ' + ' + totalSuppl + ' supp.')
+                : (total + '/' + maxViandes + ' incluse' + (maxViandes > 1 ? 's' : ''));
             quotaBadge.className = 'quota-badge ' + (total >= maxViandes ? 'complete' : '');
         }
         var vHeader = wizardEl.querySelector('.viande-section .section-header');
@@ -3491,7 +3504,8 @@
             var countEl = addBtn.querySelector('.viande-tile-count');
             if (count > 0) {
                 if (!countEl) { countEl = document.createElement('span'); countEl.className = 'viande-tile-count'; addBtn.insertBefore(countEl, addBtn.firstChild); }
-                countEl.textContent = count;
+                // [VIANDE-BADGE-CLAIR 2026-08-14 · owner gate] Jumeau du render initial (~L3147).
+                countEl.textContent = '✓' + count;
                 countEl.classList.toggle('suppl', sup > 0);
             } else if (countEl) { countEl.remove(); }
             // tag +prix supplément
