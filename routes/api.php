@@ -1559,6 +1559,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/credit-manual', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'creditManual'])
             ->middleware(['throttle:pos-loyalty-lookup', 'idempotency'])
             ->name('credit-manual');
+
+        // [FIDÉLITÉ COMPTOIR 2026-08-14 · propriétaire] RETIRER manuellement des points — correction
+        // d'un sur-crédit sans jamais annuler l'écriture déjà posée (grand-livre append-only).
+        Route::post('/deduct-manual', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'deductManual'])
+            ->middleware(['throttle:pos-loyalty-lookup', 'idempotency'])
+            ->name('deduct-manual');
     });
 
     Route::prefix('pos-category')->name('pos-category.')->group(function () {

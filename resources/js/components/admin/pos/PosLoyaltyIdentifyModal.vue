@@ -228,7 +228,8 @@
                                 @keyup.enter="crediterManuellement"
                             />
                             <p class="pos-loy-id__hint">
-                                Converti en points au même barème que la remise en caisse.
+                                Converti en points au même barème qu'un gain normal sur un achat
+                                (pas le barème de la remise — deux taux différents).
                             </p>
                             <button
                                 type="button"
@@ -238,6 +239,48 @@
                                 data-testid="loy-id-credit-submit"
                                 @click="crediterManuellement"
                             >{{ occupe ? '…' : `Créditer ${creditEurosValide ? euros(creditEuros) : ''}` }}</button>
+                        </div>
+
+                        <!--
+                          [FIDÉLITÉ COMPTOIR 2026-08-14 · propriétaire] « je préfère diminuer ici…
+                          je veux pas annuler [ce qui est déjà fait] ». Une erreur de crédit se
+                          corrige en RETIRANT des points, jamais en effaçant l'écriture posée — le
+                          grand-livre reste complet, une seconde ligne raconte la correction.
+                        -->
+                        <button
+                            type="button"
+                            class="pos-loy-id__lien-histo"
+                            data-testid="loy-id-deduct-toggle"
+                            @click="deduireManuelOuvert = !deduireManuelOuvert"
+                        >{{ deduireManuelOuvert ? 'Masquer le retrait' : 'Retirer des points (correction)' }}</button>
+
+                        <div v-if="deduireManuelOuvert" class="pos-loy-id__field" data-testid="loy-id-deduct-panel">
+                            <label for="loy-id-deduct-points" class="pos-loy-id__label">Points à retirer</label>
+                            <input
+                                id="loy-id-deduct-points"
+                                v-model="deduirePoints"
+                                type="number"
+                                inputmode="numeric"
+                                min="1"
+                                :max="client.balance"
+                                step="1"
+                                placeholder="1557"
+                                class="pos-loy-id__input"
+                                data-testid="loy-id-deduct-points"
+                                @keyup.enter="deduireManuellement"
+                            />
+                            <p class="pos-loy-id__hint">
+                                Solde après retrait : <strong>{{ Math.max(0, client.balance - (Number(deduirePoints) || 0)) }} pts</strong>.
+                                Le solde ne descend jamais sous zéro.
+                            </p>
+                            <button
+                                type="button"
+                                class="pos-loy-id__btn pos-loy-id__btn--primary"
+                                style="margin-top: 0.5rem"
+                                :disabled="occupe || !deduirePointsValide"
+                                data-testid="loy-id-deduct-submit"
+                                @click="deduireManuellement"
+                            >{{ occupe ? '…' : 'Retirer' }}</button>
                         </div>
                     </div>
 
@@ -385,6 +428,8 @@ export default {
             historique: [],
             creditManuelOuvert: false,
             creditEuros: '',
+            deduireManuelOuvert: false,
+            deduirePoints: '',
             scanEnCours: false,
             flux: null,
             boucleScan: null,
@@ -411,6 +456,11 @@ export default {
         creditEurosValide() {
             const v = Number(this.creditEuros);
             return Number.isFinite(v) && v > 0 && v <= 200;
+        },
+        deduirePointsValide() {
+            const v = Number(this.deduirePoints);
+            const plafond = this.client ? this.client.balance : 0;
+            return Number.isInteger(v) && v > 0 && v <= 100000 && (!this.client || v <= plafond);
         },
     },
     watch: {
@@ -451,6 +501,8 @@ export default {
             this.historique = [];
             this.creditManuelOuvert = false;
             this.creditEuros = '';
+            this.deduireManuelOuvert = false;
+            this.deduirePoints = '';
         },
         changerOnglet(cle) {
             if (cle !== 'qr') this.arreterScan();
@@ -600,6 +652,40 @@ export default {
                 this.creditManuelOuvert = false;
             } catch (e) {
                 this.erreur = this.messageErreur(e, 'Crédit impossible.');
+            } finally {
+                this.occupe = false;
+            }
+        },
+
+        /**
+         * [FIDÉLITÉ COMPTOIR 2026-08-14] Correction d'un sur-crédit — retire des points SANS
+         * toucher à l'écriture déjà posée. Raisonné en points exacts, pas en euros.
+         */
+        async deduireManuellement() {
+            if (this.occupe || !this.client || !this.deduirePointsValide) return;
+            this.occupe = true;
+            this.erreur = '';
+
+            try {
+                const { data } = await axios.post(
+                    '/admin/pos-loyalty/deduct-manual',
+                    {
+                        loyalty_code: this.client.loyalty_code,
+                        points: Number(this.deduirePoints),
+                        order_id: this.orderId || null,
+                    },
+                    { headers: { 'X-Idempotency-Key': this.cleIdempotence('ded') } }
+                );
+
+                const d = (data && data.data) || {};
+                if (d.customer) this.client = d.customer;
+
+                const pts = Number(d.points_removed) || 0;
+                this.succes = `-${pts} points retirés.`;
+                this.deduirePoints = '';
+                this.deduireManuelOuvert = false;
+            } catch (e) {
+                this.erreur = this.messageErreur(e, 'Retrait impossible.');
             } finally {
                 this.occupe = false;
             }

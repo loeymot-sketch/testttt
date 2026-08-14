@@ -7,6 +7,7 @@ use App\Http\Requests\PosCustomerCreateRequest;
 use App\Http\Requests\PosLoyaltyAttachRequest;
 use App\Http\Requests\PosLoyaltyLookupRequest;
 use App\Http\Requests\PosLoyaltyManualCreditRequest;
+use App\Http\Requests\PosLoyaltyManualDeductRequest;
 use App\Http\Requests\PosLoyaltyRedeemRequest;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
@@ -313,6 +314,48 @@ final class PosLoyaltyController extends Controller
                 'points_added'  => $resultat['points_added'],
                 'balance_after' => $resultat['balance_after'],
                 'customer'      => $client ? $this->lookupService->presenter($client) : null,
+            ],
+        ]);
+    }
+
+    /**
+     * RETIRER MANUELLEMENT DES POINTS — correction d'un sur-crédit, sans annuler l'écriture posée.
+     *
+     * [2026-08-14 · propriétaire] « je préfère diminuer ici… je veux pas annuler [ce qui est déjà
+     * fait] ». Miroir de `creditManual` : même porte, même style de réponse.
+     */
+    public function deductManual(PosLoyaltyManualDeductRequest $request): JsonResponse
+    {
+        try {
+            $resultat = $this->manualCreditService->deduct(
+                (string) $request->input('loyalty_code'),
+                (int) $request->input('points'),
+                $request->user()?->id,
+                $request->input('order_id') ? (int) $request->input('order_id') : null,
+                $request->input('reason'),
+            );
+        } catch (PosRedemptionException $e) {
+            return response()->json([
+                'status' => false, 'code' => $e->errorCode, 'message' => $e->getMessage(),
+            ], $e->httpStatus);
+        } catch (\Throwable $e) {
+            Log::error('pos.loyalty.retrait_manuel_echoue', [
+                'error' => $e->getMessage(), 'cashier' => $request->user()?->id,
+            ]);
+
+            return response()->json([
+                'status' => false, 'code' => 'DEDUCT_FAILED', 'message' => 'Retrait impossible pour le moment.',
+            ], 500);
+        }
+
+        $client = \App\Models\User::find($resultat['customer_id']);
+
+        return response()->json([
+            'status' => true,
+            'data'   => [
+                'points_removed' => $resultat['points_removed'],
+                'balance_after'  => $resultat['balance_after'],
+                'customer'       => $client ? $this->lookupService->presenter($client) : null,
             ],
         ]);
     }

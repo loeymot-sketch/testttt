@@ -57,23 +57,45 @@ class PosLoyaltyManualCreditTest extends TestCase
             ->postJson('/api/admin/pos-loyalty/credit-manual', $corps);
     }
 
-    /** LE CAS RÉEL : 7€ crédités au barème 100 pts/€ → 700 points. */
-    public function test_credit_7_euros_convertit_au_bareme(): void
+    /**
+     * LE CAS RÉEL : 7€ crédités au barème de GAIN 10 pts/€ → 70 points.
+     *
+     * [CORRIGÉ 2026-08-14, ERREUR RÉELLE EN PRODUCTION] La version d'origine de ce test
+     * attendait 700 (barème de REMISE, 100 pts/€) — c'était le bug lui-même, pas juste le test :
+     * `PosManualCreditService::credit()` lisait `LoyaltyRules::rate()` (remise) au lieu de
+     * `pointsPerEuro()` (gain). Mesuré en production le jour même : 17,30€ → 1730 pts au lieu de
+     * 173, facteur 10 exact, repéré par le propriétaire au comptoir.
+     */
+    public function test_credit_7_euros_convertit_au_bareme_de_gain(): void
     {
         $reponse = $this->crediter(['loyalty_code' => 'CREDIT001', 'euros' => 7]);
 
         $reponse->assertOk()
             ->assertJsonPath('status', true)
-            ->assertJsonPath('data.points_added', 700)
-            ->assertJsonPath('data.balance_after', 700);
+            ->assertJsonPath('data.points_added', 70)
+            ->assertJsonPath('data.balance_after', 70);
 
-        $this->assertSame(700, (int) DB::table('users')->where('id', $this->client->id)->value('loyalty_points'));
+        $this->assertSame(70, (int) DB::table('users')->where('id', $this->client->id)->value('loyalty_points'));
 
         $ligne = DB::table('loyalty_transactions')->where('loyalty_code', 'CREDIT001')->first();
         $this->assertNotNull($ligne);
         $this->assertSame('manual_add', $ligne->type);
-        $this->assertSame(700, (int) $ligne->points);
+        $this->assertSame(70, (int) $ligne->points);
         $this->assertNull($ligne->order_id);
+    }
+
+    /** Les deux taux (gain vs remise) doivent rester distincts, sinon la divergence redevient invisible. */
+    public function test_credit_utilise_bien_le_taux_de_gain_pas_le_taux_de_remise(): void
+    {
+        Settings::group('loyalty_setup')->set([
+            'loyalty_points_per_euro'            => 10,
+            'loyalty_points_for_1_euro_discount' => 100,
+            'loyalty_min_redeem_points'          => 50,
+        ]);
+
+        $this->crediter(['loyalty_code' => 'CREDIT001', 'euros' => 1])
+            ->assertOk()
+            ->assertJsonPath('data.points_added', 10);
     }
 
     public function test_credit_trace_la_commande_quand_fournie(): void
