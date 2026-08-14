@@ -2842,6 +2842,31 @@ class OrderService
                 $locked->payment_status = $request->payment_status;
                 $locked->save();
 
+                /*
+                 * [FISCAL 2026-08-14 · GOAL_CAYENNE_FINITION §1.2] LA VENTILATION DU Z A BESOIN DE
+                 * SAVOIR COMMENT ON A ÉTÉ PAYÉ — MÊME QUAND C'EST CE CHEMIN-CI QUI SCELLE LA VENTE.
+                 *
+                 * Mesuré en production : 19 ventes PAID avec `pos_payment_method` NULL. La cause :
+                 * SEUL `PaymentService::payment()` (callback passerelle) appelait
+                 * `PosMethodFromGateway::appliquer()`. Ce chemin-ci — « marquer payé » depuis le
+                 * dropdown admin (table/en-ligne/POS, PosOrderRequest§changePaymentStatus) — scelle
+                 * aussi des ventes PAID sans jamais poser `pos_payment_method`. Le Z se rabat alors
+                 * sur `payment_method` (ZReportService::applyOrderToTotals:792), qui collisionne
+                 * avec `PosPaymentMethod` sur les mêmes nombres (voir PosMethodFromGateway) — la
+                 * vente atterrit dans une colonne qui n'est pas la sienne, ou sous une clé qu'aucun
+                 * libellé de la ventilation ne reconnaît.
+                 *
+                 * Même correctif, même garde-fou : `appliquer()` ne pose RIEN si pos_payment_method
+                 * est déjà renseigné (jamais d'écrasement d'une valeur saisie au comptoir), et ne
+                 * traduit que les passerelles dont l'équivalent caisse est CERTAIN (CARD,
+                 * TICKET_RESTAURANT). Les passerelles ambiguës (E_WALLET, PAYPAL, CASH_ON_DELIVERY
+                 * hors branche `collect_counter_cash` ci-dessus) restent volontairement NULL —
+                 * inventer une correspondance écrirait un chiffre faux dans un document fiscal.
+                 * Décision métier restante (owner) : aucune équivalence caisse certaine n'existe
+                 * pour ces passerelles à ce jour.
+                 */
+                app(\App\Services\Payments\PosMethodFromGateway::class)->appliquer($locked);
+
                 // [SYNC-WEB-KDS-02 2026-07-15 / P1 parité cuisine] Une commande online/livraison
                 // encaissée au comptoir (UNPAID→PAID via CE chemin) restait en ACCEPT(4) → présente
                 // dans la liste KDS mais JAMAIS rendue comme carte cuisine active (le board rend
