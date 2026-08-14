@@ -66,14 +66,29 @@ class UberOrderMapper
         }
 
         // Modificateurs Uber (sauces / suppléments / options) → extras du snapshot.
+        // [FIX CUISSON-UBER 2026-08-14 owner] Un groupe dont le TITRE identifie un choix de
+        // viande alimente AUSSI `lines` (attribute_name/variation_name — le format lu par
+        // meatPortionsForItem()/KitchenTicketSymbolicFormatter::meatSymbol, jumeau JS/PHP).
+        // Avant ce fix, `lines` restait TOUJOURS vide pour Uber (toute la viande finissait en
+        // extra, un format que le bandeau de cuisson ne lit jamais) : une commande Uber avec
+        // viande au choix (tacos, sandwich...) ne comptait JAMAIS dans le total cuisson, alors
+        // que la même commande prise borne/caisse/web comptait normalement. Additif strict :
+        // `extras` reste peuplé à l'identique (ticket/affichage existants inchangés).
         $extras = [];
+        $lines = [];
         foreach (($line['selected_modifier_groups'] ?? $line['modifier_groups'] ?? []) as $group) {
+            $groupTitle = (string) ($group['title'] ?? $group['name'] ?? '');
+            $isMeatGroup = (bool) preg_match('/viande|meat/i', $this->norm($groupTitle));
             foreach (($group['selected_items'] ?? $group['items'] ?? []) as $mod) {
+                $modTitle = (string) ($mod['title'] ?? $mod['name'] ?? '');
                 $extras[] = [
-                    'extra_name' => (string) ($mod['title'] ?? $mod['name'] ?? ''),
+                    'extra_name' => $modTitle,
                     'quantity'   => (int) ($mod['quantity'] ?? 1),
                     'line_total' => (float) (($mod['price']['amount'] ?? 0) / 100),
                 ];
+                if ($isMeatGroup && $modTitle !== '') {
+                    $lines[] = ['attribute_name' => 'Viande', 'variation_name' => $modTitle];
+                }
             }
         }
 
@@ -87,8 +102,8 @@ class UberOrderMapper
             'composition_snapshot' => [
                 'schema_version' => 1,
                 'source'         => 'uber_eats',
-                'lines'          => [], // Uber ne détaille pas viande/sauce en attributs → gardé en extras
-                'extras'         => $extras,
+                'lines'          => $lines,  // viande détectée par titre de groupe (cf. ci-dessus)
+                'extras'         => $extras, // sauces/suppléments/options — inchangé
                 'addons'         => [],
                 'uber_title'     => $title,
             ],
