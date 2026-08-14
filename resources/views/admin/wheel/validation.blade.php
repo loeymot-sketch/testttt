@@ -88,6 +88,9 @@
     color:var(--jaune);font-size:15px;text-decoration:none;font-weight:700}
   .err{background:rgba(217,48,37,.16);border:1px solid rgba(217,48,37,.5);border-radius:12px;padding:12px;font-size:14px}
   .err-suite{font-size:14px;line-height:1.5;opacity:.85;margin:12px 0 0}
+  /* [UX SERVICE 2026-08-14] État « envoi parti », posé par le script de bas de page.
+     Raisonnement complet en bas de page (commentaire Blade — le CSS, lui, part au navigateur). */
+  button[data-occupe]{opacity:.72;cursor:progress;filter:saturate(.75)}
 </style>
 </head>
 <body>
@@ -152,5 +155,30 @@
          lien, l'équipe devrait retenir deux adresses. --}}
     <a class="encore" href="{{ url('/admin/roue-lot') }}" style="display:flex;margin-top:18px">Remettre un lot gagné →</a>
 </main>
+{{--
+  Amélioration progressive UNIQUEMENT — même raisonnement que `lot.blade.php` (voir le commentaire
+  détaillé en bas de ce fichier-là). En ligne, quinze lignes, aucune requête, aucun rendu client :
+  coupé ou bloqué, l'écran fonctionne exactement comme avant. Il empêche seulement qu'un second
+  appui parte pendant que le premier est en vol — ce qui, ICI, brûlerait un jeton signé à usage
+  unique et laisserait le client devant un QR déjà périmé.
+
+  ⚠️ Comme sur `lot.blade.php` : toute prose citant un libellé d'écran va dans un commentaire
+  BLADE (retiré au rendu), jamais dans le bloc `<style>` (envoyé au navigateur, et donc visible
+  des `assertDontSee` — défaut réellement provoqué puis corrigé le 2026-08-14).
+--}}
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target;
+    if (!form || form.tagName !== 'FORM') { return; }
+    var bouton = form.querySelector('button[type="submit"], button:not([type])');
+    if (!bouton || bouton.hasAttribute('data-occupe')) { return; }
+    bouton.setAttribute('data-occupe', '1');
+    bouton.disabled = true;
+    bouton.textContent = 'Validation en cours…';
+  });
+})();
+</script>
 </body>
 </html>

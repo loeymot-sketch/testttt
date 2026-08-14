@@ -51,6 +51,14 @@
   .msg.ok{background:rgba(29,185,84,.14);border:1px solid rgba(29,185,84,.55)}
   .msg.err{background:rgba(217,48,37,.16);border:1px solid rgba(217,48,37,.55)}
   .msg.info{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.42)}
+  /* [UX SERVICE 2026-08-14] Le message arrive en se posant : après un rechargement, c'est la
+     seule chose neuve à l'écran. 160 ms — assez pour attirer l'œil, trop court pour se lire
+     comme une animation. Raisonnement complet en bas de page (commentaire Blade). */
+  @keyframes msgArrive{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .msg{animation:msgArrive .16s ease-out both}
+  /* [UX SERVICE 2026-08-14] État « envoi parti », posé par le script de bas de page. */
+  button[data-occupe]{opacity:.72;cursor:progress;filter:saturate(.75)}
+  @media (prefers-reduced-motion:reduce){.msg{animation:none}}
   .hist{margin-top:18px;border-top:1px solid rgba(255,255,255,.12);padding-top:14px}
   .hist h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.6;margin:0 0 8px}
   .hist li{list-style:none;font-size:14px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
@@ -184,5 +192,62 @@
 
   <a class="retour" href="{{ url('/admin/roue-validation') }}">← Valider un tour</a>
 </main>
+{{--
+  POURQUOI IL Y A DU JAVASCRIPT SUR UN ÉCRAN ANNONCÉ « SANS JAVASCRIPT » (en-tête de ce fichier).
+
+  L'en-tête dit « Blade sans JavaScript : pendant un service, un écran qui charge est un écran
+  qu'on n'utilise pas ». L'intention — et elle reste vraie — est que cet écran ne DÉPENDE JAMAIS
+  de JavaScript pour FONCTIONNER : pas de framework, pas de fetch, pas de rendu client, rien à
+  télécharger. Ce script-ci est en ligne, tient en quinze lignes, et ne fait qu'AJOUTER un retour
+  visuel. Coupe-le, bloque-le, laisse-le échouer : les formulaires partent exactement comme avant.
+  C'est de l'amélioration progressive, pas une dépendance — l'intention de l'en-tête est intacte.
+
+  LE DÉFAUT QU'IL CORRIGE, mesuré dans le code et pas supposé : le bouton vert de remise est
+  irréversible et ne donnait AUCUN retour à l'appui. Sur une tablette lente, l'équipe appuie,
+  ne voit rien, réappuie — le second envoi tombe sur la garde serveur, qui répond que le lot est
+  déjà consommé, en ROUGE, devant le client, alors que le geste avait réussi du premier coup.
+  Le lot n'a jamais été consommé deux fois (verrou `lockForUpdate` + contrôle `delivered_at` dans
+  la même transaction, WheelDeliveryService::deliver) : le défaut n'était pas dans la donnée, il
+  était dans le silence de l'écran, et il faisait perdre la face à l'équipe.
+
+  ⚠️ DEUX PIÈGES PAYÉS EN ÉCRIVANT CE BLOC — les deux dans MES PROPRES COMMENTAIRES :
+
+  1. Un commentaire CSS est ENVOYÉ AU NAVIGATEUR ; un commentaire Blade est retiré au rendu. La
+     première version de ce raisonnement était dans le bloc `<style>` et citait les phrases
+     exactes de l'écran — ce qui a fait échouer `WheelOperatorScreensTest` (`assertDontSee`), à
+     juste titre : la page contenait bien ces mots. Toute prose citant un libellé d'écran va dans
+     un commentaire BLADE, jamais dans le CSS.
+
+  2. Ce commentaire-ci contenait la séquence de FERMETURE d'un commentaire Blade, écrite en
+     exemple au milieu du texte. Blade ne connaît pas l'échappement : il ferme au PREMIER
+     marqueur rencontré. Le commentaire se terminait donc en plein milieu, le reste de la prose
+     partait en texte visible au bas de l'écran, et le `<script>` qui suit ne s'exécutait plus —
+     la garde anti-double-appui était donc MORTE, silencieusement. Diagnostiqué en vérifiant dans
+     un vrai navigateur que l'écouteur n'existait pas, PAS en relisant le fichier (il paraissait
+     juste). ⛔ Ne JAMAIS écrire les marqueurs de commentaire Blade à l'intérieur d'un
+     commentaire Blade, même entre accents graves.
+
+  ⛔ Ne pas « enrichir » ce script. Il ne doit jamais faire de requête, ni rendre du contenu, ni
+  bloquer l'envoi du formulaire. Il désactive un bouton déjà envoyé, et c'est tout.
+--}}
+<script>
+(function () {
+  'use strict';
+  // `submit` sur le formulaire (et non `click` sur le bouton) : c'est l'événement qui prouve que
+  // l'envoi part VRAIMENT — un clic sur un formulaire invalide n'envoie rien, et désactiver le
+  // bouton là bloquerait l'équipe sur un écran mort.
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target;
+    if (!form || form.tagName !== 'FORM') { return; }
+    var bouton = form.querySelector('button[type="submit"], button:not([type])');
+    if (!bouton || bouton.hasAttribute('data-occupe')) { return; }
+    bouton.setAttribute('data-occupe', '1');
+    bouton.disabled = true;
+    // Le libellé dit ce qui se passe MAINTENANT, au même endroit que le geste — pas un spinner
+    // ailleurs sur l'écran, que personne ne regarde en service.
+    bouton.textContent = bouton.classList.contains('remettre') ? 'Remise en cours…' : 'Recherche…';
+  });
+})();
+</script>
 </body>
 </html>
