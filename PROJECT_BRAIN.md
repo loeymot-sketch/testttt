@@ -47,6 +47,56 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-14 — TOUT DÉPLOYÉ (VPS `21bdaff9` + Vercel `e75c9dd`) + UI/UX des deux surfaces roue**
+>
+> Owner : « deploy tout et améliore le UI et UX … pour l'accès client après scan de QR code ;
+> ensuite même mission pour le contrôle de POS pour appliquer ces réductions et offres ».
+>
+> **Déploiement** : 15 commits vers le VPS en deux passes (dont les correctifs fiscaux
+> « marquer payé » et écart tiroir-caisse vérifiés la veille par l'audit `verif-globale-2026-08-14`),
+> build complet, chaîne NF525 attestée à chaque passe. Site client poussé sur `main` → Vercel.
+> Les deux vérifiés EN LIGNE (contenu servi, pas juste un `git push`).
+>
+> **Parcours client (roue.html) — « la braise : rien ne claque, tout se pose »** :
+> le défaut central n'était pas cosmétique — `fini()` posait la modale de gain à la frame EXACTE
+> où la roue s'arrêtait, donc après 4,6 s de ralentissement le client ne voyait JAMAIS son lot sur
+> la roue. Ajout d'un battement de 900 ms (repère qui se cale, secteur gagnant désigné par
+> extinction des AUTRES secteurs, moyeu qui éclate, puis un silence tenu) avant la modale.
+> Plus : transitions de sortie (180 ms) à la place des coupures sèches, entrée de `#ecran0` au
+> moment exact où le jeu devient jouable, easings unifiés en 3 jetons, focus déplacé à chaque
+> étape (a11y), tout repliable sous `prefers-reduced-motion` (le battement SURVIT — le client doit
+> voir son lot même sans animation).
+> **La roue s'éveille** : palier de luminosité qui monte à chaque porte franchie = progression
+> RESSENTIE sans jamais annoncer « 3 étapes » (décision produit `d434e2b` respectée).
+> ⚠️ Première version de l'éveil REJETÉE sur données réelles : une désaturation forte rendait les
+> photos (Coca, frites, tiramisu) grises au-dessus d'un carrousel en couleur — ça lisait « cassé »,
+> et ça contredisait la doctrine de la page (« la photo du sandwich fait saliver »). Refait en
+> pilotant par la LUMINOSITÉ, avec un seuil de banc qui interdit désormais `saturate < .8`.
+> Specs : 10/10 · 17/17 · 80/80 · nouveau `roue-mouvement-2026-08-14` 40/40.
+>
+> **Écrans caisse (remise d'un lot / validation d'un tour)** — mission adaptée, PAS copiée :
+> un écran de service avec un client qui attend ne veut pas du plaisir, il veut de la vitesse et
+> l'absence d'erreur. Les deux boutons irréversibles ne donnaient AUCUN retour à l'appui : sur
+> tablette lente l'équipe réappuyait et recevait une alerte ROUGE devant le client alors que le
+> geste avait réussi. La donnée n'a jamais été en danger (`lockForUpdate` + contrôle
+> `delivered_at` en transaction, lu et vérifié) — c'était le SILENCE de l'écran. Garde
+> anti-double-appui en amélioration progressive stricte (~15 lignes en ligne, aucune requête :
+> coupée, l'écran marche comme avant — l'intention « Blade sans JavaScript » de l'en-tête est
+> préservée). Côté validation l'enjeu était pire : chaque envoi brûle un jeton à usage unique.
+>
+> ⚠️ **DEUX PIÈGES QUE JE ME SUIS INFLIGÉS, tous deux dans MES PROPRES COMMENTAIRES** — attrapés
+> par un test et par le navigateur, jamais par ma relecture (le fichier paraissait juste) :
+> 1. un commentaire **CSS part au navigateur** : le mien citait les libellés exacts de l'écran et
+>    a fait échouer `WheelOperatorScreensTest` (`assertDontSee`), à raison ;
+> 2. mon commentaire **Blade contenait la séquence qui FERME un commentaire Blade**, écrite en
+>    exemple → fermeture prématurée, prose en clair au bas de la page, et le `<script>` qui suit
+>    ne s'exécutait plus : **la garde était MORTE en silence**. Diagnostiqué en constatant dans un
+>    vrai navigateur que l'écouteur n'existait pas. ⛔ Jamais de marqueur de commentaire Blade
+>    à l'intérieur d'un commentaire Blade, même entre accents graves.
+>
+> 253/253 Wheel verts après correction, garde re-vérifiée en direct (bouton désactivé, libellé
+> « Remise en cours… », second envoi ignoré).
+
 > **2026-08-14 — « Ultra raisonne et planifie » : convergence Vague 1 + Vague 5 de
 > GOAL_CAYENNE_FINITION, PAS déployé, HEAD `dbbe877a3`**
 >
