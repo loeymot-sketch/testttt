@@ -112,6 +112,11 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // renvoie 'items' (même gate lecture que le backend items_show et les écrans
     // stock frères). Écran ADDITIF lecture seule, hors NF525.
     Object.freeze({ url: 'stock/unified', language: 'stock_unified', icon: 'lab lab-stock' }),
+    // [GOAL_CAYENNE_FINITION_2026-08-13 / §6 Vague 5] Ajustement inventaire manuel
+    // (casse / vol / pesée fausse). URL `stock/…` → permissionUrlForSidebarPath
+    // renvoie 'items' (même gate lecture ; l'écriture elle-même est gated
+    // items_create côté backend et l'écran bascule en lecture seule sinon).
+    Object.freeze({ url: 'stock/raw-material-adjust', language: 'raw_material_adjust', icon: 'fa-solid fa-scale-balanced' }),
     Object.freeze({
         url: 'items',
         language: 'items',

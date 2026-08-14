@@ -204,6 +204,39 @@
             "subtitle": "Configure your product step by step",
             "finish": "Finish",
             "progress": "Step :current of :total"
+        },
+        "raw_material_adjust": {
+            "title": "Inventory adjustment",
+            "subtitle": "Correct the theoretical stock after breakage, theft, or a wrong weighing — every adjustment is traced.",
+            "refresh": "Refresh",
+            "loading": "Loading…",
+            "load_error": "Could not load the materials list. Try again.",
+            "retry": "Retry",
+            "empty": "No active raw material yet.",
+            "no_match": "No material matches the search.",
+            "search": "Search a material…",
+            "read_only": "Read-only — adjustment permission required.",
+            "threshold": "Threshold",
+            "adjust_action": "Adjust",
+            "close": "Close",
+            "field_target": "New counted stock (absolute target)",
+            "field_reason": "Reason (required)",
+            "field_reason_placeholder": "E.g. breakage, theft, wrong weighing…",
+            "field_note": "Note (optional)",
+            "field_note_placeholder": "Free-text detail, e.g. “shelf fell in the kitchen”",
+            "saving": "Saving…",
+            "save": "Save adjustment",
+            "success": "{name} adjusted to {on_hand} {unit}.",
+            "error_reason_required": "A reason is required (3 characters minimum).",
+            "error_target_invalid": "The counted stock must be a positive number.",
+            "error_forbidden": "You do not have permission to adjust stock.",
+            "error_generic": "The adjustment failed. Try again.",
+            "history_title": "Recent manual adjustments",
+            "history_empty": "No manual adjustment recorded for this material yet.",
+            "unknown_author": "Unknown user",
+            "status_ok": "OK",
+            "status_low": "Low",
+            "status_out": "Out"
         }
     },
     "pos": {
@@ -494,7 +527,8 @@
         "promo_flyer": "Promo flyer",
         "uber_photo": "Uber order (photo)",
         "promo_flyer_settings": "Promo flyer settings",
-        "system_health": "System health"
+        "system_health": "System health",
+        "raw_material_adjust": "Stock adjustment"
     },
     "label": {
         "kds_sync_uncertain_banner": "Sync uncertain — data may be out of date",

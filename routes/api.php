@@ -82,6 +82,7 @@ use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\SmsGatewayController;
 use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\PurchasingScanController;
+use App\Http\Controllers\Admin\RawMaterialAdjustController;
 use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\UnifiedStockViewController;
 use App\Http\Controllers\Admin\SubscriberController;
@@ -394,6 +395,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // Même gate permission:items_create. Domaine NEUF, ADDITIF, HORS NF525.
     Route::post('/purchasing/{document}/validate', [PurchasingScanController::class, 'apply'])
         ->name('purchasing.validate');
+
+    // [GOAL_CAYENNE_FINITION_2026-08-13 / §6 Vague 5] Ajustement inventaire manuel
+    // (casse / vol / pesée fausse) — la seule porte d'écriture manquante du domaine
+    // matière première (RawMaterialStockService::adjust() existait, testée, sans
+    // appelant). `history` = lecture des derniers ajustements (gate items_show),
+    // `adjust` = écriture (gate items_create, même famille que /purchasing/scan).
+    // `idempotency` : protection double-submit HTTP (opt-in via X-Idempotency-Key ;
+    // no-op si l'en-tête est absent ou si `idempotency.enabled` est false).
+    Route::get('/raw-materials/{rawMaterial}/movements', [RawMaterialAdjustController::class, 'history'])
+        ->name('raw-materials.movements');
+    Route::post('/raw-materials/{rawMaterial}/adjust', [RawMaterialAdjustController::class, 'adjust'])
+        ->middleware('idempotency')
+        ->name('raw-materials.adjust');
 
     // [UBER-PHOTO 2026-08-10 · owner] Commande Uber PHOTOGRAPHIÉE sur la tablette → lecture →
     // aperçu cuisine → validation humaine → commande réelle (écran de cuisine, caisse, ticket

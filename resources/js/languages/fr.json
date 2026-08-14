@@ -205,6 +205,39 @@
             "subtitle": "Configurez votre produit étape par étape",
             "finish": "Terminer",
             "progress": "Étape :current sur :total"
+        },
+        "raw_material_adjust": {
+            "title": "Ajustement inventaire",
+            "subtitle": "Corrige le stock théorique après une casse, un vol ou une pesée fausse — chaque ajustement est tracé.",
+            "refresh": "Rafraîchir",
+            "loading": "Chargement…",
+            "load_error": "Impossible de charger la liste des matières. Réessayez.",
+            "retry": "Réessayer",
+            "empty": "Aucune matière première active pour le moment.",
+            "no_match": "Aucune matière ne correspond à la recherche.",
+            "search": "Rechercher une matière…",
+            "read_only": "Lecture seule — permission d'ajustement requise.",
+            "threshold": "Seuil",
+            "adjust_action": "Ajuster",
+            "close": "Fermer",
+            "field_target": "Nouveau stock compté (cible absolue)",
+            "field_reason": "Raison (obligatoire)",
+            "field_reason_placeholder": "Ex. casse, vol, pesée fausse…",
+            "field_note": "Note (facultative)",
+            "field_note_placeholder": "Détail libre, ex. « plaque tombée en cuisine »",
+            "saving": "Enregistrement…",
+            "save": "Enregistrer l'ajustement",
+            "success": "{name} ajusté à {on_hand} {unit}.",
+            "error_reason_required": "La raison est obligatoire (3 caractères minimum).",
+            "error_target_invalid": "Le stock compté doit être un nombre positif.",
+            "error_forbidden": "Vous n'avez pas la permission d'ajuster le stock.",
+            "error_generic": "L'ajustement a échoué. Réessayez.",
+            "history_title": "Derniers ajustements manuels",
+            "history_empty": "Aucun ajustement manuel enregistré pour cette matière.",
+            "unknown_author": "Utilisateur inconnu",
+            "status_ok": "OK",
+            "status_low": "Bas",
+            "status_out": "Rupture"
         }
     },
     "pos": {
@@ -489,7 +522,8 @@
         "promo_flyer": "Ticket promo",
         "uber_photo": "Commande Uber (photo)",
         "promo_flyer_settings": "Réglages ticket promo",
-        "system_health": "État du système"
+        "system_health": "État du système",
+        "raw_material_adjust": "Ajustement stock"
     },
     "label": {
         "kds_sync_uncertain_banner": "Synchro incertaine — données peut-être datées",

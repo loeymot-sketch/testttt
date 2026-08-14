@@ -7,6 +7,13 @@ const StockRuptureDashboardComponent = () =>
 const UnifiedStockViewComponent = () =>
     import(/* webpackChunkName: "admin-shell" */ "../../components/admin/stock/UnifiedStockViewComponent");
 
+// [GOAL_CAYENNE_FINITION_2026-08-13 / §6 Vague 5] Ajustement inventaire manuel
+// (casse / vol / pesée fausse) — la seule porte d'écriture manquante du domaine
+// matière première (RawMaterialStockService::adjust() existait, testée, sans
+// appelant avant cette vague).
+const RawMaterialAdjustComponent = () =>
+    import(/* webpackChunkName: "admin-shell" */ "../../components/admin/stock/RawMaterialAdjustComponent");
+
 export default [
     {
         path: "/admin/stock/rupture",
@@ -28,6 +35,17 @@ export default [
             auth: true,
             permissionUrl: "items",
             breadcrumb: "stock_unified",
+        },
+    },
+    {
+        path: "/admin/stock/raw-material-adjust",
+        name: "admin.stock.raw-material-adjust",
+        component: RawMaterialAdjustComponent,
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "items",
+            breadcrumb: "raw_material_adjust",
         },
     },
 ];
