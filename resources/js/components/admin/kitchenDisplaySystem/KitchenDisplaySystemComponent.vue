@@ -1675,8 +1675,19 @@ export default {
       const newOrders = (newVal || []).filter((o) => o && !oldIds.has(o.id));
       if (newOrders.length > 0) {
         this.playKdsNewOrderSound();
-        // [KITCHEN-BRIDGE 2026-07-09] Auto-impression cuisine, exactement 1× / commande.
-        this.autoPrintNewKitchenTickets(newOrders);
+        // [DOUBLE-IMPRESSION 2026-08-14 owner] DÉSACTIVÉ — ce déclencheur et
+        // KitchenTicketPrintListener.vue (monté globalement dans DefaultComponent.vue,
+        // donc TOUJOURS présent en même temps que cet écran KDS, cf. theme==='backend')
+        // impriment TOUS LES DEUX chaque commande sur le MÊME pont 127.0.0.1:9101, avec
+        // deux dédup totalement indépendantes (localStorage ici, table serveur
+        // kitchen_ticket_claims là-bas — aucune des deux ne voit l'autre). Tant que le
+        // pont cuisine ne répondait jamais correctement (cf. kitchen_bridge_service_
+        // manquant_2026-08-14), le doublon passait inaperçu ; dès que l'impression a
+        // recommencé à fonctionner, CHAQUE commande est sortie deux fois. Le listener
+        // global couvre déjà TOUTES les sources (SURFACES_CUISINE) avec une garde
+        // atomique serveur — source de vérité unique désormais. autoPrintKitchenTicket()
+        // reste utilisé par le bouton de réimpression manuelle ci-dessous, inchangé.
+        // this.autoPrintNewKitchenTickets(newOrders);
       }
     },
   },
