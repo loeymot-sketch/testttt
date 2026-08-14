@@ -126,6 +126,24 @@ class PosLoyaltyManualCreditTest extends TestCase
             ->assertStatus(422);
     }
 
+    /**
+     * [BUG RÉEL 2026-08-14] Un motif au plafond validé par la FormRequest (255) + le préfixe
+     * (« Crédit manuel de X€ par caissier #Y — ») dépasse la colonne VARCHAR(255) et faisait
+     * échouer l'INSERT en pleine transaction — constaté en tinker en appliquant la correction
+     * du sur-crédit du jour même.
+     */
+    public function test_motif_au_plafond_ne_fait_pas_echouer_l_ecriture(): void
+    {
+        $motif = str_repeat('x', 255);
+
+        $this->crediter(['loyalty_code' => 'CREDIT001', 'euros' => 1, 'reason' => $motif])
+            ->assertOk();
+
+        $ligne = DB::table('loyalty_transactions')->where('loyalty_code', 'CREDIT001')->first();
+        $this->assertNotNull($ligne);
+        $this->assertLessThanOrEqual(255, mb_strlen($ligne->description));
+    }
+
     /** Un caissier de l'équipe ne se crédite pas lui-même via ce chemin. */
     public function test_compte_equipe_refuse(): void
     {

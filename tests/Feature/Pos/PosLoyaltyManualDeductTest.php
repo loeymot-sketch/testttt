@@ -128,6 +128,19 @@ class PosLoyaltyManualDeductTest extends TestCase
             ->assertStatus(422);
     }
 
+    /** [BUG RÉEL 2026-08-14] Miroir du même bug côté crédit (cf. PosLoyaltyManualCreditTest). */
+    public function test_motif_au_plafond_ne_fait_pas_echouer_l_ecriture(): void
+    {
+        $motif = str_repeat('x', 255);
+
+        $this->retirer(['loyalty_code' => 'DEDUCT001', 'points' => 100, 'reason' => $motif])
+            ->assertOk();
+
+        $ligne = DB::table('loyalty_transactions')->where('loyalty_code', 'DEDUCT001')->where('type', 'manual_deduct')->first();
+        $this->assertNotNull($ligne);
+        $this->assertLessThanOrEqual(255, mb_strlen($ligne->description));
+    }
+
     public function test_compte_equipe_refuse(): void
     {
         DB::table('users')->where('id', $this->caissier->id)->update(['loyalty_code' => 'STAFF002']);

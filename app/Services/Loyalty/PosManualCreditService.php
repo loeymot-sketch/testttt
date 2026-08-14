@@ -111,9 +111,9 @@ final class PosManualCreditService
                     'points'         => $points,
                     'balance_after'  => $balanceAfter,
                     'source_surface' => 'pos',
-                    'description'    => trim(
-                        sprintf('Crédit manuel de %s€ par caissier #%s', number_format($euros, 2, ',', ''), $cashierId ?? '?')
-                        . ($reason ? " — {$reason}" : '')
+                    'description'    => $this->description(
+                        sprintf('Crédit manuel de %s€ par caissier #%s', number_format($euros, 2, ',', ''), $cashierId ?? '?'),
+                        $reason
                     ),
                 ]);
             } catch (QueryException $e) {
@@ -196,9 +196,9 @@ final class PosManualCreditService
                     'points'         => -$retires,
                     'balance_after'  => $balanceAfter,
                     'source_surface' => 'pos',
-                    'description'    => trim(
-                        sprintf('Retrait manuel de %d points par caissier #%s', $retires, $cashierId ?? '?')
-                        . ($reason ? " — {$reason}" : '')
+                    'description'    => $this->description(
+                        sprintf('Retrait manuel de %d points par caissier #%s', $retires, $cashierId ?? '?'),
+                        $reason
                     ),
                 ]);
             } catch (QueryException $e) {
@@ -231,6 +231,24 @@ final class PosManualCreditService
     }
 
     /** Verrou + garde staff, partagés par crédit et retrait. */
+    /**
+     * Compose la description du grand-livre — colonne VARCHAR(255) (migration
+     * `2026_03_26_075918_create_loyalty_transactions_table.php:29`). `reason` est déjà
+     * borné à 255 par la FormRequest, mais CE bornage-là ignore le préfixe (« Crédit
+     * manuel de X€ par caissier #Y — ») : un motif de 255 caractères + préfixe dépasse la
+     * colonne et fait échouer l'INSERT en pleine transaction (constaté en tinker le 14 août
+     * en appliquant une correction — le motif seul faisait 106 caractères, le total 156,
+     * sous la limite ce jour-là, mais un motif au plafond validé par la FormRequest ne
+     * l'aurait pas été). `mb_substr` : les caractères accentués ne doivent pas être coupés
+     * au milieu d'un octet.
+     */
+    private function description(string $base, ?string $reason): string
+    {
+        $texte = trim($base . ($reason ? " — {$reason}" : ''));
+
+        return mb_substr($texte, 0, 255);
+    }
+
     private function verrouillerClient(string $loyaltyCode): User
     {
         $query = User::where('loyalty_code', $loyaltyCode)->where('status', Status::ACTIVE);
