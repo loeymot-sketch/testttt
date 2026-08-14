@@ -47,6 +47,53 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-14 (nuit) — Fidélité déployée + incident réel corrigé : crédit manuel utilisait le taux de remise (facteur 10) — DÉPLOYÉ, chaîne NF525 OK**
+>
+> Suite immédiate de l'entrée précédente : owner a poussé `go` → déploiement de la mission
+> fidélité caisse (commit `ccd15c96b`), vérifié en prod (diff binaire octet-pour-octet entre
+> bundles servis et build local déjà testé — preuve la plus forte, zones gelées à 0 ligne côté
+> serveur, chaîne NF525 attestée).
+>
+> **Incident réel signalé par l'owner dans la foulée** : « j'ai fait une erreur d'ajouter 10 fois
+> plus… je préfère diminuer ici… je veux pas annuler [ce qui est déjà fait] ». Diagnostic mesuré
+> en base prod (pas supposé) : `PosManualCreditService::credit()` convertissait les euros en
+> points via `LoyaltyRules::rate()` (taux de REMISE, `loyalty_points_for_1_euro_discount` =
+> 100 pts/€ en prod) au lieu de `pointsPerEuro()` (taux de GAIN normal, `loyalty_points_per_euro`
+> = 10 pts/€). Transaction réelle : 17,30€ → 1730 pts crédités au lieu de 173 — facteur 10 exact,
+> repéré au comptoir. **Un crédit manuel émule ce qu'un client aurait gagné pour un achat, pas ce
+> qu'une remise coûte en points** — deux barèmes distincts confondus, le motif « jumeau oublié »
+> une fois de plus.
+>
+> **Corrigé (commit `db0261e5`)** :
+> - Taux de conversion fixé (`pointsPerEuro()`).
+> - Nouveau retrait manuel symétrique — `PosManualCreditService::deduct()`, route
+>   `pos-loyalty/deduct-manual`, UI « Retirer des points (correction) » dans
+>   `PosLoyaltyIdentifyModal.vue` — pour corriger un sur-crédit SANS jamais toucher à l'écriture
+>   fautive déjà posée (grand-livre append-only, demande explicite owner). Plancher à zéro,
+>   raisonné en points exacts (pas en euros, pour ne pas réintroduire une ambiguïté de taux dans
+>   l'outil de correction lui-même).
+>
+> **Second bug trouvé EN APPLIQUANT la correction** (pas en relisant le code — en l'utilisant) :
+> `loyalty_transactions.description` est `VARCHAR(255)`, mais le service concatène un préfixe
+> (« Crédit/Retrait manuel de X par caissier #Y — ») AVANT le motif du caissier, qui lui est déjà
+> borné à 255 par la FormRequest. Un motif au plafond validé dépasse donc la colonne → l'INSERT
+> échoue en pleine transaction (`23000`), et la garantie « ne casse jamais la vente » du service
+> était fausse dans ce cas précis. Corrigé (commit `4cd80851`, déployé) : troncature `mb_substr`
+> défensive après concaténation, partagée credit/deduct. Test de régression ajouté qui reproduit
+> exactement le crash rencontré (motif de 255 caractères).
+>
+> **Correction réelle appliquée en production** (via `PosManualCreditService::deduct()` en
+> tinker — PAS un UPDATE SQL brut, pour passer par le grand-livre) : compte `81898A25`,
+> retrait de 1557 points. Vérifié : écriture #14 (manual_add, +1730) intacte, nouvelle écriture
+> #15 (manual_deduct, -1557) posée, solde final **173** — exactement le montant qui aurait dû
+> être crédité. Deux déploiements dans la soirée (`db0261e5` puis `4cd80851`), NF525 CHAIN OK à
+> chaque fois.
+>
+> 22 tests PHPUnit sur ce sous-système (dont le cas exact de l'incident et sa correction),
+> régression `tests/Feature/Pos` 325/325 verte, zones gelées à 0 ligne. Vérifié visuellement en
+> réel (Playwright) : crédit 7€ → +70 pts (barème correct), retrait 400 pts → solde recalculé
+> juste, plancher zéro testé.
+
 > **2026-08-14 (soir, suite) — Fidélité caisse : le vrai trou trouvé et fermé (crédit manuel € + rattachement rétroactif) — NON DÉPLOYÉ**
 >
 > Owner (`/goal`) : créer un compte client depuis la caisse, ajouter un montant équivalent
