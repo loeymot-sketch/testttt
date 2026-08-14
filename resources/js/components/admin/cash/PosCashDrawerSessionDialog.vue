@@ -331,9 +331,11 @@
  * caissier ferme manuellement, et `session-opened` / `session-closed` après
  * action réussie (utile au parent pour rafraîchir le state ou tracker).
  *
- * Variance reason: capturée côté UI uniquement — le controller actuel ne
- * persiste pas la raison (TODO Sprint 1B: whitelist `variance_reason` dans
- * `CashDrawerSessionController::close()`).
+ * Variance reason: saisie ici puis transmise par `CashDrawerService.closeSession()`
+ * au POST /reconcile (pas /close — c'est `reconcileSession()` qui l'exige, cf.
+ * garde I6). [CAISSE 2026-08-14] Corrigé : ce corps de requête était vide
+ * jusqu'ici, ce qui bloquait 422 toute clôture avec un écart réel (voir
+ * CashDrawerService.js pour le détail du défaut).
  */
 import CashDrawerService from '../../../services/CashDrawerService';
 

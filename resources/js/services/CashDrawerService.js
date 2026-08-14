@@ -12,10 +12,10 @@
  *            note: branch_id dérivé de auth()->user()->branch_id, PAS du body
  *   - POST   /admin/pos/cash-drawer/sessions/{id}/close
  *            body: { closing_amount }
- *            note: variance_reason n'est PAS validé par le controller actuel
- *                  → conservé côté UI uniquement (Sprint 1B doit l'ajouter)
  *   - POST   /admin/pos/cash-drawer/sessions/{id}/reconcile
- *            body: {} (calcule expected + variance server-side)
+ *            body: { variance_reason? } (calcule expected + variance server-side ;
+ *            variance_reason est REQUIS par le backend dès que |variance| dépasse
+ *            `cash.variance_threshold_eur` — voir CashDrawerService::reconcileSession I6)
  *   - GET    /admin/pos/cash-drawer/sessions/{id}/movements
  *
  * Idempotence :
@@ -104,14 +104,25 @@ export async function openSession(openingAmount, branchId = null) {
  *   1. POST /{id}/close  → freezes closing_amount
  *   2. POST /{id}/reconcile → computes expected_closing_amount + variance
  *
- * Variance reason (when |variance| > 0) is captured by the UI but currently
- * not persisted by the backend close() validator — Sprint 1B follow-up to
- * whitelist it. We surface it on the returned payload for the local UX flow.
+ * [CAISSE 2026-08-14 · GOAL_CAYENNE_FINITION §1.1] LE BUG QUI EMPÊCHAIT TOUTE CLÔTURE RÉELLE.
+ *
+ * `varianceReason` était saisie dans le dialog (mode "close", champ obligatoire dès que l'écart
+ * dépasse le seuil), mais cette fonction ne la transmettait JAMAIS au POST /reconcile — le corps
+ * envoyé était `{}`, littéralement vide. Le backend (`CashDrawerService::reconcileSession`, garde
+ * I6) EXIGE un `variance_reason` non-vide dès que |variance| > `cash.variance_threshold_eur`
+ * (2,00 € par défaut) : sans lui, il répond 422 `CASH_VARIANCE_REASON_REQUIRED` — même si le
+ * caissier avait bien tapé une raison à l'écran, elle se perdait entre le Vuex store et l'appel
+ * réseau. Mesuré en production : deux sessions ouvertes depuis 36 et 49 jours pour 3 818,30 € de
+ * mouvements — un écart de plusieurs semaines de caisse dépasse presque toujours 2 €, donc TOUTE
+ * tentative de clôture réelle échouait silencieusement à cette 2e étape, laissant la session OPEN.
+ *
+ * Le champ était réellement conçu pour le controller `reconcile()` (pas `close()`, qui n'a jamais
+ * eu besoin d'une raison) — cette fonction le transmet maintenant à la bonne étape.
  *
  * @param {number} sessionId
  * @param {number} closingAmount  Float >= 0 — montant physiquement compté.
- * @param {string|null} varianceReason  UI-only for now.
- * @returns {Promise<Object>} { ...session, expected, variance, variance_reason_local }
+ * @param {string|null} varianceReason  Transmis au POST /reconcile.
+ * @returns {Promise<Object>} { ...session, expected, variance }
  */
 export async function closeSession(sessionId, closingAmount, varianceReason = null) {
     const closeBody = { closing_amount: Number(closingAmount) };
@@ -127,17 +138,14 @@ export async function closeSession(sessionId, closingAmount, varianceReason = nu
     const reconcileConfig = {
         headers: { 'X-Idempotency-Key': freshIdempotencyKey('cash-reconcile') },
     };
+    const reconcileBody = varianceReason ? { variance_reason: varianceReason } : {};
     const reconcileRes = await client().post(
         `admin/pos/cash-drawer/sessions/${sessionId}/reconcile`,
-        {},
+        reconcileBody,
         reconcileConfig
     );
 
-    const payload = unwrap(reconcileRes) || {};
-    return {
-        ...payload,
-        variance_reason_local: varianceReason || null,
-    };
+    return unwrap(reconcileRes) || {};
 }
 
 /**
