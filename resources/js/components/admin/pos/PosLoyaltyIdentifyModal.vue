@@ -197,6 +197,48 @@
                                 </li>
                             </ul>
                         </div>
+
+                        <!--
+                          [FIDÉLITÉ COMPTOIR 2026-08-14 · propriétaire] « Quand je lui ajoute un
+                          montant équivalent fidélité, par exemple sept euros, je veux directement
+                          les rajouter dans son compte. » Distinct de « Cumuler sur cette vente » :
+                          ici le caissier choisit lui-même la somme (geste commercial, oubli d'une
+                          vente passée), sans lien avec le montant réel du panier.
+                        -->
+                        <button
+                            type="button"
+                            class="pos-loy-id__lien-histo"
+                            data-testid="loy-id-credit-toggle"
+                            @click="creditManuelOuvert = !creditManuelOuvert"
+                        >{{ creditManuelOuvert ? 'Masquer le crédit manuel' : 'Créditer manuellement (€)' }}</button>
+
+                        <div v-if="creditManuelOuvert" class="pos-loy-id__field" data-testid="loy-id-credit-panel">
+                            <label for="loy-id-credit-euros" class="pos-loy-id__label">Montant à créditer</label>
+                            <input
+                                id="loy-id-credit-euros"
+                                v-model="creditEuros"
+                                type="number"
+                                inputmode="decimal"
+                                min="0.01"
+                                max="200"
+                                step="0.01"
+                                placeholder="7,00"
+                                class="pos-loy-id__input"
+                                data-testid="loy-id-credit-euros"
+                                @keyup.enter="crediterManuellement"
+                            />
+                            <p class="pos-loy-id__hint">
+                                Converti en points au même barème que la remise en caisse.
+                            </p>
+                            <button
+                                type="button"
+                                class="pos-loy-id__btn pos-loy-id__btn--primary"
+                                style="margin-top: 0.5rem"
+                                :disabled="occupe || !creditEurosValide"
+                                data-testid="loy-id-credit-submit"
+                                @click="crediterManuellement"
+                            >{{ occupe ? '…' : `Créditer ${creditEurosValide ? euros(creditEuros) : ''}` }}</button>
+                        </div>
                     </div>
 
                     <!-- ── AUCUN COMPTE : ON PROPOSE DE L'INSCRIRE ─────────────────── -->
@@ -341,6 +383,8 @@ export default {
             historiqueOuvert: false,
             historiqueEnCours: false,
             historique: [],
+            creditManuelOuvert: false,
+            creditEuros: '',
             scanEnCours: false,
             flux: null,
             boucleScan: null,
@@ -363,6 +407,10 @@ export default {
             if (this.onglet === 'phone') return this.chiffres(this.phone).length >= 9;
             if (this.onglet === 'code') return this.code.trim().length >= 4;
             return false;
+        },
+        creditEurosValide() {
+            const v = Number(this.creditEuros);
+            return Number.isFinite(v) && v > 0 && v <= 200;
         },
     },
     watch: {
@@ -401,6 +449,8 @@ export default {
             // afficherait les mouvements de la personne précédente sous le nom de la suivante.
             this.historiqueOuvert = false;
             this.historique = [];
+            this.creditManuelOuvert = false;
+            this.creditEuros = '';
         },
         changerOnglet(cle) {
             if (cle !== 'qr') this.arreterScan();
@@ -514,6 +564,42 @@ export default {
                 this.$emit('attached', d);
             } catch (e) {
                 this.erreur = this.messageErreur(e, 'Rattachement impossible.');
+            } finally {
+                this.occupe = false;
+            }
+        },
+
+        /**
+         * [FIDÉLITÉ COMPTOIR 2026-08-14] Crédit manuel — le caissier choisit lui-même la somme,
+         * distincte du gain automatique proportionnel à une vente (« Cumuler sur cette vente »).
+         * `orderId` n'est envoyé QUE pour tracer « pour quelle vente » dans l'historique — cette
+         * route ne modifie jamais le total ni la remise d'une commande.
+         */
+        async crediterManuellement() {
+            if (this.occupe || !this.client || !this.creditEurosValide) return;
+            this.occupe = true;
+            this.erreur = '';
+
+            try {
+                const { data } = await axios.post(
+                    '/admin/pos-loyalty/credit-manual',
+                    {
+                        loyalty_code: this.client.loyalty_code,
+                        euros: Number(this.creditEuros),
+                        order_id: this.orderId || null,
+                    },
+                    { headers: { 'X-Idempotency-Key': this.cleIdempotence('cred') } }
+                );
+
+                const d = (data && data.data) || {};
+                if (d.customer) this.client = d.customer;
+
+                const pts = Number(d.points_added) || 0;
+                this.succes = `+${pts} points crédités (${this.euros(this.creditEuros)}).`;
+                this.creditEuros = '';
+                this.creditManuelOuvert = false;
+            } catch (e) {
+                this.erreur = this.messageErreur(e, 'Crédit impossible.');
             } finally {
                 this.occupe = false;
             }
@@ -815,6 +901,10 @@ export default {
 }
 
 .pos-loy-id__lien-histo {
+    /* [FIDÉLITÉ COMPTOIR 2026-08-14] `display: block` — deux boutons du même style
+       (historique, crédit manuel) se suivent dans le DOM ; en `inline-block` par défaut
+       ils collaient l'un à l'autre sans espace ni séparateur visuel. */
+    display: block;
     margin-top: 0.75rem;
     padding: 0;
     font-size: 0.8125rem;

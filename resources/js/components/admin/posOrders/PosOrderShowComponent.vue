@@ -330,10 +330,30 @@
                          Permission gate `pos.redeem-loyalty` is enforced
                          server-side by the FormRequest. -->
                     <div
-                        v-if="order.id && canShowLoyaltyRedeem"
-                        class="flex items-center justify-end p-3 pt-0"
+                        v-if="order.id && (canShowLoyaltyRedeem || canShowLoyaltyIdentify)"
+                        class="flex items-center justify-end gap-2 p-3 pt-0"
                     >
+                        <!--
+                          [FIDÉLITÉ COMPTOIR 2026-08-14 · propriétaire] « il a passé une commande
+                          hier, il n'y avait pas de points ajoutés, je veux qu'ils soient ajoutés » —
+                          il n'existait AUCUN moyen de rattacher un client à une commande déjà
+                          servie depuis l'historique. `attachCustomer` (backend) le permettait déjà
+                          sur une commande DELIVERED — seule cette entrée manquait. Visible plus
+                          largement que la remise : identifier/rattacher ne dépense rien, donc reste
+                          possible après paiement (seule une vente morte — annulée/rejetée/rendue —
+                          le referme, mêmes gardes que le serveur).
+                        -->
                         <button
+                            v-if="canShowLoyaltyIdentify"
+                            type="button"
+                            class="text-xs px-3 py-1.5 rounded border border-primary text-primary hover:bg-primary hover:text-white transition"
+                            data-testid="pos-loyalty-identify-open"
+                            @click="loyaltyIdentifyOpen = true"
+                        >
+                            Fidélité client
+                        </button>
+                        <button
+                            v-if="canShowLoyaltyRedeem"
                             type="button"
                             class="text-xs px-3 py-1.5 rounded border border-primary text-primary hover:bg-primary hover:text-white transition"
                             data-testid="pos-loyalty-redeem-open"
@@ -410,6 +430,16 @@
         @applied="onLoyaltyRedeemApplied"
     />
 
+    <!-- [FIDÉLITÉ COMPTOIR 2026-08-14] Identifier / inscrire / rattacher un client depuis une
+         commande déjà passée (historique) — le même écran que la page caisse principale. -->
+    <PosLoyaltyIdentifyModal
+        :open="loyaltyIdentifyOpen"
+        :order-id="order.id"
+        @close="loyaltyIdentifyOpen = false"
+        @attached="onLoyaltyIdentifyAttached"
+        @use-points="onLoyaltyIdentifyUsePoints"
+    />
+
     <!-- [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] NF525 Refund modal.
          Reusable standalone modal — opens via the "Rembourser" CTA above.
          On `refunded`, refreshes the order so REMBOURSEMENT marker + new
@@ -447,6 +477,7 @@ import PosOrderMapComponent from "./PosOrderMapComponent";
 // modal itself is server-permission-gated so it's safe to render the CTA
 // unconditionally — backend will 403 unauthorized cashiers.
 import PosLoyaltyRedeemModal from "../pos/PosLoyaltyRedeemModal.vue";
+import PosLoyaltyIdentifyModal from "../pos/PosLoyaltyIdentifyModal.vue";
 // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] NF525 refund modal.
 // Owner-mandate V1 ship gate per PROPOSAL_POS_REFUND_UI_2026-05-25 §3
 // Option B (reusable standalone modal). Visibility CTA gated by
@@ -469,6 +500,7 @@ export default {
         PosOrderReceiptComponent,
         PosOrderMapComponent,
         PosLoyaltyRedeemModal,
+        PosLoyaltyIdentifyModal,
         // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26]
         PosRefundModal,
     },
@@ -496,6 +528,8 @@ export default {
             delivery_boy: null,
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Loyalty redeem modal flag.
             loyaltyRedeemOpen: false,
+            // [FIDÉLITÉ COMPTOIR 2026-08-14] Identify/attach modal flag — historique.
+            loyaltyIdentifyOpen: false,
             // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight (2s) after
             // successful driver assignment so the cashier visually perceives
             // the state change beyond the toast.
@@ -567,6 +601,21 @@ export default {
             ];
             if (terminal.includes(o.status)) return false;
             return true;
+        },
+        // [FIDÉLITÉ COMPTOIR 2026-08-14] Identifier/rattacher un client — PAS la même règle que la
+        // remise. Mirroir exact de la garde serveur `PosLoyaltyAttachService::attach()` : seule une
+        // vente MORTE (annulée / rejetée / rendue) referme la porte. DELIVERED et PAID restent
+        // ouverts à dessein — c'est précisément le cas d'une vente cash déjà servie hier, que le
+        // caissier doit pouvoir retrouver dans l'historique et rattacher.
+        canShowLoyaltyIdentify: function () {
+            const o = this.order || {};
+            if (!o.id) return false;
+            const morte = [
+                orderStatusEnum.CANCELED,
+                orderStatusEnum.REJECTED,
+                orderStatusEnum.RETURNED,
+            ];
+            return !morte.includes(o.status);
         },
         // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Refund CTA visibility.
         // Backend is authoritative (PosOrderController:54-57 abort_unless can()
@@ -740,6 +789,18 @@ export default {
                 .catch(() => {
                     this.loading.isActive = false;
                 });
+        },
+        // [FIDÉLITÉ COMPTOIR 2026-08-14] Un client vient d'être rattaché (ou créé) sur cette
+        // commande de l'historique — la modale affiche déjà son propre message de succès, rien de
+        // plus à rafraîchir ici (le rattachement ne change ni le total ni le statut de la commande).
+        onLoyaltyIdentifyAttached: function () {
+            // Volontairement vide : cf. commentaire ci-dessus.
+        },
+        // Passe le relais à la fenêtre de remise existante, cohérent avec PosComponent.vue —
+        // seule la remise reste gardée pré-paiement (server-side ORDER_ALREADY_FINALIZED sinon).
+        onLoyaltyIdentifyUsePoints: function () {
+            this.loyaltyIdentifyOpen = false;
+            this.loyaltyRedeemOpen = true;
         },
         // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Refund modal handlers.
         openRefundModal: function () {

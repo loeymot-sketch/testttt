@@ -1552,6 +1552,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/customers', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'createCustomer'])
             ->middleware(['throttle:pos-loyalty-lookup', 'idempotency'])
             ->name('customers.store');
+
+        // [FIDÉLITÉ COMPTOIR 2026-08-14 · propriétaire] CRÉDITER manuellement un montant en euros
+        // sur le compte d'un client, hors vente. `idempotency` : un double appui ne doit pas
+        // créditer deux fois le même geste commercial.
+        Route::post('/credit-manual', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'creditManual'])
+            ->middleware(['throttle:pos-loyalty-lookup', 'idempotency'])
+            ->name('credit-manual');
     });
 
     Route::prefix('pos-category')->name('pos-category.')->group(function () {

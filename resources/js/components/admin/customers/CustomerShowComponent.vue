@@ -102,6 +102,23 @@
                                 </span>
                             </div>
                         </div>
+                        <!--
+                          [FIDÉLITÉ COMPTOIR 2026-08-14 · propriétaire] La liste des clients affiche
+                          déjà le solde (corrigé 2026-08-13) ; la fiche détail d'un client, elle, ne
+                          l'affichait nulle part — un responsable qui ouvre UN client pour répondre à
+                          « pourquoi j'ai ce solde ? » n'y trouvait rien.
+                        -->
+                        <div class="col-12 sm:col-6 !py-1.5" v-if="customer.loyalty_code">
+                            <div class="db-list-item p-0">
+                                <span class="db-list-item-title w-full sm:w-1/2">
+                                    Fidélité
+                                </span>
+                                <span class="db-list-item-text w-full sm:w-1/2">
+                                    <b>{{ customer.loyalty_points }}</b> pts
+                                    <small style="opacity:.6"> · {{ customer.loyalty_code }}</small>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

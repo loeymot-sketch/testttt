@@ -5,10 +5,12 @@ namespace App\Services\Identity;
 use App\Enums\Ask;
 use App\Enums\Role as EnumRole;
 use App\Enums\Status;
+use App\Mail\CustomerWelcomeMail;
 use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -102,7 +104,10 @@ class CustomerAccountProvisioner
         }
 
         if ($existant) {
-            $this->completer($existant, $mail, $nom);
+            $emailVientDetreAjoute = $this->completer($existant, $mail, $nom);
+            if ($emailVientDetreAjoute) {
+                $this->envoyerBienvenue($existant);
+            }
 
             return ['user_id' => (int) $existant->id, 'created' => false, 'reason' => 'existing'];
         }
@@ -122,9 +127,13 @@ class CustomerAccountProvisioner
         ]);
         $user->assignRole(EnumRole::CUSTOMER);
 
-        $this->completer($user, $mail, $nom);
+        $emailPose = $this->completer($user, $mail, $nom);
 
         Log::channel('daily')->info($origine . '.account_created', ['user_id' => $user->id]);
+
+        if ($emailPose) {
+            $this->envoyerBienvenue($user);
+        }
 
         return ['user_id' => (int) $user->id, 'created' => true, 'reason' => 'created'];
     }
@@ -135,10 +144,15 @@ class CustomerAccountProvisioner
      * L'adresse n'est PAS marquée vérifiée : le client l'a tapée, personne n'a prouvé qu'elle est à
      * lui. Elle le deviendra à sa première connexion par code — là, la possession sera prouvée. Poser
      * `email_verified_at` ici serait affirmer une preuve qu'on n'a pas.
+     *
+     * @return bool VRAI si une adresse a été posée pour la première fois sur ce compte (déclenche
+     *              le mail de bienvenue chez l'appelant — pas ici, la responsabilité d'envoyer un
+     *              e-mail ne doit pas être invisible dans une méthode nommée « compléter »).
      */
-    private function completer(User $user, ?string $mail, string $nom): void
+    private function completer(User $user, ?string $mail, string $nom): bool
     {
         $modifie = false;
+        $emailPose = false;
 
         if ($mail !== null && blank($user->email)) {
             $prise = User::withoutGlobalScope(BranchScope::class)
@@ -150,6 +164,7 @@ class CustomerAccountProvisioner
             if (! $prise) {
                 $user->email = $mail;
                 $modifie = true;
+                $emailPose = true;
             }
         }
 
@@ -168,6 +183,34 @@ class CustomerAccountProvisioner
 
         if ($modifie) {
             $user->save();
+        }
+
+        return $emailPose;
+    }
+
+    /**
+     * « Le client va recevoir le mail et enregistrer ses données » [propriétaire 2026-08-14].
+     *
+     * Ne fait JAMAIS tomber la création du compte : un e-mail qui échoue (SMTP indisponible,
+     * adresse invalide) est un incident à tracer, pas une vente à casser. Même discipline que
+     * `ensure()` — le filet écrit dans le canal `daily` ET le canal par défaut, la leçon du
+     * `app(WheelService::class)` invalide du 10 août ne se repaie pas deux fois.
+     */
+    private function envoyerBienvenue(User $user): void
+    {
+        if (blank($user->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($user->email)->send(new CustomerWelcomeMail(
+                $user->name ?: 'client',
+                (string) $user->loyalty_code
+            ));
+        } catch (\Throwable $e) {
+            $contexte = ['user_id' => $user->id, 'error' => $e->getMessage()];
+            Log::channel('daily')->warning('customer_account.welcome_mail_failed', $contexte);
+            Log::error('customer_account.welcome_mail_failed', $contexte);
         }
     }
 }

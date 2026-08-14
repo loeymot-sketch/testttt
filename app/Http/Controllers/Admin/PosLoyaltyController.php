@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PosCustomerCreateRequest;
 use App\Http\Requests\PosLoyaltyAttachRequest;
 use App\Http\Requests\PosLoyaltyLookupRequest;
+use App\Http\Requests\PosLoyaltyManualCreditRequest;
 use App\Http\Requests\PosLoyaltyRedeemRequest;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Services\Identity\CustomerAccountProvisioner;
 use App\Services\Loyalty\PosCustomerLookupService;
 use App\Services\Loyalty\PosLoyaltyAttachService;
+use App\Services\Loyalty\PosManualCreditService;
 use App\Services\Loyalty\PosRedemptionException;
 use App\Services\Loyalty\PosRedemptionService;
 use Illuminate\Http\JsonResponse;
@@ -40,6 +42,7 @@ final class PosLoyaltyController extends Controller
         private readonly PosCustomerLookupService $lookupService,
         private readonly CustomerAccountProvisioner $provisioner,
         private readonly PosLoyaltyAttachService $attachService,
+        private readonly PosManualCreditService $manualCreditService,
     ) {
     }
 
@@ -265,6 +268,53 @@ final class PosLoyaltyController extends Controller
         ]);
 
         return response()->json(['status' => true, 'data' => $resultat]);
+    }
+
+    /**
+     * CRÉDITER MANUELLEMENT DES POINTS — un montant en euros choisi par le caissier, sans commande.
+     *
+     * [2026-08-14 · propriétaire : « quand je lui ajoute un montant équivalent fidélité, par
+     * exemple sept euros, directement dans son compte »]
+     *
+     * Distinct de `attachCustomer` (qui relance le crédit AUTOMATIQUE proportionnel à une vente) :
+     * ici le caissier choisit lui-même la somme. `order_id` est facultatif et ne sert qu'à noter
+     * « pour quelle vente » dans le grand-livre — cette route ne modifie JAMAIS le total ni la
+     * remise d'une commande, donc rien qui touche NF525.
+     */
+    public function creditManual(PosLoyaltyManualCreditRequest $request): JsonResponse
+    {
+        try {
+            $resultat = $this->manualCreditService->credit(
+                (string) $request->input('loyalty_code'),
+                (float) $request->input('euros'),
+                $request->user()?->id,
+                $request->input('order_id') ? (int) $request->input('order_id') : null,
+                $request->input('reason'),
+            );
+        } catch (PosRedemptionException $e) {
+            return response()->json([
+                'status' => false, 'code' => $e->errorCode, 'message' => $e->getMessage(),
+            ], $e->httpStatus);
+        } catch (\Throwable $e) {
+            Log::error('pos.loyalty.credit_manuel_echoue', [
+                'error' => $e->getMessage(), 'cashier' => $request->user()?->id,
+            ]);
+
+            return response()->json([
+                'status' => false, 'code' => 'CREDIT_FAILED', 'message' => 'Crédit impossible pour le moment.',
+            ], 500);
+        }
+
+        $client = \App\Models\User::find($resultat['customer_id']);
+
+        return response()->json([
+            'status' => true,
+            'data'   => [
+                'points_added'  => $resultat['points_added'],
+                'balance_after' => $resultat['balance_after'],
+                'customer'      => $client ? $this->lookupService->presenter($client) : null,
+            ],
+        ]);
     }
 
     public function redeem(PosLoyaltyRedeemRequest $request, int $orderId): JsonResponse

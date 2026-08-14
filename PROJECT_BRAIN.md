@@ -47,8 +47,150 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **2026-08-14 — TOUT DÉPLOYÉ (VPS `21bdaff9` + Vercel `e75c9dd`) + UI/UX des deux surfaces roue**
+> **2026-08-14 (soir, suite) — Fidélité caisse : le vrai trou trouvé et fermé (crédit manuel € + rattachement rétroactif) — NON DÉPLOYÉ**
 >
+> Owner (`/goal`) : créer un compte client depuis la caisse, ajouter un montant équivalent
+> fidélité (ex 7€) directement au compte, utiliser les points en cours de vente, mail de
+> bienvenue à la création, et pouvoir ajouter des points a posteriori sur une commande d'hier
+> qui n'en avait pas reçu.
+>
+> **Diagnostic (anti-fiction, lu dans le code réel)** : la quasi-totalité existait déjà et
+> tournait (`PosLoyaltyController` : lookup/createCustomer/attachCustomer/redeem/history,
+> `CustomerAccountProvisioner`, `PosRedemptionService`, `LoyaltyRules` — commits `81dc987b1`
+> → `e6ae04311`, 2026-08-10/13). Le vrai trou, mesuré : le bouton "Fidélité client" sur
+> `PosOrderShowComponent.vue` (page d'une commande) n'ouvrait QUE la fenêtre de remise
+> (`canShowLoyaltyRedeem`), gardée PAID/terminal-only — donc invisible dès qu'une vente cash
+> est encaissée (le cas dominant, 1411/1411 ventes caisse). Et cette page n'embarquait PAS du
+> tout `PosLoyaltyIdentifyModal` (identifier/inscrire/rattacher). Un client qui a payé hier ne
+> pouvait donc JAMAIS être rattaché après coup depuis aucun écran — alors que le service serveur
+> `PosLoyaltyAttachService::attach()` le permettait déjà explicitement sur une commande DELIVERED
+> (c'est son unique raison d'être, testé par `PosLoyaltyAttachTest`). Deux définitions de
+> "peut-on rattacher ce client" (redeem = dépense, doit être pré-paiement ; identify = gain, sans
+> contrainte hors vente morte) avaient été confondues sous une seule gate.
+>
+> **Fait** :
+> - `PosLoyaltyIdentifyModal` monté sur `PosOrderShowComponent.vue` avec sa propre gate
+>   `canShowLoyaltyIdentify` (miroir exact du guard serveur : exclut seulement
+>   CANCELED/REJECTED/RETURNED, PAS PAID/DELIVERED) — visible sur n'importe quelle commande de
+>   l'historique, retrouvable depuis n'importe quel jour.
+> - Nouveau `PosManualCreditService` + route `POST /admin/pos-loyalty/credit-manual` (permission
+>   `pos`, transaction verrouillée, ligne `loyalty_transactions` type `manual_add`) — le caissier
+>   tape un montant en EUROS (ex 7€), converti au même barème que la remise. UI dans
+>   `PosLoyaltyIdentifyModal.vue` à côté de "Cumuler sur cette vente".
+> - `CustomerAccountProvisioner::envoyerBienvenue()` — mail `CustomerWelcomeMail` (code fidélité)
+>   envoyé UNE fois quand un compte comptoir reçoit un e-mail (création ou complément), jamais
+>   si l'envoi échoue (try/catch, ne casse jamais la vente).
+> - `CustomerShowComponent.vue` (fiche client admin) affiche désormais aussi le solde — la liste
+>   le faisait déjà depuis le 2026-08-13, la fiche détail non.
+> - CSS : les deux liens "Voir l'historique" / "Créditer manuellement" collaient sans séparateur
+>   (repéré au test visuel réel, pas en relisant le code) — `display:block` corrigé.
+>
+> **Preuve E2E réelle** (Playwright/Chrome MCP, `pos@lecayenne.fr`, DB `foodking_e2e`, build
+> production complet) : compte trouvé par téléphone → crédit manuel 7€ → **+700 pts en direct,
+> historique "Ajouté à la main" correct** → commande d'HIER déjà payée (`ORD-0513-FU`, 40€, sans
+> client) → bouton Fidélité maintenant visible → rattachée → **+400 pts automatiques (crédit
+> normal proportionnel à la vente, relancé rétroactivement)** → solde cumulé 1100 pts, seuil
+> 1000 franchi, "Utiliser 11,00€" désormais actif. Guard testé aussi côté refus : une commande
+> déjà au nom d'un autre client → `ALREADY_ATTACHED_OTHER` correctement bloqué.
+>
+> **Tests** : 2 nouveaux fichiers (`PosLoyaltyManualCreditTest` 7/7, `PosCustomerCreateWelcomeMailTest`
+> 3/3) + régression `tests/Feature/Pos` 315/315, `Loyalty` 56/56, `Identity` 9/9,
+> `Admin/CustomerLoyaltyVisibleTest` 2/2 — tous verts, lancés séparément (PHPUnit de ce projet
+> n'exécute qu'un seul chemin par invocation). Zones gelées §7 : diff = 0 ligne.
+>
+> **Reste** : NON DÉPLOYÉ (accord propriétaire requis avant push/deploy-vps.sh, recompiler au
+> déploiement — build local de vérification fait puis assets ignorés du commit, gitignorés sauf
+> `daily-book`/`vendor` que j'ai restaurés intacts pour ne pas polluer le diff avec 50k lignes de
+> churn webpack sans rapport). Écran d'historique des points pour le gérant (vue globale, pas par
+> client) toujours pas construit — hors périmètre de cette mission.
+
+> **2026-08-14 (soir) — Deploy VPS `13681f83` + diagnostic ticket cuisine auto-print : AUCUN bug code, verrou 100% physique**
+>
+> Owner : « deploy tout et fix le problème » (ticket cuisine qui ne sort jamais tout seul, malgré
+> imprimante `Epson TM-m30 Cuisine` connectée en USB sur le PC cuisine, confirmée par test terrain).
+>
+> **Deploy** : `tools/deploy-vps.sh` exécuté sur le VPS, HEAD `21bdaff9` → `13681f83`. Bundles
+> complets/frais (mix-manifest), migrations à jour (rien à jouer), NF525 `fiscal:verify-chain --all`
+> OK sur branch 1, worker `queue:work redis --queue=high,default` confirmé relancé et vivant. Contenu
+> SERVI vérifié (pas juste poussé) : `KitchenTicketQueueController::SURFACES_CUISINE` inclut bien
+> `pos`+`phone` en prod, et le nom de repli imprimante `"Epson TM-m30 Cuisine"` (fix `0fe79b167`) est
+> live dans `tools/kitchen-bridge/kitchen-bridge.js` + `tools/bridge-service/*` sur le VPS.
+>
+> **Diagnostic ticket cuisine — lu dans le code réel, pas supposé** : `KitchenTicketPrintListener.vue`
+> (monté globalement via `DefaultComponent.vue`, donc actif sur tout écran admin dont KDS) sonde
+> `admin/pos/kitchen-tickets/pending?destination=kitchen` toutes les 5s et couvre DÉJÀ kiosk/web/
+> online/delivery/uber_eats/pos/phone — aucun filtre de source manquant, aucun bug à corriger côté
+> code. Le blocage réel : ce composant n'imprime QUE si `GET http://127.0.0.1:9101/health` répond
+> depuis le navigateur ouvert SUR le PC cuisine lui-même — donc `kitchen-bridge.js` doit tourner en
+> permanence sur cette machine physique. Cf. [[kitchen_bridge_service_manquant_2026-08-14]] : le test
+> manuel réussi + « aucun bridge constaté après coup » = un process lancé à la main pour le test,
+> jamais installé comme service NSSM persistant. **Reste à faire, PHYSIQUEMENT sur le PC cuisine**
+> (hors portée d'une session de code / SSH VPS) : `install-kitchen-service.ps1 -Printer "Epson
+> TM-m30 Cuisine"`, + vérifier la permission Chrome "Local network access" sur ce poste (échec
+> silencieux par design si refusée — le composant avale ses erreurs pour ne jamais polluer l'écran
+> cuisine).
+>
+> **Suite (même soirée)** : `routes/web.php` — `kitchen-bridge.js` manquait à la whitelist
+> `/dl/{bridge}` (seuls `caisse-bridge.js`/`borne-bridge.js` y étaient) alors que la doc
+> `tools/bridge-service/README.md` affirmait le contraire. Ajouté (`2e8fe766f`), déployé, vérifié
+> content servi 200 sur l'hôte RÉEL de l'app — **`https://vps-418872ac.vps.ovh.net`**, PAS
+> `lecayenne.fr`/`www.lecayenne.fr` (ça c'est la vitrine Vercel ; `curl` dessus donnait un 404
+> trompeur avant d'aller vérifier `APP_URL` en prod). Mission complète écrite pour exécution
+> physique sur le PC cuisine (service NSSM + repli VBS + flag Chrome + checklist de vérif),
+> envoyée à l'owner en fichier.
+>
+> **Suite (exécutée sur site via TeamViewer, autre session Claude cowork)** : mission
+> appliquée avec succès. Node.js installé (v20.17.0, absent avant), `kitchen-bridge.js` +
+> NSSM téléchargés (PowerShell `Invoke-WebRequest` a échoué en SSL — repli Chrome utilisé,
+> cf. mission §1), service `FoodKingCuisineBridge` installé + démarré, **`/health` → `UP`
+> confirmé**. Imprimante `Epson TM-m30 Cuisine` confirmée conforme sur site.
+> ⚠️ **Découverte non liée, corrigée au passage** : le raccourci `Cuisine Le Cayenne.lnk` →
+> `run-hidden.vbs` → `start-kds.ps1` (lancement auto de Chrome/KDS) était CASSÉ depuis un
+> dépannage antérieur du 2026-07-19 (une session avait désactivé le vrai lancement Chrome
+> pour stopper une boucle infinie, jamais restauré depuis — le PC cuisine ne relançait donc
+> plus l'écran KDS tout seul après un redémarrage). Corrigé sur place : le script relance
+> maintenant Chrome avec la bonne URL (`vps-418872ac.vps.ovh.net/admin/k…`) ET le flag
+> `--disable-features=BlockInsecurePrivateNetworkRequests,LocalNetworkAccessChecks`. Testé
+> bout en bout (fermeture + relance via raccourci) : Chrome se rouvre correctement sur KDS.
+> **Suite — cause réelle trouvée et corrigée (21:10)** : le service tournait, `/health` UP,
+> mais l'impression échouait à 100% (`winspool_send_failed` en boucle dans
+> `kitchen-bridge.err.log`) — l'imprimante était installée dans la session interactive
+> **POS**, invisible pour le service **LocalSystem** (session 0). `Get-Printer` la voyait
+> quand même (liste des files ≠ droits d'accès par session) — piège déjà anticipé dans le
+> commentaire de `install-kitchen-service.ps1`. Fix : service NSSM remplacé par une
+> **tâche planifiée au logon POS** (évite de devoir mettre un mot de passe sur le compte
+> POS, ce qui aurait cassé l'auto-login). **Vérifié côté serveur, PAS juste supposé** :
+> logs + `kitchen_ticket_claims` montrent commandes 502/503 débloquées à 21:10:28, et
+> commande **504 (nouvelle, aucune intervention manuelle)** imprimée automatiquement sur
+> `kitchen` (21:10:58) ET `counter` (21:11:01) dès sa création. Détail complet + leçon
+> générale (accès imprimante = droit de SESSION, pas un fait visible par `Get-Printer`) :
+> [[kitchen_bridge_service_manquant_2026-08-14]]. Confirmation papier physique par
+> l'owner encore en attente au moment de cette note (preuve serveur solide, mais le
+> mandat visuel/physique du projet reste la preuve finale).
+>
+> **Suite (même soirée) — 2 nouveaux signalements owner, 1 fix livré + 1 déjà couvert** :
+>
+> 1. **« la viande Uber Eats ne compte pas au bandeau cuisson »** — confirmé et corrigé.
+>    Cause : `UberOrderMapper::mapLine()` laissait `composition_snapshot.lines` TOUJOURS
+>    vide (toute la viande Uber finit en `extras`, un format que
+>    `MeatPortionCalculator`/`kdsSymbolic.js` ne lisent jamais pour compter). Fix additif
+>    (`c377d959f`, déployé, NF525 OK) : un groupe de modificateurs dont le TITRE identifie
+>    un choix de viande (FR « viande » / EN « meat ») alimente aussi `lines`
+>    (`attribute_name`/`variation_name`), sans toucher `extras`. 4 tests neufs +
+>    preuve bout-en-bout via `MeatPortionCalculator::forLine` (108 tests Uber verts,
+>    aucune régression). ⚠️ Heuristique basée sur le TITRE du groupe de modificateurs
+>    Uber — jamais vérifiée contre un VRAI payload Uber production (aucun accès prod
+>    confirmé aux vrais noms de groupes à ce jour, cf. commentaires historiques du
+>    mapper) : à confirmer sur la PROCHAINE vraie commande Uber avec choix de viande —
+>    si le bandeau reste vide, le nom réel du groupe Uber diffère de "viande"/"meat" et
+>    il faudra l'ajuster avec un exemple réel.
+> 2. **« assure que téléphone/borne/site web s'impriment tous en cuisine »** — déjà
+>    couvert, rien à corriger : `KitchenTicketQueueController::SURFACES_CUISINE` inclut
+>    `kiosk`/`web`/`online`/`pos`/`phone`/`delivery`/`uber_eats` (aucune branche par
+>    source dans le déclencheur lui-même), et la preuve live du point précédent
+>    (commande 504, surface `phone`, imprimée automatiquement sans intervention) couvre
+>    déjà le même mécanisme pour toutes ces sources — ce n'est pas une logique
+>    par-source qui pourrait diverger.
 > Owner : « deploy tout et améliore le UI et UX … pour l'accès client après scan de QR code ;
 > ensuite même mission pour le contrôle de POS pour appliquer ces réductions et offres ».
 >
