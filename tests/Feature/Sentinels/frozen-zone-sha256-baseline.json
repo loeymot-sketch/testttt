@@ -10,7 +10,7 @@
   "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "b2845a326baaee0051439e8cd8a88cf1962d8704686703bf81f8cbb4f3fad2ff",
   "resources/js/components/admin/pos/PaymentComponent.vue": "6bfaadcdb9865a6b51ebbd4c5c47d631e20eaad15815913d3816d2a37640c084",
   "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": "1a23064ef92b42550fbf98210347818daf58b3fa35360e647eaf87e25dc5303c",
-  "public/js/pos-wizard.js": "bee8e8c86885b2cd385446229b41d622b6a9707dc402cc12050483147bb7dfe2",
+  "public/js/pos-wizard.js": "24eaac96230b4f37fa26a24a2a71e2a05d6d81c9f7679a128f3b5835464560d3",
   "public/css/pos-wizard.css": "857e00680ea813b5a902dbf8365f77eb34400a179a66e8d0ecd6905527f98626",
   "resources/views/admin-pos-v4.blade.php": "47535c19c7c06ed2a863f03d3bee8335280838740fe30eb51e8044809d48c956",
   "app/Services/Fiscal/FiscalSequenceService.php": "1d8626b81d83d014a9e4562f47357eb0f1e1588f479c4fcd390cba3cdb3302f3",
