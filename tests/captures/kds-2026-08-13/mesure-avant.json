@@ -1,0 +1,151 @@
+{
+  "mesure": {
+    "hauteurFenetre": 720,
+    "hautDeLaPremiereCarte": null,
+    "pourcentagePerduEnHaut": null,
+    "nombreDeBoutons": 22,
+    "rangeesDeBoutonsAuDessus": [
+      12,
+      84,
+      132,
+      360,
+      624
+    ],
+    "boutons": [
+      {
+        "texte": "",
+        "testid": null,
+        "haut": 11,
+        "hauteur": 36
+      },
+      {
+        "texte": "Bonjour\nChef Le Cayenne",
+        "testid": null,
+        "haut": 11,
+        "hauteur": 36
+      },
+      {
+        "texte": "🚫\nRupture",
+        "testid": "kds-availability-panel-open",
+        "haut": 86,
+        "hauteur": 32
+      },
+      {
+        "texte": "📚\nHistorique",
+        "testid": "kds-history-button",
+        "haut": 86,
+        "hauteur": 32
+      },
+      {
+        "texte": "🔑\nAfficher les noms",
+        "testid": "kds-legend-toggle",
+        "haut": 86,
+        "hauteur": 32
+      },
+      {
+        "texte": "4",
+        "testid": "kds-cols-4",
+        "haut": 132,
+        "hauteur": 44
+      },
+      {
+        "texte": "6",
+        "testid": "kds-cols-6",
+        "haut": 132,
+        "hauteur": 44
+      },
+      {
+        "texte": "8",
+        "testid": "kds-cols-8",
+        "haut": 132,
+        "hauteur": 44
+      },
+      {
+        "texte": "Prêt",
+        "testid": "kds-card-cta-ready",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Réimprimer",
+        "testid": "kds-card-reprint",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Prêt",
+        "testid": "kds-card-cta-ready",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Réimprimer",
+        "testid": "kds-card-reprint",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Prêt",
+        "testid": "kds-card-cta-ready",
+        "haut": 626,
+        "hauteur": 52
+      },
+      {
+        "texte": "Réimprimer",
+        "testid": "kds-card-reprint",
+        "haut": 626,
+        "hauteur": 52
+      },
+      {
+        "texte": "Prêt",
+        "testid": "kds-card-cta-ready",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Réimprimer",
+        "testid": "kds-card-reprint",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Prêt",
+        "testid": "kds-card-cta-ready",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Réimprimer",
+        "testid": "kds-card-reprint",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Prêt",
+        "testid": "kds-card-cta-ready",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "Réimprimer",
+        "testid": "kds-card-reprint",
+        "haut": 627,
+        "hauteur": 52
+      },
+      {
+        "texte": "◀",
+        "testid": "kds-scroll-left",
+        "haut": 362,
+        "hauteur": 96
+      },
+      {
+        "texte": "▶",
+        "testid": "kds-scroll-right",
+        "haut": 362,
+        "hauteur": 96
+      }
+    ],
+    "hauteurDocument": 720
+  },
+  "erreurs": []
+}

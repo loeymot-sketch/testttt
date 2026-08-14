@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-05T17:30:11.134Z",
-  "verdict": "PASS_DASHBOARD_CRUD_RUNTIME_LOCAL",
+  "generated_at": "2026-08-13T12:24:53.179Z",
+  "verdict": "REWORK_DASHBOARD_CRUD_RUNTIME_LOCAL",
   "scope": {
     "ui_created": [
       "category",
@@ -19,25 +19,5 @@
       "order/stock/snapshot inspection"
     ]
   },
-  "results": [
-    {
-      "scenario": "dashboard_crud_to_runtime_sync",
-      "pass": true,
-      "category_id": 189,
-      "attribute_id": 233,
-      "item_id": 228,
-      "drink_id": 227,
-      "variation_id": 188,
-      "extra_id": 131,
-      "addon_id": 50,
-      "profile_id": 51,
-      "order_id": 96,
-      "queue_number": "A86243273",
-      "quote_total": 13,
-      "persisted_total": 13,
-      "stock_on_hand_after_order": 7,
-      "pos_projection_steps": 3,
-      "kiosk_projection_steps": 3
-    }
-  ]
+  "results": []
 }

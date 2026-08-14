@@ -265,16 +265,34 @@ class KitchenTicketQueueTest extends TestCase
         $this->assertNotContains($vieille->id, $this->reclamer());
     }
 
-    /** @test Caisse et téléphone impriment déjà au checkout — les inclure doublerait le papier. */
-    public function les_ventes_caisse_et_telephone_ne_sont_pas_reclamees(): void
+    /** @test Caisse et téléphone impriment déjà leur comptoir au clic — les inclure doublerait ce papier-là. */
+    public function les_ventes_caisse_et_telephone_ne_sont_pas_reclamees_au_comptoir(): void
     {
         $caisse = $this->commandeWeb(['source_surface' => 'pos']);
         $tel    = $this->commandeWeb(['source_surface' => 'phone']);
 
-        $ids = $this->reclamer();
+        $ids = $this->reclamer('counter');
 
         $this->assertNotContains($caisse->id, $ids);
         $this->assertNotContains($tel->id, $ids);
+    }
+
+    /**
+     * @test
+     * [OWNER 2026-08-13 « je veux tout imprime direct »] Le filet qui manquait : avant ce jour,
+     * une vente caisse ou téléphone n'atteignait JAMAIS le poste cuisine — seul le comptoir en
+     * avait un, et seulement si le caissier cliquait. Sans droit sur cette destination, un oubli
+     * de clic = un plat jamais préparé.
+     */
+    public function les_ventes_caisse_et_telephone_sont_reclamees_en_cuisine(): void
+    {
+        $caisse = $this->commandeWeb(['source_surface' => 'pos']);
+        $tel    = $this->commandeWeb(['source_surface' => 'phone']);
+
+        $ids = $this->reclamer('kitchen');
+
+        $this->assertContains($caisse->id, $ids);
+        $this->assertContains($tel->id, $ids);
     }
 
     /** @test */

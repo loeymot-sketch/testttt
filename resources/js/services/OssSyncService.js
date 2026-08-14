@@ -11,8 +11,14 @@ const DEFAULTS = Object.freeze({
     // so that the SYNC-2 8s budget (POS pay → OSS visible) is met by the
     // polling fallback alone when the broadcast queue is idle in dev
     // (BROADCAST_DRIVER=pusher + WS port 6001 down + no queue worker).
-    // Production still uses Echo/Pusher live so this fallback is essentially
-    // unused there; tightening it costs nothing in prod and saves ~3s in dev.
+    // [AUDIT-5SYS 2026-08-12 CORRECTIF DOC] Le commentaire précédent affirmait que la
+    // production utilise Echo/Pusher en direct, rendant ce fallback "essentiellement
+    // inutile" — c'est FAUX et contredit la réalité connue du projet : `BROADCAST_DRIVER=log`,
+    // aucun serveur de sockets en prod (cf. PROJECT_BRAIN.md). Ce fallback 2s EST le mécanisme
+    // réel qui garde l'OSS à jour en production (le KDS, lui, utilise une cadence WS-aware
+    // séparée à 5s/15s dans KitchenDisplaySystemComponent.vue::_pollingInterval() — les deux
+    // écrans ne partagent pas la même horloge, ce qui est sans risque pour le client (l'OSS
+    // n'est jamais EN RETARD sur la cuisine) mais mérite d'être su avant de la retoucher.
     intervalMsWhenDisconnected: 2_000,
     backoffStartMs: 5_000,
     backoffCapMs: 30_000,

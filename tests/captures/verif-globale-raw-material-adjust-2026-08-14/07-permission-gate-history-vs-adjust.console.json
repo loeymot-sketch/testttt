@@ -1,0 +1,482 @@
+[
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/setting' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 9291,
+      "columnNumber": 0
+    },
+    "ts": 1786708510996
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/theme/theme-logo.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/login",
+      "lineNumber": 363,
+      "columnNumber": 0
+    },
+    "ts": 1786708511071
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/language?paginate=0&order_column=id&order_type=asc&status=5' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708511073
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/language/show/2' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708511073
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/item-category?paginate=0&order_column=sort&order_type=asc&status=5' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708511073
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/1/english.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708511143
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/item/thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708511143
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/1/english.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708511144
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/item/thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708511144
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/item/thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708511165
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/auth/login' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708511432
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/default/profile.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708511823
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/theme/theme-logo.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708512091
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/item/thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708512091
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/item/thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708512091
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/default/profile.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708512091
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/default/profile.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708512092
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/theme/theme-logo.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708512094
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/1/english.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512117
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/default/not-found.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512117
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/default-access' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708512118
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708512118
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/item?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708512118
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/setting/item-category?paginate=0&order_column=id&order_type=asc' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708512119
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/setting/tax?paginate=0&order_column=id&order_type=asc' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708512119
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/setting/branch/show/1' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708512252
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/galette.webp?v=1783357678' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512337
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/sandwich-classique.webp?v=1783791954' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512337
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/eau.webp?v=1783357678' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/fanta-fraise.webp?v=1783357678' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/lipton-framboise.webp?v=1783357679' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/fanta-citron.webp?v=1783357678' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/lipton-peche.webp?v=1783357679' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/tropico.webp?v=1783357680' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/coca-cherry.webp?v=1783357678' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar-oignons.webp?v=1783357678' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512338
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/admin/setting/item-category?paginate=0&order_column=id&order_type=asc",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1786708512362
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/default/profile.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708517277
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/default/profile.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708517278
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/setting' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 9291,
+      "columnNumber": 0
+    },
+    "ts": 1786708517291
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/auth/authcheck' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 9291,
+      "columnNumber": 0
+    },
+    "ts": 1786708517297
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/default-access' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 9291,
+      "columnNumber": 0
+    },
+    "ts": 1786708517298
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 9291,
+      "columnNumber": 0
+    },
+    "ts": 1786708517298
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/stock/unified-overview' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708517427
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/theme/theme-logo.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708517505
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/images/theme/theme-logo.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b34d7fe23a2f8c2bcdd10da7de94e0d4",
+      "lineNumber": 25643,
+      "columnNumber": 0
+    },
+    "ts": 1786708517506
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/setting/branch/show/1' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708517542
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/raw-materials/33/movements' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708518181
+  }
+]

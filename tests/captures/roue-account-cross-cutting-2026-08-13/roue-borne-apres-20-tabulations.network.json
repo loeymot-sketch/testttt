@@ -4,34 +4,34 @@
     "method": "POST",
     "status": 302,
     "duration_ms": null,
-    "ts": 1786641553482
+    "ts": 1786645416297
   },
   {
     "url": "http://localhost:8000/api/frontend/csp-report",
     "method": "POST",
     "status": 204,
     "duration_ms": null,
-    "ts": 1786641554389
+    "ts": 1786645417195
   },
   {
     "url": "http://localhost:8000/api/frontend/csp-report",
     "method": "POST",
     "status": 204,
     "duration_ms": null,
-    "ts": 1786641554390
+    "ts": 1786645417195
   },
   {
     "url": "http://localhost:8000/api/frontend/csp-report",
     "method": "POST",
     "status": 204,
     "duration_ms": null,
-    "ts": 1786641554403
+    "ts": 1786645417208
   },
   {
     "url": "http://localhost:8000/api/frontend/csp-report",
     "method": "POST",
     "status": 204,
     "duration_ms": null,
-    "ts": 1786641554404
+    "ts": 1786645417208
   }
 ]

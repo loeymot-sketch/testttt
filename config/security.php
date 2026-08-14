@@ -54,16 +54,42 @@ return [
     | (TcpPrinterTransport host) and MailRequest (mail_host).
     |
     | V1 LOCAL Le Cayenne: empty by default. Owner opts in via .env if a
-    | legit LAN-hosted printer needs allowlisting:
+    | legit internal printer host needs allowlisting.
     |
-    |     SAFE_REMOTE_HOST_ALLOWLIST=192.168.1.0/24
+    | [OWNER DECISION 2026-08-13 — option (b) "allowlist host+port FERMÉE"]
+    | Each entry carries its OWN port scope, and the host is only unlocked for
+    | the ports it names. Rationale: TcpPrinterTransport::send() performs a
+    | bare fsockopen($host,$port) and returns a distinct error per outcome, so
+    | a host-only allowlist would hand admin — and POS-Operator via testPrint —
+    | a port-scan oracle over all 65535 ports of the box. Scoping the port to
+    | the print bridge keeps the oracle closed.
     |
-    | Multiple subnets are comma-separated:
+    | Grammar (comma-separated):
     |
-    |     SAFE_REMOTE_HOST_ALLOWLIST=192.168.1.0/24,10.10.0.0/16
+    |     <IPv4 CIDR|IPv4>:<port>          192.168.1.20/32:9100
+    |     <IPv4 CIDR|IPv4>:<first>-<last>  127.0.0.1/32:9100-9103
+    |     <IPv4 CIDR|IPv4>                 LEGACY host-only (see below)
     |
-    | Each entry must be an IPv4 CIDR (a.b.c.d/n) or bare IPv4. IPv6 ranges
-    | are not supported by the allowlist (V1 LOCAL = IPv4-only printer LAN).
+    | Le Cayenne real architecture (per-station LOCAL print bridge, CLAUDE.md):
+    |
+    |     SAFE_REMOTE_HOST_ALLOWLIST=127.0.0.1/32:9100-9101
+    |
+    | Multiple entries:
+    |
+    |     SAFE_REMOTE_HOST_ALLOWLIST=127.0.0.1/32:9100-9101,192.168.1.0/24:9100
+    |
+    | LEGACY host-only entries (the 2026-05-24 format) are still UNDERSTOOD:
+    | they keep working for host-only fields (mail_host / MAIL_HOST boot guard,
+    | which have no port to scope), but they are REFUSED for port-aware fields
+    | (printer host) with an explicit error naming the required format — a
+    | host-only entry cannot express the closed variant, so we fail closed
+    | rather than silently granting every port. Symmetrically, a port-scoped
+    | entry does NOT unlock mail_host: allowlisting the print bridge must not
+    | open SMTP to loopback.
+    |
+    | Malformed entries (bad CIDR, port out of 1-65535, inverted range) are
+    | ignored — fail-closed. IPv6 ranges are not supported by the allowlist
+    | (V1 LOCAL = IPv4-only printer LAN); that is what makes ':' unambiguous.
     */
     'safe_remote_host_allowlist' => env('SAFE_REMOTE_HOST_ALLOWLIST', '')
         ? array_values(array_filter(array_map('trim', explode(',', env('SAFE_REMOTE_HOST_ALLOWLIST', '')))))

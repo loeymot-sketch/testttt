@@ -1,0 +1,44 @@
+[
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645405812
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645405812
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645405812
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645405813
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645405813
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645406340
+  }
+]

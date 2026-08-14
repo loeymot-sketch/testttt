@@ -89,47 +89,32 @@
                         </div>
                     </div>
                 </fieldset>
-                <fieldset class="p-4 mb-6 border border-[#DBDEE0]">
-                    <legend class="py-1.5 px-4 text-base font-semibold capitalize border border-[#DBDEE0] text-primary">
-                        {{ $t('menu.delivery_charge') }}
-                    </legend>
-                    <div class="form-row">
-                        <div class="form-col-12 sm:form-col-6">
-                            <label for="order_setup_free_delivery_kilometer" class="db-field-title required">
-                                {{ $t("label.free_delivery_kilometer") }}
-                            </label>
-                            <input v-on:keypress="floatNumber($event)"
-                                v-model="form.order_setup_free_delivery_kilometer"
-                                v-bind:class="errors.order_setup_free_delivery_kilometer ? 'invalid' : ''" type="text"
-                                id="order_setup_free_delivery_kilometer" class="db-field-control" />
-                            <small class="db-field-alert" v-if="errors.order_setup_free_delivery_kilometer">{{
-                                errors.order_setup_free_delivery_kilometer[0]
-                            }}</small>
-                        </div>
-                        <div class="form-col-12 sm:form-col-6">
-                            <label for="order_setup_basic_delivery_charge" class="db-field-title required">
-                                {{ $t("label.basic_delivery_charge") }}
-                            </label>
-                            <input v-on:keypress="floatNumber($event)" v-model="form.order_setup_basic_delivery_charge"
-                                v-bind:class="errors.order_setup_basic_delivery_charge ? 'invalid' : ''" type="text"
-                                id="order_setup_basic_delivery_charge" class="db-field-control" />
-                            <small class="db-field-alert" v-if="errors.order_setup_basic_delivery_charge">{{
-                                errors.order_setup_basic_delivery_charge[0]
-                            }}</small>
-                        </div>
-                        <div class="form-col-12 sm:form-col-6">
-                            <label for="order_setup_charge_per_kilo" class="db-field-title required">
-                                {{ $t("label.charge_per_kilo") }}
-                            </label>
-                            <input v-on:keypress="floatNumber($event)" v-model="form.order_setup_charge_per_kilo"
-                                v-bind:class="errors.order_setup_charge_per_kilo ? 'invalid' : ''" type="text"
-                                id="order_setup_charge_per_kilo" class="db-field-control" />
-                            <small class="db-field-alert" v-if="errors.order_setup_charge_per_kilo">{{
-                                errors.order_setup_charge_per_kilo[0]
-                            }}</small>
-                        </div>
-                    </div>
-                </fieldset>
+                <!--
+                    [DÉCISION OWNER 2026-08-14] LE BLOC « FRAIS DE LIVRAISON » A ÉTÉ RETIRÉ D'ICI.
+
+                    Il contenait trois champs — kilomètres offerts, frais de base, prix au
+                    kilomètre — que l'admin pouvait remplir et enregistrer sans que RIEN ne s'en
+                    serve. Vérifié par grep sur tout `app/` : `order_setup_free_delivery_kilometer`,
+                    `order_setup_basic_delivery_charge` et `order_setup_charge_per_kilo` n'avaient
+                    AUCUN lecteur métier ; ils ne faisaient qu'un aller-retour entre
+                    `OrderSetupRequest` et `OrderSetupResource`.
+
+                    Le VRAI calcul des frais de livraison est `DeliveryFeeService`, qui lit des
+                    colonnes de la table `branches` (`delivery_fee_base`, `delivery_fee_per_km`,
+                    `delivery_fee_minimum`, `free_km`) — des colonnes qui, elles, n'ont AUCUN écran
+                    d'administration à ce jour.
+
+                    Un réglage qui a l'air de marcher et ne fait rien est pire que pas de réglage :
+                    le gérant croit avoir changé ses frais de livraison, et rien ne bouge en caisse.
+                    On retire donc la promesse vide plutôt que de la laisser mentir.
+
+                    ⚠️ Les valeurs déjà enregistrées en base ne sont PAS supprimées (aucune perte de
+                    donnée) : elles cessent simplement d'être proposées à l'édition.
+                    ⛔ Ne pas remettre ces champs ici : le jour où l'on voudra rendre les frais de
+                    livraison réglables, c'est un écran sur les colonnes `branches` qu'il faut
+                    construire — pas ce formulaire-ci.
+                -->
+
                 <button type="submit" class="db-btn text-white bg-primary">
                     <i class="lab lab-save"></i>
                     <span>{{ $t("button.save") }}</span>
@@ -158,10 +143,12 @@ export default {
                 order_setup_food_preparation_time: null,
                 order_setup_schedule_order_slot_duration: null,
                 order_setup_takeaway: null,
-                order_setup_delivery: null,
-                order_setup_free_delivery_kilometer: null,
-                order_setup_basic_delivery_charge: null,
-                order_setup_charge_per_kilo: null
+                order_setup_delivery: null
+                // [DÉCISION OWNER 2026-08-14] Les 3 clés « frais de livraison » ont été retirées
+                // du formulaire ET de la charge utile envoyée — voir le commentaire au-dessus du
+                // fieldset supprimé. Les règles `required` correspondantes ont été retirées de
+                // `OrderSetupRequest` dans le même geste : les garder aurait fait échouer chaque
+                // enregistrement en 422 sur des champs que plus personne ne peut remplir.
             },
             enums: {
                 activityEnum: activityEnum
@@ -179,10 +166,7 @@ export default {
                     order_setup_food_preparation_time: res.data.data.order_setup_food_preparation_time,
                     order_setup_schedule_order_slot_duration: res.data.data.order_setup_schedule_order_slot_duration,
                     order_setup_takeaway: res.data.data.order_setup_takeaway,
-                    order_setup_delivery: res.data.data.order_setup_delivery,
-                    order_setup_free_delivery_kilometer: res.data.data.order_setup_free_delivery_kilometer,
-                    order_setup_basic_delivery_charge: res.data.data.order_setup_basic_delivery_charge,
-                    order_setup_charge_per_kilo: res.data.data.order_setup_charge_per_kilo
+                    order_setup_delivery: res.data.data.order_setup_delivery
                 }
                 this.loading.isActive = false;
             }).catch((err) => {

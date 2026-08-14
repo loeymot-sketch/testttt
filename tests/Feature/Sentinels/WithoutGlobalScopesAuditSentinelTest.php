@@ -129,13 +129,12 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         // l'indentation → ligne 146.
         // [SELF-AUDIT R3 2026-07-05] 146→158 : createFromUber a reçu la garde « annulation-avant-création »
         // (check pierre tombale webhook_events) au-dessus du dédup pluriel. Reste PLURIEL par design.
-        // [UBER-PHOTO 2026-08-12] Reste à 158 : le refactor qui extrayait la création vers
-        // UberOrderIngestor a été SORTI du déploiement (il vit dans l'historique, `4806b7b71`).
-        // Raison : la production fait tourner sa propre version non committée de ce contrôleur
-        // (events store, `pickup_time`, `resource_href`) qu'un déploiement aurait écrasée. Le
-        // canal photographié n'a pas besoin de ce refactor pour fonctionner ; la réconciliation
-        // appartient à qui porte le travail « menu push ».
-        'Http/Controllers/Webhook/UberWebhookController.php' => [158],
+        // [AUDIT-5SYS 2026-08-12 RETIRÉ] `Http/Controllers/Webhook/UberWebhookController.php:158`
+        // est SORTI de l'allowlist : le refactor différé depuis le 2026-08-12 (note ci-dessus,
+        // laissée pour l'historique) a fini par être fait — `createFromUber()` délègue désormais
+        // intégralement à `UberOrderIngestor::ingest()`, qui PORTE DÉJÀ le seul dédup pluriel
+        // nécessaire (site `Services/Uber/UberOrderIngestor.php:47` ci-dessous, inchangé). Dupliquer
+        // le site ici n'aurait plus de sens : il n'existe plus qu'un seul chemin de création.
         // [UBER-PHOTO 2026-08-10] Cat A — chemin de création du canal Uber PHOTOGRAPHIÉ. Le
         // dédup au niveau commande DOIT voir la commande quelle que soit la branche (l'appel
         // peut venir d'un contexte sans utilisateur authentifié) ET même soft-deleted (sinon une

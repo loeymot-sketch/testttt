@@ -39,9 +39,17 @@ use Illuminate\Support\Facades\Log;
  *    historiques ont `kitchen_ticket_printed_at` à NULL. Sans borne basse, le premier sondage
  *    viderait des centaines de tickets d'un coup. La fenêtre est donc de quelques minutes : un
  *    ticket plus vieux n'a de toute façon plus d'intérêt en cuisine.
- *  - **Caisse et téléphone sont exclus.** Ils impriment déjà leur ticket cuisine à
- *    l'encaissement ; les inclure ferait sortir DEUX papiers par commande. La liste des
- *    surfaces est le miroir exact de PrintKioskKitchenTicketOnOrderCreated.
+ *  - **Caisse et téléphone sont exclus DU COMPTOIR.** Le caissier imprime déjà (ou pas, à sa
+ *    main) leur ticket COMPTOIR à l'encaissement — un poste de ticket cuisine que rien
+ *    ne réclame côté serveur ; les inclure ici ferait sortir un DEUXIÈME papier comptoir.
+ *  - **[OWNER 2026-08-13 « je veux tout imprime direct »] Caisse et téléphone SONT inclus EN
+ *    CUISINE.** Avant ce jour, le poste cuisine (pont 9101) n'avait JAMAIS reçu le ticket d'une
+ *    vente caisse — seul le comptoir en avait un, et seulement si le caissier cliquait
+ *    « Imprimer ticket cuisine ». Un oubli de clic = zéro papier en cuisine, sans filet. Ce
+ *    canal-ci est sans risque de doublon avec le clic manuel : `tryCaisseBridge('kitchen')`
+ *    (ReceiptComponent.vue) POSTe au pont COMPTOIR (127.0.0.1:9100, le poste du caissier),
+ *    jamais au pont CUISINE (127.0.0.1:9101, un poste physiquement différent) — les deux
+ *    canaux visent des imprimantes distinctes, aucun ne peut doubler l'autre.
  *  - **Seules les commandes RELÂCHÉES en cuisine** (mêmes prédicats que le board : statut
  *    visible + paiement encaissé ou différé comptoir). Une commande dont le paiement est encore
  *    en vol ne doit pas produire de papier.
@@ -49,11 +57,19 @@ use Illuminate\Support\Facades\Log;
 class KitchenTicketQueueController extends Controller
 {
     /**
-     * Surfaces dont le ticket cuisine doit sortir automatiquement. Miroir EXACT de
-     * PrintKioskKitchenTicketOnOrderCreated — 'pos' et 'phone' en sont absents à dessein
-     * (ils impriment au checkout ; les ajouter ici doublerait le papier).
+     * Surfaces dont le ticket cuisine doit sortir automatiquement AU COMPTOIR (destination
+     * 'counter', pont 9100). 'pos' et 'phone' en sont absents à dessein : leur ticket comptoir
+     * sort déjà (ou pas) au clic caissier — les ajouter ici doublerait ce papier-là.
      */
-    private const SURFACES = ['kiosk', 'web', 'online', 'delivery', 'uber_eats'];
+    private const SURFACES_COMPTOIR = ['kiosk', 'web', 'online', 'delivery', 'uber_eats'];
+
+    /**
+     * [OWNER 2026-08-13] Surfaces dont le ticket cuisine doit sortir automatiquement EN CUISINE
+     * (destination 'kitchen', pont 9101) — 'pos' et 'phone' AJOUTÉS ICI SEULEMENT : ce poste n'a
+     * jamais eu de filet pour eux (cf. doc de classe). Additif au clic manuel comptoir, ne le
+     * remplace pas — le clic reste disponible pour une réimpression comptoir.
+     */
+    private const SURFACES_CUISINE = ['kiosk', 'web', 'online', 'delivery', 'uber_eats', 'pos', 'phone'];
 
     /** Nombre maximum de tickets réclamés par sondage — évite une rafale de papier. */
     private const MAX_PAR_CYCLE = 5;
@@ -109,7 +125,7 @@ class KitchenTicketQueueController extends Controller
                             ->orWhere('kitchen_ticket_claims.updated_at', '>=', $this->reclamationValideDepuis());
                     });
             })
-            ->whereIn('source_surface', self::SURFACES)
+            ->whereIn('source_surface', $destination === 'kitchen' ? self::SURFACES_CUISINE : self::SURFACES_COMPTOIR)
             ->whereIn('status', KitchenReleaseRule::visibleStatuses())
             ->where('created_at', '>=', now()->subMinutes($fenetreMinutes))
             ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))

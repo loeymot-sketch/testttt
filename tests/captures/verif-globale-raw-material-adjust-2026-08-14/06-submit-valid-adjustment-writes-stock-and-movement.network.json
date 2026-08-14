@@ -1,0 +1,16 @@
+[
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786708509667
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/admin/raw-materials/33/adjust",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1786708509729
+  }
+]

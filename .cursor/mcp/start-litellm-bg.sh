@@ -7,7 +7,7 @@
 #   # attends "✓ LiteLLM prêt"
 #   # puis lance/reload Cursor → graphiti MCP démarre en < 3s
 
-export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}"
+export PATH="/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}"
 
 # See start-graphiti-mcp.sh — DEBUG=release breaks LiteLLM Click (--debug must be boolean).
 unset DEBUG LITELLM_DEBUG 2>/dev/null || true
@@ -38,16 +38,16 @@ fi
 
 export MOONSHOT_API_BASE="${MOONSHOT_API_BASE:-https://api.moonshot.ai/v1}"
 
-if curl -sf "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1 && ! graphiti_litellm_models_healthy; then
-  echo "✗ Un proxy répond déjà sur :${PROXY_PORT} mais aucun modèle n'est sain (souvent clé Moonshot 401)."
+if curl -sf "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1 && ! graphiti_litellm_ready; then
+  echo "✗ Un proxy répond déjà sur :${PROXY_PORT} mais Graphiti n'a pas chat + embeddings utilisables."
   echo "  Arrête-le puis relance : bash ${REPO_DIR}/.cursor/mcp/stop-litellm.sh"
   graphiti_litellm_health_hint || true
   exit 1
 fi
 
 # Already running and models healthy?
-if curl -sf "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1 && graphiti_litellm_models_healthy; then
-  echo "✓ LiteLLM déjà actif sur :${PROXY_PORT} (modèles sains)"
+if curl -sf "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1 && graphiti_litellm_ready; then
+  echo "✓ LiteLLM déjà actif sur :${PROXY_PORT} (chat + embeddings sains)"
   exit 0
 fi
 
@@ -79,15 +79,15 @@ echo "PID : $(cat "${PID_FILE}")"
 echo "Attente démarrage (premier run = téléchargements fastembed ~90MB)..."
 
 for i in $(seq 1 90); do
-  if graphiti_litellm_models_healthy; then
-    echo "✓ LiteLLM prêt (modèles sains) en ${i}s sur :${PROXY_PORT}"
+  if graphiti_litellm_ready; then
+    echo "✓ LiteLLM prêt (chat + embeddings sains) en ${i}s sur :${PROXY_PORT}"
     echo "→ Lance Cursor maintenant. Graphiti MCP démarrera en < 3s."
     exit 0
   fi
   sleep 1
 done
 
-echo "✗ LiteLLM pas prêt après 90s (aucun modèle sain sur /health)."
+echo "✗ LiteLLM pas prêt après 90s (chat ou embeddings KO)."
 graphiti_litellm_health_hint || true
 echo "  tail -50 ${PROXY_LOG}"
 exit 1

@@ -108,10 +108,15 @@ return [
         ['key' => 'tiramisu',    'label' => 'Tiramisu',         'type' => 'free_item',      'value' => 0,   'weight' => 14, 'daily_cap' => 10, 'quantity' => 50,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_TIRAMISU', 51), 'cost_item_name' => 'Tiramisu'],
         ['key' => 'tarte',       'label' => 'Tarte Daim',       'type' => 'free_item',      'value' => 0,   'weight' => 12, 'daily_cap' => 10, 'quantity' => 50,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_TARTE', 50),    'cost_item_name' => 'Tarte Daim'],
         // Sandwichs : les lots chers. Le propriétaire a dit « 10 sandwiches, 10 burgers ».
-        ['key' => 'cheeseburger', 'label' => 'Cheese Burger',   'type' => 'free_item',      'value' => 0,   'weight' => 6,  'daily_cap' => 3,  'quantity' => 10,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_CHEESE', 98),  'cost_item_name' => 'Cheese Burger'],
-        ['key' => 'cayenne',     'label' => 'Cayenne',          'type' => 'free_item',      'value' => 0,   'weight' => 4,  'daily_cap' => 2,  'quantity' => 10,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_CAYENNE', 22),  'cost_item_name' => 'Cayenne'],
+        // `kitchen_prep` [AUDIT-5SYS 2026-08-12 P1] : ces 3 lots sont des plats PRÉPARÉS, pas des
+        // produits que l'équipe tend directement (boisson/frites/dessert). Sans ce marqueur,
+        // WheelDeliveryService n'a aucun moyen de savoir qu'un cadeau remis doit AUSSI être cuisiné —
+        // et rien (ticket, carte KDS) ne le signale ailleurs. Lu par
+        // WheelDeliveryService::requiertPreparationCuisine().
+        ['key' => 'cheeseburger', 'label' => 'Cheese Burger',   'type' => 'free_item',      'value' => 0,   'weight' => 6,  'daily_cap' => 3,  'quantity' => 10,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_CHEESE', 98),  'cost_item_name' => 'Cheese Burger', 'kitchen_prep' => true],
+        ['key' => 'cayenne',     'label' => 'Cayenne',          'type' => 'free_item',      'value' => 0,   'weight' => 4,  'daily_cap' => 2,  'quantity' => 10,  'cost_item_id' => (int) env('WHEEL_COST_ITEM_CAYENNE', 22),  'cost_item_name' => 'Cayenne', 'kitchen_prep' => true],
         // LA VITRINE. Poids 0 = affiché, jamais tiré. Curseur sur l'écran du propriétaire.
-        ['key' => 'terminator',  'label' => 'Terminator',       'type' => 'free_item',      'value' => 0,   'weight' => 0,  'daily_cap' => 1,  'quantity' => 1,   'cost_item_id' => (int) env('WHEEL_COST_ITEM_TERMINATOR', 105), 'cost_item_name' => 'Terminator'],
+        ['key' => 'terminator',  'label' => 'Terminator',       'type' => 'free_item',      'value' => 0,   'weight' => 0,  'daily_cap' => 1,  'quantity' => 1,   'cost_item_id' => (int) env('WHEEL_COST_ITEM_TERMINATOR', 105), 'cost_item_name' => 'Terminator', 'kitchen_prep' => true],
     ],
 
     /*

@@ -1,0 +1,34 @@
+[
+  {
+    "surface": "01-caisse-accueil",
+    "url": "http://localhost:8000/admin/pos",
+    "erreursJS": [],
+    "consoleErreurs": [],
+    "httpEnEchec": [],
+    "libellesBruts": []
+  },
+  {
+    "surface": "03-kds",
+    "url": "http://localhost:8000/admin/kitchen-display-system",
+    "erreursJS": [],
+    "consoleErreurs": [],
+    "httpEnEchec": [],
+    "libellesBruts": []
+  },
+  {
+    "surface": "04-borne-accueil",
+    "url": "http://localhost:8000/kiosk/idle",
+    "erreursJS": [],
+    "consoleErreurs": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "httpEnEchec": [
+      "401 POST /api/frontend/kiosk-event",
+      "401 GET /api/frontend/menu",
+      "401 GET /api/login"
+    ],
+    "libellesBruts": []
+  }
+]

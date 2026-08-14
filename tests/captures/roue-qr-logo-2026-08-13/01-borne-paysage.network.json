@@ -1,0 +1,37 @@
+[
+  {
+    "url": "http://localhost:8000/admin/roue/ouvrir",
+    "method": "POST",
+    "status": 302,
+    "duration_ms": null,
+    "ts": 1786645402602
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645403541
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645403543
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645403543
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1786645403554
+  }
+]

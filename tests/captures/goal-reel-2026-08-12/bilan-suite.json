@@ -1,0 +1,18 @@
+[
+  {
+    "surface": "07-admin-catalogue",
+    "url": "http://localhost:8000/admin/items",
+    "erreursJS": [],
+    "consoleErreurs": [],
+    "httpEnEchec": [],
+    "libellesBruts": []
+  },
+  {
+    "surface": "08-admin-stock",
+    "url": "http://localhost:8000/admin/stock/rupture",
+    "erreursJS": [],
+    "consoleErreurs": [],
+    "httpEnEchec": [],
+    "libellesBruts": []
+  }
+]

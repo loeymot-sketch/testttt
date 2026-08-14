@@ -1,0 +1,16 @@
+[
+  {
+    "url": "http://localhost:8000/admin/roue/ouvrir",
+    "method": "POST",
+    "status": 302,
+    "duration_ms": null,
+    "ts": 1786645409569
+  },
+  {
+    "url": "http://localhost:8000/admin/roue-validation",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1786645410908
+  }
+]

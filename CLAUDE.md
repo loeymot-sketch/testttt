@@ -429,13 +429,28 @@ Loi de Finance France — non-négociable, prison time si violé.
   ItemBranchAvailability, CashDrawerSession, CashMovement,
   DeliveryBoyCashSession, DeliveryBoyCashMovement,
   PendingPaymentConfirmation, PaymentTerminal, PushNotification,
-  DiningTable, Printer, **User**, StockOutflow (module repas/pertes 2026-07-31),
+  DiningTable, Printer, StockOutflow (module repas/pertes 2026-07-31),
   PromoFlyer (ticket promo nominatif 2026-08-07 — un ordre d'impression
   appartient à SA caisse, jamais à une autre),
   WheelSpin (roue de la fortune 2026-08-09),
   UberTicketCapture (ticket Uber photographié 2026-08-10 — une capture
   appartient à la caisse qui l'a prise, jamais à une autre).
 - Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
+- ⚠️ **`User` N'EST PAS ISOLÉ PAR BRANCHE — corrigé dans CE document le 2026-08-14 après
+  vérification en lecture de code (décision owner).** `User.php` enregistre bien le scope
+  (`static::addGlobalScope(new BranchScope())`), mais `BranchScope::apply()` fait un **no-op
+  EXPLICITE** dès que `$model instanceof User` (commentaire du code : « Never branch-filter the
+  authenticatable model »). Conséquence réelle : Chef/Waiter/Employee/DeliveryBoy/Customer n'ont
+  AUCUNE isolation multi-branche sur read/update/delete/show — seul `store()` est protégé, par
+  `EnforcesOwnBranchScope`. Ce document affirmait le contraire (« User » était listé parmi les
+  modèles scopés) : c'était FAUX, et un audit du 2026-08-13 l'avait déjà relevé sans le corriger.
+  **En V1 LOCAL mono-branche c'est sans effet** (une seule branche existe) ; c'est le jour d'un
+  vrai multi-succursales que ça devient un trou. Décision owner 2026-08-14 : **corriger la
+  DOCUMENTATION** (dire la vérité) plutôt que muter le comportement — le scoping réel de `User`
+  reste un chantier V2/cloud, à rouvrir avant tout multi-tenant.
+  ⚠️ `BranchScopeCoverageSentinelTest` ne vérifie que la PRÉSENCE TEXTUELLE du scope sur le
+  modèle, pas son comportement : il reste donc vert sur `User` alors que le filtrage ne s'applique
+  pas. Ne pas lui faire dire ce qu'il ne prouve pas.
 - **Exemptions documentées** (sentinel `EXEMPTED_MODELS`) :
   - `Branch` — self-reference (BranchScope sur Branch serait circulaire)
   - `Customer` — Sanctum customer-token recursion risk

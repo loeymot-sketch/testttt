@@ -2,7 +2,7 @@
 
 > **Owner : corrige les quantités, surtout les lignes ⚠️ À CONFIRMER.**
 > Ce n'est PAS une page blanche : chaque ligne est pré-remplie d'après nos règles maison.
-> Généré le 2026-08-12 18:07 par `php artisan raw-materials:fiche` — 27 produits couverts (15 pré-remplis, 12 à l'unité), 83 lignes de recette.
+> Généré le 2026-08-14 05:18 par `php artisan raw-materials:fiche` — 27 produits couverts (15 pré-remplis, 12 à l'unité), 83 lignes de recette.
 >
 > **Rappels gravés** : steak haché façonné maison = **75 g/pièce** (3 kg ≈ 40 pièces ; 
 > incohérence 68 g vs 75 g à trancher ici) · sauce maison = **25 g/dose** · cheddar & jambon 

@@ -3,6 +3,7 @@
 namespace App\Services\Uber;
 
 use App\Models\Item;
+use App\Models\Scopes\BranchScope;
 
 /**
  * [UBER-PHOTO 2026-08-10 · owner] Transforme un ticket Uber LU SUR PHOTO en une commande interne
@@ -314,7 +315,13 @@ final class UberPhotoOrderMapper
             return $defaut;
         }
 
-        $nom = Item::query()->withoutGlobalScopes()->whereKey($itemId)->value('name');
+        // [AUDIT-5SYS 2026-08-12 P2 — WithoutGlobalScopesAuditSentinelTest] `withoutGlobalScopes()`
+        // (pluriel) supprimait AUSSI le filtre de suppression douce sans le dire : un item retiré de
+        // la carte (soft-deleted) aurait quand même affiché son vrai nom sur le ticket cuisine. Item
+        // n'a pas de BranchScope (pas de portée par branche sur le catalogue), donc ce bypass est un
+        // no-op sur le branch-fence — seul le SoftDeletingScope reste actif, comme voulu : un item
+        // supprimé retombe sur `$defaut`, déjà géré juste en dessous.
+        $nom = Item::query()->withoutGlobalScope(BranchScope::class)->whereKey($itemId)->value('name');
 
         return is_string($nom) && $nom !== '' ? $nom : $defaut;
     }

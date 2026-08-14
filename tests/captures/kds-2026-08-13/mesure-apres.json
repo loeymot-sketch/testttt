@@ -1,0 +1,25 @@
+{
+  "m": {
+    "hauteurFenetre": 720,
+    "barrePresente": true,
+    "hauteurBarre": 44,
+    "basDeLaBarre": 106,
+    "hautDeLaPremiereCarte": 115,
+    "pourcentagePerduEnHaut": 16,
+    "rangeesDeBoutonsAuDessus": [
+      14,
+      70
+    ],
+    "boutonsDansLaBarre": {
+      "rupture": true,
+      "historique": true,
+      "noms": true,
+      "info": true,
+      "colonnes4": true,
+      "colonnes6": true,
+      "colonnes8": true
+    },
+    "bandeauPermanentVisible": false
+  },
+  "erreurs": []
+}

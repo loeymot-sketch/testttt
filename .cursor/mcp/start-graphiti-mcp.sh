@@ -5,7 +5,7 @@
 # FAST START: si LiteLLM tourne déjà (start-litellm-bg.sh), Graphiti démarre en < 3s.
 # COLD START: lance LiteLLM en background puis attend (40-90s premier run).
 
-export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}"
+export PATH="/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}"
 
 # Cursor / Rust / Android tooling often inject DEBUG=release. LiteLLM's Click CLI
 # maps env DEBUG to --debug and crashes: "Invalid value for '--debug': 'release'".
@@ -165,8 +165,8 @@ else
   LITELLM_PID=$!
 
   for i in $(seq 1 "${LITELLM_TIMEOUT}"); do
-    if graphiti_litellm_models_healthy; then
-      echo "[start-graphiti-mcp] LiteLLM prêt (modèles sains) en ${i}s (PID ${LITELLM_PID})" >&2
+    if graphiti_litellm_ready; then
+      echo "[start-graphiti-mcp] LiteLLM prêt (chat + embeddings sains) en ${i}s (PID ${LITELLM_PID})" >&2
       break
     fi
     if ! kill -0 "${LITELLM_PID}" 2>/dev/null; then
@@ -175,7 +175,7 @@ else
       exit 1
     fi
     if [[ "${i}" -eq "${LITELLM_TIMEOUT}" ]]; then
-      echo "[start-graphiti-mcp] ERREUR : timeout ${LITELLM_TIMEOUT}s — aucun modèle sain sur /health." >&2
+      echo "[start-graphiti-mcp] ERREUR : timeout ${LITELLM_TIMEOUT}s — LiteLLM incomplet (chat ou embeddings KO)." >&2
       graphiti_litellm_health_hint >&2 || true
       tail -n 30 "${PROXY_LOG}" >&2 || true
       exit 1
@@ -184,9 +184,9 @@ else
   done
 fi
 
-if ! graphiti_litellm_models_healthy; then
-  echo "[start-graphiti-mcp] ERREUR : LiteLLM sur :${PROXY_PORT} répond mais healthy_count=0 (aucun modèle utilisable)." >&2
-  echo "  Graphiti ne peut pas démarrer tant que le proxy n'a pas au moins un endpoint sain." >&2
+if ! graphiti_litellm_ready; then
+  echo "[start-graphiti-mcp] ERREUR : LiteLLM sur :${PROXY_PORT} répond mais Graphiti n'a pas chat + embeddings utilisables." >&2
+  echo "  Graphiti ne peut pas démarrer tant que le proxy ne répond pas aussi sur /v1/embeddings." >&2
   graphiti_litellm_health_hint >&2 || true
   echo "  Si un vieux LiteLLM tourne avec une mauvaise clé : bash ${REPO_DIR}/.cursor/mcp/stop-litellm.sh puis recharge le MCP Graphiti dans Cursor." >&2
   exit 1

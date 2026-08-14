@@ -17,7 +17,7 @@ class UberOrderMapper
 {
     /**
      * @param  array  $uberOrder  Payload complet de GET /v1/eats/orders/{id}
-     * @return array{queue_number:?string, display_id:?string, items:array<int,array>, total:float, raw_customer:?string}
+     * @return array{queue_number:?string, display_id:?string, items:array<int,array>, total:float, customer_name:?string, order_type:string}
      */
     public function map(array $uberOrder): array
     {
@@ -34,7 +34,15 @@ class UberOrderMapper
             'queue_number' => $this->shortDisplay($uberOrder),
             'items'        => $items,
             'total'        => (float) (($uberOrder['payment']['charges']['total']['amount'] ?? 0) / 100) ?: (float) ($uberOrder['total'] ?? 0),
-            'raw_customer' => (string) ($uberOrder['eater']['first_name'] ?? $uberOrder['customer']['name'] ?? ''),
+            // [AUDIT-5SYS 2026-08-12 P1] Clé alignée sur celle lue par UberOrderIngestor::orderAttributes()
+            // (`customer_name`) — avant, cette clé s'appelait `raw_customer` et n'était consommée nulle part :
+            // le webhook créait sa commande sans jamais poser pos_customer_name, seule la capture photo le faisait.
+            'customer_name' => (string) ($uberOrder['eater']['first_name'] ?? $uberOrder['customer']['name'] ?? ''),
+            // [AUDIT-5SYS 2026-08-12 P1] Pas de champ Uber Orders API vérifié en LIVE pour distinguer
+            // retrait/livraison (aucun accès production à ce jour) → on garde le comportement historique
+            // (toujours DELIVERY, cf. UberOrderIngestor::orderAttributes) plutôt que d'inventer un nom de
+            // champ non confirmé. À COMPLÉTER dès qu'un vrai payload Uber sera inspectable.
+            'order_type' => 'delivery',
         ];
     }
 

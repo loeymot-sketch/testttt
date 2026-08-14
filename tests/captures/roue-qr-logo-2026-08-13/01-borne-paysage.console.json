@@ -1,0 +1,62 @@
+[
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/8/conversions/coca-thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/roue-borne",
+      "lineNumber": 1203,
+      "columnNumber": 0
+    },
+    "ts": 1786645403474
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/7/conversions/frites-thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/roue-borne",
+      "lineNumber": 1203,
+      "columnNumber": 0
+    },
+    "ts": 1786645403474
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/8/conversions/coca-thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/roue-borne",
+      "lineNumber": 1203,
+      "columnNumber": 0
+    },
+    "ts": 1786645403474
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/7/conversions/frites-thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/roue-borne",
+      "lineNumber": 1203,
+      "columnNumber": 0
+    },
+    "ts": 1786645403474
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/8/conversions/coca-thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/roue-borne",
+      "lineNumber": 682,
+      "columnNumber": 0
+    },
+    "ts": 1786645403475
+  },
+  {
+    "level": "info",
+    "text": "Loading the image 'http://127.0.0.1:8766/storage/7/conversions/frites-thumb.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/admin/roue-borne",
+      "lineNumber": 682,
+      "columnNumber": 0
+    },
+    "ts": 1786645403475
+  }
+]

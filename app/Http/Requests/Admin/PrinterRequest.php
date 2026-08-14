@@ -37,12 +37,20 @@ class PrinterRequest extends FormRequest
             // SAFE_REMOTE_HOST_ALLOWLIST explicitly allowlists the subnet.
             // Hostnames pass through (DNS-rebind residual risk documented
             // in SafeRemoteHost docblock — V1.0.2 follow-up).
+            //
+            // [OWNER DECISION 2026-08-13 — option (b) "allowlist fermée"] The
+            // rule runs in PORT-AWARE mode here: the allowlist entry that
+            // unlocks an internal host must also cover the port, so
+            // allowlisting the local print bridge (127.0.0.1:9100-9101) does
+            // NOT re-open the fsockopen() port-scan oracle on the other 65533
+            // ports of the box. defaultPort mirrors TcpPrinterTransport::send()
+            // which dials 9100 when `port` is left blank.
             'host' => [
                 Rule::requiredIf(fn () => $this->input('type', 'escpos_tcp') === 'escpos_tcp'),
                 'nullable',
                 'string',
                 'max:64',
-                new \App\Rules\SafeRemoteHost(),
+                new \App\Rules\SafeRemoteHost(portField: 'port', defaultPort: 9100),
             ],
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'station' => ['nullable', 'string', Rule::in(['receipt', 'kitchen_hot', 'kitchen_cold', 'bar'])],

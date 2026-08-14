@@ -58,57 +58,311 @@
     "updateSourceMethod": "patch",
     "version": "1.58.2",
     "workers": 1,
-    "webServer": null
+    "webServer": {
+      "command": "php artisan serve --host=127.0.0.1 --port=8000",
+      "url": "http://127.0.0.1:8000",
+      "reuseExistingServer": true,
+      "timeout": 180000,
+      "stdout": "pipe",
+      "stderr": "pipe"
+    }
   },
   "suites": [
     {
-      "title": "Playwright/zz-web-t52-waveA.spec.js",
-      "file": "Playwright/zz-web-t52-waveA.spec.js",
+      "title": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+      "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
       "column": 0,
       "line": 0,
-      "specs": [
+      "specs": [],
+      "suites": [
         {
-          "title": "Wave A — vitrine, menu, wizard tacos, wizard crudités (lecture seule)",
-          "ok": true,
-          "tags": [],
-          "tests": [
+          "title": "verif-globale Wave D2 — RawMaterialAdjustComponent (fresh page CRUD proof)",
+          "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+          "line": 154,
+          "column": 6,
+          "specs": [
             {
-              "timeout": 300000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
+              "title": "01 — sidebar entry present, navigates to /admin/stock/raw-material-adjust",
+              "ok": true,
+              "tags": [],
+              "tests": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 20847,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-08-05T02:05:08.109Z",
+                  "timeout": 180000,
                   "annotations": [],
-                  "attachments": []
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8675,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:19:55.589Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "status": "expected"
+              "id": "7cca4a18866448f14a8a-45f9e058f988d624948c",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 184,
+              "column": 3
+            },
+            {
+              "title": "02 — list loads materials, search filter narrows the list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 110,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:06.331Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-d8f0826497678d5ef95e",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 201,
+              "column": 3
+            },
+            {
+              "title": "03 — open adjust panel, form pre-filled with current on_hand",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 82,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:06.451Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-36508fa61e716071f50f",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 221,
+              "column": 3
+            },
+            {
+              "title": "04 — empty reason: client-side guard blocks submit, zero network calls",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 571,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:06.543Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-7029fee22ddd8430ddfc",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 233,
+              "column": 3
+            },
+            {
+              "title": "05 — negative target: client-side guard blocks, THEN direct backend bypass proves 422 independently",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 640,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:07.120Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-8c7543b1639547ce9917",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 262,
+              "column": 3
+            },
+            {
+              "title": "06 — valid adjustment: read-after-write proof on BOTH the stock card AND the movement history",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 397,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:07.765Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-c3cc5fa42c56b8069b7e",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 301,
+              "column": 3
+            },
+            {
+              "title": "07 — permission gate: items_show-without-items_create sees read-only, adjust API 403s directly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8428,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:08.166Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-6508e99102fa579e98be",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 364,
+              "column": 3
+            },
+            {
+              "title": "08 — branch isolation: a branch-2 user cannot adjust or read a branch-1 material",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 99,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-14T11:20:16.599Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7cca4a18866448f14a8a-831f0bb924d1c0fe38a5",
+              "file": "e2e/verif-globale-raw-material-adjust-2026-08-14.spec.js",
+              "line": 409,
+              "column": 3
             }
-          ],
-          "id": "0972eb352bf2e8550213-016ad70488ab6daaf60b",
-          "file": "Playwright/zz-web-t52-waveA.spec.js",
-          "line": 135,
-          "column": 1
+          ]
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-05T02:05:07.123Z",
-    "duration": 22612.747,
-    "expected": 1,
+    "startTime": "2026-08-14T11:19:54.581Z",
+    "duration": 22709.681,
+    "expected": 8,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

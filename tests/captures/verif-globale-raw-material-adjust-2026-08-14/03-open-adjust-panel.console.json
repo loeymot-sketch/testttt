@@ -1,0 +1,12 @@
+[
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/admin/raw-materials/33/movements' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1786672782",
+      "lineNumber": 195,
+      "columnNumber": 0
+    },
+    "ts": 1786708508249
+  }
+]

@@ -7,30 +7,43 @@ admin.item_preview.load_error,Impossible de charger l'aperçu. Réessayez plus t
 admin.item_preview.no_kiosk_data,Article non disponible sur la borne pour cette succursale.,Article non disponible sur la borne pour cette succursale.
 admin.item_preview.no_pos_data,Article non disponible sur la caisse pour cette succursale.,Article non disponible sur la caisse pour cette succursale.
 admin.observability_outbox.exception,Exception,Exception
+admin.stock_mgmt.rail_variations,Variations,Variations
 allergens.gluten,Gluten,Gluten
+availability.button_label,Rupture,Rupture
+availability.empty,Aucun produit trouvé.,Aucun produit trouvé.
+availability.load_error,Impossible de charger les produits.,Impossible de charger les produits.
+availability.loading,Chargement des produits…,Chargement des produits…
+availability.mark_available,Disponible,Disponible
+availability.mark_rupture,En rupture,En rupture
+availability.options,Options,Options
+availability.options_error,Impossible de charger les options.,Impossible de charger les options.
+availability.options_loading,Chargement des options…,Chargement des options…
+availability.options_none,Aucune option pour ce produit.,Aucune option pour ce produit.
+availability.panel_title,Rupture produits,Rupture produits
+availability.search_placeholder,Rechercher un produit…,Rechercher un produit…
+availability.section_available,Disponibles,Disponibles
+availability.section_extras,Suppléments,Suppléments
+availability.section_rupture,En rupture,En rupture
+availability.section_variations,Variantes,Variantes
+availability.toggle_error,Échec de la mise à jour. Réessayez.,Échec de la mise à jour. Réessayez.
 button.add_item,Ajouter un article,Ajouter un article
 button.cancel,Annuler,Annuler
 button.clear,Effacer,Effacer
 button.close,Fermer,Fermer
 button.export,Exporter,Exporter
 button.filter,Filtrer,Filtrer
-button.kds_allergens_modal_close,Fermer,Fermer
 button.kds_recall,Annuler,Annuler
 button.release_table,Libérer la table,Libérer la table
 button.search,Rechercher,Rechercher
 button.transfer_table,Transférer la table,Transférer la table
 kiosk.a11y.contrast_aa,Standard,Standard
-kiosk.admin_screen.section_app,Application,Application
 kiosk.loyalty_screen.placeholder_phone,06 12 34 56 78,06 12 34 56 78
 kiosk.pay_screen.tr_sub,Edenred · Swile · Sodexo,Edenred · Swile · Sodexo
 kiosk.upsell_screen.skip_timer,({n}s),({n}s)
 kiosk.wizard.frites_sauce.ketchup,Ketchup,Ketchup
 kiosk.wizard.frites_sauce.mayo,Mayonnaise,Mayonnaise
-kiosk.wizard.step.sauce.fallback_ketchup,Ketchup,Ketchup
-kiosk.wizard.step.sauce.fallback_mayo,Mayonnaise,Mayonnaise
-kiosk.wizard.step.viande.fallback_merguez,Merguez,Merguez
-kiosk.wizard.step.viande.fallback_nuggets,Nuggets,Nuggets
 kiosk.wizard.summary.sauces,Sauces,Sauces
+label.accept,Acceptée,Acceptée
 label.action,Action,Action
 label.back,Retour,Retour
 label.composer.inactive,Inactive,Inactive
@@ -53,6 +66,7 @@ label.dine_in,Sur place,Sur place
 label.dinein_orders,Sur place,Sur place
 label.dismiss,Fermer,Fermer
 label.done,Terminées,Terminées
+label.encaisser_mode_mobile,Mobile,Mobile
 label.extras,Extras,Extras
 label.facebook,Facebook,Facebook
 label.floorplan,Plan de salle,Plan de salle
@@ -64,15 +78,12 @@ label.instagram,Instagram,Instagram
 label.instruction,Instruction,Instruction
 label.items,Articles,Articles
 label.items_board,Préparations,Préparations
-label.kds_allergens_badge,Allergènes,Allergènes
-label.kds_allergens_badge_aria,Voir les allergènes de cette commande,Voir les allergènes de cette commande
-label.kds_allergens_for_item,{item_name} : {allergens},{item_name} : {allergens}
-label.kds_allergens_modal_none,Aucun allergène déclaré pour cet article.,Aucun allergène déclaré pour cet article.
 label.kds_cuisine_chaude,Cuisine chaude,Cuisine chaude
 label.kds_cuisine_froide,Cuisine froide,Cuisine froide
 label.kds_group_by_table,Regrouper par table,Regrouper par table
 label.kds_sync_never,Pas encore synchronisé,Pas encore synchronisé
 label.kds_sync_stamp,Synchronisé il y a {ago},Synchronisé il y a {ago}
+label.kds_sync_uncertain,Synchro incertaine — actualiser,Synchro incertaine — actualiser
 label.kds_volume,Volume,Volume
 label.kiosk_tap_hint_placeholder,Touchez l'écran pour commander,Touchez l'écran pour commander
 label.kiosk_welcome_subtitle_placeholder,Commandez en quelques touches,Commandez en quelques touches
@@ -90,23 +101,33 @@ label.order_confirmed,Commande confirmée,Commande confirmée
 label.order_type,Type de commande,Type de commande
 label.payment_status,Statut paiement,Statut paiement
 label.paypal,Paypal,Paypal
+label.pos_customer_name_placeholder,Nom du client (optionnel),Nom du client (optionnel)
+label.pos_customer_phone_placeholder,Téléphone (optionnel),Téléphone (optionnel)
+label.pos_phone_order_cta,Commande téléphone,Commande téléphone
+label.pos_phone_order_hint,"Enregistrée + envoyée en cuisine, encaissée à l'arrivée du client","Enregistrée + envoyée en cuisine, encaissée à l'arrivée du client"
+label.pos_phone_order_success,Commande téléphone enregistrée — à encaisser à l'arrivée,Commande téléphone enregistrée — à encaisser à l'arrivée
 label.preparing,En préparation,En préparation
 label.received_amount,Montant reçu,Montant reçu
 label.reserved,Réservée,Réservée
 label.section,Section,Section
 label.select_customer,Sélectionner un client,Sélectionner un client
 label.source,Source,Source
+label.station,Station,Station
 label.status,Statut,Statut
+label.surface,Surface,Surface
+label.surfaces,Surfaces,Surfaces
 label.takeaway,À emporter,À emporter
 label.todays_order,Commandes du jour,Commandes du jour
 label.token_no,N° commande,N° commande
 label.total_amount,Montant total,Montant total
 label.total_orders,Total commandes,Total commandes
 label.total_sales,Total ventes,Total ventes
+label.transactions,Transactions,Transactions
 label.twitter,Twitter,Twitter
 label.unpaid,Non payé,Non payé
 label.youtube,Youtube,Youtube
 menu.catalog,Catalogue,Catalogue
+menu.communications,Communications,Communications
 menu.cookies,Cookies,Cookies
 menu.coupons,Coupons,Coupons
 menu.customers,Clients,Clients
@@ -126,21 +147,22 @@ message.no_data_available,Aucune donnée disponible.,Aucune donnée disponible.
 pos.barcode_not_found,Aucun article trouvé pour ce code-barres.,Aucun article trouvé pour ce code-barres.
 pos.cancel_last_line,Annuler la dernière ligne,Annuler la dernière ligne
 pos.cancel_last_line_error,Impossible d'annuler la dernière ligne.,Impossible d'annuler la dernière ligne.
-pos.cancel_order,Annuler la commande,Annuler la commande
 pos.cancel_order_cancel,Garder la commande,Garder la commande
 pos.cancel_order_confirm,Confirmer l'annulation,Confirmer l'annulation
 pos.cancel_order_done,Commande annulée.,Commande annulée.
 pos.cancel_order_error,Impossible d'annuler cette commande.,Impossible d'annuler cette commande.
 pos.discard,Supprimer,Supprimer
 pos.kiosk_counter_collect_short,À encaisser,À encaisser
-pos.no_sale_done,Tiroir ouvert.,Tiroir ouvert.
+pos.no_sale_done,Tiroir ouvert — ouverture enregistrée.,Tiroir ouvert — ouverture enregistrée.
 pos.no_sale_error,Impossible d'ouvrir le tiroir.,Impossible d'ouvrir le tiroir.
+pos.no_sale_untraced,"Tiroir ouvert, mais l'ouverture n'a PAS pu être enregistrée (session de caisse fermée ou serveur injoignable).","Tiroir ouvert, mais l'ouverture n'a PAS pu être enregistrée (session de caisse fermée ou serveur injoignable)."
 pos.orders.history,Historique,Historique
 pos.orders.view_detail,Voir le détail de la commande,Voir le détail de la commande
 pos.park,Mettre en attente,Mettre en attente
 pos.park_restore_error,Impossible de restaurer cette commande.,Impossible de restaurer cette commande.
 pos.parked_order_fallback_label,Commande sans libellé,Commande sans libellé
 pos.parked_orders,Commandes en attente,Commandes en attente
+pos.parked_orders_short,En attente,En attente
 pos.print_ticket_client,Ticket client,Ticket client
 pos.print_ticket_kitchen,Ticket cuisine,Ticket cuisine
 pos.reason_required_hint,Saisissez un motif d'au moins 3 caractères pour appliquer la remise.,Saisissez un motif d'au moins 3 caractères pour appliquer la remise.
@@ -151,9 +173,14 @@ pos.restore,Restaurer,Restaurer
 pos.tracker.active_orders,actives,actives
 pos.tracker.back_to_pos,Retour caisse,Retour caisse
 pos.tracker.button_hint,"Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête.","Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."
-pos.tracker.col_accept,Confirmées,Confirmées
+pos.tracker.cash_collect_cta,Encaisser,Encaisser
+pos.tracker.cash_due_label,À encaisser,À encaisser
+pos.tracker.col_accept,À encaisser,À encaisser
+pos.tracker.col_on_the_way,En livraison,En livraison
 pos.tracker.col_preparing,En préparation,En préparation
 pos.tracker.customer_screen,Écran client,Écran client
+pos.tracker.empty_accept,Aucune commande à encaisser.,Aucune commande à encaisser.
+pos.tracker.empty_on_the_way,Aucune commande en livraison.,Aucune commande en livraison.
 pos.tracker.empty_prepared,Aucune commande prête.,Aucune commande prête.
 pos.tracker.empty_preparing,Aucune commande en cuisine.,Aucune commande en cuisine.
 pos.tracker.history,Historique,Historique

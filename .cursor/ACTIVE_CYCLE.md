@@ -5,7 +5,7 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `(none)` |
+| **PHASE** | `none` |
 | **MASTER_TASK_ID** | |
 | **TASK_ID** | |
 | **PLAN_FILE** | |
