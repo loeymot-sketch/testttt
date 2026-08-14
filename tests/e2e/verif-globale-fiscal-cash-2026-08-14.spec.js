@@ -167,12 +167,25 @@ function seedUnpaidCardOrder() {
     return { orderId, customerId };
 }
 
+/**
+ * [test-e2e fix 2026-08-14] Does NOT delete the order. Discovered live: once
+ * this test's own action (mark-paid) allocates a `fiscal_sequence_no`, a DB
+ * trigger makes the row permanently undeletable —
+ *   SQLSTATE[45000]: 1644 NF525: order with fiscal_sequence_no cannot be
+ *   deleted — fiscal number reuse forbidden (P1-1)
+ * — which is CORRECT NF525 behavior (CLAUDE.md §8), not a bug to work
+ * around. An earlier version of this cleanup tried `Order::forceDelete()`
+ * anyway; the resulting QueryException aborted the tinker script before it
+ * reached the customer-user delete below, silently leaving BOTH rows behind
+ * every run. Only the throwaway customer (not fiscal-protected) is cleaned;
+ * the sealed order is left as a permanent, harmless synthetic fiscal record
+ * — exactly what the feature under test is supposed to produce.
+ */
 function deleteWaveCFixture(orderId, customerId) {
-    if (!orderId) return;
+    if (!customerId) return;
     try {
         tinker(`
-            \\App\\Models\\Order::withoutGlobalScopes()->whereKey(${orderId})->forceDelete();
-            ${customerId ? `\\App\\Models\\User::withoutGlobalScopes()->whereKey(${customerId})->forceDelete();` : ''}
+            \\App\\Models\\User::withoutGlobalScopes()->whereKey(${customerId})->forceDelete();
             echo 'ok';
         `);
     } catch (err) {
@@ -216,16 +229,28 @@ function createCashUser() {
     return { email, userId };
 }
 
-function deleteCashUserFixture(userId, sessionIds) {
+/**
+ * [test-e2e fix 2026-08-14] Does NOT delete cash_movements or
+ * cash_drawer_sessions rows. Discovered live — both tables carry the same
+ * NF525 append-only DB trigger family as `orders`/`audit_logs`:
+ *   SQLSTATE[45000]: 1644 cash_movements is immutable (NF525 / P0-FIX-4) —
+ *   DELETE forbidden
+ *   SQLSTATE[45000]: 1644 cash_drawer_sessions is immutable (NF525 /
+ *   P0-FIX-4) — DELETE forbidden
+ * — again correct behavior (CLAUDE.md §8 cash-trail invariant), not
+ * something to route around. An earlier version of this cleanup attempted
+ * the delete anyway; the QueryException aborted before the (harmless) user
+ * delete below ever ran, leaving every throwaway user AND its sessions
+ * behind on every single run. Only the throwaway Branch-Manager user
+ * (not fiscal-protected) is cleaned; its sessions/movements remain as
+ * permanent, harmless synthetic audit-trail rows — same acceptance already
+ * documented above for the 11 pre-existing dev-DB debris sessions.
+ */
+function deleteCashUserFixture(userId) {
+    if (!userId) return;
     try {
-        const ids = (sessionIds || []).filter((n) => Number.isInteger(n) && n > 0);
         tinker(`
-            $ids = [${ids.join(',')}];
-            if (count($ids) > 0) {
-                \\App\\Models\\CashMovement::withoutGlobalScopes()->whereIn('cash_drawer_session_id', $ids)->delete();
-                \\App\\Models\\CashDrawerSession::withoutGlobalScopes()->whereIn('id', $ids)->delete();
-            }
-            ${userId ? `\\App\\Models\\User::withoutGlobalScopes()->whereKey(${userId})->forceDelete();` : ''}
+            \\App\\Models\\User::withoutGlobalScopes()->whereKey(${userId})->forceDelete();
             echo 'ok';
         `);
     } catch (err) {
@@ -365,7 +390,7 @@ test.describe('Wave D1 — cash-drawer variance-reason regression (53b1dc6d6)', 
     });
 
     test.afterAll(() => {
-        deleteCashUserFixture(waveD1User.userId, waveD1SessionIds);
+        deleteCashUserFixture(waveD1User.userId);
     });
 
     test('02a-close-without-reason-still-422-guard-intact', async ({ page }) => {
