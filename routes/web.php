@@ -125,6 +125,7 @@ Route::get('/dl/{bridge}', function (string $bridge) {
     $map = [
         'caisse-bridge.js' => base_path('tools/caisse-bridge/caisse-bridge.js'),
         'borne-bridge.js' => base_path('tools/borne/bridge.js'),
+        'kitchen-bridge.js' => base_path('tools/kitchen-bridge/kitchen-bridge.js'),
     ];
     abort_unless(isset($map[$bridge]) && is_file($map[$bridge]), 404);
 
