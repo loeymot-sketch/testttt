@@ -96,7 +96,14 @@ describe('V1 admin sidebar cleanup', () => {
         // Compteur remonté DANS la session qui livre l'entrée, pas découvert plus tard.
         expect(text).toContain('menu.uber_photo');
         expect(text).toContain('menu.roue');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(17);
+        // [RAW-MATERIAL-ADJUST 2026-08-14] +1 : « Ajustement Stock » (GOAL_CAYENNE_FINITION
+        // §6 Vague 5) — RawMaterialStockService::adjust() existait, testée, sans aucun
+        // appelant ; la seule porte d'écriture manquante du domaine matière première
+        // (casse/vol/pesée fausse) a maintenant un écran. Même porte que le reste du stock
+        // (`items`), donc le même personnel → 18 rows. Compteur remonté DANS la session qui
+        // livre l'entrée, pas découvert plus tard.
+        expect(text).toContain('menu.raw_material_adjust');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(18);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.
