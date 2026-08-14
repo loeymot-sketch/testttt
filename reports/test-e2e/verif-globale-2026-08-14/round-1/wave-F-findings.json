@@ -1,0 +1,37 @@
+{
+  "wave": "F",
+  "round": 1,
+  "states_reviewed": 3,
+  "findings": [
+    {
+      "id": "F-001",
+      "state_artifact": "static:tests/Feature/Security/AdminApiEnforcementDirectCallTest.php",
+      "category": "claim_verification",
+      "severity": "none",
+      "evidence": "Fresh re-run of `php artisan test --filter=AdminApiEnforcementDirectCallTest` (added by 2381d0bfc): 6/6 passed (1.60s) -- 'chef direct call cannot mutate role permissions', 'chef direct call cannot create administrator account', 'chef direct call cannot read x report', 'chef direct call cannot close z report', 'settings holder can reach permission update 200', 'fiscal permission holder can reach x report 200'. No regression introduced by any of the 10 commits that landed on top of 2381d0bfc since it was authored. Confirms Wave F's claim.",
+      "fix_hint": null
+    },
+    {
+      "id": "F-002",
+      "state_artifact": "static:tests/Feature/Observability/SloEvaluatorJobTest.php + app/Services/Observability/SloMetricCollector.php:135",
+      "category": "claim_verification",
+      "severity": "none",
+      "evidence": "Fresh re-run of `php artisan test --filter=SloEvaluatorJobTest`: 5/5 passed (1.16s), including 'payment success rate counts real paid orders not a string literal' -- the specific regression-guard test for bd17406f1's fix. Independently re-grepped `app/Services/Observability/SloMetricCollector.php` for the fixed comparison: line 135 reads `->where('payment_status', PaymentStatus::PAID)`, an enum/int comparison, not the old string-literal 'paid' bug. Fix intact, no type-juggling regression reintroduced by any commit since.",
+      "fix_hint": null
+    },
+    {
+      "id": "F-003",
+      "state_artifact": "runtime:ssh lecayenne 'cd /var/www/lecayenne && git rev-parse HEAD'",
+      "category": "reporting_staleness",
+      "severity": "P3",
+      "evidence": "VPS HEAD is currently d402e4c38 (unchanged since Wave F's check -- confirms VPS itself has NOT moved, no surprise deploy happened). However, LOCAL HEAD has moved forward since Wave F's check: local is now 32b112a9d, and `git rev-list --count d402e4c38..HEAD` = 10, not 7. The 10 commits ahead (oldest first) are: bf7fffea6 (LOCK doc), f662a1277 (2nd-viande badge fix), 53b1dc6d6 (cash-drawer variance reason fix), 11019f363 (fiscal mark-paid fix), 60faeba6e (stock adjustment screen), dbbe877a3 (sentinel bump), b77465fdb (brain convergence), 9662e9fde (Wave B e2e test), 7fdb78184 (Wave D2 e2e test), 32b112a9d (Wave A e2e test). This is not a regression or a new defect -- it is simply that more work landed locally between Wave F's original check and this round-1 re-verification, as anticipated by the attack instruction. The 'VPS is behind, not deployed, flagged not fixed' conclusion still holds and is if anything reinforced (three of the newly-ahead commits are real un-deployed bug fixes: 11019f363, 53b1dc6d6, f662a1277). Flagging only so the '7 commits behind' figure quoted by Wave F is not silently treated as still-current -- the correct current figure is 10.",
+      "fix_hint": "When Wave F's summary is finalized/reported to the owner, state 'VPS is N commits behind local (N as of round-1 re-check), not deployed' rather than repeating the original '7' -- the count will keep drifting as work continues, so any report referencing an exact number should be timestamped or re-derived at read time."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 0, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 0, "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN"
+}

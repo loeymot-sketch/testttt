@@ -1,0 +1,47 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 4,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "plan-doc:AUDIT_PLAN.md#Wave-B",
+      "category": "other",
+      "severity": "P3",
+      "evidence": "AUDIT_PLAN.md and the GStack report describe the frozen-zone diff scope as '13 §7 frozen files'. Actually enumerating CLAUDE.md §7 (Frontend 8 items: 3 Kiosk components + PaymentComponent.vue + PosV5TrancheRow.vue + pos-wizard.js + pos-wizard.css + admin-pos-v4.blade.php; Backend NF525 3 items: FiscalSequenceService/ZReportService/AuditLogService; Backend multi-tenant 4 items: BranchScope/IdempotencyKeyMiddleware/PricingService/OrderStateMachine) yields 15 discrete files, not 13. Re-ran `git diff --stat 26667af86..HEAD` against the full 15-file list myself — result unchanged (only public/js/pos-wizard.js touched), so the miscount does not change the acceptance conclusion.",
+      "fix_hint": "Correct the '13 frozen files' figure to 15 in AUDIT_PLAN.md / future GStack reports to prevent an incomplete file list being used in some other wave where it would matter."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 0, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 0, "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "attack_results": {
+    "1_sha_recompute": {
+      "result": "CONFIRMED",
+      "detail": "git log -3 -- public/js/pos-wizard.js shows HEAD is f662a1277 (2026-08-14 04:37:14), no changes since GStack's run. Independently recomputed: shasum -a 256 public/js/pos-wizard.js = 24eaac96230b4f37fa26a24a2a71e2a05d6d81c9f7679a128f3b5835464560d3, byte-for-byte identical to the baseline entry in tests/Feature/Sentinels/frozen-zone-sha256-baseline.json. Also verified the baseline's PRE-patch value (bee8e8c8...) matches what was in the file at bf7fffea6~1, confirming the LOCK commit correctly re-aligned the baseline to the post-patch content rather than fabricating a match."
+    },
+    "2_frozen_diff_scope": {
+      "result": "CONFIRMED",
+      "detail": "Re-ran git diff --stat 26667af86..HEAD against the FULL 15-file §7 list (not the plan's cited 13, see B-001) — output shows exactly one file: public/js/pos-wizard.js | 22 ++++++++++++++++++-- (18 insertions, 4 deletions). No other frozen file touched in range."
+    },
+    "3_lock_doc_authenticity": {
+      "result": "CONFIRMED-SPECIFIC",
+      "detail": "plans/LOCK_POSWIZARD_VIANDE_BADGE_2026-08-14.md is concrete, not boilerplate: cites exact line numbers (~L3126, ~L3151, ~L3466, ~L3504), an exact before/after SHA pair matching git history, a literal owner-approved preview string ('1 incluse + 1 supp.'), 3 named options (a/b/c) with the chosen one explained, and a rollback plan tied to a specific git revert. Commit bf7fffea6 (04:37:05) precedes patch commit f662a1277 (04:37:14) by 9s, and bf7fffea6 is a direct git ancestor of f662a1277 — LOCK-first ordering confirmed structurally, not just by timestamp proximity."
+    },
+    "4_diff_matches_lock_claim": {
+      "result": "CONFIRMED-DISPLAY-ONLY",
+      "detail": "Read full diff of f662a1277 myself. All 4 hunks touch only string-rendering/textContent lines (quota-badge label text, tile counter textContent). Verified the variables involved (totalV, totalVSupplTop, totalSuppl, maxViandes, count, sup) are NOT introduced or recalculated by this diff — grep confirms totalVSupplTop and totalSuppl were already computed in the July 24 commit f06bc6be6, untouched here. VIANDE_SUPPL_PRICE, detectViandeCountFromData, and the click-routing logic in bindSinglePageEvents are absent from the diff entirely. No CSS class added to pos-wizard.css (also frozen) — confirmed via the diff, no changes to that file at all."
+    },
+    "5_fresh_reruns": {
+      "result": "CONFIRMED",
+      "detail": "npx vitest run tests/js/posWizardViandeSupplementUnified.spec.js -> 5/5 passed, independently re-run. npx playwright test tests/e2e/verif-globale-poswizard-badge-2026-08-14.spec.js --reporter=line -> 1 passed (19.7s) covering all 4 numbered states sequentially. Dev server was confirmed up (curl /login -> 200) before running."
+    },
+    "6_visual_inspection": {
+      "result": "CONFIRMED-CLEAN",
+      "detail": "Read all 4 PNGs directly. State 1: Sandwich Classique shows '1/1 incluse' badge + tile '✓ 1', clean layout, total €7.40. State 2: badge correctly reads '1 incluse + 1 supp.', orange '+1 supp. (+€2.50)' pill next to it, tile shows '+€2.50' tag, total €9.90 (7.40+2.50) -- no overlap, legible, colors distinct (green=included badge, orange=supplement). State 3 (Tacos L): badge correctly shows '2/2 incluses' (NOT the new supplement text), total €7.90 unaffected -- proves the patch is product-aware and doesn't leak into the free-2nd-viande product family. State 4: cart sous-total €17.80 = €9.90 + €7.90, numeric integrity holds. Also checked console.json/network.json for all 4 states: zero entries with level=error, zero HTTP >=400 across 210 total network entries -- only info-level CSP report-only violations (allowlisted noise per REVIEWER_PROTOCOL, not app errors)."
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "verif-globale-cashier-permission-2026-08-14/05-cashier-coupon-crud-still-403.network.json, .../07-chef-flyer-direct-api-403.network.json, .../08-daily-cap-429.network.json",
+      "category": "tooling_artifact_gap (not one of the 12 REVIEWER_PROTOCOL categories — a meta-finding about evidence completeness, not a product defect)",
+      "severity": "P3",
+      "evidence": "tests/e2e/helpers/mega-audit-snap.js:92 only wires `page.on('response', onResponse)`. States 05/07/08 issue their adversarial-core probes via `page.request.post(...)` (a separate Playwright APIRequestContext), which never fires the page's `response` event. Confirmed empirically: network.json for all three states is `[]` even though each state's underlying request legitimately returned 403/403/429. The REVIEWER_PROTOCOL 4-file quartet contract is therefore unfulfillable for API-only (non-UI) test steps — the artifact looks 'clean' regardless of what status code came back, so a reviewer relying on network.json alone (instead of also reading the spec's own `expect(resp.status())` assertions, as this review did) could be misled into false confidence OR could wrongly flag a false 'category 6/10 violation' for a state where nothing is actually wrong.",
+      "fix_hint": "Not a product bug — no code or business-logic fix needed. If the project wants network.json to be authoritative for API-only states too, mega-audit-snap.js's recorder would need to also intercept `page.context().request` (or the spec would need to route API probes through page.evaluate(fetch) so they hit the page's own network stack). Documented here so a future reviewer doesn't misinterpret an empty network.json on an API-only state as either a false pass or a false P0/P1."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 0, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 0, "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "attack_log": {
+    "1_state05_403_not_misread": {
+      "question": "Is state 05's 403 genuinely a permission denial, or could it be a 422 (missing fields) or 404 (route absent) that Playwright's status check happens to also treat as 'not 200'?",
+      "verified": "Route confirmed real: routes/api.php:807 `Route::post('/', [CouponController::class, 'store'])` inside the `coupon.` prefix group -> CouponController::store exists (app/Http/Controllers/Admin/CouponController.php:41). The test asserts `resp.status()` equals EXACTLY 403 (not 'not-200'), so a 422/404 would fail the assertion, not pass it — I re-ran the spec fresh and state 05 passed (403 exactly), and separately confirmed via DB check `Coupon::where('code','WAVEA-LEAK-CHECK')->exists()` = ABSENT. Additionally found a SECOND, independent confirmation the GStack report didn't mention: CouponRequest::authorize() (app/Http/Requests/CouponRequest.php:24-28) ALSO independently gates on `coupons_create`/`coupons_edit` — so even if the controller-level middleware were ever removed, the FormRequest's own authorize() would still 403 a pos-flyer-print-only cashier for the same correct reason. Two independent layers, same correct verdict, neither referencing pos-flyer-print. Payload completeness (missing name/start_date/end_date/etc.) is irrelevant since authorization runs before FormRequest validation in Laravel's request lifecycle — confirmed a 403 cannot be a validation-rules artifact here."
+    },
+    "2_pos_flyer_print_leak_grep": {
+      "question": "Does pos-flyer-print really gate ONLY PromoFlyerController, confirmed by a repo-wide grep (not just the files GStack cited)?",
+      "verified": "Ran `grep -rln 'pos-flyer-print' --exclude-dir={node_modules,vendor,storage,.git} .` across the ENTIRE repo. Full hit list: database/migrations/2026_08_13_190000_grant_pos_flyer_print_to_cashier.php, database/seeders/PermissionTableSeeder.php, database/seeders/RolePermissionTableSeeder.php, app/Http/Controllers/Admin/PromoFlyerController.php, app/Services/Promo/PromoFlyerService.php, resources/js/components/admin/pos/PosOrdersTrackerComponent.vue, resources/js/components/admin/promo/PromoFlyerComponent.vue, tests/TestCase.php, tests/Feature/Promo/PromoFlyerCashierAccessTest.php, tests/e2e/verif-globale-cashier-permission-2026-08-14.spec.js, 5 compiled JS bundles (expected — these are the Mix-compiled output of the two .vue files above), and this audit's own docs. Zero hits in CouponController.php, CouponRequest.php, or routes/api.php. `permission:pos-flyer-print|coupons_create|settings` scopes exactly `store`/`reprint`/`revoke` on PromoFlyerController (app/Http/Controllers/Admin/PromoFlyerController.php:57,68) — confirmed by direct read, not trusted from the report."
+    },
+    "3_state08_live_count_not_hardcoded": {
+      "question": "Does state 08 read the REAL current daily count before flooding to the cap, or does it hardcode an assumption of 0?",
+      "verified": "tests/e2e/verif-globale-cashier-permission-2026-08-14.spec.js:127-133 `dailyCountFor(email)` shells out to `app(PromoFlyerService::class)->dailyCountForUser((int)$u->id)` via tinker — a live DB read, not a hardcoded constant. Line 500-501: `const alreadyToday = dailyCountFor('pos@lecayenne.fr'); const toCreate = Math.max(0, DAILY_CAP - alreadyToday);` — genuinely dynamic. Cross-checked PromoFlyerService::dailyCountForUser (app/Services/Promo/PromoFlyerService.php:264-270) counts `PromoFlyer::withoutGlobalScope(BranchScope)->where('created_by_user_id',$userId)->where('created_at','>=', today start)` — matches exactly what the 429 gate itself checks (PromoFlyerController.php:147: `! $user->hasRole('Admin') && $this->service->dailyCountForUser(...) >= DAILY_CAP_PER_USER`), so the spec's flood-to-cap arithmetic and the production gate use the identical counting method — no boundary mismatch possible. There's also a `beforeAll` guard (`resetCashierDailyQuotaIfExhausted`) that back-dates any of today's flyers by one day if a same-day re-run would otherwise start already-exhausted — a legitimate self-healing mechanism, not a weakening of the cap assertion (state 08 still floods to the REAL live cap from wherever the count starts)."
+    },
+    "4_independent_rerun": {
+      "question": "Re-run the spec and the PHPUnit test fresh, independently of the GStack report's claim.",
+      "verified": "`npx playwright test tests/e2e/verif-globale-cashier-permission-2026-08-14.spec.js --project=chromium --workers=1 --retries=0 --reporter=list` => 9/9 passed (1.4m), including the bonus Branch Manager DB-level check. `php artisan test --filter=PromoFlyerCashierAccessTest` => 7/7 passed (2.09s). Both re-runs done from a cold state by this reviewer, not copy-pasted from the GStack report."
+    },
+    "5_cleanup_no_orphans": {
+      "question": "Query the DB post-run for any promo_flyers/coupons rows created by this spec that are NOT properly revoked.",
+      "verified": "Queried promo_flyers for created_by_user_id=pos@lecayenne.fr within the last 2 hours: 40 rows (1 from state 02 + 39 from state 08's flood; the 40th cap-hit request correctly created NO row). Joined to their coupon_id and checked Coupon.status: `NON_REVOKED_ACTIVE_COUPON` count = 0 — every coupon backing these flyers is Status::INACTIVE (10), confirming afterAll's revokeFlyers() successfully soft-revoked (not deleted, per the product's own append-only design docblock in PromoFlyerController::revoke) all 40. No orphaned active -10% coupons left live in the dev DB."
+    },
+    "6_visual_check": {
+      "question": "Read the screenshots — does the cashier UI genuinely look right?",
+      "verified": "Read 01, 02, 06, 08 .png via the Read tool (multimodal). State 01: tracker header shows the pink 'Ticket promo' button plus a per-card 🎟️ 'Ticket promo' button on the E2E Uber Eats platform-order card in 'EN PRÉPARATION' — no overlap, no i18n leak, French labels correct. State 02: success modal 'Ticket promo' shows 'Ticket envoyé à la caisse. Code créé : CAISSIERE2EW-92PN' with a legible 'Imprimer un autre ticket' button, no layout break, no raw label. State 06 (Chef): router-level redirect fires a clean red permission-denied banner 'Permission requise pour accéder à cette page : pos-orders' and lands Chef back on their own dashboard — no promo-flyer UI ever rendered. State 08: incidental screenshot of the POS wizard shell (the test does its cap-flood via page.request without navigating, so the snapshot just shows wherever loginAsPosOperator leaves the page) — clean layout, not a defect. No console errors (0 in every state.console.json checked) and no unexpected >=400 network entries in the events the recorder DOES capture (page-navigation traffic)."
+    }
+  }
+}

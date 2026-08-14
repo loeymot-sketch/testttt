@@ -1,0 +1,37 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 3,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "static:docs/runbooks/IMPRESSION_AUTO_CUISINE.md:3,66 + app/Console/Commands/KitchenPrinterSetupCommand.php:13",
+      "category": "stale_reference_adjacent",
+      "severity": "P2",
+      "evidence": "GStack's claim covers exactly 6 launcher files (3 kitchen + 3 counter, verified). There IS a 7th and 8th place referencing a 'kitchen printer' that GStack's grep scope did not include: docs/runbooks/IMPRESSION_AUTO_CUISINE.md ('Imprimante: Epson TM-m30 (modele M335B) - IP statique 192.168.192.168 - port 9100', diagram 'SERVEUR --TCP 9100--> Epson TM-m30') and app/Console/Commands/KitchenPrinterSetupCommand.php:13 ('L'imprimante (Epson TM-m30, IP fixe)'). These describe a COMPLETELY DIFFERENT printing mechanism (direct server-side TCP/IP ESC/POS via the Printer DB model + config/printing.php driver=tcp) than the one 0fe79b167 fixed (Windows-named-printer-queue via the local kitchen-bridge.js/9101 bridge, driver=windows_raw equivalent). Neither the runbook nor the command uses the literal strings 'Epson TM-m30 Cuisine' or 'Epson TM-m30II', so there is no name COLLISION with the bridge fix, and this is not the counter/kitchen cross-contamination the plan warned about. But it is a genuine, unresolved architecture ambiguity in the repo: a runbook titled 'Impression automatique du ticket cuisine' that instructs an operator to run `php artisan kitchen:printer --host=192.168.192.168 --port=9100`, which is NOT the mechanism actually wired to the KDS auto-print path documented in PROJECT_BRAIN.md 2026-08-14 (kitchen-bridge.js on 127.0.0.1:9101 against a Windows print-queue name). An operator following this runbook literally would configure the wrong printer target. Not in scope of the Wave E acceptance criteria (which only concerned the 6 launcher files + the test), so it does not invalidate GStack's specific claim, but it is a real, verifiable inconsistency adjacent to the same feature area that neither GStack's static verification nor the AUDIT_PLAN's numbered check enumerated.",
+      "fix_hint": "Either mark docs/runbooks/IMPRESSION_AUTO_CUISINE.md as superseded/historical (if the TCP-direct Printer-model path was abandoned in favor of the Windows-bridge path), or clarify in both docs which of the two kitchen-print mechanisms is currently live in production, to prevent an operator from configuring the wrong one during an incident."
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "static:tools/bridge-service/*.ps1,*.vbs + tools/kitchen-bridge/kitchen-bridge.js + tools/bridge-service/install-caisse-service.ps1,start-caisse-bridge-hidden.vbs + tools/caisse-bridge/caisse-bridge.js",
+      "category": "claim_verification",
+      "severity": "none",
+      "evidence": "Independent grep of the 6 launcher files confirms GStack's claim exactly: all 3 kitchen artifacts (install-kitchen-service.ps1:31,48; start-kitchen-bridge-hidden.vbs:44; kitchen-bridge.js:47) consistently say 'Epson TM-m30 Cuisine'. All 3 counter artifacts (install-caisse-service.ps1:28,45; start-caisse-bridge-hidden.vbs:42; caisse-bridge.js:53) are unchanged at 'Epson TM-m30II'. No cross-contamination. tests/Feature/Kitchen/KitchenTicketAutoPrintTest.php:82 already encodes 'Epson TM-m30 Cuisine'. Re-ran `php artisan test --filter=KitchenTicketAutoPrintTest` fresh: 16/16 passed (3.58s), matching the claim.",
+      "fix_hint": null
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "static:tools/deploy-vps.sh:48-82 (VERIF 1 block) + node_modules/laravel-mix/src/webpackPlugins/ManifestPlugin.js + node_modules/laravel-mix/src/File.js:218-228",
+      "category": "claim_verification",
+      "severity": "none",
+      "evidence": "Re-derived the VERIF 1 logic independently by reading tools/deploy-vps.sh directly (not GStack's paraphrase): DEPLOY_START is stamped at line 21, BEFORE `npm run production` runs at line 38. VERIF 1 (lines 63-71) checks ONLY mix-manifest.json's own mtime against DEPLOY_START -- it never compares individual bundle mtimes to DEPLOY_START (only existence, lines 72-82). GStack's empirical dry-run could not be independently re-run because the throwaway scratch script was not committed (as expected -- 'throwaway'), so instead an independent proof was constructed from a different angle: read laravel-mix's actual ManifestPlugin.js source. It hooks webpack's `emit` event (which fires on EVERY compilation, unconditionally) and calls `this.mix.manifest.transform(stats).refresh()`, and Manifest.refresh() -> File.write() calls `fs.writeFileSync()` unconditionally -- there is no content-comparison or skip-if-unchanged logic anywhere in the manifest-write path (only individual webpack ASSET emission uses compareBeforeEmit, not the manifest file). This independently corroborates, from primary source rather than trusting GStack's paraphrase or dry-run, that mix-manifest.json's mtime is refreshed on every build regardless of whether referenced bundle content changed -- so VERIF 1 cannot false-rollback on a byte-identical rebuild. The dry-run's representativeness could not be assessed directly (script no longer exists) but is now moot since the source-level proof is stronger and reaches the same conclusion.",
+      "fix_hint": null
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 1, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 1, "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN"
+}

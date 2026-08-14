@@ -1,0 +1,64 @@
+{
+  "wave": "C+D1",
+  "round": 1,
+  "states_reviewed": 3,
+  "findings": [
+    {
+      "id": "CD1-001",
+      "state_artifact": "test-e2e-verif-globale-fiscal-cash-2026-08-14/01-mark-paid-dropdown-sets-payment-method.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "Screenshot shows the entire admin order-detail page rendered at very low opacity (near-invisible: navbar, order header, dropdowns, totals all faded). Root cause identified by reading resources/css/app.css:336-337 — `.backdrop { opacity-0 ... transition } .backdrop.active { opacity-100 }` is a page-wide semi-opaque (bg-black/60) overlay shared by every `.dropdown-group` (declared once at the top of BackendNavbarComponent.vue: `<div class=\"backdrop\"></div>`). The capture fires immediately after `Promise.all([page.waitForResponse(...), paidOption.click()])` resolves, with no wait for the backdrop's CSS transition to finish closing after the dropdown selection — so the snap() caught mid-fade. This is a test-capture-timing artifact (one animation frame), not a real production rendering defect: functional correctness is proven independently by the DB-level assertions (after.pos_payment_method, after.payment_status, after.fiscal_sequence_no), and a real cashier would never see this half-second transitional frame as a static state.",
+      "fix_hint": "Optional spec polish only: await a short `page.waitForTimeout(350)` or `.dropdown-group:not(.active)` state before snap('01-...') if a crisper screenshot is wanted for future visual-diff baselines. Not blocking."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 0, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 0, "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "attack_log": [
+    {
+      "attack": "1. Re-verify '.dropdown-group .dropdown-btn' text-scoped-by-\"Non payé\" selector genuinely disambiguates from navbar",
+      "method": "Read resources/js/components/layouts/backend/BackendNavbarComponent.vue in full (lines 1-130) — 4 dropdown-btn buttons exist: branch selector (text = branch.name), language switcher (text = language.name), a router-link with dropdown-group class but no dropdown-btn class (KDS shortcut), and the profile menu (text = 'Bonjour ' + user name). None render fr.json label.unpaid ('Non payé', fr.json:784) or label.paid ('Payé', fr.json:783) anywhere, including no notification badge with that text. Also read OnlineOrderShowComponent.vue (the actual page) — 3 dropdown-group elements exist there: delivery-boy assign (hidden, order_type!=DELIVERY for this TAKEAWAY fixture), payment-status (button text = paymentStatusEnumArray[order.payment_status], target), order-status (button text = orderStatusEnumArray[order.status], distinct enum, never 'Non payé'). Selector is provably unique on the page.",
+      "verdict": "CONFIRMED REAL — the fix is a genuine disambiguation, not cosmetic."
+    },
+    {
+      "attack": "2. Verify PosMethodFromGateway::appliquer() guard at line 71 is real, and the fixture genuinely starts pos_payment_method=NULL",
+      "method": "Read app/Services/Payments/PosMethodFromGateway.php in full — `if ($order->pos_payment_method !== null) { return; }` is real, unconditional guard code (not a docblock claim). Read app/Services/OrderService.php:2638-2870 (changePaymentStatus) — confirms the call site `app(PosMethodFromGateway::class)->appliquer($locked)` at line 2868, placed right after `$locked->save()` seals PAID, inside the same locked DB transaction. Checked database/factories/OrderFactory.php — no `fiscal_sequence_no` or `pos_payment_method` default is set anywhere in the factory (grep returns zero hits for fiscal_sequence_no in the factory file), and the spec's seedUnpaidCardOrder() explicitly overrides `pos_payment_method => null`. The spec's own test additionally re-reads the fixture from the DB (readOrderPaymentColumns, not a cached model) BEFORE acting and asserts `before.pos_payment_method` is null and `before.payment_status` is UNPAID(10) — this is a genuine pre-condition check baked into the test, not merely claimed in a comment.",
+      "verdict": "CONFIRMED REAL — guard exists, fixture genuinely starts NULL, the test exercises the actual overwrite-guard-bypass path (order.pos_payment_method WAS null, so appliquer() actually writes CARD(2))."
+    },
+    {
+      "attack": "3. Is the fiscal_sequence_no assertion doing real work, or could it already be non-null before the mark-paid action?",
+      "method": "Read app/Services/OrderService.php:2803-2814 — fiscal_sequence_no allocation for this exact code path (`$targetPaymentStatus === PAID && $locked->fiscal_sequence_no === null && ...`) happens INSIDE changePaymentStatus() itself, at seal time, not at order creation. Confirmed database/factories/OrderFactory.php's definition() never sets fiscal_sequence_no (nullable column per migration 2026_04_22_000001, no DB default). The fixture is created via Order::factory()->create() with status=ACCEPT (not PAID), so no other seal point (POS create OrderService:1117, confirmCounterPayment PaymentService:335-337, kiosk TPE FrontendOrderService:1232 — none of which this fixture's creation path touches) would have allocated a sequence number ahead of time. No OrderObserver auto-allocates it either (grep for an OrderObserver touching fiscal_sequence_no returns nothing).",
+      "verdict": "CONFIRMED REAL — the assertion measures an actual NULL-to-non-NULL transition caused by this test's own action, not a pre-existing value."
+    },
+    {
+      "attack": "4. Re-derive the CashDrawerService.js historical bug and confirm the current fix genuinely includes variance_reason in the outgoing payload",
+      "method": "Read `git show 53b1dc6d6 -- resources/js/services/CashDrawerService.js resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue` — the diff shows closeSession() previously posted `{}` (literal empty body, confirmed by the removed comment 'body: {} (calculates expected + variance server-side)') to /reconcile, discarding the `varianceReason` parameter entirely. The fix changes the call to `const reconcileBody = varianceReason ? { variance_reason: varianceReason } : {}; ... client().post(.../reconcile, reconcileBody, ...)`. Traced the wiring further upstream: PosCashDrawerSessionDialog.vue:229 binds `v-model=\"varianceReason\"` on `[data-testid=cash-session-reason-input]`, submitClose() (line 521-536) dispatches Vuex action `cashDrawer/closeSession` with `varianceReason: this.varianceReason || null` (line 530), and the Vuex module (resources/js/store/modules/cashDrawer.js:129-138) passes it straight through to CashDrawerService.closeSession(). Full chain from typed input to network body is real code, not a partial/cosmetic patch.",
+      "verdict": "CONFIRMED REAL — this is a genuine bug-fix, and the wiring from the reason `<textarea>` to the POST body is intact end-to-end."
+    },
+    {
+      "attack": "5. Does state 02a reach the 422 via a page.request bypass that could mask a UI-level regression?",
+      "method": "Read PosCashDrawerSessionDialog.vue:225-257 — the real submit button has `:disabled=\"loading || varianceReasonMissing\"`, and varianceReasonMissing (line 405-408) requires the trimmed reason to be >= 3 chars whenever varianceRequiresReason is true. This makes it structurally IMPOSSIBLE to click a real UI submit button with an empty/short reason when a reason is required — so testing the empty-body 422 guard necessarily requires an API-level bypass; there is no UI path that could exercise it. State 02b (the very next test, same describe block) DOES drive the full real UI path — real click on `[data-testid=cash-session-open-submit]`, real `.fill()` on the reason textarea, real click on `[data-testid=cash-session-close-submit]` — and asserts the actual `page.on('request')`-captured network body. Between the two tests, both the client-side guard (02a implicitly, via reading the disabled logic) and the server-side guard (02a explicitly) and the real UI wiring (02b) are each independently proven.",
+      "verdict": "CONFIRMED REAL — 02a's page.request bypass is the only viable way to exercise this specific guard (the UI cannot reach it), and it does not substitute for the real-UI proof, which 02b independently supplies."
+    },
+    {
+      "attack": "6. Fresh re-run (x2) + backing PHPUnit",
+      "method": "Ran `npx playwright test tests/e2e/verif-globale-fiscal-cash-2026-08-14.spec.js` twice in a row: run 1 = 3 passed (34.6s), run 2 = 3 passed (36.7s). Ran `php artisan test tests/Feature/Fiscal/` = 302 passed, 8 skipped (matches commit's own claim exactly). Ran `php artisan test --filter=CashDrawerCloseVarianceTest` = 4 passed. Ran `npx vitest run tests/js/cashDrawerServiceReconcileReason.spec.js` = 2 passed. Ran frozen-zone diff across all 13 §7 files from `63cf19de0~1..HEAD` — zero lines changed in any of them (exit 0, empty diff).",
+      "verdict": "STABLE GREEN across 2 runs, all backing suites green, zero frozen-zone touch."
+    },
+    {
+      "attack": "7. Visual read of the 2 captured screenshots",
+      "method": "Read both PNGs via the Read tool. 01-mark-paid: page content correct (order #ORD-9603-LR, 'Payé' badge, 'En Préparation' status, correct French labels, totals 28,26€/0,00€/6,20€ readable) but rendered at low opacity due to a page-wide `.backdrop` CSS transition mid-fade at capture time (see finding CD1-001, P3, non-blocking — traced to resources/css/app.css:336-337, a capture-timing artifact, not a production defect). 02b: clean POS 'Commande rapide' screen, correct French copy ('Ouvrir tiroir', 'Encaissement', 'À encaisser — Comptoir'), amounts correctly formatted (11,10€, 8,30€, 0,00€), no layout breaks, no raw i18n keys, no overlap.",
+      "verdict": "Visually clean except one P3 capture-timing artifact, not user-facing in real usage."
+    },
+    {
+      "attack": "8. Confirm the VPS-stuck-sessions claim via SSH, read-only",
+      "method": "`ssh lecayenne` (config points to 51.210.111.124), located `/var/www/lecayenne/artisan`, ran a read-only tinker query: `DB::table('cash_drawer_sessions')->where('status','open')->where('opened_at','<', now()->subDays(7))->get()`. Result: exactly 2 rows — id=1, branch_id=1, opened_at=2026-06-25 13:02:15, opening_amount=110.00; id=2, branch_id=1, opened_at=2026-07-08 15:58:01, opening_amount=50.00. No writes performed.",
+      "verdict": "CONFIRMED — matches the claimed 2 stuck sessions (2026-06-25, 2026-07-08, branch 1) exactly."
+    }
+  ],
+  "notes": "This is the second-round adversarial pass on a wave whose spec author already caught and fixed one real defect (the .dropdown-group collision) before ever reporting. Every claim in the spec's own header comments was independently re-derived from source (not trusted): the guard, the call site, the fixture's pre-state, the fiscal_sequence_no allocation site, the CashDrawerService.js diff, the Vuex/component wiring, and the VPS stuck-session numbers. Nothing in this wave is superficially green — each assertion is measuring a genuine before/after state transition caused by the code under test. Only finding is a P3 (non-blocking) screenshot-timing artifact unrelated to the fixes themselves."
+}
