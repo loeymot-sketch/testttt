@@ -146,6 +146,12 @@
     @reprint="reprintKitchenTicket"
     @reopen="reopenOrder"
   />
+  <!-- [T-6.1 CARILLON-MORT-V2 2026-08-15 · GOAL_CONFORT_MAX] Le SEUL élément <audio
+       ref="kdsNewOrderAudio"> vivait dans la branche v-else (legacy) ci-dessous — en V2
+       (useV2Layout=true par défaut), this.$refs.kdsNewOrderAudio était undefined et
+       playKdsNewOrderSound() faisait un no-op silencieux (garde `if (!el) return;`,
+       ligne ~2125) : AUCUN carillon nouvelle commande sur l'écran cuisine par défaut. -->
+  <audio v-if="useV2Layout" ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
   <template v-else>
   <!--
     [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the

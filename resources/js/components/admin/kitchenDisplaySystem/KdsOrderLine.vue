@@ -175,7 +175,11 @@ export default {
   font-weight: 500;
   line-height: 1.15;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  /* [T-6.1 SAUCE-TRONQUEE 2026-08-15 · GOAL_CONFORT_MAX] 2 lignes coupait net
+     (webkit-line-clamp ajoute une ellipse, mais le contenu au-delà — souvent la
+     dernière sauce choisie sur un nom long — reste invisible et illisible pour le
+     cuisinier). 3 lignes donne 50% de marge de plus avant toute coupe. */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

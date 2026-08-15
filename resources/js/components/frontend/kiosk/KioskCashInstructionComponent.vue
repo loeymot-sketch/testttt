@@ -17,7 +17,7 @@
           <div class="kiosk-cash__row">
             <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.order_label') }}</span>
             <strong class="kiosk-cash__number" data-testid="kiosk-cash-order-number">
-              #{{ orderNumber || '—' }}
+              #{{ displayOrderNumber || '—' }}
             </strong>
           </div>
           <div class="kiosk-cash__divider" aria-hidden="true" />
@@ -106,9 +106,28 @@ export default {
             countdown: this.autoRedirectSeconds,
             timer: null,
             printFailed: false, // [G2] filet écran si le pont est injoignable
+            // [T-6.2 BORNE-OFFLINE-SANS-REFERENCE 2026-08-15 · GOAL_CONFORT_MAX] Générée
+            // une seule fois au montage, JAMAIS utilisée si orderNumber/orderId sont
+            // présents — filet pour le cas borne hors-ligne où aucun numéro serveur
+            // n'a encore été attribué. Sans ceci le client lisait "#—" : rien à dire au
+            // comptoir pour se faire identifier.
+            localFallbackRef: '',
         };
     },
+    computed: {
+        displayOrderNumber() {
+            if (this.orderNumber) return this.orderNumber;
+            if (this.orderId) return String(this.orderId).slice(-4).padStart(4, '0');
+            return this.localFallbackRef;
+        },
+    },
     mounted() {
+        if (!this.orderNumber && !this.orderId) {
+            // [T-6.2] Code court dérivé de l'horloge (millisecondes + aléa) — stable pour
+            // toute la durée de vie de l'écran, jamais confondu avec un vrai numéro de
+            // file (préfixe "T" = temporaire, lisible à voix haute au comptoir).
+            this.localFallbackRef = 'T' + (Date.now() % 100000).toString().padStart(5, '0');
+        }
         this.logEvent('cash_instruction_shown');
         this.startCountdown();
         // [BORNE-LOCAL-BRIDGE 2026-06-28] Auto-impression du ticket client pour le

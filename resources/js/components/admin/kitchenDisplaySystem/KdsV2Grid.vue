@@ -811,9 +811,13 @@ export default {
     align-items: center;
     justify-content: center;
     margin-inline-start: 6px;
-    padding: 3px;
+    /* [T-6.1 CIBLE-21PX 2026-08-15 · GOAL_CONFORT_MAX] icône 15px + padding 3px =
+       cible tactile ~21px, sous le minimum WCAG 2.5.8 AA (24px) — sur une tablette
+       cuisine tenue avec des mains grasses/mouillées, c'est précisément le bouton
+       « remettre en préparation » (owner 2026-08-13) qui devient dur à toucher. */
+    padding: 10px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     background: rgba(17, 17, 17, 0.08);
     color: #111111;
     cursor: pointer;
