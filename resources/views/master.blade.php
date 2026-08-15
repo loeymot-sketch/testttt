@@ -215,6 +215,14 @@
             printing: {
                 autoPrintClientReceipt: @json((bool) config('printing.auto_print_client_receipt', false)),
             },
+            // [T-4.3 SEUIL-INCOHERENT 2026-08-15 · GOAL_CONFORT_MAX] PosCashDrawerSessionDialog
+            // exigeait un motif d'écart caisse dès 0,005€ (arrondi flottant) alors que le
+            // serveur (config/cash.php) ne l'exige qu'au-delà de ce seuil réel — le caissier
+            // était bloqué pour de simples centimes d'arrondi que le serveur aurait acceptés
+            // sans motif.
+            cash: {
+                varianceThresholdEur: @json((float) config('cash.variance_threshold_eur', 2.00)),
+            },
             // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
             // master flag, exposed so the customer UI hides coupon + loyalty-redeem
             // entries while discounts are disabled — otherwise a customer who uses them

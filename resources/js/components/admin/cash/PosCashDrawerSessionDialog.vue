@@ -399,8 +399,18 @@ export default {
             const diff = Number(this.closingAmount) - this.expectedTotal;
             return Math.round(diff * 100) / 100;
         },
+        // [T-4.3 SEUIL-INCOHERENT 2026-08-15] Même seuil que le serveur
+        // (`CashDrawerService::closeSession()` — `abs($variance) > $threshold`,
+        // config/cash.php:31, 2,00€ par défaut) : exiger un motif dès 0,005€
+        // bloquait le caissier pour de simples centimes d'arrondi que le
+        // serveur aurait acceptés sans discussion.
+        varianceThresholdEur() {
+            const configured = window.foodkingConfig && window.foodkingConfig.cash && window.foodkingConfig.cash.varianceThresholdEur;
+            const n = Number(configured);
+            return Number.isFinite(n) && n >= 0 ? n : 2.00;
+        },
         varianceRequiresReason() {
-            return this.mode === 'close' && Math.abs(this.liveVariance) > 0.005;
+            return this.mode === 'close' && Math.abs(this.liveVariance) > this.varianceThresholdEur;
         },
         varianceReasonMissing() {
             if (!this.varianceRequiresReason) return false;
@@ -576,7 +586,20 @@ export default {
             }
         },
         _extractError(err) {
-            const fromResponse = err && err.response && err.response.data && err.response.data.message;
+            // [T-4.3 ERREUR-ANGLAISE 2026-08-15 · GOAL_CONFORT_MAX] `CashDrawerService::
+            // reconcileSession()` (backend) lève `CashVarianceRequiresApprovalException`
+            // avec un message CODÉ EN DUR EN ANGLAIS ("Cash variance X€ exceeds threshold
+            // Y€ — ..."). Lire `err.response.data.message` en premier faisait fuiter cet
+            // anglais brut sur un écran FR (ADR-007). Le `code` stable existe justement
+            // pour éviter ça — même discipline que CashSessionReportListComponent (T-2.1).
+            const data = err && err.response && err.response.data;
+            if (data && data.code === 'CASH_VARIANCE_REASON_REQUIRED') {
+                return this.$t('message.cash_variance_reason_required', { threshold: this.formatMoney(data.threshold) });
+            }
+            if (data && data.code === 'CASH_VARIANCE_MANAGER_APPROVAL_REQUIRED') {
+                return this.$t('message.cash_variance_manager_required', { threshold: this.formatMoney(data.threshold) });
+            }
+            const fromResponse = data && data.message;
             if (fromResponse) return fromResponse;
             if (err && err.message) return err.message;
             return this.$t('label.cash_session_failure');

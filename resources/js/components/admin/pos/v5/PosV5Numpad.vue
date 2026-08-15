@@ -1,16 +1,33 @@
 <template>
-  <div class="pos-v5-numpad" role="group" :aria-label="ariaLabel">
-    <button
-      v-for="key in keys"
-      :key="key.id"
-      type="button"
-      :class="['pos-v5-numpad__key', `pos-v5-numpad__key--${key.kind}`, key.span ? `pos-v5-numpad__key--span-${key.span}` : '']"
-      :aria-label="key.aria || key.label"
-      @click.prevent="onKey(key)"
-    >
-      <slot v-if="key.slot" :name="key.slot" :keyData="key">{{ key.label }}</slot>
-      <span v-else aria-hidden="true">{{ key.label }}</span>
-    </button>
+  <div class="pos-v5-numpad-wrap">
+    <!-- [T-4.4 BILLETS-ABSENTS 2026-08-15 · GOAL_CONFORT_MAX] Opt-in via la prop
+         `denominations` (défaut []) — rien ne change pour les consommateurs qui ne la
+         passent pas (PaymentComponent.vue FROZEN §7 notamment, jamais touché). -->
+    <div v-if="denominations.length" class="pos-v5-numpad__bills" role="group" :aria-label="billsAriaLabel">
+      <button
+        v-for="d in denominations"
+        :key="`bill-${d}`"
+        type="button"
+        class="pos-v5-numpad__bill"
+        :aria-label="`${d} €`"
+        @click.prevent="$emit('denomination', d)"
+      >
+        {{ d }}&nbsp;€
+      </button>
+    </div>
+    <div class="pos-v5-numpad" role="group" :aria-label="ariaLabel">
+      <button
+        v-for="key in keys"
+        :key="key.id"
+        type="button"
+        :class="['pos-v5-numpad__key', `pos-v5-numpad__key--${key.kind}`, key.span ? `pos-v5-numpad__key--span-${key.span}` : '']"
+        :aria-label="key.aria || key.label"
+        @click.prevent="onKey(key)"
+      >
+        <slot v-if="key.slot" :name="key.slot" :keyData="key">{{ key.label }}</slot>
+        <span v-else aria-hidden="true">{{ key.label }}</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -42,8 +59,13 @@ export default {
     props: {
         ariaLabel: { type: String, default: "Pavé numérique" },
         decimalSeparator: { type: String, default: "." },
+        // [T-4.4 BILLETS-ABSENTS 2026-08-15] Coupures rapides (ex. [5, 10, 20, 50]).
+        // Vide par défaut = aucune ligne rendue, comportement 100% inchangé pour les
+        // consommateurs existants qui ne passent pas cette prop.
+        denominations: { type: Array, default: () => [] },
+        billsAriaLabel: { type: String, default: "Coupures rapides" },
     },
-    emits: ["input", "back", "clear"],
+    emits: ["input", "back", "clear", "denomination"],
     computed: {
         keys() {
             return [
@@ -81,6 +103,28 @@ export default {
 </script>
 
 <style scoped>
+.pos-v5-numpad-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pos-v5-space-2);
+}
+
+.pos-v5-numpad__bills {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--pos-v5-space-2);
+}
+
+.pos-v5-numpad__bill {
+    min-height: 44px;
+    padding: var(--pos-v5-space-2);
+    font-weight: 600;
+    border-radius: var(--pos-v5-radius-md);
+    border: 1px solid var(--pos-v5-border);
+    background: #fff;
+    cursor: pointer;
+}
+
 .pos-v5-numpad {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

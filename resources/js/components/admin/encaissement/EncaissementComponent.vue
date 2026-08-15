@@ -24,7 +24,20 @@
                 </div>
 
                 <div class="enc-body">
-                    <div v-if="orders.length === 0" class="enc-empty">
+                    <!-- [T-4.1 FAUX-VIDE 2026-08-15] Un fetch en échec avec orders=[] affichait le
+                         MÊME ✅ vert que "0 commande à encaisser" réel — le caissier ne pouvait pas
+                         distinguer une file réellement vide d'une file INVISIBLE par panne réseau.
+                         Un poll silencieux qui échoue alors qu'une liste réelle est déjà affichée ne
+                         doit PAS l'effacer (orders.length > 0 garde la priorité sur l'erreur). -->
+                    <div v-if="fetchError && orders.length === 0" class="enc-empty enc-error" data-test="enc-fetch-error">
+                        <div class="enc-empty-icon">⚠️</div>
+                        <p class="enc-empty-title">{{ $t('label.encaisser_queue_error') }}</p>
+                        <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
+                            {{ $t('button.refresh') }}
+                        </button>
+                    </div>
+
+                    <div v-else-if="orders.length === 0" class="enc-empty" data-test="enc-empty-real">
                         <div class="enc-empty-icon">✅</div>
                         <p class="enc-empty-title">{{ $t('label.encaisser_queue_empty') }}</p>
                     </div>
@@ -95,6 +108,7 @@ export default {
         return {
             loading: { isActive: false },
             orders: [],
+            fetchError: false,
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
@@ -129,10 +143,14 @@ export default {
     methods: {
         fetchPending(silent = false) {
             if (!silent) this.loading.isActive = true;
-            axios.get('admin/pos/counter-collect/pending').then((res) => {
+            return axios.get('admin/pos/counter-collect/pending').then((res) => {
                 this.orders = res.data?.data || [];
+                this.fetchError = false;
                 this.loading.isActive = false;
             }).catch(() => {
+                // [T-4.1 FAUX-VIDE] Ne JAMAIS laisser une panne réseau se déguiser en
+                // "file vide ✅" — cf. garde du template ci-dessus.
+                this.fetchError = true;
                 this.loading.isActive = false;
             });
         },

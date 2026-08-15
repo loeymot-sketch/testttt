@@ -152,9 +152,12 @@
           <PosV5Numpad
             :aria-label="$t('label.received_amount')"
             :decimal-separator="','"
+            :denominations="cashDenominations"
+            :bills-aria-label="$t('label.cash_denominations')"
             @input="numpadInput"
             @back="numpadBack"
             @clear="numpadClear"
+            @denomination="onDenomination"
           />
 
           <!-- Rendu calc -->
@@ -345,6 +348,12 @@ export default {
       if (this.selectedMode !== 'CASH') return 0;
       const diff = this.cashReceivedNumber - this.orderTotal;
       return diff > 0 ? Math.round(diff * 100) / 100 : 0;
+    },
+    // [T-4.4 BILLETS-ABSENTS] Coupures FR usuelles pour un ticket restaurant —
+    // 100/200/500€ omis (jamais présentés pour un ticket moyen, surchargeraient
+    // l'écran pour un cas quasi inexistant en caisse comptoir).
+    cashDenominations() {
+      return [5, 10, 20, 50];
     },
     cashShort() {
       if (this.selectedMode !== 'CASH') return false;
@@ -539,6 +548,19 @@ export default {
       if (this.submitting) return;
       this.cashFieldPristine = false;
       this.cashReceivedRaw = '';
+    },
+    // [T-4.4 BILLETS-ABSENTS 2026-08-15 · GOAL_CONFORT_MAX] Coupures rapides FR
+    // courantes en caisse restaurant (billets 5/10/20/50 — 100/200/500 trop rares
+    // pour un ticket moyen, retirés pour ne pas surcharger l'écran). Un appui = un
+    // billet posé sur le comptoir : le 1er appui après le pré-remplissage démarre à
+    // ce montant (même règle que numpadInput, BUG-CASH-KEYPAD), les suivants
+    // S'ADDITIONNENT — un caissier empile les billets, il ne les remplace pas.
+    onDenomination(amount) {
+      if (this.submitting) return;
+      const base = this.cashFieldPristine ? 0 : this.cashReceivedNumber;
+      this.cashFieldPristine = false;
+      const total = Math.round((base + Number(amount)) * 100) / 100;
+      this.cashReceivedRaw = String(total.toFixed(2)).replace('.', ',');
     },
     // [PRINT-AENCAISSER 2026-07-03] Imprime le ticket CLIENT ou CUISINE de la commande
     // à encaisser, via le pont RAW (octets ESC/POS fiscaux rendus serveur → SAGA). Lecture

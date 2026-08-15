@@ -15,6 +15,24 @@ export function createBarcodeDetector(onBarcode) {
     let lastKeyAt = 0;
 
     function handler(event) {
+        // [T-4.4 SCANNER-CAPTE-CHAMPS 2026-08-15 · GOAL_CONFORT_MAX] Enregistré en
+        // phase CAPTURE (3e arg `true`) sur `window`, ce handler voyait CHAQUE frappe
+        // AVANT tout champ texte — y compris pendant une saisie manuelle normale (motif
+        // remise, nom client, recherche…). Une saisie rapide ≥6 caractères suivie
+        // d'Entrée était interprétée comme un scan : `event.preventDefault()` avalait
+        // l'Entrée du champ ET déclenchait une recherche produit sur du texte tapé, pas
+        // un vrai code-barres. Même garde que `createFKeyShortcuts` juste en dessous
+        // (déjà correcte pour les raccourcis F-key dans ce même fichier).
+        const target = event.target;
+        if (
+            target
+            && (target.tagName === 'INPUT'
+                || target.tagName === 'TEXTAREA'
+                || target.isContentEditable)
+        ) {
+            return;
+        }
+
         const now = performance.now();
         const delta = now - lastKeyAt;
         lastKeyAt = now;
