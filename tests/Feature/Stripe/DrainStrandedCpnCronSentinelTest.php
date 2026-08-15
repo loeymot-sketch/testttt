@@ -53,7 +53,7 @@ use Tests\TestCase;
  * @group cron
  * @group nf525
  */
-class DrainStrandedCpnCronSentinel extends TestCase
+class DrainStrandedCpnCronSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

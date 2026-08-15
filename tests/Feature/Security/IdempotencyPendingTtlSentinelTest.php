@@ -34,7 +34,7 @@ use Tests\TestCase;
  * Array store respects TTL in real-time seconds; no Carbon::setTestNow magic
  * is needed because Cache::add() uses microtime() internally on this driver.
  */
-final class IdempotencyPendingTtlSentinel extends TestCase
+final class IdempotencyPendingTtlSentinelTest extends TestCase
 {
     public function test_config_key_present_and_defaults_to_30_seconds(): void
     {

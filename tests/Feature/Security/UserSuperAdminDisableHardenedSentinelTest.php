@@ -46,7 +46,7 @@ use Tests\TestCase;
  * @see app/Models/User.php (booted() — id===1 fast-path removed)
  * @see CLAUDE.md §9 Auth Invariants
  */
-class UserSuperAdminDisableHardenedSentinel extends TestCase
+class UserSuperAdminDisableHardenedSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

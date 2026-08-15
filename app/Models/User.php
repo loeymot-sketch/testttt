@@ -134,7 +134,7 @@ class User extends Authenticatable implements HasMedia
         // recovery user + documented recovery procedure in runbook.
         // NO automatic status re-activation in model lifecycle.
         //
-        // Sentinel: tests/Feature/Security/UserSuperAdminDisableHardenedSentinel.php
+        // Sentinel: tests/Feature/Security/UserSuperAdminDisableHardenedSentinelTest.php
         static::updating(function ($user) {
             // intentionally empty — see comment above
         });

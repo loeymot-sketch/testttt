@@ -41,7 +41,7 @@ use Tests\TestCase;
  *  - upload arbitrarily large files via PushNotification (V3)
  *  - upload arbitrarily large files via Theme upload (V4)
  */
-class FileUploadHardenedSentinel extends TestCase
+class FileUploadHardenedSentinelTest extends TestCase
 {
     /**
      * Real JPEG magic bytes — enough to satisfy `image` rule's MIME

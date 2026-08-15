@@ -23,7 +23,8 @@ on:
     branches: [main, develop]
     types: [labeled, opened, synchronize, reopened]
   push:
-    branches: [main]
+    # [D11 2026-08-15] branche de travail V1 réelle, jamais couverte depuis le 2026-06-23.
+    branches: [main, "pos/category-first-caisse-2026-06-23"]
 
 # Empêche les runs simultanés sur la même PR (annule l'ancien si nouveau push)
 concurrency:

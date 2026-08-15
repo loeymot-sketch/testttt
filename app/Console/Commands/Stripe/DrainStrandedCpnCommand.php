@@ -73,7 +73,7 @@ use Illuminate\Support\Facades\Log;
  *     pilot allowlist (post-activation gate) the drain auto-activates
  *     without any code change.
  *
- * Sentinel: tests/Feature/Stripe/DrainStrandedCpnCronSentinel.php
+ * Sentinel: tests/Feature/Stripe/DrainStrandedCpnCronSentinelTest.php
  *   - Asserts Kernel.php registers `stripe:drain-stranded-cpn` every 5 min Europe/Paris.
  *   - Behaviour: create stranded CPN, run command, verify Order PAID + audit row + CPN gone.
  */

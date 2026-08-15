@@ -16,7 +16,11 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main, develop]
+    # [D11 2026-08-15] pos/category-first-caisse-2026-06-23 = branche de travail V1 réelle
+    # depuis le 2026-06-23. Sans elle ici, aucun push direct n'a jamais déclenché la CI
+    # PHPUnit sur MySQL depuis cette date — les triggers NF525 BEFORE DELETE et la
+    # concurrence lockForUpdate n'étaient exercés que sur SQLite (phpunit.xml :memory:).
+    branches: [main, develop, "pos/category-first-caisse-2026-06-23"]
 
 jobs:
   # E04 (méga-checklist) : scripts/check-invariants.sh (6 greps) — bloque le merge sur régression.

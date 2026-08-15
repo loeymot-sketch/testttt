@@ -25,7 +25,20 @@ const fs = require('fs');
 const path = require('path');
 
 const { execSync } = require('child_process');
-const TOKEN = fs.readFileSync('/tmp/livreur-e2e-token.txt', 'utf-8').trim();
+// [D9 2026-08-15] Le jeton ÉTAIT lu au niveau module (import-time) : quand le
+// fichier de pré-seed manquait, fs.readFileSync jetait AVANT que Playwright
+// n'ait fini de COLLECTER les specs → toute la suite (~1580 tests, 427
+// fichiers) sortait à `0 tests in 0 files`, invisible depuis le 2026-05-29.
+// Lecture différée à l'exécution (beforeAll ci-dessous) : un jeton absent
+// SKIP proprement CE fichier, sans jamais empêcher la collecte des autres.
+const TOKEN_PATH = '/tmp/livreur-e2e-token.txt';
+function readToken() {
+  try {
+    return fs.readFileSync(TOKEN_PATH, 'utf-8').trim();
+  } catch (_) {
+    return null;
+  }
+}
 
 function resetOrderToPrepared(orderId) {
   // Reset via tinker before transition tests — idempotent
@@ -39,7 +52,7 @@ function resetOrderToPrepared(orderId) {
 }
 const API_KEY = process.env.FOODKING_API_KEY || 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
 const apiHeaders = (extra = {}) => ({
-  Authorization: `Bearer ${TOKEN}`,
+  Authorization: `Bearer ${readToken() || ''}`,
   Accept: 'application/json',
   'Content-Type': 'application/json',
   'x-api-key': API_KEY,
@@ -67,6 +80,10 @@ const LIVREUR_ID = 10;
 
 test.describe('LIVREUR API contract + admin cockpit', () => {
   test.describe.configure({ mode: 'serial' });
+
+  test.beforeAll(() => {
+    test.skip(!readToken(), `jeton livreur e2e absent (${TOKEN_PATH}) — pré-seed requis avant ce spec`);
+  });
 
   test('A1 — index() returns assigned orders + items lean shape', async ({ request }) => {
     const res = await request.get('http://127.0.0.1:8000/api/frontend/delivery-boy-order', {

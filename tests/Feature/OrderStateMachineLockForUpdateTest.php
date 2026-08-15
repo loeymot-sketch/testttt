@@ -200,8 +200,14 @@ class OrderStateMachineLockForUpdateTest extends TestCase
         $orderTable = (new Order())->getTable();
         $hasLockedRead = false;
         foreach ($log as $entry) {
-            $sql = strtolower($entry['query']);
-            if (str_contains($sql, 'select') && str_contains($sql, $orderTable) && str_contains($sql, 'where') && str_contains($sql, '"id"')) {
+            // [D11 2026-08-15] Identifiants entre guillemets DOUBLES en SQLite, entre
+            // ACCENTS GRAVES en MySQL (`select * from `orders` where `id` = ? ... for
+            // update`, vérifié en direct). Le littéral `"id"` ne matchait donc JAMAIS
+            // sur MySQL — faux négatif découvert au premier run réel sur MySQL depuis
+            // le 2026-06-23 (D11). apply() verrouille bien la ligne des deux côtés ;
+            // seule la détection était SQLite-only. On dé-quote avant de comparer.
+            $sql = strtolower(str_replace(['"', '`'], '', $entry['query']));
+            if (str_contains($sql, 'select') && str_contains($sql, $orderTable) && str_contains($sql, 'where') && preg_match('/\bid\b/', $sql)) {
                 $hasLockedRead = true;
                 break;
             }

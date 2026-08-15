@@ -27,7 +27,7 @@ use Tests\TestCase;
  * @see plans/GOAL_ULTRA_DEEP_F2_2026-05-23.md
  * @see reports/test-e2e/goal-ultra-deep-2026-05-23/phase-f/F-6-4-FIND-02.json
  */
-class InnodbLockWaitTimeoutSentinel extends TestCase
+class InnodbLockWaitTimeoutSentinelTest extends TestCase
 {
     private function readProvider(): string
     {

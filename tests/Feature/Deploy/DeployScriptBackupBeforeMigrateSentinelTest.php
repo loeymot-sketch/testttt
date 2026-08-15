@@ -45,7 +45,7 @@ use Tests\TestCase;
  * @group sentinel
  * @group deploy
  */
-class DeployScriptBackupBeforeMigrateSentinel extends TestCase
+class DeployScriptBackupBeforeMigrateSentinelTest extends TestCase
 {
     /**
      * Invariant 1+2+3 — fold into one test to make any failure a single

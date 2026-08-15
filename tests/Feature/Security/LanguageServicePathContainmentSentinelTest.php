@@ -37,7 +37,7 @@ use Tests\TestCase;
  * Service-layer test: no DB, no Sanctum — the containment is a pure function
  * of the request path and the filesystem layout.
  */
-class LanguageServicePathContainmentSentinel extends TestCase
+class LanguageServicePathContainmentSentinelTest extends TestCase
 {
     private LanguageService $service;
 

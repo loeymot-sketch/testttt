@@ -57,7 +57,7 @@ use Tests\TestCase;
  * @see app/Services/Fiscal/AuditLogService.php (FROZEN §7 — public API only)
  * @see CLAUDE.md §8 NF525 Audit Chain
  */
-class CashierAttributionAndLoginAuditSentinel extends TestCase
+class CashierAttributionAndLoginAuditSentinelTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;

@@ -49,7 +49,7 @@ use Tests\TestCase;
  *     status (only ONE order_status_transitions row + ONE Changement
  *     de statut action_log per order)
  */
-class OrderServiceChangeStatusRaceSentinel extends TestCase
+class OrderServiceChangeStatusRaceSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

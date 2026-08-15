@@ -49,7 +49,7 @@ use Tests\TestCase;
  * parity branch, the trigger-presence assertion will flag the gap so it
  * cannot ship silently.
  */
-class SqliteMysqlParitySentinel extends TestCase
+class SqliteMysqlParitySentinelTest extends TestCase
 {
     use RefreshDatabase;
 

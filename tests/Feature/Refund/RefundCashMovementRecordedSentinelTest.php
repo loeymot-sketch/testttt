@@ -46,7 +46,7 @@ use Tests\TestCase;
  *   4. Best-effort: no open drawer session → log + continue (mirrors I.1
  *      silent-fail observability discipline). Counter-entry succeeds.
  */
-class RefundCashMovementRecordedSentinel extends TestCase
+class RefundCashMovementRecordedSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

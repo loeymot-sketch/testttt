@@ -55,7 +55,7 @@ use Tests\TestCase;
  * @group sentinel
  * @group deploy
  */
-class ServerSetupShHardeningSentinel extends TestCase
+class ServerSetupShHardeningSentinelTest extends TestCase
 {
     /**
      * Single test holds all 5 invariants — any failure becomes one red
@@ -114,7 +114,7 @@ class ServerSetupShHardeningSentinel extends TestCase
 
         // -- Pre-work: classify each line as executable vs comment/echo --
         // Reuses the per-line filter pattern from
-        // DeployScriptBackupBeforeMigrateSentinel. A line counts as
+        // DeployScriptBackupBeforeMigrateSentinelTest. A line counts as
         // executable if it is NOT empty, NOT a `#` comment, and NOT an
         // echo/printf/cat invocation (those carry strings that contain
         // the same keywords as real commands).

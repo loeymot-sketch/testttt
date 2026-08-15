@@ -27,7 +27,7 @@ use Tests\TestCase;
  * are NOT asserted here — they are V1.0.X candidates, V1 LOCAL ships GREEN
  * without them. When V1.0.X migrations land, add an assertion line below.
  */
-class IndexCoverageSentinel extends TestCase
+class IndexCoverageSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

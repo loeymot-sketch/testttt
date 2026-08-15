@@ -31,7 +31,7 @@ use Tests\TestCase;
  * @see app/Http/Requests/EmployeeRequest.php (line 50)
  * @see CLAUDE.md §9 Auth Invariants
  */
-class LoginPasswordValidationParity extends TestCase
+class LoginPasswordValidationParityTest extends TestCase
 {
     /**
      * SEC-002-01: LoginController must not enforce a numeric min length on
