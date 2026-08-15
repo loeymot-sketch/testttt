@@ -86,7 +86,22 @@ class UberOrderMapper
                     'quantity'   => (int) ($mod['quantity'] ?? 1),
                     'line_total' => (float) (($mod['price']['amount'] ?? 0) / 100),
                 ];
-                if ($isMeatGroup && $modTitle !== '') {
+                // [D6 2026-08-15 · GOAL_CONFORT_MAX] « Sans poulet » n'est pas un choix de
+                // poulet. Nos canaux maison sont ADDITIFS (rien coché = rien) ; un ticket Uber,
+                // lui, s'écrit en négatif — exactement la leçon déjà tirée pour les crudités le
+                // 2026-08-12 (KitchenTicketSymbolicFormatter::cruditeSymbol) et RE-INTRODUITE ici
+                // par erreur le 2026-08-14 (ce fix). Sans cette garde, meatSymbol('Sans poulet')
+                // matche /poulet/ → 'P' : la cuisine cuit ce que le client vient de refuser. Même
+                // regex, même ancre en TÊTE ("Sauce sans gluten" reste un ajout) — jumeau strict.
+                // NB : ce norm()-là (ligne ~229) strip TOUTE ponctuation — contrairement au
+                // norm() jumeau de KitchenTicketSymbolicFormatter::cruditeSymbol, plus doux, qui
+                // la garde. Deux conséquences vérifiées (tests/Feature/Uber/
+                // UberOrderMapperMeatLinesTest.php) : « w/o chicken » → « wo chicken » (pas de
+                // « / » à matcher) ; « Pas d'agneau » → « pas dagneau » (apostrophe élidée, donc
+                // pas de frontière de mot après le « d » — \b y est délibérément OMIS). Copier
+                // le motif de cruditeSymbol tel quel ici serait retombé dans le même piège.
+                $isNegation = (bool) preg_match('/^(sans\b|pas\s+d|no\b|without\b|wo\b)/iu', $this->norm($modTitle));
+                if ($isMeatGroup && $modTitle !== '' && ! $isNegation) {
                     $lines[] = ['attribute_name' => 'Viande', 'variation_name' => $modTitle];
                 }
             }

@@ -110,4 +110,76 @@ class UberOrderMapperMeatLinesTest extends TestCase
             $line['composition_snapshot']['lines']
         );
     }
+
+    /**
+     * [D6 2026-08-15 · GOAL_CONFORT_MAX] « Sans poulet » n'est PAS un choix de poulet. Nos
+     * canaux maison sont additifs (rien coché = rien) ; un ticket Uber s'écrit en négatif —
+     * exactement la leçon déjà tirée pour les crudités le 2026-08-12
+     * (KitchenTicketSymbolicFormatter::cruditeSymbol) et RE-INTRODUITE ici par erreur le
+     * 2026-08-14 (ce fix lui-même). Sans la garde, meatSymbol('Sans poulet') matche /poulet/
+     * → 'P' : la cuisine cuit ce que le client vient de refuser.
+     */
+    public function test_negated_meat_modifier_does_not_pollute_lines(): void
+    {
+        $line = $this->mapLineWithModifierGroup('Choix de la viande', 'Sans poulet');
+
+        $this->assertSame(
+            [],
+            $line['composition_snapshot']['lines'],
+            '« Sans poulet » ne doit JAMAIS devenir une ligne de viande — sinon la cuisine en cuit'
+        );
+        // extras reste peuplé (visibilité ticket inchangée, additif strict).
+        $this->assertSame('Sans poulet', $line['composition_snapshot']['extras'][0]['extra_name']);
+    }
+
+    /** @dataProvider negationPhrasesProvider */
+    public function test_negation_variants_fr_and_en_are_all_ignored(string $negatedModTitle): void
+    {
+        $line = $this->mapLineWithModifierGroup('Choix de la viande', $negatedModTitle);
+
+        $this->assertSame([], $line['composition_snapshot']['lines'], "« $negatedModTitle » ne doit pas alimenter lines");
+    }
+
+    public static function negationPhrasesProvider(): array
+    {
+        return [
+            'sans' => ['Sans poulet'],
+            'sans accent' => ['sans boeuf'],
+            "pas de" => ['Pas de poulet'],
+            "pas d'" => ["Pas d'agneau"],
+            'no' => ['No chicken'],
+            'without' => ['Without beef'],
+            'w/o' => ['w/o chicken'],
+        ];
+    }
+
+    /**
+     * Contre-exemple : la négation n'est reconnue qu'en TÊTE (même contrat que
+     * cruditeSymbol) — un modificateur qui contient « sans » ailleurs que comme premier mot
+     * reste un VRAI ajout de viande et doit continuer à compter.
+     */
+    public function test_negation_word_mid_string_is_not_treated_as_refusal(): void
+    {
+        $line = $this->mapLineWithModifierGroup('Choix de la viande', 'Poulet sans gluten');
+
+        $this->assertSame(
+            [['attribute_name' => 'Viande', 'variation_name' => 'Poulet sans gluten']],
+            $line['composition_snapshot']['lines'],
+            '« sans » au milieu (pas en tête) ne doit pas effacer un vrai choix de viande'
+        );
+    }
+
+    /**
+     * Preuve bout-en-bout : même en passant par MeatPortionCalculator (pas seulement en
+     * inspectant `lines`), une viande refusée ne produit ni symbole ni portion fantôme.
+     */
+    public function test_negated_meat_produces_no_phantom_portion_via_calculator(): void
+    {
+        $line = $this->mapLineWithModifierGroup('Choix de la viande', 'Sans poulet');
+
+        $calc = app(MeatPortionCalculator::class);
+        $result = $calc->forLine('Tacos M', $line['composition_snapshot'], $line['quantity'], $line['instruction']);
+
+        $this->assertSame([], $result['pieces'], 'un refus ne doit produire AUCUNE pièce à cuire — ni P, ni un autre symbole');
+    }
 }

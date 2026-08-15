@@ -92,6 +92,24 @@ function rawTimeoutMs(opts = {}) {
   return 3000;
 }
 
+// [D5 2026-08-15 · GOAL_CONFORT_MAX] Le pont CUISINE (tools/kitchen-bridge/kitchen-bridge.js)
+// répond le RÉSULTAT RÉEL de l'impression (pas un 202 optimiste comme la caisse), borné par
+// SON timeout serveur (KITCHEN_PRINT_TIMEOUT_MS, défaut 15000 ms). Ce timeout CLIENT doit
+// rester PLUS GRAND, sinon on abandonne (abort) pendant que le pont imprime encore → faux
+// « échec » → remise en file → boucle de réimpression sans fin. `printEscPosViaKitchenBridge`
+// réutilisait `rawTimeoutMs()` (3000 ms, correct UNIQUEMENT pour la caisse dont le pont
+// répond 202 dès réception) — régression introduite le 2026-08-14 (commit e2d2ca3b4) en
+// désactivant l'unique AUTRE déclencheur d'auto-print, qui lui utilisait le bon timeout
+// (kitchenLocalPrinter.js:73, jamais branché ici). Jumeau strict du calcul là-bas.
+function kitchenRawTimeoutMs(opts = {}) {
+  if (Number.isFinite(opts.timeoutMs) && opts.timeoutMs > 0) return opts.timeoutMs;
+  try {
+    const t = window.foodkingConfig && window.foodkingConfig.kitchenBridgeRawTimeoutMs;
+    if (Number.isFinite(t) && t > 0) return t;
+  } catch (_) { /* défaut ci-dessous */ }
+  return 20000;
+}
+
 export async function printEscPosViaCaisseBridge(escposB64, opts = {}) {
   try {
     if (!escposB64) return null;
@@ -163,7 +181,7 @@ export async function printEscPosViaKitchenBridge(escposB64, opts = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/octet-stream' },
       body: bytes,
-    }, rawTimeoutMs(opts));
+    }, kitchenRawTimeoutMs(opts));
     return res && res.ok ? { ok: true, method: 'kitchen-bridge' } : null;
   } catch (_) { return null; }
 }
