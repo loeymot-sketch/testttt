@@ -1269,6 +1269,7 @@
         "cash_status_open": "Ouverte",
         "cash_status_closed": "Fermée",
         "cash_status_reconciled": "Réconciliée",
+        "cash_variance_reason": "Motif de l'écart",
         "all_sources": "Toutes les sources",
         "all_methods": "Tous les modes",
         "source_caisse": "Caisse",
@@ -1532,6 +1533,7 @@
         "kds_reopen_aria": "Remettre la commande N°{queue} en préparation"
     },
     "button": {
+        "cash_reconcile_now": "Réconcilier",
         "refresh": "Actualiser",
         "add": "Ajouter",
         "save": "Enregistrer",
@@ -1661,6 +1663,9 @@
         "kiosk_rate_limited": "Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes."
     },
     "message": {
+        "cash_session_reconciled": "Session de caisse réconciliée.",
+        "cash_variance_reason_required": "Écart supérieur au seuil autorisé ({threshold}) — merci d'indiquer le motif.",
+        "cash_variance_manager_required": "Écart supérieur au seuil autorisé ({threshold}) — seul un responsable peut valider cette clôture.",
         "permission_required": "Permission requise pour accéder à cette page : {permission}",
         "item_created_success": "Produit créé avec succès",
         "item_created_next_step": "Que voulez-vous faire ensuite ?",

@@ -106,6 +106,48 @@
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs" :class="statusClass(s.status)">
                                                 {{ $t('label.cash_status_' + s.status) }}
                                             </span>
+                                            <!--
+                                                [P0 CLÔTURE-BLOQUÉE 2026-08-15 · GOAL_CONFORT_MAX] Une session
+                                                CLOSED-non-réconciliée (2e appel /reconcile échoué — écart >
+                                                seuil sans la permission cash.reconcile.variance.override)
+                                                n'avait AUCUN chemin de reprise : reconcile() existait côté JS
+                                                mais 0 écran ne l'appelait. Session bloquée à vie, invisible de
+                                                l'écran de caisse (qui ne relit QUE status=OPEN).
+                                            -->
+                                            <button
+                                                v-if="s.status === 'closed'"
+                                                type="button"
+                                                data-test="cash-reconcile-start"
+                                                class="db-btn py-1 px-2 mt-1 text-xs text-white bg-amber-600"
+                                                :disabled="reconcilingId === s.id"
+                                                @click="startReconcile(s)"
+                                            >
+                                                {{ reconcilingId === s.id ? $t('label.loading') + '…' : $t('button.cash_reconcile_now') }}
+                                            </button>
+                                            <div v-if="reconcileTarget && reconcileTarget.id === s.id" class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded">
+                                                <p v-if="reconcileError" class="text-xs text-red-700 mb-1">{{ reconcileError }}</p>
+                                                <template v-if="reconcileNeedsReason">
+                                                    <label :for="'reconcileReason' + s.id" class="text-xs text-gray-700 block mb-1">
+                                                        {{ $t('label.cash_variance_reason') }}
+                                                    </label>
+                                                    <textarea
+                                                        :id="'reconcileReason' + s.id"
+                                                        data-test="cash-reconcile-reason"
+                                                        v-model="reconcileReason"
+                                                        rows="2"
+                                                        maxlength="255"
+                                                        class="db-field-control text-xs w-full mb-2"
+                                                    ></textarea>
+                                                    <div class="flex gap-2">
+                                                        <button type="button" data-test="cash-reconcile-confirm" class="db-btn py-1 px-2 text-xs text-white bg-primary" @click="confirmReconcile(s)">
+                                                            {{ $t('button.confirm') }}
+                                                        </button>
+                                                        <button type="button" data-test="cash-reconcile-cancel" class="db-btn py-1 px-2 text-xs bg-gray-200" @click="cancelReconcile">
+                                                            {{ $t('button.cancel') }}
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -144,6 +186,8 @@
 <script>
 import axios from 'axios';
 import { formatPrice } from '../../../helpers/formatPrice';
+import { reconcile as reconcileCashSession } from '../../../services/CashDrawerService';
+import alertService from '../../../services/alertService';
 
 export default {
     name: 'CashSessionReportListComponent',
@@ -161,6 +205,12 @@ export default {
                 from: '',
                 to: '',
             },
+            // [P0 CLÔTURE-BLOQUÉE 2026-08-15] État de la reprise de réconciliation.
+            reconcilingId: null,
+            reconcileTarget: null,
+            reconcileNeedsReason: false,
+            reconcileReason: '',
+            reconcileError: '',
         };
     },
     computed: {
@@ -264,6 +314,54 @@ export default {
                 case 'closed': return 'bg-amber-100 text-amber-800';
                 case 'reconciled': return 'bg-green-100 text-green-800';
                 default: return 'bg-gray-100 text-gray-800';
+            }
+        },
+        // [P0 CLÔTURE-BLOQUÉE 2026-08-15 · GOAL_CONFORT_MAX] Reprise d'une session
+        // CLOSED-non-réconciliée. Tente d'abord SANS raison (cas courant : écart sous
+        // le seuil, `reconcileSession()` est idempotent) ; si le backend répond
+        // CASH_VARIANCE_REASON_REQUIRED, révèle le champ de saisie plutôt que
+        // d'échouer en silence.
+        async startReconcile(session) {
+            this.reconcileError = '';
+            this.reconcileNeedsReason = false;
+            this.reconcileReason = '';
+            this.reconcileTarget = session;
+            await this.attemptReconcile(session, null);
+        },
+        async confirmReconcile(session) {
+            await this.attemptReconcile(session, this.reconcileReason);
+        },
+        cancelReconcile() {
+            this.reconcileTarget = null;
+            this.reconcileNeedsReason = false;
+            this.reconcileError = '';
+            this.reconcileReason = '';
+        },
+        async attemptReconcile(session, reason) {
+            this.reconcilingId = session.id;
+            this.reconcileError = '';
+            try {
+                const result = await reconcileCashSession(session.id, reason);
+                session.status = result?.data?.status || 'reconciled';
+                session.variance = result?.data?.variance ?? session.variance;
+                session.expected_closing_amount = result?.data?.expected ?? session.expected_closing_amount;
+                this.cancelReconcile();
+                alertService.success(this.$t('message.cash_session_reconciled'));
+            } catch (err) {
+                const data = err?.response?.data;
+                if (data?.code === 'CASH_VARIANCE_REASON_REQUIRED') {
+                    this.reconcileNeedsReason = true;
+                    this.reconcileError = this.$t('message.cash_variance_reason_required', { threshold: this.formatMoney(data.threshold) });
+                } else if (data?.code === 'CASH_VARIANCE_MANAGER_APPROVAL_REQUIRED') {
+                    this.reconcileNeedsReason = false;
+                    this.reconcileError = this.$t('message.cash_variance_manager_required', { threshold: this.formatMoney(data.threshold) });
+                } else {
+                    this.reconcileError = data?.message || this.$t('message.something_wrong');
+                }
+                // eslint-disable-next-line no-console
+                console.error('[CashSessionReport] reconcile failed', err);
+            } finally {
+                this.reconcilingId = null;
             }
         },
     },

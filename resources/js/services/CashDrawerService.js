@@ -151,15 +151,25 @@ export async function closeSession(sessionId, closingAmount, varianceReason = nu
 /**
  * POST reconcile only (idempotent on backend — safe to retry).
  *
+ * [P0 CLÔTURE-BLOQUÉE 2026-08-15 · GOAL_CONFORT_MAX] Cette fonction existait déjà mais
+ * n'était appelée par AUCUN écran (grep composants = 0 résultat) : une session bloquée
+ * en CLOSED-non-réconciliée (2e appel de closeSession échoué — écart > seuil, permission
+ * manquante) n'avait donc AUCUN chemin pour être terminée, par personne. Câblée depuis
+ * CashSessionReportListComponent.vue. `varianceReason` ajouté ici (absent avant, jamais
+ * nécessaire tant que rien n'appelait cette fonction) pour permettre la reprise avec
+ * justification, exactement comme le premier appel dans closeSession() ci-dessus.
+ *
  * @param {number} sessionId
+ * @param {string|null} varianceReason
  */
-export async function reconcile(sessionId) {
+export async function reconcile(sessionId, varianceReason = null) {
     const config = {
         headers: { 'X-Idempotency-Key': freshIdempotencyKey('cash-reconcile') },
     };
+    const body = varianceReason ? { variance_reason: varianceReason } : {};
     const res = await client().post(
         `admin/pos/cash-drawer/sessions/${sessionId}/reconcile`,
-        {},
+        body,
         config
     );
     return unwrap(res);
