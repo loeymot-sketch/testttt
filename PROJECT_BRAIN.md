@@ -47,6 +47,34 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-15 — GOAL_CONFORT_MAX_ET_BASE_PROUVEE : 7/7 vagues fermées, aucun push**
+>
+> HEAD `b307120e2`, branche `pos/category-first-caisse-2026-06-23`, working tree propre (les
+> seuls fichiers non commités appartiennent à une session concurrente — `.claude/scheduled_tasks.lock`,
+> `public/js/daily-book.js`/`vendor.js`, `public/css/daily-book.css`, plusieurs `reports/*.json`
+> — jamais touchés). Synthèse complète en §3 (entrée la plus récente) ; détail tâche-par-tâche en
+> §4 (bloc "GOAL TERMINÉ").
+>
+> **Preuves de convergence (chiffres définitifs, run final post-Vague 7)** : frozen-zone diff = 0
+> ligne sur les 15 fichiers §7 (mission entière, pas juste la dernière vague) ·
+> `fiscal:verify-chain --all` CHAIN OK (6 branches actives) · Vitest 411 fichiers/3295 tests/0
+> échec · **PHPUnit Feature 4705 passés / 8 échecs / 36 skip** (971s) — les 8 échecs sont
+> EXACTEMENT la baseline documentée en T-1.2 (`PrinterControllerTest`×3, `PrinterHostAllowlist
+> SentinelTest`×1, `IdempotencyRequiredRoutesCoverageTest`×1, `RolePermissionSeederTest`×3),
+> **aucun nouveau, aucun régressé**. +19 tests vs le run pré-Vague-5 (4686→4705) = exactement les
+> tests PHPUnit ajoutés en Vagues 5-7 (`InterrupteurCatalogueTest` 11 + `DashboardTilesArePeriod
+> ScopedTest` 3 + `PaymentGatewaySecretExposureTest` 3 + `MessageControllerNoDeadUpdateRouteTest`
+> 2).
+>
+> **Ce qui reste ouvert, volontairement** : G1 (20 worktrees périmés à purger), G2 (le cycle
+> ouverture/clôture caisse n'a jamais été vraiment utilisé en prod — question produit, pas un
+> bug), G3 (rendez-vous matériel sur place, N3a/N3b), G5 (LOCK zone gelée si `KioskAppComponent.vue`
+> doit changer un jour), G6 (quelles entrées de `v1-hidden-modules.js` réafficher), D12/LOCK
+> M6-002 (ventilation Z paiement mixte — `ZReportService.php` FROZEN), coupon accepté-au-devis-
+> refusé-au-commit (documenté, cycle dédié requis avant tout fix — touche la tarification SSOT).
+>
+> **Aucun push, aucun déploiement.** Règle finale du GOAL respectée à la lettre.
+
 > **2026-08-14 (nuit) — Fidélité déployée + incident réel corrigé : crédit manuel utilisait le taux de remise (facteur 10) — DÉPLOYÉ, chaîne NF525 OK**
 >
 > Suite immédiate de l'entrée précédente : owner a poussé `go` → déploiement de la mission
@@ -1336,6 +1364,87 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**GOAL_CONFORT_MAX_ET_BASE_PROUVEE — 7/7 vagues fermées 2026-08-15** (commits `bf94a73e1`→
+`e8923b10a`→`0835adbb0`→`ee9803008`→`b04a274de`→`a64484c18`→`1e0965ed2`→`421b34032`→
+`59ef2721f`→`30e0bcb3f`→`21bf8560f`→`b307120e2`, branche `pos/category-first-caisse-2026-06-23`,
+aucun push). Owner : « lance le goal max décipliné… max utilisation comfortable de tout les
+accèes et surtout de caisse et gestion… tout la structure et fonctionalité de base validé en
+test réel ». Détail complet dans §4 (bloc "GOAL TERMINÉ") ; synthèse chiffrée ici.
+
+**V1 pré-vol** : Playwright 0→1590 tests (D9, `fs.readFileSync` module-level cassait toute la
+collecte) · 87 méthodes PHPUnit orphelines ressuscitées (D10, 14 `git mv` + autoloader) · CI
+étendue à la branche de travail + 1 vrai bug MySQL/SQLite trouvé et corrigé (D11) · SYSTEM_MAP/
+CLAUDE.md réalignés sur le code réel (baseline FormRequest 69→64), 20 worktrees inventoriés
+(G1 ouvert). **V2** : 2 régressions du soir même corrigées (D5 timeout impression 3s→20s, D6
+négation Uber "sans viande") + P0 argent clôturé (une session caisse bloquée `status=closed`
+n'avait AUCUN chemin de reprise — câblé pour la première fois, G2 sur la question produit plus
+large reste ouvert) + allowlist staff-only réparée (accès reset mot de passe).
+
+**V3 harnais** : `tests/e2e/boucle-quotidienne.spec.js` (L0/L1/L4/L7, navigateur réel, 4/4 vert)
++ `tests/Feature/BoucleQuotidienneTest.php` (jumeau PHP, L0-L7+L5bis via les VRAIS endpoints des
+5 canaux comptoir/téléphone/borne/web/Uber — aucune interaction avec `pos-wizard.js` FROZEN). En
+l'écrivant, 3 bugs de test découverts et corrigés en RED→GREEN honnête (pas devinés) : le guard
+Sanctum `TokenGuard` reste figé sur le dernier `actingAs()` sans `Auth::forgetGuards()` explicite
+entre deux utilisateurs différents dans le même test ; `OrderType::KIOSK` = "sur place" en V1
+(désactivé, dine-in off) donc la borne réelle envoie TAKEAWAY ; un Z doit être OUVERT
+(`ZReportService::open()`) avant de pouvoir être clôturé. Purge de **91 fichiers Playwright**
+"preuve vacante" (0 `expect()` malgré des `test()` réels, verts en CI sans rien prouver — 15
+repérés en reconnaissance + 76 trouvés par la nouvelle sentinelle `noVacuousSpecSentinel.spec.js`,
+tous des scripts de capture/repro/debug jetables jamais référencés par la CI). Collection
+Playwright 1590/428 → 1259/340 (plus honnête, 0 perte de couverture réelle).
+
+**V4 confort caisse** (hors wizard gelé) : file d'encaissement faux-vide (panne réseau
+= même écran vert "file vide" qu'une vraie file vide — le caissier ne pouvait jamais distinguer
+les deux) · seuil d'écart caisse client 0,005€ vs serveur 2,00€ (bloquait pour de simples
+centimes d'arrondi) + message d'erreur serveur codé en dur en anglais fuité sur écran FR
+(ADR-007) · boutons billets rapides ajoutés (opt-in, `PaymentComponent.vue` FROZEN inchangé) ·
+scanner code-barres qui interceptait CHAQUE frappe clavier y compris dans un champ texte focusé
+(saisie manuelle rapide + Entrée confondue avec un scan). 1 finding rejeté après vérification
+(T-4.2 "ticket envoyé ✓ avant verdict" — le code actuel dit "envoyé À L'IMPRESSION…", design
+délibéré documenté, pas un bug).
+
+**V5 confort gestion** : `InterrupteurService::CATALOGUE` élargi 2→6 (remise manuelle, fidélité,
+promo borne, auto-impression ticket — délibérément SEULEMENT les bascules vraiment booléennes ;
+seuil caisse/barème livraison/mention légale/seuil stock restent hors catalogue, ce sont des
+valeurs numériques/texte, pas des on/off) · tuiles dashboard "Total ventes/commandes" étaient des
+cumuls DEPUIS TOUJOURS sans aucun filtre de date → `period=today` scope sur `business_date` (jour
+fiscal, pas minuit UTC) · widget alertes stock bas même faux-vide que V4. **2 fausses alarmes du
+registre de dangers fermées après vérification directe du code** : D13 (payment-gateway expose
+un secret à tout utilisateur — en fait gated `permission:settings` depuis un heal du 01/06, avant
+l'audit du 13/08 qui a vérifié un état périmé) et D14 (route PUT/PATCH message 500 latent — en
+fait retirée le 01/06, jamais réintroduite cassée). Les deux verrouillées par des tests de
+non-régression dédiés. 1 vrai trou trouvé et **délibérément non corrigé** : un coupon est accepté
+et pricé au devis (`OrderQuoteService`) mais peut être rejeté au commit
+(`FrontendOrderService::assertDiscretionaryDiscountAllowed`) si les kill-switches sont OFF —
+touche la tarification SSOT NF525 sur le chemin devis, jugé trop risqué pour un fix précipité
+sans couverture dédiée coupon×fidélité ; documenté pour un cycle à part.
+
+**V6 confort cuisine + borne** : le carillon "nouvelle commande" du KDS était MORT en layout V2
+(le défaut) — le seul `<audio>` vivait dans la branche legacy `v-else`, `useV2Layout=true` par
+défaut rendait `$refs.kdsNewOrderAudio` toujours `undefined`, `playKdsNewOrderSound()` faisait un
+no-op 100% silencieux (aucune erreur, aucun signal) : le cuisinier ratait CHAQUE alerte sonore
+sur l'écran standard · bouton "remettre en préparation" à cible tactile ~21px (icône 15px +
+padding 3px), sous le minimum WCAG 2.5.8 AA (24px), sur une tablette cuisine tenue mains
+grasses/mouillées · nom produit tronqué à 2 lignes sans marge (webkit-line-clamp, +50% porté à 3
+lignes) · borne offline affichait "#—" sans aucune référence à donner au comptoir — fix contenu
+entièrement dans `KioskCashInstructionComponent.vue` (repli 4 derniers chiffres de `orderId` ou
+code local "T"+5 chiffres), `KioskAppComponent.vue`/`KioskWizardComponent.vue` (FROZEN, porte G5)
+intacts.
+
+**V7 convergence** : frozen-zone diff = **0 ligne** sur les 15 fichiers §7 mesuré sur TOUTE la
+mission (`git diff --stat` base-avant-V1..HEAD, vide) · `php artisan fiscal:verify-chain --all` →
+CHAIN OK sur les 6 branches actives · D12 (ventilation Z paiement mixte split) re-vérifié : le
+test auto-armant `ZReportSplitBucketingLockTest` reste correctement SKIPPED (`ZReportService.php`
+ne lit toujours pas `order_payments`, 0 occurrence grep) — P1 NF525 réel, FROZEN, LOCK M6-002 non
+contresigné, non résolvable par agent · registre §2 du GOAL entièrement relu et mis à jour avec
+preuve à l'appui de chaque statut (D4/D5/D6/D9/D10/D11 fermés, D13/D14 fermés-faux-positifs, D1/
+D2/D3/D7/D8/D12 restent ouverts — D1-D3/D7 hors périmètre des 20 tâches, D8 owner-only, D12
+frozen-gated) · Vitest final 411 fichiers/3295 passés/3 skip/**0 échec** · PHPUnit Feature final
+**4705 passés/8 échecs/36 skip** (971s) — les 8 échecs = EXACTEMENT la baseline T-1.2, aucun
+nouveau, aucun régressé sur les 6 vagues de fixes (4686→4705 = les 19 tests PHPUnit ajoutés en
+V5-V7). **Aucun push, aucun déploiement — attente GO owner explicite** (règle finale du GOAL,
+respectée).
+
 **Audit parité borne↔web + sync unifiée →POS/KDS 2026-07-18** (commits `92d2de610`+`6c7701214`, non poussé ; registre `reports/goal-parite-sync-2026-07-18/REGISTRE_PARITE_SYNC.md`) : 3 finders adversaires ciblés. **Réponse owner prouvée** : borne et web = MÊME logique (chemin partagé `myOrderStore`→`PricingService::forKiosk`, web traité comme kiosk → prix/TVA/validation/composer/fidélité byte-identiques) ; sync →POS unifiée (encaissement par forme de paiement pas surface) ; sync →KDS unifiée (board-release source-agnostique, OSS/temps-réel/recall parité prouvée DB). **Healés SAFE** : S1 flip PENDING_COUNTER gaté COD (jumeau non-COD de P1-3, P1 futur carte web), S5 accept web atomique, S4 print serveur élargi web/online, S3 coupon surface/branche threadé au commit (legacy+défense profondeur). Tests 37/102 groupés, frozen 0, NF525 OK. **ESCALADE OWNER** : (S2) auto-accept web COD vs filet manuel = décision produit (la web n'atteint la cuisine que sur accept caisse, la borne auto) ; (S3-SSOT) accept-on-match coupon restreint en mode SSOT défaut exige touch frozen DiscountCalculator (LOCK). Landmine documentée : `visible_on=["pos","kiosk"]` si web bascule un jour `surface=web`.
 
 **Heal registre audit intelligence 2026-07-18** (commits `8a67523be`→`f8ef74027`, non poussé) : 5 P1 + 3 P2 du registre `reports/goal-intelligence-2026-07-18/REGISTRE_FINAL.md` healés en clusters TDD (4 implémenteurs //, commits séquentiels). **P1-5** `/admin/sales-report/overview` réellement gaté permission:sales-report (only par mauvais nom méthode → CA lisible par tout staff) + sentinelle anti vert-faux. **P1-4** upsell borne exclut items à composition requise/86 (item 40/106 → plus de 422 paiement). **P1-3** commande web PENDING_COUNTER rendue encaissable au comptoir (5 edits coordonnés, logique fiscale inchangée, visibilité cuisine préservée) + **P2-e** refund web gaté pos-refund + **P2-u** /loyalty/scan durci (KioskMachine). **P2-k** touches KDS [D]-[H] bornées aux cartes visibles + **P1-2** détecteur continuity au scheduler. **P1-1 [GATE OWNER]** trigger `orders_no_delete_when_fiscalized` (anti-réutilisation numéros NF525, mirror order_payments_no_delete) — code prêt+testé, NON migré, LOCK `tasks/2026-07-18/`. Validation : régression groupée 189 tests/3667 assertions, frozen 0, chaîne NF525 OK ×4, **RED-team hostile 0 P0/P1**, **e2e abusif 5/5 PASS**. **Restant registre (P2/P3 non-healés, vagues suivantes)** : FrontendOrder/Order 2 modèles (gate archi), collision out_of_stock quota/stock (latent), KDS zombies board+janitor, is_advance_order enum, seed auto-print, delivery_charge POS, loyalty/register verrou, env config:cache, ZReport TVA livraison (frozen). Pre-deploy trigger : garder les ~36 cleanups e2e forceDelete (RED P2).
@@ -2568,11 +2677,10 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
 
-### 🎯✅ GOAL EN COURS D'EXÉCUTION — `plans/GOAL_CONFORT_MAX_ET_BASE_PROUVEE_2026-08-15.md`
-**Owner a dit "lance le goal" (2026-08-15 soirée) — Vagues 1 ET 2/7 CLOSES, preuve N0/N1/N2 à
-chaque tâche gated non-owner.** 7 vagues · 20 tâches. Commits : `bf94a73e1`+`e8923b10a` (V1.1),
-`0835adbb0` (V1.3), `ee9803008` (V1.2 close), `b04a274de` (V2 D5+D6), `a64484c18` (V2 T-2.4),
-`1e0965ed2` (V2 T-2.1 close — **Vague 2 entièrement fermée**).
+### 🎯✅ GOAL TERMINÉ — `plans/GOAL_CONFORT_MAX_ET_BASE_PROUVEE_2026-08-15.md`
+**Owner a dit "lance le goal" (2026-08-15 soirée) — 7/7 VAGUES FERMÉES.** Synthèse complète en
+§3 LAST DONE (entrée du 2026-08-15, tout en haut). Ce bloc ci-dessous garde le détail Vagues 1-2
+tel qu'écrit pendant l'exécution ; Vagues 3-7 résumées juste après.
 
 **Vague 1 (PRÉ-VOL) — fermée** : Playwright 0→1590 tests/428 fichiers (D9, 1 ligne) · 87 méthodes
 PHPUnit orphelines ressuscitées + autoloader régénéré (D10) · CI ouverte sur la branche de travail
@@ -2601,7 +2709,35 @@ commits de retard), rien supprimé (G1 toujours ouvert).
 **Non-régression Vague 2** : 101/101 `tests/Feature/Cash`, 403/403 fichiers Vitest (2922/2925,
 3 skip légitimes), 0 échec.
 
-**Suite** : Vague 3 (harnais `boucle-quotidienne.spec.js` L0-L7) en cours.
+**Vagues 3-7 (résumé — détail complet en §3 LAST DONE)** :
+- **V3** `tests/e2e/boucle-quotidienne.spec.js` (4/4 vert, navigateur réel) + jumeau PHP
+  `tests/Feature/BoucleQuotidienneTest.php` (L0-L7+L5bis, 5 canaux réels) + purge de 91 specs
+  Playwright preuve-vacante (0 `expect()` malgré des `test()` réels) + sentinelle
+  `noVacuousSpecSentinel.spec.js` créée pour empêcher la régression.
+- **V4** 4 défauts confort caisse : faux-vide encaissement (panne masquée en "file vide ✅"),
+  seuil d'écart caisse 0,005€ client vs 2,00€ serveur + erreurs anglaises brutes, boutons billets
+  absents + scanner code-barres qui captait les champs texte. 1 finding rejeté (T-4.2, vérifié
+  non reproductible — design délibéré).
+- **V5** `InterrupteurService::CATALOGUE` 2→6 bascules · tuiles dashboard "depuis toujours" →
+  scope `period=today` sur `business_date` · widget stock-bas même faux-vide que V4 · **2 fausses
+  alarmes fermées** (D13 payment-gateway secret leak et D14 message 500 latent — déjà corrigées
+  début juin, l'audit source du 13/08 avait vérifié un état périmé) · 1 vrai trouvé et **délibérément
+  différé** (coupon accepté au devis puis refusé au commit — touche la tarification SSOT NF525,
+  risque de régression trop élevé pour un fix précipité).
+- **V6** carillon KDS mort en V2 (layout par défaut) · cible tactile 21px sous le minimum WCAG
+  (bouton "remettre en préparation") · nom produit tronqué à 2 lignes sans marge · borne offline
+  affichait "#—" sans référence (fix contenu hors zone gelée, KioskAppComponent.vue intact).
+- **V7** convergence : frozen-zone diff = **0 ligne** sur les 15 fichiers §7 (mesuré sur tout le
+  mission, `git diff --stat` vide) · `fiscal:verify-chain --all` CHAIN OK sur les 6 branches
+  actives · D12 (ventilation Z paiement mixte) re-vérifié toujours OUVERT, correctement figé
+  (ZReportService FROZEN, LOCK M6-002 non contresigné) · registre §2 du GOAL mis à jour avec
+  preuve pour chaque statut.
+
+**Suite** : rien d'assigné dans ce GOAL — portes owner ouvertes G1 (20 worktrees périmés), G2
+(cycle ouverture/clôture caisse jamais utilisé — question produit), G3 (rendez-vous matériel
+N3a/N3b sur place), G5 (LOCK zone gelée pour toucher KioskAppComponent.vue si besoin futur), G6
+(quelles entrées de `v1-hidden-modules.js` réafficher), D12 (LOCK M6-002 ZReportService). Aucun
+push, aucun déploiement — attente GO owner explicite.
 
 ---
 
