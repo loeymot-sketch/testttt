@@ -1,6 +1,6 @@
 # SYSTEM_MAP — Disjoint ownership of the 5 systems (cold-start SSOT)
 
-**Rule:** each system = one agent lane. Path sets below are **DISJOINT**. Any file used by 2+ systems is listed under **§6 SHARED (lock + gate, never parallel)** — never claimed by a single system lane. All paths grep-verified at HEAD `d6487f716`; items not directly confirmed are tagged `(à vérifier)`.
+**Rule:** each system = one agent lane. Path sets below are **DISJOINT**. Any file used by 2+ systems is listed under **§6 SHARED (lock + gate, never parallel)** — never claimed by a single system lane. All paths grep-verified at HEAD `d6487f716`; items not directly confirmed are tagged `(à vérifier)`. **Re-vérifié 2026-08-15 à HEAD `e8923b10a` (T-1.3, `GOAL_CONFORT_MAX_ET_BASE_PROUVEE_2026-08-15.md`)** : 4 dérives mineures corrigées ci-dessous (services déplacés, comptage controllers, dirs admin non listés). Rien de structurel — les voies restent disjointes.
 
 Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-shell/kiosk-wizard/kiosk-wizard-step/kiosk-errors`→BORNE · `pos-shell`→CAISSE · `admin-kds`/`admin-oss`→KDS+OSS · `admin-shell`(117 chunks)/`admin-reports`→CENTRAL · `app.js`=shared admin/customer SPA entry · `pos-app.js`=POS SPA entry · `vendor.js`=shared.
 
@@ -35,7 +35,7 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 **Backend (OWNED):**
 - `app/Http/Controllers/Admin/Pos/**` (PosReceiptPrintController) + `PosController`, `PosOrderController`
 - ⚠️ **POS controllers sitting DIRECTLY in `Admin/` (no `Pos/` subdir) — CAISSE, NOT CENTRAL:** `AdminPosV4Controller.php`, `PosCategoryController.php`, `PosLoyaltyController.php`, `CashOverviewController.php`, `CashSessionReportController.php` (verified `ls Admin/*.php`).
-- `app/Services/PaymentService.php`, `SplitPaymentService`, `CashDrawerService`, `app/Services/Pos/**`
+- `app/Services/PaymentService.php`, `app/Services/Payments/SplitPaymentService.php` (déplacé, `à vérifier` 2026-05→`Payments/` confirmé 2026-08-15), `app/Services/Cash/CashDrawerService.php` (déplacé, confirmé 2026-08-15), `app/Services/Pos/**`
 - Routes: `routes/api.php:792` `pos.`, `:971` `pos-order.`, `:1156` `pos-category.`
 - Config: `config/pos.php` (`simulation_hardware:37`)
 
@@ -92,7 +92,7 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 - `resources/js/components/layouts/backend/BackendMenuComponent.vue` (sidebar/RBAC). ⚠️ `resources/js/app.js` (shared admin SPA entry) is **NOT a CENTRAL-owned file → §6 SHARED (coordinate-only, never parallel)**.
 - Bundles: `public/js/admin-shell.js` (117 lazy chunks), `public/js/admin-reports.js`
 
-**Backend (OWNED):** `app/Http/Controllers/Admin/**` (**100 controllers**, incl. subdirs `Fiscal/`,`Observability/`,`Pos/`) EXCEPT the POS + KDS/OSS controllers **explicitly named in §2/§3** — including the 7 that sit DIRECTLY in `Admin/` (AdminPosV4/PosCategory/PosLoyalty/CashOverview/CashSessionReport → CAISSE ; KitchenDisplaySystemController/KdsSync → KDS). ⚠️ **The exclusion is by the EXPLICIT named list, NOT by subdir** — a POS/KDS controller sitting in bare `Admin/` belongs to its functional lane, never CENTRAL. Includes `DashboardController`/`DashboardService`, `OrderHistoryController`, Settings cluster (~26 controllers), catalogue (`ItemController`, CatalogStudio), `SalesReport`/`ItemsReport`/`AnalyticController`, users (Administrator/Employee/Chef/Waiter/Customer/DeliveryBoy), Coupon/Offer.
+**Backend (OWNED):** `app/Http/Controllers/Admin/**` (**97 controllers** mesuré 2026-08-15 à HEAD `e8923b10a`, était noté ~100 ; incl. subdirs `Fiscal/`,`Observability/`,`Pos/`) EXCEPT the POS + KDS/OSS controllers **explicitly named in §2/§3** — including the 7 that sit DIRECTLY in `Admin/` (AdminPosV4/PosCategory/PosLoyalty/CashOverview/CashSessionReport → CAISSE ; KitchenDisplaySystemController/KdsSync → KDS). ⚠️ **The exclusion is by the EXPLICIT named list, NOT by subdir** — a POS/KDS controller sitting in bare `Admin/` belongs to its functional lane, never CENTRAL. Includes `DashboardController`/`DashboardService`, `OrderHistoryController`, Settings cluster (~26 controllers), catalogue (`ItemController`, CatalogStudio), `SalesReport`/`ItemsReport`/`AnalyticController`, users (Administrator/Employee/Chef/Waiter/Customer/DeliveryBoy), Coupon/Offer.
 
 **FROZEN inside:** none specific.
 **SHARED it touches:** PricingService (reads), Fiscal (reads Z, `LastZReportWidget`), BranchScope/auth, sync (dashboard polls) — §6.
@@ -119,5 +119,12 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 **Coverage — dormant orphan:** `resources/js/components/table/**` + `resources/js/components/layouts/table/**` = dine-in surface, **DORMANT in V1** (`pos.dine_in_enabled=false`). Assigned to **CENTRAL** on activation (it owns `tableOrders`); untouched in V1 — no lane edits it.
 
 **Default-assignment rule (catch-all — guarantees no path is ever ambiguous):** any path NOT in a lane's OWNED set (§1–§5) AND NOT in §6 → treat as **SHARED-until-assigned**: declare it in your mission report and coordinate (no parallel edit) until the owner assigns it. Covers any new `layouts/<dir>`, `router/modules/<x>`, `store/modules/<x>`, `services/<x>`, `helpers/<x>` not yet listed. No path is silently claimable by two lanes or by none.
+
+**6 dirs `admin/<x>` non listés, résolus 2026-08-15 (T-1.3, ne pas re-signaler) :**
+- `admin/kitchen/KitchenTicketPrintListener.vue` + `admin/promo/PromoFlyerPrintListener.vue` → **§6 SHARED** (les deux sont montés globalement dans `DefaultComponent.vue`, imprimant pour la destination `kitchen` COMME `counter` — cross-lane structurel, pas un oubli).
+- `admin/promo/{PromoFlyerComponent,PromoFlyerQuickModal,PromoFlyerSettingsComponent}.vue` → **CAISSE** (flux comptoir : impression d'un ticket promo nominatif au point de vente).
+- `admin/uber/UberPhotoCaptureComponent.vue` → **CAISSE**, déjà documenté §2 (canal agrégateur rattaché à la caisse) — absent seulement de CETTE liste d'exclusion CENTRAL, pas un trou d'ownership réel.
+- `admin/shared/AvailabilityTogglePanel.vue` → **§6 SHARED** (le nom l'indique ; bascule de rupture consommée par plusieurs surfaces).
+- `admin/purchasing/PurchaseScanComponent.vue`, `admin/demo/WizardAdvancedLauncherComponent.vue` → **CENTRAL** par la règle catch-all ci-dessus (aucun signal cross-lane trouvé).
 
 **Produce-side events (boundary clarification):** a system lane EMITS the existing events (`OrderCreated`/`OrderStatusChanged`) and CONSUMES them — that stays in-lane. But the DISPATCH logic + the order-create path live in shared `OrderService.php`/`FrontendOrderService.php` and the event/payload classes live in §6. So changing **WHEN/HOW** an event fires, or the **KdsOrder payload shape**, is a SHARED-zone change = LOCK + gate, NEVER in a single lane in parallel (it would break KDS+OSS+tracker at once). A lane is in-lane only while it produces/consumes the existing contract UNCHANGED.

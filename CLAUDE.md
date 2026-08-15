@@ -482,15 +482,13 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
 - FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
-  (baseline-lock — count GROWS = CI fails). **Verified actual count
-  2026-05-21 = 66 FormRequests avec `return true;`** ; sentinel
-  baseline still set to **69** (ceiling, count<baseline passes).
-  Historique : 77 initial Wave 8 → 74 post Wave 5H → 69 post BUILD-6
-  (8 critical refactored vers `$this->user()?->can('xxx')`) → **66
-  observed today (a further -3 chipped away in subsequent waves
-  without lowering the sentinel constant)**. V1.0.2 BACKLOG : continue
-  chip-away par vague de commits AND lower sentinel `RETURN_TRUE_BASELINE`
-  to 66 to ratchet the ceiling tight.
+  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 64`
+  vérifié dans le code le 2026-08-15** (`tests/Feature/Sentinels/
+  FormRequestAuthzDriftSentinelTest.php:67`) — le cliquet a déjà été
+  resserré deux fois depuis la dernière note ici (69 → 66 → **64**,
+  historique complet : 77 initial Wave 8 → 74 post Wave 5H → 69 post
+  BUILD-6 → 66 → 64). V1.0.2 BACKLOG : continuer le chip-away par vague
+  de commits et resserrer `RETURN_TRUE_BASELINE` à chaque fois.
 
 ### Idempotency
 - HTTP `X-Idempotency-Key` header sur POST mutating
