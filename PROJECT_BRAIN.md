@@ -2568,6 +2568,81 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
 
+### 🎯✅ GOAL EN COURS D'EXÉCUTION — `plans/GOAL_CONFORT_MAX_ET_BASE_PROUVEE_2026-08-15.md`
+**Owner a dit "lance le goal" (2026-08-15 soirée) — Vagues 1 ET 2/7 CLOSES, preuve N0/N1/N2 à
+chaque tâche gated non-owner.** 7 vagues · 20 tâches. Commits : `bf94a73e1`+`e8923b10a` (V1.1),
+`0835adbb0` (V1.3), `ee9803008` (V1.2 close), `b04a274de` (V2 D5+D6), `a64484c18` (V2 T-2.4),
+`1e0965ed2` (V2 T-2.1 close — **Vague 2 entièrement fermée**).
+
+**Vague 1 (PRÉ-VOL) — fermée** : Playwright 0→1590 tests/428 fichiers (D9, 1 ligne) · 87 méthodes
+PHPUnit orphelines ressuscitées + autoloader régénéré (D10) · CI ouverte sur la branche de travail
++ premier run MySQL réel (D11) — a démasqué ET corrigé un vrai faux-négatif SQLite-only dans
+`OrderStateMachineLockForUpdateTest` (quoting `"id"` vs `` `id` ``) · SYSTEM_MAP/CLAUDE.md
+réalignés (dérive FormRequest baseline 69→**64** réelle) · 20 worktrees inventoriés (jusqu'à 2529
+commits de retard), rien supprimé (G1 toujours ouvert).
+
+**Vague 2 (SOLDER LE CHAUD) — fermée, les 4 tâches** :
+- **T-2.2 (D5)** — timeout impression cuisine 3s→20000ms pour la destination `kitchen`
+  (`kitchenRawTimeoutMs`, régression de `e2d2ca3b4` ce soir même). RED→GREEN prouvé.
+- **T-2.3 (D6)** — négation Uber (« sans poulet ») ne pollue plus le bandeau cuisson
+  (régression de `c377d959f` ce soir même). RED→GREEN prouvé, 7 variantes FR/EN.
+- **T-2.4** — allowlist staff-only : `auth.signup`/`auth.guest` (morts) → 9 vraies routes.
+  Personnel débloqué sur réinitialisation mot de passe. N1 (14 tests) + **N2 navigateur réel**
+  (6 tests, piège trouvé : bundle local périmé, rebuild nécessaire — même leçon que
+  `kdsBundleFreshnessSentinel`).
+- **T-2.1 (P0 argent)** — une session caisse bloquée à `status=closed` (2e appel `/reconcile`
+  échoué) n'avait AUCUN chemin de reprise, pour PERSONNE. `reconcile()` câblé pour la première
+  fois dans `CashSessionReportListComponent.vue`. **Preuve N2 la plus forte de la soirée** :
+  vraie session créée (écart 47,30€), retrouvée sans filtre, réconciliée de bout en bout dans un
+  VRAI navigateur, vérifiée en base ensuite. ⚠️ Portée délibérément limitée à la CORRECTION — la
+  question produit plus large (les 2 sessions historiques n'ont jamais dépassé `status=open` :
+  faut-il redessiner le parcours ?) reste **G2, non tranché**.
+
+**Non-régression Vague 2** : 101/101 `tests/Feature/Cash`, 403/403 fichiers Vitest (2922/2925,
+3 skip légitimes), 0 échec.
+
+**Suite** : Vague 3 (harnais `boucle-quotidienne.spec.js` L0-L7) en cours.
+
+---
+
+**Ce que la reconnaissance initiale a mesuré et qui doit survivre à cette session** (historique,
+conservé pour mémoire de la décomposition d'origine) :
+
+**Ce que la reconnaissance a mesuré et qui doit survivre à cette session** :
+- 🔴 **La suite Playwright ne collecte RIEN depuis le 2026-05-29** (`--list` → `0 tests in 0 files`) : un
+  `fs.readFileSync('/tmp/livreur-e2e-token.txt')` au **niveau module** dans
+  `tests/e2e/goal-functional-livreur-2026-05-28.spec.js:28` fait avorter toute la collecte (~1580 tests).
+  Lancer un spec nommément marche encore ⇒ **l'incident est resté invisible 2,5 mois**. Correctif : 1 ligne.
+- 🔴 **87 méthodes PHPUnit ne s'exécutent jamais** (14 fichiers sans suffixe `Test.php`) · **zéro CI depuis le
+  2026-06-23** (workflows sur `main`/`develop` seulement) ⇒ **PHPUnit ne tourne jamais sur MySQL**, donc les
+  triggers NF525 `BEFORE DELETE` et la concurrence `lockForUpdate` ne sont **jamais** exercés.
+- 🔴 **P0 ARGENT — la clôture de caisse est infinissable** : `CashDrawerService.js:132/142` = deux POST sans
+  compensation ; si `/reconcile` échoue (écart > 2 € et le POS Operator n'a pas l'override,
+  `RolePermissionTableSeeder.php:81`), la session reste CLOSED-non-réconciliée, **invisible** (relecture
+  `status=OPEN` seulement, `CashDrawerService.php:477-481`) et **terminable par personne** (0 appel UI à
+  `reconcile()`). Famille « Z bloqué 17 jours ».
+- 🔴 **N0 — L1 et L6 ne sont pas utilisés** : 2 sessions de caisse ouvertes le 25/06 et le 08/07, **encore
+  ouvertes** (50 et 37 j), **0 close jamais**, pour **347 commandes/30 j** (borne 108 · **téléphone 101** ·
+  comptoir 81 · web 31 · Uber 26). Le téléphone est le 2ᵉ canal et n'est pas dans la boucle de `CONSTITUTION.md:12`.
+- 🔴 **45 réglages métier exigent un développeur** — cause unique : `InterrupteurService.php:43-56`, la liste
+  blanche des réglages pilotables depuis l'écran ne contient que **2 entrées**. Dont SIRET/TVA imprimés sur le
+  ticket, barème de livraison, tolérance d'écart de caisse, seuil d'alerte stock.
+- 🔴 **Le carillon KDS ne sonne jamais en prod** : l'`<audio>` est dans le bloc legacy V1 alors que **V2 est le
+  défaut** (`KitchenDisplaySystemComponent.vue:339` vs `:1507`).
+- ⚠️ **Deux régressions introduites par MOI le 2026-08-14, déployées** : (D5) `e2d2ca3b4` a fait du chemin à
+  **3 000 ms** (`posLocalPrinter.js:86-93`) le SEUL survivant de l'auto-impression, alors que le pont cuisine
+  répond en **15 s** réels — toute impression longue = faux échec → boucle ; (D6) `c377d959f` teste
+  `/viande|meat/` **sans garde de négation** (`UberOrderMapper.php:81`) ⇒ « sans poulet » fait cuire du poulet,
+  alors que la garde existe à 3 m pour les crudités (`kdsSymbolic.js:115`) et que la leçon était déjà en mémoire.
+- **`APP_ENV=staging` n'est PAS un P0** : TPE simulé (`CONSTITUTION §2`) ⇒ `POS_SIMULATION_HARDWARE=true` ⇒ refus
+  de boot en `production` (`AppServiceProvider.php:198`). Couple **cohérent**. Vérifié : `BROADCAST_DRIVER=log`
+  **passe** le guard (seul `null` refusé, `:344`). Le travail est de balayer ce que `staging` désactive ailleurs.
+
+**Règle centrale du GOAL** : le double-ticket du 14/08 était écrit **deux jours avant** dans
+`reports/hardware/GLOBAL_OPS_HARDWARE_PROTOCOL_GAP_ANALYSIS_2026-08-12.md`. L'analyse n'a pas manqué, elle n'a
+pas été **consommée**. D'où un **registre des dangers connus non traités** (§2, 14 entrées) relu à l'ouverture
+de chaque vague.
+
 ### 🆕✅ EXÉCUTÉ 2026-08-12 — W3 : « trop de requêtes » sur la CAISSE — cause mesurée, rafale d'ouverture −17 %
 **Rapport** : `reports/goal-ops-swap-2026-08-12/W3_TROP_DE_REQUETES_CAISSE.md`. **Le message n'a PAS été masqué** : il a été ajouté exprès (`bootstrap.js:52-64`) après un P0 où la caisse avalait « 7+ HTTP 429 en silence » — le retirer restaurerait ce P0. **Mesuré** (Playwright, origine correspondant à `APP_URL`) : ouverture caisse = **35 req en 10 s**, repos = **5 req/min** (sobre), dont **7 endpoints appelés DEUX FOIS à 0-1 ms d'écart**. **Le mur** : `throttle:api` = **120/min en prod** et **PAR COMPTE** (`RouteServiceProvider.php:57`), pas par écran ; en local il est à 1000 ⇒ **le défaut est invisible au développement**. **Fausse piste écartée** : ma 1ʳᵉ mesure annonçait 81 req dont **47 rapports CSP** — **artefact de mon harnais** (Playwright chargeait `localhost:8000` alors que `APP_URL=127.0.0.1:8766`) ; sur l'origine correcte, **zéro CSP**. **Correctif** : `resources/js/shared/inflight-dedupe.js` (neuf) — fusionne les GET **identiques et EN VOL**, installé aux 2 entrées ; **ne met RIEN en cache** (libération au règlement), **jamais** de mutation, erreur propagée à tous. **Résultat mesuré : 35 → 29 req (−17 %), 7 paires de doublons → 1** (celle à 213 ms, non chevauchante, correctement épargnée) ; repos inchangé. **Effet exploitant : le mur recule de 4 à 5 écrans sur un même compte** (4 écrans : 140 ⇒ 116, sous les 120). **FAUTE DE MÉTHODE CONSIGNÉE** : ma 1ʳᵉ version était **INERTE** — la garde testait `typeof adapter !== 'function'` alors qu'en **axios 1.16** `defaults.adapter` est un **TABLEAU** `["xhr","http","fetch"]` ; **mes 7 bancs passaient quand même** (faux axios avec fonction). Attrapé par la **re-mesure** (rafale toujours à 35). 2 bancs ajoutés sur le **vrai axios**. `getAdapter` n'existe que sur l'export par défaut, pas sur `axios.create()`. **Bancs** : `inflightGetDedupe.spec.js` **9 verts** · `tests/e2e/pos-request-budget.spec.js` **2 verts** (garde permanente : ouverture ≤ 32, 0 doublon simultané, repos ≤ 12/min). **4 mutations détectées** (fusion off · fusion→cache · fusion des POST · garde fautive). **Gate** : Vitest **2887/2891, 1 rouge** (kdsBundleFreshness, toujours hors voie) · frozen **0** · **aucun composant caisse touché** (voie session parallèle intacte). **2 leviers laissés à l'owner, non actionnés** : **A** un compte par écran (gratuit, le plafond est par compte — `admin@`/`pos@`/`chef@` existent déjà) ; **B** relever `API_THROTTLE_PER_MINUTE` (pansement, réduit la protection anti-boucle). **AUCUN commit, AUCUNE poussée.**
 
