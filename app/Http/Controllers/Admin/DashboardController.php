@@ -60,19 +60,23 @@ class DashboardController extends AdminController
         $this->middleware(['permission:pos-manage-fiscal'])->only('eodPdf');
     }
 
-    public function totalSales(): \Illuminate\Http\Response|array|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    public function totalSales(Request $request): \Illuminate\Http\Response|array|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return ['data' => ['total_sales' => AppLibrary::currencyAmountFormat($this->dashboardService->totalSales())]];
+            // [T-5.2 CUMUL-NON-DATE 2026-08-15] period=all par défaut = comportement
+            // historique inchangé pour tout appelant qui n'envoie pas ce paramètre.
+            $period = $request->query('period') === 'today' ? 'today' : 'all';
+            return ['data' => ['total_sales' => AppLibrary::currencyAmountFormat($this->dashboardService->totalSales($period))]];
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
 
-    public function totalOrders(): \Illuminate\Http\Response|array|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    public function totalOrders(Request $request): \Illuminate\Http\Response|array|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return ['data' => ['total_orders' => $this->dashboardService->totalOrders()]];
+            $period = $request->query('period') === 'today' ? 'today' : 'all';
+            return ['data' => ['total_orders' => $this->dashboardService->totalOrders($period)]];
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

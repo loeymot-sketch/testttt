@@ -71,10 +71,12 @@ export const dashboard = {
     },
 
     actions: {
-        totalSales: function (context) {
+        // [T-5.2 CUMUL-NON-DATE 2026-08-15] period optionnel (défaut absent =
+        // comportement historique inchangé côté serveur).
+        totalSales: function (context, period) {
             return new Promise((resolve, reject) => {
                 axios
-                    .get("admin/dashboard/total-sales")
+                    .get("admin/dashboard/total-sales", { params: period ? { period } : {} })
                     .then((res) => {
                         context.commit("totalSales", res.data.data);
                         resolve(res);
@@ -84,10 +86,10 @@ export const dashboard = {
                     });
             });
         },
-        totalOrders: function (context) {
+        totalOrders: function (context, period) {
             return new Promise((resolve, reject) => {
                 axios
-                    .get("admin/dashboard/total-orders")
+                    .get("admin/dashboard/total-orders", { params: period ? { period } : {} })
                     .then((res) => {
                         context.commit("totalOrders", res.data.data);
                         resolve(res);

@@ -53,6 +53,40 @@ class InterrupteurService
             'description' => 'Le jeu de la roue proposé au client après sa commande.',
             'consequence' => 'Désactivée, la roue disparaît ; les lots déjà gagnés restent valables.',
         ],
+        // [T-5.1 CATALOGUE-ETROIT 2026-08-15 · GOAL_CONFORT_MAX] 4 ajouts —
+        // uniquement des bascules VRAIMENT booléennes qui existaient déjà comme
+        // `config('...')` lues directement dans le code métier (même famille que
+        // split_payment/wheel ci-dessus). D'autres candidats évoqués à l'audit
+        // (tolérance d'écart caisse, barème frais livraison, mention légale
+        // ticket, seuil alerte stock bas, heures de service) sont des valeurs
+        // NUMÉRIQUES/TEXTE/HORAIRES, pas des bascules on/off — ce catalogue est
+        // délibérément booléen (`valeur(): bool`, `regler(bool $actif)`), les y
+        // forcer aurait été une fausse case à cocher. Ils resteront hors de ce
+        // catalogue jusqu'à un mécanisme de réglages TYPÉS dédié (hors scope ici).
+        'remise_manuelle' => [
+            'cle'         => 'pos.manual_discount_enabled',
+            'libelle'     => 'Remise manuelle en caisse',
+            'description' => "Autorise le caissier à appliquer une remise libre sur une commande.",
+            'consequence' => 'Désactivée, le bouton remise disparaît de la caisse ; les remises déjà appliquées restent valables (F1 : le Z reste fiscalement correct sur base remisée).',
+        ],
+        'fidelite' => [
+            'cle'         => 'pos.loyalty_enabled',
+            'libelle'     => 'Programme fidélité (dépense de points)',
+            'description' => 'Permet à un client de dépenser ses points fidélité pour obtenir une réduction.',
+            'consequence' => 'Désactivé, les points cessent d’être dépensables ; ils continuent de s’accumuler et restent visibles au client.',
+        ],
+        'kiosk_promo' => [
+            'cle'         => 'kiosk.promo_enabled',
+            'libelle'     => 'Codes promo sur la borne',
+            'description' => 'Affiche le champ code promo dans le parcours de commande borne.',
+            'consequence' => 'Désactivé, le champ disparaît de la borne ; les codes restent utilisables aux autres canaux (caisse, web).',
+        ],
+        'impression_ticket_client_auto' => [
+            'cle'         => 'printing.auto_print_client_receipt',
+            'libelle'     => 'Impression automatique du ticket client',
+            'description' => "À l'encaissement, imprime automatiquement le ticket client sans clic du caissier.",
+            'consequence' => 'Désactivée (défaut), le ticket reste imprimable à la demande via le bouton dédié — rien ne se perd, juste plus de clic requis.',
+        ],
     ];
 
     private const GROUPE = 'pilotage';

@@ -371,18 +371,36 @@ class DashboardService
         }
     }
 
-    public function totalSales()
+    /**
+     * [T-5.2 CUMUL-NON-DATE 2026-08-15 · GOAL_CONFORT_MAX] `$period='all'`
+     * (défaut) préserve EXACTEMENT le comportement historique — cumul depuis
+     * toujours, comme avant, pour tout appelant qui ne passe pas ce paramètre.
+     * `$period='today'` scope sur `business_date` (le jour FISCAL, pas minuit
+     * UTC — Le Cayenne sert jusqu'à 00h30, cf. config/kds.php, un même service
+     * du soir ne doit pas être coupé en deux jours). Utilisé par la tuile
+     * "Ventes du jour" du dashboard (OverviewComponent.vue).
+     */
+    private function scopePeriod($query, string $period)
+    {
+        if ($period === 'today') {
+            $query->where('business_date', now()->toDateString());
+        }
+
+        return $query;
+    }
+
+    public function totalSales(string $period = 'all')
     {
         try {
             // [DASH-NET-01 heal 2026-06-01] Net realized revenue (excl cancelled-paid, net refunds).
-            return $this->orderQuery()->realizedRevenue()->sum('total');
+            return $this->scopePeriod($this->orderQuery()->realizedRevenue(), $period)->sum('total');
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
 
-    public function totalOrders()
+    public function totalOrders(string $period = 'all')
     {
         try {
             // [DASH-01 heal 2026-06-01, owner "do the goal"] The "Total commandes" KPI must
@@ -390,7 +408,7 @@ class DashboardService
             // vs 1755 placed/day), misleading under that label. Count all PLACED orders,
             // excluding refund counter-entry mirrors (parent_order_id). The per-status
             // breakdown stays in orderStatistics; this headline is total volume.
-            return $this->orderQuery()->whereNull('parent_order_id')->count();
+            return $this->scopePeriod($this->orderQuery()->whereNull('parent_order_id'), $period)->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

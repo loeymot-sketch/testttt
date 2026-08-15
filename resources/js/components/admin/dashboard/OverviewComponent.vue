@@ -9,7 +9,7 @@
                         <i class="lab lab-total-sale lab-font-size-24 lab-color-pink"></i>
                     </div>
                     <div>
-                        <h3 class="font-medium text-white">{{ $t('label.total_sales') }}</h3>
+                        <h3 class="font-medium text-white">{{ $t('label.total_sales_today') }}</h3>
                         <h4 class="font-semibold text-[22px] leading-[34px] text-white">{{ total_sales }}</h4>
                     </div>
                 </div>
@@ -20,7 +20,7 @@
                         <i class="lab lab-total-orders lab-font-size-24 lab-color-portage"></i>
                     </div>
                     <div>
-                        <h3 class="font-medium text-white">{{ $t('label.total_orders') }}</h3>
+                        <h3 class="font-medium text-white">{{ $t('label.total_orders_today') }}</h3>
                         <h4 class="font-semibold text-[22px] leading-[34px] text-white">{{ total_orders }}</h4>
                     </div>
                 </div>
@@ -62,9 +62,14 @@ export default {
         this.totalMenuItems();
     },
     methods: {
+        // [T-5.2 CUMUL-NON-DATE 2026-08-15 · GOAL_CONFORT_MAX] Ces 2 tuiles étaient
+        // des cumuls DEPUIS TOUJOURS (aucun filtre de date côté serveur) — un
+        // propriétaire au jour 500 d'exploitation lisait un "Total ventes" qui ne
+        // disait rien de la journée en cours. Scopées sur le jour fiscal
+        // (business_date, pas minuit UTC) + relabellisées honnêtement.
         totalSales: function () {
             this.loading.isActive = true;
-            this.$store.dispatch("dashboard/totalSales").then((res) => {
+            this.$store.dispatch("dashboard/totalSales", 'today').then((res) => {
                 this.total_sales = res.data.data.total_sales;
                 this.loading.isActive = false;
             }).catch((err) => {
@@ -74,7 +79,7 @@ export default {
 
         totalOrders: function () {
             this.loading.isActive = true;
-            this.$store.dispatch("dashboard/totalOrders").then((res) => {
+            this.$store.dispatch("dashboard/totalOrders", 'today').then((res) => {
                 this.total_orders = res.data.data.total_orders;
                 this.loading.isActive = false;
             }).catch((err) => {

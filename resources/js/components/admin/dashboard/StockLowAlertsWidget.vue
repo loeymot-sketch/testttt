@@ -9,7 +9,14 @@
                 </router-link>
             </div>
             <div class="db-card-body">
-                <p v-if="!loading.isActive && alerts.length === 0" class="text-sm text-gray-500">
+                <!-- [T-5.2 PANNE-MASQUEE 2026-08-15 · GOAL_CONFORT_MAX] fetchAlerts()
+                     avalait toute erreur (403/500/réseau) en la traitant EXACTEMENT
+                     comme "aucune alerte" — une panne était donc invisible, jamais
+                     distinguable d'un vrai stock sain. -->
+                <p v-if="!loading.isActive && fetchError" class="text-sm text-red-600" data-testid="stock-low-alerts-error">
+                    {{ $t('label.stock_low_alerts_error') }}
+                </p>
+                <p v-else-if="!loading.isActive && alerts.length === 0" class="text-sm text-gray-500">
                     {{ $t('label.no_low_alerts') }}
                 </p>
                 <div v-else-if="loading.isActive" class="py-6" />
@@ -51,6 +58,7 @@ export default {
         return {
             loading: { isActive: false },
             alerts: [],
+            fetchError: false,
         };
     },
     mounted() {
@@ -90,8 +98,12 @@ export default {
             try {
                 const res = await axios.get('admin/stock/low-alerts');
                 this.alerts = res.data?.alerts ?? [];
+                this.fetchError = false;
             } catch (_e) {
+                // [T-5.2 PANNE-MASQUEE] Une panne (403/500/réseau) ne doit JAMAIS
+                // ressembler à "aucune alerte" — cf. bannière d'erreur dans le template.
                 this.alerts = [];
+                this.fetchError = true;
             } finally {
                 this.loading.isActive = false;
             }
