@@ -62,12 +62,26 @@ const authenticatedStaffLanding = () => {
 
 // [STAFF-ONLY-V1] Liste blanche des frontend routes accessibles même en staff-only mode.
 // Tout ce qui n'est pas ici est redirigé vers /login quand staffOnlyMode=true.
+// [D-PWD-RESET 2026-08-15 · GOAL_CONFORT_MAX] "auth.signup" et "auth.guest" NE
+// CORRESPONDAIENT À AUCUNE ROUTE DÉCLARÉE (vrais noms : auth.signupPhone/
+// signupVerify/signupRegister, auth.guestLogin/guestLoginVerify — voir
+// router/modules/authRoutes.js). Les 3 liens de /login pointant dessus étaient donc
+// morts. Pire : auth.verifyEmail (où ForgetPasswordComponent.vue pousse après
+// saisie du téléphone) manquait aussi → le personnel qui demandait une
+// réinitialisation de mot de passe était renvoyé en boucle sur /login, sans
+// jamais pouvoir la terminer. Liste complétée aux 9 routes RÉELLES du module
+// auth (chaînes login/reset/signup/guest au complet, pas seulement le symptôme
+// signalé) — sentinelle : tests/js/staffOnlyAllowlistNamesExist.spec.js.
 const STAFF_ONLY_FRONTEND_ALLOWLIST = new Set([
     "auth.login",
-    "auth.signup",
     "auth.forgetPassword",
+    "auth.verifyEmail",
     "auth.resetPassword",
-    "auth.guest",
+    "auth.signupPhone",
+    "auth.signupVerify",
+    "auth.signupRegister",
+    "auth.guestLogin",
+    "auth.guestLoginVerify",
     "route.notFound",
     "route.exception",
 ]);
