@@ -170,4 +170,39 @@ describe('[test-e2e fix C-007 round-1 2026-08-16] DefaultComponent — gate admi
     expect(ctx.authcheck).toHaveBeenCalledTimes(1);
     wrapper.unmount();
   });
+
+  // [test-e2e fix C-007 round-3 2026-08-16] Trouvé par l'audit adversarial
+  // round-2 (Wave C) : le fix round-2 ne gardait QUE le dispatch authcheck
+  // derrière isReady() — mais created() appelait TOUJOURS
+  // applyThemeFromRoute() SYNCHRONEMENT, avant toute résolution. Avec
+  // $route.meta non résolu, aucune branche isKiosk/isFrontend/isTable/
+  // isTracking ne matchait, donc theme tombait dans le else final :
+  // "backend" — montant BRIÈVEMENT BackendNavbarComponent, dont created()
+  // dispatche LUI-MÊME (fichier séparé, indépendant de ce gate)
+  // admin/default-access + admin/setting/branch AVANT que watch:$route ne
+  // corrige theme→"tracking". Preuve terrain : ces 2 appels visibles dans
+  // CHAQUE console.json admin-cookie malgré le "fix" round-2 (network.json
+  // ne les capture pas — mega-audit-snap.js ne journalise que les requêtes
+  // en échec/lentes/mutation).
+  it("le theme reste 'frontend' (valeur sûre par défaut, JAMAIS 'backend') tant que router.isReady() n'est pas résolu — empêche le montage furtif de BackendNavbarComponent", async () => {
+    const ctx = makeStore({ authStatus: true });
+    const route = { path: '/suivi/abc123', meta: {} }; // état réel au chargement à froid
+    let resolveReady;
+    const isReady = vi.fn(() => new Promise((r) => { resolveReady = r; }));
+    const wrapper = mountDefault(route, ctx, { isReady });
+
+    // Avant résolution : theme ne doit JAMAIS être passé à "backend" — created()
+    // ne détermine plus le theme du tout, il reste à data()'s "frontend" sûr.
+    await flushPromises();
+    expect(wrapper.vm.theme, 'theme ne doit pas devenir "backend" avant la résolution du router').not.toBe('backend');
+    expect(wrapper.vm.theme).toBe('frontend');
+
+    // Le router se résout — meta reste vide (page non-tracking résolue en /admin/x par ex.)
+    resolveReady();
+    await flushPromises();
+
+    // Seulement APRÈS résolution, le theme peut légitimement devenir "backend".
+    expect(wrapper.vm.theme).toBe('backend');
+    wrapper.unmount();
+  });
 });

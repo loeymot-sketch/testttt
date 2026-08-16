@@ -117,7 +117,10 @@ export default {
     },
   },
   created() {
-    this.applyThemeFromRoute(this.$route);
+    // [test-e2e fix C-007 round-3 2026-08-16] NE PLUS déterminer le theme ici,
+    // de façon synchrone — voir beforeMount() ci-dessous pour le pourquoi
+    // complet. this.theme reste à sa valeur sûre par défaut (data(): "frontend",
+    // JAMAIS "backend") tant que le router n'a pas résolu la vraie route.
   },
   beforeMount() {
     this.$store
@@ -131,31 +134,43 @@ export default {
       .catch();
 
 
-    // [test-e2e fix C-007 round-1 2026-08-16, corrigé round-2] La page publique
-    // de suivi (theme "tracking", route.meta.isTracking === true — LE MÊME flag
-    // que la branche `theme === 'tracking'` du template et de
-    // applyThemeFromRoute() ci-dessous) ne doit déclencher AUCUN bootstrap
-    // admin-authentifié : un membre du staff avec un cookie de session admin
-    // actif qui ouvre ce lien public (téléphone client, QR borne) ne doit pas
-    // faire atterrir des données privilégiées (authcheck : user/menu/permission)
-    // dans le store Vuex / la mémoire JS de cette page, même si rien ne les
-    // affiche.
+    // [test-e2e fix C-007 round-1/2/3 2026-08-16] La page publique de suivi
+    // (theme "tracking", route.meta.isTracking === true — LE MÊME flag que la
+    // branche `theme === 'tracking'` du template et de applyThemeFromRoute()
+    // ci-dessous) ne doit déclencher AUCUN bootstrap admin-authentifié : un
+    // membre du staff avec un cookie de session admin actif qui ouvre ce lien
+    // public (téléphone client, QR borne) ne doit pas faire atterrir des
+    // données privilégiées (authcheck, ou même le simple MONTAGE de
+    // BackendNavbarComponent/BackendMenuComponent) dans le store Vuex / la
+    // mémoire JS de cette page, même si rien ne les affiche.
     //
-    // [round-2 fix] Le premier passage vérifiait `this.$route.meta` directement
-    // dans beforeMount() — correct pour l'ORDRE des hooks du COMPOSANT (created()
-    // tourne bien avant beforeMount()), mais faux pour la résolution ASYNCHRONE
-    // du ROUTER : `app.mount('#app')` (app.js) n'attend PAS `router.isReady()`,
-    // donc au premier chargement à froid d'un lien /suivi/... (le seul chemin
-    // réel : QR borne, SMS/lien direct — jamais une navigation interne depuis
-    // une SPA déjà montée), `$route.meta` n'était PAS ENCORE résolu à cet instant
-    // précis : `isTracking` valait `undefined`, `undefined !== true` = vrai, donc
-    // le bootstrap admin partait quand même. Prouvé par test-e2e round-2 (Wave C) :
-    // authcheck observé dans le network.json admin-cookie sur CHAQUE chargement
-    // à froid malgré le gate. Le `watch: $route` plus bas corrige `theme`
-    // réactivement ensuite (d'où l'absence de chrome DOM, jamais régressée) mais
-    // ce dispatch ponctuel ne se ré-évalue jamais. Fix : attendre la résolution
-    // réelle du router avant d'évaluer le gate.
+    // [round-2] Le premier fix vérifiait this.$route.meta directement — faux
+    // pour la résolution ASYNCHRONE du ROUTER : app.js appelle app.mount()
+    // sans attendre router.isReady(), donc $route.meta n'était pas encore
+    // résolu à l'instant précis de ce hook sur un chargement à froid (le SEUL
+    // chemin réel : QR borne, lien direct — jamais une navigation interne).
+    //
+    // [round-3] Le fix round-2 ne gardait QUE le dispatch authcheck derrière
+    // isReady() — mais created() appelait TOUJOURS applyThemeFromRoute()
+    // SYNCHRONEMENT, AVANT toute résolution. Avec $route.meta non résolu,
+    // AUCUNE branche isKiosk/isFrontend/isTable/isTracking ne matchait, donc
+    // applyThemeFromRoute() tombait dans son `else` final : theme="backend" —
+    // montant BRIÈVEMENT BackendNavbarComponent, dont le created() (fichier
+    // séparé) dispatche LUI-MÊME, indépendamment de ce gate,
+    // admin/default-access + admin/setting/branch, avant que watch:$route ne
+    // corrige theme→"tracking" une fois la vraie route résolue. Prouvé par
+    // test-e2e round-2 (Wave C, adversarial) : ces 2 appels visibles dans
+    // CHAQUE console.json admin-cookie malgré le fix round-2 (network.json ne
+    // les capture pas — mega-audit-snap.js ne journalise QUE les requêtes en
+    // échec/lentes/mutation, un GET 200 rapide y est invisible par
+    // construction ; console.json capte les violations CSP report-only pour
+    // ces mêmes appels, qui elles ont trahi le montage).
+    //
+    // Fix définitif : la détermination du theme ET le dispatch authcheck
+    // attendent TOUS DEUX router.isReady() — theme reste à "frontend" (sûr,
+    // aucune donnée privilégiée) jusqu'à résolution réelle de la route.
     this.$router.isReady().then(() => {
+      this.applyThemeFromRoute(this.$route);
       if (this.$route?.meta?.isTracking !== true && this.$store.getters.authStatus) {
         this.$store.dispatch("authcheck").then(res => {
           if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
