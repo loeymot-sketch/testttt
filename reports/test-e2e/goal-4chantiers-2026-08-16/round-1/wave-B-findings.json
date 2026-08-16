@@ -1,0 +1,46 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 6,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-B/03-beep-t0.{console,network}.json, 04-beep-t10s.{console,network}.json, 05-beep-t20s.{console,network}.json, 06-kiosk-order-single-beep-regression.console.json",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "The spec's ONLY technical proof mechanism for 'exactly 3 beeps at ~0/10/20s' and 'kiosk order = exactly 1 beep' is `console.log('[wave-B] ...', ...)` calls executed in the Playwright Node test process (printing window.__beepEvents, netTrace, aria-label diffs, the 'our triple anchor' diagnostic). mega-audit-snap.js's recorder (tests/e2e/helpers/mega-audit-snap.js:90, `page.on('console', onConsole)`) only captures BROWSER page-context console events, not Node-side test output -- confirmed empty: 03-beep-t0.console.json and .network.json are literally 2 bytes each (`[]`); 04-beep-t10s.console.json and 05-beep-t20s.console.json (5780 bytes each, identical structure) contain ONLY CSP-report-only noise + the pre-existing admin/stock/low-alerts 403 -- zero beep-timestamp, zero __beepEvents, zero netTrace content in ANY of the 4-file artifact quartet across all 6 states. No Playwright HTML/JSON reporter output exists anywhere in the repo either (test-results/.last-run.json contains only `{\"status\":\"passed\",\"failedTests\":[]}`, no stdout transcript). This directly violates AUDIT_PLAN.md Wave B's own explicit instruction: 'Record the counter value + timestamps in the network/console artifact, not just a PNG.' The only recoverable indirect evidence is PNG file mtimes (1s resolution): 03-beep-t0.png=09:21:49, 04-beep-t10s.png=09:21:59, 05-beep-t20s.png=09:22:09 -- consistent with 'roughly 3 events ~10s apart' but cannot substantiate the self-report's specific claim of 'EXACTLY 10000ms/10000ms spacing', and gives zero corroboration for the kiosk-order 'exactly 1 beep, does not escalate' regression claim (state 06 has no beep-count evidence at all). The self-reported 'cross-wave interference' diagnosis for the first run's anomalous 6428ms gap (attributed to a concurrent Wave C fixture via a netTrace diff) is likewise unverifiable from this round's deliverables -- no netTrace was persisted anywhere for me to check. Net effect: the wave's two 'cannot fail' acceptance criteria (exactly-3-beeps-at-10s-spacing; kiosk-stays-at-1-beep) rest entirely on trusting the test's internal assert()+pass status and the GStack narrative, with no independently-inspectable technical trail -- exactly the 'confidence without evidence' pattern CLAUDE.md §13 forbids.",
+      "fix_hint": "In test-e2e-goal-4chantiers-wave-B.spec.js, replace/augment the console.log('[wave-B] ...') diagnostic prints with page.evaluate-side console.log calls (so mega-audit-snap.js's page.on('console') listener actually captures them into the .console.json artifact), or write a dedicated JSON sidecar file (e.g. `${SCREENSHOT_DIR}/_beep-timeline.json`) via fs.writeFileSync with { allBeepTimestamps, netTrace, ariaBefore, ariaAfter } before the test ends, so a reviewer can independently verify the exact spacing and the interference diagnosis without re-running the suite."
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-B/02-web-order-seeded-panel-red.png, 03-beep-t0.png",
+      "category": "visual_overlap",
+      "severity": "P2",
+      "evidence": "The web-order-arrival toast ('Nouvelle commande #6510', Vue-Toastification `role=\"alert\"`, top-right position) visually overlaps and obscures the persistent 'TICKET CAISSE' section header text underneath it, and its right edge partially clips the 'Caissier Le Cayenne' staff-name text in the top nav bar. Confirmed via pixel crop of both PNGs at region (900,0)-(1280,130): in 02-web-order-seeded-panel-red.png the 'TICKET CAISSE' label is only faintly visible bleeding through/behind the toast box; in 03-beep-t0.png it is fully hidden and 'Caissier Le Cayenne' is clipped by the toast's rounded corner. This toast is emitted from BOTH the realtime path (_notifyNewOrder, PosComponent.vue:3955 `alertService.info(label)`) AND the polling path this wave's own spec comment identifies as the actual production trigger (_notifyPolledNewOrders -> _signalNewOrder, PosComponent.vue:4329 `alertService.info(label)`), so it fires on every real-world web-order arrival this feature targets, not just an edge case. The toast mechanism itself predates this diff (comment tag 'UX-NOTIF-01 2026-07-22'), so it is not a regression introduced by b7e5240ba, but it is directly co-triggered by the alert sequence under test and was not disclosed in the GStack self-report despite being visible in their own captured artifacts.",
+      "fix_hint": "Reposition the Vue-Toastification container (or add a top offset) so it does not overlap resources/js/components/admin/pos/PosComponent.vue's 'TICKET CAISSE' panel header -- e.g. anchor toasts below the top nav bar height, or move the ticket panel's sticky header to a higher z-index with a semi-opaque background so overlapping text stays legible even during the toast's visible window."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": {
+    "independently_verified_clean": [
+      "Panel border-left computed AND rendered pixel color confirmed exactly rgb(211,47,47)/#d32f2f via direct pixel sampling of 02-web-order-seeded-panel-red.png at (x=27-29,y=552) -- matches getComputedStyle assertion in spec, not just trusted.",
+      "New web-alert red (#d32f2f, sampled 211,47,47) IS visually distinguishable from the pre-existing cash panel border -- the cash panel ('À ENCAISSER') actually renders var(--pos-v5-brand-red) which resolves to the Cayenne brand orange #F4501E (sampled 244,80,30 at x=417,y=350 in the same screenshot), NOT the #cf3a3a fallback documented in the PosComponent.vue CSS comment. Euclidean RGB distance vs the true rendered color is ~49.7 (clearly distinct orange vs crimson), not ~16 as the raw CSS fallback text would suggest -- verified by reading resources/css/foundations/pos-v5-tokens.css:41 rather than trusting the source-code comment.",
+      "Web-order panel numeric integrity holds across all 6 states: aria-label count (77->78), visible header count ('Commandes web · 77'->'· 78'), and API poll response body all agree; count stays flat at 78 through states 03-06 (no beep-per-poll double counting); kiosk fixture correctly lands in 'À ENCAISSER — COMPTOIR' (4->5) and never bleeds into the web-order count (78 stays 78) -- confirms SYNC-WEB-ALERT-1 and the kiosk/web channel separation structurally.",
+      "State 01's 77-pre-existing-orders baseline (never showing the plan-assumed empty '--empty' panel variant) is legitimate given the live dev DB and the CSS: .pos-shortcuts__panel--empty (PosComponent.vue ~L6415) only softens the border when webOrders.length===0, so a red border at baseline with 77 orders queued is CORRECT rendering, not evidence of a broken empty-state -- GStack's 'verified structurally via CSS instead of capturing it live' claim checks out under independent code read, though it remains an actual capture gap (the true empty variant was never visually proven, only inferred).",
+      "'Suivi commandes' toolbar button visually 'disappearing' between states 04 and 05 was investigated and is NOT a defect -- it is present in both states' DOM with identical markup; only the 'is-tone-ready' modifier class and badge span are removed when readyOrders.length drops from 1 to 0 (a concurrent/shared-dev-DB delivery of an unrelated order, per the disclosed live-DB caveat). Zoomed pixel crop confirms the button renders in its plain/neutral (non-green, no badge) state, not display:none -- an initial full-page-thumbnail read misjudged this as missing; corrected after crop verification.",
+      "Zero i18n leaks, zero undefined/NaN/null visible page text (Symfony Debugbar's own JS boilerplate 'null' strings excluded, not user-facing), zero frozen-zone diff (git diff --stat 69b10f0aa..10cff6e76 against all 8 frozen paths independently re-run, empty).",
+      "The recurring admin/stock/low-alerts 403 (POS operator role) visible in nearly every state's network.json/console.json is the documented, pre-existing, out-of-scope Wave E degrade case (AUDIT_PLAN.md explicitly calls this NOT a bug for the POS-operator role) -- confirmed it produces no visible error toast/raw text in any Wave B screenshot, but this wave does not own verifying its silent-degrade quality across full poll cycles; left for Wave E's reviewer, not counted as a Wave B finding."
+    ]
+  }
+}

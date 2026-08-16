@@ -1,0 +1,75 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 12,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/01-in-progress-anon.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Independently confirmed, not taken on GStack's word. Screenshots 01-in-progress-anon.png and 01-in-progress-admin-cookie.png both visibly show '465 commandes avant vous' directly beside '20-25 min temps d'attente estimé' for the SAME order (queue_number 9813) on the SAME card. This matches 00-ground-truth.json byte-for-byte (pos.position_ahead=465, pos.wait_low=20, pos.wait_high=25). Root cause read directly in the two backend services: app/Services/OrderTrackingService.php forOrder() (lines 100-117) builds position_ahead from Order::withoutGlobalScope(BranchScope::class)->where('branch_id',...)->where('order_datetime','<',$order->order_datetime)->whereIn('status', KitchenReleaseRule::visibleStatuses()) with applyBoardReleaseFilter/applyScheduledBoardFilter -- and NO staleness bound. app/Services/WaitEstimateService.php estimate() (lines 63-69) runs the SAME kind of active-status count but adds an explicit staleness filter absent from the sibling: ->where('order_datetime','>=',$now->copy()->subMinutes(self::QUEUE_WINDOW_MINUTES)) -- QUEUE_WINDOW_MINUTES=120, tagged '[STALE-GUARD 2026-07-28]' in a comment that explicitly documents the exact same bug class: 'la DB dev portait 414 ACCEPT fantomes -> fourchette scotchee a 30-35'. wait_low/wait_high are computed by this staleness-guarded WaitEstimateService (queue_count small enough to land in the 20-25 tier), while position_ahead is computed by the UN-guarded query in OrderTrackingService and counts hundreds of stale/abandoned ACCEPT-PREPARING orders as 'ahead' of this one. The two numbers shown together on the customer's phone are not a UX-only mismatch: position_ahead=465 is factually wrong (it counts stale ghost orders the kitchen already abandoned), while wait_low/high=20-25 is correct because it alone has the staleness guard. This is the exact same defect class already fixed once in the sibling service on 2026-07-28 and re-introduced unguarded in brand-new code (OrderTrackingService, dated 2026-08-16, same day as this audit). The GStack team's spec itself documents discovering this (test-e2e-goal-4chantiers-wave-C.spec.js lines 106-116, 'OrderTrackingService::forOrder()'s position_ahead query has NO staleness window (unlike WaitEstimateService's STALE-GUARD)') and had to anchor the almost-ready fixture's order_datetime to dodge it -- but left the in-progress (pos) fixture exposed to it, which is exactly what state 01 captures.",
+      "fix_hint": "app/Services/OrderTrackingService.php forOrder() lines 106-113: add the same staleness bound WaitEstimateService::estimate() uses (->where('order_datetime','>=',$now->copy()->subMinutes(WaitEstimateService::QUEUE_WINDOW_MINUTES)) or a shared constant) to the position_ahead query before ->count(). This bug also reaches the kiosk waiting screen (KioskWaitingComponent.vue / Wave D), since forOrder() is the SAME shared method OrderController::show()/store() call for the kiosk -- fixing it here fixes both surfaces."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/06-malformed-token-anon.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "AUDIT_PLAN.md's own stated acceptance criterion for this wave says the malformed (10-char) token must 'confirm it 404s cleanly at the route layer rather than reaching the Vue component in a broken loading state'. Verified directly against the running dev server (not inferred): `curl -sD - http://127.0.0.1:8000/api/frontend/order/track/ABCDEFGHIJ -H 'Accept: application/json' -H 'x-api-key: <key>'` returns `HTTP/1.1 200 OK` with `Content-Type: text/html; charset=UTF-8` and a full SPA index.html body (<div id=\"app\"><default-component /></div>, window.foodkingConfig, fresh XSRF-TOKEN/session Set-Cookie headers) -- NOT a 404, NOT JSON, NOT an error of any kind. Root cause confirmed in routes/api.php:1763-1764 (`Route::get('order/track/{trackingToken}', ...)->where('trackingToken', '[A-Za-z0-9]{48}')`) and routes/web.php:237 (`Route::get('/{any}', [RootController::class, 'index'])`, the SPA catch-all comment at web.php:140 confirms it is registered LAST/attrape-tout): when the 48-char regex constraint fails to match a 10-char token, Laravel does not 404 -- the request falls through past the entire api.php route table to web.php's unscoped `{any}` wildcard, which matches the literal string 'api/frontend/order/track/ABCDEFGHIJ' and serves the full SPA shell with 200. By contrast, a syntactically-valid 48-char but non-existent token (state 05) DOES hit the real track() controller and correctly returns `{\"found\":false,...}` JSON (verified: curl against a 48-char fake token returns clean JSON). The reason the screenshot for state 06 still LOOKS correct (clean 'Commande introuvable' card) is accidental, not verified by design: OrderTrackingPageComponent.vue's _poll() does `const data = res?.data || {}; this.found = !!data.found;` -- when res.data is an HTML STRING (not a JSON object, because Content-Type is text/html so axios does not parse it), `data.found` is undefined, `!!undefined` is false, and the component happens to fall into the not-found branch. This is undefined behavior, not a verified 404 contract. The GStack spec (test-e2e-goal-4chantiers-wave-C.spec.js) never actually asserts on the malformed-token request's HTTP status/network entry -- it only checks the rendered DOM text (no stack trace, length>10) -- and mega-audit-snap.js's network.json capture filter (status>=400 OR duration>2000ms OR mutation-method) cannot even see this bug, because the response is a fast 200 GET. The wave's stated acceptance criterion ('404s cleanly at the route layer') is therefore unverified by the spec and factually FALSE when checked directly.",
+      "fix_hint": "routes/api.php: add an explicit fallback within the api group for malformed dynamic segments on frontend/order/* (e.g. a low-priority `Route::any('order/{any}', ...)->where('any','.*')` inside the api middleware group returning a clean 404 JSON) so unmatched api/* requests never fall through to web.php's SPA catch-all. Alternatively, exclude `api/*` from routes/web.php's `{any}` wildcard entirely (e.g. `Route::get('/{any}', ...)->where('any', '^(?!api/).*$')`), which is the more general fix and would harden every other api/* route with a regex-constrained segment, not just this one."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/01-in-progress-anon.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Independently computed WCAG 2.1 relative-luminance contrast for `.ot-status-label` (resources/js/components/frontend/tracking/OrderTrackingPageComponent.vue, scoped style block: color #F4501E on white #ffffff shell background, font-size 15px, font-weight 700). Computed ratio = 3.49:1. 15px bold does not meet the 'large text' exemption (requires >=~18.66px/14pt bold) so the standard 4.5:1 AA minimum applies -- this fails it. Visible text affected: 'Commande acceptee' (state 01) and 'En preparation' (state 02), both anon and admin-cookie captures.",
+      "fix_hint": "OrderTrackingPageComponent.vue .ot-status-label rule: darken the orange or use a darker brand token (e.g. #DC4517-class darker red) to clear 4.5:1 against white, or bump font-weight/size into the large-text exemption range if the brand orange must stay exactly #F4501E."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/01-in-progress-anon.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Independently computed contrast for `.ot-meta-label` (color #8a8a8a on #faf5f2 card background, font-size 11px). Computed ratio = 3.19:1, below the 4.5:1 AA minimum for normal-size text. Visible text affected: the small captions 'commande(s) avant vous' and 'temps d'attente estime' under the big numbers in state 01 (both contexts) -- the smallest, hardest-to-read text on the page is also the lowest-contrast.",
+      "fix_hint": "OrderTrackingPageComponent.vue .ot-meta-label rule: darken #8a8a8a to at least #6b6b6b-class gray (matches the already-compliant .ot-hint color used elsewhere in the same component) against #faf5f2."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/03-ready-anon.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Independently computed contrast for `.ot-ready .ot-title` (color #2ecc71 green on white, font-size 22px, font-weight 800). Computed ratio = 2.10:1. Even the RELAXED large-bold-text AA threshold (3:1, which 22px/800 qualifies for) is failed here -- this is the worst contrast defect on the page and sits on the single most prominent heading of the 'ready' state: 'Votre commande est prete !', visible in 03-ready-anon.png and 03-ready-admin-cookie.png.",
+      "fix_hint": "OrderTrackingPageComponent.vue .ot-ready .ot-title rule: use a darker green (e.g. #1a9d54-class) to clear 3:1 against white, matching the darker green already used for .ot-step.done .ot-step-dot's checkmark badge background contrast intent."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/02-almost-ready-anon.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "OrderTrackingPageComponent.vue polls `frontend/order/track/{token}` every 8000ms (POLL_INTERVAL_MS, lines 90/136) and mutates status/step/positionAhead/almostReady/waitLow/waitHigh/networkLost in place -- a genuinely live-updating status display. Grepped all 12 *.dom.html artifacts for `aria-live=`, `role=\"status\"`, `role=\"alert\"`: zero matches across every state, both contexts. The template (lines 1-81) confirms no aria-live/role=status anywhere on .ot-state, .ot-steps, .ot-status-label, .ot-almost-ready, .ot-meta, or .ot-network-banner. A screen-reader user watching this page (a realistic scenario -- it is the public customer-facing tracking link) gets no announcement when the order advances from 'Acceptee' to 'En preparation', when position_ahead changes, or when the connection-lost banner appears; they would have to manually re-navigate the page to discover any update.",
+      "fix_hint": "OrderTrackingPageComponent.vue: add `aria-live=\"polite\"` and `role=\"status\"` to the `.ot-state` wrapper div (or a dedicated visually-hidden live region that mirrors statusLabel + positionAhead text) so status-changing content is announced on each successful poll; use `aria-live=\"assertive\"`/`role=\"alert\"` on `.ot-network-banner` since connectivity loss is more urgent."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/01-in-progress-admin-cookie.console.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "The GStack team's DOM-chrome-absence claim (locator '.db-header, .db-sidebar, .db-main, .kiosk-locked-shell' count===0) is independently VERIFIED TRUE: I cross-checked the selector against the real component source (resources/js/components/DefaultComponent.vue line 13 kiosk-locked-shell, line 18 db-main wrapping BackendNavbarComponent.vue line 3 db-header and BackendMenuComponent.vue line 2 db-sidebar) -- these are the genuine class names, not a mismatched/false-negative selector -- then grepped all 6 *-admin-cookie.dom.html files directly for db-header|db-sidebar|db-main|kiosk-locked-shell|BackendNavbar|BackendMenu: zero matches in all 6, and each file's root shows exactly `<!--v-if--><!--v-if--><!--v-if--><!--v-if--><div><div class=\"ot-page\"...` (the frontend/kiosk/backend/table v-if branches all render as empty comment placeholders, only the tracking branch mounts). Screenshots confirm this visually too. HOWEVER, the broader claim that this regression is 'genuinely fixed' is only partially true: 01-in-progress-admin-cookie.console.json through 06-malformed-token-admin-cookie.console.json ALL show real, repeating, CSP-report-only-logged connection attempts to /api/auth/authcheck, /api/admin/default-access, /api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5, and /api/admin/setting/branch/show/1 (plus /images/default/profile.png and /images/theme/theme-logo.png admin-theme asset loads) on EVERY SINGLE one of the 6 admin-cookie page loads -- these never appear in the anon-context console.json files. curl confirms these endpoints require and succeed with an authenticated admin session. So while zero admin CHROME renders, the tracking page's JS boot still performs a full admin-bootstrap sequence (branch list, branch detail, permission/default-access) whenever a staff session cookie exists in the browser, fetching real privileged branch/permission data into the page's JS/Vuex memory even though nothing displays it. This is architecturally incomplete relative to the spirit of the fix (full isolation of the public tracking page from admin-authenticated behavior), though it produces no visible defect and no rendered leak today.",
+      "fix_hint": "Trace and gate the source of the authcheck-triggered admin bootstrap (DefaultComponent.vue beforeMount()'s unconditional `if (this.$store.getters.authStatus) { this.$store.dispatch('authcheck')... }` fires regardless of theme; something downstream of that response handler -- likely a BackendNavbarComponent-style branch/defaultAccess bootstrap -- is still executing even though BackendNavbarComponent itself never mounts for theme==='tracking'. Root trigger not fully isolated to one file:line in this review; recommend instrumenting the authcheck .then() chain and any store watchers on authStatus to confirm and then gate them on `theme !== 'tracking'`."
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 5,
+    "P3": 0,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 5,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED"
+}

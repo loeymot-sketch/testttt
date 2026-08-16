@@ -1,0 +1,59 @@
+{
+  "wave": "B",
+  "round": 2,
+  "states_reviewed": 7,
+  "findings": [
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-B/02-web-order-seeded-panel-red.png, 03-beep-t0.png",
+      "category": "visual_overlap",
+      "severity": "P2",
+      "evidence": "Re-verified against the fresh round-2 captures (not carried forward blindly). The Vue-Toastification top-right toast ('Nouvelle commande #6537', role=\"alert\") still overlaps the 'TICKET CAISSE' panel header and the 'Bonjour Caissier Le Cayenne' staff-name text in the top nav bar, identically to round 1. Confirmed by direct visual read of 02-web-order-seeded-panel-red.png and 03-beep-t0.png: in 02 'TICKET CAISSE' is barely visible peeking from behind the toast's bottom edge; in 03 it is fully hidden and the toast's left edge now clips into 'Caissier' (rendered as '...ssier Le Cayenne'). Confirmed transient/non-persistent: by 04-beep-t10s.png (10s later) the toast has auto-dismissed and does not reappear in 04/05/06/07 -- so this is a real but time-boxed defect, reproducing on every web-order arrival exactly as in round 1. B-002 was NOT assigned to any fix agent this round (P2, non-blocking per protocol), and indeed the a92d5e232 diff touches ONLY tests/e2e/test-e2e-goal-4chantiers-wave-B.spec.js (evidence-capture plumbing) -- zero touch to PosComponent.vue or the toast container, so this is expected, not a regression.",
+      "fix_hint": "Unchanged from round 1: reposition the Vue-Toastification container (top offset below the nav bar) or raise the 'TICKET CAISSE' panel header's z-index/background so it stays legible during the toast's visible window."
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "tests/e2e/test-e2e-goal-4chantiers-wave-B.spec.js:311-389 (no PNG/console artifact -- this is a test-code defect found by reading the spec, not a rendered-page defect)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "The wave's OWN stated language (quoted in round-1 B-001's evidence) calls 'kiosk-stays-at-1-beep' one of the wave's TWO 'cannot fail' acceptance criteria. But the entire kiosk-regression block -- including both of its load-bearing assertions `expect(beepsAfterKiosk - beepsBeforeKiosk).toBe(1)` (line 385) and `expect(beepsSettled - beepsBeforeKiosk).toBe(1)` (line 386) -- is wrapped in a `try { ... } catch (e) { console.warn(...) }` (try opens line 311, catch at line 388-389) that does NOT re-throw, does NOT call test.fail()/expect(false), and does NOT distinguish 'infra flake during seeding' from 'assertion genuinely violated'. Any future regression that makes a kiosk-origin order beep 2 or 3 times (the exact defect this test exists to catch, per its own docstring at the top of the file: 'a single 0.4s beep was inaudible... keep the single beep') would cause the `expect().toBe(1)` to throw, be swallowed by this catch, print only a Node-side console.warn (which -- ironically, the same class of bug as the original B-001 -- lands in Playwright's stdout, NOT in any .console.json artifact, since it is Node-side not page.evaluate-side), and the overall spec would still exit with status:'passed'. Verified this round's actual run did NOT hit this catch (07-kiosk-order-single-beep-regression.console.json's 'kiosk-regression' log shows deltaAfterSeed:1, deltaSettled:1, both assertions genuinely satisfied -- so the current behavior is correct), but the SAFETY NET for catching a future silent regression on this exact acceptance criterion does not exist: green today gives zero assurance for tomorrow. This try/catch predates round 2 (git diff b65cae50b..a92d5e232 shows the try/catch structure itself untouched; round 2 only added evidence-logging calls inside it), so it is not a round-2 regression, but it was not previously flagged by any reviewer and directly undermines the 'cannot fail' claim.",
+      "fix_hint": "Split the try/catch: keep seeding/network-wait failures (tinker() call, waitForResponse timeout) soft-failing with a warn (genuine environment flakiness), but move the two `expect(...).toBe(1)` calls OUTSIDE the catch's blast radius -- e.g. capture the seed/wait result in a variable, close the try block before the assertions, and let a genuine count mismatch throw uncaught so the spec fails red. Alternatively, wrap only the seed+wait in try/catch with an explicit `test.skip()` on infra failure, and always run the two assertions unconditionally afterward when a kiosk order was actually seeded."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "FAIL"
+  },
+  "verdict": "AMBER",
+  "notes": {
+    "B-001_closure_evidence": [
+      "06-beep-timeline-summary.console.json now contains a genuine page-context console.log entry (523 chars, well under mega-audit-snap.js's 2000-char cap -- not truncated) with allBeepTimestamps=[1786869229315, 1786869239315, 1786869249316]. Independently computed deltas: 1786869239315-1786869229315 = 10000ms exactly; 1786869249316-1786869239315 = 10001ms. Both within the spec's own ±2000ms tolerance for a '+10s companion' / '+20s companion' -- genuinely ~10s apart, not fabricated round numbers.",
+      "Cross-checked against 03-beep-t0.console.json (events-so-far=[1786869229315]), 04-beep-t10s.console.json (events-so-far=[1786869229315,1786869239315]), 05-beep-t20s.console.json (events-so-far=[1786869229315,1786869239315,1786869249316]) -- the per-state incremental captures are internally consistent with the 06 summary's full array, i.e. this is one coherent, non-contradictory dataset across 4 independent artifact files, not a single unverifiable blob.",
+      "The netTrace inside 06's payload causally correlates: baseline web_pending count=77 at ts=1786869220917, then web_pending count=78 newIds=[6537] at ts=1786869229329 -- only 14ms after the t0 beep timestamp (1786869229315), i.e. the recorded beep fired essentially simultaneously with the poll that detected order #6537 as newly pending. This causal tightness is strong evidence the timestamps are real browser-side event captures, not synthesized.",
+      "07-kiosk-order-single-beep-regression.console.json's 'kiosk-regression' log (665 chars, not truncated) shows beepsBeforeKiosk:3, beepsAfterKiosk:4, beepsSettled:4, deltaAfterSeed:1, deltaSettled:1, allBeepTimestamps ending in a 4th entry 1786869253874 -- again causally tight against netTrace's counter_pending count=3 newIds=[6538] at ts=1786869253877 (3ms later). Exactly 1 beep for the kiosk order, matches the spec's hard assertions at lines 385-386 (see B-003 below for why those assertions are not a durable safety net going forward, which is a separate, new finding).",
+      "Verified this is the CURRENT, non-stale, non-interfered final run: all 7 states' PNG mtimes form one monotonic 41-second sequence (10:33:45 to 10:34:26), the embedded ts values in the console.json payloads match that same wall-clock window, and 06's own 'extras' field (beeps beyond the anchored triple) is an empty array -- i.e. this specific committed run shows ZERO evidence of the cross-wave interference the GStack agent said an earlier attempt hit. Screenshots are gitignored (tests/e2e/__screenshots__/ in .gitignore) so these are genuinely the artifacts written by the last local execution, not a stale committed copy.",
+      "jq validated all 4 beep-related console.json files as syntactically valid JSON."
+    ],
+    "new_findings_this_round": [
+      "B-003 (P1, audit_integrity) -- see findings array. Found by reading the spec code (git diff + full file read), not by inspecting artifacts; the current run's artifacts happen to show the assertions passing, but the enforcement mechanism has a swallow-all catch that would hide a real future regression on the wave's second 'cannot fail' criterion."
+    ],
+    "clean_on_full_pass": [
+      "Zero i18n leaks (regex scan across all 7 .dom.html files, zero matches).",
+      "Zero level=error console entries outside state 01's 3x ERR_CONNECTION_REFUSED on http://127.0.0.1:9100/health and :9101/health -- these are the local printer-bridge health probes (counter/kitchen bridges, per project memory: strictly local per-station processes, not running in this test/dev context) -- same allowlisted class as the wss:// ERR_CONNECTION_REFUSED entry in REVIEWER_PROTOCOL.md's allowlist table, not an application bug. States 02-07 have zero error-level console entries.",
+      "Zero network.json entries with status>=400 across all 7 states.",
+      "Numeric integrity holds throughout: 'À encaisser' badge (2->3) matches 'À ENCAISSER — COMPTOIR' panel count exactly when the kiosk order (N°EK216189, 9,00€, order id 6538) lands in state 07; 'Commandes web · 78' stays flat 78 through states 03-07 (no beep-triggered double count, no kiosk-order bleed into the web-order channel) -- matches netTrace's counter_pending vs web_pending separation.",
+      "Frozen-zone diff (git diff --stat b65cae50b..a92d5e232 against all 14 CLAUDE.md §7 frozen paths) is empty -- only tests/e2e/test-e2e-goal-4chantiers-wave-B.spec.js changed.",
+      "No new visual defects found across 01-07 PNGs beyond the carried-forward B-002."
+    ]
+  }
+}

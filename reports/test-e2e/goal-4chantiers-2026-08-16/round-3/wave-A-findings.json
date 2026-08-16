@@ -1,0 +1,66 @@
+{
+  "wave": "A",
+  "round": 3,
+  "states_reviewed": 6,
+  "findings": [],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "A-001": "PASS",
+    "A-002": "PASS",
+    "A-003": "PASS",
+    "A-004": "PASS",
+    "A-005": "PASS"
+  },
+  "closure_evidence": {
+    "A-001": {
+      "claim": "Round-2 fix (commit 1edc968d9) still holds: buildWizardRestorePayload() writes explicit garnitures[key]=false for excluded items, not just true for included ones.",
+      "verification": "Independently re-extracted the 'pos-v5-cart-item__detail' composition text node from all three fresh round-3 dom.html files (04-cart-line-added, 05-wizard-reopen-edit, 06-wizard-edit-confirm) via raw grep/python, not trusting round-2's cached quote. All three are byte-identical: 'Viandes: Poulet mariné\\nPain: Pain\\nSans: Oignon\\nCrudités: Salade, Tomate, Oignons cuits\\nSauce: Andalouse'. 'Sans: Oignon' (the exclusion that regressed pre-round-2) is present in state 05 (reopen, before any click) and survives unchanged into state 06 (post no-op confirm). Price held at 7,40 EUR across all three states — no drift. No app code changed for this path since round 2 (only the unrelated DefaultComponent.vue timing fix), so byte-identical reproduction is the expected and correct outcome.",
+      "verdict": "PASS — re-confirmed with fresh round-3 artifacts, independently extracted, not copy-pasted from round-2."
+    },
+    "A-002": {
+      "claim": "PosComponent.vue::loadLowStockCount() gated by canFetchLowStockAlerts(); a role without items_show never fires the low-alerts request.",
+      "verification": "Grepped the literal string 'low-alerts' across all 6 fresh *.console.json and *.network.json files (round-3 recapture) — zero occurrences in every file. No status-403 entries either. Confirms the gate still holds after the DefaultComponent.vue timing change (an unrelated file, but re-verified independently rather than assumed unaffected).",
+      "verdict": "PASS — zero low-alerts network/console activity across the full 6-state round-3 capture."
+    },
+    "A-003": {
+      "claim": ".pos-v5-cart-item__edit icon color #B03712 on --pos-v5-brand-red-soft (#FFE8DD), ~5.24:1 contrast.",
+      "verification": "Re-read current resources/css/pos-v5.css:862-864 — color: #B03712 still in place, unchanged since round 2 (file untouched by the DefaultComponent.vue commit). Visually re-inspected the pencil icon in fresh 04/05/06 PNGs at native resolution: clearly legible dark red-orange glyph against the soft pink chip background, no regression.",
+      "verdict": "PASS — CSS unchanged, contrast intact, visually re-confirmed on fresh captures."
+    },
+    "A-004": {
+      "claim": "Edit-confirm (no-op reopen+confirm) shows a distinct toast 'Article du panier mis à jour' instead of the add-toast.",
+      "verification": "Grepped toast body text in fresh 06-wizard-edit-confirm.dom.html: both 'Article du panier mis à jour' (current action, fresh) and 'Article ajouté au panier' (the state-04 add toast, mid fade-out) are present, matching round-2's explanation exactly. Visually re-confirmed in 06-wizard-edit-confirm.png: two toasts stacked vertically top-right, fully legible, zero overlap with any interactive element (cart panel, buttons, category grid all clear beneath).",
+      "verdict": "PASS — distinct, correctly-worded toast re-confirmed; two-toast stack is expected sequential-action behavior, not a defect."
+    },
+    "A-005": {
+      "claim": "Informational-only: sauce/garniture item_extras reorder path remains unreachable by the current catalogue (sauce is an ItemVariation, not an ItemExtra) — no code action, narrative-accuracy note only.",
+      "verification": "No code touched this round relevant to A-005's scope (only DefaultComponent.vue changed, unrelated file/component). Re-confirmed via fresh captures that the live, exercised path in all 6 states is still the item_variations sauce branch (Andalouse chip selection, visible and correctly reflected in composition text) — the item_extras sauce-vs-garniture reorder branch remains untouched and still unreachable by any real catalogue product.",
+      "verdict": "PASS — no regression, still correctly informational/non-blocking."
+    }
+  },
+  "new_findings_this_round": [],
+  "shared_component_impact_check": {
+    "component": "resources/js/components/DefaultComponent.vue",
+    "commit": "0680c45c4",
+    "change_summary": "applyThemeFromRoute() moved out of created() (synchronous) into the router.isReady().then() callback in beforeMount(), alongside the already-gated authcheck dispatch. theme now stays at its safe default ('frontend') until the real route resolves, instead of briefly falling through to the 'backend' else-branch on cold load.",
+    "wave_A_relevance": "Wave A's 6 states are all the already-mounted /admin/pos caisse SPA (POS-wizard, a separate Vanilla-JS frozen surface loaded inside the backend theme) — not a cold-load transition through DefaultComponent's theme-resolution branch under test by the fix. Checked for any incidental impact anyway since the fix touches a component that wraps every route.",
+    "checks_performed": [
+      "Visual: all 6 fresh PNGs inspected at full resolution for flash-of-wrong-content, layout shift, or delayed chrome — none found; navbar/theme render as expected backend chrome in every state.",
+      "console.json: zero level=error entries in states 01-04 and 06; state 05 has exactly 3 level=error entries, all http://127.0.0.1:9100/health and :9101/health ERR_CONNECTION_REFUSED — pre-existing, allowlisted printer-bridge health-probe noise (same class documented in round-2 wave-B findings, local bridges not running in this test/dev context, unrelated to DefaultComponent).",
+      "console.json: zero level=error or level=pageerror entries referencing DefaultComponent.vue, applyThemeFromRoute, or a theme flash signature (checked all 6 files).",
+      "network.json: zero status>=400 and zero duration>2000ms across all 6 fresh files — no evidence of a slow/failed router-readiness wait introduced by the fix.",
+      "spec timeouts: tests/e2e/test-e2e-goal-4chantiers-wave-A.spec.js already waits up to 25-30s for /admin/pos URL and grid visibility before asserting further, so router.isReady() resolving asynchronously (previously synchronous theme assignment, now deferred one microtask/router-tick) has ample headroom and produced no timeout or retry in this fresh run."
+    ],
+    "verdict": "No visible delay, no flash-of-wrong-content, no new console noise attributable to the DefaultComponent.vue timing change in Wave A's fresh captures."
+  },
+  "verdict": "GREEN"
+}

@@ -1,0 +1,55 @@
+{
+  "wave": "B",
+  "round": 3,
+  "states_reviewed": 7,
+  "findings": [
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-B/02-web-order-seeded-panel-red.png, 03-beep-t0.png",
+      "category": "visual_overlap",
+      "severity": "P2",
+      "evidence": "Still present, unchanged from round 1/round 2. Re-verified against the fresh round-3 captures (16 aout 16:43-16:44 mtimes). In 02-web-order-seeded-panel-red.png the Vue-Toastification toast ('Nouvelle commande #6566', <div role=\"alert\" class=\"Vue-Toastification__toast-body\"> confirmed via grep on the .dom.html) overlaps the top of the 'TICKET CAISSE' panel header -- only a thin red sliver of the header text is visible peeking from under the toast's bottom edge. By 03-beep-t0.png the toast has drifted down slightly and now (a) fully occludes 'TICKET CAISSE', and (b) its right/top edge sits directly against the 'Bonjour / Caissier Le Cayenne' staff-name block -- only a fragment ('...nne') of 'Cayenne' remains visible outside the toast's bounding box, matching round 2's description almost verbatim. Confirmed transient/non-persistent: by 04-beep-t10s.png (auto-dismissed) both 'TICKET CAISSE' and 'Bonjour Caissier Le Cayenne' render fully intact, and the toast does not reappear in 04-07. No fix agent touched PosComponent.vue or the toast container between round 2 and round 3 (frozen-zone-adjacent diff a92d5e232..44e55a25b touches ONLY the spec file), so persistence is expected, not a regression.",
+      "fix_hint": "Unchanged from round 1/2: reposition the Vue-Toastification container (top offset below the nav bar) or raise the 'TICKET CAISSE' panel header's z-index/background so it stays legible during the toast's visible window."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS (closed round 2, re-confirmed stable round 3 -- see B-001_closure_reconfirmed below)",
+    "B-002": "FAIL (still open, P2 non-blocking, unchanged since round 1 -- see findings array)",
+    "B-003": "PASS (closed round 3 by commit 44e55a25b -- see B-003_closure_evidence below)"
+  },
+  "verdict": "GREEN",
+  "notes": {
+    "B-003_closure_evidence": [
+      "Read the CURRENT tests/e2e/test-e2e-goal-4chantiers-wave-B.spec.js source directly (not the round-2 diff, the live file). Confirmed the code structure fix commit 44e55a25b claims: lines 320-323 declare `let kioskSetupOk = false; let beepsBeforeKiosk = 0; let beepsAfterKiosk = 0; let beepsSettled = 0;` OUTSIDE any try block, at test-function scope. The try block (lines 324-401) now covers ONLY the seed (tinker Order::create) + the waitForResponse poll-wait + the two page.evaluate beep-count reads + the evidence console.log + snap('07-...') -- it sets `kioskSetupOk = true` at line 397, the LAST statement inside the try's success path, only after every setup step has genuinely succeeded. The catch block (lines 399-401) does `console.warn(...)` only -- it never sets kioskSetupOk and never touches the assertions.",
+      "Critically, `expect(beepsAfterKiosk - beepsBeforeKiosk).toBe(1)` (line 408) and `expect(beepsSettled - beepsBeforeKiosk).toBe(1)` (line 409) now live at lines 407-410, INSIDE an `if (kioskSetupOk) { ... }` block that sits AFTER the try/catch has already closed (catch closes line 401, the if-block opens line 407). These two expect() calls are not inside any try/catch anywhere in the test -- grep of the full file confirms the ONLY try/catch wrapping any part of this test body are: the helper at line 48 (outside test.describe, a different function), the netTrace JSON.parse guard at line 118/128, the waitForResponse body-parse guards at lines 201/204 and 356/359, and this one setup try/catch at 324/399. None of them wrap the two assertions. So a genuine future regression -- e.g. a kiosk-origin order incorrectly firing the 3-beep web escalation sequence -- would throw an uncaught Playwright expect() failure and turn the whole spec red, exactly as the round-2 fix_hint prescribed ('move the two expect(...).toBe(1) calls OUTSIDE the catch's blast radius').",
+      "Re-ran the arithmetic on this round's fresh evidence rather than trusting the GStack report: 07-kiosk-order-single-beep-regression.console.json's page-side 'kiosk-regression' log shows beepsBeforeKiosk=3, beepsAfterKiosk=4, beepsSettled=4 -> deltaAfterSeed=4-3=1, deltaSettled=4-3=1. Both match the hard-coded .toBe(1) assertions exactly -- the current run passed for real, not because the catch swallowed a failure (kioskSetupOk was true, assertions genuinely executed and genuinely satisfied).",
+      "This is a genuine code fix, not a re-labeling: diff of commit 44e55a25b shows the two expect() lines physically moved from inside the try (old lines ~378-379, before the closing '}' of the outer 'else' and the try) to after a NEW closing '}' for the try/catch, gated by the newly-introduced kioskSetupOk boolean that previously did not exist."
+    ],
+    "B-001_closure_reconfirmed": [
+      "06-beep-timeline-summary.console.json (fresh round-3 capture) contains a page-context console.log with allBeepTimestamps=[1786891406057,1786891416058,1786891426059]. Independently recomputed deltas: 1786891416058-1786891406057=10001ms, 1786891426059-1786891416058=10001ms -- both within the spec's own +-2000ms tolerance window for '+10s'/'+20s' companions. has10s=true, has20s=true, extras=[] (empty), expectedOursSize=3 -- matches the hard assertions at spec lines 302-303/308.",
+      "Per-state incremental logs are internally consistent: 03-beep-t0.console.json events-so-far=[1786891406057]; 04-beep-t10s.console.json events-so-far=[1786891406057,1786891416058]; 05-beep-t20s.console.json events-so-far=[1786891406057,1786891416058,1786891426059] -- one coherent growing dataset across 3 independent artifact files.",
+      "netTrace causal correlation still holds this round: baseline web_pending count=77 at ts=1786891397879, then web_pending count=78 newIds=[6566] at ts=1786891406071 -- only 14ms after the t0 beep timestamp (1786891406057).",
+      "07-kiosk-order-single-beep-regression.console.json's kiosk-regression log: allBeepTimestamps ending in a 4th entry 1786891430710, causally tight against netTrace's counter_pending count=3 newIds=[6567] at ts=1786891430716 (only 6ms later). Exactly 1 beep for the kiosk order."
+    ],
+    "fresh_technical_pass": [
+      "i18n leak scan: re-ran the regex scan properly excluding <script>/<style> blocks (round 2's/round 3's naive tag-strip would have false-positived on Quill editor classes like 'ql-toolbar', Swiper classes, and inline JS variable names like 'state.nodes.push' -- corrected methodology this round). Zero real i18n-key-shaped leaks in visible rendered text across all 7 .dom.html files. The only two dot-separated tokens surviving the corrected scan are 'lecayenne.fr' (part of the legitimate email 'pos@lecayenne.fr' in the staff-account card) and 'master.blade.php' (inside the Laravel Debugbar JSON payload rendered in the dev-only bottom toolbar, not application UI) -- both false positives, not leaks.",
+      "Console errors: zero level=error entries in states 02-07. State 01 has exactly 3, all net::ERR_CONNECTION_REFUSED on http://127.0.0.1:9100/health and :9101/health (counter/kitchen printer-bridge health probes) -- confirmed via direct read of the console.json entries' location.url fields, same allowlisted class as round 2 (local per-station bridges not running in this dev/test context, per project memory).",
+      "Network errors: all 7 states' .network.json show zero entries with status>=400. State 01's 47 entries are all csp-report 204 (allowlisted) plus one 201 (login) and one 200 (customer-display) -- no unexpected 4xx/5xx anywhere.",
+      "Numeric integrity: 'A encaisser' badge goes 2 -> 3 exactly when the kiosk order (N deg EK393357, 9,00 euros) lands in state 07's 'A ENCAISSER -- COMPTOIR (3)' panel, matching the seeded subtotal/total. 'COMMANDES WEB . 78' stays flat across states 03-07 (no beep-triggered double count, no kiosk-order bleed into the web-order channel) -- consistent with netTrace's counter_pending vs web_pending separation.",
+      "Aria: toast confirmed to carry role=\"alert\" (grep on 02's .dom.html: '<div role=\"alert\" class=\"Vue-Toastification__toast-body\">') -- screen readers are notified of the new-order event even though the visual overlap (B-002) remains a sighted-user issue only.",
+      "No NEW visual defects found across the full 01-07 PNG set beyond the carried-forward B-002. Layout, branding, empty-states ('Aucune commande pret a livrer', 'Aucun article. Selectionnez un produit') all render with real copy + icon, no raw i18n keys, no broken layout."
+    ],
+    "frozen_zone_diff": "git diff --stat a92d5e232..44e55a25b against all 14 CLAUDE.md section-7 frozen paths is empty. Full commit diff touches ONLY tests/e2e/test-e2e-goal-4chantiers-wave-B.spec.js (34 lines, +27/-7).",
+    "b002_disposition": "P2, non-blocking per REVIEWER_PROTOCOL.md severity table -- does not affect the GREEN verdict. Still open, tracked, fix_hint unchanged. Recommend a follow-up (non-wave-B-blocking) ticket to reposition the toast container."
+  }
+}

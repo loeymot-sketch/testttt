@@ -1,0 +1,59 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 6,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-A/05-wizard-reopen-edit.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Composition drift on a NO-OP edit round-trip, independently confirmed against the .dom.html files (not the GStack team's claim taken on trust). State 04 (04-cart-line-added.dom.html) cart-item detail text: 'Viandes: Poulet mariné\\nPain: Pain\\nSans: Oignon\\nCrudités: Salade, Tomate, Oignons cuits\\nSauce: Andalouse'. State 05 (05-wizard-reopen-edit.dom.html), captured at wizard REOPEN before any user click, already contains ZERO occurrences of the text 'Sans Oignon' anywhere in the DOM (grep confirmed) and the crudités row for Oignon renders checked/green in the screenshot (05-wizard-reopen-edit.png) alongside Oignons cuits -- i.e. the explicit exclusion is already lost at restore time, not only after confirm. State 06 (06-wizard-edit-confirm.dom.html), after confirming with ZERO changes, shows: 'Viandes: Poulet mariné\\nPain: Pain\\nCrudités: Salade, Tomate, Oignon, Oignons cuits\\nSauce: Andalouse' -- the 'Sans:' line is gone entirely and both onion variants (Oignon + Oignons cuits) are now listed as included. Price is identical both states (7,40 EUR), so this is price-invisible but this DIRECTLY violates AUDIT_PLAN.md's own stated acceptance criterion for this wave ('cart line total/composition must be byte-identical to state 4 -- no drift from the restore round-trip'). Root cause confirmed by reading resources/js/components/admin/pos/ItemComponent.vue lines 1429-1432: in buildWizardRestorePayload's item_extras loop, the garniture branch only ever executes 'restore.garnitures[\"c_\" + extra.id] = true' for extras PRESENT in cartLine.item_extras; there is no corresponding 'false' write for a default-included garniture (Oignon is included by default per the wizard's own initial state, visible unchecked-as-excluded only via explicit user action) that is ABSENT from item_extras because the customer excluded it. The wizard's default-checked state for Oignon is therefore never overridden and silently wins back on every edit-reopen.",
+      "fix_hint": "resources/js/components/admin/pos/ItemComponent.vue ~L1382-1432 (extraEntries.forEach in buildWizardRestorePayload): the restore payload needs a way to explicitly represent 'excluded from the default-included set', not just 'explicitly included'. Either enumerate the item's default-included garnitures (e.g. from item.extras marked default/isFree base composition) and set restore.garnitures[key] = false when they are NOT present in cartLine.item_extras, or have the wizard's pre-fill logic distinguish 'no data' from 'excluded'. A cashier who reopens+confirms a 'Sans Oignon' order with zero changes must not silently reintroduce the excluded ingredient onto the kitchen ticket -- this is an order-accuracy/dietary-exclusion integrity defect, not merely cosmetic."
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-A/01-cart-empty.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "01-cart-empty.console.json and 06-wizard-edit-confirm.console.json both contain a console error 'Failed to load resource: the server responded with a status of 403 (Forbidden)' at location http://127.0.0.1:8766/api/admin/stock/low-alerts; the matching entries are confirmed in 01-cart-empty.network.json and 06-wizard-edit-confirm.network.json (status 403, same URL). This 403 is NOT on the REVIEWER_PROTOCOL allowlist (which only covers 401 on /api/auth/logout, 422 on form validation, 304 cache revalidation, wss ERR_CONNECTION_REFUSED, csp-report 204, vendor.js noise). Checked both .dom.html files for any [role=alert]/.toast/.alert-* referencing stock or an error: the ONLY visible toast present in either capture is unrelated ('Connexion reussie.' in state 01, 'Article ajoute au panier' in state 06, both Vue-Toastification__toast-body) -- there is no on-screen indication whatsoever that the low-stock-alerts widget is failing. This repeats across two separate captures in the same session, consistent with a recurring background poll silently failing for this POS-operator session on every load.",
+      "fix_hint": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:92 lowAlerts() -> scopedBranches()/authorizeBranchScope(). Likely an authorization gap for the pos-operator role hitting an admin-only endpoint used by a POS-page widget. Either grant the permission this route needs for POS-operator sessions, or catch the 403 client-side and degrade the widget silently+visibly (e.g. hide it) instead of leaving a raw failed fetch with zero UI feedback every page load."
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-A/04-cart-line-added.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Independently computed WCAG 2.1 relative-luminance contrast for the NEW .pos-v5-cart-item__edit button (resources/css/pos-v5.css ~L852-865, foreground var(--pos-v5-brand-red), background var(--pos-v5-brand-red-soft)) using the actual token values from resources/css/foundations/pos-v5-tokens.css (--pos-v5-brand-red: #F4501E; --pos-v5-brand-red-soft: #FFE8DD). Computed contrast ratio = 2.97:1, below both the 4.5:1 (normal text/icon) and 3:1 (large bold text) AA minimums. The button's pencil glyph is 14px, so the stricter 4.5:1 threshold applies.",
+      "fix_hint": "resources/css/pos-v5.css ~L852-858: darken --pos-v5-brand-red-soft or use --pos-v5-brand-red-dark (#DC4517) as the icon color against the soft background to clear 4.5:1 (e.g. --pos-v5-ink or a darker red text token on the existing soft background)."
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-A/06-wizard-edit-confirm.png",
+      "category": "misleading_feedback",
+      "severity": "P2",
+      "evidence": "06-wizard-edit-confirm.dom.html contains TWO stacked Vue-Toastification toasts with identical text 'Article ajoute au panier' ('Item added to cart') even though this capture is an EDIT-CONFIRM of an existing line (zero new items added, cart stays at 1 line / 7,40 EUR total, confirmed correct). Root cause read in resources/js/components/admin/pos/ItemComponent.vue addToCart() ~L1569-1599: both the 'add new line' path and the 'edit existing line' path (editingCartIndex !== null -> $store.dispatch('posCart/replaceCartLine', ...)) share the same finishSuccess closure, which unconditionally calls alertService.success(this.$t('message.add_to_cart')). A cashier confirming a no-op edit sees the same 'item added' toast as a genuine addition, with no toast copy distinguishing 'updated' from 'added' -- a plausible source of an operator mistakenly believing a duplicate line was just created.",
+      "fix_hint": "resources/js/components/admin/pos/ItemComponent.vue addToCart() ~L1573-1599: branch finishSuccess's toast message on editIdx !== null vs null, e.g. this.$t('message.cart_line_updated') for the edit path vs the existing add_to_cart message for genuine adds."
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-A/03-wizard-sauce-selected.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "GStack's claim #3 (fix patches an unreachable item_extras code path) is ACCURATE and independently confirmed. Product used for this wave's captures is 'Cayenne' (item id 22, php artisan tinker confirmed). Its sauce 'Andalouse' selected in states 03/05/06 is an ItemVariation (item_attribute 'Sauce (1ere Gratuite)', ItemVariation ids 281-289/452-454/688, convert_price=0) -- NOT an ItemExtra. `git show 69b10f0aa` confirms the shipped fix touches ONLY the item_extras branch of buildWizardRestorePayload (ItemComponent.vue ~L1408-1428, reordering the sauce-vs-garniture catch-all); the item_variations sauce branch (~L1344-1364) is byte-identical before/after the commit, and the test file's own docstring (tests/js/posCartEditRestoreFreeSauce.spec.js L27-29) calls it 'deja correct par lecture de code, verrouille ici en non-regression'. DB sweep (php artisan tinker, App\\Models\\ItemExtra::whereNull('deleted_at'), 508 active rows) found ZERO extras priced 0 with 'sauce' in the name -- every one of the 44 sauce-named extras across the entire catalogue is the generic paid 'Sauce supplementaire' at 0.50 EUR; a further targeted search for bare sauce-flavor names (Andalouse, Algerienne, Blanche, Curry, Hannibal, Harissa, Ketchup, Mayonnaise, Samourai, Barbecue, Fromagere maison, Spicy maison) as ItemExtra rows returned zero matches too. Net effect: the wave's own DOM/screenshot evidence (states 02-06, all using Cayenne) proves the item_variations path works, which was ALREADY correct pre-fix and untouched by the commit -- it does NOT, and structurally CANNOT with the current catalogue, exercise the patched item_extras branch end-to-end. The only evidence the patched branch itself is correct is the isolated vitest unit suite with synthetic fixtures. The commit message narrative ('reproduit en conditions reelles : sauce Andalouse choisie -> reouverture affichait Algerienne') describes exactly the Cayenne/Tacos-family item_variations scenario, yet the test docstring itself attributes that live-browser observation to probable test-click synthetic-dispatch noise, not to the item_extras bug that was actually fixed. So the wave's headline claim ('the free-sauce-restore P0 bug is FIXED... verified') overclaims: no real E2E evidence closes the loop on the originally-observed symptom; only a plausible-but-unconfirmed-in-production code path was patched.",
+      "fix_hint": "Not a functional regression -- the item_extras reorder is a harmless, arguably-correct precedence fix and should stay. But (a) the commit message and this wave's narrative should be corrected to state plainly that the patched branch is currently unreachable by any real catalogue product, so the fix is defensive/future-proofing, not a verified resolution of the originally-observed Andalouse->Algerienne symptom; (b) if that original symptom is still considered a live P0, it needs a genuinely reproducible repro path (real user clicks, not synthetic dispatch) before it can be marked fixed. Consider either finding/creating a real catalogue item with a free-priced sauce modeled as an extra to close the E2E loop, or explicitly documenting that no such item exists and the item_extras path is speculative hardening only."
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 0,
+    "P2": 3,
+    "P3": 0,
+    "open_P0": 2,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED"
+}

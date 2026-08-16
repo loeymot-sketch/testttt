@@ -1,0 +1,67 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-E/01a-pos-badge-hidden-cycle1.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "01a-pos-badge-hidden-cycle1.network.json contains a 403 response for GET http://127.0.0.1:8766/api/admin/stock/low-alerts. 01a-pos-badge-hidden-cycle1.dom.html has zero [role=alert], zero .toast/.Vue-Toastification__toast, zero .alert-* element visible for this failure (confirmed by grep + the PNG, which shows the POS header with no badge and no error indicator of any kind). This matches REVIEWER_PROTOCOL category 6 'Silent error' verbatim: 4xx in network.json AND no visible alert/toast in the DOM = P0. The GStack spec/AUDIT_PLAN frames this as INTENTIONAL design (bootstrap.js's axios interceptor deliberately excludes admin/stock/low-alerts from both TOAST_STATUSES and the critical-4xx allowlist, verified by reading the interceptor source) and the REVIEWER_PROTOCOL allowlist table does NOT list a 403-on-permission-gated-background-poll exception (it only lists 401-on-logout, 422-on-validation-submit, 304-cache-revalidation, wss ERR_CONNECTION_REFUSED, csp-report 204, vendor.js noise). Category 6's detection rule has no 'unless intentional' carve-out the way category 10 does ('not in expected-allowlist'). Applying the protocol literally and mechanically (per this round's explicit instruction to do so even where it conflicts with the team's 'intended' framing): this is a P0 finding on the letter of the rule, not a claim that the underlying app behavior is wrong. Recommend the protocol maintainer/owner explicitly add this endpoint+role combination to the category-6 allowlist if the silent-degrade is accepted policy, rather than leaving reviewers to interpret intent case-by-case.",
+      "fix_hint": "Either (a) add 'permission-gated background-poll 4xx (e.g. admin/stock/low-alerts for a role lacking items_show)' as an explicit REVIEWER_PROTOCOL allowlist entry (owner/process decision, not a code fix), or (b) if zero-silent-4xx is truly required everywhere, gate PosComponent.vue's loadLowStockCount() (~L4076-4081) behind the same client-side permission check StockLowAlertsWidget.vue already uses (canFetchAlerts()) so POS Operator's browser never issues a request it already knows will 403."
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-E/01b-pos-badge-hidden-cycle2.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Same violation as E-001, second poll cycle (~5s later): 01b-pos-badge-hidden-cycle2.network.json contains a second 403 on GET admin/stock/low-alerts, and 01b-pos-badge-hidden-cycle2.dom.html again shows zero visible alert/toast/error text. Filed as a separate finding (distinct artifact, distinct capture) rather than folded into E-001 because REVIEWER_PROTOCOL's schema keys findings to a single state_artifact; the repetition across 2 independent poll cycles also positively confirms this is the polling loop's steady-state behavior, not a one-off race.",
+      "fix_hint": "Same as E-001."
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-E/02-dashboard-widget-empty-operator.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "Widget's empty-state container (db-card-body) contains only <p class=\"text-sm text-gray-500\">Aucune alerte</p> — 13 characters, under the protocol's 20-char copy threshold — with zero illustration <img> and zero CTA <button>/<a> inside that container (grep confirmed on 02-dashboard-widget-empty-operator.dom.html). The 'Voir toutes' router-link exists but lives in the card HEADER (db-card-header), outside the empty-state body, and is present identically in both the empty (02) and populated (03) states — it's structural chrome, not an empty-state-specific CTA. Per category 5's literal 'contains zero of' test scoped to the empty list/grid element itself, this qualifies. Visually (PNG) the text reads clean and is not confusing, but it is bare relative to the bar the protocol sets.",
+      "fix_hint": "Lengthen the copy (e.g. 'Aucune alerte de stock bas pour le moment.') and/or move a CTA (e.g. link to Gestion Produits & Stock) inside db-card-body so the empty state carries it independent of the header."
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-E/04-pos-badge-visible-admin.png",
+      "category": "visual_capture_integrity",
+      "severity": "P2",
+      "evidence": "04-pos-badge-visible-admin.dom.html contains class=\"velmld-full-screen velmld-overlay fade-leave-active fade-leave-to\" — the vue-loading-overlay component was captured MID CSS fade-out transition (.3s opacity transition per the component's own <style> block, extracted from the same DOM snapshot). The PNG confirms this visually: the entire page (header, sidebar-less POS screen, 'Stock faible 1' badge, everything) is rendered at a washed-out, near-transparent opacity rather than full brightness. The badge text and count ARE technically present in the DOM/locator (the spec's toBeVisible()/toHaveText() assertions correctly passed, since Playwright locators don't care about opacity), but the delivered screenshot — the artifact this whole review process treats as 'visual evidence' per CLAUDE.md's non-negotiable principle 11 — does not actually show the badge in its true, settled, on-brand rendered state. This is not a one-off: the identical overlay-mid-transition signature also appears in 06-post-cleanup-verify (see E-005), meaning 2 of 8 captured states (25%) have compromised visual evidence.",
+      "fix_hint": "In the spec, wait for the loading overlay to fully detach before calling snap() — e.g. await page.waitForSelector('.velmld-overlay', { state: 'detached' }).catch(() => {}) or a fixed ~400ms waitForTimeout after the overlay's .3s transition — so persisted screenshots reflect the settled UI, not a mid-fade frame."
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-E/06-post-cleanup-verify.png",
+      "category": "visual_capture_integrity",
+      "severity": "P2",
+      "evidence": "Same defect as E-004: 06-post-cleanup-verify.dom.html contains class=\"velmld-full-screen velmld-overlay fade-leave-active fade-leave-to\" and a second overlay div with just \"velmld-full-screen velmld-overlay\" (no leave classes) also present — i.e. TWO overlay instances stacked, one mid-fade-out, one freshly appearing, at the moment of capture. The PNG shows the same washed-out POS screen. This is the state the GStack self-report specifically calls out as 'teardown verified (both back to baseline with screenshots)' — the screenshot delivered as that proof is compromised in the same way as E-004. The underlying DB-level teardown IS independently verified as genuinely correct (I re-read stock_levels id=17 directly via tinker after this review started: threshold_low=NULL, on_hand=19, global low-alert count=0 — matching baseline), so this finding is about the weakness of the VISUAL evidence artifact, not the correctness of the teardown itself.",
+      "fix_hint": "Same as E-004."
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "resources/js/components/admin/dashboard/StockLowAlertsWidget.vue",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Confirmed via grep + Read (not assumed): StockLowAlertsWidget.vue's canFetchAlerts() (line ~99) checks the Spatie permission entry with url==='items', while StockRuptureDashboardController::__construct() (line 46) gates lowAlerts()/lastSummary()/catalogOverview() behind middleware(['permission:items_show']) — a DIFFERENT permission. Verified these are independently assignable DB rows (Spatie Permission id=2 'items' vs id=6 'items_show', both guard_name=sanctum) via tinker; no current seeded role (Admin/Customer/Delivery Boy/Waiter/Chef/Branch Manager/POS Operator/Stuff) has a split state today, so the mismatch has zero LIVE blast radius in this V1 LOCAL dev DB right now. However this is not merely theoretical: (1) RoleShowComponent.vue's enable() method (line ~134-168) auto-checks ALL children (including items_show) when the 'items' parent checkbox is checked, but individual child checkboxes remain independently toggleable afterward (v-bind:disabled only gates on the PARENT's checked state, not re-locked per-child) — so an admin can, via the normal RBAC UI, check 'Items' then individually UNcheck 'Items Show', producing items=Y/items_show=N. In that state the widget's gate (checks 'items') lets the fetch through, the backend 403s (real gate is items_show), and the widget's fetchError banner (T-5.2 fix) surfaces visibly — not silent, but a confusing 'stock alerts error' shown to an admin who believes they have full Items access. (2) The REVERSE combo (items_show=Y, items=N) is not reachable via the cascading UI (child stays disabled until parent is checked) but IS reachable via direct backend assignment (Role::givePermissionTo / tinker / a custom seeder) — a pattern this same codebase already uses for ad-hoc test roles (e.g. an 'E2ERolePerm32048' role exists in this DB). In that state canFetchAlerts() returns false and the dashboard widget SILENTLY skips the fetch, rendering 'Aucune alerte' (implying zero alerts exist) while PosComponent.vue's loadLowStockCount() (confirmed via grep: no client-side permission gate at all, unconditionally calls admin/stock/low-alerts every poll tick) would get a real 200 with the true nonzero count and show the POS badge. That is exactly the SYNC-STOCK-1 cross-surface divergence the mission brief flags as P0-worthy IF observed — dashboard says 'no alerts', POS badge says otherwise, same role, same moment. Rated P2 rather than P0/P1 here because it is not reproduced in any of the actually-captured states (all captures used real Admin/POS-Operator roles where both permissions agree) and is not reachable via the standard, supported RBAC UI in the 'dashboard hides real alerts' direction — it is a latent code-level defect, confirmed real by source+DB inspection, not an observed live defect in this round's evidence.",
+      "fix_hint": "Change StockLowAlertsWidget.vue canFetchAlerts() to check the 'items_show' permission entry (url==='items/show') instead of 'items', matching the actual backend gate at StockRuptureDashboardController.php:46."
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 0,
+    "P2": 4,
+    "P3": 0,
+    "open_P0": 2,
+    "open_P1": 0,
+    "open_P2": 4,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED"
+}

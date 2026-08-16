@@ -1,0 +1,51 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 6,
+  "findings": [],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "A-001": "PASS",
+    "A-002": "PASS",
+    "A-003": "PASS",
+    "A-004": "PASS",
+    "A-005": "PASS"
+  },
+  "closure_evidence": {
+    "A-001": {
+      "claim": "buildWizardRestorePayload() writes explicit false for excluded garnitures, not just true for included ones (ItemComponent.vue ~L1440-1475, commit 1edc968d9).",
+      "verification": "Independently grepped composition text out of 04-cart-line-added.dom.html, 05-wizard-reopen-edit.dom.html and 06-wizard-edit-confirm.dom.html. All three are byte-identical: 'Viandes: Poulet mariné / Pain: Pain / Sans: Oignon / Crudités: Salade, Tomate, Oignons cuits / Sauce: Andalouse'. Round-1's specific complaint — that state 05 (reopen, before any click) ALREADY lost 'Sans: Oignon' — is gone: state 05 now correctly shows the raw-onion toggle excluded (red, unchecked) and 'Sans Oignon' text present, both in DOM and visually in 05-wizard-reopen-edit.png. State 06 (post no-op confirm) also correctly keeps the exclusion. Cross-checked against resources/js/components/admin/pos/ItemComponent.vue lines 1440-1475: new block mirrors the inclusion-bucket predicate over item.extras (the full catalog), writing an explicit garnitures[key]=false for anything free/garniture-shaped not already true. Also confirmed the fix is exercised by real Playwright clicks (not synthetic dispatch) with hard assertions in tests/e2e/test-e2e-goal-4chantiers-wave-A.spec.js:249-288 comparing compositionAtAdd === compositionAfterEdit and asserting the raw-onion toggle lacks class 'included' at reopen. Price also stayed identical (7,40 EUR) across all three states — no drift.",
+      "verdict": "PASS — genuinely fixed, confirmed via independent artifact inspection plus code read."
+    },
+    "A-002": {
+      "claim": "PosComponent.vue::loadLowStockCount() gated by new canFetchLowStockAlerts() so a role without items_show never fires the request (commit d454c8a2b).",
+      "verification": "Grepped 'low-alerts' and status-403 across ALL 6 fresh network.json and console.json files (01 through 06) — zero occurrences in every file, confirming the round-2 GStack claim that the request does not fire at all for this session (not merely that it no longer 403s). Cross-checked against PosComponent.vue diff: canFetchLowStockAlerts() reads authPermission, finds the 'items/show' entry, and loadLowStockCount() returns early (lowStockCount=0, no axios.get) when access !== true.",
+      "verdict": "PASS — zero low-alerts network activity across the full 6-state capture, matching the fix's intended behavior."
+    },
+    "A-003": {
+      "claim": ".pos-v5-cart-item__edit icon color darkened to #B03712 against --pos-v5-brand-red-soft (#FFE8DD) background, claimed 5.24:1 (commit 1edc968d9, resources/css/pos-v5.css ~L864).",
+      "verification": "Read current resources/css/pos-v5.css:852-867 — color: #B03712 confirmed in place with an inline comment documenting the WCAG calculation. Independently recomputed WCAG 2.1 relative-luminance contrast for #B03712 on #FFE8DD by hand (sRGB gamma-decode + relative luminance formula): L(fg)=0.1201, L(bg)=0.8421, ratio=(0.8421+0.05)/(0.1201+0.05)=5.24:1. Matches the commit's claim exactly and clears the 4.5:1 AA threshold for small icon glyphs with margin.",
+      "verdict": "PASS — contrast fix mathematically verified independently, not just trusted from the commit message."
+    },
+    "A-004": {
+      "claim": "Edit-confirm (no-op reopen+confirm) now shows a distinct toast ('Article du panier mis à jour' / message.cart_line_updated) instead of the add-toast ('Article ajouté au panier'), via a wasEdit branch captured before finishSuccess resets editingCartIndex (commit 1edc968d9).",
+      "verification": "Grepped toast-body text in 06-wizard-edit-confirm.dom.html: found BOTH 'Article du panier mis à jour' (fresh, non-leaving toast, current action) and 'Article ajouté au panier' (present with Vue-Toastification__bounce-leave-active / v-leave-to classes, i.e. mid fade-out animation). Cross-checked 04-cart-line-added.dom.html and 05-wizard-reopen-edit.dom.html: both show only 'Article ajouté au panier' — confirming the second (leaving) toast in state 06 is the state-04 ADD toast still animating out (Vue-Toastification default multi-toast stacking/timeout), not a mislabeled duplicate of the edit action. The edit action itself is now correctly and distinctly labeled. Visually confirmed in 06-wizard-edit-confirm.png: two toasts stacked vertically, non-overlapping, both legible, correct wording each.",
+      "verdict": "PASS — the specific misleading-feedback defect (edit action mislabeled as add) is fixed. The two-toast stacking visible in state 06 is expected library behavior reflecting two real, distinct, sequential actions (state-04 add + state-06 edit), not a new defect."
+    },
+    "A-005": {
+      "claim": "Informational-only finding: the shipped fix for the sauce/garniture item_extras reorder touches a code path unreachable by the current catalogue (Cayenne's sauce is modeled as an ItemVariation, not an ItemExtra) — no code action required, narrative-accuracy note only.",
+      "verification": "Confirmed this round's actual A-001 fix (commit 1edc968d9, ItemComponent.vue L1440-1475) is a SEPARATE, NEW block operating on item.extras for garniture false-marking, distinct from the earlier item_extras sauce-vs-garniture reorder at L1408-1428 (dated same day, pre-existing before this round's commit) that A-005 originally concerned. Re-read L1344-1364 (item_variations sauce branch) — untouched, still the live path exercised by Cayenne's Andalouse sauce selection in all 6 fresh captures. The A-001 fix itself IS genuinely exercised end-to-end in real captures (garniture/crudités bucket, not sauce/extras bucket), so this round's headline claim is honestly scoped this time. A-005's original caveat (item_extras sauce branch still unreachable by any real catalogue product) remains factually true and unaffected by this round's commits.",
+      "verdict": "PASS — characterization remains accurate; no regression, no action needed, correctly still labeled informational/non-blocking."
+    }
+  },
+  "verdict": "GREEN"
+}

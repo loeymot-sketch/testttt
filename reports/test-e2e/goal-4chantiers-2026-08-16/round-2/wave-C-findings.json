@@ -1,0 +1,51 @@
+{
+  "wave": "C",
+  "round": 2,
+  "states_reviewed": 12,
+  "findings": [
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/01-in-progress-admin-cookie.console.json",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "STILL BROKEN after TWO fix attempts (round-1 4b1e8ea2b, round-2 cd0f353fd). Independently grepped all 6 fresh *-admin-cookie.console.json (mtimes 10:38:09-10:38:34, i.e. captured AFTER app.js was rebuilt at 10:37:39 with the cd0f353fd router.isReady() fix, confirmed present via `grep -o \"router.isReady().then\" public/js/app.js`): every single one of the 6 files contains, verbatim and identically, three CSP connect-src violation reports for 'http://127.0.0.1:8766/api/admin/default-access', 'http://127.0.0.1:8766/api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5', and 'http://127.0.0.1:8766/api/admin/setting/branch/show/1'. The orchestrator's closure claim ('confirmed via direct grep of the new network.json files that zero admin-bootstrap calls appear') is TRUE but PROVES NOTHING: I read tests/e2e/helpers/mega-audit-snap.js:69-86 myself -- the onResponse filter only records a response when `status>=400 OR duration>2000ms OR method is POST/PUT/PATCH/DELETE`. All 3 leaked calls are fast GETs, so by the harness's OWN documented design they are structurally invisible to network.json regardless of whether they fired -- checking network.json for this class of leak was already the wrong artifact, exactly as the task briefing warned. console.json is the correct sibling artifact and it shows the leak on all 6/6 loads. I further confirmed these are not idle/blocked attempts: `lsof -iTCP:8766` shows a live `php` process LISTENING on that port (confirmed 8766 is a real second app instance, matching APP_URL in .env/.env.e2e, while Playwright serves the captured page from 127.0.0.1:8000 per playwright.config.js -- a port MISMATCH artifact of this e2e environment, not evidence the calls fail), and `curl http://127.0.0.1:8766/api/admin/default-access` returns a live 302 (auth redirect), not connection-refused -- i.e. these ARE real, answering endpoints; in a correctly single-origin-configured deployment (prod, or any environment where APP_URL matches the serving host) the credentialed cross-origin request would complete and return real branch/permission JSON into the tracking page's JS memory, exactly as round-1's own curl-verified evidence stated. ROOT CAUSE (not fully identified in round-1, now traced precisely): cd0f353fd only wrapped ONE of TWO ungated code paths in resources/js/components/DefaultComponent.vue. It gated the `authcheck` dispatch (confirmed working -- zero 'authcheck' string matches in any of the 6 console.json, this part of the fix genuinely works). But DefaultComponent.vue:100 `data() { return { theme: \"frontend\", ... } }` defaults theme to a non-tracking value, and `created()` at line 120 calls `this.applyThemeFromRoute(this.$route)` SYNCHRONOUSLY -- still NOT wrapped in `router.isReady().then()` -- so on a genuine cold load (QR/direct link, the only real path, same class of race the round-2 fix commit message itself describes) `$route` is unresolved, `applyThemeFromRoute` (lines 179-190) falls through past the kiosk/frontend/table/tracking checks to the final `else theme = \"backend\"`, and the template's `v-if=\"theme === 'backend' && !isKioskRoute\"` (DefaultComponent.vue:17) BRIEFLY mounts BackendNavbarComponent.vue, whose own created()/mounted() (lines 353-357: `this.$store.dispatch(\"defaultAccess/show\").then(res => { ...this.$store.dispatch('backendGlobalState/branchShow', res.data.data.branch_id)... }); this.$store.dispatch('backendGlobalState/branches', this.branchProps)`) unconditionally fires the exact 3 URLs observed. `watch: $route` then corrects theme to 'tracking' once the router resolves, unmounting the backend chrome -- which is WHY round-1's DOM-chrome-absence check (still independently reconfirmed true this round: zero db-header/db-sidebar/BackendNavbar/BackendMenu matches in all 6 dom.html) never caught it: the chrome flashes and unmounts, but the fire-and-forget dispatches it triggered cannot be un-sent. The round-2 fix only addressed the authcheck if-block, not this second, independent, unguarded created()-time theme computation that feeds the SAME v-if chain.",
+      "fix_hint": "DefaultComponent.vue:120 -- wrap the created()-time `this.applyThemeFromRoute(this.$route)` call in the SAME `this.$router.isReady().then(() => { this.applyThemeFromRoute(this.$route); ... })` pattern already used for the authcheck gate (or better: change data()'s default `theme` to a neutral/non-rendering sentinel like `null` and gate the ENTIRE template's v-if chain on `theme !== null`) so BackendNavbarComponent/BackendMenuComponent can never flash-mount before the real route is known. This must be fixed at the theme-computation level, not by chasing individual downstream dispatches (BackendNavbarComponent is not the only component that could land in that momentarily-wrong branch)."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-C/06-malformed-token-anon.network.json",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "Residual, disclosed gap behind the C-002 closure (see round_to_round_closures -- C-002 itself is PASS because the component-side defect is genuinely fixed). AUDIT_PLAN.md's stated acceptance criterion for the malformed-token state was that it '404s cleanly at the route layer.' Re-verified live against the running dev server: `curl -sD - http://127.0.0.1:8000/api/frontend/order/track/ABCDEFGHIJ -H 'Accept: application/json'` still returns `HTTP/1.1 200 OK` / `Content-Type: text/html; charset=UTF-8` with a full SPA shell body -- routes/api.php:1763-1764's 48-char regex constraint still falls through to routes/web.php:237's `Route::get('/{any}', ...)` catch-all exactly as round-1 described; this backend behavior is UNCHANGED. What changed (correctly closing C-002's P1) is resources/js/components/frontend/tracking/OrderTrackingPageComponent.vue:160-206's `_poll()`: it now explicitly computes `looksLikeJson = res?.data !== null && typeof res?.data === 'object' && (contentType === '' || contentType.includes('json'))` and only trusts `data.found` when `looksLikeJson` is true -- I independently verified this evaluates to `false` for the actual text/html response (contentType='text/html; charset=UTF-8', does not include 'json', is not '') so `this.found` deliberately becomes `false` regardless of what the malformed route returns. This is a robust, tested, deliberate contract at the component layer, but it is compensating for an unfixed route-layer defect, not fixing it -- any FUTURE api/* endpoint with its own regex-constrained segment (order/wait-estimate, order/track-qr, etc.) remains exposed to the same 200-HTML-instead-of-404 fallthrough unless it independently adds an equivalent client-side guard.",
+      "fix_hint": "Same as round-1 C-002's original fix_hint (still unapplied): exclude `api/*` from routes/web.php's `{any}` wildcard (e.g. `->where('any', '^(?!api/).*$')`), or add a low-priority `Route::any('{any}', ...)->where('any', '.*')` inside the `api` middleware group returning a clean 404 JSON for any unmatched api/* segment. Non-blocking for Wave C specifically since the component now has its own defense-in-depth, but this is the second consecutive round this route-layer gap has been left open -- consider raising priority."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "resources/js/components/frontend/tracking/OrderTrackingPageComponent.vue:88",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Not exercised by any of the 12 captured states (networkLost never becomes true in these fixtures, so this is a source-read observation, not an artifact-evidenced defect) -- flagging as informational only per anti-hallucination discipline. `.ot-network-banner` (line 88, `v-if=\"networkLost\"`) still has no `role=\"alert\"` / `aria-live=\"assertive\"`, unlike the C-006 fix which correctly added `aria-live=\"polite\" role=\"status\"` to all 5 `.ot-state` branches. Round-1's own C-006 fix_hint explicitly suggested the more urgent `assertive`/`alert` treatment for this specific banner (connectivity loss is more time-sensitive than a routine status update) but the round-1/round-2 fix only touched the 5 state wrappers, not this banner.",
+      "fix_hint": "Add `role=\"alert\" aria-live=\"assertive\"` to `.ot-network-banner` at OrderTrackingPageComponent.vue:88, matching round-1's original C-006 fix_hint. Low priority -- no artifact in this round exercised the networkLost path, so this cannot be visually/technically confirmed as broken, only confirmed absent by source read."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 1,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "PASS",
+    "C-004": "PASS",
+    "C-005": "PASS",
+    "C-006": "PASS",
+    "C-007": "FAIL"
+  },
+  "verdict": "AMBER"
+}

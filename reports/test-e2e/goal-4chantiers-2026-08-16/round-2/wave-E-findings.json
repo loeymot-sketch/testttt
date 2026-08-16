@@ -1,0 +1,43 @@
+{
+  "wave": "E",
+  "round": 2,
+  "commit": "d4f356c94",
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "E-007",
+      "state_artifact": "test-e2e-goal-4chantiers-wave-E/03-dashboard-widget-populated-admin.console.json,04-pos-badge-visible-admin.console.json,05-badge-click-navigates.console.json,06-post-cleanup-verify.console.json,06a-dashboard-back-to-baseline.console.json",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "Every state that fetches GET http://127.0.0.1:8766/api/admin/stock/low-alerts (03,04,05,06,06a — 9 total occurrences) logs a console entry: level='info', text=\"Connecting to 'http://127.0.0.1:8766/api/admin/stock/low-alerts' violates the following Content Security Policy directive: connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100. The policy is report-only, so the violation has been logged but no further action has been taken.\" (verified via python3 json.load + filter on all 8 *.console.json, not grep-pathological-regex). This is filed with explicit caveats: (1) level is 'info', not 'error' — category 9's literal detection rule ('entry with level=error') is NOT met, so this does not qualify as a scored P1 console_error under REVIEWER_PROTOCOL's letter, consistent with the same literal-reading discipline round-1 applied to E-001/E-002. (2) The policy is report-only (confirmed by the browser's own log text) so the request is NOT blocked — all corresponding network.json files show zero 4xx/5xx/slow entries for this URL, i.e. the fetch succeeds despite the logged violation. (3) Filed at P3 purely as an owner-visibility config-drift item: the CSP connect-src allowlist enumerates the print-bridge ports (127.0.0.1:9100/localhost:9100) but not the API host 127.0.0.1:8766 that both StockLowAlertsWidget.vue and PosComponent.vue call directly (cross-origin from the 8000-served page). If this CSP is ever flipped from Content-Security-Policy-Report-Only to enforcing, both stock-alert fetches would break silently (same failure family as E-001/E-002, this time via CSP block instead of 403) with zero visible UI signal, since both call sites already swallow errors into count=0/alerts=[] without a toast. Not blocking this round's verdict (P3, non-functional today) but worth tracking before any CSP-hardening pass.",
+      "fix_hint": "Add http://127.0.0.1:8766 (and its https/prod equivalent) to connect-src in the CSP config alongside the existing 9100/9101 bridge entries, before ever promoting the policy from report-only to enforcing."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "E-001": "PASS",
+    "E-002": "PASS",
+    "E-003": "PASS",
+    "E-004": "PASS",
+    "E-005": "PASS",
+    "E-006": "PASS"
+  },
+  "closure_evidence": {
+    "E-001": "Independent grep/parse of 01a-pos-badge-hidden-cycle1.network.json (full array, 47 entries) and .console.json: zero occurrences of 'low-alerts', '403', or 'forbidden' in either file. Source-level confirmation: PosComponent.vue:4083-4096 now has canFetchLowStockAlerts() gate (checks p.url === 'items/show', matching backend StockRuptureDashboardController's permission:items_show) called at PosComponent.vue:4108 before every fetch in loadLowStockCount(); role lacking items_show now short-circuits to lowStockCount=0 with zero network call, not a 403.",
+    "E-002": "Independent parse of 01b-pos-badge-hidden-cycle2.network.json and .console.json: both are literal empty arrays [] — zero requests recorded at all for the second poll cycle (no low-alerts call issued, confirming the client-side gate suppresses the request entirely rather than merely swallowing a 403 response). Same source fix as E-001 (shared canFetchLowStockAlerts() gate covers every poll tick).",
+    "E-003": "02-dashboard-widget-empty-operator.dom.html: db-card-body now contains <p class=\"text-sm text-gray-500\">Aucune alerte de stock bas pour le moment.</p> — 44 chars, clears the 20-char threshold. Per REVIEWER_PROTOCOL category 5's literal test ('contains zero of: illustration/copy>=20/CTA' -> flag), the widget now satisfies one of the three conditions (copy length) and no longer qualifies as flaggable, even though no CTA/illustration was added to db-card-body itself (the 'Voir toutes' link remains header-only, as in round 1).",
+    "E-004": "04-pos-badge-visible-admin.png read via vision tool: crisp, full-opacity, fully-settled POS screen; 'Stock faible 1' badge fully legible in the COMMANDES row, no washed-out/translucent rendering anywhere on the page. 04-pos-badge-visible-admin.dom.html: regex scan for class=\"...\" attributes (not <style> text) finds three .velmld-overlay elements, ALL with class=\"velmld-full-screen velmld-overlay\" (no fade-leave-active/fade-leave-to) and inline style=\"...display: none;\" — confirms Vue's v-show correctly resolved to hidden before capture. Source: tests/e2e/test-e2e-goal-4chantiers-wave-E.spec.js:247 uses page.waitForSelector('.velmld-overlay', { state: 'hidden', timeout: 5_000 }).catch(() => {}) — matches the reported state:'hidden' fix (not 'detached', which would never fire since v-show never removes the node).",
+    "E-005": "06-post-cleanup-verify.png read via vision tool: same crisp/full-opacity quality as 04, no mid-transition artifact. 06-post-cleanup-verify.dom.html: same class-attribute regex scan finds zero live fade-leave-active/fade-leave-to on any .velmld-overlay element (all display:none, no leave classes) — round-1's 'two overlay instances stacked mid-fade' defect is gone. Independently re-verified the underlying DB teardown myself (not reusing round-1's or round-2's claim): php artisan tinker on StockLevel::withoutGlobalScopes()->find(17) returns threshold_low=NULL, on_hand=19; a global query for on_hand<=threshold_low (non-null) returns count=0 — matches baseline. Cross-checked visually: 06a-dashboard-back-to-baseline.png shows 'Alertes Stock Bas' with no count badge and 'Aucune alerte de stock bas pour le moment.', and 06-post-cleanup-verify.png's POS header has no 'Stock faible' badge at all — both surfaces agree on 0/baseline.",
+    "E-006": "grep + Read on resources/js/components/admin/dashboard/StockLowAlertsWidget.vue:108 confirms canFetchAlerts() now does perms.find((p) => p && p.url === 'items/show'), matching StockRuptureDashboardController's permission:items_show gate. Code carries an explicit inline comment trail crediting 'test-e2e fix A-002/E-001/E-002/E-006 round-1 2026-08-16' — the same items/items_show mismatch previously flagged. Cross-surface consistency confirmed: 03-dashboard-widget-populated-admin.png shows 'Alertes Stock Bas 1' with exactly one row (Coca-Cola 33cl, 19/25), and 04-pos-badge-visible-admin.png shows POS badge 'Stock faible 1' — same count, same moment, same underlying mutation (SYNC-STOCK-1 cross-surface agreement holds during the mutation, not just at baseline)."
+  },
+  "verdict": "GREEN"
+}
