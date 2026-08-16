@@ -260,6 +260,14 @@ test.describe('Wave D — Kiosk order → waiting screen → QR round trip', () 
       expect(qrSrc, 'QR <img> must have a src pointing at the track-qr endpoint').toMatch(/\/api\/frontend\/order\/track-qr\//);
 
       const naturalWidth = await qrImg.evaluate((el) => el.naturalWidth);
+      // [ROUND-2 D-002 FIX] Round-1's 1280x720 viewport-only screenshots left the
+      // QR (76x76px, at the bottom of .kiosk-waiting-track) below the fold in
+      // EVERY capture — nobody could actually visually confirm "does this look
+      // like a real, scannable QR code" even though the naturalWidth>0 technical
+      // check passed. Scroll the QR's own container into view before snapping so
+      // the capture actually contains the QR in frame.
+      await page.locator('[data-testid="kiosk-track-qr"]').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(150); // let scroll settle before the screenshot
       await rec.snap('03-qr-image-loaded');
       observations.push(`state03: QR naturalWidth=${naturalWidth}`);
       expect(naturalWidth, `QR <img> naturalWidth must be > 0 (a broken image icon still exists in the DOM with naturalWidth=0) — src=${qrSrc}`).toBeGreaterThan(0);
