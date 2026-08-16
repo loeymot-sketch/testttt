@@ -2849,6 +2849,11 @@ export default {
             clearTimeout(this._resetConfirmTimer);
             this._resetConfirmTimer = null;
         }
+        // [T-B ALERTE-WEB 2026-08-16] Annule les bips web programmés en attente.
+        if (this._webOrderAlertTimers) {
+            this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
+            this._webOrderAlertTimers = [];
+        }
         // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
         // late-firing async callbacks (echo/wsService reconnect handlers,
         // in-flight axios resolves, debounced flushers) can early-out instead of
@@ -3930,8 +3935,24 @@ export default {
                     ? true
                     : (String(soundFlag) === '1' || soundFlag === true);
                 if (!soundOn) return;
-                this._playNewOrderBeep();
+                // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Miroir du fix
+                // PosOrdersTrackerComponent : 3 bips espacés 10s pour une commande
+                // WEB (origin='web'), façon Uber Eats — 1 seul bip de 0,4s passait
+                // inaperçu. Les autres canaux gardent le bip unique existant.
+                if (String(normalized.origin || '').toLowerCase() === 'web') {
+                    this._playWebOrderAlertSequence();
+                } else {
+                    this._playNewOrderBeep();
+                }
             } catch (e) { /* defensive */ }
+        },
+        _playWebOrderAlertSequence() {
+            if (!this._webOrderAlertTimers) this._webOrderAlertTimers = [];
+            this._playNewOrderBeep();
+            [10000, 20000].forEach((delay) => {
+                const t = setTimeout(() => this._playNewOrderBeep(), delay);
+                this._webOrderAlertTimers.push(t);
+            });
         },
         _playNewOrderBeep() {
             const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -4271,7 +4292,13 @@ export default {
                 const soundOn = soundFlag === undefined || soundFlag === null
                     ? true
                     : (String(soundFlag) === '1' || soundFlag === true);
-                if (soundOn) this._playNewOrderBeep();
+                if (!soundOn) return;
+                // [T-B ALERTE-WEB 2026-08-16] Même miroir côté secours polling.
+                if (String(origin || '').toLowerCase() === 'web') {
+                    this._playWebOrderAlertSequence();
+                } else {
+                    this._playNewOrderBeep();
+                }
             } catch (_) { /* defensive */ }
         },
         toggleKioskCashOrderDetails(orderId) {
@@ -6122,9 +6149,13 @@ export default {
 .pos-shortcuts__panel--cash {
   border-left: 4px solid var(--pos-v5-brand-red, #cf3a3a);
 }
-/* [WEB-CAISSE-SYNC 2026-07-13] Panneau commandes web — accent bleu. */
+/* [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Accent bleu pâle → rouge vif.
+   Owner : « je ne détecte même pas qu'il y a une commande depuis le site web » —
+   le bleu discret se fondait dans l'écran. Rouge distinct de --pos-v5-brand-red
+   (déjà utilisé par le panneau "cash-pending kiosk" juste au-dessus) pour ne
+   pas confondre les deux panneaux au premier coup d'œil. */
 .pos-shortcuts__panel--web {
-  border-left: 4px solid var(--pos-v5-info, #2563a8);
+  border-left: 4px solid #d32f2f;
 }
 .pos-shortcuts__head {
   display: flex;

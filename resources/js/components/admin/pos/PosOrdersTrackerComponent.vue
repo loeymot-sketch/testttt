@@ -719,6 +719,10 @@ export default {
             _onWsDisconnected: null,
             realtimeConnected: !!(window._wsService?.isConnected()),
             _freshTimers: Object.create(null),
+            // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] 1 seul bip de 0,4s passait
+            // inaperçu ("je ne détecte même pas une commande site web"). Séquence de
+            // 3 bips espacés 10s pour les commandes web, façon Uber Eats.
+            _webOrderAlertTimers: [],
             // [UX-TRACKER-02/POSPERF-09 2026-07-22] Timestamp of the last
             // realtime order event actually DELIVERED (bumped by every Echo
             // handler + on ws (re)connect as a grace period). Init = boot time
@@ -1074,6 +1078,10 @@ export default {
         Object.values(this._freshTimers).forEach((t) => clearTimeout(t));
         // [CAISSE-WEB-INTEL 2026-08-06] Restaure le titre d'onglet original.
         try { if (this._baseDocTitle) document.title = this._baseDocTitle; } catch (_e) { /* defensive */ }
+        // [T-B ALERTE-WEB 2026-08-16] Annule les bips web programmés en attente —
+        // sinon un bip peut sonner après le démontage de l'écran.
+        this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
+        this._webOrderAlertTimers = [];
         // [RED heal P3 2026-08-06] Libère l'AudioContext (les navigateurs en
         // plafonnent ~6 par page) + vide la dédup sonore.
         try { this._audioCtx?.close?.(); } catch (_e) { /* defensive */ }
@@ -1780,7 +1788,23 @@ export default {
                 alertService.info(label);
             } catch (_e) { /* defensive */ }
             if (!this._newOrderSoundEnabled()) return;
+            // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] "la caisse n'arrête pas de sonner
+            // pendant 30s" (en réalité : 1 seul bip de 0,4s, noyé dans le bruit ambiant,
+            // raté) → 3 bips espacés de 10s pour une commande WEB, façon Uber Eats. La
+            // borne garde son bip unique existant (non demandé par l'owner, pas de raison
+            // de le changer).
+            if (src === 'online') {
+                this._playWebOrderAlertSequence();
+            } else {
+                this._playNewOrderBeep();
+            }
+        },
+        _playWebOrderAlertSequence() {
             this._playNewOrderBeep();
+            [10000, 20000].forEach((delay) => {
+                const t = setTimeout(() => this._playNewOrderBeep(), delay);
+                this._webOrderAlertTimers.push(t);
+            });
         },
         // [CAISSE-WEB-INTEL 2026-08-06] Miroir exact du beep PosComponent
         // (POS-9.1.11 / H.3.4) — Web Audio, aucun asset, resume() anti-autoplay.
@@ -2309,7 +2333,10 @@ export default {
 }
 
 .pos-tracker-card-source--kiosk { background: #EEF2FF; }
-.pos-tracker-card-source--online { background: #ECFEFF; }
+/* [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Bleu pâle → rouge, même teinte que
+   .pos-shortcuts__panel--web (PosComponent.vue) pour une identité visuelle
+   cohérente "commande web" sur tout l'écran caisse. */
+.pos-tracker-card-source--online { background: #FDECEA; color: #d32f2f; }
 
 /* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,
  * gentle pulse to keep cashier attention without being aggressive. */
