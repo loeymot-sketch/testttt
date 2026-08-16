@@ -86,8 +86,17 @@ export default {
     },
     methods: {
         // [iter15-mega-fix D-005 2026-05-10] Permission gate aligned with
-        // /admin/stock/rupture route meta (permissionUrl:'items') and the
-        // existing DashboardComponent.normalizedPermissions() helper.
+        // /admin/stock/rupture route meta and the existing
+        // DashboardComponent.normalizedPermissions() helper.
+        // [test-e2e fix A-002/E-001/E-002/E-006 round-1 2026-08-16] Le gate
+        // comparait p.url === 'items' alors que le VRAI gate backend sur
+        // GET admin/stock/low-alerts est `permission:items_show`
+        // (StockRuptureDashboardController::__construct — url seedée
+        // 'items/show', PermissionTableSeeder.php:63), pas `items` (url
+        // 'items'). Ça ne changeait rien pour le rôle de test POS Operator
+        // (qui n'a ni l'un ni l'autre) mais un rôle réel avec `items_show`
+        // seul (pas `items`) aurait un faux-négatif (widget masqué à tort),
+        // et l'inverse un faux-positif (widget affiché puis 403 au fetch).
         canFetchAlerts() {
             const raw = this.$store.getters.authPermission;
             const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
@@ -96,7 +105,7 @@ export default {
                 // dashboards never silently degrade if perms haven't hydrated.
                 return true;
             }
-            const entry = perms.find((p) => p && p.url === 'items');
+            const entry = perms.find((p) => p && p.url === 'items/show');
             if (!entry) {
                 return true;
             }

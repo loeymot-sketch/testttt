@@ -64,3 +64,62 @@ describe('[T-D STOCK-IA 2026-08-16] StockLowAlertsWidget — badge de compte', (
     wrapper.unmount();
   });
 });
+
+/**
+ * [test-e2e fix A-002/E-001/E-002/E-006 round-1 2026-08-16] canFetchAlerts()
+ * comparait p.url === 'items' alors que le VRAI gate backend sur
+ * GET admin/stock/low-alerts est `permission:items_show` (url seedée
+ * 'items/show', PermissionTableSeeder.php:63 + StockRuptureDashboardController
+ * __construct). RED avant fix : le test "refuse sur items/show=false" échouait
+ * (le widget fetchait quand même, car il ne regardait que 'items') ; le test
+ * "n'est PAS bloqué par items=false" échouait aussi (le widget se fermait à
+ * tort sur la mauvaise clé). GREEN après fix : le gate suit exactement le
+ * slug backend réel.
+ */
+function mountWidgetWithPerms(perms) {
+  return mount(StockLowAlertsWidget, {
+    global: {
+      plugins: [i18n],
+      mocks: { $store: { getters: { authPermission: perms } } },
+      stubs: { LoadingComponent: true, 'router-link': true },
+    },
+  });
+}
+
+describe('[test-e2e fix A-002/E-001/E-002/E-006] StockLowAlertsWidget — gate items_show (pas items)', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('ne fetch PAS quand la permission items/show est refusée (access:false)', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [{ stockable_id: 1 }] } });
+    const wrapper = mountWidgetWithPerms([{ url: 'items/show', access: false }]);
+    await flushPromises();
+
+    expect(axios.get).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-testid="stock-low-alerts-error"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('fetch quand items/show est accordé, MÊME si l\'entrée "items" (mauvais slug historique) est refusée', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [] } });
+    const wrapper = mountWidgetWithPerms([
+      { url: 'items', access: false },
+      { url: 'items/show', access: true },
+    ]);
+    await flushPromises();
+
+    expect(axios.get).toHaveBeenCalledWith('admin/stock/low-alerts');
+    wrapper.unmount();
+  });
+
+  it('ne fetch PAS quand items/show est refusé, MÊME si l\'entrée "items" (mauvais slug) est accordée', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [] } });
+    const wrapper = mountWidgetWithPerms([
+      { url: 'items', access: true },
+      { url: 'items/show', access: false },
+    ]);
+    await flushPromises();
+
+    expect(axios.get).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+});

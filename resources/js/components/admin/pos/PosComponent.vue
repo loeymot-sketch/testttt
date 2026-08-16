@@ -4068,12 +4068,47 @@ export default {
             }
         },
 
+        // [test-e2e fix A-002/E-001/E-002/E-006 round-1 2026-08-16] Gate miroir
+        // de StockLowAlertsWidget.vue::canFetchAlerts() (dashboard admin) —
+        // MÊME endpoint (admin/stock/low-alerts), donc MÊME gate backend
+        // (`permission:items_show`, url seedée 'items/show'). Sans ce gate,
+        // un rôle sans `items_show` (ex: POS Operator) déclenchait un 403 à
+        // CHAQUE tick de polling (~toutes les 5-15s), à vie, sans jamais
+        // pouvoir réussir — bruit réseau/console pur, aucune UI ne le
+        // signalait (finding adversarial A-002/E-001/E-002, 2 vagues
+        // indépendantes). Petit gate dupliqué plutôt qu'extrait en helper
+        // partagé : ce fichier + le widget suivent déjà ce patron (voir
+        // canProcessWebOrders/canToggleAvailability ci-dessus, chacun avec
+        // sa propre lecture de authPermission).
+        canFetchLowStockAlerts() {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+            if (!perms.length) {
+                // Perms pas encore hydratées — comportement historique
+                // default-allow (même choix que le widget dashboard).
+                return true;
+            }
+            const entry = perms.find((p) => p && p.url === 'items/show');
+            if (!entry) {
+                return true;
+            }
+            return entry.access === true;
+        },
+
         // [T-D STOCK-IA 2026-08-16 · GOAL owner] "sur la caisse voir le nombre de
         // stock faible... pour préparer la liste à acheter demain". Même endpoint,
         // même sémantique que StockLowAlertsWidget.vue (dashboard admin) — SSOT
         // StockRuptureDashboardController::lowAlerts(). Silencieux en cas d'erreur,
         // même discipline que loadActiveOrdersStats ci-dessus.
+        // [test-e2e fix A-002/E-001/E-002/E-006 round-1 2026-08-16] Gate
+        // canFetchLowStockAlerts() AVANT le fetch — un rôle sans `items_show`
+        // ne déclenche plus AUCUNE requête (au lieu d'un 403 systématique à
+        // chaque tick).
         async loadLowStockCount() {
+            if (!this.canFetchLowStockAlerts()) {
+                this.lowStockCount = 0;
+                return;
+            }
             try {
                 const res = await axios.get('admin/stock/low-alerts');
                 this.lowStockCount = (res.data?.alerts ?? []).length;
