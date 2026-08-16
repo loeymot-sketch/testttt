@@ -97,6 +97,42 @@ describe('[T-C SUIVI-CLIENT 2026-08-16] OrderTrackingPageComponent — page publ
     wrapper.unmount();
   });
 
+  it('[C-002] traite une réponse HTML (catch-all SPA sur token malformé) comme found:false DÉLIBÉRÉMENT, pas par accident', async () => {
+    // Reproduit routes/web.php:237 : token malformé -> route/track/{trackingToken} ne
+    // matche pas (regex [A-Za-z0-9]{48}) -> le catch-all SPA sert le shell HTML en 200.
+    const html = '<!doctype html><html><head><title>Le Cayenne</title></head><body id="app"></body></html>';
+    axiosGet.mockResolvedValue({ data: html, headers: { 'content-type': 'text/html; charset=UTF-8' } });
+    const wrapper = mountTracking('ABCDEFGHIJ');
+    await flushPromises();
+
+    // Preuve que le garde-fou EXPLICITE a tranché (et pas juste data.found undefined par
+    // hasard) : le champ d'introspection doit avoir été mis à `false` en connaissance de
+    // cause, avant même de regarder data.found.
+    expect(wrapper.vm._lastPollLooksLikeJson).toBe(false);
+    expect(wrapper.vm.found).toBe(false);
+    expect(wrapper.find('[data-testid="ot-not-found"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="ot-loading"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('[C-002] ne régresse pas le cas nominal JSON (found=true) même sans header Content-Type explicite', async () => {
+    axiosGet.mockResolvedValue({
+      data: {
+        found: true, status: 7, status_label: 'En préparation', step: 3,
+        queue_number: 'A0050', position_ahead: 1, almost_ready: false, ready: false,
+        wait_low: 10, wait_high: 15, server_time: '2026-08-16T12:00:00+02:00',
+      },
+      // Pas de `headers` du tout (comme axios en environnement de test réel sans mock
+      // complet) — le garde-fou C-002 ne doit pas devenir plus strict que nécessaire.
+    });
+    const wrapper = mountTracking();
+    await flushPromises();
+
+    expect(wrapper.vm._lastPollLooksLikeJson).toBe(true);
+    expect(wrapper.find('[data-testid="ot-in-progress"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it('affiche un bandeau réseau après 3 échecs consécutifs de sondage', async () => {
     vi.useFakeTimers();
     axiosGet.mockRejectedValue(new Error('network'));
