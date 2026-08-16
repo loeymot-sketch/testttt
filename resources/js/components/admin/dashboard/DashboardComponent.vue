@@ -61,6 +61,11 @@
         <ErrorBoundary><LastZReportWidget/></ErrorBoundary>
         <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
         <ErrorBoundary><MostPopularItemsComponent/></ErrorBoundary>
+        <!-- [T-D STOCK-IA 2026-08-16 · GOAL owner] "alerter lorsque y aura un stock
+             faible dans le tableau de bord principal" — le widget existait déjà
+             (StockLowAlertsWidget.vue, endpoint admin/stock/low-alerts déjà câblé)
+             mais n'était monté nulle part (grep repo-wide : aucun import). -->
+        <ErrorBoundary><StockLowAlertsWidget/></ErrorBoundary>
     </div>
 </template>
 
@@ -77,6 +82,7 @@ import RealtimeReportComponent from "./RealtimeReportComponent";
 import SlaAlertsComponent from "./SlaAlertsComponent";
 import ChannelStatsComponent from "./ChannelStatsComponent";
 import AuditTrailComponent from "./AuditTrailComponent";
+import StockLowAlertsWidget from "./StockLowAlertsWidget";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ENV from "../../../config/env";
 
@@ -95,6 +101,7 @@ export default {
         SlaAlertsComponent,
         ChannelStatsComponent,
         AuditTrailComponent,
+        StockLowAlertsWidget,
         ErrorBoundary
     },
     data() {

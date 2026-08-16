@@ -3,7 +3,16 @@
     <div class="col-12 xl:col-6">
         <div class="db-card">
             <div class="db-card-header flex items-center justify-between flex-wrap gap-2">
-                <h3 class="db-card-title mb-0">{{ $t('label.stock_low_alerts') }}</h3>
+                <h3 class="db-card-title mb-0 flex items-center gap-2">
+                    {{ $t('label.stock_low_alerts') }}
+                    <!-- [T-D STOCK-IA 2026-08-16 · GOAL owner] "trois articles stock faible" —
+                         un compte visible, pas seulement les 5 premières lignes du tableau. -->
+                    <span
+                        v-if="!loading.isActive && alerts.length"
+                        class="db-table-badge text-orange-900 bg-orange-100 rounded-full px-2 py-0.5 text-xs font-semibold"
+                        data-testid="stock-low-alerts-count"
+                    >{{ alerts.length }}</span>
+                </h3>
                 <router-link to="/admin/stock/rupture" class="text-sm font-medium text-orange-700" data-testid="stock-low-alerts-view-all">
                     {{ $t('label.view_all_alerts') }}
                 </router-link>

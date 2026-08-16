@@ -368,6 +368,10 @@
             "delivered_short": "Servie",
             "now": "à l'instant"
         },
+        "low_stock": {
+            "button_label": "Stock faible",
+            "button_hint": "Articles en stock faible — préparer la liste d'achat pour demain."
+        },
         "loyalty": {
             "redeem": {
                 "title": "Apply loyalty discount",
@@ -1991,7 +1995,13 @@
         "waiting_ui": {
             "number_label": "Number",
             "preparing_hint": "Please come to the counter when your number is called",
-            "ready_hint": "Pick up your order at the counter 🙌"
+            "ready_hint": "Pick up your order at the counter 🙌",
+            "orders_ahead_label": "orders ahead of you",
+            "wait_estimate_label": "estimated wait time",
+            "almost_ready_banner": "🔥 Almost ready!",
+            "track_from_phone_title": "Track your order",
+            "track_from_phone_hint": "Scan to follow your order from your phone",
+            "track_qr_alt": "Order tracking QR code"
         },
         "rush": {
             "active_title": "Kitchen busy",

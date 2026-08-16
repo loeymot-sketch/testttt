@@ -183,6 +183,26 @@
                             <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
                         </PosV5Button>
                         <!--
+                          [T-D STOCK-IA 2026-08-16 · GOAL owner] "sur la caisse voir le nombre
+                          de stock faible... pour préparer la liste à acheter demain" — même
+                          tick de polling que le tracker ci-dessus (loadLowStockCount), même
+                          endpoint que le widget dashboard (admin/stock/low-alerts). Masqué à
+                          zéro alerte (pas de bruit visuel permanent).
+                        -->
+                        <PosV5Button
+                            v-if="lowStockCount > 0"
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.stock.rupture' }"
+                            :badge="lowStockCount"
+                            data-testid="pos-low-stock-open"
+                            :title="$t('pos.low_stock.button_hint')"
+                        >
+                            <template #icon>📦</template>
+                            <span class="hidden lg:inline">{{ $t('pos.low_stock.button_label') }}</span>
+                        </PosV5Button>
+                        <!--
                           [POS-V5 HEADER-REORG 2026-07-21] Accès « Archives » —
                           router-link vers l'historique unifié de toutes les commandes
                           (admin.historique.list / HistoriqueListComponent). Calqué sur
@@ -2159,6 +2179,10 @@ export default {
             // PREPARED uniquement (déclencheur du halo vert). Pas de popup, pas de son
             // ici — l'écran tracker dédié et l'OSS client gèrent les notifications fortes.
             activeOrdersStats: { active: 0, ready: 0 },
+            // [T-D STOCK-IA 2026-08-16 · GOAL owner] Nombre d'articles en stock faible
+            // (StockLevel.on_hand <= threshold_low), même endpoint que
+            // StockLowAlertsWidget.vue côté dashboard admin — une seule définition.
+            lowStockCount: 0,
             // [POS-V4-CASHIER-OPS 2026-05-02] Guard against double-tap on the
             // no-sale button while the hardware bridge resolves (real till can
             // take ~200-500ms to physically open).
@@ -3641,6 +3665,10 @@ export default {
                 // transport-agnostique (self-throttled ~30s) : tuiles/panier 86 à jour
                 // même worker down (Echo muet).
                 this.loadAvailabilitySnapshotFallback();
+                // [T-D STOCK-IA 2026-08-16] Même tick pour le badge stock faible —
+                // pas besoin d'un timer dédié, la fraîcheur des commandes suffit
+                // largement pour un indicateur qui évolue lentement.
+                this.loadLowStockCount();
                 const nextIntervalMs = this._kioskPollingInterval();
                 this._kioskPollTimer = setTimeout(tick, nextIntervalMs);
             };
@@ -4037,6 +4065,20 @@ export default {
             } catch (e) {
                 // Silencieux — pas de toast (le caissier n'a pas besoin de bruit ici).
                 this.activeOrdersStats = { active: 0, ready: 0 };
+            }
+        },
+
+        // [T-D STOCK-IA 2026-08-16 · GOAL owner] "sur la caisse voir le nombre de
+        // stock faible... pour préparer la liste à acheter demain". Même endpoint,
+        // même sémantique que StockLowAlertsWidget.vue (dashboard admin) — SSOT
+        // StockRuptureDashboardController::lowAlerts(). Silencieux en cas d'erreur,
+        // même discipline que loadActiveOrdersStats ci-dessus.
+        async loadLowStockCount() {
+            try {
+                const res = await axios.get('admin/stock/low-alerts');
+                this.lowStockCount = (res.data?.alerts ?? []).length;
+            } catch (e) {
+                this.lowStockCount = 0;
             }
         },
 
