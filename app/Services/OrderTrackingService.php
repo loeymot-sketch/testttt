@@ -107,7 +107,15 @@ class OrderTrackingService
                 ->where('branch_id', $order->branch_id)
                 ->where('id', '!=', $order->id)
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses())
-                ->where('order_datetime', '<', $order->order_datetime);
+                ->where('order_datetime', '<', $order->order_datetime)
+                // [test-e2e fix C-001/D-001 round-1 2026-08-16] garde-fou d'ancienneté
+                // miroir WaitEstimateService::QUEUE_WINDOW_MINUTES (SSOT file active) —
+                // sans elle les ACCEPT/PREPARING fantômes jamais bumpés (454 en dev,
+                // 431 > 7j, 411 > 30j) gonflaient position_ahead sans borne alors que
+                // wait_low/wait_high restaient bornés par ce même filtre côté
+                // WaitEstimateService, produisant "465 commandes avant vous" affiché
+                // en même temps que "20-25 min" — contradiction interne visible client.
+                ->where('order_datetime', '>=', $now->copy()->subMinutes(WaitEstimateService::QUEUE_WINDOW_MINUTES));
 
             KitchenReleaseRule::applyBoardReleaseFilter($query);
             KitchenReleaseRule::applyScheduledBoardFilter($query, $now);

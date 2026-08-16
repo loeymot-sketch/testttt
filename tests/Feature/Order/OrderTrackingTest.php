@@ -166,6 +166,33 @@ class OrderTrackingTest extends TestCase
     }
 
     /** @test */
+    public function une_commande_plus_vieille_que_la_fenetre_de_fraicheur_ne_compte_pas_dans_la_file(): void
+    {
+        // [test-e2e fix C-001/D-001 round-1 2026-08-16] Régression du
+        // STALE-GUARD (déjà appliqué à WaitEstimateService::QUEUE_WINDOW_MINUTES,
+        // fenêtre 120 min) — position_ahead n'avait AUCUNE borne d'ancienneté :
+        // en DB dev, 454 commandes ACCEPT/PREPARING actives sur branch_id=1,
+        // 431 vieilles de plus de 7 jours, 411 de plus de 30 jours. Un client
+        // voyait "465 commandes avant vous" ET "20-25 min" simultanément —
+        // contradiction interne. Une commande fantôme (jamais bumpée), plus
+        // vieille que la fenêtre de fraîcheur, ne doit PLUS compter devant une
+        // commande plus récente.
+        $stale = $this->makeOrder([
+            'order_datetime' => now()->subMinutes(121),
+        ]);
+        $fresh = $this->makeOrder([
+            'order_datetime' => now()->subMinutes(30),
+        ]);
+        $mine = $this->makeOrder(['order_datetime' => now()]);
+
+        $result = $this->track($mine->tracking_token);
+
+        // Seule $fresh (dans la fenêtre 120 min) compte devant nous ;
+        // $stale (121 min, hors fenêtre) est ignorée.
+        $this->assertSame(1, $result['position_ahead'], 'la commande fantôme hors fenêtre 120 min ne doit pas compter');
+    }
+
+    /** @test */
     public function commande_annulee_est_visible_mais_sans_illusion_de_file(): void
     {
         $order = $this->makeOrder(['status' => OrderStatus::CANCELED]);
