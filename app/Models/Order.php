@@ -177,6 +177,17 @@ class Order extends Model implements BroadcastableOrder
             }
         });
 
+        // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Identifiant opaque pour le lien
+        // de suivi public (borne/téléphone) — distinct de `token`/`order_serial_no`
+        // (séquentiels, devinables). Généré au niveau MODÈLE (même philosophie que
+        // le hook source_surface ci-dessus) : aucun chemin de création de commande
+        // ne peut l'oublier, POS y compris (coût nul, jamais utilisé côté caisse).
+        static::creating(function (self $order) {
+            if (empty($order->tracking_token)) {
+                $order->tracking_token = \Illuminate\Support\Str::random(48);
+            }
+        });
+
         // [ULTRA-AUDIT 2026-07-04 — P2 timing cuisine CENTRALISÉ] Horodatage du temps réel de préparation
         // posé au niveau MODÈLE (même philosophie que le hook source_surface ci-dessus : « sans per-writer
         // plumbing ») pour qu'AUCUN chemin ne l'oublie. BUG trouvé par l'audit intersections : le stamp

@@ -60,6 +60,17 @@ class OrderController extends Controller
         }
     }
 
+    /**
+     * [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'UNE commande par
+     * son `tracking_token` opaque (jamais l'id/serial, séquentiels et devinables).
+     * `found=false` (jamais 404/500) sur un token inconnu — un lien expiré/mal
+     * copié doit rester un écran propre côté client, pas une erreur brute.
+     */
+    public function track(string $trackingToken, \App\Services\OrderTrackingService $orderTrackingService): \Illuminate\Http\JsonResponse
+    {
+        return response()->json($orderTrackingService->track($trackingToken));
+    }
+
     public function store(OrderRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {

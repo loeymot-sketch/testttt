@@ -7,15 +7,22 @@ use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Models\TimeSlot;
 use Carbon\Carbon;
-use Smartisan\Settings\Facades\Settings;
 
 /**
- * [GOAL WEB COMMANDE Wave D 2026-07-28] Estimation d'attente retrait pour le
- * site web, dérivée de la file RÉELLE cuisine (caisse/KDS).
+ * [GOAL WEB COMMANDE Wave D 2026-07-28, formule owner révisée 2026-08-16]
+ * Estimation d'attente retrait pour le site web, dérivée de la file RÉELLE
+ * cuisine (caisse/KDS).
  *
- * Formule owner : base 15 min ; +5 min par tranche PLEINE de 3 commandes
- * actives devant ; fourchette (low, low+5) ; PLAFOND dur 30-35 (low jamais
- * au-dessus du cap 30, high = low + 5 → jamais > 35).
+ * [T-C TEMPS-ATTENTE 2026-08-16 · GOAL owner] Nouvelle formule PAR PALIERS
+ * (remplace l'ancienne formule linéaire +5min/tranche de 3, qui décalait tout
+ * d'un cran vers le haut par rapport à ce que l'owner voulait — ex. 3
+ * commandes donnait 20-25 au lieu de 15-20 attendu, et plafonnait à 30-35 au
+ * lieu de 25-30). Règle owner (dictée, bornes ≤N choisies pour rendre les
+ * paliers non chevauchants — "1 à 3", "3 à 5", "plus de 5" laissait un
+ * chevauchement à l'exact valeur 3) :
+ *   - file ≤ 3 commandes actives devant  → 15-20 min
+ *   - file 4 à 5 commandes               → 20-25 min
+ *   - file > 5 commandes                 → 25-30 min (plafond dur, jamais plus)
  *
  * File « devant » = sémantique SSOT KitchenReleaseRule (le MÊME contrat que le
  * board KDS — leçon unreleased-order-bump : ne jamais re-définir la file) :
@@ -30,11 +37,18 @@ use Smartisan\Settings\Facades\Settings;
  */
 class WaitEstimateService
 {
-    public const STEP_MINUTES = 5;
-    public const ORDERS_PER_STEP = 3;
-    public const DEFAULT_BASE_MINUTES = 15;
-    public const DEFAULT_CAP_MINUTES = 30;
+    /** [T-C] Paliers owner : [seuil_max_commandes => [low, high]], triés croissant. */
+    public const TIERS = [
+        3 => [15, 20],
+        5 => [20, 25],
+    ];
+    public const OVERFLOW_TIER = [25, 30];
     public const QUEUE_WINDOW_MINUTES = 120;
+    // [T-C PLANCHER-JAMAIS-ZERO] Owner : « on va jamais dire que y a aucune
+    // commande, toujours y a deux commandes avant vous minimum ». Plancher
+    // artificiel affiché au client — la vraie valeur reste dans queue_count
+    // (jamais menti côté staff/admin, seulement côté vitrine client).
+    public const MIN_DISPLAYED_QUEUE_COUNT = 2;
 
     /**
      * @return array{queue_count:int, wait_low:int, wait_high:int, closing_time:?string, server_time:string}
@@ -59,26 +73,20 @@ class WaitEstimateService
 
         $queueCount = $query->count();
 
-        // Même pattern Settings que OrderService.php:405 (base) ; cap = nouveau
-        // setting optionnel order_setup_wait_cap (défaut 30, AUCUNE migration —
-        // surchargeable owner via le repository settings existant).
-        $base = (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? self::DEFAULT_BASE_MINUTES);
-        $cap = (int) (Settings::group('order_setup')->get('order_setup_wait_cap') ?? self::DEFAULT_CAP_MINUTES);
-
-        if ($base <= 0) {
-            $base = self::DEFAULT_BASE_MINUTES;
+        [$low, $high] = self::OVERFLOW_TIER;
+        foreach (self::TIERS as $maxCount => $range) {
+            if ($queueCount <= $maxCount) {
+                [$low, $high] = $range;
+                break;
+            }
         }
-        if ($cap <= 0) {
-            $cap = self::DEFAULT_CAP_MINUTES;
-        }
-
-        // [OWNER 2026-07-28] ceil (pas intdiv) : les exemples owner font foi —
-        // 3 cmds devant → 20-25 (ceil(3/3)=1) ; 7 cmds → 30-35 (ceil(7/3)=3, cap).
-        $low = min($base + self::STEP_MINUTES * (int) ceil($queueCount / self::ORDERS_PER_STEP), $cap);
-        $high = $low + self::STEP_MINUTES;
 
         return [
             'queue_count' => $queueCount,
+            // [T-C PLANCHER-JAMAIS-ZERO] Réservé à l'AFFICHAGE client (borne/suivi
+            // mobile) — jamais utilisé pour la fourchette de temps ci-dessus, qui
+            // reste sur le compte réel (queue_count) pour ne pas biaiser la cuisine.
+            'queue_count_displayed' => max($queueCount, self::MIN_DISPLAYED_QUEUE_COUNT),
             'wait_low' => $low,
             'wait_high' => $high,
             'closing_time' => $this->todayClosingTime($now),

@@ -13,15 +13,16 @@ use App\Services\WaitEstimateService;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
 /**
- * [GOAL WEB COMMANDE Wave D 2026-07-28] Estimation d'attente retrait web.
+ * [T-C TEMPS-ATTENTE 2026-08-16 · GOAL owner] Estimation d'attente retrait web.
  *
- * Formule owner : base 15 min ; +5 min par tranche PLEINE de 3 commandes
- * actives devant ; rendu fourchette (low, low+5) ; PLAFOND dur 30-35
- * (low jamais > 30, high jamais > 35).
+ * Formule owner (paliers, remplace l'ancienne formule linéaire du 2026-07-28
+ * qui décalait tout d'un cran — 3 commandes donnait 20-25 au lieu de 15-20) :
+ *   - file ≤ 3 commandes actives devant → 15-20 min
+ *   - file 4 à 5 commandes              → 20-25 min
+ *   - file > 5 commandes                → 25-30 min (plafond dur)
  *
  * File « devant » = sémantique KitchenReleaseRule (SSOT board KDS) :
  *  - statuts actifs cuisine = visibleStatuses() = ACCEPT / PREPARING / PREPARED
@@ -44,11 +45,6 @@ class WaitEstimateEndpointTest extends TestCase
 
         config(['app.api_key' => '123456']);
         config(['kds.scheduled_lead_minutes' => 20]);
-
-        // Base owner = 15 min (seedMinimalSettings pose 30 — on aligne sur la formule owner).
-        Settings::group('order_setup')->set([
-            'order_setup_food_preparation_time' => 15,
-        ]);
 
         // Horloge fixe (hiver CET — pas de piège DST), même discipline que KdsScheduledOrderGateTest.
         $now = CarbonImmutable::parse('2026-03-10 12:00:00', 'Europe/Paris');
@@ -95,7 +91,7 @@ class WaitEstimateEndpointTest extends TestCase
     }
 
     /** @test */
-    public function trois_commandes_actives_donnent_20_25(): void
+    public function trois_commandes_actives_restent_dans_le_palier_15_20(): void
     {
         $this->makeKitchenOrder();
         $this->makeKitchenOrder(['status' => OrderStatus::PREPARING]);
@@ -104,28 +100,44 @@ class WaitEstimateEndpointTest extends TestCase
         $result = $this->estimate();
 
         $this->assertSame(3, $result['queue_count']);
+        $this->assertSame(15, $result['wait_low']);
+        $this->assertSame(20, $result['wait_high']);
+    }
+
+    /** @test */
+    public function quatre_a_cinq_commandes_donnent_20_25(): void
+    {
+        for ($i = 0; $i < 4; $i++) {
+            $this->makeKitchenOrder();
+        }
+        $result = $this->estimate();
+        $this->assertSame(4, $result['queue_count']);
+        $this->assertSame(20, $result['wait_low']);
+        $this->assertSame(25, $result['wait_high']);
+
+        $this->makeKitchenOrder();
+        $result = $this->estimate();
+        $this->assertSame(5, $result['queue_count']);
         $this->assertSame(20, $result['wait_low']);
         $this->assertSame(25, $result['wait_high']);
     }
 
     /** @test */
-    public function sept_commandes_actives_donnent_30_35(): void
+    public function six_commandes_actives_donnent_25_30(): void
     {
-        for ($i = 0; $i < 7; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $this->makeKitchenOrder();
         }
 
         $result = $this->estimate();
 
-        // [OWNER 2026-07-28] exemple owner : « 7 commandes devant → 30 à 35 » →
-        // ceil(7/3) = 3 → 15 + 15 = 30 (== cap).
-        $this->assertSame(7, $result['queue_count']);
-        $this->assertSame(30, $result['wait_low']);
-        $this->assertSame(35, $result['wait_high']);
+        $this->assertSame(6, $result['queue_count']);
+        $this->assertSame(25, $result['wait_low']);
+        $this->assertSame(30, $result['wait_high']);
     }
 
     /** @test */
-    public function douze_commandes_actives_plafonnent_a_30_35(): void
+    public function douze_commandes_actives_plafonnent_a_25_30(): void
     {
         for ($i = 0; $i < 12; $i++) {
             $this->makeKitchenOrder();
@@ -133,10 +145,30 @@ class WaitEstimateEndpointTest extends TestCase
 
         $result = $this->estimate();
 
-        // ceil(12/3) = 4 → 15 + 20 = 35 → CAP low=30, high=35.
         $this->assertSame(12, $result['queue_count']);
-        $this->assertSame(30, $result['wait_low']);
-        $this->assertSame(35, $result['wait_high']);
+        $this->assertSame(25, $result['wait_low']);
+        $this->assertSame(30, $result['wait_high']);
+    }
+
+    /** @test */
+    public function queue_count_displayed_ne_montre_jamais_moins_de_2_meme_a_zero_commande(): void
+    {
+        // [T-C PLANCHER-JAMAIS-ZERO] Owner : « on va jamais dire que y a aucune
+        // commande, toujours y a deux commandes avant vous minimum ».
+        $result = $this->estimate();
+        $this->assertSame(0, $result['queue_count'], 'le compte RÉEL reste honnête (staff/admin)');
+        $this->assertSame(2, $result['queue_count_displayed'], 'le plancher client ne descend jamais sous 2');
+
+        $this->makeKitchenOrder();
+        $result = $this->estimate();
+        $this->assertSame(1, $result['queue_count']);
+        $this->assertSame(2, $result['queue_count_displayed'], '1 commande réelle → toujours affiché 2 minimum');
+
+        $this->makeKitchenOrder();
+        $this->makeKitchenOrder();
+        $result = $this->estimate();
+        $this->assertSame(3, $result['queue_count']);
+        $this->assertSame(3, $result['queue_count_displayed'], 'au-delà du plancher, la vraie valeur est affichée telle quelle');
     }
 
     /** @test */
@@ -153,10 +185,9 @@ class WaitEstimateEndpointTest extends TestCase
 
         $result = $this->estimate();
 
-        // ceil(1/3) = 1 → 20-25 (tranche entamée = comptée, jamais de sous-promesse).
         $this->assertSame(1, $result['queue_count']);
-        $this->assertSame(20, $result['wait_low']);
-        $this->assertSame(25, $result['wait_high']);
+        $this->assertSame(15, $result['wait_low']);
+        $this->assertSame(20, $result['wait_high']);
     }
 
     /** @test */
@@ -223,16 +254,18 @@ class WaitEstimateEndpointTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'queue_count',
+                'queue_count_displayed',
                 'wait_low',
                 'wait_high',
                 'closing_time',
                 'server_time',
             ])
             ->assertJson([
-                'queue_count'  => 1,
-                'wait_low'     => 20,
-                'wait_high'    => 25,
-                'closing_time' => '22:30',
+                'queue_count'           => 1,
+                'queue_count_displayed' => 2,
+                'wait_low'              => 15,
+                'wait_high'             => 20,
+                'closing_time'          => '22:30',
             ]);
 
         $route = app('router')->getRoutes()->getByName('frontend.order.wait-estimate');

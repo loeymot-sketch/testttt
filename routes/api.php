@@ -1751,6 +1751,20 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->middleware('throttle:30,1')
         ->name('order.wait-estimate');
 
+    // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'une commande par
+    // tracking_token opaque — PUBLIC (lien envoyé/affiché au client, pas de
+    // login), lecture seule, throttle 30/min (même discipline que wait-estimate,
+    // endpoint public = vecteur d'abus). Contrainte `[A-Za-z0-9]{48}` = forme
+    // exacte de Str::random(48) (Order::boot()) — un token malformé ne matche
+    // jamais cette route (donc jamais le contrôleur, zéro requête DB gaspillée) ;
+    // il tombe sur l'attrape-tout SPA `/{any}` de routes/web.php (200 HTML), pas
+    // un 404 JSON — comportement partagé par toute route API mal formée dans
+    // cette app, pas spécifique à ce endpoint.
+    Route::get('order/track/{trackingToken}', [FrontendOrderController::class, 'track'])
+        ->where('trackingToken', '[A-Za-z0-9]{48}')
+        ->middleware('throttle:30,1')
+        ->name('order.track');
+
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
