@@ -1213,7 +1213,13 @@
         "waiting_ui": {
             "number_label": "Numéro",
             "preparing_hint": "Présentez-vous au comptoir lorsque votre numéro est appelé",
-            "ready_hint": "Venez récupérer votre commande au comptoir 🙌"
+            "ready_hint": "Venez récupérer votre commande au comptoir 🙌",
+            "orders_ahead_label": "commandes avant vous",
+            "wait_estimate_label": "temps d'attente estimé",
+            "almost_ready_banner": "🔥 Presque prête !",
+            "track_from_phone_title": "Suivez votre commande",
+            "track_from_phone_hint": "Scannez pour suivre la préparation depuis votre téléphone",
+            "track_qr_alt": "QR code de suivi de commande"
         },
         "waiting_screen": {
             "cancel_order_btn": "Annuler ma commande",

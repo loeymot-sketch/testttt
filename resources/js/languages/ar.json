@@ -1585,7 +1585,13 @@
         "waiting_ui": {
             "number_label": "الرقم",
             "preparing_hint": "توجّه إلى الكاونتر عندما يُنادى رقمك",
-            "ready_hint": "استلم طلبك من الكاونتر 🙌"
+            "ready_hint": "استلم طلبك من الكاونتر 🙌",
+            "orders_ahead_label": "طلبات قبلك",
+            "wait_estimate_label": "الوقت المتوقع للانتظار",
+            "almost_ready_banner": "🔥 على وشك الجاهزية!",
+            "track_from_phone_title": "تتبّع طلبك",
+            "track_from_phone_hint": "امسح الرمز لمتابعة تحضير طلبك من هاتفك",
+            "track_qr_alt": "رمز QR لتتبع الطلب"
         },
         "rush": {
             "active_title": "المطبخ مشغول",

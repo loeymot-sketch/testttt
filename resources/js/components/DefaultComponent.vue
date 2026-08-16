@@ -46,6 +46,13 @@
       <router-view></router-view>
       <TableFooterComponent />
     </div>
+
+    <!-- [T-C SUIVI-CLIENT 2026-08-16] Page publique de suivi (téléphone client, lien/QR
+         borne) : AUCUN habillage (ni sidebar admin, ni navbar vitrine/table, ni kiosk-shell
+         plein-écran verrouillé) — la page compose son propre layout complet. -->
+    <div v-if="theme === 'tracking'">
+      <router-view></router-view>
+    </div>
   </div>
 </template>
 
@@ -151,6 +158,8 @@ export default {
         this.theme = "frontend";
       } else if (route?.meta?.isTable === true) {
         this.theme = "table";
+      } else if (route?.meta?.isTracking === true) {
+        this.theme = "tracking";
       } else {
         this.theme = "backend";
       }

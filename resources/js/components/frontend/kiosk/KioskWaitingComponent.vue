@@ -56,9 +56,40 @@
 
           <p class="kiosk-waiting-hint">{{ $t('kiosk.waiting_ui.preparing_hint') }}</p>
 
+          <!-- [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] "Presque prête" (SSOT
+               OrderTrackingService, ALMOST_READY_THRESHOLD=2) remplace position/temps
+               une fois qu'il ne reste presque plus de commandes devant. -->
+          <div v-if="almostReady" class="kiosk-waiting-almost-ready" data-testid="kiosk-almost-ready">
+            {{ $t('kiosk.waiting_ui.almost_ready_banner') }}
+          </div>
+          <div v-else-if="positionAhead !== null || (waitLow !== null && waitHigh !== null)" class="kiosk-waiting-meta">
+            <div v-if="positionAhead !== null" class="kiosk-waiting-meta-item" data-testid="kiosk-position-ahead">
+              <span class="kiosk-waiting-meta-value">{{ positionAhead }}</span>
+              <span class="kiosk-waiting-meta-label">{{ $t('kiosk.waiting_ui.orders_ahead_label') }}</span>
+            </div>
+            <div v-if="waitLow !== null && waitHigh !== null" class="kiosk-waiting-meta-item" data-testid="kiosk-wait-estimate">
+              <span class="kiosk-waiting-meta-value">{{ waitLow }}-{{ waitHigh }} min</span>
+              <span class="kiosk-waiting-meta-label">{{ $t('kiosk.waiting_ui.wait_estimate_label') }}</span>
+            </div>
+          </div>
+
           <!-- Barre de progression indéterminée -->
           <div class="kiosk-waiting-progress">
             <div class="kiosk-waiting-progress-bar" />
+          </div>
+
+          <!-- Suivi depuis le téléphone (QR vers la page publique /suivi/:token) -->
+          <div v-if="trackingToken" class="kiosk-waiting-track" data-testid="kiosk-track-qr">
+            <img
+              class="kiosk-waiting-track-qr"
+              :src="trackQrUrl"
+              :alt="$t('kiosk.waiting_ui.track_qr_alt')"
+              width="120" height="120"
+            >
+            <div class="kiosk-waiting-track-text">
+              <strong>{{ $t('kiosk.waiting_ui.track_from_phone_title') }}</strong>
+              <span>{{ $t('kiosk.waiting_ui.track_from_phone_hint') }}</span>
+            </div>
           </div>
         </div>
 
@@ -174,6 +205,7 @@ import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import { onEvents } from '../../../services/eventContract';
 import kioskHardware from '../../../services/kioskHardware';
 import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
+import ENV from '../../../config/env';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
@@ -228,9 +260,22 @@ export default {
       // [Owner 2026-05-21] Countdown to auto-redirect home during preparing state.
       preparingAutoRedirectSeconds: PREPARING_AUTO_REDIRECT_SECONDS,
       preparingAutoRedirectTimer: null,
+      // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Position file / fourchette temps
+      // (même calcul SSOT que la page /suivi publique) + token pour le QR "suivez
+      // votre commande depuis votre téléphone".
+      trackingToken: null,
+      positionAhead: null,
+      almostReady: false,
+      waitLow: null,
+      waitHigh: null,
     };
   },
   computed: {
+    trackQrUrl() {
+      // <img src> ne passe pas par l'instance axios (baseURL configurée dans
+      // shared/axios-setup.js) — même construction ENV.API_URL + '/api/...' ici.
+      return this.trackingToken ? `${ENV.API_URL}/api/frontend/order/track-qr/${this.trackingToken}` : null;
+    },
     // [GAP-FIX-03] Consume is_rush server-driven flag from kioskMenu Vuex store.
     // Backend signal: KioskMenuService::computeIsRush (checks config kiosk.rush_windows).
     // Vuex storage: kioskMenu.branchFlags.is_rush (mutation SET_BRANCH_FLAGS).
@@ -331,6 +376,18 @@ export default {
         const numericStatus = parseInt(data.status ?? data.order_status ?? -1, 10);
 
         if (data.queue_number) this.queueNumber = data.queue_number;
+
+        // [T-C SUIVI-CLIENT 2026-08-16] `tracking` est un sibling top-level de `data`
+        // (OrderDetailsResource::additional(), pas nested dedans) — voir
+        // OrderController::trackingPayload(), même forme que /suivi côté client.
+        const tracking = res?.data?.tracking;
+        if (tracking) {
+          if (tracking.tracking_token) this.trackingToken = tracking.tracking_token;
+          this.positionAhead = tracking.position_ahead ?? null;
+          this.almostReady = !!tracking.almost_ready;
+          this.waitLow = tracking.wait_low ?? null;
+          this.waitHigh = tracking.wait_high ?? null;
+        }
 
         if (numericStatus === STATUS_PREPARED || numericStatus === STATUS_DELIVERED) {
           this.markReady();
@@ -688,6 +745,80 @@ export default {
   margin: 0;
   max-width: 400px;
   line-height: 1.5;
+}
+
+/* [T-C SUIVI-CLIENT 2026-08-16] Presque prête / position+temps */
+.kiosk-waiting-almost-ready {
+  background: rgba(255, 184, 0, 0.12);
+  border: 1px solid var(--kiosk-primary, #F4501E);
+  border-radius: 16px;
+  padding: 14px 22px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--kiosk-text);
+  text-align: center;
+}
+
+.kiosk-waiting-meta {
+  display: flex;
+  gap: 16px;
+}
+
+.kiosk-waiting-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--kiosk-surface-alt);
+  border-radius: 16px;
+  padding: 12px 20px;
+  min-width: 120px;
+}
+
+.kiosk-waiting-meta-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--kiosk-text);
+}
+
+.kiosk-waiting-meta-label {
+  font-size: 12px;
+  color: var(--kiosk-text-muted);
+  text-align: center;
+}
+
+/* Suivi téléphone (QR) */
+.kiosk-waiting-track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--kiosk-surface-alt);
+  border-radius: 18px;
+  padding: 12px 18px;
+  max-width: 380px;
+}
+
+.kiosk-waiting-track-qr {
+  width: 76px;
+  height: 76px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.kiosk-waiting-track-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--kiosk-text-muted);
+}
+
+.kiosk-waiting-track-text strong {
+  font-size: 15px;
+  color: var(--kiosk-text);
 }
 
 /* Barre progress */
