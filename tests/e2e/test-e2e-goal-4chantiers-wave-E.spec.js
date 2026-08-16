@@ -219,6 +219,34 @@ function isKnownNoise(text) {
     return KNOWN_NOISE_PATTERNS.some((rx) => rx.test(String(text || '')));
 }
 
+// [round-2 heal, E-004/E-005] Round-1 captures of 04-pos-badge-visible-admin
+// and 06-post-cleanup-verify were taken MID CSS fade-out of the
+// vue-element-loading overlay (class="velmld-full-screen velmld-overlay
+// fade-leave-active fade-leave-to" still in the DOM at snap() time) — a
+// washed-out, low-opacity screenshot. Confirmed by source, not assumed:
+// resources/js/components/admin/components/LoadingComponent.vue wraps
+// `<VueElementLoading :active="props.isActive" :is-full-screen="true"/>`
+// (vue-element-loading package, package.json "vue-element-loading": "^3.0.1"),
+// PosComponent.vue mounts it via `<LoadingComponent :props="loading" />`
+// (L73) and toggles `this.loading.isActive` around every async load.
+//
+// [round-2 correction, verified against the actual compiled component before
+// assuming] The overlay div is NOT v-if'd out on hide — the library's own
+// compiled render function (public/js/vendor.js ~L5480-5502) wraps it in a
+// Vue <Transition name="fade"> (0.3s opacity, CSS at ~L4912) whose child uses
+// the `vShow` directive (`[vShow, isActive || isActiveDelay]`), not v-if. So
+// the node NEVER detaches from the DOM — Vue's transition machinery plays the
+// 0.3s fade then sets `style.display:none` on transition-end, and it stays
+// there permanently. Confirmed directly in a captured DOM snapshot:
+// `style="background-color: rgba(255,255,255,.9); display: none;"` with no
+// fade-* classes left. `state:'detached'` can therefore never resolve (it
+// would silently eat the full timeout every call); `state:'hidden'` is the
+// correct target — Playwright's hidden check is satisfied once display:none
+// lands, which only happens after the CSS transition has fully finished.
+async function waitForLoadingOverlayDetached(page) {
+    await page.waitForSelector('.velmld-overlay', { state: 'hidden', timeout: 5_000 }).catch(() => {});
+}
+
 test.describe('Wave E — Stock intelligence: dashboard widget + POS badge (empty vs populated)', () => {
     // 03 seeds a DB row that 04/05 depend on and 06 must revert — order matters.
     test.describe.configure({ mode: 'serial' });
@@ -435,6 +463,9 @@ test.describe('Wave E — Stock intelligence: dashboard widget + POS badge (empt
             expect(badgeText).toBe(String(posCount));
             expect(badgeText.toLowerCase()).not.toMatch(/null|undefined/);
 
+            // [round-2 heal E-004] wait out the loading overlay's fade-out
+            // before persisting the "final rendered state" screenshot.
+            await waitForLoadingOverlayDetached(page);
             await snap('04-pos-badge-visible-admin');
         } finally {
             dispose();
@@ -524,6 +555,10 @@ test.describe('Wave E — Stock intelligence: dashboard widget + POS badge (empt
                 await expect(page.locator('[data-testid="pos-low-stock-open"]')).toHaveCount(0);
             }
 
+            // [round-2 heal E-005] same overlay-detach wait as state 04 —
+            // this snap is the "teardown verified" evidence, it must show the
+            // settled, fully-rendered final state, not a mid-fade frame.
+            await waitForLoadingOverlayDetached(page);
             await snap('06-post-cleanup-verify');
         } finally {
             dispose();
