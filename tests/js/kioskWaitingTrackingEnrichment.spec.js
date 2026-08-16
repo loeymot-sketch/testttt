@@ -70,6 +70,37 @@ describe('[T-C SUIVI-CLIENT 2026-08-16] KioskWaitingComponent — position/temps
     wrapper.unmount();
   });
 
+  // [test-e2e fix D-005 round-1 2026-08-16] Les deux conteneurs pilotés par le polling
+  // doivent annoncer leur changement à un lecteur d'écran, exactement comme
+  // .kiosk-rush-banner (role="status" aria-live="polite") dans le même fichier.
+  it('[D-005] le bandeau "presque prête" porte role="status" aria-live="polite" (mirror kiosk-rush-banner)', async () => {
+    const { wrapper } = mountWaiting(
+      { id: 64, status: orderStatusEnum.PREPARING, queue_number: 'A0064', total: 12 },
+      { tracking_token: 'TOKEN64', position_ahead: 1, almost_ready: true, wait_low: 10, wait_high: 15 },
+    );
+    await flushPromises();
+
+    const almostReady = wrapper.find('[data-testid="kiosk-almost-ready"]');
+    expect(almostReady.exists()).toBe(true);
+    expect(almostReady.attributes('role')).toBe('status');
+    expect(almostReady.attributes('aria-live')).toBe('polite');
+    wrapper.unmount();
+  });
+
+  it('[D-005] le bloc position/temps porte role="status" aria-live="polite" (mirror kiosk-rush-banner)', async () => {
+    const { wrapper } = mountWaiting(
+      { id: 65, status: orderStatusEnum.PREPARING, queue_number: 'A0065', total: 12 },
+      { tracking_token: 'TOKEN65', position_ahead: 5, almost_ready: false, wait_low: 20, wait_high: 25 },
+    );
+    await flushPromises();
+
+    const meta = wrapper.find('.kiosk-waiting-meta');
+    expect(meta.exists()).toBe(true);
+    expect(meta.attributes('role')).toBe('status');
+    expect(meta.attributes('aria-live')).toBe('polite');
+    wrapper.unmount();
+  });
+
   it('affiche le QR de suivi téléphone avec le bon tracking_token dans l\'URL', async () => {
     const { wrapper } = mountWaiting(
       { id: 62, status: orderStatusEnum.ACCEPT, queue_number: 'A0062', total: 12 },

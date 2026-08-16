@@ -131,7 +131,17 @@ export default {
       .catch();
 
 
-    if (this.$store.getters.authStatus) {
+    // [test-e2e fix C-007 round-1 2026-08-16] La page publique de suivi (theme
+    // "tracking", route.meta.isTracking === true — LE MÊME flag que la branche
+    // `theme === 'tracking'` du template et de applyThemeFromRoute() ci-dessous)
+    // ne doit déclencher AUCUN bootstrap admin-authentifié : un membre du staff
+    // avec un cookie de session admin actif qui ouvre ce lien public (téléphone
+    // client, QR borne) ne doit pas faire atterrir des données privilégiées
+    // (authcheck : user/menu/permission) dans le store Vuex / la mémoire JS de
+    // cette page, même si rien ne les affiche. created() (qui appelle
+    // applyThemeFromRoute) tourne AVANT beforeMount() dans le cycle de vie Vue,
+    // donc this.$route.meta est déjà fiable ici.
+    if (this.$route?.meta?.isTracking !== true && this.$store.getters.authStatus) {
       this.$store.dispatch("authcheck").then(res => {
         if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
           // [STAFF-ONLY-V1] Session expirée : retour au login staff si staffOnlyMode, sinon home vitrine.

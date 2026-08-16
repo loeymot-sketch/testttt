@@ -59,10 +59,16 @@
           <!-- [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] "Presque prête" (SSOT
                OrderTrackingService, ALMOST_READY_THRESHOLD=2) remplace position/temps
                une fois qu'il ne reste presque plus de commandes devant. -->
-          <div v-if="almostReady" class="kiosk-waiting-almost-ready" data-testid="kiosk-almost-ready">
+          <!-- [test-e2e fix D-005 round-1 2026-08-16] Conteneur dynamique piloté par le
+               polling — sans role="status"/aria-live, un utilisateur lecteur d'écran
+               n'est jamais averti quand ce nombre change. Mirroring exact du
+               .kiosk-rush-banner ci-dessus (même fichier, même pattern). -->
+          <div v-if="almostReady" class="kiosk-waiting-almost-ready" data-testid="kiosk-almost-ready" role="status" aria-live="polite">
             {{ $t('kiosk.waiting_ui.almost_ready_banner') }}
           </div>
-          <div v-else-if="positionAhead !== null || (waitLow !== null && waitHigh !== null)" class="kiosk-waiting-meta">
+          <!-- [test-e2e fix D-005 round-1 2026-08-16] Idem : position-file / fourchette
+               d'attente mise à jour par le même polling, même besoin d'annonce. -->
+          <div v-else-if="positionAhead !== null || (waitLow !== null && waitHigh !== null)" class="kiosk-waiting-meta" role="status" aria-live="polite">
             <div v-if="positionAhead !== null" class="kiosk-waiting-meta-item" data-testid="kiosk-position-ahead">
               <span class="kiosk-waiting-meta-value">{{ positionAhead }}</span>
               <span class="kiosk-waiting-meta-label">{{ $t('kiosk.waiting_ui.orders_ahead_label') }}</span>
