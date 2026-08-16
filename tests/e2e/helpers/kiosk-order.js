@@ -625,7 +625,21 @@ function cleanupKioskAuditOrders(prefix = KIOSK_AUDIT_PREFIX) {
         $transitions = DB::table('order_status_transitions')->whereIn('order_id', $orderIds)->delete();
       }
       if (Schema::hasTable('stock_movements')) {
-        $stockMovements = DB::table('stock_movements')->whereIn('reference_id', $orderIds)->delete();
+        // [WAVE-D HEAL 2026-08-16] stock_movements is append-only (Foundation
+        // F-6 P0 / NF525-aligned — DB trigger SIGNAL 45000 on DELETE). An
+        // order placed against a stock-tracked item (e.g. "Frites Seules")
+        // creates a real movement row that can NEVER be deleted — that's
+        // correct, intentional behavior, not a bug. Before this heal, this
+        // unconditional ->delete() THREW and aborted the whole cleanup
+        // script, silently skipping every line below it (order_items,
+        // audit_logs, orders itself never got cleaned up either). We now
+        // catch it, report 0 deleted (append-only ledger rows legitimately
+        // survive order cleanup), and let the rest of the teardown proceed.
+        try {
+          $stockMovements = DB::table('stock_movements')->whereIn('reference_id', $orderIds)->delete();
+        } catch (\\Throwable $e) {
+          $stockMovements = 0;
+        }
       }
       if (Schema::hasTable('domain_events')) {
         $eventQuery = DB::table('domain_events')->whereIn('aggregate_id', $orderIds);

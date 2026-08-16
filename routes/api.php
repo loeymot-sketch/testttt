@@ -1768,8 +1768,23 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // [T-C SUIVI-CLIENT 2026-08-16] QR borne → page de suivi. Throttle 30/min
     // aussi : chargé une seule fois par écran d'attente (pas de polling), la
     // borne n'appelle jamais assez souvent pour approcher la limite.
+    //
+    // [WAVE-D HEAL 2026-08-16 · P0] `withoutMiddleware('apiKey')` — consommé
+    // par un <img :src="trackQrUrl"> BRUT (KioskWaitingComponent.vue) : un
+    // navigateur ne peut PAS attacher d'en-tête custom à une requête <img>,
+    // donc l'image était TOUJOURS cassée (400 "Clé API invalide", vérifié en
+    // Playwright réel : naturalWidth=0) — un bug de naissance de la feature,
+    // pas un accident d'environnement. `order/track` et `order/wait-estimate`
+    // ci-dessus restent SOUS apiKey car ils sont consommés via axios (l'en-tête
+    // est injecté par l'intercepteur, resources/js/shared/axios-setup.js) — ce
+    // n'est QUE track-qr, unique consommateur <img>, qui doit en être exempté.
+    // Le commentaire d'ApiKeyMiddleware::handle() le dit déjà explicitement :
+    // cette clé "n'est pas un secret" (publiée en clair dans les bundles JS/
+    // meta HTML) — seuls throttle:30,1 (conservé) et le format {48} du token
+    // protègent réellement cette route publique, exactement comme order/track.
     Route::get('order/track-qr/{trackingToken}', [FrontendOrderController::class, 'trackQr'])
         ->where('trackingToken', '[A-Za-z0-9]{48}')
+        ->withoutMiddleware('apiKey')
         ->middleware('throttle:30,1')
         ->name('order.track-qr');
 

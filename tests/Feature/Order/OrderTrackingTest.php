@@ -238,6 +238,25 @@ class OrderTrackingTest extends TestCase
     }
 
     /** @test */
+    public function le_qr_fonctionne_sans_x_api_key_car_un_img_brut_ne_peut_pas_en_envoyer(): void
+    {
+        // [WAVE-D HEAL 2026-08-16 · P0 trouvé par test-e2e] Le seul consommateur
+        // de cette route est <img :src="trackQrUrl"> (KioskWaitingComponent.vue)
+        // — un navigateur ne peut PAS attacher d'en-tête custom à une requête
+        // <img>. Sans ce test, TOUS les tests QR de ce fichier envoyaient
+        // x-api-key manuellement et masquaient que la route était structurellement
+        // cassée dans TOUS les environnements réels (400 "Clé API invalide" au
+        // premier chargement de l'écran d'attente borne) — trouvé par un audit
+        // Playwright réel (naturalWidth=0), pas par cette suite.
+        $order = $this->makeOrder();
+
+        $response = $this->get('/api/frontend/order/track-qr/' . $order->tracking_token);
+
+        $response->assertOk();
+        $this->assertStringContainsString('image/svg+xml', $response->headers->get('Content-Type'));
+    }
+
+    /** @test */
     public function une_commande_d_une_autre_branche_reste_consultable_par_son_propre_token(): void
     {
         // [Multi-succursale] Le token identifie une commande précise, pas un
