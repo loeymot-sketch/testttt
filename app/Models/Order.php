@@ -180,8 +180,12 @@ class Order extends Model implements BroadcastableOrder
         // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Identifiant opaque pour le lien
         // de suivi public (borne/téléphone) — distinct de `token`/`order_serial_no`
         // (séquentiels, devinables). Généré au niveau MODÈLE (même philosophie que
-        // le hook source_surface ci-dessus) : aucun chemin de création de commande
-        // ne peut l'oublier, POS y compris (coût nul, jamais utilisé côté caisse).
+        // le hook source_surface ci-dessus). Ce hook couvre les créations via CETTE
+        // classe (POS/caisse, OrderService::store()) — le chemin kiosk/web réel
+        // (FrontendOrderService::myOrderStore() → FrontendOrder::create()) a SON
+        // PROPRE mirror hook dans FrontendOrder::booted() : Eloquent déclenche les
+        // events par CLASSE, pas par table, donc les deux modèles qui partagent
+        // `orders` doivent chacun porter le hook (précédent : source_surface ci-dessus).
         static::creating(function (self $order) {
             if (empty($order->tracking_token)) {
                 $order->tracking_token = \Illuminate\Support\Str::random(48);

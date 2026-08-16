@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Resources\UserOrderResource;
 use Exception;
 use App\Models\FrontendOrder;
+use App\Models\Order;
 use App\Http\Requests\OrderRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
@@ -71,6 +72,44 @@ class OrderController extends Controller
         return response()->json($orderTrackingService->track($trackingToken));
     }
 
+    /**
+     * [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] QR de la borne vers la page de
+     * suivi publique — même mécanisme (simplesoftwareio/simple-qrcode, format
+     * SVG, errorCorrection H) que WheelCounterController::kiosk()/enterWithPass(),
+     * pour que le rendu et le comportement scanner soient cohérents dans toute
+     * l'app. 404 franc (pas de found:false ici) : un <img> cassé se voit
+     * immédiatement côté borne si le token est invalide, contrairement à un JSON
+     * silencieux.
+     */
+    public function trackQr(string $trackingToken, \App\Services\OrderTrackingService $orderTrackingService): \Illuminate\Http\Response
+    {
+        if (! $orderTrackingService->findByToken($trackingToken)) {
+            abort(404);
+        }
+        $url = url('/suivi/' . $trackingToken);
+        $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            ->size(320)
+            ->margin(1)
+            ->errorCorrection('H')
+            ->generate($url);
+
+        return response($svg, 200)->header('Content-Type', 'image/svg+xml');
+    }
+
+    /**
+     * [T-C SUIVI-CLIENT 2026-08-16] Position file / fourchette temps (SSOT
+     * OrderTrackingService::forOrder) + tracking_token brut — la borne en a
+     * besoin pour construire le lien/QR "suivez votre commande" (le token
+     * n'a pas sa place dans OrderDetailsResource, consommée par bien d'autres
+     * écrans qui n'ont rien à voir avec le suivi public).
+     */
+    private function trackingPayload(Order|FrontendOrder $order): array
+    {
+        return app(\App\Services\OrderTrackingService::class)->forOrder($order) + [
+            'tracking_token' => $order->tracking_token,
+        ];
+    }
+
     public function store(OrderRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
@@ -80,6 +119,9 @@ class OrderController extends Controller
             // (e.g. race condition, insufficient points at commit time).
             return (new OrderDetailsResource($order))->additional([
                 'loyalty_applied' => $this->frontendOrderService->loyaltyApplied,
+                // [T-C SUIVI-CLIENT 2026-08-16] Position file + fourchette temps dès la
+                // création — même calcul SSOT que la page de suivi publique (voir show()).
+                'tracking' => $this->trackingPayload($order),
             ]);
         } catch (ValidationException $exception) {
             throw $exception;
@@ -100,7 +142,14 @@ class OrderController extends Controller
     {
 
         try {
-            return new OrderDetailsResource($this->frontendOrderService->show($frontendOrder));
+            $order = $this->frontendOrderService->show($frontendOrder);
+            // [T-C SUIVI-CLIENT 2026-08-16] Polled by KioskWaitingComponent.vue — même
+            // calcul SSOT (position file / fourchette temps) que la page de suivi
+            // publique, pour que la borne et le téléphone du client affichent la
+            // même chose.
+            return (new OrderDetailsResource($order))->additional([
+                'tracking' => $this->trackingPayload($order),
+            ]);
         } catch (HttpException $exception) {
             // [W14 AUTHZ 2026-07-20] Préserver le code du service — l'abort(403) IDOR (heal
             // FRONT-SHOW-403-422, FrontendOrderService::show) était aplati en 422 par le

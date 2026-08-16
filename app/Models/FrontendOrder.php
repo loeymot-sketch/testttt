@@ -32,6 +32,20 @@ class FrontendOrder extends Model implements BroadcastableOrder
                 $order->source_surface = 'delivery';
             }
         });
+
+        // [T-C SUIVI-CLIENT 2026-08-16] Mirror of Order::creating tracking_token hook
+        // (see Order.php). CRITICAL: FrontendOrderService::myOrderStore() — the actual
+        // kiosk/web order-creation path — writes via FrontendOrder::create(), NOT
+        // Order::create(). Eloquent model events are per-class, not per-table: without
+        // this mirror, every kiosk/web order (i.e. exactly the orders the customer
+        // tracking feature exists for) would get tracking_token=NULL despite the
+        // hook existing on Order. Only POS/caisse (OrderService, Order::create) hit
+        // the original hook — the one surface that never needs a customer link.
+        static::creating(function (self $order) {
+            if (empty($order->tracking_token)) {
+                $order->tracking_token = \Illuminate\Support\Str::random(48);
+            }
+        });
     }
     protected $fillable = [
         'order_serial_no',

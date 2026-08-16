@@ -1765,6 +1765,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->middleware('throttle:30,1')
         ->name('order.track');
 
+    // [T-C SUIVI-CLIENT 2026-08-16] QR borne → page de suivi. Throttle 30/min
+    // aussi : chargé une seule fois par écran d'attente (pas de polling), la
+    // borne n'appelle jamais assez souvent pour approcher la limite.
+    Route::get('order/track-qr/{trackingToken}', [FrontendOrderController::class, 'trackQr'])
+        ->where('trackingToken', '[A-Za-z0-9]{48}')
+        ->middleware('throttle:30,1')
+        ->name('order.track-qr');
+
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);

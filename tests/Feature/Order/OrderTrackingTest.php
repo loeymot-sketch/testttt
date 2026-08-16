@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Models\Branch;
+use App\Models\FrontendOrder;
 use App\Models\Order;
 use App\Services\OrderTrackingService;
 use Carbon\Carbon;
@@ -78,6 +79,33 @@ class OrderTrackingTest extends TestCase
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9]{48}$/', $a->tracking_token);
         // Jamais un simple id/token séquentiel devinable.
         $this->assertNotEquals((string) $a->id, $a->tracking_token);
+    }
+
+    /** @test */
+    public function un_token_genere_aussi_via_frontendorder_create_pas_seulement_via_order(): void
+    {
+        // [GAP RÉEL 2026-08-16] FrontendOrderService::myOrderStore() — le vrai chemin
+        // d'écriture kiosk/web/QR-table — crée la ligne via FrontendOrder::create(),
+        // PAS Order::create(). Les events Eloquent (static::creating) sont déclenchés
+        // par CLASSE, pas par table : sans le hook miroir dans FrontendOrder::booted(),
+        // exactement les commandes pour lesquelles cette fonctionnalité existe
+        // (kiosk/web) auraient un tracking_token NULL, alors que tous les autres tests
+        // de ce fichier (Order::factory()) l'auraient masqué en passant tous au vert.
+        $order = FrontendOrder::create([
+            'branch_id' => $this->branch->id,
+            'user_id' => \App\Models\User::factory()->create()->id,
+            'order_type' => OrderType::TAKEAWAY,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::UNPAID,
+            'order_datetime' => now(),
+            'preparation_time' => 15,
+            'total' => 0,
+            'subtotal' => 0,
+            'discount' => 0,
+        ]);
+
+        $this->assertNotEmpty($order->tracking_token);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9]{48}$/', $order->tracking_token);
     }
 
     /** @test */
@@ -185,6 +213,28 @@ class OrderTrackingTest extends TestCase
             $route->matches($request),
             'La contrainte [A-Za-z0-9]{48} doit rejeter un token malformé avant le contrôleur.'
         );
+    }
+
+    /** @test */
+    public function le_qr_de_la_borne_pointe_vers_la_page_de_suivi_d_un_token_valide(): void
+    {
+        $order = $this->makeOrder();
+
+        $response = $this->withHeader('x-api-key', '123456')
+            ->get('/api/frontend/order/track-qr/' . $order->tracking_token);
+
+        $response->assertOk();
+        $this->assertStringContainsString('image/svg+xml', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('<svg', $response->getContent());
+    }
+
+    /** @test */
+    public function le_qr_d_un_token_inconnu_est_un_404_franc_pas_un_json_silencieux(): void
+    {
+        $response = $this->withHeader('x-api-key', '123456')
+            ->get('/api/frontend/order/track-qr/' . str_repeat('x', 48));
+
+        $response->assertStatus(404);
     }
 
     /** @test */

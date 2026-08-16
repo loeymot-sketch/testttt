@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\OrderStatus;
+use App\Models\FrontendOrder;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 
@@ -60,6 +61,35 @@ class OrderTrackingService
                 'server_time' => $now->toIso8601String(),
             ];
         }
+
+        return $this->forOrder($order, $now);
+    }
+
+    /**
+     * Même calcul que track(), mais à partir d'une commande DÉJÀ résolue par
+     * un appelant authentifié (kiosk `frontend/order/show/{id}`) — pas besoin
+     * du tracking_token dans ce contexte, l'appelant possède déjà la commande.
+     * Réutilisé par OrderController::show()/store() pour que la borne affiche
+     * la même position de file / fourchette de temps que la page de suivi
+     * publique (une seule définition, jamais deux calculs qui divergent).
+     *
+     * @return array{
+     *   found: bool,
+     *   queue_number: ?string,
+     *   status: int,
+     *   status_label: string,
+     *   step: int,
+     *   position_ahead: ?int,
+     *   almost_ready: bool,
+     *   ready: bool,
+     *   wait_low: ?int,
+     *   wait_high: ?int,
+     *   server_time: string,
+     * }
+     */
+    public function forOrder(Order|FrontendOrder $order, ?\Illuminate\Support\Carbon $now = null): array
+    {
+        $now ??= now(config('app.timezone'));
 
         $status = (int) $order->status;
         [$step, $label] = $this->stepAndLabel($status);
