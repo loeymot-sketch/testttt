@@ -47,6 +47,53 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-16 — test-e2e sur les 4 chantiers GOAL confort : convergence round 4, PUSHÉ + DÉPLOYÉ VPS**
+>
+> HEAD `c1d27ee09`, branche `pos/category-first-caisse-2026-06-23`, **pushée sur origin**
+> (`bd980fb12..c1d27ee09`) et **déployée sur le VPS production** (`https://vps-418872ac.vps.ovh.net`,
+> déploiement OVH direct — le nom `lecayenne.fr`/`www.lecayenne.fr` sert le site vitrine statique
+> SÉPARÉ, ne pas confondre les deux quand on vérifie une prochaine fois).
+>
+> Audit adversarial `test-e2e` (skill dédié) sur les 4 chantiers de l'entrée précédente (édition
+> panier caisse, alerte commande web, suivi client + attente kiosk, stock intelligent). 4 rounds :
+> round 1 RED (7 P0 sur 5 vagues), rounds 2-3 healing, **round 3 et round 4 GREEN identiques
+> (convergence)**. Rapport complet : `reports/test-e2e/goal-4chantiers-2026-08-16/CONVERGENCE_FINAL.md`.
+>
+> **3 P0 réels trouvés et corrigés** (pas des faux positifs) :
+> - `ItemComponent.vue::buildWizardRestorePayload()` n'écrivait jamais `garniture=false` —
+>   une exclusion explicite ("sans oignon") revenait silencieusement incluse à la réouverture
+>   d'édition panier caisse. `1edc968d9`.
+> - `PosComponent.vue::loadLowStockCount()` interrogeait `admin/stock/low-alerts` sans vérifier
+>   la permission Spatie `items_show` d'abord — 403 silencieux à CHAQUE tick de polling pour un
+>   rôle sans cette permission. `d454c8a2b`.
+> - Route `order/track-qr` gated par le middleware `apiKey`, mais son seul consommateur est un
+>   `<img :src>` qui ne peut PAS envoyer de header custom — QR cassé dans TOUS les environnements
+>   depuis le premier commit de la fonctionnalité. `64c02437f`. **Vérifié live post-déploiement**
+>   (200 propre, avant c'était 401).
+> - `OrderTrackingService::forOrder()` avait le même trou de garde-fou d'ancienneté déjà corrigé
+>   sur `WaitEstimateService` (régression du même bug, sibling non synchronisé). `8dfdd2dd3`.
+>
+> **1 P1 fermé en 3 tentatives** (C-007, fuite bootstrap admin sur la page publique de suivi) —
+> `DefaultComponent.vue` : le premier fix gate seulement `authcheck`, le second gate `authcheck`
+> mais oublie que `applyThemeFromRoute()` tourne encore de façon synchrone (fuite séparée via
+> `BackendNavbarComponent`), le troisième fix gate LES DEUX sous `router.isReady()`. `0680c45c4`.
+> Assertion de non-régression automatisée ajoutée (`C-010`, `438178689`) pour que ce piège précis
+> ne redevienne jamais un audit manuel.
+>
+> **Preuves de convergence finales** : frozen-zone diff = 0 ligne (21 commits, `69b10f0aa..
+> 438178689`) · `fiscal:verify-chain --all` CHAIN OK (6 branches) · Vitest 418 fichiers / 3346
+> tests / 0 échec (2 runs indépendants pendant l'audit) · PHPUnit large 2714 passés / 2 échecs
+> (les 2 sont `RolePermissionSeederTest`, baseline documentée 2026-08-15, non liée à cette
+> session) · déploiement VPS auto-vérifié par `tools/deploy-vps.sh` (jeu de bundles complet,
+> `mix-manifest.json` frais, chaîne NF525 attestée post-déploiement) **+ vérification externe
+> indépendante** (contenu `mix-manifest.json` servi = octet-identique au disque serveur, route
+> `order/track-qr` confirmée 200 en vrai HTTP, pas seulement le script qui se déclare content).
+>
+> Résidus P2/P3 non-bloquants disclosés dans le rapport (contraste WCAG, aria-live manquant,
+> CSP report-only, clipping viewport 720px sur états non-critiques) — aucun ne bloque la
+> livraison. Round 4 volontairement scopé en confirmation GStack seule (pas un second audit
+> adversarial complet) — jugement d'efficacité disclosé, pas un raccourci silencieux.
+
 > **2026-08-16 — GOAL confort caisse/borne/stock (4 chantiers dictés owner) : 6/6 commits, aucun push**
 >
 > HEAD `51d72fc15`, branche `pos/category-first-caisse-2026-06-23`. Déploiement séparé et
