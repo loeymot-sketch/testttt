@@ -47,6 +47,60 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-16 — GOAL confort caisse/borne/stock (4 chantiers dictés owner) : 6/6 commits, aucun push**
+>
+> HEAD `51d72fc15`, branche `pos/category-first-caisse-2026-06-23`. Déploiement séparé et
+> antérieur dans cette session (`bd980fb12`, vérifié en prod HTTP 200) + test E2E réel borne→
+> caisse→KDS→OSS propre (commandes créées puis annulées, chaîne NF525 revérifiée).
+>
+> **T-A (édition panier caisse)** `69b10f0aa` — bouton "modifier" invisible (22px transparent →
+> 28px fond persistant, WCAG 2.5.8) + bug réel trouvé en même temps : une sauce GRATUITE (extra
+> prix 0, nom catalogue contenant "sauce") était classée dans le catch-all garniture au lieu de
+> la branche sauce dédiée lors de la restauration wizard à l'édition — ordre des branches inversé.
+>
+> **T-B (alerte commande web)** `b7e5240ba` — triple bip (0/10s/20s) + carte rouge `#d32f2f` (au
+> lieu du bleu ECFEFF) sur les DEUX fichiers qui dupliquent le mécanisme de bip caisse
+> (`PosOrdersTrackerComponent.vue` + `PosComponent.vue` — realtime Echo ET fallback polling).
+>
+> **T-C (temps d'attente + suivi client)** `f1433a6b9` + `1410105e4` + `51d72fc15` —
+> `WaitEstimateService` réécrit en paliers exacts dictés (1-3→15-20min, 4-5→20-25min, >5→25-
+> 30min, plancher jamais <2 "commandes avant vous"). Nouveau `tracking_token` opaque
+> (`Str::random(48)`, PAS `token`/`order_serial_no` qui sont séquentiels/devinables — vérifié
+> tinker). **Gap réel trouvé APRÈS le premier commit backend** : le hook de génération vivait
+> sur `Order::boot()` mais le vrai chemin d'écriture kiosk/web/QR-table utilise `FrontendOrder::
+> create()` — classe Eloquent différente sur la même table `orders`, events déclenchés par
+> classe pas par table → toutes les commandes kiosk/web auraient eu `tracking_token=NULL` en
+> prod. Mirror hook ajouté (même précédent que `source_surface`). Page publique `/suivi/:token`
+> (theme `tracking` dédié dans `DefaultComponent.vue` — sans lui la page héritait de la coquille
+> admin complète si un onglet avait une session staff active dans le même navigateur). QR borne
+> vers cette page + enrichissement `KioskWaitingComponent.vue` (position file / fourchette /
+> bandeau "presque prête").
+>
+> **T-D (stock intelligent)** `4b7574598` — `StockLowAlertsWidget.vue` + endpoint `admin/stock/
+> low-alerts` existaient déjà mais le widget n'était monté NULLE PART sur le dashboard (grep
+> repo-wide : zéro import) — trouvé en vérifiant, pas supposé. Badge de compte ajouté au widget
+> + badge "Stock faible" côté caisse (même endpoint, même tick de polling que le tracker
+> commandes). **Décision consciente** : pas de job cron 23h dédié (le badge est déjà live en
+> permanence, 23h n'est qu'un moment d'usage naturel). **Trouvé sans corriger** : le badge caisse
+> dépend de la permission Spatie `items` (mirroir du gate pré-existant sur le widget dashboard,
+> confirmé backend ET frontend) — un rôle "Caissier" sans cette permission ne le verra jamais
+> (403 géré silencieusement, dégradation propre mais invisible). Si les caissiers de terrain
+> n'ont pas la permission `items`, c'est un choix RBAC pré-existant à trancher par l'owner, pas
+> modifié ici. IA facture (`OpenAiInvoiceVisionService`, déjà codée, gated par `services.openai.
+> enabled`) activée en LOCAL DEV UNIQUEMENT (`.env` non committé) — clé/base_url/model déjà
+> provisionnés (même credential qu'`UBER_VISION_ENABLED`, déjà en prod), seul le flag manquait.
+> **PAS activé sur le VPS** sans confirmation owner explicite (coût API réel par facture scannée
+> en production).
+>
+> **Preuves de convergence** : frozen-zone diff = 0 ligne sur les 15 fichiers §7 (session
+> entière) · `fiscal:verify-chain --all` CHAIN OK (6 branches actives) · Vitest 417 fichiers /
+> 3324 tests / 0 échec · PHPUnit filtré large (Order|Frontend|Kiosk|Admin|Purchasing|Stock|Pos|
+> Wheel) 2712 passés / 2 échecs — **les 2 échecs sont `RolePermissionSeederTest` (baseline
+> documentée ci-dessous, 2026-08-15, confirmé reproductible sur DB de test fraîchement migrée,
+> zéro fichier touché cette session)**, aucun nouveau, aucun régressé.
+>
+> **Aucun push, aucun déploiement.**
+
 > **2026-08-15 — GOAL_CONFORT_MAX_ET_BASE_PROUVEE : 7/7 vagues fermées, aucun push**
 >
 > HEAD `b307120e2`, branche `pos/category-first-caisse-2026-06-23`, working tree propre (les
