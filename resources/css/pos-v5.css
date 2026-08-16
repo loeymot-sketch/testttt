@@ -855,7 +855,13 @@
     border: 0;
     border-radius: var(--pos-v5-radius-pill);
     background: var(--pos-v5-brand-red-soft);
-    color: var(--pos-v5-brand-red);
+    /* [test-e2e fix A-003 round-1 2026-08-16] WCAG 2.1 AA needs >= 4.5:1 for this
+       icon glyph. --pos-v5-brand-red (#F4501E) on --pos-v5-brand-red-soft (#FFE8DD)
+       measures 2.97:1 — fails. --pos-v5-brand-red-dark (#DC4517), the usual hover/
+       active token, still only reaches 3.64:1 against this same soft background —
+       not dark enough either. #B03712 (same red-orange family, darkened) measures
+       5.24:1, clearing the threshold with margin. */
+    color: #B03712;
     cursor: pointer;
     display: inline-flex;
     align-items: center;

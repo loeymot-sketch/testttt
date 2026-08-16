@@ -154,3 +154,77 @@ describe('ItemComponent.buildWizardRestorePayload — sauce via item_variations 
         expect(restore.sauceSingle).toBe(13);
     });
 });
+
+/**
+ * [test-e2e fix A-001 round-1 2026-08-16] Adversarial supervisor finding, confirmed
+ * by raw DOM text diff: a cart line explicitly excluding a default-included crudité
+ * (customer says "no onion", picks "cooked onion" instead via mutual exclusivity)
+ * shows correctly at add-time, but reopening the edit wizard and confirming with
+ * ZERO changes (a pure round-trip) silently REINTRODUCED the excluded ingredient.
+ *
+ * Root cause: buildWizardRestorePayload only ever wrote restore.garnitures[key] = true
+ * for extras PRESENT on the cart line — it never wrote `false` for the item's other
+ * free/garniture-eligible extras that were explicitly NOT present (i.e. excluded).
+ * pos-wizard.js restores selections via `Object.assign(selections, restored)`
+ * (public/js/pos-wizard.js ~L5055), which REPLACES selections.garnitures WHOLESALE —
+ * it does not merge key-by-key against the wizard's own name-aware defaults
+ * (cruditeDefaultIncluded). A garniture key ABSENT from the restore payload reads as
+ * `undefined !== false` downstream, so the frozen wizard's own defaults silently win
+ * back anything the restore payload didn't explicitly override.
+ */
+describe('ItemComponent.buildWizardRestorePayload — exclusion garniture explicite survit au round-trip (A-001)', () => {
+    function makeOnionItem() {
+        return {
+            itemAttributes: [],
+            variations: {},
+            extras: [
+                { id: 301, name: 'Oignon', convert_price: 0 },        // cru — défaut inclus
+                { id: 302, name: 'Oignons cuits', convert_price: 0 }, // cuit — opt-in, défaut exclu
+                { id: 303, name: 'Salade', convert_price: 0 },
+                { id: 304, name: 'Tomate', convert_price: 0 },
+            ],
+        };
+    }
+
+    function makeOnionCartLine(overrides = {}) {
+        return {
+            instruction: '',
+            quantity: 1,
+            item_variations: [],
+            // Client a remplacé "Oignon" (cru, défaut inclus) par "Oignons cuits"
+            // (opt-in, défaut exclu) via l'exclusivité mutuelle du wizard —
+            // "Oignon" N'EST DONC PAS dans item_extras : exclusion EXPLICITE.
+            item_extras: [
+                { id: 9101, name: 'Salade' },
+                { id: 9102, name: 'Tomate' },
+                { id: 9103, name: 'Oignons cuits' },
+            ],
+            ...overrides,
+        };
+    }
+
+    it('une crudité explicitement EXCLUE (oignon cru, remplacé par oignons cuits) est restaurée à false — PAS juste absente', () => {
+        const restore = buildWizardRestorePayload(makeOnionCartLine(), makeOnionItem());
+
+        expect(restore.garnitures['c_302'], 'Oignons cuits (réellement choisi) doit être true').toBe(true);
+        expect(
+            restore.garnitures['c_301'],
+            'Oignon cru (explicitement exclu par le client) doit être false — un simple `undefined` ' +
+            'laisserait le wizard le réintroduire silencieusement au reopen (Object.assign remplace ' +
+            'tout le sous-objet garnitures, il ne fusionne pas clé par clé)',
+        ).toBe(false);
+        expect(restore.garnitures['c_303'], 'Salade (incluse, présente sur la ligne) reste true').toBe(true);
+        expect(restore.garnitures['c_304'], 'Tomate (incluse, présente sur la ligne) reste true').toBe(true);
+    });
+
+    it('si TOUTES les crudités par défaut ont été retirées (item_extras vide), chacune est restaurée à false explicite', () => {
+        const restore = buildWizardRestorePayload(makeOnionCartLine({ item_extras: [] }), makeOnionItem());
+
+        expect(restore.garnitures['c_301']).toBe(false);
+        expect(restore.garnitures['c_303']).toBe(false);
+        expect(restore.garnitures['c_304']).toBe(false);
+        // Oignons cuits (opt-in, défaut déjà exclu) doit aussi ressortir false explicite,
+        // pas juste absent — même garantie pour tout le monde.
+        expect(restore.garnitures['c_302']).toBe(false);
+    });
+});

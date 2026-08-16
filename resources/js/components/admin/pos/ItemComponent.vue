@@ -1437,6 +1437,43 @@ export default {
                 });
             }
 
+            // [test-e2e fix A-001 round-1 2026-08-16] Explicitly mark EXCLUDED garnitures
+            // as false, not just included ones as true. Root cause: the loop above only
+            // ever wrote restore.garnitures[key] = true for extras PRESENT in the cart
+            // line's item_extras. pos-wizard.js restores via
+            // `Object.assign(selections, restored)` (public/js/pos-wizard.js ~L5055),
+            // which REPLACES selections.garnitures WHOLESALE — it does not merge key by
+            // key against the wizard's own name-aware defaults (cruditeDefaultIncluded).
+            // Any garniture key ABSENT from this payload reads as `undefined !== false`
+            // downstream (e.g. pos-wizard.js ~L1788/2280/2841), so the wizard silently
+            // treats it as included again — reintroducing an explicitly-excluded
+            // ingredient (classic case: mutual-exclusivity "oignon" ↔ "oignons cuits")
+            // on a pure reopen+confirm round-trip with zero user action.
+            // Fix: mirror the EXACT bucket predicate used just above (sauceFrites /
+            // fritesGrande / fritesCheddar / sauce / garniture / supplement) but run it
+            // over the FULL catalog of this item's extras (item.extras), not just the
+            // ones present on the cart line. Anything that lands in the "garniture"
+            // bucket and wasn't already marked true gets an explicit false — this exactly
+            // reconstructs the composed selections.garnitures state that existed when the
+            // line was originally added (syncAndSubmit only checks IN true crudités, see
+            // public/js/pos-wizard.js ~L4119-4131), so the wizard's own defaults can never
+            // silently win back an intentional exclusion.
+            if (item.extras && item.extras.length > 0) {
+                item.extras.forEach((extra) => {
+                    const key = 'c_' + extra.id;
+                    if (restore.garnitures[key] === true) return; // already explicitly included above
+                    const extraLower = (extra.name || '').toLowerCase();
+                    const isFree = parseFloat(extra.convert_price) <= 0;
+                    if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) return;
+                    if (extraLower.includes('grande') && extraLower.includes('portion')) return;
+                    if (extraLower.includes('cheddar')) return;
+                    if (extraLower.includes('sauce')) return;
+                    const isGarniture = isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon');
+                    if (!isGarniture) return; // paid supplement not selected — leave unset, not our concern here
+                    restore.garnitures[key] = false;
+                });
+            }
+
             // [P5-2 FIX] Restore sauceSingle from instruction text if not already set via variations
             // Instruction format: "Sauce: <name>" on its own line
             if (!restore.sauceSingle && cartLine.instruction) {
@@ -1570,6 +1607,10 @@ export default {
             if (!this.canAddToCart) return;
             var mainPayload = this.buildPosCartMainPayload();
             var editIdx = this.editingCartIndex;
+            // [test-e2e fix A-004 round-1 2026-08-16] Capture the edit/add distinction
+            // BEFORE finishSuccess resets this.editingCartIndex to null, so the toast
+            // below can branch on it.
+            var wasEdit = editIdx !== null && editIdx >= 0;
             var finishSuccess = () => {
                 this.editingCartIndex = null;
                 this.usePricedCartBase = false;
@@ -1581,7 +1622,11 @@ export default {
                 this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
                 this.itemArrays = [];
 
-                alertService.success(this.$t('message.add_to_cart'));
+                // [test-e2e fix A-004 round-1 2026-08-16] Confirming an EDIT (reopening
+                // an existing cart line, no new item) was showing "Article ajouté au
+                // panier" ("Item added to cart") — misleading, since nothing was added,
+                // an existing line was updated in place. Branch the toast on wasEdit.
+                alertService.success(this.$t(wasEdit ? 'message.cart_line_updated' : 'message.add_to_cart'));
                 appService.modalHide('#item-variation-modal');
             };
             var finishError = () => {
