@@ -844,22 +844,28 @@
     gap: var(--pos-v5-space-2);
 }
 
+/* [T-A DISCOVERABILITE-EDIT 2026-08-16] Owner : « j'arrive pas à modifier un produit
+   du panier, y a pas de bouton modifié ». Le mécanisme existe et fonctionne (vérifié en
+   navigateur réel), mais le bouton était 22x22px avec un fond TRANSPARENT (invisible tant
+   qu'on ne survole pas — inutile sur un écran tactile, personne ne "survole"). Sous le
+   minimum tactile WCAG 2.5.8 AA (24px) en plus. Fond visible en permanence + cible agrandie. */
 .pos-v5-cart-item__edit {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     border: 0;
     border-radius: var(--pos-v5-radius-pill);
-    background: transparent;
+    background: var(--pos-v5-brand-red-soft);
     color: var(--pos-v5-brand-red);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 14px;
     transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
 }
 .pos-v5-cart-item__edit:hover {
-    background: var(--pos-v5-brand-red-soft);
+    background: var(--pos-v5-brand-red);
+    color: #fff;
 }
 
 .pos-v5-cart-item__detail {

@@ -1405,17 +1405,30 @@ export default {
                     else if (extraLower.includes('cheddar')) {
                         restore.fritesCheddar = true;
                     }
-                    // Garnitures gratuites (tomate, oignon, salade, etc.)
-                    else if (isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon')) {
-                        restore.garnitures['c_' + extra.id] = true;
-                    }
-                    // Sauce extra (payante)
+                    // [EDIT-RESTORE FIX 2026-08-16] Sauce (gratuite OU payante) — DOIT être
+                    // vérifié AVANT le catch-all "isFree" ci-dessous. Le wizard offre la
+                    // 1ère sauce gratuite ("1ère gratuite" affiché à l'écran) : avec l'ancien
+                    // ordre, isFree===true faisait tomber CETTE sauce dans `garnitures` (comme
+                    // tomate/oignon) au lieu de `sauces`, donc restore.sauceOrder restait vide
+                    // et le wizard rouvrait sur son propre choix par défaut — reproduit en
+                    // conditions réelles : sauce Andalouse choisie → ré-ouverture affichait
+                    // Algérienne (1ère de la liste), pas le choix réel du client.
                     else if (extraLower.includes('sauce')) {
                         const key = 's_' + extra.id;
                         if (!restore.sauceOrder.includes(key)) {
                             restore.sauces[key] = true;
                             restore.sauceOrder.push(key);
                         }
+                        // Sauce unique (omelettes, snacking) — même règle que la branche
+                        // variation ci-dessus : la 1ère sauce rencontrée devient sauceSingle,
+                        // gratuite ou non (aligné sur le comportement variation existant).
+                        if (restore.sauceOrder.length === 1) {
+                            restore.sauceSingle = extra.id;
+                        }
+                    }
+                    // Garnitures gratuites (tomate, oignon, salade, etc.)
+                    else if (isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon')) {
+                        restore.garnitures['c_' + extra.id] = true;
                     }
                     // Supplément payant
                     else {
