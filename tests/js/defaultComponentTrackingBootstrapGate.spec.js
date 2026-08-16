@@ -62,13 +62,17 @@ function makeStore({ authStatus }) {
   return { store, authcheck, frontendSettingLists, globalStateInit };
 }
 
-function mountDefault(route, storeCtx) {
+function mountDefault(route, storeCtx, routerOverrides = {}) {
   return shallowMount(DefaultComponent, {
     global: {
       plugins: [storeCtx.store],
       mocks: {
         $route: route,
-        $router: { push: vi.fn().mockResolvedValue() },
+        $router: {
+          push: vi.fn().mockResolvedValue(),
+          isReady: vi.fn().mockResolvedValue(),
+          ...routerOverrides,
+        },
       },
       stubs: { 'router-view': true },
     },
@@ -109,6 +113,61 @@ describe('[test-e2e fix C-007 round-1 2026-08-16] DefaultComponent — gate admi
     await flushPromises();
 
     expect(ctx.authcheck).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  // [test-e2e fix C-007 round-2 2026-08-16] Le premier fix vérifiait
+  // this.$route.meta directement dans beforeMount() — correct pour l'ordre
+  // des hooks du COMPOSANT, mais faux pour la résolution ASYNCHRONE du
+  // ROUTER : app.js appelle app.mount('#app') sans attendre router.isReady().
+  // Sur un chargement à froid réel (QR borne / lien direct — jamais une
+  // navigation interne), $route.meta est encore undefined à l'instant où
+  // beforeMount() s'exécute → le gate voyait isTracking=undefined
+  // (!==true) et laissait partir authcheck quand même. Prouvé par
+  // test-e2e round-2 (Wave C) : authcheck observé dans network.json sur
+  // CHAQUE chargement à froid malgré le "fix" round-1.
+  it("attend router.isReady() avant d'évaluer le gate — authcheck ne part PAS avant la résolution même si route.meta est déjà isTracking:true au montage (simule le chargement à froid réel)", async () => {
+    const ctx = makeStore({ authStatus: true });
+    // Simule l'état RÉEL au premier rendu à froid : $route.meta n'est pas
+    // encore résolu (objet vide), comme le router non-ready le laisserait.
+    const route = { path: '/suivi/abc123', meta: {} };
+    let resolveReady;
+    const isReady = vi.fn(() => new Promise((r) => { resolveReady = r; }));
+    const wrapper = mountDefault(route, ctx, { isReady });
+
+    // Avant résolution du router : authcheck ne doit JAMAIS être parti,
+    // même si (dans ce test) route.meta ne changera pas — le point est
+    // que le gate ne s'évalue PAS avant isReady().
+    await flushPromises();
+    expect(isReady).toHaveBeenCalledTimes(1);
+    expect(ctx.authcheck).not.toHaveBeenCalled();
+
+    // Le router se résout maintenant — à cet instant, dans la vraie appli,
+    // $route serait réactivement à jour (ici on simule directement le cas
+    // où la résolution a corrigé meta.isTracking=true, le lien réel testé).
+    wrapper.vm.$route.meta.isTracking = true;
+    resolveReady();
+    await flushPromises();
+
+    expect(ctx.authcheck, 'authcheck ne doit jamais partir pour une route isTracking, résolue ou non').not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("attend router.isReady() puis dispatch authcheck normalement pour une route admin résolue APRÈS le montage (cas réel non-tracking)", async () => {
+    const ctx = makeStore({ authStatus: true });
+    const route = { path: '/admin/dashboard', meta: {} };
+    let resolveReady;
+    const isReady = vi.fn(() => new Promise((r) => { resolveReady = r; }));
+    const wrapper = mountDefault(route, ctx, { isReady });
+
+    await flushPromises();
+    expect(ctx.authcheck, 'ne doit pas partir avant que le router soit prêt').not.toHaveBeenCalled();
+
+    wrapper.vm.$route.meta.isTracking = false;
+    resolveReady();
+    await flushPromises();
+
+    expect(ctx.authcheck).toHaveBeenCalledTimes(1);
     wrapper.unmount();
   });
 });

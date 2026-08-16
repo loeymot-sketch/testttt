@@ -131,27 +131,43 @@ export default {
       .catch();
 
 
-    // [test-e2e fix C-007 round-1 2026-08-16] La page publique de suivi (theme
-    // "tracking", route.meta.isTracking === true — LE MÊME flag que la branche
-    // `theme === 'tracking'` du template et de applyThemeFromRoute() ci-dessous)
-    // ne doit déclencher AUCUN bootstrap admin-authentifié : un membre du staff
-    // avec un cookie de session admin actif qui ouvre ce lien public (téléphone
-    // client, QR borne) ne doit pas faire atterrir des données privilégiées
-    // (authcheck : user/menu/permission) dans le store Vuex / la mémoire JS de
-    // cette page, même si rien ne les affiche. created() (qui appelle
-    // applyThemeFromRoute) tourne AVANT beforeMount() dans le cycle de vie Vue,
-    // donc this.$route.meta est déjà fiable ici.
-    if (this.$route?.meta?.isTracking !== true && this.$store.getters.authStatus) {
-      this.$store.dispatch("authcheck").then(res => {
-        if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
-          // [STAFF-ONLY-V1] Session expirée : retour au login staff si staffOnlyMode, sinon home vitrine.
-          this.$router.push({ name: this.staffOnlyMode ? "auth.login" : "frontend.home" });
-        } else if (res.data.status !== false && res.data.permission) {
-          // F5 / onglet : réaligner les routes sur les permissions renvoyées par authcheck.
-          appService.recursiveRouter(routes, res.data.permission);
-        }
-      }).catch();
-    }
+    // [test-e2e fix C-007 round-1 2026-08-16, corrigé round-2] La page publique
+    // de suivi (theme "tracking", route.meta.isTracking === true — LE MÊME flag
+    // que la branche `theme === 'tracking'` du template et de
+    // applyThemeFromRoute() ci-dessous) ne doit déclencher AUCUN bootstrap
+    // admin-authentifié : un membre du staff avec un cookie de session admin
+    // actif qui ouvre ce lien public (téléphone client, QR borne) ne doit pas
+    // faire atterrir des données privilégiées (authcheck : user/menu/permission)
+    // dans le store Vuex / la mémoire JS de cette page, même si rien ne les
+    // affiche.
+    //
+    // [round-2 fix] Le premier passage vérifiait `this.$route.meta` directement
+    // dans beforeMount() — correct pour l'ORDRE des hooks du COMPOSANT (created()
+    // tourne bien avant beforeMount()), mais faux pour la résolution ASYNCHRONE
+    // du ROUTER : `app.mount('#app')` (app.js) n'attend PAS `router.isReady()`,
+    // donc au premier chargement à froid d'un lien /suivi/... (le seul chemin
+    // réel : QR borne, SMS/lien direct — jamais une navigation interne depuis
+    // une SPA déjà montée), `$route.meta` n'était PAS ENCORE résolu à cet instant
+    // précis : `isTracking` valait `undefined`, `undefined !== true` = vrai, donc
+    // le bootstrap admin partait quand même. Prouvé par test-e2e round-2 (Wave C) :
+    // authcheck observé dans le network.json admin-cookie sur CHAQUE chargement
+    // à froid malgré le gate. Le `watch: $route` plus bas corrige `theme`
+    // réactivement ensuite (d'où l'absence de chrome DOM, jamais régressée) mais
+    // ce dispatch ponctuel ne se ré-évalue jamais. Fix : attendre la résolution
+    // réelle du router avant d'évaluer le gate.
+    this.$router.isReady().then(() => {
+      if (this.$route?.meta?.isTracking !== true && this.$store.getters.authStatus) {
+        this.$store.dispatch("authcheck").then(res => {
+          if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
+            // [STAFF-ONLY-V1] Session expirée : retour au login staff si staffOnlyMode, sinon home vitrine.
+            this.$router.push({ name: this.staffOnlyMode ? "auth.login" : "frontend.home" });
+          } else if (res.data.status !== false && res.data.permission) {
+            // F5 / onglet : réaligner les routes sur les permissions renvoyées par authcheck.
+            appService.recursiveRouter(routes, res.data.permission);
+          }
+        }).catch();
+      }
+    }).catch();
 
   },
   watch: {
