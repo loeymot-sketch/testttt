@@ -98,21 +98,33 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
     // Forensic network trace: this is a LIVE, shared dev DB (197 pre-existing pending
     // counter-collect orders, 77 pre-existing pending web orders confirmed before this test
     // even starts — see wave report) and other GStack waves may poll/mutate the SAME server
-    // concurrently. Record every web-orders/pending + web-orders/paid poll response's order-ID
-    // set with a timestamp so any unexpected beep can be attributed to a specific poll/order
-    // rather than guessed at after the fact.
+    // concurrently. Record every web-orders/pending + web-orders/paid + counter-collect/pending
+    // poll response's order-ID DIFF (newly-appeared ids only, not the full 77-200-id list) with
+    // a timestamp, so any unexpected beep can be attributed to a specific poll/order rather than
+    // guessed at after the fact. [round-2 B-001 fix] Storing full id arrays (round-1 shape)
+    // produced a netTrace payload so large it blew mega-audit-snap.js's 2000-char console
+    // capture cap and silently truncated the anchor-verdict fields that followed it in the same
+    // JSON blob — diffing to newIds-only keeps every poll tick's entry tiny (0-2 ids after the
+    // first poll of each kind) while preserving the exact forensic signal (WHICH id newly
+    // appeared WHEN) needed to attribute a beep to a specific order.
     const netTrace = [];
+    const _netTracePrevIds = {}; // kind -> Set of ids seen at the previous poll of that kind
     page.on('response', async (resp) => {
       const url = resp.url();
-      if (!/admin\/pos\/web-orders\/(pending|paid)/.test(url)) return;
+      const isWeb = /admin\/pos\/web-orders\/(pending|paid)/.test(url);
+      const isCounter = /admin\/pos\/counter-collect\/pending/.test(url);
+      if (!isWeb && !isCounter) return;
       if (resp.request().method() !== 'GET') return;
       try {
         const body = await resp.json();
-        netTrace.push({
-          ts: Date.now(),
-          kind: /paid/.test(url) ? 'web_paid' : 'web_pending',
-          ids: (body?.data || []).map((o) => o.id),
-        });
+        const kind = isCounter ? 'counter_pending' : (/paid/.test(url) ? 'web_paid' : 'web_pending');
+        const ids = (body?.data || []).map((o) => o.id);
+        const prev = _netTracePrevIds[kind];
+        const baseline = prev === undefined; // first sighting of this kind = baseline, not "new"
+        const prevSet = prev || new Set();
+        const newIds = baseline ? [] : ids.filter((id) => !prevSet.has(id));
+        _netTracePrevIds[kind] = new Set(ids);
+        netTrace.push({ ts: Date.now(), kind, count: ids.length, newIds, baseline });
       } catch (_e) { /* ignore parse failures */ }
     });
 
@@ -228,6 +240,18 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
     while (Date.now() < windowDeadline) {
       const count = await page.evaluate(() => window.__beepEvents.length);
       while (snappedCount < count && snappedCount < 3) {
+        // [round-2 B-001 fix] Print the events-so-far INSIDE the page context (not Node-side)
+        // immediately before snap() — mega-audit-snap.js's page.on('console') listener only
+        // captures browser-page console output, so this is the only way the beep timeline data
+        // survives into THIS state's .console.json artifact instead of vanishing into the
+        // Playwright test-process stdout that no artifact file captures.
+        // eslint-disable-next-line no-await-in-loop
+        const eventsSoFar = await page.evaluate(() => window.__beepEvents.slice());
+        // eslint-disable-next-line no-await-in-loop
+        await page.evaluate((evts) => {
+          // eslint-disable-next-line no-console
+          console.log('[wave-B beep evidence] events-so-far=' + JSON.stringify(evts));
+        }, eventsSoFar);
         // eslint-disable-next-line no-await-in-loop
         await snap(beepStates[snappedCount]);
         snappedCount += 1;
@@ -237,8 +261,6 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
       await page.waitForTimeout(500);
     }
     const allBeepTimestamps = await page.evaluate(() => window.__beepEvents.slice());
-    console.log('[wave-B] ALL beep timestamps observed in window (epoch ms):', allBeepTimestamps);
-    console.log('[wave-B] network trace (web-orders poll bodies):', JSON.stringify(netTrace));
     expect(allBeepTimestamps.length).toBeGreaterThanOrEqual(3);
 
     // Anchor on t0 = first beep observed after the seed (our order's t=0 firing is essentially
@@ -249,9 +271,6 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
       allBeepTimestamps.some((ts) => Math.abs(ts - target) <= tolerance);
     const has10s = hasNear(t0 + 10_000);
     const has20s = hasNear(t0 + 20_000);
-    console.log('[wave-B] our triple anchor t0=', t0, '| +10s companion found=', has10s, '| +20s companion found=', has20s);
-    expect(has10s).toBe(true);
-    expect(has20s).toBe(true);
 
     const expectedOurs = new Set([
       t0,
@@ -259,12 +278,29 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
       allBeepTimestamps.find((ts) => Math.abs(ts - (t0 + 20_000)) <= 2_000),
     ]);
     const extras = allBeepTimestamps.filter((ts) => !expectedOurs.has(ts));
-    if (extras.length > 0) {
-      console.warn(
-        '[wave-B] EXTRA beep event(s) beyond our order\'s expected triple — attributing to shared-dev-DB concurrent activity (see netTrace above), not a defect in this order\'s sequence:',
-        extras
-      );
-    }
+
+    // [round-2 B-001 fix] Full timeline + netTrace + anchor-computation summary, printed
+    // PAGE-side (not Node-side) so it lands in a real .console.json artifact instead of only
+    // the Playwright stdout transcript. netTrace itself is collected Node-side (page.on
+    // ('response') fires in the Node process) — it is passed IN as page.evaluate's argument,
+    // but the console.log call executing it runs inside the browser context, which is exactly
+    // what mega-audit-snap.js's page.on('console') listener observes and persists.
+    // Scalar verdict fields (t0/has10s/has20s/extras/expectedOursSize) are placed FIRST in the
+    // logged object — JSON.stringify serializes object keys in insertion order — so they survive
+    // intact even if mega-audit-snap.js's 2000-char console-text cap truncates the tail. netTrace
+    // is filtered to baseline + actual-new-id entries only (see listener above) to stay compact.
+    const interestingNetTrace = netTrace.filter((e) => e.baseline || (e.newIds && e.newIds.length > 0));
+    await page.evaluate(
+      (data) => {
+        // eslint-disable-next-line no-console
+        console.log('[wave-B beep evidence] full-timeline=' + JSON.stringify(data));
+      },
+      { t0, has10s, has20s, extras, expectedOursSize: expectedOurs.size, allBeepTimestamps, netTrace: interestingNetTrace }
+    );
+    await snap('06-beep-timeline-summary');
+
+    expect(has10s).toBe(true);
+    expect(has20s).toBe(true);
     // Hard P0: our order's own sequence must be EXACTLY 3 (t0, t0+10s, t0+20s), never a 4th
     // firing belonging to OUR order specifically. We cannot fully rule out an unrelated order's
     // beep interleaving on this shared server (see extras[] above / netTrace), so we assert the
@@ -315,16 +351,39 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
         );
         await page.waitForTimeout(1_500);
         const beepsAfterKiosk = await page.evaluate(() => window.__beepEvents.length);
-        console.log('[wave-B] kiosk regression: beeps before/after seed', beepsBeforeKiosk, beepsAfterKiosk);
-        expect(beepsAfterKiosk - beepsBeforeKiosk).toBe(1);
 
         // Confirm it does NOT escalate into the 3-beep web sequence.
         await page.waitForTimeout(11_000);
         const beepsSettled = await page.evaluate(() => window.__beepEvents.length);
-        console.log('[wave-B] kiosk regression: beeps settled (should still be +1):', beepsSettled - beepsBeforeKiosk);
-        expect(beepsSettled - beepsBeforeKiosk).toBe(1);
+        const kioskAllTimestamps = await page.evaluate(() => window.__beepEvents.slice());
 
-        await snap('06-kiosk-order-single-beep-regression');
+        // [round-2 B-001 fix] page-side evidence log, executed right before the snap it
+        // belongs to, so it lands in THIS state's real .console.json artifact. Includes the
+        // same compact newIds-diff netTrace (all kinds, since test start) so a reviewer can
+        // attribute any delta > 1 to a specific unrelated order id newly appearing in a poll
+        // during this window, exactly the forensic technique used successfully in round 1 —
+        // scalar fields first so they survive the 2000-char truncation cap regardless.
+        const kioskInterestingNetTrace = netTrace.filter((e) => e.baseline || (e.newIds && e.newIds.length > 0));
+        await page.evaluate(
+          (data) => {
+            // eslint-disable-next-line no-console
+            console.log('[wave-B beep evidence] kiosk-regression=' + JSON.stringify(data));
+          },
+          {
+            beepsBeforeKiosk,
+            beepsAfterKiosk,
+            beepsSettled,
+            deltaAfterSeed: beepsAfterKiosk - beepsBeforeKiosk,
+            deltaSettled: beepsSettled - beepsBeforeKiosk,
+            kioskOrderId,
+            allBeepTimestamps: kioskAllTimestamps,
+            netTrace: kioskInterestingNetTrace,
+          }
+        );
+        await snap('07-kiosk-order-single-beep-regression');
+
+        expect(beepsAfterKiosk - beepsBeforeKiosk).toBe(1);
+        expect(beepsSettled - beepsBeforeKiosk).toBe(1);
       }
     } catch (e) {
       console.warn('[wave-B] kiosk regression check failed (best-effort, non-blocking):', e?.message || e);
