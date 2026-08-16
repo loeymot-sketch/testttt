@@ -308,8 +308,21 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
     expect(expectedOurs.size).toBe(3);
 
     // ---- Best-effort regression: a kiosk/POS-origin order still gets exactly 1 beep. ----
+    // [test-e2e fix B-003 round-2 2026-08-16] "Best-effort" applies to the SEEDING/
+    // POLLING-WAIT infrastructure (can legitimately fail on environmental/timing
+    // grounds — that's what the try/catch below tolerates), NOT to the actual beep-count
+    // ASSERTIONS once we have real data. The previous shape wrapped expect(...).toBe(1)
+    // INSIDE the same try/catch, so a genuine regression (e.g. kiosk order silently
+    // getting the 3-beep web sequence) would be swallowed into a console.warn and the
+    // test would still report green — found by adversarial round-2 review reading the
+    // spec source directly. Fix: only the setup can fail silently; if setup succeeds,
+    // the assertions run OUTSIDE any try/catch and can genuinely fail the test.
+    let kioskSetupOk = false;
+    let beepsBeforeKiosk = 0;
+    let beepsAfterKiosk = 0;
+    let beepsSettled = 0;
     try {
-      const beepsBeforeKiosk = await page.evaluate(() => window.__beepEvents.length);
+      beepsBeforeKiosk = await page.evaluate(() => window.__beepEvents.length);
       const kioskSeedOut = tinker(`
         $o = \\App\\Models\\Order::withoutGlobalScopes()->create([
           'branch_id' => 1,
@@ -350,11 +363,11 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
           { timeout: 20_000 }
         );
         await page.waitForTimeout(1_500);
-        const beepsAfterKiosk = await page.evaluate(() => window.__beepEvents.length);
+        beepsAfterKiosk = await page.evaluate(() => window.__beepEvents.length);
 
         // Confirm it does NOT escalate into the 3-beep web sequence.
         await page.waitForTimeout(11_000);
-        const beepsSettled = await page.evaluate(() => window.__beepEvents.length);
+        beepsSettled = await page.evaluate(() => window.__beepEvents.length);
         const kioskAllTimestamps = await page.evaluate(() => window.__beepEvents.slice());
 
         // [round-2 B-001 fix] page-side evidence log, executed right before the snap it
@@ -381,12 +394,19 @@ test.describe('Wave B — web-order alert: triple beep + red panel', () => {
           }
         );
         await snap('07-kiosk-order-single-beep-regression');
-
-        expect(beepsAfterKiosk - beepsBeforeKiosk).toBe(1);
-        expect(beepsSettled - beepsBeforeKiosk).toBe(1);
+        kioskSetupOk = true;
       }
     } catch (e) {
-      console.warn('[wave-B] kiosk regression check failed (best-effort, non-blocking):', e?.message || e);
+      console.warn('[wave-B] kiosk regression setup failed (best-effort infra, non-blocking):', e?.message || e);
+    }
+
+    // [test-e2e fix B-003 round-2 2026-08-16] Assertions live OUTSIDE the try/catch —
+    // once setup genuinely succeeded (kioskSetupOk), a wrong beep count is a REAL
+    // regression and must fail the test, not be swallowed as if it were an
+    // infrastructure hiccup.
+    if (kioskSetupOk) {
+      expect(beepsAfterKiosk - beepsBeforeKiosk).toBe(1);
+      expect(beepsSettled - beepsBeforeKiosk).toBe(1);
     }
   });
 });
