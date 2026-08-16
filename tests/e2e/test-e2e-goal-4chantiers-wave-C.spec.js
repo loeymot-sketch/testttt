@@ -379,6 +379,17 @@ test.describe('Wave C — /suivi/:trackingToken (public tracking page)', () => {
       const consoleJson = JSON.parse(fs.readFileSync(path.join(SCREENSHOT_DIR, `${state.id}-admin-cookie.console.json`), 'utf8'));
       const pageErrors = consoleJson.filter((c) => c.level === 'pageerror');
       expect(pageErrors, `unhandled JS exception in ${state.id}-admin-cookie: ${JSON.stringify(pageErrors)}`).toHaveLength(0);
+
+      // [test-e2e fix C-010 round-3 2026-08-16] Le regard C-007 (admin bootstrap
+      // fuyant sur cette page publique quand un cookie staff est présent) a
+      // échappé DEUX fois au CI de cette spec — network.json ne capture que les
+      // requêtes en échec/lentes/mutation (un GET 200 rapide y est invisible par
+      // construction), seul un grep MANUEL du console.json (violations CSP
+      // report-only pour ces mêmes appels) l'a trahi à chaque fois, à la main,
+      // par l'audit adversarial. Cette assertion automatise ce grep pour de bon.
+      const ADMIN_BOOTSTRAP_LEAK_RE = /default-access|setting\/branch|\/api\/auth\/authcheck/;
+      const leaks = consoleJson.filter((c) => ADMIN_BOOTSTRAP_LEAK_RE.test(c.text || ''));
+      expect(leaks, `fuite bootstrap admin détectée en ${state.id}-admin-cookie (régression C-007): ${JSON.stringify(leaks)}`).toHaveLength(0);
     }
 
     dispose();

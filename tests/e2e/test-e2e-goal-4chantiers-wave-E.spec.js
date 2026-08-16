@@ -247,6 +247,24 @@ async function waitForLoadingOverlayDetached(page) {
     await page.waitForSelector('.velmld-overlay', { state: 'hidden', timeout: 5_000 }).catch(() => {});
 }
 
+// [test-e2e fix E-008 round-3 2026-08-16] Le dashboard admin monte NEUF
+// `.velmld-overlay` distincts (un par widget de la page : Overview,
+// RealtimeReport, SlaAlerts, ChannelStats, AuditTrail, OrderStatistics,
+// SalesSummary, OrderSummary, LastZReport, FeaturedItems, MostPopularItems,
+// StockLowAlertsWidget...) — `waitForSelector('.velmld-overlay', {state:
+// 'hidden'})` avec un sélecteur GÉNÉRIQUE résout dès que LE PREMIER élément
+// matché (dans l'ordre du DOM, pas forcément le nôtre) devient hidden, pas
+// tous. Preuve directe : capture DOM réelle montrant 3 overlays déjà propres
+// et 6 encore `class="...fade-leave-active fade-leave-to"` (sans
+// `display:none`) SIMULTANÉMENT — le premier a résolu la promesse avant que
+// celui du widget stock n'ait fini sa transition. StockLowAlertsWidget est le
+// DERNIER widget monté sur cette page (dernier `<ErrorBoundary>` de la
+// dernière rangée, DashboardComponent.vue) : `.last()` cible spécifiquement
+// SON overlay, pas un widget arbitraire résolu plus tôt.
+async function waitForLastLoadingOverlayDetached(page) {
+    await page.locator('.velmld-overlay').last().waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+}
+
 test.describe('Wave E — Stock intelligence: dashboard widget + POS badge (empty vs populated)', () => {
     // 03 seeds a DB row that 04/05 depend on and 06 must revert — order matters.
     test.describe.configure({ mode: 'serial' });
@@ -428,6 +446,13 @@ test.describe('Wave E — Stock intelligence: dashboard widget + POS badge (empt
 
             // Scroll the widget into frame for real visual evidence (CLAUDE.md §6).
             await row.scrollIntoViewIfNeeded();
+            // [test-e2e fix E-008 round-3 2026-08-16] Le dashboard monte NEUF
+            // overlays distincts (un par widget) — le sélecteur générique résout
+            // dès que LE PREMIER devient hidden, pas forcément le nôtre (preuve :
+            // capture réelle avec 3 déjà propres et 6 encore mid-fade en même
+            // temps). .last() cible spécifiquement celui de StockLowAlertsWidget
+            // (dernier widget monté sur cette page).
+            await waitForLastLoadingOverlayDetached(page);
             await snap('03-dashboard-widget-populated-admin');
         } finally {
             dispose();
@@ -541,6 +566,10 @@ test.describe('Wave E — Stock intelligence: dashboard widget + POS badge (empt
                 await expect(emptyTextAfterRevert).toBeVisible({ timeout: 10_000 });
                 await emptyTextAfterRevert.scrollIntoViewIfNeeded();
             }
+            // [test-e2e fix E-008 round-3 2026-08-16] Même correctif que l'état 03
+            // ci-dessus — même page dashboard, même besoin de cibler LE DERNIER
+            // overlay (le nôtre), pas le premier résolu.
+            await waitForLastLoadingOverlayDetached(page);
             await snap('06a-dashboard-back-to-baseline');
 
             const posRespPromise = page.waitForResponse(
