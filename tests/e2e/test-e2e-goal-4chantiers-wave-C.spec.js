@@ -103,27 +103,34 @@ function clearTrackingRateLimit() {
 // cannot land in the web-orders/pending panel Wave B is auditing — verified
 // via routes/api.php:1025 comment "web-orders/pending exige status = PENDING").
 //
-// almost-ready anchor trick: the branch already carries hundreds of stale
-// ACCEPT/PREPARING/PREPARED orders (pre-existing dev-DB debt, confirmed via
-// tinker pre-flight query: 614 board-released orders, oldest 2026-06-10).
-// OrderTrackingService::forOrder()'s position_ahead query has NO staleness
-// window (unlike WaitEstimateService's STALE-GUARD) — every one of those 614
-// would count as "ahead" of any order dated "now". To get a genuinely
-// deterministic almost-ready fixture (position_ahead <= 2) regardless of that
-// backlog, the almost-ready order's own order_datetime is anchored to ONE DAY
-// BEFORE the oldest currently-active board order, then exactly ONE dedicated
-// filler is placed 5 minutes before that anchor — deterministic position_ahead
-// = 1 no matter what the rest of the DB looks like.
+// [round-2 2026-08-16, post fix C-001 commit 8dfdd2dd3] FRESH-WINDOW fixture
+// design — replaces the round-1 "anchor on the stale DB backlog" trick.
+// OrderTrackingService::forOrder()'s position_ahead query NOW carries the
+// same staleness bound as WaitEstimateService (order_datetime >= now -
+// QUEUE_WINDOW_MINUTES=120), which is exactly the fix this wave demanded.
+// Consequence: anchoring a fixture's own order_datetime to "one day before
+// the DB backlog" (round-1 approach) now falls itself OUTSIDE the 120-min
+// window and can no longer see any "ahead" candidates — that is the fix
+// working correctly, not a regression. All fixture timestamps below are
+// therefore FRESH (relative to `now()` at seed time, all inside the 120-min
+// window), spread out so they are individually orderable by `order_datetime`:
+//
+//   almostFiller (t-100) < almost (t-90)  <<  posFiller1 (t-60) <
+//   posFiller2 (t-50) < posFiller3 (t-40)  <<  pos / ready / cancelled (t-0)
+//
+// - almost's own ahead-query only sees candidates with order_datetime <
+//   t-90 AND >= t-120 → exactly almostFiller (t-100) → position_ahead=1
+//   (<=2 → almost_ready=true). None of the posFiller* (t-60..t-40, i.e.
+//   AFTER t-90) leak into almost's count.
+// - pos's own ahead-query sees every candidate with order_datetime < t-0 and
+//   >= t-120 → almostFiller + almost + posFiller1 + posFiller2 + posFiller3
+//   = 5 (> 2 → position_ahead deterministic, small, sane — NOT the round-1
+//   stale-ghost "465").
 function seedFixtures() {
   return tinkerJson(`
     $admin = \\App\\Models\\User::where('email','admin@lecayenne.fr')->first();
     $branchId = 1;
-
-    $q = \\App\\Models\\Order::withoutGlobalScopes()->where('branch_id', $branchId)->whereIn('status', [4,7,8]);
-    \\App\\Domain\\Kds\\KitchenReleaseRule::applyBoardReleaseFilter($q);
-    \\App\\Domain\\Kds\\KitchenReleaseRule::applyScheduledBoardFilter($q);
-    $minExisting = $q->min('order_datetime');
-    $anchor = $minExisting ? \\Carbon\\Carbon::parse($minExisting)->subDay() : now()->subDay();
+    $now = now();
 
     $mk = function(array $attrs) use ($admin, $branchId) {
         $o = \\App\\Models\\Order::withoutGlobalScopes()->create(array_merge([
@@ -141,16 +148,22 @@ function seedFixtures() {
         return $o;
     };
 
-    $pos = $mk(['status' => 4, 'payment_status' => 5, 'order_datetime' => now()]);
-    $almost = $mk(['status' => 7, 'payment_status' => 5, 'order_datetime' => $anchor]);
-    $almostFiller = $mk(['status' => 7, 'payment_status' => 5, 'order_datetime' => (clone $anchor)->subMinutes(5)]);
-    $ready = $mk(['status' => 8, 'payment_status' => 5, 'order_datetime' => now()]);
-    $cancelled = $mk(['status' => 16, 'payment_status' => 10, 'order_datetime' => now()]);
+    $almostFiller = $mk(['status' => 7, 'payment_status' => 5, 'order_datetime' => $now->copy()->subMinutes(100)]);
+    $almost       = $mk(['status' => 7, 'payment_status' => 5, 'order_datetime' => $now->copy()->subMinutes(90)]);
+    $posFiller1   = $mk(['status' => 4, 'payment_status' => 5, 'order_datetime' => $now->copy()->subMinutes(60)]);
+    $posFiller2   = $mk(['status' => 4, 'payment_status' => 5, 'order_datetime' => $now->copy()->subMinutes(50)]);
+    $posFiller3   = $mk(['status' => 4, 'payment_status' => 5, 'order_datetime' => $now->copy()->subMinutes(40)]);
+    $pos          = $mk(['status' => 4, 'payment_status' => 5, 'order_datetime' => $now]);
+    $ready        = $mk(['status' => 8, 'payment_status' => 5, 'order_datetime' => $now]);
+    $cancelled    = $mk(['status' => 16, 'payment_status' => 10, 'order_datetime' => $now]);
 
     echo json_encode([
       'pos' => ['id'=>$pos->id, 'token'=>$pos->tracking_token],
       'almost' => ['id'=>$almost->id, 'token'=>$almost->tracking_token],
       'almostFiller' => ['id'=>$almostFiller->id],
+      'posFiller1' => ['id'=>$posFiller1->id],
+      'posFiller2' => ['id'=>$posFiller2->id],
+      'posFiller3' => ['id'=>$posFiller3->id],
       'ready' => ['id'=>$ready->id, 'token'=>$ready->tracking_token],
       'cancelled' => ['id'=>$cancelled->id, 'token'=>$cancelled->tracking_token],
     ]);
@@ -227,6 +240,7 @@ test.describe('Wave C — /suivi/:trackingToken (public tracking page)', () => {
     fixtures = seedFixtures();
     fixtureIds = [
       fixtures.pos.id, fixtures.almost.id, fixtures.almostFiller.id,
+      fixtures.posFiller1.id, fixtures.posFiller2.id, fixtures.posFiller3.id,
       fixtures.ready.id, fixtures.cancelled.id,
     ];
     console.log('[wave-C] seeded fixtures:', JSON.stringify(fixtures));
