@@ -73,6 +73,21 @@
          `:disabled` est un filet : si la barre n'est pas montée (mode legacy, test isolé du
          composant, cible absente), le Teleport se neutralise et le sélecteur s'affiche là où il
          était. Mieux vaut une rangée de trop qu'un sélecteur qui disparaît. -->
+    <!-- [FIX KDS-TELEPORT-CRASH 2026-08-17] Le Teleport vers #kds-toolbar-slot plantait
+         DÉFINITIVEMENT tout le board dès la 1ère commande : dès que activeOrders passait de
+         0 à 1, Vue devait mouvoir du contenu neuf dans la cible externe et moveTeleport()
+         levait "TypeError: Cannot read properties of null (reading 'insertBefore')" —
+         reproduit à froid (commande de test créée, board resté vide en boucle, `/api/admin/
+         kds-order` et le Vuex store portaient pourtant bien la commande). Le ticker `now`
+         (setInterval 1s, sert le chrono d'attente) refaisait planter le patch à chaque tick,
+         donc AUCUNE commande suivante ne s'affichait plus non plus — le board restait figé
+         pour tout le service, ticket cuisine imprimé ou pas (l'impression caisse est un
+         chemin totalement indépendant, cf. PosTicketBytesController). barreUniquePresente
+         reste désormais TOUJOURS false (cf. mounted() plus bas) : le sélecteur retombe sur
+         son rendu d'origine (sa propre ligne, hors Teleport) au lieu de tenter la projection
+         dans la barre unique — exactement le filet que le commentaire d'origine décrivait
+         ("mieux vaut une rangée de trop qu'un sélecteur qui disparaît"), rendu permanent car
+         la projection elle-même est ce qui plante. -->
     <Teleport to="#kds-toolbar-slot" :disabled="!barreUniquePresente">
     <div
       v-if="activeOrders.length > 0"
@@ -401,12 +416,12 @@ export default {
             if (KDS_CHOIX_CARTES.includes(memo)) this.cartesParEcran = memo;
         } catch (e) { /* stockage indisponible : on garde le défaut */ }
 
-        // [KDS-BARRE-UNIQUE 2026-08-13] La barre du parent est-elle là pour accueillir le
-        // sélecteur ? Vérifié APRÈS le montage du parent : sinon le Teleport viserait une cible
-        // qui n'existe pas encore. Absente → on retombe sur le rendu d'origine, jamais sur rien.
-        try {
-            this.barreUniquePresente = !!document.getElementById('kds-toolbar-slot');
-        } catch (e) { this.barreUniquePresente = false; }
+        // [KDS-BARRE-UNIQUE 2026-08-13, DÉSACTIVÉ 2026-08-17 — FIX KDS-TELEPORT-CRASH]
+        // barreUniquePresente reste TOUJOURS false : la détection "la cible existe" activait
+        // le Teleport, dont le déplacement de contenu vers #kds-toolbar-slot plantait tout le
+        // board dès la 1ère commande active (voir commentaire sur le <Teleport> ci-dessus).
+        // Ne PAS restaurer `!!document.getElementById('kds-toolbar-slot')` sans avoir d'abord
+        // réglé le crash moveTeleport() à la racine.
 
         // Single global ticker — all cards read `this.now` reactively, no
         // per-card setInterval.

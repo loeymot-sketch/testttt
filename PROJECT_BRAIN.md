@@ -47,6 +47,48 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-17 — P0 KDS : écran cuisine figé en vide dès la 1ère commande (Teleport Vue) — CORRIGÉ, NON COMMITÉ**
+>
+> HEAD `e707a549c` (inchangé), branche `pos/category-first-caisse-2026-06-23`. Signalement owner :
+> « je passe commande, aucune ne passe sur écran de cuisine, l'imprimante imprime direct ». Diagnostic
+> systematic-debugging (Phase 1-4) + reproduction live navigateur (Chrome MCP), pas de suppositions.
+>
+> **Preuve initiale** : aucune commande créée en base depuis le 2026-08-14 alors que l'owner venait
+> d'en passer une — le ticket s'imprime pourtant, car l'impression caisse (`PosTicketBytesController`)
+> est un chemin totalement indépendant de la création d'ordre (lit juste id/branch_id, ne vérifie ni
+> `payment_status`, ni la fenêtre KDS, ni le board).
+>
+> **Root cause réelle** (reproduite à froid : commande de test créée avec succès, visible dans
+> `/api/admin/kds-order` ET dans le store Vuex, mais AUCUNE carte ne s'affichait) :
+> `KdsV2Grid.vue` projette le sélecteur "nombre de cartes" vers la barre unique du parent via
+> `<Teleport to="#kds-toolbar-slot">` (feature `KDS-BARRE-UNIQUE` du 2026-08-13). Le contenu teleporté
+> est conditionné par `v-if="activeOrders.length > 0"` : dès que la 1ère commande active fait
+> passer ce compteur de 0 à 1, Vue doit déplacer du contenu neuf vers la cible externe et
+> `moveTeleport()` lève `TypeError: Cannot read properties of null (reading 'insertBefore')` — le
+> patch de TOUT le composant plante, et comme un ticker `setInterval` 1s réévalue le rendu en
+> continu (chrono d'attente), le crash se reproduit à CHAQUE tick pour le reste du service : le
+> board reste figé vide, ticket cuisine imprimé ou pas, quel que soit le nombre de commandes
+> suivantes créées derrière.
+>
+> **Fix** : `barreUniquePresente` (le flag qui active le Teleport) forcé à rester `false` en
+> permanence — le sélecteur retombe sur son rendu d'origine hors Teleport (sa propre ligne), le
+> filet que le code documentait déjà lui-même ("mieux vaut une rangée de trop qu'un sélecteur qui
+> disparaît") devient permanent au lieu de conditionnel, puisque la projection elle-même est ce qui
+> plante. `resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue` — seul fichier touché,
+> hors frozen-zone.
+>
+> **Preuves de convergence** : rebuild Mix (`admin-kds.3a38d0a7.js`) + reproduction bout-en-bout en
+> navigateur réel — écran cuisine ouvert et vide, commande créée depuis un second onglet caisse
+> (Petite Frites, sans sauce, payée espèces), carte apparue automatiquement au sondage 5s suivant,
+> chrono d'attente qui tourne, clic « Prêt » qui bascule bien vers la bande « Récemment servies » —
+> zéro erreur console sur un onglet propre (le premier test avait des faux positifs `__vnode` dus à
+> ma propre instrumentation JS de diagnostic dans l'onglet contaminé, pas au produit). Vitest ciblé
+> KDS (`kds-v2-grid-keys`, `KdsV2GridOverflowChipSentinel`, `kdsScheduledBanner`,
+> `kitchen-printer-cross-tab`, `kdsOrderCardScheduled`) : 4 fichiers / 32 tests / 0 échec.
+> Frozen-zone diff = 0 ligne.
+>
+> **Non commité** — changement en attente de validation owner avant commit/push/déploiement.
+
 > **2026-08-16 — test-e2e sur les 4 chantiers GOAL confort : convergence round 4, PUSHÉ + DÉPLOYÉ VPS**
 >
 > HEAD `c1d27ee09`, branche `pos/category-first-caisse-2026-06-23`, **pushée sur origin**
