@@ -28,13 +28,21 @@ use Tests\TestCase;
  *          php artisan stock:ensure-meat-materials --dry-run
  *          → « 7 création(s), 0 alignement(s) »
  *
- *      SEPT viandes sur dix n'ont aucune matière en base au restaurant : Poulet mariné,
- *      Mexicanos, Tenders, Nuggets, Fricadelle, Chicken burger, Poisson pané. Seules
- *      « Viande hachée » (75 g), « Cordon bleu » et « Portion frites » sont réellement
- *      consommées. Ce n'est PAS silencieux (le résolveur empile `matiere_absente` et
- *      journalise), mais personne ne lisait les journaux. La base de DÉVELOPPEMENT, elle,
- *      portait bien « Poulet mariné » : c'est cet écart local ↔ production qui a rendu le trou
- *      invisible des deux côtés pendant treize jours.
+ *      SEPT viandes sur dix n'avaient aucune matière en base au restaurant : Poulet mariné,
+ *      Mexicanos, Tenders, Nuggets, Fricadelle, Chicken burger, Poisson pané. Le chemin du
+ *      moteur de CUISSON ne résolvait donc rien pour elles. Ce n'est PAS silencieux (le
+ *      résolveur empile `matiere_absente` et journalise), mais personne ne lisait les journaux.
+ *      La base de DÉVELOPPEMENT, elle, portait bien « Poulet mariné » : c'est cet écart
+ *      local ↔ production qui a rendu le trou invisible des deux côtés pendant treize jours.
+ *
+ *      ⚠️ NE PAS SUR-INTERPRÉTER : « le moteur de cuisson ne résout rien » ≠ « rien n'est
+ *      décompté ». Un SECOND moteur, celui des recettes (`raw_material_recipe_lines`),
+ *      décomptait bien le poulet EN VRAC (matière « Poulet », id 2, forfait 200 g sur les items
+ *      22 et 38) — mesuré à −28 400 g en production. La première lecture avait conclu « rien
+ *      n'est décompté » en interrogeant `stock_levels` / `stock_movements`, qui sont les tables
+ *      des PRODUITS, au lieu de `raw_material_stocks` / `raw_material_movements` (4 780
+ *      mouvements réels). La mauvaise table rend « 0 » et fabrique une conclusion fausse :
+ *      quand deux lectures se contredisent, examiner le JUGE avant la preuve.
  *
  *      Le « 0 alignement » de la même mesure prouve au passage que la migration du poids
  *      unitaire a été un no-op en production — la ligne à corriger n'existait pas.
@@ -148,10 +156,11 @@ class CuissonStockCoherenceSentinelTest extends TestCase
         $this->assertSame(
             ['Chick', 'Frec', 'Mex', 'Nug', 'P', 'Poi', 'Tender'],
             $absents,
-            'État MESURÉ de la production au 2026-08-19 (« 7 création(s), 0 alignement(s) ») : '
-            .'ces sept viandes ne sont décomptées nulle part. '
-            .'Elles sont SIGNALÉES (matiere_absente + Log::warning), ce qui est le comportement '
-            .'voulu — consommer zéro en silence serait pire.'
+            'État MESURÉ de la production au 2026-08-19 avant activation (« 7 création(s), '
+            .'0 alignement(s) ») : pour ces sept viandes, le moteur de CUISSON ne résout aucune '
+            .'matière. Elles sont SIGNALÉES (matiere_absente + Log::warning), ce qui est le '
+            .'comportement voulu — consommer zéro en silence serait pire. Cela ne dit RIEN du '
+            .'moteur des recettes, qui décomptait par ailleurs le poulet en vrac.'
         );
 
         $this->assertCount(
@@ -187,6 +196,47 @@ class CuissonStockCoherenceSentinelTest extends TestCase
             'La commande doit poser le poids de l\'UNITÉ COMPTÉE (100 g), pas celui de la portion '
             .'servie (200 g) — sinon le compte doublé double aussi la sortie de stock.'
         );
+    }
+
+    /**
+     * VERROU 5 — LE PLUS IMPORTANT : aucune viande ne peut être décomptée DEUX FOIS.
+     *
+     * Deux moteurs peuvent servir la même ligne de commande :
+     *   · le moteur des RECETTES (`raw_material_recipe_lines`, forfait par produit) ;
+     *   · le moteur des PORTIONS (le bandeau CUISSON, depuis le choix réel du client).
+     *
+     * `RawMaterialConsumptionService::matieresReprises()` empêche le doublon en écartant les
+     * lignes de recette dès que le moteur de portions a quelque chose à dire — mais il décide
+     * cela en comparant le NOM de la matière à deux listes EN DUR, `VIANDES_PILOTEES` et
+     * `FRITES_PILOTEES`. Une viande câblée dans `SYMBOLE_VERS_MATIERE` mais oubliée dans ces
+     * listes serait donc décomptée par les DEUX moteurs, en silence, sans aucun signal : ni
+     * exception, ni journal, ni test rouge. Juste un stock qui fond deux fois plus vite.
+     *
+     * C'est le motif dominant de ce projet — « un correctif appliqué à une moitié du mécanisme,
+     * pas à sa jumelle » — appliqué ici à deux listes de noms qui doivent rester en accord.
+     * Ce verrou est devenu critique le 2026-08-19, jour où le décompte des sept viandes
+     * manquantes a été ACTIVÉ en production : avant, une viande orpheline ne consommait rien ;
+     * depuis, elle consommerait double.
+     */
+    public function test_aucune_viande_du_bandeau_ne_peut_etre_decomptee_deux_fois(): void
+    {
+        $service = new \ReflectionClass(\App\Services\RawMaterials\RawMaterialConsumptionService::class);
+        $pilotees = array_merge(
+            (array) $service->getConstant('VIANDES_PILOTEES'),
+            (array) $service->getConstant('FRITES_PILOTEES'),
+        );
+
+        foreach (MeatMaterialResolver::SYMBOLE_VERS_MATIERE as $symbole => $matiere) {
+            $this->assertContains(
+                mb_strtolower($matiere),
+                $pilotees,
+                "Le symbole « {$symbole} » décompte « {$matiere} » via le moteur de PORTIONS, mais "
+                ."ce nom est absent de VIANDES_PILOTEES / FRITES_PILOTEES : les lignes de recette "
+                ."portant cette matière ne seront donc PAS écartées, et elle sera décomptée DEUX "
+                ."FOIS — sans exception, sans journal, sans test rouge. Ajouter le nom dans "
+                .'RawMaterialConsumptionService, en minuscules.'
+            );
+        }
     }
 
     /** Une unité de CHAQUE symbole de cuisson, pour exercer le résolveur de bout en bout. */
