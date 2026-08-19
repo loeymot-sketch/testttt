@@ -119,6 +119,43 @@
                                 </span>
                             </div>
                         </div>
+
+                        <!--
+                          [FIDÉLITÉ 2026-08-19] L'HISTOIRE DU SOLDE, PAS SEULEMENT LE CHIFFRE.
+                          Le bloc ci-dessus avait été ajouté le 2026-08-14 pour répondre à
+                          « pourquoi j'ai ce solde ? » — et n'affichait que le solde, c'est-à-dire
+                          la question, pas la réponse. Un solde sans son histoire est indéfendable :
+                          le client conteste, le responsable ouvre la fiche, et n'a rien à montrer.
+                          Le comptoir avait déjà cet historique ; la gestion, non.
+                        -->
+                        <div class="col-12 !py-1.5" v-if="customer.loyalty_code">
+                            <div class="db-list-item p-0 flex-col items-start">
+                                <span class="db-list-item-title w-full mb-2">
+                                    Historique des points
+                                </span>
+                                <span v-if="loyaltyHistory.loading" class="db-list-item-text w-full">…</span>
+                                <span v-else-if="loyaltyHistory.error" class="db-list-item-text w-full" style="opacity:.7">
+                                    {{ loyaltyHistory.error }}
+                                </span>
+                                <span v-else-if="!loyaltyHistory.rows.length" class="db-list-item-text w-full" style="opacity:.7">
+                                    Aucun mouvement enregistré pour ce client.
+                                </span>
+                                <table v-else class="w-full" data-testid="admin-loyalty-history">
+                                    <tr v-for="(m, i) in loyaltyHistory.rows" :key="i">
+                                        <td style="padding:.15rem .5rem .15rem 0; white-space:nowrap; opacity:.6">
+                                            {{ m.date }}
+                                        </td>
+                                        <td style="padding:.15rem .5rem">{{ m.libelle }}</td>
+                                        <td style="padding:.15rem 0; text-align:right; white-space:nowrap">
+                                            <b :style="{ color: m.points < 0 ? '#b91c1c' : '#15803d' }">
+                                                {{ m.points > 0 ? '+' : '' }}{{ m.points }}
+                                            </b>
+                                            <small style="opacity:.55"> → {{ m.solde }}</small>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -237,6 +274,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import LoadingComponent from "../components/LoadingComponent";
 import statusEnum from "../../../enums/modules/statusEnum";
 import labelEnum from "../../../enums/modules/labelEnum";
@@ -261,6 +299,12 @@ export default {
         return {
             loading: {
                 isActive: false,
+            },
+            // [FIDÉLITÉ 2026-08-19] Mouvements de points du client (lecture seule).
+            loyaltyHistory: {
+                loading: false,
+                error: '',
+                rows: [],
             },
             enums: {
                 statusEnum: statusEnum,
@@ -315,6 +359,7 @@ export default {
                 this.defaultImage = res.data.data.image;
                 this.previewImage = res.data.data.image;
                 this.loading.isActive = false;
+                this.chargerHistoriqueFidelite(res.data.data.loyalty_code);
             })
             .catch((error) => {
                 this.loading.isActive = false;
@@ -322,6 +367,46 @@ export default {
         this.orderLists();
     },
     methods: {
+        /**
+         * [FIDÉLITÉ 2026-08-19] Charge les mouvements de points du client.
+         *
+         * L'endpoint est celui du comptoir (`admin/pos-loyalty/history`) : le réutiliser plutôt
+         * que d'en écrire un second garantit que la gestion et la caisse racontent la MÊME
+         * histoire. Deux sources pour un même solde, c'est deux versions devant un client qui
+         * conteste.
+         *
+         * Un échec n'est jamais bloquant : la fiche client doit s'afficher même si l'historique
+         * est indisponible (permission, réseau). On dit simplement qu'on ne peut pas l'afficher —
+         * un tableau vide laisserait croire « aucun mouvement », ce qui serait un mensonge.
+         */
+        chargerHistoriqueFidelite: function (code) {
+            if (!code) return;
+            this.loyaltyHistory.loading = true;
+            this.loyaltyHistory.error = '';
+            // Contrat EXACT de l'endpoint (verifie dans PosLoyaltyController::history et
+            // PosCustomerLookupService::history) : `data.entries`, parametre `limit`, et chaque
+            // entree porte { when, label, points, balance }. Ecrire des replis « au cas ou »
+            // serait avouer qu'on n'a pas regarde — et masquerait un changement de contrat le
+            // jour ou il arriverait.
+            // On RETOURNE la promesse : un appelant (ou un test) doit pouvoir attendre la fin
+            // du chargement plutôt que de deviner quand il est terminé.
+            return axios.get('admin/pos-loyalty/history', { params: { loyalty_code: code, limit: 15 } })
+                .then((res) => {
+                    const lignes = res?.data?.data?.entries || [];
+                    this.loyaltyHistory.rows = lignes.map((m) => ({
+                        date: m.when || '',
+                        libelle: m.label || m.type || '—',
+                        points: Number(m.points) || 0,
+                        solde: m.balance,
+                    }));
+                })
+                .catch(() => {
+                    this.loyaltyHistory.error = "Historique indisponible pour le moment.";
+                })
+                .finally(() => {
+                    this.loyaltyHistory.loading = false;
+                });
+        },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
         },

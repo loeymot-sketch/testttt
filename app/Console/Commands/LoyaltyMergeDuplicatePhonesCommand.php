@@ -208,19 +208,32 @@ class LoyaltyMergeDuplicatePhonesCommand extends Command
      */
     private function fusionner(User $principal, array $secondaires, string $canonique): void
     {
+        /*
+         * [2026-08-19] AUCUN `withoutGlobalScopes()` ICI, ET C'EST VOLONTAIRE.
+         *
+         * La première version en posait cinq, par réflexe « commande d'administration ». La
+         * sentinelle `WithoutGlobalScopesAuditSentinelTest` les a refusés — à raison : chaque
+         * contournement d'isolation doit être justifié un par un, et l'inscrire sur une liste
+         * d'exceptions aurait été traiter l'alarme au lieu de la cause.
+         *
+         * Ils n'étaient pas nécessaires : un client porte `branch_id = 0`, et `BranchScope` est
+         * un no-op explicite sur le modèle `User` (CLAUDE.md §9). Ne pas contourner est donc à la
+         * fois plus sûr et plus simple.
+         */
+
         DB::transaction(function () use ($principal, $secondaires, $canonique) {
-            $principalFrais = User::withoutGlobalScopes()->whereKey($principal->id)->lockForUpdate()->first();
+            $principalFrais = User::whereKey($principal->id)->lockForUpdate()->first();
             $solde = (int) $principalFrais->loyalty_points;
 
             foreach ($secondaires as $s) {
-                $source = User::withoutGlobalScopes()->whereKey($s->id)->lockForUpdate()->first();
+                $source = User::whereKey($s->id)->lockForUpdate()->first();
                 $points = (int) $source->loyalty_points;
                 if ($points <= 0) {
                     continue;
                 }
 
                 // 1) Retrait chez le doublon — solde à zéro, et la ligne dit pourquoi.
-                User::withoutGlobalScopes()->whereKey($source->id)->update([
+                User::whereKey($source->id)->update([
                     'loyalty_points' => 0,
                     'updated_at' => now(),
                 ]);
@@ -237,7 +250,7 @@ class LoyaltyMergeDuplicatePhonesCommand extends Command
 
                 // 2) Ajout chez le principal.
                 $solde += $points;
-                User::withoutGlobalScopes()->whereKey($principal->id)->update([
+                User::whereKey($principal->id)->update([
                     'loyalty_points' => $solde,
                     'updated_at' => now(),
                 ]);
@@ -262,7 +275,7 @@ class LoyaltyMergeDuplicatePhonesCommand extends Command
 
             // Le principal porte désormais la forme canonique : le prochain client qui donne son
             // numéro tombe sur LUI, quelle que soit l'écriture qu'il présente.
-            User::withoutGlobalScopes()->whereKey($principal->id)->update([
+            User::whereKey($principal->id)->update([
                 'phone' => $canonique,
                 'updated_at' => now(),
             ]);
