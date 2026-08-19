@@ -87,6 +87,9 @@ class AccountDeletionTest extends TestCase
         $user->apple_sub = 'sub-apple-client';
         $user->google_sub = 'sub-google-client';
         $user->loyalty_code = 'ABCD1234';
+        // Numéro DÉCLARÉ après une connexion Apple/Google : une donnée personnelle au même
+        // titre que les autres, dans une colonne distincte — donc facile à oublier.
+        $user->contact_phone = '0699999999';
         $user->save();
 
         return $user;
@@ -131,6 +134,11 @@ class AccountDeletionTest extends TestCase
         $this->assertNull($apres->google_sub, 'L\'identité Google doit avoir disparu.');
         $this->assertNull($apres->loyalty_code, 'Le code fidélité doit avoir disparu.');
         $this->assertNotSame('0612345678', $apres->phone, 'Le téléphone doit avoir disparu.');
+        // Le numéro DÉCLARÉ vit dans une autre colonne : c'est exactement le genre de champ
+        // qu'une suppression « complète » oublie. Constaté en cassant volontairement le code :
+        // sans cette ligne, retirer l'effacement ne faisait échouer AUCUN test.
+        $this->assertNull($apres->contact_phone, 'Le numéro déclaré doit avoir disparu aussi.');
+        $this->assertNull($apres->numeroJoignable(), 'Plus aucun numéro ne doit rester joignable.');
 
         // Le téléphone ne peut pas être null (colonne NOT NULL) : il porte une sentinelle.
         // Elle doit être masquée par le juge canonique, sinon elle FUIRAIT à l'écran d'une

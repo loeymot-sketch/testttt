@@ -218,15 +218,14 @@ class SocialAuthController extends Controller
         $indicatif = trim((string) ($request->post('code') ?: '+33'));
 
         // Changer un numéro déjà enregistré est une opération de PROFIL, avec ses propres
-        // garanties (le numéro sert de clé de connexion au parcours historique). Cet
-        // endpoint ne fait que COMPLÉTER un compte qui n'en a pas encore.
+        // garanties. Cet endpoint ne fait que COMPLÉTER un compte qui n'en a pas encore.
         //
-        // Attention : « pas encore » ne veut PAS dire « vide ». La colonne est NOT NULL
+        // Attention : « pas encore » ne veut PAS dire « vide ». `users.phone` est NOT NULL
         // depuis 2026_05_16_140100, et User::creating y injecte une sentinelle
         // `PENDING_CREATE_<hex>` quand aucun numéro n'est fourni. Un simple `filled()`
         // aurait donc considéré tout compte social comme déjà pourvu, et cet endpoint
         // n'aurait JAMAIS rien enregistré tout en répondant « c'est bon ».
-        if (PhoneDisplay::safe((string) $user->phone) !== null) {
+        if ($user->numeroJoignable() !== null) {
             return response()->json([
                 'status'         => true,
                 'message'        => trans('all.message.login_success'),
@@ -265,8 +264,20 @@ class SocialAuthController extends Controller
             }
         }
 
-        $user->phone = $telephone;
-        $user->country_code = $indicatif;
+        /*
+         * Le numéro va dans `contact_phone`, PAS dans `phone`. Ce n'est pas un détail de
+         * rangement : `phone` est une CLÉ dans ce système (recherche de compte, et surtout
+         * choix de l'adresse vers laquelle part le code de connexion). Y écrire un numéro
+         * que personne n'a prouvé permettait de squatter le numéro d'un tiers encore sans
+         * compte, puis de capter SES codes — vecteur reproduit par un test avant correction
+         * (voir tests/Feature/Auth/SocialPhoneSquattingTest.php et la migration
+         * 2026_08_19_140000). Ici, le numéro déclaré ne donne accès à rien : il sert
+         * uniquement à ce que l'exploitant a demandé — pouvoir appeler le client.
+         */
+        $user->contact_phone = $telephone;
+        if (blank($user->country_code)) {
+            $user->country_code = $indicatif;
+        }
         $user->save();
 
         return response()->json([
@@ -304,10 +315,10 @@ class SocialAuthController extends Controller
             'token'          => $token,
             'branch_id'      => (int) $user->branch_id,
             'user'           => new UserResource($user),
-            // Le drapeau que l'application lit pour afficher l'écran bloquant. Jugé par le
-            // helper canonique : un compte social porte une sentinelle `PENDING_…`, pas
-            // une chaîne vide (voir attacherTelephone pour le détail).
-            'phone_required' => PhoneDisplay::safe((string) $user->phone) === null,
+            // Le drapeau que l'application lit pour afficher l'écran bloquant. Il regarde
+            // les DEUX numéros — celui qui sert d'identité et celui simplement déclaré :
+            // ce qui compte ici est « peut-on joindre ce client ? », pas « qui est-il ? ».
+            'phone_required' => $user->numeroJoignable() === null,
         ], 201);
     }
 

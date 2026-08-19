@@ -86,6 +86,11 @@ class DeactivateController extends Controller
                 // l'affichage et `ValidPhone` le refuse. Réutiliser cette convention évite
                 // d'introduire un second vocabulaire que les gardes existantes ignoreraient.
                 $user->phone = 'PENDING_DELETED_' . bin2hex(random_bytes(6));
+                // [APPS 2026-08-19] Le numéro DÉCLARÉ (comptes ouverts par connexion
+                // Apple/Google) est une donnée personnelle au même titre que l'autre :
+                // l'oublier ici aurait laissé un numéro de téléphone en base après une
+                // suppression annoncée comme définitive.
+                $user->contact_phone = null;
                 $user->username = 'supprime-' . Str::random(12);
                 $user->apple_sub = null;
                 $user->google_sub = null;

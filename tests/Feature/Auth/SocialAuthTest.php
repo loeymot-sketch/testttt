@@ -357,7 +357,14 @@ class SocialAuthTest extends TestCase
             ->assertJson(['status' => true, 'phone_required' => false]);
 
         $user = User::where('apple_sub', 'sub-client-001')->first();
-        $this->assertSame('0612345678', $user->phone);
+        // Le numéro est enregistré comme donnée de CONTACT, pas comme identité : il ne doit
+        // surtout pas atterrir dans `users.phone`, qui sert de clé de recherche de compte et
+        // décide de l'adresse vers laquelle part un code de connexion (voir
+        // SocialPhoneSquattingTest pour le vecteur que cela ouvrait).
+        $this->assertSame('0612345678', $user->numeroJoignable());
+        $this->assertSame('0612345678', $user->contact_phone);
+        $this->assertNull(PhoneDisplay::safe((string) $user->phone),
+            'Un numéro déclaré sans preuve ne doit JAMAIS devenir une identité.');
 
         // Le filtre ne bloque plus : la requête va jusqu'à la validation du corps, donc
         // l'erreur n'est plus PHONE_REQUIRED. C'est ce changement de motif qui prouve

@@ -71,14 +71,14 @@ class RequireCustomerPhone
             return $next($request);
         }
 
-        // `PhoneDisplay::safe()` est le juge canonique du projet sur « ce numéro est-il
-        // réel ». La colonne `users.phone` est NOT NULL depuis la migration
-        // 2026_05_16_140100 : un compte créé sans numéro n'est donc PAS vide, il porte une
-        // sentinelle `PENDING_CREATE_<hex>` posée par User::creating. Tester `filled()`
-        // aurait laissé passer TOUS les comptes sociaux — le filtre aurait eu l'air de
-        // fonctionner sans jamais rien bloquer. On réutilise le helper existant plutôt que
-        // de réécrire ici la connaissance du préfixe : deux juges finissent par diverger.
-        if (PhoneDisplay::safe((string) $user->phone) !== null) {
+        // La question posée ici est « peut-on JOINDRE ce client ? », pas « qui est-il ? ».
+        // `numeroJoignable()` regarde donc les deux colonnes : le numéro prouvé, puis le
+        // numéro déclaré après une connexion Apple/Google. Il masque aussi la sentinelle
+        // `PENDING_…` que `User::creating` écrit quand un compte naît sans numéro
+        // (`users.phone` est NOT NULL depuis 2026_05_16_140100) : tester `filled()` aurait
+        // laissé passer TOUS les comptes sociaux, et ce filtre aurait eu l'air de
+        // fonctionner sans jamais rien bloquer.
+        if ($user->numeroJoignable() !== null) {
             return $next($request);
         }
 
