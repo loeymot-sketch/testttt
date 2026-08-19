@@ -1969,12 +1969,24 @@
       @confirmed="onCounterCollectConfirmed"
       @cancel="onCounterCollectCancel"
     />
+    <!--
+      [OWNER 2026-08-19] SONNERIE D'ARRIVÉE. La caisse n'avait qu'un sinus de synthèse de
+      0,4 s : structurellement inaudible derrière un comptoir en service. On réutilise le
+      carillon DÉJÀ livré et éprouvé de l'écran cuisine — aucun fichier de plus à déployer,
+      et un seul son à reconnaître dans tout le restaurant. Le bip de synthèse reste en
+      repli si le MP3 est refusé (autoplay, fichier absent) : mieux vaut un son faible que
+      pas de son.
+    -->
+    <audio ref="posNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
     </section>
 </template>
 <script>
 import axios from 'axios';
 // [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS local à l'encaissement.
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
+// [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
+// l'écran cuisine et l'écran de statut.
+import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
 import LoadingComponent from "../components/LoadingComponent.vue";
 import 'vue3-carousel/dist/carousel.css';
 import ItemComponent from "./ItemComponent.vue";
@@ -3042,6 +3054,16 @@ export default {
         if (this._audioCtx && typeof this._audioCtx.close === 'function') {
             this._audioCtx.close().catch(() => {});
             this._audioCtx = null;
+        }
+        // [OWNER 2026-08-19] Annule les sonneries encore programmées : sans ça, une minuterie
+        // survit au composant et tente de jouer sur un <audio> démonté.
+        if (this._sequenceurSonnerie) {
+            this._sequenceurSonnerie.annuler();
+            this._sequenceurSonnerie = null;
+        }
+        if (this._webOrderAlertTimers) {
+            this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
+            this._webOrderAlertTimers = [];
         }
     },
     mounted() {
@@ -4119,24 +4141,51 @@ export default {
                     ? true
                     : (String(soundFlag) === '1' || soundFlag === true);
                 if (!soundOn) return;
-                // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Miroir du fix
-                // PosOrdersTrackerComponent : 3 bips espacés 10s pour une commande
-                // WEB (origin='web'), façon Uber Eats — 1 seul bip de 0,4s passait
-                // inaperçu. Les autres canaux gardent le bip unique existant.
-                if (String(normalized.origin || '').toLowerCase() === 'web') {
-                    this._playWebOrderAlertSequence();
-                } else {
-                    this._playNewOrderBeep();
-                }
+                // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] 3 bips espacés de 10 s pour une
+                // commande WEB, façon Uber Eats — 1 seul bip de 0,4 s passait inaperçu.
+                // [OWNER 2026-08-19] ÉLARGI À TOUS LES CANAUX. La restriction au web était
+                // une limitation assumée du 16/08, pas une règle métier : une commande borne
+                // ou téléphone se rate tout aussi bien. Le comptoir ne notifie toujours pas
+                // (filtré plus haut) — le caissier vient de la saisir lui-même.
+                this._sonnerieArrivee();
             } catch (e) { /* defensive */ }
         },
-        _playWebOrderAlertSequence() {
-            if (!this._webOrderAlertTimers) this._webOrderAlertTimers = [];
-            this._playNewOrderBeep();
-            [10000, 20000].forEach((delay) => {
-                const t = setTimeout(() => this._playNewOrderBeep(), delay);
-                this._webOrderAlertTimers.push(t);
-            });
+        /**
+         * [OWNER 2026-08-19] Sonnerie d'arrivée : 3 fois, espacées, puis stop.
+         *
+         * Le RYTHME vit dans `helpers/orderArrivalChime.js` (partagé avec le suivi commandes,
+         * l'écran cuisine et l'écran de statut) ; ici on ne fournit que la façon d'émettre UN
+         * son. Une nouvelle arrivée REMPLACE la séquence en attente : l'ancienne version
+         * empilait ses minuteries sans borne, et cinq commandes en une minute donnaient quinze
+         * bips entrelacés — un bruit continu qu'on finit par ignorer.
+         */
+        _sonnerieArrivee() {
+            if (!this._sequenceurSonnerie) {
+                this._sequenceurSonnerie = creerSequenceurDeSonnerie();
+            }
+            this._sequenceurSonnerie.declencher(() => this._emettreSonnerie());
+        },
+        /**
+         * Émet UNE sonnerie. Le carillon MP3 d'abord — celui de l'écran cuisine, déjà livré et
+         * éprouvé — et le bip de synthèse en REPLI, jamais en plus : si le MP3 part, on ne veut
+         * pas les deux à la fois. Le repli couvre le fichier absent comme l'autoplay refusé.
+         */
+        _emettreSonnerie() {
+            const el = this.$refs && this.$refs.posNewOrderAudio;
+            if (!el || typeof el.play !== 'function') {
+                this._playNewOrderBeep();
+
+                return;
+            }
+            try {
+                el.currentTime = 0;
+                const p = el.play();
+                if (p && typeof p.catch === 'function') {
+                    p.catch(() => this._playNewOrderBeep());
+                }
+            } catch (e) {
+                this._playNewOrderBeep();
+            }
         },
         _playNewOrderBeep() {
             const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -4540,11 +4589,10 @@ export default {
                     : (String(soundFlag) === '1' || soundFlag === true);
                 if (!soundOn) return;
                 // [T-B ALERTE-WEB 2026-08-16] Même miroir côté secours polling.
-                if (String(origin || '').toLowerCase() === 'web') {
-                    this._playWebOrderAlertSequence();
-                } else {
-                    this._playNewOrderBeep();
-                }
+                // [OWNER 2026-08-19] Même séquenceur que le chemin Echo — c'est CE chemin qui
+                // sert en production, où il n'y a aucun serveur de sockets et où tout passe
+                // par le sondage. Une divergence ici serait invisible en développement.
+                this._sonnerieArrivee();
             } catch (_) { /* defensive */ }
         },
         toggleKioskCashOrderDetails(orderId) {

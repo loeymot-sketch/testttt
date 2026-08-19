@@ -20,6 +20,10 @@ import KDS from '../../resources/js/components/admin/kitchenDisplaySystem/Kitche
 const unlock = KDS.methods._unlockKdsAudio;
 const play = KDS.methods.playKdsNewOrderSound;
 const setup = KDS.methods._setupKdsAudioUnlockListeners;
+// [OWNER 2026-08-19] `playKdsNewOrderSound` ne joue plus lui-même : il cadence « 3 sonneries
+// espacées » et délègue CHAQUE sonnerie à `_emettreCarillonKds`. C'est cette émission qui
+// porte le repli autoplay (bandeau + vibreur) vérifié ici — le contexte doit donc la fournir.
+const emettre = KDS.methods._emettreCarillonKds;
 const teardown = KDS.methods._teardownKdsAudioUnlockListeners;
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -42,6 +46,7 @@ const ctx = (overrides = {}) => ({
     _kdsAudioUnlockHandler: null,
     $refs: {},
     _unlockKdsAudio: unlock,
+    _emettreCarillonKds: emettre,
     _setupKdsAudioUnlockListeners: setup,
     _teardownKdsAudioUnlockListeners: teardown,
     ...overrides,

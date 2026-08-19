@@ -1219,6 +1219,9 @@ import {
   parseOrderCreatedMs,
   shouldPlayKdsNewOrderSound,
 } from "../../../helpers/kdsDisplay";
+// [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, le suivi
+// commandes et l'écran de statut. Une 4e copie du rythme finirait par diverger.
+import { creerSequenceurDeSonnerie } from "../../../helpers/orderArrivalChime";
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
 import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
 import { ORDER_STATUS } from "../../../helpers/kdsState";
@@ -2154,6 +2157,18 @@ export default {
         return;
       }
       this._kdsLastNewOrderSoundAt = now;
+
+      // [OWNER 2026-08-19] « 3 sonneries espacées, puis stop ». L'anti-rafale ci-dessus reste
+      // au niveau de l'ARRIVÉE : le séquenceur appelle l'émission BRUTE, pas cette méthode.
+      // L'y renvoyer ferait bloquer les 2e et 3e sonneries par le seuil de 2,5 s — la commande
+      // ne serait alors annoncée qu'une fois, exactement ce qu'on cherche à corriger.
+      if (!this._sequenceurSonnerie) {
+        this._sequenceurSonnerie = creerSequenceurDeSonnerie();
+      }
+      this._sequenceurSonnerie.declencher(() => this._emettreCarillonKds());
+    },
+    /** Émet UN carillon. Séparé de la cadence : voir playKdsNewOrderSound ci-dessus. */
+    _emettreCarillonKds() {
       const el = this.$refs.kdsNewOrderAudio;
       if (!el) {
         return;
@@ -3058,6 +3073,12 @@ export default {
   },
   beforeUnmount() {
     this.stopAutoRefresh();
+    // [OWNER 2026-08-19] Annule les sonneries encore programmées : sans ça, une minuterie
+    // survit au composant et tente de jouer sur un <audio> démonté.
+    if (this._sequenceurSonnerie) {
+      this._sequenceurSonnerie.annuler();
+      this._sequenceurSonnerie = null;
+    }
     // [#2] Clear the debounced-refresh timer — without this, a refresh queued
     // <300ms before navigation fires _refreshWithCurrentFilter()+items() on the
     // torn-down component (orphan dispatch + reactive writes on a dead instance).

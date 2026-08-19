@@ -769,6 +769,9 @@ import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
+// [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, l'écran
+// cuisine et l'écran de statut. Trois copies du rythme finiraient par diverger.
+import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
 // [T-SUIVI-MINUIT 2026-08-19 · GOAL owner] Journée de SERVICE plutôt que jour
 // calendaire : une commande de 23 h 50 ne doit pas disparaître à minuit.
 import { serviceDayRange } from '../../../helpers/posServiceDay';
@@ -1290,8 +1293,12 @@ export default {
         Object.values(this._freshTimers).forEach((t) => clearTimeout(t));
         // [CAISSE-WEB-INTEL 2026-08-06] Restaure le titre d'onglet original.
         try { if (this._baseDocTitle) document.title = this._baseDocTitle; } catch (_e) { /* defensive */ }
-        // [T-B ALERTE-WEB 2026-08-16] Annule les bips web programmés en attente —
-        // sinon un bip peut sonner après le démontage de l'écran.
+        // [T-B ALERTE-WEB 2026-08-16] Annule les bips programmés en attente — sinon un bip
+        // peut sonner après le démontage de l'écran.
+        // [OWNER 2026-08-19] Le séquenceur porte désormais ces minuteries ; l'ancien tableau
+        // reste vidé pour les contextes fabriqués par les bancs d'essai, qui le renseignent.
+        try { this._sequenceurSonnerie?.annuler?.(); } catch (_e) { /* defensive */ }
+        this._sequenceurSonnerie = null;
         this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
         this._webOrderAlertTimers = [];
         // [RED heal P3 2026-08-06] Libère l'AudioContext (les navigateurs en
@@ -2102,23 +2109,35 @@ export default {
                 alertService.info(label);
             } catch (_e) { /* defensive */ }
             if (!this._newOrderSoundEnabled()) return;
-            // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] "la caisse n'arrête pas de sonner
-            // pendant 30s" (en réalité : 1 seul bip de 0,4s, noyé dans le bruit ambiant,
-            // raté) → 3 bips espacés de 10s pour une commande WEB, façon Uber Eats. La
-            // borne garde son bip unique existant (non demandé par l'owner, pas de raison
-            // de le changer).
-            if (src === 'online') {
-                this._playWebOrderAlertSequence();
-            } else {
-                this._playNewOrderBeep();
-            }
+            // [T-B ALERTE-WEB 2026-08-16 · GOAL owner] « la caisse n'arrête pas de sonner
+            // pendant 30s » (en réalité : 1 seul bip de 0,4 s, noyé dans le bruit ambiant,
+            // raté) → 3 bips espacés de 10 s, façon Uber Eats.
+            //
+            // [OWNER 2026-08-19] ÉLARGI À TOUS LES CANAUX D'ARRIVÉE. Le 16/08, seul le WEB
+            // avait été demandé et la BORNE gardait son bip unique — décision explicitement
+            // bornée à l'époque. Le propriétaire a tranché depuis : « 3 sonneries espacées,
+            // puis stop » pour toute commande qui arrive. Une commande borne se rate aussi
+            // bien qu'une commande web, et rien ne justifiait deux régimes d'alerte sur le
+            // même comptoir. Les commandes SAISIES au comptoir ne notifient toujours pas :
+            // le caissier vient de les taper lui-même (garde `src` au-dessus).
+            this._sonnerieArrivee();
         },
-        _playWebOrderAlertSequence() {
-            this._playNewOrderBeep();
-            [10000, 20000].forEach((delay) => {
-                const t = setTimeout(() => this._playNewOrderBeep(), delay);
-                this._webOrderAlertTimers.push(t);
-            });
+        /**
+         * [OWNER 2026-08-19] Sonnerie d'arrivée : 3 fois, espacées, puis stop. Le rythme vit
+         * dans `helpers/orderArrivalChime.js`, partagé avec les trois autres surfaces ; ici on
+         * ne fournit que la façon d'émettre UN son.
+         *
+         * Le séquenceur est créé à la demande (et non dans `data`) pour que les bancs d'essai
+         * puissent appeler cette méthode sur un contexte fabriqué à la main, comme ils le font
+         * déjà. Une nouvelle arrivée REMPLACE la séquence en attente : l'ancienne version
+         * empilait ses minuteries sans borne, et cinq commandes en une minute donnaient quinze
+         * bips entrelacés — un bruit continu qu'on finit par ignorer.
+         */
+        _sonnerieArrivee() {
+            if (!this._sequenceurSonnerie) {
+                this._sequenceurSonnerie = creerSequenceurDeSonnerie();
+            }
+            this._sequenceurSonnerie.declencher(() => this._playNewOrderBeep());
         },
         // [CAISSE-WEB-INTEL 2026-08-06] Miroir exact du beep PosComponent
         // (POS-9.1.11 / H.3.4) — Web Audio, aucun asset, resume() anti-autoplay.

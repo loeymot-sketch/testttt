@@ -16,6 +16,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * beep PosComponent") : PosOrdersTrackerComponent.vue (écran "Suivi commandes")
  * et PosComponent.vue (écran caisse principal, 2 points d'entrée : Echo
  * temps-réel + secours polling).
+ *
+ * [OWNER 2026-08-19] LE RÉGIME EST DÉSORMAIS LE MÊME POUR TOUS LES CANAUX D'ARRIVÉE.
+ * Le 16/08, seul le WEB avait été demandé et la BORNE gardait son bip unique — une
+ * limitation assumée à l'époque, pas une règle métier. Le propriétaire a tranché depuis :
+ * « 3 sonneries espacées, puis stop » pour toute commande qui arrive. Le cas BORNE
+ * ci-dessous a donc changé d'attendu VOLONTAIREMENT ; ce n'est pas une régression.
+ *
+ * Le rythme lui-même ne vit plus ici : il est dans `helpers/orderArrivalChime.js`, partagé
+ * avec l'écran cuisine et l'écran de statut, et couvert par `orderArrivalChime.spec.js`.
  */
 import PosOrdersTrackerComponent from '../../resources/js/components/admin/pos/PosOrdersTrackerComponent.vue';
 
@@ -34,7 +43,7 @@ describe('PosOrdersTrackerComponent — 3 bips espacés 10s pour une commande WE
             _playNewOrderBeep: vi.fn(),
             _newOrderSoundEnabled: () => true,
             sourceOf: PosOrdersTrackerComponent.methods.sourceOf,
-            _playWebOrderAlertSequence: PosOrdersTrackerComponent.methods._playWebOrderAlertSequence,
+            _sonnerieArrivee: PosOrdersTrackerComponent.methods._sonnerieArrivee,
             ...overrides,
         };
     }
@@ -58,13 +67,33 @@ describe('PosOrdersTrackerComponent — 3 bips espacés 10s pour une commande WE
         expect(c._playNewOrderBeep, 'jamais un 4e bip').toHaveBeenCalledTimes(3);
     });
 
-    it('commande KIOSK (borne) : garde le bip UNIQUE existant, non demandé par l\'owner', () => {
+    it('commande KIOSK (borne) : MÊME régime que le web depuis l\'arbitrage owner du 19/08', () => {
         const c = ctx();
         PosOrdersTrackerComponent.methods._maybeNotifyIncomingOrder.call(c, { id: 2, source_surface: 'kiosk' });
 
-        expect(c._playNewOrderBeep).toHaveBeenCalledTimes(1);
+        expect(c._playNewOrderBeep, 'immédiat à la réception').toHaveBeenCalledTimes(1);
+        vi.advanceTimersByTime(10000);
+        expect(c._playNewOrderBeep, '2e sonnerie à 10s').toHaveBeenCalledTimes(2);
+        vi.advanceTimersByTime(10000);
+        expect(c._playNewOrderBeep, '3e sonnerie à 20s').toHaveBeenCalledTimes(3);
         vi.advanceTimersByTime(30000);
-        expect(c._playNewOrderBeep, 'aucune répétition pour la borne').toHaveBeenCalledTimes(1);
+        expect(c._playNewOrderBeep, 'puis stop — jamais une 4e').toHaveBeenCalledTimes(3);
+    });
+
+    /**
+     * LE DÉFAUT DE L'ANCIENNE VERSION : elle empilait ses minuteries sans borne. Cinq
+     * commandes en une minute donnaient quinze bips entrelacés — un bruit continu qu'on
+     * finit par ignorer, c'est-à-dire l'inverse du but.
+     */
+    it('deux arrivées rapprochées ne s\'empilent pas : 3 sonneries après la DERNIÈRE', () => {
+        const c = ctx();
+        PosOrdersTrackerComponent.methods._maybeNotifyIncomingOrder.call(c, { id: 10, source_surface: 'web' });
+        vi.advanceTimersByTime(2000);
+        PosOrdersTrackerComponent.methods._maybeNotifyIncomingOrder.call(c, { id: 11, source_surface: 'kiosk' });
+
+        expect(c._playNewOrderBeep, 'une sonnerie immédiate par arrivée').toHaveBeenCalledTimes(2);
+        vi.advanceTimersByTime(60000);
+        expect(c._playNewOrderBeep, '2 immédiates + les 2 restantes de la dernière, PAS 6').toHaveBeenCalledTimes(4);
     });
 
     it('commande COMPTOIR (pos) : aucune notification du tout (comportement existant préservé)', () => {

@@ -87,6 +87,9 @@ import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import alertService from "../../../services/alertService";
 import { onEvents } from "../../../services/eventContract";
 import ossSyncService from "../../../services/OssSyncService";
+// [OWNER 2026-08-19] Rythme de la sonnerie — partagé avec la caisse, le suivi commandes et
+// l'écran cuisine, pour que les quatre surfaces ne puissent pas diverger.
+import { creerSequenceurDeSonnerie } from "../../../helpers/orderArrivalChime";
 
 export default {
   name: "PreparingAndReadyComponent",
@@ -183,6 +186,10 @@ export default {
     try { this._audioCtx?.close?.(); } catch (_) { /* noop */ }
     this._audioCtx = null;
     this._audioInitListener = null;
+    // [OWNER 2026-08-19] Annule les sonneries encore programmées — sinon une minuterie
+    // survit au composant et tente de jouer sur un contexte audio déjà fermé.
+    try { this._sequenceurSonnerie?.annuler?.(); } catch (_) { /* noop */ }
+    this._sequenceurSonnerie = null;
     // [RED-team R4 V1.0.2 2026-05-17] Release wakeLock + drop visibility listener.
     try {
       if (this._onVisibilityChange) document.removeEventListener('visibilitychange', this._onVisibilityChange);
@@ -371,6 +378,25 @@ export default {
       // which is the documented `[OSS-B-02]` heal path Option C). Operator-
       // attended surfaces (`authBranchId() > 0`) keep full chime behaviour.
       if (this.authBranchId() <= 0) return;
+
+      // [OWNER 2026-08-19] « 3 sonneries espacées, puis stop ».
+      //
+      // NOTE DE PORTÉE, à ne pas confondre : cet écran n'a PAS d'événement « commande qui
+      // arrive » — il annonce les commandes PRÊTES. C'est donc cet événement-là qui prend le
+      // nouveau rythme. Et il ne concerne QUE les écrans tenus par le personnel : la garde
+      // ci-dessus écarte déjà le mur client, qui n'a ni opérateur ni geste de déblocage audio.
+      // Aucun client en salle n'entendra trois carillons.
+      if (!this._sequenceurSonnerie) {
+        this._sequenceurSonnerie = creerSequenceurDeSonnerie();
+      }
+      this._sequenceurSonnerie.declencher(() => this._emettreCarillonOss());
+    },
+    /**
+     * Émet UN carillon (accord ascendant 4 tons). Séparé de la cadence : les gardes de contexte
+     * audio sont réévaluées à CHAQUE sonnerie, car un contexte peut se suspendre entre deux
+     * (veille d'écran, Safari) — les figer à la première rendrait les suivantes muettes.
+     */
+    _emettreCarillonOss() {
       // [iter15-mega-fix C-034 round-7 2026-05-10] Lazy-init pattern: bail out
       // silently if the user has not yet interacted with the screen. We do
       // NOT create a fresh AudioContext per call (that was flooding the
