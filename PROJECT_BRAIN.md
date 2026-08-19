@@ -47,6 +47,80 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 (soir) — Les 4 points « Reste ouvert » du GOAL caisse/cuisine sont fermés**
+>
+> HEAD `d80f280b5`, branche `pos/category-first-caisse-2026-06-23`. 2 commits
+> (`a4e1b97d4`, `d80f280b5`). **NON POUSSÉ, NON DÉPLOYÉ** — attente owner.
+>
+> ⚠️ **Un AUTRE agent travaillait dans le MÊME arbre pendant cette session** (fichiers cuisine
+> modifiés à 19:10–19:14, commit `eca082572` intercalé ENTRE mes deux commits). Tout a été
+> commité en `git commit --only <chemins>` : mes deux commits ne contiennent que mes fichiers,
+> vérifié après coup sur `git show --stat`. Restent à eux dans l'arbre : `daily-book.*`,
+> `vendor.js`, `FICHE_PARAMETRES_INGREDIENTS.md`, `tools/deploy-lecayenne.sh`.
+>
+> **1. P1 — La cuisine n'était prévenue par AUCUN signal quand une commande prête était annulée.**
+> La carte quittait `visibleStatuses()` et disparaissait au sondage suivant, sans un mot : le plat
+> restait sur le passe. Mesuré : 12 annulations réelles depuis PREPARING/PREPARED/OUT, dont #6598
+> annulée **51 min après le bip « Prêt »**. Bandeau « ANNULÉE — RETIRER DU PASSE » alimenté par
+> `order_status_transitions` (seule table qui sait d'où venait la commande) et transporté dans le
+> `meta` du sondage board — donc **sans temps réel** (`BROADCAST_DRIVER=log` en prod) et **sans
+> `Teleport`** (c'est lui qui avait figé le board vide tout un service le 17/08).
+> **Piège du jumeau évité** : `order_status_transitions.order_type` porte `Order` **OU**
+> `FrontendOrder` (les deux valeurs existent en base) — filtrer sur `Order::class` aurait rendu
+> le bandeau MUET pour toute commande venue du site. On joint par `order_id` seul.
+> L'accusé « Vu » est **local au poste** (un plat est sur UN passe), clé portant l'horodatage
+> d'annulation, donc une NOUVELLE annulation ré-alerte.
+> Coût mesuré sur le chemin sondé 5 s : **1 requête / 2,2 ms** dans le cas normal (fenêtre vide),
+> *index range scan* sur `order_status_transitions_occurred_at_index`, pas de balayage.
+> Preuve écran : commande créée puis annulée par le VRAI chemin serveur, bandeau vu (N°V0099 +
+> motif + bouton Vu), disparu à l'accusé, **non revenu au sondage suivant**.
+>
+> **2. P1 — 577 commandes non terminées invisibles.** Depuis la « journée de service », tout ce
+> qui était antérieur avait disparu du tableau : ni suivi, ni livraison, ni annulation possibles.
+> Mesuré : **577**, dont **486 PAYÉES**, la plus ancienne du **2026-05-28**. Panneau dépliable
+> `GET admin/pos-order/stale`, **séparé des voies** (y fondre 577 lignes noierait les 2 commandes
+> du service). Compteur = TOTAL réel, troncature ÉCRITE à l'écran. Le plancher 5 h serveur est
+> épinglé par test sur le helper front : s'ils divergeaient, il existerait une bande horaire où
+> une commande n'est **ni** dans le tableau **ni** en souffrance — invisible à nouveau.
+>
+> **3. P1 — « Annuler » affiché sur une commande scellée dans un Z clos.** Refus NF525 juste, mais
+> bouton mort. La sortie légitime (contrepartie comptable `refund-with-counter-entry`) existait
+> déjà et n'était offerte nulle part depuis cet écran : elle l'est maintenant, pour qui porte
+> `pos-refund`. `SealedOrderGuard::sealedOrderIds()` ajouté — **le prédicat n'est PAS réécrit**
+> (mêmes bornes, mêmes opérateurs), seulement mis en lot : 1 requête au lieu de 100 sur un tableau
+> rafraîchi toutes les 5 s. **Équivalence prouvée sur 400 commandes réelles : 68 scellées,
+> 0 désaccord**, plus un test sur les cas limites.
+>
+> **4. Arbitrage owner — `pos-refund` au rôle Caissier : NON TRANCHÉ, volontairement.**
+> Annuler une commande PAYÉE rend l'argent : le serveur exige `pos-refund`, que le rôle Caissier
+> n'a pas (refus délibéré, « vecteur de remboursement de masse » inscrit dans le seeder).
+> **40 comptes** concernés. Je n'ai accordé aucun droit — c'est une décision qui déplace de
+> l'argent. Ce que j'ai corrigé à la place : **le mensonge de l'écran**. Le bouton ne promet plus
+> ce que le serveur refusera ; un marqueur inerte dit LEQUEL des deux refus s'applique
+> (« Clôturé » / « Responsable ») et qui peut agir.
+> Rapport chiffré, 3 options et commande exacte : `reports/arbitrages/POS_REFUND_CAISSIER_2026-08-19.md`.
+> ⚠️ Y est écrit noir sur blanc : une commande `tinker` ne survit pas à un `db:seed` — il faut
+> AUSSI le seeder + une migration dédiée, sinon le droit disparaît silencieusement au redéploiement.
+>
+> **Défaut trouvé EN REGARDANT L'ÉCRAN** (pas en relisant le code) : le panneau affichait la clé
+> brute `all.order.status.8`. Cette clé n'existe QUE côté PHP. Corrigé + épinglé par spec.
+>
+> **Gates** : Vitest **427 fichiers / 3437 verts** (2 suites d'abord tombées sur `ENOSPC` — disque
+> à 87 %, 1,8 Go libres — **rejouées seules : 15/15 vertes**, l'échec était l'environnement).
+> Feature **4735 verts / 8 échecs**, et ces 8 sont EXACTEMENT les 4 fichiers déjà prouvés
+> préexistants ce matin (`RolePermissionSeederTest` 3, `PrinterControllerTest` 3,
+> `PrinterHostAllowlistSentinelTest` 1, `IdempotencyRequiredRoutesCoverageTest` 1 = 8) — rejoués
+> isolément, ils donnent 8 : donc **tout le reste de la suite est vert**, mes 14 nouveaux tests
+> PHP inclus. Zones gelées : **0 ligne**. `fiscal:verify-chain --all` : **CHAIN OK** (6 branches).
+>
+> ⚠️ Mon `npm run production` a MINIFIÉ trois bundles **suivis en git** commités en version non
+> minifiée (`vendor.js`, `daily-book.js/.css`) : restaurés à leur état commité, jamais commités.
+> À savoir avant le prochain build dans cet arbre.
+>
+> **Reste ouvert** : le panneau « en souffrance » n'affiche que les 50 plus récentes des 577 (la
+> troncature est dite, mais il n'y a pas de pagination) ; les **73 commandes scellées** n'ont pour
+> seule sortie que la contrepartie comptable ; l'arbitrage `pos-refund` attend l'owner.
+
 > **2026-08-19 — GOAL owner terrain caisse/cuisine : 6 défauts + 5 auto-infligés corrigés — DÉPLOYÉ**
 >
 > HEAD `f53b3ee70`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
