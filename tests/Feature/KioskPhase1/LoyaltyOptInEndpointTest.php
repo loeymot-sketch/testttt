@@ -28,8 +28,25 @@ class LoyaltyOptInEndpointTest extends TestCase
 
         $response->assertStatus(200)->assertJson(['status' => true]);
 
-        $user = User::where('phone', '+33612345678')->first();
-        $this->assertNotNull($user);
+        /*
+         * [SUPERVISION 2026-08-19] CE TEST CHERCHAIT LE NUMÉRO TEL QU'IL L'AVAIT ENVOYÉ.
+         *
+         * Depuis le 2026-08-19, l'inscription enregistre la FORME CANONIQUE du numéro
+         * (« 0612345678 ») et non plus la forme saisie — décision documentée dans
+         * `LoyaltyController::register` : réparer la lecture sans corriger l'écriture
+         * reviendrait à semer indéfiniment des écritures divergentes. Le compte EST donc bien
+         * créé ; c'est la recherche par égalité exacte de ce test qui ne le trouvait plus.
+         *
+         * Cause racine du défaut d'origine : « 06… » et « +33 6… » créaient DEUX comptes pour
+         * la même personne — un cas réel mesuré avec 500 points d'un côté et 0 de l'autre.
+         *
+         * On cherche donc comme le code cherche : par toutes les écritures du même numéro.
+         * Épingler une forme de stockage précise ici ferait de ce test un frein au jour où
+         * la normalisation évoluera, alors que ce qu'il doit prouver est le CONSENTEMENT RGPD.
+         */
+        $tel = app(\App\Services\Identity\PhoneIdentity::class);
+        $user = User::whereIn('phone', $tel->variants('+33612345678'))->first();
+        $this->assertNotNull($user, 'Le compte doit exister, quelle que soit l’écriture stockée du numéro.');
         $this->assertNotNull($user->loyalty_code);
 
         $consent = LoyaltyConsent::where('user_id', $user->id)->first();

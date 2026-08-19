@@ -40,7 +40,27 @@ class LoyaltyApiTest extends TestCase
         $response->assertJson([
             'status' => true,
         ]);
-        $this->assertDatabaseHas('users', ['phone' => '+33612345678']);
+        /*
+         * [SUPERVISION 2026-08-19] LE NUMÉRO EST DÉSORMAIS STOCKÉ SOUS SA FORME CANONIQUE.
+         *
+         * On envoie « +33612345678 », la base retient « 0612345678 ». Ce n'est pas une
+         * régression mais la correction d'un défaut mesuré : « 06… » et « +33 6… » créaient
+         * DEUX comptes pour la même personne (un cas réel avec 500 points d'un côté, 0 de
+         * l'autre). Les surfaces cherchent maintenant toutes les écritures d'un numéro
+         * (`PhoneIdentity::variants`), et l'écriture a été alignée sur la lecture — sinon on
+         * continuerait à semer des formes divergentes que la lecture devrait rattraper à vie.
+         *
+         * Ce test épingle donc les deux choses qui comptent : le compte existe pour CE numéro
+         * quelle que soit l'écriture retenue, ET la forme stockée est bien la canonique (si
+         * elle cessait de l'être, les doublons reviendraient).
+         */
+        $tel = app(\App\Services\Identity\PhoneIdentity::class);
+        $this->assertDatabaseHas('users', ['phone' => $tel->normalize('+33612345678')]);
+        $this->assertSame(
+            1,
+            \App\Models\User::withoutGlobalScopes()->whereIn('phone', $tel->variants('+33612345678'))->count(),
+            'Un seul compte pour ce numéro — deux écritures = deux comptes = le défaut d’origine.'
+        );
         $this->assertNotNull($response->json('data.loyalty_code'));
     }
 
