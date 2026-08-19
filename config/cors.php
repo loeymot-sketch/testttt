@@ -27,6 +27,28 @@ return [
         // server runs on assorted local ports. Safe: only matches localhost/127.0.0.1 (same box),
         // never a remote origin; production uses the explicit APP_URL / FRONTEND_WEB_DOMAIN above.
         '#^http://(localhost|127\.0\.0\.1):\d{2,5}$#',
+
+        /*
+         * [APPS 2026-08-19] Origines des APPLICATIONS iOS et Android (Capacitor).
+         *
+         * Une application empaquetée sert ses fichiers depuis un serveur LOCAL interne à la
+         * vue web. Son origine n'est donc pas « lecayenne.fr » mais :
+         *   · https://localhost      — configuration retenue ici (iosScheme + androidScheme = https)
+         *   · capacitor://localhost  — schéma par défaut de Capacitor sur iOS
+         *   · ionic://localhost      — schéma hérité, gardé par sécurité si la config change
+         *
+         * Sans ces motifs, TOUS les appels de l'application sont refusés par la politique
+         * d'origine du navigateur. Le défaut est particulièrement traître : la carte
+         * s'affiche (elle vient de fichiers embarqués) et l'application paraît fonctionner,
+         * mais la connexion, la commande et la fidélité échouent — le « ça a l'air bien mais
+         * rien ne marche » que ce dépôt a déjà connu avec `api-base-url`.
+         *
+         * Le motif exige `localhost` SANS port : ajouter `:\d+` ne l'attraperait pas. Il ne
+         * peut désigner aucune machine distante — c'est toujours l'appareil lui-même.
+         */
+        '#^https://localhost$#',
+        '#^capacitor://localhost$#',
+        '#^ionic://localhost$#',
     ],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
