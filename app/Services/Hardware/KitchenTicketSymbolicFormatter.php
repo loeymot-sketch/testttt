@@ -598,6 +598,19 @@ final class KitchenTicketSymbolicFormatter
     {
         $menu = $this->menuLine($snapshot);
 
+        // [OWNER 2026-08-19, 2ᵉ passe] Repli sur la formule REVENDIQUÉE par l'instruction.
+        // La caisse (pos-wizard) ne scelle AUCUN addon dans le composition_snapshot du
+        // produit parent — vérifié en base : `"addons": []` sur 100 % des lignes. Le badge
+        // ne tenait donc que par la ligne de formule vendue à côté ; depuis qu'elle est
+        // repliée (doublon signalé par l'owner), le mot « MENU » avait disparu de la
+        // cuisine et un menu complet s'affichait « FRITES » — voire RIEN quand la sauce
+        // frites vivait sur la ligne repliée. Le parent revendique pourtant lui-même
+        // « + Menu (Frites + Boisson) » : on lit cette revendication, on ne devine pas.
+        // Mêmes règles que menuLine() : frites+boisson = MENU, une moitié seule = partielle.
+        if ($menu === '') {
+            $menu = $this->claimedFormuleBadge($instruction);
+        }
+
         if ($menu === 'MENU' || $menu === 'FRITES') {
             $sym = $this->fritesSauceSymbol($instruction);
 
@@ -620,6 +633,54 @@ final class KitchenTicketSymbolicFormatter
         }
 
         return $menu;
+    }
+
+    /**
+     * NATURE de la formule revendiquée par l'instruction du produit parent : « MENU »,
+     * « FRITES », « BOISSON » ou rien.
+     *
+     * Le wizard écrit « + <nom de la formule> (+2,50 €) » dans l'instruction du produit ;
+     * c'est le SEUL lien parent→formule qui existe (order_items n'a aucune colonne de
+     * rattachement). On réutilise l'extracteur du replieur plutôt que d'en écrire un
+     * second : deux lectures de la même revendication finiraient par diverger, et le
+     * ticket dirait alors autre chose que l'écran.
+     *
+     * Jumeau strict : resources/js/helpers/kdsSymbolic.js claimedFormuleBadge().
+     */
+    public function claimedFormuleBadge(?string $instruction): string
+    {
+        if (! is_string($instruction) || $instruction === '') {
+            return '';
+        }
+
+        $hasFull = $hasFrites = $hasBoisson = false;
+        foreach (KitchenBundledAddonCollapser::claimedAddonNames($instruction) as $nom) {
+            $frites = (bool) preg_match('/frite/u', $nom);
+            $boisson = (bool) preg_match('/boisson|drink/u', $nom);
+            $formule = (bool) preg_match('/\bmenu\b|\bformule\b/u', $nom);
+
+            if ($frites) {
+                $hasFrites = true;
+            }
+            if ($boisson) {
+                $hasBoisson = true;
+            }
+            if ($formule && ! $frites && ! $boisson) {
+                $hasFull = true; // « Menu complet », « Formule » — la formule entière
+            }
+        }
+
+        if ($hasFull || ($hasFrites && $hasBoisson)) {
+            return 'MENU';
+        }
+        if ($hasFrites) {
+            return 'FRITES';
+        }
+        if ($hasBoisson) {
+            return 'BOISSON';
+        }
+
+        return '';
     }
 
     /**

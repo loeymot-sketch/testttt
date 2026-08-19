@@ -44,6 +44,9 @@ namespace App\Services\Hardware;
  */
 class KitchenBundledAddonCollapser
 {
+    /** Puce des options de formule écrite par le wizard (« ↳ Sauce frites: … »). */
+    private const PUCE_OPTION = "\u{21b3}";
+
     /**
      * @param  iterable<object>  $items  Lignes de commande (OrderItem ou équivalent)
      * @return array<int, object>        Nouvelle liste ; les lignes dont la quantité
@@ -62,16 +65,23 @@ class KitchenBundledAddonCollapser
 
         // 1. Recenser ce que chaque ligne revendique, en quantité.
         //    Une ligne ne se revendique JAMAIS elle-même (anti-auto-suppression).
+        //    On mémorise AUSSI l'index du parent revendiquant — une entrée par unité —
+        //    parce qu'un repli n'est pas une suppression : la ligne repliée doit LÉGUER
+        //    ses consignes de cuisine à celui qui la revendique (§3).
         $quota = [];
-        foreach ($rows as $item) {
-            $ownName = $this->normalize($this->nameOf($item));
+        $claimers = [];
+        foreach ($rows as $index => $item) {
+            $ownName = self::normalize($this->nameOf($item));
             $qty = $this->quantityOf($item);
 
-            foreach ($this->claimedAddonNames($this->instructionOf($item)) as $claimed) {
+            foreach (self::claimedAddonNames($this->instructionOf($item)) as $claimed) {
                 if ($claimed === $ownName) {
                     continue;
                 }
                 $quota[$claimed] = ($quota[$claimed] ?? 0) + $qty;
+                for ($k = 0; $k < $qty; $k++) {
+                    $claimers[$claimed][] = $index;
+                }
             }
         }
 
@@ -80,19 +90,38 @@ class KitchenBundledAddonCollapser
         }
 
         // 2. Consommer le quota sur les lignes correspondantes.
-        $out = [];
-        foreach ($rows as $item) {
-            $name = $this->normalize($this->nameOf($item));
+        $out = [];   // index de ligne d'origine => objet à rendre (l'ordre est conservé)
+        $legs = [];  // index du parent         => consignes héritées de la ligne repliée
+        foreach ($rows as $index => $item) {
+            $name = self::normalize($this->nameOf($item));
             $remaining = $quota[$name] ?? 0;
 
             if ($remaining <= 0) {
-                $out[] = $item;
+                $out[$index] = $item;
                 continue;
             }
 
             $qty = $this->quantityOf($item);
             $consumed = min($remaining, $qty);
             $quota[$name] = $remaining - $consumed;
+
+            // 3. LEGS — [OWNER 2026-08-19, 2ᵉ passe] Le repli initial DÉTRUISAIT ce que la
+            //    ligne de formule était SEULE à porter. Mesuré en base avant correctif :
+            //    5 formules dont la « Sauce frites : … » n'existe QUE là (commande 5544 :
+            //    Andalouse), et 17 parents qui revendiquent un menu sans porter eux-mêmes
+            //    la moindre consigne — leur badge tombait donc à VIDE : plus de « MENU »,
+            //    plus de boisson, la cuisine ne préparait plus la formule. On ne jette
+            //    plus : on transmet au parent, qui les affiche dans SON bloc.
+            $consignes = $this->kitchenDirectives($this->instructionOf($item));
+            for ($k = 0; $k < $consumed; $k++) {
+                $parent = array_shift($claimers[$name]);
+                if ($parent === null || $consignes === []) {
+                    continue;
+                }
+                foreach ($consignes as $ligne) {
+                    $legs[$parent][] = $ligne;
+                }
+            }
 
             $left = $qty - $consumed;
             if ($left <= 0) {
@@ -101,10 +130,107 @@ class KitchenBundledAddonCollapser
 
             $clone = clone $item;
             $clone->quantity = $left;
-            $out[] = $clone;
+            $out[$index] = $clone;
+        }
+
+        // 4. Appliquer les legs sur des CLONES — jamais sur le modèle source, qui reste la
+        //    ligne comptable intacte (aucune écriture, aucun effet prix/TVA/fiscal).
+        foreach ($legs as $parentIndex => $lignes) {
+            if (! isset($out[$parentIndex])) {
+                continue;
+            }
+            $parent = $out[$parentIndex];
+            $instruction = $this->instructionOf($parent);
+            $deja = [];
+            foreach ($this->kitchenDirectives($instruction) as $existante) {
+                $deja[$this->directiveKey($existante)] = true;
+            }
+
+            $ajouts = [];
+            foreach ($lignes as $ligne) {
+                $cle = $this->directiveKey($ligne);
+                if (isset($deja[$cle])) {
+                    continue;
+                }
+                $deja[$cle] = true;
+                $ajouts[] = $ligne;
+            }
+            if ($ajouts === []) {
+                continue;
+            }
+
+            $clone = clone $parent;
+            $clone->instruction = $this->appendDirectives($instruction, $ajouts);
+            $out[$parentIndex] = $clone;
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * Consignes de CUISINE portées par une instruction — celles qu'un repli ne doit
+     * jamais faire disparaître : les options de formule (lignes « ↳ »), la sauce des
+     * frites et la boisson incluse. Tout le reste (nom du produit en tête, note libre
+     * entre crochets) appartient à la ligne repliée et n'a pas à migrer.
+     *
+     * Jumeau strict : resources/js/helpers/kdsBundledAddons.js kitchenDirectives().
+     *
+     * @return array<int, string>
+     */
+    private function kitchenDirectives(string $instruction): array
+    {
+        $bracket = mb_strpos($instruction, '[');
+        if ($bracket !== false) {
+            $instruction = mb_substr($instruction, 0, $bracket);
+        }
+
+        $out = [];
+        foreach (preg_split('/\R/u', $instruction) ?: [] as $rawLine) {
+            $line = trim((string) $rawLine);
+            if ($line === '') {
+                continue;
+            }
+            if (str_starts_with($line, self::PUCE_OPTION)
+                || preg_match('/^boisson\s*:/iu', $line)
+                || preg_match('/sauce\s*frites\s*:/iu', $line)
+            ) {
+                $out[] = $line;
+            }
         }
 
         return $out;
+    }
+
+    /**
+     * Clé d'unicité d'une consigne : deux « Sauce frites : … » ne coexistent jamais sur un
+     * même bloc (seule la première est lue à l'affichage — la seconde ne ferait que du bruit).
+     */
+    private function directiveKey(string $ligne): string
+    {
+        if (preg_match('/sauce\s*frites\s*:/iu', $ligne)) {
+            return 'sauce-frites';
+        }
+
+        return self::normalize($ligne);
+    }
+
+    /**
+     * Insère les consignes héritées AVANT la note libre du caissier, qui doit rester la
+     * DERNIÈRE ligne : les deux surfaces tronquent au premier crochet pour l'ignorer.
+     *
+     * @param  array<int, string>  $ajouts
+     */
+    private function appendDirectives(string $instruction, array $ajouts): string
+    {
+        $bracket = mb_strpos($instruction, '[');
+        $tete = $bracket === false ? $instruction : mb_substr($instruction, 0, $bracket);
+        $note = $bracket === false ? '' : mb_substr($instruction, $bracket);
+
+        $tete = rtrim($tete, "\r\n");
+        $bloc = implode("\n", $ajouts);
+        $fusion = $tete === '' ? $bloc : $tete."\n".$bloc;
+
+        return $note === '' ? $fusion : $fusion."\n".$note;
     }
 
     /**
@@ -116,7 +242,7 @@ class KitchenBundledAddonCollapser
      *
      * @return array<int, string> noms normalisés
      */
-    private function claimedAddonNames(string $instruction): array
+    public static function claimedAddonNames(string $instruction): array
     {
         // [RED-TEAM 2026-08-19] N'examiner QUE la partie composée par le wizard.
         // La note libre du caissier est toujours écrite EN DERNIER, entre crochets
@@ -144,7 +270,7 @@ class KitchenBundledAddonCollapser
             $withoutPlus = trim(mb_substr($line, 1));
             $withoutPrice = trim((string) preg_replace('/\s*\(\s*\+[^()]*\)\s*$/u', '', $withoutPlus));
             if ($withoutPrice !== '') {
-                $names[] = $this->normalize($withoutPrice);
+                $names[] = self::normalize($withoutPrice);
             }
         }
 
@@ -152,7 +278,7 @@ class KitchenBundledAddonCollapser
     }
 
     /** Jumeau de normalizeLabel() côté JS : sans accent, sans casse, espaces réduits. */
-    private function normalize(string $value): string
+    private static function normalize(string $value): string
     {
         $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT', $value);
         if ($ascii === false) {
