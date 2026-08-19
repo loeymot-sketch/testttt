@@ -54,7 +54,20 @@ function normalizeLabel(value) {
  * @returns {string[]} noms normalisés
  */
 function claimedAddonNames(instruction) {
-    const text = typeof instruction === 'string' ? instruction : '';
+    const raw = typeof instruction === 'string' ? instruction : '';
+
+    // [RED-TEAM 2026-08-19] N'examiner QUE la partie composée par le wizard.
+    // La note libre du caissier est toujours écrite EN DERNIER, entre crochets
+    // (`pos-wizard.js` : `extraLines.push('[' + instructionText.trim() + ']')`),
+    // et c'est un `<textarea>` : elle peut donc contenir des retours à la ligne
+    // et des lignes commençant par « + ». Sans cette coupe, une note telle que
+    //     + Frites
+    //     Merci
+    // sur un sandwich faisait DISPARAÎTRE de la cuisine la vraie ligne « Frites »
+    // commandée à côté — facturée, jamais préparée. On tronque au premier crochet.
+    const bracket = raw.indexOf('[');
+    const text = bracket === -1 ? raw : raw.slice(0, bracket);
+
     const names = [];
 
     text.split('\n').forEach((rawLine) => {

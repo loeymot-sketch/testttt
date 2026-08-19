@@ -130,12 +130,18 @@ class CleanupStalePendingKioskOrders
         // 8/9 des commandes borne UNPAID fantômes observées sont au statut PREPARED (status=8) :
         // la borne Plan-B cash auto-accepte (ACCEPT), le KDS la fait avancer ACCEPT→PREPARING→
         // PREPARED avant que la caisse encaisse. Le bloc kiosk ci-dessus ne peut PAS les CANCEL :
-        // PREPARED→CANCELED est ILLÉGALE dans le OrderStateMachine FROZEN (l.65-71, PREPARED
-        // n'autorise que OUT_FOR_DELIVERY/DELIVERED/RETURNED) — les inclure ferait throw
-        // IllegalTransitionException et avorterait tout le job. Donc au lieu d'une transition de
-        // statut interdite, on SOFT-DELETE le fantôme ($order->delete() → deleted_at) : il quitte
-        // « à encaisser » ET le KDS (tous deux filtrés par le SoftDeletingScope) SANS toucher le
-        // frozen state machine ni changer son statut.
+        // On SOFT-DELETE donc le fantôme ($order->delete() → deleted_at) : il quitte
+        // « à encaisser » ET le KDS (tous deux filtrés par le SoftDeletingScope) sans changer
+        // son statut.
+        //
+        // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19] MISE À JOUR — la justification d'origine
+        // (« PREPARED→CANCELED est ILLÉGALE dans le state machine gelé ») N'EST PLUS VRAIE :
+        // la transition a été ouverte sous gate propriétaire. Le comportement de ce job est
+        // volontairement INCHANGÉ (sa requête code en dur PENDING/ACCEPT/PREPARING et cette
+        // branche appelle ->delete() sans consulter allows()), mais l'arbitrage se rouvre :
+        // le janitor POURRAIT désormais annuler proprement (transition auditée + motif +
+        // événements) au lieu d'un soft-delete muet qui laisse status=PREPARED pour toujours.
+        // À trancher par le propriétaire — ne pas laisser ce commentaire mentir en attendant.
         //
         // GARDE ABSOLUE NF525 (mirror du bloc kiosk) : whereNull('fiscal_sequence_no') +
         // payment_status ∈ {UNPAID, PENDING_COUNTER} → une commande encaissée (PAID + séquence
@@ -475,7 +481,7 @@ class CleanupStalePendingKioskOrders
                 'branch_id'  => $locked->branch_id,
                 'status'     => (int) $locked->status,
                 'ttl_min'    => $ttlMinutes,
-                'reason'     => 'PREPARED→CANCELED illegal in frozen state machine; soft-delete purge instead.',
+                'reason'     => 'Fantome borne PREPARED perime : purge par soft-delete (statut inchange).',
             ]);
 
             $locked->refresh();

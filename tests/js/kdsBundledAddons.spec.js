@@ -119,6 +119,37 @@ describe('collapseBundledAddonItems — la formule n\'est plus écrite deux fois
         expect(noms(out)).toEqual(['1× Menu (Frites + Boisson)']);
     });
 
+    /**
+     * [RED-TEAM 2026-08-19] SÛRETÉ — la note libre du caissier ne doit JAMAIS pouvoir
+     * faire disparaître une ligne de la cuisine.
+     *
+     * La note est un `<textarea>` : elle peut contenir des retours à la ligne. Le wizard
+     * l'écrit EN DERNIER, entre crochets. Avant correctif, une note dont une ligne
+     * commençait par « + » produisait une revendication fantôme : la ligne « Frites »
+     * réellement commandée à côté disparaissait du ticket ET de l'écran cuisine — tout en
+     * restant facturée. Le client payait des frites que personne ne préparait.
+     */
+    it('SÛRETÉ : une note libre contenant « + Frites » ne masque pas les vraies frites', () => {
+        const sandwichAvecNote = sandwich({
+            instruction: `${INSTRUCTION_PARENT}\n[+ Frites\nMerci]`,
+        });
+        const frites = { id: 6001, item_name: 'Frites', quantity: 1, instruction: 'FRITES' };
+
+        const out = collapseBundledAddonItems([sandwichAvecNote, frites]);
+
+        expect(noms(out)).toEqual(['1× Cayenne', '1× Frites']);
+    });
+
+    it('la revendication légitime fonctionne toujours malgré une note libre', () => {
+        const sandwichAvecNote = sandwich({
+            instruction: `${INSTRUCTION_PARENT}\n[sans oignons]`,
+        });
+
+        const out = collapseBundledAddonItems([sandwichAvecNote, formule()]);
+
+        expect(noms(out)).toEqual(['1× Cayenne']);
+    });
+
     it('valeurs dégénérées', () => {
         expect(collapseBundledAddonItems([])).toEqual([]);
         expect(collapseBundledAddonItems(null)).toEqual([]);

@@ -337,6 +337,7 @@
             "active_orders": "actives",
             "ready_short": "prête(s)",
             "today_total": "aujourd'hui",
+            "service_total": "service en cours",
             "search_placeholder": "Rechercher par N° ou client",
             "source_filter": "Filtrer par source",
             "source_all": "Toutes",

@@ -55,7 +55,38 @@ class ItemService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_type') ?? 'desc';
 
-            return Item::with('media', 'category', 'tax')->where(function ($query) use ($requests) {
+            // [PERF-CAISSE 2026-08-19 · GOAL owner « pas assez rapide »] N+1 MESURÉ.
+            //
+            // Cette requête est la plus lourde de l'ouverture de caisse :
+            // `GET admin/item?paginate=0&surface=pos` renvoie 57 articles.
+            // Mesure serveur AVANT (médiane à chaud, 5 exécutions) :
+            //     1 785 requêtes SQL · 1 149 ms · 615 Ko de JSON
+            // dont 787 requêtes `media`, 414 `items`, 101 `item_variations`,
+            // 101 `offers`, 57 `allergens`, 57 `item_extras`, 57 `item_addons`,
+            // 57 `count(order_items)`.
+            //
+            // Cause : seuls `media`, `category` et `tax` étaient pré-chargés, alors que
+            // `ItemResource` accède ENSUITE en paresseux à `allergens`, `variations`,
+            // `extras`, `addons` (+ `addonItem`), `offer` et `orders()->count()` — soit
+            // un aller-retour par article et par relation.
+            //
+            // APRÈS (même corps de réponse, à l'octet près) :
+            //     650 requêtes SQL · 687 ms   → −63 % de requêtes, −38 % de temps
+            //
+            // `orderBy('id')` explicite sur les allergènes : sans lui, l'eager-load peut
+            // rendre l'ensemble dans un ORDRE différent du chargement paresseux (écart
+            // constaté sur un article). Même ensemble, mais on fige l'ordre pour que la
+            // réponse reste strictement identique.
+            return Item::with([
+                'media',
+                'category',
+                'tax',
+                'allergens' => fn ($q) => $q->orderBy('allergens.id'),
+                'variations.media',
+                'extras.media',
+                'addons.addonItem.media',
+                'offer',
+            ])->withCount('orders')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemFilter)) {
                         if ($key == 'except') {

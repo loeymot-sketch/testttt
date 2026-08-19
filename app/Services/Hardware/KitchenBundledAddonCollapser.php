@@ -118,6 +118,21 @@ class KitchenBundledAddonCollapser
      */
     private function claimedAddonNames(string $instruction): array
     {
+        // [RED-TEAM 2026-08-19] N'examiner QUE la partie composée par le wizard.
+        // La note libre du caissier est toujours écrite EN DERNIER, entre crochets
+        // (`pos-wizard.js` : `extraLines.push('[' . instructionText . ']')`), et c'est
+        // un `<textarea>` : elle peut donc contenir des retours à la ligne et des lignes
+        // commençant par « + ». Sans cette coupe, une note telle que
+        //     + Frites
+        //     Merci
+        // sur un sandwich faisait DISPARAÎTRE du ticket cuisine la vraie ligne « Frites »
+        // commandée à côté — facturée, jamais préparée. On tronque au premier crochet.
+        // Jumeau strict : resources/js/helpers/kdsBundledAddons.js.
+        $bracket = mb_strpos($instruction, '[');
+        if ($bracket !== false) {
+            $instruction = mb_substr($instruction, 0, $bracket);
+        }
+
         $names = [];
 
         foreach (preg_split('/\R/u', $instruction) ?: [] as $rawLine) {
