@@ -1622,8 +1622,10 @@
     <PosLoyaltyIdentifyModal
         :open="loyaltyIdentifyOpen"
         :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
+        :cart-has-items="carts.length > 0"
         @close="loyaltyIdentifyOpen = false"
         @attached="onLoyaltyAttached"
+        @attach-to-cart="onLoyaltyAttachedToCart"
         @use-points="onLoyaltyUsePoints"
     />
     <!-- [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) -->
@@ -3338,6 +3340,33 @@ export default {
                 points: client.balance,
                 loading: false,
             };
+            /*
+             * ON N'ÉCRIT VOLONTAIREMENT PAS `checkoutProps.form.loyalty_customer_code` ICI.
+             *
+             * Ce chemin-là rattache une commande DÉJÀ VALIDÉE (crédit rétroactif serveur). Le
+             * panier, lui, a déjà été vidé par la confirmation : poser le code sur le formulaire
+             * ferait hériter la vente SUIVANTE du client précédent — un « jumeau » silencieux qui
+             * créditerait un inconnu. Le rattachement du panier a sa propre porte ci-dessous.
+             */
+        },
+        /**
+         * [FIDÉLITÉ PANIER 2026-08-19] Le client est identifié PENDANT la saisie de la vente.
+         *
+         * Rien n'est écrit en base ici : on renseigne le champ que la commande porte déjà
+         * (`PosOrderRequest:215` l'accepte, `OrderService:1204` le persiste,
+         * `AwardLoyaltyPointsOnDelivery` crédite). PaymentComponent (zone gelée §7) transmet le
+         * formulaire tel quel via son spread `currentFormSnapshot` — aucune retouche nécessaire
+         * du fichier gelé.
+         */
+        onLoyaltyAttachedToCart(payload) {
+            const client = payload && payload.customer ? payload.customer : null;
+            if (!client || !client.loyalty_code) return;
+            this.checkoutProps.form.loyalty_customer_code = client.loyalty_code;
+            this.selectedCustomerLoyalty = {
+                code: client.loyalty_code,
+                points: client.balance ?? null,
+                loading: false,
+            };
         },
         /**
          * Passe le relais à la fenêtre de REMISE existante, qui porte déjà toutes ses gardes.
@@ -4706,7 +4735,13 @@ export default {
                 pos_received_amount: null,
                 quote_token: null,
                 quote_signature: null,
+                // [FIDÉLITÉ PANIER 2026-08-19] LE CLIENT NE SURVIT JAMAIS À SA VENTE.
+                // On vient d'ouvrir une porte qui ÉCRIT ce champ (rattachement au panier) ;
+                // ouvrir un écrivain sans ouvrir l'effaceur, c'est créditer le client précédent
+                // sur la vente du suivant — silencieusement, et au détriment des deux.
+                loyalty_customer_code: null,
             };
+            this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Clear any
             // previously tracked order so the next order:confirmed event
             // captures fresh state. PaymentComponent emits payment-form:reset
@@ -5073,6 +5108,10 @@ export default {
                 // next order:confirmed event. Mirrors the owner direction
                 // "loyalty applies during this order; on completion → reset".
                 this.currentLoyaltyOrder = null;
+                // [FIDÉLITÉ PANIER 2026-08-19] Vider le panier, c'est abandonner CETTE vente —
+                // donc aussi le client qu'on y avait rattaché. Miroir exact de resetPaymentForm.
+                this.checkoutProps.form.loyalty_customer_code = null;
+                this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
                 alertService.success(this.$t('message.cart_reset') || 'Panier vidé.');
             }).catch();
         },
@@ -5279,6 +5318,12 @@ export default {
                     pos_received_amount: null,
                     pos_customer_name: (this.checkoutProps.form.pos_customer_name || '').trim() || null,
                     pos_customer_phone: (this.checkoutProps.form.pos_customer_phone || '').trim() || null,
+                    // [FIDÉLITÉ PANIER 2026-08-19] La commande téléphone construit son PROPRE
+                    // payload et omettait ce champ — un habitué qui commande par téléphone ne
+                    // pouvait donc JAMAIS cumuler, même une fois la porte du comptoir ouverte.
+                    // Le « jumeau oublié » du chemin principal (PaymentComponent le transmet, lui,
+                    // par le spread de currentFormSnapshot).
+                    loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code || null,
                     // [W4-E5 SCHEDULED 2026-07-20] Commande téléphone programmée : datetime
                     // cible "Y-m-d H:i:s" (null = ASAP), validée serveur (min lead cuisine).
                     scheduled_at: this.checkoutProps.form.scheduled_at || null,
@@ -5302,6 +5347,10 @@ export default {
                 // vers la commande suivante (miroir resetPaymentForm).
                 this.checkoutProps.form.scheduled_at = null;
                 this.checkoutProps.form.token = '';
+                // [FIDÉLITÉ PANIER 2026-08-19] Même règle que resetPaymentForm : le client ne
+                // survit pas à sa vente, sinon l'appel téléphonique suivant hérite du précédent.
+                this.checkoutProps.form.loyalty_customer_code = null;
+                this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
                 await this.loadKioskCashOrders();
             } catch (err) {
                 const msg = err?.response?.data?.message

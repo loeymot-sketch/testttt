@@ -161,9 +161,9 @@
                           (« grisée / inaccessible »), et le corriger d'un côté pour le refaire de
                           l'autre n'aurait servi à rien.
                         -->
-                        <p v-if="!orderId" class="pos-loy-id__manque" data-testid="loy-id-no-order">
-                            Aucune commande en cours&nbsp;: ajoutez des articles et validez la vente, puis revenez
-                            ici pour lui créditer ses points.
+                        <p v-if="!orderId && !cartHasItems" class="pos-loy-id__manque" data-testid="loy-id-no-order">
+                            Aucun article au panier&nbsp;: ajoutez des articles, puis rattachez le client —
+                            ses points seront crédités automatiquement à l'encaissement.
                         </p>
 
                         <!--
@@ -342,7 +342,7 @@
                         <button
                             type="button"
                             class="pos-loy-id__btn pos-loy-id__btn--primary"
-                            :disabled="occupe || !orderId"
+                            :disabled="occupe || (!orderId && !cartHasItems)"
                             data-testid="loy-id-attach"
                             @click="rattacher"
                         >{{ occupe ? '…' : 'Cumuler sur cette vente' }}</button>
@@ -408,8 +408,18 @@ export default {
     props: {
         open: { type: Boolean, default: false },
         orderId: { type: [Number, String], default: null },
+        /**
+         * [FIDÉLITÉ PANIER 2026-08-19] Y a-t-il une vente EN COURS DE SAISIE (panier non vide) ?
+         *
+         * Le rattachement avait DEUX moments possibles et n'en connaissait qu'un. `orderId` ne
+         * désigne qu'une commande DÉJÀ VALIDÉE — donc le geste naturel du comptoir (« vous avez
+         * la carte ? » pendant qu'on compose le panier) tombait dans le seul cas non prévu :
+         * bouton pâle, message « Aucune commande en cours », et le client repartait sans points.
+         * Mesuré avant correction : 1817 ventes caisse, 12 portant un code fidélité.
+         */
+        cartHasItems: { type: Boolean, default: false },
     },
-    emits: ['close', 'attached', 'use-points'],
+    emits: ['close', 'attached', 'attach-to-cart', 'use-points'],
     data() {
         return {
             onglet: 'phone',
@@ -592,7 +602,26 @@ export default {
         // ── LES DEUX GESTES ──────────────────────────────────────────────────────────────────
 
         async rattacher() {
-            if (this.occupe || !this.client || !this.orderId) return;
+            if (this.occupe || !this.client) return;
+
+            /*
+             * DEUX MOMENTS, UN SEUL GESTE POUR LE CAISSIER.
+             *
+             * Pas encore de commande, mais un panier en cours → on ne peut RIEN écrire côté
+             * serveur (la vente n'existe pas), et il ne faut surtout pas la créer ici. On note
+             * le client sur le formulaire de la vente : `OrderService` lit
+             * `loyalty_customer_code` à la création et `AwardLoyaltyPointsOnDelivery` crédite
+             * tout seul. C'est le chaînon qui manquait — le champ existait, était accepté par
+             * `PosOrderRequest:215` et persisté, mais AUCUNE surface ne l'écrivait jamais.
+             *
+             * Commande déjà validée → chemin serveur historique (crédit rétroactif), inchangé.
+             */
+            if (!this.orderId) {
+                this.$emit('attach-to-cart', { customer: this.client });
+                this.succes = `${this.client.name} suivra cette vente — ses points seront crédités à l'encaissement.`;
+                return;
+            }
+
             this.occupe = true;
             this.erreur = '';
 
