@@ -18,6 +18,7 @@
  */
 
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
+import { claimedFormuleBadge } from './kdsBundledAddons.js';
 
 // Group keys are surfaced to i18n via `label.kds_group_<key>`.
 // Heuristic-keyword regex per group. The first match wins.
@@ -317,7 +318,12 @@ export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
         // symbolique « MENU : SYM » → on les retire ici (anti double-menu / verbeux).
         // [D-1 GOAL-8AXES 2026-08-05] + « Formule : … » : compo, jamais une note client —
         // sa boisson est extraite du BRUT avant ce drop, rien n'est perdu (parité PHP).
-        if (/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b|^formule\s*:/i.test(t)) return false;
+        if (/sauce\s*frites|menu\s*\(\s*frites|^formule\s*:/i.test(t)) return false;
+        // [OWNER 2026-08-19, 2ᵉ passe] La revendication « + <formule> » est RENDUE par le badge
+        // (MENU / FRITES / BOISSON) : la garder en note l'afficherait une SECONDE fois — le
+        // doublon signalé par l'owner, vu sur la commande réelle 5135. On ne droppe que ce que
+        // le badge rend : « + Cheddar » reste une note. Jumeau PHP : cleanInstruction().
+        if (t.startsWith('+') && claimedFormuleBadge(t) !== '') return false;
         if (/^[+↳]/.test(t)) return true;                   // autres formule / notes → KEEP
         if (/^-\s/.test(t)) return false;                   // bare crudités-removal (structured covers it)
         if (KDS_COMPO_LINE_RE.test(t)) return false;        // compo blob "Viandes : … Sauce : …" → DROP (dup)
