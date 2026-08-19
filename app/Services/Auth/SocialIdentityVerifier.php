@@ -46,6 +46,9 @@ class SocialIdentityVerifier
     /** Durée de mise en cache du trousseau public d'un fournisseur. */
     private const CACHE_TROUSSEAU = 21600; // 6 h
 
+    /** Intervalle minimal entre deux rafraîchissements forcés du trousseau (anti-abus). */
+    private const FREIN_RAFRAICHISSEMENT = 60; // 1 min
+
     private const FOURNISSEURS = [
         'apple' => [
             'jwks' => 'https://appleid.apple.com/auth/keys',
@@ -189,6 +192,17 @@ class SocialIdentityVerifier
         $cle = 'social_jwks:' . $fournisseur;
 
         if ($forcerRafraichissement) {
+            // Un `kid` inconnu est le signal d'une rotation de clés — mais c'est AUSSI ce
+            // qu'obtient quiconque envoie un identifiant de clé au hasard. Sans frein, chaque
+            // jeton bidon nous ferait rappeler le trousseau d'Apple ou de Google : au mieux
+            // on se fait limiter par eux, au pire on leur sert de levier d'amplification.
+            // Un rafraîchissement par minute suffit largement — une rotation de clés se
+            // propage en heures, jamais en secondes.
+            $verrou = 'social_jwks_refresh:' . $fournisseur;
+            if (Cache::get($verrou)) {
+                return null;
+            }
+            Cache::put($verrou, true, self::FREIN_RAFRAICHISSEMENT);
             Cache::forget($cle);
         }
 

@@ -232,6 +232,31 @@ class SocialAuthTest extends TestCase
     }
 
     /** @test */
+    public function un_identifiant_de_cle_inconnu_ne_fait_pas_marteler_le_fournisseur(): void
+    {
+        // Un `kid` inconnu est le signal d'une rotation de clés chez Apple ou Google — il
+        // faut donc rafraîchir le trousseau. Mais c'est AUSSI ce qu'obtient quiconque envoie
+        // un identifiant de clé au hasard : sans frein, chaque jeton bidon nous ferait
+        // rappeler leurs serveurs, et on se ferait limiter (ou on leur servirait de levier).
+        //
+        // Comptage attendu sur DEUX tentatives : 1 lecture initiale + 1 rafraîchissement
+        // forcé = 2 appels. La seconde tentative ne doit en déclencher AUCUN.
+        $entete = ['alg' => 'RS256', 'kid' => 'kid-inexistant', 'typ' => 'JWT'];
+        $charge = [
+            'iss' => 'https://appleid.apple.com', 'aud' => self::AUDIENCE, 'sub' => 'sub-x',
+            'iat' => time() - 10, 'exp' => time() + 600,
+        ];
+        $signe = self::b64url(json_encode($entete)) . '.' . self::b64url(json_encode($charge));
+        openssl_sign($signe, $sig, self::paire(), OPENSSL_ALGO_SHA256);
+        $jeton = $signe . '.' . self::b64url($sig);
+
+        $this->postJson('/api/auth/social/apple', ['id_token' => $jeton])->assertStatus(422);
+        $this->postJson('/api/auth/social/apple', ['id_token' => $jeton])->assertStatus(422);
+
+        Http::assertSentCount(2);
+    }
+
+    /** @test */
     public function un_compte_du_personnel_ne_peut_pas_etre_pris_par_connexion_sociale(): void
     {
         // Un compte NON-INVITÉ (personnel, gérant) ne s'ouvre jamais par cette porte,
