@@ -630,6 +630,9 @@ import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
+// [T-SUIVI-MINUIT 2026-08-19 · GOAL owner] Journée de SERVICE plutôt que jour
+// calendaire : une commande de 23 h 50 ne doit pas disparaître à minuit.
+import { serviceDayRange } from '../../../helpers/posServiceDay';
 import appService from '../../../services/appService';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import ReceiptComponent from './ReceiptComponent.vue';
@@ -1372,12 +1375,27 @@ export default {
                 if (this._refetchQueued) { this._refetchQueued = false; this._debouncedFetch(); }
             }
         },
+        /**
+         * [T-SUIVI-MINUIT 2026-08-19 · GOAL owner] Bornes de la JOURNÉE DE SERVICE.
+         *
+         * Ce tableau ne chargeait que le jour calendaire : Le Cayenne servant tard,
+         * une commande prise à 23 h 50 DISPARAISSAIT à 00 h 00 alors que la cuisine
+         * était encore dessus — plus moyen de la suivre, de la marquer livrée ni de
+         * l'annuler. C'est l'une des deux causes du « je n'arrive pas à annuler les
+         * commandes passées il y a quelques heures » (l'autre, la machine à états,
+         * est traitée sous LOCK-OSM-CANCEL-AFTER-READY).
+         *
+         * Avant 5 h du matin, la veille reste donc affichée avec le jour courant.
+         * Passé cette heure, comportement strictement identique à avant : un seul
+         * jour. La décision « board du jour » documentée plus bas pour des raisons
+         * de charge est préservée — elle n'est élargie que sur la poignée d'heures
+         * où elle coupait le service en deux.
+         *
+         * Logique et cas limites (mois, année, heure réglable) :
+         * resources/js/helpers/posServiceDay.js + tests/js/posServiceDay.spec.js.
+         */
         _todayRange() {
-            const d = new Date();
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return { from: `${y}-${m}-${day}`, to: `${y}-${m}-${day}` };
+            return serviceDayRange();
         },
         async markDelivered(order) {
             if (!order || order._delivering) return;
