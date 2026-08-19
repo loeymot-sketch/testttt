@@ -53,7 +53,7 @@ class AddSandwichClassiqueCommand extends Command
     public function handle(): int
     {
         $dry = (bool) $this->option('dry-run');
-        $stats = ['items' => 0, 'variations' => 0, 'extras' => 0, 'recipe_lines' => 0];
+        $stats = ['items' => 0, 'variations' => 0, 'extras' => 0, 'addons' => 0, 'recipe_lines' => 0];
 
         foreach (self::CLONES as $spec) {
             $source = Item::where('slug', $spec['source'])->whereNull('deleted_at')->first();
@@ -70,11 +70,12 @@ class AddSandwichClassiqueCommand extends Command
 
             $stats['variations'] += $this->cloneVariations($source->id, $target->id, $dry);
             $stats['extras'] += $this->cloneExtras($source->id, $target->id, $dry);
+            $stats['addons'] += $this->cloneAddons($source->id, $target->id, $dry);
             $stats['recipe_lines'] += $this->cloneRecipeLines($source->id, $target->id, $spec['exclude_raw_materials'], $dry);
         }
 
         $prefix = $dry ? '[dry-run] ' : '';
-        $this->info("{$prefix}Sandwich/Galette Classique — items:{$stats['items']} variations:{$stats['variations']} extras:{$stats['extras']} recette:{$stats['recipe_lines']}.");
+        $this->info("{$prefix}Sandwich/Galette Classique — items:{$stats['items']} variations:{$stats['variations']} extras:{$stats['extras']} formules:{$stats['addons']} recette:{$stats['recipe_lines']}.");
 
         return self::SUCCESS;
     }
@@ -146,6 +147,53 @@ class AddSandwichClassiqueCommand extends Command
                 'caution'           => $row->caution,
                 'status'            => $row->status,
                 'visible_on'        => $row->visible_on,
+            ]);
+        }
+
+        return $created;
+    }
+
+    /**
+     * [OWNER 2026-08-19] Clone les FORMULES (item_addons : « Menu (Frites + Boisson) »,
+     * « Frites Seules », « Boisson Seule »).
+     *
+     * Elles manquaient : le propriétaire demandait « vraiment toute la même chose que le
+     * Cayenne », mais sans ces lignes le Sandwich Classique ne pouvait PAS être passé en
+     * menu à la caisse — le bloc « Formule » du wizard restait vide. Constaté sur les deux
+     * bases : Cayenne 3 formules, Classique 0.
+     *
+     * Idempotent comme les autres clonages : on saute une formule déjà présente
+     * (même produit d'addon, même rôle).
+     */
+    private function cloneAddons(int $sourceItemId, int $targetItemId, bool $dry): int
+    {
+        $created = 0;
+        $rows = DB::table('item_addons')
+            ->where('item_id', $sourceItemId)
+            ->whereNull('deleted_at')
+            ->get();
+
+        foreach ($rows as $row) {
+            $exists = DB::table('item_addons')
+                ->where('item_id', $targetItemId)
+                ->where('addon_item_id', $row->addon_item_id)
+                ->where('role', $row->role)
+                ->whereNull('deleted_at')
+                ->exists();
+            if ($exists) {
+                continue;
+            }
+            $created++;
+            if ($dry) {
+                continue;
+            }
+            DB::table('item_addons')->insert([
+                'item_id'              => $targetItemId,
+                'addon_item_id'        => $row->addon_item_id,
+                'addon_item_variation' => $row->addon_item_variation,
+                'role'                 => $row->role,
+                'created_at'           => now(),
+                'updated_at'           => now(),
             ]);
         }
 
