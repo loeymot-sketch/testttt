@@ -120,6 +120,12 @@
        E6) : ce niveau est le seul point commun aux deux modes. Alimenté par le
        poll kds-order existant via le store (meta.scheduled_upcoming) ; liste
        vide ou meta absente ⇒ rien ne s'affiche. Affichage seul (V1). -->
+  <!-- [SIGNAL ANNULATION CUISINE 2026-08-19] Bandeau « RETIRER DU PASSE ». Placé AVANT le
+       bandeau des programmées : un plat déjà fait qu'il faut retirer prime sur une commande
+       qui n'existe pas encore. Même point de montage racine (seul point commun aux deux
+       layouts V2 + legacy), même alimentation par le poll existant (meta.recently_canceled),
+       même repli : liste vide ou meta absente ⇒ rien ne s'affiche. -->
+  <KdsCanceledBanner :entries="kdsRecentlyCanceled" />
   <KdsScheduledBanner :entries="kdsScheduledUpcoming" />
   <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
@@ -1240,6 +1246,8 @@ import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 import AvailabilityTogglePanel from "../shared/AvailabilityTogglePanel.vue";
 // [E6 KDS-SCHEDULED 2026-07-20] Bandeau commandes programmées à venir.
 import KdsScheduledBanner from "./KdsScheduledBanner.vue";
+// [SIGNAL ANNULATION CUISINE 2026-08-19] Bandeau des commandes annulées à retirer du passe.
+import KdsCanceledBanner from "./KdsCanceledBanner.vue";
 // [RED-TEAM 2026-08-19] Repli des lignes de formule déjà décrites sous leur parent.
 import { collapseBundledAddonItems } from '../../../helpers/kdsBundledAddons.js';
 
@@ -1260,6 +1268,8 @@ export default {
     AvailabilityTogglePanel,
     // [E6 KDS-SCHEDULED 2026-07-20] Bandeau programmées à venir.
     KdsScheduledBanner,
+    // [SIGNAL ANNULATION CUISINE 2026-08-19] Bandeau « retirer du passe ».
+    KdsCanceledBanner,
   },
   data() {
     return {
@@ -1633,6 +1643,12 @@ export default {
     // undefined ⇒ la prop `entries` retombe sur son défaut [] (masqué).
     kdsScheduledUpcoming: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/scheduledUpcoming"];
+    },
+    // [SIGNAL ANNULATION CUISINE 2026-08-19] Annulations récentes de commandes qui étaient
+    // SUR le board (meta kds-order). Getter absent (specs à $store mocké) ⇒ undefined ⇒ la
+    // prop `entries` retombe sur son défaut [] ⇒ bandeau masqué, aucune spec cassée.
+    kdsRecentlyCanceled: function () {
+      return this.$store.getters["kitchenDisplaySystemOrder/recentlyCanceled"];
     },
     // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Nombre de tickets cuisine en échec —
     // pilote le badge d'avertissement en en-tête KDS.

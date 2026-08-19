@@ -58,11 +58,23 @@ class KitchenDisplaySystemController extends AdminController
                 $scheduledUpcoming = [];
             }
 
+            // [SIGNAL ANNULATION CUISINE 2026-08-19] Commandes annulées alors qu'elles étaient
+            // SUR le board — la carte disparaissait au sondage suivant sans un mot, et le plat
+            // restait sur le passe. Même piggyback que le bandeau « programmées » (zéro requête
+            // HTTP en plus, fonctionne sans serveur de sockets). Même filet fail-safe : ce
+            // bandeau ne doit JAMAIS pouvoir faire tomber le board — repli [].
+            try {
+                $recentlyCanceled = $this->kitchenDisplaySystemOrderService->recentlyCanceled();
+            } catch (Exception $canceledException) {
+                $recentlyCanceled = [];
+            }
+
             return KDSOrderDetailsResource::collection($orders)->additional([
                 'meta' => [
                     'overflow' => $this->kitchenDisplaySystemOrderService->lastListOverflow(),
                     'limit' => 50,
                     'scheduled_upcoming' => $scheduledUpcoming,
+                    'recently_canceled' => $recentlyCanceled,
                 ],
             ]);
         } catch (Exception $exception) {

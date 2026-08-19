@@ -13,6 +13,11 @@ export const kitchenDisplaySystemOrder = {
         // parallèle, peut ne pas encore exister). Toujours un tableau :
         // meta absente/vide ⇒ [] (bandeau masqué, zéro erreur).
         scheduledUpcoming: [],
+        // [SIGNAL ANNULATION CUISINE 2026-08-19] Commandes annulées ALORS QU'ELLES ÉTAIENT
+        // sur le board — meta.recently_canceled de GET admin/kds-order. Sans ce canal, la
+        // carte disparaissait au sondage suivant sans un mot et le plat restait sur le passe.
+        // Toujours un tableau : meta absente/inattendue ⇒ [] (bandeau masqué, zéro erreur).
+        recentlyCanceled: [],
     },
     getters: {
         lists: function (state) {
@@ -23,6 +28,9 @@ export const kitchenDisplaySystemOrder = {
         },
         scheduledUpcoming: function (state) {
             return state.scheduledUpcoming;
+        },
+        recentlyCanceled: function (state) {
+            return state.recentlyCanceled;
         },
     },
     actions: {
@@ -43,6 +51,12 @@ export const kitchenDisplaySystemOrder = {
                         context.commit(
                             'scheduledUpcoming',
                             meta && Array.isArray(meta.scheduled_upcoming) ? meta.scheduled_upcoming : []
+                        );
+                        // [SIGNAL ANNULATION CUISINE 2026-08-19] Même commit défensif : un
+                        // serveur plus ancien (ou une réponse tronquée) ⇒ [] ⇒ bandeau masqué.
+                        context.commit(
+                            'recentlyCanceled',
+                            meta && Array.isArray(meta.recently_canceled) ? meta.recently_canceled : []
                         );
                     }
                     resolve(res);
@@ -88,6 +102,9 @@ export const kitchenDisplaySystemOrder = {
         },
         scheduledUpcoming: function (state, payload) {
             state.scheduledUpcoming = Array.isArray(payload) ? payload : []
+        },
+        recentlyCanceled: function (state, payload) {
+            state.recentlyCanceled = Array.isArray(payload) ? payload : []
         },
     },
 }

@@ -327,6 +327,132 @@ class KitchenDisplaySystemOrderService
     }
 
     /**
+     * [SIGNAL ANNULATION CUISINE 2026-08-19] Commandes annulées ALORS QU'ELLES ÉTAIENT SUR LE BOARD.
+     *
+     * LE DÉFAUT RÉPARÉ. Quand la caisse annule une commande déjà affichée en cuisine, sa carte
+     * disparaît au sondage suivant — sans un mot. Le cuisinier ne voit rien partir : le plat reste
+     * sur le passe, il part au client suivant ou finit à la poubelle sans que personne ne le sache.
+     * Le board n'avait AUCUN canal pour dire « celle-là, retire-la ». Constat en base au
+     * 2026-08-19 : 12 annulations réelles depuis PREPARING/PREPARED/OUT_FOR_DELIVERY, dont la
+     * commande #6598 annulée 51 minutes APRÈS le bip « Prêt ».
+     *
+     * POURQUOI `order_status_transitions` ET PAS `orders`. La table `orders` ne retient que le
+     * statut COURANT (16) : elle ne sait pas dire si la commande était sur le board avant de
+     * disparaître, ni quand. La ligne de transition, elle, porte `from_status` — c'est la seule
+     * source qui répond à la vraie question posée ici : « une carte VIENT-ELLE de disparaître de
+     * MON écran ? ».
+     *
+     * PÉRIMÈTRE = EXACTEMENT `visibleStatuses()`. On ne signale que ce que le cuisinier a pu voir
+     * disparaître. Une commande annulée depuis PENDING n'a jamais atteint le board : la signaler
+     * serait du bruit pur. Une commande annulée depuis DELIVERED est déjà partie de la cuisine.
+     * Le périmètre est donc dérivé du MÊME `KitchenReleaseRule::visibleStatuses()` que le board —
+     * s'il change un jour, le signal suit tout seul, sans jumeau à ne pas oublier.
+     *
+     * FILTRE DE RELEASE. Une commande non libérée (impayée hors POS cash) n'apparaît jamais sur le
+     * board : `applyBoardReleaseFilter` est ré-appliqué ici pour que « je l'ai vue » et « on me
+     * prévient qu'elle part » restent le même ensemble.
+     *
+     * PAS DE FILTRE `order_type` SUR LA TRANSITION. `Order` et `FrontendOrder` écrivent dans la
+     * MÊME table `orders` et la colonne `order_status_transitions.order_type` porte l'un OU
+     * l'autre nom de classe (vérifié en base : les deux valeurs existent). Filtrer sur
+     * `Order::class` rendrait MUET tout ce qui vient du site — le « jumeau oublié » classique de
+     * ce dépôt. On joint donc par `order_id` seul.
+     *
+     * PAS DE TEMPS RÉEL. L'entrée voyage dans le `meta` du sondage board existant (zéro requête
+     * HTTP supplémentaire), donc elle fonctionne avec `BROADCAST_DRIVER=log` — la production n'a
+     * aucun serveur de sockets.
+     *
+     * NF525 : lecture seule, aucune écriture, chaîne d'audit intacte.
+     *
+     * @return array<int, array{id: int, order_serial_no: mixed, queue_number: mixed, canceled_at: string|null, from_status: int, to_status: int, reason: string|null, items: string}>
+     */
+    public function recentlyCanceled(): array
+    {
+        $userBranchId = auth()->user()->branch_id ?? 0;
+        $appTz = config('app.timezone');
+        $since = now($appTz)->subMinutes((int) config('kds.canceled_notice_minutes', 20));
+
+        $transitions = OrderStatusTransition::query()
+            ->whereIn('to_status', [OrderStatus::CANCELED, OrderStatus::REJECTED])
+            ->whereIn('from_status', KitchenReleaseRule::visibleStatuses())
+            ->where('occurred_at', '>=', $since)
+            ->orderByDesc('occurred_at')
+            // On lit LARGE puis on borne la SORTIE (plus bas) : borner ici ferait taire une
+            // vraie annulation dès que des lignes sans commande (commandes de test purgées —
+            // 11 orphelines constatées en base) occupent les premières places du tri.
+            ->limit(60)
+            ->get(['id', 'order_id', 'from_status', 'to_status', 'reason', 'occurred_at']);
+
+        if ($transitions->isEmpty()) {
+            return [];
+        }
+
+        // Une commande peut porter plusieurs lignes (annulée, puis rejetée) : on ne garde que la
+        // plus récente par commande — le cuisinier a un plat, pas un historique.
+        $byOrder = [];
+        foreach ($transitions as $t) {
+            $byOrder[(int) $t->order_id] ??= $t;
+        }
+
+        $orders = Order::query()
+            ->with(['orderItems.orderItem'])
+            ->whereIn('id', array_keys($byOrder))
+            ->get(['id', 'order_serial_no', 'queue_number', 'branch_id', 'status', 'payment_status', 'order_type', 'pos_payment_method']);
+
+        $out = [];
+        foreach ($orders as $order) {
+            // Isolation branche — miroir exact de list() : admin (branch_id=0) voit tout.
+            if ($userBranchId > 0 && (int) $order->branch_id !== $userBranchId) {
+                continue;
+            }
+            // Le board ne l'aurait jamais montrée si elle n'était pas libérée au paiement.
+            if (! KitchenReleaseRule::orderIsReleasedForBoard($order)) {
+                continue;
+            }
+            $t = $byOrder[(int) $order->id];
+            $out[] = [
+                'id'              => (int) $order->id,
+                'order_serial_no' => $order->order_serial_no,
+                'queue_number'    => $order->queue_number,
+                'canceled_at'     => $t->occurred_at?->toIso8601String(),
+                'from_status'     => (int) $t->from_status,
+                'to_status'       => (int) $t->to_status,
+                'reason'          => $t->reason === null || $t->reason === '' ? null : (string) $t->reason,
+                // Résumé court des plats à retirer du passe — le cuisinier reconnaît son assiette
+                // par le contenu, pas par un numéro de commande.
+                'items'           => $this->cancelNoticeItemsSummary($order),
+            ];
+        }
+
+        // Le plus récent en tête (l'ordre des transitions est perdu par le regroupement).
+        usort($out, static fn (array $a, array $b): int => strcmp((string) $b['canceled_at'], (string) $a['canceled_at']));
+
+        return array_slice($out, 0, 20);
+    }
+
+    /**
+     * Résumé « 2× Cayenne · Frites » d'une commande annulée, borné à 3 lignes.
+     * Volontairement textuel : le bandeau est une bande d'une ligne, pas une carte.
+     */
+    private function cancelNoticeItemsSummary(Order $order): string
+    {
+        $parts = [];
+        foreach ($order->orderItems as $line) {
+            $name = $line->orderItem->name ?? null;
+            if ($name === null || $name === '') {
+                continue;
+            }
+            $qty = (int) ($line->quantity ?? 1);
+            $parts[] = $qty > 1 ? $qty.'× '.$name : $name;
+            if (count($parts) === 3) {
+                break;
+            }
+        }
+
+        return implode(' · ', $parts);
+    }
+
+    /**
      * [Wave X3 2026-05-21] KDS "Historique du jour" — read-only V1.
      *
      * Returns today's PREPARED / OUT_FOR_DELIVERY / DELIVERED orders for the

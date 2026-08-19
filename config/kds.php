@@ -131,4 +131,22 @@ return [
      * vaut un risque de doublon qu'un ticket perdu en cuisine. »
      */
     'bridge_claim_ttl_seconds' => max(10, (int) env('KDS_BRIDGE_CLAIM_TTL_SECONDS', 90)),
+    /*
+     * [SIGNAL ANNULATION CUISINE 2026-08-19] Fenêtre d'affichage du bandeau « annulées ».
+     *
+     * Quand une commande DÉJÀ SUR LE BOARD est annulée à la caisse, sa carte disparaissait au
+     * sondage suivant sans le moindre signal : le cuisinier ne voyait rien partir, et le plat
+     * restait sur le passe. Constat en base au 2026-08-19 : 12 annulations réelles depuis
+     * PREPARING / PREPARED / OUT_FOR_DELIVERY, dont #6598 annulée 51 min après le bip « Prêt ».
+     *
+     * Le bandeau n'est PAS un temps réel : il voyage dans le `meta` du sondage board existant
+     * (aucune requête HTTP en plus), donc il fonctionne avec BROADCAST_DRIVER=log — la
+     * production n'a aucun serveur de sockets.
+     *
+     * La fenêtre borne l'affichage côté serveur. Trop courte, un cuisinier qui lève les yeux
+     * 3 min après l'annulation ne voit rien ; trop longue, le bandeau devient un mur d'anciennes
+     * annulations qu'on n'ose plus lire. 20 min couvre le temps qu'un plat reste physiquement
+     * sur le passe. L'accusé « Vu » du poste retire l'entrée AVANT la fin de la fenêtre.
+     */
+    'canceled_notice_minutes' => max(1, (int) env('KDS_CANCELED_NOTICE_MINUTES', 20)),
 ];
