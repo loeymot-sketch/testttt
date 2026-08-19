@@ -47,6 +47,71 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 — GOAL FIDÉLITÉ (borne + caisse + web) : le programme ne tournait PAS. 5 commits, NON POUSSÉS**
+>
+> Branche `worktree-goal-fidelite-2026-08-19` (worktree `.claude/worktrees/goal-fidelite-2026-08-19`),
+> basée sur `7ae8a9c4c`. HEAD `4be4c288c`. **Rien n'est poussé ni déployé** (CLAUDE.md §3quater).
+>
+> **LE CONSTAT QUI COMMANDE TOUT — mesuré, pas supposé.** Sur la base réelle : **1817 ventes de
+> caisse, 12 portant un code fidélité**, et **5 lignes « earn » de surface caisse dans TOUT le
+> grand-livre**. Le moteur (identifier, inscrire, rattacher, créditer, débiter, historique) était
+> construit de bout en bout depuis août. Ce n'était pas un moteur à écrire : c'étaient des portes
+> fermées.
+>
+> **QUATRE CAUSES RACINES, TOUTES REPRODUITES AVANT CORRECTION :**
+> 1. **Caisse — rattacher.** Le modal d'identification était gaté sur `orderId`, qui ne désigne
+>    qu'une commande DÉJÀ validée. Au moment naturel du comptoir (« vous avez la carte ? » pendant
+>    la composition du panier) il affichait « Aucune commande en cours » et ses boutons étaient
+>    morts. `loyalty_customer_code` — accepté par `PosOrderRequest:215`, persisté par
+>    `OrderService`, lu par `AwardLoyaltyPointsOnDelivery` — n'était écrit par AUCUNE surface.
+> 2. **Caisse — utiliser ses points.** `POST /admin/pos-order/{id}/redeem-loyalty` → **409
+>    ORDER_ALREADY_FINALIZED**. `PosRedemptionService` refuse toute commande payée ou terminale, or
+>    une vente de comptoir naît PAYÉE et LIVRÉE dans le même geste : la fenêtre était VIDE.
+> 3. **Borne — email jeté.** `POST /api/frontend/loyalty/register` avec {phone, name, email} répond
+>    200 « inscrit » et enregistre `email = NULL` (garde P1-1 SÉCU 2026-08-04). Le client n'avait
+>    ENSUITE aucun canal de connexion : ni son email (non stocké), ni celui qu'il retapait (la
+>    garde channel-confusion de `GuestSignupController`, branche 2, refuse de livrer à l'email de
+>    l'appelant dès que le compte a de la valeur). Enfermé dehors, structurellement.
+> 4. **Paliers menteurs.** `/loyalty/config` annonçait `tiers: [100,250,500,1000,2000]` avec
+>    `min_redeem_points: 1000` → la borne promettait « encore 40 points » à un client à 60 points
+>    pour une récompense qui n'existe pas. Jumeau oublié du correctif du 2026-08-05 (qui avait
+>    redressé le plancher mais pas les paliers, servis par le MÊME endpoint).
+>
+> **CE QUI A ÉTÉ LIVRÉ.** Rattachement au panier (avec effaceurs partout : reset panier/formulaire,
+> commande téléphone, changement de client, snapshot park) · rachat de points AVANT paiement, entré
+> dans le DEVIS SCELLÉ puis dans la création, via une définition UNIQUE `PosCartRedemption` appelée
+> par les deux chemins · email borne conservé derrière un réglage `loyalty.kiosk_email_capture`
+> (défaut true = arbitrage owner ; la sentinelle éprouve LES DEUX positions) + réinitialisation de
+> mot de passe fermée aux comptes invités · paliers filtrés au plancher réel.
+>
+> **DEUX DÉFAUTS TROUVÉS EN JOUANT UNE VRAIE VENTE, PAS EN RELISANT LE CODE** — et c'est la leçon
+> de la session : (a) débiter AVANT `sealForCommit` changeait la donnée dont le sceau se sert (il
+> relit le solde vivant) → « Order quote intent mismatch » sur tout rachat faisant tomber le solde
+> sous le plancher ; **les 4 tests écrits juste avant passaient par CHANCE**, leurs soldes restant
+> au-dessus du plancher après débit. (b) le bouton proposait « Utiliser 20,00 € » sur un panier à
+> 1,90 €.
+>
+> **PREUVE ARGENT RÉEL** (serveur servant ce code, port 8011) : vente **6600** — sous-total 15,20 €
+> − remise 15,00 € = **0,20 € encaissés** ; solde client **2000 → 500** ; grand-livre `redeem`
+> −1500. Preuve visuelle navigateur : bouton « Cumuler sur cette vente » actif dès qu'il y a un
+> panier, « Utiliser 15,00 € » plafonné au panier, pastille « ⭐ 2000 pts (ANNUL001) — 1500 pts
+> déduits sur cette vente ».
+>
+> **Tests** : Feature/Loyalty 73/73 · Feature/Pos 325/325 · Feature/Fiscal 310/310 ·
+> Feature/Sentinels 364/364 · Feature/Auth 63/63 · Feature/Frontend 58/58 · Vitest 3318 passés
+> (les 10 rouges étaient des sentinelles de fraîcheur de bundle — `public/` jamais compilé dans le
+> worktree ; vertes après build) · build webpack production OK · **zones gelées §7 = 0 ligne**
+> (PaymentComponent, PricingService, Fiscal/*, pos-wizard.js intacts).
+>
+> **À TRANCHER PAR L'OWNER (remonté, pas décidé) :** le barème rend **10 %** (10 pts/€ gagnés,
+> 100 pts = 1 € de remise) mais n'ouvre rien avant **1000 points, soit 100 € d'achats pour 10 € de
+> remise**. Mesure : **1 seul compte sur 153** atteint le plancher. Choix commercial, pas un défaut
+> — mais décisif pour que « utiliser ses points » soit visible en salle.
+>
+> **Piège de banc à ne pas repayer :** un worktree qui lie `vendor/` au checkout principal fait
+> résoudre `App\` par l'autoloader Composer vers l'ANCIEN code (mes correctifs PHP n'étaient pas
+> testés), et `.env.testing` manquant produit 3 faux échecs. Copier `vendor/` en dur + `.env.testing`.
+
 > **2026-08-17 — P0 KDS : écran cuisine figé en vide dès la 1ère commande (Teleport Vue) — CORRIGÉ, NON COMMITÉ**
 >
 > HEAD `e707a549c` (inchangé), branche `pos/category-first-caisse-2026-06-23`. Signalement owner :
