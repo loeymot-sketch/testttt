@@ -618,6 +618,34 @@ class LoyaltyController extends Controller
                 $tiers = [100, 250, 500, 1000, 2000];
             }
 
+            /*
+             * [FIDÉLITÉ 2026-08-19] LES PALIERS AUSSI DOIVENT DIRE LA VÉRITÉ — c'était le jumeau
+             * oublié du correctif d'août.
+             *
+             * Le 5 août, `min_redeem_points` a été corrigé pour publier le plancher EFFECTIF plutôt
+             * que le réglage brut (sentinelle LoyaltyConfigEffectiveFloorTest). Les PALIERS, eux,
+             * sont restés publiés tels quels — or ce sont eux, et pas le plancher, que le client
+             * VOIT : la borne en tire une barre de progression « encore N points ».
+             *
+             * Constaté le 2026-08-19 avec le réglage réel de production (plancher 1000) : l'API
+             * renvoyait [100, 250, 500, 1000, 2000]. Un client à 60 points lisait donc « encore
+             * 40 points » — une promesse que rien ne tient, puisque RIEN n'est utilisable sous
+             * 1000. Il atteint 100 points, il ne se passe rien, et il conclut que le programme est
+             * une farce. Un palier sous le plancher n'est pas une petite imprécision d'affichage,
+             * c'est un rendez-vous qu'on ne peut pas honorer.
+             *
+             * On ne garde donc que les paliers réellement atteignables, et on garantit que le
+             * plancher lui-même figure comme PREMIER jalon : c'est le seul chiffre qui change
+             * quelque chose pour le client.
+             */
+            $tiers = collect($tiers)
+                ->filter(fn (int $palier): bool => $palier >= $minRedeem)
+                ->push($minRedeem)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+
             return response()->json([
                 'status' => true,
                 'data'   => [
