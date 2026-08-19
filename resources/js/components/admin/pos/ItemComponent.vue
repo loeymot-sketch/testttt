@@ -386,6 +386,9 @@ import {
     normalizeVariationEntries,
 } from "../../../helpers/posNormalizeIds";
 import { extractCashierNote } from "../../../helpers/posWizardInstruction";
+// [T-CAISSE-1TAP 2026-08-19 · GOAL owner] Un produit sans aucune option n'a rien
+// à demander : il rejoint le panier en un seul appui. Voir helpers/posQuickAdd.js.
+import { itemHasNoChoices } from "../../../helpers/posQuickAdd";
 
 function createEmptyTemp() {
     return {
@@ -929,6 +932,25 @@ export default {
                     this.temp.currency_price = item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price;
                     this.initializeDefaultSelections();
                     this.totalPriceSetup();
+
+                    // [T-CAISSE-1TAP 2026-08-19 · GOAL owner] Produit SANS aucune
+                    // option (boisson, dessert, accompagnement simple) : il partait
+                    // quand même dans une modale plein écran ne contenant qu'un
+                    // champ « Instruction spéciale » vide, et exigeait un SECOND
+                    // clic pour rejoindre le panier. Deux fois le travail, et une
+                    // modale bloquante, pour chaque canette — en plein coup de feu.
+                    // Il rejoint désormais le panier directement.
+                    // Le caissier garde l'accès à la consigne : le crayon ✎ de la
+                    // ligne panier rouvre le wizard sur ce produit.
+                    // `itemHasNoChoices` retombe sur l'ouverture du wizard à la
+                    // moindre forme inattendue — un clic de trop est sans
+                    // conséquence, un produit envoyé sans ses choix ne l'est pas.
+                    if (itemHasNoChoices(item)) {
+                        this.wizardLoading = false;
+                        this.pendingItemId = null;
+                        this.addToCart();
+                        return;
+                    }
 
                     const modalTarget = this.$refs.itemVariationModal;
                     // Inject item data directly so wizard doesn't depend solely on XHR interceptor
