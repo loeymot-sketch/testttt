@@ -385,6 +385,7 @@ import {
     normalizeQuantity,
     normalizeVariationEntries,
 } from "../../../helpers/posNormalizeIds";
+import { extractCashierNote } from "../../../helpers/posWizardInstruction";
 
 function createEmptyTemp() {
     return {
@@ -1283,7 +1284,18 @@ export default {
                 pain: null,
                 accompagnement: null,
                 sauceSingle: null,
-                instruction: cartLine.instruction || '',
+                // [T-DOUBLON 2026-08-19 · GOAL owner] NE JAMAIS renvoyer ici
+                // l'instruction complète de la ligne : le wizard FROZEN
+                // (public/js/pos-wizard.js:3981) ré-emballe `instructionText`
+                // entre crochets à chaque validation, et régénère lui-même toute
+                // la composition depuis `selections`. Lui repasser le bloc entier
+                // faisait donc réimprimer la composition une 2e fois, crochetée,
+                // sur le ticket cuisine ET le KDS (les assainisseurs préservent
+                // les `[...]` verbatim — garantie FOOD-SAFETY allergènes, à ne pas
+                // toucher). Repro terrain 2026-08-19 : après retrait de l'oignon,
+                // la cuisine lisait « Salade, Tomate » ET « Salade, Tomate, Oignon ».
+                // On ne restaure donc que ce que le wizard ne sait pas reconstruire.
+                instruction: extractCashierNote(cartLine.instruction, cartLine.name),
                 fritesGrande: false,
                 fritesCheddar: false,
                 sauceFrites: {},

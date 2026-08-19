@@ -1268,11 +1268,25 @@
                         </button>
                     </h3>
 
-                    <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) -->
+                    <!--
+                      [T-PANIER-COMPACT 2026-08-19 · GOAL owner] `cart_display`
+                      arrive en « Groupe: valeurs », une paire par ligne, rendu en
+                      `pre-line` — soit jusqu'à 6 lignes d'écran par article. On le
+                      replie en une seule ligne de segments (« Poulet mariné · STO ·
+                      Algérienne »). Cliquer dessus rouvre le wizard sur CET article.
+                      Un retrait (« SANS OIGNON ») est mis en évidence, jamais masqué.
+                    -->
                     <p
-                        v-if="cart.cart_display && cart.cart_display.trim()"
-                        class="pos-v5-cart-item__detail"
-                    >{{ cart.cart_display }}</p>
+                        v-if="cartCompactSegments(cart).length > 0"
+                        class="pos-v5-cart-item__detail pos-v5-cart-item__detail--compact"
+                        :title="cart.cart_display"
+                        data-testid="pos-cart-compact-detail"
+                        @click.prevent="editCartLine(index)"
+                    ><template v-for="(seg, si) in cartCompactSegments(cart)" :key="'seg-' + index + '-' + si"><span
+                            v-if="si > 0"
+                            class="pos-v5-cart-item__sep"
+                            aria-hidden="true"
+                        > · </span><span :class="seg.startsWith('SANS ') ? 'pos-v5-cart-item__removal' : ''">{{ seg }}</span></template></p>
 
                     <!-- Fallback for non-wizard products: variations + extras -->
                     <template v-else>
@@ -1287,7 +1301,7 @@
                     <!-- Menu bundled + extras menu (formules) -->
                     <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="pos-v5-cart-item__bundled">
                         <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi" class="pos-v5-cart-item__bundled-line">
-                            <span>+ {{ bundled.name }}</span>
+                            <span>+ {{ cartBundledName(bundled) }}</span>
                             <span v-if="bundledLineUnitTotal(bundled) > 0" class="pos-v5-tabular">
                                 (+{{
                                     currencyFormat(bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity,
@@ -1295,16 +1309,18 @@
                                         setting.site_default_currency_symbol, setting.site_currency_position)
                                 }})
                             </span>
-                            <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="w-full m-0 p-0 list-none ml-3 mt-0.5">
-                                <li
-                                    v-for="(extra, ei) in bundled.menu_extras"
-                                    :key="'me-' + index + '-' + bi + '-' + ei"
-                                    class="text-[10px] leading-snug text-[var(--pos-v5-ink-muted)] flex items-center gap-1"
-                                >
-                                    <span class="text-[color:var(--pos-v5-success)] font-bold" aria-hidden="true">↳</span>
-                                    <span>{{ extra }}</span>
-                                </li>
-                            </ul>
+                            <!--
+                              [T-PANIER-COMPACT 2026-08-19 · GOAL owner] Une seule
+                              ligne au lieu d'une puce par extra, ET la BOISSON y
+                              figure enfin : `menu_extras` ne la contient pas (elle
+                              n'existe que dans `instruction`), le caissier ne
+                              pouvait donc pas vérifier la boisson avant de servir.
+                            -->
+                            <span
+                                v-if="cartBundledExtras(cart, bundled).length > 0"
+                                class="pos-v5-cart-item__bundled-extras"
+                                data-testid="pos-cart-bundled-extras"
+                            >{{ cartBundledExtras(cart, bundled).join(' · ') }}</span>
                         </div>
                     </div>
                 </div>
@@ -1340,8 +1356,23 @@
           CTA principal "Encaisser X €" (Q3 plan : montant intégré au bouton).
         -->
         <footer class="pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0">
+            <!--
+              [T-PANIER-40PX 2026-08-19 · GOAL owner] Déclencheur du bloc remise.
+              Replié, il rend 90 px au panier (mesure terrain : le corps du panier
+              était réduit à 40 px de haut pour 241 px de contenu).
+            -->
+            <button
+                v-if="carts.length > 0 && !discountPanelOpen"
+                type="button"
+                data-testid="pos-discount-toggle"
+                class="w-full h-8 mb-2 text-[11px] font-bold uppercase tracking-wider rounded-md border border-dashed border-[var(--pos-v5-border)] text-[var(--pos-v5-ink-soft)] hover:border-[var(--pos-v5-brand-red)] hover:text-[var(--pos-v5-brand-red)] transition"
+                @click.prevent="discountPanelManual = true"
+            >
+                🏷 {{ $t('label.discount') }}
+            </button>
+
             <!-- Discount block -->
-            <div v-if="carts.length > 0" class="flex h-9 mb-2">
+            <div v-if="carts.length > 0 && discountPanelOpen" class="flex h-9 mb-2">
                 <div class="dropdown-group">
                     <button
                         type="button"
@@ -1393,7 +1424,7 @@
                 </button>
             </div>
 
-            <div v-if="carts.length > 0" class="mb-3">
+            <div v-if="carts.length > 0 && discountPanelOpen" class="mb-3">
                 <label
                     for="pos-discount-reason"
                     class="flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"
@@ -2028,6 +2059,10 @@ import { usePosOfflineState } from "../../../composables/usePosOfflineState";
 // navigateur que l'owner appliquait à la main) — appliqué au montage, retiré au
 // démontage. Helper NON-frozen ; le wizard Vanilla frozen n'est pas modifié.
 import { applyCaisseZoom, clearCaisseZoom, resolveCaisseZoom } from "../../../helpers/caisseZoom";
+// [T-PANIER-COMPACT 2026-08-19 · GOAL owner] Rendu compact de la composition au
+// panier (« Salade, Tomate, Oignon » → « STO »), et récupération de la boisson
+// que `menu_extras` n'expose pas. Voir helpers/posCartCompactDisplay.js.
+import { compactCompositionSegments, compactBundledExtras, compactBundledName } from "../../../helpers/posCartCompactDisplay";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -2095,6 +2130,15 @@ export default {
             discount: null,
             // [POS-9.1.1] mandatory motif for any POS discount
             discountReason: '',
+            // [T-PANIER-40PX 2026-08-19 · GOAL owner] Le bloc remise (sélecteur +
+            // saisie + APPLIQUER + motif) occupait 90 px du pied de page EN
+            // PERMANENCE, même sans remise en cours — mesuré en direct — au
+            // détriment de la commande elle-même (réduite à 40 px). Il est
+            // désormais replié par défaut et ne s'ouvre qu'à la demande. Il se
+            // rouvre TOUJOURS automatiquement dès qu'une remise est saisie ou
+            // appliquée (voir `discountPanelOpen`), pour qu'une remise active ne
+            // puisse jamais devenir invisible.
+            discountPanelManual: false,
             // Kiosk cash orders notification
             kioskCashOrders: [],
             kioskCashLoading: false,
@@ -2569,6 +2613,19 @@ export default {
         isDiscountApplyable: function () {
             if (this.discountAmountValue <= 0) return true;
             return !this.discountReasonInvalid;
+        },
+        /**
+         * [T-PANIER-40PX 2026-08-19 · GOAL owner] Le bloc remise n'est déplié que
+         * sur demande explicite du caissier — OU dès qu'une remise existe, est en
+         * cours de saisie, ou porte déjà un motif. Une remise active ne peut donc
+         * jamais se retrouver masquée : le repli n'est qu'un gain de place, jamais
+         * une dissimulation d'information monétaire.
+         */
+        discountPanelOpen: function () {
+            if (this.discountPanelManual) return true;
+            if (this.posDiscount) return true;
+            if (this.discountAmountValue > 0) return true;
+            return String(this.discountReason || '').trim().length > 0;
         },
         /**
          * [POS-9.1.6] POS dine-in feature flag.
@@ -5085,6 +5142,29 @@ export default {
         },
         cartExtraEntries: function (cart) {
             return normalizeExtraEntries(cart && cart.item_extras);
+        },
+        /**
+         * [T-PANIER-COMPACT 2026-08-19 · GOAL owner] Composition d'une ligne panier
+         * repliée en segments courts : « Viandes: Poulet mariné / Pain: Pain /
+         * Crudités: Salade, Tomate, Oignon / Sauce: Algérienne » (4 lignes d'écran)
+         * devient « Poulet mariné · STO · Algérienne » (1 ligne). Un RETRAIT
+         * (« SANS OIGNON ») reste toujours affiché — voir le helper.
+         */
+        cartCompactSegments: function (cart) {
+            return compactCompositionSegments(cart && cart.cart_display);
+        },
+        /**
+         * [T-PANIER-COMPACT 2026-08-19 · GOAL owner] Extras d'une formule, BOISSON
+         * COMPRISE. `menu_extras` ne la contient pas (elle n'existe que dans
+         * `instruction`), ce qui rendait impossible la vérification de la boisson
+         * au comptoir — défaut prouvé en direct le 2026-08-19.
+         */
+        cartBundledExtras: function (cart, bundled) {
+            return compactBundledExtras(bundled, cart && cart.instruction);
+        },
+        /** [T-PANIER-COMPACT 2026-08-19] « Menu (Frites + Boisson) » → « Menu ». */
+        cartBundledName: function (bundled) {
+            return compactBundledName(bundled && bundled.name);
         },
         formatCartVariationSummary: function (cart) {
             const entries = this.cartVariationEntries(cart);

@@ -764,6 +764,39 @@
     padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
 }
 
+/* [T-PANIER-40PX 2026-08-19 · GOAL owner] « je dois scroller pour voir tout ce
+   qu'il y a dans le panier ».
+   MESURE EN DIRECT (navigateur réel, /admin/pos, panneau 839 px de haut) :
+       .pos-v5-cart__head  = 404 px  (flex-shrink-0)
+       .pos-v5-cart__body  =  40 px  ← la commande, contenu réel 241 px
+       .pos-v5-cart__foot  = 394 px  (flex-shrink-0)
+   Soit 798 px de décor et 4,7 % de la hauteur pour la commande elle-même : le
+   caissier lisait sa vente par un hublot de 40 pixels. Cause : head et foot sont
+   incompressibles, donc `body` (seul `flex:1`) absorbe 100 % du déficit.
+
+   Correctif : l'en-tête devient compressible et borné (il porte des réglages
+   consultés au début de la vente, pas pendant la saisie), le corps reçoit un
+   plancher garanti, et le pied reste intouchable — le bouton d'encaissement ne
+   doit JAMAIS pouvoir sortir de l'écran.
+   Sélecteur à 2 classes pour l'emporter sur l'utilitaire Tailwind `flex-shrink-0`
+   posé dans le template, quel que soit l'ordre de concaténation des feuilles. */
+.pos-v5-cart .pos-v5-cart__head {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 30vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.pos-v5-cart .pos-v5-cart__body {
+    flex: 1 1 auto;
+    min-height: 28vh;
+}
+
+.pos-v5-cart .pos-v5-cart__foot {
+    flex: 0 0 auto;
+}
+
 .pos-v5-cart__foot {
     flex-shrink: 0;
     padding: var(--pos-v5-space-3) var(--pos-v5-space-4) var(--pos-v5-space-4);
@@ -791,19 +824,35 @@
 
 .pos-v5-cart-item {
     display: grid;
-    grid-template-columns: 48px 1fr auto;
-    gap: var(--pos-v5-space-3);
+    /* [T-PANIER-COMPACT 2026-08-19] Vignette 48 → 40 px et placement explicite :
+       visuel et contenu occupent les deux rangées, prix et quantité s'empilent
+       dans la colonne de droite. Voir `.pos-v5-cart-item__qty`. */
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: var(--pos-v5-space-2) var(--pos-v5-space-3);
     align-items: start;
-    padding: var(--pos-v5-space-3) 0;
+    padding: var(--pos-v5-space-2) 0;
     border-bottom: 1px dashed var(--pos-v5-border);
+}
+.pos-v5-cart-item__visual {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+.pos-v5-cart-item__body {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+}
+.pos-v5-cart-item__price {
+    grid-column: 3;
+    grid-row: 1;
 }
 .pos-v5-cart-item:last-child {
     border-bottom: 0;
 }
 
 .pos-v5-cart-item__visual {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--pos-v5-radius-md);
     overflow: hidden;
     background: var(--pos-v5-bg-subtle);
@@ -882,8 +931,44 @@
     white-space: pre-line;
 }
 
+/* [T-PANIER-COMPACT 2026-08-19 · GOAL owner] Variante compacte : la composition
+   tient sur une ligne (repliée par helpers/posCartCompactDisplay.js), donc plus
+   de `pre-line` — c'est lui qui transformait chaque « \n » de `cart_display` en
+   ligne d'écran, jusqu'à 6 par article. Cliquable : rouvre le wizard sur CET
+   article, comme demandé (« en cas de modification je peux y accéder directement »). */
+.pos-v5-cart-item__detail--compact {
+    white-space: normal;
+    cursor: pointer;
+}
+.pos-v5-cart-item__detail--compact:hover {
+    color: var(--pos-v5-ink);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+.pos-v5-cart-item__sep {
+    /* Padding plutôt qu'espaces dans le template : Vue condense les blancs. */
+    padding: 0 4px;
+    color: var(--pos-v5-ink-muted);
+}
+/* Un RETRAIT change le plat : il doit sauter aux yeux même dans un libellé replié. */
+.pos-v5-cart-item__removal {
+    font-weight: var(--pos-v5-weight-bold);
+    color: var(--pos-v5-danger);
+}
+
 .pos-v5-cart-item__bundled {
     margin-top: var(--pos-v5-space-1);
+}
+/* Extras de formule sur une seule ligne (« Frites : Mayonnaise · Coca-Cola 33cl »)
+   au lieu d'une puce par extra. */
+.pos-v5-cart-item__bundled-extras {
+    width: 100%;
+    margin-top: 1px;
+    font-size: 10px;
+    font-weight: var(--pos-v5-weight-medium);
+    line-height: var(--pos-v5-leading-snug);
+    color: var(--pos-v5-ink-muted);
 }
 .pos-v5-cart-item__bundled-line {
     display: flex;
@@ -906,9 +991,16 @@
     padding-top: 2px;
 }
 
+/* [T-PANIER-COMPACT 2026-08-19 · GOAL owner] Le pas de quantité occupait une
+   RANGÉE ENTIÈRE sous l'article (`grid-column: 2 / -1` + marge), ce qui portait la
+   ligne à 152 px — soit un seul article visible à la fois. Il rejoint la colonne
+   du prix : la hauteur d'un article tombe à ~95 px sans réduire la taille des
+   boutons (usage tactile au comptoir). */
 .pos-v5-cart-item__qty {
-    grid-column: 2 / -1;
-    margin-top: var(--pos-v5-space-2);
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+    margin-top: var(--pos-v5-space-1);
 }
 
 /* =============================================================================

@@ -133,8 +133,23 @@ describe('POS discount reason binding quickwin', () => {
         alertServiceMock.error.mockReset();
     });
 
-    it('renders an accessible discount reason input', () => {
+    /**
+     * [T-PANIER-40PX 2026-08-19 · GOAL owner] Le bloc remise est désormais REPLIÉ
+     * par défaut : mesuré en direct, il occupait 90 px du pied de page en
+     * permanence alors que le corps du panier était réduit à 40 px pour 241 px de
+     * contenu — le caissier lisait sa vente par un hublot. Les cas ci-dessous
+     * déplient donc explicitement le panneau avant de viser ses champs.
+     * La garantie « une remise active reste toujours visible » est verrouillée par
+     * le bloc `describe` suivant.
+     */
+    const mountPosWithDiscountPanel = async () => {
         const wrapper = mountPos();
+        await wrapper.setData({ discountPanelManual: true });
+        return wrapper;
+    };
+
+    it('renders an accessible discount reason input', async () => {
+        const wrapper = await mountPosWithDiscountPanel();
 
         // Stable selector owned by this quickwin: avoids depending on nearby cart inputs.
         const input = wrapper.find('#pos-discount-reason');
@@ -146,7 +161,7 @@ describe('POS discount reason binding quickwin', () => {
     });
 
     it('binds the discount reason input through v-model', async () => {
-        const wrapper = mountPos();
+        const wrapper = await mountPosWithDiscountPanel();
 
         await wrapper.find('#pos-discount-reason').setValue('Geste commercial');
 
@@ -160,5 +175,47 @@ describe('POS discount reason binding quickwin', () => {
         wrapper.vm.applyDiscount();
 
         expect(alertServiceMock.error).toHaveBeenCalledWith('message.discount_reason_required');
+    });
+});
+
+/**
+ * [T-PANIER-40PX 2026-08-19 · GOAL owner] Replier le bloc remise rend 90 px à la
+ * commande, mais ne doit JAMAIS pouvoir dissimuler une information monétaire :
+ * dès qu'une remise est saisie, appliquée, ou porte un motif, le panneau se
+ * rouvre de lui-même. Ces cas verrouillent cette garantie.
+ */
+describe('POS discount panel — repli sans dissimulation', () => {
+    it('replié par défaut : ni saisie ni motif à l\'ouverture de la caisse', () => {
+        const wrapper = mountPos();
+
+        expect(wrapper.vm.discountPanelOpen).toBe(false);
+        expect(wrapper.find('#pos-discount-reason').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="pos-discount-input"]').exists()).toBe(false);
+    });
+
+    it('un montant de remise saisi rouvre le panneau tout seul', async () => {
+        const wrapper = mountPos();
+
+        await wrapper.setData({ discount: '10' });
+
+        expect(wrapper.vm.discountPanelOpen).toBe(true);
+        expect(wrapper.find('#pos-discount-reason').exists()).toBe(true);
+    });
+
+    it('un motif déjà renseigné rouvre le panneau tout seul', async () => {
+        const wrapper = mountPos();
+
+        await wrapper.setData({ discountReason: 'Geste commercial' });
+
+        expect(wrapper.vm.discountPanelOpen).toBe(true);
+        expect(wrapper.find('#pos-discount-reason').exists()).toBe(true);
+    });
+
+    it('le déclencheur n\'est proposé que tant que le panneau est replié', async () => {
+        const wrapper = mountPos();
+        expect(wrapper.find('[data-testid="pos-discount-toggle"]').exists()).toBe(true);
+
+        await wrapper.setData({ discountPanelManual: true });
+        expect(wrapper.find('[data-testid="pos-discount-toggle"]').exists()).toBe(false);
     });
 });
