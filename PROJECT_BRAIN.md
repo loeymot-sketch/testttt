@@ -47,6 +47,85 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 — GOAL owner « je prends des commandes sur le terrain » : 6 défauts caisse/cuisine corrigés, 8 commits, NON POUSSÉ**
+>
+> HEAD `b5fd9477c`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
+> Méthode : reproduction en navigateur réel (`/admin/pos`, `/kds`, `/admin/pos-orders-tracker`),
+> vraies commandes passées et encaissées, mesures chiffrées avant/après. Aucun défaut n'a été
+> déclaré sans preuve exécutable.
+>
+> **1. P0 — Doublon ticket cuisine + KDS à la modification d'un article.**
+> Boucle exacte : `pos-wizard.js:3981` (GELÉ) ré-emballe `instructionText` entre crochets à chaque
+> validation ; `ItemComponent.vue:1286` lui renvoyait l'instruction COMPLÈTE de la ligne panier ;
+> `pos-wizard.js:5057` la recharge. La composition repartait donc dans les crochets, cumulativement.
+> Repro terrain (retrait de l'oignon) : la cuisine lisait « Salade, Tomate » **ET** « Salade, Tomate,
+> Oignon ». Les assainisseurs ticket/KDS préservent volontairement les `[...]` (FOOD-SAFETY
+> allergènes) : la source devait cesser d'émettre, pas eux d'être affaiblis.
+> Correctif `helpers/posWizardInstruction.js` — ne rend au wizard que la NOTE LIBRE du caissier, et
+> répare les lignes déjà corrompues. Mesuré : 320 car. → 159, 2× CAYENNE → 1×, 0 crochet en base.
+>
+> **2. P1 — Panier illisible (40 px).** Mesure en direct du panneau (839 px) : `cart__head` 404 px +
+> `cart__foot` 394 px incompressibles ⇒ **40 px (4,7 %)** pour la commande, contenu réel 241 px.
+> En-tête borné/compressible, plancher garanti pour le corps, pied intact (le bouton d'encaissement
+> ne doit jamais sortir de l'écran) ; bloc remise replié par défaut (90 px rendus) mais rouvert
+> AUTOMATIQUEMENT dès qu'une remise existe. Composition repliée sur une ligne via le moteur KDS
+> existant (`Salade, Tomate, Oignon` → `STO`), retrait affiché en rouge (`SANS OIGNON`), clic sur la
+> ligne = réouverture du wizard. **Boisson enfin visible** : `menu_extras` ne la contient pas, elle
+> est récupérée depuis `instruction`. Résultat : corps 40 → **237 px**, article 196 → 87-145 px.
+>
+> **3. P1 — Annulation impossible après « Prêt » (ZONE GELÉE, gate owner obtenu).**
+> Sonde exécutable : `PRETE(8)` et `EN LIVRAISON(10)` n'avaient AUCUNE arête vers `ANNULEE(16)`,
+> pas même pour un Admin — et le bouton Annuler restait AFFICHÉ sur ces voies (clic → 422).
+> Le cuisinier bipant « Prêt » en ~10 min, toute commande devenait inannulable pour toujours.
+> Base au diagnostic : **857 commandes non terminées**, dont 109 définitivement inannulables.
+> `+ PREPARED→CANCELED`, `+ OUT_FOR_DELIVERY→CANCELED` ; `DELIVERED` reste fermé (sortie légitime =
+> remboursement tracé). Les 3 gardes aval sont INCHANGÉES : motif obligatoire, permission
+> `pos-refund` si payée, `SealedOrderGuard` si scellée dans un Z clos. Cliquet 11 → 13.
+> Preuve : commande #6598, trace `PRETE → ANNULEE` motif « Client injoignable », acteur enregistré.
+>
+> **4. P1 — Carte bancaire : code à 4 chiffres exigé (ZONE GELÉE, gate owner obtenu).**
+> Vérifié avant retrait : jamais validés (règle de FORME seule, « 0000 » passait), absents de
+> `app/Services/Fiscal/`, du payload d'audit chaîné et de la ventilation du Z ; le serveur les
+> acceptait vides depuis le 2026-08-05. Reliquat du template d'origine (2026-03-06).
+> Champ supprimé, pavé numérique réservé aux espèces, `canConfirmCard` assoupli (il rendait le
+> bouton Confirmer MORT sans explication si la liste des TPE revenait vide).
+> Preuve : commande #6601 encaissée en 2 clics — `pos_payment_method=2 (CARTE)`,
+> `pos_payment_note=NULL`, `fiscal_sequence_no=2722`, audit HMAC intact, `CHAIN OK` 6 branches.
+>
+> **5. P1 — Suivi commandes : scroll horizontal + commandes invisibles.**
+> Mesure (fenêtre 1728 px) : barre latérale admin dépliée 260 px, grille 1388 px, 5 voies de 266 px,
+> barre d'actions 218 px pour 215 px dispo en `nowrap` INCOMPRESSIBLE. Cause profonde du scroll :
+> `overflow-x` non déclaré sur `.pos-tracker-col-body` est recalculé en `auto` face à un `overflow-y`
+> non-`visible` (CSS Overflow 3) — le `overflow:hidden` de la colonne est une couche AU-DESSUS.
+> Barre latérale repliée (motif déjà utilisé par la caisse), `overflow-x:hidden` explicite,
+> `flex-wrap:wrap`, grille en `auto-fit/minmax` qui mesure le CONTENEUR et non le viewport (écart de
+> 340 px : à 1366 px les media queries renvoyaient 2 voies hors écran).
+> Résultat : grille 1388 → **1648 px**, voies 266 → **320 px**, 0 débordement, 5 voies sur 1 rangée.
+> **+ journée de SERVICE** : le tableau ne chargeait que le jour calendaire — une commande de 23 h 50
+> disparaissait à minuit alors que la cuisine était dessus. Avant 5 h, la veille reste affichée.
+>
+> **6. P1 — La formule écrite deux fois en cuisine (arbitrage owner : fusionner).**
+> Une formule est enregistrée deux fois : sous son parent (instruction) ET comme `order_item` qui en
+> porte le prix. Ticket réel #6598 : `FRITES : MAY` sur le sandwich **puis** `MENU : MAY`.
+> `OrderReceiptEscPosRenderer` ANNONÇAIT cette fusion depuis 2026-06-30 mais y renonçait
+> (« Pas de fusion devinée »). Le signal manquant existe : le parent revendique `+ <nom>` dans son
+> instruction. Repli d'AFFICHAGE seulement, à hauteur de ce qui est revendiqué — une formule
+> commandée SEULE reste toujours affichée. Jumeaux stricts JS (écran) / PHP (ticket), 9 cas chacun.
+>
+> **7. Fluidité — ajout en un seul appui.** Un Coca-Cola (aucune option) ouvrait une modale plein
+> écran vide et exigeait un 2e clic. Il rejoint désormais le panier directement ; toute forme
+> inattendue retombe sur l'ouverture du wizard.
+>
+> **Gates** : JS 424 fichiers / **3409 verts** · PHP Order 104, Pos 325, Hardware 155, KDS 84,
+> Delivery 50, Refund 33, Unit 139, **Sentinelles 364** · `fiscal:verify-chain --all` **CHAIN OK**
+> (6 branches) · diff zones gelées limité aux 2 fichiers sous LOCK, empreintes SHA-256 réalignées.
+> Dérogation : `plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md`.
+>
+> **Reste ouvert (à arbitrer)** : les commandes non terminées ANTÉRIEURES à la journée de service
+> restent invisibles au tableau (857 au diagnostic) — filtre « en souffrance » à créer ;
+> `pos-refund` n'est pas accordé au rôle POS Operator (refus délibéré) : sous un compte caissier,
+> annuler une commande PAYÉE renverra un 403.
+
 > **2026-08-17 — P0 KDS : écran cuisine figé en vide dès la 1ère commande (Teleport Vue) — CORRIGÉ, NON COMMITÉ**
 >
 > HEAD `e707a549c` (inchangé), branche `pos/category-first-caisse-2026-06-23`. Signalement owner :
