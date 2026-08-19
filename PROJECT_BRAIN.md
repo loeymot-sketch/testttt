@@ -92,6 +92,27 @@ Plateforme restaurant fast-food complète :
 > prouvée par mutation sur 11 gardes (chacune rend SON test rouge quand on la retire) ·
 > `cap doctor` iOS + Android valides · captures et bandeau générés aux formats exacts des 2 stores.
 >
+> **APPROFONDISSEMENT (même journée) — 4 défauts de plus, dont 3 invisibles sans artefact réel :**
+> 6. **Squattage de numéro** (vulnérabilité que J'AVAIS introduite) : le numéro déclaré après
+>    connexion sociale allait dans `users.phone`, qui est une CLÉ — la garde anti-confusion de
+>    canal envoyait alors le code de connexion de la victime au squatteur. Reproduit par test,
+>    puis fermé par une colonne séparée `contact_phone` : le code d'auth durci n'a PAS été touché.
+> 7. **Six permissions PUBLICITAIRES dans l'APK** (`AD_ID`, `ACCESS_ADSERVICES_*`,
+>    `BIND_GET_INSTALL_REFERRER_SERVICE`), injectées par les dépendances Google du greffon de
+>    connexion. Google recoupe le manifeste avec le formulaire « Sécurité des données » →
+>    **refus garanti**. Retirées (17 → 11 permissions). Visible SEULEMENT en ouvrant le binaire.
+> 8. **La production refuse encore l'origine de l'app** — mesuré au curl : `www.lecayenne.fr` →
+>    en-tête renvoyé ; `https://localhost` → RIEN. **Déployer le backend AVANT de publier l'app.**
+> 9. **Spec `account-email-otp` silencieusement ROUGE depuis le 03/08** (champ « Nom » devenu
+>    obligatoire, jamais rempli ; assertion de formulation trop littérale). Réparée → 8/8, vrai
+>    bout-en-bout navigateur → Laravel → MySQL → jeton Sanctum.
+>
+> **L'application Android COMPILE réellement** : `app-debug.apk` 15,2 Mo et `app-release.aab`
+> 13,0 Mo (l'artefact à téléverser). Chaîne montée en local sans `sudo` — JDK 21 (le JDK 25 du
+> système est incompatible avec AGP 8.13) + SDK API 36. Migrations validées sur **vrai MySQL**
+> sur une table de 520 comptes (index uniques + NULL multiples confirmés). `lint` Android sans
+> erreur. Smoke navigation 13/13, 0 erreur JS.
+>
 > **Reste à l'owner** : comptes développeur Apple/Google, identifiants de connexion Apple/Google à
 > coller dans `index.html` + `.env` (`APPLE_AUDIENCES`/`GOOGLE_AUDIENCES`), keystore Android, boîte
 > e-mail de démonstration pour l'examinateur, puis compilation. Certificat API expire le 22/09/2026.
