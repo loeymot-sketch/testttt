@@ -163,7 +163,7 @@ describe('POS availability live guard (T11)', () => {
         expect(dispatch).toHaveBeenCalledWith('item/details', { id: 42, surface: 'pos' });
     });
 
-    it('modal load normalizes missing collection fields before opening', async () => {
+    it('modal load normalizes missing collection fields', async () => {
         const detail = {
             id: 44,
             name: 'Bare item',
@@ -173,6 +173,11 @@ describe('POS availability live guard (T11)', () => {
             currency_price: '6.00 EUR',
         };
         const vm = createVm(null, vi.fn(() => Promise.resolve({ data: { data: detail } })));
+        // [T-CAISSE-1TAP 2026-08-19] Ce produit n'a AUCUNE option : il rejoint
+        // désormais le panier en un seul appui au lieu d'ouvrir une modale vide.
+        // On neutralise l'ajout pour n'observer ici que la normalisation, qui est
+        // l'objet réel de ce cas.
+        vm.addToCart = vi.fn();
 
         await vm.variationModalShow({ id: 44 });
         await flushPromises();
@@ -182,6 +187,48 @@ describe('POS availability live guard (T11)', () => {
         expect(vm.item.extras).toEqual([]);
         expect(vm.item.itemAttributes).toEqual([]);
         expect(vm.item.variations).toEqual({});
+    });
+
+    /**
+     * [T-CAISSE-1TAP 2026-08-19 · GOAL owner] Un produit sans la moindre option
+     * (boisson, dessert) n'ouvre plus de modale : il part directement au panier.
+     * Observé en direct : un Coca-Cola imposait une modale plein écran vide PUIS
+     * un second clic — deux fois le travail en plein coup de feu.
+     */
+    it('produit SANS option : ajout direct au panier, aucune modale', async () => {
+        const detail = {
+            id: 52,
+            name: 'Coca-Cola 33cl',
+            thumb: '',
+            convert_price: 1.9,
+            currency_price: '1.90 EUR',
+            itemAttributes: [],
+            extras: [],
+            addons: [],
+        };
+        const vm = createVm(null, vi.fn(() => Promise.resolve({ data: { data: detail } })));
+        vm.addToCart = vi.fn();
+
+        await vm.variationModalShow({ id: 52 });
+        await flushPromises();
+
+        expect(vm.addToCart).toHaveBeenCalled();
+        expect(vm.$refs.itemVariationModal.classList.add).not.toHaveBeenCalledWith('active');
+        expect(vm.wizardLoading, 'l\'overlay de chargement doit être relâché').toBe(false);
+    });
+
+    /**
+     * SÛRETÉ : la moindre option doit continuer d'ouvrir le wizard — un sandwich
+     * envoyé en cuisine sans son choix de viande serait bien pire que deux clics.
+     */
+    it('produit AVEC options : le wizard s\'ouvre toujours', async () => {
+        const vm = createVm(null, vi.fn(() => Promise.resolve({ data: { data: clone(legacyItem) } })));
+        vm.addToCart = vi.fn();
+
+        await vm.variationModalShow({ id: 11 });
+        await flushPromises();
+
+        expect(vm.addToCart).not.toHaveBeenCalled();
         expect(vm.$refs.itemVariationModal.classList.add).toHaveBeenCalledWith('active');
     });
 

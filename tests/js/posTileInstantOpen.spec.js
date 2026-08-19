@@ -156,9 +156,14 @@ describe('POS ItemComponent — ouverture optimiste (feedback instantané)', () 
     });
 
     it('succès → modal ouvert (.active) + overlay masqué', async () => {
+        // [T-CAISSE-1TAP 2026-08-19] Le produit porte une VRAIE option : c'est la
+        // condition d'ouverture du wizard. Un produit sans aucune option rejoint
+        // désormais le panier en un seul appui — cas couvert juste en dessous.
         const detail = {
             id: 99, name: 'Y', offer: [], convert_price: 5, currency_price: '5.00 EUR',
-            itemAttributes: [], variations: {}, extras: [], addons: [],
+            itemAttributes: [{ id: 1, name: 'Viande', min_select: 1, max_select: 1 }],
+            variations: { 1: [{ id: 101, item_attribute_id: 1, name: 'Poulet mariné', convert_price: 0 }] },
+            extras: [], addons: [],
         };
         const dispatch = vi.fn(() => Promise.resolve({ data: { data: detail } }));
         const vm = createVm(dispatch);
@@ -170,6 +175,30 @@ describe('POS ItemComponent — ouverture optimiste (feedback instantané)', () 
         expect(vm.pendingItemId).toBe(null);
         expect(vm.item.id).toBe(99);
         expect(vm.$refs.itemVariationModal.classList.add).toHaveBeenCalledWith('active');
+    });
+
+    /**
+     * [T-CAISSE-1TAP 2026-08-19 · GOAL owner] Produit SANS aucune option : la
+     * modale plein écran ne contenait qu'un champ « Instruction spéciale » vide et
+     * exigeait un second clic. Elle ne s'ouvre plus, et l'overlay de chargement est
+     * bien relâché (sinon la caisse resterait grisée sans rien afficher).
+     */
+    it('succès sans option → aucune modale, panier direct, overlay masqué', async () => {
+        const detail = {
+            id: 52, name: 'Coca-Cola 33cl', offer: [], convert_price: 1.9, currency_price: '1.90 EUR',
+            itemAttributes: [], variations: {}, extras: [], addons: [],
+        };
+        const dispatch = vi.fn(() => Promise.resolve({ data: { data: detail } }));
+        const vm = createVm(dispatch);
+        vm.addToCart = vi.fn();
+
+        vm.variationModalShow({ id: 52 });
+        await flush();
+
+        expect(vm.addToCart).toHaveBeenCalled();
+        expect(vm.wizardLoading).toBe(false);
+        expect(vm.pendingItemId).toBe(null);
+        expect(vm.$refs.itemVariationModal.classList.add).not.toHaveBeenCalledWith('active');
     });
 
     it('préchauffe : survol d’une tuile disponible déclenche un dispatch item/details', () => {
