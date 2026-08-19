@@ -25,8 +25,9 @@ use Illuminate\Support\Facades\Log;
  * Une pièce se compte sans connaître son poids ; le poids ne sert qu'à convertir en grammes
  * pour le coût. Les viandes créées ici sont donc en `piece` : « aujourd'hui on a sorti 168
  * pièces de poulet mariné » est une réponse exacte, disponible immédiatement.
- * Les matières déjà en grammes (viande hachée, 75 g/pièce) sont converties via
- * `piece_weight_g`. Une matière en grammes SANS poids déclaré n'est PAS consommée à 0 en
+ * Les matières déjà en grammes (viande hachée 75 g/steak, poulet mariné 100 g/pièce) sont
+ * converties via `piece_weight_g` — le poids d'UNE UNITÉ COMPTÉE, jamais celui d'une portion
+ * servie (voir l'avertissement sur MATIERES_A_CREER). Une matière en grammes SANS poids déclaré n'est PAS consommée à 0 en
  * silence : elle est ignorée et LOGGÉE, pour que le trou se voie.
  */
 final class MeatMaterialResolver
@@ -62,15 +63,32 @@ final class MeatMaterialResolver
      * question de l'owner (« combien on a vraiment sorti ») trouve alors une réponse exacte
      * tout de suite. Le poids ne sert qu'à valoriser en grammes.
      *
-     * Le POULET fait exception : depuis la correction owner du 2026-08-07 il se compte en
-     * PORTIONS, et une portion complète pèse 200 g (une demi-portion, celle d'un sandwich
-     * mixte, en pèse donc 100). L'unité est le gramme et la conversion est connue — c'est
-     * d'ailleurs exactement le forfait que portaient les anciennes fiches produit.
+     * Le POULET fait exception : il est vendu au poids, donc l'unité est le GRAMME et la
+     * conversion doit être connue.
+     *
+     * ⚠️ [OWNER 2026-08-19] CE POIDS SUIT L'UNITÉ COMPTÉE, IL NE DÉCRIT PAS LA PORTION SERVIE.
+     * Le propriétaire a demandé que le bandeau de cuisson DOUBLE le poulet — il s'affichait en
+     * portions de 200 g, seule viande de la table à valoir 1 quand toutes les autres valent 2,
+     * ce qui produisait les « 0,5P » qu'il a signalés. `MeatPortionCalculator` compte donc
+     * désormais le poulet en DEMI-PORTIONS, et le poids d'UNE unité comptée passe mécaniquement
+     * de 200 g à 100 g.
+     *
+     * Le résultat physique est INCHANGÉ, et c'est tout l'intérêt de bouger les deux ensemble :
+     *     Cayenne poulet   1P × 200 g    ->   2P × 100 g   = 200 g   (identique)
+     *     Méga mixte       0,5P × 200 g  ->   1P × 100 g   = 100 g   (identique)
+     *     supplément       1P × 200 g    ->   2P × 100 g   = 200 g   (identique)
+     * Le SEUL déplacement voulu est celui que l'owner a demandé le même jour : un BOL passe
+     * d'une portion pleine à une demi (200 g -> 100 g de poulet, 2 -> 1 cordon bleu).
+     *
+     * Toucher ce poids SANS toucher la table des portions — ou l'inverse — diviserait ou
+     * doublerait la consommation réelle de poulet, en silence. Les deux vont ensemble.
+     * `php artisan stock:ensure-meat-materials` réaligne les matières déjà en base, et la
+     * migration `2026_08_19_190000_align_poulet_marine_piece_weight` le fait au déploiement.
      *
      * @var array<string, array{0:string, 1:float|null}>
      */
     public const MATIERES_A_CREER = [
-        'Poulet mariné' => ['g', 200.0],
+        'Poulet mariné' => ['g', 100.0],
         'Mexicanos' => ['piece', null],
         'Tenders' => ['piece', null],
         'Nuggets' => ['piece', null],

@@ -22,11 +22,20 @@ namespace App\Services\Kitchen;
  *   · un produit à UNE viande        → 2 pièces de cette viande   (Cayenne hachée = 2K)
  *   · un produit à DEUX viandes      → 1 pièce de chacune         (Méga poulet+hachée = 1P 1K)
  *   · deux fois la même viande       → elles s'additionnent       (Méga tout hachée = 2K)
+ *   · un BOL                         → une DEMI-portion           (Bol Riz cordon = 1Cordon)
  *
  * Cette règle est STRUCTURELLE : elle se déduit du nombre d'emplacements « Viande N » que le
  * produit porte réellement, tel qu'il est SCELLÉ dans le composition_snapshot. Aucun tableau
  * produit par produit à maintenir pour les 9 produits à choix de viande — donc aucune dérive
  * possible le jour où l'owner ajoute un sandwich.
+ *
+ * [OWNER 2026-08-19] CE BLOC DÉCRIVAIT DÉJÀ « Méga poulet+hachée = 1P 1K », mais le code
+ * rendait « 0,5P 1K » : le poulet était la SEULE viande dont la portion complète valait 1 et
+ * non 2, si bien qu'un demi-emplacement lui donnait 0,5. Le propriétaire l'a signalé — « une
+ * portion de poulet est affichée en cuisson [comme] la moitié, alors faut doubler ». La
+ * portion de poulet vaut désormais 2 pièces de 100 g comme toutes les autres viandes valent
+ * 2 pièces : le commentaire et le code disent enfin la même chose, et plus aucune valeur du
+ * bandeau n'est à virgule. Le poids consommé, lui, ne bouge pas (voir MeatMaterialResolver).
  *
  * CE QUI N'EST PAS ENCORE CONNU
  * -----------------------------
@@ -45,9 +54,15 @@ final class MeatPortionCalculator
      * c'est la correction owner du 2026-08-07 :
      *
      *   · VIANDE HACHÉE (K) : 2 STEAKS (2 × 75 g).
-     *   · POULET (P)        : 1 PORTION de 200 g. Seule viande au poids continu, donc la
-     *                          seule qui puisse valoir une DEMI-portion « 0,5P » (100 g) —
-     *                          d'où « 2,5P » pour 3 sandwichs mixtes + 1 Cayenne entier.
+     *   · POULET (P)        : 2 PIÈCES de 100 g. [OWNER 2026-08-19] Valait 1 seule pièce de
+     *                          200 g jusqu'ici, et c'était l'anomalie de la table : un
+     *                          emplacement partagé lui donnait « 0,5P » là où la hachée
+     *                          affichait « 1K ». Compté en demi-portions, le poulet se lit
+     *                          comme les autres et le bandeau n'a plus aucune virgule
+     *                          (3 sandwichs mixtes + 1 Cayenne entier = 5P, ex-« 2,5P »).
+     *                          La QUANTITÉ SERVIE est inchangée : 2 × 100 g = les 200 g
+     *                          d'avant. Voir MeatMaterialResolver::MATIERES_A_CREER, dont
+     *                          le poids unitaire suit ce changement d'unité (200 → 100 g).
      *   · NUGGETS (Nug)     : 4 nuggets.
      *   · TENDERS (Tender)  : 3 tenders.
      *   · les autres        : 2 pièces (cordon bleu, mexicanos, fricadelle…), confirmé par
@@ -55,14 +70,16 @@ final class MeatPortionCalculator
      *
      * Toutes ces viandes sont des PIÈCES ENTIÈRES : un demi-nugget n'existe pas en cuisine.
      * Une demi-portion en donne donc la moitié ARRONDIE (2 nuggets, 1 tender, 1 cordon), jamais
-     * un nombre à virgule — seul le poulet, vendu au poids, garde ses décimales.
+     * un nombre à virgule. Le poulet garde la possibilité des décimales : elles ne peuvent plus
+     * naître que d'un emplacement DÉJÀ partagé sur un BOL (bol × « Mixte » = 0,5P), et les
+     * effacer par un arrondi ferait disparaître de la viande du stock en silence.
      */
     public const PORTION_COMPLETE = 2;
 
     /** @var array<string, float> symbole => valeur d'une portion complète */
     private const PORTION_PAR_VIANDE = [
         'K' => 2.0,   // 2 steaks
-        'P' => 1.0,   // 1 portion de 200 g — la seule fractionnable
+        'P' => 2.0,   // 2 pièces de 100 g — [OWNER 2026-08-19] doublé, cf. bloc ci-dessus
         'Nug' => 4.0, // 4 nuggets
         'Tender' => 3.0, // 3 tenders
     ];
@@ -74,6 +91,27 @@ final class MeatPortionCalculator
      * @var array<int, string>
      */
     private const VIANDES_FRACTIONNABLES = ['P'];
+
+    /**
+     * BOLS — [OWNER 2026-08-19] « les portions de poulet et les cordons bleus SUR LES BOLS, on
+     * mettra qu'une seule ».
+     *
+     * Un bol est un fond (frites ou riz) surmonté d'une viande : il en reçoit une DEMI-portion,
+     * là où un sandwich en reçoit une entière. Concrètement, sur les deux bols actifs du
+     * catalogue (« Bol Frites » #41 et « Bol Riz » #45, qui ne portent qu'un seul emplacement
+     * « Viande 1 ») :
+     *     cordon bleu → 1Cordon  (au lieu de 2)
+     *     poulet      → 1P       (au lieu des 2 de la nouvelle unité)
+     *
+     * Ce n'est PAS une contradiction avec la règle owner du 2026-08-06 (« un Tacos L 2 viandes
+     * au cordon bleu affiche 2Cordon ») : « sur les bols » en est un qualificatif de lieu. Un
+     * Tacos L continue d'afficher 2Cordon.
+     *
+     * Le mot est cherché en TOKEN (`\b`), jamais en sous-chaîne : aucun autre article du
+     * catalogue ne contient « bol » ni « bowl » (vérifié le 2026-08-19 sur les 13 articles qui
+     * les portent — tous des bols), et un `str_contains` attraperait un jour un « Bolognaise ».
+     */
+    private const MOTIF_BOL = '/\b(bols?|bowls?)\b/iu';
 
     /**
      * RECETTES FIXES — produits sans attribut « Viande N », dont la composition est immuable.
@@ -164,8 +202,16 @@ final class MeatPortionCalculator
         if ($viandes !== []) {
             // Règle structurelle : 1 emplacement → portion COMPLÈTE ; N emplacements → une
             // DEMI-portion chacun. La valeur d'une portion dépend ensuite de la viande
-            // (2 steaks pour la hachée, 1 portion de 200 g pour le poulet).
+            // (2 steaks pour la hachée, 2 pièces de 100 g pour le poulet).
             $partEmplacement = count($viandes) === 1 ? 1.0 : 0.5;
+
+            // [OWNER 2026-08-19] Un BOL reçoit une demi-portion (cf. MOTIF_BOL). La réduction
+            // s'applique sur le PART D'EMPLACEMENT et non sur le total : elle se compose donc
+            // naturellement avec un bol à deux viandes, si l'owner en crée un un jour, sans
+            // qu'aucune autre règle n'ait à être retouchée.
+            if ($this->estBol($itemName)) {
+                $partEmplacement *= 0.5;
+            }
             foreach ($viandes as $nom) {
                 foreach ($this->symbolesPour($nom) as $symbole => $facteur) {
                     $this->ajoute($pieces, $symbole, $this->portion($symbole) * $partEmplacement * $facteur * $quantity);
@@ -475,7 +521,16 @@ final class MeatPortionCalculator
         return $grande($segment) ? 2 : 1;
     }
 
-    /** Valeur d'une portion complète pour cette viande (2 steaks, 1 portion de poulet…). */
+    /**
+     * L'article vendu est-il un BOL ? Voir {@see MOTIF_BOL} pour la règle owner et pourquoi le
+     * mot est cherché en token. Jumeau STRICT du JS kdsSymbolic.js EST_BOL.
+     */
+    private function estBol(string $itemName): bool
+    {
+        return (bool) preg_match(self::MOTIF_BOL, $itemName);
+    }
+
+    /** Valeur d'une portion complète pour cette viande (2 steaks, 2 pièces de poulet…). */
     private function portion(string $symbole): float
     {
         return self::PORTION_PAR_VIANDE[$symbole] ?? (float) self::PORTION_COMPLETE;

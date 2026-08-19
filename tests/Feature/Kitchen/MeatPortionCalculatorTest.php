@@ -56,10 +56,35 @@ class MeatPortionCalculatorTest extends TestCase
     {
         $this->assertSame('2K', $this->ligne('Tacos M', ['Viande Hachée']));
         $this->assertSame('2K', $this->ligne('Cayenne', ['Viande Hachée']));
-        // [owner 2026-08-07] Le POULET se compte en PORTIONS : une portion complète = 1 (200 g),
-        // là où la viande hachée se compte en STEAKS (2 par portion).
-        $this->assertSame('1P', $this->ligne('Galette Normale', ['Poulet mariné']));
-        $this->assertSame('2Cordon', $this->ligne('Bol Riz', ['Cordon Bleu']));
+        // [OWNER 2026-08-19] Le POULET se compte en PIÈCES de 100 g : une portion complète en
+        // vaut 2, exactement comme la hachée vaut 2 steaks. Il valait 1 auparavant — la seule
+        // viande de la table à valoir 1, d'où les « 0,5P » que le propriétaire a signalés.
+        $this->assertSame('2P', $this->ligne('Galette Normale', ['Poulet mariné']));
+        // Porté par un NON-bol : depuis le 2026-08-19 un bol ne reçoit qu'une demi-portion.
+        $this->assertSame('2Cordon', $this->ligne('Tacos M', ['Cordon Bleu']));
+    }
+
+    /**
+     * RÈGLE 1bis — UN BOL reçoit une DEMI-portion. Owner 2026-08-19 : « les portions de poulet
+     * et les cordons bleus SUR LES BOLS, on mettra qu'une seule ».
+     *
+     * Ce n'est pas une contradiction avec la règle du 2026-08-06 (« un Tacos L 2 viandes au
+     * cordon bleu affiche 2Cordon ») : « sur les bols » en est un qualificatif de lieu, et le
+     * Tacos L est vérifié juste en dessous pour que la frontière reste prouvée.
+     */
+    public function test_un_bol_ne_recoit_qu_une_demi_portion_de_viande(): void
+    {
+        $this->assertSame('1Cordon', $this->ligne('Bol Riz', ['Cordon Bleu']), 'Owner : « qu\'une seule » sur les bols.');
+        $this->assertSame('1P', $this->ligne('Bol Riz', ['Poulet mariné']));
+        $this->assertSame('1K', $this->ligne('Bol Riz', ['Viande Hachée']));
+        // Le fond de frites du bol n'est pas de la viande : il continue de compter sa portion.
+        $this->assertSame('1P 1F', $this->ligne('Bol Frites', ['Poulet mariné']));
+
+        // La frontière : hors bol, rien ne change.
+        $this->assertSame('2Cordon', $this->ligne('Tacos L', ['Cordon Bleu', 'Cordon Bleu']));
+        // « bol » est cherché en TOKEN : un jour où l'owner créera une « Bolognaise », elle ne
+        // doit pas se retrouver à moitié servie parce que son nom contient les trois lettres.
+        $this->assertSame('2Cordon', $this->ligne('Tacos Bolognaise', ['Cordon Bleu']));
     }
 
     /**
@@ -69,7 +94,7 @@ class MeatPortionCalculatorTest extends TestCase
      */
     public function test_un_produit_a_deux_viandes_recoit_une_demi_portion_de_chacune(): void
     {
-        $this->assertSame('1K 0,5P', $this->ligne('Méga', ['Viande Hachée', 'Poulet mariné']), 'Mixte : 1 steak (demi-portion de hachée) + une DEMI-portion de poulet (100 g).');
+        $this->assertSame('1K 1P', $this->ligne('Méga', ['Viande Hachée', 'Poulet mariné']), 'Mixte : 1 steak + 1 pièce de poulet (100 g) — c\'est ce que l\'en-tête de la classe annonçait déjà, alors que le code rendait « 0,5P ».');
         $this->assertSame('1Cordon 1Mex', $this->ligne('Tacos L', ['Mexicanos', 'Cordon Bleu']));
     }
 
@@ -92,8 +117,8 @@ class MeatPortionCalculatorTest extends TestCase
             'tenders seuls = 3 tenders'          => ['1 emplacement', ['Tenders'], '3Tender'],
             'cordon seul = 2 pièces'             => ['1 emplacement', ['Cordon Bleu'], '2Cordon'],
             'deux fois cordon = 2Cordon (owner)' => ['2 emplacements', ['Cordon Bleu', 'Cordon Bleu'], '2Cordon'],
-            'cordon + poulet (owner)'            => ['2 emplacements', ['Cordon Bleu', 'Poulet mariné'], '0,5P 1Cordon'],
-            'nuggets + poulet'                   => ['2 emplacements', ['Nuggets', 'Poulet mariné'], '0,5P 2Nug'],
+            'cordon + poulet (owner)'            => ['2 emplacements', ['Cordon Bleu', 'Poulet mariné'], '1P 1Cordon'],
+            'nuggets + poulet'                   => ['2 emplacements', ['Nuggets', 'Poulet mariné'], '1P 2Nug'],
         ];
     }
 
@@ -106,7 +131,7 @@ class MeatPortionCalculatorTest extends TestCase
     /** Un choix « Mixte (hachée + poulet) » occupe UN emplacement, partagé entre ses deux viandes. */
     public function test_le_choix_mixte_partage_son_emplacement_entre_ses_deux_viandes(): void
     {
-        $this->assertSame('1K 0,5P', $this->ligne('Cayenne', ['Mixte (hachée + poulet)']));
+        $this->assertSame('1K 1P', $this->ligne('Cayenne', ['Mixte (hachée + poulet)']));
     }
 
     /** La quantité de la ligne multiplie les pièces : 3 tacos hachée = 6 steaks à cuire. */
@@ -124,9 +149,9 @@ class MeatPortionCalculatorTest extends TestCase
         $extra = [['extra_name' => 'Viande supplémentaire', 'quantity' => 1]];
 
         $this->assertSame(
-            '2K 1P',
+            '2K 2P',
             $this->ligne('Cayenne', ['Poulet mariné'], 1, $extra, 'Viandes en plus : Viande Hachée'),
-            'Le Cayenne seul en poulet = 1 portion ; le supplément hachée apporte une portion complète, soit 2K.'
+            'Le Cayenne seul en poulet = 1 portion (2 pièces) ; le supplément hachée apporte une portion complète, soit 2K.'
         );
     }
 
@@ -140,7 +165,7 @@ class MeatPortionCalculatorTest extends TestCase
         $rendu = $this->ligne('Cayenne', ['Poulet mariné'], 1, [['extra_name' => 'Viande supplémentaire', 'quantity' => 1]]);
 
         $this->assertStringContainsString('?', $rendu, 'Un supplément non nommé ne doit jamais disparaître silencieusement du bandeau de cuisson.');
-        $this->assertStringContainsString('1P', $rendu);
+        $this->assertStringContainsString('2P', $rendu);
     }
 
     /**
@@ -244,21 +269,26 @@ class MeatPortionCalculatorTest extends TestCase
         $o = $this->moteur->forOrder([
             ['name' => 'Tacos M', 'snapshot' => $this->snap(['Viande Hachée']), 'quantity' => 3],   // 6K
             ['name' => 'Méga', 'snapshot' => $this->snap(['Viande Hachée', 'Poulet mariné']), 'quantity' => 2], // 2K 2P
-            ['name' => 'Galette Cayenne', 'snapshot' => $this->snap(['Poulet mariné']), 'quantity' => 1],       // 2P
+            ['name' => 'Galette Cayenne', 'snapshot' => $this->snap(['Poulet mariné']), 'quantity' => 1],       // 2P (1 portion pleine)
             ['name' => 'Frites', 'snapshot' => $this->snap([]), 'quantity' => 2],                              // 2F
         ]);
 
-        $this->assertSame('8K 2P 2F', $o['texte']);
+        $this->assertSame('8K 4P 2F', $o['texte']);
         $this->assertSame(0, $o['inconnus']);
     }
 
     /**
-     * L'EXEMPLE DE L'OWNER, mot pour mot : « trois sandwichs mixtes qui contiennent du poulet
-     * […] et un Cayenne complet qui contient juste du poulet […] on va noter qu'il y a deux
-     * portions et demie, ça veut dire 2,5 ».
-     * 3 × 0,5 portion (mixtes) + 1 portion (Cayenne entier) = 2,5P.
+     * L'EXEMPLE DE L'OWNER de 2026-08-07, mot pour mot : « trois sandwichs mixtes qui
+     * contiennent du poulet […] et un Cayenne complet qui contient juste du poulet […] on va
+     * noter qu'il y a deux portions et demie ».
+     *
+     * [OWNER 2026-08-19] LA QUANTITÉ EST LA MÊME, L'UNITÉ A CHANGÉ. Le poulet se compte
+     * désormais en demi-portions de 100 g, à la demande du propriétaire (« faut doubler ») :
+     * 3 × 1 pièce (mixtes) + 2 pièces (Cayenne entier) = 5P, soit exactement les 2,5 portions
+     * d'hier — 500 g de poulet dans les deux lectures. C'est le sens même du changement : le
+     * bandeau dit la même viande sans jamais écrire de virgule.
      */
-    public function test_lexemple_owner_donne_bien_deux_portions_et_demie_de_poulet(): void
+    public function test_lexemple_owner_ne_change_pas_de_quantite_seulement_d_unite(): void
     {
         $o = $this->moteur->forOrder([
             ['name' => 'Tacos L', 'snapshot' => $this->snap(['Poulet mariné', 'Viande Hachée']), 'quantity' => 2],
@@ -266,8 +296,16 @@ class MeatPortionCalculatorTest extends TestCase
             ['name' => 'Cayenne', 'snapshot' => $this->snap(['Poulet mariné']), 'quantity' => 1],
         ]);
 
-        $this->assertStringContainsString('2,5P', $o['texte']);
-        $this->assertSame('2K 2,5P 1Cordon', $o['texte']);
+        $this->assertStringNotContainsString(',', $o['texte'], 'Le bandeau ne doit plus afficher aucune virgule : c\'est la raison même du doublage.');
+        $this->assertSame('2K 5P 1Cordon', $o['texte']);
+
+        // Preuve que la QUANTITÉ SERVIE n'a pas bougé : 5 pièces × 100 g = les 500 g que
+        // valaient les « 2,5 portions » de 200 g. Le poids d'une unité comptée suit la table.
+        $this->assertSame(
+            500.0,
+            5 * (float) \App\Services\Kitchen\MeatMaterialResolver::MATIERES_A_CREER['Poulet mariné'][1],
+            'Doubler le compte SANS diviser le poids unitaire doublerait la consommation réelle de poulet.'
+        );
     }
 
     /** Les recettes inconnues sont comptées à part et annoncées, pas noyées dans les pièces. */

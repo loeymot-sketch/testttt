@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialRecipeLine;
 use App\Models\User;
+use App\Services\Kitchen\MeatMaterialResolver;
 use App\Services\RawMaterials\RawMaterialConsumptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -32,6 +33,20 @@ use Tests\TestCase;
  */
 class MeatDrivenConsumptionTest extends TestCase
 {
+    /**
+     * Poids d'UNE UNITÉ COMPTÉE de poulet — LU sur la source de vérité, jamais recopié.
+     *
+     * [OWNER 2026-08-19] Ce chiffre est passé de 200 g à 100 g le jour où le bandeau de cuisson
+     * a doublé le compte du poulet : les deux vont ensemble, sinon la consommation réelle double
+     * ou se divise. Une fixture qui figerait l'ancien chiffre laisserait cette suite VERTE sur
+     * une sortie de stock deux fois trop grande — c'est exactement ce qui s'est produit ici, et
+     * c'est pourquoi elle lit désormais la constante.
+     *
+     * Les grammes attendus par les assertions, eux, ne bougent pas : c'est LA preuve que la
+     * quantité physiquement servie est restée identique.
+     */
+    private const POIDS_POULET = MeatMaterialResolver::MATIERES_A_CREER['Poulet mariné'][1];
+
     use RefreshDatabase;
 
     private ItemCategory $category;
@@ -117,7 +132,7 @@ class MeatDrivenConsumptionTest extends TestCase
     public function test_la_viande_choisie_par_le_client_est_celle_qui_sort_du_stock(): void
     {
         $hachee = $this->matiere('Viande hachée', 'g', 75);
-        $poulet = $this->matiere('Poulet mariné', 'g', 200);
+        $poulet = $this->matiere('Poulet mariné', 'g', self::POIDS_POULET);
         $cayenne = $this->item('Cayenne');
         // La fiche produit porte l'ANCIEN forfait poulet : il doit être ignoré, pas additionné.
         $this->recetteProduit($cayenne, $poulet, 1);
@@ -137,7 +152,7 @@ class MeatDrivenConsumptionTest extends TestCase
      */
     public function test_un_sandwich_mixte_ne_retire_quune_demi_portion_de_poulet(): void
     {
-        $poulet = $this->matiere('Poulet mariné', 'g', 200);
+        $poulet = $this->matiere('Poulet mariné', 'g', self::POIDS_POULET);
         $hachee = $this->matiere('Viande hachée', 'g', 75);
         $mega = $this->item('Méga');
 
@@ -202,7 +217,7 @@ class MeatDrivenConsumptionTest extends TestCase
     public function test_un_supplement_nomme_sort_la_vraie_viande_sans_doublon(): void
     {
         $hachee = $this->matiere('Viande hachée', 'g', 75);
-        $poulet = $this->matiere('Poulet mariné', 'g', 200);
+        $poulet = $this->matiere('Poulet mariné', 'g', self::POIDS_POULET);
         $cayenne = $this->item('Cayenne');
         // Ligne de GROUPE historique : 75 g de hachée forfaitaires pour tout supplément.
         RawMaterialRecipeLine::create([
@@ -229,7 +244,7 @@ class MeatDrivenConsumptionTest extends TestCase
     public function test_un_supplement_non_nomme_garde_la_moyenne_historique(): void
     {
         $hachee = $this->matiere('Viande hachée', 'g', 75);
-        $poulet = $this->matiere('Poulet mariné', 'g', 200);
+        $poulet = $this->matiere('Poulet mariné', 'g', self::POIDS_POULET);
         $cayenne = $this->item('Cayenne');
         RawMaterialRecipeLine::create([
             'branch_id' => 1, 'subject_type' => 'extra_group', 'subject_id' => 1,

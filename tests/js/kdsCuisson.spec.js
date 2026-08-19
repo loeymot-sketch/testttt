@@ -33,13 +33,31 @@ describe('bandeau de cuisson — règle de portion owner', () => {
     it('un produit à UNE viande reçoit la portion complète (2 pièces)', () => {
         expect(ligne('Tacos M', ['Viande Hachée'])).toBe('2K');
         expect(ligne('Cayenne', ['Viande Hachée'])).toBe('2K');
-        // [owner 2026-08-07] Le POULET se compte en PORTIONS (1 = 200 g), la hachée en STEAKS.
-        expect(ligne('Galette Normale', ['Poulet mariné'])).toBe('1P');
-        expect(ligne('Bol Riz', ['Cordon Bleu'])).toBe('2Cordon');
+        // [OWNER 2026-08-19] Le POULET se compte en PIÈCES de 100 g : une portion en vaut 2,
+        // comme la hachée vaut 2 steaks. Il valait 1 — seule viande de la table à valoir 1,
+        // d'où les « 0,5P » signalés par le propriétaire.
+        expect(ligne('Galette Normale', ['Poulet mariné'])).toBe('2P');
+        // Porté par un NON-bol : depuis le 2026-08-19 un bol ne reçoit qu'une demi-portion.
+        expect(ligne('Tacos M', ['Cordon Bleu'])).toBe('2Cordon');
+    });
+
+    // [OWNER 2026-08-19] « les portions de poulet et les cordons bleus SUR LES BOLS, on mettra
+    // qu'une seule ». Jumeau strict de MeatPortionCalculatorTest::test_un_bol_ne_recoit_qu_une_demi_portion.
+    it('un BOL ne reçoit qu’une demi-portion de viande', () => {
+        expect(ligne('Bol Riz', ['Cordon Bleu'])).toBe('1Cordon');
+        expect(ligne('Bol Riz', ['Poulet mariné'])).toBe('1P');
+        expect(ligne('Bol Riz', ['Viande Hachée'])).toBe('1K');
+        // Le fond de frites du bol n'est pas de la viande : sa portion reste entière.
+        expect(ligne('Bol Frites', ['Poulet mariné'])).toBe('1P 1F');
+
+        // La frontière : hors bol, la règle owner du 2026-08-06 est intacte.
+        expect(ligne('Tacos L', ['Cordon Bleu', 'Cordon Bleu'])).toBe('2Cordon');
+        // « bol » est cherché en TOKEN — une « Bolognaise » n'est pas un bol.
+        expect(ligne('Tacos Bolognaise', ['Cordon Bleu'])).toBe('2Cordon');
     });
 
     it('un produit à DEUX viandes reçoit une demi-portion de chacune', () => {
-        expect(ligne('Méga', ['Viande Hachée', 'Poulet mariné'])).toBe('1K 0,5P');
+        expect(ligne('Méga', ['Viande Hachée', 'Poulet mariné'])).toBe('1K 1P');
         expect(ligne('Tacos L', ['Mexicanos', 'Cordon Bleu'])).toBe('1Cordon 1Mex');
     });
 
@@ -50,8 +68,8 @@ describe('bandeau de cuisson — règle de portion owner', () => {
         [['Tenders'], '3Tender'],
         [['Cordon Bleu'], '2Cordon'],
         [['Cordon Bleu', 'Cordon Bleu'], '2Cordon'],
-        [['Cordon Bleu', 'Poulet mariné'], '0,5P 1Cordon'],
-        [['Nuggets', 'Poulet mariné'], '0,5P 2Nug'],
+        [['Cordon Bleu', 'Poulet mariné'], '1P 1Cordon'],
+        [['Nuggets', 'Poulet mariné'], '1P 2Nug'],
     ])('portion par viande : %s → %s', (viandes, attendu) => {
         expect(ligne('Tacos', viandes)).toBe(attendu);
     });
@@ -61,7 +79,7 @@ describe('bandeau de cuisson — règle de portion owner', () => {
     });
 
     it('le choix « Mixte » partage son emplacement entre ses deux viandes', () => {
-        expect(ligne('Cayenne', ['Mixte (hachée + poulet)'])).toBe('1K 0,5P');
+        expect(ligne('Cayenne', ['Mixte (hachée + poulet)'])).toBe('1K 1P');
     });
 
     it('la quantité de ligne multiplie les pièces', () => {
@@ -70,13 +88,13 @@ describe('bandeau de cuisson — règle de portion owner', () => {
 
     it('le supplément viande vaut une portion complète et est nommé depuis l’instruction', () => {
         const extra = [{ extra_name: 'Viande supplémentaire', quantity: 1 }];
-        expect(ligne('Cayenne', ['Poulet mariné'], 1, extra, 'Viandes en plus : Viande Hachée')).toBe('2K 1P');
+        expect(ligne('Cayenne', ['Poulet mariné'], 1, extra, 'Viandes en plus : Viande Hachée')).toBe('2K 2P');
     });
 
     it('un supplément non nommable reste VISIBLE plutôt que de disparaître', () => {
         const rendu = ligne('Cayenne', ['Poulet mariné'], 1, [{ extra_name: 'Viande supplémentaire', quantity: 1 }]);
         expect(rendu).toContain('?');
-        expect(rendu).toContain('1P');
+        expect(rendu).toContain('2P');
     });
 
     // Recettes FIXES — données owner 2026-08-06, confirmées contre la description produit.
@@ -165,21 +183,27 @@ describe('bandeau de cuisson — agrégation de toute la commande', () => {
         const o = cuissonForOrder([
             item('Tacos M', ['Viande Hachée'], 3),                    // 6K
             item('Méga', ['Viande Hachée', 'Poulet mariné'], 2),      // 2K 2P
-            item('Galette Cayenne', ['Poulet mariné'], 1),            // 2P
+            item('Galette Cayenne', ['Poulet mariné'], 1),            // 2P (1 portion pleine)
             item('Frites', [], 2),                                    // 2F
         ]);
-        expect(o.texte).toBe('8K 2P 2F');
+        expect(o.texte).toBe('8K 4P 2F');
         expect(o.inconnus).toBe(0);
     });
 
-    /** L'exemple owner : 3 mixtes au poulet (0,5 chacun) + 1 Cayenne entier (1) = 2,5P. */
-    it('donne bien 2,5 portions de poulet sur l’exemple owner', () => {
+    /**
+     * L'exemple owner de 2026-08-07 : 3 mixtes au poulet + 1 Cayenne entier.
+     * [OWNER 2026-08-19] MÊME QUANTITÉ, UNITÉ DIFFÉRENTE : 3 × 1 pièce + 2 pièces = 5P, soit
+     * exactement les « 2,5 portions » de 200 g d'hier — 500 g de poulet dans les deux lectures.
+     * Le bandeau dit la même viande sans jamais écrire de virgule, ce qui était le but.
+     */
+    it('garde la quantité de l’exemple owner, sans virgule', () => {
         const o = cuissonForOrder([
             item('Tacos L', ['Poulet mariné', 'Viande Hachée'], 2),
             item('Tacos L', ['Poulet mariné', 'Cordon Bleu'], 1),
             item('Cayenne', ['Poulet mariné'], 1),
         ]);
-        expect(o.texte).toBe('2K 2,5P 1Cordon');
+        expect(o.texte).toBe('2K 5P 1Cordon');
+        expect(o.texte).not.toContain(',');
     });
 
     it('compte les recettes inconnues à part et les annonce', () => {

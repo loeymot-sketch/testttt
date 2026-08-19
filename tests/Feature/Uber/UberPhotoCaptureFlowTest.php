@@ -109,7 +109,10 @@ class UberPhotoCaptureFlowTest extends TestCase
         $this->assertStringContainsString('SANS OIGNONS SVP', $lignes[0]['note']);
 
         // Bandeau de cuisson : 1 poulet + 2×(2 hachées) + 1 frite de menu + 2 grandes frites.
-        $this->assertSame('4K 1P 3F', $res->json('apercu.cuisson'));
+        // [OWNER 2026-08-19] Le poulet se compte en PIÈCES de 100 g (2 par portion) : la même
+        // portion de poulet s'écrit « 2P » au lieu de « 1P ». L'aperçu Uber doit montrer
+        // EXACTEMENT ce que la cuisine verra — il suit donc le bandeau, sans règle à lui.
+        $this->assertSame('4K 2P 3F', $res->json('apercu.cuisson'));
 
         $this->assertSame(0, Order::query()->withoutGlobalScopes()->count(), 'Rien ne doit partir en cuisine avant validation.');
     }

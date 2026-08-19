@@ -25,6 +25,12 @@
 
 import { categorize, isDrinkName, kdsVariationGroupValue, sanitizeKdsInstruction } from './kdsCustomization.js';
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
+// `claimedFormuleBadge` vit dans kdsBundledAddons.js (module sans import) pour
+// rester atteignable AUSSI depuis kdsCustomization.js sans cycle d'import.
+// Ré-exporté ici : c'est le module que les surfaces cuisine importent déjà.
+import { claimedFormuleBadge } from './kdsBundledAddons.js';
+
+export { claimedFormuleBadge };
 
 /** lowercase, strip diacritics, collapse spaces — for keyword matching. */
 function normalize(s) {
@@ -509,6 +515,10 @@ export function buildSymbolic(orderItem) {
         menu = 'BOISSON';
     } else if (addons.some((a) => /frite/.test(normalize(addonName(a))))) {
         menu = 'F';
+    } else {
+        // Aucun addon scellé : la formule est revendiquée par l'instruction du parent
+        // (seul lien parent→formule qui existe côté caisse). Voir claimedFormuleBadge().
+        menu = claimedFormuleBadge(orderItem?.instruction);
     }
 
     const crudites = CRUDITE_ORDER.filter((c) => crud.has(c)).join('');
@@ -694,23 +704,42 @@ export function renderItemSymbolic(orderItem) {
 
 /**
  * Valeur d'une PORTION COMPLÈTE, par viande — miroir de MeatPortionCalculator.
- * [owner 2026-08-07] L'unité diffère selon la viande :
+ * L'unité diffère selon la viande :
  *   · VIANDE HACHÉE (K) : la portion se compte en STEAKS et vaut 2 steaks (2 × 75 g) ;
- *   · POULET (P)        : la portion se compte en PORTIONS et vaut 1 portion (200 g),
- *                          donc un sandwich mixte en reçoit 0,5P (100 g).
+ *   · POULET (P)        : la portion se compte en PIÈCES et vaut 2 pièces (2 × 100 g).
  * Les autres viandes restent en pièces (2 par portion) jusqu'à instruction owner.
+ *
+ * [OWNER 2026-08-19] Le poulet valait 1 (une portion de 200 g) : c'était la seule viande de la
+ * table à valoir 1 quand toutes les autres valent 2, si bien qu'un emplacement partagé lui
+ * donnait « 0,5P » là où la hachée affichait « 1K ». Le propriétaire a demandé de le doubler ;
+ * compté en demi-portions il se lit comme les autres et le bandeau n'a plus de virgule. La
+ * quantité SERVIE ne bouge pas : le poids d'une unité comptée suit (200 g -> 100 g, cf.
+ * MeatMaterialResolver::MATIERES_A_CREER) et la consommation de stock reste identique.
  */
 export const PORTION_COMPLETE = 2;
 
-// K = 2 steaks · P = 1 portion de 200 g · Nug = 4 nuggets · Tender = 3 tenders ·
+// K = 2 steaks · P = 2 pièces de 100 g · Nug = 4 nuggets · Tender = 3 tenders ·
 // les autres (cordon, mexicanos, fricadelle) = 2 pièces.
-const PORTION_PAR_VIANDE = { K: 2, P: 1, Nug: 4, Tender: 3 };
+const PORTION_PAR_VIANDE = { K: 2, P: 2, Nug: 4, Tender: 3 };
 
 /**
  * Seul le poulet, vendu au poids, accepte une demi-portion à la virgule. Les autres viandes
  * sont des pièces entières : « 1,5Tender » enverrait le cuisinier couper un tender en deux.
+ * Depuis le doublage, une décimale ne peut plus naître que d'un emplacement DÉJÀ partagé sur
+ * un BOL — l'arrondir ferait disparaître de la viande du stock en silence.
  */
 const VIANDES_FRACTIONNABLES = ['P'];
+
+/**
+ * BOLS — [OWNER 2026-08-19] « les portions de poulet et les cordons bleus SUR LES BOLS, on
+ * mettra qu'une seule ». Un bol est un fond (frites ou riz) surmonté d'une viande : il en
+ * reçoit une DEMI-portion, là où un sandwich en reçoit une entière (bol cordon = 1Cordon,
+ * bol poulet = 1P). Ce n'est pas une contradiction avec « un Tacos L 2 viandes au cordon bleu
+ * affiche 2Cordon » (owner 2026-08-06) : « sur les bols » en est un qualificatif de lieu.
+ * Cherché en TOKEN, jamais en sous-chaîne, pour ne pas attraper un jour « Bolognaise ».
+ * Jumeau STRICT : MeatPortionCalculator::MOTIF_BOL / estBol().
+ */
+const EST_BOL = /\b(bols?|bowls?)\b/i;
 
 /** Valeur d'une portion complète pour cette viande. */
 function portion(symbole) {
@@ -846,6 +875,9 @@ export function meatPortionsForItem(orderItem) {
     const qty = Math.max(1, Number(orderItem?.quantity) || 1);
     const instruction = orderItem?.instruction || '';
     const pieces = {};
+    // Lu AVANT la boucle des viandes : la règle des bols en dépend. Jumeau PHP : forLine()
+    // reçoit déjà $itemName en premier paramètre.
+    const nomItem = String(orderItem?.item_name || orderItem?.name || '');
 
     const viandes = [];
     for (const v of readVariations(orderItem)) {
@@ -857,8 +889,12 @@ export function meatPortionsForItem(orderItem) {
 
     if (viandes.length) {
         // 1 emplacement → portion COMPLÈTE ; N emplacements → une DEMI-portion chacun.
-        // La valeur d'une portion dépend ensuite de la viande (2 steaks / 1 portion de poulet).
-        const partEmplacement = viandes.length === 1 ? 1 : 0.5;
+        // La valeur d'une portion dépend ensuite de la viande (2 steaks / 2 pièces de poulet).
+        // [OWNER 2026-08-19] Un BOL reçoit une demi-portion (cf. EST_BOL). La réduction porte
+        // sur la PART D'EMPLACEMENT, pas sur le total : elle se compose donc d'elle-même avec
+        // un bol à deux viandes, si l'owner en crée un un jour.
+        let partEmplacement = viandes.length === 1 ? 1 : 0.5;
+        if (EST_BOL.test(nomItem)) partEmplacement *= 0.5;
         for (const nom of viandes) {
             const shares = meatShares(nom);
             for (const sym of Object.keys(shares)) addPiece(pieces, sym, portion(sym) * partEmplacement * shares[sym] * qty);
@@ -888,8 +924,6 @@ export function meatPortionsForItem(orderItem) {
             for (const sym of Object.keys(shares)) addPiece(pieces, sym, portion(sym) * shares[sym] * mult * qty);
         }
     }
-
-    const nomItem = String(orderItem?.item_name || orderItem?.name || '');
 
     // Recette FIXE : composition immuable, ne dépendant d'aucun choix client.
     let recetteConnue = false;
