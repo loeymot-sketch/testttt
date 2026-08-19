@@ -47,6 +47,55 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 — APPS App Store / Google Play : le site devient une application — LIVRÉ, NON POUSSÉ**
+>
+> Branche backend `apps-stores-auth-2026-08-19` (worktree) · branche web
+> `app-stores/capacitor-2026-08-19` dans `lecayenne-web-deploy/Site lecayenne`. **Aucun push.**
+> Xcode n'est pas installé sur cette machine : tout est livré JUSQU'AU « Build/Archive » inclus,
+> les binaires restent à compiler par l'owner. Guide complet : `app/PUBLICATION.md` (dépôt web).
+>
+> **Choix structurant** : l'application EST le site (Capacitor 8), pas une copie. `app/www` est un
+> ARTEFACT reconstruit par `tools/build-app-www.mjs`, dont le mode `--check` échoue si l'app et le
+> site divergent — y compris sur un fichier « en trop ». Sans cette garde, un correctif appliqué au
+> site n'aurait aucune raison d'atteindre l'application.
+>
+> **Cinq défauts réels trouvés, aucun par un test qui échouait :**
+> 1. **CORS** — le serveur n'autorisait que `http://localhost:<port>` ; une app Capacitor appelle
+>    depuis `https://localhost` (sans port). TOUS les appels de l'app auraient été refusés, avec le
+>    symptôme le plus traître : la carte s'affiche (fichiers embarqués), seules connexion, commande
+>    et fidélité échouent. Corrigé + 5 tests (`tests/Feature/Apps/AppOriginCorsTest.php`).
+> 2. **Paiement 3-D Secure** — `funnel.jsx` fait `window.location.href = <url banque>`. Dans l'app,
+>    la vue web serait partie chez la banque puis retombée sur le SITE (autre origine) : sans panier,
+>    sans session, sans retour possible, après débit éventuel. Paiement en ligne COUPÉ dans l'app
+>    (`api.js` `onlineCardEnabled`), « Payer sur place » reste et est recommandé. Site inchangé.
+> 3. **Suppression de compte** — la garde de rôle comparait `roles.id` à `Role::CUSTOMER` : si
+>    l'auto-incrément dérive, PLUS AUCUN client ne peut supprimer son compte (piège déjà documenté
+>    par `SpatieRoleLookup`). De plus la « suppression » laissait nom/e-mail/téléphone en base, et
+>    le parcours d'inscription RESSUSCITAIT le compte par son téléphone. Corrigé : reconnaissance
+>    par NOM de rôle, effacement réel, toutes les sessions révoquées. Exigence Apple 5.1.1(v).
+> 4. **`users.phone` est NOT NULL** (sentinelle `PENDING_…`) : un test `filled()` aurait laissé
+>    passer TOUS les comptes sociaux — le verrou téléphone aurait eu l'air de marcher sans jamais
+>    rien bloquer. Juge canonique réutilisé : `PhoneDisplay::safe()`.
+> 5. **Verrou dépendant du canal d'auth** — la 1ʳᵉ version du filtre exigeait un jeton `auth_token`
+>    et s'effaçait sur une requête authentifiée par session (les contrôleurs ouvrent aussi une
+>    session web). On juge désormais le COMPTE (`is_guest`), avec dérogation borne (nom de jeton +
+>    rattachement `KioskMachine` en base — cette seconde dérogation vient d'une régression réelle
+>    attrapée par les tests de débit borne existants).
+>
+> **Auth** : `SocialAuthController` + `SocialIdentityVerifier` (RS256 vérifié contre le trousseau
+> public, émetteur, destinataire, expiration ; `alg:none` et confusion HS256 refusés ; rotation de
+> clés gérée). Aucune bibliothèque JWT ajoutée — reconstruction JWK→PEM prouvée identique à OpenSSL.
+> Téléphone TOUJOURS exigé (demande owner) : écran bloquant + middleware `require_customer_phone`.
+>
+> **Preuves** : Auth 85/85 · Apps 5/5 · Frontend 58/58 · Sentinelles 360/360 · zones gelées 0 ligne ·
+> 13 contrôles de comportement natif/navigateur (`tools/verify-app-behaviour.mjs`) · non-vacuité
+> prouvée par mutation sur 11 gardes (chacune rend SON test rouge quand on la retire) ·
+> `cap doctor` iOS + Android valides · captures et bandeau générés aux formats exacts des 2 stores.
+>
+> **Reste à l'owner** : comptes développeur Apple/Google, identifiants de connexion Apple/Google à
+> coller dans `index.html` + `.env` (`APPLE_AUDIENCES`/`GOOGLE_AUDIENCES`), keystore Android, boîte
+> e-mail de démonstration pour l'examinateur, puis compilation. Certificat API expire le 22/09/2026.
+
 > **2026-08-17 — P0 KDS : écran cuisine figé en vide dès la 1ère commande (Teleport Vue) — CORRIGÉ, NON COMMITÉ**
 >
 > HEAD `e707a549c` (inchangé), branche `pos/category-first-caisse-2026-06-23`. Signalement owner :
