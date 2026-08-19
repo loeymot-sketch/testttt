@@ -252,9 +252,136 @@ class PosOrderController extends AdminController
     ): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         abort_unless(auth()->user()?->can('pos-orders') || auth()->user()?->can('pos'), 403);
         try {
-            return SimpleOrderResource::collection($this->orderService->list($request));
+            $orders = $this->orderService->list($request);
+
+            return SimpleOrderResource::collection($this->markSealed($orders));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [BOUTON SCELLÉ 2026-08-19] Pose `is_sealed` sur chaque ligne avant sérialisation.
+     *
+     * Le tableau de suivi affichait « Annuler » sur des commandes enfermées dans un Z clos :
+     * le clic partait, le serveur refusait (NF525, à raison), et le caissier restait devant un
+     * bouton mort. Avec ce drapeau, la ligne propose « Rembourser » — la sortie légitime, qui
+     * existe déjà (`refundWithCounterEntry`, contrepartie NF525).
+     *
+     * UNE seule requête pour tout le lot (SealedOrderGuard::sealedOrderIds) : le prédicat par
+     * commande aurait coûté 100 requêtes sur un tableau rafraîchi toutes les 5 secondes.
+     * Mesuré : le tableau passe à 9 requêtes / 31 ms au total, dont UNE pour ce marquage.
+     * Fail-safe : si le calcul échoue, on rend la liste INTACTE sans drapeau — le tableau
+     * s'affiche comme avant plutôt que de tomber.
+     *
+     * ⛔ NE JAMAIS appeler ceci avant un `->save()`. `is_sealed` n'est PAS une colonne : posée
+     * par `setAttribute`, elle devient un attribut sale et Eloquent l'inclurait dans l'UPDATE
+     * → « Unknown column 'is_sealed' ». C'est le même piège que `withCount` (`orders_count`
+     * n'est pas une colonne non plus). Les deux seuls appelants (`index`, `stale`) lisent puis
+     * sérialisent, sans jamais persister — c'est ce qui rend ce marquage sûr ici.
+     *
+     * @template T
+     * @param  T  $orders
+     * @return T
+     */
+    private function markSealed($orders)
+    {
+        try {
+            $rows = $orders instanceof \Illuminate\Contracts\Pagination\Paginator
+                || $orders instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator
+                ? $orders->getCollection()
+                : $orders;
+
+            if (! $rows instanceof \Illuminate\Support\Collection && ! is_iterable($rows)) {
+                return $orders;
+            }
+
+            $sealed = app(\App\Services\Order\SealedOrderGuard::class)->sealedOrderIds($rows);
+            foreach ($rows as $row) {
+                $row->setAttribute('is_sealed', isset($sealed[(int) $row->id]));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[PosOrder] marquage scellé ignoré : '.$e->getMessage()); // allow: dégradation d'affichage seulement
+        }
+
+        return $orders;
+    }
+
+    /**
+     * [COMMANDES EN SOUFFRANCE 2026-08-19] Les non terminées ANTÉRIEURES à la journée de service.
+     *
+     * LE DÉFAUT RÉPARÉ. Depuis le passage du tableau en « journée de service » (fenêtre glissante
+     * qui garde la veille jusqu'à 5 h), toute commande non terminée plus ancienne est devenue
+     * INVISIBLE : plus moyen de la suivre, de la livrer, ni de l'annuler. Mesuré en base au
+     * 2026-08-19 : 577 commandes non terminées antérieures, dont 486 PAYÉES, la plus ancienne du
+     * 2026-05-28. Elles ne disparaissaient pas — on ne les voyait plus.
+     *
+     * Endpoint SÉPARÉ, jamais fondu dans les voies du tableau : 577 lignes noieraient les 2 vraies
+     * commandes du service en cours. La caisse affiche un compteur, et n'ouvre la liste que si on
+     * la demande.
+     *
+     * `count` est le total RÉEL (pas la taille de la page) : une troncature muette ferait croire
+     * qu'on a tout vu.
+     */
+    public function stale(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(auth()->user()?->can('pos-orders') || auth()->user()?->can('pos'), 403);
+
+        try {
+            $appTz = config('app.timezone');
+            // 5 h : littéral VOLONTAIRE, pas un réglage. Un clé de config ici serait un piège —
+            // le helper front porte la sienne en dur (DEFAULT_SERVICE_DAY_START_HOUR = 5) et ne
+            // la lirait pas : la déplacer côté serveur seul créerait une bande horaire où une
+            // commande n'est NI dans le tableau NI en souffrance. Les deux valeurs sont épinglées
+            // ensemble par tests/Feature/PosStaleOrdersTest.
+            $startHour = 5;
+            // Plancher = début de la journée de service en cours, MIROIR EXACT du helper front
+            // resources/js/helpers/posServiceDay.js : avant l'heure de bascule, le service de la
+            // veille court encore, donc le plancher recule d'un jour. Les deux doivent bouger
+            // ensemble — sinon une commande serait « ni dans le tableau, ni en souffrance ».
+            $now = \Carbon\Carbon::now($appTz);
+            $floor = $now->copy()->startOfDay()->setTime($startHour, 0);
+            if ($now->hour < $startHour) {
+                $floor->subDay();
+            }
+
+            $unfinished = [
+                \App\Enums\OrderStatus::PENDING,
+                \App\Enums\OrderStatus::ACCEPT,
+                \App\Enums\OrderStatus::PREPARING,
+                \App\Enums\OrderStatus::PREPARED,
+                \App\Enums\OrderStatus::OUT_FOR_DELIVERY,
+            ];
+
+            $base = Order::query()
+                ->whereIn('status', $unfinished)
+                ->where('order_datetime', '<', $floor);
+
+            $total = (clone $base)->count();
+
+            $perPage = (int) $request->input('per_page', 50);
+            $perPage = max(1, min($perPage, 100));
+
+            $rows = (clone $base)
+                ->with(['transaction', 'user', 'orderItems.orderItem'])
+                ->orderByDesc('order_datetime')
+                ->limit($perPage)
+                ->get();
+
+            return response()->json([
+                'data' => SimpleOrderResource::collection($this->markSealed($rows))->resolve(),
+                'meta' => [
+                    'count'      => $total,
+                    'shown'      => $rows->count(),
+                    'floor'      => $floor->toIso8601String(),
+                    'per_page'   => $perPage,
+                    // Vrai dès qu'on n'affiche pas tout : la caisse doit pouvoir le DIRE, une
+                    // troncature silencieuse se lit comme « il n'y a que ça ».
+                    'truncated'  => $total > $rows->count(),
+                ],
+            ]);
+        } catch (Exception $exception) {
+            return response()->json(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
 

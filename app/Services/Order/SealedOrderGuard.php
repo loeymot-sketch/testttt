@@ -151,6 +151,82 @@ class SealedOrderGuard
             ->exists();
     }
 
+    /**
+     * [BOUTON SCELLÉ 2026-08-19] Variante EN MASSE de {@see isSealed()} — quels ids, parmi
+     * ces commandes, vivent dans un Z CLOS ?
+     *
+     * POURQUOI. Le tableau de suivi affichait « Annuler » sur des commandes scellées : le clic
+     * partait, le serveur refusait (NF525, à raison), et le caissier restait devant un bouton
+     * mort sans savoir quoi faire. Pour proposer « Rembourser » à la place, la ligne doit savoir
+     * dès l'affichage si elle est scellée — or `isSealed()` coûte UNE requête PAR commande, soit
+     * 100 requêtes sur un rafraîchissement de tableau qui tourne toutes les 5 secondes.
+     *
+     * Le PRÉDICAT n'est pas réécrit : mêmes bornes, mêmes opérateurs (`opened_at <  created_at`
+     * ET `closed_at >= created_at`), même exigence `fiscal_sequence_no != null`, même
+     * interrupteur `fiscal.sealed_z_guard_enabled`. Seule la FORME change : une requête pour
+     * toutes les fenêtres Z closes concernées, puis la comparaison en mémoire. Un test épingle
+     * l'équivalence avec `isSealed()` commande par commande — si le prédicat dérive un jour,
+     * c'est ce test qui doit tomber, pas la caisse.
+     *
+     * @param  iterable<\App\Models\Order>  $orders
+     * @return array<int, true>  Ensemble indexé par id (isset() en O(1) côté appelant).
+     */
+    public function sealedOrderIds(iterable $orders): array
+    {
+        if (! $this->isEnabled()) {
+            return [];
+        }
+
+        $candidates = [];
+        $branchIds = [];
+        $earliest = null;
+        foreach ($orders as $order) {
+            if ($order->fiscal_sequence_no === null || $order->created_at === null) {
+                continue;
+            }
+            $candidates[] = $order;
+            $branchIds[(int) $order->branch_id] = true;
+            if ($earliest === null || $order->created_at->lt($earliest)) {
+                $earliest = $order->created_at;
+            }
+        }
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        // Une fenêtre ne peut sceller une commande que si elle se ferme APRÈS sa création :
+        // borner sur la plus ancienne des commandes évite de charger tout l'historique des Z.
+        $windows = ZReport::query()
+            ->whereIn('branch_id', array_keys($branchIds))
+            ->where('status', ZReport::STATUS_CLOSED)
+            ->where('closed_at', '>=', $earliest)
+            ->get(['branch_id', 'opened_at', 'closed_at']);
+
+        if ($windows->isEmpty()) {
+            return [];
+        }
+
+        $byBranch = [];
+        foreach ($windows as $w) {
+            $byBranch[(int) $w->branch_id][] = $w;
+        }
+
+        $sealed = [];
+        foreach ($candidates as $order) {
+            foreach ($byBranch[(int) $order->branch_id] ?? [] as $w) {
+                if ($w->opened_at !== null && $w->closed_at !== null
+                    && $w->opened_at->lt($order->created_at)
+                    && $w->closed_at->gte($order->created_at)) {
+                    $sealed[(int) $order->id] = true;
+                    break;
+                }
+            }
+        }
+
+        return $sealed;
+    }
+
     private function isEnabled(): bool
     {
         return (bool) Config::get('fiscal.sealed_z_guard_enabled', true);

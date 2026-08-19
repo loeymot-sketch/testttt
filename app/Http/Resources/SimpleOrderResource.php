@@ -104,6 +104,14 @@ class SimpleOrderResource extends JsonResource
             // to filter cards into the À ENCAISSER lane and renders
             // `cash_pending_amount` as the amount due in EUR.
             'is_cash_pending'              => $isCashPending,
+            // [BOUTON SCELLÉ 2026-08-19] La commande est-elle enfermée dans un Z CLOS ?
+            // Calculé SERVEUR (SealedOrderGuard::sealedOrderIds, prédicat unique) et posé sur
+            // le modèle par l'appelant AVANT la sérialisation — le client ne re-dérive rien.
+            // ABSENT ⇒ false : les endpoints qui ne le calculent pas n'ont AUCUN comportement
+            // modifié, et le serveur reste de toute façon l'autorité (l'endpoint de
+            // remboursement re-teste le sceau à chaque appel). C'est un indice d'AFFICHAGE,
+            // jamais une autorisation.
+            'is_sealed'                    => (bool) ($this->is_sealed ?? false),
             'cash_pending_amount'          => $isCashPending
                 ? AppLibrary::flatAmountFormat($this->total)
                 : null,

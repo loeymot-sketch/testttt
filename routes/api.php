@@ -1327,6 +1327,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
         Route::get('/', [PosOrderController::class, 'index']);
+        // [COMMANDES EN SOUFFRANCE 2026-08-19] Non terminées ANTÉRIEURES à la journée de service.
+        // Depuis la fenêtre glissante du tableau de suivi, elles étaient devenues invisibles :
+        // 577 en base au 2026-08-19, dont 486 payées, la plus ancienne du 2026-05-28. Lecture
+        // seule ; les actions passent par les routes existantes (change-status, refund…), qui
+        // gardent toutes leurs permissions. `throttle` aligné sur les lectures du tableau.
+        Route::get('/stale', [PosOrderController::class, 'stale'])
+            ->middleware('throttle:60,1')
+            ->name('stale');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         Route::delete('/{order}', [PosOrderController::class, 'destroy']);
         Route::get('/export', [PosOrderController::class, 'export']);

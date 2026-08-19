@@ -41,6 +41,26 @@
                          veille + 3 depuis minuit = « 143 aujourd'hui »). Le mot bascule dès que
                          la fenêtre s'étend sur deux jours civils. -->
                     <span>{{ stats.todayCount }} {{ windowSpansTwoDays ? $t('pos.tracker.service_total') : $t('pos.tracker.today_total') }}</span>
+                    <!-- [COMMANDES EN SOUFFRANCE 2026-08-19] Le tableau ne montre que la journée
+                         de SERVICE : tout ce qui traîne au-delà était devenu invisible (577 non
+                         terminées mesurées le 2026-08-19, dont 486 payées, la plus ancienne du
+                         2026-05-28). La pilule n'apparaît que s'il y en a, et le nombre est le
+                         TOTAL réel, pas la taille de la page. Instantané rafraîchi à l'ouverture
+                         du panneau et après chaque action — pas à chaque sondage : ce compteur
+                         bouge en heures, il ne mérite pas une requête toutes les 5 secondes. -->
+                    <button
+                        v-if="staleMeta.count > 0"
+                        type="button"
+                        class="pos-tracker-status-pill pos-tracker-status-pill--stale"
+                        data-testid="tracker-stale-pill"
+                        :aria-expanded="staleOpen ? 'true' : 'false'"
+                        aria-controls="pos-tracker-stale-panel"
+                        title="Commandes non terminées antérieures à la journée de service"
+                        @click="toggleStalePanel"
+                    >
+                        <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+                        {{ staleMeta.count }} en souffrance
+                    </button>
                     <!-- [CAISSE-HEALTH 2026-07-30] Santé système au cœur de la vue d'ensemble : l'opérateur
                          voit une dégradation temps réel/fiscale AVANT de perdre des commandes en silence. -->
                     <pos-system-health-pill />
@@ -454,8 +474,20 @@
                                       (required, max 700) — we duplicate the rule client-side
                                       to short-circuit the round-trip + give immediate UX feedback.
                                     -->
+                                    <!--
+                                      [BOUTON SCELLÉ 2026-08-19] Une commande enfermée dans un Z CLOS
+                                      ne PEUT PLUS être annulée — le refus vient de NF525 et il est
+                                      juste. Mais le bouton « Annuler » restait AFFICHÉ : le caissier
+                                      cliquait, recevait une erreur, et restait sans issue. 68 commandes
+                                      scellées mesurées sur 400 lignes réelles.
+                                      La sortie légitime existe déjà : la contrepartie comptable
+                                      (« Rembourser » → refund-with-counter-entry, la commande d'origine
+                                      reste immuable). On la propose À LA PLACE.
+                                      Sans le droit `pos-refund`, on n'affiche PAS un second bouton mort :
+                                      un état inerte DIT pourquoi et qui peut le faire.
+                                    -->
                                     <button
-                                        v-if="col.id !== 'delivered'"
+                                        v-if="col.id !== 'delivered' && !cancelBlockedReason(order)"
                                         type="button"
                                         class="pos-tracker-card-btn pos-tracker-card-btn--danger"
                                         :title="$t('pos.cancel_order_hint')"
@@ -464,6 +496,29 @@
                                     >
                                         <i class="fa-solid fa-ban" aria-hidden="true"></i>
                                     </button>
+                                    <button
+                                        v-else-if="col.id !== 'delivered' && cancelBlockedReason(order) === 'sealed' && canRefundSealed"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--danger"
+                                        title="Ticket clôturé dans un Z : annulation impossible (NF525). Émettre un remboursement en contrepartie."
+                                        :data-testid="`tracker-refund-${order.id}`"
+                                        @click="openRefundDialog(order)"
+                                    >
+                                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">Rembourser</span>
+                                    </button>
+                                    <span
+                                        v-else-if="col.id !== 'delivered'"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--sealed"
+                                        role="note"
+                                        :title="cancelBlockedReason(order) === 'sealed'
+                                            ? 'Ticket clôturé dans un Z : ni annulation ni remboursement depuis ce compte. Un responsable doit émettre la contrepartie.'
+                                            : 'Commande PAYÉE : l’annuler rend l’argent, ce compte n’a pas le droit de remboursement. Un responsable doit la traiter.'"
+                                        :data-testid="`tracker-blocked-${order.id}`"
+                                    >
+                                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ cancelBlockedReason(order) === 'sealed' ? 'Clôturé' : 'Responsable' }}</span>
+                                    </span>
                                     <button
                                         v-if="col.id === 'prepared'"
                                         type="button"
@@ -486,6 +541,76 @@
                 </div>
             </article>
         </div>
+
+        <!--
+          [COMMANDES EN SOUFFRANCE 2026-08-19] Panneau dépliable, SÉPARÉ des voies.
+          Fondre 577 vieilles commandes dans les colonnes noierait les 2 du service en cours —
+          c'est l'inverse du service rendu. Ici on les VOIT, on les rouvre, on les clôt.
+        -->
+        <section
+            v-if="staleOpen"
+            id="pos-tracker-stale-panel"
+            class="pos-tracker-stale"
+            data-testid="tracker-stale-panel"
+        >
+            <header class="pos-tracker-stale-head">
+                <h2>
+                    <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+                    En souffrance — non terminées avant la journée de service
+                </h2>
+                <div class="pos-tracker-stale-head-right">
+                    <span v-if="staleMeta.truncated" class="pos-tracker-stale-truncated">
+                        {{ staleMeta.shown }} affichées sur {{ staleMeta.count }}
+                    </span>
+                    <button type="button" class="pos-tracker-card-btn" @click="fetchStaleOrders" :disabled="staleLoading">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="pos-tracker-card-btn" @click="staleOpen = false" aria-label="Fermer">✕</button>
+                </div>
+            </header>
+
+            <p v-if="staleLoading" class="pos-tracker-stale-msg">Lecture…</p>
+            <!-- Un panneau vide après une erreur se lirait « il n'y en a pas » : on le DIT. -->
+            <p v-else-if="staleError" class="pos-tracker-stale-msg pos-tracker-stale-msg--error">
+                Lecture impossible : {{ staleError }}
+            </p>
+            <p v-else-if="staleOrders.length === 0" class="pos-tracker-stale-msg">Aucune commande en souffrance.</p>
+
+            <ul v-else class="pos-tracker-stale-list">
+                <li v-for="o in staleOrders" :key="o.id" class="pos-tracker-stale-row" :data-testid="`tracker-stale-row-${o.id}`">
+                    <span class="pos-tracker-stale-serial keep-latin">{{ o.queue_number ? 'N°' + o.queue_number : '#' + (o.order_serial_no || o.id) }}</span>
+                    <span class="pos-tracker-stale-date">{{ o.order_datetime }}</span>
+                    <span class="pos-tracker-stale-status">{{ staleStatusLabel(o.status) }}</span>
+                    <span class="pos-tracker-stale-total">{{ formatPrice(o.total) }}</span>
+                    <span v-if="o.is_sealed" class="pos-tracker-stale-sealed" title="Clôturée dans un Z : annulation impossible (NF525)">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i> Clôturé
+                    </span>
+                    <span class="pos-tracker-stale-actions">
+                        <router-link
+                            :to="{ name: 'admin.pos-orders.show', params: { id: o.id } }"
+                            class="pos-tracker-card-btn"
+                            :title="$t('pos.tracker.view_details')"
+                        ><i class="fa-solid fa-eye" aria-hidden="true"></i></router-link>
+                        <button
+                            v-if="!cancelBlockedReason(o)"
+                            type="button"
+                            class="pos-tracker-card-btn pos-tracker-card-btn--danger"
+                            :data-testid="`tracker-stale-cancel-${o.id}`"
+                            :title="$t('pos.cancel_order_hint')"
+                            @click="openCancelDialog(o)"
+                        ><i class="fa-solid fa-ban" aria-hidden="true"></i></button>
+                        <button
+                            v-else-if="cancelBlockedReason(o) === 'sealed' && canRefundSealed"
+                            type="button"
+                            class="pos-tracker-card-btn pos-tracker-card-btn--danger"
+                            :data-testid="`tracker-stale-refund-${o.id}`"
+                            title="Clôturée dans un Z : émettre la contrepartie comptable"
+                            @click="openRefundDialog(o)"
+                        ><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button>
+                    </span>
+                </li>
+            </ul>
+        </section>
 
         <div v-if="loading && columns.every(c => c.orders.length === 0)" class="pos-tracker-loading">
             <div class="pos-tracker-spinner" aria-hidden="true"></div>
@@ -616,6 +741,15 @@
             @cancel="encaisseOrder = null"
         />
 
+        <!-- [BOUTON SCELLÉ 2026-08-19] Contrepartie comptable d'une commande scellée.
+             Composant EXISTANT réutilisé tel quel (PosRefundModal) : il porte déjà la clé
+             d'idempotence, la validation du motif et l'appel à refund-with-counter-entry. -->
+        <PosRefundModal
+            :order="refundOrder"
+            @close="refundOrder = null"
+            @refunded="onRefunded"
+        />
+
         <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Sortie de stock hors-vente. -->
         <PosStockOutflowModal :open="stockOutflowOpen" @close="stockOutflowOpen = false" />
         <PromoFlyerQuickModal
@@ -641,6 +775,8 @@ import { serviceDayRange } from '../../../helpers/posServiceDay';
 import appService from '../../../services/appService';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import ReceiptComponent from './ReceiptComponent.vue';
+// [BOUTON SCELLÉ 2026-08-19] Contrepartie NF525 d'une commande enfermée dans un Z clos.
+import PosRefundModal from './PosRefundModal.vue';
 // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal — the tracker
 // must be self-sufficient for encashment (its Encaisser CTA was previously a
 // dead button: it only dispatched an un-listened CustomEvent).
@@ -698,7 +834,7 @@ const SCHEDULED_LEAD_MIN = 20;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal, PosRefundModal },
     mixins: [adminPriceMixin],
     data() {
         return {
@@ -706,6 +842,17 @@ export default {
             // [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Modale sortie de stock hors-vente.
             stockOutflowOpen: false,
             promoFlyerOpen: false,
+            // [BOUTON SCELLÉ 2026-08-19] Commande dont on émet la contrepartie (null = fermé).
+            refundOrder: null,
+            // [COMMANDES EN SOUFFRANCE 2026-08-19] Non terminées ANTÉRIEURES à la journée de
+            // service : invisibles depuis la fenêtre glissante du tableau. 577 en base au
+            // 2026-08-19, dont 486 payées. Chargées À LA DEMANDE — les fondre dans les voies
+            // noierait les commandes du service en cours.
+            staleOpen: false,
+            staleLoading: false,
+            staleOrders: [],
+            staleMeta: { count: 0, shown: 0, truncated: false },
+            staleError: '',
             promoFlyerPrefill: '',
             orders: [],
             filters: {
@@ -796,6 +943,47 @@ export default {
             const bornes = serviceDayRange();
 
             return bornes.from !== bornes.to;
+        },
+        /**
+         * [BOUTON MENTEUR 2026-08-19] Pourquoi cette commande ne peut-elle PAS être annulée
+         * depuis CE compte ? Rend une clé, ou null si l'annulation est réellement possible.
+         *
+         * Deux refus existent côté serveur, et les DEUX laissaient un bouton affiché :
+         *  · `sealed` — la commande est enfermée dans un Z clos : NF525 interdit de la muter,
+         *    la sortie légitime est la contrepartie comptable ;
+         *  · `refund_right` — la commande est PAYÉE : l'annuler REND l'argent
+         *    (PosOrderController::changeStatus étend la garde `pos-refund` à CANCELED/REJECTED
+         *    dès que payment_status = PAYÉ). Le rôle Caissier ne porte pas ce droit — refus
+         *    DÉLIBÉRÉ et documenté (vecteur de remboursement de masse). Le bouton, lui, ne le
+         *    disait pas : clic → 403 sans explication.
+         *
+         * On ne CONTOURNE aucune garde ici : on cesse de promettre ce que le serveur refusera.
+         * Rendu comme une fonction (et non un computed par ligne) : le tableau affiche jusqu'à
+         * 100 cartes et se rafraîchit toutes les 5 s.
+         */
+        cancelBlockedReason() {
+            const peutRembourser = this.canRefundSealed;
+            return (order) => {
+                if (!order) return null;
+                if (order.is_sealed) return 'sealed';
+                if (Number(order.payment_status) === paymentStatusEnum.PAID && !peutRembourser) {
+                    return 'refund_right';
+                }
+                return null;
+            };
+        },
+        /**
+         * [BOUTON SCELLÉ 2026-08-19] Ce compte peut-il émettre une contrepartie ?
+         * Même vérificateur que PosOrderShowComponent (`permissionChecker('pos-refund')`) :
+         * l'endpoint est gardé par cette permission côté serveur, la refléter ici évite un
+         * SECOND bouton mort là où on vient justement d'en supprimer un.
+         */
+        canRefundSealed() {
+            try {
+                return !!appService.permissionChecker('pos-refund');
+            } catch (e) {
+                return false;
+            }
         },
         // [WEB-ORDER-ACCEPT 2026-07-30 · décision owner + parité PosComponent.canProcessWebOrders]
         // Le CTA « Accepter » d'une commande web POST vers online-order/change-status (gardé
@@ -1085,6 +1273,10 @@ export default {
         try { this._baseDocTitle = document.title || ''; } catch (_e) { /* SSR/test */ }
         this._collapseSidebar();
         this.fetchOrders();
+        // [COMMANDES EN SOUFFRANCE 2026-08-19] Instantané du compteur au chargement. Ce nombre
+        // évolue en heures : le sonder à chaque poll 5 s coûterait 720 requêtes/heure pour une
+        // valeur qui ne bouge pas. Il est rafraîchi à l'ouverture du panneau et après action.
+        this.fetchStaleOrders();
         this._subscribeEcho();
         this._bindWsService();
         this._startPolling();
@@ -1413,6 +1605,69 @@ export default {
         _todayRange() {
             return serviceDayRange();
         },
+        /**
+         * [COMMANDES EN SOUFFRANCE 2026-08-19] Libellé de statut du panneau.
+         *
+         * Réutilise EXACTEMENT les libellés des voies affichées juste au-dessus : le caissier
+         * lit « En préparation » dans la colonne et « En préparation » dans le panneau, pas deux
+         * mots pour un même état. `all.order.status.X` n'existe QUE côté PHP — la première
+         * écriture de ce panneau affichait donc la clé brute « all.order.status.8 » à l'écran,
+         * défaut vu en ouvrant la page, pas en relisant le code.
+         *
+         * PENDING n'a pas de voie (le tableau ne l'affiche jamais) : libellé propre en dur,
+         * cohérent avec la V1 FR-locked (ADR-007).
+         */
+        staleStatusLabel(status) {
+            const s = Number(status);
+            if (s === orderStatusEnum.PENDING) return 'En attente';
+            if (s === orderStatusEnum.ACCEPT) return this.$t('pos.tracker.col_accept');
+            if (s === orderStatusEnum.PREPARING) return this.$t('pos.tracker.col_preparing');
+            if (s === orderStatusEnum.PREPARED) return this.$t('pos.tracker.col_prepared');
+            if (s === orderStatusEnum.OUT_FOR_DELIVERY) return this.$t('pos.tracker.col_on_the_way');
+            if (s === orderStatusEnum.DELIVERED) return this.$t('pos.tracker.col_delivered');
+            return '';
+        },
+        // [BOUTON SCELLÉ 2026-08-19] Ouvre la contrepartie comptable sur une commande scellée.
+        openRefundDialog(order) {
+            if (!order || !order.id) return;
+            this.refundOrder = order;
+        },
+        async onRefunded() {
+            this.refundOrder = null;
+            await this.fetchOrders();
+            if (this.staleOpen) await this.fetchStaleOrders();
+        },
+        /**
+         * [COMMANDES EN SOUFFRANCE 2026-08-19] Charge les non terminées antérieures à la
+         * journée de service. Lecture seule ; les actions passent par les routes existantes.
+         */
+        async fetchStaleOrders() {
+            if (this.staleLoading) return;
+            this.staleLoading = true;
+            this.staleError = '';
+            try {
+                const res = await axios.get('admin/pos-order/stale', { params: { per_page: 50 } });
+                const data = res?.data?.data;
+                this.staleOrders = Array.isArray(data) ? data : [];
+                const meta = res?.data?.meta;
+                this.staleMeta = meta && typeof meta === 'object'
+                    ? { count: Number(meta.count) || 0, shown: Number(meta.shown) || 0, truncated: !!meta.truncated }
+                    : { count: 0, shown: 0, truncated: false };
+            } catch (e) {
+                // On DIT que la lecture a échoué : un panneau vide se lirait « il n'y en a pas ».
+                this.staleOrders = [];
+                this.staleMeta = { count: 0, shown: 0, truncated: false };
+                this.staleError = e?.response?.data?.message || 'Lecture impossible';
+            } finally {
+                this.staleLoading = false;
+            }
+        },
+        async toggleStalePanel() {
+            this.staleOpen = !this.staleOpen;
+            if (this.staleOpen && this.staleOrders.length === 0 && !this.staleError) {
+                await this.fetchStaleOrders();
+            }
+        },
         async markDelivered(order) {
             if (!order || order._delivering) return;
             order._delivering = true;
@@ -1504,6 +1759,9 @@ export default {
                 this.closeCancelDialog();
                 alertService.success(this.$t('pos.cancel_order_done'));
                 await this.fetchOrders();
+                // [COMMANDES EN SOUFFRANCE 2026-08-19] Une annulation peut venir de CE panneau :
+                // sans ce rafraîchissement, la ligne resterait affichée et le compteur mentirait.
+                await this.fetchStaleOrders();
             } catch (e) {
                 // [test-e2e/pos-kds-sync round-3 E-001 P0] silent-error visibility:
                 // backend 422/4xx on /pos-order/change-status was previously written
@@ -2966,4 +3224,85 @@ export default {
     .pos-tracker-card.tracker-card--urgent,
     .pos-tracker-card.is-fresh { animation: none; }
 }
+/* ─────────────────────────────────────────────────────────────────────────────
+   [COMMANDES EN SOUFFRANCE + BOUTON SCELLÉ 2026-08-19]
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.pos-tracker-status-pill--stale {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+    cursor: pointer;
+}
+.pos-tracker-status-pill--stale:hover { background: #FDE68A; }
+
+/* Marqueur inerte : la commande est clôturée dans un Z et ce compte ne peut pas
+   émettre la contrepartie. Ce n'est PAS un bouton — pas de curseur main, pas de
+   clic : un bouton mort est exactement ce qu'on vient de supprimer. */
+.pos-tracker-card-btn--sealed {
+    background: #F3F4F6;
+    color: #6B7280;
+    border: 1px dashed #D1D5DB;
+    cursor: default;
+}
+
+.pos-tracker-stale {
+    margin: 12px 0 0;
+    padding: 12px 16px;
+    background: #FFFBEB;
+    border: 1px solid #FCD34D;
+    border-radius: 10px;
+    /* Déclaré EXPLICITEMENT : non déclaré, `overflow-x` est recalculé en `auto` face à un
+       `overflow-y` non-`visible` (CSS Overflow 3). C'est précisément ce qui a produit le
+       scroll horizontal de cet écran le 2026-08-19 — on ne le refait pas. */
+    overflow-x: hidden;
+}
+.pos-tracker-stale-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.pos-tracker-stale-head h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    color: #92400E;
+}
+.pos-tracker-stale-head-right { display: flex; align-items: center; gap: 6px; }
+.pos-tracker-stale-truncated { font-size: 12px; font-weight: 700; color: #92400E; }
+.pos-tracker-stale-msg { margin: 6px 0; font-size: 13px; color: #78350F; }
+.pos-tracker-stale-msg--error { color: #B91C1C; font-weight: 700; }
+
+.pos-tracker-stale-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    /* Le panneau ne doit pas pousser les voies hors de l'écran : il défile chez lui. */
+    max-height: 340px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.pos-tracker-stale-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 6px 4px;
+    border-bottom: 1px solid #FDE68A;
+    font-size: 13px;
+}
+.pos-tracker-stale-row:last-child { border-bottom: 0; }
+.pos-tracker-stale-serial {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 800;
+    min-width: 92px;
+}
+.pos-tracker-stale-date { color: #78350F; min-width: 128px; }
+.pos-tracker-stale-status { font-weight: 700; }
+.pos-tracker-stale-total { font-weight: 800; margin-left: auto; }
+.pos-tracker-stale-sealed { font-size: 12px; font-weight: 700; color: #6B7280; }
+.pos-tracker-stale-actions { display: flex; align-items: center; gap: 4px; }
 </style>
