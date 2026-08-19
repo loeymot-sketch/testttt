@@ -109,6 +109,9 @@ class PosOrderCarriesLoyaltyCodeTest extends TestCase
 
         $this->actingAs($caissier, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // Le vrai client caisse génère cette clé à chaque envoi (store posOrder/save) : la
+            // poser ici garde le test aligné sur le chemin réel, middleware d'idempotence inclus.
+            ->withHeader('X-Idempotency-Key', 'test-fid-'.uniqid('', true))
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($caissier, $payload))
             ->assertStatus(201);
 
@@ -123,6 +126,7 @@ class PosOrderCarriesLoyaltyCodeTest extends TestCase
         if ((int) $commande->status !== OrderStatus::DELIVERED) {
             $this->actingAs($caissier, 'sanctum')
                 ->withHeader('x-api-key', config('app.api_key'))
+                ->withHeader('X-Idempotency-Key', 'test-fid-st-'.uniqid('', true))
                 ->postJson('/api/admin/pos-order/change-status/' . $commande->id, [
                     'status' => OrderStatus::DELIVERED,
                 ]);
@@ -179,17 +183,27 @@ class PosOrderCarriesLoyaltyCodeTest extends TestCase
 
         $this->actingAs($caissier, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // Le vrai client caisse génère cette clé à chaque envoi (store posOrder/save) : la
+            // poser ici garde le test aligné sur le chemin réel, middleware d'idempotence inclus.
+            ->withHeader('X-Idempotency-Key', 'test-fid-'.uniqid('', true))
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($caissier, $payload))
             ->assertStatus(201);
 
         $commande = Order::withoutGlobalScopes()->latest('id')->first();
         $this->assertNull($commande->loyalty_customer_code);
 
+        // La commande DOIT réellement atteindre « livrée », sinon l'assertion « 0 point »
+        // passerait à vide et ce contre-exemple ne prouverait plus rien.
         $this->actingAs($caissier, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', 'test-fid-st2-'.uniqid('', true))
             ->postJson('/api/admin/pos-order/change-status/' . $commande->id, [
                 'status' => OrderStatus::DELIVERED,
-            ]);
+            ])
+            ->assertOk();
+
+        $commande->refresh();
+        $this->assertSame(OrderStatus::DELIVERED, (int) $commande->status);
 
         $client->refresh();
         $this->assertSame(0, (int) $client->loyalty_points);

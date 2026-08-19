@@ -117,4 +117,53 @@ return [
     | the pending row anyway). Default 30 min. Override: LOYALTY_ORPHAN_REDEEM_REAP_MINUTES.
     */
     'orphan_redeem_reap_minutes' => (int) env('LOYALTY_ORPHAN_REDEEM_REAP_MINUTES', 30),
+
+    /*
+    |----------------------------------------------------------------------
+    | Conserver l'email saisi à la borne (2026-08-19 — arbitrage propriétaire)
+    |----------------------------------------------------------------------
+    |
+    | CE QUE CE DRAPEAU ARBITRE. Un client s'inscrit à la borne avec son nom, son
+    | téléphone et son email. Faut-il ÉCRIRE cet email sur le compte créé ?
+    |
+    | NON (false) — la position [P1-1 SÉCU 2026-08-04]. Sur cet endpoint public et
+    | non authentifié, rien ne prouve que la personne devant la borne possède le
+    | numéro qu'elle tape. Un attaquant peut donc enrôler le numéro d'une victime
+    | avec SON email à lui ; plus tard, la garde anti-« channel-confusion » de
+    | `GuestSignupController` livre le code de connexion à l'email LIÉ AU COMPTE,
+    | c'est-à-dire au squatteur. Le prix de cette prudence est lourd et mesuré : la
+    | borne annonçait « inscrit » et jetait l'email, si bien qu'un client fidèle
+    | n'avait ENSUITE aucun canal de connexion — ni son email (jamais stocké), ni
+    | celui qu'il retapait (la même garde, branche 2, refuse de livrer à l'email de
+    | l'appelant dès que le compte a de la valeur). Le programme était une impasse.
+    |
+    | OUI (true, défaut) — l'arbitrage du propriétaire du 2026-08-19, formulé
+    | explicitement : « il crée un compte avec son numéro, son e-mail et son prénom
+    | […] ensuite il se connecte avec son e-mail et il peut utiliser ses points ».
+    | L'email stocké redonne au mécanisme EXISTANT de quoi fonctionner — aucune
+    | garde n'est réécrite, on lui fournit la donnée qui lui manquait.
+    |
+    | CE QUI RESTE VRAI DANS LES DEUX POSITIONS :
+    |   - l'email n'est JAMAIS posé sur un compte préexistant (fix hijack 2026-07-02) ;
+    |   - un email déjà porté ailleurs → 409, aucune création ;
+    |   - `email_verified_at` reste NULL : une adresse déclarée n'est pas une preuve ;
+    |   - la réinitialisation de mot de passe refuse les comptes invités
+    |     (`ForgotPasswordController`) — on ne pose pas un PREMIER mot de passe sur
+    |     le compte d'un autre en appelant ça « réinitialiser ».
+    |
+    | RISQUE RÉSIDUEL, ASSUMÉ ET CHIFFRÉ : il faut être physiquement devant la borne,
+    | connaître le numéro d'une victime, l'enrôler AVANT elle, puis attendre qu'elle
+    | cumule assez de points. Enveloppe V1 = un seul restaurant, une borne en salle,
+    | gain maximal = les points d'un client (plancher 1000 pts = 10 €). Pour revenir
+    | à la position prudente sans toucher au code : LOYALTY_KIOSK_EMAIL_CAPTURE=false.
+    |
+    | Sentinelle : tests/Feature/Loyalty/LoyaltyRegisterAllowsWebLoginTest.php
+    |              (elle éprouve LES DEUX positions, pas seulement celle du défaut)
+    |              tests/Feature/Loyalty/KioskRegisterKeepsEmailTest.php
+    */
+    'kiosk_email_capture' => filter_var(
+        env('LOYALTY_KIOSK_EMAIL_CAPTURE', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE
+    ) ?? true,
 ];

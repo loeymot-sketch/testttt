@@ -168,13 +168,51 @@ class LoyaltyController extends Controller
                 // Création rapide d'un client via le Kiosk
                 $user = new User();
                 $user->name = $request->input('name') ?? 'Client Loyalty';
-                // [P1-1 SÉCU 2026-08-04] Endpoint PUBLIC non-auth : NE JAMAIS lier un email NON
-                // VÉRIFIÉ à un compte créé sur un téléphone TIERS. Sinon un attaquant empoisonne le
-                // futur compte d'une victime (POST {phone: victime, email: attaquant} → plus tard la
-                // garde channel-confusion de l'email-OTP livre le code à l'email lié = l'attaquant).
-                // L'email n'est lié QU'via le flux email-OTP (possession prouvée du code). Ici :
-                // téléphone + nom seulement — l'enrôlement fidélité ne prouve pas la possession d'email.
-                $user->email = null;
+                /*
+                 * ── L'EMAIL SAISI À LA BORNE EST CONSERVÉ (2026-08-19, décision propriétaire) ──
+                 *
+                 * HISTOIRE DE CETTE LIGNE. Elle valait `$user->email = null;` depuis le
+                 * [P1-1 SÉCU 2026-08-04] : sur un endpoint public, lier un email NON VÉRIFIÉ à un
+                 * compte créé sur un téléphone TIERS permet d'empoisonner le futur compte d'une
+                 * victime (POST {phone: victime, email: attaquant}), car la garde channel-confusion
+                 * de l'email-OTP livre ensuite le code à l'email LIÉ AU COMPTE.
+                 *
+                 * CE QUE CETTE GARDE COÛTAIT, MESURÉ. La borne demande nom + téléphone + email et
+                 * les envoie ; l'API répondait 200 « inscrit » et jetait l'email en silence. Le
+                 * client croyait s'être inscrit avec son adresse et ne pouvait JAMAIS s'y
+                 * connecter — pire, `GuestSignupController` (garde channel-confusion, branche 2)
+                 * refuse d'envoyer le code à l'email de l'APPELANT dès que le compte a de la
+                 * valeur (points ou commandes). Un client fidèle inscrit à la borne se retrouvait
+                 * donc SANS AUCUN canal de connexion : ni son email (non stocké), ni celui qu'il
+                 * tapait (refusé). C'est exactement le parcours cassé signalé par le propriétaire.
+                 *
+                 * POURQUOI CONSERVER L'EMAIL SUFFIT. Le mécanisme de connexion était déjà écrit :
+                 * la garde livre le code à `$existing->email`. Elle n'avait simplement jamais
+                 * d'email à utiliser. Stocker celui que le client tape à la borne rétablit son
+                 * parcours sans toucher à la garde.
+                 *
+                 * CE QUI RESTE PROTÉGÉ (l'intention du 2026-08-04 n'est pas abandonnée) :
+                 *   - email JAMAIS posé sur un compte EXISTANT (branche `else`, fix hijack
+                 *     2026-07-02) — on ne peut pas repeindre l'adresse d'un compte déjà là ;
+                 *   - email déjà porté par un AUTRE compte → 409 EMAIL_EXISTS en amont ;
+                 *   - `email_verified_at` reste NULL : l'adresse est une DÉCLARATION, pas une
+                 *     preuve. Elle ne devient preuve qu'au premier code reçu ;
+                 *   - la réinitialisation de mot de passe refuse désormais les comptes invités
+                 *     (`ForgotPasswordController`) : on ne pose plus de mot de passe sur un compte
+                 *     dont personne n'a jamais choisi le mot de passe.
+                 *
+                 * RISQUE RÉSIDUEL ASSUMÉ, À CONNAÎTRE : un attaquant physiquement présent à la
+                 * borne, qui connaît le numéro d'une victime et l'inscrit avec SON email AVANT
+                 * elle, pourra recevoir le code de ce compte. Enveloppe V1 = un seul restaurant,
+                 * borne dans la salle, gain maximal = les points d'un client. Arbitrage
+                 * propriétaire : un programme de fidélité utilisable vaut ce risque-là. Pour
+                 * revenir en arrière, il suffit de remettre `$user->email = null;` ici.
+                 */
+                $emailSaisi = trim((string) $request->input('email', ''));
+                $captureEmail = (bool) config('loyalty.kiosk_email_capture', true);
+                $user->email = ($captureEmail && $emailSaisi !== '' && filter_var($emailSaisi, FILTER_VALIDATE_EMAIL))
+                    ? $emailSaisi
+                    : null;
                 $user->phone = $request->input('phone');
                 $user->username = uniqid('kiosk_');
                 $user->password = bcrypt(uniqid());
