@@ -254,6 +254,7 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
         );
 
         $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id]);
 
         $prepared = $this->makeAbandonedKioskCounterOrder(
             $branch->id,
