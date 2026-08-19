@@ -31,6 +31,11 @@ describe('kioskCart submit payload', () => {
         expect(payload).toEqual({
             order_type: 10,
             loyalty_code: 'LOYAL-42',
+            // [FIDÉLITÉ BORNE 2026-08-19] Ce que le client dépense, en POINTS — une QUANTITÉ, pas
+            // de l'argent. C'est précisément pourquoi ce champ ne contredit pas l'invariant que
+            // ce test protège : `discount` reste interdit dans la liste ci-dessous, et le serveur
+            // convertit lui-même les points au taux de la maison.
+            loyalty_redeem_points: 0,
             kiosk_promo_code: 'PROMO10',
             is_advance_order: 10,
             source: 5,

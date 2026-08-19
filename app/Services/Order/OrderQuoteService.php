@@ -421,10 +421,35 @@ class OrderQuoteService
         );
     }
 
+    /**
+     * [FIDÉLITÉ BORNE 2026-08-19] CE QUE LE CLIENT DEMANDE À DÉPENSER, TRADUIT EN EUROS.
+     *
+     * DEUX ENTRÉES, UNE SEULE TRADUCTION — et elle vit ici pour que le devis et la création ne
+     * puissent pas diverger d'un centime (le sceau refuserait la commande).
+     *
+     * - `loyalty_redeem_points` (borne, depuis 2026-08-19) : une QUANTITÉ, pas de l'argent. Le
+     *   payload borne ne doit porter aucun champ monétaire (invariant SSOT/NF525 verrouillé par
+     *   `kioskCartSendPayload.spec.js`), et raisonner en points supprime l'ambiguïté euro↔point
+     *   qui a causé l'incident « facteur 10 » du 2026-08-14.
+     * - `discount` (web / self-service, historique) : conservé tel quel, ce chemin passe par un
+     *   pré-rachat déjà débité et exprimé en euros.
+     *
+     * Le serveur reste seul maître du chiffre RETENU : ceci n'est que la lecture de la demande.
+     */
+    private function montantRachatDemande(Request $request): float
+    {
+        $points = (int) $request->input('loyalty_redeem_points', 0);
+        if ($points > 0) {
+            return app(\App\Services\Loyalty\LoyaltyRules::class)->euroValue($points);
+        }
+
+        return (float) $request->input('discount', 0);
+    }
+
     private function withKioskLoyaltyDiscount(Request $request, PricingResult $pricing): PricingResult
     {
         $loyaltyCode = trim((string) $request->input('loyalty_code', ''));
-        $requestedDiscount = (float) $request->input('discount', 0);
+        $requestedDiscount = $this->montantRachatDemande($request);
 
         if ((int) $request->input('coupon_id', 0) > 0 || $loyaltyCode === '' || $requestedDiscount <= 0.0) {
             return $pricing;

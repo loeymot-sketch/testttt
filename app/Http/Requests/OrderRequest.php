@@ -187,6 +187,13 @@ class OrderRequest extends FormRequest
             ] : ['nullable'],
             'coupon_id' => ['nullable', 'numeric'],
             'loyalty_code' => ['nullable', 'string', 'max:25'],
+            // [FIDÉLITÉ BORNE 2026-08-19] Points que le client dépense. Une QUANTITÉ, jamais un
+            // montant : le payload borne ne porte aucun champ monétaire (SSOT/NF525), et le
+            // serveur convertit lui-même au taux de la maison.
+            // `min:0` et non `min:1` : le payload borne porte TOUJOURS ce champ (une clé
+            // conditionnelle ferait diverger devis et commande, donc échouer le sceau) et vaut 0
+            // quand le client ne dépense rien. 0 = « aucun rachat », pas une erreur de saisie.
+            'loyalty_redeem_points' => ['nullable', 'integer', 'min:0'],
             'quote_token' => $this->isKioskOrderToken()
                 ? ['required', 'uuid']
                 : ['nullable', 'uuid'],

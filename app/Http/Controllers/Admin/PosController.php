@@ -183,7 +183,7 @@ class PosController extends AdminController
             // « total does not match » sur toute vente avec points. Ces deux champs voyagent donc
             // ensemble sur le devis ET sur la commande.
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
-            'loyalty_redeem_points' => ['nullable', 'integer', 'min:1'],
+            'loyalty_redeem_points' => ['nullable', 'integer', 'min:0'],
             'delivery_charge' => ['nullable', 'numeric', 'min:0'],
             'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
             'order_type' => ['nullable', 'numeric'],
