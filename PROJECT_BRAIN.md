@@ -47,16 +47,37 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **2026-08-19 — SUPERVISION : les 3 lots du jour sur UNE seule ligne, audités, testés — EN ATTENTE DU GO DÉPLOIEMENT**
+> **2026-08-19 — SUPERVISION : les 3 lots du jour intégrés, audités, testés — DÉPLOYÉ ET VÉRIFIÉ**
 >
-> Branche `supervision/integration-2026-08-19` (worktree `.claude/worktrees/supervision-2026-08-19`),
-> HEAD `29d7e3e32`. Contient les sommets des TROIS branches du 19/08 : caisse `d7072ec91`,
-> apps `f142ba657`, fidélité `3b51ee700`. **Rien n'est poussé.** GOAL :
-> `plans/GOAL_SUPERVISION_INTEGRATION_3_BRANCHES_2026-08-19.md`.
+> HEAD déployé **`57c17f8fe`** (poussé sur `pos/category-first-caisse-2026-06-23` en AVANCE
+> RAPIDE, `d7072ec91..57c17f8fe`, 31 commits, aucun historique réécrit). Contient les sommets
+> des TROIS branches du 19/08 : caisse `d7072ec91`, apps `f142ba657`, fidélité `3b51ee700`.
+> GOAL : `plans/GOAL_SUPERVISION_INTEGRATION_3_BRANCHES_2026-08-19.md`.
 >
-> **CE QUE LA PRODUCTION PORTE AUJOURD'HUI** : le lot caisse/cuisine SEUL (`origin` =
-> `d7072ec91`, déployé à 14:44 par une autre session). Les lots **comptes/apps** et
-> **fidélité** ne sont PAS en ligne.
+> **AVANT** : la production ne portait que le lot caisse/cuisine (déployé à 14:44 par une
+> autre session). **APRÈS** : les trois lots sont en ligne.
+>
+> **PREUVES DE DÉPLOIEMENT** (pas un `git push` — le contenu servi) : `git rev-parse` sur le
+> VPS = `57c17f8f` · chaîne NF525 CHAIN OK · jeu de bundles complet (gate hash-servi) ·
+> `healthz` 200 · CORS web OK · retour arrière jamais déclenché · instantané de base pris
+> avant migration (`predeploy-20260819-170208.sql.gz`).
+> Sondes personnelles : `POST /api/auth/social/apple` → **400** (route présente, corps vide
+> rejeté) contre **405** pour un fournisseur inventé — la liste blanche `apple|google` mord,
+> donc le lot apps est réellement actif. `fidelite:verifier` en production : soldes tous
+> cohérents avec le grand-livre, toutes les ventes rattachées ont crédité, aucun point bloqué.
+>
+> **LE CORRECTIF `config:cache` A SERVI DÈS CE DÉPLOIEMENT** : le journal affiche
+> « caches OK (config:cache volontairement SAUTÉ — piège fiscal) ». Ce correctif vivait NON
+> COMMITÉ dans un arbre de travail le matin même.
+>
+> **RESTE OUVERT, MESURÉ EN PRODUCTION** :
+>   · 1 numéro porte 2 comptes (`#24` 10 pts / `#30` 0 pt) → `php artisan fidelite:fusionner-doublons`
+>     répare sans perte. NON LANCÉ (mutation de données, décision owner).
+>   · **121 ventes de caisse, 0 rattachée à un client (0,0 %)** — le programme est en ligne
+>     mais personne n'est rattaché au comptoir. C'est ce que les correctifs du jour visent.
+>   · Barème confirmé en production : 10 pts/€ gagnés · 100 pts = 1 € · plancher 100 pts.
+>   · **4ᵉ lot du jour NON INTÉGRÉ** : `goal/roue-concours-saas-2026-08-19` — session ENCORE
+>     ACTIVE à 18:59. Délibérément hors périmètre : on ne fusionne pas une branche en écriture.
 >
 > **POURQUOI CETTE SUPERVISION EXISTAIT.** Trois sessions ont travaillé en parallèle sans se
 > voir. Chacune a validé son travail sur SA branche ; personne n'avait exécuté un seul test
