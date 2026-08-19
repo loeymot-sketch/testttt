@@ -119,7 +119,17 @@ class KioskRedeemThroughSealedQuoteTest extends TestCase
         [$kioskUser, $branch, $item, $client] = $this->borne(2000);
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        // [SUPERVISION 2026-08-19] `POST api/frontend/order` figure dans
+        // `idempotency.required_routes` : sans cet en-tête, la requête est refusée AVANT
+        // d'atteindre le contrôleur. Ce test passait parce que le banc de la session
+        // fidélité portait un `.env.testing` (NON VERSIONNÉ, .gitignore:14) qui ne définit
+        // pas IDEMPOTENCY_MIDDLEWARE_ENABLED — la valeur retombait donc sur le défaut
+        // `false` de config/idempotency.php:28 et le filtre s'effaçait. Sur un clone neuf,
+        // en CI, ou avec `.env.example` (qui pose `true`, ligne 421, comme l'exige le garde
+        // de démarrage NF525 en production), le test échouait. On emprunte désormais le
+        // chemin réel : une borne envoie sa clé, comme les autres suites du dépôt.
         $reponse = $this->withHeader('x-api-key', 'test-api-key')
+            ->withHeaders(['X-Idempotency-Key' => 'kio-'.bin2hex(random_bytes(6))])
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $this->commande($branch, $item, 1500)));
 
         $this->assertContains(
@@ -153,7 +163,11 @@ class KioskRedeemThroughSealedQuoteTest extends TestCase
         [$kioskUser, $branch, $item, $client] = $this->borne(2000);
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        // [SUPERVISION 2026-08-19] Même raison que le test précédent : la clé d'idempotence
+        // est exigée sur cette route dès que le filtre est actif (donc partout sauf sur un
+        // banc portant un `.env.testing` qui l'omet).
         $reponse = $this->withHeader('x-api-key', 'test-api-key')
+            ->withHeaders(['X-Idempotency-Key' => 'kio-'.bin2hex(random_bytes(6))])
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $this->commande($branch, $item, 0)));
 
         $this->assertContains($reponse->status(), [200, 201], $reponse->getContent());
