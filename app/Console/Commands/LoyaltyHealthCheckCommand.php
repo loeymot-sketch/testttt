@@ -135,18 +135,23 @@ class LoyaltyHealthCheckCommand extends Command
         $tel = app(PhoneIdentity::class);
         $groupes = [];
 
-        DB::table('users')
+        \App\Models\User::query()
             ->whereNotNull('phone')
             ->where('phone', '!=', '')
             ->select('id', 'name', 'phone', 'loyalty_code', 'loyalty_points')
             ->orderBy('id')
             ->chunk(500, function ($lot) use (&$groupes, $tel) {
                 foreach ($lot as $u) {
-                    $canonique = $tel->normalize((string) $u->phone);
                     if (! $tel->looksComplete((string) $u->phone)) {
                         continue;
                     }
-                    $groupes[$canonique][] = $u;
+                    // MÊME règle que la commande de fusion, au même endroit : sans ça le
+                    // vérificateur annonçait 6 clients en double et la fusion n'en traitait qu'1.
+                    // Deux chiffres contradictoires, et l'exploitant cesse de croire les deux.
+                    if (! $u->isLoyaltyCustomer()) {
+                        continue;
+                    }
+                    $groupes[$tel->normalize((string) $u->phone)][] = $u;
                 }
             });
 

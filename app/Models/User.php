@@ -184,4 +184,33 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(MessageHistory::class, 'user_id', 'id')->where('is_read', Ask::NO);
     }
+
+    /**
+     * [FIDÉLITÉ 2026-08-19] EST-CE UN COMPTE DE CLIENT, ET NON DU PERSONNEL ?
+     *
+     * ── POURQUOI CETTE RÈGLE VIT ICI ─────────────────────────────────────────────────────────
+     * Deux outils de fidélité en avaient besoin le même jour : le vérificateur de santé et la
+     * fusion des comptes en double. Écrite deux fois, elle a immédiatement divergé — le premier
+     * annonçait 6 clients en double, le second n'en traitait qu'1, et l'exploitant devant deux
+     * chiffres contradictoires cesse de croire les deux. C'est le motif du « jumeau oublié »
+     * pris à sa naissance, avant qu'il ne coûte quelque chose.
+     *
+     * ── CE QU'ELLE PROTÈGE ───────────────────────────────────────────────────────────────────
+     * Dans un restaurant de quartier, l'exploitant ou un caissier partage volontiers son numéro
+     * avec un client. Un outil qui regrouperait « les comptes de ce numéro » sans distinguer
+     * transférerait les points DU CLIENT vers le compte DU PERSONNEL. Le doute profite au
+     * client : au moindre rôle d'exploitation, ce n'est pas un compte de fidélité.
+     */
+    public function isLoyaltyCustomer(): bool
+    {
+        return ! $this->hasAnyRole([
+            'Admin',
+            'Branch Manager',
+            'POS Operator',
+            'Chef',
+            'Waiter',
+            'Delivery Boy',
+            'Stuff',
+        ]);
+    }
 }
