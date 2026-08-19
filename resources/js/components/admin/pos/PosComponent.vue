@@ -1288,8 +1288,17 @@
                             aria-hidden="true"
                         > · </span><span :class="seg.startsWith('SANS ') ? 'pos-v5-cart-item__removal' : ''">{{ seg }}</span></template></p>
 
-                    <!-- Fallback for non-wizard products: variations + extras -->
-                    <template v-else>
+                    <!--
+                      Fallback for non-wizard products: variations + extras.
+                      [RED-TEAM 2026-08-19] Condition sur `cart_display`, PAS sur le nombre
+                      de segments. Un `cart_display` qui se réduit à la seule tautologie
+                      « Pain: Pain » produit zéro segment : avec un simple `v-else`, la
+                      ligne basculait alors sur ce rendu de repli VERBEUX (« Type de Pain:
+                      Pain »), c'est-à-dire exactement ce que la compaction vient
+                      d'éliminer. Le repli ne doit servir qu'aux produits qui n'ont pas de
+                      composition wizard du tout.
+                    -->
+                    <template v-else-if="!cart.cart_display || !cart.cart_display.trim()">
                         <p v-if="formatCartVariationSummary(cart)" class="pos-v5-cart-item__detail">
                             {{ formatCartVariationSummary(cart) }}
                         </p>

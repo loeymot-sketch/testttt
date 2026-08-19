@@ -499,7 +499,7 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="(item, iIdx) in dineinOrder.order_items" :key="item.id || iIdx"
+                    <div v-for="(item, iIdx) in lignesCuisine(dineinOrder)" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
@@ -687,7 +687,7 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="(item, iIdx) in onlineOrder.order_items" :key="item.id || iIdx"
+                    <div v-for="(item, iIdx) in lignesCuisine(onlineOrder)" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
@@ -863,7 +863,7 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="(item, iIdx) in takeawayOrder.order_items" :key="item.id || iIdx"
+                    <div v-for="(item, iIdx) in lignesCuisine(takeawayOrder)" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
@@ -1036,7 +1036,7 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="(item, iIdx) in kioskOrder.order_items" :key="item.id || iIdx"
+                    <div v-for="(item, iIdx) in lignesCuisine(kioskOrder)" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
@@ -1240,6 +1240,8 @@ import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 import AvailabilityTogglePanel from "../shared/AvailabilityTogglePanel.vue";
 // [E6 KDS-SCHEDULED 2026-07-20] Bandeau commandes programmées à venir.
 import KdsScheduledBanner from "./KdsScheduledBanner.vue";
+// [RED-TEAM 2026-08-19] Repli des lignes de formule déjà décrites sous leur parent.
+import { collapseBundledAddonItems } from '../../../helpers/kdsBundledAddons.js';
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -1854,6 +1856,15 @@ export default {
     }, KITCHEN_PRINT_RETRY_MS);
   },
   methods: {
+    /**
+     * [RED-TEAM 2026-08-19] Lignes réellement affichées au cuisinier : mêmes règles
+     * que le board V2 et que le ticket imprimé. Sans ça, le doublon de formule
+     * (« FRITES : MAY » sur le sandwich PUIS « MENU : MAY » en ligne séparée)
+     * subsistait sur cette surface alors qu'il était corrigé sur les deux autres.
+     */
+    lignesCuisine(order) {
+        return collapseBundledAddonItems((order && (order.order_items || order.orderItems)) || []);
+    },
     // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
     safePhone(phone) {
       return safePhone(phone);

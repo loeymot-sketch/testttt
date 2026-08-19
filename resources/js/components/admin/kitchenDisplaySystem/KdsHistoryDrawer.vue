@@ -155,7 +155,7 @@
             returns the SAME KDSOrderDetailsResource as the live board). -->
           <div class="kds-history-drawer__items">
             <template
-              v-for="(item, idx) in (order.order_items || [])"
+              v-for="(item, idx) in lignesCuisine(order)"
               :key="(item.id || idx) + '-' + idx"
             >
               <div class="kds-history-drawer__item-block">
@@ -219,6 +219,8 @@ import axios from 'axios';
 // component (same as KdsOrderCard.vue) so history shows the FULL composition.
 import KdsOrderLine from './KdsOrderLine.vue';
 import { renderItem } from '../../../helpers/kdsCustomization.js';
+// [RED-TEAM 2026-08-19] Repli des lignes de formule déjà décrites sous leur parent.
+import { collapseBundledAddonItems } from '../../../helpers/kdsBundledAddons.js';
 
 const STATUS_PREPARED          = 8;
 const STATUS_OUT_FOR_DELIVERY  = 10;
@@ -318,6 +320,15 @@ export default {
   },
 
   methods: {
+    /**
+     * [RED-TEAM 2026-08-19] Lignes réellement affichées au cuisinier : mêmes règles
+     * que le board V2 et que le ticket imprimé. Sans ça, le doublon de formule
+     * (« FRITES : MAY » sur le sandwich PUIS « MENU : MAY » en ligne séparée)
+     * subsistait sur cette surface alors qu'il était corrigé sur les deux autres.
+     */
+    lignesCuisine(order) {
+        return collapseBundledAddonItems((order && (order.order_items || order.orderItems)) || []);
+    },
     async fetch() {
       this.loading = true;
       this.error = false;
