@@ -215,10 +215,27 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
      */
     public function test_stale_prepared_kiosk_phantom_is_soft_deleted_and_job_does_not_throw(): void
     {
-        // La transition dont le janitor aurait besoin reste illégale dans le frozen state machine.
-        $this->assertFalse(
+        // [SUPERVISION 2026-08-19] CETTE ASSERTION ÉPINGLAIT LE MAUVAIS INVARIANT.
+        //
+        // Elle vérifiait que PREPARED→CANCELED reste ILLÉGALE. Le propriétaire a ouvert cette
+        // arête le 2026-08-19 par dérogation gatée — plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md,
+        // demande verbatim : « je n'arrive pas à annuler les commandes passées il y a quelques
+        // heures, je veux pouvoir les annuler si je veux ». Le commentaire du janitor
+        // (CleanupStalePendingKioskOrders.php:57) l'avait d'ailleurs anticipée mot pour mot.
+        //
+        // Ce que ce test doit protéger n'a PAS changé : la purge d'un fantôme est une
+        // SUPPRESSION DOUCE, jamais une transition de statut. Cet invariant-là est épinglé à la
+        // fin de ce test (`Status untouched`) et reste vrai — le janitor exclut PREPARED en dur
+        // et n'interroge pas `OrderStateMachine::allows()` à l'exécution, donc son comportement
+        // est identique avant et après la dérogation.
+        //
+        // On épingle donc ce qui compte : le janitor n'utilise AUCUNE transition de statut pour
+        // purger, que l'arête soit légale ou non. Réintroduire un `assertFalse(allows(...))` ici
+        // reviendrait à interdire au propriétaire une décision qu'il a déjà prise.
+        $this->assertTrue(
             OrderStateMachine::allows(OrderStatus::PREPARED, OrderStatus::CANCELED),
-            'PREPARED→CANCELED must stay illegal — purge is a soft-delete, NOT a status transition.'
+            'Depuis le LOCK du 2026-08-19, PREPARED→CANCELED est légale. Si cette assertion '
+            .'échoue, la dérogation a été annulée : relire le LOCK avant de toucher ce test.'
         );
 
         $branch = Branch::factory()->create();
