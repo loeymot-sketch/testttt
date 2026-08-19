@@ -244,7 +244,10 @@ class LoyaltyRegisterAllowsWebLoginTest extends TestCase
             'email' => 'attacker@evil.com',
         ])->assertStatus(200);
 
-        $created = \App\Models\User::where('phone', '+33699000777')->first();
+        // [2026-08-19] `register()` enregistre desormais la forme canonique : « +33699000777 »
+        // est stocke « 0699000777 ». Chercher l'ecriture brute ne trouverait plus rien — et ce
+        // test conclurait a tort que le compte n'a pas ete cree.
+        $created = \App\Models\User::whereIn('phone', app(\App\Services\Identity\PhoneIdentity::class)->variants('+33699000777'))->first();
         $this->assertNotNull($created, 'compte fidélité créé');
         $this->assertNull($created->email, 'réglage OFF : l\'email non vérifié NE doit PAS être lié au compte');
     }
@@ -264,7 +267,7 @@ class LoyaltyRegisterAllowsWebLoginTest extends TestCase
             'email' => 'client.borne@exemple.fr',
         ])->assertStatus(200);
 
-        $cree = \App\Models\User::where('phone', '+33699000778')->first();
+        $cree = \App\Models\User::whereIn('phone', app(\App\Services\Identity\PhoneIdentity::class)->variants('+33699000778'))->first();
         $this->assertNotNull($cree);
         $this->assertSame('client.borne@exemple.fr', $cree->email, 'réglage ON : l\'email saisi est conservé');
         $this->assertNull($cree->email_verified_at, 'une adresse déclarée à la borne n\'est PAS une preuve');

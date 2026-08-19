@@ -251,6 +251,73 @@ Plateforme restaurant fast-food complète :
 > **Reste à l'owner** : comptes développeur Apple/Google, identifiants de connexion Apple/Google à
 > coller dans `index.html` + `.env` (`APPLE_AUDIENCES`/`GOOGLE_AUDIENCES`), keystore Android, boîte
 > e-mail de démonstration pour l'examinateur, puis compilation. Certificat API expire le 22/09/2026.
+> **2026-08-19 (2ᵉ vague, superviseur) — FIDÉLITÉ : 3 défauts CACHÉS + la borne qui ne pouvait pas dépenser. 10 commits, NON POUSSÉS**
+>
+> Branche `worktree-goal-fidelite-2026-08-19`, HEAD `99e445de0`. **Rien n'est poussé ni déployé.**
+> Fait suite à l'entrée ci-dessous ; l'owner a demandé d'aller « jusqu'au bout, direct ou
+> indirect, visible ou caché ».
+>
+> **CE QUE LA PREMIÈRE VAGUE AVAIT MANQUÉ — et pourquoi.** Les 4 causes racines de la 1ʳᵉ vague
+> étaient des portes fermées, visibles dès qu'on jouait le parcours. Cette vague a cherché ce qui
+> ne produit AUCUNE erreur et ne s'affiche NULLE PART.
+>
+> 1. **LE CLIENT PAYAIT ET N'ÉTAIT PAS CRÉDITÉ.** Le crédit ne se déclenchait que sur un
+>    CHANGEMENT de statut — or une vente de caisse NAÎT « en préparation » : aucun changement,
+>    aucun crédit. Le client n'avait ses points QUE si la cuisine bumpait sa commande, ce qui
+>    n'arrive jamais pour une boisson. **Mesuré : 307 ventes immobilisées à ce statut.** Prouvé en
+>    jouant une vraie vente (9,50 €, client rattaché → statut 7, crédit NUL) puis en déclenchant
+>    le guetteur à la main sur la même commande (il crédite correctement — c'est bien l'événement
+>    qui n'arrivait jamais). Corrigé : le fait générateur au comptoir est le **PAIEMENT**. Sûr car
+>    réversible (`clawbackEarnedPoints` + `refundPoints` déjà câblés) et idempotent (sentinelle
+>    atomique — vérifié : 2 bumps ultérieurs, solde inchangé). Preuve : vente 6603 → 95 pts
+>    immédiats.
+> 2. **UN CLIENT, DEUX COMPTES.** « 06… », « +33 6… » et « 6… » sont la même personne.
+>    `PhoneIdentity` existe pour ça depuis le 2026-08-10 et la CAISSE l'utilise ; la BORNE et le
+>    SITE comparaient l'écriture exacte tapée → second compte créé, points restés sur le premier.
+>    **Mesuré : 6 numéros en double, dont `+33600009999` à 500 pts et `0600009999` à 0.** Les 4
+>    points d'entrée passent par le normaliseur, et la CRÉATION enregistre la forme canonique.
+>    *Dégât indirect de ma propre correction, attrapé en suivant la donnée* : `optIn()` retrouvait
+>    le client au numéro BRUT → le **consentement RGPD** n'était plus écrit.
+> 3. **LA BORNE NE POUVAIT PAS DÉPENSER** (3 blocages empilés) : payload jamais câblé
+>    (`loyalty_code` seul, jamais le montant) ; débit AVANT le sceau du devis → « Order quote
+>    intent mismatch » — **invisible parce que TOUS les tests borne remplaçaient le sceau par un
+>    double** (`bypassKioskQuoteSealForLoyaltySentinel`) ; et un drapeau `kiosk.promo_enabled` qui
+>    prenait la fidélité en otage d'un défaut de codes promo (**3ᵉ occurrence** du motif déjà
+>    traité pour `pos.loyalty_enabled` et `pos.coupon_codes_enabled`). La demande voyage en
+>    **POINTS** et non en euros, pour respecter la sentinelle « aucun champ monétaire dans le
+>    payload borne » (SSOT/NF525).
+>
+> **TROIS OUTILS DE SUPERVISION** (`fidelite:verifier` / `fidelite:fusionner-doublons` /
+> `fidelite:bareme`). Le vérificateur a trouvé son premier vrai défaut 15 min après avoir été
+> écrit. La fusion ne supprime aucun compte et passe par le grand-livre ; sa garde la plus
+> importante — **ne jamais toucher un compte de PERSONNEL** — vient de l'aperçu sur la vraie base.
+>
+> **BARÈME : décision prise, et celle que je ne prends pas.** Mesuré : **10 % de retour**,
+> **12,9 visites** avant la 1ʳᵉ récompense (panier moyen 7,78 €), **1 153 €** de coût sur le CA
+> caisse réalisé, **0 client sur 156** capable de dépenser. J'ai appliqué **plancher 1000 → 300**
+> (ne dévalue rien, ne retire rien à personne) → adoption **0 % → 6,4 %**. Le **TAUX** (10 %→5 %)
+> dévalue rétroactivement le solde de chaque client : il appartient à l'owner, avec les chiffres
+> devant lui (`php artisan fidelite:bareme --taux=200`, qui affiche l'impact exact et exige
+> confirmation).
+>
+> **SENTINELLES : renforcées, jamais assouplies.** Les specs C39 encodaient « masquer, ne pas
+> câbler » — une décision temporaire, pas un invariant ; l'invariant (*affiché == facturé*) est
+> désormais tenu par APPLICATION. Et `WithoutGlobalScopesAuditSentinelTest` a refusé 5
+> `withoutGlobalScopes()` posés par réflexe : je les ai **retirés** (inutiles — `branch_id=0`,
+> no-op sur `User`) au lieu de les inscrire sur la liste d'exceptions.
+>
+> **Tests** : JS **420 fichiers / 3359 tests / 0 échec** · Feature/Loyalty 93/93 · Pos 325/325 ·
+> Sentinels 364/364 · Fiscal 310/310 · Auth 63/63 · Order 104/104 · Sync 29/29 · build production
+> OK · **zones gelées §7 = 0 ligne**.
+>
+> **Limite connue et assumée** : l'écran fidélité borne exige un panier non vide (`requireCart`).
+> C'est délibéré (on s'inscrit pendant la commande, pour cumuler dessus) ; le retirer ferait
+> apparaître « Utiliser 0,00 € ». Non modifié.
+>
+> **Non vérifié à l'écran** : le parcours borne et le panneau d'historique admin (l'extension
+> navigateur s'est déconnectée en cours de session). Le contrat de l'historique a été vérifié en
+> direct contre le serveur ; la caisse, elle, a bien été prouvée visuellement (1ʳᵉ vague).
+
 > **2026-08-19 — GOAL FIDÉLITÉ (borne + caisse + web) : le programme ne tournait PAS. 5 commits, NON POUSSÉS**
 >
 > Branche `worktree-goal-fidelite-2026-08-19` (worktree `.claude/worktrees/goal-fidelite-2026-08-19`),

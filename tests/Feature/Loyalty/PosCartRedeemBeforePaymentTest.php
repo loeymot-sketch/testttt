@@ -135,9 +135,21 @@ class PosCartRedeemBeforePaymentTest extends TestCase
         $this->assertSame(20.00, round((float) $commande->total, 2), 'le total encaissé est déjà net');
         $this->assertSame('REDEEM01', $commande->loyalty_customer_code);
 
-        // Les points sont réellement partis, et le grand-livre le dit.
+        /*
+         * DEUX MOUVEMENTS, PAS UN. Depuis le 2026-08-19 une vente payée crédite AUSSI le gain
+         * immédiatement (le client n'attend plus le bump cuisine). Le solde final raconte donc
+         * l'histoire complète : 2000 − 1500 racheté + 200 gagnés sur les 20 € réellement payés.
+         * N'assertionner que le débit laisserait le gain hors du filet.
+         */
         $client->refresh();
-        $this->assertSame(1000, (int) $client->loyalty_points);
+        $gain = (int) floor(20.00 * 10); // 20 € payés × 10 pts/€
+        $this->assertSame(1000 + $gain, (int) $client->loyalty_points);
+        $this->assertDatabaseHas('loyalty_transactions', [
+            'user_id' => $client->id,
+            'order_id' => $commande->id,
+            'type' => 'earn',
+            'points' => $gain,
+        ]);
         $this->assertDatabaseHas('loyalty_transactions', [
             'user_id' => $client->id,
             'order_id' => $commande->id,
@@ -194,7 +206,8 @@ class PosCartRedeemBeforePaymentTest extends TestCase
         $this->assertSame(30.00, round((float) $commande->discount, 2), 'la remise s’arrête au sous-total');
         $this->assertSame(0.00, round((float) $commande->total, 2));
 
-        // 30 € au taux de 100 = 3000 points, et pas un de plus.
+        // 30 € au taux de 100 = 3000 points, et pas un de plus. Le total tombant à 0 €, il n'y a
+        // aucun gain à créditer : le client n'a rien dépensé de sa poche.
         $client->refresh();
         $this->assertSame(100000 - 3000, (int) $client->loyalty_points);
     }
@@ -232,8 +245,9 @@ class PosCartRedeemBeforePaymentTest extends TestCase
         $this->assertSame(15.00, round((float) $commande->discount, 2));
         $this->assertSame(15.00, round((float) $commande->total, 2));
 
+        // 2000 − 1500 racheté + 150 gagnés sur les 15 € payés.
         $client->refresh();
-        $this->assertSame(500, (int) $client->loyalty_points);
+        $this->assertSame(500 + (int) floor(15.00 * 10), (int) $client->loyalty_points);
     }
 
     /**
@@ -259,7 +273,9 @@ class PosCartRedeemBeforePaymentTest extends TestCase
 
         $commande = Order::withoutGlobalScopes()->latest('id')->first();
         $client->refresh();
-        $this->assertSame(1000, (int) $client->loyalty_points, 'points bien débités avant annulation');
+        // Cette vente-ci rachète 1000 points et encaisse 20 € : 2000 − 1000 + 200 gagnés.
+        $soldeApresVente = 1000 + (int) floor(20.00 * 10);
+        $this->assertSame($soldeApresVente, (int) $client->loyalty_points, 'points bien débités avant annulation');
 
         /*
          * On appelle le rembourseur DIRECTEMENT, et c'est délibéré.
@@ -274,14 +290,27 @@ class PosCartRedeemBeforePaymentTest extends TestCase
          */
         app(\App\Services\LoyaltyService::class)->refundPoints($commande->refresh(), 'pos');
 
+        /*
+         * `refundPoints` rend EXACTEMENT les points RACHETÉS — ni plus, ni moins. Les points
+         * GAGNÉS sur cette vente sont repris par `clawbackEarnedPoints`, l'autre moitié du chemin
+         * d'annulation (couverte par OrderCancellationLoyaltyTest). Les mélanger ici ferait passer
+         * ce test pour une preuve de quelque chose qu'il ne vérifie pas.
+         */
         $client->refresh();
-        $this->assertSame(2000, (int) $client->loyalty_points, 'les points rachetés doivent revenir');
+        $this->assertSame(
+            $soldeApresVente + 1000,
+            (int) $client->loyalty_points,
+            'les points rachetés doivent revenir, et eux seuls'
+        );
     }
 
     /**
-     * SANS DEMANDE DE RACHAT, RIEN NE BOUGE — le contre-exemple qui donne sa valeur aux autres.
+     * SANS DEMANDE DE RACHAT, AUCUN DÉBIT — le contre-exemple qui donne sa valeur aux autres.
+     *
+     * Le solde bouge quand même : la vente CRÉDITE le gain. Ce qu'on vérifie ici, c'est qu'aucune
+     * ligne `redeem` n'est écrite et que le total reste plein — pas que le solde est figé.
      */
-    public function test_une_vente_sans_rachat_ne_touche_pas_au_solde(): void
+    public function test_une_vente_sans_rachat_ne_debite_aucun_point(): void
     {
         [$branch, $caissier, $article] = $this->comptoir();
         $client = $this->client(2000);
@@ -296,6 +325,10 @@ class PosCartRedeemBeforePaymentTest extends TestCase
         $this->assertSame(30.00, round((float) $commande->total, 2));
 
         $client->refresh();
-        $this->assertSame(2000, (int) $client->loyalty_points);
+        $this->assertSame(2000 + (int) floor(30.00 * 10), (int) $client->loyalty_points, 'seul le gain bouge');
+        $this->assertDatabaseMissing('loyalty_transactions', [
+            'user_id' => $client->id,
+            'type' => 'redeem',
+        ]);
     }
 }
