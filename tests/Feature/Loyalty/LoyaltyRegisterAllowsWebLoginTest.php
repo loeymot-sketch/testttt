@@ -215,22 +215,66 @@ class LoyaltyRegisterAllowsWebLoginTest extends TestCase
     }
 
     /**
-     * [P1-1 SÉCU 2026-08-04] SQUATTING sur un NOUVEAU numéro : un attaquant enrôle en fidélité
-     * (endpoint PUBLIC non-auth) un téléphone tiers avec SON email → le compte créé ne doit PAS
-     * porter l'email non-vérifié de l'attaquant, sinon la garde channel-confusion de l'email-OTP
-     * livrerait ensuite le code au squatteur. L'email n'est lié qu'via l'OTP (possession prouvée).
+     * [P1-1 SÉCU 2026-08-04, PARAMÉTRÉ LE 2026-08-19] SQUATTING sur un NOUVEAU numéro.
+     *
+     * Un attaquant enrôle en fidélité (endpoint PUBLIC non-auth) un téléphone tiers avec SON
+     * email. S'il est écrit sur le compte, la garde channel-confusion de l'email-OTP livrera
+     * ensuite le code de connexion au squatteur.
+     *
+     * ── POURQUOI CE TEST A CHANGÉ DE FORME ───────────────────────────────────────────────────
+     * Il assertait `email === null` en dur. Cette prudence avait un coût qui n'avait jamais été
+     * mesuré : la borne demande un email, l'API répondait « inscrit » et le jetait, si bien
+     * qu'un client inscrit à la borne n'avait ENSUITE aucun moyen de se connecter — ni par son
+     * email (jamais stocké), ni par celui qu'il retapait (la même garde, branche 2, refuse de
+     * livrer à l'email de l'appelant dès que le compte porte des points). Le propriétaire a
+     * tranché le 2026-08-19 : le parcours doit fonctionner.
+     *
+     * La décision de sécurité n'est pas effacée, elle est devenue un RÉGLAGE
+     * (`loyalty.kiosk_email_capture`). Ce test éprouve donc LES DEUX positions — sinon la
+     * position prudente deviendrait du code mort que plus rien ne vérifie.
      */
-    public function test_public_register_does_not_bind_unverified_attacker_email_on_a_third_party_phone(): void
+    public function test_public_register_does_not_bind_unverified_attacker_email_when_capture_disabled(): void
     {
+        // Position prudente (LOYALTY_KIOSK_EMAIL_CAPTURE=false) : comportement du 2026-08-04.
+        config(['loyalty.kiosk_email_capture' => false]);
+
         $this->postJson('/api/frontend/loyalty/register', [
             'name'  => 'Victime',
             'phone' => '+33699000777',
             'email' => 'attacker@evil.com',
         ])->assertStatus(200);
 
-        $created = \App\Models\User::where('phone', '+33699000777')->first();
+        // [2026-08-19] `register()` enregistre desormais la forme canonique : « +33699000777 »
+        // est stocke « 0699000777 ». Chercher l'ecriture brute ne trouverait plus rien — et ce
+        // test conclurait a tort que le compte n'a pas ete cree.
+        $created = \App\Models\User::whereIn('phone', app(\App\Services\Identity\PhoneIdentity::class)->variants('+33699000777'))->first();
         $this->assertNotNull($created, 'compte fidélité créé');
-        $this->assertNull($created->email, 'l\'email NON vérifié de l\'attaquant NE doit PAS être lié au compte');
+        $this->assertNull($created->email, 'réglage OFF : l\'email non vérifié NE doit PAS être lié au compte');
+    }
+
+    /**
+     * Position par défaut (arbitrage propriétaire) : l'email EST conservé — mais il reste une
+     * DÉCLARATION, et la porte par laquelle le risque deviendrait une prise de contrôle
+     * complète (poser un premier mot de passe sur le compte d'un autre) est fermée.
+     */
+    public function test_capture_enabled_stores_email_but_leaves_it_unverified_and_closes_password_reset(): void
+    {
+        config(['loyalty.kiosk_email_capture' => true]);
+
+        $this->postJson('/api/frontend/loyalty/register', [
+            'name'  => 'Client Borne',
+            'phone' => '+33699000778',
+            'email' => 'client.borne@exemple.fr',
+        ])->assertStatus(200);
+
+        $cree = \App\Models\User::whereIn('phone', app(\App\Services\Identity\PhoneIdentity::class)->variants('+33699000778'))->first();
+        $this->assertNotNull($cree);
+        $this->assertSame('client.borne@exemple.fr', $cree->email, 'réglage ON : l\'email saisi est conservé');
+        $this->assertNull($cree->email_verified_at, 'une adresse déclarée à la borne n\'est PAS une preuve');
+
+        // La contrepartie défensive : pas de « réinitialisation » sur un talon invité.
+        $this->postJson('/api/auth/forgot-password', ['email' => 'client.borne@exemple.fr']);
+        $this->assertDatabaseMissing('password_resets', ['email' => 'client.borne@exemple.fr']);
     }
 
 }

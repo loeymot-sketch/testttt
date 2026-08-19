@@ -151,20 +151,88 @@ class ConcurrentOrderTest extends TestCase
         // la recherche du porteur filtrait `status=1`, donc ce client ACTIVE(5) était
         // INTROUVABLE → la remise était silencieusement ignorée → les 2 commandes passaient,
         // identiques, sans jamais toucher aux points. Le client croyait payer avec ses points
-        // et payait plein tarif. Depuis le heal, la 1ʳᵉ commande consomme réellement les points
-        // et la 2ᵉ est REFUSÉE par la garde de devis (le total recalculé serveur ne correspond
-        // plus à l'intention du devis) : c'est le comportement voulu — mieux vaut refuser que
-        // débiter deux fois.
+        // et payait plein tarif.
+        //
+        // [SUPERVISION 2026-08-19] ET IL PASSAIT ENCORE POUR UNE MAUVAISE RAISON, LA DEUXIÈME FOIS.
+        //
+        // Le heal du 01/08 l'avait fait reposer sur le REFUS de la 2ᵉ commande. Or ce refus
+        // n'était pas une garde : c'était un DÉFAUT. Les points étaient débités AVANT que
+        // `sealForCommit` recalcule le devis ; ce recalcul relisait le solde vivant, le trouvait
+        // diminué, concluait « remise 0 » et refusait la vente — « Order quote intent mismatch ».
+        // Le même défaut bloquait de VRAIES ventes au comptoir (reproduit en HTTP le 19/08 :
+        // client à 2000 points rachetant 1500, vente refusée). Le corriger — déplacer l'ÉCRITURE
+        // après le sceau, le CALCUL restant avant — a donc fait tomber ce refus avec lui.
+        //
+        // MESURÉ sur le code fusionné, pas déduit : les 2 commandes aboutissent, chacune avec SON
+        // PROPRE devis (`withQuote` en régénère un à chaque appel — il n'y a jamais eu de devis
+        // « réutilisé »), solde 100 → 50 → 0, deux lignes de grand-livre `redeem −50`, chacune
+        // rattachée à sa commande. Cent points pour 1,00 € de remise : le taux exact. Aucun
+        // découvert, aucune double dépense. Refuser cette 2ᵉ vente serait le vrai défaut — on
+        // refuserait le second achat légitime d'un client qui a encore des points.
+        //
+        // Ce test épingle donc désormais ce que son NOM promet : on ne découvre jamais.
         $this->assertTrue(in_array($response1->status(), [200, 201]), 'La 1ʳᵉ commande doit aboutir.');
-        $this->assertNotContains($response2->status(), [200, 201],
-            'La 2ᵉ commande concurrente ne doit PAS aboutir en réutilisant le même devis fidélité.');
-        $this->assertLessThan(500, $response2->status(),
-            'Le refus doit être une garde métier explicite, jamais une erreur serveur.');
+        $this->assertTrue(in_array($response2->status(), [200, 201]),
+            'La 2ᵉ commande doit aboutir : le client a encore 50 points, c\'est un achat légitime.');
 
         $customer->refresh();
-        $this->assertGreaterThanOrEqual(0, $customer->loyalty_points, 'Points must not go negative');
-        $this->assertSame(1, \App\Models\LoyaltyTransaction::where('user_id', $customer->id)->where('type', 'redeem')->count(),
-            'Exactement UN débit de points : aucune double dépense sous concurrence.');
+        $this->assertSame(0, (int) $customer->loyalty_points,
+            'Solde exact après deux rachats de 50 points sur 100 : zéro, jamais négatif.');
+
+        $lignes = \App\Models\LoyaltyTransaction::where('user_id', $customer->id)
+            ->where('type', 'redeem')->orderBy('id')->get();
+        $this->assertCount(2, $lignes, 'Un débit par commande — ni plus (double dépense), ni moins (remise offerte).');
+        $this->assertSame(-100, (int) $lignes->sum('points'), 'Somme débitée = exactement les points possédés.');
+        $this->assertCount(2, $lignes->pluck('order_id')->unique(),
+            'Chaque débit est rattaché à SA commande : deux lignes sur la même commande = double dépense.');
+    }
+
+    /**
+     * Test C bis — LE VRAI DÉCOUVERT. [SUPERVISION 2026-08-19]
+     *
+     * Le test ci-dessus mesure deux rachats que le solde COUVRE. Celui-ci éprouve le cas que son
+     * titre promettait sans jamais l'atteindre : un client qui n'a PAS de quoi payer le second
+     * rachat. C'est le seul scénario où un découvert peut naître, et donc le seul qui prouve la
+     * garde. Sans lui, « does not overdraw » n'était qu'une intention.
+     */
+    public function test_loyalty_second_redemption_without_enough_points_never_overdraws(): void
+    {
+        [$branch, $user] = $this->setupKiosk();
+        $item = \Database\Factories\ItemFactory::new()->create(['price' => 10]);
+
+        // 50 points = 0,50 € : de quoi payer UN rachat, pas deux.
+        $customer = \Database\Factories\UserFactory::new()->create([
+            'branch_id' => $branch->id,
+            'status' => \App\Enums\Status::ACTIVE,
+            'loyalty_code' => 'LOYAL_SHORT_1',
+            'loyalty_points' => 50,
+        ]);
+
+        $basePayload = $this->makeOrderPayload($item->id, $branch->id);
+        $basePayload['loyalty_code'] = 'LOYAL_SHORT_1';
+        $basePayload['discount'] = 0.50;
+
+        $this->actingAs($user)->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', 'short-a-' . uniqid())
+            ->postJson('/api/frontend/order', $this->withQuote($user, $basePayload));
+
+        $reponse2 = $this->actingAs($user)->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', 'short-b-' . uniqid())
+            ->postJson('/api/frontend/order', $this->withQuote($user, $basePayload));
+
+        $customer->refresh();
+
+        // L'INVARIANT ABSOLU : quoi qu'il arrive à la 2ᵉ commande — acceptée au prix plein ou
+        // refusée — le solde ne descend JAMAIS sous zéro et aucun second débit n'est écrit.
+        $this->assertGreaterThanOrEqual(0, (int) $customer->loyalty_points,
+            'Le solde de points ne doit JAMAIS devenir négatif.');
+        $this->assertSame(0, (int) $customer->loyalty_points, 'Les 50 points ont été dépensés une seule fois.');
+        $this->assertLessThan(500, $reponse2->status(),
+            'Un refus doit être une garde métier explicite, jamais une erreur serveur.');
+
+        $lignes = \App\Models\LoyaltyTransaction::where('user_id', $customer->id)->where('type', 'redeem')->get();
+        $this->assertCount(1, $lignes, 'Un seul débit : le second rachat n\'a pas de quoi être payé.');
+        $this->assertSame(-50, (int) $lignes->sum('points'), 'On ne débite jamais plus que ce que le client possède.');
     }
 
     private function withQuote(User $user, array $payload): array

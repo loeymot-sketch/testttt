@@ -158,5 +158,13 @@ class Kernel extends HttpKernel
         // messages, adresses, fidélité…) — empêche une borne de lire/modifier les données du user support
         // auquel elle est rattachée (P1 profil=hijack ; siblings=fuite PII/adresse). Clients (auth_token) OK.
         'block_kiosk_machine' => \App\Http\Middleware\BlockKioskMachineToken::class,
+
+        // [APPS 2026-08-19] Aucune commande CLIENT sans numéro joignable. Exigence de
+        // l'exploitation : en cas de rupture, de question sur une cuisson ou de commande
+        // jamais retirée, il faut pouvoir appeler. Sans ce filtre, un compte ouvert par
+        // connexion Apple/Google — qui n'apporte AUCUN téléphone — pourrait commander en
+        // fermant simplement l'écran qui le réclame. La borne (jeton `kiosk-token`) et les
+        // clients venus par le parcours téléphone ne sont pas touchés.
+        'require_customer_phone' => \App\Http\Middleware\RequireCustomerPhone::class,
     ];
 }

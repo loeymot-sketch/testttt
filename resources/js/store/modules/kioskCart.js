@@ -148,6 +148,28 @@ export function buildKioskQuotePayload(state, { orderType, paymentMethod, requir
         // branch_id is intentionally omitted: kiosk quotes resolve it server-side from KioskMachine.
         order_type: resolvedOrderType,
         loyalty_code: state.loyaltyCustomer?.loyalty_code || null,
+        /*
+         * [FIDÉLITÉ BORNE 2026-08-19] LE MAILLON QUI MANQUAIT — exprimé en POINTS, pas en euros.
+         *
+         * Le rachat de points borne était construit et testé côté serveur (calcul, débit
+         * atomique, grand-livre) — mais ce payload n'envoyait que `loyalty_code`, JAMAIS ce que
+         * le client voulait dépenser. Le serveur sortait donc immédiatement : le panier affichait
+         * « -X € » et la commande partait plein tarif. Le masquage d'urgence du 2026-07-06 a
+         * caché le symptôme sans réparer le câblage.
+         *
+         * POURQUOI DES POINTS ET NON DES EUROS. Ce payload ne doit porter AUCUN champ monétaire
+         * (invariant SSOT/NF525, verrouillé par `kioskCartSendPayload.spec.js`) : le prix
+         * appartient au serveur. Des POINTS ne sont pas de l'argent — c'est une quantité que le
+         * serveur convertit lui-même, à son propre taux. Cela supprime en prime l'ambiguïté
+         * euro↔point qui a produit l'incident « facteur 10 » du 2026-08-14, et aligne la borne
+         * sur la convention adoptée en caisse le même jour.
+         *
+         * C'est une DEMANDE : le serveur la borne (solde, plancher, multiple du taux, sous-total)
+         * et reste seul maître du chiffre retenu.
+         */
+        loyalty_redeem_points: Number(state.loyaltyRedeemPoints) > 0
+            ? Math.floor(Number(state.loyaltyRedeemPoints))
+            : 0,
         // Promo code remains non-financial metadata; the backend recomputes the discount.
         kiosk_promo_code: state.promoCode || null,
         is_advance_order: KIOSK_IS_ADVANCE_ORDER_NO,
@@ -188,6 +210,10 @@ export const kioskCart = {
         upsellShown: false,
         loyaltyCustomer: null,
         loyaltyDiscount: 0,
+        // [FIDELITE BORNE 2026-08-19] Ce que le client depense, EN POINTS. `loyaltyDiscount`
+        // (euros) reste la valeur d'AFFICHAGE ; les points sont ce qu'on transmet au serveur,
+        // parce qu'un payload borne ne doit porter aucun champ monetaire (SSOT/NF525).
+        loyaltyRedeemPoints: 0,
         // Kiosk Phase 9.1.6 — Code promo branch-scoped (kiosk_promos) ou
         // coupon global. Validé lecture-seule via POST /promo/validate, la
         // consommation réelle (increment uses_count) n'intervient qu'à la
@@ -234,6 +260,7 @@ export const kioskCart = {
         upsellShown: (state) => state.upsellShown,
         loyaltyCustomer: (state) => state.loyaltyCustomer,
         loyaltyDiscount: (state) => state.loyaltyDiscount,
+        loyaltyRedeemPoints: (state) => state.loyaltyRedeemPoints,
         editingCartIndex: (state) => state.editingCartIndex,
         editingCartSnapshot: (state) => state.editingCartSnapshot,
         isEditingCart: (state) => state.editingCartIndex !== null,
@@ -344,10 +371,11 @@ export const kioskCart = {
         SET_UPSELL_SHOWN(state, val) {
             state.upsellShown = val;
         },
-        SET_LOYALTY(state, { customer, discount }) {
+        SET_LOYALTY(state, { customer, discount, points }) {
             state.orderQuote = null;
             state.loyaltyCustomer = customer;
             state.loyaltyDiscount = discount || 0;
+            state.loyaltyRedeemPoints = points || 0;
         },
         SET_ORDER_QUOTE(state, quote) {
             state.orderQuote = quote || null;
@@ -420,6 +448,7 @@ export const kioskCart = {
             state.upsellShown = false;
             state.loyaltyCustomer = null;
             state.loyaltyDiscount = 0;
+            state.loyaltyRedeemPoints = 0;
             state.idempotencyKey = null;
             state.paymentMethod = null;
             state.orderType = null;

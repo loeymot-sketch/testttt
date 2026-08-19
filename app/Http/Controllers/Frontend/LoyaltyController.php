@@ -75,9 +75,25 @@ class LoyaltyController extends Controller
             // Try by loyalty code first, then fall back to phone number
             $user = User::where('loyalty_code', $input)->first();
             if (!$user) {
-                // Normalize phone: keep digits, leading +
-                $phone = preg_replace('/[\s\-]/', '', $input);
-                $user = User::where('phone', $phone)->first();
+                /*
+                 * [FIDÉLITÉ 2026-08-19] « 06 … », « +33 6 … » et « 6 … » SONT LA MÊME PERSONNE.
+                 *
+                 * Cette ligne ne retirait que les espaces et les tirets : elle cherchait donc
+                 * l'écriture EXACTE tapée. Mesuré sur la base réelle : 6 numéros portent plusieurs
+                 * comptes, dont `+33600009999` avec **500 points** et `0600009999` avec **0** — le
+                 * même humain, coupé en deux, dont les points sont introuvables depuis la moitié
+                 * qu'il présente. `PhoneIdentity` existe exactement pour ça depuis le 10 août (la
+                 * caisse l'utilise déjà, `PosCustomerLookupService::byPhone`) ; la borne et le site
+                 * étaient les jumeaux oubliés.
+                 */
+                $tel = app(\App\Services\Identity\PhoneIdentity::class);
+                if ($tel->looksComplete($input)) {
+                    $user = User::whereIn('phone', $tel->variants($input))
+                        // À doublons existants, on présente celui qui porte les points : c'est le
+                        // compte que le client reconnaîtra, et celui qu'il faut créditer.
+                        ->orderByDesc('loyalty_points')
+                        ->first();
+                }
             }
 
             if ($user && $this->isCustomerActive($user)) { // [FIX P3 audit] accepte status 1 OU ACTIVE(5) (cohérent avec le reste)
@@ -140,7 +156,19 @@ class LoyaltyController extends Controller
                 ], 422);
             }
 
-            $user = User::where('phone', $request->input('phone'))->first();
+            /*
+             * [FIDÉLITÉ 2026-08-19] ON CHERCHE TOUTES LES ÉCRITURES DU NUMÉRO, PAS CELLE TAPÉE.
+             *
+             * Une correspondance exacte, ici, FABRIQUE des doublons : le client inscrit au
+             * comptoir en « 0600009999 » qui tape « +33600009999 » à la borne n'est pas trouvé, un
+             * SECOND compte est créé, et ses points restent sur le premier — invisibles pour lui
+             * comme pour le caissier. C'est mesuré, pas théorique (6 numéros concernés en base).
+             */
+            $tel = app(\App\Services\Identity\PhoneIdentity::class);
+            $telSaisi = (string) $request->input('phone');
+            $user = $tel->looksComplete($telSaisi)
+                ? User::whereIn('phone', $tel->variants($telSaisi))->orderByDesc('loyalty_points')->first()
+                : User::where('phone', $telSaisi)->first();
 
             // [AUDIT-P50-BUG8] Check for email conflict before creating/updating
             $email = $request->input('email');
@@ -168,14 +196,57 @@ class LoyaltyController extends Controller
                 // Création rapide d'un client via le Kiosk
                 $user = new User();
                 $user->name = $request->input('name') ?? 'Client Loyalty';
-                // [P1-1 SÉCU 2026-08-04] Endpoint PUBLIC non-auth : NE JAMAIS lier un email NON
-                // VÉRIFIÉ à un compte créé sur un téléphone TIERS. Sinon un attaquant empoisonne le
-                // futur compte d'une victime (POST {phone: victime, email: attaquant} → plus tard la
-                // garde channel-confusion de l'email-OTP livre le code à l'email lié = l'attaquant).
-                // L'email n'est lié QU'via le flux email-OTP (possession prouvée du code). Ici :
-                // téléphone + nom seulement — l'enrôlement fidélité ne prouve pas la possession d'email.
-                $user->email = null;
-                $user->phone = $request->input('phone');
+                /*
+                 * ── L'EMAIL SAISI À LA BORNE EST CONSERVÉ (2026-08-19, décision propriétaire) ──
+                 *
+                 * HISTOIRE DE CETTE LIGNE. Elle valait `$user->email = null;` depuis le
+                 * [P1-1 SÉCU 2026-08-04] : sur un endpoint public, lier un email NON VÉRIFIÉ à un
+                 * compte créé sur un téléphone TIERS permet d'empoisonner le futur compte d'une
+                 * victime (POST {phone: victime, email: attaquant}), car la garde channel-confusion
+                 * de l'email-OTP livre ensuite le code à l'email LIÉ AU COMPTE.
+                 *
+                 * CE QUE CETTE GARDE COÛTAIT, MESURÉ. La borne demande nom + téléphone + email et
+                 * les envoie ; l'API répondait 200 « inscrit » et jetait l'email en silence. Le
+                 * client croyait s'être inscrit avec son adresse et ne pouvait JAMAIS s'y
+                 * connecter — pire, `GuestSignupController` (garde channel-confusion, branche 2)
+                 * refuse d'envoyer le code à l'email de l'APPELANT dès que le compte a de la
+                 * valeur (points ou commandes). Un client fidèle inscrit à la borne se retrouvait
+                 * donc SANS AUCUN canal de connexion : ni son email (non stocké), ni celui qu'il
+                 * tapait (refusé). C'est exactement le parcours cassé signalé par le propriétaire.
+                 *
+                 * POURQUOI CONSERVER L'EMAIL SUFFIT. Le mécanisme de connexion était déjà écrit :
+                 * la garde livre le code à `$existing->email`. Elle n'avait simplement jamais
+                 * d'email à utiliser. Stocker celui que le client tape à la borne rétablit son
+                 * parcours sans toucher à la garde.
+                 *
+                 * CE QUI RESTE PROTÉGÉ (l'intention du 2026-08-04 n'est pas abandonnée) :
+                 *   - email JAMAIS posé sur un compte EXISTANT (branche `else`, fix hijack
+                 *     2026-07-02) — on ne peut pas repeindre l'adresse d'un compte déjà là ;
+                 *   - email déjà porté par un AUTRE compte → 409 EMAIL_EXISTS en amont ;
+                 *   - `email_verified_at` reste NULL : l'adresse est une DÉCLARATION, pas une
+                 *     preuve. Elle ne devient preuve qu'au premier code reçu ;
+                 *   - la réinitialisation de mot de passe refuse désormais les comptes invités
+                 *     (`ForgotPasswordController`) : on ne pose plus de mot de passe sur un compte
+                 *     dont personne n'a jamais choisi le mot de passe.
+                 *
+                 * RISQUE RÉSIDUEL ASSUMÉ, À CONNAÎTRE : un attaquant physiquement présent à la
+                 * borne, qui connaît le numéro d'une victime et l'inscrit avec SON email AVANT
+                 * elle, pourra recevoir le code de ce compte. Enveloppe V1 = un seul restaurant,
+                 * borne dans la salle, gain maximal = les points d'un client. Arbitrage
+                 * propriétaire : un programme de fidélité utilisable vaut ce risque-là. Pour
+                 * revenir en arrière, il suffit de remettre `$user->email = null;` ici.
+                 */
+                $emailSaisi = trim((string) $request->input('email', ''));
+                $captureEmail = (bool) config('loyalty.kiosk_email_capture', true);
+                $user->email = ($captureEmail && $emailSaisi !== '' && filter_var($emailSaisi, FILTER_VALIDATE_EMAIL))
+                    ? $emailSaisi
+                    : null;
+                // [FIDÉLITÉ 2026-08-19] On ENREGISTRE la forme canonique (« 0612345678 »).
+                // Réparer la lecture sans corriger l'écriture, ce serait continuer à semer des
+                // écritures divergentes que la lecture devra rattraper indéfiniment.
+                $user->phone = $tel->looksComplete($telSaisi)
+                    ? $tel->normalize($telSaisi)
+                    : $telSaisi;
                 $user->username = uniqid('kiosk_');
                 $user->password = bcrypt(uniqid());
                 // [AUDIT FIDÉLITÉ 2026-08-01 · P1-2] ACTIVE(5) et non le legacy 1 : un compte
@@ -509,7 +580,22 @@ class LoyaltyController extends Controller
             // pour lier le consentement.
             $user = null;
             if (!empty($data['phone'])) {
-                $user = User::where('phone', $data['phone'])->first();
+                /*
+                 * [FIDÉLITÉ 2026-08-19] IL FAUT CHERCHER TOUTES LES ÉCRITURES — sinon ce
+                 * consentement RGPD n'est plus écrit du tout.
+                 *
+                 * `register()` enregistre désormais la forme canonique (« 0612345678 »). Chercher
+                 * ici la forme BRUTE tapée par le client (« +33612345678 ») ne retrouverait donc
+                 * plus le compte qu'on vient de créer : l'inscription réussirait, et la preuve du
+                 * consentement — la seule pièce qui justifie le traitement de ses données —
+                 * disparaîtrait en silence. Dégât indirect de ma propre correction, attrapé en
+                 * suivant la donnée plutôt qu'en relisant la ligne.
+                 */
+                $telOptIn = app(\App\Services\Identity\PhoneIdentity::class);
+                $user = $telOptIn->looksComplete((string) $data['phone'])
+                    ? User::whereIn('phone', $telOptIn->variants((string) $data['phone']))
+                        ->orderByDesc('loyalty_points')->first()
+                    : User::where('phone', $data['phone'])->first();
             }
             if (!$user && !empty($data['email'])) {
                 $user = User::where('email', $data['email'])->first();
@@ -579,6 +665,34 @@ class LoyaltyController extends Controller
             if (empty($tiers)) {
                 $tiers = [100, 250, 500, 1000, 2000];
             }
+
+            /*
+             * [FIDÉLITÉ 2026-08-19] LES PALIERS AUSSI DOIVENT DIRE LA VÉRITÉ — c'était le jumeau
+             * oublié du correctif d'août.
+             *
+             * Le 5 août, `min_redeem_points` a été corrigé pour publier le plancher EFFECTIF plutôt
+             * que le réglage brut (sentinelle LoyaltyConfigEffectiveFloorTest). Les PALIERS, eux,
+             * sont restés publiés tels quels — or ce sont eux, et pas le plancher, que le client
+             * VOIT : la borne en tire une barre de progression « encore N points ».
+             *
+             * Constaté le 2026-08-19 avec le réglage réel de production (plancher 1000) : l'API
+             * renvoyait [100, 250, 500, 1000, 2000]. Un client à 60 points lisait donc « encore
+             * 40 points » — une promesse que rien ne tient, puisque RIEN n'est utilisable sous
+             * 1000. Il atteint 100 points, il ne se passe rien, et il conclut que le programme est
+             * une farce. Un palier sous le plancher n'est pas une petite imprécision d'affichage,
+             * c'est un rendez-vous qu'on ne peut pas honorer.
+             *
+             * On ne garde donc que les paliers réellement atteignables, et on garantit que le
+             * plancher lui-même figure comme PREMIER jalon : c'est le seul chiffre qui change
+             * quelque chose pour le client.
+             */
+            $tiers = collect($tiers)
+                ->filter(fn (int $palier): bool => $palier >= $minRedeem)
+                ->push($minRedeem)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
 
             return response()->json([
                 'status' => true,
@@ -839,7 +953,14 @@ class LoyaltyController extends Controller
                     if (! $target) {
                         $phone = preg_replace('/[\s\-]/', '', $code);
                         if ($phone && preg_match('/^\+?\d{6,15}$/', $phone)) {
-                            $target = User::where('phone', $phone)->first();
+                            // [FIDÉLITÉ 2026-08-19] Toutes les écritures du numéro, comme partout
+                            // ailleurs : un QR ancien peut porter « +33… » quand le compte est en
+                            // « 06… », et l'inverse.
+                            $telScan = app(\App\Services\Identity\PhoneIdentity::class);
+                            $target = $telScan->looksComplete($phone)
+                                ? User::whereIn('phone', $telScan->variants($phone))
+                                    ->orderByDesc('loyalty_points')->first()
+                                : User::where('phone', $phone)->first();
                         }
                     }
                 }

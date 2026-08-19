@@ -88,7 +88,9 @@ fi
 # mort en ligne (P0 prouvé 2026-07-19 ; curl seul ne le voit pas, il ignore le
 # CORS). Idempotent : on ne pose un défaut QUE si la var est absente/vide (respecte
 # un domaine custom déjà configuré, ex. lecayenne.fr). Ce n'est PAS un secret —
-# c'est l'URL PUBLIQUE du site. Posé AVANT config:cache (§4) pour être pris en compte.
+# c'est l'URL PUBLIQUE du site. Posé AVANT le vidage des caches (§4) pour être pris en
+# compte. (Ce commentaire disait « avant config:cache » : faux depuis le 2026-08-17, cet
+# appel a été retiré du script — voir le bloc FIX TAMPER-FAUX-POSITIF plus bas.)
 sed -i '/^FRONTEND_WEB_DOMAIN=$/d' .env 2>/dev/null || true   # valeur VIDE = CORS cassé → on la retire
 if ! grep -qE '^FRONTEND_WEB_DOMAIN=.+' .env; then
   printf '\nFRONTEND_WEB_DOMAIN=%s\n' 'https://site-lecayenne.vercel.app' >> .env
@@ -123,9 +125,16 @@ echo "== SEEDER permission rupture…"; php artisan db:seed --class=Availability
 echo "== NF525 triggers…"
 php artisan fiscal:install-immutability-triggers 2>&1 | tail -1 || rollback
 php artisan fiscal:verify-immutability-triggers  2>&1 | tail -1 || rollback
-php artisan config:clear >/dev/null && php artisan config:cache >/dev/null \
+# [FIX TAMPER-FAUX-POSITIF 2026-08-17] JAMAIS config:cache sur ce VPS : AuditLogService::secretFor()
+# (zone gelée §7) lit l'override par caisse via env('FISCAL_AUDIT_SECRET_BRANCH_'.$id) — un
+# appel direct à env(), qui rend TOUJOURS null une fois la config mise en cache (Laravel ne relit
+# plus le .env). Le secret de la caisse retombe alors sur le fallback config('fiscal.audit_secret'),
+# différent de celui qui a signé la ligne de genèse → fiscal:verify-chain hurle TAMPER à tort
+# (reproduit 2026-08-12 ET 2026-08-17, memory piege_config_cache_secret_fiscal_2026-08-12).
+# config:clear + cache:clear + view:clear + route:clear suffisent après un git pull.
+php artisan config:clear >/dev/null \
   && php artisan cache:clear >/dev/null && php artisan view:clear >/dev/null \
-  && php artisan route:clear >/dev/null && echo "== caches OK"
+  && php artisan route:clear >/dev/null && echo "== caches OK (config:cache volontairement SAUTÉ — piège fiscal)"
 php artisan queue:restart >/dev/null && echo "== queue OK"
 echo -n "== NF525 chain : "; php artisan fiscal:verify-chain --all 2>&1 | tail -1 || true
 
@@ -226,7 +235,7 @@ if [ -n "$WEBDOM" ]; then
   else
     WEB_CORS_WARN=1
     echo "!! CORS CASSÉ : $WEBDOM ne reçoit PAS d'Access-Control-Allow-Origin → checkout web bloqué navigateur."
-    echo "!!   Corrige : poser FRONTEND_WEB_DOMAIN (liste CSV) dans .env puis php artisan config:cache."
+    echo "!!   Corrige : poser FRONTEND_WEB_DOMAIN (liste CSV) dans .env puis php artisan config:clear (PAS config:cache — piège fiscal, voir plus haut)."
   fi
 fi
 
@@ -234,7 +243,7 @@ fi
 # saines) mais NE DOIT PAS s'afficher « ✅ OK » (un opérateur qui survole les logs livrerait
 # un checkout en ligne mort). Verdict honnête, sans rollback ni faux échec du deploy backend.
 if [ "${WEB_CORS_WARN:-0}" -eq 1 ]; then
-  echo "== ⚠️  Déploiement backend OK — MAIS CORS WEB CASSÉ (HEAD $(git rev-parse --short HEAD)) : borne/caisse saines, checkout EN LIGNE probablement BLOQUÉ. Corrige FRONTEND_WEB_DOMAIN + php artisan config:cache, puis re-teste le préflight avant d'annoncer le site en ligne."
+  echo "== ⚠️  Déploiement backend OK — MAIS CORS WEB CASSÉ (HEAD $(git rev-parse --short HEAD)) : borne/caisse saines, checkout EN LIGNE probablement BLOQUÉ. Corrige FRONTEND_WEB_DOMAIN + php artisan config:clear (PAS config:cache), puis re-teste le préflight avant d'annoncer le site en ligne."
 else
   echo "== ✅ Déploiement OK — HEAD $(git rev-parse --short HEAD) · triggers vérifiés · healthz vert · contenu frais · CORS web OK."
 fi

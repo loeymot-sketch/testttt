@@ -51,12 +51,21 @@ class CleanupStalePendingKioskOrders
         // PREPARING→CANCELED are all legal (OrderStateMachine.php:38,52,63) — no frozen-
         // zone edit needed.
         //
-        // PREPARED is DELIBERATELY EXCLUDED (same as the phone lane): PREPARED→CANCELED is
-        // ILLEGAL in the frozen OrderStateMachine (PREPARED only allows OUT_FOR_DELIVERY/
-        // DELIVERED/RETURNED — OrderStateMachine.php:65-71). Reaping a PREPARED kiosk
-        // orphan requires an owner-gated frozen-zone change (add PREPARED→CANCELED); until
-        // then, fetching a PREPARED row here would make OrderStateMachine::apply() throw
-        // and abort the whole janitor run — so it stays out of the query.
+        // PREPARED is DELIBERATELY EXCLUDED (same as the phone lane) — et il le RESTE, mais
+        // la raison a changé le 2026-08-19 ; ce commentaire disait le faux depuis.
+        //
+        // AVANT : PREPARED→CANCELED était ILLÉGALE dans le state machine gelé, si bien qu'une
+        // ligne PREPARED ramenée ici aurait fait throw OrderStateMachine::apply() et avorté
+        // tout le passage du janitor. Le commentaire annonçait qu'une dérogation gatée par le
+        // propriétaire serait nécessaire pour la traiter autrement.
+        //
+        // DEPUIS : cette dérogation a eu lieu — plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md
+        // ouvre PREPARED→CANCELED (le patron veut pouvoir annuler une commande prête).
+        // L'exclusion reste néanmoins VOLONTAIRE et ne doit pas être « corrigée » : purger un
+        // fantôme n'est pas l'annuler. Une annulation est un geste HUMAIN, tracé, avec motif
+        // obligatoire et permission de remboursement si la vente est payée ; un fantôme périmé
+        // n'a ni client devant le comptoir ni décision à tracer. Il quitte donc les écrans par
+        // SOFT-DELETE, sans transition ni événement — voir le bloc dédié plus bas.
         //
         // NF525-safety: only rows with NO fiscal_sequence_no are touched. A
         // collected order has been sealed (payment_status=PAID + a fiscal
@@ -129,19 +138,30 @@ class CleanupStalePendingKioskOrders
         // [CLUSTER-5-reste 2026-07-11] PHANTOMS BORNE AU STATUT PREPARED — purge par SOFT-DELETE.
         // 8/9 des commandes borne UNPAID fantômes observées sont au statut PREPARED (status=8) :
         // la borne Plan-B cash auto-accepte (ACCEPT), le KDS la fait avancer ACCEPT→PREPARING→
-        // PREPARED avant que la caisse encaisse. Le bloc kiosk ci-dessus ne peut PAS les CANCEL :
-        // On SOFT-DELETE donc le fantôme ($order->delete() → deleted_at) : il quitte
-        // « à encaisser » ET le KDS (tous deux filtrés par le SoftDeletingScope) sans changer
-        // son statut.
+        // PREPARED avant que la caisse encaisse. Le bloc kiosk ci-dessus ne les CANCEL PAS.
+        // On SOFT-DELETE le fantôme ($order->delete() → deleted_at) : il quitte « à encaisser »
+        // ET le KDS (tous deux filtrés par le SoftDeletingScope) sans changer son statut.
         //
-        // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19] MISE À JOUR — la justification d'origine
-        // (« PREPARED→CANCELED est ILLÉGALE dans le state machine gelé ») N'EST PLUS VRAIE :
-        // la transition a été ouverte sous gate propriétaire. Le comportement de ce job est
-        // volontairement INCHANGÉ (sa requête code en dur PENDING/ACCEPT/PREPARING et cette
-        // branche appelle ->delete() sans consulter allows()), mais l'arbitrage se rouvre :
-        // le janitor POURRAIT désormais annuler proprement (transition auditée + motif +
-        // événements) au lieu d'un soft-delete muet qui laisse status=PREPARED pour toujours.
-        // À trancher par le propriétaire — ne pas laisser ce commentaire mentir en attendant.
+        // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19 · fusion de deux relectures indépendantes]
+        // La justification d'origine (« PREPARED→CANCELED est ILLÉGALE dans le state machine
+        // gelé ») N'EST PLUS VRAIE : la transition a été ouverte sous gate propriétaire —
+        // plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md.
+        //
+        // Le comportement de ce job est volontairement INCHANGÉ : sa requête code en dur
+        // PENDING/ACCEPT/PREPARING, et cette branche appelle ->delete() sans jamais consulter
+        // allows(). Rien ne bascule donc tout seul du fait de la dérogation.
+        //
+        // POURQUOI LE SOFT-DELETE RESTE DÉFENDABLE : purger n'est pas annuler. Une annulation
+        // est un geste HUMAIN — client au comptoir, motif obligatoire, permission de
+        // remboursement si la vente est payée, événements émis. Un fantôme périmé n'a rien de
+        // tout cela ; lui appliquer une transition d'annulation ferait MENTIR la trace sur ce
+        // qui s'est réellement passé.
+        //
+        // MAIS L'ARBITRAGE SE ROUVRE, ET IL APPARTIENT AU PROPRIÉTAIRE : le janitor POURRAIT
+        // désormais annuler proprement (transition auditée + motif + événements) au lieu d'un
+        // soft-delete muet qui laisse status=PREPARED pour toujours. Les deux positions se
+        // défendent ; ce commentaire ne tranche pas à sa place, il refuse seulement de mentir
+        // en attendant.
         //
         // GARDE ABSOLUE NF525 (mirror du bloc kiosk) : whereNull('fiscal_sequence_no') +
         // payment_status ∈ {UNPAID, PENDING_COUNTER} → une commande encaissée (PAID + séquence
@@ -239,7 +259,8 @@ class CleanupStalePendingKioskOrders
         // une commande web encaissée (scellée) est immunisée. Transitions PENDING→REJECTED /
         // ACCEPT|PREPARING→CANCELED toutes légales (OrderStateMachine) ; release stock +
         // refund fidélité via le MÊME chemin unifié cleanupStaleDeferredOrder. PREPARED
-        // exclu (PREPARED→CANCELED illégale dans le state machine frozen).
+        // exclu — non plus parce que la transition serait illégale (elle ne l'est plus depuis
+        // le LOCK du 2026-08-19) mais parce qu'un fantôme se purge, ne s'annule pas.
         $webTtlMinutes = (int) config('kiosk.stale_web_collect_ttl_minutes', 360);
         $webStaleThreshold = now()->subMinutes($webTtlMinutes);
 

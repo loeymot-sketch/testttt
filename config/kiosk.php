@@ -70,6 +70,42 @@ $paymentRouteAllToCounter = filter_var(env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER',
 $promoEnabled = filter_var(env('KIOSK_PROMO_ENABLED', false), FILTER_VALIDATE_BOOLEAN);
 
 /*
+| [FIDÉLITÉ BORNE 2026-08-19] RACHAT DE POINTS À LA BORNE — interrupteur DÉDIÉ.
+|
+| POURQUOI IL FALLAIT LE SÉPARER. Le drapeau `promo_enabled` juste au-dessus a été créé le
+| 2026-06-26 pour une raison précise et JUSTE : le câblage des CODES PROMO borne est cassé
+| (la borne n'envoie qu'un `kiosk_promo_code`, jamais de `coupon_id`), donc le panier
+| affichait une remise que le serveur n'appliquait pas. Il gate depuis le bloc promo ET le
+| rachat de points — deux choses de nature différente, prises en otage par le même défaut.
+|
+| C'est la TROISIÈME fois que ce motif apparaît dans ce projet : `pos.manual_discount_enabled`
+| coupait déjà la fidélité (découplé le 2026-07-18 par `pos.loyalty_enabled`), puis les codes
+| promo (découplés le 2026-08-07 par `pos.coupon_codes_enabled`). Même remède ici.
+|
+| CE QUI A CHANGÉ POUR QUE CE FLAG PUISSE VALOIR TRUE. Le rachat borne n'était pas seulement
+| masqué, il était NON CÂBLÉ : `buildKioskQuotePayload` n'envoyait que `loyalty_code`, jamais
+| le montant demandé, si bien que le serveur sortait immédiatement. Et une fois câblé, il
+| tombait sur un second défaut, jamais vu parce que tous les tests remplaçaient le sceau du
+| devis par un double : le débit s'exécutait AVANT `sealForCommit`, qui recalcule le devis en
+| relisant le solde VIVANT → « Order quote intent mismatch » dès que le rachat faisait tomber
+| le solde sous le plancher. Les deux sont corrigés et prouvés bout-en-bout, sceau compris
+| (`tests/Feature/Loyalty/KioskRedeemThroughSealedQuoteTest.php`).
+|
+| Fiscalement : la fidélité passe par `pos.loyalty_enabled` (défaut true) dans
+| `FrontendOrderService::assertDiscretionaryDiscountAllowed`, pas par le kill-switch des
+| remises manuelles — le défaut F1 est corrigé et prouvé (ZReportDiscountNettingTest).
+|
+| Kill-switch : KIOSK_LOYALTY_REDEEM_ENABLED=false masque le rachat borne SANS toucher aux
+| codes promo ni à la caisse. La consultation du solde et le CUMUL restent toujours actifs :
+| ils n'appliquent aucune réduction, donc aucun risque d'afficher un prix non tenu.
+*/
+$loyaltyRedeemEnabled = filter_var(
+    env('KIOSK_LOYALTY_REDEEM_ENABLED', true),
+    FILTER_VALIDATE_BOOLEAN,
+    FILTER_NULL_ON_FAILURE
+) ?? true;
+
+/*
 | [TRAP-2 2026-06-04] Stale counter-collect TTL (minutes).
 |
 | A walk-away kiosk order auto-accepts to status=ACCEPT + PENDING_COUNTER and
@@ -201,6 +237,9 @@ if ($requireForm) {
         'payment_route_all_to_counter' => $paymentRouteAllToCounter,
         // [W2 audit heal 2026-06-26] Dedicated kiosk promo/loyalty UI gate (default FALSE) — see top of file.
         'promo_enabled' => $promoEnabled,
+        // [FIDÉLITÉ BORNE 2026-08-19] Interrupteur DÉDIÉ au rachat de points — présent dans
+        // LES DEUX branches de retour, comme l'exige le piège documenté plus haut.
+        'loyalty_redeem_enabled' => $loyaltyRedeemEnabled,
         // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
         'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
         // [C4-CAISSE-TELEPHONE FIX-2 2026-07-07] TTL distinct pour la purge des commandes téléphone.
@@ -329,6 +368,8 @@ return [
     'payment_route_all_to_counter' => $paymentRouteAllToCounter,
     // [W2 audit heal 2026-06-26] Dedicated kiosk promo/loyalty UI gate (default FALSE) — see top of file.
     'promo_enabled' => $promoEnabled,
+    // [FIDÉLITÉ BORNE 2026-08-19] Interrupteur DÉDIÉ au rachat de points (cf. branche ci-dessus).
+    'loyalty_redeem_enabled' => $loyaltyRedeemEnabled,
     // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
     'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
     // [C4-CAISSE-TELEPHONE FIX-2 2026-07-07] TTL distinct pour la purge des commandes téléphone.

@@ -145,6 +145,29 @@ class User extends Authenticatable implements HasMedia
         return $this->roles->pluck('id', 'id')->first();
     }
 
+    /**
+     * [APPS 2026-08-19] Le numéro auquel on peut RÉELLEMENT joindre ce client.
+     *
+     * Deux colonnes, deux rôles, et il ne faut pas les confondre :
+     *   · `phone`         — le numéro qui sert de CLÉ d'identité (recherche de compte,
+     *                       choix du canal d'envoi du code). Il vaut `PENDING_…` quand le
+     *                       compte a été créé sans numéro.
+     *   · `contact_phone` — le numéro DÉCLARÉ après une connexion Apple ou Google, jamais
+     *                       prouvé, et qui ne donne accès à rien (voir la migration
+     *                       2026_08_19_140000 pour la raison).
+     *
+     * Pour la caisse et la cuisine, la question n'est pas « quelle est son identité » mais
+     * « quel numéro je compose si sa commande pose problème ». C'est ce que renvoie cette
+     * méthode : le numéro prouvé s'il existe, sinon le numéro déclaré, sinon rien — et
+     * JAMAIS une sentinelle `PENDING_…`, qui n'est pas un numéro et n'a rien à faire sous
+     * les yeux d'un caissier.
+     */
+    public function numeroJoignable(): ?string
+    {
+        return \App\Support\PhoneDisplay::safe($this->phone)
+            ?? \App\Support\PhoneDisplay::safe($this->contact_phone);
+    }
+
     public function getrole(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Role::class, 'id', 'myrole');
@@ -183,5 +206,34 @@ class User extends Authenticatable implements HasMedia
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(MessageHistory::class, 'user_id', 'id')->where('is_read', Ask::NO);
+    }
+
+    /**
+     * [FIDÉLITÉ 2026-08-19] EST-CE UN COMPTE DE CLIENT, ET NON DU PERSONNEL ?
+     *
+     * ── POURQUOI CETTE RÈGLE VIT ICI ─────────────────────────────────────────────────────────
+     * Deux outils de fidélité en avaient besoin le même jour : le vérificateur de santé et la
+     * fusion des comptes en double. Écrite deux fois, elle a immédiatement divergé — le premier
+     * annonçait 6 clients en double, le second n'en traitait qu'1, et l'exploitant devant deux
+     * chiffres contradictoires cesse de croire les deux. C'est le motif du « jumeau oublié »
+     * pris à sa naissance, avant qu'il ne coûte quelque chose.
+     *
+     * ── CE QU'ELLE PROTÈGE ───────────────────────────────────────────────────────────────────
+     * Dans un restaurant de quartier, l'exploitant ou un caissier partage volontiers son numéro
+     * avec un client. Un outil qui regrouperait « les comptes de ce numéro » sans distinguer
+     * transférerait les points DU CLIENT vers le compte DU PERSONNEL. Le doute profite au
+     * client : au moindre rôle d'exploitation, ce n'est pas un compte de fidélité.
+     */
+    public function isLoyaltyCustomer(): bool
+    {
+        return ! $this->hasAnyRole([
+            'Admin',
+            'Branch Manager',
+            'POS Operator',
+            'Chef',
+            'Waiter',
+            'Delivery Boy',
+            'Stuff',
+        ]);
     }
 }

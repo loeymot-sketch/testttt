@@ -223,6 +223,23 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             ->middleware('throttle:3,5');
     });
 
+    /**
+     * [APPS 2026-08-19] Connexion Apple / Google des applications iOS et Android.
+     *
+     * Le corps ne porte qu'un jeton d'identité signé par le fournisseur ; TOUT est
+     * revérifié côté serveur (signature RS256 contre le trousseau public, émetteur,
+     * destinataire, expiration) — voir SocialIdentityVerifier. Un jeton décodé sans être
+     * vérifié « marche » parfaitement en test et laisse prendre n'importe quel compte.
+     *
+     * Débit limité comme les autres portes d'authentification : l'endpoint est PUBLIC,
+     * donc c'est aussi une surface d'abus (fabrication de jetons en rafale).
+     */
+    Route::prefix('social')->name('social.')->group(function () {
+        Route::post('/{provider}', [\App\Http\Controllers\Auth\SocialAuthController::class, 'login'])
+            ->whereIn('provider', ['apple', 'google'])
+            ->middleware('throttle:10,1');
+    });
+
     Route::middleware('auth:sanctum')->group(function () {
         // [A1 cycle 5 · GOAL_WEB_ADVERSARIAL 2026-08-05 · P1 SÉCURITÉ] `verify.api` (e-mail
         // vérifié) gardait la DÉCONNEXION alors que la CONNEXION ne l'exige pas : asymétrie
@@ -247,6 +264,18 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // borne ne doit pas pouvoir lister ni révoquer les sessions du compte
         // auquel il est rattaché (il pourrait éteindre la caisse).
         Route::middleware('block_kiosk_machine')->group(function () {
+            /**
+             * [APPS 2026-08-19] Complète un compte ouvert par connexion Apple/Google avec
+             * son numéro de téléphone — l'exploitation doit pouvoir appeler le client.
+             *
+             * Dans ce groupe `block_kiosk_machine` par défense en profondeur : une BORNE
+             * n'a aucun numéro personnel à déclarer. Le contrôleur refait le contrôle,
+             * mais compter sur une seule garde pour une écriture sur le compte, c'est
+             * accepter qu'un jour un déplacement de route l'emporte en silence.
+             */
+            Route::post('/social/phone', [\App\Http\Controllers\Auth\SocialAuthController::class, 'attacherTelephone'])
+                ->middleware('throttle:10,1');
+
             Route::get('/devices', [DeviceSessionController::class, 'index']);
             Route::patch('/devices/{token}', [DeviceSessionController::class, 'update'])
                 ->whereNumber('token');
@@ -1806,7 +1835,13 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // ne consomme plus le budget de création de commandes → fin des 429 « Trop de requêtes »
         // quand on compose/enchaîne des commandes.
         Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-quote');
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
+        // [APPS 2026-08-19] `require_customer_phone` : un compte ouvert par connexion
+        // Apple/Google n'apporte aucun téléphone, et l'exploitation doit pouvoir appeler
+        // le client (rupture, cuisson, commande non retirée). L'écran de l'application le
+        // réclame déjà, mais un écran se contourne en fermant l'app — le refus vit donc
+        // ici. Sans effet sur la BORNE (jeton `kiosk-token`) ni sur les clients venus par
+        // le parcours téléphone, dont le compte est créé À PARTIR de leur numéro.
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'require_customer_phone', 'idempotency']);
         // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
         // [P0 2026-08-07] Jumelles de mollie-checkout : elles portent aussi une commande, donc
         // même garde de branche dérivée du serveur. Ces deux méthodes ne lisent PAS `branch_id`

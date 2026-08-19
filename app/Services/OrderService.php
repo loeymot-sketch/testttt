@@ -890,6 +890,10 @@ class OrderService
                 $requestItems = is_array($requestItems) ? $requestItems : [];
 
                 $posSsotPricingResult = null;
+                // [FIDÉLITÉ CAISSE 2026-08-19] Déclaré ICI (et pas dans la branche SSOT) pour que
+                // la trace d'audit plus bas puisse dire de quelle NATURE est la remise, même quand
+                // le moteur SSOT est désactivé.
+                $rachatFidelite = null;
                 if (config('pricing.use_ssot_service', true)) {
                     $posSsotPricingResult = $this->pricingService->calculateOrder(
                         PricingRequest::forPos(
@@ -948,6 +952,34 @@ class OrderService
                     // F1 split defect → fiscally-incorrect signed Z. The V1 gate
                     // refuses every discretionary discount source.
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
+
+                    /*
+                     * [FIDÉLITÉ CAISSE 2026-08-19] LE RACHAT DE POINTS S'APPLIQUE ICI, ET PAS APRÈS.
+                     *
+                     * Le chemin historique (`PosRedemptionService`) opère sur une commande DÉJÀ
+                     * créée et refuse tout ce qui est payé ou terminal — or une vente de comptoir
+                     * naît payée et livrée dans le même geste. Reproduit le 2026-08-19 :
+                     * 409 ORDER_ALREADY_FINALIZED. La fenêtre était vide ; « utiliser ses points »
+                     * ne pouvait littéralement jamais aboutir au comptoir.
+                     *
+                     * On l'applique donc AVANT que l'argent soit compté, sur le même moteur SSOT
+                     * que le devis (`PosCartRedemption`, appelé aussi par `OrderQuoteService`) —
+                     * un seul calcul pour deux chemins, sinon le sceau du devis rejette la vente.
+                     *
+                     * PLACÉ APRÈS `assertDiscretionaryDiscountAllowed` À DESSEIN : cette garde
+                     * coupe les remises MANUELLES et COUPON (défaut V1 fermé). La fidélité a son
+                     * propre interrupteur `pos.loyalty_enabled` (défaut true) depuis le
+                     * découplage du 2026-07-18 — le défaut fiscal F1 qui justifiait de tout
+                     * couper est corrigé et prouvé (ZReportDiscountNettingTest : netting TVA sur
+                     * base NETTE). Passer la fidélité par la garde des remises manuelles la
+                     * rendrait donc impossible pour une raison qui ne la concerne plus.
+                     */
+                    $rachatFidelite = $this->applyPosLoyaltyRedemption($request, $posSsotPricingResult);
+                    if ($rachatFidelite !== null) {
+                        $posSsotPricingResult = $rachatFidelite['pricing'];
+                        $calculatedDiscount = $posSsotPricingResult->discount;
+                    }
+
                     // [POS-9.4.BL.1] Persist immutable allergen snapshot on each
                     // order_item row for NF525 fiscal traceability (must be frozen
                     // at order time, not read through a live FK join later).
@@ -1151,7 +1183,7 @@ class OrderService
                     }
                 }
 
-                $this->saveOrderWithQueueNumber(function () use ($request, $posSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount, $idempotencyKey): void {
+                $this->saveOrderWithQueueNumber(function () use ($request, $posSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount, $idempotencyKey, $rachatFidelite): void {
                     $this->order->order_serial_no = date('dmy').$this->order->id;
                     if ($posSsotPricingResult instanceof PricingResult) {
                         $this->order->total_tax = $posSsotPricingResult->totalTax;
@@ -1176,6 +1208,31 @@ class OrderService
                         (int) $this->order->id,
                         (float) $this->order->total
                     );
+
+                    /*
+                     * [FIDÉLITÉ CAISSE 2026-08-19] LE DÉBIT VIENT APRÈS LE SCEAU. PAS AVANT.
+                     *
+                     * Défaut trouvé en jouant une VRAIE vente en HTTP, pas en relisant le code —
+                     * et qu'aucun des tests écrits juste avant n'attrapait, par pure chance.
+                     *
+                     * `sealForCommit` RECALCULE le devis à partir de la requête pour le comparer au
+                     * total de la commande. Ce recalcul repasse par `PosCartRedemption`, qui lit le
+                     * SOLDE VIVANT du client. Débiter avant, c'est donc changer sous ses pieds la
+                     * donnée dont il se sert : sur un client à 2000 points rachetant 1500, le
+                     * recalcul voyait 500 points restants, tombait sous le plancher, concluait
+                     * « remise 0 » et refusait la vente (« Order quote intent mismatch »).
+                     *
+                     * Les tests passaient parce que leurs soldes RESTAIENT au-dessus du plancher
+                     * après débit (2000−1000, 100000−3000) : le recalcul retombait par hasard sur
+                     * le même chiffre. Un cas de plus, et le comptoir se bloquait en plein service.
+                     *
+                     * Le calcul (qui fixe le prix) reste donc avant le sceau ; l'ÉCRITURE vient
+                     * après. Les deux sont dans la même transaction : si la suite échoue, rien n'est
+                     * débité.
+                     */
+                    if ($rachatFidelite !== null) {
+                        $this->debitPosLoyaltyPoints($rachatFidelite);
+                    }
 
                     app(\App\Services\Stock\StockService::class)->decrementForOrder($this->order, $idempotencyKey);
 
@@ -1324,7 +1381,15 @@ class OrderService
                             'discount_reason' => $request->coupon_id > 0 ? null : trim((string) $request->discount_reason),
                             'requested_discount' => round((float) $request->discount, 2),
                             'discount_amount' => round((float) $calculatedDiscount, 2),
-                            'discount_type' => $request->coupon_id > 0 ? 'coupon' : 'manual_cashier',
+                            // [FIDÉLITÉ CAISSE 2026-08-19] Une remise fidélité n'est PAS une remise
+                            // discrétionnaire de caissier. Les confondre dans la chaîne d'audit
+                            // ferait lire à un contrôleur « remise manuelle sans motif » là où il y
+                            // a un rachat de points traçable au grand-livre — soupçon fabriqué par
+                            // une étiquette, pas par un fait.
+                            'discount_type' => $request->coupon_id > 0
+                                ? 'coupon'
+                                : ($rachatFidelite !== null ? 'loyalty_redeem' : 'manual_cashier'),
+                            'loyalty_points_redeemed' => $rachatFidelite['points'] ?? null,
                             'subtotal_before' => round((float) $realSubtotal, 2),
                             'backend_subtotal' => round((float) $realSubtotal, 2),
                             'total_after' => round((float) $this->order->total, 2),
@@ -1422,6 +1487,36 @@ class OrderService
                 }
 
                 $order = $this->order;
+
+                /*
+                 * [FIDÉLITÉ 2026-08-19] AU COMPTOIR, LE FAIT GÉNÉRATEUR EST LE PAIEMENT.
+                 *
+                 * Le crédit des points ne se déclenchait que sur un CHANGEMENT de statut
+                 * (`AwardLoyaltyPointsOnDelivery`). Or une vente de caisse NAÎT au statut « en
+                 * préparation » : il n'y a aucun changement, donc aucun crédit. Le client payait,
+                 * repartait, et n'obtenait ses points QUE si la cuisine bumpait sa commande — ce
+                 * qui n'arrive jamais pour une boisson ou tout produit sans étape cuisine.
+                 *
+                 * Mesuré sur la base réelle : **307 ventes de caisse immobilisées à ce statut**,
+                 * aucune n'ayant pu créditer qui que ce soit. Vérifié en jouant une vraie vente
+                 * (commande 6602, 9,50 €, client rattaché) : statut 7, crédit NUL.
+                 *
+                 * Attendre la cuisine pour récompenser un achat est un reste du modèle
+                 * « livraison ». Ici l'argent est dans le tiroir et la vente est scellée
+                 * fiscalement : c'est le moment, et c'est ce que le client attend.
+                 *
+                 * SÛR PARCE QUE RÉVERSIBLE : l'annulation reprend ce qui a été donné —
+                 * `clawbackEarnedPoints` pour les points gagnés, `refundPoints` pour les points
+                 * dépensés, tous deux déjà câblés sur le chemin d'annulation.
+                 * IDEMPOTENT : la sentinelle atomique `orders.loyalty_points_awarded` fait qu'un
+                 * bump cuisine ultérieur ne crédite pas une seconde fois.
+                 *
+                 * Une commande TÉLÉPHONE différée n'est pas payée ici (PENDING_COUNTER) : elle ne
+                 * remplit pas la condition et sera créditée à son encaissement, comme il se doit.
+                 */
+                if ((int) ($order->payment_status ?? 0) === PaymentStatus::PAID) {
+                    app(\App\Listeners\AwardLoyaltyPointsOnDelivery::class)->award($order);
+                }
 
                 // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
                 // INSIDE the closure so DispatchableAfterCommit engages
@@ -3425,6 +3520,152 @@ class OrderService
      * (pos.manual_discount_enabled=false — the master discretionary-discount
      * flag, covering manual/coupon/loyalty). Non-discounted orders are unaffected.
      */
+    /**
+     * [FIDÉLITÉ CAISSE 2026-08-19] Applique le rachat de points AU MOMENT DE LA VENTE et débite.
+     *
+     * Rend `null` quand il n'y a rien à racheter (cas de très loin le plus fréquent) : l'appelant
+     * garde alors son calcul de prix intact, sans branche supplémentaire.
+     *
+     * TROIS PRÉCAUTIONS QUI ONT CHACUNE UNE HISTOIRE DANS CE PROJET :
+     *   - Le calcul vient de `PosCartRedemption`, LE MÊME objet que celui du devis scellé. Deux
+     *     calculs jumeaux qui doivent s'accorder au centime finissent toujours par diverger, et
+     *     ici la divergence se paie en 409 devant un client qui attend.
+     *   - Le solde est relu SOUS VERROU avant d'être débité : entre le devis et la validation, le
+     *     même client peut avoir dépensé ses points sur une autre caisse ou sur la borne.
+     *   - La ligne de grand-livre a exactement la forme de celle de `PosRedemptionService`
+     *     (type `redeem`, points négatifs, UNIQUE(user_id, order_id, type)), pour que le
+     *     remboursement automatique à l'annulation (`LoyaltyService::refundPoints`, qui cherche
+     *     cette forme précise) continue de retrouver ses petits.
+     *
+     * @return array{pricing: PricingResult, points: int}|null
+     */
+    private function applyPosLoyaltyRedemption(PosOrderRequest $request, ?PricingResult $pricing): ?array
+    {
+        if (! $pricing instanceof PricingResult) {
+            return null;
+        }
+
+        $points = (int) $request->input('loyalty_redeem_points', 0);
+        $code = trim((string) $request->input('loyalty_customer_code', ''));
+
+        if ($points <= 0 || $code === '') {
+            return null;
+        }
+
+        // Interrupteur DÉDIÉ à la fidélité (découplage 2026-07-18) — distinct de celui des
+        // remises manuelles, et fiscalement légitime depuis la correction prouvée de F1.
+        if (! (bool) config('pos.loyalty_enabled', true)) {
+            throw new \InvalidArgumentException(
+                'Le programme de fidélité est désactivé : impossible d\'utiliser des points.',
+                422
+            );
+        }
+
+        $rachat = app(\App\Services\Loyalty\PosCartRedemption::class)->compute(
+            $code,
+            $points,
+            (float) $pricing->accumulatedSubtotal,
+            (float) $pricing->discount,
+        );
+
+        if ((float) $rachat['discount'] <= 0.0 || (int) $rachat['points'] <= 0) {
+            // Un refus SILENCIEUX ferait encaisser le prix plein en laissant croire au caissier
+            // que la remise est passée. On nomme l'obstacle — c'est ce que le comptoir doit dire
+            // au client (« il lui manque X points »), pas un prix qui change sans explication.
+            throw new \InvalidArgumentException(
+                match ($rachat['reason']) {
+                    'customer_not_found' => 'Compte fidélité introuvable : impossible d\'utiliser ses points.',
+                    'below_floor'        => 'Ce solde n\'atteint pas le minimum utilisable — points non déduits.',
+                    'no_room'            => 'La commande ne laisse pas de place pour cette réduction.',
+                    default              => 'Réduction fidélité impossible sur cette vente.',
+                },
+                422
+            );
+        }
+
+        /** @var \App\Models\User $client */
+        $client = $rachat['customer'];
+        $pointsDebites = (int) $rachat['points'];
+
+        // Le code du client suit la vente : c'est lui qui permet le remboursement des points en
+        // cas d'annulation, et le crédit du gain sur le montant réellement payé.
+        $this->order->loyalty_customer_code = $client->loyalty_code;
+
+        $remiseTotale = round((float) $pricing->discount + (float) $rachat['discount'], 2);
+
+        // Même formule que le devis (branche TTC/HT) : toute divergence ici rejette la vente.
+        $total = round(max(
+            0.0,
+            (bool) config('pricing.tax_inclusive_prices', true)
+                ? $pricing->accumulatedSubtotal + $pricing->deliveryCharge - $remiseTotale
+                : $pricing->accumulatedSubtotal + $pricing->totalTax + $pricing->deliveryCharge - $remiseTotale
+        ), 2);
+
+        return [
+            'points' => $pointsDebites,
+            'customer_id' => (int) $client->id,
+            'loyalty_code' => (string) $client->loyalty_code,
+            'pricing' => new PricingResult(
+                $pricing->orderItemInsertRows,
+                $pricing->lines,
+                $pricing->accumulatedSubtotal,
+                $pricing->subtotal,
+                $pricing->totalTax,
+                $remiseTotale,
+                $pricing->deliveryCharge,
+                $total,
+                $pricing->meta + ['loyalty_points_required' => $pointsDebites],
+            ),
+        ];
+    }
+
+    /**
+     * [FIDÉLITÉ CAISSE 2026-08-19] Débite réellement les points, une fois la vente scellée.
+     *
+     * Séparé du calcul à dessein (cf. le commentaire à l'appel) : tant que le sceau du devis n'est
+     * pas posé, le solde doit rester tel qu'il était quand le prix a été calculé.
+     *
+     * @param array{points:int, customer_id:int, loyalty_code:string} $rachat
+     */
+    private function debitPosLoyaltyPoints(array $rachat): void
+    {
+        $pointsDebites = (int) $rachat['points'];
+        $clientId = (int) $rachat['customer_id'];
+        if ($pointsDebites <= 0 || $clientId <= 0) {
+            return;
+        }
+
+        // Relecture SOUS VERROU : entre l'affichage du solde au comptoir et la validation, le même
+        // client a pu dépenser ses points sur une autre caisse ou sur la borne.
+        $soldeReel = (int) User::whereKey($clientId)->lockForUpdate()->value('loyalty_points');
+        if ($soldeReel < $pointsDebites) {
+            throw new \InvalidArgumentException(
+                'Le solde de points a changé depuis l\'affichage — relance l\'encaissement.',
+                422
+            );
+        }
+
+        $soldeApres = $soldeReel - $pointsDebites;
+
+        User::whereKey($clientId)->update([
+            'loyalty_points' => $soldeApres,
+            'updated_at'     => now(),
+        ]);
+
+        // Forme IDENTIQUE à celle de PosRedemptionService : c'est elle, et elle seule, que
+        // `LoyaltyService::refundPoints` sait retrouver pour rendre les points à l'annulation.
+        \App\Models\LoyaltyTransaction::create([
+            'user_id'        => $clientId,
+            'loyalty_code'   => $rachat['loyalty_code'],
+            'order_id'       => $this->order->id,
+            'type'           => 'redeem',
+            'points'         => -$pointsDebites,
+            'balance_after'  => $soldeApres,
+            'source_surface' => 'pos',
+            'description'    => 'Reduction fidelite appliquee a la vente par caissier #'.(Auth::id() ?? 0),
+        ]);
+    }
+
     private function assertDiscretionaryDiscountAllowed(float $discount): void
     {
         if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {

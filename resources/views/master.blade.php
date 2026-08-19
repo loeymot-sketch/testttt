@@ -236,6 +236,10 @@
             // INDEPENDENT of the shared discountsEnabled flag so POS manual discount + web
             // checkout stay untouched. Default FALSE hides the kiosk entries. See config/kiosk.php.
             kioskPromoEnabled: @json((bool) config('kiosk.promo_enabled', false)),
+            {{-- [FIDÉLITÉ BORNE 2026-08-19] Interrupteur DÉDIÉ au rachat de points : les codes
+                 promo borne restent cassés (pas de coupon_id envoyé), la fidélité non — elle est
+                 désormais câblée et prouvée bout-en-bout, sceau du devis compris. --}}
+            kioskLoyaltyRedeemEnabled: @json((bool) config('kiosk.loyalty_redeem_enabled', true)),
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),

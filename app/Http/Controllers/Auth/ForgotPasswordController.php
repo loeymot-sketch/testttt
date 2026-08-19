@@ -31,7 +31,34 @@ class ForgotPasswordController extends Controller
             return new JsonResponse(['errors' => $validator->errors()], 422);
         }
 
-        $verify = User::where('email', $request->post('email'))->exists();
+        /*
+         * [FIDÉLITÉ BORNE 2026-08-19] ON NE « RÉINITIALISE » PAS UN MOT DE PASSE QUE PERSONNE
+         * N'A JAMAIS CHOISI.
+         *
+         * Un compte invité (`is_guest = YES`) est un talon créé POUR le client — borne, comptoir,
+         * commande web sans inscription — avec un mot de passe aléatoire qu'il n'a jamais vu.
+         * « Réinitialiser » un tel compte ne rend rien à personne : ça POSE un premier mot de
+         * passe, et donc ça donne le compte à qui demande. Depuis que la borne conserve l'email
+         * saisi (LoyaltyController::register), ce chemin serait devenu la porte de sortie du
+         * risque résiduel qu'on y assume : un email déclaré et non vérifié suffirait à prendre
+         * un compte porteur de points. On la ferme.
+         *
+         * Le vrai chemin du client reste ouvert et inchangé : s'inscrire sur le site, ce qui
+         * revendique le talon PAR LE TÉLÉPHONE AVEC PREUVE OTP (SignupController:88) et laisse
+         * ses points intacts. Un compte plein (`is_guest = NO`) n'est pas concerné.
+         *
+         * Réponse volontairement IDENTIQUE au cas « email inconnu » : distinguer les deux
+         * transformerait ce point d'entrée en oracle d'énumération de comptes.
+         */
+        // NOTE SQL : `is_guest != YES` seul EXCLUT les lignes NULL (NULL != 5 vaut NULL, donc
+        // faux). Il n'y en a aucune aujourd'hui (mesuré : 340 en NO, 174 en YES, 6 sur une valeur
+        // héritée « 1 »), mais un compte au marqueur absent est un compte PLEIN, pas un invité —
+        // le refuser silencieusement lui retirerait sa récupération de mot de passe.
+        $verify = User::where('email', $request->post('email'))
+            ->where(function ($q) {
+                $q->whereNull('is_guest')->orWhere('is_guest', '!=', \App\Enums\Ask::YES);
+            })
+            ->exists();
 
         if ($verify) {
             $verify = DB::table('password_resets')->where([

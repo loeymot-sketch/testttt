@@ -161,9 +161,9 @@
                           (« grisée / inaccessible »), et le corriger d'un côté pour le refaire de
                           l'autre n'aurait servi à rien.
                         -->
-                        <p v-if="!orderId" class="pos-loy-id__manque" data-testid="loy-id-no-order">
-                            Aucune commande en cours&nbsp;: ajoutez des articles et validez la vente, puis revenez
-                            ici pour lui créditer ses points.
+                        <p v-if="!orderId && !cartHasItems" class="pos-loy-id__manque" data-testid="loy-id-no-order">
+                            Aucun article au panier&nbsp;: ajoutez des articles, puis rattachez le client —
+                            ses points seront crédités automatiquement à l'encaissement.
                         </p>
 
                         <!--
@@ -342,18 +342,18 @@
                         <button
                             type="button"
                             class="pos-loy-id__btn pos-loy-id__btn--primary"
-                            :disabled="occupe || !orderId"
+                            :disabled="occupe || (!orderId && !cartHasItems)"
                             data-testid="loy-id-attach"
                             @click="rattacher"
                         >{{ occupe ? '…' : 'Cumuler sur cette vente' }}</button>
 
                         <button
-                            v-if="client.can_use && orderId"
+                            v-if="rachatPossibleIci && (orderId || cartHasItems)"
                             type="button"
                             class="pos-loy-id__btn pos-loy-id__btn--accent"
                             data-testid="loy-id-use"
                             @click="utiliserLesPoints"
-                        >Utiliser {{ euros(client.usable_eur) }}</button>
+                        >Utiliser {{ euros(rachatPossibleIci.euros) }}</button>
                     </template>
                 </footer>
             </section>
@@ -408,8 +408,30 @@ export default {
     props: {
         open: { type: Boolean, default: false },
         orderId: { type: [Number, String], default: null },
+        /**
+         * [FIDÉLITÉ PANIER 2026-08-19] Y a-t-il une vente EN COURS DE SAISIE (panier non vide) ?
+         *
+         * Le rattachement avait DEUX moments possibles et n'en connaissait qu'un. `orderId` ne
+         * désigne qu'une commande DÉJÀ VALIDÉE — donc le geste naturel du comptoir (« vous avez
+         * la carte ? » pendant qu'on compose le panier) tombait dans le seul cas non prévu :
+         * bouton pâle, message « Aucune commande en cours », et le client repartait sans points.
+         * Mesuré avant correction : 1817 ventes caisse, 12 portant un code fidélité.
+         */
+        cartHasItems: { type: Boolean, default: false },
+        /**
+         * [FIDÉLITÉ CAISSE 2026-08-19] Sous-total du panier EN COURS, en euros.
+         *
+         * Trouvé au test visuel, pas à la lecture : sur un panier à 1,90 € le bouton proposait
+         * « Utiliser 20,00 € » (le solde du client), le caissier l'aurait annoncé au client, et le
+         * serveur aurait refusé la vente — une remise ne peut pas dépasser le sous-total. Une
+         * réduction promise puis retirée au moment de payer est pire que pas de réduction du tout.
+         *
+         * Le serveur reste seul maître du chiffre (`PosCartRedemption`) ; ici on se contente de ne
+         * pas promettre ce qu'il refusera.
+         */
+        cartSubtotal: { type: Number, default: 0 },
     },
-    emits: ['close', 'attached', 'use-points'],
+    emits: ['close', 'attached', 'attach-to-cart', 'use-points'],
     data() {
         return {
             onglet: 'phone',
@@ -436,6 +458,45 @@ export default {
         };
     },
     computed: {
+        /**
+         * [FIDÉLITÉ CAISSE 2026-08-19] CE QUE CE CLIENT PEUT UTILISER SUR CE PANIER-CI.
+         *
+         * `client.usable_points` dit ce que vaut son SOLDE ; il ignore tout de la vente en cours.
+         * Sur un panier à 1,90 €, annoncer « Utiliser 20,00 € » est une promesse que le serveur
+         * refusera (une remise ne peut pas dépasser le sous-total) — et le client l'aura entendue.
+         *
+         * On n'invente pas de règle ici : on applique les mêmes bornes que `PosCartRedemption`
+         * (plafond du panier, multiple du taux, plancher effectif) pour ne rien promettre qu'il
+         * refuse. Le serveur reste l'autorité ; ceci n'est qu'une politesse d'affichage.
+         *
+         * Rend `null` quand rien n'est utilisable sur cette vente — le bouton disparaît alors,
+         * plutôt que de proposer un montant impossible.
+         */
+        rachatPossibleIci() {
+            const c = this.client;
+            if (!c || !c.can_use) return null;
+
+            const pointsSolde = Number(c.usable_points) || 0;
+            const eurosSolde = Number(c.usable_eur) || 0;
+            const plancher = Number(c.effective_floor) || 0;
+            if (pointsSolde <= 0 || eurosSolde <= 0) return null;
+
+            // Le taux se déduit de ce que le serveur vient de renvoyer : on ne le recopie pas
+            // depuis un réglage local, qui pourrait avoir dérivé (le barème a déjà été exprimé
+            // en quatre endroits dans ce projet — on ne rouvre pas ce dossier).
+            const taux = Math.round(pointsSolde / eurosSolde);
+            if (!Number.isFinite(taux) || taux <= 0) return null;
+
+            // Sans panier (commande déjà validée), c'est la commande qui borne, pas nous.
+            const plafondEuros = this.cartSubtotal > 0 ? Math.min(eurosSolde, this.cartSubtotal) : eurosSolde;
+
+            let points = Math.floor(plafondEuros * taux);
+            points = Math.floor(points / taux) * taux;
+
+            if (points <= 0 || points < plancher) return null;
+
+            return { points, euros: Math.round((points / taux) * 100) / 100 };
+        },
         onglets() {
             return [
                 { cle: 'phone', libelle: 'Téléphone' },
@@ -592,7 +653,26 @@ export default {
         // ── LES DEUX GESTES ──────────────────────────────────────────────────────────────────
 
         async rattacher() {
-            if (this.occupe || !this.client || !this.orderId) return;
+            if (this.occupe || !this.client) return;
+
+            /*
+             * DEUX MOMENTS, UN SEUL GESTE POUR LE CAISSIER.
+             *
+             * Pas encore de commande, mais un panier en cours → on ne peut RIEN écrire côté
+             * serveur (la vente n'existe pas), et il ne faut surtout pas la créer ici. On note
+             * le client sur le formulaire de la vente : `OrderService` lit
+             * `loyalty_customer_code` à la création et `AwardLoyaltyPointsOnDelivery` crédite
+             * tout seul. C'est le chaînon qui manquait — le champ existait, était accepté par
+             * `PosOrderRequest:215` et persisté, mais AUCUNE surface ne l'écrivait jamais.
+             *
+             * Commande déjà validée → chemin serveur historique (crédit rétroactif), inchangé.
+             */
+            if (!this.orderId) {
+                this.$emit('attach-to-cart', { customer: this.client });
+                this.succes = `${this.client.name} suivra cette vente — ses points seront crédités à l'encaissement.`;
+                return;
+            }
+
             this.occupe = true;
             this.erreur = '';
 
@@ -714,9 +794,19 @@ export default {
         utiliserLesPoints() {
             // La fenêtre de remise existe déjà et porte toutes ses gardes : on lui passe le relais
             // plutôt que de refaire un second chemin de débit.
+            //
+            // [2026-08-19] On annonce le nombre de points RÉELLEMENT utilisable sur cette vente,
+            // pas le solde : envoyer 2000 points pour un panier à 1,90 € ferait refuser la vente
+            // par le serveur après que le caissier a annoncé la réduction au client.
+            const possible = this.rachatPossibleIci;
             this.$emit('use-points', {
                 loyalty_code: this.client.loyalty_code,
-                usable_points: this.client.usable_points,
+                usable_points: possible ? possible.points : this.client.usable_points,
+                usable_eur: possible ? possible.euros : this.client.usable_eur,
+                // Le SOLDE voyage avec, sinon la pastille de l'écran de caisse affiche « 0 pts »
+                // pour un client qui en a 2000 — un chiffre faux sous les yeux du caissier
+                // pendant qu'il annonce la réduction au client.
+                balance: this.client.balance,
             });
         },
 

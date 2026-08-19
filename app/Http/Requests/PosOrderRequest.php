@@ -213,6 +213,11 @@ class PosOrderRequest extends FormRequest
                 [],
             ),
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
+            // [FIDÉLITÉ CAISSE 2026-08-19] Points que le client dépense sur CETTE vente. Le
+            // montant en euros n'est jamais envoyé par le client : le serveur le déduit du taux
+            // (`LoyaltyRules`). Un seul sens de conversion — l'incident « facteur 10 » du
+            // 2026-08-14 venait d'un euro→point fait au mauvais taux.
+            'loyalty_redeem_points' => ['nullable', 'integer', 'min:0'],
             // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
             // When the feature flag is OFF, prepareForValidation() strips this field
             // BEFORE these rules run, so they only fire on flag-enabled deployments.

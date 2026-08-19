@@ -198,6 +198,73 @@ Plateforme restaurant fast-food complète :
 > **Reste ouvert** : le panneau « en souffrance » n'affiche que les 50 plus récentes des 577 (la
 > troncature est dite, mais il n'y a pas de pagination) ; les **73 commandes scellées** n'ont pour
 > seule sortie que la contrepartie comptable ; l'arbitrage `pos-refund` attend l'owner.
+> **2026-08-19 — SUPERVISION : les 3 lots du jour intégrés, audités, testés — DÉPLOYÉ ET VÉRIFIÉ**
+>
+> HEAD déployé **`57c17f8fe`** (poussé sur `pos/category-first-caisse-2026-06-23` en AVANCE
+> RAPIDE, `d7072ec91..57c17f8fe`, 31 commits, aucun historique réécrit). Contient les sommets
+> des TROIS branches du 19/08 : caisse `d7072ec91`, apps `f142ba657`, fidélité `3b51ee700`.
+> GOAL : `plans/GOAL_SUPERVISION_INTEGRATION_3_BRANCHES_2026-08-19.md`.
+>
+> **AVANT** : la production ne portait que le lot caisse/cuisine (déployé à 14:44 par une
+> autre session). **APRÈS** : les trois lots sont en ligne.
+>
+> **PREUVES DE DÉPLOIEMENT** (pas un `git push` — le contenu servi) : `git rev-parse` sur le
+> VPS = `57c17f8f` · chaîne NF525 CHAIN OK · jeu de bundles complet (gate hash-servi) ·
+> `healthz` 200 · CORS web OK · retour arrière jamais déclenché · instantané de base pris
+> avant migration (`predeploy-20260819-170208.sql.gz`).
+> Sondes personnelles : `POST /api/auth/social/apple` → **400** (route présente, corps vide
+> rejeté) contre **405** pour un fournisseur inventé — la liste blanche `apple|google` mord,
+> donc le lot apps est réellement actif. `fidelite:verifier` en production : soldes tous
+> cohérents avec le grand-livre, toutes les ventes rattachées ont crédité, aucun point bloqué.
+>
+> **LE CORRECTIF `config:cache` A SERVI DÈS CE DÉPLOIEMENT** : le journal affiche
+> « caches OK (config:cache volontairement SAUTÉ — piège fiscal) ». Ce correctif vivait NON
+> COMMITÉ dans un arbre de travail le matin même.
+>
+> **RESTE OUVERT, MESURÉ EN PRODUCTION** :
+>   · 1 numéro porte 2 comptes (`#24` 10 pts / `#30` 0 pt) → `php artisan fidelite:fusionner-doublons`
+>     répare sans perte. NON LANCÉ (mutation de données, décision owner).
+>   · **121 ventes de caisse, 0 rattachée à un client (0,0 %)** — le programme est en ligne
+>     mais personne n'est rattaché au comptoir. C'est ce que les correctifs du jour visent.
+>   · Barème confirmé en production : 10 pts/€ gagnés · 100 pts = 1 € · plancher 100 pts.
+>   · **4ᵉ lot du jour NON INTÉGRÉ** : `goal/roue-concours-saas-2026-08-19` — session ENCORE
+>     ACTIVE à 18:59. Délibérément hors périmètre : on ne fusionne pas une branche en écriture.
+>
+> **POURQUOI CETTE SUPERVISION EXISTAIT.** Trois sessions ont travaillé en parallèle sans se
+> voir. Chacune a validé son travail sur SA branche ; personne n'avait exécuté un seul test
+> sur la COMBINAISON. Base commune unique `7ae8a9c4c`, surface de collision minuscule (2
+> fichiers), mais deux régressions ne pouvaient apparaître qu'à la fusion.
+>
+> **LES DEUX RÉGRESSIONS, TROUVÉES ET CORRIGÉES.**
+> 1. Un test du 11/07 épinglait « PREPARED→CANCELED doit rester illégal » — la dérogation
+>    gatée du jour l'a ouverte. Vérifié AVANT de toucher : le janitor n'interroge pas
+>    `allows()`, il exclut PREPARED en dur, son comportement est identique. L'assertion
+>    épinglait le mauvais invariant ; le vrai (« purger n'est pas une transition ») était déjà
+>    épinglé plus bas et reste vert.
+> 2. `ConcurrentOrderTest` exigeait le REFUS de la 2ᵉ commande fidélité. Sonde de mesure :
+>    2 commandes, chacune SON devis, solde 100→50→0, deux lignes `redeem −50`. Ni découvert
+>    ni double dépense — le refus d'avant ÉTAIT le défaut (débit avant sceau). Ajouté le vrai
+>    cas de découvert (50 points, 2 rachats de 50), qui manquait depuis toujours.
+>
+> **DÉFAUT DE FOND DU BANC DE TEST** : `.env.testing` est **ignoré par git** (`.gitignore:14`).
+> Un clone neuf, une CI ou un worktree d'agent tombent sur ~336 rouges fantômes. Mesuré :
+> `tests/Feature/Cash` passe de 25 rouges à **101/101** par la seule présence de ce fichier.
+> C'est ce qui a fait croire à des « bancs périmés » à de précédentes sessions.
+>
+> **AUTRE CORRECTIF** : `tools/deploy-lecayenne.sh` (retrait de `config:cache`, piège TAMPER
+> NF525) vivait NON COMMITÉ dans l'arbre de travail — une bascule de branche l'effaçait.
+> Commité. Un commentaire d'en-tête qui mentait depuis le 17/08 corrigé au passage.
+>
+> **LIMITE DE MON PROPRE AUDIT, À RETENIR** : j'ai validé le LOCK en vérifiant les gardes
+> qu'il DÉCLARE — toutes intactes. La session caisse, en red-teamant, a trouvé ce qu'il
+> OMETTAIT : une **compensation** (restitution de stock à l'annulation) devenue fausse une
+> fois l'arête élargie — 252 unités fantômes. Chercher les gardes affaiblies ne suffit pas ;
+> il faut chercher les compensations dont le contexte a changé.
+>
+> **PORTES PROPRIÉTAIRE OUVERTES** : (a) GO déploiement — avancer
+> `pos/category-first-caisse-2026-06-23` sur `29d7e3e32` est une AVANCE RAPIDE, puis
+> `tools/deploy-lecayenne.sh <SHA>` ; (b) paliers fidélité ; (c) purger-ou-annuler un fantôme
+> borne (l'arbitrage se rouvre depuis le LOCK).
 
 > **2026-08-19 — GOAL owner terrain caisse/cuisine : 6 défauts + 5 auto-infligés corrigés — DÉPLOYÉ**
 >
@@ -333,6 +400,207 @@ Plateforme restaurant fast-food complète :
 > **Reste ouvert (à arbitrer)** : les commandes non terminées ANTÉRIEURES à la journée de service
 > restent invisibles au tableau (857 au diagnostic) — filtre « en souffrance » à créer ;
 > `pos-refund` n'est pas accordé au rôle POS Operator (refus délibéré) : sous un compte caissier,
+> annuler une commande PAYÉE renverra un 403.
+> **2026-08-19 — APPS App Store / Google Play : le site devient une application — LIVRÉ, NON POUSSÉ**
+>
+> Branche backend `apps-stores-auth-2026-08-19` (worktree) · branche web
+> `app-stores/capacitor-2026-08-19` dans `lecayenne-web-deploy/Site lecayenne`. **Aucun push.**
+> Xcode n'est pas installé sur cette machine : tout est livré JUSQU'AU « Build/Archive » inclus,
+> les binaires restent à compiler par l'owner. Guide complet : `app/PUBLICATION.md` (dépôt web).
+>
+> **Choix structurant** : l'application EST le site (Capacitor 8), pas une copie. `app/www` est un
+> ARTEFACT reconstruit par `tools/build-app-www.mjs`, dont le mode `--check` échoue si l'app et le
+> site divergent — y compris sur un fichier « en trop ». Sans cette garde, un correctif appliqué au
+> site n'aurait aucune raison d'atteindre l'application.
+>
+> **Cinq défauts réels trouvés, aucun par un test qui échouait :**
+> 1. **CORS** — le serveur n'autorisait que `http://localhost:<port>` ; une app Capacitor appelle
+>    depuis `https://localhost` (sans port). TOUS les appels de l'app auraient été refusés, avec le
+>    symptôme le plus traître : la carte s'affiche (fichiers embarqués), seules connexion, commande
+>    et fidélité échouent. Corrigé + 5 tests (`tests/Feature/Apps/AppOriginCorsTest.php`).
+> 2. **Paiement 3-D Secure** — `funnel.jsx` fait `window.location.href = <url banque>`. Dans l'app,
+>    la vue web serait partie chez la banque puis retombée sur le SITE (autre origine) : sans panier,
+>    sans session, sans retour possible, après débit éventuel. Paiement en ligne COUPÉ dans l'app
+>    (`api.js` `onlineCardEnabled`), « Payer sur place » reste et est recommandé. Site inchangé.
+> 3. **Suppression de compte** — la garde de rôle comparait `roles.id` à `Role::CUSTOMER` : si
+>    l'auto-incrément dérive, PLUS AUCUN client ne peut supprimer son compte (piège déjà documenté
+>    par `SpatieRoleLookup`). De plus la « suppression » laissait nom/e-mail/téléphone en base, et
+>    le parcours d'inscription RESSUSCITAIT le compte par son téléphone. Corrigé : reconnaissance
+>    par NOM de rôle, effacement réel, toutes les sessions révoquées. Exigence Apple 5.1.1(v).
+> 4. **`users.phone` est NOT NULL** (sentinelle `PENDING_…`) : un test `filled()` aurait laissé
+>    passer TOUS les comptes sociaux — le verrou téléphone aurait eu l'air de marcher sans jamais
+>    rien bloquer. Juge canonique réutilisé : `PhoneDisplay::safe()`.
+> 5. **Verrou dépendant du canal d'auth** — la 1ʳᵉ version du filtre exigeait un jeton `auth_token`
+>    et s'effaçait sur une requête authentifiée par session (les contrôleurs ouvrent aussi une
+>    session web). On juge désormais le COMPTE (`is_guest`), avec dérogation borne (nom de jeton +
+>    rattachement `KioskMachine` en base — cette seconde dérogation vient d'une régression réelle
+>    attrapée par les tests de débit borne existants).
+>
+> **Auth** : `SocialAuthController` + `SocialIdentityVerifier` (RS256 vérifié contre le trousseau
+> public, émetteur, destinataire, expiration ; `alg:none` et confusion HS256 refusés ; rotation de
+> clés gérée). Aucune bibliothèque JWT ajoutée — reconstruction JWK→PEM prouvée identique à OpenSSL.
+> Téléphone TOUJOURS exigé (demande owner) : écran bloquant + middleware `require_customer_phone`.
+>
+> **Preuves** : Auth 85/85 · Apps 5/5 · Frontend 58/58 · Sentinelles 360/360 · zones gelées 0 ligne ·
+> 13 contrôles de comportement natif/navigateur (`tools/verify-app-behaviour.mjs`) · non-vacuité
+> prouvée par mutation sur 11 gardes (chacune rend SON test rouge quand on la retire) ·
+> `cap doctor` iOS + Android valides · captures et bandeau générés aux formats exacts des 2 stores.
+>
+> **APPROFONDISSEMENT (même journée) — 4 défauts de plus, dont 3 invisibles sans artefact réel :**
+> 6. **Squattage de numéro** (vulnérabilité que J'AVAIS introduite) : le numéro déclaré après
+>    connexion sociale allait dans `users.phone`, qui est une CLÉ — la garde anti-confusion de
+>    canal envoyait alors le code de connexion de la victime au squatteur. Reproduit par test,
+>    puis fermé par une colonne séparée `contact_phone` : le code d'auth durci n'a PAS été touché.
+> 7. **Six permissions PUBLICITAIRES dans l'APK** (`AD_ID`, `ACCESS_ADSERVICES_*`,
+>    `BIND_GET_INSTALL_REFERRER_SERVICE`), injectées par les dépendances Google du greffon de
+>    connexion. Google recoupe le manifeste avec le formulaire « Sécurité des données » →
+>    **refus garanti**. Retirées (17 → 11 permissions). Visible SEULEMENT en ouvrant le binaire.
+> 8. **La production refuse encore l'origine de l'app** — mesuré au curl : `www.lecayenne.fr` →
+>    en-tête renvoyé ; `https://localhost` → RIEN. **Déployer le backend AVANT de publier l'app.**
+> 9. **Spec `account-email-otp` silencieusement ROUGE depuis le 03/08** (champ « Nom » devenu
+>    obligatoire, jamais rempli ; assertion de formulation trop littérale). Réparée → 8/8, vrai
+>    bout-en-bout navigateur → Laravel → MySQL → jeton Sanctum.
+>
+> **L'application Android COMPILE réellement** : `app-debug.apk` 15,2 Mo et `app-release.aab`
+> 13,0 Mo (l'artefact à téléverser). Chaîne montée en local sans `sudo` — JDK 21 (le JDK 25 du
+> système est incompatible avec AGP 8.13) + SDK API 36. Migrations validées sur **vrai MySQL**
+> sur une table de 520 comptes (index uniques + NULL multiples confirmés). `lint` Android sans
+> erreur. Smoke navigation 13/13, 0 erreur JS.
+>
+> **Reste à l'owner** : comptes développeur Apple/Google, identifiants de connexion Apple/Google à
+> coller dans `index.html` + `.env` (`APPLE_AUDIENCES`/`GOOGLE_AUDIENCES`), keystore Android, boîte
+> e-mail de démonstration pour l'examinateur, puis compilation. Certificat API expire le 22/09/2026.
+> **2026-08-19 (2ᵉ vague, superviseur) — FIDÉLITÉ : 3 défauts CACHÉS + la borne qui ne pouvait pas dépenser. 10 commits, NON POUSSÉS**
+>
+> Branche `worktree-goal-fidelite-2026-08-19`, HEAD `99e445de0`. **Rien n'est poussé ni déployé.**
+> Fait suite à l'entrée ci-dessous ; l'owner a demandé d'aller « jusqu'au bout, direct ou
+> indirect, visible ou caché ».
+>
+> **CE QUE LA PREMIÈRE VAGUE AVAIT MANQUÉ — et pourquoi.** Les 4 causes racines de la 1ʳᵉ vague
+> étaient des portes fermées, visibles dès qu'on jouait le parcours. Cette vague a cherché ce qui
+> ne produit AUCUNE erreur et ne s'affiche NULLE PART.
+>
+> 1. **LE CLIENT PAYAIT ET N'ÉTAIT PAS CRÉDITÉ.** Le crédit ne se déclenchait que sur un
+>    CHANGEMENT de statut — or une vente de caisse NAÎT « en préparation » : aucun changement,
+>    aucun crédit. Le client n'avait ses points QUE si la cuisine bumpait sa commande, ce qui
+>    n'arrive jamais pour une boisson. **Mesuré : 307 ventes immobilisées à ce statut.** Prouvé en
+>    jouant une vraie vente (9,50 €, client rattaché → statut 7, crédit NUL) puis en déclenchant
+>    le guetteur à la main sur la même commande (il crédite correctement — c'est bien l'événement
+>    qui n'arrivait jamais). Corrigé : le fait générateur au comptoir est le **PAIEMENT**. Sûr car
+>    réversible (`clawbackEarnedPoints` + `refundPoints` déjà câblés) et idempotent (sentinelle
+>    atomique — vérifié : 2 bumps ultérieurs, solde inchangé). Preuve : vente 6603 → 95 pts
+>    immédiats.
+> 2. **UN CLIENT, DEUX COMPTES.** « 06… », « +33 6… » et « 6… » sont la même personne.
+>    `PhoneIdentity` existe pour ça depuis le 2026-08-10 et la CAISSE l'utilise ; la BORNE et le
+>    SITE comparaient l'écriture exacte tapée → second compte créé, points restés sur le premier.
+>    **Mesuré : 6 numéros en double, dont `+33600009999` à 500 pts et `0600009999` à 0.** Les 4
+>    points d'entrée passent par le normaliseur, et la CRÉATION enregistre la forme canonique.
+>    *Dégât indirect de ma propre correction, attrapé en suivant la donnée* : `optIn()` retrouvait
+>    le client au numéro BRUT → le **consentement RGPD** n'était plus écrit.
+> 3. **LA BORNE NE POUVAIT PAS DÉPENSER** (3 blocages empilés) : payload jamais câblé
+>    (`loyalty_code` seul, jamais le montant) ; débit AVANT le sceau du devis → « Order quote
+>    intent mismatch » — **invisible parce que TOUS les tests borne remplaçaient le sceau par un
+>    double** (`bypassKioskQuoteSealForLoyaltySentinel`) ; et un drapeau `kiosk.promo_enabled` qui
+>    prenait la fidélité en otage d'un défaut de codes promo (**3ᵉ occurrence** du motif déjà
+>    traité pour `pos.loyalty_enabled` et `pos.coupon_codes_enabled`). La demande voyage en
+>    **POINTS** et non en euros, pour respecter la sentinelle « aucun champ monétaire dans le
+>    payload borne » (SSOT/NF525).
+>
+> **TROIS OUTILS DE SUPERVISION** (`fidelite:verifier` / `fidelite:fusionner-doublons` /
+> `fidelite:bareme`). Le vérificateur a trouvé son premier vrai défaut 15 min après avoir été
+> écrit. La fusion ne supprime aucun compte et passe par le grand-livre ; sa garde la plus
+> importante — **ne jamais toucher un compte de PERSONNEL** — vient de l'aperçu sur la vraie base.
+>
+> **BARÈME : décision prise, et celle que je ne prends pas.** Mesuré : **10 % de retour**,
+> **12,9 visites** avant la 1ʳᵉ récompense (panier moyen 7,78 €), **1 153 €** de coût sur le CA
+> caisse réalisé, **0 client sur 156** capable de dépenser. J'ai appliqué **plancher 1000 → 300**
+> (ne dévalue rien, ne retire rien à personne) → adoption **0 % → 6,4 %**. Le **TAUX** (10 %→5 %)
+> dévalue rétroactivement le solde de chaque client : il appartient à l'owner, avec les chiffres
+> devant lui (`php artisan fidelite:bareme --taux=200`, qui affiche l'impact exact et exige
+> confirmation).
+>
+> **SENTINELLES : renforcées, jamais assouplies.** Les specs C39 encodaient « masquer, ne pas
+> câbler » — une décision temporaire, pas un invariant ; l'invariant (*affiché == facturé*) est
+> désormais tenu par APPLICATION. Et `WithoutGlobalScopesAuditSentinelTest` a refusé 5
+> `withoutGlobalScopes()` posés par réflexe : je les ai **retirés** (inutiles — `branch_id=0`,
+> no-op sur `User`) au lieu de les inscrire sur la liste d'exceptions.
+>
+> **Tests** : JS **420 fichiers / 3359 tests / 0 échec** · Feature/Loyalty 93/93 · Pos 325/325 ·
+> Sentinels 364/364 · Fiscal 310/310 · Auth 63/63 · Order 104/104 · Sync 29/29 · build production
+> OK · **zones gelées §7 = 0 ligne**.
+>
+> **Limite connue et assumée** : l'écran fidélité borne exige un panier non vide (`requireCart`).
+> C'est délibéré (on s'inscrit pendant la commande, pour cumuler dessus) ; le retirer ferait
+> apparaître « Utiliser 0,00 € ». Non modifié.
+>
+> **Non vérifié à l'écran** : le parcours borne et le panneau d'historique admin (l'extension
+> navigateur s'est déconnectée en cours de session). Le contrat de l'historique a été vérifié en
+> direct contre le serveur ; la caisse, elle, a bien été prouvée visuellement (1ʳᵉ vague).
+
+> **2026-08-19 — GOAL FIDÉLITÉ (borne + caisse + web) : le programme ne tournait PAS. 5 commits, NON POUSSÉS**
+>
+> Branche `worktree-goal-fidelite-2026-08-19` (worktree `.claude/worktrees/goal-fidelite-2026-08-19`),
+> basée sur `7ae8a9c4c`. HEAD `4be4c288c`. **Rien n'est poussé ni déployé** (CLAUDE.md §3quater).
+>
+> **LE CONSTAT QUI COMMANDE TOUT — mesuré, pas supposé.** Sur la base réelle : **1817 ventes de
+> caisse, 12 portant un code fidélité**, et **5 lignes « earn » de surface caisse dans TOUT le
+> grand-livre**. Le moteur (identifier, inscrire, rattacher, créditer, débiter, historique) était
+> construit de bout en bout depuis août. Ce n'était pas un moteur à écrire : c'étaient des portes
+> fermées.
+>
+> **QUATRE CAUSES RACINES, TOUTES REPRODUITES AVANT CORRECTION :**
+> 1. **Caisse — rattacher.** Le modal d'identification était gaté sur `orderId`, qui ne désigne
+>    qu'une commande DÉJÀ validée. Au moment naturel du comptoir (« vous avez la carte ? » pendant
+>    la composition du panier) il affichait « Aucune commande en cours » et ses boutons étaient
+>    morts. `loyalty_customer_code` — accepté par `PosOrderRequest:215`, persisté par
+>    `OrderService`, lu par `AwardLoyaltyPointsOnDelivery` — n'était écrit par AUCUNE surface.
+> 2. **Caisse — utiliser ses points.** `POST /admin/pos-order/{id}/redeem-loyalty` → **409
+>    ORDER_ALREADY_FINALIZED**. `PosRedemptionService` refuse toute commande payée ou terminale, or
+>    une vente de comptoir naît PAYÉE et LIVRÉE dans le même geste : la fenêtre était VIDE.
+> 3. **Borne — email jeté.** `POST /api/frontend/loyalty/register` avec {phone, name, email} répond
+>    200 « inscrit » et enregistre `email = NULL` (garde P1-1 SÉCU 2026-08-04). Le client n'avait
+>    ENSUITE aucun canal de connexion : ni son email (non stocké), ni celui qu'il retapait (la
+>    garde channel-confusion de `GuestSignupController`, branche 2, refuse de livrer à l'email de
+>    l'appelant dès que le compte a de la valeur). Enfermé dehors, structurellement.
+> 4. **Paliers menteurs.** `/loyalty/config` annonçait `tiers: [100,250,500,1000,2000]` avec
+>    `min_redeem_points: 1000` → la borne promettait « encore 40 points » à un client à 60 points
+>    pour une récompense qui n'existe pas. Jumeau oublié du correctif du 2026-08-05 (qui avait
+>    redressé le plancher mais pas les paliers, servis par le MÊME endpoint).
+>
+> **CE QUI A ÉTÉ LIVRÉ.** Rattachement au panier (avec effaceurs partout : reset panier/formulaire,
+> commande téléphone, changement de client, snapshot park) · rachat de points AVANT paiement, entré
+> dans le DEVIS SCELLÉ puis dans la création, via une définition UNIQUE `PosCartRedemption` appelée
+> par les deux chemins · email borne conservé derrière un réglage `loyalty.kiosk_email_capture`
+> (défaut true = arbitrage owner ; la sentinelle éprouve LES DEUX positions) + réinitialisation de
+> mot de passe fermée aux comptes invités · paliers filtrés au plancher réel.
+>
+> **DEUX DÉFAUTS TROUVÉS EN JOUANT UNE VRAIE VENTE, PAS EN RELISANT LE CODE** — et c'est la leçon
+> de la session : (a) débiter AVANT `sealForCommit` changeait la donnée dont le sceau se sert (il
+> relit le solde vivant) → « Order quote intent mismatch » sur tout rachat faisant tomber le solde
+> sous le plancher ; **les 4 tests écrits juste avant passaient par CHANCE**, leurs soldes restant
+> au-dessus du plancher après débit. (b) le bouton proposait « Utiliser 20,00 € » sur un panier à
+> 1,90 €.
+>
+> **PREUVE ARGENT RÉEL** (serveur servant ce code, port 8011) : vente **6600** — sous-total 15,20 €
+> − remise 15,00 € = **0,20 € encaissés** ; solde client **2000 → 500** ; grand-livre `redeem`
+> −1500. Preuve visuelle navigateur : bouton « Cumuler sur cette vente » actif dès qu'il y a un
+> panier, « Utiliser 15,00 € » plafonné au panier, pastille « ⭐ 2000 pts (ANNUL001) — 1500 pts
+> déduits sur cette vente ».
+>
+> **Tests** : Feature/Loyalty 73/73 · Feature/Pos 325/325 · Feature/Fiscal 310/310 ·
+> Feature/Sentinels 364/364 · Feature/Auth 63/63 · Feature/Frontend 58/58 · Vitest 3318 passés
+> (les 10 rouges étaient des sentinelles de fraîcheur de bundle — `public/` jamais compilé dans le
+> worktree ; vertes après build) · build webpack production OK · **zones gelées §7 = 0 ligne**
+> (PaymentComponent, PricingService, Fiscal/*, pos-wizard.js intacts).
+>
+> **À TRANCHER PAR L'OWNER (remonté, pas décidé) :** le barème rend **10 %** (10 pts/€ gagnés,
+> 100 pts = 1 € de remise) mais n'ouvre rien avant **1000 points, soit 100 € d'achats pour 10 € de
+> remise**. Mesure : **1 seul compte sur 153** atteint le plancher. Choix commercial, pas un défaut
+> — mais décisif pour que « utiliser ses points » soit visible en salle.
+>
+> **Piège de banc à ne pas repayer :** un worktree qui lie `vendor/` au checkout principal fait
+> résoudre `App\` par l'autoloader Composer vers l'ANCIEN code (mes correctifs PHP n'étaient pas
+> testés), et `.env.testing` manquant produit 3 faux échecs. Copier `vendor/` en dur + `.env.testing`.
 > annuler une commande PAYÉE renverra un 403 ; 35 des 109 commandes prêtes sont scellées dans un
 > Z clos et resteront inannulables (NF525 correct) — le bouton devrait y céder la place à
 > « Rembourser » ; la cuisine n'est prévenue par AUCUN signal quand une commande prête est

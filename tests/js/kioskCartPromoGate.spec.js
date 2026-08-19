@@ -142,18 +142,40 @@ describe('KioskCartComponent — v-if réel du gate promo/fidélité', () => {
     beforeEach(() => { saved = global.window.foodkingConfig; });
     afterEach(() => { global.window.foodkingConfig = saved; });
 
-    it('flag partagé ON + gate borne OFF → promo + fidélité CACHÉS (bug W2 fixé)', () => {
+    /*
+     * [FIDÉLITÉ BORNE 2026-08-19] LES DEUX BLOCS ONT ÉTÉ SÉPARÉS.
+     *
+     * Ils partageaient `kioskPromoEnabled` depuis le W2 (2026-06-26) parce qu'ils promettaient
+     * alors tous les deux une remise que le serveur n'appliquait pas. Ce n'est plus vrai que du
+     * PROMO : le rachat de points est câblé (`loyalty_redeem_points` dans le payload) et prouvé
+     * bout-en-bout, sceau du devis compris (`KioskRedeemThroughSealedQuoteTest`). Le garder
+     * derrière le drapeau du promo, c'était punir la fidélité pour un défaut qui n'est pas le
+     * sien. Ce qui est vérifié ici reste le même invariant : ce qu'on AFFICHE est ce qu'on
+     * FACTURE — chaque bloc suit désormais l'interrupteur de sa propre plomberie.
+     */
+    it('gate promo OFF → promo CACHÉ, fidélité VISIBLE (elle a son propre interrupteur)', () => {
         global.window.foodkingConfig = { discountsEnabled: true, kioskPromoEnabled: false };
         const w = mountCart();
         expect(w.find('[data-testid="kiosk-cart-promo"]').exists()).toBe(false);
-        expect(w.find('[data-testid="kiosk-cart-loyalty-btn"]').exists()).toBe(false);
+        expect(w.find('[data-testid="kiosk-cart-loyalty-btn"]').exists()).toBe(true);
     });
 
-    it('clé kioskPromoEnabled absente → promo + fidélité CACHÉS (défaut fail-safe)', () => {
+    it('gate fidélité OFF → fidélité CACHÉE (le kill-switch doit vraiment couper)', () => {
+        global.window.foodkingConfig = {
+            discountsEnabled: true,
+            kioskPromoEnabled: true,
+            kioskLoyaltyRedeemEnabled: false,
+        };
+        const w = mountCart();
+        expect(w.find('[data-testid="kiosk-cart-loyalty-btn"]').exists()).toBe(false);
+        // …sans emporter le promo avec elle : c'est tout l'intérêt d'avoir séparé les deux.
+        expect(w.find('[data-testid="kiosk-cart-promo"]').exists()).toBe(true);
+    });
+
+    it('clé kioskPromoEnabled absente → promo CACHÉ (défaut fail-safe inchangé)', () => {
         global.window.foodkingConfig = { discountsEnabled: true };
         const w = mountCart();
         expect(w.find('[data-testid="kiosk-cart-promo"]').exists()).toBe(false);
-        expect(w.find('[data-testid="kiosk-cart-loyalty-btn"]').exists()).toBe(false);
     });
 
     it('LES DEUX flags ON → promo + fidélité VISIBLES', () => {

@@ -89,4 +89,33 @@ return [
         'mock_fixture' => env('OPENAI_MOCK_FIXTURE'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | [APPS 2026-08-19] Connexion Apple / Google des applications mobiles
+    |--------------------------------------------------------------------------
+    |
+    | `audiences` = la liste des identifiants d'application pour lesquels un jeton
+    | d'identité est accepté. C'est le contrôle qui empêche de REJOUER chez nous un
+    | jeton parfaitement authentique mais émis pour l'application de quelqu'un d'autre.
+    |
+    | Pourquoi une LISTE et non une seule valeur : le même compte fournisseur émet un
+    | destinataire différent selon la plateforme.
+    |   · Apple  → l'identifiant du paquet sur iOS (fr.lecayenne.app) ;
+    |              l'identifiant de service (Services ID) sur Android et sur le web.
+    |   · Google → un identifiant client par plateforme (iOS, Android, Web).
+    | Une valeur unique aurait fait échouer une plateforme sur deux, avec un message
+    | impossible à distinguer d'une vraie tentative de fraude.
+    |
+    | Tant que la liste est VIDE, toute connexion sociale est refusée. C'est voulu :
+    | mieux vaut une porte fermée qu'une porte qui accepte n'importe quel destinataire.
+    |
+    */
+    'apple' => [
+        'audiences' => array_filter(array_map('trim', explode(',', (string) env('APPLE_AUDIENCES', 'fr.lecayenne.app')))),
+    ],
+
+    'google' => [
+        'audiences' => array_filter(array_map('trim', explode(',', (string) env('GOOGLE_AUDIENCES', '')))),
+    ],
+
 ];
