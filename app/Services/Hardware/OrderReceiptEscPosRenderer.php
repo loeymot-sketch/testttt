@@ -28,6 +28,10 @@ final class OrderReceiptEscPosRenderer
         private readonly ReceiptDataService $receiptData = new ReceiptDataService,
         private readonly KitchenTicketSymbolicFormatter $symbolic = new KitchenTicketSymbolicFormatter,
         private readonly \App\Services\Kitchen\MeatPortionCalculator $portions = new \App\Services\Kitchen\MeatPortionCalculator,
+        // [T-KDS-MENU-DOUBLON 2026-08-19 · GOAL owner] Replie les lignes de formule
+        // déjà décrites sous leur produit parent. Jumeau strict de
+        // resources/js/helpers/kdsBundledAddons.js (écran cuisine).
+        private readonly KitchenBundledAddonCollapser $bundledAddons = new KitchenBundledAddonCollapser,
     ) {}
 
     /**
@@ -353,8 +357,21 @@ final class OrderReceiptEscPosRenderer
         //   L2 : MENU (: sauce frites en symbole)  + suppléments
         // Un item « Menu/Formule » séparé est FUSIONNÉ comme ligne 2 du produit précédent
         // (pas de bloc « MENU » isolé) → 2 lignes nettes, jamais le détail « Frites+Boisson ».
+        //
+        // [T-KDS-MENU-DOUBLON 2026-08-19 · GOAL owner] Cette fusion était ANNONCÉE ici
+        // depuis 2026-06-30 mais jamais réalisée : la branche `isMenuItem` plus bas y
+        // renonçait explicitement (« Pas de fusion devinée : le menu n'est pas forcément
+        // adjacent à son produit »). Résultat sur le ticket réel de la commande 6598 :
+        //     S | CAY | P | ST | ALG
+        //       FRITES : MAY          <- la sauce frites, sur le sandwich
+        //     MENU : MAY              <- LA MÊME, une seconde fois
+        // Le propriétaire l'a signalé (« ça écrit en double »). Le lien manquant existe
+        // pourtant : le parent revendique lui-même « + <nom de la formule> » dans son
+        // instruction. On ne devine plus, on lit — et on ne replie qu'à hauteur de ce qui
+        // est revendiqué, pour qu'une formule commandée SEULE reste toujours imprimée.
+        // Filtre d'affichage uniquement : la ligne comptable reste intacte en base.
         $blocks = [];
-        foreach (($order->orderItems ?? collect()) as $oi) {
+        foreach ($this->bundledAddons->collapse($order->orderItems ?? collect()) as $oi) {
             $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
             $qty = max(1, (int) ($oi->quantity ?? 1));

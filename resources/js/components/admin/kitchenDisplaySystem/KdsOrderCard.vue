@@ -151,7 +151,7 @@
           <span class="kds-card__delivery-text">{{ customerPhone }}</span>
         </a>
       </div>
-      <template v-for="(item, idx) in order.order_items" :key="item.id || idx">
+      <template v-for="(item, idx) in displayItems" :key="item.id || idx">
         <div class="kds-card__item-block">
           <!-- [F-03 AUDIT CUISINIER 2026-08-01 · P1] Produit passé « 86 » PENDANT la
                préparation : le badge existait sur l'écran legacy mais avait disparu du
@@ -236,6 +236,9 @@
 import KdsOrderLine from './KdsOrderLine.vue';
 import { orderHasAnyAllergen } from '../../../helpers/kdsCustomization.js';
 import { renderItemSymbolic, cuissonForOrder } from '../../../helpers/kdsSymbolic.js';
+// [T-KDS-MENU-DOUBLON 2026-08-19 · GOAL owner] Repli des lignes de formule
+// déjà décrites sous leur produit parent — voir helpers/kdsBundledAddons.js.
+import { collapseBundledAddonItems } from '../../../helpers/kdsBundledAddons.js';
 import {
     getKdsAgeBucket,
     parseOrderCreatedMs,
@@ -295,6 +298,22 @@ export default {
     },
     emits: ['ready', 'reprint'],
     computed: {
+        /**
+         * [T-KDS-MENU-DOUBLON 2026-08-19 · GOAL owner] Lignes réellement affichées
+         * au cuisinier.
+         *
+         * Une formule est enregistrée deux fois : sous son produit parent (dans
+         * l'`instruction`) ET comme `order_item` distinct qui en porte le prix.
+         * La cuisine lisait donc « FRITES : MAY » sur le sandwich PUIS « 1× MENU :
+         * MAY » juste en dessous — la même consigne écrite deux fois.
+         *
+         * On replie la seconde ligne À L'AFFICHAGE seulement : aucune écriture,
+         * aucun effet sur le prix ni sur la chaîne fiscale. Une formule commandée
+         * SEULE n'est jamais masquée (voir helpers/kdsBundledAddons.js).
+         */
+        displayItems() {
+            return collapseBundledAddonItems((this.order && this.order.order_items) || []);
+        },
         // [REMETTRE-EN-PRÉPARATION 2026-08-13] Le bouton « remettre en préparation » n'a de sens
         // que sur une commande déjà déclarée prête. On lit l'état dérivé du statut plutôt que le
         // code brut : c'est la même source que le reste de la carte, donc pas de divergence
