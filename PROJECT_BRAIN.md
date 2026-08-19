@@ -47,6 +47,84 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 (soir) — GOAL owner 2 points : la formule redevient visible en cuisine + portions de viande**
+>
+> HEAD `eca082572`, branche `pos/category-first-caisse-2026-06-23`. **4 commits LOCAUX, aucun push.**
+> Deux sessions en parallèle sur LE MÊME arbre (disque plein : worktree impossible), voies
+> disjointes négociées par messages, `git commit --only <chemins>` exclusivement.
+> `c3a5cc938` + `d17d80c78` (point 1, PHP) · `050d592b4` (point 2, cuisson) · `eca082572` (point 1, JS).
+>
+> **POINT 1 — « les menus on les voit plus et les boissons on les voit plus » (owner).**
+> Régression de mes propres commits du matin (`826020f3c`, `5a3b85e0f`, repli du doublon de
+> formule). Un filtre d'affichage qui SUPPRIME une ligne détruit tout ce que cette ligne était
+> SEULE à porter. La ligne de formule portait deux choses introuvables ailleurs :
+> · **la NATURE de la formule** — le badge du parent vient de `menuLine()`, qui lit
+>   `composition_snapshot['addons']` ; or **la caisse ne scelle AUCUN addon sur le parent**
+>   (`"addons": []` sur 100 % des lignes, mesuré en base). Le mot « MENU » ne venait donc QUE de
+>   la ligne repliée ;
+> · **les consignes de cuisine** écrites nulle part ailleurs : `Sauce frites: …`,
+>   `↳ Grande Portion`, `↳ Cheddar Fondu`, `BOISSON: …`.
+> **Balayage des 21 commandes réelles portant une formule : 20 étaient cassées.** 16 n'affichaient
+> RIEN (la cuisine ignorait qu'un menu était vendu, donc la boisson n'était pas servie), 3
+> affichaient « FRITES : … » pour un MENU COMPLET, 1 « Boisson Seule » invisible.
+> Correctif : un repli n'est pas une suppression — la ligne repliée **LÈGUE** au parent (sur un
+> CLONE) ce qu'elle portait, et le badge lit la NATURE sur la revendication « + <nom> » que le
+> wizard écrit déjà dans l'instruction du parent (`claimedAddonNames()`, un seul extracteur pour
+> les deux surfaces). Ticket 6598 : « FRITES : MAY » → « MENU : MAY ». 5544 : rien → « MENU : AND ».
+> Second défaut trouvé en RE-RENDANT les tickets (pas en relisant le code) : le badge rendait la
+> formule ET la note la répétait (commande 5135 : « BOISSON » puis « ** + Boisson Seule ») —
+> le doublon même qu'on réparait. `cleanInstruction`/`sanitizeKdsInstruction` ne gardent plus ce
+> que le badge rend, en interrogeant la MÊME règle ; « + Cheddar » reste une note.
+> Portée : AFFICHAGE seul, aucune écriture, aucun effet prix/TVA/`composition_snapshot`/chaîne
+> fiscale. Le canal addon scellé (borne) garde la priorité. Zones gelées : aucune touchée.
+>
+> **POINT 2 — portions de viande du bandeau CUISSON** (session jumelle, lot `050d592b4`) :
+> · Le poulet valait 1 quand toutes les autres viandes valent 2 (K=2 steaks, Nug=4, Tender=3,
+>   cordon/mexicanos/fricadelle=2) : un emplacement partagé lui donnait « 0,5P ». L'en-tête de
+>   `MeatPortionCalculator` annonçait pourtant « Méga poulet+hachée = 1P 1K » depuis le
+>   2026-08-07 — le commentaire disait le comportement voulu, le code en faisait un autre.
+>   Le poulet se compte désormais en PIÈCES de 100 g, 2 par portion : plus aucune virgule au
+>   bandeau (l'exemple owner « 2,5P » devient « 5P », les mêmes 500 g).
+> · **Le stock ne bouge PAS** : ces pièces alimentent la consommation matière via
+>   `raw_materials.piece_weight_g`. Doubler le compte seul aurait sorti 400 g de poulet par
+>   Cayenne au lieu de 200 (+100 % en silence sur la matière la plus vendue). Le poids d'une
+>   unité comptée suit l'unité, 200 → 100 g (constante + migration idempotente).
+> · Un BOL ne reçoit qu'une DEMI-portion (owner : « sur les bols on mettra qu'une seule ») :
+>   Bol Riz cordon 2 → 1, Bol Riz poulet 1P. Pas de contradiction avec la règle du 2026-08-06
+>   sur le Tacos L, qui reste vérifiée dans le même test. « bol » cherché en TOKEN, sinon une
+>   future « Bolognaise » serait servie à moitié.
+> · Impact réel mesuré sur 3 589 lignes de commande : 44 lignes de bol avec viande, 800 g de
+>   poulet d'écart au total — exactement les bols, rien d'autre.
+> · Piège : une fixture de test qui RECOPIE une valeur partagée (200 g en dur dans
+>   `MeatDrivenConsumptionTest`) laisse la suite verte sur une consommation fausse.
+>
+> **PREUVES.** JS : **428 fichiers / 3481 verts, 0 rouge** (suite complète, après build).
+> PHP : Unit/Hardware 65, Feature/Hardware 155, Feature/Kds 84, Feature/Uber 104,
+> Feature/Kitchen 117, Feature/RawMaterials 74. 40 tests neufs pour le point 1 (20 PHP + 20 JS,
+> jumeaux stricts, mêmes commandes réelles 6598 / 5544 / 5135).
+> `npm run prod` relancé : nouveau bundle servi `admin-kds.1b14127a.js`, sentinelle
+> `kdsBundleFreshnessSentinel` VERTE, vérification faite sur le CONTENU SERVI en sondant des
+> littéraux (le prod minifie les identifiants). Ticket 6598 final : `CUISSON 2P 1F` puis
+> `MENU : MAY` + `** BOISSON: Coca-Cola 33cl`.
+>
+> ⚠️ **DÉPLOIEMENT — deux points bloquants.**
+> 1. `php artisan migrate` est OBLIGATOIRE (`2026_08_19_190000_align_poulet_marine_piece_weight`).
+>    Sans elle, en prod, le compte de poulet double SANS que le poids unitaire suive : la sortie
+>    de stock de poulet doublerait silencieusement.
+> 2. `npm run prod` doit être relancé SUR LE SERVEUR : `public/.gitignore` ignore `/js/*.js` et
+>    `/mix-manifest.json` — **aucun bundle n'est versionné**, l'écran cuisine exécute donc
+>    l'ancien code tant que le build n'a pas tourné. Le ticket IMPRIMÉ, lui, est du PHP : correct
+>    dès le déploiement du code.
+>
+> ⚠️ Restent NON COMMITÉS et n'appartenant à aucune des deux sessions : `public/js/vendor.js`,
+> `public/js/daily-book.js`, `public/css/daily-book.css` (−50 972 lignes, un build DEV avait
+> remplacé les bundles prod avant nos sessions ; `npm run prod` a régénéré le même contenu, rien
+> d'introduit), plus le chantier KDS « bannière annulée » d'une 3ᵉ session
+> (`KdsCanceledBanner.vue`, `KitchenDisplaySystemComponent.vue`, `PosOrdersTrackerComponent.vue`,
+> `SealedOrderGuard.php`, `SimpleOrderResource.php`, `config/kds.php`, `routes/api.php`).
+> ⚠️ Disque de dev toujours à 100 % (≈4 Gi libres sur 460).
+
+
 > **2026-08-19 (soir) — Les 4 points « Reste ouvert » du GOAL caisse/cuisine sont fermés**
 >
 > HEAD `d80f280b5`, branche `pos/category-first-caisse-2026-06-23`. 2 commits
