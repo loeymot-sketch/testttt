@@ -47,9 +47,24 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **2026-08-19 — GOAL owner « je prends des commandes sur le terrain » : 6 défauts caisse/cuisine corrigés, 8 commits, NON POUSSÉ**
+> **2026-08-19 — GOAL owner terrain caisse/cuisine : 6 défauts + 5 auto-infligés corrigés — DÉPLOYÉ**
 >
-> HEAD `b5fd9477c`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
+> HEAD `f53b3ee70`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
+> **13 commits poussés et DÉPLOYÉS sur le VPS** (`7ae8a9c4` → `f53b3ee7`) : instantané SQL pris,
+> `npm run production`, 0 migration, triggers NF525 10/10, `config:cache` volontairement sauté
+> (piège du secret fiscal), chaîne `CHAIN OK`, healthz/login/admin-pos en 200.
+> Déploiement prouvé sur le **CONTENU SERVI** — littéraux et classes CSS, jamais les noms de
+> fonctions (le build production les minifie) — plus une sonde PHP côté serveur : annulation
+> autorisée depuis PRÊTE et EN LIVRAISON, 13 transitions, garde stock ACTIVE.
+>
+> **Suite Feature complète : 4765 tests, 8 échecs — TOUS PRÉEXISTANTS**, prouvés en les rejouant
+> sur la base `7ae8a9c4c` dans un worktree (comptes identiques). Mes commits n'en introduisent
+> aucun. À traiter par ailleurs : `RolePermissionSeederTest` (3 erreurs),
+> `IdempotencyRequiredRoutesCoverageTest` (1), `PrinterController` + `PrinterHostAllowlist` (4).
+>
+> ⚠️ **Disque de la machine de dev à 100 %** pendant la session (885 Mo libres sur 460 Go) —
+> a fait échouer une création de worktree. 830 Mo de journaux Laravel tronqués ; le volume reste
+> tendu, à surveiller.
 > Méthode : reproduction en navigateur réel (`/admin/pos`, `/kds`, `/admin/pos-orders-tracker`),
 > vraies commandes passées et encaissées, mesures chiffrées avant/après. Aucun défaut n'a été
 > déclaré sans preuve exécutable.
