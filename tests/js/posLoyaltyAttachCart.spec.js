@@ -91,6 +91,49 @@ describe('PosLoyaltyIdentifyModal — rattachement au panier (avant la vente)', 
         expect(w.vm.succes).toMatch(/encaissement/i);
     });
 
+    it('ne propose PAS une réduction plus grande que le panier', async () => {
+        // Trouvé au test visuel, pas à la lecture : panier à 1,90 €, client à 2000 points
+        // (= 20 €). Le bouton annonçait « Utiliser 20,00 € » — le caissier l'aurait dit au
+        // client, et le serveur aurait refusé la vente (une remise ne peut pas dépasser le
+        // sous-total). Une réduction promise puis retirée au paiement est pire que rien.
+        const w = monter({ orderId: null, cartHasItems: true, cartSubtotal: 1.9 });
+        await w.setData({
+            client: { ...CLIENT, can_use: true, usable_points: 2000, usable_eur: 20, effective_floor: 1000 },
+        });
+
+        // 1,90 € ne permet même pas d'atteindre le plancher (1000 pts = 10 €) : rien à proposer.
+        expect(w.find('[data-testid="loy-id-use"]').exists()).toBe(false);
+        // Le rattachement, lui, reste possible — cumuler ne coûte rien au panier.
+        expect(w.find('[data-testid="loy-id-attach"]').attributes('disabled')).toBeUndefined();
+    });
+
+    it('sur un panier assez grand, propose le montant réellement utilisable', async () => {
+        const w = monter({ orderId: null, cartHasItems: true, cartSubtotal: 30 });
+        await w.setData({
+            client: { ...CLIENT, can_use: true, usable_points: 2000, usable_eur: 20, effective_floor: 1000 },
+        });
+
+        const bouton = w.find('[data-testid="loy-id-use"]');
+        expect(bouton.exists()).toBe(true);
+        expect(bouton.text()).toMatch(/20/);
+
+        await bouton.trigger('click');
+        // On annonce au reste de l'écran le nombre de points RÉELLEMENT applicable, pas le solde.
+        expect(w.emitted('use-points')[0][0]).toMatchObject({ loyalty_code: 'E2ECAIS1', usable_points: 2000 });
+    });
+
+    it('plafonne au panier quand le solde le dépasse', async () => {
+        // Panier 12 €, solde 20 € : on ne propose que ce que la vente peut absorber, arrondi au
+        // multiple du taux inférieur (1200 pts = 12 €).
+        const w = monter({ orderId: null, cartHasItems: true, cartSubtotal: 12 });
+        await w.setData({
+            client: { ...CLIENT, can_use: true, usable_points: 2000, usable_eur: 20, effective_floor: 1000 },
+        });
+
+        await w.find('[data-testid="loy-id-use"]').trigger('click');
+        expect(w.emitted('use-points')[0][0].usable_points).toBe(1200);
+    });
+
     it('avec une commande : conserve le rattachement SERVEUR rétroactif (non régressé)', async () => {
         axios.post.mockResolvedValue({
             data: { status: true, data: { customer: { ...CLIENT, balance: 925 }, points_awarded: 25 } },

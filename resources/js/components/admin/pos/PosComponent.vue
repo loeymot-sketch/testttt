@@ -1633,6 +1633,7 @@
         :open="loyaltyIdentifyOpen"
         :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
         :cart-has-items="carts.length > 0"
+        :cart-subtotal="Number(subtotal) || 0"
         @close="loyaltyIdentifyOpen = false"
         @attached="onLoyaltyAttached"
         @attach-to-cart="onLoyaltyAttachedToCart"
@@ -3408,6 +3409,9 @@ export default {
                 this.selectedCustomerLoyalty = {
                     ...this.selectedCustomerLoyalty,
                     code: payload.loyalty_code,
+                    // Le solde vient du serveur avec la réponse d'identification : sans lui la
+                    // pastille affichait « 0 pts fidélité » pour un client qui en a 2000.
+                    points: payload.balance ?? this.selectedCustomerLoyalty.points,
                     redeemPoints: points,
                     loading: false,
                 };

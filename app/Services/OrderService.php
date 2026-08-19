@@ -1183,7 +1183,7 @@ class OrderService
                     }
                 }
 
-                $this->saveOrderWithQueueNumber(function () use ($request, $posSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount, $idempotencyKey): void {
+                $this->saveOrderWithQueueNumber(function () use ($request, $posSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount, $idempotencyKey, $rachatFidelite): void {
                     $this->order->order_serial_no = date('dmy').$this->order->id;
                     if ($posSsotPricingResult instanceof PricingResult) {
                         $this->order->total_tax = $posSsotPricingResult->totalTax;
@@ -1208,6 +1208,31 @@ class OrderService
                         (int) $this->order->id,
                         (float) $this->order->total
                     );
+
+                    /*
+                     * [FIDÉLITÉ CAISSE 2026-08-19] LE DÉBIT VIENT APRÈS LE SCEAU. PAS AVANT.
+                     *
+                     * Défaut trouvé en jouant une VRAIE vente en HTTP, pas en relisant le code —
+                     * et qu'aucun des tests écrits juste avant n'attrapait, par pure chance.
+                     *
+                     * `sealForCommit` RECALCULE le devis à partir de la requête pour le comparer au
+                     * total de la commande. Ce recalcul repasse par `PosCartRedemption`, qui lit le
+                     * SOLDE VIVANT du client. Débiter avant, c'est donc changer sous ses pieds la
+                     * donnée dont il se sert : sur un client à 2000 points rachetant 1500, le
+                     * recalcul voyait 500 points restants, tombait sous le plancher, concluait
+                     * « remise 0 » et refusait la vente (« Order quote intent mismatch »).
+                     *
+                     * Les tests passaient parce que leurs soldes RESTAIENT au-dessus du plancher
+                     * après débit (2000−1000, 100000−3000) : le recalcul retombait par hasard sur
+                     * le même chiffre. Un cas de plus, et le comptoir se bloquait en plein service.
+                     *
+                     * Le calcul (qui fixe le prix) reste donc avant le sceau ; l'ÉCRITURE vient
+                     * après. Les deux sont dans la même transaction : si la suite échoue, rien n'est
+                     * débité.
+                     */
+                    if ($rachatFidelite !== null) {
+                        $this->debitPosLoyaltyPoints($rachatFidelite);
+                    }
 
                     app(\App\Services\Stock\StockService::class)->decrementForOrder($this->order, $idempotencyKey);
 
@@ -3528,33 +3553,6 @@ class OrderService
         $client = $rachat['customer'];
         $pointsDebites = (int) $rachat['points'];
 
-        // Relecture SOUS VERROU : le devis a pu être calculé il y a plusieurs minutes.
-        $soldeReel = (int) User::whereKey($client->id)->lockForUpdate()->value('loyalty_points');
-        if ($soldeReel < $pointsDebites) {
-            throw new \InvalidArgumentException(
-                'Le solde de points a changé depuis l\'affichage — relance l\'encaissement.',
-                422
-            );
-        }
-
-        $soldeApres = $soldeReel - $pointsDebites;
-
-        User::whereKey($client->id)->update([
-            'loyalty_points' => $soldeApres,
-            'updated_at'     => now(),
-        ]);
-
-        \App\Models\LoyaltyTransaction::create([
-            'user_id'        => $client->id,
-            'loyalty_code'   => $client->loyalty_code,
-            'order_id'       => $this->order->id,
-            'type'           => 'redeem',
-            'points'         => -$pointsDebites,
-            'balance_after'  => $soldeApres,
-            'source_surface' => 'pos',
-            'description'    => 'Reduction fidelite appliquee a la vente par caissier #'.(Auth::id() ?? 0),
-        ]);
-
         // Le code du client suit la vente : c'est lui qui permet le remboursement des points en
         // cas d'annulation, et le crédit du gain sur le montant réellement payé.
         $this->order->loyalty_customer_code = $client->loyalty_code;
@@ -3571,6 +3569,8 @@ class OrderService
 
         return [
             'points' => $pointsDebites,
+            'customer_id' => (int) $client->id,
+            'loyalty_code' => (string) $client->loyalty_code,
             'pricing' => new PricingResult(
                 $pricing->orderItemInsertRows,
                 $pricing->lines,
@@ -3583,6 +3583,53 @@ class OrderService
                 $pricing->meta + ['loyalty_points_required' => $pointsDebites],
             ),
         ];
+    }
+
+    /**
+     * [FIDÉLITÉ CAISSE 2026-08-19] Débite réellement les points, une fois la vente scellée.
+     *
+     * Séparé du calcul à dessein (cf. le commentaire à l'appel) : tant que le sceau du devis n'est
+     * pas posé, le solde doit rester tel qu'il était quand le prix a été calculé.
+     *
+     * @param array{points:int, customer_id:int, loyalty_code:string} $rachat
+     */
+    private function debitPosLoyaltyPoints(array $rachat): void
+    {
+        $pointsDebites = (int) $rachat['points'];
+        $clientId = (int) $rachat['customer_id'];
+        if ($pointsDebites <= 0 || $clientId <= 0) {
+            return;
+        }
+
+        // Relecture SOUS VERROU : entre l'affichage du solde au comptoir et la validation, le même
+        // client a pu dépenser ses points sur une autre caisse ou sur la borne.
+        $soldeReel = (int) User::whereKey($clientId)->lockForUpdate()->value('loyalty_points');
+        if ($soldeReel < $pointsDebites) {
+            throw new \InvalidArgumentException(
+                'Le solde de points a changé depuis l\'affichage — relance l\'encaissement.',
+                422
+            );
+        }
+
+        $soldeApres = $soldeReel - $pointsDebites;
+
+        User::whereKey($clientId)->update([
+            'loyalty_points' => $soldeApres,
+            'updated_at'     => now(),
+        ]);
+
+        // Forme IDENTIQUE à celle de PosRedemptionService : c'est elle, et elle seule, que
+        // `LoyaltyService::refundPoints` sait retrouver pour rendre les points à l'annulation.
+        \App\Models\LoyaltyTransaction::create([
+            'user_id'        => $clientId,
+            'loyalty_code'   => $rachat['loyalty_code'],
+            'order_id'       => $this->order->id,
+            'type'           => 'redeem',
+            'points'         => -$pointsDebites,
+            'balance_after'  => $soldeApres,
+            'source_surface' => 'pos',
+            'description'    => 'Reduction fidelite appliquee a la vente par caissier #'.(Auth::id() ?? 0),
+        ]);
     }
 
     private function assertDiscretionaryDiscountAllowed(float $discount): void

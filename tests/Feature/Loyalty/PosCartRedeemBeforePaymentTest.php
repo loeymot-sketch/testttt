@@ -200,6 +200,43 @@ class PosCartRedeemBeforePaymentTest extends TestCase
     }
 
     /**
+     * LE RACHAT QUI FAIT TOMBER LE SOLDE SOUS LE PLANCHER.
+     *
+     * ── CE TEST EXISTE PARCE QU'UNE VENTE RÉELLE A ÉCHOUÉ LÀ OÙ LES TESTS PASSAIENT ───────────
+     * Jouée en HTTP sur le serveur de développement le 2026-08-19 : client à 2000 points,
+     * rachat de 1500 sur un panier à 15,20 €. Réponse : « Order quote intent mismatch ».
+     *
+     * Cause : `sealForCommit` RECALCULE le devis à partir de la requête pour le comparer au total
+     * de la commande, et ce recalcul relit le SOLDE VIVANT. Les points étaient débités AVANT le
+     * sceau — le recalcul voyait donc 500 points restants, tombait sous le plancher (1000),
+     * concluait « remise 0 » et refusait la vente.
+     *
+     * Les quatre tests écrits juste avant passaient PAR CHANCE : leurs soldes restaient au-dessus
+     * du plancher après débit (2000−1000 = 1000 ; 100000−3000), si bien que le recalcul retombait
+     * sur le même chiffre. Aucun ne franchissait la frontière. C'est ce cas-frontière qu'on fige
+     * ici — le seul qui distingue « débiter avant le sceau » de « débiter après ».
+     */
+    public function test_un_rachat_qui_vide_le_solde_sous_le_plancher_passe_quand_meme(): void
+    {
+        [$branch, $caissier, $article] = $this->comptoir();
+        $client = $this->client(2000);
+
+        // 1500 points = 15 € sur une vente de 30 € → il restera 500 points, SOUS le plancher.
+        $this->envoyer($caissier, $this->payload($branch, $caissier, $article, [
+            'loyalty_customer_code' => 'REDEEM01',
+            'loyalty_redeem_points' => 1500,
+            'pos_received_amount' => 15.00,
+        ]))->assertStatus(201);
+
+        $commande = Order::withoutGlobalScopes()->latest('id')->first();
+        $this->assertSame(15.00, round((float) $commande->discount, 2));
+        $this->assertSame(15.00, round((float) $commande->total, 2));
+
+        $client->refresh();
+        $this->assertSame(500, (int) $client->loyalty_points);
+    }
+
+    /**
      * ANNULER LA VENTE REND LES POINTS. Le point de second ordre qui coûte le plus cher quand on
      * l'oublie : un client dont la commande est annulée après avoir « payé » avec ses points les
      * perdrait deux fois (pas de repas, pas de points), et rien dans l'écran ne le montrerait.
