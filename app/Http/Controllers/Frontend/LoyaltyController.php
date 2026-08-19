@@ -75,9 +75,25 @@ class LoyaltyController extends Controller
             // Try by loyalty code first, then fall back to phone number
             $user = User::where('loyalty_code', $input)->first();
             if (!$user) {
-                // Normalize phone: keep digits, leading +
-                $phone = preg_replace('/[\s\-]/', '', $input);
-                $user = User::where('phone', $phone)->first();
+                /*
+                 * [FIDÉLITÉ 2026-08-19] « 06 … », « +33 6 … » et « 6 … » SONT LA MÊME PERSONNE.
+                 *
+                 * Cette ligne ne retirait que les espaces et les tirets : elle cherchait donc
+                 * l'écriture EXACTE tapée. Mesuré sur la base réelle : 6 numéros portent plusieurs
+                 * comptes, dont `+33600009999` avec **500 points** et `0600009999` avec **0** — le
+                 * même humain, coupé en deux, dont les points sont introuvables depuis la moitié
+                 * qu'il présente. `PhoneIdentity` existe exactement pour ça depuis le 10 août (la
+                 * caisse l'utilise déjà, `PosCustomerLookupService::byPhone`) ; la borne et le site
+                 * étaient les jumeaux oubliés.
+                 */
+                $tel = app(\App\Services\Identity\PhoneIdentity::class);
+                if ($tel->looksComplete($input)) {
+                    $user = User::whereIn('phone', $tel->variants($input))
+                        // À doublons existants, on présente celui qui porte les points : c'est le
+                        // compte que le client reconnaîtra, et celui qu'il faut créditer.
+                        ->orderByDesc('loyalty_points')
+                        ->first();
+                }
             }
 
             if ($user && $this->isCustomerActive($user)) { // [FIX P3 audit] accepte status 1 OU ACTIVE(5) (cohérent avec le reste)
@@ -140,7 +156,19 @@ class LoyaltyController extends Controller
                 ], 422);
             }
 
-            $user = User::where('phone', $request->input('phone'))->first();
+            /*
+             * [FIDÉLITÉ 2026-08-19] ON CHERCHE TOUTES LES ÉCRITURES DU NUMÉRO, PAS CELLE TAPÉE.
+             *
+             * Une correspondance exacte, ici, FABRIQUE des doublons : le client inscrit au
+             * comptoir en « 0600009999 » qui tape « +33600009999 » à la borne n'est pas trouvé, un
+             * SECOND compte est créé, et ses points restent sur le premier — invisibles pour lui
+             * comme pour le caissier. C'est mesuré, pas théorique (6 numéros concernés en base).
+             */
+            $tel = app(\App\Services\Identity\PhoneIdentity::class);
+            $telSaisi = (string) $request->input('phone');
+            $user = $tel->looksComplete($telSaisi)
+                ? User::whereIn('phone', $tel->variants($telSaisi))->orderByDesc('loyalty_points')->first()
+                : User::where('phone', $telSaisi)->first();
 
             // [AUDIT-P50-BUG8] Check for email conflict before creating/updating
             $email = $request->input('email');
@@ -213,7 +241,12 @@ class LoyaltyController extends Controller
                 $user->email = ($captureEmail && $emailSaisi !== '' && filter_var($emailSaisi, FILTER_VALIDATE_EMAIL))
                     ? $emailSaisi
                     : null;
-                $user->phone = $request->input('phone');
+                // [FIDÉLITÉ 2026-08-19] On ENREGISTRE la forme canonique (« 0612345678 »).
+                // Réparer la lecture sans corriger l'écriture, ce serait continuer à semer des
+                // écritures divergentes que la lecture devra rattraper indéfiniment.
+                $user->phone = $tel->looksComplete($telSaisi)
+                    ? $tel->normalize($telSaisi)
+                    : $telSaisi;
                 $user->username = uniqid('kiosk_');
                 $user->password = bcrypt(uniqid());
                 // [AUDIT FIDÉLITÉ 2026-08-01 · P1-2] ACTIVE(5) et non le legacy 1 : un compte
@@ -547,7 +580,22 @@ class LoyaltyController extends Controller
             // pour lier le consentement.
             $user = null;
             if (!empty($data['phone'])) {
-                $user = User::where('phone', $data['phone'])->first();
+                /*
+                 * [FIDÉLITÉ 2026-08-19] IL FAUT CHERCHER TOUTES LES ÉCRITURES — sinon ce
+                 * consentement RGPD n'est plus écrit du tout.
+                 *
+                 * `register()` enregistre désormais la forme canonique (« 0612345678 »). Chercher
+                 * ici la forme BRUTE tapée par le client (« +33612345678 ») ne retrouverait donc
+                 * plus le compte qu'on vient de créer : l'inscription réussirait, et la preuve du
+                 * consentement — la seule pièce qui justifie le traitement de ses données —
+                 * disparaîtrait en silence. Dégât indirect de ma propre correction, attrapé en
+                 * suivant la donnée plutôt qu'en relisant la ligne.
+                 */
+                $telOptIn = app(\App\Services\Identity\PhoneIdentity::class);
+                $user = $telOptIn->looksComplete((string) $data['phone'])
+                    ? User::whereIn('phone', $telOptIn->variants((string) $data['phone']))
+                        ->orderByDesc('loyalty_points')->first()
+                    : User::where('phone', $data['phone'])->first();
             }
             if (!$user && !empty($data['email'])) {
                 $user = User::where('email', $data['email'])->first();
@@ -905,7 +953,14 @@ class LoyaltyController extends Controller
                     if (! $target) {
                         $phone = preg_replace('/[\s\-]/', '', $code);
                         if ($phone && preg_match('/^\+?\d{6,15}$/', $phone)) {
-                            $target = User::where('phone', $phone)->first();
+                            // [FIDÉLITÉ 2026-08-19] Toutes les écritures du numéro, comme partout
+                            // ailleurs : un QR ancien peut porter « +33… » quand le compte est en
+                            // « 06… », et l'inverse.
+                            $telScan = app(\App\Services\Identity\PhoneIdentity::class);
+                            $target = $telScan->looksComplete($phone)
+                                ? User::whereIn('phone', $telScan->variants($phone))
+                                    ->orderByDesc('loyalty_points')->first()
+                                : User::where('phone', $phone)->first();
                         }
                     }
                 }

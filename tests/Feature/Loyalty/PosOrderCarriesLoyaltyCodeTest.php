@@ -154,6 +154,73 @@ class PosOrderCarriesLoyaltyCodeTest extends TestCase
     }
 
     /**
+     * AU COMPTOIR, LE CLIENT EST CRÉDITÉ EN PAYANT — SANS ATTENDRE LA CUISINE.
+     *
+     * ── LE DÉFAUT QUE CE TEST FIGE ───────────────────────────────────────────────────────────
+     * Le crédit ne se déclenchait que sur un CHANGEMENT de statut. Or une vente de caisse NAÎT
+     * au statut « en préparation » : aucun changement, donc aucun crédit. Le client payait,
+     * repartait, et n'obtenait ses points QUE si la cuisine bumpait sa commande — ce qui n'arrive
+     * jamais pour une boisson ou tout produit sans étape cuisine.
+     *
+     * Mesuré sur la base réelle le 2026-08-19 : **307 ventes de caisse immobilisées à ce
+     * statut**, dont pas une n'a crédité qui que ce soit. Vérifié aussi en jouant une vraie vente
+     * (9,50 €, client rattaché) : statut 7, crédit NUL.
+     */
+    public function test_une_vente_payee_credite_immediatement_sans_attendre_la_cuisine(): void
+    {
+        [$branch, $caissier, $article] = $this->comptoir();
+        $client = $this->client(0);
+
+        $payload = [
+            'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 10.00,
+            'total' => 10.00,
+            'source' => Source::POS,
+            'customer_id' => $caissier->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => 0,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 10.00,
+            'loyalty_customer_code' => 'FIDTEST1',
+            'items' => json_encode([[
+                'item_id' => $article->id,
+                'price' => 10.00,
+                'quantity' => 1,
+            ]]),
+        ];
+
+        $this->actingAs($caissier, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', 'test-fid-'.uniqid('', true))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($caissier, $payload))
+            ->assertStatus(201);
+
+        $commande = Order::withoutGlobalScopes()->latest('id')->first();
+        $pointsParEuro = (int) \Smartisan\Settings\Facades\Settings::group('loyalty_setup')
+            ->get('loyalty_points_per_euro', 10);
+        $attendu = (int) floor(10.00 * $pointsParEuro);
+
+        // AUCUNE transition de statut n'est jouée ici : c'est tout l'objet du test.
+        $client->refresh();
+        $this->assertSame($attendu, (int) $client->loyalty_points, 'le client doit être crédité dès le paiement');
+        $this->assertSame($attendu, (int) $commande->loyalty_points_awarded);
+
+        // Et le bump cuisine qui viendra plus tard ne doit PAS créditer une seconde fois : c'est
+        // la sentinelle atomique `loyalty_points_awarded` qui le garantit, pas la chance.
+        $ecouteur = new \App\Listeners\AwardLoyaltyPointsOnDelivery();
+        $ecouteur->handle(new \App\Events\OrderStatusChanged($commande->refresh(), OrderStatus::PREPARING, OrderStatus::PREPARED));
+        $ecouteur->handle(new \App\Events\OrderStatusChanged($commande->refresh(), OrderStatus::PREPARED, OrderStatus::DELIVERED));
+
+        $client->refresh();
+        $this->assertSame($attendu, (int) $client->loyalty_points, 'deux bumps ne doivent pas doubler le crédit');
+        $this->assertSame(
+            1,
+            \App\Models\LoyaltyTransaction::where('order_id', $commande->id)->where('type', 'earn')->count(),
+            'une seule écriture au grand-livre'
+        );
+    }
+
+    /**
      * LE CONTRE-EXEMPLE QUI DONNE SON SENS AU TEST PRÉCÉDENT.
      *
      * Sans code, la même vente ne doit créditer PERSONNE. Sinon le premier test passerait même

@@ -49,6 +49,45 @@ class AwardLoyaltyPointsOnDelivery
             return;
         }
 
+        $this->award($order);
+    }
+
+    /**
+     * [FIDÉLITÉ 2026-08-19] LE CRÉDIT LUI-MÊME, APPELABLE SANS ÉVÉNEMENT.
+     *
+     * ── POURQUOI CETTE MÉTHODE A ÉTÉ DÉTACHÉE ────────────────────────────────────────────────
+     * Le crédit ne se déclenchait que sur un CHANGEMENT DE STATUT. Or une vente de comptoir naît
+     * déjà au statut « en préparation » : aucun changement n'a lieu, donc aucun crédit. Le client
+     * paie, s'en va, et n'obtient ses points QUE si la cuisine bumpe sa commande — ce qui
+     * n'arrive jamais pour une boisson ou un produit sans étape cuisine. Mesuré sur la base
+     * réelle le 2026-08-19 : **307 ventes de caisse immobilisées à ce statut**, dont aucune n'a
+     * pu créditer qui que ce soit.
+     *
+     * Attendre la cuisine pour récompenser un achat est un héritage du modèle « livraison ». Au
+     * comptoir, le fait générateur est le PAIEMENT : l'argent est dans le tiroir, la vente est
+     * scellée fiscalement. `OrderService` appelle donc cette méthode dès qu'une vente de caisse
+     * est payée.
+     *
+     * C'est sûr parce que l'annulation reprend ce qui a été donné : `clawbackEarnedPoints`
+     * (points gagnés) et `refundPoints` (points dépensés) sont tous deux câblés sur le chemin
+     * d'annulation. Créditer tôt n'est donc pas créditer à l'aveugle.
+     *
+     * L'idempotence est portée par la sentinelle atomique `orders.loyalty_points_awarded` : un
+     * bump cuisine ultérieur, ou un second appel, ne crédite pas une deuxième fois.
+     *
+     * @param \App\Models\Order|\App\Models\FrontendOrder $order
+     */
+    public function award($order): void
+    {
+        // Re-contrôle défensif : cette méthode est désormais appelable hors événement, elle ne
+        // peut donc plus supposer que l'appelant a déjà écarté les états terminaux.
+        $statutCourant = (int) ($order->status ?? -1);
+        if (in_array($statutCourant, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
+            return;
+        }
+
+        $isKiosk = in_array((int) ($order->order_type ?? 0), [OrderType::KIOSK, OrderType::TAKEAWAY], true);
+
         // Atomic idempotency: only one concurrent process can claim the sentinel.
         // FrontendOrder::$table = "orders" — physical table is always "orders".
         // [AUDIT-P50-BUG10] Also verify order is not cancelled at the moment of awarding

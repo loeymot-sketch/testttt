@@ -1488,6 +1488,36 @@ class OrderService
 
                 $order = $this->order;
 
+                /*
+                 * [FIDÉLITÉ 2026-08-19] AU COMPTOIR, LE FAIT GÉNÉRATEUR EST LE PAIEMENT.
+                 *
+                 * Le crédit des points ne se déclenchait que sur un CHANGEMENT de statut
+                 * (`AwardLoyaltyPointsOnDelivery`). Or une vente de caisse NAÎT au statut « en
+                 * préparation » : il n'y a aucun changement, donc aucun crédit. Le client payait,
+                 * repartait, et n'obtenait ses points QUE si la cuisine bumpait sa commande — ce
+                 * qui n'arrive jamais pour une boisson ou tout produit sans étape cuisine.
+                 *
+                 * Mesuré sur la base réelle : **307 ventes de caisse immobilisées à ce statut**,
+                 * aucune n'ayant pu créditer qui que ce soit. Vérifié en jouant une vraie vente
+                 * (commande 6602, 9,50 €, client rattaché) : statut 7, crédit NUL.
+                 *
+                 * Attendre la cuisine pour récompenser un achat est un reste du modèle
+                 * « livraison ». Ici l'argent est dans le tiroir et la vente est scellée
+                 * fiscalement : c'est le moment, et c'est ce que le client attend.
+                 *
+                 * SÛR PARCE QUE RÉVERSIBLE : l'annulation reprend ce qui a été donné —
+                 * `clawbackEarnedPoints` pour les points gagnés, `refundPoints` pour les points
+                 * dépensés, tous deux déjà câblés sur le chemin d'annulation.
+                 * IDEMPOTENT : la sentinelle atomique `orders.loyalty_points_awarded` fait qu'un
+                 * bump cuisine ultérieur ne crédite pas une seconde fois.
+                 *
+                 * Une commande TÉLÉPHONE différée n'est pas payée ici (PENDING_COUNTER) : elle ne
+                 * remplit pas la condition et sera créditée à son encaissement, comme il se doit.
+                 */
+                if ((int) ($order->payment_status ?? 0) === PaymentStatus::PAID) {
+                    app(\App\Listeners\AwardLoyaltyPointsOnDelivery::class)->award($order);
+                }
+
                 // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
                 // INSIDE the closure so DispatchableAfterCommit engages
                 // (transactionLevel()>0 → afterCommit). On rollback the
