@@ -63,6 +63,28 @@ class FrontendOrderService
     // [AUDIT-P2] Flag set to true when loyalty discount is successfully applied server-side.
     // Exposed in the API response so the kiosk can show a toast if points were silently dropped.
     public bool $loyaltyApplied = false;
+
+    /**
+     * [FIDÉLITÉ BORNE 2026-08-19] LE DÉBIT DES POINTS, EN ATTENTE DU SCEAU DU DEVIS.
+     *
+     * `sealForCommit` RECALCULE le devis à partir de la requête pour le comparer au total de la
+     * commande, et ce recalcul repasse par `DiscountCalculator::kioskLoyaltyRedemption`, qui lit
+     * le SOLDE VIVANT du client. Débiter avant le sceau, c'est donc changer sous ses pieds la
+     * donnée dont il se sert.
+     *
+     * Mesuré (test `KioskRedeemThroughSealedQuoteTest`) : client à 2000 points dépensant 1500 sur
+     * un panier de 20 € → après débit il reste 500 points, SOUS le plancher de 1000 → le recalcul
+     * conclut « remise 0 », compare 20 € à 5 € et refuse la commande :
+     * **« Order quote intent mismatch »**. Aucun test ne le voyait : tous remplaçaient
+     * `OrderQuoteService` par un double (`bypassKioskQuoteSealForLoyaltySentinel`).
+     *
+     * On garde donc ICI l'intention d'écriture (calcul, gardes et montant restent à leur place,
+     * avant le sceau puisqu'ils déterminent le prix) et on l'exécute APRÈS, dans la MÊME
+     * transaction : si la suite échoue, rien n'est débité.
+     *
+     * @var array{mode:string, user:\App\Models\User, points:int, balance_after:int, pending_id:?int}|null
+     */
+    private ?array $kioskLoyaltyDebitEnAttente = null;
     protected array $frontendOrderFilter = [
         'order_serial_no',
         'user_id',
@@ -652,6 +674,14 @@ class FrontendOrderService
                         );
                     }
 
+                    // [FIDÉLITÉ BORNE 2026-08-19] LE DÉBIT DES POINTS VIENT ICI, APRÈS LE SCEAU.
+                    // Le sceau recalcule le devis et relit le SOLDE VIVANT : débiter avant, c'est
+                    // lui retirer la donnée sur laquelle il s'appuie, et refuser la commande
+                    // (« Order quote intent mismatch »). Voir $kioskLoyaltyDebitEnAttente.
+                    // Appelé hors du `if` : une commande WEB n'a pas de sceau mais doit débiter
+                    // pareil — c'est exactement le genre de jumeau qu'on oublie.
+                    $this->flushKioskLoyaltyDebit();
+
                     app(\App\Services\Stock\StockService::class)->decrementForOrder($this->frontendOrder, $idempotencyKey);
 
                     // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
@@ -1087,7 +1117,20 @@ class FrontendOrderService
         float &$calculatedDiscount
     ): void {
         $loyaltyCode = trim((string) $request->input('loyalty_code', ''));
-        $requestedDiscount = (float) $request->input('discount', 0);
+
+        /*
+         * [FIDÉLITÉ BORNE 2026-08-19] La borne demande des POINTS, le web des EUROS.
+         *
+         * Même traduction que `OrderQuoteService::montantRachatDemande` — et il FAUT que ce soit
+         * la même, au centime : le sceau du devis compare les deux et refuse la commande à la
+         * moindre divergence. La borne envoie une quantité (pas d'argent dans son payload,
+         * invariant SSOT/NF525) ; le chemin web/self-service, lui, garde son montant en euros
+         * puisqu'il correspond à un pré-rachat déjà débité.
+         */
+        $pointsDemandes = (int) $request->input('loyalty_redeem_points', 0);
+        $requestedDiscount = $pointsDemandes > 0
+            ? app(\App\Services\Loyalty\LoyaltyRules::class)->euroValue($pointsDemandes)
+            : (float) $request->input('discount', 0);
 
         if ($loyaltyCode === '' || $requestedDiscount <= 0.0) {
             return;
@@ -1179,18 +1222,22 @@ class FrontendOrderService
             }
 
             // Rattacher SANS re-débiter ni re-vérifier le solde (les points sont déjà partis).
-            $pendingRedeem->order_id = $this->frontendOrder->id;
-            $pendingRedeem->description = 'Reduction fidelite rattachee a la commande';
-            $pendingRedeem->save();
+            // [2026-08-19] L'ÉCRITURE est différée après le sceau du devis (cf.
+            // $kioskLoyaltyDebitEnAttente) ; ici on ne fait que retenir l'intention.
+            $this->kioskLoyaltyDebitEnAttente = [
+                'mode'          => 'rattachement',
+                'user'          => $loyaltyUser,
+                'points'        => $pointsRequired,
+                'balance_after' => (int) $loyaltyUser->loyalty_points,
+                'pending_id'    => (int) $pendingRedeem->id,
+            ];
 
             $calculatedDiscount += $maxDiscount;
             $this->loyaltyApplied = true;
 
-            Log::info('[Loyalty] Pending redeem attached without second deduction', [
-                'user_id' => $loyaltyUser->id,
-                'order_id' => $this->frontendOrder->id,
-                'transaction_id' => $pendingRedeem->id,
-            ]);
+            // Le journal est écrit par flushKioskLoyaltyDebit(), au moment où le rattachement a
+            // RÉELLEMENT lieu : annoncer « rattaché » avant l'écriture serait un journal qui ment
+            // si la transaction échoue ensuite.
             return;
         }
 
@@ -1207,19 +1254,70 @@ class FrontendOrderService
 
         $balanceAfter = (int) $loyaltyUser->loyalty_points - $pointsRequired;
 
-        DB::table('users')
-            ->where('id', $loyaltyUser->id)
-            ->update([
-                'loyalty_points' => $balanceAfter,
-                'updated_at' => now(),
-            ]);
-
-        $this->createKioskLoyaltyRedeemLedger($loyaltyUser, $pointsRequired, $balanceAfter);
+        // [2026-08-19] Le solde a été LU sous verrou juste au-dessus ; l'ÉCRITURE, elle, attend
+        // que le devis soit scellé (cf. $kioskLoyaltyDebitEnAttente). Le verrou tient jusqu'au
+        // bout de la transaction : personne ne peut modifier ce solde entre la lecture et le débit.
+        $this->kioskLoyaltyDebitEnAttente = [
+            'mode'          => 'debit_frais',
+            'user'          => $loyaltyUser,
+            'points'        => $pointsRequired,
+            'balance_after' => $balanceAfter,
+            'pending_id'    => null,
+        ];
 
         $calculatedDiscount += $maxDiscount;
         $this->loyaltyApplied = true;
 
-        Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount} EUR)");
+        Log::info("[Loyalty] {$pointsRequired} pts à débiter pour user #{$loyaltyUser->id} (-{$maxDiscount} EUR) — écriture après sceau");
+    }
+
+    /**
+     * [FIDÉLITÉ BORNE 2026-08-19] Exécute le débit retenu, une fois le devis scellé.
+     *
+     * Appelé APRÈS `sealForCommit`, dans la même transaction. Idempotent : l'intention est
+     * consommée, si bien qu'un second appel ne débite pas deux fois.
+     */
+    private function flushKioskLoyaltyDebit(): void
+    {
+        $enAttente = $this->kioskLoyaltyDebitEnAttente;
+        if ($enAttente === null) {
+            return;
+        }
+        $this->kioskLoyaltyDebitEnAttente = null;
+
+        /** @var \App\Models\User $loyaltyUser */
+        $loyaltyUser = $enAttente['user'];
+        $pointsRequired = (int) $enAttente['points'];
+
+        if ($enAttente['mode'] === 'rattachement') {
+            // Un pré-rachat a DÉJÀ débité les points : on ne fait que lui donner sa commande.
+            \App\Models\LoyaltyTransaction::whereKey($enAttente['pending_id'])->update([
+                'order_id'    => $this->frontendOrder->id,
+                'description' => 'Reduction fidelite rattachee a la commande',
+                'updated_at'  => now(),
+            ]);
+
+            Log::info('[Loyalty] Pending redeem attached without second deduction', [
+                'user_id'        => $loyaltyUser->id,
+                'order_id'       => $this->frontendOrder->id,
+                'transaction_id' => $enAttente['pending_id'],
+            ]);
+
+            return;
+        }
+
+        $balanceAfter = (int) $enAttente['balance_after'];
+
+        DB::table('users')
+            ->where('id', $loyaltyUser->id)
+            ->update([
+                'loyalty_points' => $balanceAfter,
+                'updated_at'     => now(),
+            ]);
+
+        $this->createKioskLoyaltyRedeemLedger($loyaltyUser, $pointsRequired, $balanceAfter);
+
+        Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id}");
     }
 
     private function createKioskLoyaltyRedeemLedger(

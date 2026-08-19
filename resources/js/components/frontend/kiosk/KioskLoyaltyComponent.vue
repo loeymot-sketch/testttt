@@ -167,7 +167,7 @@
         <div class="kiosk-loyalty-points-badge">
           <span class="kiosk-loyalty-points-value">{{ customer.loyalty_point }}</span>
           <span class="kiosk-loyalty-points-label">{{ $t('kiosk.loyalty_screen.points_label') }}</span>
-          <span v-if="discountValue > 0 && discountsEnabled && kioskPromoEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
+          <span v-if="discountValue > 0 && kioskLoyaltyRedeemEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
             {{ $t('kiosk.loyalty_screen.points_equiv', { amount: formatPrice(Math.min(discountValue, total)) }) }}
           </span>
         </div>
@@ -192,7 +192,7 @@
              n'envoie jamais le discount au payload (loyalty_code seul), donc afficher
              « utiliser mes points » = promesse « -X € » jamais tenue (client débité
              plein tarif). Même couple de flags que le bloc promo du panier. -->
-        <div v-if="canRedeem && discountsEnabled && kioskPromoEnabled" class="kiosk-loyalty-options" data-testid="kiosk-loyalty-redeem-options">
+        <div v-if="canRedeem && kioskLoyaltyRedeemEnabled" class="kiosk-loyalty-options" data-testid="kiosk-loyalty-redeem-options">
           <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
@@ -241,7 +241,7 @@
         <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
-          :disabled="canRedeem && discountsEnabled && kioskPromoEnabled && !redeemChoice"
+          :disabled="canRedeem && kioskLoyaltyRedeemEnabled && !redeemChoice"
         >
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
@@ -347,6 +347,10 @@ export default {
       error: null,
       customer: null,
       discountValue: 0,
+      // [FIDELITE BORNE 2026-08-19] Taux de la maison (points pour 1 EUR). Deja renvoye par
+      // /loyalty/config mais jamais lu : il sert a exprimer la demande en POINTS, seule
+      // unite que le payload borne a le droit de porter (aucun champ monetaire, SSOT/NF525).
+      pointsFor1Euro: 100,
       minRedeemPoints: 100,
       rewardTiers: [100, 250, 500, 1000, 2000],
       redeemChoice: null,
@@ -407,6 +411,25 @@ export default {
      * La consultation du solde de points reste (lecture seule) ; seul le redeem
      * qui affiche une remise non appliquée est gaté.
      */
+    /**
+     * [FIDELITE BORNE 2026-08-19] Interrupteur DEDIE au rachat de points.
+     *
+     * Le redeem suivait `kioskPromoEnabled` depuis le C39 (2026-07-06) pour une raison JUSTE :
+     * le payload borne n'envoyait jamais la remise, donc afficher « -X EUR » etait un mensonge
+     * et le client etait debite plein tarif. Ce cablage est desormais repare
+     * (`buildKioskQuotePayload` envoie `discount`) ET le debit se fait apres le sceau du devis
+     * — parcours complet prouve par `KioskRedeemThroughSealedQuoteTest`. Le rachat n'a donc
+     * plus a rester otage du defaut des codes promo, qui, lui, n'est pas corrige.
+     *
+     * Defaut TRUE (config kiosk.loyalty_redeem_enabled) ; KIOSK_LOYALTY_REDEEM_ENABLED=false
+     * le referme sans toucher au reste.
+     */
+    kioskLoyaltyRedeemEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.kioskLoyaltyRedeemEnabled !== false
+        : true;
+    },
+
     kioskPromoEnabled() {
       return (typeof window !== 'undefined' && window.foodkingConfig)
         ? window.foodkingConfig.kioskPromoEnabled === true
@@ -475,6 +498,9 @@ export default {
         const res = await axios.get('frontend/loyalty/config', { timeout: ms });
         const cfg = res.data?.data || res.data || {};
         this.minRedeemPoints = cfg.min_redeem_points || 100;
+        this.pointsFor1Euro = Number(cfg.points_for_1_euro_discount) > 0
+          ? Number(cfg.points_for_1_euro_discount)
+          : 100;
         if (Array.isArray(cfg.tiers) && cfg.tiers.length > 0) {
           this.rewardTiers = cfg.tiers
             .map((tier) => parseInt(tier, 10))
@@ -558,9 +584,20 @@ export default {
       // [FIX P2 audit] redeem seulement si activé (sinon le backend 422 rejette la commande).
       // [C39 heal 2026-07-06] + gate borne dédié kioskPromoEnabled : sans lui, la remise
       // était posée dans le store mais jamais envoyée au payload → client débité plein tarif.
-      if (this.canRedeem && this.discountsEnabled && this.kioskPromoEnabled && this.redeemChoice === 'yes') {
+      if (this.canRedeem && this.kioskLoyaltyRedeemEnabled && this.redeemChoice === 'yes') {
         this.appliedDiscount = Math.min(this.discountValue, this.total);
-        await this.setLoyalty({ customer: this.customer, discount: this.appliedDiscount });
+        /*
+         * [FIDÉLITÉ BORNE 2026-08-19] On transmet AUSSI la demande en POINTS.
+         *
+         * Les euros restent la valeur d'AFFICHAGE (« -X € » au panier) ; les points sont ce que
+         * le payload envoie, parce qu'il ne doit porter aucun champ monétaire (SSOT/NF525) et
+         * que raisonner en points supprime l'ambiguïté euro↔point de l'incident du 2026-08-14.
+         * Le serveur reste seul maître du chiffre retenu — il replafonne au solde, au plancher,
+         * au multiple du taux et au sous-total.
+         */
+        const taux = this.pointsFor1Euro > 0 ? this.pointsFor1Euro : 100;
+        const points = Math.floor(this.appliedDiscount * taux);
+        await this.setLoyalty({ customer: this.customer, discount: this.appliedDiscount, points });
         this.showToast(
           this.$t('kiosk.loyalty_screen.toast_discount', { amount: this.formatPrice(this.appliedDiscount) }),
           'success',

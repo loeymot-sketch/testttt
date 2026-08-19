@@ -15,15 +15,24 @@
  * redeem fidélité (atteignable via « Mon compte »). C39 aligne donc le redeem
  * fidélité + l'affichage de la remise au panier sur le MÊME couple de flags.
  *
- * FIX (option a — cohérent avec W2, zéro risque pricing NF525) : gater
- * l'affichage/redeem fidélité derrière `kioskPromoEnabled` (défaut prod FALSE) →
- * quand le flag est OFF, aucune remise fidélité affichée ni redeemable, donc
- * aucune promesse non tenue. On NE câble PAS le discount dans le payload.
+ * FIX D'ORIGINE (option a, 2026-07-06) : masquer le redeem derrière `kioskPromoEnabled`
+ * (défaut FALSE) — « caché = aucune promesse non tenue ». Le câblage restait cassé, assumé.
+ *
+ * [FIDÉLITÉ BORNE 2026-08-19] ON EST PASSÉ À L'OPTION (b) : ON A CÂBLÉ.
+ * Le payload transmet désormais la demande (`loyalty_redeem_points`), le serveur l'applique, et
+ * le débit a lieu APRÈS le sceau du devis — sans quoi le sceau, qui recalcule le rachat sur le
+ * solde vivant, refusait la commande (« Order quote intent mismatch », prouvé par
+ * `tests/Feature/Loyalty/KioskRedeemThroughSealedQuoteTest.php`). Le rachat a donc son propre
+ * interrupteur, `kioskLoyaltyRedeemEnabled` : les CODES PROMO, eux, restent cassés et gardent
+ * le leur.
+ *
+ * L'INVARIANT PROTÉGÉ N'A PAS CHANGÉ — il est seulement satisfait autrement : ce qui est
+ * AFFICHÉ est ce qui sera FACTURÉ. Hier en cachant, aujourd'hui en tenant la promesse.
  *
  * Ce spec prouve :
- *  (a) flag OFF → pas de ligne remise fidélité au panier, total affiché == sous-total ;
- *  (b) contrat source : le redeem fidélité est gaté par le même flag que la promo ;
- *  (c) le total affiché == total qui sera facturé (aucun discount fantôme dans le payload).
+ *  (a) interrupteur fidélité OFF → aucune ligne remise, total affiché == sous-total ;
+ *  (b) interrupteur ON → remise affichée ET réellement transmise au serveur ;
+ *  (c) le payload ne porte AUCUN champ monétaire : la demande voyage en POINTS.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -108,9 +117,11 @@ describe('KioskCartComponent — remise fidélité affichée == facturée (C39)'
     beforeEach(() => { saved = global.window.foodkingConfig; });
     afterEach(() => { global.window.foodkingConfig = saved; });
 
-    it('(a) flag borne OFF + loyaltyDiscount persisté → AUCUNE ligne remise, total == sous-total', () => {
-        // discountsEnabled ON (remise manuelle POS légitime), gate borne OFF (défaut prod).
-        global.window.foodkingConfig = { discountsEnabled: true, kioskPromoEnabled: false };
+    it('(a) interrupteur fidélité OFF + loyaltyDiscount persisté → AUCUNE ligne remise, total == sous-total', () => {
+        // Le kill-switch fidélité doit vraiment couper : un discount resté en mémoire (session
+        // antérieure au flip du flag) ne doit jamais s'afficher, sinon on annonce une remise
+        // que le payload n'enverra pas.
+        global.window.foodkingConfig = { discountsEnabled: true, kioskLoyaltyRedeemEnabled: false };
         const store = makeCartStore({ subtotal: 20, loyaltyDiscount: 5 });
         const w = mountCart(store);
 
@@ -124,8 +135,12 @@ describe('KioskCartComponent — remise fidélité affichée == facturée (C39)'
         expect(totalTxt).not.toContain('-');
     });
 
-    it('(a-bis) clé kioskPromoEnabled absente → même comportement fail-safe (caché)', () => {
-        global.window.foodkingConfig = { discountsEnabled: true };
+    it('(a-bis) interrupteur fidélité OFF explicite → même comportement, quel que soit le promo', () => {
+        global.window.foodkingConfig = {
+            discountsEnabled: true,
+            kioskPromoEnabled: true,
+            kioskLoyaltyRedeemEnabled: false,
+        };
         const store = makeCartStore({ subtotal: 20, loyaltyDiscount: 5 });
         const w = mountCart(store);
         expect(w.find('[data-testid="kiosk-cart-loyalty-discount"]').exists()).toBe(false);
@@ -133,8 +148,8 @@ describe('KioskCartComponent — remise fidélité affichée == facturée (C39)'
             .toBe(w.find('[data-testid="kiosk-cart-subtotal"]').text());
     });
 
-    it('(c) flag borne ON → remise affichée ET total réduit (parité avec le getter store)', () => {
-        global.window.foodkingConfig = { discountsEnabled: true, kioskPromoEnabled: true };
+    it('(c) interrupteur fidélité ON → remise affichée ET total réduit (parité avec le getter store)', () => {
+        global.window.foodkingConfig = { discountsEnabled: true, kioskLoyaltyRedeemEnabled: true };
         const store = makeCartStore({ subtotal: 20, loyaltyDiscount: 5 });
         const w = mountCart(store);
 
@@ -229,37 +244,37 @@ describe('KioskLoyaltyComponent — redeem gaté au montage (parité promo)', ()
     beforeEach(() => { saved = global.window.foodkingConfig; });
     afterEach(() => { global.window.foodkingConfig = saved; vi.restoreAllMocks(); });
 
-    it('discountsEnabled ON + gate borne OFF → options « utiliser mes points » CACHÉES', async () => {
-        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskPromoEnabled: false });
+    it('interrupteur fidélité OFF → options « utiliser mes points » CACHÉES', async () => {
+        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskLoyaltyRedeemEnabled: false });
         expect(w.find('[data-testid="kiosk-loyalty-redeem-options"]').exists()).toBe(false);
     });
 
-    it('gate borne OFF → PAS d\'équivalence « = X € de réduction sur cette commande » (promesse non tenue)', async () => {
-        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskPromoEnabled: false });
+    it('interrupteur fidélité OFF → PAS d\'équivalence « = X € de réduction » (promesse non tenue)', async () => {
+        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskLoyaltyRedeemEnabled: false });
         // Le solde brut reste (consultation), mais l'équivalence-réduction est masquée.
         expect(w.find('[data-testid="kiosk-loyalty-points-equiv"]').exists()).toBe(false);
         expect(w.find('.kiosk-loyalty-points-value').text()).toContain('500');
     });
 
-    it('LES DEUX flags ON → équivalence-réduction VISIBLE', async () => {
-        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskPromoEnabled: true });
+    it('interrupteur fidélité ON → équivalence-réduction VISIBLE', async () => {
+        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskLoyaltyRedeemEnabled: true });
         expect(w.find('[data-testid="kiosk-loyalty-points-equiv"]').exists()).toBe(true);
     });
 
-    it('clé kioskPromoEnabled absente → options CACHÉES (défaut fail-safe)', async () => {
-        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true });
-        expect(w.find('[data-testid="kiosk-loyalty-redeem-options"]').exists()).toBe(false);
-    });
-
-    it('LES DEUX flags ON → options de redeem VISIBLES', async () => {
-        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskPromoEnabled: true });
+    it('le rachat ne dépend PLUS du drapeau des codes promo (défaut cassé qui n\'est pas le sien)', async () => {
+        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskPromoEnabled: false });
         expect(w.find('[data-testid="kiosk-loyalty-redeem-options"]').exists()).toBe(true);
     });
 
-    it('applyLoyalty : flag borne OFF ne pose JAMAIS de discount même si redeemChoice=yes', async () => {
+    it('interrupteur fidélité ON → options de redeem VISIBLES', async () => {
+        const { w } = await mountLoyaltyOnBalance({ discountsEnabled: true, kioskLoyaltyRedeemEnabled: true });
+        expect(w.find('[data-testid="kiosk-loyalty-redeem-options"]').exists()).toBe(true);
+    });
+
+    it('applyLoyalty : interrupteur fidélité OFF ne pose JAMAIS de discount, même si redeemChoice=yes', async () => {
         const store = makeLoyaltyStore();
         const setLoyaltySpy = vi.spyOn(store._actions['kioskCart/setLoyalty'], '0');
-        global.window.foodkingConfig = { discountsEnabled: true, kioskPromoEnabled: false };
+        global.window.foodkingConfig = { discountsEnabled: true, kioskLoyaltyRedeemEnabled: false };
         const axios = (await import('axios')).default;
         vi.spyOn(axios, 'get').mockResolvedValue({ data: { data: {} } });
 
@@ -284,23 +299,48 @@ describe('KioskLoyaltyComponent — redeem gaté au montage (parité promo)', ()
 });
 
 // ---------------------------------------------------------------------------
-// (c) Contrat payload : le frontend borne n'envoie JAMAIS de discount fidélité.
-//     Preuve que le total plein affiché (flag OFF) == ce que le serveur facturera.
+// (c) Contrat payload : la demande de rachat EST transmise — en POINTS, jamais en argent.
+//     C'est ce qui rend « affiché == facturé » vrai par application, et non par masquage.
 // ---------------------------------------------------------------------------
-describe('buildKioskQuotePayload — aucun discount fidélité transmis (contrat)', () => {
-    it('envoie loyalty_code seul, jamais de champ discount/loyalty_discount', () => {
+describe('buildKioskQuotePayload — la demande de rachat voyage en POINTS (contrat)', () => {
+    it('transmet loyalty_redeem_points, et AUCUN champ monétaire', () => {
         const state = {
             orderType: ORDER_TYPE_KIOSK,
             loyaltyCustomer: { loyalty_code: 'ABC123' },
-            loyaltyDiscount: 5,   // présent en state…
+            loyaltyDiscount: 5,        // valeur d'AFFICHAGE (euros)
+            loyaltyRedeemPoints: 500,  // ce qu'on TRANSMET (quantité)
             promoCode: null,
             items: [{ item_id: 42, quantity: 1, item_variations: [], item_extras: [] }],
         };
         const payload = buildKioskQuotePayload(state, { orderType: ORDER_TYPE_KIOSK });
-        // …mais JAMAIS transmis : le serveur (SSOT) recalcule → total plein.
+
         expect(payload.loyalty_code).toBe('ABC123');
+        // Le maillon qui manquait : sans lui, le serveur sortait immédiatement et facturait
+        // plein tarif pendant que le panier affichait « -5 € ».
+        expect(payload.loyalty_redeem_points).toBe(500);
+
+        // L'invariant SSOT/NF525 tient toujours : le prix appartient au serveur, le client
+        // n'envoie aucun montant. Des points ne sont pas de l'argent.
         expect(payload).not.toHaveProperty('discount');
         expect(payload).not.toHaveProperty('loyalty_discount');
         expect(payload).not.toHaveProperty('loyaltyDiscount');
+        expect(payload).not.toHaveProperty('subtotal');
+        expect(payload).not.toHaveProperty('total');
+    });
+
+    it('sans rachat demandé → 0 point, et toujours aucun champ monétaire', () => {
+        const state = {
+            orderType: ORDER_TYPE_KIOSK,
+            loyaltyCustomer: { loyalty_code: 'ABC123' },
+            loyaltyDiscount: 0,
+            loyaltyRedeemPoints: 0,
+            promoCode: null,
+            items: [{ item_id: 42, quantity: 1, item_variations: [], item_extras: [] }],
+        };
+        const payload = buildKioskQuotePayload(state, { orderType: ORDER_TYPE_KIOSK });
+        // La clé est TOUJOURS présente : une clé conditionnelle ferait diverger le devis de la
+        // commande, et le sceau refuserait la vente.
+        expect(payload.loyalty_redeem_points).toBe(0);
+        expect(payload).not.toHaveProperty('discount');
     });
 });

@@ -330,10 +330,11 @@
         </div>
       </div>
 
-      <!-- Bouton fidélité — masqué quand les remises sont désactivées (V1 F1-dormancy)
-           ET derrière le gate dédié borne kioskPromoEnabled (W2 audit 2026-06-26 :
-           redeem fidélité = même promesse de remise non-appliquée que le code promo). -->
-      <button v-if="discountsEnabled && kioskPromoEnabled" type="button"
+      <!-- [FIDÉLITÉ BORNE 2026-08-19] Le bouton fidélité suit désormais son PROPRE
+           interrupteur. Il partageait celui des codes promo depuis le 2026-06-26 parce que les
+           deux promettaient alors une remise non appliquée ; la fidélité, elle, est câblée et
+           prouvée bout-en-bout (sceau du devis compris) — les codes promo restent cassés. -->
+      <button v-if="kioskLoyaltyRedeemEnabled" type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -493,7 +494,20 @@ export default {
      * d'un discount persisté avant flip du flag.
      */
     effectiveLoyaltyDiscount() {
-      return this.kioskPromoEnabled ? (parseFloat(this.loyaltyDiscount) || 0) : 0;
+      // [2026-08-19] Suit l'interrupteur fidélité, plus celui des codes promo : la remise est
+      // réellement transmise au serveur (buildKioskQuotePayload envoie `discount`), donc
+      // l'afficher n'est plus une promesse en l'air.
+      return this.kioskLoyaltyRedeemEnabled ? (parseFloat(this.loyaltyDiscount) || 0) : 0;
+    },
+    /**
+     * [FIDÉLITÉ BORNE 2026-08-19] Interrupteur DÉDIÉ au rachat de points (config
+     * kiosk.loyalty_redeem_enabled, défaut true). Distinct de kioskPromoEnabled, qui reste
+     * fermé tant que le câblage coupon_id borne n'est pas réparé.
+     */
+    kioskLoyaltyRedeemEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.kioskLoyaltyRedeemEnabled !== false
+        : true;
     },
     /**
      * [C39 heal 2026-07-06] Remise promo EFFECTIVE (affichable) — même logique.
