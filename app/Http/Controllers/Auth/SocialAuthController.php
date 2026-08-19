@@ -137,6 +137,15 @@ class SocialAuthController extends Controller
                 'username'     => Str::slug($nom) . Str::random(5),
                 'branch_id'    => 0,
                 'is_guest'     => Ask::YES,
+                // Renseigné à la création, comme le fait le parcours téléphone
+                // (GuestSignupController::register). Ce n'est pas cosmétique : la route de
+                // SUPPRESSION DE COMPTE est gardée par `verify.api`. Sans cette ligne, un
+                // client connecté par Apple ou Google dont le fournisseur n'atteste pas
+                // l'adresse serait dans l'impossibilité de supprimer son compte — soit
+                // exactement le manquement qu'Apple et Google sanctionnent. L'identité est
+                // ici attestée par le fournisseur, ce qui vaut au moins la vérification
+                // d'adresse que ce champ représente.
+                'email_verified_at' => Carbon::now()->getTimestamp(),
                 'password'     => Hash::make(Str::random(32)),
             ]);
             $user->assignRole(EnumRole::CUSTOMER);
