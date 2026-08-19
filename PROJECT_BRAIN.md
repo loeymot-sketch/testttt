@@ -47,6 +47,47 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 (nuit, suite) — DÉCOMPTE DES VIANDES ACTIVÉ EN PRODUCTION (autorisation owner)**
+>
+> HEAD prod **`8c9e4b51b`** (== origin ; le commit ajouté depuis `ab8b7af6f` est du TEST seul,
+> aucun code de production, aucun build requis — synchro git simple, pas de redéploiement).
+> `stock:ensure-meat-materials` lancée SANS `--dry-run` sur demande explicite de l'owner,
+> instantané SQL pris avant (`pre-meat-materials-20260819-182400.sql.gz`) :
+> **7 matières créées** — Poulet mariné (100 g l'unité comptée), Mexicanos, Tenders, Nuggets,
+> Fricadelle, Chicken burger, Poisson pané. Les **10 symboles de viande résolvent désormais**,
+> 0 manquante.
+>
+> **INVARIANT PHYSIQUE VÉRIFIÉ APRÈS ACTIVATION** — un Cayenne poulet sort **200 g**
+> (2 pièces × 100 g), un mixte 100 g + 75 g de hachée, un bol 100 g. La quantité réelle est
+> INCHANGÉE : c'est tout l'intérêt d'avoir bougé le compteur et le poids unitaire ensemble.
+>
+> ⚠️ **DEUX AFFIRMATIONS DU BLOC PRÉCÉDENT SONT CORRIGÉES ICI, la vérification les a démenties :**
+> · « le suivi de stock ne tourne pas en prod » → **FAUX**. `raw_material_stocks` 13 lignes,
+>   `raw_material_movements` **4 780 mouvements** (3 934 ventes + 846 reprises). Il tourne depuis
+>   des semaines. Le piège : ce sont les tables `raw_material_stocks` / `raw_material_movements`,
+>   **PAS** `stock_levels` / `stock_movements` (celles-là servent aux produits). Interroger la
+>   mauvaise table rend « 0 » et fabrique une conclusion fausse.
+> · « le poulet n'est décompté nulle part » → **imprécis**. Le poulet EN VRAC (`Poulet`, id 2)
+>   est à **−28 400 g**, décompté par le moteur de RECETTES (`raw_material_recipe_lines`, 200 g
+>   sur les items 22 et 38). Ce qui manquait, c'était le chemin du moteur de CUISSON.
+>
+> **PAS DE DOUBLE DÉCOMPTE — vérifié dans le code AVANT de conclure**, c'était le vrai risque de
+> l'activation : `RawMaterialConsumptionService::VIANDES_PILOTEES` contient à la fois `'poulet'`
+> ET `'poulet mariné'` ; dès que le moteur de portions parle, les lignes de recette de TOUTES ces
+> matières sont écartées (`$aEcarter`). Le poulet apparaîtra en revanche désormais sur DEUX
+> matières distinctes à l'écran : `Poulet` (vrac, historique) et `Poulet mariné` (moteur cuisson).
+>
+> 🔴 **À FAIRE PAR L'OWNER — INVENTAIRE D'OUVERTURE.** Les 13 matières sont TOUTES à `on_hand`
+> NÉGATIF (viande hachée −12 kg, poulet −28,4 kg, salade −13 kg, sauce maison −12 kg…) : aucun
+> inventaire n'a jamais été saisi, le grand-livre ne fait que décrémenter depuis zéro. **Tant
+> qu'aucune quantité de départ n'est saisie, ces chiffres sont des CUMULS DE SORTIES, pas des
+> quantités en réserve.** Les 7 nouvelles matières n'ont pas encore de ligne de stock : elle se
+> crée au premier décompte (`lockOrCreateStock`).
+>
+> Santé après activation : `/api/healthz`, `/kds`, `/admin/pos`, `/kiosk/idle` → 200.
+> Commit de test poussé : `cc8078e50..8c9e4b51b` (avance rapide).
+
+
 > **2026-08-19 (nuit) — DÉPLOYÉ SUR LE VPS ET VÉRIFIÉ SUR LE CONTENU SERVI**
 >
 > HEAD déployé **`ab8b7af6f`** (merge). Push en **avance rapide** `3895ca84e..ab8b7af6f`,
