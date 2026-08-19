@@ -47,6 +47,53 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 — SUPERVISION : les 3 lots du jour sur UNE seule ligne, audités, testés — EN ATTENTE DU GO DÉPLOIEMENT**
+>
+> Branche `supervision/integration-2026-08-19` (worktree `.claude/worktrees/supervision-2026-08-19`),
+> HEAD `29d7e3e32`. Contient les sommets des TROIS branches du 19/08 : caisse `d7072ec91`,
+> apps `f142ba657`, fidélité `3b51ee700`. **Rien n'est poussé.** GOAL :
+> `plans/GOAL_SUPERVISION_INTEGRATION_3_BRANCHES_2026-08-19.md`.
+>
+> **CE QUE LA PRODUCTION PORTE AUJOURD'HUI** : le lot caisse/cuisine SEUL (`origin` =
+> `d7072ec91`, déployé à 14:44 par une autre session). Les lots **comptes/apps** et
+> **fidélité** ne sont PAS en ligne.
+>
+> **POURQUOI CETTE SUPERVISION EXISTAIT.** Trois sessions ont travaillé en parallèle sans se
+> voir. Chacune a validé son travail sur SA branche ; personne n'avait exécuté un seul test
+> sur la COMBINAISON. Base commune unique `7ae8a9c4c`, surface de collision minuscule (2
+> fichiers), mais deux régressions ne pouvaient apparaître qu'à la fusion.
+>
+> **LES DEUX RÉGRESSIONS, TROUVÉES ET CORRIGÉES.**
+> 1. Un test du 11/07 épinglait « PREPARED→CANCELED doit rester illégal » — la dérogation
+>    gatée du jour l'a ouverte. Vérifié AVANT de toucher : le janitor n'interroge pas
+>    `allows()`, il exclut PREPARED en dur, son comportement est identique. L'assertion
+>    épinglait le mauvais invariant ; le vrai (« purger n'est pas une transition ») était déjà
+>    épinglé plus bas et reste vert.
+> 2. `ConcurrentOrderTest` exigeait le REFUS de la 2ᵉ commande fidélité. Sonde de mesure :
+>    2 commandes, chacune SON devis, solde 100→50→0, deux lignes `redeem −50`. Ni découvert
+>    ni double dépense — le refus d'avant ÉTAIT le défaut (débit avant sceau). Ajouté le vrai
+>    cas de découvert (50 points, 2 rachats de 50), qui manquait depuis toujours.
+>
+> **DÉFAUT DE FOND DU BANC DE TEST** : `.env.testing` est **ignoré par git** (`.gitignore:14`).
+> Un clone neuf, une CI ou un worktree d'agent tombent sur ~336 rouges fantômes. Mesuré :
+> `tests/Feature/Cash` passe de 25 rouges à **101/101** par la seule présence de ce fichier.
+> C'est ce qui a fait croire à des « bancs périmés » à de précédentes sessions.
+>
+> **AUTRE CORRECTIF** : `tools/deploy-lecayenne.sh` (retrait de `config:cache`, piège TAMPER
+> NF525) vivait NON COMMITÉ dans l'arbre de travail — une bascule de branche l'effaçait.
+> Commité. Un commentaire d'en-tête qui mentait depuis le 17/08 corrigé au passage.
+>
+> **LIMITE DE MON PROPRE AUDIT, À RETENIR** : j'ai validé le LOCK en vérifiant les gardes
+> qu'il DÉCLARE — toutes intactes. La session caisse, en red-teamant, a trouvé ce qu'il
+> OMETTAIT : une **compensation** (restitution de stock à l'annulation) devenue fausse une
+> fois l'arête élargie — 252 unités fantômes. Chercher les gardes affaiblies ne suffit pas ;
+> il faut chercher les compensations dont le contexte a changé.
+>
+> **PORTES PROPRIÉTAIRE OUVERTES** : (a) GO déploiement — avancer
+> `pos/category-first-caisse-2026-06-23` sur `29d7e3e32` est une AVANCE RAPIDE, puis
+> `tools/deploy-lecayenne.sh <SHA>` ; (b) paliers fidélité ; (c) purger-ou-annuler un fantôme
+> borne (l'arbitrage se rouvre depuis le LOCK).
+
 > **2026-08-19 — GOAL owner terrain caisse/cuisine : 6 défauts + 5 auto-infligés corrigés — DÉPLOYÉ**
 >
 > HEAD `f53b3ee70`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
