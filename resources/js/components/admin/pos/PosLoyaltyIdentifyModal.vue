@@ -348,7 +348,7 @@
                         >{{ occupe ? '…' : 'Cumuler sur cette vente' }}</button>
 
                         <button
-                            v-if="client.can_use && orderId"
+                            v-if="client.can_use && (orderId || cartHasItems)"
                             type="button"
                             class="pos-loy-id__btn pos-loy-id__btn--accent"
                             data-testid="loy-id-use"

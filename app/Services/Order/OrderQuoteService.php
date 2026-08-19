@@ -58,6 +58,10 @@ class OrderQuoteService
         private readonly PricingService $pricingService,
         private readonly CouponService $couponService,
         private readonly DiscountCalculator $discountCalculator,
+        // [FIDÉLITÉ CAISSE 2026-08-19] Le rachat au panier est calculé DEUX fois — ici pour le
+        // devis scellé, puis dans OrderService à la création. Les deux doivent rendre le même
+        // chiffre au centime près, sinon le sceau rejette la vente. D'où une définition unique.
+        private readonly \App\Services\Loyalty\PosCartRedemption $posCartRedemption,
     ) {
     }
 
@@ -347,7 +351,74 @@ class OrderQuoteService
             );
         }
 
-        return $pricing;
+        return $this->withPosLoyaltyDiscount($request, $pricing);
+    }
+
+    /**
+     * [FIDÉLITÉ CAISSE 2026-08-19] LA REMISE FIDÉLITÉ ENTRE DANS LE DEVIS, DONC DANS LE PRIX
+     * ANNONCÉ AU CLIENT.
+     *
+     * Sans ça, le caissier encaisse le prix plein puis découvre que le rachat est refusé
+     * (`PosRedemptionService` interdit toute commande déjà payée) — c'est le « ça passe jamais »
+     * du propriétaire, reproduit en 409 ORDER_ALREADY_FINALIZED. L'argent doit être juste AVANT
+     * d'être pris.
+     *
+     * Miroir exact de `withKioskLoyaltyDiscount` pour la formule du total (branche TTC/HT), avec
+     * une différence assumée : la caisse raisonne en POINTS et non en euros demandés. C'est
+     * délibéré — l'incident du 2026-08-14 (facteur 10) est né d'une conversion euro→point faite
+     * au mauvais taux. Le caissier choisit des points, le serveur en déduit les euros, il n'y a
+     * qu'un sens de conversion et un seul taux possible.
+     *
+     * La remise MANUELLE (`discount`) reste soumise à son propre interrupteur : on l'additionne
+     * ici, sans jamais la remplacer ni l'autoriser.
+     */
+    private function withPosLoyaltyDiscount(Request $request, PricingResult $pricing): PricingResult
+    {
+        if (! (bool) config('pos.loyalty_enabled', true)) {
+            return $pricing;
+        }
+
+        $points = (int) $request->input('loyalty_redeem_points', 0);
+        $code = trim((string) $request->input('loyalty_customer_code', ''));
+
+        if ($points <= 0 || $code === '') {
+            return $pricing;
+        }
+
+        $rachat = $this->posCartRedemption->compute(
+            $code,
+            $points,
+            (float) $pricing->accumulatedSubtotal,
+            (float) $pricing->discount,
+        );
+
+        if ($rachat['discount'] <= 0.0) {
+            return $pricing;
+        }
+
+        $remiseTotale = round((float) $pricing->discount + (float) $rachat['discount'], 2);
+
+        // [TERRAIN-HEAL 2026-07-16 · LOYAL-409-TTC] En mode TTC (défaut FR), accumulatedSubtotal
+        // contient DÉJÀ la TVA : y rajouter totalTax la double-compte et fait diverger le devis
+        // du recalcul de création → 409 sur toute vente remisée. Même branche que la borne.
+        $total = round(max(
+            0.0,
+            (bool) config('pricing.tax_inclusive_prices', true)
+                ? $pricing->accumulatedSubtotal + $pricing->deliveryCharge - $remiseTotale
+                : $pricing->accumulatedSubtotal + $pricing->totalTax + $pricing->deliveryCharge - $remiseTotale
+        ), 2);
+
+        return new PricingResult(
+            $pricing->orderItemInsertRows,
+            $pricing->lines,
+            $pricing->accumulatedSubtotal,
+            $pricing->subtotal,
+            $pricing->totalTax,
+            $remiseTotale,
+            $pricing->deliveryCharge,
+            $total,
+            $pricing->meta + ['loyalty_points_required' => (int) $rachat['points']],
+        );
     }
 
     private function withKioskLoyaltyDiscount(Request $request, PricingResult $pricing): PricingResult

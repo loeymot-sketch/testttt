@@ -178,6 +178,12 @@ class PosController extends AdminController
             'customer_id' => ['nullable', 'numeric'],
             'coupon_id' => ['nullable', 'numeric'],
             'discount' => ['nullable', 'numeric', 'min:0'],
+            // [FIDÉLITÉ CAISSE 2026-08-19] Le devis DOIT connaître le rachat, sinon il annonce le
+            // prix plein et la création (qui, elle, l'applique) rend un total différent → 409
+            // « total does not match » sur toute vente avec points. Ces deux champs voyagent donc
+            // ensemble sur le devis ET sur la commande.
+            'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
+            'loyalty_redeem_points' => ['nullable', 'integer', 'min:1'],
             'delivery_charge' => ['nullable', 'numeric', 'min:0'],
             'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
             'order_type' => ['nullable', 'numeric'],

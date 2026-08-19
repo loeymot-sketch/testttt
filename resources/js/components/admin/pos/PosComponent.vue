@@ -983,6 +983,16 @@
                     <template v-else>
                         <span class="pos-v5-loyalty__points">{{ selectedCustomerLoyalty.points ?? 0 }}</span> pts fidélité
                         <span class="opacity-80 ml-1">({{ selectedCustomerLoyalty.code }})</span>
+                        <!--
+                          [FIDÉLITÉ CAISSE 2026-08-19] Une réduction en attente DOIT se voir avant
+                          d'encaisser : le caissier annonce un montant au client, il faut qu'il
+                          puisse vérifier d'un coup d'œil que la déduction est bien armée.
+                        -->
+                        <span
+                            v-if="checkoutProps.form.loyalty_redeem_points > 0"
+                            class="pos-v5-loyalty__points ml-2"
+                            data-testid="pos-loyalty-pending-redeem"
+                        >— {{ checkoutProps.form.loyalty_redeem_points }} pts déduits sur cette vente</span>
                     </template>
                 </span>
             </div>
@@ -2264,6 +2274,10 @@ export default {
                     dining_table_id: null,
                     pos_received_amount: null,
                     loyalty_customer_code: null,
+                    // [FIDÉLITÉ CAISSE 2026-08-19] Points que le client dépense sur CETTE vente.
+                    // Envoyé au devis ET à la commande (les deux doivent porter les mêmes champs,
+                    // sinon le sceau du devis rejette la vente).
+                    loyalty_redeem_points: null,
                     // [POS-9.1.1] motif mandatory when discount > 0
                     discount_reason: null,
                 }
@@ -3373,8 +3387,36 @@ export default {
          * Deux chemins de débit auraient été deux occasions de diverger sur le plancher, le
          * multiple du taux et le plafond de la commande.
          */
-        onLoyaltyUsePoints() {
+        onLoyaltyUsePoints(payload) {
             this.loyaltyIdentifyOpen = false;
+
+            /*
+             * [FIDÉLITÉ CAISSE 2026-08-19] LE CAS NORMAL DU COMPTOIR : la vente n'est pas encore
+             * validée. On note le rachat sur le formulaire — le devis scellé le prendra en compte,
+             * donc le montant affiché ET encaissé sera déjà net de la réduction.
+             *
+             * C'est le seul ordre possible. L'autre chemin (fenêtre de remise sur une commande
+             * existante) travaille APRÈS création, et `PosRedemptionService` refuse tout ce qui
+             * est déjà payé : au comptoir, où la vente naît payée, il ne pouvait jamais aboutir.
+             */
+            if (!this.currentLoyaltyOrder && this.carts.length > 0 && payload) {
+                const points = Number(payload.usable_points) || 0;
+                if (!payload.loyalty_code || points <= 0) return;
+
+                this.checkoutProps.form.loyalty_customer_code = payload.loyalty_code;
+                this.checkoutProps.form.loyalty_redeem_points = points;
+                this.selectedCustomerLoyalty = {
+                    ...this.selectedCustomerLoyalty,
+                    code: payload.loyalty_code,
+                    redeemPoints: points,
+                    loading: false,
+                };
+                alertService.success(`Réduction fidélité appliquée : ${points} points seront déduits de cette vente.`);
+                return;
+            }
+
+            // Commande déjà validée → on passe le relais à la fenêtre de remise, qui porte ses
+            // propres gardes. Deux chemins de débit auraient été deux occasions de diverger.
             if (this.canShowLoyaltyMainCta) {
                 this.loyaltyRedeemMainOpen = true;
             }
@@ -4681,6 +4723,10 @@ export default {
                     delivery_charge: this.checkoutProps.form.delivery_charge,
                     delivery_distance_km: this.checkoutProps.form.delivery_distance_km,
                     loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code,
+                    // [FIDÉLITÉ CAISSE 2026-08-19] Même raison que le coupon juste en dessous : un
+                    // rachat de points absent du snapshot serait perdu à la reprise, et le client
+                    // paierait le prix plein après qu'on lui a annoncé sa réduction.
+                    loyalty_redeem_points: this.checkoutProps.form.loyalty_redeem_points,
                     // [HEAL P2 2026-07-30] coupon_id manquait au snapshot park → remise
                     // perdue à la reprise (le serveur re-dérive la remise depuis coupon_id).
                     // Parité avec loyalty_customer_code (sérialisé ci-dessus, restauré 2× plus bas).
@@ -4740,6 +4786,9 @@ export default {
                 // ouvrir un écrivain sans ouvrir l'effaceur, c'est créditer le client précédent
                 // sur la vente du suivant — silencieusement, et au détriment des deux.
                 loyalty_customer_code: null,
+                // Et un rachat de points qui survivrait à sa vente déduirait les points d'un
+                // client sur la commande d'un autre : la même faute, en pire (c'est de l'argent).
+                loyalty_redeem_points: null,
             };
             this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Clear any
@@ -4823,6 +4872,7 @@ export default {
                 this.checkoutProps.form.delivery_charge = savedForm.delivery_charge ?? 0;
                 this.checkoutProps.form.delivery_distance_km = savedForm.delivery_distance_km ?? null;
                 this.checkoutProps.form.loyalty_customer_code = savedForm.loyalty_customer_code ?? null;
+                this.checkoutProps.form.loyalty_redeem_points = savedForm.loyalty_redeem_points ?? null;
                 // [HEAL P2 2026-07-30] Restaure le coupon à la reprise (cf. snapshot serialize).
                 this.checkoutProps.form.coupon_id = savedForm.coupon_id ?? null;
                 this.checkoutProps.form.pos_payment_method = savedForm.pos_payment_method ?? posPaymentMethodEnum.CASH;
@@ -5109,8 +5159,10 @@ export default {
                 // "loyalty applies during this order; on completion → reset".
                 this.currentLoyaltyOrder = null;
                 // [FIDÉLITÉ PANIER 2026-08-19] Vider le panier, c'est abandonner CETTE vente —
-                // donc aussi le client qu'on y avait rattaché. Miroir exact de resetPaymentForm.
+                // donc aussi le client qu'on y avait rattaché, et le rachat qu'on y avait posé.
+                // Miroir exact de resetPaymentForm.
                 this.checkoutProps.form.loyalty_customer_code = null;
+                this.checkoutProps.form.loyalty_redeem_points = null;
                 this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
                 alertService.success(this.$t('message.cart_reset') || 'Panier vidé.');
             }).catch();
@@ -5295,6 +5347,12 @@ export default {
                     order_type: orderTypeEnum.TAKEAWAY,
                     source: sourceEnum.POS,
                     pos_payment_method: posPaymentMethodEnum.COUNTER_DEFERRED,
+                    // [FIDÉLITÉ CAISSE 2026-08-19] LE DEVIS ET LA COMMANDE DOIVENT PORTER LES
+                    // MÊMES CHAMPS. Le rachat de points change le total ; s'il manque ici, le
+                    // devis annonce le prix plein, la création applique la réduction, et le sceau
+                    // rejette la vente (« total does not match ») devant un client au téléphone.
+                    loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code || null,
+                    loyalty_redeem_points: this.checkoutProps.form.loyalty_redeem_points || null,
                     items: itemsJson,
                 });
                 const quote = quoteRes?.data?.data;
@@ -5324,6 +5382,7 @@ export default {
                     // Le « jumeau oublié » du chemin principal (PaymentComponent le transmet, lui,
                     // par le spread de currentFormSnapshot).
                     loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code || null,
+                    loyalty_redeem_points: this.checkoutProps.form.loyalty_redeem_points || null,
                     // [W4-E5 SCHEDULED 2026-07-20] Commande téléphone programmée : datetime
                     // cible "Y-m-d H:i:s" (null = ASAP), validée serveur (min lead cuisine).
                     scheduled_at: this.checkoutProps.form.scheduled_at || null,
@@ -5350,6 +5409,7 @@ export default {
                 // [FIDÉLITÉ PANIER 2026-08-19] Même règle que resetPaymentForm : le client ne
                 // survit pas à sa vente, sinon l'appel téléphonique suivant hérite du précédent.
                 this.checkoutProps.form.loyalty_customer_code = null;
+                this.checkoutProps.form.loyalty_redeem_points = null;
                 this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
                 await this.loadKioskCashOrders();
             } catch (err) {
@@ -5618,6 +5678,16 @@ export default {
         },
 
         _loadCustomerLoyalty: function (customerId) {
+            /*
+             * [FIDÉLITÉ CAISSE 2026-08-19] CHANGER DE CLIENT ANNULE LE RACHAT EN COURS.
+             *
+             * Sans cette ligne, le caissier applique « 1000 points » pour Karim, change de client
+             * dans la liste, et la vente déduit les points du NOUVEAU compte — de l'argent pris
+             * chez quelqu'un qui n'a rien demandé. Le rachat appartient au client qui l'a demandé,
+             * jamais au champ « client sélectionné ».
+             */
+            this.checkoutProps.form.loyalty_redeem_points = null;
+
             const customer = this.customers.find(c => c.id === customerId);
             if (!customer) {
                 this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
