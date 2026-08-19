@@ -866,7 +866,16 @@ final class KitchenTicketSymbolicFormatter
             // (conteneur + boisson), jamais une note client — sa boisson est extraite du
             // BRUT par extractFormuleDrinkLines AVANT ce drop (W6-ADV C-P1-1), rien n'est
             // perdu. Sans ce drop, « Formule : Menu XL (Fanta 33cl) » survivait en note.
-            if (preg_match('/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b|^formule\s*:/iu', $t)) {
+            if (preg_match('/sauce\s*frites|menu\s*\(\s*frites|^formule\s*:/iu', $t)) {
+                continue;
+            }
+            // [OWNER 2026-08-19, 2ᵉ passe] La revendication « + <formule> » est désormais
+            // RENDUE par le badge (MENU / FRITES / BOISSON). La garder en note l'afficherait
+            // une SECONDE fois — exactement le doublon signalé par l'owner : vu sur la commande
+            // réelle 5135, badge « BOISSON » puis note « ** + Boisson Seule ». On ne droppe que
+            // ce que le badge rend : un supplément payant (« + Cheddar ») reste une note, et on
+            // interroge la MÊME règle que le badge, jamais une seconde qui dériverait.
+            if (str_starts_with($t, '+') && $this->claimedFormuleBadge($t) !== '') {
                 continue;
             }
             if (preg_match('/^[+↳]/u', $t)) {

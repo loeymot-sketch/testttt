@@ -221,6 +221,25 @@ class KitchenFormuleVisibleTest extends TestCase
         $this->assertNotSame($parent, $out[0], 'le legs est porté par un CLONE');
     }
 
+    public function test_la_revendication_rendue_par_le_badge_ne_reste_pas_aussi_en_note(): void
+    {
+        // Commande réelle 5135 : le badge disait « BOISSON » ET la note répétait
+        // « ** + Boisson Seule » — le doublon que l'owner voulait justement voir disparaître.
+        $out = $this->collapser->collapse([
+            $this->ligne('Tacos', "TACOS\nViandes : Poulet\n+ Boisson Seule (+2,00 €)"),
+            $this->ligne('Boisson Seule', 'BOISSON SEULE'),
+        ]);
+
+        $this->assertSame('BOISSON', $this->badge($out[0]));
+        $this->assertSame('', trim($this->formatter->cleanInstruction($out[0]->instruction, 'Tacos', [])));
+
+        // Un supplément PAYANT, lui, reste une note : on ne droppe que ce que le badge rend.
+        $this->assertSame(
+            '+ Cheddar',
+            trim($this->formatter->cleanInstruction("TACOS\n+ Cheddar (+0,90 €)", 'Tacos', []))
+        );
+    }
+
     public function test_les_options_de_frites_de_la_formule_ne_disparaissent_plus(): void
     {
         // « Grande Portion » et « Cheddar Fondu » sont des gestes de CUISINE : elles ne

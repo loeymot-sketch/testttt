@@ -249,8 +249,14 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
     public function test_clean_instruction_strips_price_annotations(): void
     {
         // Cuisine = ZÉRO prix, quel que soit le format : (+2,00 €), (+2,50), (+€1.00).
-        $this->assertSame('+ Boisson Seule', $this->f->cleanInstruction("TACOS M\n+ Boisson Seule (+2,00 €)", 'Tacos M'));
+        // [OWNER 2026-08-19] L'échantillon était « + Boisson Seule » : depuis que le badge REND
+        // les formules revendiquées (MENU / FRITES / BOISSON), cette ligne-là est retirée des
+        // notes — la garder l'afficherait deux fois (constaté sur la commande réelle 5135).
+        // On garde ici un supplément PAYANT, qui reste bien une note : c'est le retrait du PRIX
+        // que ce test verrouille, pas la survie d'une revendication de formule.
+        $this->assertSame('+ Cheddar', $this->f->cleanInstruction("TACOS M\n+ Cheddar (+2,00 €)", 'Tacos M'));
         $this->assertSame('+ Extra', $this->f->cleanInstruction("X\n+ Extra (+2,50)", 'X'));
+        $this->assertSame('', $this->f->cleanInstruction("TACOS M\n+ Boisson Seule (+2,00 €)", 'Tacos M'), 'rendue par le badge BOISSON');
         // € AVANT le nombre + décimale point (vrai cas commande #4509).
         $out = $this->f->cleanInstruction("TACOS\nViandes : Poulet Sauce : Algérienne\n↳ Grande Portion (+€1.00)\n↳ Cheddar Fondu (+€1.00)", 'Tacos');
         $this->assertStringNotContainsString('€', $out, 'aucun € en cuisine');
