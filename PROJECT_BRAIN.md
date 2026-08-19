@@ -121,10 +121,55 @@ Plateforme restaurant fast-food complète :
 > (6 branches) · diff zones gelées limité aux 2 fichiers sous LOCK, empreintes SHA-256 réalignées.
 > Dérogation : `plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md`.
 >
+> **VAGUE 2 — red-team adverse de MES PROPRES correctifs (3 enquêtes parallèles).**
+> Cinq défauts que j'avais introduits, plus deux gains de performance mesurés.
+>
+> · **P1 — annuler une commande PRÊTE remettait la marchandise en stock.** Conséquence
+>   directe de l'ouverture PREPARED→CANCELED : le stock part à la CRÉATION, et
+>   l'annulation le restituait sans regarder d'où l'on venait. Prouvé sur #6598
+>   (`delta=+1 order_canceled` 51 min APRÈS le bip « Prêt ») ; 252 unités fantômes sur
+>   les 109 commandes PRÊTES. `OrderCanceled` porte désormais le statut quitté ; au-delà
+>   de PREPARED on ne restitue rien et on inscrit une PERTE (`StockOutflow::TYPE_WASTE`).
+>   Le LOCK a été corrigé (§4bis) : il affirmait à tort qu'aucune protection n'était
+>   retirée — il manquait cette **compensation**, qui n'est pas une garde.
+> · **P1 — suite ROUGE non détectée** : je n'avais lancé que des répertoires ciblés.
+>   `CleanupAbandonedKioskCounterOrderTest` épinglait la règle abolie. Corrigé, plus
+>   2 commentaires et une chaîne écrite EN BASE DE LOGS qui la répétaient.
+> · **P1 — la note du caissier pouvait faire disparaître une ligne de la cuisine.** Mon
+>   repli de formule faisait confiance à TOUTE ligne « + » ; la note libre est un
+>   `<textarea>` multi-lignes. Une note « + Frites » faisait disparaître les vraies
+>   frites — facturées, jamais préparées. On ne lit plus que ce qui précède le crochet.
+> · **P1 — l'autocomplétion d'adresse était rognée** par mon en-tête défilant (un
+>   `position:absolute` ne s'échappe pas d'un ancêtre qui défile). Livraison exemptée.
+> · **P2** — `overflow-x` non déclaré sur l'en-tête (le jumeau oublié le jour même) ·
+>   garde d'ajout en 1 appui lisant la charge NORMALISÉE au lieu de la brute · « X aujourd'hui »
+>   mentant entre minuit et 5 h · doublon de formule subsistant sur le layout KDS legacy
+>   et le tiroir historique.
+>
+> **PERFORMANCE (mesurée, pas estimée)**
+> · `GET admin/item` (ouverture de caisse) : **1692 → 602 requêtes SQL (−64 %)**,
+>   **1847 → 1006 ms (−46 %)**, corps de réponse IDENTIQUE à l'octet près. N+1 sur
+>   allergens/variations/extras/addons/offer/orders-count, non pré-chargés.
+> · **Les animations du panier ne se déclenchaient JAMAIS** — littéralement la plainte
+>   « pas dynamique ». Watcher `deep` sur un getter qui renvoie `state.lists` lui-même :
+>   Vue passait la MÊME référence en ancien et nouveau, la condition était impossible.
+>   Passé sur une valeur scalaire ; c'était le SEUL watcher `deep` de l'arbre POS, son
+>   retrait neutralise en prime un risque de récursion invisible en production.
+> · Badge stock faible : 12 requêtes/min pour un indicateur qui évolue en heures →
+>   auto-bridage 60 s (l'écran envoyait 62 req/min pour un plafond de 120/appareil).
+>
+> **Validation massive** : le repli de formule passé sur **3353 commandes réelles** —
+> 22 impactées, 22 lignes repliées, **0 repli sans revendication légitime** (contrôle
+> indépendant du code testé). Ticket CLIENT (fiscal) vérifié intact : la ligne
+> « Menu 2,50 € » y figure toujours, somme des lignes = total.
+>
 > **Reste ouvert (à arbitrer)** : les commandes non terminées ANTÉRIEURES à la journée de service
 > restent invisibles au tableau (857 au diagnostic) — filtre « en souffrance » à créer ;
 > `pos-refund` n'est pas accordé au rôle POS Operator (refus délibéré) : sous un compte caissier,
-> annuler une commande PAYÉE renverra un 403.
+> annuler une commande PAYÉE renverra un 403 ; 35 des 109 commandes prêtes sont scellées dans un
+> Z clos et resteront inannulables (NF525 correct) — le bouton devrait y céder la place à
+> « Rembourser » ; la cuisine n'est prévenue par AUCUN signal quand une commande prête est
+> annulée (le plat reste sur le passe).
 
 > **2026-08-17 — P0 KDS : écran cuisine figé en vide dès la 1ère commande (Teleport Vue) — CORRIGÉ, NON COMMITÉ**
 >
