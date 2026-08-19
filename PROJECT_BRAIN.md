@@ -47,6 +47,60 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-19 (nuit) — DÉPLOYÉ SUR LE VPS ET VÉRIFIÉ SUR LE CONTENU SERVI**
+>
+> HEAD déployé **`ab8b7af6f`** (merge). Push en **avance rapide** `3895ca84e..ab8b7af6f`,
+> 9 commits, aucun historique réécrit, aucun `--force`.
+> Porte franchie avant le push : suite `tests/Feature` COMPLÈTE — **4819 verts, 36 ignorés,
+> 8 échecs, exactement les 8 PRÉEXISTANTS documentés** (RolePermissionSeeder ×3, Printer ×4,
+> IdempotencyRequiredRoutes ×1). Aucun 9ᵉ.
+>
+> **La branche avait DIVERGÉ** : `origin` portait 32 commits de supervision (fidélité, apps
+> App Store/Google Play, RGPD, connexion Apple/Google) déjà poussés ET déployés, dont
+> `57c17f8f` qui n'était PAS un ancêtre de notre HEAD. Fusion plutôt que push, un seul conflit
+> (`PROJECT_BRAIN.md §2`, les deux camps l'avaient écrit le même soir) résolu en gardant les
+> DEUX blocs. Relire `git log origin/<branche>..HEAD` juste avant de pousser a évité un
+> `--force` qui aurait effacé 32 commits en production.
+>
+> **LE DÉPLOIEMENT A ÉCHOUÉ AU PREMIER ESSAI, ET LE ROLLBACK A FONCTIONNÉ.**
+> `npm run production` sur le VPS : `Cannot find module 'caniuse-lite/dist/unpacker/agents'`.
+> Cause réelle : un `npm ci` interrompu avait laissé `node_modules/caniuse-lite/dist/unpacker/`
+> avec 2 fichiers sur 7 (`index.js`, `region.js` — `agents.js` et 4 autres manquants). Le script
+> masquait le symptôme : `npm ci … >/dev/null 2>&1 || npm install >/dev/null 2>&1` envoie TOUTE
+> la sortie au néant, et `npm install` ne répare pas un paquet qu'il croit déjà installé.
+> **Diagnostic fait dans un `git worktree` isolé sur le VPS** (node_modules en lien symbolique,
+> `.env` copié) : la panne a été reproduite SANS jamais toucher la production, qui est restée
+> en 200 tout du long. `npm ci` relancé avec sortie visible → 1137 paquets, exit 0, build isolé
+> vert, puis déploiement réel rejoué. **À retenir : une sortie envoyée à `/dev/null` dans un
+> script de déploiement transforme une panne d'environnement en mystère.**
+>
+> **PREUVES SUR LE CONTENU SERVI** (jamais depuis un `git push`) : bundle KDS servi
+> `admin-kds.1b14127a.js` (18:12) — contient `boisson|drink` (badge de formule) ET
+> `K:2,P:2,Nug:4,Tender:3` (portions), l'ancien `K:2,P:1,Nug:4` à **0 occurrence** ; on sonde
+> des littéraux, jamais des identifiants (le prod minifie). Migration
+> `align_poulet_marine_piece_weight` DONE. Triggers NF525 10/10, `CHAIN OK`. `/api/healthz`,
+> `/kiosk/idle`, `/login`, `/kds`, `/admin/pos` → 200. CORS web OK. Instantané SQL pris avant
+> `migrate --force` (`predeploy-20260819-181007.sql.gz`, 1,4 Mo).
+> Badge vérifié sur les VRAIES commandes de production (179 en portent une) :
+> `MENU : MAY`, `MENU : AND`, `MENU : CURY`, `MENU`, `FRITES` — toutes n'affichaient RIEN avant.
+>
+> 🔴 **DÉCOUVERTE MAJEURE À REMONTER À L'OWNER — 7 VIANDES SUR 10 NE SONT PAS DÉCOMPTÉES DU
+> STOCK EN PRODUCTION.** `stock:ensure-meat-materials --dry-run` (lecture seule) :
+> « 7 création(s), 0 alignement(s) » — **Poulet mariné, Mexicanos, Tenders, Nuggets, Fricadelle,
+> Chicken burger, Poisson pané** n'existent PAS dans `raw_materials`. Seules `Viande hachée`
+> (75 g), `Cordon bleu` et `Portion frites` sont réellement consommées. Ce n'est PAS silencieux
+> (`matiere_absente` + `Log::warning` à chaque vente) — personne ne lisait ces journaux.
+> État PRÉEXISTANT, sans rapport avec les lots du jour, et NON aggravé : le doublement des
+> pièces de poulet n'a donc AUCUN effet sur le stock réel, et la migration a été un no-op en
+> prod (la ligne n'existe pas). Le seul mouvement de stock produit par ce déploiement est celui
+> demandé par l'owner : **cordon bleu 2 → 1 sur les bols**.
+> ⛔ `stock:ensure-meat-materials` **N'A PAS** été lancée sans `--dry-run` : créer ces 7 matières
+> mettrait en route, en production, un décompte de stock qui n'existe pas aujourd'hui. C'est une
+> décision métier de l'owner, pas une étape de déploiement.
+> Note : la base LOCALE, elle, PORTE « Poulet mariné » (créée le 2026-08-06). **Local et prod ont
+> divergé sur les matières premières** — c'est pour ça que rien ne l'avait signalé.
+
+
 > **2026-08-19 (soir) — GOAL owner 2 points : la formule redevient visible en cuisine + portions de viande**
 >
 > HEAD `eca082572`, branche `pos/category-first-caisse-2026-06-23`. **4 commits LOCAUX, aucun push.**
