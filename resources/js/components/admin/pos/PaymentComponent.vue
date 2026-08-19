@@ -138,16 +138,38 @@
                             {{ $t('pos.no_terminal_configured_hint') || 'Aucun TPE actif sur cette filiale. Ajoutez-en un depuis Paramètres → Terminaux de paiement avant d’encaisser par carte.' }}
                         </p>
                     </div>
-                    <div class="mb-3">
-                        <label for="cardInput" class="pos-v5-payment-input-label">{{ $t('label.enter_card_last_4_digits') }}</label>
-                        <input
-                            id="cardInput"
-                            ref="cardInput"
-                            type="number"
-                            class="pos-v5-payment-input pos-v5-tabular"
-                            required
-                        />
-                    </div>
+                    <!--
+                      [LOCK-PAY-NO-CARD4 2026-08-19, owner-gated] Le champ
+                      « Saisir les 4 derniers chiffres de la carte » a été retiré.
+
+                      Le patron : « je veux qu'en cliquant sur Carte bleue ça passe
+                      DIRECTEMENT, sans taper 4 chiffres ».
+
+                      Vérifié avant retrait — ces 4 chiffres ne servaient à rien :
+                        · aucune validation métier : la règle backend est
+                          `nullable|numeric|min_digits:4|max_digits:4`
+                          (PosOrderRequest) — un contrôle de FORME seul, « 0000 »
+                          passait ; aucun appel TPE, aucun rapprochement bancaire ;
+                        · aucune trace fiscale : `pos_payment_note` n'apparaît nulle
+                          part dans app/Services/Fiscal/, ni dans la ligne
+                          `audit_logs` `order.created.pos`, ni dans la ventilation
+                          du Z (qui ventile sur `pos_payment_method`) ;
+                        · le serveur les accepte VIDES depuis le 2026-08-05
+                          (sentinelle PosCardDeclarativeNoNoteTest : vente carte
+                          sans note ⇒ 201). L'encaissement carte est DÉCLARATIF par
+                          mandat propriétaire, le TPE étant physique et externe.
+                      Le rituel était donc purement visuel — un reliquat du template
+                      d'origine (bloc importé le 2026-03-06).
+
+                      Ce qui reste scellé et intact : `orders.pos_payment_method`
+                      = CARD, `fiscal_sequence_no`, la ligne d'audit chaînée HMAC.
+                      `collectPaymentInputPatch` retombe seule sur "" en l'absence
+                      de la ref (`this.$refs.cardInput?.value`), converti en NULL par
+                      ConvertEmptyStringsToNull → la règle `nullable` s'applique.
+                      NE PAS retirer `min_digits:4|max_digits:4` côté backend : la
+                      sentinelle PosCardDeclarativeNoNoteTest verrouille le contrat
+                      « si fournie, exactement 4 chiffres ».
+                    -->
                 </div>
 
                 <!--
@@ -155,9 +177,17 @@
                   Émissions @input(value) / @back / @clear sont raccordées aux
                   méthodes existantes numpadInput / numpadBack / numpadClear.
                 -->
+                <!--
+                  [LOCK-PAY-NO-CARD4 2026-08-19, owner-gated] Pavé numérique
+                  restreint au mode ESPÈCES. En mode CARTE il ne pilotait que le
+                  champ « 4 derniers chiffres », désormais supprimé : sans cette
+                  restriction il resterait affiché sans cible et `numpadInput`
+                  écrirait dans le vide — et surtout il continuerait à suggérer au
+                  caissier qu'une saisie est attendue.
+                -->
                 <div
                     class="pos-v4-numpad pos-v5-payment-numpad-wrap mb-4"
-                    v-if="paymentMode === 'cash' || paymentMode === 'card'"
+                    v-if="paymentMode === 'cash'"
                 >
                     <PosV5Numpad
                         aria-label="Pavé numérique"
@@ -446,9 +476,25 @@ export default {
         // legacy single-tender CARD path. Backend PosOrderRequest:114-119
         // rejects without `terminal_id` ⇒ surface the requirement client-side
         // to avoid a 422 round-trip + confusing error toast.
+        /**
+         * [LOCK-PAY-NO-CARD4 2026-08-19, owner-gated] Le bouton « Confirmer » n'est
+         * plus jamais désactivé en mode CARTE.
+         *
+         * Il exigeait la sélection d'un TPE actif. Or ce verrou ne protégeait rien :
+         * le chemin mono-règlement JETTE `terminal_id` (aucune occurrence dans
+         * OrderService ; seul SplitPaymentService persiste `order_payments
+         * .terminal_id`), et le backend a explicitement retiré cette exigence le
+         * 2026-08-10 — sentinelle PosCardSaleWithoutTerminalTest : « sans aucun TPE
+         * la vente passe quand même ». En revanche, si `GET admin/payment-terminals`
+         * renvoyait une liste vide (TPE désactivé, appel en échec), le bouton
+         * devenait MORT sans explication et la caisse ne pouvait plus encaisser par
+         * carte du tout. C'est le contraire du besoin exprimé.
+         *
+         * Le sélecteur de TPE et son bandeau d'avertissement restent affichés pour
+         * la traçabilité ; ils informent, ils ne bloquent plus.
+         */
         canConfirmCard: function () {
-            if (this.paymentMode !== 'card') return true;
-            return this.selectedTerminalId !== null && Number(this.selectedTerminalId) > 0;
+            return true;
         },
     },
     mounted() {

@@ -68,10 +68,43 @@ final class OrderStateMachine
                     return true;
                 }
 
+                // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19, owner-gated] Le patron :
+                // « je n'arrive pas à annuler les commandes passées il y a quelques
+                // heures, je veux pouvoir les annuler si je veux ».
+                //
+                // Diagnostic terrain : le cuisinier bipe « Prêt » au bout d'environ
+                // dix minutes ; la commande passait alors en PREPARED, d'où plus
+                // AUCUNE arête vers CANCELED — pas même pour un Admin (le bypass
+                // Admin plus bas ne couvre que les statuts DÉJÀ terminaux). Et le
+                // bouton Annuler restait affiché sur la voie « Prêts à servir » du
+                // suivi commandes : le clic échouait en 422 « transition invalide ».
+                // Un plat prêt mais jamais retiré (client parti, commande fantôme)
+                // restait donc bloqué à l'écran pour toujours.
+                //
+                // Ouvrir cette arête ne retire AUCUNE protection : les trois gardes
+                // qui comptent vivent en aval et restent inchangées —
+                //   1. motif obligatoire            (self::requiresReason + OrderService)
+                //   2. permission `pos-refund` si la commande est déjà PAYÉE
+                //      (PosOrderController::changeStatus — de l'argent bouge)
+                //   3. SealedOrderGuard : refus absolu si la commande est scellée
+                //      dans un Z clôturé (NF525 — jamais de mutation en place,
+                //      seule la contrepassation tracée est permise)
+                //
+                // DELIVERED reste volontairement fermé : « livrée » signifie remise
+                // au client, sa seule sortie légitime est RETURNED (remboursement
+                // tracé). Ne pas l'ouvrir.
+                if ($to === OrderStatus::CANCELED) {
+                    return true;
+                }
+
                 return in_array($to, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED], true);
 
             case OrderStatus::OUT_FOR_DELIVERY:
-                return $to === OrderStatus::DELIVERED;
+                // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19, owner-gated] Même
+                // motif que PREPARED ci-dessus : une course annulée (livreur
+                // rentré bredouille, adresse introuvable) doit pouvoir être
+                // fermée. Gardes aval identiques et inchangées.
+                return in_array($to, [OrderStatus::DELIVERED, OrderStatus::CANCELED], true);
 
             case OrderStatus::DELIVERED:
                 return $to === OrderStatus::RETURNED;

@@ -34,12 +34,19 @@ class OrderStateMachineTest extends TestCase
             'preparing → prepared'        => [OrderStatus::PREPARING, OrderStatus::PREPARED],
             'preparing → canceled'        => [OrderStatus::PREPARING, OrderStatus::CANCELED],
 
-            // PREPARED → {OUT_FOR_DELIVERY, DELIVERED}
+            // PREPARED → {OUT_FOR_DELIVERY, DELIVERED, CANCELED}
             'prepared → out_for_delivery' => [OrderStatus::PREPARED, OrderStatus::OUT_FOR_DELIVERY],
             'prepared → delivered'        => [OrderStatus::PREPARED, OrderStatus::DELIVERED],
+            // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19, owner-gated] Voir le bloc
+            // de commentaire dans OrderStateMachine::allows() case PREPARED.
+            // Terrain : le cuisinier bipe « Prêt » en ~10 min, après quoi le
+            // patron ne pouvait PLUS JAMAIS annuler — alors que le bouton
+            // Annuler restait affiché sur la voie « Prêts à servir ».
+            'prepared → canceled'         => [OrderStatus::PREPARED, OrderStatus::CANCELED],
 
-            // OUT_FOR_DELIVERY → DELIVERED
+            // OUT_FOR_DELIVERY → {DELIVERED, CANCELED}
             'out_for_delivery → delivered' => [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED],
+            'out_for_delivery → canceled'  => [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::CANCELED],
 
             // DELIVERED → RETURNED
             'delivered → returned'        => [OrderStatus::DELIVERED, OrderStatus::RETURNED],
@@ -195,8 +202,16 @@ class OrderStateMachineTest extends TestCase
 
     public function test_legal_transitions_matrix_contains_exactly_expected_count(): void
     {
-        // 11 legal non-identity pairs in V1. If this changes, docs/ORDER_FLOW.md must change too.
-        $this->assertCount(11, OrderStateMachine::legalTransitions());
+        // 13 legal non-identity pairs. If this changes, docs/ORDER_FLOW.md must change too.
+        //
+        // Historique du cliquet :
+        //   11 → 13 le 2026-08-19 [LOCK-OSM-CANCEL-AFTER-READY, owner-gated] :
+        //   ajout de PREPARED→CANCELED et OUT_FOR_DELIVERY→CANCELED. Motif terrain :
+        //   une commande devenait inannulable dès que la cuisine la déclarait prête
+        //   (~10 min), alors que le bouton Annuler restait affiché sur le suivi
+        //   commandes. Les gardes aval (motif obligatoire, permission `pos-refund`
+        //   si payée, SealedOrderGuard si scellée dans un Z clos) sont inchangées.
+        $this->assertCount(13, OrderStateMachine::legalTransitions());
     }
 
     public function test_all_statuses_returns_nine_v1_states(): void

@@ -1064,6 +1064,7 @@ export default {
     },
     mounted() {
         try { this._baseDocTitle = document.title || ''; } catch (_e) { /* SSR/test */ }
+        this._collapseSidebar();
         this.fetchOrders();
         this._subscribeEcho();
         this._bindWsService();
@@ -1089,6 +1090,27 @@ export default {
         this._notifiedOrderIds.clear();
     },
     methods: {
+        /**
+         * [T-SUIVI-LAYOUT 2026-08-19 · GOAL owner] Replie la barre latérale admin,
+         * exactement comme le fait déjà la caisse plein écran
+         * (`PosComponent.closeSidebar`, PosComponent.vue:4920).
+         *
+         * Ce tableau est un écran d'exploitation affiché en continu au comptoir :
+         * la navigation admin n'y sert à rien et lui volait 260 px de largeur, soit
+         * une voie entière sur cinq. C'était le premier facteur du « je dois
+         * scroller à gauche et à droite » — mesuré en direct : 1728 px de fenêtre
+         * mais seulement 1388 px pour la grille.
+         *
+         * Non restauré au démontage : c'est le comportement déjà en place côté
+         * caisse, et l'utilisateur peut rouvrir la barre d'un clic sur le menu.
+         */
+        _collapseSidebar() {
+            try {
+                this.$store.dispatch('globalState/set', { topSidebar: false });
+                document?.querySelector('.db-sidebar')?.classList?.add('active');
+                document?.querySelector('.db-main')?.classList?.add('expand');
+            } catch (_e) { /* défensif : jamais bloquer le chargement du tableau */ }
+        },
         authBranchId() {
             const candidates = [
                 this.$store.getters['auth/authBranchId'],
@@ -2090,19 +2112,16 @@ export default {
        grid at 4 cols; with the new on-the-way lane the cashier keeps
        full caisse-to-delivered visibility on a single screen. Wide
        breakpoints unchanged for laptops & vertical caisse displays. */
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 14px;
+    /* [T-SUIVI-LAYOUT 2026-08-19 · GOAL owner] `auto-fit` mesure la place RÉELLE
+       du conteneur, là où les media queries mesuraient le VIEWPORT — écart de
+       340 px sur cette route (barre latérale 260 px + marges), donc à 1481 px la
+       règle réclamait 5 voies dans 1141 px, soit 217 px chacune, illisibles ; et à
+       1366 px elle repassait à 3 voies, renvoyant « EN LIVRAISON » et « LIVRÉS »
+       sur une 2e rangée hors écran — exactement la plainte terrain. Les trois
+       media queries deviennent inutiles : `minmax` fait le travail à toute taille. */
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    gap: 12px;
     align-items: start;
-}
-
-@media (max-width: 1480px) {
-    .pos-tracker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 1100px) {
-    .pos-tracker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 720px) {
-    .pos-tracker-grid { grid-template-columns: 1fr; }
 }
 
 .pos-tracker-col {
@@ -2205,6 +2224,13 @@ export default {
 .pos-tracker-col-body {
     padding: 10px;
     overflow-y: auto;
+    /* [T-SUIVI-LAYOUT 2026-08-19] `overflow-x` DOIT être déclaré. La spec CSS
+       Overflow 3 impose qu'un axe laissé à `visible` face à un axe non-`visible`
+       soit recalculé en `auto` : sans cette ligne, cette voie était elle-même un
+       défileur horizontal — la vraie origine du « scroller à gauche et à droite »
+       (le `overflow:hidden` de `.pos-tracker-col` est une couche AU-DESSUS et ne
+       protégeait pas d'ici). Le contenu s'adapte maintenant en largeur. */
+    overflow-x: hidden;
     overscroll-behavior: contain;
 }
 
@@ -2557,8 +2583,19 @@ export default {
     color: var(--pos-tracker-text);
 }
 
+/* [T-SUIVI-LAYOUT 2026-08-19 · GOAL owner] « je dois scroller à gauche et à
+   droite pour voir une commande ».
+   CAUSE MESURÉE en direct (viewport 1728 px, barre latérale dépliée à 260 px,
+   5 voies de 266 px) : cette rangée de boutons faisait 218 px pour 215 px
+   disponibles — et `nowrap` + `min-width:auto` par défaut sur un item flex la
+   rendaient INCOMPRESSIBLE. Sur une carte de commande web (sélecteur de temps de
+   préparation ~90 px + « Ticket promo » ~105 px + « Accepter » ~105 px + 3 icônes)
+   le débordement dépasse 150 px. Elle passe désormais à la ligne. */
 .pos-tracker-card-actions {
-    display: inline-flex;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
     gap: 6px;
 }
 
