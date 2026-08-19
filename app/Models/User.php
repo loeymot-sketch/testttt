@@ -145,6 +145,29 @@ class User extends Authenticatable implements HasMedia
         return $this->roles->pluck('id', 'id')->first();
     }
 
+    /**
+     * [APPS 2026-08-19] Le numéro auquel on peut RÉELLEMENT joindre ce client.
+     *
+     * Deux colonnes, deux rôles, et il ne faut pas les confondre :
+     *   · `phone`         — le numéro qui sert de CLÉ d'identité (recherche de compte,
+     *                       choix du canal d'envoi du code). Il vaut `PENDING_…` quand le
+     *                       compte a été créé sans numéro.
+     *   · `contact_phone` — le numéro DÉCLARÉ après une connexion Apple ou Google, jamais
+     *                       prouvé, et qui ne donne accès à rien (voir la migration
+     *                       2026_08_19_140000 pour la raison).
+     *
+     * Pour la caisse et la cuisine, la question n'est pas « quelle est son identité » mais
+     * « quel numéro je compose si sa commande pose problème ». C'est ce que renvoie cette
+     * méthode : le numéro prouvé s'il existe, sinon le numéro déclaré, sinon rien — et
+     * JAMAIS une sentinelle `PENDING_…`, qui n'est pas un numéro et n'a rien à faire sous
+     * les yeux d'un caissier.
+     */
+    public function numeroJoignable(): ?string
+    {
+        return \App\Support\PhoneDisplay::safe($this->phone)
+            ?? \App\Support\PhoneDisplay::safe($this->contact_phone);
+    }
+
     public function getrole(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Role::class, 'id', 'myrole');

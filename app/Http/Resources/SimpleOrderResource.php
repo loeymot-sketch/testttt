@@ -206,7 +206,11 @@ class SimpleOrderResource extends JsonResource
             return $telCommande;
         }
 
-        return $this->isAggregatorAnchoredOrder() ? null : $this->user?->phone;
+        // [APPS 2026-08-19] `numeroJoignable()` : inclut le numéro DÉCLARÉ des comptes
+        // ouverts par connexion Apple/Google (qui n'ont pas de numéro d'identité), et ne
+        // laisse plus passer la sentinelle `PENDING_…` — laquelle remontait ici telle
+        // quelle, jusque dans les listes vues en caisse.
+        return $this->isAggregatorAnchoredOrder() ? null : $this->user?->numeroJoignable();
     }
 
     private function resolveItemsForTracker(): array

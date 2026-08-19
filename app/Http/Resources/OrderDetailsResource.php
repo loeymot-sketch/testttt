@@ -103,7 +103,11 @@ class OrderDetailsResource extends JsonResource
             'user' => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
-                'phone' => \App\Support\PhoneDisplay::safe($this->user->phone),
+                // [APPS 2026-08-19] `numeroJoignable()` et non `phone` : un compte ouvert
+                // par connexion Apple/Google n'a pas de numéro d'identité (il porte une
+                // sentinelle) mais a bien un numéro DÉCLARÉ, qui est justement celui qu'il
+                // faut composer si la commande pose problème. Masque toujours la sentinelle.
+                'phone' => $this->user->numeroJoignable(),
                 'loyalty_points' => (int) ($this->user->loyalty_points ?? 0),
             ] : null,
             'order_address' => new AddressResource($this->address),
@@ -137,7 +141,11 @@ class OrderDetailsResource extends JsonResource
             // anti « commande nulle »). Un client consultant SA propre commande voit son propre contact
             // (aucune fuite). La saisie caisse explicite (téléphone/comptoir) reste prioritaire.
             'pos_customer_name' => $this->pos_customer_name ?: (($this->source_surface === 'web') ? $this->user?->name : null),
-            'pos_customer_phone' => $this->pos_customer_phone ?: (($this->source_surface === 'web') ? $this->user?->phone : null),
+            // [APPS 2026-08-19] `numeroJoignable()` : couvre le numéro déclaré des comptes
+            // ouverts par connexion Apple/Google, ET cesse d'exposer au caissier la
+            // sentinelle `PENDING_…` — qui s'affichait telle quelle ici, faute d'être
+            // passée par le filtre d'affichage.
+            'pos_customer_phone' => $this->pos_customer_phone ?: (($this->source_surface === 'web') ? $this->user?->numeroJoignable() : null),
             'source' => $this->source,
             // [GOAL-CAISSE-UNIFIED W-ENC 2026-05-30] Origin signal for the
             // unified /admin/encaissement queue badge (Borne='kiosk',
