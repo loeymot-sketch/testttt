@@ -117,6 +117,55 @@ Aucun changement backend n'a été nécessaire.
 
 ---
 
+## 4bis. CORRECTION DU PRÉSENT DOCUMENT — un 4ᵉ effet avait été manqué
+
+> Ajouté le 2026-08-19 après un red-team adverse de ce LOCK et du diff qu'il couvre.
+> La section 5 ci-dessous affirmait « ouvrir cette arête ne retire AUCUNE protection ».
+> **C'était incomplet.** Les trois gardes citées sont bien intactes, mais il existait un
+> quatrième effet — non pas une garde, une **compensation** — que l'analyse initiale
+> n'avait pas vu.
+
+**Le stock d'un plat DÉJÀ CUISINÉ était restitué.**
+
+Le stock part à la CRÉATION de la commande (`DecrementStockOnOrderCreated` sur
+`OrderCreated`). L'annulation dispatchait `OrderCanceled` **inconditionnellement**, et
+trois écouteurs rendaient tout sans jamais regarder le statut de départ :
+`ReleaseStockOnOrderCanceled`, `ReleaseAvailabilityOnOrderCanceled`,
+`ReverseRawMaterialsOnOrderCanceled`.
+
+Tant que l'annulation n'était possible qu'AVANT « prêt », c'était juste : rien n'était
+encore transformé. Depuis l'ouverture de PREPARED→CANCELED, le pain, la viande et la
+sauce d'un plat que la cuisine a déclaré prêt revenaient au stock — `on_hand` remontait
+et la disponibilité se **ré-ouvrait** : la caisse et la borne proposaient un produit qui
+n'existe plus.
+
+Preuve, commande réelle **#6598** (celle-là même qui prouve le §6.1) :
+
+```
+stock_movements ref=6598 :
+   delta=-1 reason=order_created   2026-08-19 08:50:33
+   delta=+1 reason=order_canceled  2026-08-19 09:41:19   ← 51 min APRÈS le bip « Prêt »
+```
+
+Ampleur mesurée : **252 unités** fantômes sur les 109 commandes PRÊTES en base.
+
+**Correctif appliqué** (commit `2853dab49`) : `OrderCanceled` porte désormais le statut
+quitté (`?int $fromStatus`, facultatif). Au-delà de PREPARED, on ne restitue **rien** et
+on inscrit une **perte** (`StockOutflow::TYPE_WASTE`, `stock_decremented = true`) — le
+stock reste physiquement juste ET l'annulation garde une trace chiffrable dans le
+grand-livre. Les 8 autres sites de dispatch ne transmettent pas le statut : leur
+comportement historique est strictement conservé.
+
+Seuil retenu : **PREPARED**, pas PREPARING — il correspond exactement aux deux arêtes
+ouvertes par ce LOCK. Annuler depuis ACCEPT ou PREPARING restitue le stock comme avant.
+
+**Leçon à retenir** : une garde n'est pas la seule chose qu'une arête de transition peut
+concerner. Une **compensation** (rendre le stock, reprendre des points, sortir de
+l'argent) est écrite en supposant un contexte ; élargir la machine à états change ce
+contexte sans toucher une seule ligne de la compensation.
+
+---
+
 ## 5. Ce qui n'a PAS été affaibli
 
 Les gardes qui protègent réellement l'argent et le fiscal sont **en aval** de la
