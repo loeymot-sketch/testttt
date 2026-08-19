@@ -138,6 +138,34 @@ class KitchenBundledAddonCollapserTest extends TestCase
         $this->assertSame(['1x Menu (Frites + Boisson)'], $this->libelles($out));
     }
 
+    /**
+     * [RED-TEAM 2026-08-19] SÛRETÉ — la note libre du caissier ne doit JAMAIS pouvoir
+     * faire disparaître une ligne du ticket cuisine.
+     *
+     * La note est un `<textarea>` multi-lignes, écrite EN DERNIER entre crochets. Avant
+     * correctif, une note dont une ligne commençait par « + » produisait une revendication
+     * fantôme : la ligne « Frites » réellement commandée disparaissait du ticket tout en
+     * restant facturée. Le client payait des frites que personne ne préparait.
+     */
+    public function test_surete_une_note_libre_ne_masque_pas_une_vraie_ligne(): void
+    {
+        $sandwich = $this->sandwich(1, self::INSTRUCTION_PARENT."\n[+ Frites\nMerci]");
+        $frites = $this->ligne('Frites', 1, 'FRITES');
+
+        $out = $this->collapser()->collapse([$sandwich, $frites]);
+
+        $this->assertSame(['1x Cayenne', '1x Frites'], $this->libelles($out));
+    }
+
+    public function test_la_revendication_legitime_fonctionne_malgre_une_note_libre(): void
+    {
+        $sandwich = $this->sandwich(1, self::INSTRUCTION_PARENT."\n[sans oignons]");
+
+        $out = $this->collapser()->collapse([$sandwich, $this->formule()]);
+
+        $this->assertSame(['1x Cayenne'], $this->libelles($out));
+    }
+
     public function test_valeurs_degenerees(): void
     {
         $this->assertSame([], $this->collapser()->collapse([]));

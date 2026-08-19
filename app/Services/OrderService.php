@@ -2681,7 +2681,11 @@ class OrderService
                 // ajouter RETURNED ne double-compte pas pour les commandes payées.
                 if (in_array($targetStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
                     try {
-                        OrderCanceled::dispatch($order); // allow: stock-release dispatch; AuditLogService::write already called above for order.cancelled / order.rejected.
+                        // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19] On transmet le statut QUITTÉ :
+                        // les écouteurs de restitution doivent savoir si la marchandise avait déjà
+                        // été transformée (annulation après « prêt ») — auquel cas on n'en rend rien
+                        // et on inscrit une perte. Voir OrderCanceled::materialAlreadyCommitted().
+                        OrderCanceled::dispatch($order, $oldStatusForBroadcast === null ? null : (int) $oldStatusForBroadcast); // allow: stock-release dispatch; AuditLogService::write already called above for order.cancelled / order.rejected.
                     } catch (\Exception $e) {
                         Log::warning('[OrderService] OrderCanceled on admin cancel failed: '.$e->getMessage()); // allow: warning only
                     }

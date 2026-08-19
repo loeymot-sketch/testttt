@@ -47,9 +47,24 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **2026-08-19 — GOAL owner « je prends des commandes sur le terrain » : 6 défauts caisse/cuisine corrigés, 8 commits, NON POUSSÉ**
+> **2026-08-19 — GOAL owner terrain caisse/cuisine : 6 défauts + 5 auto-infligés corrigés — DÉPLOYÉ**
 >
-> HEAD `b5fd9477c`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
+> HEAD `f53b3ee70`, branche `pos/category-first-caisse-2026-06-23` (part de `7ae8a9c4c`).
+> **13 commits poussés et DÉPLOYÉS sur le VPS** (`7ae8a9c4` → `f53b3ee7`) : instantané SQL pris,
+> `npm run production`, 0 migration, triggers NF525 10/10, `config:cache` volontairement sauté
+> (piège du secret fiscal), chaîne `CHAIN OK`, healthz/login/admin-pos en 200.
+> Déploiement prouvé sur le **CONTENU SERVI** — littéraux et classes CSS, jamais les noms de
+> fonctions (le build production les minifie) — plus une sonde PHP côté serveur : annulation
+> autorisée depuis PRÊTE et EN LIVRAISON, 13 transitions, garde stock ACTIVE.
+>
+> **Suite Feature complète : 4765 tests, 8 échecs — TOUS PRÉEXISTANTS**, prouvés en les rejouant
+> sur la base `7ae8a9c4c` dans un worktree (comptes identiques). Mes commits n'en introduisent
+> aucun. À traiter par ailleurs : `RolePermissionSeederTest` (3 erreurs),
+> `IdempotencyRequiredRoutesCoverageTest` (1), `PrinterController` + `PrinterHostAllowlist` (4).
+>
+> ⚠️ **Disque de la machine de dev à 100 %** pendant la session (885 Mo libres sur 460 Go) —
+> a fait échouer une création de worktree. 830 Mo de journaux Laravel tronqués ; le volume reste
+> tendu, à surveiller.
 > Méthode : reproduction en navigateur réel (`/admin/pos`, `/kds`, `/admin/pos-orders-tracker`),
 > vraies commandes passées et encaissées, mesures chiffrées avant/après. Aucun défaut n'a été
 > déclaré sans preuve exécutable.
@@ -120,6 +135,48 @@ Plateforme restaurant fast-food complète :
 > Delivery 50, Refund 33, Unit 139, **Sentinelles 364** · `fiscal:verify-chain --all` **CHAIN OK**
 > (6 branches) · diff zones gelées limité aux 2 fichiers sous LOCK, empreintes SHA-256 réalignées.
 > Dérogation : `plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md`.
+>
+> **VAGUE 2 — red-team adverse de MES PROPRES correctifs (3 enquêtes parallèles).**
+> Cinq défauts que j'avais introduits, plus deux gains de performance mesurés.
+>
+> · **P1 — annuler une commande PRÊTE remettait la marchandise en stock.** Conséquence
+>   directe de l'ouverture PREPARED→CANCELED : le stock part à la CRÉATION, et
+>   l'annulation le restituait sans regarder d'où l'on venait. Prouvé sur #6598
+>   (`delta=+1 order_canceled` 51 min APRÈS le bip « Prêt ») ; 252 unités fantômes sur
+>   les 109 commandes PRÊTES. `OrderCanceled` porte désormais le statut quitté ; au-delà
+>   de PREPARED on ne restitue rien et on inscrit une PERTE (`StockOutflow::TYPE_WASTE`).
+>   Le LOCK a été corrigé (§4bis) : il affirmait à tort qu'aucune protection n'était
+>   retirée — il manquait cette **compensation**, qui n'est pas une garde.
+> · **P1 — suite ROUGE non détectée** : je n'avais lancé que des répertoires ciblés.
+>   `CleanupAbandonedKioskCounterOrderTest` épinglait la règle abolie. Corrigé, plus
+>   2 commentaires et une chaîne écrite EN BASE DE LOGS qui la répétaient.
+> · **P1 — la note du caissier pouvait faire disparaître une ligne de la cuisine.** Mon
+>   repli de formule faisait confiance à TOUTE ligne « + » ; la note libre est un
+>   `<textarea>` multi-lignes. Une note « + Frites » faisait disparaître les vraies
+>   frites — facturées, jamais préparées. On ne lit plus que ce qui précède le crochet.
+> · **P1 — l'autocomplétion d'adresse était rognée** par mon en-tête défilant (un
+>   `position:absolute` ne s'échappe pas d'un ancêtre qui défile). Livraison exemptée.
+> · **P2** — `overflow-x` non déclaré sur l'en-tête (le jumeau oublié le jour même) ·
+>   garde d'ajout en 1 appui lisant la charge NORMALISÉE au lieu de la brute · « X aujourd'hui »
+>   mentant entre minuit et 5 h · doublon de formule subsistant sur le layout KDS legacy
+>   et le tiroir historique.
+>
+> **PERFORMANCE (mesurée, pas estimée)**
+> · `GET admin/item` (ouverture de caisse) : **1692 → 602 requêtes SQL (−64 %)**,
+>   **1847 → 1006 ms (−46 %)**, corps de réponse IDENTIQUE à l'octet près. N+1 sur
+>   allergens/variations/extras/addons/offer/orders-count, non pré-chargés.
+> · **Les animations du panier ne se déclenchaient JAMAIS** — littéralement la plainte
+>   « pas dynamique ». Watcher `deep` sur un getter qui renvoie `state.lists` lui-même :
+>   Vue passait la MÊME référence en ancien et nouveau, la condition était impossible.
+>   Passé sur une valeur scalaire ; c'était le SEUL watcher `deep` de l'arbre POS, son
+>   retrait neutralise en prime un risque de récursion invisible en production.
+> · Badge stock faible : 12 requêtes/min pour un indicateur qui évolue en heures →
+>   auto-bridage 60 s (l'écran envoyait 62 req/min pour un plafond de 120/appareil).
+>
+> **Validation massive** : le repli de formule passé sur **3353 commandes réelles** —
+> 22 impactées, 22 lignes repliées, **0 repli sans revendication légitime** (contrôle
+> indépendant du code testé). Ticket CLIENT (fiscal) vérifié intact : la ligne
+> « Menu 2,50 € » y figure toujours, somme des lignes = total.
 >
 > **Reste ouvert (à arbitrer)** : les commandes non terminées ANTÉRIEURES à la journée de service
 > restent invisibles au tableau (857 au diagnostic) — filtre « en souffrance » à créer ;
@@ -258,6 +315,10 @@ Plateforme restaurant fast-food complète :
 > **Piège de banc à ne pas repayer :** un worktree qui lie `vendor/` au checkout principal fait
 > résoudre `App\` par l'autoloader Composer vers l'ANCIEN code (mes correctifs PHP n'étaient pas
 > testés), et `.env.testing` manquant produit 3 faux échecs. Copier `vendor/` en dur + `.env.testing`.
+> annuler une commande PAYÉE renverra un 403 ; 35 des 109 commandes prêtes sont scellées dans un
+> Z clos et resteront inannulables (NF525 correct) — le bouton devrait y céder la place à
+> « Rembourser » ; la cuisine n'est prévenue par AUCUN signal quand une commande prête est
+> annulée (le plat reste sur le passe).
 
 > **2026-08-17 — P0 KDS : écran cuisine figé en vide dès la 1ère commande (Teleport Vue) — CORRIGÉ, NON COMMITÉ**
 >

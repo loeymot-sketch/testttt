@@ -119,6 +119,16 @@ function createVm(storeDispatch) {
     Object.entries(ItemComponent.methods).forEach(([name, fn]) => {
         vm[name] = fn.bind(vm);
     });
+    // [RED-TEAM 2026-08-19] Les computed doivent être câblés : l'ajout en un appui
+    // est conditionné par `canAddToCart`, précisément pour ne jamais produire un
+    // clic muet sur un produit devenu indisponible. Sans ce câblage, la valeur
+    // serait `undefined` et la spec testerait un chemin qui n'existe pas.
+    ['catalogItemAvailable', 'canAddToCart'].forEach((name) => {
+        Object.defineProperty(vm, name, {
+            get() { return ItemComponent.computed[name].call(vm); },
+            configurable: true,
+        });
+    });
     return vm;
 }
 
@@ -199,6 +209,83 @@ describe('POS ItemComponent — ouverture optimiste (feedback instantané)', () 
         expect(vm.wizardLoading).toBe(false);
         expect(vm.pendingItemId).toBe(null);
         expect(vm.$refs.itemVariationModal.classList.add).not.toHaveBeenCalledWith('active');
+    });
+
+    /**
+     * [RED-TEAM 2026-08-19] Charge dégradée : `normalizeLoadedItem` remplace tout champ
+     * absent/null/mal typé par `[]`. Si la garde lisait l'objet NORMALISÉ, un
+     * `item/details` en succès mais à forme inattendue (régression d'API, projection
+     * `surface=pos` fautive) ressemblerait à « produit sans option » et partirait au
+     * panier SANS viande, sans pain, sans sauce, en un appui et sans écran — le mode de
+     * panne exact du P0 borne du 2026-08-08. La garde lit donc la charge BRUTE.
+     */
+    it('charge dégradée (champs manquants) → le wizard s\'ouvre, aucun ajout aveugle', async () => {
+        const detail = {
+            id: 61, name: 'Produit à forme inattendue', offer: [],
+            convert_price: 7, currency_price: '7.00 EUR',
+            // itemAttributes / extras / addons ABSENTS de la réponse
+        };
+        const dispatch = vi.fn(() => Promise.resolve({ data: { data: detail } }));
+        const vm = createVm(dispatch);
+        vm.addToCart = vi.fn();
+
+        vm.variationModalShow({ id: 61 });
+        await flush();
+
+        expect(vm.addToCart, 'aucun ajout sur une charge dont on ne sait rien').not.toHaveBeenCalled();
+        expect(vm.$refs.itemVariationModal.classList.add).toHaveBeenCalledWith('active');
+    });
+
+    /**
+     * [RED-TEAM 2026-08-19] RÉGRESSION ÉVITÉE — un clic ne doit JAMAIS rester muet.
+     *
+     * La grille peut être périmée : la tuile annonce « disponible » alors que le
+     * détail frais dit le contraire (produit passé « 86 » pendant le service).
+     * Sans garde, l'ajout en un appui appelait `addToCart()`, qui commence par
+     * `if (!this.canAddToCart) return;` — et ne dit RIEN. Le caissier aurait tapé
+     * plusieurs fois sans comprendre pourquoi le produit ne descend pas.
+     * On retombe donc sur l'ouverture du wizard, qui porte le bandeau
+     * d'indisponibilité expliquant la situation.
+     */
+    it('sans option mais INDISPONIBLE → le wizard s\'ouvre (jamais de clic muet)', async () => {
+        const detail = {
+            id: 53, name: 'Sprite 33cl', offer: [], convert_price: 1.9, currency_price: '1.90 EUR',
+            itemAttributes: [], variations: {}, extras: [], addons: [],
+            is_available: false,
+        };
+        const dispatch = vi.fn(() => Promise.resolve({ data: { data: detail } }));
+        const vm = createVm(dispatch);
+        vm.addToCart = vi.fn();
+
+        vm.variationModalShow({ id: 53 });
+        await flush();
+
+        expect(vm.addToCart, 'aucun ajout silencieux').not.toHaveBeenCalled();
+        expect(
+            vm.$refs.itemVariationModal.classList.add,
+            'le wizard doit s\'ouvrir pour montrer le bandeau d\'indisponibilité'
+        ).toHaveBeenCalledWith('active');
+    });
+
+    /**
+     * [RED-TEAM 2026-08-19] Même garde pour un article à prix nul : `canAddToCart`
+     * exige `total_price > 0`. Le wizard s'ouvre, le bouton y est désactivé — le
+     * caissier voit au moins l'écran au lieu d'un clic sans effet.
+     */
+    it('sans option et à prix nul → le wizard s\'ouvre (jamais de clic muet)', async () => {
+        const detail = {
+            id: 54, name: 'Article offert', offer: [], convert_price: 0, currency_price: '0.00 EUR',
+            itemAttributes: [], variations: {}, extras: [], addons: [],
+        };
+        const dispatch = vi.fn(() => Promise.resolve({ data: { data: detail } }));
+        const vm = createVm(dispatch);
+        vm.addToCart = vi.fn();
+
+        vm.variationModalShow({ id: 54 });
+        await flush();
+
+        expect(vm.addToCart).not.toHaveBeenCalled();
+        expect(vm.$refs.itemVariationModal.classList.add).toHaveBeenCalledWith('active');
     });
 
     it('préchauffe : survol d’une tuile disponible déclenche un dispatch item/details', () => {

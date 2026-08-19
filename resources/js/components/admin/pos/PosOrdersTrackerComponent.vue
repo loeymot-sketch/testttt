@@ -35,7 +35,12 @@
                     >
                         🌐 {{ webActionableCount }} web à traiter
                     </button>
-                    <span>{{ stats.todayCount }} {{ $t('pos.tracker.today_total') }}</span>
+                    <!-- [RED-TEAM 2026-08-19] Libellé HONNÊTE. Depuis la fenêtre « journée de
+                         service », ce compteur couvre AUSSI la veille entre minuit et 5 h :
+                         annoncer « aujourd'hui » ferait mentir le nombre (140 commandes de la
+                         veille + 3 depuis minuit = « 143 aujourd'hui »). Le mot bascule dès que
+                         la fenêtre s'étend sur deux jours civils. -->
+                    <span>{{ stats.todayCount }} {{ windowSpansTwoDays ? $t('pos.tracker.service_total') : $t('pos.tracker.today_total') }}</span>
                     <!-- [CAISSE-HEALTH 2026-07-30] Santé système au cœur de la vue d'ensemble : l'opérateur
                          voit une dégradation temps réel/fiscale AVANT de perdre des commandes en silence. -->
                     <pos-system-health-pill />
@@ -781,6 +786,17 @@ export default {
         };
     },
     computed: {
+        /**
+         * [RED-TEAM 2026-08-19] La fenêtre de chargement couvre-t-elle DEUX jours civils ?
+         * Vrai uniquement entre minuit et l'heure de bascule du service — c'est là que le
+         * mot « aujourd'hui » deviendrait faux. Recalculé à chaque rendu, sans état stocké,
+         * donc jamais périmé au passage de 5 h.
+         */
+        windowSpansTwoDays() {
+            const bornes = serviceDayRange();
+
+            return bornes.from !== bornes.to;
+        },
         // [WEB-ORDER-ACCEPT 2026-07-30 · décision owner + parité PosComponent.canProcessWebOrders]
         // Le CTA « Accepter » d'une commande web POST vers online-order/change-status (gardé
         // `permission:online-orders`). On garde le bouton sur CETTE permission : sinon un rôle

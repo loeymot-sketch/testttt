@@ -45,6 +45,15 @@ class ReverseRawMaterialsOnOrderCanceled implements ShouldQueue
 
     public function handle(OrderCanceled $event): void
     {
+        // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19] Marchandise DÉJÀ transformée : on ne
+        // restitue RIEN. Le plat que la cuisine a déclaré prêt est à la poubelle, pas au
+        // frigo — le rendre ferait remonter `on_hand` et RÉ-OUVRIRAIT la disponibilité,
+        // donc la caisse et la borne proposeraient un produit qui n'existe plus.
+        // Voir OrderCanceled::materialAlreadyCommitted() pour le seuil et la preuve.
+        if ($event->materialAlreadyCommitted()) {
+            return;
+        }
+
         $order = $event->order;
 
         // OrderCanceled porte un Model générique ; la reprise n'a de sens que sur

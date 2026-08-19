@@ -206,12 +206,27 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
     }
 
     /**
-     * [CLUSTER-5-reste 2026-07-11] PHANTOM PREPARED PURGÉ PAR SOFT-DELETE (sans toucher le frozen).
-     * PREPARED→CANCELED reste ILLÉGALE dans le OrderStateMachine FROZEN, donc le janitor ne peut PAS
-     * faire de transition de statut sur un fantôme borne bloqué à PREPARED (cela ferait throw et
-     * avorterait le run). À la place, un fantôme UNPAID + non-fiscalisé + périmé est SOFT-DELETE :
-     * il quitte « à encaisser » + KDS (SoftDeletingScope) sans transition illégale. Ce test épingle :
-     * (1) la transition est toujours illégale, (2) le job ne throw PAS, (3) le fantôme est trashed().
+     * [CLUSTER-5-reste 2026-07-11] PHANTOM PREPARED PURGÉ PAR SOFT-DELETE.
+     * Un fantôme borne UNPAID + non-fiscalisé + périmé est SOFT-DELETE : il quitte
+     * « à encaisser » + KDS (SoftDeletingScope). Ce test épingle : le job ne throw
+     * PAS, et le fantôme est trashed().
+     *
+     * [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19, owner-gated] Ce cas affirmait
+     * auparavant `assertFalse(allows(PREPARED, CANCELED))` et en déduisait la
+     * nécessité du soft-delete. **Cette prémisse n'est plus vraie** : la transition
+     * a été ouverte sous gate propriétaire (le patron ne pouvait plus annuler une
+     * commande dès que la cuisine la déclarait prête). L'assertion a donc été
+     * retirée — elle épinglait une règle abolie, pas le comportement du janitor.
+     *
+     * Le COMPORTEMENT du job, lui, est inchangé et reste vérifié ci-dessous : sa
+     * requête code en dur `whereIn('status', [PENDING, ACCEPT, PREPARING])`
+     * (CleanupStalePendingKioskOrders.php:66) et la branche PREPARED appelle
+     * `->delete()` sans jamais consulter `allows()`.
+     *
+     * ARBITRAGE OUVERT (propriétaire) : maintenant que la transition est légale, le
+     * janitor POURRAIT annuler proprement (transition auditée, motif, événements)
+     * au lieu d'un soft-delete muet qui laisse `status=PREPARED` pour toujours.
+     * Non fait ici : ce serait un changement de comportement hors périmètre du LOCK.
      */
     public function test_stale_prepared_kiosk_phantom_is_soft_deleted_and_job_does_not_throw(): void
     {
@@ -239,7 +254,6 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
         );
 
         $branch = Branch::factory()->create();
-        $customer = User::factory()->create(['branch_id' => $branch->id]);
 
         $prepared = $this->makeAbandonedKioskCounterOrder(
             $branch->id,

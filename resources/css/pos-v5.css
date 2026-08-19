@@ -785,7 +785,26 @@
     min-height: 0;
     max-height: 30vh;
     overflow-y: auto;
+    /* [RED-TEAM 2026-08-19] `overflow-x` DOIT être déclaré : la spec CSS Overflow 3
+       impose qu'un axe laissé à `visible` face à un axe non-`visible` soit recalculé
+       en `auto`. Sans cette ligne, l'en-tête devenait à son tour un défileur
+       horizontal — exactement le défaut que cette même session a corrigé sur le
+       tableau de suivi, et que j'avais oublié de répercuter ici le jour même. */
+    overflow-x: hidden;
     overscroll-behavior: contain;
+}
+
+/* [RED-TEAM 2026-08-19] EXCEPTION LIVRAISON — l'en-tête reprend sa hauteur libre
+   tant que le formulaire de livraison est déplié.
+   Ce formulaire vit DANS l'en-tête et sa liste de suggestions d'adresse est en
+   `position: absolute` (PosComponent.vue, `<ul>` des suggestions). Or un élément
+   positionné ne s'échappe JAMAIS d'un ancêtre qui défile, quel que soit son
+   `z-index` : plafonner l'en-tête enfermait la liste dans une fenêtre de 30 vh
+   (20 vh sur un écran 768) — le caissier ne voyait plus les adresses proposées.
+   Le bloc `#orderdelivery` est basculé par la classe `hidden`, d'où le `:has()`. */
+.pos-v5-cart .pos-v5-cart__head:has(#orderdelivery:not(.hidden)) {
+    max-height: none;
+    overflow: visible;
 }
 
 .pos-v5-cart .pos-v5-cart__body {
@@ -795,6 +814,26 @@
 
 .pos-v5-cart .pos-v5-cart__foot {
     flex: 0 0 auto;
+}
+
+/* [RED-TEAM 2026-08-19] Écrans de caisse peu hauts (1366×768, tablettes 1024×600).
+   Le pied ne rétrécit jamais — c'est voulu, le bouton d'encaissement ne doit pas
+   pouvoir sortir de l'écran — donc la seule zone compressible est l'en-tête. Il
+   faut que « pied + plancher du corps » tienne TOUJOURS dans le panneau, sinon le
+   conteneur (`overflow: hidden`) rognerait le bas, c'est-à-dire le bouton payer.
+   Calcul du pire cas à 600 px de haut : panneau ≈ 520 px, pied ≈ 394 px ⇒ le
+   plancher du corps doit rester sous ~126 px. 20 vh = 120 px : l'en-tête absorbe
+   le reste et se réduit, le pied reste intégralement visible.
+   (Avant la refonte le problème était pire : en-tête ET pied étaient tous deux
+   incompressibles — 798 px fixes — donc les deux se faisaient rogner.) */
+@media (max-height: 800px) {
+    .pos-v5-cart .pos-v5-cart__head {
+        max-height: 20vh;
+    }
+
+    .pos-v5-cart .pos-v5-cart__body {
+        min-height: 20vh;
+    }
 }
 
 .pos-v5-cart__foot {

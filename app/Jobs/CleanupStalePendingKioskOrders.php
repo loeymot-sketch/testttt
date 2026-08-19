@@ -139,15 +139,29 @@ class CleanupStalePendingKioskOrders
         // 8/9 des commandes borne UNPAID fantômes observées sont au statut PREPARED (status=8) :
         // la borne Plan-B cash auto-accepte (ACCEPT), le KDS la fait avancer ACCEPT→PREPARING→
         // PREPARED avant que la caisse encaisse. Le bloc kiosk ci-dessus ne les CANCEL PAS.
-        // [MAJ SUPERVISION 2026-08-19] Ce commentaire disait « PREPARED→CANCELED est ILLÉGALE
-        // dans le state machine gelé » : ce n'est plus vrai depuis la dérogation gatée
-        // plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md. Le choix du soft-delete ne
-        // repose donc plus sur une interdiction technique mais sur une raison métier, plus
-        // solide : purger un fantôme n'est pas l'annuler (pas de client, pas de motif, pas de
-        // décision humaine à tracer). Donc, plutôt qu'une transition de statut qui mentirait
-        // sur ce qui s'est passé, on SOFT-DELETE le fantôme ($order->delete() → deleted_at) : il quitte
-        // « à encaisser » ET le KDS (tous deux filtrés par le SoftDeletingScope) SANS toucher le
-        // frozen state machine ni changer son statut.
+        // On SOFT-DELETE le fantôme ($order->delete() → deleted_at) : il quitte « à encaisser »
+        // ET le KDS (tous deux filtrés par le SoftDeletingScope) sans changer son statut.
+        //
+        // [LOCK-OSM-CANCEL-AFTER-READY 2026-08-19 · fusion de deux relectures indépendantes]
+        // La justification d'origine (« PREPARED→CANCELED est ILLÉGALE dans le state machine
+        // gelé ») N'EST PLUS VRAIE : la transition a été ouverte sous gate propriétaire —
+        // plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md.
+        //
+        // Le comportement de ce job est volontairement INCHANGÉ : sa requête code en dur
+        // PENDING/ACCEPT/PREPARING, et cette branche appelle ->delete() sans jamais consulter
+        // allows(). Rien ne bascule donc tout seul du fait de la dérogation.
+        //
+        // POURQUOI LE SOFT-DELETE RESTE DÉFENDABLE : purger n'est pas annuler. Une annulation
+        // est un geste HUMAIN — client au comptoir, motif obligatoire, permission de
+        // remboursement si la vente est payée, événements émis. Un fantôme périmé n'a rien de
+        // tout cela ; lui appliquer une transition d'annulation ferait MENTIR la trace sur ce
+        // qui s'est réellement passé.
+        //
+        // MAIS L'ARBITRAGE SE ROUVRE, ET IL APPARTIENT AU PROPRIÉTAIRE : le janitor POURRAIT
+        // désormais annuler proprement (transition auditée + motif + événements) au lieu d'un
+        // soft-delete muet qui laisse status=PREPARED pour toujours. Les deux positions se
+        // défendent ; ce commentaire ne tranche pas à sa place, il refuse seulement de mentir
+        // en attendant.
         //
         // GARDE ABSOLUE NF525 (mirror du bloc kiosk) : whereNull('fiscal_sequence_no') +
         // payment_status ∈ {UNPAID, PENDING_COUNTER} → une commande encaissée (PAID + séquence
@@ -488,7 +502,7 @@ class CleanupStalePendingKioskOrders
                 'branch_id'  => $locked->branch_id,
                 'status'     => (int) $locked->status,
                 'ttl_min'    => $ttlMinutes,
-                'reason'     => 'PREPARED→CANCELED illegal in frozen state machine; soft-delete purge instead.',
+                'reason'     => 'Fantome borne PREPARED perime : purge par soft-delete (statut inchange).',
             ]);
 
             $locked->refresh();

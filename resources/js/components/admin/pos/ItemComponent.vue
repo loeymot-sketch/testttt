@@ -914,7 +914,16 @@ export default {
             this.$store.dispatch('item/details', this.posItemDetailsPayload(selectedItem.id))
                 .then((res) => {
 
-                    const item = this.normalizeLoadedItem(res.data.data);
+                    // [RED-TEAM 2026-08-19] On garde la charge BRUTE de côté : la garde
+                    // d'ajout en un appui doit la lire ELLE, pas la version normalisée.
+                    // `normalizeLoadedItem` remplace tout champ absent/null/mal typé par
+                    // `[]` — un `item/details` dégradé (régression d'API, projection
+                    // `surface=pos` fautive) ressemblerait donc à « produit sans option »
+                    // et partirait au panier SANS viande, sans pain, sans sauce, en un
+                    // appui et sans écran. C'est exactement le mode de panne du P0 borne
+                    // du 2026-08-08, mais sur une réponse HTTP en succès.
+                    const brut = res.data?.data;
+                    const item = this.normalizeLoadedItem(brut);
                     this.item = item;
 
                     if (this.item.addons.length > 0) {
@@ -945,7 +954,18 @@ export default {
                     // `itemHasNoChoices` retombe sur l'ouverture du wizard à la
                     // moindre forme inattendue — un clic de trop est sans
                     // conséquence, un produit envoyé sans ses choix ne l'est pas.
-                    if (itemHasNoChoices(item)) {
+                    //
+                    // [RED-TEAM 2026-08-19] `canAddToCart` est OBLIGATOIRE dans cette
+                    // condition. Sans lui, un produit devenu INDISPONIBLE ou en
+                    // RUPTURE depuis le dernier rafraîchissement de la grille (la
+                    // tuile dit encore « dispo », le détail frais dit « non ») donnait
+                    // un clic TOTALEMENT MUET : `addToCart()` commence par
+                    // `if (!this.canAddToCart) return;` et ne dit rien. Le caissier
+                    // aurait tapé plusieurs fois sans comprendre. En retombant sur
+                    // l'ouverture du wizard, il retrouve le bandeau d'indisponibilité
+                    // (`itemUnavailabilityBannerVisible`) qui lui explique pourquoi.
+                    // Même raisonnement pour un article à prix nul.
+                    if (itemHasNoChoices(brut) && this.canAddToCart) {
                         this.wizardLoading = false;
                         this.pendingItemId = null;
                         this.addToCart();

@@ -1298,8 +1298,17 @@
                             aria-hidden="true"
                         > · </span><span :class="seg.startsWith('SANS ') ? 'pos-v5-cart-item__removal' : ''">{{ seg }}</span></template></p>
 
-                    <!-- Fallback for non-wizard products: variations + extras -->
-                    <template v-else>
+                    <!--
+                      Fallback for non-wizard products: variations + extras.
+                      [RED-TEAM 2026-08-19] Condition sur `cart_display`, PAS sur le nombre
+                      de segments. Un `cart_display` qui se réduit à la seule tautologie
+                      « Pain: Pain » produit zéro segment : avec un simple `v-else`, la
+                      ligne basculait alors sur ce rendu de repli VERBEUX (« Type de Pain:
+                      Pain »), c'est-à-dire exactement ce que la compaction vient
+                      d'éliminer. Le repli ne doit servir qu'aux produits qui n'ont pas de
+                      composition wizard du tout.
+                    -->
+                    <template v-else-if="!cart.cart_display || !cart.cart_display.trim()">
                         <p v-if="formatCartVariationSummary(cart)" class="pos-v5-cart-item__detail">
                             {{ formatCartVariationSummary(cart) }}
                         </p>
@@ -2638,6 +2647,21 @@ export default {
          * jamais se retrouver masquée : le repli n'est qu'un gain de place, jamais
          * une dissimulation d'information monétaire.
          */
+        /**
+         * [PERF-CAISSE 2026-08-19 · GOAL owner] Quantité TOTALE d'articles au panier.
+         *
+         * Valeur scalaire observée par le watcher `cartTotalQuantity` : c'est elle qui
+         * ranime les animations « panier qui rebondit » et « total qui flashe ». Elles
+         * étaient mortes parce que l'ancien watcher était `deep` sur `carts` et que le
+         * getter `posCart/lists` renvoie `state.lists` lui-même — Vue passait la MÊME
+         * référence en ancienne et nouvelle valeur, donc les deux totaux étaient toujours
+         * égaux. Sur un nombre, la comparaison redevient vraie.
+         */
+        cartTotalQuantity: function () {
+            const lignes = Array.isArray(this.carts) ? this.carts : [];
+
+            return lignes.reduce((somme, ligne) => somme + (parseInt(ligne.quantity, 10) || 0), 0);
+        },
         discountPanelOpen: function () {
             if (this.discountPanelManual) return true;
             if (this.posDiscount) return true;
@@ -4241,6 +4265,19 @@ export default {
                 this.lowStockCount = 0;
                 return;
             }
+            // [PERF-CAISSE 2026-08-19 · GOAL owner] Auto-bridage à 60 s.
+            //
+            // Ce chargement était accroché au tick de sondage de 5 s, soit 12 requêtes
+            // par minute — pour un indicateur de stock faible qui évolue en HEURES.
+            // Mesuré : l'écran caisse envoyait 62 requêtes/minute au repos, alors que
+            // le plafond par appareil est de 120/min (`API_THROTTLE_PER_MINUTE`) : un
+            // seul écran consommait déjà plus de la moitié du budget, sans rien faire.
+            // Même motif d'auto-bridage que `loadAvailabilitySnapshotFallback`.
+            const maintenant = Date.now();
+            if (this._lastLowStockPollAt && (maintenant - this._lastLowStockPollAt) < 60000) {
+                return;
+            }
+            this._lastLowStockPollAt = maintenant;
             try {
                 const res = await axios.get('admin/stock/low-alerts');
                 this.lowStockCount = (res.data?.alerts ?? []).length;
@@ -6191,26 +6228,48 @@ export default {
         grandTotal(newVal) {
             this.pushCustomerDisplay(newVal);
         },
+        /**
+         * [PERF-CAISSE 2026-08-19 · GOAL owner] Les animations « panier qui rebondit »
+         * et « total qui flashe » ne se déclenchaient JAMAIS — c'est littéralement la
+         * plainte « l'interface n'est pas si dynamique ».
+         *
+         * Le watcher était `deep: true` sur `carts`, et le getter `posCart/lists` renvoie
+         * `state.lists` LUI-MÊME. Vue passe alors la MÊME référence en `newValue` et
+         * `oldValue` : les deux `reduce` comptaient donc le même tableau, `newCount` était
+         * toujours strictement égal à `oldCount`, et la condition ne pouvait jamais être
+         * vraie. Mesuré sur banc (vrai store, vrai module) : watcher déclenché 3 fois,
+         * `newCarts === oldCarts` à chaque fois, animation déclenchée 0 fois. Mort depuis
+         * son écriture.
+         *
+         * On observe désormais une VALEUR SCALAIRE dérivée : Vue compare deux nombres, la
+         * comparaison redevient vraie, et l'animation vit.
+         *
+         * Double bénéfice : c'était le SEUL watcher `deep` de tout l'arbre POS. Le retirer
+         * supprime la traversée profonde du panier à chaque mutation, et neutralise un
+         * risque de récursion réel — le getter `posCart/lists` mute ses propres dépendances
+         * (il normalise chaque ligne à la lecture), et un second observateur profond aurait
+         * suffi à faire boucler Vue à l'infini. Le garde-fou « Maximum recursive updates »
+         * de Vue est compilé HORS du build de production : l'onglet aurait figé sans message.
+         */
+        cartTotalQuantity(newCount, oldCount) {
+            // [POS-V5 WAVE 3] Ne se déclenche QUE si la quantité totale a augmenté
+            // (pas sur retrait ni sur édition). Auto-reset après 320 ms (pos-v5-bump).
+            if (newCount > oldCount && newCount > 0) {
+                this.triggerCartBump();
+                this.triggerTotalFlash();
+            }
+        },
         carts: {
-            handler(newCarts, oldCarts) {
-                // [POS-V5 WAVE 3] Trigger cart-bump animation quand un item est ajouté.
-                // - Ne se déclenche QUE si la quantité totale a augmenté (pas sur retrait/édition)
-                // - Auto-reset après 320ms (durée de l'animation CSS pos-v5-bump).
-                const newCount = Array.isArray(newCarts)
-                    ? newCarts.reduce((sum, c) => sum + (parseInt(c.quantity, 10) || 0), 0)
-                    : 0;
-                const oldCount = Array.isArray(oldCarts)
-                    ? oldCarts.reduce((sum, c) => sum + (parseInt(c.quantity, 10) || 0), 0)
-                    : 0;
-                if (newCount > oldCount && newCount > 0) {
-                    this.triggerCartBump();
-                    this.triggerTotalFlash();
-                }
-
+            handler(newCarts) {
                 if (!newCarts || newCarts.length === 0) {
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
                     this.discountReason = '';
+                    // [RED-TEAM 2026-08-19] Refermer AUSSI le panneau remise avec le
+                    // panier. Sans ça, une seule remise dans la journée le laissait
+                    // déplié pour tous les clients suivants : les 90 px rendus à la
+                    // commande étaient reperdus définitivement, en silence.
+                    this.discountPanelManual = false;
                     this.checkoutProps.form.discount_reason = null;
                     this.$nextTick(() => {
                         if (this.$refs.takeAway) {
@@ -6221,7 +6280,10 @@ export default {
                     });
                 }
             },
-            deep: true,
+            // [PERF-CAISSE 2026-08-19] `deep` RETIRÉ : ce bloc ne réagit plus qu'au
+            // passage à un panier VIDE (remise/type de commande à réinitialiser), ce qui
+            // ne demande aucune traversée profonde. La détection d'ajout est passée sur
+            // le watcher scalaire `cartTotalQuantity` ci-dessus.
             immediate: true
         }
     },

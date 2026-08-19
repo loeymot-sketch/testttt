@@ -157,10 +157,22 @@ describe('compactBundledExtras — « Sauce frites: Mayo » puis la boisson', ()
         ]);
     });
 
-    it('menu_extras livré en objet indexé (mutation observée après édition) est accepté', () => {
-        // Capturé en direct : après une modification, `menu_extras` passe de
-        // ["Sauce frites: Mayonnaise"] à {"0": "Sauce frites: Mayonnaise"}.
-        // Un `v-for` s'en accommode, pas un `.map()` — le formateur doit tenir les deux.
+    it('menu_extras livré en objet indexé est accepté (tolérance défensive)', () => {
+        // CORRECTION D'UNE PREMIÈRE LECTURE ERRONÉE (2026-08-19, red-team) : j'avais
+        // d'abord noté ici avoir « observé en direct » `menu_extras` muter en objet
+        // indexé après une édition. C'était FAUX — un artefact de la sérialisation
+        // JSON d'un proxy réactif Vue par mon outil de sonde, pas une mutation des
+        // données. Vérifié sur les trois chemins réels : `buildMenuExtras()`
+        // (pos-wizard.js:4391) construit un vrai tableau, `readWizardBundledAddons`
+        // le relit via JSON.parse en tableau, et `normPosLineAddon`
+        // (store/modules/posCart.js:170) le force en tableau à chaque écriture.
+        //
+        // La tolérance est donc DÉFENSIVE, pas corrective — mais elle a sa valeur :
+        // si une forme objet arrivait un jour (charge héritée, changement backend),
+        // `posCart.js:170` la remplacerait silencieusement par `[]` — la sauce frites
+        // DISPARAÎTRAIT du panier — et `posLineAddonsSignature` (l.146) produirait une
+        // empreinte vide, faisant FUSIONNER deux lignes aux sauces différentes.
+        // Ici, au moins, l'affichage tient.
         const bundled = { name: 'Menu', menu_extras: { 0: 'Sauce frites: Mayonnaise' } };
         expect(compactBundledExtras(bundled, '')).toEqual(['Frites : Mayonnaise']);
     });
