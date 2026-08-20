@@ -428,8 +428,17 @@ class UberPhotoCaptureFlowTest extends TestCase
         $ligne = Order::query()->withoutGlobalScopes()->findOrFail($orderId)
             ->orderItems()->withoutGlobalScopes()->get()->first();
 
-        // La commande existe malgré tout, et le titre réel reste lisible en cuisine.
-        $this->assertStringContainsString('Produit Qui N Existe Pas', (string) $ligne->instruction);
+        // [UBER TITRE ENTIER 2026-08-20 · owner] La commande existe malgré tout — et le titre réel
+        // est écrit EN ENTIER sur la ligne que le cuisinier lit, au lieu du code « ART » tiré du
+        // nom de l'article d'ancrage. C'est là que se jugeait le défaut signalé par l'owner.
+        $snap = is_array($ligne->composition_snapshot) ? $ligne->composition_snapshot : [];
+        $this->assertTrue($snap['uber_unmapped'] ?? false);
+        $this->assertSame('Produit Qui N Existe Pas', $snap['uber_title'] ?? null);
+
+        $l1 = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class)
+            ->mainLine('Article Uber (non mappé)', $snap, (string) $ligne->instruction);
+        $this->assertStringContainsString('PRODUIT QUI N EXISTE PAS', $l1);
+        $this->assertStringNotContainsString('ART', $l1);
     }
 
     /**

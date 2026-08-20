@@ -198,10 +198,51 @@ final class KitchenTicketSymbolicFormatter
         return (bool) preg_match('/\btacos?\b/', $this->norm($name));
     }
 
+    /**
+     * [UBER TITRE ENTIER 2026-08-20 · owner] Le titre RECOPIÉ du ticket, quand — et seulement
+     * quand — la carte n'a pas reconnu la ligne. Vide dans tous les autres cas.
+     *
+     * @param  array<string,mixed>  $snapshot
+     */
+    public function uberUnmappedTitle(array $snapshot): string
+    {
+        return \App\Services\Uber\UberLineTitle::unmapped($snapshot) ?? '';
+    }
+
+    /**
+     * Un titre rendu EN ENTIER : ASCII pur (les pages de code d'imprimante n'encaissent pas les
+     * accents, cf. norm()) et en capitales, comme le reste de la ligne 1.
+     */
+    private function titreEnEntier(string $titre): string
+    {
+        return mb_strtoupper(trim((string) preg_replace('/\s+/', ' ', $this->norm($titre))));
+    }
+
     /** @param array<string,mixed> $snapshot */
     public function mainLine(string $itemName, array $snapshot, ?string $instruction = null): string
     {
+        // [UBER TITRE ENTIER 2026-08-20 · owner] Une ligne Uber que la carte n'a pas reconnue est
+        // ancrée sur l'article technique « Article Uber (non mappé) » — dont produitCode() tire
+        // « ART », un code qui ne désigne RIEN. L'owner l'a mesuré sur chaque ticket scanné :
+        // « chaque fois ça donne ART ». On écrit donc le titre du ticket EN ENTIER à la place du
+        // code, et lui seul : le support, les viandes, les crudités et les sauces restent en
+        // symboles, exactement comme la caisse — consigne owner « faut juste les mots techniques
+        // comme la caisse ». Deux effets voulus :
+        //   · le cuisinier lit le vrai produit au lieu d'un code creux ;
+        //   · les règles de nom (tacos/galette → support G) travaillent enfin sur le VRAI titre,
+        //     alors qu'elles ne voyaient jusqu'ici que le nom du bouche-trou.
+        $titreBrut = $this->uberUnmappedTitle($snapshot);
+        if ($titreBrut !== '') {
+            $itemName = $titreBrut;
+        }
+
         [$produit, $taille] = $this->produitAndSize($itemName);
+
+        if ($titreBrut !== '') {
+            // La taille est déjà DANS le texte complet : la répéter écrirait « TACOS M | M ».
+            $produit = $this->titreEnEntier($titreBrut);
+            $taille = '';
+        }
         // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
         // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
         $isTacos = $this->isTacos($itemName);

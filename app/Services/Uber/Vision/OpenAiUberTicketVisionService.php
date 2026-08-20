@@ -90,13 +90,7 @@ TXT;
         $sortie = [];
 
         foreach ($items as $item) {
-            $titre = self::sansAccents(mb_strtolower(trim((string) $item['title'])));
-            $estRubrique = (bool) preg_match(
-                '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
-                $titre
-            );
-
-            if ($estRubrique && $sortie !== []) {
+            if (self::estIntituleDeRubrique((string) $item['title']) && $sortie !== []) {
                 $dernier = count($sortie) - 1;
                 foreach ($item['options'] as $o) {
                     $sortie[$dernier]['options'][] = $o;
@@ -132,10 +126,51 @@ TXT;
             return false;
         }
 
-        return (bool) preg_match(
-            '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
-            self::sansAccents(mb_strtolower($brut))
-        );
+        return self::estIntituleDeRubrique($brut);
+    }
+
+    /**
+     * Les mots que le ticket Uber imprime pour ANNONCER des choix — jamais pour vendre un plat.
+     *
+     * Liste validée par l'owner le 2026-08-12 ; on n'y ajoute AUCUN mot de produit. « Frites »,
+     * « Menu Enfant Nuggets », « Boisson Seule » sont de VRAIS articles de la carte : les y faire
+     * entrer replierait une ligne payée sur la précédente, donc effacerait un plat vendu.
+     */
+    private const MOTS_RUBRIQUE = 'pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?';
+
+    /**
+     * [RUBRIQUES 2026-08-20 · owner] L'INTITULÉ d'une rubrique, DÉCORATIONS COMPRISES.
+     *
+     * La liste de mots n'était pas le problème : la NORMALISATION l'était. `sansAccents()` retire
+     * la ponctuation mais laisse l'espace qui la précédait — « SAUCE : » devenait « sauce » suivi
+     * d'une espace, que l'ancre `$` refusait, et « SAUCES (2) » devenait « sauces 2 ». Ces deux
+     * formes, imprimées telles quelles par Uber, passaient donc AU TRAVERS des deux gardes de
+     * 2026-08-12 : au niveau option elles ressortaient en supplément fantôme « + SAUCE », au
+     * niveau ligne elles devenaient un PRODUIT que la carte ne peut évidemment pas reconnaître —
+     * d'où le « ART » que l'owner voit sur chaque ticket scanné. Sa consigne est nette : ces
+     * mots-là n'ont rien à faire sur le papier, seuls les codes techniques de la caisse comptent.
+     *
+     * L'élargissement se borne à ce qui se construit AVEC la même liste : un compte en fin
+     * d'étiquette (« SAUCES (2) »), une tournure de choix (« CHOIX DE LA SAUCE »), une qualité
+     * (« CRUDITÉS OFFERTES ») et la paire (« SAUCES ET CRUDITÉS »). Le mot de tête reste
+     * obligatoirement un mot de {@see self::MOTS_RUBRIQUE} : « Boisson Seule » (article #3 de la
+     * carte) ne matche pas, « seule » n'étant aucune de ces qualités.
+     */
+    private static function estIntituleDeRubrique(string $texte): bool
+    {
+        $n = trim((string) preg_replace('/\s+/', ' ', self::sansAccents(trim($texte))));
+        // « SAUCES (2) » → « sauces 2 » → « sauces » : un compte n'est pas une valeur.
+        $n = trim((string) preg_replace('/ \d+$/', '', $n));
+
+        if ($n === '') {
+            return false;
+        }
+
+        $mot = '(?:'.self::MOTS_RUBRIQUE.')';
+        $tete = '(?:(?:choix|selection)(?: de(?: la| l| les)?| des| du)?\s+|(?:vos|votre|le|la|les)\s+)?';
+        $queue = '(?:\s+(?:au choix|offerte?s?|incluse?s?|gratuite?s?|payante?s?|supplementaires?|obligatoires?|facultatives?|en plus))?';
+
+        return (bool) preg_match('/^'.$tete.$mot.'(?:\s+et\s+'.$mot.')?'.$queue.'$/u', $n);
     }
 
     /** Minuscules ASCII : « CRUDITÉS » et « crudites » doivent se reconnaître. */

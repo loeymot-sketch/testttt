@@ -18,6 +18,14 @@ class KDSOrderItemsResource extends JsonResource
         return [
             'item_id'            => $this->item_id,
             'item_name'          => $this->orderItem?->name,
+            // [UBER TITRE ENTIER 2026-08-20 · owner] Une ligne Uber que la carte n'a pas reconnue
+            // est ancrée sur l'article technique « Article Uber (non mappé) » : `item_name` ne dit
+            // donc RIEN du plat commandé, et l'écran en tirait « ART ». Le vrai titre vit dans le
+            // composition_snapshot, que cette ressource ne sérialise que par tranches (lines /
+            // extras / addons) — d'où ce champ dédié plutôt qu'un snapshot complet, bien plus
+            // lourd, sur un endpoint sondé toutes les 5 s. Null sur toute ligne normale.
+            // Consommé par kdsSymbolic.js uberUnmappedTitle().
+            'uber_unmapped_title' => $this->uberUnmappedTitle(),
             'quantity'           => $this->quantity,
             // [POS-OUTPUT-AUDIT 2026-06-24 P2-KDS-SSOT] Prefer the immutable
             // composition_snapshot (NF525 SSOT) like OrderItemResource — the
@@ -43,6 +51,15 @@ class KDSOrderItemsResource extends JsonResource
             // Sentinel: tests/Feature/KDS/KdsOrderItemsResourceAllergenExposureTest.php.
             'allergens_snapshot' => $this->safeJsonDecodeArray($this->allergens_snapshot),
         ];
+    }
+
+    /**
+     * [UBER TITRE ENTIER 2026-08-20 · owner] Le titre recopié du ticket Uber, uniquement quand la
+     * carte ne l'a pas reconnu. Jumeau PHP : KitchenTicketSymbolicFormatter::uberUnmappedTitle().
+     */
+    private function uberUnmappedTitle(): ?string
+    {
+        return \App\Services\Uber\UberLineTitle::unmapped($this->composition_snapshot);
     }
 
     /**

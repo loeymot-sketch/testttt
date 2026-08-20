@@ -244,6 +244,73 @@ class UberTicketOptionClassifierTest extends TestCase
         $this->assertSame('Sauce', $r['label']);
     }
 
+    /**
+     * [RUBRIQUES 2026-08-20 · owner] Les gardes de 2026-08-12 exigeaient le mot NU et RIEN d'autre.
+     * Or Uber décore ses en-têtes — « SAUCE : », « SAUCES (2) », « CHOIX DE LA SAUCE » — et
+     * `sansAccents()` laisse derrière la ponctuation retirée une espace que l'ancre `$` refusait.
+     * Ces formes repartaient donc en LIGNES DE PRODUIT, jamais mappables : c'est l'une des sources
+     * du « ART » que l'owner voyait sur chaque ticket scanné, et des « + SAUCE » sur le papier.
+     *
+     * @dataProvider rubriquesDecorees
+     */
+    public function test_une_rubrique_decoree_n_est_toujours_pas_un_produit(string $entete): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [
+                ['title' => 'Cheese Burger', 'quantity' => 1, 'options' => [], 'note' => ''],
+                ['title' => $entete, 'quantity' => 1, 'options' => ['1 x Harissa'], 'note' => ''],
+            ],
+        ]);
+
+        $this->assertCount(1, $t['items'], "« {$entete} » est reparti en plat fantôme.");
+        $this->assertSame('Cheese Burger', $t['items'][0]['title']);
+        $this->assertContains('1 x Harissa', $t['items'][0]['options'], 'Le choix du client a été perdu au repliement.');
+    }
+
+    public static function rubriquesDecorees(): array
+    {
+        return [
+            'deux-points' => ['SAUCE :'],
+            'compte entre parenthèses' => ['SAUCES (2)'],
+            'accentuée et ponctuée' => ['CRUDITÉS :'],
+            'tournure de choix' => ['CHOIX DE LA SAUCE'],
+            'paire' => ['SAUCES ET CRUDITÉS'],
+            'qualifiée' => ['CRUDITÉS OFFERTES'],
+            'au choix' => ['BOISSON AU CHOIX'],
+            'payants' => ['SUPPLÉMENTS PAYANTS'],
+        ];
+    }
+
+    /**
+     * ⚠️ Le garde-fou du garde-fou : un VRAI article de la carte dont le nom commence par un mot
+     * de rubrique ne doit JAMAIS être replié — ce serait effacer un plat vendu et payé.
+     *
+     * @dataProvider vraisArticles
+     */
+    public function test_un_vrai_article_n_est_jamais_pris_pour_une_rubrique(string $titre): void
+    {
+        $t = \App\Services\Uber\Vision\OpenAiUberTicketVisionService::normalize([
+            'items' => [
+                ['title' => 'Cheese Burger', 'quantity' => 1, 'options' => [], 'note' => ''],
+                ['title' => $titre, 'quantity' => 1, 'options' => [], 'note' => ''],
+            ],
+        ]);
+
+        $this->assertCount(2, $t['items'], "« {$titre} » est un article de la carte, pas un en-tête.");
+        $this->assertSame($titre, $t['items'][1]['title']);
+    }
+
+    public static function vraisArticles(): array
+    {
+        return [
+            'boisson seule' => ['Boisson Seule'],   // item #3 de la carte
+            'grande frites' => ['Grande Frites'],
+            'menu enfant' => ['Menu Enfant Nuggets'],
+            'sauce nommée' => ['Sauce Algérienne'],
+            'bol' => ['Bol Frites'],
+        ];
+    }
+
     /** @test */
     public function une_option_vide_ne_produit_jamais_de_ligne_fantome(): void
     {

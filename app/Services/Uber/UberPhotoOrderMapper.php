@@ -226,9 +226,14 @@ final class UberPhotoOrderMapper
         if ($note !== '') {
             $notes[] = $this->safeNote($note);
         }
-        if ($unmapped) {
-            array_unshift($notes, '[UBER NON MAPPÉ: '.$title.']');
-        }
+        // [UBER TITRE ENTIER 2026-08-20 · owner] La mention « [UBER NON MAPPÉ: … ] » a été retirée
+        // de la note. Elle disait en toutes lettres, sur le papier de la cuisine, une information
+        // d'OUTILLAGE — « l'automate n'a pas reconnu ce produit » — que le cuisinier ne peut pas
+        // exploiter et qui le détourne du plat à faire (owner : « au lieu de distraire l'équipe »).
+        // Rien n'est perdu : le titre part maintenant EN ENTIER sur la ligne 1 du ticket et de
+        // l'écran, et l'état « non reconnu » voyage en donnée STRUCTURÉE dans le snapshot, où
+        // l'écran de validation le lit pour signaler la ligne à la personne qui, elle, peut la
+        // corriger. Un drapeau se lit ; un mot au milieu d'une note se subit.
 
         return [
             'unmapped' => $unmapped,
@@ -247,7 +252,11 @@ final class UberPhotoOrderMapper
                     'lines' => $lines,
                     'extras' => $extras,
                     'addons' => $addons,
-                    'uber_title' => $title,
+                    // Le titre RECOPIÉ du ticket, toujours — jamais le nom de notre carte. C'est
+                    // la seule trace de ce que le client a réellement commandé, et c'est elle que
+                    // la cuisine lit quand la carte n'a rien reconnu.
+                    'uber_title' => $titreUber,
+                    'uber_unmapped' => $unmapped,
                 ],
             ],
         ];

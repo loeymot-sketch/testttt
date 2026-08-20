@@ -371,6 +371,42 @@ function produitCode(produit) {
     return code;
 }
 
+/**
+ * [UBER TITRE ENTIER 2026-08-20 · owner] Le titre RECOPIÉ du ticket Uber, quand — et seulement
+ * quand — la carte n'a pas reconnu la ligne. Chaîne vide dans tous les autres cas.
+ *
+ * Deux sources, parce que les deux surfaces KDS ne sérialisent pas la même chose : la carte de
+ * commande passe par OrderItemResource (qui expose `composition_snapshot` en entier), le tableau
+ * items par KDSOrderItemsResource (qui n'expose que des tranches, d'où le champ dédié
+ * `uber_unmapped_title`). Jumeau PHP : KitchenTicketSymbolicFormatter::uberUnmappedTitle().
+ */
+export function uberUnmappedTitle(orderItem) {
+    const direct = String(orderItem?.uber_unmapped_title || '').trim();
+    if (direct) return direct;
+
+    const snap = orderItem?.composition_snapshot;
+    if (!snap || snap.uber_unmapped !== true) return '';
+
+    return String(snap.uber_title || '').trim();
+}
+
+/**
+ * [UBER TITRE ENTIER 2026-08-20 · owner] Le nom à AFFICHER pour une ligne de commande.
+ *
+ * Les écrans qui écrivent le nom du produit en toutes lettres (tableau des items du KDS, modale
+ * allergènes) lisent `item_name` — c'est-à-dire, sur une ligne Uber non reconnue, le nom de
+ * l'article d'ancrage : « Article Uber (non mappé) ». C'est littéralement le « article non mappé »
+ * que l'owner voit à l'écran. On rend ici le titre du ticket à sa place.
+ */
+export function displayItemName(orderItem) {
+    return uberUnmappedTitle(orderItem) || orderItem?.item_name || '';
+}
+
+/** Un titre rendu EN ENTIER, en capitales — parité PHP titreEnEntier(). */
+function titreEnEntier(titre) {
+    return normalize(titre).replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
 /** Split "Tacos M" → { produit: "TAC", taille: "M" }. Only M/L/XL trailing tokens. */
 function produitAndSize(itemName) {
     const raw = String(itemName || '').trim();
@@ -390,13 +426,24 @@ function produitAndSize(itemName) {
  */
 export function buildSymbolic(orderItem) {
     const category = categorize(orderItem);
-    const { produit, taille: nameSize } = produitAndSize(orderItem?.item_name);
+    // [UBER TITRE ENTIER 2026-08-20 · owner] Ligne Uber que la carte n'a pas reconnue : elle est
+    // ancrée sur « Article Uber (non mappé) », dont produitCode() tire « ART » — un code qui ne
+    // désigne rien, et que l'owner voyait sur CHAQUE ticket scanné. On écrit le titre du ticket
+    // EN ENTIER à la place du code, et lui seul : support, viandes, crudités et sauces restent
+    // en symboles, comme la caisse. Jumeau STRICT du PHP
+    // KitchenTicketSymbolicFormatter::mainLine()/uberUnmappedTitle() — l'écran et le papier
+    // doivent dire le même mot, sinon on retombe sur l'écart aperçu↔cuisine de 2026-08-12.
+    const titreBrut = uberUnmappedTitle(orderItem);
+    const nomEffectif = titreBrut || orderItem?.item_name;
+    const { produit: codeProduit, taille: nameSize } = produitAndSize(nomEffectif);
+    // La taille est déjà DANS le texte complet : la répéter écrirait « TACOS M | M ».
+    const produit = titreBrut ? titreEnEntier(titreBrut) : codeProduit;
     // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
     // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
-    const isTacosItem = isTacos(orderItem?.item_name);
+    const isTacosItem = isTacos(nomEffectif);
 
     let support = '';
-    let taille = nameSize;
+    let taille = titreBrut ? '' : nameSize;
     const viandes = [];
     const sauces = [];
     const crud = new Set();
@@ -482,14 +529,18 @@ export function buildSymbolic(orderItem) {
     }
 
     // Owner rule: tacos (and any galette product) show the support first, default G.
-    if (!support && (category === 'taco' || /galette/.test(normalize(orderItem?.item_name)))) {
+    // [UBER TITRE ENTIER 2026-08-20] `isTacosItem` en plus de `category` : categorize() lit
+    // `item_name`, qui vaut « Article Uber (non mappé) » sur une ligne Uber non reconnue — l'écran
+    // n'aurait donc pas posé le G que le ticket, lui, pose (le PHP teste le nom, pas la catégorie).
+    // Sur toute autre ligne c'est le même test sur le même nom : aucun cas nouveau.
+    if (!support && (category === 'taco' || isTacosItem || /galette/.test(normalize(nomEffectif)))) {
         support = 'G';
     }
     // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » : pas de step pain actif (comme
     // le Cayenne) → aucune ligne snapshot ne porte le support, et le nom ne s'affiche pas
     // (CODE_SANS_MENTION) : le S vient donc du nom, comme le G ci-dessus pour la galette. Jumeau
     // STRICT : KitchenTicketSymbolicFormatter::mainLine().
-    if (!support && normalize(orderItem?.item_name) === 'sandwich classique') {
+    if (!support && normalize(nomEffectif) === 'sandwich classique') {
         support = 'S';
     }
 

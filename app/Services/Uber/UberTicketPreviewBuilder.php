@@ -56,7 +56,11 @@ final class UberTicketPreviewBuilder
                 // ne doit pas apparaître dans l'aperçu, sinon l'humain croit avoir transmis une
                 // consigne qui n'arrivera jamais en cuisine.
                 'note' => $this->formatter->cleanInstruction($instruction, $nom, $boissons),
-                'non_mappe' => str_contains($instruction, '[UBER NON MAPPÉ'),
+                // [UBER TITRE ENTIER 2026-08-20 · owner] Le drapeau se lit dans le snapshot, plus
+                // dans le texte de la note : la note ne porte plus la mention (elle distrayait la
+                // cuisine), et une détection par sous-chaîne aurait de toute façon fini par mentir
+                // le jour où un client écrit ces mots-là dans SA note.
+                'non_mappe' => ($snapshot['uber_unmapped'] ?? false) === true,
             ];
         }
 

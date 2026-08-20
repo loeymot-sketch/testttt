@@ -113,7 +113,11 @@ class UberOrderMapper
             'quantity'   => max(1, $qty),
             'unit_price' => (float) (($line['price']['unit_price']['amount'] ?? 0) / 100),
             'total'      => (float) (($line['price']['total_price']['amount'] ?? 0) / 100),
-            'instruction'=> trim(($unmapped ? '[UBER NON MAPPÉ: ' . $title . '] ' : '') . $this->safeNote((string) ($line['special_instructions'] ?? ''))),
+            // [UBER TITRE ENTIER 2026-08-20 · owner] Plus de « [UBER NON MAPPÉ: … ] » dans la note :
+            // le titre part EN ENTIER sur la ligne 1 (KitchenTicketSymbolicFormatter::mainLine lit
+            // `uber_unmapped` + `uber_title`), et l'état « non reconnu » voyage en donnée
+            // structurée. Jumeau strict du chemin PHOTO — deux canaux Uber, une seule règle.
+            'instruction'=> trim($this->safeNote((string) ($line['special_instructions'] ?? ''))),
             'composition_snapshot' => [
                 'schema_version' => 1,
                 'source'         => 'uber_eats',
@@ -121,6 +125,7 @@ class UberOrderMapper
                 'extras'         => $extras, // sauces/suppléments/options — inchangé
                 'addons'         => [],
                 'uber_title'     => $title,
+                'uber_unmapped'  => $unmapped,
             ],
         ];
     }

@@ -255,7 +255,7 @@
             <li v-for="(orderItem, oIdx) in orderItems" :key="orderItem.item_id + '-' + oIdx"
               class="px-3 py-2 flex items-start justify-between gap-2 border-b border-[#EFF0F6] last:border-none">
               <div>
-                <h5 class="text-sm font-medium mb-1">{{ orderItem.item_name }}</h5>
+                <h5 class="text-sm font-medium mb-1">{{ nomProduit(orderItem) }}</h5>
                 <!-- [AUDIT-P1] Array.isArray guard: legacy kiosk orders stored JSON objects,
                      not arrays. Without this guard, .length on an object is undefined → Vue warning. -->
                 <p v-if="Array.isArray(orderItem.item_variations) && orderItem.item_variations.length > 0"
@@ -509,7 +509,7 @@
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
-                        <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
+                        <h5 class="text-sm font-medium mb-1">{{ nomProduit(item) }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
@@ -548,7 +548,7 @@
                         <button v-if="!kdsIsBumped(dineinOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
-                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          :aria-label="`${$t('button.kds_bump')} — ${nomProduit(item)}`"
                           @click.prevent.stop="kdsBump(dineinOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
@@ -697,7 +697,7 @@
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
-                        <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
+                        <h5 class="text-sm font-medium mb-1">{{ nomProduit(item) }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
@@ -735,7 +735,7 @@
                         <button v-if="!kdsIsBumped(onlineOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
-                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          :aria-label="`${$t('button.kds_bump')} — ${nomProduit(item)}`"
                           @click.prevent.stop="kdsBump(onlineOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
@@ -873,7 +873,7 @@
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
-                        <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
+                        <h5 class="text-sm font-medium mb-1">{{ nomProduit(item) }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
@@ -912,7 +912,7 @@
                         <button v-if="!kdsIsBumped(takeawayOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
-                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          :aria-label="`${$t('button.kds_bump')} — ${nomProduit(item)}`"
                           @click.prevent.stop="kdsBump(takeawayOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
@@ -1046,7 +1046,7 @@
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
                       <div class="flex-1 min-w-0">
-                        <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
+                        <h5 class="text-sm font-medium mb-1">{{ nomProduit(item) }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
@@ -1092,7 +1092,7 @@
                         <button v-if="!kdsIsBumped(kioskOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
-                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          :aria-label="`${$t('button.kds_bump')} — ${nomProduit(item)}`"
                           @click.prevent.stop="kdsBump(kioskOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
@@ -1186,7 +1186,7 @@
             :key="(orderItem.id || orderItem.item_id || allergenIndex) + '-' + allergenIndex"
             class="kds-allergens-modal-list-item"
           >
-            <strong>{{ orderItem.item_name || orderItem.name || (orderItem.item && orderItem.item.name) || '-' }}</strong>
+            <strong>{{ nomProduit(orderItem) || orderItem.name || (orderItem.item && orderItem.item.name) || '-' }}</strong>
             <span>{{ sortedAllergens(orderItem.allergens_snapshot).length
               ? sortedAllergens(orderItem.allergens_snapshot).join(' \u00B7 ')
               : $t('label.kds_allergens_modal_none') }}</span>
@@ -1230,6 +1230,10 @@ import { ORDER_STATUS } from "../../../helpers/kdsState";
 // no longer invert on the KDS order-cards + kitchen ticket. Legacy items-board
 // shape stays correct through the same helper.
 import { kdsVariationLine, sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
+// [UBER TITRE ENTIER 2026-08-20 · owner] Le tableau des items écrit le nom du produit en toutes
+// lettres : sur une ligne Uber non reconnue, `item_name` vaut « Article Uber (non mappé) », ce que
+// l'owner lisait littéralement à l'écran. displayItemName() rend le titre du ticket à la place.
+import { displayItemName } from "../../../helpers/kdsSymbolic";
 import { freshnessBaseMs as kdsFreshnessBaseMs, isSyncStale as kdsIsSyncStale, isSyncUncertain as kdsIsSyncUncertain, humanizeSyncAgo as kdsHumanizeSyncAgo } from "../../../helpers/kdsFreshness";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
@@ -1894,6 +1898,12 @@ export default {
     // inverted snapshot lines into "Poulet mariné: ".
     variationLine(v) {
       return kdsVariationLine(v);
+    },
+    // [UBER TITRE ENTIER 2026-08-20 · owner] Nom du produit tel qu'il doit s'AFFICHER : le titre
+    // recopié du ticket quand la carte n'a rien reconnu, `item_name` partout ailleurs. Sans ce
+    // repli, l'écran écrivait « Article Uber (non mappé) » sur chaque ligne Uber non reconnue.
+    nomProduit(orderItem) {
+      return displayItemName(orderItem);
     },
     // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
     // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /

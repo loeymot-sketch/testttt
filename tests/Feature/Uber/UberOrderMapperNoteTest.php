@@ -103,16 +103,57 @@ class UberOrderMapperNoteTest extends TestCase
         $this->assertSame('[deja notee]', $this->mapLineFor('[deja notee]')['instruction'], 'pas de double bracket');
     }
 
-    public function test_unmapped_item_keeps_uber_prefix_and_bracketed_note(): void
+    /**
+     * [UBER TITRE ENTIER 2026-08-20 · owner] Une ligne non reconnue ne s'annonce plus par une
+     * mention d'outillage dans la note — le titre part EN ENTIER sur la ligne 1, et l'état
+     * « non reconnu » voyage en donnée structurée dans le snapshot.
+     */
+    public function test_unmapped_item_carries_raw_title_in_snapshot_not_in_the_note(): void
     {
-        // catalogue vide → placeholder technique + titre réel en instruction
+        // catalogue vide → placeholder technique, mais le titre réel reste la référence
         $line = $this->mapLineFor('NO ONIONS', 'ZZZ Produit Inconnu');
 
-        $this->assertStringContainsString('[UBER NON MAPPÉ: ZZZ Produit Inconnu]', $line['instruction']);
-        $this->assertStringContainsString('[NO ONIONS]', $line['instruction']);
+        $this->assertStringNotContainsString(
+            'UBER NON MAPPÉ',
+            $line['instruction'],
+            'la note de cuisine ne porte plus de mention d\'outillage (owner : « au lieu de distraire l\'équipe »)'
+        );
+        $this->assertSame('[NO ONIONS]', $line['instruction'], 'la note du CLIENT, elle, survit intacte');
+
+        $this->assertTrue($line['composition_snapshot']['uber_unmapped']);
+        $this->assertSame('ZZZ Produit Inconnu', $line['composition_snapshot']['uber_title']);
 
         $f = app(KitchenTicketSymbolicFormatter::class);
         $clean = $f->cleanInstruction($line['instruction'], 'Article Uber (non mappé)');
         $this->assertStringContainsString('NO ONIONS', $clean, 'note capitale visible en cuisine même sur item non mappé');
+    }
+
+    /**
+     * Le défaut signalé par l'owner : « chaque fois ça donne ART ». L'article technique
+     * s'appelle « Article Uber (non mappé) », dont le code produit est « ART » — un code qui ne
+     * désigne rien. La ligne 1 doit porter le titre du ticket EN ENTIER.
+     */
+    public function test_kitchen_line_spells_the_ticket_title_instead_of_ART(): void
+    {
+        $line = $this->mapLineFor('', 'ZZZ Produit Inconnu');
+        $f = app(KitchenTicketSymbolicFormatter::class);
+
+        // Le nom porté par la LIGNE en base est celui de l'article d'ancrage : c'est exactement
+        // ce que le ticket et le KDS lisent, et c'est de là que sortait « ART ».
+        $ligne = $f->mainLine('Article Uber (non mappé)', $line['composition_snapshot'], $line['instruction']);
+
+        $this->assertStringContainsString('ZZZ PRODUIT INCONNU', $ligne);
+        $this->assertStringNotContainsString('ART', $ligne, '« ART » ne doit plus jamais atteindre la cuisine');
+    }
+
+    /** Une ligne RECONNUE n'est pas touchée : elle garde le code court de la caisse. */
+    public function test_mapped_item_keeps_the_short_code(): void
+    {
+        $this->makeCatalogItem();
+        $line = $this->mapLineFor('', 'Tacos M');
+        $f = app(KitchenTicketSymbolicFormatter::class);
+
+        $this->assertFalse($line['composition_snapshot']['uber_unmapped']);
+        $this->assertSame('G | TAC', $f->mainLine('Tacos M', $line['composition_snapshot'], $line['instruction']));
     }
 }

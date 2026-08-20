@@ -95,7 +95,15 @@ class UberGoLiveHardeningTest extends TestCase
         $this->assertNotNull($line->item_id, 'item_id ancré (placeholder), pas NULL.');
         $snap = is_string($line->composition_snapshot) ? json_decode($line->composition_snapshot, true) : $line->composition_snapshot;
         $this->assertSame('ZZZ Menu Maxi Uber Special 999', $snap['uber_title'] ?? null, 'Le titre Uber réel est préservé dans le snapshot (cuisine le voit).');
-        $this->assertStringContainsString('ZZZ Menu Maxi', (string) $line->instruction, 'Le titre réel est visible en instruction cuisine.');
+        $this->assertTrue($snap['uber_unmapped'] ?? false, 'L\'état « non reconnu » voyage en donnée structurée.');
+
+        // [UBER TITRE ENTIER 2026-08-20 · owner] Le titre ne se cache plus dans l'instruction : il
+        // EST la ligne 1, celle que le cuisinier lit en gros. C'est la garantie qui compte —
+        // « le titre est quelque part dans la charge utile » n'a jamais fait cuire un plat.
+        $ligne = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class)
+            ->mainLine('Article Uber (non mappé)', $snap, (string) $line->instruction);
+        $this->assertStringContainsString('ZZZ MENU MAXI UBER SPECIAL 999', $ligne, 'Le titre réel est écrit EN ENTIER sur la ligne cuisine.');
+        $this->assertStringNotContainsString('ART', $ligne, '« ART » ne doit plus jamais atteindre la cuisine.');
     }
 
     /** @test — 2+3. dédup 2 events même commande + business_date/is_advance_order posés. */

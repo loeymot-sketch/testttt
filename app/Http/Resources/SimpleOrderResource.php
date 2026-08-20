@@ -234,7 +234,13 @@ class SimpleOrderResource extends JsonResource
         return $relation->map(function ($line) {
             return [
                 'item_id'     => (int) $line->item_id,
-                'item_name'   => $line->orderItem?->name,
+                // [UBER TITRE ENTIER 2026-08-20 · owner] Une ligne Uber non reconnue est ancrée sur
+                // l'article technique : sans ce repli, la liste « commandes en cours » de la caisse
+                // affichait « Article Uber (non mappé) » au lieu du plat commandé. Affichage pur
+                // (PosOrdersTrackerComponent/PosComponent l'écrivent tel quel) — aucune règle
+                // métier ne lit ce champ.
+                'item_name'   => \App\Services\Uber\UberLineTitle::unmapped($line->composition_snapshot)
+                    ?? $line->orderItem?->name,
                 'quantity'    => (int) $line->quantity,
                 // [CAISSE-WEB-INTEL 2026-08-06] Instruction client par ligne
                 // (colonne order_items.instruction) — le caissier doit voir une
