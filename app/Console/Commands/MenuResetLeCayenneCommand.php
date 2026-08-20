@@ -212,7 +212,7 @@ class MenuResetLeCayenneCommand extends Command
         $this->line('');
         $this->line('5. New items to create per category :');
         $this->line('   - Sandwich Cayenne   : 1 item (Sandwich Cayenne 7.00€, sauce locked)');
-        $this->line('   - Galette            : 2 items (Galette Normale 6.50€ sauce libre + Galette Cayenne 7.00€ sauce locked)');
+        $this->line('   - Galette            : 2 items (Galette Normale 6.50€ sauce libre + Galette Cayenne 7.40€ sauce locked)');
         $this->line('   - Sandwich Classique : 1 item (Sandwich Classique pain faluche 6.50€)');
         $this->line('   - Tacos              : 2 items (Tacos 1 viande 8.50€ + Big Tacos 2 viandes 11.50€)');
         $this->line('   - Bols Gourmands     : 5 items (Curry/Tandoori/Mariné/Crousti 10.50€ + Gratiné 12.50€)');
@@ -486,7 +486,11 @@ class MenuResetLeCayenneCommand extends Command
                 'slug'             => 'galette-cayenne',
                 'name'             => 'Galette Cayenne',
                 'item_category_id' => $cat->id,
-                'price'            => 7.00,
+                // [OWNER 2026-08-19] Aligné sur le Cayenne (7,40 €) : même produit, même prix.
+                // ⚠ `createOrRestoreItem` fait un `update()` sur un article existant — cette
+                // constante ÉCRASE donc le prix en base à chaque réinitialisation du menu.
+                // La laisser à 7,00 aurait silencieusement annulé le changement de tarif.
+                'price'            => 7.40,
                 'description'      => 'Galette signature avec sauce Cayenne maison incluse.',
                 'is_featured'      => 1,
                 'item_type'        => \App\Enums\ItemType::NON_VEG,
