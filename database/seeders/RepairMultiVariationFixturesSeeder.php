@@ -54,7 +54,14 @@ class RepairMultiVariationFixturesSeeder extends Seeder
             }
         }
 
-        $reportPath = base_path('reports/data-repair/MULTI_VARIATION_AUDIT_' . now()->toDateString() . '.md');
+        // [SUPERVISION 2026-08-22] En `testing`, l'audit atterrit sous storage/. Ce seeder est
+        // appelé par la suite de tests, qui déposait donc dans le dépôt un fichier NEUF par
+        // jour calendaire, en-tête « **Mode: FORCED (DB MUTATED)** » — relu plus tard, cela se
+        // lit comme la preuve qu'on a forcé une mutation de la base opérationnelle.
+        // Voir App\Support\GeneratedReportPath.
+        $reportPath = \App\Support\GeneratedReportPath::resolve(
+            'reports/data-repair/MULTI_VARIATION_AUDIT_' . now()->toDateString() . '.md'
+        );
         $dir = dirname($reportPath);
         if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);

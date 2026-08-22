@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\Status;
+use App\Support\GeneratedReportPath;
 use App\Models\Item;
 use App\Services\RawMaterials\FoodCostService;
 use Illuminate\Console\Command;
@@ -26,7 +27,9 @@ use Illuminate\Support\Facades\File;
  */
 class RawMaterialFoodCostCommand extends Command
 {
-    protected $signature = 'raw-materials:food-cost {--dry-run : Calculer et afficher sans écrire le fichier}';
+    protected $signature = 'raw-materials:food-cost
+                            {--dry-run : Calculer et afficher sans écrire le fichier}
+                            {--out= : Écrire le rapport ailleurs (chemin absolu, ou relatif à la racine du dépôt)}';
 
     protected $description = 'Génère le rapport food cost (prix vente vs coût matière, marge) par produit. Les coûts inconnus (avg_cost NULL) = « en attente prix d\'achat », attendu tant que les factures ne sont pas saisies.';
 
@@ -68,7 +71,10 @@ class RawMaterialFoodCostCommand extends Command
 
         $md = $this->render($groups, $complete, $pending, $noRecipe, $items->count());
 
-        $path = base_path(self::REPORT_PATH);
+        // [SUPERVISION 2026-08-22] En `testing`, le rapport atterrit sous storage/ : la suite
+        // de tests réécrivait ce fichier du dépôt avec des données de FIXTURE
+        // (« 1 produits actifs — Cayenne 10,00 € »). Voir App\Support\GeneratedReportPath.
+        $path = GeneratedReportPath::resolve(self::REPORT_PATH, $this->option('out'));
         if (! $dry) {
             File::ensureDirectoryExists(dirname($path));
             File::put($path, $md);
@@ -76,7 +82,7 @@ class RawMaterialFoodCostCommand extends Command
 
         $this->info(($dry ? '[dry-run] ' : '')."Food cost — {$items->count()} produits : "
             ."{$complete} complets, {$pending} en attente prix, {$noRecipe} sans recette."
-            .($dry ? '' : " Rapport : ".self::REPORT_PATH));
+            .($dry ? '' : " Rapport : ".$path));
 
         return self::SUCCESS;
     }

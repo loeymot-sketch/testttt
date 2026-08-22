@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\RawMaterials;
 
+use App\Support\GeneratedReportPath;
+
 use App\Console\Commands\RawMaterialFoodCostCommand;
 use App\Enums\OrderStatus;
 use App\Enums\Status;
@@ -51,7 +53,7 @@ class FoodCostAndReplayTest extends TestCase
         ]);
 
         // Rapport propre entre les tests (chemin partagé dans le repo).
-        $path = base_path(RawMaterialFoodCostCommand::REPORT_PATH);
+        $path = GeneratedReportPath::resolve(RawMaterialFoodCostCommand::REPORT_PATH);
         if (File::exists($path)) {
             File::delete($path);
         }
@@ -268,7 +270,7 @@ class FoodCostAndReplayTest extends TestCase
 
         $this->artisan('raw-materials:food-cost')->assertExitCode(0);
 
-        $path = base_path(RawMaterialFoodCostCommand::REPORT_PATH);
+        $path = GeneratedReportPath::resolve(RawMaterialFoodCostCommand::REPORT_PATH);
         $this->assertTrue(File::exists($path), 'Le rapport food cost doit être écrit.');
 
         $content = File::get($path);

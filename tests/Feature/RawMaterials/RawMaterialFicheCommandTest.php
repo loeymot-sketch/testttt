@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\RawMaterials;
 
+use App\Support\GeneratedReportPath;
+
 use App\Console\Commands\RawMaterialFicheCommand;
 use App\Enums\Status;
 use App\Models\Branch;
@@ -38,7 +40,7 @@ class RawMaterialFicheCommandTest extends TestCase
         parent::setUp();
         $this->seedCatalog();
         // Fiche propre entre les tests (chemin partagé dans le repo).
-        $path = base_path(RawMaterialFicheCommand::FICHE_PATH);
+        $path = GeneratedReportPath::resolve(RawMaterialFicheCommand::FICHE_PATH);
         if (File::exists($path)) {
             File::delete($path);
         }
@@ -49,7 +51,7 @@ class RawMaterialFicheCommandTest extends TestCase
     {
         $this->artisan('raw-materials:fiche')->assertExitCode(0);
 
-        $path = base_path(RawMaterialFicheCommand::FICHE_PATH);
+        $path = GeneratedReportPath::resolve(RawMaterialFicheCommand::FICHE_PATH);
         $this->assertTrue(File::exists($path), 'La fiche doit être écrite.');
 
         $content = File::get($path);
@@ -73,7 +75,7 @@ class RawMaterialFicheCommandTest extends TestCase
         );
 
         // Contrôle croisé sur le fichier : chaque produit du catalogue y figure.
-        $content = File::get(base_path(RawMaterialFicheCommand::FICHE_PATH));
+        $content = File::get(GeneratedReportPath::resolve(RawMaterialFicheCommand::FICHE_PATH));
         $found = Item::query()->where('status', Status::ACTIVE)->pluck('name')
             ->filter(fn ($n) => str_contains($content, $n))->count();
         $this->assertGreaterThan(20, $found, 'Plus de 20 produits nommés dans la fiche.');
@@ -171,7 +173,7 @@ class RawMaterialFicheCommandTest extends TestCase
         $this->assertSame('Œuf', $oeuf->rawMaterial->name);
 
         // Section Extras rendue dans la fiche.
-        $content = File::get(base_path(RawMaterialFicheCommand::FICHE_PATH));
+        $content = File::get(GeneratedReportPath::resolve(RawMaterialFicheCommand::FICHE_PATH));
         $this->assertStringContainsString('Extras', $content);
     }
 

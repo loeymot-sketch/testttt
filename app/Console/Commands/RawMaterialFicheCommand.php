@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Support\GeneratedReportPath;
+
 use App\Enums\Status;
 use App\Models\Item;
 use App\Models\RawMaterial;
@@ -47,7 +49,9 @@ use Illuminate\Support\Facades\File;
  */
 class RawMaterialFicheCommand extends Command
 {
-    protected $signature = 'raw-materials:fiche {--dry-run : Calculer et afficher sans écrire (ni DB, ni fichier)}';
+    protected $signature = 'raw-materials:fiche
+                            {--dry-run : Calculer et afficher sans écrire (ni DB, ni fichier)}
+                            {--out= : Écrire la fiche ailleurs (chemin absolu, ou relatif à la racine du dépôt)}';
 
     protected $description = 'Génère la fiche paramètres owner (recettes pré-remplies produit→matières) + upsert des lignes de recette. Idempotent.';
 
@@ -124,7 +128,7 @@ class RawMaterialFicheCommand extends Command
     public function handle(): int
     {
         $dry = (bool) $this->option('dry-run');
-        $r = self::generate($dry);
+        $r = self::generate($dry, $this->option('out'));
 
         $this->info(($dry ? '[dry-run] ' : '')
             ."Fiche paramètres — {$r['products']} produits pré-remplis, "
@@ -138,7 +142,7 @@ class RawMaterialFicheCommand extends Command
     /**
      * @return array{products:int,lines:int,unitaire:int,path:string}
      */
-    public static function generate(bool $dryRun = false): array
+    public static function generate(bool $dryRun = false, ?string $out = null): array
     {
         // 1. S'assurer que la baseline matières a tourné (call silencieux si vide).
         if (RawMaterial::query()->where('branch_id', self::BRANCH_ID)->count() === 0) {
@@ -273,7 +277,11 @@ class RawMaterialFicheCommand extends Command
         }
 
         $unitaireCount = array_sum(array_map('count', $unitaireGroups));
-        $path = base_path(self::FICHE_PATH);
+        // [SUPERVISION 2026-08-22] En `testing`, la fiche atterrit sous storage/. Ce fichier
+        // est TRACKÉ et son en-tête dit « Owner : corrige les quantités » : le propriétaire
+        // l'édite à la main, et un `php artisan test` l'écrasait sans un mot.
+        // Voir App\Support\GeneratedReportPath.
+        $path = GeneratedReportPath::resolve(self::FICHE_PATH, $out);
 
         if (! $dryRun) {
             File::ensureDirectoryExists(dirname($path));
@@ -284,7 +292,7 @@ class RawMaterialFicheCommand extends Command
             'products' => $productCount,
             'lines' => $lineCount,
             'unitaire' => $unitaireCount,
-            'path' => self::FICHE_PATH,
+            'path' => $path,
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ItemAttribute;
+use App\Support\GeneratedReportPath;
 use Database\Seeders\RepairMultiVariationFixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,7 +34,7 @@ class RepairMultiVariationFixturesSeederTest extends TestCase
         $seeder = new RepairMultiVariationFixturesSeeder();
         $seeder->run(false);
 
-        $reportPath = base_path('reports/data-repair/MULTI_VARIATION_AUDIT_' . now()->toDateString() . '.md');
+        $reportPath = GeneratedReportPath::resolve('reports/data-repair/MULTI_VARIATION_AUDIT_' . now()->toDateString() . '.md');
         $this->assertFileExists($reportPath);
         $content = file_get_contents($reportPath);
         $this->assertStringContainsString('DRY-RUN', $content);
