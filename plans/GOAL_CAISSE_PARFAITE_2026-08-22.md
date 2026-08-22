@@ -143,7 +143,10 @@ resources/js/components/admin/pos/PosComponent.vue      7274 lignes
   :893   <header class="pos-v5-cart__head pos-v4-cart-head flex-shrink-0">
   :1049  <!-- [C2-CAISSE 2026-07-05] Nom du client (optionnel) -->
   :1058  label 'Nom du client (imprimé sur le ticket cuisine)'
-  :1117  placeholder="Nom du client"
+  :1063  input v-model="checkoutProps.form.pos_customer_name" maxlength=60 data-testid="pos-customer-name"
+  :1117  ⚠️ CE N'EST **PAS** LE NOM CLIENT — c'est `deliveryInline.name` (livraison), qui
+         alimente `orders.token` avec le PREMIER MOT seulement (:5634). Deux champs
+         « nom client » cohabitent dans ce composant, deux colonnes, deux troncatures.
   :1251  <div class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto ...">
   :1377  <footer class="pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0">
   :2792  computed posBrowseMode        :2799  showCategoryGrid === 'categories'
@@ -268,7 +271,7 @@ peut l'attraper, puisque les deux fonctionnent comme prévu.
     « Téléphone », « Programmer ».
 
 - **T-1.2.2** Sortir le champ nom/téléphone de l'en-tête compressible vers le corps du panier.
-  • anchor : de `PosComponent.vue:1049-1117` vers `:1251` (`.pos-v5-cart__body`)
+  • anchor : de `PosComponent.vue:1049-1078` vers `:1251` (`.pos-v5-cart__body`)
   • test : `tests/js/posCart.spec.js` (existant) + la sentinelle T-1.2.1 (qui doit alors ne plus
     lister le champ nom)
   • acceptance : **C2 = 0** contrôle de saisie coupé · **C3 préservé** (corps ≥ 20 vh, pied
@@ -528,6 +531,61 @@ owner ; `commit --only` ré-ajoute ; `assertExitCode(1)` ne distingue pas « blo
 `overflow-x` non déclaré devient `auto`) · `page_blanche_vendor_recompile_seul_2026-08-19` ·
 `suite_sqlite_memoire_pas_mysql_2026-08-20` (aucune épreuve de CONCURRENCE n'est écrivable dans
 cette suite — structurel).
+
+---
+
+## §Z — AMENDEMENT DU 2026-08-22 (après vagues 1-3) — CE QUE L'AUDIT ADVERSE A RÉFUTÉ
+
+> Un plan qui ne change pas après confrontation n'a pas été confronté. Quatre spécialistes en
+> lecture seule ont été lancés en parallèle sur ce GOAL. Deux de ses tâches sont mortes.
+
+**ERREUR FACTUELLE CORRIGÉE (§1.3, §3)** — le GOAL citait `PosComponent.vue:1117` comme le champ
+nom client. **Faux.** C'est `deliveryInline.name`, un champ LIVRAISON distinct qui écrit
+`orders.token` avec le premier mot seulement. Le vrai champ est **:1063**. Deux « nom client »
+cohabitent dans le même composant — un correctif qui les aurait fusionnés en cassait un en silence.
+
+**T-1.1.2 / OPTION A — RÉFUTÉE.** Replier les 4 panneaux de suivi par défaut est *dangereux* :
+· `PosComponent.vue:392-399` (Q10, 2026-05-21, mandat propriétaire) — les panneaux sont rendus
+  MÊME VIDES parce qu'« un caissier ne pouvait pas distinguer une période calme d'une panne de
+  sondage ». Le panneau vide EST la balise de vie.
+· `PosComponent.vue:647-653` (P0 propriétaire, 2026-08-10) — « Web payées » n'a aucun bouton
+  d'action : **son seul rôle est d'être VU**. Une commande site payée 31,40 € était passée
+  « sans un bruit — ni ligne, ni bip, ni papier ». Le replier annule la fonction.
+⇒ **C1 reste OUVERT, bloqué sur G1.** Les trois options A/B/C ont maintenant un coût connu ;
+aucune n'est gratuite. C'est un arbitrage entre deux mandats propriétaires qui se contredisent.
+
+**T-1.2.2 — RÉFUTÉE.** Déplacer le champ nom client vers le corps du panier :
+· techniquement sans risque (aucun `ref`/sélecteur ne dépend de sa position) ;
+· mais `PosComponent.vue:1048-1051` documente que ce champ a DÉJÀ été indécouvrable une fois
+  (2026-08-05, « l'owner écrivait le nom au stylo »). Le corps du panier DÉFILE avec les lignes
+  de commande : le champ sortirait du champ visuel dès que la commande grossit — retour exact
+  au symptôme ;
+· et il romprait le `<fieldset>` (:1005-1242) qui le groupe avec le type de commande (ARIA).
+
+**CE QUI A ÉTÉ FAIT À LA PLACE — et qui n'était dans aucune des trois options.**
+Le plafond `max-height: 20vh` de l'en-tête a été dimensionné le 19/08 contre un pied de **394 px**.
+Mesuré le 2026-08-22 : le pied fait **122 px**. Le plafond visait un poids qui n'existe plus.
+Relâché au-dessus de 760 px de fenêtre (seuil trouvé empiriquement : tient jusqu'à 680, rompt à
+640) : à 768 l'en-tête passe de 152 à **331 px, 0 caché**, le champ nom client devient visible
+**sans aucun geste**, le corps reste à 179 px au-dessus de son plancher de 154, le pied ne bouge
+pas. Sous 760 px, rien ne change. ⇒ **C2 ATTEINT** aux 4 gabarits.
+
+**DEUX TROUS TROUVÉS EN CHEMIN, non traités ici, à ouvrir plus tard**
+1. **F1–F12 sélectionnent une catégorie sans jamais défiler** (`PosComponent.vue:3115-3119`,
+   `:5066-5074`, testé `tests/js/posBarcode.spec.js:67-76`) — mais **aucune légende à l'écran** ;
+   et `PosV5SearchInput` prévoit un indice `<kbd>` que `PosComponent.vue:717-727` ne passe jamais.
+   ⚠️ Piège avant d'étiqueter : `onFKeyShortcut` indexe `categories` (liste brute) tandis que la
+   grille rend `categoryTiles` = `browseCategoryTiles()` qui **filtre `id > 0`**
+   (`resources/js/helpers/posBrowseView.js:58`). **F1 vise la sentinelle « toutes catégories »,
+   pas la première tuile.** Étiqueter naïvement afficherait de faux libellés.
+2. **Aucun test ne va jusqu'au papier.** Le trajet réel HTTP → DB → event → listener →
+   `KitchenTicketAutoPrinter::printOnce` (claim+hydrate) → `renderKitchenTicket` → `sendRaw`
+   n'est couvert par rien AVEC un nom client : les tests de rendu court-circuitent la chaîne
+   (Order en mémoire), et `KitchenTicketAutoPrintTest` — qui exerce le vrai déclenchement — ne
+   porte jamais de nom. Un `select()` amont qui oublierait `pos_customer_name` casserait le
+   ticket cuisine sans faire rougir un seul test. C'est **T-2.1.1**, toujours à faire.
+3. **Marge sous 600 px** : le calcul du 19/08 annonce 600 px comme pire cas ; le seuil réel de
+   rupture mesuré est vers 640-660. Risque PRÉEXISTANT, non introduit ici, à documenter.
 
 ---
 
