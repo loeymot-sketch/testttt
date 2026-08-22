@@ -1,0 +1,28 @@
+# [SUPERVISION 2026-08-22] Runtime local de Claude Code — jamais versionné.
+#
+# POURQUOI CE FICHIER EXISTE
+# Ces règles ne vivaient que dans `.git/info/exclude`, qui est LOCAL À CETTE COPIE : il n'est
+# ni poussé, ni cloné, ni visible d'un worktree créé ailleurs. Deux entrées avaient donc déjà
+# été committées par accident, dans des commits qui parlaient d'autre chose :
+#   · `scheduled_tasks.lock` (commits « up », « p », « kds ») ;
+#   · `worktrees/clever-hypatia-1e4f84`, enregistré comme GITLINK (mode 160000) par
+#     c86644869 — un worktree git avalé comme s'il était un sous-module, sans `.gitmodules`.
+#     Résultat : `git status` restait sale en permanence sur cette entrée.
+#
+# ET CE N'EST PAS COSMÉTIQUE : `scripts/deploy/deploy.sh:103` REFUSE de déployer quand
+# `git status` n'est pas vide. Une saleté permanente entraîne l'opérateur à passer `--force`,
+# qui écrase les hot-patches SCP — exactement ce que cette garde existait pour empêcher.
+#
+# Ce qui RESTE versionné volontairement : `agents/`, `brain/` (l'ancre d'audit partagée entre
+# sessions, scellée par « chore(brain): seal »), `launch.json`, et les `.md` de `worktrees/`.
+/scheduled_tasks.lock
+/scheduled_tasks.json
+/routines/.state/
+/checkpoints/
+/mailbox/
+/agent-registry.json
+/agent-memory-local/
+/first-run
+/assistant-daemon-state.json
+# Les worktrees eux-mêmes (répertoires) — pas les notes .md rangées à côté.
+/worktrees/*/
