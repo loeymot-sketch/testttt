@@ -47,6 +47,43 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-22 (soir) — GOAL CAISSE DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI**
+>
+> HEAD prod **`ac700e41c`** (== origin), avance rapide `e1ef70887..ac700e41c`, 7 commits, aucun
+> `--force`. Un seul fichier de PRODUCTION dans le lot : `resources/css/pos-v5.css`. Ni
+> dépendance, ni migration — donc ni `composer install`, ni `npm ci`, ni `migrate`.
+>
+> **DEUX PREUVES QUE LE TRAVAIL DU MATIN TIENT EN CONDITIONS RÉELLES**
+> · Avant le déploiement, `git status` du VPS : **0 ligne** (avant ce matin : 3 fichiers sales en
+>   permanence, qui faisaient aborter le déploiement suivant).
+> · **APRÈS un `npx mix --production` complet, `git status` est TOUJOURS à 0 ligne.** Le cycle
+>   d'auto-empoisonnement est rompu, mesuré sur la machine qui sert.
+> · Conséquence inattendue et bienvenue : les bundles étant désormais IGNORÉS, `git reset --hard`
+>   ne les efface plus — le site a continué de servir l'ancien CSS jusqu'à ce que le build le
+>   remplace. **Aucune fenêtre sans feuille de style.**
+>
+> ⚠️ **LE BUILD A ÉCHOUÉ AU PREMIER ESSAI — cause : propriétaires de fichiers, pas code.**
+> `EACCES` en écriture sur `public/mix-manifest.json` en tant que `www-data`. Diagnostic :
+> **107 fichiers de `public/` appartiennent à `ubuntu`** (dates du 13 et 19/08) — ce serveur a
+> TOUJOURS été construit en tant qu'`ubuntu`. Mon `chown www-data` du matin sur 3 fichiers avait
+> créé l'incohérence. Réaligné (`chown ubuntu:www-data`), reconstruit en tant qu'`ubuntu` : OK.
+> 🔴 **Conséquence à retenir : `scripts/deploy/deploy.sh` ne peut PAS tourner sur cette machine.**
+> Il exige PHP ≥ 8.4 (le VPS a 8.1), lance tout en `sudo -u www-data` (qui n'a pas les droits ici),
+> cible `lecayenne-queue-worker:*` (le service s'appelle `lecayenne-worker`) et vise `main` par
+> défaut alors que la prod est sur `pos/category-first-caisse-2026-06-23`. Le lancer tel quel
+> ferait au mieux avorter, au pire un `reset --hard origin/main`.
+>
+> **VÉRIFIÉ SUR LE CONTENU SERVI, jamais depuis un `git push`**
+> La page `/admin/pos` demande `/css/app.css?id=61a1d97da8b4a6c991422d5a6727a3a5` ; le CSS servi
+> a ce md5 ET contient la règle `min-height: 760px`. Ce fichier est **octet pour octet identique**
+> à celui mesuré en local — les mesures (en-tête 331 px, 0 caché, champ nom client visible)
+> valent donc pour la production. Porte `[6b/12]` : « OK — 17 bundles présents et non vides ».
+> 6 surfaces en 200. NF525 : **CHAIN OK**.
+>
+> 🔴 **NON VALIDÉ, et je ne le prétends pas** : je n'ai pas de compte caisse en production, donc
+> aucune capture de l'écran RÉEL du comptoir. La preuve est indirecte (CSS servi identique au CSS
+> mesuré). **La porte G5 — validation par le propriétaire sur le vrai poste — reste ouverte.**
+
 > **2026-08-22 (suite) — GOAL CAISSE PARFAITE : vagues 1-4 exécutées, 4 agents en parallèle. NON POUSSÉ.**
 >
 > Branche **`goal/caisse-parfaite-2026-08-22`** depuis `fbe13a48a`. Instantané SQL pris.
