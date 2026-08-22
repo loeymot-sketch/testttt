@@ -220,6 +220,24 @@ sudo -u "$APP_USER" npx mix --production
 # Shrink node_modules to runtime-only after Mix is built (soketi runtime needs prod deps).
 sudo -u "$APP_USER" npm prune --production
 
+# [SUPERVISION 2026-08-22] LE BUILD A-T-IL VRAIMENT TOUT PRODUIT ?
+#
+# `/api/health` repond 200 meme quand la SPA est un ecran blanc : le controle final de ce
+# script ne peut donc PAS voir le mode de panne le plus couteux qu on ait connu ici — un
+# bundle manquant ou vide, tout le reste en 200, aucune erreur nulle part (webpack attend un
+# morceau jamais enregistre). Depuis que les artefacts de build ne sont plus versionnes, un
+# build a moitie fait ne laisse plus un fichier PERIME derriere lui : il ne laisse RIEN. On
+# verifie donc ici, AVANT les migrations, que chaque entree de mix-manifest.json existe et
+# n est pas vide. Echouer maintenant coute un deploiement ; echouer plus tard coute un service.
+echo "[6b/12] Verification d integrite des bundles (mix-manifest)..."
+if ! sudo -u "$APP_USER" php -r '""" + php + """' "$APP_DIR"; then
+    echo
+    echo "ERROR: build incomplet — des bundles annonces par mix-manifest.json manquent ou sont vides."
+    echo "  Relancer avec la sortie VISIBLE : sudo -u ${APP_USER} npx mix --production"
+    echo "  Rien n a ete migre : la base n a pas ete touchee."
+    exit 6
+fi
+
 # ---------- 7. Storage link --------------------------------------------------
 
 echo "[7/12] storage:link..."
