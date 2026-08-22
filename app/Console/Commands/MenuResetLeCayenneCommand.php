@@ -143,26 +143,18 @@ class MenuResetLeCayenneCommand extends Command
             $this->line('');
         }
 
-        if (!$this->option('force') && !$dryRun) {
-            $this->warn('⚠️  This will :');
-            $this->line('  - Soft-delete 8 categories + ~35 items + 9 viandes + 6 sauces');
-            $this->line('  - Rename 4 kept categories (Tacos/Desserts/Boissons/Suppléments)');
-            $this->line('  - Create 5 new categories (Cayenne/Galette/Classique/Bols/Frites)');
-            $this->line('  - Create composer_profiles for 5 bols + 2 frites items');
-            $this->line('  - Fire CategoryCreated/Updated/Deleted events for sync');
-            $this->line('');
-            if (!$this->confirm('Proceed?')) {
-                $this->warn('Aborted by user.');
-                return self::SUCCESS;
-            }
-        }
-
         try {
             $this->preflightChecks();
 
             // [SUPERVISION 2026-08-22] Comparer le spec au catalogue VIVANT avant d'écrire.
             // Le rapport s'affiche toujours (y compris en dry-run, où il est le plus utile) ;
             // il ne BLOQUE que sur une exécution réelle. Voir catalogueDriftReport().
+            //
+            // Il passe AVANT la demande de confirmation, et non après : confirmer puis se faire
+            // refuser apprend à l'opérateur à chercher l'option qui passe outre sans lire. Et la
+            // liste qu'affichait cette confirmation (« will create 5 new categories… ») décrit un
+            // spec qui ne correspond plus à la carte servie — la lui montrer en premier serait
+            // lui faire approuver une description périmée.
             $derive = $this->renderDriftReport(self::catalogueDriftReport());
             if ($derive && ! $dryRun && ! $this->option('allow-drift')) {
                 $this->line('');
@@ -176,6 +168,20 @@ class MenuResetLeCayenneCommand extends Command
             if ($dryRun) {
                 $this->dryRunPlan();
                 return self::SUCCESS;
+            }
+
+            if (!$this->option('force')) {
+                $this->warn('⚠️  This will :');
+                $this->line('  - Soft-delete 8 categories + ~35 items + 9 viandes + 6 sauces');
+                $this->line('  - Rename 4 kept categories (Tacos/Desserts/Boissons/Suppléments)');
+                $this->line('  - Create 5 new categories (Cayenne/Galette/Classique/Bols/Frites)');
+                $this->line('  - Create composer_profiles for 5 bols + 2 frites items');
+                $this->line('  - Fire CategoryCreated/Updated/Deleted events for sync');
+                $this->line('');
+                if (!$this->confirm('Proceed?')) {
+                    $this->warn('Aborted by user.');
+                    return self::SUCCESS;
+                }
             }
 
             DB::transaction(function () {
