@@ -836,6 +836,41 @@
     }
 }
 
+/* [GOAL CAISSE 2026-08-22] LE PLAFOND CI-DESSUS A ÉTÉ CALCULÉ CONTRE UN PIED QUI N'EXISTE PLUS.
+   Le calcul du 2026-08-19 (bloc ci-dessus) dimensionnait le plafond de l'en-tête contre un pied
+   « ≈ 394 px » incompressible. MESURÉ AU NAVIGATEUR LE 2026-08-22, aux 4 gabarits de comptoir :
+   `.pos-v5-cart__foot` fait **122 px**. Le pied a fondu depuis, et le plafond est resté serré
+   comme s'il pesait toujours 394. Conséquence concrète : à 1366×768 l'en-tête n'affichait que
+   152 px de ses 366 px, et le champ « Nom du client (imprimé sur le ticket cuisine) » —
+   PosComponent.vue:1063 — tombait sous la ligne de défilement INTERNE de l'en-tête. Or ce
+   champ avait été rendu visible le 2026-08-05 précisément parce qu'il était indécouvrable
+   (le propriétaire écrivait le nom au stylo sur le ticket). Deux correctifs justes, à quinze
+   jours d'écart, dont le second annulait discrètement le premier.
+
+   ON NE REPREND PAS LES PIXELS RENDUS AU PANIER LE 19/08 — on rend à l'en-tête ceux que le
+   pied a libérés. Vérifié à 1366×768 après relâchement : en-tête 331 px (entier),
+   corps 179 px pour un plancher de 154 px, pied entièrement visible (bas à 690 < 768).
+
+   POURQUOI 760 px ET PAS PLUS BAS. Seuil de rupture cherché EMPIRIQUEMENT, pas déduit
+   (1366 × hauteur décroissante, plafond relâché) :
+       1080→corps 460 · 900→298 · 800→208 · 768→179 · 740→155 · 720→149 · 700→144 · 680→138
+       640→corps 127 < plancher 128  ⇒ ROMPT      600→116 < 120  ⇒ ROMPT
+   Ça tient jusqu'à 680. On s'arrête à 760 : à 768 la marge est de 25 px, à 740 elle n'est que
+   de 7 px. Sous 760, le comportement livré le 19/08 reste EXACTEMENT en place — aucune tablette
+   basse n'est touchée par ce correctif. */
+@media (min-height: 760px) {
+    .pos-v5-cart .pos-v5-cart__head {
+        max-height: none;
+        /* Les DEUX axes, volontairement. La règle de base pose `overflow-x: hidden` ; laisser
+           `overflow-y: visible` en face aurait été recalculé en `auto` par la spec CSS
+           Overflow 3 — c'est exactement le piège relevé par le RED-team du 2026-08-19
+           (commentaire à `.pos-v5-cart .pos-v5-cart__head`), et il n'y a aucune raison de le
+           rejouer trois jours plus tard. Sans plafond, rien ne déborde : aucun axe n'a besoin
+           de défiler. */
+        overflow: visible;
+    }
+}
+
 .pos-v5-cart__foot {
     flex-shrink: 0;
     padding: var(--pos-v5-space-3) var(--pos-v5-space-4) var(--pos-v5-space-4);
