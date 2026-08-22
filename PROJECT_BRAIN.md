@@ -47,9 +47,12 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **2026-08-22 — SUPERVISION : 3 défauts LATENTS + 1 porte de déploiement (dont 1 défaut que je me suis infligé). NON POUSSÉ.**
+> **2026-08-22 — SUPERVISION : 3 défauts LATENTS + 1 porte de déploiement (+ 2 défauts auto-infligés). POUSSÉ.**
 >
-> HEAD local **`d228a4033`** — 7 commits **en avance sur `origin`**, aucun push (règle owner).
+> HEAD **`85c084159`** — **9 commits POUSSÉS** sur `origin/pos/category-first-caisse-2026-06-23` en
+> avance rapide `0acac58ac..85c084159`, sur demande explicite du propriétaire, aucun `--force`,
+> aucun historique réécrit. Vérifié en relisant le SHA distant (`git ls-remote`), pas depuis le
+> cache local. ⚠️ **POUSSÉ ≠ DÉPLOYÉ** : le VPS ne bougera qu'au prochain `scripts/deploy/deploy.sh`.
 > Point de départ : `0acac58ac` (== origin). Zones gelées : **0 ligne** touchée
 > (`git diff --stat 0acac58ac..HEAD -- <15 fichiers §7>` vide). NF525 : **CHAIN OK** sur les
 > 6 branches actives. Vitest sentinelles : **413 verts / 58 fichiers**.
@@ -71,6 +74,13 @@ Plateforme restaurant fast-food complète :
 > « **Mode: FORCED (DB MUTATED)** ». C'étaient des sorties de FIXTURE. Supprimés.
 > Correctif : `App\Support\GeneratedReportPath` + option `--out=` + 5 cas qui empreintent le
 > fichier du dépôt avant/après chaque écrivain.
+>
+> 🔴 **UNE FOIS, AU PROCHAIN DÉPLOIEMENT** — le détrackage ne prend effet qu'APRÈS un
+> `reset --hard`, or la garde `deploy.sh:103` s'exécute AVANT lui. Le VPS porte donc encore ces
+> 7 fichiers comme trackés-et-modifiés : **le premier déploiement après ce push abortera encore
+> une fois**. Le débloquer une seule fois — `DEPLOY_FORCE=1 bash scripts/deploy/deploy.sh` après
+> avoir vérifié qu'aucun hot-patch SCP n'attend, ou `git -C <app> checkout -- public/` puis
+> déploiement normal. Ensuite le cycle est rompu définitivement.
 >
 > **2. LE DÉPLOIEMENT SE SALISSAIT LUI-MÊME ET DÉSARMAIT SA PROPRE GARDE** (`c089b37ef`)
 > `public/.gitignore` déclarait les bundles ignorés, mais **7 fichiers étaient restés dans
