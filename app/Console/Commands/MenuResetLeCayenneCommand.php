@@ -26,9 +26,21 @@ class MenuResetLeCayenneCommand extends Command
 {
     protected $signature = 'menu:reset-le-cayenne
                             {--dry-run : Show what would be done, no DB writes}
-                            {--force : Skip confirmation prompt}';
+                            {--force : Skip confirmation prompt}
+                            {--allow-drift : Passer outre le rapport de dérive du catalogue (voir catalogueDriftReport)}';
 
     protected $description = 'Archive 8 old categories + rename 4 kept + create 5 new (Le Cayenne 2026-05-13 spec)';
+
+    /**
+     * [SUPERVISION 2026-08-22] Code de sortie RÉSERVÉ à « le catalogue a dérivé ».
+     *
+     * Pourquoi pas `FAILURE` (1) : cette commande retourne déjà 1 quand elle explose en cours
+     * de route. Les deux confondus, on ne peut pas distinguer « bloquée AVANT d'écrire » de
+     * « plantée APRÈS avoir commencé » — ni depuis un script, ni depuis un test. Le trou a été
+     * démontré : neutraliser la garde laissait les cas de `MenuResetDriftGuardTest` tous verts,
+     * parce que la commande échouait plus loin, pour une autre raison, avec le même code.
+     */
+    public const EXIT_CATALOGUE_DRIFT = 2;
 
     private const ARCHIVE_SLUGS = [
         'nos-sandwichs', 'nos-burgers', 'nos-assiettes',
@@ -70,6 +82,30 @@ class MenuResetLeCayenneCommand extends Command
         ['name' => 'Oignons frits',   'price' => 1.0],
         ['name' => 'Champignons',     'price' => 1.0],
         ['name' => 'Boule gratinée',  'price' => 1.0],
+    ];
+
+    /**
+     * [SUPERVISION 2026-08-22] LES 13 ARTICLES QUE `step9CreateNewItems()` ÉCRIT.
+     *
+     * Recopiés ici pour que le pré-vol puisse COMPARER le spec au catalogue vivant avant
+     * d'écrire quoi que ce soit. Le risque évident d'une recopie, c'est qu'elle se désynchronise
+     * de la vérité ; `MenuResetDriftGuardTest` relit le fichier source et échoue si un
+     * `createOrRestoreItem()` de step 9 n'apparaît pas ici, à l'identique (slug, nom, prix).
+     */
+    private const SPEC_ITEMS = [
+        ['slug' => 'sandwich-cayenne-classique', 'name' => 'Sandwich Cayenne',   'price' => 7.00],
+        ['slug' => 'galette-normale',            'name' => 'Galette Normale',    'price' => 6.50],
+        ['slug' => 'galette-cayenne',            'name' => 'Galette Cayenne',    'price' => 7.40],
+        ['slug' => 'sandwich-classique-faluche', 'name' => 'Sandwich Classique', 'price' => 6.50],
+        ['slug' => 'tacos-1-viande',             'name' => 'Tacos',              'price' => 8.50],
+        ['slug' => 'big-tacos-2-viandes',        'name' => 'Big Tacos',          'price' => 11.50],
+        ['slug' => 'bol-curry',                  'name' => 'Bol Curry',          'price' => 10.50],
+        ['slug' => 'bol-tandoori',               'name' => 'Bol Tandoori',       'price' => 10.50],
+        ['slug' => 'bol-marine',                 'name' => 'Bol Mariné',         'price' => 10.50],
+        ['slug' => 'bol-crousti',                'name' => 'Bol Crousti',        'price' => 10.50],
+        ['slug' => 'bol-gratine',                'name' => 'Bol Gratiné',        'price' => 12.50],
+        ['slug' => 'petite-frites',              'name' => 'Petite Frites',      'price' => 2.50],
+        ['slug' => 'grande-frites',              'name' => 'Grande Frites',      'price' => 4.00],
     ];
 
     private array $stats = [
@@ -124,6 +160,19 @@ class MenuResetLeCayenneCommand extends Command
         try {
             $this->preflightChecks();
 
+            // [SUPERVISION 2026-08-22] Comparer le spec au catalogue VIVANT avant d'écrire.
+            // Le rapport s'affiche toujours (y compris en dry-run, où il est le plus utile) ;
+            // il ne BLOQUE que sur une exécution réelle. Voir catalogueDriftReport().
+            $derive = $this->renderDriftReport(self::catalogueDriftReport());
+            if ($derive && ! $dryRun && ! $this->option('allow-drift')) {
+                $this->line('');
+                $this->error('❌ ABORT : le catalogue a dérivé sous ce spec — la réinitialisation créerait des doublons ou ressusciterait des produits retirés de la vente.');
+                $this->line('   Rien n\'a été écrit. Relance avec --dry-run pour le plan complet,');
+                $this->line('   ou --allow-drift si tu assumes la liste ci-dessus (arbitrage propriétaire).');
+
+                return self::EXIT_CATALOGUE_DRIFT;
+            }
+
             if ($dryRun) {
                 $this->dryRunPlan();
                 return self::SUCCESS;
@@ -167,6 +216,131 @@ class MenuResetLeCayenneCommand extends Command
 
         $branchCount = DB::table('branches')->count();
         $this->info("Pre-flight : {$branchCount} branch(es) detected.");
+    }
+
+    /**
+     * [SUPERVISION 2026-08-22] LE CATALOGUE A-T-IL DÉRIVÉ SOUS LE SPEC ?
+     *
+     * CE QUI A DÉCLENCHÉ CETTE GARDE
+     * Le 2026-08-19, un correctif a rattrapé UNE constante : `galette-cayenne` était figée à
+     * 7,00 € alors que la base vend 7,40 €, et `createOrRestoreItem()` fait un `update()` —
+     * la prochaine réinitialisation aurait donc silencieusement annulé le changement de tarif.
+     * Le correctif était juste. Sa PORTÉE ne l'était pas : le même mécanisme frappe les douze
+     * autres articles du spec, et pas seulement sur le prix.
+     *
+     * MESURÉ SUR LE CATALOGUE (2026-08-22), une réinitialisation ferait aujourd'hui :
+     *   · RESSUSCITER 7 produits retirés de la vente — les 5 bols (soft-deleted le 2026-05-28),
+     *     `big-tacos-2-viandes` et `sandwich-classique-faluche` (statut INACTIF). Quelqu'un les
+     *     a retirés volontairement ; `createOrRestoreItem()` fait `restore()` + `status=ACTIVE`.
+     *   · CRÉER 2 articles qui n'existent pas : « Sandwich Cayenne » à 7,00 € — alors que le
+     *     vrai sandwich signature est `cayenne` (#22) à 7,40 €, actif, dans la même carte — et
+     *     « Tacos » à 8,50 €.
+     *   · Laisser DEUX articles ACTIFS nommés « Sandwich Classique » à deux prix : le #163 à
+     *     7,40 € et le #25 ressuscité à 6,50 €. C'est exactement la confusion signalée par le
+     *     propriétaire le 2026-08-19 (« je le vois en admin, pas en caisse »).
+     *
+     * POURQUOI BLOQUER PLUTÔT QUE « CORRIGER » LES CONSTANTES
+     * Décider que le vrai Sandwich Cayenne est `cayenne` #22 et non `sandwich-cayenne-classique`,
+     * c'est redéfinir la carte — un arbitrage propriétaire, pas une décision d'outil
+     * (CLAUDE.md §10, porte humaine « correction métier incertaine »). La garde rend donc le
+     * dégât IMPOSSIBLE À DÉCLENCHER par accident, et laisse l'arbitrage à qui de droit.
+     * Bloqué > silencieusement dangereux.
+     *
+     * CE QUI NE DÉCLENCHE PAS LA GARDE : une base neuve. Les règles « créerait » et
+     * « écraserait » ne s'appliquent que si le catalogue contient déjà des articles ACTIFS.
+     *
+     * PUBLIC STATIC À DESSEIN : le rapport est la partie qu'on veut éprouver, et la sortie
+     * console d'une commande n'est pas capturable de façon fiable dans ce dépôt. Les cas de
+     * `MenuResetDriftGuardTest` affirment donc sur le TABLEAU rendu ici, pas sur du texte.
+     *
+     * @return array{resurrect:list<string>, create:list<string>, price:list<string>, dupes:list<string>}
+     */
+    public static function catalogueDriftReport(): array
+    {
+        $out = ['resurrect' => [], 'create' => [], 'price' => [], 'dupes' => []];
+
+        $cataloguePeuple = Item::whereNull('deleted_at')->where('status', Status::ACTIVE)->exists();
+
+        // Noms des articles ACTIFS qui SURVIVRONT à la réinitialisation, indexés par nom.
+        // On s'en sert pour prédire un doublon de nom AVANT de l'avoir créé.
+        $specSlugs = array_column(self::SPEC_ITEMS, 'slug');
+        $actifsParNom = [];
+        foreach (Item::whereNull('deleted_at')->where('status', Status::ACTIVE)->get(['id', 'slug', 'name', 'price']) as $vivant) {
+            $actifsParNom[$vivant->name][] = $vivant;
+        }
+
+        foreach (self::SPEC_ITEMS as $spec) {
+            /** @var Item|null $row */
+            $row = Item::withTrashed()->where('slug', $spec['slug'])->first();
+
+            if ($row === null) {
+                if ($cataloguePeuple) {
+                    $out['create'][] = sprintf(
+                        '%s — « %s » à %s € serait CRÉÉ (aucun article ne porte ce slug)',
+                        $spec['slug'], $spec['name'], number_format($spec['price'], 2, ',', ' ')
+                    );
+                }
+            } elseif ($row->trashed() || (int) $row->status !== (int) Status::ACTIVE) {
+                $out['resurrect'][] = sprintf(
+                    '%s (#%d) — « %s » serait REMIS EN VENTE (%s)',
+                    $spec['slug'], $row->id, $row->name,
+                    $row->trashed() ? 'supprimé le ' . $row->deleted_at->toDateString() : 'statut INACTIF'
+                );
+            } elseif (abs((float) $row->price - (float) $spec['price']) >= 0.005) {
+                $out['price'][] = sprintf(
+                    '%s (#%d) — %s € en base serait ÉCRASÉ par %s € du spec',
+                    $spec['slug'], $row->id,
+                    number_format((float) $row->price, 2, ',', ' '),
+                    number_format((float) $spec['price'], 2, ',', ' ')
+                );
+            }
+
+            // Doublon de nom : un article ACTIF portant déjà ce nom, sous un AUTRE slug, ne sera
+            // pas touché par la réinitialisation — il coexistera donc avec celui du spec.
+            foreach ($actifsParNom[$spec['name']] ?? [] as $vivant) {
+                if ($vivant->slug === $spec['slug'] || in_array($vivant->slug, $specSlugs, true)) {
+                    continue;
+                }
+                $out['dupes'][] = sprintf(
+                    'DEUX articles ACTIFS nommés « %s » : #%d (%s) à %s € et celui du spec (%s) à %s €',
+                    $spec['name'], $vivant->id, $vivant->slug,
+                    number_format((float) $vivant->price, 2, ',', ' '),
+                    $spec['slug'], number_format($spec['price'], 2, ',', ' ')
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    /** Rend le rapport lisible et dit s'il y a matière à bloquer. @return bool true = dérive */
+    private function renderDriftReport(array $drift): bool
+    {
+        $sections = [
+            'dupes'     => '⛔ DOUBLONS EN CAISSE — deux articles actifs sous le même nom',
+            'resurrect' => '⛔ RÉSURRECTIONS — des produits retirés de la vente reviendraient',
+            'create'    => '⚠️  CRÉATIONS — le spec vise des slugs absents du catalogue',
+            'price'     => '⚠️  PRIX ÉCRASÉS — le tarif en base serait remplacé par la constante',
+        ];
+
+        $derive = false;
+        foreach ($sections as $key => $titre) {
+            if (empty($drift[$key])) {
+                continue;
+            }
+            $derive = true;
+            $this->line('');
+            $this->warn($titre);
+            foreach ($drift[$key] as $ligne) {
+                $this->line('   - ' . $ligne);
+            }
+        }
+
+        if (! $derive) {
+            $this->info('Pre-flight : catalogue conforme au spec — aucune dérive.');
+        }
+
+        return $derive;
     }
 
     private function dryRunPlan(): void
