@@ -47,6 +47,49 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-22 (suite) — GOAL CAISSE PARFAITE : vagues 1-4 exécutées, 4 agents en parallèle. NON POUSSÉ.**
+>
+> Branche **`goal/caisse-parfaite-2026-08-22`** depuis `fbe13a48a`. Instantané SQL pris.
+> Zones gelées : **0 ligne**. Vitest : **432 fichiers, 3517 verts, 0 rouge**.
+>
+> **CE QUE L'AUDIT ADVERSE A TUÉ DANS MON PROPRE PLAN** (4 spécialistes lecture seule en parallèle) :
+> · le GOAL citait `PosComponent.vue:1117` comme champ nom client — **FAUX**, c'est
+>   `deliveryInline.name` (livraison, écrit `orders.token` avec le PREMIER MOT). Le vrai est **:1063** ;
+> · **replier les 4 panneaux de suivi : RÉFUTÉ** — mandat Q10 du 21/05 (`:392-399`, un panneau
+>   vide est la balise de vie du sondage) + P0 du 10/08 (`:647-653`, « Web payées » n'a aucun
+>   bouton : son seul rôle est d'ÊTRE VU, après 31,40 € passés « sans un bruit ») ;
+> · **déplacer le champ nom : RÉFUTÉ** — il a DÉJÀ été indécouvrable une fois (05/08), et le
+>   corps du panier défile avec les lignes de commande.
+>
+> **CE QUI A ÉTÉ FAIT À LA PLACE, et qui n'était dans aucune option du GOAL** (`a9769319a`) :
+> le plafond `max-height: 20vh` de l'en-tête du panier avait été dimensionné le 19/08 contre un
+> pied de **394 px**. Mesuré le 22/08 : le pied fait **122 px**. Le plafond visait un poids qui
+> n'existe plus. Relâché au-dessus de **760 px** de fenêtre — seuil trouvé EMPIRIQUEMENT (tient
+> jusqu'à 680, rompt à 640), pas déduit.
+> À 1366×768 et 1024×768 : en-tête **152 → 331 px, 0 caché** · champ « Nom du client (imprimé
+> sur le ticket cuisine) » **visible sans aucun geste** · corps du panier 179 px, toujours
+> au-dessus de son plancher de 154 · pied inchangé. **À 1024×600 : rien ne bouge**, le
+> comportement du 19/08 reste intact. On n'a repris aucun pixel au panier.
+>
+> **PORTE DE MESURE** `tests/e2e/goal-caisse-portes-de-mesure.spec.js` — C1/C2/C3 traduits en
+> chiffres refusables, 4 gabarits, écrite AVANT le correctif : **7 échecs → 3**.
+>
+> **TROU FERMÉ CÔTÉ CUISINE** (`d5233aacd`) : rien ne couvrait DB → `printOnce` (claim+hydrate)
+> → rendu → **octets envoyés**. Un `select()` oubliant `pos_customer_name` cassait le ticket sans
+> faire rougir un test. 4 cas, éprouvés par mutation (2 rouges à chaque casse volontaire).
+> `tests/Feature/Kitchen` complet : 126 verts.
+>
+> 🔴 **C1 RESTE OUVERT — porte G1.** La grille des catégories démarre toujours 24 px sous le bord
+> bas à 1366×768. L'option A est réfutée ; B (grille au-dessus) et C (grille collante) ont
+> maintenant un coût connu. C'est un arbitrage entre deux mandats propriétaires qui se
+> contredisent — je ne le tranche pas.
+>
+> ⚠️ **TROIS TROUS CONSIGNÉS** : (1) F1–F12 sélectionnent une catégorie sans défiler mais sans
+> aucune légende — et `onFKeyShortcut` indexe une liste que la grille FILTRE (`id > 0`), donc
+> **F1 ne vise pas la 1re tuile** ; (2) la marge sous 600 px du calcul du 19/08 est plus mince
+> qu'annoncée (rupture réelle vers 640-660) — PRÉEXISTANT ; (3) deux champs « nom client »
+> cohabitent dans `PosComponent.vue`, les fusionner en casserait un.
+
 > **2026-08-22 — SUPERVISION : 3 défauts LATENTS + 1 porte de déploiement (+ 2 défauts auto-infligés). POUSSÉ.**
 >
 > HEAD **`85c084159`** — **9 commits POUSSÉS** sur `origin/pos/category-first-caisse-2026-06-23` en
