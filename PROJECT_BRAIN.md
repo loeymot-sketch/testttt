@@ -138,6 +138,33 @@ Plateforme restaurant fast-food complète :
 > l'exécutant. Le contrôle vit maintenant dans `scripts/deploy/check-bundles.php`.
 > **Leçon à garder : une preuve sur une reconstruction ne prouve rien de ce qui est livré.**
 >
+> 📋 **GOAL ÉCRIT — `plans/GOAL_CAISSE_PARFAITE_2026-08-22.md` (32,9 Ko)**
+> 3 systèmes (écran d'accueil caisse · chaîne du nom client · dérive du spec menu), 6 vagues,
+> 12 tâches, 13 chemins de test dont **8 à créer** (les 5 existants vérifiés par `ls`).
+> **5 portes propriétaire** (G1 option d'accueil · G2 identité du Sandwich Cayenne · G3 inventaire
+> d'ouverture · G4 poste tactile ou non · G5 validation sur le vrai comptoir).
+> **Les vagues 1, 2 et 4 ne dépendent d'aucune porte : elles peuvent démarrer immédiatement.**
+> Aucun fichier gelé dans le périmètre — vérifié : `PosComponent.vue` et `pos-v5.css` ne sont pas
+> en §7, donc aucun `LOCK` requis.
+>
+> **MESURES DE RÉFÉRENCE DE L'UI DE CAISSE** (navigateur réel, `/admin/pos`, `zoom: 0.9`) :
+> à 1366×768 la zone principale fait **1455 px pour 768 visibles (53 %)** ; la grille des
+> catégories commence à **y = 792**, soit **24 px SOUS le bord bas de l'écran**, alors que
+> `PosComponent.vue:789` porte la consigne propriétaire « the first POS screen shows the
+> categories ». Budget : en-tête 209 + panneaux de suivi 432 + recherche 15 = **641 px avant la
+> grille**. Sur 1024×768 : 48 % visible. Sur 1920×1080 : 97 %.
+> Cause : accrétion — hub catégories 23/06, panneau « Commandes web » 13/07, « Web payées » 10/08
+> (P0 propriétaire), chacun inséré AU-DESSUS, personne n'ayant mesuré le cumul.
+>
+> ⚠️ **CE QUI RESSEMBLE À UN 2ᵉ DÉFAUT N'EN EST PAS UN** : l'en-tête du panier cache 214 px à
+> 768 px de haut, mais c'est le correctif MESURÉ du 19/08 (`pos-v5.css:766`) — avant lui le
+> panier n'avait que **40 px**. Ma mesure (152 px = 20 vh) confirme la règle appliquée comme
+> écrite. Le vrai problème est **ce qui est tombé dans les 214 px** : le champ « nom du client
+> (imprimé sur le ticket cuisine) », que le travail fidélité du 14/08 avait justement mis DANS le
+> flux de vente. Deux décisions justes à 5 jours d'écart qui se contredisent, invisibles aux
+> tests puisque les deux fonctionnent comme prévu. Chemin de données vérifié :
+> `OrderService.php:847` → `KitchenDisplaySystemOrderService.php:318`.
+>
 > 🔴 **DEUX POINTS QUI APPARTIENNENT AU PROPRIÉTAIRE**
 > · **Quel est le vrai « Sandwich Cayenne » ?** `cayenne` #22 à 7,40 € (actif, vendu) ou
 >   `sandwich-cayenne-classique` à 7,00 € (du spec, inexistant en base) ? Tant que ce n'est pas
