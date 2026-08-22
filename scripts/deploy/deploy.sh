@@ -229,8 +229,10 @@ sudo -u "$APP_USER" npm prune --production
 # build a moitie fait ne laisse plus un fichier PERIME derriere lui : il ne laisse RIEN. On
 # verifie donc ici, AVANT les migrations, que chaque entree de mix-manifest.json existe et
 # n est pas vide. Echouer maintenant coute un deploiement ; echouer plus tard coute un service.
+# Le controle vit dans scripts/deploy/check-bundles.php : embarque en `php -r` il etait
+# illisible, et une version corrompue passait `bash -n` sans broncher.
 echo "[6b/12] Verification d integrite des bundles (mix-manifest)..."
-if ! sudo -u "$APP_USER" php -r '""" + php + """' "$APP_DIR"; then
+if ! sudo -u "$APP_USER" php "$APP_DIR/scripts/deploy/check-bundles.php" "$APP_DIR"; then
     echo
     echo "ERROR: build incomplet — des bundles annonces par mix-manifest.json manquent ou sont vides."
     echo "  Relancer avec la sortie VISIBLE : sudo -u ${APP_USER} npx mix --production"
