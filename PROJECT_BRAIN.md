@@ -47,6 +47,101 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-22 — SUPERVISION : 3 défauts LATENTS + 1 porte de déploiement (dont 1 défaut que je me suis infligé). NON POUSSÉ.**
+>
+> HEAD local **`d228a4033`** — 7 commits **en avance sur `origin`**, aucun push (règle owner).
+> Point de départ : `0acac58ac` (== origin). Zones gelées : **0 ligne** touchée
+> (`git diff --stat 0acac58ac..HEAD -- <15 fichiers §7>` vide). NF525 : **CHAIN OK** sur les
+> 6 branches actives. Vitest sentinelles : **413 verts / 58 fichiers**.
+> **Suite `tests/Feature` COMPLÈTE : 4840 verts, 36 ignorés, 8 échecs en 1 003 s.** Les 8 sont
+> les PRÉEXISTANTS documentés — rejoués isolément, ce sont exactement les 4 mêmes classes
+> (`RolePermissionSeeder` ×3, `PrinterController` + `PrinterHostAllowlistSentinel` ×4,
+> `IdempotencyRequiredRoutesCoverage` ×1). Aucun 9ᵉ, et aucune ne touche un fichier modifié ici.
+> Référence du 19/08 : 4819 verts / 36 ignorés / **les mêmes 8**. Les +21 verts sont les tests
+> ajoutés depuis (3 Sandwich Classique, 5 cuisson, **13 de cette session**).
+>
+> **1. UN LANCEMENT DE TESTS ÉCRASAIT UN DOCUMENT QUE LE PROPRIÉTAIRE ÉDITE À LA MAIN** (`43b6eefb3`)
+> `php artisan test` réécrivait trois fichiers du dépôt, dont
+> `reports/goal-mega-2026-07-22/FICHE_PARAMETRES_INGREDIENTS.md` — **tracké**, et dont l'en-tête
+> dit « Owner : corrige les quantités ». Reproduit : fichier remis à HEAD → suite lancée →
+> fichier de nouveau modifié. Les deux fichiers qui traînaient dans `git status` depuis le 19/08
+> n'étaient donc PAS des rapports de production : `FOOD_COST_REPORT.md` annonçait
+> « 1 produits actifs — Cayenne 10,00 € » là où le catalogue en compte **57** et vend le Cayenne
+> **7,40 €**, et `MULTI_VARIATION_AUDIT_2026-08-19.md` portait l'en-tête
+> « **Mode: FORCED (DB MUTATED)** ». C'étaient des sorties de FIXTURE. Supprimés.
+> Correctif : `App\Support\GeneratedReportPath` + option `--out=` + 5 cas qui empreintent le
+> fichier du dépôt avant/après chaque écrivain.
+>
+> **2. LE DÉPLOIEMENT SE SALISSAIT LUI-MÊME ET DÉSARMAIT SA PROPRE GARDE** (`c089b37ef`)
+> `public/.gitignore` déclarait les bundles ignorés, mais **7 fichiers étaient restés dans
+> l'index** — un `.gitignore` n'a aucun effet sur un fichier déjà tracké. Or `deploy.sh:218`
+> lance `npx mix --production`, qui les RÉÉCRIT : chaque déploiement laissait l'arbre du VPS
+> sale, et `deploy.sh:103` (garde G9, anti-écrasement de hot-patch SCP) **abortait le
+> déploiement suivant**, en conseillant `--force` — le geste exact qu'elle existait pour
+> empêcher. Autre moitié du piège : `git reset --hard` restaurait un `vendor.js` **périmé**
+> par-dessus le bundle construit → la page blanche muette déjà documentée. Détrackés (fichiers
+> conservés sur disque). Restent trackés : `pos-wizard.js/.css` (§7) et `version-beacon.js`.
+> Même saleté côté `.claude/` : un **worktree committé comme gitlink** (mode 160000, sans
+> `.gitmodules`, par `c86644869`) + `scheduled_tasks.lock`. Les règles d'ignore ne vivaient que
+> dans `.git/info/exclude`, **local à une copie** → un `.claude/.gitignore` versionné.
+> **Résultat mesuré : `git status` entièrement vide, pour la première fois de la session.**
+>
+> **3. LA RÉINITIALISATION DU MENU RESSUSCITERAIT 7 PRODUITS RETIRÉS DE LA VENTE** (`fbe045524`)
+> `0acac58ac` avait rattrapé UNE constante de prix. Le même mécanisme (`createOrRestoreItem`
+> fait `update()` + `restore()` + `status=ACTIVE`) frappe les 12 autres articles du spec.
+> Mesuré : `menu:reset-le-cayenne` remettrait en vente les **5 bols** (supprimés le 2026-05-28),
+> `big-tacos-2-viandes` et `sandwich-classique-faluche` ; créerait « Sandwich Cayenne » à
+> **7,00 €** face au vrai `cayenne` #22 à **7,40 €** ; et laisserait **deux articles ACTIFS
+> nommés « Sandwich Classique »** à deux prix — la confusion même que `bd180a926` venait de
+> démêler. Le dry-run montre aussi que les étapes 1 et 2 ne trouvent plus rien : le spec
+> « 2026-05-13 » ne décrit plus la carte servie.
+> Choix : **bloquer, pas réécrire les constantes** — décider quel article est le vrai Sandwich
+> Cayenne est un arbitrage propriétaire (§10). `catalogueDriftReport()` + code de sortie dédié
+> **2** + `--allow-drift` (distinct de `--force`, qui ne saute que la confirmation).
+>
+> **4. LE DÉPLOIEMENT DÉCLARAIT « OK » SANS JAMAIS REGARDER LES BUNDLES** (`1e68775ce`)
+> Son unique critère de succès est `/api/health` à 200 — or la panne la plus coûteuse d'ici
+> répond 200 partout (écran blanc muet, webpack attend un morceau jamais enregistré). Nouvelle
+> porte **[6b/12]**, AVANT les migrations : chaque entrée de `mix-manifest.json` (17) doit
+> exister et être non vide. Éprouvée dans les TROIS sens — dépôt réel OK ; `vendor.js` retiré →
+> détecté ; `daily-book.js` vidé à 0 octet → détecté. Un contrôle vu passer seulement sur le
+> cas vert ne prouve rien.
+>
+> ⚠️ **DEUX DÉFAUTS AUTO-INFLIGÉS, ATTRAPÉS AVANT DE PARTIR**
+>
+> **(b) LE DÉTRACKAGE N'AVAIT PAS EU LIEU** (`d228a4033`). `c089b37ef` annonçait le détrackage
+> des bundles ; `git show --stat` montre qu'il a committé leur CONTENU minifié. Cause :
+> `git commit --only <chemins>` committe l'état du RÉPERTOIRE DE TRAVAIL — il ANNULE le
+> `git rm --cached` qui précède. Le même piège avait ramené le gitlink une heure plus tôt.
+> **Et `git status` était VIDE** — non parce que c'était détracké, mais parce que le contenu
+> committé correspondait au disque. Démasqué en RÉÉCRIVANT un bundle (ce que fait `npx mix`) :
+> ` M public/js/vendor.js` est réapparu. Vérifié depuis dans les deux sens :
+> `git ls-files public/js public/css` ne rend plus que les 3 fichiers écrits à la main, et une
+> réécriture laisse l'arbre vide. **Un arbre propre ne dit pas ce qui est suivi ; `git ls-files` si.**
+>
+> **(a) LA PORTE DE DÉPLOIEMENT ÉTAIT INERTE** (`8d56bbae1`)
+> La porte [6b/12] du commit précédent était **INERTE** : embarquée en `php -r '…'`, une
+> interpolation ratée y avait laissé un littéral au lieu du code. `bash -n` passait — c'est du
+> bash valide, il lance juste un PHP invalide — donc **tous les déploiements auraient échoué**
+> à l'étape qui précède les migrations. Je l'avais « prouvée » sur une COPIE du PHP dans un
+> fichier à part : la copie marchait, le livré non. Trouvée en extrayant le bloc RÉEL et en
+> l'exécutant. Le contrôle vit maintenant dans `scripts/deploy/check-bundles.php`.
+> **Leçon à garder : une preuve sur une reconstruction ne prouve rien de ce qui est livré.**
+>
+> 🔴 **DEUX POINTS QUI APPARTIENNENT AU PROPRIÉTAIRE**
+> · **Quel est le vrai « Sandwich Cayenne » ?** `cayenne` #22 à 7,40 € (actif, vendu) ou
+>   `sandwich-cayenne-classique` à 7,00 € (du spec, inexistant en base) ? Tant que ce n'est pas
+>   tranché, `menu:reset-le-cayenne` reste bloqué — c'est voulu.
+> · **Les 13 matières restent à `on_hand` négatif** (cf. bloc du 19/08) : aucun inventaire
+>   d'ouverture n'a été saisi. Toujours vrai au 2026-08-22.
+>
+> ✅ **VÉRIFIÉ ET SAIN** (affirmations de la dernière intervention recontrôlées) : l'ancien rythme
+> `[10000, 20000]` est à **0 occurrence** ; `cloneAddons()` copie bien toutes les colonnes
+> porteuses de sens d'`item_addons` (seuls `creator_*`/`editor_*` sont omis) ; aucune AUTRE
+> commande ne clone un article vendable sans ses formules (les 14 autres ne créent pas de
+> produit) ; la caisse et le suivi commandes sont deux **routes** distinctes — pas de double
+> sonnerie sur un même écran.
+
 > **2026-08-19 (nuit, suite) — DÉCOMPTE DES VIANDES ACTIVÉ EN PRODUCTION (autorisation owner)**
 >
 > HEAD prod **`8c9e4b51b`** (== origin ; le commit ajouté depuis `ab8b7af6f` est du TEST seul,
