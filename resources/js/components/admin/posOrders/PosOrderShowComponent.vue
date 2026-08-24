@@ -253,7 +253,7 @@
                           d'où le « Extras: , » orphelin. Le normaliseur écarte déjà les
                           entrées sans nom.
                         -->
-                        <ul v-if="normalizedExtras(item).length > 0 || unnamedExtrasCount(item) > 0 || hasInstruction(item)"
+                        <ul v-if="normalizedExtras(item).length > 0 || unnamedExtrasCount(item) > 0 || normalizedAddons(item).length > 0 || hasInstruction(item)"
                             class="flex flex-col gap-1.5 mt-2">
                             <!--
                               [S2 V6 2026-07-29] Filet d'honnêteté : le normaliseur écarte les
@@ -276,6 +276,24 @@
                             <li class="flex gap-1" v-else-if="unnamedExtrasCount(item) > 0">
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs text-[#6E7191]">{{ $t('label.unnamed_extras', { count: unnamedExtrasCount(item) }) }}</p>
+                            </li>
+                            <!--
+                              [GOAL-CAISSE-VISION 2026-08-24] Les SUPPLÉMENTS DE FORMULE (addons).
+                              Ils étaient facturés (`CompositionSnapshotBuilder.php:166-177`) ET
+                              imprimés sur le ticket client (`ReceiptComponent.vue:162-170`), mais
+                              cette fiche — celle que le caissier ouvre quand un client conteste —
+                              n'en portait AUCUNE trace : `grep -c addon` y valait 0. Un client
+                              demandant « pourquoi 3 € de plus ? » recevait une fiche muette.
+                              Même normaliseur que le ticket, donc même vérité.
+                            -->
+                            <li class="flex gap-1" v-if="normalizedAddons(item).length > 0">
+                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.addons') }}:</h3>
+                                <p class="text-xs" data-testid="pos-order-show-addons">
+                                    <span v-for="(addon, index) in normalizedAddons(item)" :key="index">
+                                        {{ addon.name }}<span v-if="addon.quantity > 1"> ×{{ addon.quantity }}</span><span
+                                            v-if="index + 1 < normalizedAddons(item).length">,&nbsp;</span>
+                                    </span>
+                                </p>
                             </li>
                             <li class="flex gap-1" v-if="hasInstruction(item)">
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
@@ -469,7 +487,7 @@ import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 // [S2 V6 2026-07-29] Normaliseurs canoniques legacy↔instantané NF525, partagés
 // avec le ticket — une seule vérité pour lire une composition (DISCIPLINE §9).
-import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
+import { normalizeReceiptVariations, normalizeReceiptExtras, normalizeReceiptAddons } from "../../../helpers/posReceiptBuilder";
 import PosOrderMapComponent from "./PosOrderMapComponent";
 // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem modal
 // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). Mounted
@@ -758,6 +776,15 @@ export default {
         },
         normalizedExtras(item) {
             return normalizeReceiptExtras(item?.item_extras);
+        },
+        /**
+         * [GOAL-CAISSE-VISION 2026-08-24] Suppléments de formule (menu : frites,
+         * boisson…). Même normaliseur que le ticket client — c'est la condition
+         * pour que la fiche et le papier racontent la MÊME commande. `item_addons`
+         * est expédié par `OrderItemResource:37` et n'existe que dans l'instantané.
+         */
+        normalizedAddons(item) {
+            return normalizeReceiptAddons(item?.item_addons);
         },
         /**
          * Nombre de suppléments présents dans la donnée mais que le normaliseur

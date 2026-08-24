@@ -320,18 +320,44 @@
                                     @click.stop
                                 ><i class="fa-solid fa-phone" aria-hidden="true"></i> {{ customerPhone(order) }}</a>
                             </div>
+                            <!--
+                              [GOAL-CAISSE-VISION 2026-08-24 · demande propriétaire]
+                              « si j'ai un client devant moi, j'ai pas pris son nom, je peux voir
+                              ce qu'il a pris et toutes les personnalisations qu'il a fait ».
+                              Avant : 3 noms de produits et un total. Un caissier ne pouvait pas
+                              distinguer deux sandwichs identiques commandés différemment.
+                              Désormais chaque ligne porte sa composition résumée, et « Voir tout »
+                              ouvre le contenu COMPLET sans quitter l'écran ni toucher le réseau.
+                            -->
                             <ul class="pos-tracker-card-items">
                                 <li
                                     v-for="(item, idx) in itemsPreview(order)"
                                     :key="idx"
                                 >
                                     <span class="pos-tracker-card-qty">{{ item.quantity || 1 }}×</span>
-                                    <span class="pos-tracker-card-name">{{ item.item_name || item.name }}</span>
+                                    <span class="pos-tracker-card-name">{{ nomProduit(item) }}</span>
+                                    <span
+                                        v-if="resumeComposition(item)"
+                                        class="pos-tracker-card-compo"
+                                        :data-testid="`tracker-compo-${order.id}-${idx}`"
+                                        :title="resumeComposition(item)"
+                                    >{{ resumeComposition(item) }}</span>
                                 </li>
                                 <li v-if="extraItemsCount(order) > 0" class="pos-tracker-card-more">
                                     + {{ extraItemsCount(order) }} {{ $t('pos.tracker.more_items') }}
                                 </li>
                             </ul>
+                            <button
+                                v-if="aDuContenuAVoir(order)"
+                                type="button"
+                                class="pos-tracker-card-voirtout"
+                                :data-testid="`tracker-voir-tout-${order.id}`"
+                                :aria-label="`Voir tout le contenu de la commande ${order.queue_number || order.order_serial_no || order.id}`"
+                                @click.stop="ouvrirContenu(order)"
+                            >
+                                <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+                                <span>Voir tout</span>
+                            </button>
                             <footer class="pos-tracker-card-foot">
                                 <!--
                                   [WT-D-R1-F4 2026-05-20] `order.total` is now
@@ -615,6 +641,118 @@
         <div v-if="loading && columns.every(c => c.orders.length === 0)" class="pos-tracker-loading">
             <div class="pos-tracker-spinner" aria-hidden="true"></div>
             <p>{{ $t('pos.tracker.loading') }}</p>
+        </div>
+
+        <!--
+          [GOAL-CAISSE-VISION 2026-08-24] Panneau « Voir tout » — le contenu COMPLET
+          d'une commande, produits ET personnalisations, en français lisible.
+
+          POURQUOI UN PANNEAU ET PAS UNE NAVIGATION : la fiche détail existe
+          (`/admin/pos-orders/show/:id`) mais depuis `/admin/pos-v4` elle coûte un
+          RECHARGEMENT COMPLET de page (`pos-app.js:118-140` la déclare en
+          `window.location.assign`). En plein service, avec un client au comptoir,
+          c'est le geste qu'on ne fait pas. Ce panneau lit les données DÉJÀ en
+          mémoire : ZÉRO appel réseau, ouverture instantanée, Échap pour fermer.
+        -->
+        <div
+            v-if="contenuDialog.open"
+            class="pos-tracker-contenu-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pos-tracker-contenu-title"
+            data-testid="tracker-contenu-overlay"
+            @click.self="fermerContenu"
+        >
+            <div class="pos-tracker-contenu-card">
+                <header class="pos-tracker-contenu-head">
+                    <h3 id="pos-tracker-contenu-title">
+                        <span class="pos-tracker-contenu-num">{{ numeroCommande(contenuDialog.order) }}</span>
+                        <span v-if="customerLabel(contenuDialog.order)" class="pos-tracker-contenu-client">
+                            — {{ customerLabel(contenuDialog.order) }}
+                        </span>
+                    </h3>
+                    <button
+                        type="button"
+                        ref="contenuCloseBtn"
+                        class="pos-tracker-contenu-close"
+                        :aria-label="$t('button.close')"
+                        data-testid="tracker-contenu-close"
+                        @click="fermerContenu"
+                    >
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </header>
+
+                <!-- Repères d'identification : canal, heure, montant. Le caissier
+                     reconnaît d'abord la commande, puis en lit le contenu. -->
+                <p class="pos-tracker-contenu-meta" v-if="contenuDialog.order">
+                    <span class="pos-tracker-contenu-canal">
+                        {{ sourceIcon(contenuDialog.order) }} {{ sourceLabel(contenuDialog.order) }}
+                    </span>
+                    <span>{{ formatTime(contenuDialog.order.created_at) }}</span>
+                    <span class="pos-tracker-contenu-total">
+                        {{ formatPrice(contenuDialog.order.total ?? contenuDialog.order.total_amount_price ?? contenuDialog.order.order_amount) }}
+                    </span>
+                </p>
+
+                <div class="pos-tracker-contenu-body">
+                    <ol class="pos-tracker-contenu-lignes" data-testid="tracker-contenu-lignes">
+                        <li
+                            v-for="(item, idx) in lignesCompletes(contenuDialog.order)"
+                            :key="idx"
+                            class="pos-tracker-contenu-ligne"
+                            :data-testid="`tracker-contenu-ligne-${idx}`"
+                        >
+                            <p class="pos-tracker-contenu-produit">
+                                <span class="pos-tracker-contenu-qty">{{ item.quantity || 1 }}×</span>
+                                <span class="pos-tracker-contenu-nom">{{ nomProduit(item) }}</span>
+                            </p>
+
+                            <!-- Les choix du client (pain, viande, sauce, cuisson…). -->
+                            <ul v-if="(item.options || []).length" class="pos-tracker-contenu-detail">
+                                <li v-for="(o, i) in item.options" :key="'o' + i" data-testid="tracker-contenu-option">
+                                    <span class="pos-tracker-contenu-label" v-if="o.label">{{ o.label }} :</span>
+                                    <span>{{ o.value }}</span>
+                                    <span v-if="o.quantity > 1" class="pos-tracker-contenu-mult">×{{ o.quantity }}</span>
+                                </li>
+                            </ul>
+
+                            <p v-if="(item.extras || []).length" class="pos-tracker-contenu-ligne-extras" data-testid="tracker-contenu-extras">
+                                <span class="pos-tracker-contenu-label">{{ $t('label.extras') }} :</span>
+                                <span>{{ listeNommee(item.extras) }}</span>
+                            </p>
+
+                            <p v-if="(item.addons || []).length" class="pos-tracker-contenu-ligne-addons" data-testid="tracker-contenu-addons">
+                                <span class="pos-tracker-contenu-label">{{ $t('label.addons') }} :</span>
+                                <span>{{ listeNommee(item.addons) }}</span>
+                            </p>
+
+                            <!-- L'instruction libre porte les allergies : jamais tronquée ici. -->
+                            <p v-if="item.instruction" class="pos-tracker-contenu-instruction" data-testid="tracker-contenu-instruction">
+                                <span aria-hidden="true">⚠️</span> {{ item.instruction }}
+                            </p>
+                        </li>
+                    </ol>
+
+                    <p v-if="!lignesCompletes(contenuDialog.order).length" class="pos-tracker-contenu-vide" data-testid="tracker-contenu-vide">
+                        Le détail de cette commande n'a pas encore été chargé.
+                    </p>
+                </div>
+
+                <footer class="pos-tracker-contenu-foot">
+                    <router-link
+                        v-if="contenuDialog.order"
+                        :to="{ name: 'admin.pos-orders.show', params: { id: contenuDialog.order.id } }"
+                        class="pos-tracker-contenu-fiche"
+                        data-testid="tracker-contenu-fiche"
+                    >
+                        {{ $t('pos.tracker.view_details') }}
+                    </router-link>
+                    <button type="button" class="pos-tracker-contenu-ok" @click="fermerContenu">
+                        {{ $t('button.close') }}
+                    </button>
+                </footer>
+            </div>
         </div>
 
         <!--
@@ -912,6 +1050,13 @@ export default {
                 error: '',
                 busy: false,
             },
+            // [GOAL-CAISSE-VISION 2026-08-24] Panneau « Voir tout » : le contenu
+            // complet d'une commande. Ne porte QUE la commande déjà en mémoire —
+            // aucun chargement, donc aucun état `busy`/`error` à gérer.
+            contenuDialog: {
+                open: false,
+                order: null,
+            },
             // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
             // via the shared PosCounterCollectModal (null = modal closed).
             encaisseOrder: null,
@@ -1025,12 +1170,29 @@ export default {
             }
         },
         sourceTabs() {
-            return [
+            const base = [
                 { id: 'all', icon: '🧾', label: this.$t('pos.tracker.source_all') },
                 { id: 'pos', icon: '🛒', label: this.$t('pos.tracker.source_pos') },
                 { id: 'kiosk', icon: '🖥️', label: this.$t('pos.tracker.source_kiosk') },
                 { id: 'online', icon: '🌐', label: this.$t('pos.tracker.source_online') },
             ];
+
+            // [GOAL-CAISSE-VISION 2026-08-24] Trois canaux réels n'avaient pas d'onglet :
+            // téléphone, plateforme, livraison — ils étaient TOUS filtrés sous « Caisse ».
+            // On ne les ajoute QUE s'ils sont réellement présents sur le tableau : en
+            // service normal la barre reste courte, et le jour où une commande téléphone
+            // arrive, son onglet apparaît de lui-même. Un onglet qui ne filtre rien est
+            // un onglet qui encombre.
+            const presents = new Set(this.orders.map((o) => this.sourceOf(o)));
+            [
+                { id: 'phone', icon: '📞', label: this.$t('pos.tracker.source_phone') },
+                { id: 'platform', icon: '🛵', label: this.$t('pos.tracker.source_platform') },
+                { id: 'delivery', icon: '🚗', label: this.$t('pos.tracker.source_delivery') },
+            ].forEach((tab) => {
+                if (presents.has(tab.id)) base.push(tab);
+            });
+
+            return base;
         },
         filteredOrders() {
             const q = this.filters.query.toLowerCase();
@@ -1284,8 +1446,12 @@ export default {
         this._bindWsService();
         this._startPolling();
         this._startAgeTicker();
+        // [GOAL-CAISSE-VISION 2026-08-24] Échap ferme le panneau « Voir tout » où que
+        // soit le focus — au comptoir on ferme d'un geste, sans viser une croix.
+        try { document.addEventListener('keydown', this._contenuOnKeydown); } catch (_e) { /* SSR/test */ }
     },
     beforeUnmount() {
+        try { document.removeEventListener('keydown', this._contenuOnKeydown); } catch (_e) { /* SSR/test */ }
         this._unsubscribeEcho();
         this._unbindWsService();
         this._stopPolling();
@@ -1949,6 +2115,23 @@ export default {
             // [WEB-TRACKER-VISIBILITY 2026-07-20] source_surface='web' (site client) = onglet 🌐.
             // Avant : non reconnu → retombait sur l'heuristique order_type → classé 'pos' à tort.
             if (surface === 'web') return 'online';
+            // [GOAL-CAISSE-VISION 2026-08-24] Trois canaux réels tombaient tous dans « Caisse ».
+            //
+            // TÉLÉPHONE (`source_surface='phone'`, créé par `OrderService.php:1273`) : le client
+            // n'est PAS là. Il faut pouvoir l'appeler, et il viendra payer au comptoir. Le
+            // confondre avec une vente au comptoir — client présent, déjà payé — c'est confondre
+            // deux situations opposées. Le mode existe depuis le 2026-07-07
+            // (`tests/Feature/Pos/PhoneOrderDeferredTest.php`) ; le suivi ne l'avait jamais su.
+            //
+            // PLATEFORME (Uber/Deliveroo) : commission de 30-35 %, ticket promo dédié — la carte
+            // proposait déjà le bouton (`isPlatformOrder`) tout en affichant « Caisse ».
+            //
+            // LIVRAISON : la commande part, elle ne sera pas retirée au comptoir.
+            if (surface === 'phone') return 'phone';
+            if (surface === 'uber_eats' || surface === 'uber' || surface === 'ubereats'
+                || surface === 'deliveroo' || surface === 'just_eat' || surface === 'justeat'
+                || surface === 'platform') return 'platform';
+            if (surface === 'delivery') return 'delivery';
             const ot = parseInt(o.order_type, 10);
             // Heuristics fallback when source_surface is missing
             if (Number.isFinite(ot)) {
@@ -1957,10 +2140,24 @@ export default {
             }
             return 'pos';
         },
+
+        /**
+         * [GOAL-CAISSE-VISION 2026-08-24] Libellé FR du canal, pour le panneau
+         * « Voir tout » et les infobulles. Passe par les clés i18n existantes
+         * (`pos.tracker.source_*`) — jamais de clé brute à l'écran.
+         */
+        sourceLabel(o) {
+            return this.$t('pos.tracker.source_' + this.sourceOf(o));
+        },
         sourceIcon(o) {
             const s = this.sourceOf(o);
             if (s === 'kiosk') return '🖥️';
             if (s === 'online') return '🌐';
+            // [GOAL-CAISSE-VISION 2026-08-24] Un pictogramme par canal réel. Le 📞
+            // dit au caissier l'essentiel en un coup d'œil : ce client n'est pas là.
+            if (s === 'phone') return '📞';
+            if (s === 'platform') return '🛵';
+            if (s === 'delivery') return '🚗';
             return '🛒';
         },
         customerLabel(o) {
@@ -1999,6 +2196,115 @@ export default {
         extraItemsCount(o) {
             const items = Array.isArray(o.order_items) ? o.order_items : [];
             return Math.max(0, items.length - 3);
+        },
+
+        // ─────────────────────────────────────────────────────────────────────
+        // [GOAL-CAISSE-VISION 2026-08-24] Voir CE QUE LE CLIENT A PRIS
+        //
+        // Demande propriétaire : « si j'ai un client devant moi, j'ai pas pris son
+        // nom, je peux voir ce qu'il a pris et toutes les personnalisations qu'il a
+        // fait ». Le serveur expédie désormais la composition en forme compacte
+        // (`SimpleOrderResource` → `App\Support\Order\CompositionCompactor`), déjà
+        // réconciliée entre l'instantané NF525 et l'ancienne forme. Ici on ne fait
+        // que RENDRE : aucune re-dérivation, aucun appel réseau.
+        // ─────────────────────────────────────────────────────────────────────
+
+        /**
+         * Nom du produit, avec repli. `item_name` est null quand l'article a été
+         * retiré du catalogue depuis la vente : sans repli la carte affichait une
+         * ligne muette — une quantité, un vide, et un caissier incapable de dire ce
+         * que le client tient dans la main.
+         */
+        nomProduit(item) {
+            if (!item) return this.$t('label.deleted_item');
+            const nom = String(item.item_name || item.name || '').trim();
+            return nom || this.$t('label.deleted_item');
+        },
+
+        /**
+         * Résumé d'UNE ligne, pour la carte : « Sauce algérienne · Salade · +2 Cheddar ».
+         * Volontairement court — la carte doit rester lisible d'un coup d'œil ;
+         * le détail intégral vit dans le panneau « Voir tout ».
+         */
+        resumeComposition(item) {
+            if (!item) return '';
+            const morceaux = [];
+
+            (item.options || []).forEach((o) => {
+                const valeur = String(o?.value || '').trim();
+                if (!valeur) return;
+                morceaux.push(o.quantity > 1 ? `${valeur} ×${o.quantity}` : valeur);
+            });
+            (item.extras || []).forEach((e) => {
+                const nom = String(e?.name || '').trim();
+                if (!nom) return;
+                morceaux.push(e.quantity > 1 ? `+${e.quantity} ${nom}` : `+${nom}`);
+            });
+            (item.addons || []).forEach((a) => {
+                const nom = String(a?.name || '').trim();
+                if (!nom) return;
+                morceaux.push(a.quantity > 1 ? `+${a.quantity} ${nom}` : `+${nom}`);
+            });
+
+            return morceaux.join(' · ');
+        },
+
+        /** Toutes les lignes de la commande, telles qu'expédiées par le serveur. */
+        lignesCompletes(o) {
+            return o && Array.isArray(o.order_items) ? o.order_items : [];
+        },
+
+        /**
+         * « Voir tout » n'apparaît que s'il y a vraiment quelque chose de plus à
+         * voir : plus de 3 lignes, une personnalisation, ou une instruction. Un
+         * bouton qui n'ajoute rien est un bouton qui ment.
+         */
+        aDuContenuAVoir(o) {
+            const lignes = this.lignesCompletes(o);
+            if (lignes.length > 3) return true;
+            return lignes.some((l) => (
+                (l.options || []).length > 0
+                || (l.extras || []).length > 0
+                || (l.addons || []).length > 0
+                || (typeof l.instruction === 'string' && l.instruction.trim() !== '')
+            ));
+        },
+
+        /** « + 2 Cheddar, Salade » — liste nommée avec quantités implicites. */
+        listeNommee(liste) {
+            return (Array.isArray(liste) ? liste : [])
+                .map((e) => {
+                    const nom = String(e?.name || '').trim();
+                    if (!nom) return '';
+                    return e.quantity > 1 ? `${e.quantity}× ${nom}` : nom;
+                })
+                .filter(Boolean)
+                .join(', ');
+        },
+
+        numeroCommande(o) {
+            if (!o) return '';
+            return o.queue_number ? `N°${o.queue_number}` : `#${o.order_serial_no || o.id}`;
+        },
+
+        ouvrirContenu(o) {
+            this.contenuDialog = { open: true, order: o };
+            // Le focus part sur la fermeture : au clavier comme au tactile, Échap et
+            // Entrée referment sans piéger le caissier dans le panneau.
+            this.$nextTick(() => {
+                try { this.$refs.contenuCloseBtn?.focus(); } catch (e) { /* jsdom */ }
+            });
+        },
+
+        fermerContenu() {
+            this.contenuDialog = { open: false, order: null };
+        },
+
+        /** Échap ferme le panneau, où que soit le focus. */
+        _contenuOnKeydown(ev) {
+            if (ev && ev.key === 'Escape' && this.contenuDialog.open) {
+                this.fermerContenu();
+            }
         },
         // [WT-D-R1-F4 2026-05-20] `formatPrice()` is now provided by the
         // shared `adminPriceMixin` (helpers/formatPrice.js) so every admin
@@ -2857,6 +3163,223 @@ export default {
     color: var(--pos-tracker-muted);
     font-style: italic;
     font-size: 11px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   [GOAL-CAISSE-VISION 2026-08-24] La composition sous chaque produit.
+
+   La ligne produit passe en `flex-wrap: wrap` pour que la composition prenne
+   sa PROPRE ligne (`flex: 1 0 100%`) au lieu d'être écrasée à côté du nom.
+   Le nom conserve son ellipse : `min-width: 0` + `flex: 0 1 auto` empêchent
+   qu'un nom long pousse la mise en page — c'est la condition pour que le
+   passage en `wrap` ne change RIEN aux cartes sans personnalisation.
+   ───────────────────────────────────────────────────────────────────────── */
+.pos-tracker-card-items li {
+    flex-wrap: wrap;
+}
+
+.pos-tracker-card-name {
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.pos-tracker-card-compo {
+    flex: 1 0 100%;
+    padding-left: 22px;          /* aligné sous le nom, après la quantité */
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--pos-tracker-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Le bouton « Voir tout » — discret tant qu'on ne le cherche pas, mais assez
+   large pour être touché du pouce en plein service (cible ≥ 32 px). */
+.pos-tracker-card-voirtout {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    margin-top: 2px;
+    min-height: 32px;
+    padding: 4px 10px;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--pos-tracker-text);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.pos-tracker-card-voirtout:hover,
+.pos-tracker-card-voirtout:focus-visible {
+    background: var(--pos-tracker-blue-soft);
+    color: var(--pos-tracker-blue);
+    border-color: rgba(29, 78, 216, 0.35);
+}
+
+/* ── Panneau « Voir tout » ─────────────────────────────────────────────── */
+.pos-tracker-contenu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.pos-tracker-contenu-card {
+    width: min(560px, 100%);
+    max-height: min(80vh, 720px);
+    display: flex;
+    flex-direction: column;
+    background: var(--pos-v5-bg-panel, #fff);
+    color: var(--pos-tracker-text);
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+    overflow: hidden;
+}
+
+.pos-tracker-contenu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--pos-tracker-border);
+}
+.pos-tracker-contenu-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+}
+.pos-tracker-contenu-num { font-variant-numeric: tabular-nums; }
+.pos-tracker-contenu-client { font-weight: 600; }
+
+.pos-tracker-contenu-close {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.pos-tracker-contenu-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--pos-tracker-muted);
+    border-bottom: 1px solid var(--pos-tracker-border);
+}
+.pos-tracker-contenu-total {
+    margin-left: auto;
+    font-weight: 800;
+    color: var(--pos-tracker-text);
+}
+
+.pos-tracker-contenu-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 12px 16px;
+}
+
+.pos-tracker-contenu-lignes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pos-tracker-contenu-ligne + .pos-tracker-contenu-ligne {
+    border-top: 1px dashed var(--pos-tracker-border);
+    padding-top: 12px;
+}
+
+.pos-tracker-contenu-produit {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 800;
+}
+.pos-tracker-contenu-qty { font-variant-numeric: tabular-nums; }
+
+.pos-tracker-contenu-detail {
+    list-style: none;
+    margin: 0 0 4px;
+    padding-left: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+}
+.pos-tracker-contenu-ligne-extras,
+.pos-tracker-contenu-ligne-addons {
+    margin: 0 0 4px;
+    padding-left: 26px;
+    font-size: 13px;
+}
+.pos-tracker-contenu-label {
+    font-weight: 700;
+    color: var(--pos-tracker-muted);
+    margin-right: 4px;
+}
+.pos-tracker-contenu-mult { margin-left: 4px; font-weight: 700; }
+
+/* L'instruction porte les allergies : elle doit sauter aux yeux, et n'est
+   jamais tronquée dans ce panneau. */
+.pos-tracker-contenu-instruction {
+    margin: 4px 0 0;
+    padding: 6px 8px 6px 26px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+    background: rgba(245, 158, 11, 0.12);
+    border-radius: 8px;
+}
+
+.pos-tracker-contenu-vide {
+    margin: 0;
+    padding: 16px 0;
+    text-align: center;
+    color: var(--pos-tracker-muted);
+    font-size: 13px;
+}
+
+.pos-tracker-contenu-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--pos-tracker-border);
+}
+.pos-tracker-contenu-fiche {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pos-tracker-blue);
+    text-decoration: underline;
+}
+.pos-tracker-contenu-ok {
+    min-height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--pos-tracker-blue, #1d4ed8);
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
 }
 
 /* [S2 F1 révisé 2026-07-29] Bandeau « anciennes commandes à encaisser ». */

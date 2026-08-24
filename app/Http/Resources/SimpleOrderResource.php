@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Libraries\AppLibrary;
+use App\Support\Order\CompositionCompactor;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class SimpleOrderResource extends JsonResource
@@ -232,8 +233,13 @@ class SimpleOrderResource extends JsonResource
         }
 
         return $relation->map(function ($line) {
-            return [
+            $ligne = [
                 'item_id'     => (int) $line->item_id,
+                // `orderItem` est nullable (article retiré du catalogue depuis la vente).
+                // Le REPLI d'affichage est délibérément laissé à la vue : le catalogue
+                // `label.*` vit dans `resources/js/languages/fr.json`, pas côté serveur —
+                // un `__('label.…')` ici expédierait la clé brute au caissier.
+                // Voir `PosOrdersTrackerComponent::nomProduit()`.
                 'item_name'   => $line->orderItem?->name,
                 'quantity'    => (int) $line->quantity,
                 // [CAISSE-WEB-INTEL 2026-08-06] Instruction client par ligne
@@ -241,6 +247,14 @@ class SimpleOrderResource extends JsonResource
                 // allergie AVANT d'accepter une commande web. Null si absente.
                 'instruction' => $line->instruction ?: null,
             ];
+
+            // [GOAL-CAISSE-VISION 2026-08-24] La COMPOSITION, en forme compacte.
+            // Besoin propriétaire : « si j'ai un client devant moi, j'ai pas pris son nom,
+            // je peux voir ce qu'il a pris et toutes les personnalisations qu'il a fait ».
+            // Coût SQL : ZÉRO — variations/extras/instantané sont des COLONNES de
+            // `order_items`, déjà rapatriées par le `select *` existant. Les clés vides
+            // sont absentes : une commande sans personnalisation n'ajoute pas un octet.
+            return $ligne + CompositionCompactor::forLine($line);
         })->values()->all();
     }
 
