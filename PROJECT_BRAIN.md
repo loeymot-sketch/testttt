@@ -47,6 +47,63 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-24 (soir) — CARTE : TACOS L À 8,90 € ET TACOS XL 3 VIANDES À 10,90 € — DÉPLOYÉ EN PLEIN SERVICE**
+>
+> Owner : « deploy ». HEAD prod **`4a636c05`** (== origin), avance rapide `43b120c7d..4a636c053`,
+> **1 commit**, aucun `--force`. `git status` du VPS : **0 ligne avant ET après**. Ni dépendance,
+> ni fichier front dans le lot (`git diff --name-only` sur `resources/`, `package*.json`,
+> `composer.*` : vide) → **ni `composer install`, ni `npm ci`, ni `npx mix`**. Seule la migration
+> et les caches étaient nécessaires.
+>
+> **CE QUI A CHANGÉ EN BASE DE PRODUCTION** (migration `2026_08_24_120000`, 333 ms, la seule en
+> attente) : Tacos L (#97) **7,90 → 8,90 €** ; **Tacos XL (#121) créé à 10,90 €**, 3 emplacements
+> « Viande N », `is_new=1`, 11 extras, 3 formules, photo `tacos-cayenne.webp`. Sauvegarde
+> d'avant-migration prise ET VÉRIFIÉE (`predeploy-tacos-xl-20260824-195421.sql.gz`, 1,5 Mo,
+> `gzip -t` OK + ligne « Dump completed » présente) — un dump non relu n'est pas un filet.
+>
+> **POURQUOI LE NOM « Tacos XL » ET PAS « Tacos 3 viandes »** : le nombre de viandes n'est stocké
+> nulle part comme un nombre, chaque surface le DÉDUIT du nom. `pos-wizard.js::detectViandeCount`
+> (GELÉ), `kioskTacosSize.js` et le ticket cuisine lisent tous les trois `XL → 3`. Sous un autre
+> nom, la caisse serait retombée à UNE viande incluse et aurait **facturé les 2ᵉ et 3ᵉ au client** —
+> un défaut d'argent invisible en base. Zone gelée : **0 ligne**.
+>
+> **VÉRIFIÉ SUR LE CONTENU SERVI, jamais depuis le `git push`** : payload borne réel
+> (`KioskMenuService::build`) → `viande_count` 1 / 2 / **3** et la même photo sur les trois tacos ;
+> 6 surfaces en **200** (`/api/health`, `/login`, `/admin/pos`, `/kiosk/idle`, `/kds`,
+> `/admin/order-status-screen`) ; photo servie en HTTPS (thumb **20 532 o**, source **636 051 o**,
+> taille identique au fichier local) ; worker recyclé (pid 2146124 → 2147603).
+>
+> 🪤 **PIÈGE DE MÉTHODE À RETENIR — un contrôle de santé sur `127.0.0.1` ment.** Mes 6 surfaces
+> répondaient **404** au premier passage. Cause : le vhost est `server_name
+> vps-418872ac.vps.ovh.net 51.210.111.124` — une requête sur `127.0.0.1` sans en-tête `Host` ne
+> matche aucun bloc et tombe sur le défaut. **Lu tel quel, ça se raconte comme une panne totale
+> après déploiement.** Toujours passer `-H "Host: vps-418872ac.vps.ovh.net"` (et `-L`/`--resolve`
+> pour les assets : nginx redirige 80→443, un `301` n'est pas un échec).
+>
+> **DÉPLOYÉ EN PLEIN SERVICE, ET LE SERVICE A CONTINUÉ** : `audit_logs` montre des
+> `order.created.pos` à 20:42, 20:44, 20:49, 21:03, 21:29, 21:31 et un
+> `order.counter_payment_confirmed` à 21:34 — donc **après** la migration de 19:56. La caisse a
+> encaissé pendant et après, sans rien casser.
+>
+> 🔴 **NF525 — UN POINT QUE JE N'AI PAS RÉSOLU, ET QUE JE NE MAQUILLE PAS.**
+> `fiscal:verify-chain --all` renvoie **TAMPER `audit_logs.id=1`**, alors que l'entrée du 22/08
+> consigne « CHAIN OK ». Ce qui est PROUVÉ : (1) la ligne id=1 date du **2026-06-25**, deux mois
+> avant ; (2) son `current_hash` est **IDENTIQUE dans la sauvegarde prise AVANT ma migration** et
+> dans la base après — comparaison faite, pas supposée ; (3) ma migration n'écrit que dans les
+> tables catalogue et n'a produit **aucune** ligne `audit_logs` (les 12 lignes de la soirée sont
+> toutes des événements de caisse réels) ; (4) `.env` n'a pas bougé depuis le **2026-08-19 20:45**,
+> donc **pas de rotation de secret** entre le « CHAIN OK » du 22/08 et le TAMPER d'aujourd'hui —
+> l'explication « artefact de rotation » du 2026-08-08b ne suffit donc PAS ici.
+> ⇒ **Mon déploiement n'en est pas la cause, mais le verdict a bel et bien CHANGÉ entre les deux
+> déploiements sans que je sache pourquoi.** À trancher par le workstream fiscal, pas par moi.
+> (État antérieurement consigné comme connu/gaté : 2026-07-31 « TAMPER NF525 id=1 = connu/gaté ».)
+>
+> **SITE WEB : NON DÉPLOYÉ, ET C'EST DÉLIBÉRÉ.** Le miroir `/Users/1millnonstop/Downloads/web` est
+> commité en local (`4d1dfcb` : Tacos XL, prix, + 3 libellés « tacos M & L » devenus faux dans le
+> bandeau d'accueil, « L'histoire du Cayenne » et le pied de page). Ce dépôt **n'a aucun remote**
+> et n'est pas le dossier lié au projet Vercel (cf. 2026-08-07b, déploiement orphelin) — il ne
+> peut pas être publié depuis cette machine.
+
 > **2026-08-22 (soir) — GOAL CAISSE DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI**
 >
 > HEAD prod **`ac700e41c`** (== origin), avance rapide `e1ef70887..ac700e41c`, 7 commits, aucun
