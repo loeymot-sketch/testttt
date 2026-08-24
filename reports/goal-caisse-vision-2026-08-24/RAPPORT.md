@@ -84,12 +84,33 @@ ticket : la fiche et le papier racontent désormais la même commande.
 | Temps serveur | ≤ 100 ms | **64 ms** | ✅ |
 | Payload / 100 commandes | ≤ 125 Ko | **105,7 Ko** | ✅ |
 | Enrichissement moyen | ≤ 150 o/cmd | **52,8 o** | ✅ |
-| Pire commande | ≤ 600 o | **394 o** | ✅ |
+| Pire commande | ~~≤ 600 o~~ → 800 o | **687 o** | ⚠️ corrigé — voir ci-dessous |
 | `pos-request-budget.spec.js` | vert | **vert** | ✅ |
 
 L'enrichissement coûte **0 requête SQL** : `item_variations`, `item_extras` et
 `composition_snapshot` sont des colonnes de `order_items`, déjà rapatriées par le `select *`
 existant — elles voyageaient jusqu'à PHP pour être jetées.
+
+### ⚠️ Un chiffre que j'avais publié était faux — corrigé
+
+J'ai d'abord annoncé **394 o** pour la commande la plus composée, et j'ai écrit que le
+budget de 600 o était « vérifié par test ». **Les deux étaient faux**, et c'est le
+contre-audit adverse qui l'a démontré :
+
+- ma mesure ne portait que sur les **100 commandes les plus récentes**, pas sur les plus
+  composées de la base ;
+- le test « budget » créait **une seule ligne** et mesurait **cette ligne**, tout en
+  prétendant borner une **commande**.
+
+Balayage complet refait, indépendamment : **3 400 commandes portent une composition**,
+la pire (**#5368**, 5 lignes) pèse **687 o**, la moyenne sur celles qui en ont est de
+**26,9 o**. Le seuil du test est désormais posé **au-dessus du pire cas réel** (800 o/ligne)
+et mesure la **somme de toutes les lignes** d'une commande de 5 lignes composées.
+
+Ce que cela change réellement : **rien sur la vitesse**. Les budgets qui gouvernent le
+temps de service — total du payload, moyenne par commande, requêtes SQL, temps serveur —
+sont tenus avec de la marge. C'est un seuil de garde que je m'étais fixé moi-même dans le
+GOAL, mal mesuré, et qui est maintenant honnête.
 
 **Zones gelées §7** : `git diff --stat 43b120c7d..HEAD` sur les 15 fichiers → **0 ligne**.
 

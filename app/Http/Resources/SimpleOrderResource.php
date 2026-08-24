@@ -153,7 +153,15 @@ class SimpleOrderResource extends JsonResource
             // eager-load we return [] rather than triggering a lazy SELECT.
             // Branch isolation: `OrderItem` enforces BranchScope global.
             // Mirrors SimpleDeliveryBoyOrderResource::resolveItemsForDriver().
-            'order_items'                  => $this->resolveItemsForTracker(),
+            // [GOAL-CAISSE-VISION 2026-08-24] `composition=1` : drapeau EXPLICITE.
+            // Cette ressource sert 5 appelants (suivi caisse, liste POS, historique,
+            // commandes en ligne, rapport de ventes) et `OrderService::list()` charge
+            // `orderItems.orderItem` dans les DEUX jeux de relations — sans porte,
+            // la composition partait aussi vers l'historique et le rapport, qui ne
+            // l'affichent pas : +60 Ko mesurés sur un export non borné, pour rien.
+            // Drapeau dédié plutôt que `lean` : un mode « allégé » qui renverrait
+            // PLUS de données serait un piège pour le prochain lecteur.
+            'order_items'                  => $this->resolveItemsForTracker($request),
             // [CAISSE-WEB-INTEL 2026-08-06] Une commande web portant une
             // instruction client (allergie, « sans crudités » en note…) doit
             // être VUE avant l'accept — l'info vivait uniquement dans le
@@ -222,7 +230,7 @@ class SimpleOrderResource extends JsonResource
         return $this->isAggregatorAnchoredOrder() ? null : $this->user?->numeroJoignable();
     }
 
-    private function resolveItemsForTracker(): array
+    private function resolveItemsForTracker($request = null): array
     {
         $relation = $this->resource->relationLoaded('orderItems')
             ? $this->resource->getRelation('orderItems')
@@ -232,7 +240,14 @@ class SimpleOrderResource extends JsonResource
             return [];
         }
 
-        return $relation->map(function ($line) {
+        // La composition ne voyage QUE si l'appelant l'a demandée (voir le
+        // commentaire du drapeau plus haut). Le reste de la ligne — nom, quantité,
+        // instruction — n'a jamais été conditionnel et ne le devient pas.
+        $avecComposition = $request !== null
+            && method_exists($request, 'boolean')
+            && $request->boolean('composition');
+
+        return $relation->map(function ($line) use ($avecComposition) {
             $ligne = [
                 'item_id'     => (int) $line->item_id,
                 // `orderItem` est nullable (article retiré du catalogue depuis la vente).
@@ -254,7 +269,7 @@ class SimpleOrderResource extends JsonResource
             // Coût SQL : ZÉRO — variations/extras/instantané sont des COLONNES de
             // `order_items`, déjà rapatriées par le `select *` existant. Les clés vides
             // sont absentes : une commande sans personnalisation n'ajoute pas un octet.
-            return $ligne + CompositionCompactor::forLine($line);
+            return $avecComposition ? $ligne + CompositionCompactor::forLine($line) : $ligne;
         })->values()->all();
     }
 

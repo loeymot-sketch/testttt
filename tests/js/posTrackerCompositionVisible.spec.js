@@ -37,6 +37,7 @@ vi.mock('../../resources/js/components/admin/pos/ReceiptComponent.vue', () => ({
 }));
 
 import axios from 'axios';
+import fr from '../../resources/js/languages/fr.json';
 import PosOrdersTrackerComponent from '../../resources/js/components/admin/pos/PosOrdersTrackerComponent.vue';
 import orderStatusEnum from '../../resources/js/enums/modules/orderStatusEnum';
 
@@ -66,20 +67,20 @@ const buildHarness = () => {
             stubs: { transition: false, 'transition-group': false, 'router-link': true },
             mocks: {
                 $store: store,
-                // Le catalogue FR réel pour les clés que ce spec traverse : un test
-                // qui renvoie la clé ne prouverait PAS l'absence de libellé brut.
-                $t: (key) => ({
-                    'label.deleted_item': 'Article retiré du catalogue',
-                    'label.extras': 'Extras',
-                    'label.addons': 'Suppléments',
-                    'pos.tracker.source_pos': 'Caisse',
-                    'pos.tracker.source_kiosk': 'Borne',
-                    'pos.tracker.source_online': 'En ligne',
-                    'pos.tracker.source_phone': 'Téléphone',
-                    'pos.tracker.source_platform': 'Plateforme',
-                    'pos.tracker.source_delivery': 'Livraison',
-                    'pos.tracker.source_all': 'Toutes',
-                }[key] ?? key),
+                // Résolution contre le VRAI `fr.json`, pas contre un dictionnaire
+                // recopié dans le spec. Le contre-audit adverse a montré que la
+                // version « à la main » laissait les 17 tests verts même si une clé
+                // disparaissait du catalogue : la garantie « aucun libellé brut »
+                // n'était alors gardée par rien. Une clé absente renvoie désormais
+                // la clé elle-même — et les assertions la refusent.
+                $t: (key, params) => {
+                    let v = fr;
+                    for (const p of String(key).split('.')) v = v?.[p];
+                    if (typeof v !== 'string') return key;
+                    return params
+                        ? v.replace(/\{(\w+)\}/g, (m, k) => (k in params ? params[k] : m))
+                        : v;
+                },
                 $route: { query: {}, params: {} },
                 $router: { push: vi.fn(), replace: vi.fn() },
             },
@@ -372,6 +373,38 @@ describe('canaux — le téléphone cesse d\'être une vente au comptoir', () =>
         await wrapper.vm.$nextTick();
 
         expect(vm.filteredOrders.map((o) => o.id)).toEqual([2]);
+    });
+});
+
+describe('catalogue FR — les clés que la caisse traverse existent VRAIMENT', () => {
+    it('chaque clé i18n utilisée par le suivi est présente dans fr.json', () => {
+        const resolue = (cle) => {
+            let v = fr;
+            for (const p of cle.split('.')) v = v?.[p];
+            return v;
+        };
+
+        // Les clés introduites ou traversées par ce travail. Si l'une disparaît du
+        // catalogue, le caissier verrait la CLÉ BRUTE à l'écran — ce test rougit avant.
+        for (const cle of [
+            'label.deleted_item', 'label.extras', 'label.addons',
+            'pos.tracker.source_all', 'pos.tracker.source_pos', 'pos.tracker.source_kiosk',
+            'pos.tracker.source_online', 'pos.tracker.source_phone',
+            'pos.tracker.source_platform', 'pos.tracker.source_delivery',
+            'pos.tracker.view_details', 'pos.tracker.more_items', 'button.close',
+        ]) {
+            expect(typeof resolue(cle), `clé i18n manquante : ${cle}`).toBe('string');
+            expect(resolue(cle).trim(), `clé i18n vide : ${cle}`).not.toBe('');
+        }
+    });
+
+    it('aucun libellé de canal ne ressemble à une clé technique', () => {
+        const vm = buildHarness().wrapper.vm;
+        for (const s of ['pos', 'kiosk', 'web', 'phone', 'uber_eats', 'delivery']) {
+            const libelle = vm.sourceLabel({ source_surface: s });
+            expect(libelle).not.toContain('.');
+            expect(libelle).not.toMatch(/^[a-z_]+$/);
+        }
     });
 });
 

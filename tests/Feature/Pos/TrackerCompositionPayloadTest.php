@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -69,11 +70,18 @@ class TrackerCompositionPayloadTest extends TestCase
         ], $attributes));
     }
 
-    private function payloadFor(Order $order): array
+    /**
+     * Le suivi demande la composition EXPLICITEMENT (`composition=1`) — sans ce
+     * drapeau la ressource n'expédie que le contrat historique, ce que le dernier
+     * cas de ce fichier vérifie.
+     */
+    private function payloadFor(Order $order, bool $avecComposition = true): array
     {
         $order->load(['orderItems.orderItem', 'user', 'transaction']);
 
-        return (new SimpleOrderResource($order))->resolve();
+        $req = Request::create('/api/admin/pos-order' . ($avecComposition ? '?composition=1' : ''), 'GET');
+
+        return (new SimpleOrderResource($order))->toArray($req);
     }
 
     /**
@@ -178,46 +186,150 @@ class TrackerCompositionPayloadTest extends TestCase
     }
 
     /**
-     * Budget d'octets (GOAL §3) : la commande la PLUS composée observée en base
-     * (4 variations + 5 extras) doit rester sous 600 octets d'enrichissement.
+     * Budget d'octets, mesuré au niveau COMMANDE — pas au niveau ligne.
+     *
+     * La première version de ce test créait UNE ligne et mesurait CETTE ligne,
+     * tout en prétendant borner « la commande la plus composée ». Le contre-audit
+     * adverse l'a démontée : trois commandes déjà en base violaient le seuil.
+     * Balayage complet du 2026-08-24 sur **3 400 commandes portant une
+     * composition** : la pire (#5368, 5 lignes) pèse **687 o**, la moyenne 26,9 o.
+     *
+     * Le seuil est donc posé à **800 o** — au-dessus du pire cas RÉEL, avec une
+     * marge, et non au-dessus d'une fixture choisie pour tenir dedans.
      *
      * @test
      */
     public function la_commande_la_plus_composee_tient_le_budget_d_octets(): void
     {
         [$order, $branch] = $this->makeOrder();
+
+        // Cinq lignes composées — le gabarit de la pire commande réelle (#5368).
+        for ($i = 0; $i < 5; $i++) {
+            $this->makeLine($order, $branch, [
+                'composition_snapshot' => [
+                    'schema_version' => 1,
+                    'lines'          => [
+                        ['variation_id' => 1, 'attribute_name' => 'Pain', 'variation_name' => 'Galette', 'quantity' => 1],
+                        ['variation_id' => 2, 'attribute_name' => 'Viande', 'variation_name' => 'Poulet mariné', 'quantity' => 1],
+                        ['variation_id' => 3, 'attribute_name' => 'Sauce', 'variation_name' => 'Algérienne', 'quantity' => 1],
+                        ['variation_id' => 4, 'attribute_name' => 'Cuisson', 'variation_name' => 'Bien cuit', 'quantity' => 1],
+                    ],
+                    'extras'         => [
+                        ['extra_id' => 1, 'extra_name' => 'Cheddar', 'quantity' => 2],
+                        ['extra_id' => 2, 'extra_name' => 'Salade', 'quantity' => 1],
+                        ['extra_id' => 3, 'extra_name' => 'Tomate', 'quantity' => 1],
+                        ['extra_id' => 4, 'extra_name' => 'Oignon', 'quantity' => 1],
+                        ['extra_id' => 5, 'extra_name' => 'Viande supplémentaire', 'quantity' => 1],
+                    ],
+                    'addons'         => [],
+                ],
+            ]);
+        }
+
+        $lignes = $this->payloadFor($order->fresh())['order_items'];
+        $this->assertCount(5, $lignes);
+
+        $enrichissement = 0;
+        foreach ($lignes as $l) {
+            $enrichissement += strlen(json_encode(
+                array_intersect_key($l, array_flip(['options', 'extras', 'addons'])),
+                JSON_UNESCAPED_UNICODE
+            ));
+        }
+
+        // Assertion POSITIVE d'abord : sans elle, supprimer la fonctionnalité
+        // rendrait ce test vert (`json_encode([])` = 2 octets ≤ n'importe quel seuil).
+        $this->assertGreaterThan(
+            1000,
+            $enrichissement,
+            'Cinq lignes richement composées doivent peser quelque chose — sinon ce test ne mesure rien.'
+        );
+
+        $this->assertLessThanOrEqual(
+            5 * 800,
+            $enrichissement,
+            "L'enrichissement de cette commande pèse {$enrichissement} o pour 5 lignes — budget 800 o/ligne."
+        );
+    }
+
+    /**
+     * La porte du drapeau : sans `composition=1`, la ressource n'expédie que son
+     * contrat historique. C'est ce qui évite de payer la composition sur
+     * l'historique et le rapport de ventes, qui ne l'affichent pas.
+     *
+     * @test
+     */
+    public function sans_le_drapeau_la_composition_ne_voyage_pas(): void
+    {
+        [$order, $branch] = $this->makeOrder();
+        $this->makeLine($order, $branch, [
+            'composition_snapshot' => [
+                'schema_version' => 1,
+                'lines'          => [['variation_id' => 1, 'attribute_name' => 'Sauce', 'variation_name' => 'Algérienne', 'quantity' => 1]],
+                'extras'         => [['extra_id' => 1, 'extra_name' => 'Cheddar', 'quantity' => 1]],
+                'addons'         => [],
+            ],
+        ]);
+
+        $avec = $this->payloadFor($order->fresh(), true)['order_items'][0];
+        $sans = $this->payloadFor($order->fresh(), false)['order_items'][0];
+
+        $this->assertArrayHasKey('options', $avec);
+        $this->assertArrayHasKey('extras', $avec);
+
+        $this->assertArrayNotHasKey('options', $sans);
+        $this->assertArrayNotHasKey('extras', $sans);
+        $this->assertSame(['item_id', 'item_name', 'quantity', 'instruction'], array_keys($sans));
+    }
+
+    /**
+     * Une chaîne VIDE doit déclencher le repli, comme le `||` du normaliseur JS —
+     * un `??` ne franchit que `null`. Sinon la carte de suivi perdrait une ligne
+     * que le ticket, lui, affiche toujours.
+     *
+     * @test
+     */
+    public function une_valeur_vide_bascule_sur_le_candidat_suivant_comme_le_ticket(): void
+    {
+        [$order, $branch] = $this->makeOrder();
         $this->makeLine($order, $branch, [
             'composition_snapshot' => [
                 'schema_version' => 1,
                 'lines'          => [
-                    ['variation_id' => 1, 'attribute_name' => 'Pain', 'variation_name' => 'Galette', 'quantity' => 1],
-                    ['variation_id' => 2, 'attribute_name' => 'Viande', 'variation_name' => 'Poulet mariné', 'quantity' => 1],
-                    ['variation_id' => 3, 'attribute_name' => 'Sauce', 'variation_name' => 'Algérienne', 'quantity' => 1],
-                    ['variation_id' => 4, 'attribute_name' => 'Cuisson', 'variation_name' => 'Bien cuit', 'quantity' => 1],
+                    ['variation_id' => 5, 'attribute_name' => 'Sauce', 'variation_name' => '', 'name' => 'Algérienne', 'quantity' => 1],
                 ],
-                'extras'         => [
-                    ['extra_id' => 1, 'extra_name' => 'Cheddar', 'quantity' => 2],
-                    ['extra_id' => 2, 'extra_name' => 'Salade', 'quantity' => 1],
-                    ['extra_id' => 3, 'extra_name' => 'Tomate', 'quantity' => 1],
-                    ['extra_id' => 4, 'extra_name' => 'Oignon', 'quantity' => 1],
-                    ['extra_id' => 5, 'extra_name' => 'Viande supplémentaire', 'quantity' => 1],
-                ],
+                'extras'         => [],
                 'addons'         => [],
             ],
         ]);
 
         $ligne = $this->payloadFor($order->fresh())['order_items'][0];
 
-        $enrichissement = strlen(json_encode(
-            array_intersect_key($ligne, array_flip(['options', 'extras', 'addons'])),
-            JSON_UNESCAPED_UNICODE
-        ));
+        $this->assertSame([['label' => 'Sauce', 'value' => 'Algérienne']], $ligne['options']);
+    }
 
-        $this->assertLessThanOrEqual(
-            600,
-            $enrichissement,
-            "L'enrichissement de la commande la plus composée pèse {$enrichissement} o — budget GOAL §3 = 600 o."
-        );
+    /**
+     * L'ordre des clés d'un extra suit le lecteur du TICKET
+     * (`posReceiptBuilder.js:219` → `e.name || e.extra_name`). Si les deux
+     * coexistaient, la carte de suivi et le ticket doivent nommer la même chose.
+     *
+     * @test
+     */
+    public function un_extra_portant_les_deux_cles_est_nomme_comme_sur_le_ticket(): void
+    {
+        [$order, $branch] = $this->makeOrder();
+        $this->makeLine($order, $branch, [
+            'composition_snapshot' => [
+                'schema_version' => 1,
+                'lines'          => [],
+                'extras'         => [['extra_id' => 1, 'name' => 'Salade', 'extra_name' => 'Tomate', 'quantity' => 1]],
+                'addons'         => [],
+            ],
+        ]);
+
+        $ligne = $this->payloadFor($order->fresh())['order_items'][0];
+
+        $this->assertSame([['name' => 'Salade']], $ligne['extras']);
     }
 
     /**
@@ -249,9 +361,20 @@ class TrackerCompositionPayloadTest extends TestCase
             $requetes++;
         });
 
-        (new SimpleOrderResource($frais))->resolve();
+        $payload = (new SimpleOrderResource($frais))->toArray(
+            Request::create('/api/admin/pos-order?composition=1', 'GET')
+        );
 
         $this->assertSame(0, $requetes, "La sérialisation a déclenché {$requetes} requête(s) — la garde N+1 est rompue.");
+
+        // Assertion POSITIVE : sans elle, supprimer la fonctionnalité laisserait ce
+        // test vert (0 requête dans les deux cas). Ce qu'on prouve, c'est que la
+        // composition arrive ET qu'elle n'a rien coûté — pas seulement le second.
+        $this->assertCount(5, $payload['order_items']);
+        foreach ($payload['order_items'] as $i => $l) {
+            $this->assertArrayHasKey('options', $l, "ligne {$i} sans composition");
+            $this->assertArrayHasKey('extras', $l, "ligne {$i} sans extras");
+        }
     }
 
     /**

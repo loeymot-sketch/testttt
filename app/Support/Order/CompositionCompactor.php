@@ -57,9 +57,17 @@ final class CompositionCompactor
         $options = self::compactOptions(
             self::pick($snapshot, 'lines') ?? self::asArray($line->item_variations)
         );
+        // ORDRE DES CLÉS : celui du normaliseur canonique, pas l'inverse.
+        // `posReceiptBuilder.js:219` fait `e.name || e.extra_name` et `:263`
+        // `a.addon_name || a.name || a.addon_item_name`. Le dépôt est incohérent
+        // ailleurs (`kdsSymbolic.js:293` prend extra_name d'abord), mais ce qui
+        // compte ici est que la CARTE DE SUIVI et le TICKET affichent la même
+        // chaîne pour la même ligne — donc on copie le lecteur du ticket.
+        // (Aucune ligne en base ne porte les deux clés à la fois : divergence
+        // latente, corrigée avant qu'elle ne devienne visible.)
         $extras = self::compactNamed(
             self::pick($snapshot, 'extras') ?? self::asArray($line->item_extras),
-            ['extra_name', 'name']
+            ['name', 'extra_name']
         );
         // Les suppléments de formule n'existent QUE dans l'instantané : ils sont nés
         // avec le composeur, il n'y a pas d'ancienne forme à rattraper.
@@ -106,12 +114,18 @@ final class CompositionCompactor
             $fromSnapshot = is_string($entry['attribute_name'] ?? null)
                 || array_key_exists('variation_id', $entry);
 
+            // `premierNonVide` et NON `??` : le JS enchaîne avec `||`, donc une
+            // chaîne VIDE déclenche le repli sur le candidat suivant. Avec `??`,
+            // `variation_name: ''` gagnait et la ligne DISPARAISSAIT du suivi
+            // alors que le ticket, lui, affichait « Sauce : Algerienne » depuis
+            // `name`. Divergence latente (aucun instantané vide en base), mais
+            // c'est exactement la classe de bug que ce compacteur promet d'éviter.
             $label = $fromSnapshot
-                ? ($entry['attribute_name'] ?? $entry['variation_name'] ?? '')
-                : ($entry['variation_name'] ?? $entry['attribute_name'] ?? '');
+                ? self::premierNonVide($entry['attribute_name'] ?? null, $entry['variation_name'] ?? null)
+                : self::premierNonVide($entry['variation_name'] ?? null, $entry['attribute_name'] ?? null);
             $value = $fromSnapshot
-                ? ($entry['variation_name'] ?? $entry['name'] ?? '')
-                : ($entry['name'] ?? $entry['variation_name'] ?? '');
+                ? self::premierNonVide($entry['variation_name'] ?? null, $entry['name'] ?? null)
+                : self::premierNonVide($entry['name'] ?? null, $entry['variation_name'] ?? null);
 
             $value = trim((string) $value);
             if ($value === '') {
@@ -164,6 +178,27 @@ final class CompositionCompactor
         }
 
         return $out;
+    }
+
+    /**
+     * Premier candidat non vide — l'équivalent PHP de la chaîne `a || b` du JS.
+     * `??` ne suffit pas : il ne franchit que `null`, pas la chaîne vide, alors
+     * que `||` franchit les deux. Le zéro est traité comme le JS : `0` est falsy
+     * là-bas, donc il déclenche le repli ici aussi.
+     */
+    private static function premierNonVide(mixed ...$candidats): string
+    {
+        foreach ($candidats as $c) {
+            if ($c === null || $c === false) {
+                continue;
+            }
+            $s = trim((string) $c);
+            if ($s !== '' && $s !== '0') {
+                return $s;
+            }
+        }
+
+        return '';
     }
 
     /**

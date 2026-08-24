@@ -1715,6 +1715,12 @@ export default {
                     paginate: 1,
                     per_page: 100,
                     lean: 1,
+                    // [GOAL-CAISSE-VISION 2026-08-24] Le suivi est le SEUL écran qui
+                    // affiche la composition d'une commande. Il la demande donc
+                    // explicitement : sans ce drapeau, elle partait aussi vers
+                    // l'historique et le rapport de ventes, qui ne la montrent pas
+                    // (+60 Ko mesurés sur un export non borné, pour zéro usage).
+                    composition: 1,
                     from_date: today.from,
                     to_date: today.to,
                     vuex: false,

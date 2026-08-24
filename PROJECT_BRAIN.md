@@ -66,8 +66,15 @@ Plateforme restaurant fast-food complète :
 > être jetées**. Les exposer coûte **0 requête SQL** — mesuré, pas déduit.
 >
 > **MESURES RÉELLES (100 commandes, pas des estimations)** : 6 requêtes SQL · 64 ms ·
-> 105,7 Ko de payload · **+52,8 o/commande** en moyenne · **394 o** pour la commande la plus
-> composée. Budgets GOAL §3 : ≤8 / ≤100 ms / ≤125 Ko / ≤150 o / ≤600 o — **les cinq tenus**.
+> 105,7 Ko de payload · **+52,8 o/commande** en moyenne. Budgets GOAL §3 sur les agrégats
+> (≤8 requêtes / ≤100 ms / ≤125 Ko / ≤150 o par commande) : **tenus**.
+> 🔴 **UN CHIFFRE QUE J'AVAIS PUBLIÉ ÉTAIT FAUX** : j'ai annoncé « 394 o pour la commande la
+> plus composée, budget 600 o vérifié par test ». Ma mesure ne portait que sur les 100
+> commandes les plus RÉCENTES, et le test créait UNE ligne tout en prétendant borner une
+> COMMANDE. Le contre-audit adverse l'a démonté. Balayage complet : **3 400 commandes portent
+> une composition, la pire (#5368, 5 lignes) pèse 687 o**, moyenne 26,9 o. Seuil réécrit
+> au-dessus du pire cas RÉEL. Aucun effet sur la vitesse — c'était un garde-fou que je m'étais
+> fixé à moi-même, mal mesuré.
 > Budget de requêtes : `tests/e2e/pos-request-budget.spec.js` vert (≤12 req/min au repos).
 >
 > **CE QUI EST LIVRÉ** · composition résumée sous chaque produit de la carte · bouton
