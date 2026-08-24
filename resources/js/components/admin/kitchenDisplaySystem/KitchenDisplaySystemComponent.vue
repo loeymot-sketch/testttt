@@ -270,7 +270,7 @@
                   </h3>
                   <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                     <span v-for="(extra, index) in orderItem.item_extras" :key="index" class="text-heading">
-                      {{ extra.name }}<span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
+                      {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
                     </span>
                   </p>
                 </span>
@@ -524,7 +524,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -712,7 +712,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -888,7 +888,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -1060,7 +1060,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -2843,6 +2843,25 @@ export default {
         return '';
       }
       return addon.addon_name || addon.addon_item_name || addon.name || addon.item_name || 'Addon';
+    },
+    /**
+     * [GOAL-CAISSE-VISION 2026-08-24] Nom d'un EXTRA, quelle que soit sa forme.
+     *
+     * Les suppléments avaient déjà `kdsAddonDisplayName` ; les extras étaient
+     * restés sur une lecture brute `extra.name` — or l'instantané NF525 nomme ce
+     * champ `extra_name` (`CompositionSnapshotBuilder.php:110`), et c'est
+     * l'instantané qui est servi EN PRIORITÉ (`KDSOrderItemsResource:81-86`).
+     *
+     * Mesuré à l'exécution le 2026-08-24 sur la ligne réelle #3956 : la ressource
+     * expédie `extra_name='Salade'`, le gabarit lisait `extra.name` = null. La
+     * cuisine affichait « Extras: , , , » — quatre garnitures invisibles, donc
+     * un produit remis au client sans ce qu'il avait demandé.
+     */
+    kdsExtraDisplayName(extra) {
+      if (!extra || typeof extra !== 'object') {
+        return '';
+      }
+      return extra.extra_name || extra.name || extra.item_name || 'Supplément';
     },
     // [AUDIT-P2] Print a kitchen ticket for a given order using a hidden iframe.
     // Opens a minimal print window with order ref, items, variations, extras, addons, and instructions.
