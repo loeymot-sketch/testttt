@@ -690,6 +690,9 @@
                         {{ sourceIcon(contenuDialog.order) }} {{ sourceLabel(contenuDialog.order) }}
                     </span>
                     <span>{{ formatTime(contenuDialog.order.created_at) }}</span>
+                    <!-- Un « voir tout » doit dire de combien de « tout » il s'agit :
+                         sans ce compte, rien n'indique qu'il faut faire défiler. -->
+                    <span data-testid="tracker-contenu-compte">{{ compteArticles(contenuDialog.order) }}</span>
                     <span class="pos-tracker-contenu-total">
                         {{ formatPrice(contenuDialog.order.total ?? contenuDialog.order.total_amount_price ?? contenuDialog.order.order_amount) }}
                     </span>
@@ -2287,6 +2290,21 @@ export default {
             return o.queue_number ? `N°${o.queue_number}` : `#${o.order_serial_no || o.id}`;
         },
 
+        /**
+         * « 4 articles · 7 au total » — le nombre de LIGNES et la quantité cumulée.
+         * Les deux comptent : 4 lignes disent combien de blocs lire, 7 articles
+         * disent combien de choses partiront dans le sac.
+         */
+        compteArticles(o) {
+            const lignes = this.lignesCompletes(o);
+            if (!lignes.length) return '';
+            const pieces = lignes.reduce((n, l) => n + (parseInt(l.quantity, 10) || 1), 0);
+            const motLignes = lignes.length > 1 ? 'articles' : 'article';
+            return pieces > lignes.length
+                ? `${lignes.length} ${motLignes} · ${pieces} au total`
+                : `${lignes.length} ${motLignes}`;
+        },
+
         ouvrirContenu(o) {
             this.contenuDialog = { open: true, order: o };
             // Le focus part sur la fermeture : au clavier comme au tactile, Échap et
@@ -3257,7 +3275,9 @@ export default {
     font-weight: 800;
 }
 .pos-tracker-contenu-num { font-variant-numeric: tabular-nums; }
-.pos-tracker-contenu-client { font-weight: 600; }
+/* Le compilateur Vue supprime le nœud d'espace entre deux `<span>` séparés par
+   un retour à la ligne : sans cette marge le titre se lit « #GCV24-COMPO— Admin ». */
+.pos-tracker-contenu-client { font-weight: 600; margin-left: 6px; }
 
 .pos-tracker-contenu-close {
     flex: 0 0 auto;

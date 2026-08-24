@@ -250,6 +250,17 @@ describe('« Voir tout » — le contenu complet, sans quitter l\'écran', () =>
         expect(vm.contenuDialog.open).toBe(true);
     });
 
+    it('annonce combien d\'articles le panneau contient — sinon rien ne dit qu\'il faut défiler', () => {
+        const vm = buildHarness().wrapper.vm;
+
+        // 2 lignes, 3 pièces (1 + 2) : les deux comptes sont utiles et différents.
+        expect(vm.compteArticles(commandeComposee())).toBe('2 articles · 3 au total');
+        // Une ligne unique en quantité 1 : pas de redondance.
+        expect(vm.compteArticles({ order_items: [{ item_name: 'Coca', quantity: 1 }] })).toBe('1 article');
+        expect(vm.compteArticles({ order_items: [] })).toBe('');
+        expect(vm.compteArticles(null)).toBe('');
+    });
+
     it('listeNommee rend les quantités explicitement, jamais « undefined »', () => {
         const vm = buildHarness().wrapper.vm;
 
