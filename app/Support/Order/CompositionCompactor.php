@@ -166,7 +166,18 @@ final class CompositionCompactor
         return $out;
     }
 
-    /** Quantité positive, 1 par défaut — comme le normaliseur JS. */
+    /**
+     * Quantité positive, 1 par défaut — mêmes règles que le normaliseur JS
+     * (`posReceiptBuilder.js:183-186`), vérifiées cas par cas : `0` → 1,
+     * négatif → 1, `"2"` → 2, `"abc"` → 1, absent/null → 1.
+     *
+     * SEULE divergence connue, et elle est théorique : une quantité FRACTIONNAIRE
+     * (2,7) donnerait 2 ici et 2,7 côté JS. `CompositionSnapshotBuilder` caste en
+     * entier à l'écriture, et un balayage de la base le 2026-08-24 sur
+     * **1 912 entrées de composition** a trouvé **0** quantité fractionnaire.
+     * Si un jour ce cas devient réel, c'est ICI qu'il faut trancher — et le
+     * normaliseur JS reste la source de vérité à recopier.
+     */
     private static function quantity(array $entry): int
     {
         $raw = $entry['quantity'] ?? null;
