@@ -666,9 +666,9 @@
             <div class="pos-tracker-contenu-card">
                 <header class="pos-tracker-contenu-head">
                     <h3 id="pos-tracker-contenu-title">
-                        <span class="pos-tracker-contenu-num">{{ numeroCommande(contenuDialog.order) }}</span>
-                        <span v-if="customerLabel(contenuDialog.order)" class="pos-tracker-contenu-client">
-                            — {{ customerLabel(contenuDialog.order) }}
+                        <span class="pos-tracker-contenu-num">{{ numeroCommande(commandeAffichee) }}</span>
+                        <span v-if="customerLabel(commandeAffichee)" class="pos-tracker-contenu-client">
+                            — {{ customerLabel(commandeAffichee) }}
                         </span>
                     </h3>
                     <button
@@ -685,23 +685,23 @@
 
                 <!-- Repères d'identification : canal, heure, montant. Le caissier
                      reconnaît d'abord la commande, puis en lit le contenu. -->
-                <p class="pos-tracker-contenu-meta" v-if="contenuDialog.order">
+                <p class="pos-tracker-contenu-meta" v-if="commandeAffichee">
                     <span class="pos-tracker-contenu-canal">
-                        {{ sourceIcon(contenuDialog.order) }} {{ sourceLabel(contenuDialog.order) }}
+                        {{ sourceIcon(commandeAffichee) }} {{ sourceLabel(commandeAffichee) }}
                     </span>
-                    <span>{{ formatTime(contenuDialog.order.created_at) }}</span>
+                    <span>{{ formatTime(commandeAffichee.created_at) }}</span>
                     <!-- Un « voir tout » doit dire de combien de « tout » il s'agit :
                          sans ce compte, rien n'indique qu'il faut faire défiler. -->
-                    <span data-testid="tracker-contenu-compte">{{ compteArticles(contenuDialog.order) }}</span>
+                    <span data-testid="tracker-contenu-compte">{{ compteArticles(commandeAffichee) }}</span>
                     <span class="pos-tracker-contenu-total">
-                        {{ formatPrice(contenuDialog.order.total ?? contenuDialog.order.total_amount_price ?? contenuDialog.order.order_amount) }}
+                        {{ formatPrice(commandeAffichee.total ?? commandeAffichee.total_amount_price ?? commandeAffichee.order_amount) }}
                     </span>
                 </p>
 
                 <div class="pos-tracker-contenu-body">
                     <ol class="pos-tracker-contenu-lignes" data-testid="tracker-contenu-lignes">
                         <li
-                            v-for="(item, idx) in lignesCompletes(contenuDialog.order)"
+                            v-for="(item, idx) in lignesCompletes(commandeAffichee)"
                             :key="idx"
                             class="pos-tracker-contenu-ligne"
                             :data-testid="`tracker-contenu-ligne-${idx}`"
@@ -737,15 +737,15 @@
                         </li>
                     </ol>
 
-                    <p v-if="!lignesCompletes(contenuDialog.order).length" class="pos-tracker-contenu-vide" data-testid="tracker-contenu-vide">
+                    <p v-if="!lignesCompletes(commandeAffichee).length" class="pos-tracker-contenu-vide" data-testid="tracker-contenu-vide">
                         Le détail de cette commande n'a pas encore été chargé.
                     </p>
                 </div>
 
                 <footer class="pos-tracker-contenu-foot">
                     <router-link
-                        v-if="contenuDialog.order"
-                        :to="{ name: 'admin.pos-orders.show', params: { id: contenuDialog.order.id } }"
+                        v-if="commandeAffichee"
+                        :to="{ name: 'admin.pos-orders.show', params: { id: commandeAffichee.id } }"
                         class="pos-tracker-contenu-fiche"
                         data-testid="tracker-contenu-fiche"
                     >
@@ -1171,6 +1171,24 @@ export default {
             } catch (_e) {
                 return false;
             }
+        },
+        /**
+         * [GOAL-CAISSE-VISION 2026-08-24] La commande montrée par le panneau
+         * « Voir tout », TOUJOURS dans sa version la plus fraîche.
+         *
+         * Le panneau reste ouvert pendant que le suivi se rafraîchit (5 s). S'il
+         * gardait la référence capturée à l'ouverture, un caissier lisant le
+         * contenu pendant qu'une ligne est modifiée verrait un état PÉRIMÉ — et
+         * rien à l'écran ne le lui dirait. On re-résout donc par id à chaque
+         * rendu, et on ne retombe sur l'instantané d'ouverture QUE si la commande
+         * a quitté le tableau (encaissée, livrée) : mieux vaut un contenu figé et
+         * lisible qu'un panneau qui se vide sous les yeux.
+         */
+        commandeAffichee() {
+            const capturee = this.contenuDialog.order;
+            if (!capturee) return null;
+            const vivante = this.orders.find((o) => String(o.id) === String(capturee.id));
+            return vivante || capturee;
         },
         sourceTabs() {
             const base = [

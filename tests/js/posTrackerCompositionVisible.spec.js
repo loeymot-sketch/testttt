@@ -232,6 +232,44 @@ describe('« Voir tout » — le contenu complet, sans quitter l\'écran', () =>
         expect(html).toContain('Sans oignons — allergie');
     });
 
+    it('suit la commande VIVANTE : un rafraîchissement pendant que le panneau est ouvert n\'affiche pas un état périmé', async () => {
+        const { wrapper } = buildHarness();
+        const vm = wrapper.vm;
+
+        const capturee = commandeComposee();
+        vm.orders = [capturee];
+        vm.ouvrirContenu(capturee);
+        await wrapper.vm.$nextTick();
+
+        // Le suivi se rafraîchit (5 s) : la MÊME commande revient enrichie d'une ligne.
+        vm.orders = [{
+            ...capturee,
+            order_items: [...capturee.order_items, { item_id: 99, item_name: 'Tiramisu', quantity: 1 }],
+        }];
+        await wrapper.vm.$nextTick();
+
+        expect(vm.commandeAffichee.order_items).toHaveLength(3);
+        expect(wrapper.html()).toContain('Tiramisu');
+    });
+
+    it('garde le contenu à l\'écran si la commande quitte le tableau — jamais un panneau qui se vide', async () => {
+        const { wrapper } = buildHarness();
+        const vm = wrapper.vm;
+
+        const capturee = commandeComposee();
+        vm.orders = [capturee];
+        vm.ouvrirContenu(capturee);
+        await wrapper.vm.$nextTick();
+
+        // La commande est encaissée / livrée : elle disparaît du tableau.
+        vm.orders = [];
+        await wrapper.vm.$nextTick();
+
+        expect(vm.commandeAffichee).not.toBeNull();
+        expect(vm.commandeAffichee.id).toBe(501);
+        expect(wrapper.html()).toContain('Sandwich Cayenne');
+    });
+
     it('Échap referme le panneau où que soit le focus', async () => {
         const { wrapper } = buildHarness();
         const vm = wrapper.vm;
