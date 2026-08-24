@@ -61,14 +61,20 @@ ticket : la fiche et le papier racontent désormais la même commande.
 
 ## 4. Preuves
 
-**Tests**
-- `tests/Feature/Pos` : **333 verts, 0 rouge** (88 s).
-- `tests/Feature/Pos/TrackerCompositionPayloadTest.php` (**nouveau**, 8 cas) : les deux formes
+**Tests** *(chiffres finaux, après réponse au contre-audit)*
+- `tests/Feature/Pos` : **336 verts, 0 rouge**.
+- **Vitest complet : 434 fichiers, 3 548 verts, 0 rouge** (référence avant mission :
+  432 fichiers / 3 535 verts / **1 rouge**).
+- `tests/Feature/Pos/TrackerCompositionPayloadTest.php` (**nouveau**, 11 cas) : les deux formes
   de stockage, la garde N+1 (`DB::listen` ⇒ **0** requête à la sérialisation), le budget
-  d'octets, le rejet des identifiants nus, l'absence de clé vide.
-- `tests/js/posTrackerCompositionVisible.spec.js` (**nouveau**, 17 cas), **éprouvé par mutation** :
-  retrait du canal téléphone → **4 rouges** ; neutralisation du résumé → **3 rouges** ; 17 verts
-  au rétablissement.
+  d'octets mesuré **au niveau commande**, la porte du drapeau `composition=1`, le repli sur
+  valeur vide, l'ordre des clés d'extra, le rejet des identifiants nus.
+  **Éprouvé par mutation** : suppression de l'appel au compacteur → **7 rouges sur 11**
+  (capacité de détection 25 % → 64 % après les correctifs du contre-audit). Les 4 survivants
+  sont des gardes *négatives* légitimes, qui doivent tenir dans les deux mondes.
+- `tests/js/posTrackerCompositionVisible.spec.js` (**nouveau**, 21 cas), **éprouvé par mutation** :
+  retrait du canal téléphone → **4 rouges** ; neutralisation du résumé → **3 rouges** ; verts
+  au rétablissement. `$t` résout le VRAI `fr.json`, pas un dictionnaire recopié.
 - `tests/js/kdsExtrasInstantaneNf525.spec.js` (**nouveau**, 6 cas) : importe la méthode RÉELLE du
   composant (pas une réplique inline) + garde de non-retour relisant le source.
 - `tests/e2e/goal-caisse-vision-2026-08-24.spec.js` (**nouveau**, 4 cas) : bout en bout sur données
@@ -160,3 +166,24 @@ Trop grave pour être seulement consigné — isolé pour pouvoir être annulé 
 | `5b895b1f1` | feat(caisse) — le suivi montre ce que le client a pris, personnalisations comprises |
 | `351cd33e6` | fix(caisse) — compte d'articles, espacement du titre, 2 specs périmés réalignés |
 | `35c53efca` | fix(cuisine) — extras de l'instantané NF525 redeviennent lisibles **[HORS VOIE CAISSE]** |
+| `b56c41f3f` | docs(goal) — rapport, mémoire projet, clés i18n miroitées |
+| `f22594f7b` | fix(caisse) — le panneau suivait une commande FIGÉE pendant le rafraîchissement |
+| `447e28577` | docs(caisse) — la seule divergence PHP/JS, mesurée et bornée |
+| `d1560509d` | fix(caisse) — **réponse au contre-audit adverse**, dont un chiffre publié qui était faux |
+
+## 8. Ce que le contre-audit adverse a changé
+
+Un auditeur en lecture seule a reçu pour mandat de casser ce travail. Il a réussi sur cinq
+points, tous corrigés dans `d1560509d` — son rapport intégral est versionné dans
+`CONTRE_AUDIT.md`. Le plus important : **il a trouvé un chiffre faux que j'avais publié**
+(le 394 o ci-dessus), et il a montré que **6 de mes 8 tests PHPUnit restaient verts si l'on
+supprimait purement et simplement la fonctionnalité**. Les quatre autres constats
+(ordre des clés d'extra divergent du ticket, `??` au lieu de `||`, composition expédiée à
+des écrans qui ne l'affichent pas, garantie i18n prouvée contre un dictionnaire recopié)
+étaient tous fondés et sont fermés.
+
+Ce qu'il a essayé de casser sans y parvenir : forme objet au lieu de tableau, quantités
+limites (0, négatives, chaînes, non numériques), isolation de branche, fuite de données,
+« : » orphelin, panneau présentant du partiel comme du complet (**2 lignes muettes sur
+~3 900**, toutes des tableaux d'identifiants nus — rien à nommer), et le réalignement des
+5 couloirs (vérifié dans le code : ce n'était pas du maquillage de vert).
