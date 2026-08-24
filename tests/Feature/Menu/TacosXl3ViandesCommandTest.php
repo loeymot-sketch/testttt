@@ -382,6 +382,40 @@ class TacosXl3ViandesCommandTest extends TestCase
         );
     }
 
+    /**
+     * [OWNER 2026-08-24] Les trois tailles doivent se lire dans l'ordre croissant sur la borne.
+     *
+     * Le comparateur borne (`kioskItemDisplayOrder.js`) trie sur `order` mais traite `order = 0`
+     * comme « aucun ordre défini » et le renvoie EN DERNIER — c'est voulu, ça garde les formules
+     * d'appoint derrière les produits signature. Le Tacos M portait `order = 0` : la borne
+     * affichait donc L, XL, M. Une échelle de tailles dans le désordre ne se lit pas.
+     *
+     * @test
+     */
+    public function les_trois_tailles_sont_rangees_dans_l_ordre_croissant(): void
+    {
+        $tacosM = Item::factory()->create([
+            'name' => 'Tacos M',
+            'slug' => 'tacos-m',
+            'price' => 6.90,
+            'item_category_id' => $this->tacos->id,
+            'status' => Status::ACTIVE,
+            'order' => 0, // la valeur que la borne interprète comme « à la fin »
+        ]);
+
+        EnsureTacosXl3ViandesCommand::ensure(false);
+
+        $ordres = Item::whereIn('slug', ['tacos-m', 'tacos-l', 'tacos-xl'])
+            ->orderBy('order')->pluck('order', 'slug')->all();
+
+        $this->assertSame(
+            ['tacos-m' => 1, 'tacos-l' => 2, 'tacos-xl' => 3],
+            array_map('intval', $ordres),
+            'M puis L puis XL — et AUCUN à 0, sinon la borne le renvoie en dernier'
+        );
+        $this->assertNotSame(0, (int) $tacosM->fresh()->order);
+    }
+
     /** @test */
     public function la_commande_est_rejouable_sans_rien_dupliquer(): void
     {

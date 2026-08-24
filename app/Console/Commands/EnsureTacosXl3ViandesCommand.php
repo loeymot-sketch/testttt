@@ -186,6 +186,7 @@ class EnsureTacosXl3ViandesCommand extends Command
             return $stats;
         }
         $stats['target_id'] = (int) $target->id;
+        self::ensureSizeLadderOrder($dryRun);
 
         // ─── 4. Choix et personnalisation, clonés à l'identique depuis le Tacos L ────────────
         $stats['variations'] = self::cloneVariations($source, $target, $viande3, $dryRun);
@@ -357,6 +358,36 @@ class EnsureTacosXl3ViandesCommand extends Command
         }
 
         return $created;
+    }
+
+    /**
+     * [OWNER 2026-08-24] Range les trois tacos dans l'ordre CROISSANT sur la borne : M, L, XL.
+     *
+     * Le comparateur de la borne (`kioskItemDisplayOrder.js::compareKioskItemsDisplay`) trie
+     * d'abord sur `order`, mais traite **`order = 0` comme « aucun ordre défini »** et le renvoie
+     * en DERNIER (`oa > 0 ? oa : POSITIVE_INFINITY`) — c'est délibéré, ça garde les formules
+     * d'appoint (order 99/100) derrière les produits signature. Or le Tacos M portait `order = 0`.
+     * Conséquence mesurée : la borne affichait **L, XL, M**. Elle affichait donc déjà « Tacos L »
+     * AVANT « Tacos M » bien avant l'arrivée du XL — le défaut est antérieur.
+     *
+     * Une échelle de tailles dans le désordre ne se lit pas : sans cette correction, agrandir
+     * progressivement les photos ne servirait à rien. On corrige par la DONNÉE (1, 2, 3) plutôt
+     * qu'en touchant au comparateur, qui est partagé par toutes les catégories de la borne.
+     */
+    private static function ensureSizeLadderOrder(bool $dryRun): void
+    {
+        if ($dryRun) {
+            return;
+        }
+
+        $ladder = [self::SOURCE_SLUG => 2, self::TARGET_SLUG => 3, 'tacos-m' => 1];
+
+        foreach ($ladder as $slug => $position) {
+            $item = Item::withoutGlobalScopes()->where('slug', $slug)->whereNull('deleted_at')->first();
+            if ($item && (int) $item->order !== $position) {
+                $item->forceFill(['order' => $position])->save();
+            }
+        }
     }
 
     /** Résout un attribut par NOM plutôt que par id — les ids ne sont pas garantis entre bases. */

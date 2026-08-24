@@ -401,12 +401,22 @@ export default {
     },
     // [BORNE-UX 2026-07-11] Layout adaptatif : peu de produits → cartes très
     // grandes qui remplissent l'espace (2 tacos = empilés ~80%). Owner.
+    //
+    // [OWNER 2026-08-24] UNE SEULE COLONNE, TOUTES CATÉGORIES CONFONDUES.
+    // Le propriétaire : « je voulais toujours les produits prennent la taille
+    // complète de la borne […] pas juste des petits produits ». Les deux colonnes
+    // donnaient des cartes de 370 px sur un écran de 1080 (un tiers de la largeur),
+    // et un nombre IMPAIR de produits laissait un trou : mesuré à 3 tacos, la
+    // grille affichait 2 + 1 avec une case vide et ~40 % de l'écran blanc dessous.
+    // Chaque produit occupe désormais toute la largeur ; seule la HAUTEUR varie
+    // selon le nombre, pour que 3 produits remplissent l'écran sans qu'une
+    // catégorie de 15 boissons devienne 15 écrans de défilement.
     productGridLayoutClass() {
       const n = this.catalogProducts.length;
       if (n <= 1) return 'kiosk-product-grid--solo';
       if (n === 2) return 'kiosk-product-grid--duo';
-      if (n <= 4) return 'kiosk-product-grid--quad';
-      return '';
+      if (n === 3) return 'kiosk-product-grid--trio';
+      return 'kiosk-product-grid--liste';
     },
     customerAllergenCodes() {
       // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
@@ -454,10 +464,30 @@ export default {
     // [BORNE-UX 2026-07-11 #3] Variantes de taille : la grande (L/XL) est rendue
     // ~30 % plus grande que la petite (M/S) pour que la différence saute aux yeux
     // (ex Tacos M vs Tacos L). Détection par suffixe de taille du nom produit.
+    /**
+     * [OWNER 2026-08-24] Un CRAN PAR TAILLE, pas deux paliers pour quatre tailles.
+     *
+     * Jusqu'ici `--size-l` couvrait L, XL ET XXL : mesuré sur la borne (1080×1920),
+     * l'image du Tacos L et celle du Tacos XL faisaient toutes deux 366×355 px —
+     * strictement identiques. Le client voyait donc « L = XL » alors que le XL est
+     * le plus grand, et payait 2 € de plus sans rien voir de différent.
+     * Le propriétaire : « entre le M le L et le XL ça doit être visiblement […]
+     * avec l'œil on fera la différence entre les tailles ».
+     *
+     * `maxi` / `grande` / `large` restent volontairement au cran L : ce sont des
+     * libellés flous (une « grande frite » n'est pas un XL), et les promouvoir
+     * changerait des produits que personne n'a demandé de toucher.
+     */
     productSizeClass(product) {
       const name = String(product?.name || '').trim().toLowerCase();
       const last = name.split(/\s+/).pop();
-      if (last === 'l' || last === 'xl' || last === 'xxl' || /\b(grande?|large|maxi)$/.test(name)) {
+      if (last === 'xxl') {
+        return 'kiosk-product-image--size-xxl';
+      }
+      if (last === 'xl') {
+        return 'kiosk-product-image--size-xl';
+      }
+      if (last === 'l' || /\b(grande?|large|maxi)$/.test(name)) {
         return 'kiosk-product-image--size-l';
       }
       if (last === 'm' || last === 's' || /\b(petite?|moyen(?:ne)?|small)$/.test(name)) {
@@ -1186,9 +1216,13 @@ export default {
   color: var(--kiosk-text-mute);
 }
 
+/* [OWNER 2026-08-24] Une seule colonne, quelle que soit la catégorie : chaque
+   produit occupe TOUTE la largeur de la borne. Les 2 colonnes rendaient des
+   cartes de 370 px sur 1080 et laissaient une case vide dès que le nombre de
+   produits était impair. */
 .kiosk-product-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -1208,14 +1242,28 @@ export default {
 .kiosk-product-grid--duo .kiosk-product-card { min-height: min(41vh, 470px); }
 .kiosk-product-grid--duo .kiosk-product-media { height: min(30vh, 360px); }
 
-/* 3-4 produits : 2 colonnes mais cartes agrandies. */
-.kiosk-product-grid--quad .kiosk-product-card { min-height: min(44vh, 470px); }
-.kiosk-product-grid--quad .kiosk-product-media { height: min(30vh, 320px); }
+/* 3 produits (ex Tacos M/L/XL) : les trois remplissent la hauteur de l'écran,
+   sans case vide — c'est le cas qui a motivé la demande owner du 2026-08-24. */
+.kiosk-product-grid--trio .kiosk-product-card { min-height: min(26vh, 520px); }
+.kiosk-product-grid--trio .kiosk-product-media { height: min(18vh, 360px); }
 
-/* [BORNE-UX 2026-07-11 #3] Différence de taille visible entre variantes :
-   l'image L est ~30 % plus grande que la M (owner). */
-.kiosk-product-image--size-l { transform: scale(1.18); }
-.kiosk-product-image--size-m { transform: scale(0.9); }
+/* 4 produits et plus : toujours pleine largeur, hauteur resserrée pour qu'il en
+   reste environ trois de visibles par écran. Une catégorie de 15 boissons à
+   26vh la carte, c'est un écran par boisson — le client ne défile pas 15 fois
+   pour trouver un Coca. */
+.kiosk-product-grid--liste .kiosk-product-card { min-height: min(24vh, 430px); }
+.kiosk-product-grid--liste .kiosk-product-media { height: min(16vh, 300px); }
+
+/* [BORNE-UX 2026-07-11 #3] Différence de taille visible entre variantes.
+   [OWNER 2026-08-24] Quatre crans au lieu de deux : le L et le XL partageaient
+   `--size-l` et sortaient au pixel près à la même taille (366×355 mesurés sur
+   les deux). Les valeurs restent SOUS 1 : l'image occupe déjà 94 % de sa boîte,
+   et la carte est en `overflow: hidden` — au-delà, le tacos serait rogné.
+   L'écart entre deux crans consécutifs est d'environ +15 %, visible à l'œil. */
+.kiosk-product-image--size-xxl { transform: scale(1.06); }
+.kiosk-product-image--size-xl  { transform: scale(0.98); }
+.kiosk-product-image--size-l   { transform: scale(0.85); }
+.kiosk-product-image--size-m   { transform: scale(0.72); }
 
 .kiosk-product-card {
   position: relative;
