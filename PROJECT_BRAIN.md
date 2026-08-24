@@ -47,6 +47,71 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-24 — GOAL CAISSE VISION : le caissier voit enfin CE QUE LE CLIENT A PRIS. NON POUSSÉ.**
+>
+> Branche **`goal/caisse-vision-2026-08-24`** depuis `43b120c7d` (== origin == prod), worktree
+> dédié. **3 commits** : `5b895b1f1` (feat caisse), `351cd33e6` (finitions + 2 specs périmés),
+> `35c53efca` (fix cuisine, **HORS VOIE**). Zones gelées §7 : **0 ligne** sur toute la plage.
+>
+> **LA DEMANDE N'ÉTAIT PAS UNE PRÉFÉRENCE D'AFFICHAGE — C'ÉTAIT IMPOSSIBLE.**
+> `SimpleOrderResource::resolveItemsForTracker()` (`:224-245`) n'expédiait que `item_id`,
+> `item_name`, `quantity`, `instruction`. Ni sauce, ni pain, ni cuisson, ni extras, ni
+> suppléments. Deux sandwichs identiques commandés différemment étaient INDISTINGUABLES, et
+> voir le reste imposait un rechargement complet de page depuis `/admin/pos-v4`
+> (`pos-app.js:118-140`, routes déclarées en `window.location.assign`).
+>
+> **LE FAIT QUI A RENDU LE CORRECTIF GRATUIT** : `item_variations`, `item_extras` et
+> `composition_snapshot` sont des **COLONNES** de `order_items` (`OrderItem.php:71-76`), déjà
+> rapatriées par le `select *` de la requête existante. Elles voyageaient jusqu'à PHP **pour
+> être jetées**. Les exposer coûte **0 requête SQL** — mesuré, pas déduit.
+>
+> **MESURES RÉELLES (100 commandes, pas des estimations)** : 6 requêtes SQL · 64 ms ·
+> 105,7 Ko de payload · **+52,8 o/commande** en moyenne · **394 o** pour la commande la plus
+> composée. Budgets GOAL §3 : ≤8 / ≤100 ms / ≤125 Ko / ≤150 o / ≤600 o — **les cinq tenus**.
+> Budget de requêtes : `tests/e2e/pos-request-budget.spec.js` vert (≤12 req/min au repos).
+>
+> **CE QUI EST LIVRÉ** · composition résumée sous chaque produit de la carte · bouton
+> **« Voir tout »** ouvrant le contenu intégral **sans un seul appel réseau** (données déjà en
+> mémoire), Échap pour fermer, compte « 4 articles · 7 au total » · **canal TÉLÉPHONE** enfin
+> distinct (📞) — `sourceOf()` ne connaissait ni `phone`, ni `uber_eats`, ni `delivery`, les
+> trois s'affichaient « 🛒 Caisse » alors qu'un client téléphone N'EST PAS LÀ · suppléments de
+> formule visibles au détail caisse (`grep -c addon PosOrderShowComponent.vue` valait **0**
+> alors qu'ils sont facturés ET imprimés sur le ticket).
+>
+> 🔴 **UN DÉFAUT DE CUISINE TROUVÉ EN CHEMIN, MESURÉ À L'EXÉCUTION** (`35c53efca`, hors voie) :
+> le board KDS legacy lisait `extra.name` ; l'instantané NF525 porte `extra_name`
+> (`CompositionSnapshotBuilder.php:110`) et c'est lui qui est servi en priorité. Sérialisation
+> de la ligne **réelle #3956** : `extra_name='Salade'`, `extra.name=NULL`. La cuisine affichait
+> **« Extras: , , , »** — quatre garnitures invisibles, donc un produit remis au client sans ce
+> qu'il avait demandé. Les SUPPLÉMENTS avaient déjà leur assistant (même piège, corrigé de ce
+> côté-là) ; les extras étaient restés sur la lecture brute aux 5 sites. Commit **séparé** pour
+> pouvoir être annulé seul.
+>
+> **PREUVES** · `tests/Feature/Pos` **333 verts / 0 rouge** · **Vitest complet 434 fichiers,
+> 3544 verts, 0 rouge** (contre 3535 + 1 rouge avant) · 3 nouveaux specs, dont
+> `posTrackerCompositionVisible` **éprouvé par mutation** (4 rouges puis 3 rouges sur deux
+> cassages volontaires) · e2e `goal-caisse-vision` 4 verts, dont la mise en page à **1366×768
+> et 1024×600** (0 débordement) · 5 captures **lues et analysées** — c'est cette lecture qui a
+> trouvé le titre « #GCV24-COMPO— Admin » (espace mangé par le compilateur Vue), corrigé.
+>
+> ⚠️ **PIÈGE D'ENVIRONNEMENT À RETENIR POUR TOUT WORKTREE** : `.env.testing` est gitignoré et
+> ABSENT d'un worktree neuf. Sans lui, `tests/Feature/Pos` donne **57 échecs fantômes**
+> (« Header X-Idempotency-Key requis… ») qui n'ont RIEN à voir avec le code. Base de référence
+> rejouée à HEAD vierge : mêmes 57. Copier `.env`, `.env.testing`, et lier `vendor/` +
+> `node_modules/` en liens durs (`cp -Rpl`, 0 octet disque).
+>
+> 🔴 **DEUX SPECS E2E ÉCHOUAIENT DEPUIS TROIS MOIS, SANS QUE PERSONNE NE LE VOIE** :
+> `wave-s4` et `wave-q1` figeaient « 4 couloirs » alors que `131d79055` (2026-05-20) a inséré
+> « EN LIVRAISON » — **le jour même** où ces specs étaient écrits. Et `wave-q1` attendait
+> « Sandwich Cayenne » quand l'article #22 s'appelle **« Cayenne »**. Réalignés sur le réel,
+> pas affaiblis. Un spec faux est pire qu'un spec absent : il occupe la place d'un garde-fou.
+>
+> **RESTE OUVERT** · **G1** validation sur le VRAI poste (tout a été mesuré en local) ·
+> **G3 / POSPERF-09** la cadence du suivi est de **5 s / 12 req/min EN PERMANENCE**, pas 60 s
+> (`lastEventAt` n'est réarmé que par un event Echo livré ⇒ `eventsStale` toujours vrai), et
+> aucune pause sur onglet caché — zone partagée §6, non traité ici · `wave-s4` S-4.2 instable
+> (compte des cartes sur une base MySQL partagée) · **rien n'est poussé** (CLAUDE.md §3quater).
+
 > **2026-08-22 (soir) — GOAL CAISSE DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI**
 >
 > HEAD prod **`ac700e41c`** (== origin), avance rapide `e1ef70887..ac700e41c`, 7 commits, aucun

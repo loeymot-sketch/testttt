@@ -206,6 +206,41 @@ test.describe('GOAL CAISSE VISION — voir ce que le client a pris', () => {
         expect(consoleErrors, `erreurs console: ${consoleErrors.join(' | ')}`).toHaveLength(0);
     });
 
+    // La composition a fait passer la ligne produit en `flex-wrap: wrap`. Il faut
+    // prouver que les cartes SANS personnalisation n'ont pas bougé, et que rien ne
+    // déborde sur les deux écrans réels du comptoir (PROJECT_BRAIN §2 : 1366×768
+    // et 1024×600, ce dernier étant le gabarit le plus contraint).
+    for (const { l, h } of [{ l: 1366, h: 768 }, { l: 1024, h: 600 }]) {
+        test(`la mise en page tient en ${l}×${h}, sans débordement horizontal`, async ({ page }) => {
+            await page.setViewportSize({ width: l, height: h });
+            await loginAsAdmin(page);
+            await page.goto(TRACKER_URL, { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('.pos-tracker-card', { timeout: 30_000 });
+
+            // Le corps de page ne défile jamais horizontalement.
+            const deborde = await page.evaluate(() =>
+                document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+            );
+            expect(deborde, `débordement horizontal à ${l}×${h}`).toBe(false);
+
+            // Chaque ligne de composition reste dans sa carte (pas de fuite latérale).
+            const fuites = await page.evaluate(() => {
+                const out = [];
+                document.querySelectorAll('.pos-tracker-card').forEach((carte) => {
+                    const bc = carte.getBoundingClientRect();
+                    carte.querySelectorAll('.pos-tracker-card-compo').forEach((c) => {
+                        const bl = c.getBoundingClientRect();
+                        if (bl.right > bc.right + 1) out.push(c.textContent.trim().slice(0, 30));
+                    });
+                });
+                return out;
+            });
+            expect(fuites, `composition hors carte: ${fuites.join(' | ')}`).toHaveLength(0);
+
+            await page.screenshot({ path: path.join(SHOTS_DIR, `04-mise-en-page-${l}x${h}.png`), fullPage: false });
+        });
+    }
+
     test('une commande téléphone n\'est plus confondue avec une vente au comptoir', async ({ page }) => {
         await loginAsAdmin(page);
         await page.goto(TRACKER_URL, { waitUntil: 'domcontentloaded' });
