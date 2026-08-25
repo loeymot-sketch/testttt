@@ -70,7 +70,23 @@ déjà complet.
 
 Demande explicite et détaillée du propriétaire (2026-08-25, commande `/goal`), assortie d'une
 condition qu'il a posée lui-même : **« tu ne déploieras jamais qu'avec les tests d'abus »**.
-Cette condition est respectée : rien n'est déployé au moment où ce LOCK est écrit, et les
-12 tests d'abus sont verts.
 
-**Contresignature propriétaire :** ☐ (en attente — le déploiement est volontairement suspendu)
+## Déploiement — 2026-08-26
+
+La condition est remplie, donc le travail est parti en production.
+
+- **Borne (VPS `/var/www/lecayenne`)** : `29f8856d` → **`1516a9b9`** en avance rapide,
+  `npx mix --production` rejoué, caches Laravel reconstruits. **Preuve du contenu
+  RÉELLEMENT SERVI** (et non du fichier sur disque) : `https://…/js/app.js` — 2 386 884 o —
+  contient `goToStepType`, `openOnRecapIfEditing` et `kiosk-summary-edit`. `/kiosk/idle`
+  répond **200, zéro erreur JS, aucun libellé i18n brut**.
+- **Limite assumée** : le parcours complet n'a PAS pu être rejoué sur la borne de
+  production. Y entrer exige `?machine_key=<KIOSK_AUTO_LOGIN_SECRET>`, et la lecture de ce
+  secret a été refusée ; je ne l'ai pas contournée. Le parcours a donc été prouvé sur le
+  MÊME commit à la résolution réelle (1080×1920) avant déploiement, et la production est
+  prouvée servir exactement ce code. C'est une preuve en deux temps, pas une preuve directe :
+  il faut le savoir.
+- **Site** (dépôt séparé `Site lecayenne`, `1ba9126` → `3420dcd`, Vercel) : déployé et
+  vérifié contre la production — bundle servi porteur du correctif, porte SEO **16/16**.
+
+**Contresignature propriétaire :** ☐ (à cocher par le propriétaire — je ne signe pas à sa place)

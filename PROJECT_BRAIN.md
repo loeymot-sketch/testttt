@@ -47,16 +47,16 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-> **2026-08-26 — MODIFIER UN PRODUIT DU PANIER SANS TOUT RECOMPOSER. NON DÉPLOYÉ, DÉLIBÉRÉMENT.**
+> **2026-08-26 — MODIFIER UN PRODUIT DU PANIER SANS TOUT RECOMPOSER. DÉPLOYÉ, BORNE ET SITE.**
 >
 > `/goal` du propriétaire : « s'il veut modifier un produit du panier, ça ouvre le récap, et à
 > côté de chaque chose il pourra le modifier, et ça ouvre directement la page dédiée — s'il veut
 > changer la viande, s'il veut changer la formule », borne ET site. Avec une condition qu'il a
 > posée lui-même : **« tu ne déploieras jamais qu'avec les tests d'abus »**.
 >
-> 🔴 **RIEN N'EST DÉPLOYÉ. C'est le respect de sa condition, pas un oubli.** Branche
-> `feat/tacos-xl-3-viandes-2026-08-24`, VPS laissé sur `29f8856d`. Le site est commité EN LOCAL,
-> non poussé — sur ce dépôt, pousser `main` déclenche Vercel.
+> ✅ **La condition est remplie, donc c'est parti en production.** Borne : VPS `29f8856d` →
+> **`1516a9b9`** (avance rapide, `npx mix --production` en `ubuntu`, caches reconstruits).
+> Site : `1ba9126` → **`3420dcd`** poussé sur `main`, Vercel a construit.
 >
 > **CE QUI EXISTAIT DÉJÀ, et qu'il ne fallait pas réécrire** : `P-MEGA-05` donnait au panier
 > borne un snapshot, la restauration des sélections, le remplacement en place et une annulation
@@ -92,11 +92,41 @@ Plateforme restaurant fast-food complète :
 > On commite donc le LOCK + le non-gelé d'abord, le fichier gelé ensuite. `--no-verify` est
 > interdit par §3quater et n'a pas été utilisé.
 >
-> 🔴 **CE QUI RESTE, et pourquoi je ne l'ai pas fait** : (1) la **contresignature owner du LOCK**
-> (case ☐) — porte humaine §10 pour toute zone gelée ; (2) les **tests d'abus du SITE** n'existent
-> pas encore : la borne satisfait la condition du propriétaire, le site NON, donc le site ne part
-> pas. Le stepper reste volontairement non cliquable : y sauter librement permettrait d'atteindre
-> une étape jamais visitée en contournant les validations, donc de composer un produit incomplet.
+> 🪤 **LES TESTS D'ABUS DU SITE ONT TROUVÉ DEUX DÉFAUTS QUE LE PARCOURS NORMAL NE MONTRAIT PAS.**
+> Ils sont la raison d'être de la condition du propriétaire, et ils l'ont justifiée le jour même
+> (`tests-e2e/panier-modifier-abus-2026-08-26.regression.js`, **14 verts**) :
+> · **le prix regonflait à chaque réouverture.** Je passais au wizard la LIGNE DU PANIER, dont
+>   `price` est le total **déjà composé** ; or `computeWizardTotal` repart de `item.price`. Un
+>   tacos à 9,80 € rouvert puis validé sans rien changer repartait à **10,70 €** — le client
+>   payait son cheddar une seconde fois, à chaque passage. On repart désormais de l'article du
+>   CATALOGUE (`menu.findItem`) ; produit retiré de la carte ⇒ on ne rouvre rien plutôt que faux.
+> · **la quantité disparaissait.** Elle vit sur la LIGNE, pas dans la composition : un « ×3 »
+>   rouvert pour corriger une sauce revenait à « ×1 », deux articles perdus sans un mot.
+> · au passage, renoncer ramène AU PANIER — le client en venait ; le refermer sur le menu lui
+>   laissait croire qu'il avait perdu sa commande.
+>
+> **PREUVE EN PRODUCTION** · Borne : `https://…/js/app.js` **réellement servi** (2 386 884 o)
+> contient `goToStepType`, `openOnRecapIfEditing`, `kiosk-summary-edit` ; `/kiosk/idle` **200,
+> 0 erreur JS, aucun libellé i18n brut**. · Site : bundle servi porteur du correctif, porte SEO
+> **16/16 contre la production**, parité des 39 prix.
+>
+> ⚠️ **LIMITE ASSUMÉE, à ne pas surinterpréter** : le parcours complet n'a PAS été rejoué sur la
+> borne de production. Y entrer exige `?machine_key=<KIOSK_AUTO_LOGIN_SECRET>` et la lecture de
+> ce secret a été refusée ; je ne l'ai pas contournée. La preuve est donc **en deux temps** :
+> parcours réel mesuré à 1080×1920 sur le MÊME commit avant déploiement, + production prouvée
+> servir exactement ce code. Ce n'est pas une preuve directe.
+>
+> 🔴 **CE QUI RESTE** : la **contresignature owner du LOCK** (case ☐) — porte humaine §10 pour
+> toute zone gelée, je ne signe pas à sa place. Le stepper reste volontairement non cliquable :
+> y sauter librement permettrait d'atteindre une étape jamais visitée en contournant les
+> validations, donc de composer un produit incomplet.
+>
+> 🐛 **Défaut d'outillage relevé, NON corrigé (hors voie)** : `tools/seo/deployer.sh` porte un
+> message de commit **figé en dur** d'un déploiement de juillet, contenant des backticks non
+> échappés dans une chaîne entre guillemets — le shell les exécute (`const: command not found`).
+> Et son `git commit … || exit 1` **abandonne avant le push** dès que l'arbre est déjà propre.
+> Résultat : le script est inutilisable une fois le travail commité à la main. Publication faite
+> par `git push origin main` après ses portes de contrôle (toutes vertes).
 
 > **2026-08-25 (nuit) — BORNE : LA CATÉGORIE ENTIÈRE TIENT À L'ÉCRAN, QUEL QU'EN SOIT LE NOMBRE**
 >
