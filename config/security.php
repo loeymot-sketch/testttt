@@ -23,6 +23,25 @@
 */
 
 return [
+    /*
+     * [AUDIT-SUPERVISEUR 2026-08-25 · D-002] LE PONT D'IMPRESSION CUISINE MANQUAIT.
+     *
+     * `connect-src` n'autorisait que le port 9100 (pont CAISSE) alors que
+     * `resources/js/helpers/kitchenLocalPrinter.js:22` compose le **9101** (pont
+     * CUISINE). L'équipe de capture avait classé les `ERR_CONNECTION_REFUSED` associés
+     * en « bruit Pusher allowlisté » ; le superviseur a montré que ce ne sont ni Pusher
+     * ni des websockets, mais des requêtes HTTP vers les ponts d'impression.
+     *
+     * Aujourd'hui la politique est en `report_only` : le navigateur SIGNALE sans
+     * bloquer, donc l'impression fonctionne et le défaut est invisible. Le jour où
+     * `CSP_ENFORCE_MODE` passe à `enforce`, le navigateur BLOQUE l'appel et la cuisine
+     * cesse d'imprimer — sans que rien dans le code n'ait changé. C'est une mine à
+     * retardement armée par une configuration, pas par un bogue.
+     *
+     * L'allowlist BACKEND, elle, connaissait déjà le 9101 : la documentation quelques
+     * lignes plus bas donne `127.0.0.1/32:9100-9101` en exemple. C'est la politique
+     * NAVIGATEUR qui avait été oubliée — les deux moitiés d'une même porte.
+     */
     'csp' => [
         'mode' => env('CSP_ENFORCE_MODE', 'report_only'),
 
@@ -32,7 +51,7 @@ return [
             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
             font-src 'self' data: https://fonts.gstatic.com;
             img-src 'self' data: blob: https:;
-            connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100;
+            connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100 http://127.0.0.1:9101 http://localhost:9101;
             frame-ancestors 'none';
             base-uri 'self';
             form-action 'self';
