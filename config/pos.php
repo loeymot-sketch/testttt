@@ -69,6 +69,7 @@ return [
         // réessayez plus tard ». 240/min = 20 écrans simultanés sur le même compte — très au-delà
         // de tout usage réel, tout en gardant une borne contre une boucle emballée.
         'print_queue_poll' => max(1, (int) env('POS_RATE_LIMIT_PRINT_QUEUE_POLL', 240)),
+        'customer_display' => max(1, (int) env('POS_RATE_LIMIT_CUSTOMER_DISPLAY', 240)),
     ],
 
     /*
