@@ -47,6 +47,59 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-25 (soir) — SITE PUBLIC : IL ANNONÇAIT DEUX PRIX QUE LA CAISSE NE PRATIQUE PAS**
+>
+> Owner : « deploy tout ». Le backend était déjà entièrement en ligne ; le morceau restant était
+> le site public. `tools/seo/comparer-prix.py` — l'outil que le projet s'est donné exactement pour
+> ça — a sorti **`ECART|…|2`** contre la production :
+>
+> | produit | site | caisse | depuis |
+> |---|---|---|---|
+> | Galette Cayenne | 7,00 € | **7,40 €** | le 2026-08-20, PAS de mon fait |
+> | Tacos L | 7,90 € | **8,90 €** | mon changement du 2026-08-24 |
+>
+> ⛔ **CORRECTION MAJEURE DE §3bis — `/Users/1millnonstop/Downloads/web` N'EST PAS LA SOURCE DU
+> SITE.** CLAUDE.md le désigne comme « mirror canonical web standalone ». Mesuré : son
+> `data/menu.js` fait **42 301 o**, celui que sert `www.lecayenne.fr` en fait **58 342 o**. La vraie
+> source est **`/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`** (dépôt
+> `loeymot-sketch/Site-lecayenne`, `.vercel/project.json` → projet `site-lecayenne`), dont le
+> `data/menu.js` fait 58 342 o — l'octet près. Mon commit de la veille dans `/Downloads/web`
+> (`4d1dfcb`) était donc **mort-né** : il n'atteindra jamais un client. C'est le piège consigné le
+> 2026-08-07b, toujours vivant sept semaines plus tard.
+>
+> **LA CORRECTION GALETTE EXISTAIT ET N'AVAIT JAMAIS ÉTÉ SERVIE.** Commit `e556f59` du 20/08,
+> poussé sur `origin/main`, 21 prix corrigés sur 5 pages — et la production servait toujours
+> 7,00 €. Pire : il n'avait corrigé QUE les pages HTML, pas `data/menu.js` ni
+> `tools/seo/catalogue-extrait.json`. **Régénérer les pages aurait donc réécrit 7,00 € partout et
+> annulé la correction en silence.** Rattrapé de justesse en inspectant l'extraction avant de
+> lancer le générateur.
+>
+> 🪤 **LE JSON-LD ÉTAIT JUSTE, LA META DESCRIPTION MENTAIT.** Après le premier déploiement, les
+> données structurées de `tacos.html` servaient bien 8,90 € (elles lisent le catalogue) pendant
+> que la meta description annonçait encore « Tacos L 7,90 € » à Google. Cause : `generer.py`
+> **retapait les prix du tacos à la main** dans sa prose, sa FAQ, son titre et sa description —
+> précisément ce que son propre en-tête interdit (« les prix […] jamais retapés »). Et la porte de
+> parité ne pouvait pas le voir : **elle compare les prix de `carte.html` au catalogue, pas la
+> prose des pages.** Les quatre endroits lisent désormais le catalogue, formules comprises.
+> ⚠️ **La porte de parité reste aveugle à toute prose écrite en dur** — elle l'était pour le tacos,
+> elle l'est encore pour les autres pages. À élargir un jour.
+>
+> **PUBLIÉ** (dépôt Site-lecayenne, `main` : `e556f59..56f0383..1ba9126`) : Tacos L 8,90 €,
+> **NOUVEAU Tacos XL 10,90 €** (3 viandes comprises, 4ᵉ à 2,50 €, `has_crudites:false` selon la
+> règle tacos du 05/08), Galette Cayenne 7,40 €, fiche `plat/tacos-xl.html` générée, sitemap à
+> **41 URL**, 24 fiches + `carte.html` + `llms.txt` + JSON-LD régénérés.
+> Sur demande explicite du propriétaire, le lot emporte AUSSI les **11 commits de
+> `app-stores/capacitor-2026-08-19`** (fondation App Store/Google Play, permissions Android,
+> connexion Apple/Google, RGPD, iOS) et le travail non commité sur la roue. 🔴 **Je n'ai relu ni
+> ces 11 commits ni ces 206 lignes — je le dis plutôt que de le laisser croire.**
+>
+> **VÉRIFIÉ SUR LE CONTENU SERVI** (un push ne prouve rien — cf. l'échec silencieux de deux jours
+> du 05/08) : `comparer-prix.py` passe de `ECART|…|2` à **`OK|39`**, la meta description servie
+> porte « M 6,90 €, L 8,90 €, XL 10,90 € », le JSON-LD sert 6,90/8,90/10,90 et
+> `plat/tacos-xl.html` répond **200**. Portes : parité SEO **18/18**, CSS critique conforme,
+> chaque `.js` compilé correspond à son `.jsx`, aucun secret.
+
+
 > **2026-08-25 — AUDIT SUPERVISEUR CAISSE DÉPLOYÉ. 4 P0 fermés, 5 P1 restants. NON CONVERGÉ.**
 >
 > Prod **`760ae546a` → `9d80f9ea9`**, avance rapide, 23 commits, **aucun `--force`**.
