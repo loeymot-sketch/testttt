@@ -106,7 +106,15 @@
             </div>
 
             <div class="db-table-responsive">
-                <table class="db-table stripe" :dir="direction">
+                <!-- [AUDIT-SUPERVISEUR 2026-08-25 · C-002] `hist-table` : marges internes
+                     resserrées SUR CETTE TABLE SEULEMENT. Dix colonnes à `px-4` coûtaient
+                     320 px de marges, et la table débordait de son conteneur — 181 px
+                     mesurés à 1280, 95 px à 1366. La colonne ACTION étant `sticky right`,
+                     ce débordement lui faisait RECOUVRIR les colonnes DATE et STATUT :
+                     mesuré à ZÉRO pixel rendu sur un état, et une date coupée en plein
+                     glyphe sur un autre. Une colonne épinglée n'a rien à masquer si la
+                     table tient — c'est le débordement qu'on supprime, pas le symptôme. -->
+                <table class="db-table stripe hist-table" :dir="direction">
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
                             <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
@@ -691,6 +699,22 @@ export default {
    rectangle d'une autre couleur au milieu du tableau). Verrouillé par
    `tests/js/historiqueActionColumnOpaque.spec.js`, qui évalue la cascade
    réelle via `getComputedStyle`. */
+/* [AUDIT-SUPERVISEUR 2026-08-25 · C-002] LA VRAIE CAUSE : la table débordait.
+   Dix colonnes à `px-4` (16 px de chaque côté) = 320 px de marges internes. Mesuré :
+   181 px de débordement à 1280, 95 px à 1366. Une colonne `sticky right` sur une table
+   qui déborde se pose FORCÉMENT sur ce qui est à sa gauche : c'est son rôle. Rendre la
+   cellule opaque, comme au round précédent, supprime la bavure mais pas le recouvrement.
+   On resserre donc les marges SUR CETTE TABLE UNIQUEMENT — jamais sur `.db-table-head-th`
+   global, qui habille toutes les tables du produit. */
+.hist-table .db-table-head-th,
+.hist-table .db-table-body-td {
+    /* 8 px laissait encore 21 px de débordement à 1280 — mesuré, pas estimé.
+       6 px les absorbe (4 px gagnés par cellule × 10 colonnes = 40 px) et la
+       table tient sur les deux gabarits du parc. */
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
 .hist-action-col {
     position: sticky;
     right: 0;
