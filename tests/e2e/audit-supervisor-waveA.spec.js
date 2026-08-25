@@ -344,6 +344,34 @@ test.describe('VAGUE A — suivi des commandes : capture des 10 états', () => {
             }
         }
 
+        /*
+         * [AUDIT-SUPERVISEUR 2026-08-26 · AB-011] REFERMER LE PANNEAU ENTRE DEUX ÉTATS.
+         *
+         * Ce que le superviseur a mesuré : CINQ des dix états de cette vague avaient un DOM
+         * identique au bit près. La cause est ici — l'état 04 ouvre le panneau « Voir tout »
+         * et ne le referme JAMAIS. Les états 05, 06 et 07 cherchaient ensuite des cartes
+         * masquées par ce panneau resté ouvert, ne les trouvaient pas, et capturaient la même
+         * page trois fois de suite en notant poliment « état non atteint ».
+         *
+         * Conséquence la plus grave : l'état censé démontrer la non-régression du correctif
+         * du panneau « Voir tout » n'avait jamais ouvert ce panneau. La couverture annoncée
+         * était de dix états ; elle était de sept.
+         */
+        const fermerPanneau = async () => {
+            const overlay = page.locator('[data-testid="tracker-contenu-overlay"]');
+            if (!(await overlay.isVisible().catch(() => false))) {
+                return;
+            }
+            const ok = page.locator('.pos-tracker-contenu-ok');
+            if (await ok.count()) {
+                await ok.first().click().catch(() => {});
+            } else {
+                await page.keyboard.press('Escape').catch(() => {});
+            }
+            await overlay.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+            await page.waitForTimeout(250);
+        };
+
         // ── ÉTAT 04 — « Voir tout » ouvert sur cette commande ────────────────
         {
             const c = carte('COMPO');
@@ -381,43 +409,84 @@ test.describe('VAGUE A — suivi des commandes : capture des 10 états', () => {
             }
         }
 
-        // ── ÉTAT 05 — « Voir tout » sur une commande à UNE ligne sans perso ──
+        await fermerPanneau();
+
+        /*
+         * ── ÉTAT 05 — LE PANNEAU OUVERT PENDANT UN RAFRAÎCHISSEMENT ──────────────────
+         *
+         * [AUDIT-SUPERVISEUR 2026-08-26 · AB-011] Cet état visait auparavant « Voir tout sur
+         * une commande à UNE ligne sans personnalisation ». Il n'a JAMAIS été atteint, et il
+         * ne pouvait pas l'être : une commande sans personnalisation n'a rien à révéler, donc
+         * la carte ne porte pas de bouton « Voir tout » — vérifié dans le DOM, AUDA-SIMPLE est
+         * la seule des quatre cartes sans ce bouton. La prémisse de l'état était fausse.
+         *
+         * Faute de l'atteindre, la capture retombait sur la page inchangée, et deux états
+         * suivants faisaient de même : trois artefacts identiques au bit près, présentés comme
+         * trois états de couverture.
+         *
+         * On le remplace par l'état qui MANQUAIT vraiment, et que le superviseur réclamait :
+         * le panneau OUVERT pendant que le suivi se rafraîchit. C'est exactement le défaut que
+         * `f22544f7b` a corrigé — le panneau suivait une commande FIGÉE pendant que la liste se
+         * mettait à jour derrière — et aucune capture ne le démontrait non-régressé.
+         *
+         * La preuve est comparative : on relève le contenu du panneau, on laisse passer au
+         * moins un cycle de rafraîchissement, et on le relève à nouveau. Il doit désigner LA
+         * MÊME commande.
+         */
         {
-            const c = carte('SIMPLE');
+            const c = carte('COMPO');
             const visible = await c.isVisible().catch(() => false);
             if (!visible) {
-                await rec.snap('05-voir-tout-ligne-simple');
-                noter('05-voir-tout-ligne-simple', 'la carte AUDA-SIMPLE', 'CARTE INTROUVABLE — état non atteint');
+                await rec.snap('05-voir-tout-pendant-rafraichissement');
+                noter('05-voir-tout-pendant-rafraichissement', 'la carte AUDA-COMPO', 'CARTE INTROUVABLE — état non atteint');
             } else {
                 await c.scrollIntoViewIfNeeded().catch(() => {});
                 const bouton = c.locator('[data-testid^="tracker-voir-tout-"]');
-                const nbBoutons = await bouton.count();
-                if (nbBoutons > 0) {
+
+                if ((await bouton.count()) === 0) {
+                    await rec.snap('05-voir-tout-pendant-rafraichissement');
+                    noter('05-voir-tout-pendant-rafraichissement', 'le bouton « Voir tout »', 'BOUTON ABSENT sur AUDA-COMPO — état non atteint');
+                } else {
+                    const overlay = page.locator('[data-testid="tracker-contenu-overlay"]');
                     await bouton.first().click();
-                    await page.locator('[data-testid="tracker-contenu-overlay"]').waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+                    await overlay.waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
                     await page.waitForTimeout(400);
-                    await rec.snap('05-voir-tout-ligne-simple');
-                    const texte = (await page.locator('[data-testid="tracker-contenu-overlay"]').innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+
+                    const lire = async () => (await overlay.innerText().catch(() => ''))
+                        .replace(/\s+/g, ' ')
+                        .trim();
+
+                    const avant = await lire();
+
+                    // Le suivi interroge le serveur toutes les 5 s. On laisse passer DEUX
+                    // cycles : un seul pourrait tomber juste avant un tick et ne rien prouver.
+                    await page.waitForTimeout(11_000);
+
+                    const apres = await lire();
+                    await rec.snap('05-voir-tout-pendant-rafraichissement');
+
+                    // Le panneau doit toujours désigner LA MÊME commande. On compare son
+                    // numéro, pas son texte entier : un compteur de minutes peut légitimement
+                    // bouger, la commande visée non.
+                    const numero = (t) => (t.match(/#?AUDA-[A-Z]+/) || [''])[0];
+
                     noter(
-                        '05-voir-tout-ligne-simple',
-                        'soit le panneau ouvert sur une commande nue, soit l\'absence assumée du bouton',
-                        `bouton PRÉSENT et panneau ouvert ; contenu = « ${texte.slice(0, 260)} »`,
+                        '05-voir-tout-pendant-rafraichissement',
+                        'le panneau « Voir tout » désignant TOUJOURS la même commande après un rafraîchissement',
+                        numero(avant) && numero(avant) === numero(apres)
+                            ? `panneau STABLE sur ${numero(avant)} après 11 s de rafraîchissements ; contenu = « ${apres.slice(0, 200)} »`
+                            : `PANNEAU DÉRIVÉ : visait « ${numero(avant) || '(numéro illisible)'} », `
+                                + `montre « ${numero(apres) || '(numéro illisible)'} » — régression de f22544f7b. `
+                                + `Avant = « ${avant.slice(0, 140)} » / Après = « ${apres.slice(0, 140)} »`,
                     );
+
                     await page.keyboard.press('Escape');
                     await page.waitForTimeout(300);
-                } else {
-                    await page.waitForTimeout(300);
-                    await rec.snap('05-voir-tout-ligne-simple');
-                    const texte = (await c.innerText()).replace(/\s+/g, ' ').trim();
-                    noter(
-                        '05-voir-tout-ligne-simple',
-                        'le panneau « Voir tout » sur une commande à une seule ligne sans personnalisation',
-                        `BOUTON « Voir tout » ABSENT (aDuContenuAVoir=false) → panneau INATTEIGNABLE sur cette commande ; ` +
-                            `carte capturée à la place : « ${texte.slice(0, 260)} »`,
-                    );
                 }
             }
         }
+
+        await fermerPanneau();
 
         // ── ÉTAT 06 — carte TÉLÉPHONE ───────────────────────────────────────
         {
@@ -443,6 +512,8 @@ test.describe('VAGUE A — suivi des commandes : capture des 10 états', () => {
             }
         }
 
+        await fermerPanneau();
+
         // ── ÉTAT 07 — carte PLATEFORME ──────────────────────────────────────
         {
             const c = carte('UBER');
@@ -465,6 +536,8 @@ test.describe('VAGUE A — suivi des commandes : capture des 10 états', () => {
                 noter('07-carte-plateforme', 'la carte AUDA-UBER', 'CARTE INTROUVABLE — état non atteint');
             }
         }
+
+        await fermerPanneau();
 
         // ── ÉTAT 08 — filtre par canal ACTIVÉ sur « Téléphone » ─────────────
         {
@@ -497,6 +570,8 @@ test.describe('VAGUE A — suivi des commandes : capture des 10 états', () => {
                 );
             }
         }
+
+        await fermerPanneau();
 
         // ── ÉTAT 09 — panneau « commandes en souffrance » ────────────────────
         {
