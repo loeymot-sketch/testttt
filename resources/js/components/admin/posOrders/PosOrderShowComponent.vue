@@ -497,6 +497,7 @@ import statusEnum from "../../../enums/modules/statusEnum";
 // [S2 V6 2026-07-29] Normaliseurs canoniques legacy↔instantané NF525, partagés
 // avec le ticket — une seule vérité pour lire une composition (DISCIPLINE §9).
 import { normalizeReceiptVariations, normalizeReceiptExtras, normalizeReceiptAddons } from "../../../helpers/posReceiptBuilder";
+import { orderTypeLabels, posPaymentMethodLabels } from "../../../helpers/orderEnumLabels";
 import PosOrderMapComponent from "./PosOrderMapComponent";
 // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem modal
 // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). Mounted
@@ -744,28 +745,18 @@ export default {
         // mode de paiement le plus fréquent du parc. Une carte d'AFFICHAGE doit couvrir
         // TOUT l'enum ; seuls les SÉLECTEURS ont le droit d'être partiels.
         posPaymentMethodEnumArray: function () {
-            return {
-                [posPaymentMethodEnum.CASH]: this.$t("label.cash"),
-                [posPaymentMethodEnum.CARD]: this.$t("label.card"),
-                [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
-                [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
-                [posPaymentMethodEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant"),
-                [posPaymentMethodEnum.COUNTER_DEFERRED]: this.$t("label.pending_counter"),
-            }
+            return posPaymentMethodLabels(this.$t.bind(this));
         },
         // [C-004 2026-08-25] POS (15) et KIOSK (25) — les deux SEULS types produits par
         // le V1 LOCAL Le Cayenne — étaient absents : « Type de commande: » était vide sur
         // la TOTALITÉ du parc, pas sur un cas de bord. La LISTE d'où l'on ouvre cette
         // fiche sait les nommer depuis toujours (PosOrderListComponent.vue:254-259) ;
         // l'incohérence était visible en deux clics.
+        // [C-017 2026-08-25] Ce tableau vivait ici en copie manuelle — la 5ᵉ du dépôt.
+        // Il lit désormais LE facteur commun : une valeur ajoutée à l'énumération est
+        // nommée partout d'un coup, ou nulle part, mais jamais sur trois écrans sur quatre.
         orderTypeEnumArray: function () {
-            return {
-                [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
-                [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
-                [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table"),
-                [orderTypeEnum.KIOSK]: this.$t("label.kiosk"),
-                [orderTypeEnum.POS]: this.$t("label.pos")
-            }
+            return orderTypeLabels(this.$t.bind(this));
         },
         /**
          * [C-003 2026-08-25] Le texte du créneau de retrait/livraison, ou '' s'il

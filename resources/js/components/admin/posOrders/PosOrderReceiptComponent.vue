@@ -159,6 +159,7 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import OrderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { receiptBranchHeader } from "../../../helpers/posReceiptBuilder";
+import { orderTypeLabels, posPaymentMethodLabels } from "../../../helpers/orderEnumLabels";
 import ReceiptRemboursementMarker from "../pos/ReceiptRemboursementMarker.vue";
 
 export default {
@@ -169,19 +170,16 @@ export default {
     },
     data() {
         return {
-            posPaymentMethodEnumArray: {
-                [posPaymentMethodEnum.CASH]: this.$t("label.cash"),
-                [posPaymentMethodEnum.CARD]: this.$t("label.card"),
-                [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
-                [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
-            },
+            // [AUDIT-SUPERVISEUR 2026-08-25 · C-017] Les deux tableaux étaient recopiés
+            // ici à la main, et incomplets : ni POS ni BORNE côté type de commande, ni
+            // Ticket Restaurant ni « À encaisser » côté paiement. Résultat sur la
+            // FACTURE REMISE AU CLIENT : « Type de commande: » et « Type de paiement: »
+            // vides, sur 100 % du parc V1. C'était la QUATRIÈME copie du même défaut ;
+            // elles lisent désormais toutes le même facteur commun.
+            posPaymentMethodEnumArray: posPaymentMethodLabels(this.$t.bind(this)),
             orderTypeEnum: OrderTypeEnum,
             enums: {
-                orderTypeEnumArray: {
-                    [OrderTypeEnum.DELIVERY]: this.$t("label.delivery"),
-                    [OrderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
-                    [OrderTypeEnum.DINING_TABLE]: this.$t("label.dining_table")
-                }
+                orderTypeEnumArray: orderTypeLabels(this.$t.bind(this))
             }
         }
     },
