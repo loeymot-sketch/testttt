@@ -2232,7 +2232,9 @@
                 "sauce_fallback": "Sauce n°{id}",
                 "garniture_fallback": "Garniture n°{id}",
                 "drink_fallback_id": "Boisson n°{id}",
-                "boisson_line": "Boisson : {name}"
+                "boisson_line": "Boisson : {name}",
+                "edit": "Modifier",
+                "edit_section": "Modifier : {section}"
             },
             "step": {
                 "frites_style": {
