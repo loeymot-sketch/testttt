@@ -80,19 +80,21 @@ beforeEach(() => {
   global.window = global.window || {};
 });
 
+const classesDe = (vm) => [].concat(vm.productGridLayoutClass);
+
 describe('borne — chaque produit occupe toute la largeur', () => {
   const cas = [
     [1, 'kiosk-product-grid--solo'],
     [2, 'kiosk-product-grid--duo'],
     [3, 'kiosk-product-grid--trio'],
-    [5, 'kiosk-product-grid--liste'],
-    [15, 'kiosk-product-grid--liste'],
+    [5, 'kiosk-product-grid--dense'],
+    [15, 'kiosk-product-grid--dense'],
   ];
 
   cas.forEach(([n, attendu]) => {
     it(`${n} produit(s) → ${attendu}`, () => {
       const items = Array.from({ length: n }, (_, i) => item(i + 1, `Produit ${i + 1}`));
-      expect(mountGrid(items).vm.productGridLayoutClass).toBe(attendu);
+      expect(classesDe(mountGrid(items).vm)).toContain(attendu);
     });
   });
 
@@ -101,8 +103,39 @@ describe('borne — chaque produit occupe toute la largeur', () => {
     // à 370 px et laissait un trou sur un nombre impair. Elle ne doit plus exister.
     for (let n = 1; n <= 20; n++) {
       const items = Array.from({ length: n }, (_, i) => item(i + 1, `P${i + 1}`));
-      expect(mountGrid(items).vm.productGridLayoutClass).not.toContain('quad');
+      expect(classesDe(mountGrid(items).vm).join(' ')).not.toContain('quad');
     }
+  });
+});
+
+/**
+ * [OWNER 2026-08-25] « ça affiche selon le nombre d'article, TOUS les produits, pas que 3 ».
+ *
+ * Les paliers de hauteur fixes laissaient 3 produits à l'écran quelle que soit la
+ * catégorie : Sandwichs (5), Burgers (6) et Boissons (15) obligeaient à faire défiler
+ * pour seulement DÉCOUVRIR la carte. La hauteur est désormais calculée en CSS à partir
+ * du nombre d'articles, exposé par le composant — c'est ce contrat qu'on verrouille ici.
+ */
+describe('borne — la catégorie entière tient à l\'écran', () => {
+  it('le nombre d\'articles est exposé au CSS, c\'est lui qui divise la hauteur', () => {
+    [1, 2, 3, 5, 6, 15].forEach((n) => {
+      const items = Array.from({ length: n }, (_, i) => item(i + 1, `P${i + 1}`));
+      expect(mountGrid(items).vm.productGridStyle).toEqual({ '--kiosk-produits': String(n) });
+    });
+  });
+
+  it('une catégorie vide ne divise jamais par zéro', () => {
+    expect(mountGrid([]).vm.productGridStyle).toEqual({ '--kiosk-produits': '1' });
+  });
+
+  it('au-delà de 9 produits, la carte s\'allège pour que le PRIX reste visible', () => {
+    // Mesuré sur les 15 boissons : à 96 px de haut, nom + régimes + description + prix
+    // ne tiennent pas, et c'est le prix qui passait sous le bord, coupé par overflow.
+    // Un produit sans prix affiché sur une borne n'est pas acceptable.
+    const peu = Array.from({ length: 9 }, (_, i) => item(i + 1, `P${i + 1}`));
+    const beaucoup = Array.from({ length: 10 }, (_, i) => item(i + 1, `P${i + 1}`));
+    expect(classesDe(mountGrid(peu).vm)).not.toContain('kiosk-product-grid--minimal');
+    expect(classesDe(mountGrid(beaucoup).vm)).toContain('kiosk-product-grid--minimal');
   });
 });
 
