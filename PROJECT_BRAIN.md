@@ -47,6 +47,58 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-25 (nuit) — BORNE : PRODUITS PLEINE LARGEUR + ÉCHELLE DE TAILLES VISIBLE — DÉPLOYÉ**
+>
+> HEAD prod **`95904e7d`** (== origin), avance rapide `4398e4e35..95904e7df`, 1 commit. Le
+> propriétaire, après avoir vu le Tacos XL sur la borne : « je voulais toujours les produits ça
+> prennent la taille complète de la borne […] pas juste des petits produits » et « entre le M le L
+> et le XL ça doit être visiblement […] avec l'œil on fera la différence entre les tailles ».
+>
+> ⚠️ **CES DEUX DEMANDES AVAIENT DÉJÀ ÉTÉ FAITES ET IMPLÉMENTÉES LE 2026-07-11** (blocs
+> `[BORNE-UX 2026-07-11]`). Elles avaient régressé **sans qu'aucun test ne rougisse** :
+> · la disposition « grandes cartes » ne couvrait que 1 ou 2 produits — passer les Tacos à 3 a fait
+>   basculer la catégorie dans la grille 2 colonnes ;
+> · `--size-l` couvrait L, XL ET XXL, donc deux tailles vendues 2 € d'écart s'affichaient pareil.
+> 12 tests (`tests/js/kioskGrilleTaillePleineLargeur.spec.js`) ferment ce trou.
+>
+> **MESURÉ À LA VRAIE RÉSOLUTION BORNE (portrait 1080×1920, Playwright headless)**
+> AVANT : cartes **370×506** (un tiers d'un écran de 1080), 3 produits en 2 colonnes = 2+1 avec une
+> case vide et ~40 % d'écran blanc ; images L et XL **366×355 TOUTES LES DEUX**, au pixel près.
+> APRÈS : cartes **765 px** pleine largeur, images **491×234 (M) → 579×276 (L) → 668×318 (XL)**.
+>
+> 🔎 **TROISIÈME DÉFAUT, NON SIGNALÉ ET ANTÉRIEUR AU TACOS XL** : la borne affichait **L, XL, M**.
+> `kioskItemDisplayOrder.js::compareKioskItemsDisplay` traite **`order = 0` comme « aucun ordre
+> défini »** et le renvoie EN DERNIER (`oa > 0 ? oa : POSITIVE_INFINITY`) — c'est délibéré, ça garde
+> les formules d'appoint derrière les produits signature. Or le Tacos M portait `order = 0` : la
+> borne montrait donc « Tacos L » AVANT « Tacos M » **depuis toujours**. Corrigé par la DONNÉE
+> (échelle 1/2/3 dans `EnsureTacosXl3ViandesCommand`), pas en touchant un comparateur partagé par
+> toutes les catégories.
+>
+> 🪤 **PIÈGE DE VÉRIFICATION À RETENIR — le hash du chunk ne prouve rien.** Après
+> `npx mix --production` sur le VPS, `kiosk-shell.cee1f829.js` portait **le même hash qu'avant**.
+> Lu tel quel : « le build n'a rien produit ». **Faux** : `KioskCategoriesComponent` n'appartient pas
+> à ce chunk, il est dans `js/app.js` (bundle NON versionné, busté par `?id=` du manifeste).
+> Vérification qui tranche : `grep` du CONTENU réellement servi en HTTPS —
+> `/js/app.js?id=b251ee97…` contient bien `kiosk-product-grid--trio` ET
+> `kiosk-product-image--size-xxl`. **Toujours valider par le contenu, jamais par un nom de fichier.**
+>
+> **DÉPLOIEMENT** : build lancé en `ubuntu` (la condition qui avait fait échouer celui du 22/08),
+> **`git status` à 0 ligne AVANT ET APRÈS le build**, caches config/route/view reconstruits,
+> `menu:ensure-tacos-xl` rejoué pour l'ordre. Payload borne de production : **Tacos M (1 viande) →
+> Tacos L (2) → Tacos XL (3)**. 6 surfaces en 200. Zones gelées : **0 ligne**.
+> Vitest COMPLET **3 534 verts / 434 fichiers**, PHPUnit Menu **162 verts**.
+>
+> 🔴 **RÉSERVE ASSUMÉE, c'est le prix du choix owner « toutes les catégories »** : 15 boissons en
+> une colonne = **3 par écran, cinq écrans de défilement**. J'ai resserré la hauteur au-delà de
+> 3 produits pour limiter la casse, et je l'ai dit avant de le faire. Corollaire visuel : pour un
+> produit étroit (bouteille, canette), la carte pleine largeur laisse beaucoup de blanc de côté.
+>
+> 🟡 **TROUVÉ, PAS CORRIGÉ (arbitrage owner)** : « Grande Frites » et « Petite Frites » ne reçoivent
+> **aucun** cran de taille. Le motif de `productSizeClass` n'accepte la taille qu'en **FIN** de nom
+> (`…$`), or le français la met devant. C'est le même défaut que celui du L/XL, sur une autre
+> catégorie, et il est ANTÉRIEUR. Verrouillé tel quel par un test qui le NOMME comme un constat,
+> plutôt qu'élargi en douce.
+
 > **2026-08-24 (soir) — CARTE : TACOS L À 8,90 € ET TACOS XL 3 VIANDES À 10,90 € — DÉPLOYÉ EN PLEIN SERVICE**
 >
 > Owner : « deploy ». HEAD prod **`4a636c05`** (== origin), avance rapide `43b120c7d..4a636c053`,
