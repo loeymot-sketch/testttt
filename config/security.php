@@ -22,6 +22,31 @@
 | existant — toute restriction supplémentaire est confiée à un cycle K-9 dédié.
 */
 
+/*
+ * [AUDIT-SUPERVISEUR 2026-08-26 · E-014] L'ORIGINE QUE L'APPLICATION PUBLIE ELLE-MÊME.
+ *
+ * Mesuré sur la vitrine de la roue : 8 violations de CSP et 6 rapports POSTés à CHAQUE
+ * chargement, sur un écran qui se recharge tout seul toutes les 450 s, en salle :
+ *   « Loading the image 'http://127.0.0.1:8000/storage/8/conversions/coca-thumb.png'
+ *     violates … "img-src 'self' data: blob: https:" »
+ *
+ * L'absolutisation qui les produit est DÉLIBÉRÉE et documentée (`WheelService`) : la vitrine
+ * du client est servie par LE SITE, sur un autre domaine, où une adresse relative pointerait
+ * vers un serveur qui n'a pas le fichier. La rendre relative casserait ce cas réel — ce n'est
+ * donc pas la bonne correction ici.
+ *
+ * Ce qui manquait, c'est que la politique reconnaisse l'origine que l'application publie.
+ * Dérivée d'`APP_URL` : aucune valeur recopiée à la main, donc rien à resynchroniser le jour
+ * d'un changement de domaine. Vide, la directive reste exactement ce qu'elle était.
+ *
+ * À DISTINGUER du cas `connect-src` : là, l'adresse absolue de `/api/broadcasting/auth`
+ * n'avait AUCUNE raison d'être — elle a été rendue relative dans `bootstrap.js`, ce qui est
+ * la correction de fond. Ici l'adresse absolue est justifiée, c'est la politique qui devait
+ * l'admettre.
+ */
+$origineApplication = rtrim((string) env('APP_URL', ''), '/');
+$origineApplication = preg_match('#^https?://[^/]+$#', $origineApplication) ? $origineApplication : '';
+
 return [
     /*
      * [AUDIT-SUPERVISEUR 2026-08-25 · D-002] LE PONT D'IMPRESSION CUISINE MANQUAIT.
@@ -50,7 +75,7 @@ return [
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
             font-src 'self' data: https://fonts.gstatic.com;
-            img-src 'self' data: blob: https:;
+            img-src 'self' data: blob: https: {$origineApplication};
             connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100 http://127.0.0.1:9101 http://localhost:9101;
             frame-ancestors 'none';
             base-uri 'self';
