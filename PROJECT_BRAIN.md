@@ -47,6 +47,62 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-25 — AUDIT SUPERVISEUR CAISSE DÉPLOYÉ. 4 P0 fermés, 5 P1 restants. NON CONVERGÉ.**
+>
+> Prod **`760ae546a` → `9d80f9ea9`**, avance rapide, 23 commits, **aucun `--force`**.
+> Ni migration, ni dépendance : ni `composer install`, ni `migrate`.
+> Arbre du VPS **propre avant ET après** — le cycle d'auto-empoisonnement reste rompu.
+> `npx mix --production` en `ubuntu` : compilé sans erreur de droits.
+> `config:clear` fait (`config/security.php` a changé). **NF525 : CHAIN OK, 1 branche.**
+>
+> **VÉRIFIÉ SUR LE CONTENU SERVI, jamais depuis un `git push`**
+> · `/login`, `/admin/pos`, `/kds` → **200**, et le CORPS de `/login` fait 16 786 octets
+>   **sans « Warning: require », « Fatal error » ni « Failed to open stream »**.
+>   ⚠️ Cette dernière vérification n'est pas décorative : le matin même, un `vendor/`
+>   amputé de 1 244 fichiers rendait **HTTP 200** avec un simple avertissement PHP en
+>   guise de page, et mes sondes `curl` avaient donné le feu vert. **Un code 200 ne
+>   prouve pas qu'une page s'affiche.**
+> · styles de canal (`#C3CEFF`) présents dans `pos-shell.b14fb4ab.js`, et le manifeste
+>   pointe bien sur CE fichier ; dégradé du panier présent dans `app.css`.
+> · **P0 identifiants : fermé EN LIGNE** — `demo: false ?` et les clés de mot de passe
+>   absents de `/login` ET du mur client `/admin/order-status-screen`.
+>   Fausse alerte écartée au passage : `grep 123456` trouve 7 occurrences dans `app.js`,
+>   toutes anodines (alphabets base64, exemples de fuseaux, un numéro de démonstration).
+>
+> **LES 4 P0 FERMÉS**
+> 1. le total de l'écran d'argent perdait des encaissements EN SILENCE (`whereHas` =
+>    jointure interne). Mesuré : 17 lignes / 222,70 € → **27 / 247,70 €**, et la
+>    répartition espèces 0 € → **25,00 €**. Renversement du diagnostic : au round 1 on
+>    accusait le bandeau de mentir, c'était la PAGE qui perdait des lignes.
+> 2. le panier recouvrait des commandes CLIQUABLES — viser « À emporter » pouvait
+>    atteindre « supprimer la ligne ». Corrigé en supprimant TOUT plafond chiffré.
+> 3. la cuisine perdait les suppléments par DEUX chemins (dont le repli de formule, qui
+>    annulait le correctif de la veille sur le seul chemin de production).
+> 4. des identifiants en clair dans le HTML de chaque page, mur client compris.
+>
+> 🔴 **CE QUI RESTE OUVERT — 5 P1, l'audit N'EST PAS CONVERGÉ**
+> colonne DATE de l'historique invisible (arbitrage de mise en page **propriétaire** :
+> supprimer, fusionner ou resserrer une colonne) · deux coutures de la colonne épinglée ·
+> le verrou de test ne compare les couleurs que sur les rangs impairs — **les deux états
+> non testés sont exactement les deux états faux** · images de lot en 404 face client
+> (fichiers ABSENTS du disque : `frites.png`, `coca.png`) · back-office à un clic sur le
+> mur client.
+>
+> 🔴 **650 € DE FONDS IMMOBILISÉS DANS 10 TIROIRS ABANDONNÉS**, le plus ancien depuis le
+> 12/06. L'index n'autorise qu'un tiroir ouvert PAR CAISSIER et rien n'expire : chaque
+> caissier qui ne clôture pas en laisse un pour toujours. L'écran les signale désormais ;
+> la décision de clôturer appartient au propriétaire.
+>
+> ⚠️ **`scripts/deploy/deploy.sh` RESTE INUTILISABLE ICI, et DANGEREUX.** Ligne 47 :
+> `LECAYENNE_BRANCH="${LECAYENNE_BRANCH:-main}"` ; ligne 115 :
+> `git reset --hard "origin/${LECAYENNE_BRANCH}"`. Or `origin/main` a **2 485 commits de
+> retard**. Le lancer sans variable EFFACERAIT la production. Il exige en outre PHP 8.4
+> (le VPS a **8.1.2**) et tourne en `www-data` (cette machine a toujours été construite
+> en `ubuntu`). Ce déploiement a été fait À LA MAIN : `fetch` → `merge --ff-only` (qui
+> REFUSE d'agir si ce n'est pas une avance rapide, contrairement à `reset --hard`) →
+> `npx mix --production` → `config:clear`.
+> **Retour arrière : `git -C /var/www/lecayenne reset --hard 760ae546a` puis rebuild.**
+
 > **2026-08-24 — GOAL CAISSE VISION : le caissier voit enfin CE QUE LE CLIENT A PRIS. NON POUSSÉ.**
 >
 > Branche **`goal/caisse-vision-2026-08-24`** depuis `43b120c7d` (== origin == prod), worktree
