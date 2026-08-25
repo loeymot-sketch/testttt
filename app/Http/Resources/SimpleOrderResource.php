@@ -140,6 +140,9 @@ class SimpleOrderResource extends JsonResource
             // que c'est une vraie commande d'une vraie personne, anti « commande nulle »). Le client web a
             // fourni un email VÉRIFIÉ (OTP) + un téléphone à l'inscription. Finalité légitime (fulfillment/
             // vérification) → la minimisation reste pour borne/walk-in (client physiquement présent).
+            // [FIX-6 / A-012 2026-08-25] AUSSI pour le canal TÉLÉPHONE (source_surface='phone') : le
+            // numéro y est saisi par le caissier PENDANT l'appel, il fait partie de la commande. Même
+            // finalité qu'en livraison/web — joindre un client absent. Borne et comptoir : inchangés.
             // [UBER-PHOTO 2026-08-10] Le téléphone de l'ANCRE TECHNIQUE d'un agrégateur
             // (« 0000000042 ») n'est le numéro de personne : affiché à côté d'une commande, il
             // finit par être composé. On rend le numéro porté par la commande s'il existe, jamais
@@ -207,13 +210,28 @@ class SimpleOrderResource extends JsonResource
     }
 
     /**
-     * Téléphone à afficher. Reste réservé aux LIVRAISONS et aux commandes WEB (minimisation des
-     * données, Z9-P0-03 + décision owner 2026-07-31), et n'est JAMAIS emprunté à l'ancre
-     * technique d'un agrégateur.
+     * Téléphone à afficher. Reste réservé aux canaux où le client est ABSENT — LIVRAISON, WEB et
+     * TÉLÉPHONE (minimisation des données, Z9-P0-03 + décision owner 2026-07-31), et n'est JAMAIS
+     * emprunté à l'ancre technique d'un agrégateur.
+     *
+     * [FIX-6 / A-012 2026-08-25] Ajout du canal `phone`. La vague A a montré le contresens : sur
+     * une commande téléphone la carte ordonnait « Rappeler avant de préparer » et ne donnait aucun
+     * numéro — le seul canal dont la raison d'être est que le client n'est pas là était le seul
+     * qu'on ne pouvait pas rappeler. La minimisation n'est pas affaiblie, elle est APPLIQUÉE :
+     *   - le numéro d'une commande téléphone est SAISI par le caissier pendant l'appel
+     *     (`pos_customer_phone`, cf. PhoneOrderDeferredTest) — il n'est pas extrait d'un compte,
+     *     il fait partie de la commande ;
+     *   - la finalité est celle déjà admise pour livraison et web : joindre un client absent pour
+     *     exécuter la commande (rupture, retard, retrait) ;
+     *   - le périmètre exclu reste intact : BORNE et COMPTOIR, où le client est physiquement
+     *     devant le caissier, continuent de renvoyer `null`.
+     * Gardé des deux côtés par tests/Feature/Pos/SimpleOrderResourcePhoneChannelTest.php.
      */
     private function displayCustomerPhone(): ?string
     {
-        $autorise = ((int) $this->order_type === OrderType::DELIVERY) || $this->source_surface === 'web';
+        $autorise = ((int) $this->order_type === OrderType::DELIVERY)
+            || $this->source_surface === 'web'
+            || $this->source_surface === 'phone';
         if (! $autorise) {
             return null;
         }

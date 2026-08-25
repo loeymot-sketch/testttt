@@ -780,10 +780,28 @@
    doit JAMAIS pouvoir sortir de l'écran.
    Sélecteur à 2 classes pour l'emporter sur l'utilitaire Tailwind `flex-shrink-0`
    posé dans le template, quel que soit l'ordre de concaténation des feuilles. */
+/* [FIX-2 2026-08-25] PLUS AUCUN PLAFOND CHIFFRÉ SUR L'EN-TÊTE — ni ici, ni par média.
+   Les trois correctifs précédents ont tous posé une HAUTEUR (30vh, puis 20vh, puis
+   `none` au-dessus de 760 px). Chacun était exact contre la mesure du jour, et chacun a
+   été démenti par l'état suivant : un plafond calibré sur un pied de 122 px (panier VIDE)
+   n'a plus de sens quand le même pied en fait 306 (panier PLEIN). La dernière tentative
+   supprimait le plafond ET le défilement, sur la foi d'une phrase écrite juste en dessous
+   — « Sans plafond, rien ne déborde » — qui est FAUSSE dès deux lignes de vente : sans
+   plafond l'en-tête n'est pas plus grand, il est seulement RÉTRÉCI PAR FLEXBOX, et son
+   contenu se peint alors PAR-DESSUS le corps et le pied. Mesuré le 2026-08-25 à 1366×768
+   avec 2 articles : en-tête 187 px à l'écran pour 394 px de contenu, soit 207 px peints
+   hors de sa boîte. Coût réel : `document.elementFromPoint` au centre de la corbeille de
+   la ligne 1 rendait `label « 🛵 Livraison »` — le doigt qui vise le type de commande
+   supprime la ligne.
+   LA RÈGLE, DÉSORMAIS SANS AUCUN NOMBRE : le pied ne cède jamais (bouton d'encaissement),
+   le corps garde son plancher tant qu'il porte des lignes de vente, et l'en-tête absorbe
+   tout le reste — mais CE QUI NE TIENT PAS DÉFILE. `overflow-y: auto` est la seule ligne
+   qui rende le débordement impossible par construction, quelle que soit la hauteur d'écran,
+   la taille du pied ou la longueur des libellés à traduire. */
 .pos-v5-cart .pos-v5-cart__head {
     flex: 0 1 auto;
     min-height: 0;
-    max-height: 30vh;
+    max-height: none;
     overflow-y: auto;
     /* [RED-TEAM 2026-08-19] `overflow-x` DOIT être déclaré : la spec CSS Overflow 3
        impose qu'un axe laissé à `visible` face à un axe non-`visible` soit recalculé
@@ -801,7 +819,19 @@
    positionné ne s'échappe JAMAIS d'un ancêtre qui défile, quel que soit son
    `z-index` : plafonner l'en-tête enfermait la liste dans une fenêtre de 30 vh
    (20 vh sur un écran 768) — le caissier ne voyait plus les adresses proposées.
-   Le bloc `#orderdelivery` est basculé par la classe `hidden`, d'où le `:has()`. */
+   Le bloc `#orderdelivery` est basculé par la classe `hidden`, d'où le `:has()`.
+
+   [FIX-2 2026-08-25] LIMITE CONNUE ET ASSUMÉE, ÉCRITE ICI POUR QU'ELLE NE SE REDÉCOUVRE PAS
+   PAR SURPRISE : cette exception rouvre `overflow: visible`, donc elle rouvre AVEC LUI le
+   débordement peint corrigé plus bas — en mode LIVRAISON, sur un panier chargé, le formulaire
+   d'adresse peut de nouveau se peindre par-dessus les lignes de vente et le pied. Ce n'est pas
+   réparable en CSS seul : une liste `position: absolute` ne s'échappe pas d'un ancêtre qui
+   défile, donc il faut choisir entre « les suggestions d'adresse restent visibles » et « rien
+   ne se peint dehors ». Trancher exige de sortir la liste de l'en-tête dans PosComponent.vue
+   (ou de la passer en `position: fixed` avec un ancrage calculé) — hors du périmètre de ce
+   correctif, qui ne touche que cette feuille. Les 4 combinaisons mesurées le 2026-08-25
+   (1366×768 et 1024×600 × panier vide et panier à 2 articles) sont toutes en mode
+   « À emporter » et ne passent donc jamais par cette exception. */
 .pos-v5-cart .pos-v5-cart__head:has(#orderdelivery:not(.hidden)) {
     max-height: none;
     overflow: visible;
@@ -810,6 +840,26 @@
 .pos-v5-cart .pos-v5-cart__body {
     flex: 1 1 auto;
     min-height: 28vh;
+}
+
+/* [FIX-2 2026-08-25] UN PLANCHER PROTÈGE DES LIGNES DE VENTE. PANIER VIDE, IL N'EN PROTÈGE
+   AUCUNE — et il coûte alors exactement ce qui manque au champ « Nom du client ».
+   Mesuré à 1024×600, panier vide (px ÉCRAN) : panneau 482, pied 122, plancher du corps 108
+   ⇒ 252 px pour un en-tête qui en demande 332. Le bas du champ « Nom du client » tombe à
+   277 dans le contenu de l'en-tête : il manquait 25 px, et le caissier devait défiler pour
+   atteindre le nom qui s'imprime sur le ticket cuisine (mandat propriétaire 2026-08-05, déjà
+   perdu une fois le 2026-08-19).
+   `flex-basis: 0` et non `min-height: 0` : avec une base `auto`, le corps vide réclame quand
+   même la hauteur de son message « Aucun article » et flexbox lui rétrocède une part
+   proportionnelle du déficit — 264 px pour l'en-tête, toujours 13 px trop court. Base nulle,
+   le corps vide ne réclame RIEN et se contente du reliquat. Il reste `flex-grow: 1`, donc sur
+   un écran haut il récupère tout l'espace libre : à 1366×768 le corps vide mesure 181 px
+   contre 179 avant ce correctif — la sentinelle C3 (corps ≥ 20vh) n'y perd pas un pixel.
+   Dès qu'un article entre, `.pos-v5-cart__empty` disparaît, la règle cesse de s'appliquer et
+   le plancher du 2026-08-19 reprend intégralement ses droits. */
+.pos-v5-cart .pos-v5-cart__body:has(.pos-v5-cart__empty) {
+    flex: 1 1 0;
+    min-height: 0;
 }
 
 .pos-v5-cart .pos-v5-cart__foot {
@@ -825,12 +875,15 @@
    plancher du corps doit rester sous ~126 px. 20 vh = 120 px : l'en-tête absorbe
    le reste et se réduit, le pied reste intégralement visible.
    (Avant la refonte le problème était pire : en-tête ET pied étaient tous deux
-   incompressibles — 798 px fixes — donc les deux se faisaient rogner.) */
-@media (max-height: 800px) {
-    .pos-v5-cart .pos-v5-cart__head {
-        max-height: 20vh;
-    }
+   incompressibles — 798 px fixes — donc les deux se faisaient rogner.)
 
+   [FIX-2 2026-08-25] LE PLAFOND DE CE BLOC EST SUPPRIMÉ, PAS DÉPLACÉ. Il ne servait à rien
+   qu'il prétendait : `max-height` borne la taille MAXIMALE, il n'empêche nullement flexbox
+   de rétrécir l'en-tête en dessous. Vérifié à 1024×600 avec 2 articles : plafond 108 px,
+   en-tête réellement obtenu 68 px — le plafond n'était pas ce qui protégeait le pied, c'est
+   `flex: 0 0 auto` sur le pied qui le protège, et lui seul. Ce qui reste de ce bloc, le
+   plancher du corps, est le VRAI gain du 2026-08-19 et n'est pas touché. */
+@media (max-height: 800px) {
     .pos-v5-cart .pos-v5-cart__body {
         min-height: 20vh;
     }
@@ -857,19 +910,33 @@
        640→corps 127 < plancher 128  ⇒ ROMPT      600→116 < 120  ⇒ ROMPT
    Ça tient jusqu'à 680. On s'arrête à 760 : à 768 la marge est de 25 px, à 740 elle n'est que
    de 7 px. Sous 760, le comportement livré le 19/08 reste EXACTEMENT en place — aucune tablette
-   basse n'est touchée par ce correctif. */
-@media (min-height: 760px) {
-    .pos-v5-cart .pos-v5-cart__head {
-        max-height: none;
-        /* Les DEUX axes, volontairement. La règle de base pose `overflow-x: hidden` ; laisser
-           `overflow-y: visible` en face aurait été recalculé en `auto` par la spec CSS
-           Overflow 3 — c'est exactement le piège relevé par le RED-team du 2026-08-19
-           (commentaire à `.pos-v5-cart .pos-v5-cart__head`), et il n'y a aucune raison de le
-           rejouer trois jours plus tard. Sans plafond, rien ne déborde : aucun axe n'a besoin
-           de défiler. */
-        overflow: visible;
-    }
-}
+   basse n'est touchée par ce correctif.
+
+   ─────────────────────────────────────────────────────────────────────────────────────────
+   [FIX-2 2026-08-25] CE BLOC EST SUPPRIMÉ. IL PORTAIT LE P0.
+   Deux raisons, et la seconde est la plus instructive.
+
+   1. LES DEUX @media SE CHEVAUCHAIENT ENTRE 760 ET 800 px. À 768 px de haut — le gabarit de
+      comptoir le plus répandu — le corps gardait le plancher `20vh` du bloc `max-height: 800px`
+      PENDANT que l'en-tête perdait son plafond ici. Deux règles écrites à trois jours d'écart,
+      chacune supposant être seule à s'appliquer, actives ensemble sur l'écran principal.
+
+   2. `overflow: visible` NE FAIT PAS TENIR L'EN-TÊTE ; IL LE LAISSE PEINDRE DEHORS. Le
+      commentaire ci-dessus concluait « Sans plafond, rien ne déborde : aucun axe n'a besoin de
+      défiler. » La prémisse est vraie sur un panier VIDE — le seul état mesuré le 22/08, avec
+      un pied de 122 px — et fausse dès deux lignes de vente, où le pied passe à 306 px : le
+      déficit revient, flexbox rétrécit l'en-tête (`flex: 0 1 auto`), et sans axe défilant son
+      contenu se peint par-dessus le corps et le pied au lieu d'être rogné. Mesuré le 2026-08-25
+      à 1366×768 avec 2 articles : boîte de l'en-tête 187 px, contenu 394 px, 207 px peints
+      dehors. Le nom du client et le champ « Programmer » recevaient leurs clics dans le pied,
+      et la corbeille de la première ligne les recevait du bouton « 🛵 Livraison ».
+
+   Le mandat que ce bloc défendait — que l'en-tête ne soit pas plafonné plus bas que la place
+   disponible — est CONSERVÉ, et sans condition de hauteur : `max-height: none` est désormais
+   dans la règle de base, avec `overflow-y: auto` en face pour que le rétrécissement produise un
+   défilement et jamais un débordement. Le mandat propriétaire du champ « Nom du client » visible
+   sans geste sur un panier vide est repris, lui, par la règle `:has(.pos-v5-cart__empty)`
+   ci-dessus — la seule qui le tenait ENCORE à 1024×600, ce que ce bloc ne faisait pas. */
 
 .pos-v5-cart__foot {
     flex-shrink: 0;

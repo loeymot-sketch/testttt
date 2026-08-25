@@ -14,13 +14,18 @@
                 <p class="pos-tracker-eyebrow">Caisse Le Cayenne</p>
                 <h1 class="pos-tracker-title">{{ $t('pos.tracker.title') }}</h1>
                 <div class="pos-tracker-status-row">
+                    <!-- [FIX-6 / A-014 2026-08-25] Accord au singulier. L'écran affichait
+                         « 1 actives » et « 1 prête(s) » : la première forme est fautive, la
+                         seconde est un aveu d'absence d'accord. La pluralisation vue-i18n
+                         (`$tc`) n'est pas disponible ici — l'app tourne en `legacy: false` —
+                         donc le choix se fait sur DEUX clés explicites, testables. -->
                     <span>
                         <strong>{{ stats.active }}</strong>
-                        {{ $t('pos.tracker.active_orders') }}
+                        {{ activeOrdersWord }}
                     </span>
                     <span class="pos-tracker-status-pill pos-tracker-status-pill--ready" v-if="stats.ready > 0">
                         <i class="fa-solid fa-bell-concierge" aria-hidden="true"></i>
-                        {{ stats.ready }} {{ $t('pos.tracker.ready_short') }}
+                        {{ stats.ready }} {{ readyWord(stats.ready) }}
                     </span>
                     <!-- [CAISSE-WEB-INTEL 2026-08-06] Pill « web à traiter » : compte les
                          commandes du site exigeant une action caissier (accepter / encaisser).
@@ -255,9 +260,16 @@
                                 >
                                     🛵
                                 </span>
+                                <!-- [FIX-6 / A-002 2026-08-25] Le canal tenait dans un emoji de
+                                     14 px, gris pour caisse/téléphone/plateforme (seules `--kiosk`
+                                     et `--online` étaient colorées) et sans autre nom qu'un `title`
+                                     — inatteignable au doigt sur une caisse tactile. Désormais :
+                                     une couleur par canal (voir CSS `--pos` … `--delivery`) ET un
+                                     nom accessible en texte. L'emoji devient décoratif. -->
                                 <span :class="['pos-tracker-card-source', `pos-tracker-card-source--${sourceOf(order)}`]"
-                                      :title="$t('pos.tracker.source_' + sourceOf(order))">
-                                    {{ sourceIcon(order) }}
+                                      :title="sourceLabel(order)">
+                                    <span aria-hidden="true">{{ sourceIcon(order) }}</span>
+                                    <span class="pos-tracker-sr-only">{{ sourceLabel(order) }}</span>
                                 </span>
                                 <span class="pos-tracker-card-time" :title="formatTime(order.created_at)">
                                     {{ elapsedShort(order.created_at) }}
@@ -336,15 +348,37 @@
                                 >
                                     <span class="pos-tracker-card-qty">{{ item.quantity || 1 }}×</span>
                                     <span class="pos-tracker-card-name">{{ nomProduit(item) }}</span>
+                                    <!--
+                                      [FIX-6 / A-006 2026-08-25] La composition était coupée par la
+                                      CSS (`white-space: nowrap` + ellipse) et son texte complet ne
+                                      vivait que dans `title=` : sur une caisse TACTILE, aucun geste
+                                      ne déclenche un survol — « +2 Cheddar · +Salade », deux extras
+                                      PAYANTS, étaient donc simplement invisibles.
+                                      Réponse la plus sobre retenue : la coupe redevient EXPLICITE.
+                                      Elle se fait en JS sur un budget de caractères (le composant
+                                      SAIT donc qu'il a coupé, ce qu'une ellipse CSS ne dit à
+                                      personne), sur une frontière « · » (jamais au milieu d'un
+                                      mot), et le reste n'est pas caché : un marqueur « +N » TAPABLE
+                                      ouvre « Voir tout », le panneau qui existe déjà. Aucun nouvel
+                                      écran, aucune requête, et le caissier voit qu'il manque
+                                      quelque chose au lieu d'avoir à le deviner.
+                                    -->
                                     <span
                                         v-if="resumeComposition(item)"
                                         class="pos-tracker-card-compo"
                                         :data-testid="`tracker-compo-${order.id}-${idx}`"
                                         :title="resumeComposition(item)"
-                                    >{{ resumeComposition(item) }}</span>
+                                    >{{ compoAffichee(item).texte }}<button
+                                            v-if="compoAffichee(item).tronque"
+                                            type="button"
+                                            class="pos-tracker-card-compo-more"
+                                            :data-testid="`tracker-compo-more-${order.id}-${idx}`"
+                                            :aria-label="$t('pos.tracker.compo_more_aria')"
+                                            @click.stop="ouvrirContenu(order)"
+                                        >+{{ compoAffichee(item).restants }}</button></span>
                                 </li>
                                 <li v-if="extraItemsCount(order) > 0" class="pos-tracker-card-more">
-                                    + {{ extraItemsCount(order) }} {{ $t('pos.tracker.more_items') }}
+                                    + {{ extraItemsCount(order) }} {{ moreItemsWord(extraItemsCount(order)) }}
                                 </li>
                             </ul>
                             <button
@@ -561,9 +595,23 @@
                         </article>
                     </transition-group>
                 </div>
+                <!--
+                  [FIX-6 / A-011 2026-08-25] Un couloir vide affirmait un ABSOLU faux dès qu'un
+                  filtre était actif : « Aucune commande livrée pour l'instant. » avec 8 livrées
+                  au tableau, et « pour l'instant » ajoutait en prime une lecture TEMPORELLE
+                  (« rien encore aujourd'hui ») là où la cause était le filtre. La phrase nomme
+                  désormais la cause, et l'état vide offre la sortie qu'il n'avait pas.
+                -->
                 <div v-else class="pos-tracker-col-empty">
                     <span class="pos-tracker-col-empty-icon" aria-hidden="true">{{ col.emptyIcon }}</span>
-                    <p>{{ col.emptyLabel || $t('pos.tracker.empty_column') }}</p>
+                    <p>{{ emptyLabelFor(col) }}</p>
+                    <button
+                        v-if="filtreActif"
+                        type="button"
+                        class="pos-tracker-col-empty-reset"
+                        data-testid="tracker-empty-reset"
+                        @click="resetFiltres"
+                    >{{ $t('pos.tracker.empty_filter_reset') }}</button>
                 </div>
             </article>
         </div>
@@ -588,7 +636,18 @@
                     <span v-if="staleMeta.truncated" class="pos-tracker-stale-truncated">
                         {{ staleMeta.shown }} affichées sur {{ staleMeta.count }}
                     </span>
-                    <button type="button" class="pos-tracker-card-btn" @click="fetchStaleOrders" :disabled="staleLoading">
+                    <!-- [FIX-6 / A-003 2026-08-25] C'était le SEUL bouton de l'écran sans aucun
+                         nom : ni texte, ni `title`, ni `aria-label`, icône en `aria-hidden`. Son
+                         voisin immédiat portait déjà `aria-label="Fermer"`. -->
+                    <button
+                        type="button"
+                        class="pos-tracker-card-btn"
+                        data-testid="tracker-stale-refresh"
+                        :aria-label="$t('pos.tracker.stale_refresh')"
+                        :title="$t('pos.tracker.stale_refresh')"
+                        :disabled="staleLoading"
+                        @click="fetchStaleOrders"
+                    >
                         <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
                     </button>
                     <button type="button" class="pos-tracker-card-btn" @click="staleOpen = false" aria-label="Fermer">✕</button>
@@ -612,10 +671,14 @@
                         <i class="fa-solid fa-lock" aria-hidden="true"></i> Clôturé
                     </span>
                     <span class="pos-tracker-stale-actions">
+                        <!-- [FIX-6 / A-003 2026-08-25] Rangs à icône seule : `title` reste, mais il
+                             n'est plus le SEUL porteur du nom — sur tactile il ne se déclenche pas,
+                             et le nom devient de surcroît spécifique à la commande visée. -->
                         <router-link
                             :to="{ name: 'admin.pos-orders.show', params: { id: o.id } }"
                             class="pos-tracker-card-btn"
                             :title="$t('pos.tracker.view_details')"
+                            :aria-label="`${$t('pos.tracker.view_details')} — ${o.queue_number ? 'N°' + o.queue_number : '#' + (o.order_serial_no || o.id)}`"
                         ><i class="fa-solid fa-eye" aria-hidden="true"></i></router-link>
                         <button
                             v-if="!cancelBlockedReason(o)"
@@ -623,6 +686,7 @@
                             class="pos-tracker-card-btn pos-tracker-card-btn--danger"
                             :data-testid="`tracker-stale-cancel-${o.id}`"
                             :title="$t('pos.cancel_order_hint')"
+                            :aria-label="`${$t('pos.cancel_order_hint')} — ${o.queue_number ? 'N°' + o.queue_number : '#' + (o.order_serial_no || o.id)}`"
                             @click="openCancelDialog(o)"
                         ><i class="fa-solid fa-ban" aria-hidden="true"></i></button>
                         <button
@@ -631,6 +695,7 @@
                             class="pos-tracker-card-btn pos-tracker-card-btn--danger"
                             :data-testid="`tracker-stale-refund-${o.id}`"
                             title="Clôturée dans un Z : émettre la contrepartie comptable"
+                            aria-label="Rembourser — commande clôturée dans un Z"
                             @click="openRefundDialog(o)"
                         ><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button>
                     </span>
@@ -1190,6 +1255,25 @@ export default {
             const vivante = this.orders.find((o) => String(o.id) === String(capturee.id));
             return vivante || capturee;
         },
+        /**
+         * [FIX-6 / A-014 2026-08-25] « 1 actives » était faux. `$tc` n'existe pas ici
+         * (vue-i18n tourne en `legacy: false`) : le singulier se choisit sur deux clés
+         * explicites du catalogue, ce qui reste lisible ET testable.
+         */
+        activeOrdersWord() {
+            return this.$t(this.stats.active <= 1
+                ? 'pos.tracker.active_orders_one'
+                : 'pos.tracker.active_orders');
+        },
+
+        /**
+         * [FIX-6 / A-011 2026-08-25] Un filtre (canal OU recherche) est-il actif ? C'est
+         * la condition qui rend MENSONGÈRE toute phrase d'état vide écrite à l'absolu.
+         */
+        filtreActif() {
+            return this.filters.source !== 'all' || String(this.filters.query || '').trim() !== '';
+        },
+
         sourceTabs() {
             const base = [
                 { id: 'all', icon: '🧾', label: this.$t('pos.tracker.source_all') },
@@ -2176,6 +2260,93 @@ export default {
         sourceLabel(o) {
             return this.$t('pos.tracker.source_' + this.sourceOf(o));
         },
+        /**
+         * [FIX-6 / A-014 2026-08-25] Accords français. Deux formes explicites plutôt que
+         * `$tc` : l'app tourne en vue-i18n `legacy: false`, et une règle de pluralisation
+         * implicite serait invisible au relecteur comme au test.
+         */
+        moreItemsWord(n) {
+            return this.$t(Number(n) === 1 ? 'pos.tracker.more_items_one' : 'pos.tracker.more_items');
+        },
+        readyWord(n) {
+            return this.$t(Number(n) === 1 ? 'pos.tracker.ready_short_one' : 'pos.tracker.ready_short');
+        },
+
+        /**
+         * [FIX-6 / A-006 2026-08-25] La composition telle qu'elle est RÉELLEMENT affichable
+         * sur la carte, et l'aveu de ce qui ne l'est pas.
+         *
+         * Pourquoi en JS et pas en CSS : `text-overflow: ellipsis` coupe sans que personne
+         * — ni le composant, ni le caissier — ne sache qu'il manque quelque chose. Le texte
+         * complet se réfugiait alors dans `title=`, c'est-à-dire nulle part sur une caisse
+         * tactile. Ici la coupe est mesurée, tombe sur une frontière « · », et ce qui reste
+         * dehors est ANNONCÉ (« +2 ») par un marqueur tapable vers « Voir tout ».
+         *
+         * Le budget vise ~2 lignes de 11 px dans une colonne de carte ; il est volontairement
+         * généreux : l'exemple relevé par la vague A (« Galette · Algerienne · Bien cuit ·
+         * +2 Cheddar · +Salade », 54 caractères) passe désormais ENTIER.
+         */
+        compoAffichee(item) {
+            const complet = this.resumeComposition(item);
+            const BUDGET = 58;
+            if (!complet || complet.length <= BUDGET) {
+                return { texte: complet, tronque: false, restants: 0 };
+            }
+
+            const morceaux = complet.split(' · ');
+            const gardes = [];
+            let longueur = 0;
+            for (const m of morceaux) {
+                const cout = gardes.length ? longueur + 3 + m.length : m.length;
+                if (gardes.length && cout > BUDGET) break;
+                gardes.push(m);
+                longueur = cout;
+            }
+            // Un premier morceau à lui seul plus long que le budget : on le garde quand même
+            // ENTIER plutôt que de couper au milieu d'un mot — mieux vaut une ligne un peu
+            // longue qu'un « Algérie… » qui ne veut rien dire.
+            if (gardes.length === 0) gardes.push(morceaux[0]);
+
+            return {
+                texte: gardes.join(' · '),
+                tronque: gardes.length < morceaux.length,
+                restants: morceaux.length - gardes.length,
+            };
+        },
+
+        /**
+         * [FIX-6 / A-011 2026-08-25] La phrase d'un couloir vide, qui cesse d'affirmer un
+         * absolu dès qu'un filtre est actif.
+         *
+         * Constat de la vague A : filtre « Téléphone » actif, le couloir Livrés annonçait
+         * « Aucune commande livrée pour l'instant. » alors que 8 commandes étaient livrées.
+         * La phrase était factuellement fausse et « pour l'instant » y ajoutait une lecture
+         * temporelle (« rien encore aujourd'hui ») qui n'était pas la cause. On nomme la
+         * cause : le filtre. Sans filtre, la phrase d'origine est conservée telle quelle.
+         */
+        emptyLabelFor(col) {
+            const absolue = col?.emptyLabel || this.$t('pos.tracker.empty_column');
+            if (!this.filtreActif) return absolue;
+
+            const colonne = col?.label || '';
+            const query = String(this.filters.query || '').trim();
+            if (query !== '') {
+                return this.$t('pos.tracker.empty_filtered_search', { query, column: colonne });
+            }
+
+            const onglet = this.sourceTabs.find((t) => t.id === this.filters.source);
+            return this.$t('pos.tracker.empty_filtered_source', {
+                source: onglet?.label || this.$t('pos.tracker.source_' + this.filters.source),
+                column: colonne,
+            });
+        },
+
+        /** [FIX-6 / A-011] La sortie que les états vides filtrés n'avaient pas. */
+        resetFiltres() {
+            this.filters.source = 'all';
+            this.filters.query = '';
+        },
+
         sourceIcon(o) {
             const s = this.sourceOf(o);
             if (s === 'kiosk') return '🖥️';
@@ -2917,6 +3088,26 @@ export default {
     opacity: 0.55;
 }
 
+/* [FIX-6 / A-011 2026-08-25] La sortie d'un couloir vide sous filtre : cible ≥ 32 px,
+   atteignable au pouce en plein service. */
+.pos-tracker-col-empty-reset {
+    min-height: 32px;
+    padding: 5px 12px;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--pos-tracker-text);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pos-tracker-col-empty-reset:hover,
+.pos-tracker-col-empty-reset:focus-visible {
+    border-color: #F4501E;
+    color: #A8320F;
+}
+
 .pos-tracker-card {
     border: 1px solid var(--pos-tracker-border);
     border-radius: 12px;
@@ -3022,6 +3213,32 @@ export default {
    .pos-shortcuts__panel--web (PosComponent.vue) pour une identité visuelle
    cohérente "commande web" sur tout l'écran caisse. */
 .pos-tracker-card-source--online { background: #FDECEA; color: #d32f2f; }
+
+/* [FIX-6 / A-002 2026-08-25] Trois canaux réels — CAISSE, TÉLÉPHONE, PLATEFORME —
+   retombaient tous sur `var(--pos-tracker-muted-soft)` : la borne et le web étaient
+   colorés, le téléphone ne l'était pas, et le seul marqueur restant était un emoji de
+   14 px identique en forme et en fond. Une teinte + un liseré par canal, chacun distinct
+   des quatre autres, pour que le canal se lise sans lire.
+   Contraste vérifié sur fond de carte blanc : chaque couleur de texte tient AA (≥ 4,5:1). */
+.pos-tracker-card-source--pos      { background: #EDEFF2; color: #414A55; box-shadow: inset 0 0 0 1px #C9CFD8; }
+.pos-tracker-card-source--phone    { background: #E7F6EC; color: #1B7A3E; box-shadow: inset 0 0 0 1px #A8DCBB; }
+.pos-tracker-card-source--platform { background: #FFF3E0; color: #A85A00; box-shadow: inset 0 0 0 1px #F3C98B; }
+.pos-tracker-card-source--delivery { background: #E8F1FD; color: #14539A; box-shadow: inset 0 0 0 1px #A9C8EE; }
+
+/* Nom accessible du canal : lu par les lecteurs d'écran, invisible à l'œil. Défini
+   localement plutôt que via `sr-only` de Tailwind — le style est `scoped`, on ne dépend
+   d'aucune utilitaire externe pour une garantie d'accessibilité. */
+.pos-tracker-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 
 /* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,
  * gentle pulse to keep cashier attention without being aggressive. */
@@ -3225,15 +3442,50 @@ export default {
     flex: 0 1 auto;
 }
 
+/* [FIX-6 / A-006 2026-08-25] `white-space: nowrap` + ellipse coupaient la composition
+   SANS le dire, en renvoyant le texte complet dans un `title=` qu'aucun doigt ne peut
+   déclencher. La ligne s'enroule désormais (deux rangs suffisent au cas semé) et la coupe
+   éventuelle est décidée en JS (`compoAffichee`), donc VISIBLE via le marqueur « +N ». */
 .pos-tracker-card-compo {
     flex: 1 0 100%;
+    min-width: 0;
     padding-left: 22px;          /* aligné sous le nom, après la quantité */
     font-size: 11px;
-    line-height: 1.3;
+    line-height: 1.35;
     color: var(--pos-tracker-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* `white-space` est HÉRITÉ : le `li` parent (.pos-tracker-card-items li) est en
+       `nowrap` pour garder le NOM du produit sur un rang, et la composition héritait
+       de cette coupe. La capture visuelle du 2026-08-25 l'a montrée encore tronquée
+       (« … · +2 Chedd ») alors que la règle locale ne disait plus `nowrap` : il fallait
+       la RÉINITIALISER ici, pas seulement s'abstenir. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Le marqueur de troncature : discret, mais c'est une VRAIE cible tactile (≥ 24 px de
+   large, zone de frappe étendue par le padding) qui ouvre « Voir tout ». */
+.pos-tracker-card-compo-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    margin-left: 4px;
+    padding: 1px 6px;
+    border: 1px solid var(--pos-tracker-border);
+    border-radius: 999px;
+    background: var(--pos-tracker-muted-soft);
+    color: var(--pos-tracker-text);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.pos-tracker-card-compo-more:hover,
+.pos-tracker-card-compo-more:focus-visible {
+    background: #FFE9E1;
+    border-color: #F4501E;
+    color: #A8320F;
 }
 
 /* Le bouton « Voir tout » — discret tant qu'on ne le cherche pas, mais assez

@@ -50,12 +50,21 @@
                           commande À EMPORTER et sur une commande BORNE, qui ne sont jamais
                           livrées : c'est le créneau de RETRAIT. Le libellé suit désormais le
                           type de commande, et la ligne disparaît si aucun créneau n'est posé.
+
+                          [C-003 2026-08-25] La seconde moitié de cette promesse était FAUSSE :
+                          `delivery_date` n'était JAMAIS vide (OrderDetailsResource:66 le
+                          calculait inconditionnellement depuis `order_datetime`), donc la
+                          ligne se rendait sur 100 % des commandes et affichait « Heure de
+                          retrait: 25-08-2026 » — un libellé qui promet une heure, suivi d'une
+                          date déjà lisible trois lignes plus haut. La racine est corrigée
+                          dans la ressource ; le garde s'appuie désormais sur le texte
+                          RÉELLEMENT rendu, blancs compris.
                         -->
-                        <li class="text-xs" v-if="order.delivery_date || order.delivery_time">{{
+                        <li class="text-xs" v-if="pickupSlotText" data-testid="pos-order-show-pickup-slot">{{
                             isDeliveryOrder ? $t('label.delivery_time') : $t('label.pickup_time')
                         }}:
                             <span class="text-heading">
-                                {{ order.delivery_date }} {{ order.delivery_time }}
+                                {{ pickupSlotText }}
                             </span>
                         </li>
                         <!-- [WT-D-R1-07 2026-05-20] Internal token reference
@@ -729,20 +738,47 @@ export default {
                 [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
             }
         },
+        // [C-004 (voisin) 2026-08-25] Même famille que ci-dessous : TICKET_RESTAURANT (5)
+        // et COUNTER_DEFERRED (6) manquaient, donc « Type de paiement: » se rendait NU
+        // sur toute commande borne Plan B en attente d'encaissement — c'est-à-dire le
+        // mode de paiement le plus fréquent du parc. Une carte d'AFFICHAGE doit couvrir
+        // TOUT l'enum ; seuls les SÉLECTEURS ont le droit d'être partiels.
         posPaymentMethodEnumArray: function () {
             return {
                 [posPaymentMethodEnum.CASH]: this.$t("label.cash"),
                 [posPaymentMethodEnum.CARD]: this.$t("label.card"),
                 [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
                 [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
+                [posPaymentMethodEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant"),
+                [posPaymentMethodEnum.COUNTER_DEFERRED]: this.$t("label.pending_counter"),
             }
         },
+        // [C-004 2026-08-25] POS (15) et KIOSK (25) — les deux SEULS types produits par
+        // le V1 LOCAL Le Cayenne — étaient absents : « Type de commande: » était vide sur
+        // la TOTALITÉ du parc, pas sur un cas de bord. La LISTE d'où l'on ouvre cette
+        // fiche sait les nommer depuis toujours (PosOrderListComponent.vue:254-259) ;
+        // l'incohérence était visible en deux clics.
         orderTypeEnumArray: function () {
             return {
                 [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
                 [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
-                [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table")
+                [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table"),
+                [orderTypeEnum.KIOSK]: this.$t("label.kiosk"),
+                [orderTypeEnum.POS]: this.$t("label.pos")
             }
+        },
+        /**
+         * [C-003 2026-08-25] Le texte du créneau de retrait/livraison, ou '' s'il
+         * n'y en a pas. La racine du défaut est corrigée côté ressource
+         * (`OrderDetailsResource::resolvePickupSlotDate` ne fabrique plus une
+         * date depuis `order_datetime`) ; ce computed est le second étage : il
+         * refuse aussi une valeur réduite à des blancs, pour qu'AUCUNE forme de
+         * vide ne puisse ressusciter le libellé.
+         */
+        pickupSlotText: function () {
+            const date = String(this.order?.delivery_date ?? '').trim();
+            const time = String(this.order?.delivery_time ?? '').trim();
+            return [date, time].filter(Boolean).join(' ');
         },
         // [WT-D-R1-07 2026-05-20] Token is an internal kiosk/online reference,
         // NOT the order number. Suppress it from the visible detail summary

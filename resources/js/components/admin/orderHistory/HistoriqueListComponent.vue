@@ -671,12 +671,44 @@ export default {
    couture au milieu du tableau). `inherit` recopie la couleur RÉELLE de la
    ligne, quelle qu'elle soit — zébrure, survol, futur surlignage. Et l'ombre
    ne se justifie que lorsqu'il y a réellement quelque chose à masquer,
-   c'est-à-dire quand le tableau déborde (≤1439px, même seuil que pos-v5.css). */
+   c'est-à-dire quand le tableau déborde (≤1439px, même seuil que pos-v5.css).
+
+   [C-002 2026-08-25 · supervisor-caisse round-1 wave C] `inherit` ÉTAIT LA
+   RACINE DU DÉFAUT, pas la solution. Il recopie le fond du `<tr>` parent — or
+   la zébrure du design system (`resources/css/app.css:464`) ne peint QUE les
+   rangs IMPAIRS. Conséquences mesurées au pixel sur la colonne DATE (x=1170) :
+     • rang IMPAIR → #f9fafb opaque : la date est REPEINTE et disparaît
+       (mesures (249,250,251) à y=385/499/613) ;
+     • rang PAIR   → le `<tr>` n'a AUCUN fond à hériter, la cellule est donc
+       TRANSPARENTE : la date s'imprime À TRAVERS les boutons
+       (mesures (26,26,26) à y=442/556/670, « 02:18, 08 » barré par l'icône) ;
+     • `<thead>`   → aucun fond non plus : DATE et ACTION s'impriment l'un sur
+       l'autre et le mot rendu est « DACTIEON ».
+   Une cellule collante qui recouvre du contenu doit être OPAQUE dans TOUS ses
+   états. On déclare donc explicitement les quatre — en-tête, rang pair, rang
+   impair, survol — chacun avec la couleur EXACTE de sa ligne, ce qui donne à
+   la fois l'opacité (rien ne transparaît) et l'absence de couture (aucun
+   rectangle d'une autre couleur au milieu du tableau). Verrouillé par
+   `tests/js/historiqueActionColumnOpaque.spec.js`, qui évalue la cascade
+   réelle via `getComputedStyle`. */
 .hist-action-col {
     position: sticky;
     right: 0;
     z-index: 2;
-    background: inherit;
+    /* Rangs PAIRS + repli : fond du tableau. Jamais `inherit`, jamais absent. */
+    background-color: rgb(255, 255, 255);
+}
+/* En-tête : `.db-table-head` ne pose aucun fond — sans ça, « DACTIEON ». */
+.db-table-head .hist-action-col { background-color: rgb(255, 255, 255); }
+/* Rangs IMPAIRS : recopie EXACTE de la zébrure `app.css:464` (#f9fafb). */
+.db-table.stripe .db-table-body-tr:nth-child(odd) .hist-action-col {
+    background-color: rgb(249, 250, 251);
+}
+/* Survol : recopie de `:deep(.db-table-body-tr:hover)` ci-dessus
+   (--pos-v5-brand-red-faint = #FFF4EE) sur les deux parités. */
+.db-table-body-tr:hover .hist-action-col,
+.db-table.stripe .db-table-body-tr:nth-child(odd):hover .hist-action-col {
+    background-color: var(--pos-v5-brand-red-faint, #FFF4EE);
 }
 @media (max-width: 1439px) {
     .hist-action-col { box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18); }

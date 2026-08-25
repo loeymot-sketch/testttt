@@ -125,13 +125,28 @@
                     data-testid="cash-overview-reconciliation"
                 >
                     <div class="border-l-4 border-amber-500 bg-amber-50 rounded p-3">
-                        <div class="text-sm font-semibold text-amber-900">
-                            {{ $t('label.cash_drawer_reconciliation') }}
+                        <div class="flex flex-wrap items-center gap-2 text-sm font-semibold text-amber-900">
+                            <span>{{ $t('label.cash_drawer_reconciliation') }}</span>
+                            <!--
+                                [FIX-3 2026-08-25] Age badge. The card used to
+                                render a bare `formatTime()` clock, which made a
+                                drawer left open for 50 days look like it had
+                                been opened this morning.
+                            -->
+                            <span
+                                v-if="drawerAgeLabel"
+                                class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-xs font-medium"
+                                data-testid="cash-overview-reconciliation-age"
+                            >{{ drawerAgeLabel }}</span>
                         </div>
                         <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                             <div>
                                 <span class="text-gray-600">{{ $t('label.drawer_opened_at') }}:</span>
-                                <strong class="ml-1">{{ formatTime(cashSession.opened_at) }}</strong>
+                                <!-- Dated, never a bare clock, unless it really is today. -->
+                                <strong
+                                    class="ml-1"
+                                    data-testid="cash-overview-reconciliation-opened-at"
+                                >{{ formatDateTime(cashSession.opened_at) }}</strong>
                             </div>
                             <div>
                                 <span class="text-gray-600">{{ $t('label.opening_amount') }}:</span>
@@ -141,11 +156,19 @@
                                 >{{ formatMoneyEuro(cashSession.opening_amount) }}</strong>
                             </div>
                             <div>
-                                <span class="text-gray-600">{{ $t('label.cash_collected_today') }}:</span>
+                                <!--
+                                    [FIX-3] Was `label.cash_collected_today` over
+                                    the session-LIFETIME figure — the page said
+                                    « aujourd'hui » about cash taken 45 days
+                                    earlier, and contradicted the mode breakdown
+                                    right below it. Now: the period figure, under
+                                    a period label.
+                                -->
+                                <span class="text-gray-600">{{ $t('label.cash_collected_in_period') }}:</span>
                                 <strong
                                     class="ml-1"
                                     data-testid="cash-overview-reconciliation-collected"
-                                >{{ formatMoneyEuro(cashSession.cash_collected) }}</strong>
+                                >{{ formatMoneyEuro(cashSession.cash_collected_in_period) }}</strong>
                             </div>
                             <div>
                                 <span class="text-gray-600">{{ $t('label.expected_in_drawer') }}:</span>
@@ -159,7 +182,52 @@
                             class="mt-2 text-xs text-amber-800"
                             data-testid="cash-overview-reconciliation-note"
                         >
-                            {{ $t('label.cash_drawer_count_pending_note') }}
+                            <!--
+                                `expected_cash` is a LIFETIME figure (fond +
+                                every movement since opening). Say so explicitly
+                                whenever the drawer predates the window, so the
+                                two amounts above can never be read as the same
+                                period.
+                            -->
+                            <span v-if="drawerAgeLabel" data-testid="cash-overview-reconciliation-lifetime-note">
+                                Tiroir ouvert le {{ formatDateTime(cashSession.opened_at) }} et jamais clôturé —
+                                « {{ $t('label.expected_in_drawer') }} » cumule
+                                {{ formatMoneyEuro(cashSession.cash_collected) }} de mouvements depuis l'ouverture,
+                                pas seulement la période affichée.
+                            </span>
+                            <span v-else>{{ $t('label.cash_drawer_count_pending_note') }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!--
+                    [FIX-3 2026-08-25] Drawers left `open` with no activity over
+                    the displayed period. Bounding the reconciliation card to the
+                    period is the honest fix, but on its own it would hide the
+                    abandoned drawers that still hold their fond de caisse — and
+                    it would leave « pourquoi aucun tiroir ? » unanswered. Owner
+                    mandate « détecter écarts (cash manquant) ». Read-only: this
+                    page never closes a session.
+                -->
+                <section
+                    v-if="!loading && staleOpenDrawers && staleOpenDrawers.count > 0"
+                    class="px-4 sm:px-5 mb-4"
+                    data-testid="cash-overview-stale-drawers"
+                >
+                    <div class="border-l-4 border-orange-400 bg-orange-50 rounded p-3">
+                        <div class="flex items-center text-sm font-semibold text-orange-800">
+                            <span class="mr-2">🗄️</span>
+                            <span>Tiroirs restés ouverts</span>
+                        </div>
+                        <div
+                            class="mt-1 text-sm text-orange-700"
+                            data-testid="cash-overview-stale-drawers-message"
+                        >
+                            {{ staleOpenDrawers.message }}
+                        </div>
+                        <div class="mt-2 text-xs text-orange-600">
+                            Sessions concernées : #{{ staleOpenDrawers.ids.join(', #') }} — leur fond de caisse
+                            n'est rattaché à aucune clôture. À clôturer depuis la caisse.
                         </div>
                     </div>
                 </section>
@@ -352,6 +420,11 @@ export default {
             // discrepancy here, where the écart actually manifests, instead of
             // only via the ephemeral collect-time toast.
             unrecordedCash: null,
+            // [FIX-3 2026-08-25] Drawers left `open` with no activity over the
+            // displayed period (11 of them existed in dev). Surfaced instead of
+            // silently letting the most-recently-opened one impersonate today's
+            // drawer.
+            staleOpenDrawers: null,
             meta: { capped: false, row_count: 0 },
             filters: {
                 from: today,
@@ -380,6 +453,20 @@ export default {
         // count-input feature the page displays 3 honest values
         // (opening / collected_today / expected_in_drawer) without a
         // misleading diff.
+
+        /**
+         * [FIX-3 2026-08-25] Non-empty ONLY when the drawer was opened on an
+         * earlier day than today. Drives both the age badge and the
+         * "lifetime cumulative" disclaimer, so the card can never present an
+         * old drawer as if it had been opened this morning.
+         */
+        drawerAgeLabel() {
+            if (!this.cashSession) return '';
+            if (this.cashSession.opened_today) return '';
+            const days = Number(this.cashSession.age_days || 0);
+            if (!Number.isFinite(days) || days < 1) return '';
+            return days === 1 ? 'ouvert depuis hier' : `ouvert depuis ${days} jours`;
+        },
     },
     // [Wave Z Q8 2026-05-21] Hydrate filter state from `$route.query` BEFORE
     // mount so an inbound shareable link (e.g. ?source=borne&from=2026-05-01)
@@ -436,6 +523,7 @@ export default {
                 this.summary = payload.summary || null;
                 this.cashSession = payload.cash_session || null;
                 this.unrecordedCash = payload.unrecorded_cash || null;
+                this.staleOpenDrawers = payload.stale_open_drawers || null;
                 this.meta = payload.meta || { capped: false, row_count: 0 };
             } catch (e) {
                 // eslint-disable-next-line no-console
@@ -444,6 +532,7 @@ export default {
                 this.summary = null;
                 this.cashSession = null;
                 this.unrecordedCash = null;
+                this.staleOpenDrawers = null;
             } finally {
                 this.loading = false;
             }
@@ -583,6 +672,31 @@ export default {
                 const d = new Date(iso);
                 const locale = (this.$i18n && this.$i18n.locale) || 'fr-FR';
                 return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return iso;
+            }
+        },
+        /**
+         * [FIX-3 2026-08-25] A bare clock is only honest for today. `formatTime`
+         * rendered « 20:56 » for a drawer opened 50 days earlier, which is what
+         * made the staleness invisible. Anything not from today is DATED.
+         */
+        formatDateTime(iso) {
+            if (!iso) return '—';
+            try {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return iso;
+                const locale = (this.$i18n && this.$i18n.locale) || 'fr-FR';
+                const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+                const now = new Date();
+                const sameDay = d.getFullYear() === now.getFullYear()
+                    && d.getMonth() === now.getMonth()
+                    && d.getDate() === now.getDate();
+                if (sameDay) return time;
+                const date = d.toLocaleDateString(locale, {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                });
+                return `${date} ${time}`;
             } catch (e) {
                 return iso;
             }

@@ -196,23 +196,32 @@ export default {
         setupCredit: function (e) {
             // [SEC-30-2] Demo credentials read from runtime config (injected server-side)
             // Never hardcode real restaurant credentials in the JS bundle.
-            const demo = window.__FOODKING_RUNTIME__?.demo || {};
-            if (e === 'admin') {
-                this.form.email = demo.adminEmail || 'admin@lecayenne.fr';
-                this.form.password = demo.adminPassword || '123456';
-            } else if (e === 'customer') {
-                this.form.email = demo.customerEmail || 'walkingcustomer@example.com';
-                this.form.password = demo.customerPassword || '123456';
-            } else if (e === 'branchManager') {
-                this.form.email = demo.branchManagerEmail || 'branchmanager@example.com';
-                this.form.password = demo.branchManagerPassword || '123456';
-            } else if (e === 'posOperator') {
-                this.form.email = demo.posOperatorEmail || 'pos@lecayenne.fr';
-                this.form.password = demo.posOperatorPassword || '123456';
-            } else if (e === 'chef') {
-                this.form.email = demo.chefEmail || 'chef@example.com';
-                this.form.password = demo.chefPassword || '123456';
+            //
+            // [SEC E-006 2026-08-25] The literal `|| '<password>'` fallbacks that used to sit
+            // on every line below were compiled by webpack straight into public/js/app.js and
+            // public/js/pos-app.js — bundles served, unauthenticated, to anyone who asks. That
+            // defeated the server-side DEMO flag entirely: turning demo mode off removed the
+            // values from the HTML but left them in the JavaScript. There is no fallback any
+            // more. If the server did not inject a demo block, these buttons do nothing.
+            const demo = window.__FOODKING_RUNTIME__?.demo;
+            if (!demo) {
+                return;
             }
+
+            const fields = {
+                admin:         ['adminEmail', 'adminPassword'],
+                customer:      ['customerEmail', 'customerPassword'],
+                branchManager: ['branchManagerEmail', 'branchManagerPassword'],
+                posOperator:   ['posOperatorEmail', 'posOperatorPassword'],
+                chef:          ['chefEmail', 'chefPassword'],
+            }[e];
+
+            if (!fields) {
+                return;
+            }
+
+            this.form.email = demo[fields[0]] || '';
+            this.form.password = demo[fields[1]] || '';
         }
     }
 }

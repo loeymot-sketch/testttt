@@ -211,7 +211,19 @@ class CashOverviewController extends AdminController
         // their open session. Admin sees the session of the filtered branch
         // when an explicit branch_id is provided; otherwise null (no drawer
         // to reconcile against, owner can drill down per-branch).
-        $cashSession = $this->resolveOpenCashSession($user, $branchFilter, $isGlobalAdmin);
+        //
+        // [FIX-3 2026-08-25] The resolver is now BOUND TO THE REQUESTED PERIOD
+        // (see resolveOpenCashSession) — it used to return the most-recently
+        // OPENED drawer across all time, which on this DB (11 concurrent
+        // `open` sessions) surfaced a drawer abandoned 50 days earlier and
+        // labelled its figures « aujourd'hui ».
+        $cashSession = $this->resolveOpenCashSession(
+            $user,
+            $branchFilter,
+            $isGlobalAdmin,
+            $startBound,
+            $endBound
+        );
 
         $cashSessionPayload = null;
         if ($cashSession) {
@@ -232,11 +244,33 @@ class CashOverviewController extends AdminController
             // into this drawer's expected (CASH-JOIN-01) and (b) summed only positive
             // order-payments, ignoring cashback/cash-OUT movements (CASH-SEM-02) → it
             // overstated the physical drawer the cashier reconciles against.
-            $movementsSum = (float) \App\Models\CashMovement::query()
+            $movements = \App\Models\CashMovement::query()
                 ->where('cash_drawer_session_id', $cashSession->id)
-                ->get()
+                ->get();
+            $movementsSum = (float) $movements
                 ->sum(fn (\App\Models\CashMovement $m) => $m->signedAmount());
             $expectedCash = round((float) $cashSession->opening_amount + $movementsSum, 2);
+
+            // [FIX-3 2026-08-25] Net cash movement of this drawer RESTRICTED TO
+            // THE DISPLAYED PERIOD. `cash_collected` (session lifetime) is what
+            // the physical drawer holds and must stay lifetime-wide, but the UI
+            // used to render it under the label « Espèces encaissées
+            // aujourd'hui » — so a 45-day-old 8,50 € was read as today's cash,
+            // contradicting the « Répartition par mode » block on the SAME page.
+            // The period figure is the one the banner shows next to the period
+            // filter; the lifetime figure keeps its own, explicitly-dated label.
+            $inPeriodSum = (float) $movements
+                ->filter(fn (\App\Models\CashMovement $m) => $m->created_at !== null
+                    && $m->created_at->between($startBound, $endBound))
+                ->sum(fn (\App\Models\CashMovement $m) => $m->signedAmount());
+
+            $openedAt = $cashSession->opened_at
+                ? $cashSession->opened_at->copy()->setTimezone($tz)
+                : null;
+            $ageDays = $openedAt
+                ? (int) $openedAt->copy()->startOfDay()->diffInDays(Carbon::today($tz))
+                : null;
+
             $cashSessionPayload = [
                 'id'               => (int) $cashSession->id,
                 'branch_id'        => $sessionBranchId,
@@ -245,8 +279,32 @@ class CashOverviewController extends AdminController
                 'expected_cash'    => $expectedCash,
                 // Net cash movement since opening (IN minus OUT), the reconciliation delta.
                 'cash_collected'   => round($movementsSum, 2),
+                // [FIX-3] Truth-telling fields the banner MUST use so it can
+                // never again print « aujourd'hui » over a stale drawer.
+                'cash_collected_in_period' => round($inPeriodSum, 2),
+                'opened_today'     => $openedAt ? $openedAt->isSameDay(Carbon::today($tz)) : false,
+                'opened_in_period' => $openedAt ? $openedAt->between($startBound, $endBound) : false,
+                'age_days'         => $ageDays,
+                'period_from'      => $startBound->toIso8601String(),
+                'period_to'        => $endBound->toIso8601String(),
             ];
         }
+
+        // [FIX-3 2026-08-25] Drawers left `open` with no activity in the window.
+        // On this DB there are 11 concurrent `open` sessions (one per cashier —
+        // the partial UNIQUE index is (branch_id, opened_by_user_id) WHERE
+        // status='open', so nothing prevents them piling up). Silently hiding
+        // them would trade one lie for an omission: the owner mandate is
+        // « détecter écarts (cash manquant) », and an abandoned drawer still
+        // holds its fond de caisse. READ-ONLY: nothing is closed or mutated.
+        $staleOpenDrawers = $this->summarizeStaleOpenDrawers(
+            $user,
+            $branchFilter,
+            $isGlobalAdmin,
+            $startBound,
+            $endBound,
+            $cashSession?->id
+        );
 
         // [TRAP-3 2026-06-04] Durable cash-trail gap surfacing. The counter-collect
         // CASH path is best-effort: when no drawer session was open at collection,
@@ -270,6 +328,8 @@ class CashOverviewController extends AdminController
             'data'   => CashOverviewTransactionResource::collection($transactions),
             'summary'      => $summary,
             'cash_session' => $cashSessionPayload,
+            // Drawers left open with zero activity over the displayed window.
+            'stale_open_drawers' => $staleOpenDrawers,
             // Flagged discrepancy block — non-null `count` > 0 means cash was
             // collected with no drawer session and is unaccounted in any session.
             'unrecorded_cash' => $unrecordedCash,
@@ -380,21 +440,15 @@ class CashOverviewController extends AdminController
     }
 
     /**
-     * Resolve the currently open CashDrawerSession to compute the
-     * "espèce attendue" reconciliation column. Admin uses the requested
-     * branch_id filter; staff uses their own.
+     * Branch-scoped base query over `open` drawer sessions. Returns null when
+     * the caller has no branch we may legally read.
      *
      * [Wave X-C round-1 2026-05-21] Fix C-003 — when admin is browsing
-     * without an explicit `?branch_id=` query param we now fall back to
-     * the most-recently-opened drawer session across all branches instead
-     * of returning null. This makes the reconciliation card mount by
-     * default for the admin login the spec exercises, matching the owner
-     * mandate « détecter écarts (cash manquant) » without requiring the
-     * user to first pick a branch. If literally no drawer is open anywhere
-     * the card stays hidden — there is nothing to reconcile against. The
-     * sibling /admin/cash-sessions-report behaviour is unchanged.
+     * without an explicit `?branch_id=` query param we do not force a branch,
+     * so the reconciliation card can still mount for the admin login,
+     * matching the owner mandate « détecter écarts (cash manquant) ».
      */
-    private function resolveOpenCashSession($user, ?int $branchFilter, bool $isGlobalAdmin): ?CashDrawerSession
+    private function openCashSessionBaseQuery($user, ?int $branchFilter, bool $isGlobalAdmin)
     {
         $query = CashDrawerSession::query();
         if ($isGlobalAdmin) {
@@ -414,11 +468,148 @@ class CashOverviewController extends AdminController
             }
             $query->where('branch_id', $ownBranch);
         }
-        // Else: global admin, no explicit filter — fall back to the
-        // most-recently-opened drawer across all branches so the card
-        // mounts by default for the admin's daily écart view.
 
-        return $query->orderByDesc('opened_at')->first();
+        return $query;
+    }
+
+    /**
+     * `whereExists`-style constraint: this drawer moved cash inside the window.
+     */
+    private function movementExistsInWindow(Carbon $startBound, Carbon $endBound): \Closure
+    {
+        return function ($sub) use ($startBound, $endBound) {
+            $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                ->from('cash_movements')
+                ->whereColumn('cash_movements.cash_drawer_session_id', 'cash_drawer_sessions.id')
+                ->whereBetween('cash_movements.created_at', [$startBound, $endBound]);
+        };
+    }
+
+    /**
+     * Resolve the CashDrawerSession the reconciliation banner is allowed to
+     * describe FOR THE REQUESTED PERIOD.
+     *
+     * [FIX-3 2026-08-25] Root-cause fix. The previous implementation ended with
+     * `orderByDesc('opened_at')->first()` filtered on `status = open` ONLY —
+     * no date bound whatsoever. With 11 concurrent `open` sessions in this DB
+     * (the partial UNIQUE index is per (branch_id, opened_by_user_id), so every
+     * cashier who never closes leaves one behind forever), the banner locked
+     * onto session #38 — opened 2026-07-06, single movement 2026-07-11 — and
+     * rendered « Espèces encaissées aujourd'hui : 8,50 € / attendues : 58,50 € »
+     * on a page dated 2026-08-25, unchanged even when the period filter was set
+     * to a window containing zero transaction. Worse, the cash actually taken
+     * that day belonged to a DIFFERENT session (#36): the drawer on screen was
+     * not the drawer collecting.
+     *
+     * Selection is now period-bound and activity-first :
+     *   0. Never a drawer opened AFTER the window — it cannot explain it.
+     *   1. The drawer that actually MOVED CASH inside the window (most recent
+     *      movement wins). This is the drawer the cashier is really using, even
+     *      when another one was opened later and abandoned.
+     *   2. Otherwise a drawer OPENED inside the window (service started, no sale
+     *      yet) — legitimately shown with 0 collected.
+     *   3. Otherwise null: no drawer is relevant to this period and the banner
+     *      says so rather than borrowing another month's figures.
+     *
+     * A drawer opened before the window but still collecting inside it is kept
+     * (case 1, night shift / never-closed drawer) — the payload then carries
+     * `opened_today=false` + `age_days` so the UI DATES it instead of implying
+     * "today".
+     */
+    private function resolveOpenCashSession(
+        $user,
+        ?int $branchFilter,
+        bool $isGlobalAdmin,
+        Carbon $startBound,
+        Carbon $endBound
+    ): ?CashDrawerSession {
+        $base = $this->openCashSessionBaseQuery($user, $branchFilter, $isGlobalAdmin);
+        if ($base === null) {
+            return null;
+        }
+
+        // (0) A drawer opened after the window ends can never explain it.
+        $base->where('opened_at', '<=', $endBound);
+
+        // (1) The drawer that actually collected cash during the window.
+        $lastMovementInWindow = \Illuminate\Support\Facades\DB::table('cash_movements')
+            ->selectRaw('MAX(created_at)')
+            ->whereColumn('cash_movements.cash_drawer_session_id', 'cash_drawer_sessions.id')
+            ->whereBetween('cash_movements.created_at', [$startBound, $endBound]);
+
+        $withActivity = (clone $base)
+            ->select('cash_drawer_sessions.*')
+            ->addSelect(['last_movement_at' => $lastMovementInWindow])
+            ->whereExists($this->movementExistsInWindow($startBound, $endBound))
+            ->orderByDesc('last_movement_at')
+            ->orderByDesc('opened_at')
+            ->first();
+
+        if ($withActivity) {
+            return $withActivity;
+        }
+
+        // (2) Otherwise a drawer whose service STARTED inside the window.
+        return (clone $base)
+            ->where('opened_at', '>=', $startBound)
+            ->orderByDesc('opened_at')
+            ->first();
+    }
+
+    /**
+     * [FIX-3 2026-08-25] Drawers left `open` with zero activity over the window
+     * (and opened before it). Read-only surfacing — nothing is closed here.
+     *
+     * Rationale: bounding the banner to the period (above) is the honest fix,
+     * but on its own it would silently hide the 10 other abandoned drawers that
+     * still hold their fond de caisse. Owner mandate « détecter écarts (cash
+     * manquant) » → we name them, dated, and leave the closing decision to a
+     * human.
+     *
+     * @return array{count:int, oldest_opened_at:?string, ids:array<int,int>, message:?string}
+     */
+    private function summarizeStaleOpenDrawers(
+        $user,
+        ?int $branchFilter,
+        bool $isGlobalAdmin,
+        Carbon $startBound,
+        Carbon $endBound,
+        ?int $excludeSessionId
+    ): array {
+        $empty = ['count' => 0, 'oldest_opened_at' => null, 'ids' => [], 'message' => null];
+
+        $base = $this->openCashSessionBaseQuery($user, $branchFilter, $isGlobalAdmin);
+        if ($base === null) {
+            return $empty;
+        }
+
+        if ($excludeSessionId !== null) {
+            $base->where('id', '!=', $excludeSessionId);
+        }
+
+        $rows = $base
+            ->where('opened_at', '<', $startBound)
+            ->whereNotExists($this->movementExistsInWindow($startBound, $endBound))
+            ->orderBy('opened_at')
+            ->limit(50)
+            ->get(['id', 'opened_at', 'opening_amount']);
+
+        if ($rows->isEmpty()) {
+            return $empty;
+        }
+
+        $oldest = $rows->first();
+        $count  = $rows->count();
+        $date   = optional($oldest->opened_at)->format('d/m/Y');
+
+        return [
+            'count'            => $count,
+            'oldest_opened_at' => optional($oldest->opened_at)->toIso8601String(),
+            'ids'              => $rows->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+            'message'          => $count.' tiroir(s) resté(s) ouvert(s) sans aucune activité sur la période'
+                .($date ? " (le plus ancien depuis le {$date})" : '')
+                .' — fond de caisse non clôturé, à régulariser',
+        ];
     }
 
     /**

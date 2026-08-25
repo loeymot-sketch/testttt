@@ -389,7 +389,15 @@ final class OrderReceiptEscPosRenderer
                 $menuLine = $sym !== '' ? 'MENU : '.$sym : 'MENU';
                 // [W3-FIX-C 2026-07-06] La boisson de la formule sort AUSSI en cuisine
                 // (owner : le cuisinier prépare les boissons).
-                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => [], 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
+                // [FIX-1 2026-08-25 · P0 cuisine, constat E-002] Les SUPPLÉMENTS de cette ligne
+                // sortent enfin. `'supps' => []` était écrit EN DUR : un cheddar facturé sur une
+                // ligne « Menu (Frites + Boisson) » n'était imprimé nulle part, et l'écran V2
+                // avait exactement le même trou. La règle owner [KITCHEN-MENU 2026-06-30] visait
+                // le DÉTAIL de la formule et le PRIX — jamais un extra payé, qui est du travail
+                // en plus à faire. Le repli des formules revendiquées (KitchenBundledAddonCollapser)
+                // ne déplace aucun extra : aucun doublon possible avec le bloc du parent.
+                // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche isMenuItem.
+                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $this->symbolic->supplementLines($snap, $instruction), 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
 
                 continue;
             }

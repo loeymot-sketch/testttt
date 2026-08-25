@@ -340,7 +340,7 @@
         "pending_counter": "بانتظار التحصيل",
         "refunded": "مسترد",
         "advanced_promo_fields": "إعدادات متقدمة",
-        "cash_collected_today": "النقد المحصل اليوم",
+        "cash_collected_in_period": "النقد المحصل خلال الفترة",
         "expected_in_drawer": "النقد المتوقع في الدرج",
         "cash_drawer_count_pending_note": "لحساب الفرق، أدخل العد المادي للدرج (قريبًا).",
         "previous": "السابق",
