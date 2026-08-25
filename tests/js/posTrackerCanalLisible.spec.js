@@ -418,3 +418,130 @@ describe('catalogue — chaque clé ajoutée existe dans fr.json ET en.json', ()
         }
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [AUDIT-SUPERVISEUR 2026-08-25 · A-015 et A-016] Deux promesses du correctif
+// précédent que le superviseur a mesurées et trouvées fausses. On les reteste
+// ici sur ce qui compte vraiment, pas sur ce qui est déclaré.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { BUDGET_COMPO } from '../../resources/js/components/admin/pos/PosOrdersTrackerComponent.vue';
+
+const SOURCE_TRACKER = readFileSync(
+    resolve(process.cwd(), 'resources/js/components/admin/pos/PosOrdersTrackerComponent.vue'),
+    'utf8',
+);
+
+/** Extrait le `background` déclaré pour une variante de pastille de canal. */
+function fondDuCanal(canal) {
+    const m = SOURCE_TRACKER.match(
+        new RegExp(`\\.pos-tracker-card-source--${canal}\\s*\\{[^}]*background:\\s*(#[0-9A-Fa-f]{6})`),
+    );
+    return m ? m[1].toUpperCase() : null;
+}
+
+const versRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+/** Écart maximal composante à composante — grossier mais suffisant pour « indiscernable ». */
+const ecart = (a, b) => {
+    const [ra, ga, ba] = versRgb(a);
+    const [rb, gb, bb] = versRgb(b);
+    return Math.max(Math.abs(ra - rb), Math.abs(ga - gb), Math.abs(ba - bb));
+};
+
+describe('couleurs de canal — distinctes ENTRE ELLES, pas seulement du fond', () => {
+    const CANAUX = ['pos', 'kiosk', 'online', 'phone', 'platform', 'delivery'];
+
+    it('les six canaux déclarent chacun un fond', () => {
+        CANAUX.forEach((c) => {
+            expect(fondDuCanal(c), `le canal ${c} n'a pas de fond déclaré`).toBeTruthy();
+        });
+    });
+
+    it('aucune paire de canaux n\'est indiscernable', () => {
+        // Le défaut mesuré : `--kiosk #EEF2FF` et `--delivery #E8F1FD` étaient à SIX
+        // valeurs l'un de l'autre — 1,02:1. Distinguer une pastille du FOND ne sert à
+        // rien si elle ne se distingue pas des AUTRES : c'est ça, un code couleur.
+        const SEUIL = 24; // au-delà de quoi deux pastilles se lisent différemment
+        for (let i = 0; i < CANAUX.length; i += 1) {
+            for (let j = i + 1; j < CANAUX.length; j += 1) {
+                const a = fondDuCanal(CANAUX[i]);
+                const b = fondDuCanal(CANAUX[j]);
+                expect(
+                    ecart(a, b),
+                    `${CANAUX[i]} (${a}) et ${CANAUX[j]} (${b}) sont indiscernables`,
+                ).toBeGreaterThanOrEqual(SEUIL);
+            }
+        }
+    });
+
+    it('chaque canal porte un liseré — la couleur n\'est jamais le seul support', () => {
+        CANAUX.forEach((c) => {
+            const bloc = SOURCE_TRACKER.match(
+                new RegExp(`\\.pos-tracker-card-source--${c}\\s*\\{[^}]*\\}`),
+            );
+            expect(bloc, `bloc introuvable pour ${c}`).toBeTruthy();
+            expect(bloc[0], `le canal ${c} n'a pas de liseré`).toContain('box-shadow');
+        });
+    });
+});
+
+describe('marqueur « +N » — le chemin de troncature est RÉELLEMENT exercé', () => {
+    const vm = () => buildHarness().wrapper.vm;
+
+    /** Compose une chaîne dont on SAIT qu'elle dépasse le budget. */
+    const compositionLongue = () => ({
+        options: [
+            { label: 'Pain', value: 'Galette complète' },
+            { label: 'Viande', value: 'Poulet mariné maison' },
+            { label: 'Sauce', value: 'Algérienne relevée' },
+            { label: 'Cuisson', value: 'Bien cuit' },
+        ],
+        extras: [{ name: 'Cheddar', quantity: 2 }, { name: 'Salade' }],
+    });
+
+    it('la composition de test dépasse bien le budget — sinon le test ne prouverait rien', () => {
+        const complet = vm().resumeComposition(compositionLongue());
+        expect(complet.length).toBeGreaterThan(BUDGET_COMPO);
+    });
+
+    it('coupe, annonce ce qui reste, et compte juste', () => {
+        const item = compositionLongue();
+        const res = vm().compoAffichee(item);
+
+        expect(res.tronque, 'la troncature n\'a pas eu lieu').toBe(true);
+        expect(res.restants, 'rien n\'est annoncé comme restant').toBeGreaterThan(0);
+        expect(res.texte.length).toBeLessThanOrEqual(BUDGET_COMPO + 20);
+
+        // Le compte doit être exact : morceaux totaux − morceaux gardés.
+        const total = vm().resumeComposition(item).split(' · ').length;
+        const gardes = res.texte.split(' · ').length;
+        expect(res.restants).toBe(total - gardes);
+    });
+
+    it('coupe sur une frontière « · », jamais au milieu d\'un mot', () => {
+        const res = vm().compoAffichee(compositionLongue());
+        expect(res.texte).not.toMatch(/[…\u2026]$/);
+        expect(res.texte.trim().endsWith('·')).toBe(false);
+    });
+
+    it('une composition COURTE passe entière, sans marqueur', () => {
+        const res = vm().compoAffichee({ options: [{ label: 'Sauce', value: 'Blanche' }] });
+        expect(res.tronque).toBe(false);
+        expect(res.restants).toBe(0);
+    });
+
+    it('le marqueur atteint le DOM quand la composition déborde', async () => {
+        const { wrapper } = buildHarness();
+        wrapper.vm.orders = [{
+            id: 900, queue_number: 9, status: orderStatusEnum.PREPARING,
+            source_surface: 'pos', payment_status: 5, total: 20,
+            created_at: new Date(NOW).toISOString(),
+            order_items: [{ item_id: 1, item_name: 'Cayenne', quantity: 1, ...compositionLongue() }],
+        }];
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.html()).toContain('tracker-compo-more-900-0');
+    });
+});

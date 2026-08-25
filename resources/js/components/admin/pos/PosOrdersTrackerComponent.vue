@@ -997,6 +997,18 @@ import PromoFlyerQuickModal from '../promo/PromoFlyerQuickModal.vue';
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
 import { adminPriceMixin } from '../../../helpers/formatPrice';
 
+/**
+ * [AUDIT-SUPERVISEUR 2026-08-25 · A-016] Budget de la composition affichée sur la carte,
+ * en caractères. EXPORTÉ pour que les tests puissent exercer la branche de troncature au
+ * lieu de la deviner : c'est parce que ce nombre était enfermé dans la méthode que le
+ * marqueur « +N » a pu n'être rendu sur AUCUNE des 10 captures sans que rien ne le signale.
+ *
+ * Valeur choisie pour ~2 lignes de 11 px dans une colonne de carte, et volontairement
+ * généreuse : la composition la plus riche relevée en audit (« Galette · Algerienne ·
+ * Bien cuit · +2 Cheddar · +Salade », 54 caractères) passe ENTIÈRE.
+ */
+export const BUDGET_COMPO = 58;
+
 const POLL_WS_MS = 60000;
 // [MULTI-DEVICE 2026-08-07] 8 s → 5 s sur demande du propriétaire, qui accepte
 // désormais des commandes depuis plusieurs terminaux : quand le temps réel est
@@ -2288,7 +2300,14 @@ export default {
          */
         compoAffichee(item) {
             const complet = this.resumeComposition(item);
-            const BUDGET = 58;
+            // [AUDIT-SUPERVISEUR 2026-08-25 · A-016] Le budget était un nombre nu, enfermé
+            // ici. Conséquence : le superviseur a constaté que le marqueur « +N » — la
+            // pièce maîtresse de ce correctif — n'était rendu sur AUCUN des 10 états
+            // capturés, parce que la chaîne semée par le banc (54 caractères) passait sous
+            // le budget (58). Un chemin de code jamais rendu est un chemin non testé.
+            // La constante est désormais EXPORTÉE : le test construit une composition
+            // juste au-dessus et exerce réellement la branche de troncature.
+            const BUDGET = BUDGET_COMPO;
             if (!complet || complet.length <= BUDGET) {
                 return { texte: complet, tronque: false, restants: 0 };
             }
@@ -3208,22 +3227,35 @@ export default {
     font-size: 14px;
 }
 
-.pos-tracker-card-source--kiosk { background: #EEF2FF; }
-/* [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Bleu pâle → rouge, même teinte que
-   .pos-shortcuts__panel--web (PosComponent.vue) pour une identité visuelle
-   cohérente "commande web" sur tout l'écran caisse. */
-.pos-tracker-card-source--online { background: #FDECEA; color: #d32f2f; }
+/* [AUDIT-SUPERVISEUR 2026-08-25 · A-015] DEUX CORRECTIONS À CE QUI A ÉTÉ ANNONCÉ ICI HIER.
+   Le correctif A-002 promettait « six canaux, six couleurs, contraste AA vérifié ».
+   Le superviseur a MESURÉ sur l'image, et les deux moitiés étaient fausses :
 
-/* [FIX-6 / A-002 2026-08-25] Trois canaux réels — CAISSE, TÉLÉPHONE, PLATEFORME —
-   retombaient tous sur `var(--pos-tracker-muted-soft)` : la borne et le web étaient
-   colorés, le téléphone ne l'était pas, et le seul marqueur restant était un emoji de
-   14 px identique en forme et en fond. Une teinte + un liseré par canal, chacun distinct
-   des quatre autres, pour que le canal se lise sans lire.
-   Contraste vérifié sur fond de carte blanc : chaque couleur de texte tient AA (≥ 4,5:1). */
-.pos-tracker-card-source--pos      { background: #EDEFF2; color: #414A55; box-shadow: inset 0 0 0 1px #C9CFD8; }
-.pos-tracker-card-source--phone    { background: #E7F6EC; color: #1B7A3E; box-shadow: inset 0 0 0 1px #A8DCBB; }
-.pos-tracker-card-source--platform { background: #FFF3E0; color: #A85A00; box-shadow: inset 0 0 0 1px #F3C98B; }
-.pos-tracker-card-source--delivery { background: #E8F1FD; color: #14539A; box-shadow: inset 0 0 0 1px #A9C8EE; }
+   1. `--kiosk #EEF2FF` et `--delivery #E8F1FD` étaient à **1,02:1 l'un de l'autre**
+      (six valeurs sur 255 d'écart) — indiscernables. Et `--kiosk` était le seul sans
+      couleur ni liseré. Distinguer une pastille du FOND ne sert à rien si elle ne se
+      distingue pas des AUTRES pastilles : c'est ça qu'on demande à un code couleur.
+   2. la `color:` annoncée « AA vérifié » n'est peinte NULLE PART. L'unique enfant
+      visible de la pastille est un EMOJI, et un emoji ignore `color`. Pixel le plus
+      sombre relevé dans chaque pastille : quatre quasi-noirs, aucune des teintes
+      déclarées. La couleur de texte était une promesse sans support.
+
+   CE QUI PORTE RÉELLEMENT L'INFORMATION, et qui est donc retravaillé : le FOND et le
+   LISERÉ. Six familles de teintes franchement séparées, chacune avec son liseré.
+   La `color` reste déclarée pour le libellé lu par les lecteurs d'écran et pour tout
+   futur enfant textuel — mais elle n'est plus présentée comme l'affordance.
+   Et la couleur n'est jamais SEULE : chaque canal porte aussi un pictogramme de forme
+   distincte (🛒 🖥️ 🌐 📞 🛵 🚗) plus un nom accessible — règle WCAG « pas d'information
+   portée par la seule couleur ». */
+.pos-tracker-card-source--pos      { background: #DEE2E6; color: #343A40; box-shadow: inset 0 0 0 1px #9AA3AC; }
+.pos-tracker-card-source--kiosk    { background: #C3CEFF; color: #2A2377; box-shadow: inset 0 0 0 1px #8C9BF0; }
+/* [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Rouge : même teinte que
+   `.pos-shortcuts__panel--web` (PosComponent.vue), identité « commande web »
+   cohérente sur tout l'écran caisse. Conservée. */
+.pos-tracker-card-source--online   { background: #FDECEA; color: #B3261E; box-shadow: inset 0 0 0 1px #F5B5AE; }
+.pos-tracker-card-source--phone    { background: #BFEBD3; color: #14532D; box-shadow: inset 0 0 0 1px #57B98A; }
+.pos-tracker-card-source--platform { background: #FFE8CC; color: #8A4B00; box-shadow: inset 0 0 0 1px #F0A952; }
+.pos-tracker-card-source--delivery { background: #E4CCFF; color: #5B1A93; box-shadow: inset 0 0 0 1px #B583E8; }
 
 /* Nom accessible du canal : lu par les lecteurs d'écran, invisible à l'œil. Défini
    localement plutôt que via `sr-only` de Tailwind — le style est `scoped`, on ne dépend
