@@ -47,6 +47,44 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-25 (nuit) — BORNE : LA CATÉGORIE ENTIÈRE TIENT À L'ÉCRAN, QUEL QU'EN SOIT LE NOMBRE**
+>
+> HEAD prod **`b44f2c28`** (== origin), avance rapide, arbre du VPS **0 ligne avant ET après**
+> `npx mix --production` (lancé en `ubuntu`). Owner, après avoir vu la borne en service :
+> « il y a plusieurs sandwichs, on ne voit que les 3 premiers, c'est pas adapté pour visualiser
+> toute la catégorie ». **Il avait raison, et c'était la réserve que j'avais posée la veille en
+> livrant sans la traiter** — je l'avais annoncée puis laissée.
+>
+> **CAUSE** : les hauteurs étaient choisies par PALIERS. Au-delà de 3 produits la carte gardait la
+> même taille, donc Sandwichs (5), Burgers (6), Frites (6) et Boissons (15) demandaient de faire
+> défiler pour seulement DÉCOUVRIR la carte. Sur une borne, ce qu'on ne voit pas n'existe pas.
+> **CORRECTIF** : la hauteur se CALCULE — hauteur utile (mesurée : **1592 px sur 1920**) moins les
+> intervalles, divisée par `--kiosk-produits` exposé au CSS par le composant.
+> Mesuré après : **Bols 2/2 · Tacos 3/3 · Desserts 3/3 · Sandwichs 5/5 · Burgers 6/6 ·
+> Boissons 15/15**, tout visible sans un geste.
+>
+> **DEUX CONSÉQUENCES QUE SEULE LA MESURE A MONTRÉES**
+> · À 6 produits la carte tombe à **246 px** : une photo EMPILÉE au-dessus du texte ne laisse alors
+>   de place ni à l'une ni à l'autre → au-delà de 3, la photo passe à GAUCHE et prend toute la
+>   hauteur (`--dense`).
+> · À 15 produits la carte fait **96 px** : nom + pastilles de régime + description + prix n'y
+>   tiennent pas, et c'est **le PRIX qui passait sous le bord**, coupé net par `overflow: hidden`.
+>   Un produit sans prix affiché sur une borne n'est pas acceptable → au-delà de 9 articles on ne
+>   garde que le nom et le prix (`--minimal`).
+>
+> 🪤 **TROIS PIÈGES PAYÉS, TOUS TROUVÉS À LA MESURE ET AUCUN À LA LECTURE**
+> 1. **`min-height` est un PLANCHER, pas un plafond** : le contenu repoussait la carte à 602 px
+>    pour une cible de 514, et 3 produits débordaient. Il faut une hauteur FERME (`height`) —
+>    qui permet en prime aux enfants en `%` de se résoudre.
+> 2. **`82,9vh` pile (la mesure exacte) faisait dépasser la dernière carte de 2 px** : les arrondis
+>    sous-pixels s'accumulent. On garde 1 % de marge → `82vh`.
+> 3. **Le bouton `+` s'ancrait à la PHOTO** (seul ancêtre positionné) : la photo couchée, il se
+>    posait en plein milieu du visuel. `position: static` sur la photo le rend à la carte.
+>
+> Zones gelées : **0 ligne**. Vitest complet **3 644 verts / 444 fichiers**. Bundle servi vérifié
+> par son CONTENU (`kiosk-product-grid--dense`, `--minimal`, `--kiosk-produits` présents dans
+> `/js/app.js?id=ef35ad82…`), 6 surfaces en 200.
+
 > **2026-08-25 (soir) — SITE PUBLIC : IL ANNONÇAIT DEUX PRIX QUE LA CAISSE NE PRATIQUE PAS**
 >
 > Owner : « deploy tout ». Le backend était déjà entièrement en ligne ; le morceau restant était
