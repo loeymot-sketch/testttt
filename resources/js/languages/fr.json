@@ -722,7 +722,7 @@
         "pos_shortcut_view_more": "Voir plus ({count}) →",
         "pos_shortcut_delivered_toast": "Commande N°{order} marquée Livré",
         "pos_shortcut_ready_empty": "Aucune commande prête à livrer pour le moment.",
-        "pos_shortcut_cash_empty": "Aucune commande borne à encaisser pour le moment.",
+        "pos_shortcut_cash_empty": "Aucune commande à encaisser au comptoir pour le moment.",
         "pos_shortcut_last_refresh_now": "Mis à jour à l'instant",
         "pos_shortcut_last_refresh_sec": "Mis à jour il y a {seconds}s",
         "pos_shortcut_last_refresh_min": "Mis à jour il y a {minutes} min",

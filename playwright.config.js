@@ -63,6 +63,23 @@ module.exports = defineConfig({
   use: {
     baseURL,
     headless: true,
+    /*
+     * [AUDIT-SUPERVISEUR 2026-08-25 · AB-013] LE HARNAIS DOIT PARLER LA LANGUE DE LA CAISSE.
+     *
+     * Sans ces deux lignes, le navigateur de test héritait de la locale de la MACHINE. Un
+     * champ `datetime-local` s'affichait alors « mm/dd/yyyy, --:-- -- » — format américain
+     * avec AM/PM — sur une caisse dont la locale est immuable (ADR-007, FR).
+     *
+     * Le superviseur adverse a désamorcé ce piège au lieu d'ouvrir un faux P1 « date au
+     * format américain en production ». Mais le vrai coût est ailleurs : tant que la locale
+     * n'est pas fixée, AUCUNE conclusion de cet audit sur le rendu des dates, des heures ou
+     * des nombres n'est fiable — ni dans un sens ni dans l'autre. Une capture peut inventer
+     * un défaut qui n'existe pas, ou masquer un défaut réel de formatage français.
+     *
+     * On épingle donc ce que la production voit réellement : français, heure de Paris.
+     */
+    locale: 'fr-FR',
+    timezoneId: 'Europe/Paris',
     ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
     screenshot: 'only-on-failure',
     video: 'off',

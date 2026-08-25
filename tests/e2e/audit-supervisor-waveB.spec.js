@@ -518,7 +518,13 @@ test('B07 — /admin/pos/floorplan', async () => {
   const etat = await page.evaluate(() => ({
     url: location.href,
     texte: document.body.innerText.replace(/\s+/g, ' ').trim().slice(0, 500),
-    tables: document.querySelectorAll('[class*="table"], [data-table-id]').length,
+    // [AUDIT-SUPERVISEUR 2026-08-25 · AB-014] Ce compteur MENTAIT d'un facteur 24 : le
+    // sélecteur `[class*="table"]` attrapait toutes les classes contenant « table »
+    // (db-table-responsive, db-table-head, db-table-body-tr…) sur une page qui affiche
+    // UNE table de salle. Une donnée de synthèse dont le nom ne décrit pas ce qu'elle
+    // compte est pire qu'une donnée absente : une porte de validation qui la lit croit
+    // mesurer le plan de salle.
+    tables: document.querySelectorAll('.pos-v5-floorplan-table').length,
     debordement_horizontal: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
   }));
   fs.writeFileSync(
