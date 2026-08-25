@@ -147,6 +147,19 @@ function releverMesures() {
       ...boite(corps),
       hauteur_visible: rd(corps.clientHeight),
       hauteur_contenu: rd(corps.scrollHeight),
+      /*
+       * [AUDIT-SUPERVISEUR 2026-08-25 · AB-004] CETTE LIGNE MANQUAIT, ET C'EST CE QUI A FAIT
+       * PASSER LA VAGUE AU VERT SUR SES PROPRES CHIFFRES.
+       *
+       * L'en-tête du panier mesurait `pixels_caches` depuis toujours. Le CORPS — la liste des
+       * articles, c'est-à-dire ce que le client a commandé — ne le mesurait pas. À 1024×600 il
+       * enregistrait `hauteur_visible: 28` pour `hauteur_contenu: 172` : 144 px de contenu
+       * invisibles, écrits noir sur blanc dans le fichier de mesures, et jamais soustraits.
+       *
+       * Une instrumentation qui relève les deux termes d'une soustraction sans jamais la faire
+       * ne mesure rien : elle donne l'apparence de la rigueur. On la fait.
+       */
+      pixels_caches: rd(Math.max(0, corps.scrollHeight - corps.clientHeight)),
       plancher_css_px: planchierCorps,
       plancher_css_brut: styleCorps ? styleCorps.minHeight : null,
       au_dessus_du_plancher: planchierCorps != null ? rd(corps.clientHeight) >= planchierCorps : null,
@@ -290,6 +303,14 @@ test('B01 — /admin/pos au chargement (1366×768)', async () => {
   });
   expect(m.entete_panier, 'en-tête du panier présent').not.toBeNull();
   expect(m.corps_panier, 'corps du panier présent').not.toBeNull();
+  if (m.corps_panier && m.corps_panier.pixels_caches > 0) {
+    console.log(
+      `[AB-004] CORPS DU PANIER : ${m.corps_panier.pixels_caches} px de contenu CACHÉS `
+      + `(${m.corps_panier.hauteur_visible} px visibles pour ${m.corps_panier.hauteur_contenu} px `
+      + 'de contenu). La liste des articles est écrasée — le caissier ne voit pas ce que le '
+      + 'client a commandé.'
+    );
+  }
   console.log('[B01]', JSON.stringify({
     entete: m.entete_panier, corps: m.corps_panier, pied: m.pied_panier,
     grille: m.grille_categories && {

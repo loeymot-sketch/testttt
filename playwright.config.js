@@ -80,6 +80,23 @@ module.exports = defineConfig({
      */
     locale: 'fr-FR',
     timezoneId: 'Europe/Paris',
+    /*
+     * [2026-08-26] `locale` ne suffit PAS pour les champs de FORMULAIRE NATIFS.
+     *
+     * Vérifié après coup : avec `locale: 'fr-FR'` seul, `navigator.language` vaut bien
+     * « fr-FR », `Intl` résout Europe/Paris et `toLocaleDateString()` rend « 25/08/2026 ».
+     * Toutes les dates rendues par du JavaScript sont donc correctes.
+     *
+     * Mais un `<input type="datetime-local">` continuait d'afficher « mm/dd/yyyy, --:-- -- » :
+     * Chromium dessine ses contrôles natifs d'après la langue de son INTERFACE, pas d'après
+     * `navigator.language`. Il faut le lui dire au lancement.
+     *
+     * Sans cette ligne, chaque campagne exhibe un champ de date au format américain sur une
+     * caisse française — et quiconque relit les captures est à un pas d'ouvrir un faux P1.
+     */
+    launchOptions: {
+        args: ['--lang=fr-FR'],
+    },
     ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
     screenshot: 'only-on-failure',
     video: 'off',
