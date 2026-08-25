@@ -17,7 +17,19 @@ const { loginAsAdmin } = require('./helpers/login');
  * garde ce qui compte vraiment : le DOM RÉELLEMENT SERVI, après build, dans un navigateur.
  */
 
-const MUR = 'http://127.0.0.1:8000/admin/order-status-screen';
+/*
+ * ADRESSE RELATIVE, ET C'EST LE COEUR DU TEST.
+ *
+ * Premier jet : « http://127.0.0.1:8000/admin/order-status-screen ». Le harnais ouvre la
+ * session sur `localhost:8000` (baseURL) — 127.0.0.1 est une AUTRE ORIGINE, donc aucun
+ * cookie, donc page NON CONNECTEE. Les assertions « pas de Deconnexion, pas d'adresse
+ * d'administration » etaient alors trivialement vraies : il n'y a pas d'en-tete d'admin
+ * quand personne n'est connecte. Le test passait au vert en ne prouvant RIEN.
+ *
+ * Le defaut qu'on garde ne se produit QUE connecte. L'adresse doit donc etre relative, et
+ * le garde `sessionOuverte()` ci-dessous refuse de conclure quoi que ce soit sans session.
+ */
+const MUR = '/admin/order-status-screen';
 
 /**
  * Un garde anti-vide : sans lui, une page blanche (assets absents, erreur PHP rendue en
@@ -35,11 +47,48 @@ async function murVraimentRendu(page) {
     return corps;
 }
 
+/**
+ * Refuse de conclure si la session n'est pas ouverte.
+ *
+ * Sans ce garde, une session perdue (cookie expire, mauvaise origine, connexion echouee)
+ * transforme CHAQUE assertion d'absence en vert automatique. C'est exactement ce qui est
+ * arrive au premier jet de ce fichier.
+ */
+async function sessionOuverte(page) {
+    const url = page.url();
+    expect(
+        /\/login(\?|$)/.test(url),
+        `SESSION PERDUE : la page a atterri sur « ${url} ». Toutes les assertions d'absence `
+        + 'de ce fichier seraient alors trivialement vraies — un vert qui ne prouve rien. '
+        + 'Verifier baseURL et l\'origine des adresses (relatives, jamais absolues).'
+    ).toBe(false);
+
+    // La session de cette application vit dans l'etat Vuex persiste, PAS dans une cle
+    // `auth_token` ni dans un cookie `laravel_session` : l'authentification passe par un
+    // jeton Sanctum, et le seul cookie present est `XSRF-TOKEN`. Un premier jet de ce garde
+    // cherchait les mauvaises cles et rougissait sur une session parfaitement ouverte.
+    const connecte = await page.evaluate(() => {
+        try {
+            const brut = window.localStorage.getItem('vuex');
+            if (!brut) return false;
+            return /"(token|authStatus)"\s*:\s*("|true)/.test(brut);
+        } catch (_) {
+            return false;
+        }
+    });
+    expect(
+        connecte,
+        'aucune trace de session : le test ne peut pas prouver l\'absence d\'en-tete '
+        + 'd\'administration sur une page ou personne n\'est connecte.'
+    ).toBe(true);
+}
+
 test.describe('E-005 — mur de statut client', () => {
     test('le DOM servi ne contient NI identité d\'admin NI sortie de session', async ({ page }) => {
         await loginAsAdmin(page);
         await page.goto(MUR, { waitUntil: 'networkidle', timeout: 60_000 });
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(4000);
+        await sessionOuverte(page);
 
         await murVraimentRendu(page);
         const dom = await page.content();
@@ -64,7 +113,8 @@ test.describe('E-005 — mur de statut client', () => {
     test('aucune navbar ni menu d\'administration n\'est monté', async ({ page }) => {
         await loginAsAdmin(page);
         await page.goto(MUR, { waitUntil: 'networkidle', timeout: 60_000 });
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(4000);
+        await sessionOuverte(page);
 
         await murVraimentRendu(page);
 
@@ -79,7 +129,8 @@ test.describe('E-005 — mur de statut client', () => {
     test('le mur affiche bien SON contenu — le correctif ne l\'a pas vidé', async ({ page }) => {
         await loginAsAdmin(page);
         await page.goto(MUR, { waitUntil: 'networkidle', timeout: 60_000 });
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(4000);
+        await sessionOuverte(page);
 
         const corps = await murVraimentRendu(page);
 
@@ -99,7 +150,8 @@ test.describe('E-005 — mur de statut client', () => {
 
         await loginAsAdmin(page);
         await page.goto(MUR, { waitUntil: 'networkidle', timeout: 60_000 });
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(4000);
+        await sessionOuverte(page);
 
         const corps = await murVraimentRendu(page);
 

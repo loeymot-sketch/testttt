@@ -162,7 +162,11 @@ describe('C-002 — la colonne ACTION collante ne doit RIEN laisser transparaît
         const css = componentStyle();
 
         const theadRule = css.match(/:deep\(\.db-table-head\)\s*\{[^}]*background[^:]*:\s*([^;]+)/);
-        const celluleRule = css.match(/\.db-table-head\s+\.hist-action-col\s*\{[^}]*background[^:]*:\s*([^;]+)/);
+        // [2026-08-26] La regex exigeait que « { » suive IMMÉDIATEMENT le sélecteur. Quand la
+        // règle est devenue une LISTE — la colonne STATUT ayant été épinglée elle aussi et
+        // partageant le même fond — elle a cessé de matcher, et ce test a rougi sur un code
+        // parfaitement correct. On tolère donc les sélecteurs voisins jusqu'à l'accolade.
+        const celluleRule = css.match(/\.db-table-head\s+\.hist-action-col[^{]*\{[^}]*background[^:]*:\s*([^;]+)/);
 
         expect(theadRule, 'le thead doit déclarer un fond').not.toBeNull();
         expect(celluleRule, 'la cellule d\'en-tête collante doit déclarer un fond').not.toBeNull();

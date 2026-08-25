@@ -1312,6 +1312,7 @@
         "cash_sales_in_period": "Ventes en espèces sur la période",
         "cash_reconciliation_gap": "Écart",
         "cash_source_unknown": "Non rattachée",
+        "payment_moot": "Sans objet",
         "cash_source_unknown_help": "Paiement dont la commande n'existe plus en base. Le montant reste compté dans le total : il a bien été encaissé.",
         "cash_reconciliation_gap_none": "Aucun écart",
         "cash_reconciliation_gap_help": "Différence entre les ventes encaissées en espèces et les mouvements réellement enregistrés au tiroir. Un écart non nul demande une explication : appoint, prélèvement, ou saisie oubliée.",
