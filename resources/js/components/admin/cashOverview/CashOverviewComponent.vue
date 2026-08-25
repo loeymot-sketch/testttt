@@ -157,18 +157,47 @@
                             </div>
                             <div>
                                 <!--
-                                    [FIX-3] Was `label.cash_collected_today` over
-                                    the session-LIFETIME figure — the page said
-                                    « aujourd'hui » about cash taken 45 days
-                                    earlier, and contradicted the mode breakdown
-                                    right below it. Now: the period figure, under
-                                    a period label.
+                                    [FIX-3] Le chiffre etait celui de TOUTE la session sous un
+                                    libelle « aujourd'hui » : la page parlait d'especes prises 45
+                                    jours plus tot. Restreint a la periode.
+
+                                    [AUDIT-SUPERVISEUR 2026-08-25 · D-001, P0] La contradiction
+                                    SUBSISTAIT, parce que restreindre le chiffre ne suffisait pas :
+                                    le libelle disait « Especes ENCAISSEES », donc des ventes, sur
+                                    un nombre qui est la somme signee des MOUVEMENTS DU TIROIR
+                                    (appoints, prelevements, saisies manuelles) du seul tiroir
+                                    ouvert. Deux grandeurs differentes sous deux libelles quasi
+                                    identiques, a 40 px l'une de l'autre : la banniere annoncait
+                                    7,50 € quand « Repartition par mode » montrait 5,00 € et que
+                                    la page ne contenait que deux lignes especes a 2,50 €. Les
+                                    2,50 € restants n'etaient NULLE PART.
+
+                                    On nomme donc chaque grandeur, et surtout on affiche leur
+                                    ECART — c'est lui le signal de piste d'especes que cette
+                                    banniere pretend surveiller, et il n'etait affiche nulle part.
                                 -->
+                                <span class="text-gray-600">{{ $t('label.cash_sales_in_period') }}:</span>
+                                <strong
+                                    class="ml-1"
+                                    data-testid="cash-overview-reconciliation-sales"
+                                >{{ formatMoneyEuro(ventesEspecesPeriode) }}</strong>
+                            </div>
+                            <div>
                                 <span class="text-gray-600">{{ $t('label.cash_collected_in_period') }}:</span>
                                 <strong
                                     class="ml-1"
                                     data-testid="cash-overview-reconciliation-collected"
                                 >{{ formatMoneyEuro(cashSession.cash_collected_in_period) }}</strong>
+                            </div>
+                            <div :title="$t('label.cash_reconciliation_gap_help')">
+                                <span class="text-gray-600">{{ $t('label.cash_reconciliation_gap') }}:</span>
+                                <strong
+                                    class="ml-1"
+                                    :class="ecartEspeces === 0 ? 'text-emerald-800' : 'text-red-700'"
+                                    data-testid="cash-overview-reconciliation-gap"
+                                >{{ ecartEspeces === 0
+                                    ? $t('label.cash_reconciliation_gap_none')
+                                    : formatMoneyEuro(ecartEspeces) }}</strong>
                             </div>
                             <div>
                                 <span class="text-gray-600">{{ $t('label.expected_in_drawer') }}:</span>
@@ -437,10 +466,56 @@ export default {
     computed: {
         // Render fixed source order : caisse / borne / livreur, populating
         // zero-count buckets so the dashboard layout stays stable.
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · D-001] Les ventes encaissees en especes sur la
+         * periode — LA MEME SOURCE que le bloc « Repartition par mode » affiche juste en
+         * dessous. C'est tout l'objet du correctif : les deux chiffres de la banniere
+         * doivent etre comparables a ce que la page montre par ailleurs, sinon la banniere
+         * contredit la page.
+         */
+        ventesEspecesPeriode() {
+            const modes = (this.summary && this.summary.by_mode) || {};
+            const espece = modes.cash || modes.espece || modes['Espèce'] || null;
+
+            return espece ? Number(espece.total || 0) : 0;
+        },
+
+        /**
+         * L'ECART, arrondi au centime. C'est le signal que cette banniere existe pour
+         * donner et qu'elle ne donnait pas : un tiroir dont les mouvements ne collent pas
+         * aux ventes demande une explication (appoint, prelevement, saisie oubliee).
+         */
+        ecartEspeces() {
+            const brut = this.ventesEspecesPeriode
+                - Number((this.cashSession && this.cashSession.cash_collected_in_period) || 0);
+
+            return Math.round(brut * 100) / 100;
+        },
+
         displayedSources() {
+            /*
+             * [AUDIT-SUPERVISEUR 2026-08-25 · D-002] UN TOTAL DONT LA DECOMPOSITION NE BOUCLE PAS.
+             *
+             * Mesure : « GRAND TOTAL 247,70 € / 27 tx » contre « BORNE 222,70 € / 17 tx », caisse
+             * et livreur a zero. 25,00 € et 10 transactions — 10 % du chiffre de la periode —
+             * n'apparaissaient dans AUCUNE carte, sans le moindre avertissement.
+             *
+             * Cause : cette liste etait FIGEE sur trois cles. Le grand total, lui, vient de
+             * `summary.total`, qui contient tout. Toute autre cle de `by_source` — en pratique
+             * `unknown`, le seau des paiements dont la commande n'existe plus — etait jetee en
+             * silence. J'avais expose ces orphelins cote serveur plus tot dans cette mission ;
+             * l'ecran les rejetait toujours. Un correctif a moitie fait ment aussi bien qu'une
+             * absence de correctif.
+             *
+             * On garde les trois cles connues pour que la mise en page reste stable meme a zero,
+             * et on ajoute TOUTE cle reellement presente. Un total qui ne boucle pas devient
+             * impossible a afficher sans le dire.
+             */
             const known = ['caisse', 'borne', 'livreur'];
             const stats = (this.summary && this.summary.by_source) || {};
-            return known.map((key) => ({
+            const autres = Object.keys(stats).filter((k) => !known.includes(k));
+
+            return known.concat(autres).map((key) => ({
                 key,
                 label: this.sourceLabel(key),
                 stat: stats[key] || { count: 0, total: 0 },
@@ -620,6 +695,12 @@ export default {
                 case 'caisse':  return this.$t('label.source_caisse');
                 case 'borne':   return this.$t('label.source_borne');
                 case 'livreur': return this.$t('label.source_livreur');
+                // [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Le `default` rendait la CLE BRUTE :
+                // une pastille portant littéralement le mot anglais « unknown » s'affichait
+                // dans la colonne Source, au milieu de pastilles traduites, sur un produit à
+                // locale immuable. Ce seau a un sens métier — un paiement dont la commande
+                // n'existe plus — il mérite son nom, en français.
+                case 'unknown': return this.$t('label.cash_source_unknown');
                 default:        return s || '—';
             }
         },
