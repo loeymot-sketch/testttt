@@ -47,6 +47,51 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-26 — LE « TAMPER » NF525 EST UN FAUX POSITIF. PROUVÉ. AUCUNE ALTÉRATION.**
+>
+> Contrôle post-déploiement demandé par le propriétaire (« deploy et vérifie si tout est bon »).
+> Tout est en ligne et sain — sauf que `fiscal:verify-chain --all` annonce toujours
+> **`TAMPER audit_logs.id=1`**. Cette alarme traînait depuis des semaines sans explication.
+> Elle en a une maintenant, et **la chaîne est intacte**.
+>
+> 🪤 **`verifyChain` S'ARRÊTE À LA PREMIÈRE LIGNE FAUTIVE.** Il annonce « id=1 » et ne dit RIEN
+> des 1 208 suivantes. Lire sa sortie comme « une seule ligne est en cause » est une erreur —
+> je l'ai commise avant de balayer. Balayage complet en lecture seule (1 209 lignes) :
+> · **chaînage INTACT** — 0 lien `prev_hash` rompu, 0 trou d'id ⇒ **aucune ligne retirée ni
+>   insérée**. C'est ÇA, la propriété qui compte pour NF525 ;
+> · mais **711 lignes sur 1 209 (59 %)** ne se reproduisaient avec aucun secret « connu » —
+>   bien plus que ce que l'alarme laissait croire ;
+> · **les 711 se reproduisent TOUTES avec `FISCAL_AUDIT_SECRET_BRANCH_1` du `.env`.
+>   Irréductibles : 0.** Falsification : aucune.
+>
+> **CAUSE EXACTE** — `AuditLogService::secretFor()` (~l.322) appelle **`env('FISCAL_AUDIT_SECRET_BRANCH_'.$id)`**.
+> Sous `php artisan config:cache`, Laravel **ne charge pas le `.env`** : `env()` rend `null`, et la
+> signature bascule silencieusement sur le secret GLOBAL `config('fiscal.audit_secret')`
+> (`config/fiscal.php:31`, une chaîne — la variante par branche n'y est jamais déclarée).
+> Le secret qui signe une ligne dépend donc de l'ÉTAT DU CACHE DE CONFIG du processus qui
+> l'écrit. D'où **14 plages qui alternent** dans le temps, avec des bascules à quelques minutes
+> d'intervalle autour des déploiements (`config:clear` → `config:cache`) — un motif impossible
+> à expliquer par une rotation de clé, et qui m'a mis sur la piste.
+> Le rattrapage `candidateVerificationBranches` de 2026-08-08 ne pouvait pas y arriver : ses
+> deux candidats repassent par le MÊME `secretFor()` cassé.
+>
+> ⛔ **NON CORRIGÉ, VOLONTAIREMENT.** `AuditLogService.php` est zone gelée §7 et NF525 est porte
+> humaine §10. Et le correctif « évident » est un piège : déclarer `audit_secret` en TABLEAU dans
+> `config/fiscal.php` (seul endroit où `env()` est légitime au moment de la mise en cache) ferait
+> **lever une `RuntimeException`** pour toute branche absente du tableau — `secretFor()` teste
+> `is_array` puis `is_string`, sans repli. Ça casserait la signature ailleurs. Décision owner + tests.
+>
+> ⚠️ **Effet de bord de MON déploiement, à savoir** : j'ai rejoué `config:clear` + `config:cache`.
+> Les lignes écrites désormais sont signées avec le secret GLOBAL. Elles se vérifient bien — mais
+> les 711 historiques resteront refusées tant que le code n'acceptera pas les deux secrets.
+>
+> **Ce qui est vérifié bon par ailleurs** : dépôts locaux et VPS alignés (`ec04c926`, arbre 0 ligne,
+> 0 commit de retard) · 5 surfaces de production **200** (borne, login, caisse, KDS, OSS) · bundles
+> RÉELLEMENT SERVIS porteurs du travail · borne 0 erreur JS, 0 libellé i18n brut · carte prod
+> M 6,90 / L 8,90 / **XL 10,90**, ordre 1-2-3 · site `tacos.html` 200 annonçant « Tacos XL 10,90 » ·
+> porte SEO **16/16** contre la production, parité des 39 prix · file d'attente `[0] OK`,
+> `lecayenne-worker` RUNNING.
+
 > **2026-08-26 — MODIFIER UN PRODUIT DU PANIER SANS TOUT RECOMPOSER. DÉPLOYÉ, BORNE ET SITE.**
 >
 > `/goal` du propriétaire : « s'il veut modifier un produit du panier, ça ouvre le récap, et à
