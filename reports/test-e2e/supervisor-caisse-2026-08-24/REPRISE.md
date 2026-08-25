@@ -20,9 +20,38 @@ identiques. **Non atteinte.** Ne pas déclarer vert.
 
 ---
 
+## ⬛ MISE À JOUR — les DEUX P0 sont fermés (commit `6f5d2f4bf`)
+
+Les 5 implémenteurs ayant été coupés, l'orchestrateur a traité le P0 lui-même, en
+séquentiel. **Les deux P0 avaient la même racine** — la jointure interne — et le
+même correctif les ferme :
+
+| | avant | après |
+|---|---|---|
+| total 23-24/08 | 17 lignes / **222,70 €** | 27 lignes / **247,70 €** |
+| espèces dans la répartition | 0 ligne / **0,00 €** | 10 lignes / **25,00 €** |
+
+Les 25,00 € retrouvés dans la répartition sont **exactement** ce que le bandeau
+affichait : la contradiction P0-2 est levée par la fermeture de P0-1.
+
+**Nuance corrigée au rapport du superviseur** : il parlait d'un modèle à
+suppression DOUCE. Vérifié : ces 10 commandes sont ABSENTES de la table (0/10),
+pas soft-deleted. Numéros `COUNTER-<id>-<horodatage>`, 2,50 € chacune → très
+probablement du résidu de nettoyage e2e (les aides suppriment la commande, pas sa
+transaction). **Les 97,40 € d'orphelins en base sont donc du bruit de test, pas du
+chiffre d'affaires perdu.** Le défaut de code restait entier.
+
+Preuve : 4 cas, **éprouvés par mutation** (2 rougissent quand on remet la jointure
+interne). `tests/Feature/Pos` **349 verts**, `tests/Feature/Cash` **101 verts**.
+
+**État à reprendre : 0 P0 · 14 P1.** Le verdict global passerait de ROUGE à AMBRE
+— à confirmer par un round 3 de supervision, non joué.
+
+---
+
 ## Ce qui BLOQUE encore (à reprendre en priorité)
 
-### P0-1 · Le grand total de l'écran d'argent perd des lignes
+### ~~P0-1 · Le grand total de l'écran d'argent perd des lignes~~ ✅ FERMÉ
 `app/Http/Controllers/Admin/CashOverviewController.php:135-144` — `whereHas('order', …)`
 est une jointure **INTERNE** sur un modèle à **suppression douce**.
 Mesuré sur 23–24/08 : **27 lignes / 247,70 € → 17 lignes / 222,70 €**. Les 10 lignes
