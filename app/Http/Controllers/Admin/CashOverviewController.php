@@ -133,13 +133,33 @@ class CashOverviewController extends AdminController
                     ]);
                 },
             ])
-            ->whereHas('order', function ($q) use ($isGlobalAdmin, $branchFilter) {
-                if ($isGlobalAdmin) {
-                    $q->withoutGlobalScope(BranchScope::class);
-                }
-                if ($branchFilter !== null) {
-                    $q->where('branch_id', $branchFilter);
-                }
+            // [AUDIT-SUPERVISEUR 2026-08-25 · P0] `whereHas` est une jointure INTERNE :
+            // un encaissement dont la commande n'existe plus disparaissait PUREMENT du
+            // total, sans un mot. Mesuré sur 23-24/08 : 27 lignes / 247,70 € tombaient à
+            // 17 / 222,70 €, et les 10 lignes perdues étaient exactement les 25,00 €
+            // d'espèces que le bandeau de réconciliation, lui, continuait d'afficher —
+            // d'où la contradiction qu'on a d'abord imputée au bandeau, à tort.
+            //
+            // Un écran d'argent n'a pas le droit de perdre une ligne en silence. On garde
+            // donc les orphelins : ils sont comptés dans le total ET annoncés à part
+            // (`orphan_payments` ci-dessous), pour qu'ils soient VUS au lieu d'être
+            // absorbés sans bruit. Le filtre de branche ne s'applique qu'aux lignes qui
+            // ont une commande — un orphelin n'a aucune branche à comparer, et
+            // l'escamoter reviendrait à recréer le défaut pour les gestionnaires de
+            // branche.
+            ->where(function ($outer) use ($isGlobalAdmin, $branchFilter) {
+                $outer
+                    ->whereHas('order', function ($q) use ($isGlobalAdmin, $branchFilter) {
+                        if ($isGlobalAdmin) {
+                            $q->withoutGlobalScope(BranchScope::class);
+                        }
+                        if ($branchFilter !== null) {
+                            $q->where('branch_id', $branchFilter);
+                        }
+                    })
+                    ->orWhereDoesntHave('order', function ($q) {
+                        $q->withoutGlobalScope(BranchScope::class);
+                    });
             })
             ->orderByDesc('created_at')
             ->orderByDesc('id');
@@ -333,6 +353,11 @@ class CashOverviewController extends AdminController
             // Flagged discrepancy block — non-null `count` > 0 means cash was
             // collected with no drawer session and is unaccounted in any session.
             'unrecorded_cash' => $unrecordedCash,
+            // [AUDIT-SUPERVISEUR 2026-08-25 · P0] Encaissements dont la commande
+            // n'existe plus. Ils sont COMPTÉS dans le total (les corriger en les
+            // excluant était précisément le défaut) mais annoncés ici, pour qu'un
+            // écart de rapprochement ait une explication au lieu d'un trou.
+            'orphan_payments' => $this->summarizeOrphanPayments($startBound, $endBound),
             'meta'         => [
                 'from'      => $startBound->toIso8601String(),
                 'to'        => $endBound->toIso8601String(),
@@ -359,6 +384,42 @@ class CashOverviewController extends AdminController
      *
      * @return array{count:int, total:float, total_currency_price:string, order_ids:array<int,int>, message:?string}
      */
+    /**
+     * [AUDIT-SUPERVISEUR 2026-08-25 · P0] Encaissements orphelins : la transaction
+     * existe, sa commande n'existe plus.
+     *
+     * Ces lignes étaient AVALÉES par le `whereHas('order')` du constructeur de
+     * requête — une jointure interne. Elles ne faisaient pas baisser un compteur
+     * visible : elles n'apparaissaient nulle part, ce qui est pire. C'est ce qui
+     * a produit la contradiction entre le bandeau de réconciliation et la
+     * répartition par mode de la même page.
+     *
+     * Elles sont désormais comptées dans le total ET listées ici. Un rapprochement
+     * de caisse doit pouvoir EXPLIQUER un écart ; un écran qui escamote la cause
+     * transforme un problème comptable en mystère.
+     *
+     * @return array{count:int, total:float, total_currency_price:string, order_ids:array<int,int>}
+     */
+    private function summarizeOrphanPayments(Carbon $startBound, Carbon $endBound): array
+    {
+        $orphelins = Transaction::query()
+            ->whereBetween('created_at', [$startBound, $endBound])
+            ->where('type', 'payment')
+            ->whereDoesntHave('order', function ($q) {
+                $q->withoutGlobalScope(BranchScope::class);
+            })
+            ->get(['id', 'order_id', 'amount']);
+
+        $total = round((float) $orphelins->sum('amount'), 2);
+
+        return [
+            'count'                => $orphelins->count(),
+            'total'                => $total,
+            'total_currency_price' => \App\Libraries\AppLibrary::currencyAmountFormat($total),
+            'order_ids'            => $orphelins->pluck('order_id')->filter()->unique()->values()->all(),
+        ];
+    }
+
     private function summarizeUnrecordedCash(
         Carbon $startBound,
         Carbon $endBound,
