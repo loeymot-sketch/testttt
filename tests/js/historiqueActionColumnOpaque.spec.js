@@ -148,6 +148,74 @@ describe('C-002 — la colonne ACTION collante ne doit RIEN laisser transparaît
         expect(v.opaque, `en-tête : background = "${v.raw}" — la ligne DATE transparaît dessous`).toBe(true);
     });
 
+    // [AUDIT-SUPERVISEUR 2026-08-25 · C-020] LE TROU DE CE VERROU, ET IL ÉTAIT AU PIRE ENDROIT.
+    // La version précédente ne comparait les COULEURS que sur les rangs impairs. L'en-tête et
+    // le survol étaient affirmés « opaques » — mais jamais confrontés à la couleur de la ligne
+    // qu'ils recouvrent. Or ce sont EXACTEMENT les deux états que le superviseur a trouvés faux :
+    // en-tête peint en blanc sur un thead beige, et survol qui ne teinte QUE la cellule ACTION.
+    // Opaque ne suffit pas : une cellule opaque de la MAUVAISE couleur laisse une couture, un
+    // rectangle d'une autre teinte au milieu du tableau. On compare donc les quatre états.
+    it('EN-TÊTE : la cellule collante reprend LA MÊME source que le thead', () => {
+        // Le harnais ne charge pas `app.css` : comparer des couleurs CALCULÉES ici
+        // renverrait du vide et prouverait n'importe quoi. On compare donc les
+        // DÉCLARATIONS, que le harnais lit vraiment — c'est ce qu'il peut établir.
+        const css = componentStyle();
+
+        const theadRule = css.match(/:deep\(\.db-table-head\)\s*\{[^}]*background[^:]*:\s*([^;]+)/);
+        const celluleRule = css.match(/\.db-table-head\s+\.hist-action-col\s*\{[^}]*background[^:]*:\s*([^;]+)/);
+
+        expect(theadRule, 'le thead doit déclarer un fond').not.toBeNull();
+        expect(celluleRule, 'la cellule d\'en-tête collante doit déclarer un fond').not.toBeNull();
+
+        // On compare la SOURCE de la teinte — le nom de la variable de thème — et non
+        // l'expression littérale : `var(--x, #fff)` et `var(--x)` désignent la même
+        // couleur, et exiger l'égalité textuelle ferait rougir sur un repli, qui est
+        // une amélioration. Ce qu'on interdit, c'est DEUX SOURCES DIFFÉRENTES.
+        const source = (v) => {
+            const t = v.trim().replace(/\s+/g, '').replace(/!important$/, '');
+            const m = t.match(/^var\((--[a-z0-9-]+)/i);
+            return m ? m[1] : t;
+        };
+        expect(
+            source(celluleRule[1]),
+            `couture d'en-tête : la cellule peint "${celluleRule[1].trim()}" sur un thead `
+            + `"${theadRule[1].trim()}". Opaque ne suffit pas — il faut la MÊME teinte, `
+            + 'sinon un rectangle d\'une autre couleur au bout du bandeau.'
+        ).toBe(source(theadRule[1]));
+    });
+
+    it('SURVOL : la cellule collante prend la teinte de survol de sa ligne', () => {
+        // Le défaut mesuré : `app.css` pose le survol sur le `<tr>` avec `!important`,
+        // la règle du round précédent visait le `<td>` — au survol d'un rang impair,
+        // SEULE la cellule ACTION virait au pêche, en plein milieu d'une ligne grise.
+        const css = componentStyle();
+
+        const survolCellule = css.match(
+            /\.db-table-body-tr:hover\s+\.hist-action-col[^{]*\{[^}]*background[^:]*:\s*([^;]+)/
+        );
+        expect(survolCellule, 'aucune règle de survol sur la colonne collante').not.toBeNull();
+
+        const survolLigne = css.match(
+            /:deep\(\.db-table-body-tr:hover\)\s*\{[^}]*background[^:]*:\s*([^;]+)/
+        );
+
+        if (survolLigne) {
+            const source = (v) => {
+                const t = v.trim().replace(/\s+/g, '').replace(/!important$/, '');
+                const m = t.match(/^var\((--[a-z0-9-]+)/i);
+                return m ? m[1] : t;
+            };
+            expect(
+                source(survolCellule[1]),
+                'la cellule collante doit prendre la MÊME teinte de survol que sa ligne'
+            ).toBe(source(survolLigne[1]));
+        } else {
+            // Pas de règle de ligne lisible ici : on exige au moins que la cellule
+            // déclare une teinte explicite, jamais un héritage.
+            expect(survolCellule[1]).not.toMatch(/inherit|transparent/);
+        }
+    });
+
     it('RANG PAIR : fond opaque — sinon la date s\'imprime À TRAVERS les boutons', () => {
         // nth-child(even) côté CSS = index 1 et 3 dans la liste (0-based).
         const cells = wrapper.findAll('td.hist-action-col');

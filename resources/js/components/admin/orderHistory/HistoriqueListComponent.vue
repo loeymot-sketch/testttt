@@ -722,8 +722,16 @@ export default {
     /* Rangs PAIRS + repli : fond du tableau. Jamais `inherit`, jamais absent. */
     background-color: rgb(255, 255, 255);
 }
-/* En-tête : `.db-table-head` ne pose aucun fond — sans ça, « DACTIEON ». */
-.db-table-head .hist-action-col { background-color: rgb(255, 255, 255); }
+/* En-tête. [AUDIT-SUPERVISEUR 2026-08-25 · C-018] Le blanc posé au round précédent
+   créait une COUTURE : le superviseur a relevé au pixel (1120,340) = (247,243,236)
+   pour le thead contre (1155,340) = (255,255,255) pour la cellule collante. Opaque,
+   oui — mais de la mauvaise couleur, donc un rectangle blanc au bout d'un bandeau
+   beige. Le commentaire d'alors affirmait que `.db-table-head` ne pose aucun fond ;
+   la ligne 568 du même fichier le contredisait — `:deep(.db-table-head)` lui pose bien
+   `var(--pos-v5-bg-subtle)`. On reprend LA MÊME VARIABLE plutôt qu'un RGB figé : une
+   couleur recopiée à la main se désynchronise au premier changement de thème, et on
+   aurait recréé la couture ailleurs. */
+.db-table-head .hist-action-col { background: var(--pos-v5-bg-subtle, #f4f4f6); }
 /* Rangs IMPAIRS : recopie EXACTE de la zébrure `app.css:464` (#f9fafb). */
 .db-table.stripe .db-table-body-tr:nth-child(odd) .hist-action-col {
     background-color: rgb(249, 250, 251);
