@@ -112,14 +112,26 @@ class KitchenBundledAddonCollapser
             //    la moindre consigne — leur badge tombait donc à VIDE : plus de « MENU »,
             //    plus de boisson, la cuisine ne préparait plus la formule. On ne jette
             //    plus : on transmet au parent, qui les affiche dans SON bloc.
+            // [AUDIT-SUPERVISEUR 2026-08-25 · E-009] Les EXTRAS de la ligne repliée étaient
+            // perdus eux aussi — sur le TICKET IMPRIMÉ comme sur l'écran. Un supplément
+            // facturé ne peut pas être effacé par un repli d'AFFICHAGE : le repli existe
+            // pour alléger la lecture, pas pour retirer de l'information payée.
+            // Jumeau strict du correctif JS `kdsBundledAddons.js`.
             $consignes = $this->kitchenDirectives($this->instructionOf($item));
+            $extrasLegues = $this->extrasDeLaLigne($item);
             for ($k = 0; $k < $consumed; $k++) {
                 $parent = array_shift($claimers[$name]);
-                if ($parent === null || $consignes === []) {
+                if ($parent === null) {
+                    continue;
+                }
+                if ($consignes === [] && $extrasLegues === []) {
                     continue;
                 }
                 foreach ($consignes as $ligne) {
-                    $legs[$parent][] = $ligne;
+                    $legs[$parent]['consignes'][] = $ligne;
+                }
+                foreach ($extrasLegues as $extra) {
+                    $legs[$parent]['extras'][] = $extra;
                 }
             }
 
@@ -135,11 +147,14 @@ class KitchenBundledAddonCollapser
 
         // 4. Appliquer les legs sur des CLONES — jamais sur le modèle source, qui reste la
         //    ligne comptable intacte (aucune écriture, aucun effet prix/TVA/fiscal).
-        foreach ($legs as $parentIndex => $lignes) {
+        foreach ($legs as $parentIndex => $legue) {
             if (! isset($out[$parentIndex])) {
                 continue;
             }
             $parent = $out[$parentIndex];
+            $clone = null;
+
+            // 4a. Consignes d'instruction (comportement d'origine, inchangé).
             $instruction = $this->instructionOf($parent);
             $deja = [];
             foreach ($this->kitchenDirectives($instruction) as $existante) {
@@ -147,7 +162,7 @@ class KitchenBundledAddonCollapser
             }
 
             $ajouts = [];
-            foreach ($lignes as $ligne) {
+            foreach (($legue['consignes'] ?? []) as $ligne) {
                 $cle = $this->directiveKey($ligne);
                 if (isset($deja[$cle])) {
                     continue;
@@ -155,16 +170,116 @@ class KitchenBundledAddonCollapser
                 $deja[$cle] = true;
                 $ajouts[] = $ligne;
             }
-            if ($ajouts === []) {
-                continue;
+            if ($ajouts !== []) {
+                $clone = clone $parent;
+                $clone->instruction = $this->appendDirectives($instruction, $ajouts);
             }
 
-            $clone = clone $parent;
-            $clone->instruction = $this->appendDirectives($instruction, $ajouts);
-            $out[$parentIndex] = $clone;
+            // 4b. [E-009] Extras hérités, écrits dans la source que le rendu LIRA :
+            // l'instantané NF525 quand il porte déjà des extras, l'ancienne colonne sinon.
+            $extras = $legue['extras'] ?? [];
+            if ($extras !== []) {
+                $clone = $this->avecExtrasHerites($clone ?? clone $parent, $extras);
+            }
+
+            if ($clone !== null) {
+                $out[$parentIndex] = $clone;
+            }
         }
 
         return array_values($out);
+    }
+
+    /**
+     * [AUDIT-SUPERVISEUR 2026-08-25 · E-009] Extras d'une ligne, lus avec la MÊME
+     * priorité que le rendu : l'instantané NF525 d'abord, l'ancienne colonne ensuite.
+     *
+     * @return array<int, mixed>
+     */
+    private function extrasDeLaLigne(mixed $item): array
+    {
+        $snap = $item->composition_snapshot ?? null;
+        if (is_string($snap)) {
+            $snap = json_decode($snap, true);
+        }
+        if (is_array($snap) && isset($snap['extras']) && is_array($snap['extras']) && $snap['extras'] !== []) {
+            return array_values($snap['extras']);
+        }
+
+        $legacy = $item->item_extras ?? null;
+        if (is_string($legacy)) {
+            $legacy = json_decode($legacy, true);
+        }
+
+        return is_array($legacy) ? array_values($legacy) : [];
+    }
+
+    /** Clé de dédoublonnage d'un extra : son nom, quelle que soit la forme qui le porte. */
+    private function extraKey(mixed $extra): string
+    {
+        $nom = '';
+        foreach (['extra_name', 'name', 'item_name'] as $cle) {
+            $candidat = trim((string) (is_array($extra) ? ($extra[$cle] ?? '') : ($extra->$cle ?? '')));
+            if ($candidat !== '') {
+                $nom = mb_strtolower($candidat);
+                break;
+            }
+        }
+
+        return $nom !== '' ? $nom : json_encode($extra);
+    }
+
+    /**
+     * Clone portant ses extras + ceux hérités d'une ligne repliée, écrits dans la source
+     * que le rendu lira réellement. Jamais de mutation du modèle source.
+     *
+     * @param  array<int, mixed>  $herites
+     */
+    private function avecExtrasHerites(mixed $parent, array $herites): mixed
+    {
+        $snap = $parent->composition_snapshot ?? null;
+        if (is_string($snap)) {
+            $snap = json_decode($snap, true);
+        }
+        $snapPorte = is_array($snap) && isset($snap['extras']) && is_array($snap['extras']) && $snap['extras'] !== [];
+
+        $actuels = $snapPorte ? array_values($snap['extras']) : $this->extrasDeLaLigne($parent);
+        if (! $snapPorte) {
+            $legacy = $parent->item_extras ?? null;
+            if (is_string($legacy)) {
+                $legacy = json_decode($legacy, true);
+            }
+            $actuels = is_array($legacy) ? array_values($legacy) : [];
+        }
+
+        $vus = [];
+        foreach ($actuels as $e) {
+            $vus[$this->extraKey($e)] = true;
+        }
+
+        $ajouts = [];
+        foreach ($herites as $e) {
+            $cle = $this->extraKey($e);
+            if (isset($vus[$cle])) {
+                continue;
+            }
+            $vus[$cle] = true;
+            $ajouts[] = $e;
+        }
+        if ($ajouts === []) {
+            return $parent;
+        }
+
+        $fusionnes = array_merge($actuels, $ajouts);
+
+        if ($snapPorte) {
+            $snap['extras'] = $fusionnes;
+            $parent->composition_snapshot = $snap;
+        } else {
+            $parent->item_extras = json_encode($fusionnes);
+        }
+
+        return $parent;
     }
 
     /**
