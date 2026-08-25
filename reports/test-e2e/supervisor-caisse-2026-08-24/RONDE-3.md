@@ -7,7 +7,8 @@ Branche `goal/caisse-vision-2026-08-24` · 2026-08-25 → 26
 ## Verdict : PAS de convergence
 
 La règle est : deux cycles consécutifs, P0 + P1 = 0, jeux de constats identiques.
-La ronde 3 a ouvert **1 P0 et 12 P1**. J'en ai clos 11. Il en reste 3.
+La ronde 3 a ouvert **1 P0 et 12 P1**. J'en ai clos 11, un douzième en partie.
+Il en reste 2 entiers et 1 partiel.
 
 On ne peut donc pas déclarer la mission validée, et je ne l'ai pas déployée en production.
 
@@ -82,11 +83,23 @@ Mesures produites par le harnais lui-même : `corps_panier.hauteur = 28` pour
 nom, programmation) prend 331 px sur 482. À l'écran, un bandeau blanc vide là où le gabarit
 1366 affiche « Aucun article. Sélectionnez un produit dans la grille. »
 
-Aggravant : l'instrumentation calcule `pixels_caches` sur l'en-tête (= 0) et **jamais sur le
-corps**. La vague est passée au vert alors que ses propres chiffres portaient le défaut.
+Aggravant : l'instrumentation calculait `pixels_caches` sur l'en-tête (= 0) et **jamais sur
+le corps**. La vague passait au vert alors que ses propres chiffres portaient le défaut.
 
-Non corrigé : il demande de rendre l'en-tête repliable sous ~650 px de haut, ce qui est un
-choix d'ergonomie sur la surface la plus sensible du produit.
+**Traité en partie.** La mesure manquante est posée — et elle a immédiatement dit PLUS que le
+constat : 141 px cachés en 1024×600 comme annoncé, mais aussi **67 px cachés en 1366×768**
+dès que le panier contient une vraie composition. Le défaut n'était pas cantonné au petit
+écran.
+
+Le bandeau blanc est corrigé : sous 700 px de haut, l'état vide se compacte (icône masquée,
+marges resserrées). Contenu 172 → 75 px, cachés 141 → 44. Vérifié à l'écran, « Aucun
+article. Sélectionnez un produit dans… » est LISIBLE. La seconde ligne reste coupée.
+
+Ce que je n'ai PAS fait, et pourquoi : rendre sa place au corps du panier. Le plancher y est
+retiré **volontairement** quand le panier est vide, parce que ces 108 px manquaient
+exactement au champ « Nom du client » — le nom qui s'imprime sur le ticket cuisine, mandat
+propriétaire déjà perdu une fois. Rouvrir cet arbitrage est un choix d'ergonomie sur la
+surface la plus sensible du produit : il appartient au propriétaire, pas à moi.
 
 ### AB-011 — un correctif sans preuve de non-régression
 
