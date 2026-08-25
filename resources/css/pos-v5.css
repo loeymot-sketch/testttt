@@ -812,6 +812,76 @@
     overscroll-behavior: contain;
 }
 
+/* [AUDIT-SUPERVISEUR 2026-08-25 · B-014] RENDRE LE DÉFILEMENT DÉCOUVRABLE.
+   Le correctif ci-dessus a supprimé le débordement peint — plus rien ne recouvre une
+   commande cliquable. Mais il a envoyé la facture ailleurs : sur un panier chargé,
+   l'en-tête cache désormais 243 de ses 450 px (54 %) SANS AUCUN INDICE. Disparaissent
+   le sélecteur de type de commande, le champ « Nom du client », le téléphone,
+   « Programmer » — et « Annuler la dernière ligne », un bouton qui n'existe dans la
+   page QUE lorsque le panier a des lignes, donc caché exactement au moment où il sert.
+
+   Le superviseur a donné la clé sans la nommer : le CORPS du panier, lui, laisse voir
+   une sous-ligne tranchée en deux, et c'est ça l'invite au défilement standard. Il a
+   d'ailleurs refusé de déposer un constat sur cette ligne coupée, en disant qu'elle est
+   la bonne pratique. L'en-tête n'a rien de tel : il coupe pile entre deux blocs.
+
+   DEUX SIGNAUX, parce qu'un seul ne suffit pas sur une caisse tactile :
+   1. une barre de défilement PERMANENTE (les barres flottantes de Chrome n'apparaissent
+      qu'au geste — inutile pour DÉCOUVRIR qu'un geste est possible), assez large pour
+      être vue ET saisie au doigt ;
+   2. une ombre interne en bas de zone, qui donne au bord la profondeur qu'un bord franc
+      n'a pas. On n'utilise PAS un `mask-image` : il estomperait le texte de la dernière
+      ligne visible, or c'est peut-être le nom du client.
+   Aucun nombre de hauteur n'est réintroduit ici — la règle « ce qui ne tient pas défile »
+   reste entière. */
+.pos-v5-cart .pos-v5-cart__head {
+    /* `scrollbar-gutter: stable` est la SEULE déclaration qui garantisse que la barre
+       OCCUPE DE LA PLACE. Sans elle, macOS et Chrome rendent des barres FLOTTANTES qui
+       n'apparaissent qu'au geste : mesuré ici, `offsetWidth - clientWidth` valait 0 alors
+       que 243 px étaient cachés. Une barre qu'on ne voit qu'une fois qu'on a fait le geste
+       ne sert à rien pour DÉCOUVRIR que le geste existe — c'est mon propre correctif que
+       le test a pris en défaut, pas le produit. */
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--pos-v5-ink-muted, #8A8278) transparent;
+}
+
+/* LA BARRE DE DÉFILEMENT NE PEUT PAS SERVIR D'INDICE — constat mesuré, pas supposé.
+   Sur ce moteur de rendu, les barres sont FLOTTANTES : `offsetWidth - clientWidth`
+   vaut 0 alors que 243 px sont cachés, et ni `scrollbar-width`, ni un
+   `::-webkit-scrollbar` stylé, ni `scrollbar-gutter: stable` n'y changent quoi que ce
+   soit. Une barre qu'on ne voit qu'APRÈS avoir fait le geste ne fait pas découvrir le
+   geste. Les déclarations ci-dessus restent pour les plateformes à barres classiques ;
+   elles ne sont pas l'affordance.
+
+   L'AFFORDANCE RÉELLE est ce dégradé, ÉPINGLÉ au bas de la zone qui défile
+   (`position: sticky`) : il reste visible tant qu'il y a quelque chose sous le pli, et
+   il s'efface de lui-même quand on atteint le bas. Sa `margin-top` négative le fait
+   flotter par-dessus le contenu sans lui prendre un pixel de hauteur — donc sans
+   reprendre de place au champ « Nom du client » qu'on vient de rendre atteignable. */
+.pos-v5-cart .pos-v5-cart__head::after {
+    content: '';
+    display: block;
+    position: sticky;
+    bottom: 0;
+    height: 16px;
+    margin-top: -16px;
+    pointer-events: none;
+    background: linear-gradient(to top, var(--pos-v5-bg-panel, #fff) 15%, rgba(255, 255, 255, 0) 100%);
+}
+.pos-v5-cart .pos-v5-cart__head::-webkit-scrollbar {
+    width: 10px;
+}
+.pos-v5-cart .pos-v5-cart__head::-webkit-scrollbar-thumb {
+    background: var(--pos-v5-ink-muted, #8A8278);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.pos-v5-cart .pos-v5-cart__head::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 /* [RED-TEAM 2026-08-19] EXCEPTION LIVRAISON — l'en-tête reprend sa hauteur libre
    tant que le formulaire de livraison est déplié.
    Ce formulaire vit DANS l'en-tête et sa liste de suggestions d'adresse est en
