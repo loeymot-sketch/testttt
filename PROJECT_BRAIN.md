@@ -47,6 +47,57 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-26 — MODIFIER UN PRODUIT DU PANIER SANS TOUT RECOMPOSER. NON DÉPLOYÉ, DÉLIBÉRÉMENT.**
+>
+> `/goal` du propriétaire : « s'il veut modifier un produit du panier, ça ouvre le récap, et à
+> côté de chaque chose il pourra le modifier, et ça ouvre directement la page dédiée — s'il veut
+> changer la viande, s'il veut changer la formule », borne ET site. Avec une condition qu'il a
+> posée lui-même : **« tu ne déploieras jamais qu'avec les tests d'abus »**.
+>
+> 🔴 **RIEN N'EST DÉPLOYÉ. C'est le respect de sa condition, pas un oubli.** Branche
+> `feat/tacos-xl-3-viandes-2026-08-24`, VPS laissé sur `29f8856d`. Le site est commité EN LOCAL,
+> non poussé — sur ce dépôt, pousser `main` déclenche Vercel.
+>
+> **CE QUI EXISTAIT DÉJÀ, et qu'il ne fallait pas réécrire** : `P-MEGA-05` donnait au panier
+> borne un snapshot, la restauration des sélections, le remplacement en place et une annulation
+> non destructive. Et le **site avait déjà** un « Modifier » par ligne de récap (`wizard-v2.jsx`
+> l.828, contraste 5,18:1 documenté). Il manquait, des deux côtés, le POINT D'ARRIVÉE.
+>
+> **BORNE** (sous `LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25`, SHA
+> `f445b1a8…` → `fcbe3755…`, baseline mise à jour, sentinelle FrozenZone verte) :
+> · le récap porte un « Modifier » par section, qui émet le **TYPE** d'étape — jamais un index :
+>   les étapes actives dépendent du produit, un burger n'a pas d'étape pain ;
+> · `goToStepType()` résout le type contre `activeSteps` ; un type inconnu/vide **ne déplace rien** ;
+> · `openOnRecapIfEditing()` n'ouvre sur le récap qu'EN ÉDITION. Posé aux **DEUX** points
+>   d'hydratation : le panier passe par `fetchItemById`, et ne le brancher que sur la prop `item`
+>   aurait laissé la fonctionnalité **morte en production tout en passant les tests** ;
+> · la ligne du panier portait un crayon gris de 16 px dans un cercle de 34 (sous le minimum
+>   tactile, et rien n'annonçait qu'on POUVAIT modifier) → bouton « Modifier » de 44 px.
+>
+> **SITE** : `WizardFlow` accepte `editState`, repart de la composition du client et ouvre sur le
+> récap ; la ligne du panier propose « Modifier » ; le retour **REMPLACE** la ligne — une
+> duplication ici, c'est un client qui paie deux fois. Index purgé à chaque fermeture, sinon il
+> détournerait l'ajout suivant. `.jsx` recompilés (le site sert du compilé depuis le 08/08).
+>
+> **VÉRIFICATIONS** · 12 tests d'ABUS verts (`kioskModifierAbus.spec.js`) : ligne jamais perdue
+> ni dupliquée, bonne ligne remplacée, validation APRÈS annulation qui ajoute au lieu d'écraser,
+> deux « Modifier » d'affilée, index négatif, snapshot en copie profonde, quantité bornée 1–20,
+> devis invalidé. · 11 tests de contrat. · **Parcours réel mesuré à 1080×1920** : récap atteint,
+> boutons rendus 106×44 px, clic viandes → « QUELLE VIANDE ? », 0 erreur JS. · Vitest complet
+> **3 667 verts / 446 fichiers**. · Portes du site vertes (parité 38 prix, CSS critique, chaque
+> `.js` correspond à son `.jsx`, aucun secret).
+>
+> 🪤 **LA PORTE DE ZONE GELÉE SE FRANCHIT EN DEUX COMMITS, PAS AVEC `--no-verify`.**
+> Le hook lit le message du commit **PRÉCÉDENT** (`git log -1`) pour y trouver un `LOCK_*.md`.
+> On commite donc le LOCK + le non-gelé d'abord, le fichier gelé ensuite. `--no-verify` est
+> interdit par §3quater et n'a pas été utilisé.
+>
+> 🔴 **CE QUI RESTE, et pourquoi je ne l'ai pas fait** : (1) la **contresignature owner du LOCK**
+> (case ☐) — porte humaine §10 pour toute zone gelée ; (2) les **tests d'abus du SITE** n'existent
+> pas encore : la borne satisfait la condition du propriétaire, le site NON, donc le site ne part
+> pas. Le stepper reste volontairement non cliquable : y sauter librement permettrait d'atteindre
+> une étape jamais visitée en contournant les validations, donc de composer un produit incomplet.
+
 > **2026-08-25 (nuit) — BORNE : LA CATÉGORIE ENTIÈRE TIENT À L'ÉCRAN, QUEL QU'EN SOIT LE NOMBRE**
 >
 > HEAD prod **`b44f2c28`** (== origin), avance rapide, arbre du VPS **0 ligne avant ET après**
