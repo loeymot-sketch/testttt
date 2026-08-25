@@ -118,6 +118,167 @@ Plateforme restaurant fast-food complète :
 > (`lastEventAt` n'est réarmé que par un event Echo livré ⇒ `eventsStale` toujours vrai), et
 > aucune pause sur onglet caché — zone partagée §6, non traité ici · `wave-s4` S-4.2 instable
 > (compte des cartes sur une base MySQL partagée) · **rien n'est poussé** (CLAUDE.md §3quater).
+> **2026-08-25 — OPTIMISATION : −2,7 Mo PAR CHARGEMENT + FIN DE LA PHOTO FLOUE SUR LA BORNE**
+>
+> HEAD prod **`8cb7183d`** (== origin). Owner : « go deeper optimisation ». J'ai MESURÉ avant de
+> proposer, et les deux gisements trouvés n'étaient pas ceux que j'attendais.
+>
+> **① NGINX NE COMPRESSAIT NI LE JS NI LE CSS — depuis toujours.**
+> `gzip on;` était bien actif, mais **`gzip_types` était resté commenté** dans
+> `/etc/nginx/nginx.conf` (défaut Debian/Ubuntu) : or le défaut nginx ne compresse que
+> `text/html`. Le HTML sortait donc gzippé — ce qui donnait l'illusion que la compression
+> marchait — pendant que les bundles partaient en clair. `scripts/deploy/nginx.conf.template`
+> ne prescrit `gzip_types` NULLE PART : ce n'est pas une dérive de config, ça n'a jamais été fait.
+>
+> | mesuré depuis l'extérieur | avant | après |
+> |---|---|---|
+> | `app.js` | 2 380 385 o | **566 757 o** |
+> | `vendor.js` | 974 701 o | **270 936 o** |
+> | `app.css` | 209 208 o | **31 933 o** |
+> | **total** | **3 564 294 o** | **869 626 o** (**−75,6 %**) |
+>
+> Bénéficie à TOUTES les surfaces (borne, caisse, KDS, OSS, web). Bloc marqué
+> `[GZIP-TEXTE-2026-08-25]`, images volontairement EXCLUES (déjà compressées).
+> `nginx -t` puis rechargement à chaud, 0 coupure. Sauvegarde :
+> `/home/ubuntu/backups-deploy/nginx.conf.avant-gzip-20260825-140440` — retour arrière =
+> restaurer + `systemctl reload nginx`. ⚠️ **Config SERVEUR, hors git** : elle ne survivra pas à
+> une reconstruction de machine tant que `nginx.conf.template` ne la porte pas.
+>
+> **② LA PHOTO DE LA BORNE ÉTAIT AGRANDIE 1,5× — et c'est moi qui l'ai causé.**
+> Source servie **320×213**, affichée jusqu'à **478×318**. La vignette « ≤320 px » n'était pas une
+> erreur : dimensionnée le 2026-07-06 pour des cartes de **370 px**, elle avait fait chuter une
+> grille de 15-32 Mo à quelques dizaines de Ko. C'est mon passage à des cartes de **765 px** la
+> veille qui l'a rendue trop petite. Source disponible : 1536×1024 → rien à re-photographier.
+> Régénéré à **640 px** (`images:generate-pos-thumbs --max=640 --force`) : 640×427 pour 45 Ko
+> au lieu de 13,5 Ko. Coût assumé : la CAISSE partage ces fichiers et ses tuiles sont petites —
+> elle paie ces octets sans rien y gagner ; une vignette dédiée borne serait plus juste mais
+> demande dossier + résolveur + tests. Arbitrage owner : le simple.
+>
+> 🪤 **PIÈGE QUE J'AI DÉCLENCHÉ ET DÛ RÉPARER — les vignettes sont SUIVIES PAR GIT.**
+> `--force` sur le VPS a rendu son arbre **sale (126 fichiers)** : exactement le cycle
+> d'auto-empoisonnement corrigé le 22/08, qui fait avorter le déploiement SUIVANT. Pire, ma
+> génération locale et celle du VPS diffèrent à l'octet (GD/libwebp distincts), donc un simple
+> `pull` aurait refusé. Réparé proprement : commit des vignettes locales → push →
+> `git checkout -- public/images/menu/thumbs` sur le VPS pour écarter les siennes → `ff-only`.
+> **Une seule source de vérité, arbre VPS de nouveau à 0 ligne.** Règle à retenir : un artefact
+> VERSIONNÉ ne se régénère pas sur le serveur, il se régénère chez soi et se déploie.
+>
+> **RESTE MESURÉ, NON FAIT (arbitrage owner)** : la photo n'occupe que **22 % (M) / 30 % (L) /
+> 39 % (XL)** de la surface de sa carte — la boîte média fait 725×346 et la photo y est limitée par
+> la HAUTEUR, pas par la largeur. L'agrandir suppose une boîte plus haute, donc de reprendre au
+> texte les ~150 px de la carte. Non tranché.
+>
+> Vérifs : 6 surfaces en 200, `git status` VPS 0 ligne, worker vivant, nginx actif, vignette
+> servie par la prod re-téléchargée et mesurée à **640×427 / 44 872 o**.
+
+> **2026-08-25 (nuit) — BORNE : PRODUITS PLEINE LARGEUR + ÉCHELLE DE TAILLES VISIBLE — DÉPLOYÉ**
+>
+> HEAD prod **`95904e7d`** (== origin), avance rapide `4398e4e35..95904e7df`, 1 commit. Le
+> propriétaire, après avoir vu le Tacos XL sur la borne : « je voulais toujours les produits ça
+> prennent la taille complète de la borne […] pas juste des petits produits » et « entre le M le L
+> et le XL ça doit être visiblement […] avec l'œil on fera la différence entre les tailles ».
+>
+> ⚠️ **CES DEUX DEMANDES AVAIENT DÉJÀ ÉTÉ FAITES ET IMPLÉMENTÉES LE 2026-07-11** (blocs
+> `[BORNE-UX 2026-07-11]`). Elles avaient régressé **sans qu'aucun test ne rougisse** :
+> · la disposition « grandes cartes » ne couvrait que 1 ou 2 produits — passer les Tacos à 3 a fait
+>   basculer la catégorie dans la grille 2 colonnes ;
+> · `--size-l` couvrait L, XL ET XXL, donc deux tailles vendues 2 € d'écart s'affichaient pareil.
+> 12 tests (`tests/js/kioskGrilleTaillePleineLargeur.spec.js`) ferment ce trou.
+>
+> **MESURÉ À LA VRAIE RÉSOLUTION BORNE (portrait 1080×1920, Playwright headless)**
+> AVANT : cartes **370×506** (un tiers d'un écran de 1080), 3 produits en 2 colonnes = 2+1 avec une
+> case vide et ~40 % d'écran blanc ; images L et XL **366×355 TOUTES LES DEUX**, au pixel près.
+> APRÈS : cartes **765 px** pleine largeur, images **491×234 (M) → 579×276 (L) → 668×318 (XL)**.
+>
+> 🔎 **TROISIÈME DÉFAUT, NON SIGNALÉ ET ANTÉRIEUR AU TACOS XL** : la borne affichait **L, XL, M**.
+> `kioskItemDisplayOrder.js::compareKioskItemsDisplay` traite **`order = 0` comme « aucun ordre
+> défini »** et le renvoie EN DERNIER (`oa > 0 ? oa : POSITIVE_INFINITY`) — c'est délibéré, ça garde
+> les formules d'appoint derrière les produits signature. Or le Tacos M portait `order = 0` : la
+> borne montrait donc « Tacos L » AVANT « Tacos M » **depuis toujours**. Corrigé par la DONNÉE
+> (échelle 1/2/3 dans `EnsureTacosXl3ViandesCommand`), pas en touchant un comparateur partagé par
+> toutes les catégories.
+>
+> 🪤 **PIÈGE DE VÉRIFICATION À RETENIR — le hash du chunk ne prouve rien.** Après
+> `npx mix --production` sur le VPS, `kiosk-shell.cee1f829.js` portait **le même hash qu'avant**.
+> Lu tel quel : « le build n'a rien produit ». **Faux** : `KioskCategoriesComponent` n'appartient pas
+> à ce chunk, il est dans `js/app.js` (bundle NON versionné, busté par `?id=` du manifeste).
+> Vérification qui tranche : `grep` du CONTENU réellement servi en HTTPS —
+> `/js/app.js?id=b251ee97…` contient bien `kiosk-product-grid--trio` ET
+> `kiosk-product-image--size-xxl`. **Toujours valider par le contenu, jamais par un nom de fichier.**
+>
+> **DÉPLOIEMENT** : build lancé en `ubuntu` (la condition qui avait fait échouer celui du 22/08),
+> **`git status` à 0 ligne AVANT ET APRÈS le build**, caches config/route/view reconstruits,
+> `menu:ensure-tacos-xl` rejoué pour l'ordre. Payload borne de production : **Tacos M (1 viande) →
+> Tacos L (2) → Tacos XL (3)**. 6 surfaces en 200. Zones gelées : **0 ligne**.
+> Vitest COMPLET **3 534 verts / 434 fichiers**, PHPUnit Menu **162 verts**.
+>
+> 🔴 **RÉSERVE ASSUMÉE, c'est le prix du choix owner « toutes les catégories »** : 15 boissons en
+> une colonne = **3 par écran, cinq écrans de défilement**. J'ai resserré la hauteur au-delà de
+> 3 produits pour limiter la casse, et je l'ai dit avant de le faire. Corollaire visuel : pour un
+> produit étroit (bouteille, canette), la carte pleine largeur laisse beaucoup de blanc de côté.
+>
+> 🟡 **TROUVÉ, PAS CORRIGÉ (arbitrage owner)** : « Grande Frites » et « Petite Frites » ne reçoivent
+> **aucun** cran de taille. Le motif de `productSizeClass` n'accepte la taille qu'en **FIN** de nom
+> (`…$`), or le français la met devant. C'est le même défaut que celui du L/XL, sur une autre
+> catégorie, et il est ANTÉRIEUR. Verrouillé tel quel par un test qui le NOMME comme un constat,
+> plutôt qu'élargi en douce.
+
+> **2026-08-24 (soir) — CARTE : TACOS L À 8,90 € ET TACOS XL 3 VIANDES À 10,90 € — DÉPLOYÉ EN PLEIN SERVICE**
+>
+> Owner : « deploy ». HEAD prod **`4a636c05`** (== origin), avance rapide `43b120c7d..4a636c053`,
+> **1 commit**, aucun `--force`. `git status` du VPS : **0 ligne avant ET après**. Ni dépendance,
+> ni fichier front dans le lot (`git diff --name-only` sur `resources/`, `package*.json`,
+> `composer.*` : vide) → **ni `composer install`, ni `npm ci`, ni `npx mix`**. Seule la migration
+> et les caches étaient nécessaires.
+>
+> **CE QUI A CHANGÉ EN BASE DE PRODUCTION** (migration `2026_08_24_120000`, 333 ms, la seule en
+> attente) : Tacos L (#97) **7,90 → 8,90 €** ; **Tacos XL (#121) créé à 10,90 €**, 3 emplacements
+> « Viande N », `is_new=1`, 11 extras, 3 formules, photo `tacos-cayenne.webp`. Sauvegarde
+> d'avant-migration prise ET VÉRIFIÉE (`predeploy-tacos-xl-20260824-195421.sql.gz`, 1,5 Mo,
+> `gzip -t` OK + ligne « Dump completed » présente) — un dump non relu n'est pas un filet.
+>
+> **POURQUOI LE NOM « Tacos XL » ET PAS « Tacos 3 viandes »** : le nombre de viandes n'est stocké
+> nulle part comme un nombre, chaque surface le DÉDUIT du nom. `pos-wizard.js::detectViandeCount`
+> (GELÉ), `kioskTacosSize.js` et le ticket cuisine lisent tous les trois `XL → 3`. Sous un autre
+> nom, la caisse serait retombée à UNE viande incluse et aurait **facturé les 2ᵉ et 3ᵉ au client** —
+> un défaut d'argent invisible en base. Zone gelée : **0 ligne**.
+>
+> **VÉRIFIÉ SUR LE CONTENU SERVI, jamais depuis le `git push`** : payload borne réel
+> (`KioskMenuService::build`) → `viande_count` 1 / 2 / **3** et la même photo sur les trois tacos ;
+> 6 surfaces en **200** (`/api/health`, `/login`, `/admin/pos`, `/kiosk/idle`, `/kds`,
+> `/admin/order-status-screen`) ; photo servie en HTTPS (thumb **20 532 o**, source **636 051 o**,
+> taille identique au fichier local) ; worker recyclé (pid 2146124 → 2147603).
+>
+> 🪤 **PIÈGE DE MÉTHODE À RETENIR — un contrôle de santé sur `127.0.0.1` ment.** Mes 6 surfaces
+> répondaient **404** au premier passage. Cause : le vhost est `server_name
+> vps-418872ac.vps.ovh.net 51.210.111.124` — une requête sur `127.0.0.1` sans en-tête `Host` ne
+> matche aucun bloc et tombe sur le défaut. **Lu tel quel, ça se raconte comme une panne totale
+> après déploiement.** Toujours passer `-H "Host: vps-418872ac.vps.ovh.net"` (et `-L`/`--resolve`
+> pour les assets : nginx redirige 80→443, un `301` n'est pas un échec).
+>
+> **DÉPLOYÉ EN PLEIN SERVICE, ET LE SERVICE A CONTINUÉ** : `audit_logs` montre des
+> `order.created.pos` à 20:42, 20:44, 20:49, 21:03, 21:29, 21:31 et un
+> `order.counter_payment_confirmed` à 21:34 — donc **après** la migration de 19:56. La caisse a
+> encaissé pendant et après, sans rien casser.
+>
+> 🔴 **NF525 — UN POINT QUE JE N'AI PAS RÉSOLU, ET QUE JE NE MAQUILLE PAS.**
+> `fiscal:verify-chain --all` renvoie **TAMPER `audit_logs.id=1`**, alors que l'entrée du 22/08
+> consigne « CHAIN OK ». Ce qui est PROUVÉ : (1) la ligne id=1 date du **2026-06-25**, deux mois
+> avant ; (2) son `current_hash` est **IDENTIQUE dans la sauvegarde prise AVANT ma migration** et
+> dans la base après — comparaison faite, pas supposée ; (3) ma migration n'écrit que dans les
+> tables catalogue et n'a produit **aucune** ligne `audit_logs` (les 12 lignes de la soirée sont
+> toutes des événements de caisse réels) ; (4) `.env` n'a pas bougé depuis le **2026-08-19 20:45**,
+> donc **pas de rotation de secret** entre le « CHAIN OK » du 22/08 et le TAMPER d'aujourd'hui —
+> l'explication « artefact de rotation » du 2026-08-08b ne suffit donc PAS ici.
+> ⇒ **Mon déploiement n'en est pas la cause, mais le verdict a bel et bien CHANGÉ entre les deux
+> déploiements sans que je sache pourquoi.** À trancher par le workstream fiscal, pas par moi.
+> (État antérieurement consigné comme connu/gaté : 2026-07-31 « TAMPER NF525 id=1 = connu/gaté ».)
+>
+> **SITE WEB : NON DÉPLOYÉ, ET C'EST DÉLIBÉRÉ.** Le miroir `/Users/1millnonstop/Downloads/web` est
+> commité en local (`4d1dfcb` : Tacos XL, prix, + 3 libellés « tacos M & L » devenus faux dans le
+> bandeau d'accueil, « L'histoire du Cayenne » et le pied de page). Ce dépôt **n'a aucun remote**
+> et n'est pas le dossier lié au projet Vercel (cf. 2026-08-07b, déploiement orphelin) — il ne
+> peut pas être publié depuis cette machine.
 
 > **2026-08-22 (soir) — GOAL CAISSE DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI**
 >
