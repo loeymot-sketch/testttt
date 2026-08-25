@@ -47,6 +47,59 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-25 — OPTIMISATION : −2,7 Mo PAR CHARGEMENT + FIN DE LA PHOTO FLOUE SUR LA BORNE**
+>
+> HEAD prod **`8cb7183d`** (== origin). Owner : « go deeper optimisation ». J'ai MESURÉ avant de
+> proposer, et les deux gisements trouvés n'étaient pas ceux que j'attendais.
+>
+> **① NGINX NE COMPRESSAIT NI LE JS NI LE CSS — depuis toujours.**
+> `gzip on;` était bien actif, mais **`gzip_types` était resté commenté** dans
+> `/etc/nginx/nginx.conf` (défaut Debian/Ubuntu) : or le défaut nginx ne compresse que
+> `text/html`. Le HTML sortait donc gzippé — ce qui donnait l'illusion que la compression
+> marchait — pendant que les bundles partaient en clair. `scripts/deploy/nginx.conf.template`
+> ne prescrit `gzip_types` NULLE PART : ce n'est pas une dérive de config, ça n'a jamais été fait.
+>
+> | mesuré depuis l'extérieur | avant | après |
+> |---|---|---|
+> | `app.js` | 2 380 385 o | **566 757 o** |
+> | `vendor.js` | 974 701 o | **270 936 o** |
+> | `app.css` | 209 208 o | **31 933 o** |
+> | **total** | **3 564 294 o** | **869 626 o** (**−75,6 %**) |
+>
+> Bénéficie à TOUTES les surfaces (borne, caisse, KDS, OSS, web). Bloc marqué
+> `[GZIP-TEXTE-2026-08-25]`, images volontairement EXCLUES (déjà compressées).
+> `nginx -t` puis rechargement à chaud, 0 coupure. Sauvegarde :
+> `/home/ubuntu/backups-deploy/nginx.conf.avant-gzip-20260825-140440` — retour arrière =
+> restaurer + `systemctl reload nginx`. ⚠️ **Config SERVEUR, hors git** : elle ne survivra pas à
+> une reconstruction de machine tant que `nginx.conf.template` ne la porte pas.
+>
+> **② LA PHOTO DE LA BORNE ÉTAIT AGRANDIE 1,5× — et c'est moi qui l'ai causé.**
+> Source servie **320×213**, affichée jusqu'à **478×318**. La vignette « ≤320 px » n'était pas une
+> erreur : dimensionnée le 2026-07-06 pour des cartes de **370 px**, elle avait fait chuter une
+> grille de 15-32 Mo à quelques dizaines de Ko. C'est mon passage à des cartes de **765 px** la
+> veille qui l'a rendue trop petite. Source disponible : 1536×1024 → rien à re-photographier.
+> Régénéré à **640 px** (`images:generate-pos-thumbs --max=640 --force`) : 640×427 pour 45 Ko
+> au lieu de 13,5 Ko. Coût assumé : la CAISSE partage ces fichiers et ses tuiles sont petites —
+> elle paie ces octets sans rien y gagner ; une vignette dédiée borne serait plus juste mais
+> demande dossier + résolveur + tests. Arbitrage owner : le simple.
+>
+> 🪤 **PIÈGE QUE J'AI DÉCLENCHÉ ET DÛ RÉPARER — les vignettes sont SUIVIES PAR GIT.**
+> `--force` sur le VPS a rendu son arbre **sale (126 fichiers)** : exactement le cycle
+> d'auto-empoisonnement corrigé le 22/08, qui fait avorter le déploiement SUIVANT. Pire, ma
+> génération locale et celle du VPS diffèrent à l'octet (GD/libwebp distincts), donc un simple
+> `pull` aurait refusé. Réparé proprement : commit des vignettes locales → push →
+> `git checkout -- public/images/menu/thumbs` sur le VPS pour écarter les siennes → `ff-only`.
+> **Une seule source de vérité, arbre VPS de nouveau à 0 ligne.** Règle à retenir : un artefact
+> VERSIONNÉ ne se régénère pas sur le serveur, il se régénère chez soi et se déploie.
+>
+> **RESTE MESURÉ, NON FAIT (arbitrage owner)** : la photo n'occupe que **22 % (M) / 30 % (L) /
+> 39 % (XL)** de la surface de sa carte — la boîte média fait 725×346 et la photo y est limitée par
+> la HAUTEUR, pas par la largeur. L'agrandir suppose une boîte plus haute, donc de reprendre au
+> texte les ~150 px de la carte. Non tranché.
+>
+> Vérifs : 6 surfaces en 200, `git status` VPS 0 ligne, worker vivant, nginx actif, vignette
+> servie par la prod re-téléchargée et mesurée à **640×427 / 44 872 o**.
+
 > **2026-08-25 (nuit) — BORNE : PRODUITS PLEINE LARGEUR + ÉCHELLE DE TAILLES VISIBLE — DÉPLOYÉ**
 >
 > HEAD prod **`95904e7d`** (== origin), avance rapide `4398e4e35..95904e7df`, 1 commit. Le
