@@ -122,6 +122,33 @@ Correction de fond : émettre ces URL en relatif. À défaut : ajouter l'hôte d
 
 ## Vérification
 
+### PHPUnit : 11 rouges, et une affirmation que je dois corriger
+
+J'ai rapporté en cours de ronde que « la suite PHPUnit complète est passée (code 0) ».
+**C'était faux.** Je m'étais fié au code de sortie de l'enveloppe qui l'avait lancée, sans
+lire le résultat.
+
+L'état réel : **11 échecs, 2 incomplets, 36 ignorés, 5248 verts.**
+
+Ces 11 échecs sont **antérieurs à mon travail**, et je l'ai établi plutôt que supposé :
+
+- **10 des 11 passent EN ISOLATION.** Ce sont des artefacts d'ordonnancement de la suite
+  complète (pollution entre tests), pas des défauts : PrinterController ×3,
+  PrinterHostAllowlistSentinel, RolePermissionSeeder ×3, WithoutGlobalScopesAuditSentinel ×2,
+  Zone5PricingSsotConvergenceSentinel.
+
+- **Le 11ᵉ est réel** : `IdempotencyRequiredRoutesCoverageTest` signale trois routes portant
+  le middleware `idempotency` sans figurer dans `config('idempotency.required_routes')` —
+  `raw-materials/{rawMaterial}/adjust`, `pos-loyalty/credit-manual`,
+  `pos-loyalty/deduct-manual`. Le blame les date du **2026-08-14**, dix jours avant le début
+  de cette mission, et mon diff ne touche aucune de ces lignes. Hors de mon périmètre : je le
+  signale, je ne le corrige pas en douce.
+
+Les deux campagnes complètes (avant et après mes derniers commits) annoncent le même compte
+de 11.
+
+### Le reste
+
 - Vitest : **450 fichiers, 3685 verts**, 0 rouge
 - Zones gelées : **0 ligne** touchée sur les 33 commits de la mission
 - 4xx/5xx sur l'ensemble des captures : **0** (contre 67 en début de ronde — tous artefacts
