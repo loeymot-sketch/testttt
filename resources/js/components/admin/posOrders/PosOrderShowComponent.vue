@@ -26,11 +26,18 @@
                             <i class="lab lab-calendar-line lab-font-size-16"></i>
                             <span class="text-xs">{{ order.order_datetime }}</span>
                         </li>
-                        <li class="text-xs">
+                        <!--
+                            [AUDIT-SUPERVISEUR 2026-08-25 · C-003] La ligne s'affichait meme
+                            quand la valeur etait absente : « Type de paiement: » suivi de RIEN,
+                            sur une commande pourtant marquee « Payé » et « Livré ». Le `v-if`
+                            existant ne protegeait que la parenthese de note, pas la ligne.
+                            Une etiquette sans valeur ne renseigne pas : elle inquiete.
+                        -->
+                        <li class="text-xs" v-if="libellePaiement">
                             {{ $t('label.payment_type') }}:
 
                             <span class="text-heading">
-                                {{ posPaymentMethodEnumArray[order.pos_payment_method] }}
+                                {{ libellePaiement }}
 
                                 <span
                                     v-if="order.pos_payment_method !== enums.posPaymentMethodEnum.CASH && order.pos_payment_note">
@@ -744,6 +751,21 @@ export default {
         // sur toute commande borne Plan B en attente d'encaissement — c'est-à-dire le
         // mode de paiement le plus fréquent du parc. Une carte d'AFFICHAGE doit couvrir
         // TOUT l'enum ; seuls les SÉLECTEURS ont le droit d'être partiels.
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · C-003] Le libelle du mode de paiement, ou rien.
+         *
+         * `posPaymentMethodEnumArray[order.pos_payment_method]` rend `undefined` des que le
+         * mode est nul ou inconnu. Le gabarit affichait alors l'etiquette suivie du vide.
+         * On decide ICI si la ligne a quelque chose a dire, et le gabarit s'efface sinon.
+         */
+        libellePaiement: function () {
+            const m = this.order && this.order.pos_payment_method;
+            if (m === null || m === undefined || m === '') {
+                return '';
+            }
+
+            return this.posPaymentMethodEnumArray[m] || '';
+        },
         posPaymentMethodEnumArray: function () {
             return posPaymentMethodLabels(this.$t.bind(this));
         },
