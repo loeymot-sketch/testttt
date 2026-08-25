@@ -1277,6 +1277,8 @@
         "closing_amount": "Fonds final",
         "opening_total": "Total ouverture",
         "closing_total": "Total clôture",
+        "session_still_open_one": "{count} caisse encore ouverte, non comptée",
+        "session_still_open_many": "{count} caisses encore ouvertes, non comptées",
         "variance": "Écart",
         "opened_at": "Ouverte le",
         "closed_at": "Fermée le",
