@@ -1,5 +1,5 @@
 # PROTOCOLE DE SESSION — programme « Onboarding commerçant »
-## La loi commune aux 14 GOAL · version 2026-08-26 (corrigée par 8 audits adverses)
+## La loi commune aux 14 GOAL · version 2026-08-27 (corrigée par 14 audits adverses — les 14 GOAL relus)
 
 > **Tu viens de recevoir un prompt court. Ce fichier est le premier des trois qu'il t'ordonne de lire.**
 > Tu le lis EN ENTIER, tu le mémorises, et tu l'appliques pendant toute la mission sans qu'on te le rappelle.
@@ -315,11 +315,11 @@ base existante. 4. `php artisan test` nu. 5. Créer une commande, une session de
 
 ---
 
-# §14 — CORRECTIONS DU 2026-08-26 QUI PRIMENT SUR LES GOAL
+# §14 — CORRECTIONS VÉRIFIÉES QUI PRIMENT SUR LES GOAL (26 et 27/08)
 
-Huit audits adverses ont relu les prompts et les GOAL contre le code réel. Ce qui suit est **vérifié** et corrige le
-GOAL concerné. (Les six autres GOAL — ONB-09 à ONB-14 — n'ont pas pu être relus : la limite de session a tué les
-agents. Applique-leur les règles générales de ce protocole avec la même rigueur, et signale tout écart.)
+**Quatorze** audits adverses ont relu les prompts et les GOAL contre le code réel — les huit du 26/08, puis les six
+qui manquaient (ONB-09 à ONB-14), relus le **27/08**. Verdict : 14 × « corriger », 0 × « rien à dire ». Ce qui suit
+est **vérifié dans le code** et **prime sur le GOAL concerné**. La dette déclarée la veille est levée.
 
 **Toutes sessions**
 - Les chemins `recon/…` cités dans les GOAL sans préfixe se lisent
@@ -373,6 +373,74 @@ critère C3 porte sur **quatre** surfaces (borne, caisse, KDS, projection web), 
 dans `reports/audit/onboarding-commercant-2026-08-26/recon/Z5_stock_ingredients.md`, captures dans `…/recon/screens/Z5/`.
 
 ---
+
+**ONB-09** — Les **trois drapeaux d'animation sont à FAUX** dans le code livré : `pos.coupon_codes_enabled`
+(`config/pos.php:271` → `Frontend/CouponController` renvoie 422 « Les codes promo sont désactivés »),
+`kiosk.promo_enabled` (`config/kiosk.php:70`), `features.offers_enabled` (`config/features.php:27` →
+`OfferController` abort 403 sur `store`/`update`). Bascule-les dans le `.env` de ton worktree : **un refus dû au
+drapeau n'est pas le défaut « accepté au devis, refusé au commit »**. Coupons et Offres sont retirés du menu
+(`v1-hidden-modules.js:13-14`) mais restent accessibles à l'URL directe. ⚠️ **Collision de zone gelée** :
+`PricingService.php` est attribué à **ONB-03** sous G-PRIX (§5) ; ton G-PRIX-COUPON se tranche **par fiche avant W3**,
+jamais en écrivant le premier. Et lis `app/Http/Controllers/Admin/OfferController.php:31-36` : le code dit que sans
+câblage du `PricingService`, une offre activée serait **« affichée mais jamais facturée »** — activer les offres par
+simple réglage fabriquerait exactement le défaut que tu chasses. W2 dépend aussi d'une fiche ONB-05 (dé-cachage) :
+enchaîne W4 et W5 sans l'attendre. Tout ce que crée le brief Z6 se renomme `GOAL-ONB09` (preuve de nettoyage).
+
+**ONB-10** — **W1 de reconnaissance en lecture seule d'abord**, avant la révocation : la tâche de révocation dépend
+d'un middleware kiosk « à localiser en W1 ». Le critère C1 porte sur **trois** chemins, pas un :
+`KioskMachineService.php:176` (déconnexion), `:147` (désactivation) et `:108` (suppression) — chacun doit produire un
+401 en moins d'une seconde. Le **bypass d'auto-login n'a pas d'interrupteur** : `config/kiosk.php:211` et `:326` valent
+`env('APP_ENV') === 'local'` ; pour l'éteindre, bascule `APP_ENV` sur une valeur **non-local et surtout pas
+`production`** (`AppServiceProvider.php:190` refuse de démarrer), et déclare la bascule au journal. De
+`config/printing.php` tu ne possèdes que les **clés d'exposition** : le bloc gaté `BYPASS-P1` (l.1-14, 202-208) reste
+intouché. **G-LAN rouvre une décision de sécurité déjà tranchée** par le propriétaire le 13/08 (allowlist fermée) : tu
+proposes, tu ne l'ouvres pas d'autorité.
+
+**ONB-11** — **La vague A s'arrête après W1.** Tu exécutes W0 + W1 (brief Z8, livrable `recon/Z8_*.md`, top 10 des
+frictions, fiches) puis tu rends ton compte rendu ; W2 à W6 (composants partagés, `app.css`, `fr.json`) n'ouvrent que
+sur l'ordre explicite du propriétaire. **Ta convergence en vague A porte sur la stabilité de ta mesure**, pas sur
+`P0+P1 = 0` du produit : un défaut qui appartient à un autre GOAL se clôt par une **fiche émise**, jamais par un
+correctif, et ne te fait pas boucler. **Toutes tes fiches s'écrivent dans le §8 de ton propre rapport de mission** :
+les treize autres GOAL vivent dans d'autres worktrees, écrire chez eux ne leur parvient jamais. Le chronomètre de la
+première heure s'arrête **au clic « Enregistrer » sans valider** (ta ligne du §4 dit « lecture seule ») ; si une
+écriture est indispensable, préfixe `GOAL-ONB11` et prouve le `forceDelete`. axe-core : **6 pages en W1** (brief Z8),
+les 25 × 3 gabarits sont pour W4. Une entité `GOAL-ONB*` vue dans une liste est le jeu d'essai d'une autre session :
+jamais une friction commerçant, jamais supprimée.
+
+**ONB-12** — **Le pré-vol du §3 suppose une base peuplée ; la tienne est vide.** Il se lit pour toi : `migrate`
+d'abord, `/login` → 200 ensuite, compteurs et attestation NF525 **après** l'installation du socle — jamais contre
+`foodking_e2e`. Pas de `mysqldump` : ton filet est la branche `backup/pre-onb12-2026-08-26` + l'inventaire
+`git grep -il cayenne` figé. **G-DATA ne bloque pas ton pré-vol** : la base dédiée locale est un *instrument* ; le gate
+porte sur la **table `onboarding_progress`**, dont tu écris la proposition sans la créer. **Ta voie est bornée au §0.2
+de ton GOAL** : tout « Cayenne » situé dans la borne, `config/printing.php`, `config/app.php` ou `TaxTableSeeder`
+s'inventorie et part en **fiche**, jamais en édition. Et « zéro Cayenne » est une assertion **négative** : prouve que
+chaque page a rendu (200 + un marqueur métier attendu) et fais **rougir ton grep exprès** en injectant « Cayenne » —
+un instrument qui ne mord pas ne prouve rien (CLAUDE.md §3ter). Si ONB-03 ou ONB-10 manquent en W5, la preuve est
+**réduite et documentée** : ce n'est pas un P0 de ta voie.
+
+**ONB-13** — ⚠️ **Le cliquet réel est 64, pas 62** : `tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:67`
+porte `RETURN_TRUE_BASELINE = 64` au HEAD du programme (vérifié) ; ta cible ≤ 55 demande donc **9** suppressions, pas
+7 : mesure-le en W0 et corrige ton GOAL. **`security-review` se lance sur le diff de tes corrections (vague B)**, pas
+au pré-vol : sur un worktree neuf le diff de branche est vide et la compétence ne prouverait rien. La **matrice live
+se joue en lecture** avec les comptes déjà seedés ; toute **création** (filiale, rôle, jeton pour l'IDOR) vit en usine
+sqlite `:memory:`, jamais sur la base partagée. Les essais de **rafale** se font en test PHPUnit : `php artisan serve`
+sert une requête à la fois et tu prendrais son blocage pour un défaut de rate limit. **Aucune migration
+`settings_audit` avant G-DATA.** Si les propriétaires ne branchent pas tes FormRequests, tu clos avec les fiches
+**émises et datées**, en BLOQUÉ — tu ne restes pas en attente.
+
+**ONB-14** — ⚠️ **Trois faits d'instrument étaient faux, ils sont corrigés ici.** (1) À HEAD,
+`tests/Playwright/global-setup.js` fait **64 lignes et ne contient aucune garde d'identité** (vérifié : 0 occurrence
+de `FOODKING_E2E_DEDICATED_DB`) : il n'y a pas de liste de ports à modifier — copie la version à marqueur depuis
+l'arbre principal en la **déclarant** (§3, étape 8), ou pose ta propre garde. (2) Ton **jumeau PHP tourne sur MySQL
+`foodking_onb14`** (triggers NF525 réels) : pas sur le sqlite `:memory:` de `phpunit.xml:68-69`, pas sur la base de
+`.env.testing`, et **jamais avec `RefreshDatabase`** — il effacerait l'état zéro ; entre deux cycles tu restaures le
+dump. (3) **`php artisan foodking:installer` n'existe dans aucun commit** — c'est un livrable de ONB-12 : **ONB-12 ne
+peut donc pas être différé**, et s'il figure dans G-DIFF tu arrêtes et tu le remontes. ⛔ **Jamais
+`E2E_BACKEND_AVAILABLE=1` sur ta base dédiée** : `global-setup.js` y seede admin, opérateurs, borne `kiosk-lecayenne`
+et catalogue — ce qui détruit ta preuve « 0 article, 0 borne, 0 Cayenne ». Les variantes adverses du §S font partie de
+**chaque** cycle comparé (sinon tu ne compares pas deux fois la même journée). Tu écris tes propres specs, helpers et
+rapports : « aucun implémenteur » vise les **fichiers produit**. Et tu termines par la **clôture du programme**
+(`RAPPORT_FINAL_PROGRAMME.md`, `PROJECT_BRAIN`, `SYSTEM_MAP`, ligne G0), pas après les deux cycles.
 
 # §15 — CHECKLIST DE DÉMARRAGE (recopie-la et coche-la dans ton journal §8)
 

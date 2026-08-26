@@ -1,10 +1,10 @@
-# AUDIT ADVERSE DES PROMPTS DE LANCEMENT — traçabilité (2026-08-26)
+# AUDIT ADVERSE DES PROMPTS DE LANCEMENT — traçabilité (2026-08-26 → 27)
 
 Quatorze agents adverses, un par GOAL, ont relu le prompt de lancement contre son GOAL, son rapport de mission et
 **le code réel**. Consigne : trouver ce qui empêcherait la session d'aboutir — manques d'auto-suffisance, chemins qui
-ne se résolvent pas, contradictions avec le GOAL. **Huit ont rendu leur verdict ; six ont été tués par la limite de
-session** (ONB-09, 10, 11, 12, 13, 14) — c'est écrit dans leurs prompts et dans le §14 du protocole, ce n'est pas
-caché. Verdict des huit : **8 × CORRIGER**, 0 × OK.
+ne se résolvent pas, contradictions avec le GOAL. Huit ont rendu leur verdict le **26/08** ; les six autres (ONB-09 à
+ONB-14), tués par la limite de session ce jour-là, ont été relancés et ont rendu le **27/08**. Verdict final :
+**14 × CORRIGER, 0 × OK** — aucun des quatorze prompts n'était lançable tel quel.
 
 Les corrections sont désormais portées par `PROTOCOLE_SESSION.md` (loi commune, §3 pré-vol, §5 voies, §6 base et
 tests, §8 preuves, §10 gates, §14 corrections par GOAL). Les prompts ont été réécrits courts (< 4 000 caractères).
@@ -68,13 +68,45 @@ tests, §8 preuves, §10 gates, §14 corrections par GOAL). Les prompts ont ét�
 
 ---
 
-## Ce qui n'a pas été vérifié (dette assumée)
+---
 
-Les prompts **ONB-09, ONB-10, ONB-11, ONB-12, ONB-13 et ONB-14** n'ont pas été relus : les six agents sont morts sur
-la limite de session. Leur prompt porte désormais un avertissement explicite (« Ce GOAL n'a PAS été relu par un
-auditeur adverse : rigueur supplémentaire, signale tout écart entre le GOAL et le code réel avant de t'y fier »),
-et les douze défauts systématiques du tableau ci-dessus leur sont **déjà** appliqués par le protocole.
+## Seconde vague — les six GOAL restants, relus le 2026-08-27
 
-Pour lever cette dette : relancer la vérification quand la limite sera réinitialisée —
-`Workflow({scriptPath: '…/workflows/scripts/verifier-prompts-lancement-wf_8d04bd06-459.js', resumeFromRunId: 'wf_8d04bd06-459'})`
-rejoue les huit résultats depuis le cache et n'exécute que les six manquants.
+La dette est levée : `Workflow({scriptPath: '…/verifier-prompts-lancement-wf_8d04bd06-459.js', resumeFromRunId:
+'wf_8d04bd06-459'})` a rejoué les huit verdicts depuis le cache et exécuté les six manquants. **14/14 rendus,
+0 erreur, 14 × CORRIGER.** Les constats ci-dessous ont été **re-vérifiés à la main** dans le code avant d'être
+portés au protocole §14 — c'est la règle CLAUDE.md §3ter, et deux des trois « faits » les plus graves étaient des
+erreurs de MA rédaction, pas du produit.
+
+| GOAL | Constat le plus lourd | Vérification refaite à la main |
+|---|---|---|
+| ONB-09 | Les trois drapeaux d'animation sont à **faux** ; une offre activée sans câblage du `PricingService` serait « affichée mais jamais facturée » | `config/pos.php:271`, `config/kiosk.php:70`, `config/features.php:27` → défauts `false` ✔ ; `OfferController.php:31-36` cité mot pour mot ✔ |
+| ONB-09 | **Collision de zone gelée** : `PricingService` revendiqué par ONB-03 (G-PRIX) *et* ONB-09 (G-PRIX-COUPON) | §5 du protocole attribue le fichier à ONB-03 ✔ — arbitrage par fiche avant W3 |
+| ONB-10 | C1 ne demandait qu'**un** des trois chemins de révocation | `KioskMachineService.php` : `destroy():108`, `changeStatus():147`, `logout():176` ✔ |
+| ONB-10 | « Désactive le bypass » sans mode d'emploi → la voie naïve (`APP_ENV=production`) **tue le serveur au boot** | `config/kiosk.php:211` et `:326` = `env('APP_ENV') === 'local'` ✔ ; garde `AppServiceProvider:190` ✔ |
+| ONB-11 | Le prompt ordonnait des vagues d'écriture pendant une phase déclarée « lecture seule totale », et un chronomètre qui écrit en base | contradiction interne au prompt ✔ ; ligne ONB-11 du §4 = « lecture seule » ✔ |
+| ONB-12 | Le pré-vol §3 (dump, chaîne fiscale, `/login` 200) est **impossible sur une base vide** avant `migrate` | §3 étapes 9-11 ✔ ; le GOAL prévoyait un filet différent (branche + inventaire figé) ✔ |
+| ONB-12 | « Zéro Cayenne » est une assertion **négative** qu'une page 500 satisfait trivialement | contrôle positif + grep qu'on fait rougir exprès, imposé (CLAUDE.md §3ter) |
+| ONB-13 | Le cliquet hérité était **62**, le réel est **64** → la cible ≤ 55 demande 9 suppressions, pas 7 | `FormRequestAuthzDriftSentinelTest.php:67` = `RETURN_TRUE_BASELINE = 64` ✔ |
+| ONB-13 | `security-review` lancé au pré-vol relit un **diff vide** | déplacé sur le diff des corrections (vague B) |
+| ONB-14 | La « garde d'identité » que le prompt demandait de modifier **n'existe pas à HEAD** | `tests/Playwright/global-setup.js` = **64 lignes**, `FOODKING_E2E_DEDICATED_DB` : **0 occurrence** ✔ |
+| ONB-14 | Le jumeau PHP serait parti sur **sqlite `:memory:`** et n'aurait prouvé aucun trigger NF525 | `phpunit.xml:68-69` ✔ |
+| ONB-14 | `php artisan foodking:installer` **n'est dans aucun commit** — c'est un livrable de ONB-12, donc **ONB-12 ne peut pas être différé** | `app/Console/Commands/` ne contient que `FiscalInstallImmutabilityTriggersCommand.php` ✔ |
+
+### Ce que cette seconde vague apprend
+
+Les six prompts non relus portaient des défauts **d'une autre nature** que les huit premiers. La première vague avait
+trouvé des défauts d'**environnement** (assets, `public/storage`, base de test, `safe-test.sh`) — communs à tous. La
+seconde a trouvé des défauts d'**énoncé** : des faits que j'avais écrits sans les vérifier (un fichier de 167 lignes
+qui n'en fait que 64, une commande qui n'existe pas, un cliquet à 62 au lieu de 64), et des ordres impossibles
+(un pré-vol de base peuplée sur une base vide, une lecture seule qui doit écrire, une convergence « P0 = 0 » pour une
+session sans droit de corriger). **Trois des quatorze prompts m'auraient fait mesurer un instrument imaginaire.**
+
+C'est exactement le piège que CLAUDE.md §3ter décrit — « ai-je prouvé que mon instrument mesure quelque chose ? » —
+appliqué cette fois non pas à un test, mais **au texte de la mission elle-même**.
+
+### Note factuelle sur G0
+
+`CONSTITUTION.md` ne porte à ce jour **aucune trace de G0**, et `docs/gates/GATE_LOG.md` non plus. Lancé tel quel,
+ONB-12 s'arrête à sa première ligne — **c'est voulu** : il ne doit pas exister d'installation générique tant que le
+propriétaire n'a pas réécrit la phrase constitutionnelle.

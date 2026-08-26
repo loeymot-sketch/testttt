@@ -15,6 +15,12 @@
 > **Ordre** — vague A : 01, 02, 05, 06, 07, 08, 09, 10 en parallèle (+ 11 et 13 en audit) · vague B : 03 puis 04, et
 > les corrections de 11/13 · vague C : 12 · vague D : 14.
 
+
+> **État au 2026-08-27** : les **14** blocs ont été relus par un auditeur adverse contre le code réel
+> (14 × « corriger », 0 × « rien à dire ») et corrigés — traçabilité dans `AUDIT_ADVERSE_PROMPTS_2026-08-26.md`,
+> corrections opposables dans `PROTOCOLE_SESSION.md §14`. Si votre terminal refuse le premier mot `/goal`
+> (aucune commande de ce nom n'est installée), supprimez la barre oblique : le reste du bloc est le message.
+
 ---
 
 ## ONB-01 · port 8801 · vague A
@@ -323,22 +329,33 @@ COMPTE RENDU : FIXÉ / VÉRIFIÉ / BLOQUÉ. Rien d'autre.
 
 ## ONB-09 · port 8809 · vague A
 
+> Relu par un auditeur adverse le 2026-08-27 : trois drapeaux à faux, collision `PricingService` avec ONB-03,
+> dépendance ONB-05, et le piège « offre affichée mais jamais facturée » sont désormais dans le bloc.
+
 ```
 /goal Tu suis avec précision cette mission : reports/audit/onboarding-commercant-2026-08-26/MISSION_ONB09_ANIMATION_COMMERCIALE.md
 le plan : plans/GOAL_ONB09_ANIMATION_COMMERCIALE_2026-08-26.md
 et les règles — toutes, sans exception — depuis : reports/audit/onboarding-commercant-2026-08-26/PROTOCOLE_SESSION.md
 
 Lis ces TROIS fichiers EN ENTIER avant d'écrire une ligne de code. Si l'un manque : ARRÊTE, il faut d'abord
-`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé du protocole.
-Si tu ne peux pas le citer sans relire, relis. Ensuite tu l'appliques seul, sans rappel.
+`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes : port, worktree, branche, ta voie,
+tes cinq interdits, la convergence, les gates, la base partagée, le compte rendu, ton premier geste. Le protocole
+prime sur le GOAL dès qu'il s'agit de l'instrument.
 
-Pré-vol §3 (12 étapes, port 8809), puis W1 = brief Z6 de
-reports/audit/onboarding-commercant-2026-08-26/recon/_ZONES.md + la caractérisation « devis ≠ commit » en 12 cas.
-Puis les vagues §X, chaque tâche par ultra-audit-profond.
+Pré-vol §3 (12 étapes, port 8809), puis W1 EN ENTIER — brief Z6 de recon/_ZONES.md + les 12 cas devis/commit +
+l'inventaire des règles de fidélité + la mesure de Queue::size('notifications') avant/après — avant W2. Tout ce que
+crée le brief Z6 se renomme GOAL-ONB09. Puis les vagues §X, chaque tâche par ultra-audit-profond.
 
-TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8809 — tu crées un coupon, tu l'appliques au DEVIS borne et
-caisse, tu vérifies l'aperçu client ; captures LUES, console + réseau, deux moyens pour tout P0/P1 ; tu reboucles
-jusqu'à DEUX CYCLES CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0.
+⚠️ AVANT de conclure qu'un coupon est refusé : les TROIS drapeaux sont à FAUX dans le code — pos.coupon_codes_enabled
+(config/pos.php:271 → 422 « codes promo désactivés »), kiosk.promo_enabled (config/kiosk.php:70),
+features.offers_enabled (config/features.php:27 → OfferController abort 403). Bascule-les dans le .env de TON
+worktree ; un refus dû au drapeau n'est PAS le défaut devis≠commit. Coupons et Offres sont retirés du menu
+(v1-hidden-modules.js:13-14) mais s'ouvrent à l'URL directe : /admin/coupons, /admin/offers.
+
+TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8809 — coupon créé, appliqué au DEVIS borne et caisse, aperçu
+client vérifié ; captures LUES, console + réseau, deux moyens indépendants pour tout P0/P1 ; tu reboucles jusqu'à
+DEUX CYCLES CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0. Un P0 que tu n'as pas le DROIT de corriger (gate ouvert,
+fichier d'un autre) se DIFFÈRE avec motif écrit et ne compte pas dans ce zéro.
 
 TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque tâche, lecture seule, dans UN SEUL message :
 — technique : Sécurité EN TÊTE (coupons publics, secret QR, IDOR abonnés) · Architecte (frontière devis/commit) · DBA
@@ -351,16 +368,21 @@ Un seul implémenteur. Trois boucles maximum, puis STOP et quatre options.
 MISSION EN UNE PHRASE : qu'un commerçant crée « -10 % le mardi », un code borne et un programme de fidélité lui-même,
 sans jamais sortir le prix du backend.
 
-PARTICULARITÉS : ⚠️ ce GOAL n'a pas été relu par un auditeur adverse (limite de session) : rigueur supplémentaire, et
-signale tout écart entre le GOAL et le code réel avant de t'y fier. ⛔ Aucune commande créée — un coupon se prouve au
-DEVIS et par test PHP. ⛔ Aucun worker lancé sur la file notifications (1 490 messages, débranchée volontairement).
-PricingService et DiscountCalculator sont gelés : « accepté au devis, refusé au commit » se caractérise d'abord, se
-corrige SOUS LOCK (G-PRIX-COUPON). La file est en Redis : la table jobs est vide et ne prouve rien.
+PARTICULARITÉS : ⛔ n'édite JAMAIS v1-hidden-modules.js (propriété exclusive de ONB-05) : le dé-cachage passe par une
+fiche. W2 dépend de G-OFFRES ET d'une fiche ONB-05 : enchaîne W4 et W5 sans l'attendre. ⚠️ COLLISION : PricingService
+est revendiqué par ONB-03 sous G-PRIX ; ton G-PRIX-COUPON se tranche PAR FICHE avant W3, jamais en écrivant le
+premier. Et lis OfferController.php:31-36 : sans câblage du PricingService, une offre activée est « affichée mais
+jamais facturée » — exactement le défaut que tu chasses. ⛔ Aucune commande créée : un coupon se prouve au DEVIS.
+⛔ Aucun worker lancé sur la file notifications (1 490 messages, débranchée volontairement) ; elle est en Redis, la
+table jobs est vide et ne prouve rien.
 
 COMPTE RENDU : FIXÉ / VÉRIFIÉ / BLOQUÉ. Rien d'autre.
 ```
 
 ## ONB-10 · port 8810 · vague A
+
+> Relu le 2026-08-27 : W1 de reconnaissance rétablie, C1 porté à ses trois chemins, mode d'emploi du bypass
+> (piège de boot en production) et périmètre réel de `config/printing.php`.
 
 ```
 /goal Tu suis avec précision cette mission : reports/audit/onboarding-commercant-2026-08-26/MISSION_ONB10_EQUIPEMENT_ET_OPERATIONS.md
@@ -368,14 +390,18 @@ le plan : plans/GOAL_ONB10_EQUIPEMENT_ET_OPERATIONS_2026-08-26.md
 et les règles — toutes, sans exception — depuis : reports/audit/onboarding-commercant-2026-08-26/PROTOCOLE_SESSION.md
 
 Lis ces TROIS fichiers EN ENTIER avant d'écrire une ligne de code. Si l'un manque : ARRÊTE, il faut d'abord
-`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé du protocole.
-Si tu ne peux pas le citer sans relire, relis. Ensuite tu l'appliques seul, sans rappel.
+`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes : port, worktree, branche, ta voie,
+tes cinq interdits, la convergence, les gates, la base partagée, le compte rendu, ton premier geste. Le protocole
+prime sur le GOAL dès qu'il s'agit de l'instrument.
 
-Pré-vol §3 (12 étapes, port 8810) + un récepteur TCP prêt (nc -l 9100). Puis les vagues §X — la RÉVOCATION DES JETONS
-d'abord, c'est de la sécurité. Chaque tâche par ultra-audit-profond.
+Pré-vol §3 (12 étapes, port 8810) + un récepteur TCP prêt (nc -l 9100). Puis W1 EN LECTURE SEULE : lis
+recon/Z7_equipement_ops.md en entier, rejoue les sondes Z7 sur :8810, LOCALISE le middleware kiosk (dont dépend la
+révocation), mesure les files et la consommation de fee_percent. ENSUITE seulement W2, la révocation des jetons —
+c'est de la sécurité, elle passe avant l'ergonomie. Chaque tâche par ultra-audit-profond.
 
-TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8810 — tu crées une borne de test, tu la connectes, tu la
-supprimes, et tu prouves que son jeton est mort (401) en moins d'une seconde ; tu testes quatre adresses
+TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8810 — tu crées une borne de test, tu la connectes, puis tu
+prouves les TROIS chemins : déconnexion (KioskMachineService:176), désactivation (:147) ET suppression (:108) →
+GET /api/frontend/menu avec l'ancien jeton = 401 en moins d'une seconde. C1 = 3/3, pas 1/3. Tu testes quatre adresses
 d'imprimante ; captures LUES, console + réseau, deux moyens pour tout P0/P1 ; tu reboucles jusqu'à DEUX CYCLES
 CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0.
 
@@ -390,16 +416,22 @@ Un seul implémenteur. Trois boucles maximum, puis STOP et quatre options.
 MISSION EN UNE PHRASE : qu'un commerçant branche sa borne, son imprimante et son TPE depuis le Dashboard, sache si
 « ça marche », et qu'une borne retirée cesse de commander à la seconde.
 
-PARTICULARITÉS : ⚠️ ce GOAL n'a pas été relu par un auditeur adverse : rigueur supplémentaire. Une impression ne se
-prouve JAMAIS par un 200 — PRINTING_BYPASS_MODE=true répond « ok » vers un hôte inexistant : compte les octets reçus
-par nc. ⛔ Ne touche jamais aux 14 bornes, 3 imprimantes et 2 TPE existants. KDS et OSS sont une AUTRE voie : lecture
-et fiches. Tu possèdes config/printing.php et SystemHealthComponent.vue. Désactive le bypass d'auto-login local pour
-prouver le vrai parcours d'installation.
+PARTICULARITÉS : une impression ne se prouve JAMAIS par un 200 — PRINTING_BYPASS_MODE=true répond « ok » vers un hôte
+inexistant : compte les octets reçus par nc. Le bypass d'auto-login n'a PAS d'interrupteur : config/kiosk.php:211 et
+:326 valent env('APP_ENV')==='local' — pour l'éteindre, mets APP_ENV sur une valeur non-local et surtout PAS
+'production' (AppServiceProvider:190 refuse de démarrer), et déclare la bascule au journal §8. De config/printing.php
+tu ne possèdes QUE les clés d'exposition : ⛔ le bloc gaté BYPASS-P1 (l.1-14, 202-208) reste intouché.
+⛔ Ne touche jamais aux 14 bornes, 3 imprimantes et 2 TPE existants. KDS et OSS sont une autre voie : lecture + fiches.
+Gates : tu proposes des options chiffrées, tu ne tranches jamais ; G-LAN rouvre une décision de sécurité déjà prise
+(allowlist fermée le 13/08) — tu ne l'ouvres pas d'autorité. ⛔ Jamais de git push.
 
 COMPTE RENDU : FIXÉ / VÉRIFIÉ / BLOQUÉ. Rien d'autre.
 ```
 
 ## ONB-11 · port 8811 · vague A (audit) puis B (corrections)
+
+> Relu le 2026-08-27 : bascule A→B définie, convergence d'une session sans droit de corriger, destination des fiches,
+> et l'écriture en base que le chronomètre exigeait sans en avoir le droit.
 
 ```
 /goal Tu suis avec précision cette mission : reports/audit/onboarding-commercant-2026-08-26/MISSION_ONB11_EXPERIENCE_COMMERCANT_TRANSVERSE.md
@@ -407,18 +439,19 @@ le plan : plans/GOAL_ONB11_EXPERIENCE_COMMERCANT_TRANSVERSE_2026-08-26.md
 et les règles — toutes, sans exception — depuis : reports/audit/onboarding-commercant-2026-08-26/PROTOCOLE_SESSION.md
 
 Lis ces TROIS fichiers EN ENTIER avant d'écrire une ligne de code. Si l'un manque : ARRÊTE, il faut d'abord
-`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé du protocole.
-Si tu ne peux pas le citer sans relire, relis. Ensuite tu l'appliques seul, sans rappel.
+`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes : port, worktree, branche, ta voie,
+tes cinq interdits, la convergence, les gates, la base partagée, le compte rendu, ton premier geste.
 
-Pré-vol §3 (12 étapes, port 8811), puis W1 = brief Z8 de
-reports/audit/onboarding-commercant-2026-08-26/recon/_ZONES.md. Puis les vagues §X, chaque tâche par
-ultra-audit-profond.
+VAGUE A = W0 et W1 SEULEMENT : pré-vol §3 (12 étapes, port 8811), brief Z8 de recon/_ZONES.md, livrable
+recon/Z8_experience_commercant.md, top 10 des frictions, fiches de renvoi — puis tu ARRÊTES sur un compte rendu.
+Tu n'entames W2 à W6 (charte, composants partagés, app.css, fr.json) QUE sur mon ordre explicite « ONB-11 vague B ».
 
 TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8811 — le chronomètre de la première heure (un agent qui n'a PAS
-lu les GOAL reçoit quatre consignes en langage courant, on mesure temps, écrans, hésitations, abandons), axe-core sur
-25 pages × 3 gabarits, 5 parcours au clavier seul, la tablette sans défilement horizontal ; captures LUES, console +
-réseau ; une friction n'est un constat que REPRODUITE PAR DEUX MOYENS ; tu reboucles jusqu'à DEUX CYCLES CONSÉCUTIFS
-aux constats IDENTIQUES, P0+P1 = 0.
+lu les GOAL reçoit quatre consignes en langage courant : temps, écrans, hésitations, abandons), axe-core sur les
+6 pages du brief Z8 en W1 (les 25 pages × 3 gabarits sont pour W4), 5 parcours au clavier seul, la tablette sans
+défilement horizontal ; captures LUES, console + réseau. Une friction n'est un constat que REPRODUITE PAR DEUX
+MOYENS. Tu reboucles jusqu'à DEUX CYCLES CONSÉCUTIFS aux constats IDENTIQUES — en vague A ta convergence porte sur la
+STABILITÉ DE TA MESURE, pas sur P0+P1 = 0 du produit, que tu n'as pas le droit de corriger.
 
 TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque tâche, lecture seule, dans UN SEUL message :
 — expérience EN TÊTE : UX/A11y (WCAG, focus, contraste, cibles tactiles) · Psychologie commerçant (chronomètre,
@@ -426,20 +459,27 @@ TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque tâche, lecture seule, dans UN SEU
 — interface : QA visuel puis ROUGE visuel qui conteste ses captures indépendamment
 — technique : Architecte (composants partagés sans casser la zone gelée) · Sécurité (aucune aide n'expose de secret)
 — puis ROUGE qui conteste chaque friction ; puis le Jalonneur et ses 6 points (§7).
-Un seul implémenteur. Trois boucles maximum, puis STOP et quatre options.
+Trois boucles maximum, puis STOP et quatre options.
 
 MISSION EN UNE PHRASE : qu'un commerçant qui ouvre le Dashboard pour la première fois sache par où commencer,
 comprenne chaque mot en français, et n'ait peur de rien.
 
-PARTICULARITÉS : ⚠️ ce GOAL n'a pas été relu par un auditeur adverse : rigueur supplémentaire. En vague A tu es en
-LECTURE SEULE TOTALE et tu émets des fiches de renvoi ; tu n'édites JAMAIS un composant de page d'un autre GOAL. Tu
-n'écris dans fr.json qu'en vague B, par blocs. Ne change jamais la signature d'un composant partagé importé par une
-zone gelée (LoadingComponent l'est par PaymentComponent.vue).
+PARTICULARITÉS : le chronomètre s'arrête AU CLIC « Enregistrer » sans valider ; si une écriture est indispensable,
+préfixe GOAL-ONB11 et forceDelete prouvé en fin de vague. Toute fiche s'écrit dans le §8 de TON rapport de mission et
+NULLE PART ailleurs : les treize autres GOAL vivent dans d'autres worktrees, écrire chez eux ne leur parvient jamais.
+foodking_e2e est écrite par huit sessions : une entité GOAL-ONB* vue dans une liste est leur jeu d'essai — jamais une
+friction commerçant, jamais supprimée, notée comme biais. Tu n'édites JAMAIS un composant de page d'un autre GOAL, ni
+la signature d'un composant partagé importé par une zone gelée (LoadingComponent l'est par PaymentComponent.vue).
+Gates : tu proposes, tu ne tranches pas — G-VOCAB conditionne le critère « zéro anglais », G-MENU-ORDRE et G-CHARTE
+attendent ; tu termines en BLOQUÉ si je n'ai pas tranché.
 
 COMPTE RENDU : FIXÉ / VÉRIFIÉ / BLOQUÉ. Rien d'autre.
 ```
 
 ## ONB-12 · port 8812 · vague C (après 01, 02, 05, 06 et G0)
+
+> Relu le 2026-08-27 : pré-vol adapté à une base VIDE (trois étapes du §3 supposaient une base peuplée), voie bornée
+> sur 158 fichiers appartenant à d'autres, et contrôle positif avant toute conclusion « zéro Cayenne ».
 
 ```
 /goal Tu suis avec précision cette mission : reports/audit/onboarding-commercant-2026-08-26/MISSION_ONB12_PREMIER_DEMARRAGE_ET_PUBLICATION_VIERGE.md
@@ -450,16 +490,22 @@ AVANT TOUT : vérifie que CONSTITUTION.md §1 porte l'amendement G0 (« logiciel
 paramétrable depuis son Dashboard »). S'il n'y est pas, ARRÊTE et demande-le : ce GOAL matérialise cet amendement.
 
 Lis ces TROIS fichiers EN ENTIER avant d'écrire une ligne de code. Si l'un manque : ARRÊTE, il faut d'abord
-`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé du protocole.
-Si tu ne peux pas le citer sans relire, relis. Ensuite tu l'appliques seul, sans rappel.
+`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes : port, worktree onb12-vierge,
+branche, ta voie, tes cinq interdits, la convergence, les gates, ta base dédiée, le compte rendu, ton premier geste.
+Le protocole prime sur le GOAL dès qu'il s'agit de l'instrument.
 
-Pré-vol §3 (12 étapes, port 8812) avec DB_DATABASE=foodking_onb12, une base DÉDIÉE créée VIDE — seule exception au
-partage de base, et seul moyen de prouver une installation vierge. Puis les vagues §X, chaque tâche par
-ultra-audit-profond.
+Pré-vol §3, port 8812, DB_DATABASE=foodking_onb12 — base DÉDIÉE créée VIDE, seule exception au partage. Elle est un
+INSTRUMENT, pas un produit : G-DATA ne porte que sur la table onboarding_progress, dont tu écris la proposition dès
+W0 sans la créer. Base vide ⇒ `migrate` D'ABORD, puis /login → 200, et les compteurs + l'attestation NF525 APRÈS
+l'installation du socle, jamais contre foodking_e2e. Ton filet n'est pas un dump : branche backup/pre-onb12 +
+inventaire `git grep -il cayenne` figé. Tests : safe-test.sh --check puis vendor/bin/phpunit
+--filter="Onboarding|Seeder|Installer|Menu|Sentinels" DEPUIS ton worktree, chemin d'un test joué cité en preuve.
 
 TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8812, base vierge — tu installes, tu ouvres le Dashboard, tu suis
-la checklist, tu crées 3 articles, une borne, une commande, un Z, et tu grep le DOM de 12 pages : zéro « Cayenne » ;
-captures LUES, console + réseau ; tu reboucles jusqu'à DEUX CYCLES CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0.
+la checklist, tu crées 3 articles, une borne, une commande, un Z, et tu grep le DOM de 12 pages : zéro « Cayenne ».
+« Zéro » est une assertion NÉGATIVE : prouve d'abord que chaque page a RENDU (200 + un marqueur métier attendu), et
+fais rougir ton grep exprès en injectant « Cayenne ». Un instrument qui ne mord pas ne prouve rien. Deux moyens
+indépendants + étape de reproduction pour tout P0/P1 ; deux cycles consécutifs identiques, P0+P1 = 0.
 
 TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque tâche, lecture seule, dans UN SEUL message :
 — technique : Architecte (socle vs données, ordre des seeders, idempotence) · DBA (chaîne fiscale à l'installation) ·
@@ -472,15 +518,20 @@ Un seul implémenteur. Trois boucles maximum, puis STOP et quatre options.
 MISSION EN UNE PHRASE : qu'une installation neuve donne un établissement générique et propre — pas le menu de Le
 Cayenne — avec une checklist « Premier démarrage », la marque étant devenue une donnée.
 
-PARTICULARITÉS : ⚠️ non relu par un auditeur adverse : rigueur supplémentaire. ⛔ JAMAIS migrate:fresh ni db:seed sur
-foodking_e2e ou une base existante ; ⛔ JAMAIS menu:reset-le-cayenne hors de ta base dédiée ; ⛔ AUCUNE suppression
-d'un seeder, d'une commande ou d'une donnée Le Cayenne — uniquement des déplacements sous LeCayenne/. Lis le docblock
-de GrillHouseMenuSeeder : une tentative de seconde marque a déjà été bloquée, comprends pourquoi.
+PARTICULARITÉS : tu ne modifies QUE les fichiers du §0.2 de ton GOAL. Tout « Cayenne » ailleurs — kiosk (borne),
+config/printing.php (caisse), config/app.php (ONB-06), TaxTableSeeder (ONB-02) — s'inventorie et part en FICHE, jamais
+en édition. ⛔ JAMAIS migrate:fresh ni db:seed sur foodking_e2e ; ⛔ JAMAIS menu:reset-le-cayenne hors de ta base
+dédiée ; ⛔ AUCUNE suppression de seeder, commande ou donnée : uniquement des déplacements sous LeCayenne/. Lis le
+docblock de GrillHouseMenuSeeder : une seconde marque a déjà été bloquée, comprends pourquoi. Si ONB-03 et ONB-10 ne
+sont pas disponibles en W5, la preuve est RÉDUITE et documentée — pas un P0, pas une boucle de soin.
 
 COMPTE RENDU : FIXÉ / VÉRIFIÉ / BLOQUÉ. Rien d'autre.
 ```
 
 ## ONB-13 · port 8813 · vague A (audit) puis B (corrections)
+
+> Relu le 2026-08-27 : base partagée, gates, cliquet réel (64 et non 62), et `security-review` déplacé sur le diff
+> des corrections — au pré-vol le diff est vide et la compétence ne prouve rien.
 
 ```
 /goal Tu suis avec précision cette mission : reports/audit/onboarding-commercant-2026-08-26/MISSION_ONB13_SECURITE_INTEGRITE_BACKOFFICE.md
@@ -488,16 +539,21 @@ le plan : plans/GOAL_ONB13_SECURITE_INTEGRITE_BACKOFFICE_2026-08-26.md
 et les règles — toutes, sans exception — depuis : reports/audit/onboarding-commercant-2026-08-26/PROTOCOLE_SESSION.md
 
 Lis ces TROIS fichiers EN ENTIER avant d'écrire une ligne de code. Si l'un manque : ARRÊTE, il faut d'abord
-`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé du protocole.
-Si tu ne peux pas le citer sans relire, relis. Ensuite tu l'appliques seul, sans rappel.
+`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes : port, worktree, branche, ta voie,
+tes cinq interdits, la convergence, les gates, la base partagée, le compte rendu, ton premier geste. Le protocole
+prime sur le GOAL dès qu'il s'agit de l'instrument.
 
-Pré-vol §3 (12 étapes, port 8813), invoque la compétence security-review, puis W1 = l'audit offensif en lecture seule
-(matrice route × rôle × champs, 40 payloads invalides, 5 points d'entrée d'upload, IDOR sur 12 ressources, inventaire
-des return true). Puis les vagues §X, chaque tâche par ultra-audit-profond.
+Pré-vol §3 (12 étapes, port 8813), puis W1 = l'audit offensif EN LECTURE SEULE (matrice route × rôle × champs,
+40 payloads invalides, 5 points d'entrée d'upload, IDOR sur 12 ressources, inventaire des `return true`). Puis les
+vagues §X, chaque tâche par ultra-audit-profond. La compétence security-review se lance sur le DIFF de tes
+corrections (vague B) — pas au pré-vol, où le diff est vide.
 
 TU TOURNES EN BOUCLE test-e2e : navigateur réel sur 8813 pour les écrans, mais l'essentiel en API directe avec des
-jetons de rôles différents ; chaque constat = requête + réponse + file:line ; captures LUES, console + réseau ; un 403
-est un SUCCÈS ; tu reboucles jusqu'à DEUX CYCLES CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0.
+jetons de rôles différents ; chaque constat = requête + réponse + file:line ; un 403 est un SUCCÈS ; tu reboucles
+jusqu'à DEUX CYCLES CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0. La matrice live se joue EN LECTURE avec les
+comptes déjà seedés ; toute CRÉATION (filiale, rôle, jeton pour l'IDOR) vit en usine sqlite :memory:. Les essais de
+rafale se font en test PHPUnit, jamais en HTTP : `php artisan serve` sert une requête à la fois et tu prendrais son
+blocage pour un défaut de rate limit.
 
 TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque tâche, lecture seule, dans UN SEUL message :
 — technique : Sécurité EN TÊTE, en mode OFFENSIF (IDOR, rejeu, upload piégé, fuite de secret) · Architecte (journal
@@ -510,38 +566,51 @@ Un seul implémenteur. Trois boucles maximum, puis STOP et quatre options.
 MISSION EN UNE PHRASE : que chaque mutation admin soit validée, qu'aucun secret ni message technique ne fuie, que le
 double clic n'écrive qu'une fois, et qu'un inspecteur sache qui a changé la TVA.
 
-PARTICULARITÉS : ⚠️ non relu par un auditeur adverse : rigueur supplémentaire. ⛔ Jamais un fichier gelé
-(IdempotencyKeyMiddleware, BranchScope, AuditLogService, PricingService) ; ⛔ jamais une garde existante relâchée — la
-validation inline du scan de facture porte une garde RCE, test de caractérisation d'abord ; ⛔ jamais d'écriture dans
-audit_logs : le journal des réglages est une table DISTINCTE. Tu CRÉES les FormRequests manquantes et tu les livres
-par fiche à leur propriétaire. Annote « MySQL requis » tout test de concurrence ou de trigger.
+PARTICULARITÉS : base foodking_e2e partagée par 8 sessions — préfixe GOAL-ONB13, nettoyage définitif prouvé par
+SELECT COUNT(*) = 0 ; ⛔ jamais db:seed --class=PermissionTableSeeder (il réécrit les permissions des sept autres),
+⛔ jamais E2E_BACKEND_AVAILABLE=1. Tests : safe-test.sh --check puis vendor/bin/phpunit
+--filter="Security|Sentinels|Idempotency" DEPUIS ton worktree. ⚠️ Le cliquet réel est
+FormRequestAuthzDriftSentinelTest:67 = 64, pas 62 : mesure-le en W0, corrige le GOAL, et sache que la cible ≤ 55
+demande 9 suppressions. ⛔ Jamais un fichier gelé (IdempotencyKeyMiddleware, BranchScope, AuditLogService,
+PricingService) ; ⛔ jamais une garde existante relâchée (la validation du scan de facture porte une garde RCE : test
+de caractérisation d'abord) ; ⛔ jamais d'écriture dans audit_logs — le journal des réglages est une table DISTINCTE,
+et aucune migration settings_audit avant G-DATA. Si les propriétaires ne branchent pas tes FormRequests, tu clos avec
+les fiches ÉMISES et datées, en BLOQUÉ. ⛔ Jamais de git push, jamais `git add .`.
 
 COMPTE RENDU : FIXÉ / VÉRIFIÉ / BLOQUÉ. Rien d'autre.
 ```
 
 ## ONB-14 · port 8814 · vague D (dernier)
 
+> Relu le 2026-08-27 : trois faits d'instrument étaient faux — la garde d'identité n'existe pas à HEAD, le jumeau PHP
+> serait parti sur sqlite, et `foodking:installer` n'est dans aucun commit. Corrigés ici.
+
 ```
 /goal Tu suis avec précision cette mission : reports/audit/onboarding-commercant-2026-08-26/MISSION_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT.md
 le plan : plans/GOAL_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT_2026-08-26.md
 et les règles — toutes, sans exception — depuis : reports/audit/onboarding-commercant-2026-08-26/PROTOCOLE_SESSION.md
 
-AVANT TOUT : vérifie dans plans/GOAL_INDEX_ONBOARDING_COMMERCANT_2026-08-26.md et PROJECT_BRAIN.md §2 que la vague C
-est close — ONB-01 à 13 fusionnés dans HEAD, ou différés par écrit (gate G-DIFF). Sinon, ARRÊTE.
+AVANT TOUT : vérifie que la vague C est close — ONB-01 à 13 fusionnés dans HEAD, ou différés par écrit (G-DIFF).
+⚠️ ONB-12 ne peut PAS être différé : sa commande `foodking:installer` n'existe dans aucun commit, et sans elle il n'y
+a ni W0 ni preuve. S'il figure dans la liste des différés, ARRÊTE et remonte-le.
 
 Lis ces TROIS fichiers EN ENTIER avant d'écrire une ligne de code. Si l'un manque : ARRÊTE, il faut d'abord
-`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé du protocole,
-dont ce que tu n'as PAS le droit de corriger. Si tu ne peux pas le citer sans relire, relis.
+`git merge goal/onboarding-commercant-2026-08-26`. Puis récite-moi en dix lignes ce que tu as mémorisé, dont ce que
+tu n'as PAS le droit de corriger.
 
-Pré-vol §3 (12 étapes, port 8814) avec DB_DATABASE=foodking_onb14, base DÉDIÉE installée par
+Pré-vol §3 (12 étapes, port 8814), DB_DATABASE=foodking_onb14 dédiée, installée par
 `php artisan foodking:installer --etablissement="Chez Nadia"`, puis dump de l'état zéro : chaque cycle repart de là.
-La garde d'identité de tests/Playwright/global-setup.js doit accepter 8814 et refuser 8766 et 8000.
+⚠️ À HEAD, tests/Playwright/global-setup.js fait 64 lignes et ne contient AUCUNE garde d'identité : il n'y a pas de
+liste de ports à modifier. Copie la version à marqueur depuis l'arbre principal en la DÉCLARANT au journal §8, ou
+pose ta propre garde — sans elle, rien ne t'empêche de mesurer :8766 en croyant mesurer 8814.
 
 TU TOURNES EN BOUCLE test-e2e — c'est TOUT le GOAL : les 12 étapes de la journée (installation, identité, carte,
 règles, équipe, réglages, équipement, stock, promo, vente borne → cuisine → encaissement → ticket, clôture Z et
-rapports, lendemain) au navigateur réel ET en jumeau PHP sur MySQL ; captures LUES à chaque étape, console + réseau ;
-preuves par le CONTENU (octets ESC/POS, z_reports, composition_snapshot, fiscal:verify-chain) ; tu reboucles jusqu'à
-DEUX CYCLES COMPLETS CONSÉCUTIFS aux constats IDENTIQUES, P0+P1 = 0.
+rapports, lendemain) au navigateur réel ET en jumeau PHP. Le jumeau tourne sur MySQL foodking_onb14 (triggers NF525
+réels) : PAS sur le sqlite :memory: de phpunit.xml:68-69, PAS sur .env.testing, et JAMAIS avec RefreshDatabase — il
+effacerait l'état zéro ; entre deux cycles tu restaures le dump. Captures LUES à chaque étape, console + réseau,
+preuves par le CONTENU (octets ESC/POS, z_reports, composition_snapshot, fiscal:verify-chain). Les variantes adverses
+du §S font partie de CHAQUE cycle comparé. Deux cycles complets aux constats identiques, P0+P1 = 0.
 
 TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque cycle, lecture seule, dans UN SEUL message :
 — interface EN TÊTE : QA visuel (chaque étape capturée) puis ROUGE visuel qui conteste indépendamment
@@ -553,10 +622,14 @@ TU DÉPLOIES DES AGENTS ADVERSAIRES à chaque cycle, lecture seule, dans UN SEUL
 MISSION EN UNE PHRASE : prouver qu'un établissement qui n'est PAS Le Cayenne se règle, vend, cuisine, encaisse,
 clôture et lit ses chiffres — sans qu'un développeur ait touché un fichier.
 
-PARTICULARITÉS : ⚠️ non relu par un auditeur adverse : rigueur supplémentaire. ⛔ AUCUN fichier produit modifié par
-toi — chaque échec devient une fiche de renvoi au GOAL propriétaire, qui corrige dans SA session ; tu fusionnes et tu
-rejoues. ⛔ Jamais la base partagée ni :8766. ⛔ Aucune commande supprimée. ⛔ Aucun sélecteur inventé : 23 sélecteurs
-morts ont déjà pourri le harnais. La poussée et l'étiquette sont le gate G-PUSH.
+PARTICULARITÉS : ⛔ AUCUN fichier produit modifié — chaque échec devient une fiche de renvoi au GOAL propriétaire
+(file:line réel), qui corrige dans SA session ; tu fusionnes et tu rejoues. Tu écris toi-même tes specs, tes helpers
+et tes rapports : « aucun implémenteur » vise les fichiers produit, pas ton harnais. ⛔ JAMAIS
+E2E_BACKEND_AVAILABLE=1 sur foodking_onb14 : global-setup.js y seede admin, opérateurs, borne kiosk-lecayenne et
+catalogue — ce qui détruit la preuve « 0 article, 0 borne, 0 Cayenne ». Deux moyens indépendants + reproduction pour
+tout constat. ⛔ Jamais la base partagée ni :8766. ⛔ Aucun sélecteur inventé : 23 sélecteurs morts ont déjà pourri le
+harnais. Tu termines par la CLÔTURE du programme (RAPPORT_FINAL_PROGRAMME.md, PROJECT_BRAIN, SYSTEM_MAP, ligne G0) ;
+la poussée et l'étiquette sont le gate G-PUSH.
 
 COMPTE RENDU : FIXÉ (rien, par construction) / VÉRIFIÉ (12 étapes × 2 cycles) / BLOQUÉ (renvois ouverts).
 ```
