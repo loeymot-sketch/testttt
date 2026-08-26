@@ -1,0 +1,7 @@
+RUNNER_MODE: `single-session`
+PHASE: `EXECUTE`
+TASK_ID: `CAISSE-SUPERVISOR-CONTROL-20260823`
+PRIMARY_EXECUTION_MODEL: `gpt-5.5-pro`
+REASONING_EFFORT: `xhigh`
+REPORT_FILE: `reports/execution/RUN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md`
+GATE_FILE: `None` for this cycle; Wheel UX gate preserved separately.

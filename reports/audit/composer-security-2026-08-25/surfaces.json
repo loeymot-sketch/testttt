@@ -1,0 +1,177 @@
+[
+  {
+    "surface": "S01-dashboard",
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "len": 7706,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S02-pos",
+    "url": "http://127.0.0.1:8766/admin/pos",
+    "len": 3309,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S03-kds",
+    "url": "http://127.0.0.1:8766/admin/kitchen-display-system",
+    "len": 1178,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S04-oss",
+    "url": "http://127.0.0.1:8766/admin/order-status-screen",
+    "len": 904,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S05-items",
+    "url": "http://127.0.0.1:8766/admin/items",
+    "len": 2897,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S06-stock",
+    "url": "http://127.0.0.1:8766/admin/stock/rupture",
+    "len": 1981,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S07-pos-orders",
+    "url": "http://127.0.0.1:8766/admin/pos-orders",
+    "len": 2506,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S08-devices",
+    "url": "http://127.0.0.1:8766/admin/profile/devices",
+    "len": 2854,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S09-tracker",
+    "url": "http://127.0.0.1:8766/admin/pos-orders-tracker",
+    "len": 2176,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S10-sales-report",
+    "url": "http://127.0.0.1:8766/admin/sales-report",
+    "len": 2780,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S11-transactions",
+    "url": "http://127.0.0.1:8766/admin/transactions",
+    "len": 2441,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S12-historique",
+    "url": "http://127.0.0.1:8766/admin/order-history",
+    "len": 611,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  },
+  {
+    "surface": "S13-borne-idle",
+    "url": "http://127.0.0.1:8766/kiosk/idle",
+    "len": 442,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [
+      {
+        "url": "http://127.0.0.1:8766/api/login",
+        "s": 401
+      }
+    ],
+    "pageerror": []
+  },
+  {
+    "surface": "S14-borne-catalogue",
+    "url": "http://127.0.0.1:8766/kiosk/categories?cat=1",
+    "len": 903,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [
+      {
+        "url": "http://127.0.0.1:8766/api/login",
+        "s": 401
+      }
+    ],
+    "pageerror": []
+  },
+  {
+    "surface": "S15-sante",
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "len": 7187,
+    "vide": false,
+    "i18n": null,
+    "casse": null,
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "pageerror": []
+  }
+]

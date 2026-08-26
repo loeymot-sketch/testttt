@@ -223,11 +223,23 @@ class HealthzController extends Controller
      */
     public static function probeQueuePending(): int
     {
-        try {
-            return (int) \Illuminate\Support\Facades\Queue::size('default')
-                + (int) \Illuminate\Support\Facades\Queue::size('high');
-        } catch (\Throwable $e) {
-            return 0;
+        // [GOAL CONSOLIDATION 2026-08-25] Ne plus écrire les files en dur.
+        //
+        // L'ancienne version comptait `default` + `high` littéralement. `notifications` — bien
+        // réelle, alimentée par SendFcmNotificationJob — n'y figurait pas : 1 490 travaux y ont
+        // pourri pendant que cette sonde renvoyait « 0 en attente ». La liste vient désormais de
+        // `queue.monitored_queues`, et un test découvre les `onQueue()` du code pour la vérifier.
+        $total = 0;
+        foreach ((array) config('queue.monitored_queues', ['default', 'high']) as $file) {
+            try {
+                $total += (int) \Illuminate\Support\Facades\Queue::size((string) $file);
+            } catch (\Throwable $e) {
+                // Une file illisible ne doit pas casser la sonde entière : on ignore CETTE file,
+                // pas les autres. Renvoyer 0 pour tout serait exactement le faux vert d'origine.
+                continue;
+            }
         }
+
+        return $total;
     }
 }

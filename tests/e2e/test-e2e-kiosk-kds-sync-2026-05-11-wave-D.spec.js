@@ -55,7 +55,7 @@
 // (6) Cleanup — placeKioskOrder hardcodes KIOSK_AUDIT_PREFIX
 //     ('AUDIT-KIOSK-WAVE-E') for orders.token. We track captured order
 //     IDs in `capturedOrderIds[]` and call `safeCancelOrder(id)` in the
-//     `finally` block + `cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX)`
+//     `finally` block + `cleanupKioskAuditOrders(PREFIXE_AUDIT)`
 //     belt-and-suspenders. Note: this prefix is shared with Wave E specs
 //     (kiosk-order.js exports it as a constant — no per-call override).
 //
@@ -94,7 +94,14 @@ const {
   uuidV4,
   PAYMENT_CASH,
   KIOSK_AUDIT_PREFIX,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const SCREENSHOT_DIR = path.resolve(
   __dirname,
@@ -111,10 +118,19 @@ const ORDER_STATUS = Object.freeze({
   CANCELED: 16,
 });
 
-// Frites Seules — id 361, 2.00€ TTC. Verified via tinker 2026-05-11:
-//   DB::table('items')->where('id',361)->first(['id','name','price'])
-//   → {"id":361,"name":"Frites Seules","price":"2.000000"}
-const ITEM_FRITES_SEULES = 361;
+// [FIX 2026-08-25] L'ID était figé à 361, « vérifié via tinker le 2026-05-11 ». Ce produit
+// n'existe plus sous cet ID : la base ne contient AUCUNE ligne 361, et « Frites Seules » vit
+// aujourd'hui sous l'id 2 (1,90 €). Le banc mourait donc au pré-vol, sans rapport avec le
+// produit testé — et trois specs du dépôt codaient trois ID différents pour le MÊME article
+// (361 ici, 2 dans goal-4chantiers et latency-cross-surface). Un identifiant figé dans un
+// banc est une bombe à retardement : il survit exactement jusqu'au prochain re-seed.
+//
+// On résout donc l'article PAR SON NOM, branch-scopé et actif, avec repli sur l'ID historique
+// et surcharge possible par variable d'environnement. C'est ce que le plan du cycle exigeait
+// déjà (« résoudre dynamiquement l'article branch-scopé »).
+const ITEM_FRITES_SEULES_NOM = process.env.ITEM_FRITES_SEULES_NOM || 'Frites Seules';
+const ITEM_FRITES_SEULES_FALLBACK = Number(process.env.ITEM_FRITES_SEULES || 2);
+let ITEM_FRITES_SEULES = ITEM_FRITES_SEULES_FALLBACK;
 
 // V1 dine-in disabled — kiosk MUST use TAKEAWAY(10), not KIOSK(25).
 const ORDER_TYPE_TAKEAWAY = 10;
@@ -193,9 +209,40 @@ function safeCancelOrder(orderId) {
 
 // Pre-flight: kiosk machine seed + Frites Seules item must exist.
 function verifyPreFlight() {
+  const nom = ITEM_FRITES_SEULES_NOM.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const out = artisan(`
     $m = \\App\\Models\\KioskMachine::withoutGlobalScopes()->where('id', 1)->first();
-    $it = DB::table('items')->where('id', ${ITEM_FRITES_SEULES})->first(['id','name','price']);
+    // Résolution par NOM d'abord (l'ID figé dérive au re-seed), repli sur l'ID historique.
+    // NB : \`items\` n'a pas de colonne \`branch_id\` — la disponibilité par branche vit dans
+    // \`item_branch_availability\`. On ne filtre donc pas la branche ici ; le parcours vérifie
+    // ensuite que l'article est bien commandable depuis la borne.
+    // [CORRECTIF 2026-08-25] L'article doit etre ROUTE vers une station de cuisine.
+    // Le tableau KDS filtre par station : un article kds_station = 'none' (c'est le cas de
+    // « Frites Seules ») n'apparait sur AUCUNE station, donc jamais sur le board — la commande
+    // etait pourtant bien creee en statut ACCEPT. On exige donc une vraie station, avec repli
+    // sur le nom demande puis sur l'identifiant historique.
+    $it = DB::table('items')
+      ->where('name', '${nom}')
+      ->where('status', 5)
+      ->whereNull('deleted_at')
+      ->whereNotNull('kds_station')
+      ->where('kds_station', '!=', 'none')
+      ->first(['id','name','price']);
+    if (! $it) {
+      $it = DB::table('items')
+        ->where('status', 5)
+        ->whereNull('deleted_at')
+        ->whereNotNull('kds_station')
+        ->where('kds_station', '!=', 'none')
+        ->whereNotExists(function ($q) {
+          $q->select(DB::raw(1))->from('item_variations')->whereColumn('item_variations.item_id', 'items.id');
+        })
+        ->orderBy('id')
+        ->first(['id','name','price']);
+    }
+    if (! $it) {
+      $it = DB::table('items')->where('id', ${ITEM_FRITES_SEULES_FALLBACK})->where('status', 5)->first(['id','name','price']);
+    }
     echo json_encode([
       'machine' => $m ? ['id' => (int) $m->id, 'username' => (string) $m->username, 'branch_id' => (int) $m->branch_id, 'status' => (int) $m->status] : null,
       'item' => $it ? ['id' => (int) $it->id, 'name' => (string) $it->name, 'price' => (string) $it->price] : null,
@@ -211,13 +258,25 @@ async function kdsAdvanceStatus(chefPage, orderId, expectedStatus, nextStatus) {
   return chefPage.evaluate(
     async ({ orderId, expectedStatus, nextStatus }) => {
       try {
+        // [GOAL CONSOLIDATION 2026-08-25] En-tête d'idempotence OBLIGATOIRE sur cette route.
+        //
+        // `config/idempotency.php:105` liste `api/admin/kds-order/change-status/*` dans
+        // `required_routes`. Sans l'en-tête, le backend répond **422 « Header X-Idempotency-Key
+        // requis pour cette opération »** — ce qui s'est produit ici sur state07 ET state09,
+        // faisant échouer toute la chaîne aval (OSS preparing, OSS prepared).
+        //
+        // L'exigence est délibérée : un double bump enverrait deux notifications client. La
+        // spec, elle, n'avait jamais été mise à jour après l'ajout de la route à la liste.
+        // Clé unique par transition : un rejeu identique doit être déduit, pas rejoué.
+        const cleIdempotence = `wave-d-kds-${orderId}-${nextStatus}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
         const response = await window.axios.post(
           `admin/kds-order/change-status/${orderId}`,
           {
             id: orderId,
             expected_status: expectedStatus,
             status: nextStatus,
-          }
+          },
+          { headers: { 'X-Idempotency-Key': cleIdempotence } }
         );
         window.dispatchEvent(
           new CustomEvent('realtime-order-update', {
@@ -255,12 +314,17 @@ test.describe('Kiosk · KDS · OSS sync audit Wave D — cross-surface lifecycle
     }
     if (!seed || !seed.item) {
       throw new Error(
-        `Wave D pre-flight: item ${ITEM_FRITES_SEULES} (Frites Seules) missing. Got: ${JSON.stringify(seed?.item)}`
+        `Wave D pré-vol : aucun article actif nommé « ${ITEM_FRITES_SEULES_NOM} » sur la branche `
+        + `de la borne, ni de repli actif sur l'id ${ITEM_FRITES_SEULES_FALLBACK}. `
+        + `Reçu : ${JSON.stringify(seed?.item)}. Surcharge possible : ITEM_FRITES_SEULES_NOM / ITEM_FRITES_SEULES.`
       );
     }
+    // L'ID réellement résolu pilote tout le reste du parcours.
+    ITEM_FRITES_SEULES = Number(seed.item.id);
+    console.log(`[Wave D] article résolu : #${ITEM_FRITES_SEULES} « ${seed.item.name} » @ ${seed.item.price}`);
     // Cleanup prior orphans sharing the kiosk audit prefix.
     try {
-      const cleanup = cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+      const cleanup = cleanupKioskAuditOrders(PREFIXE_AUDIT);
       // eslint-disable-next-line no-console
       console.log(`[Wave D kiosk-kds-sync] beforeAll cleanup: ${JSON.stringify(cleanup)}`);
     } catch (e) {
@@ -308,14 +372,26 @@ test.describe('Kiosk · KDS · OSS sync audit Wave D — cross-surface lifecycle
       await kioskPage.waitForTimeout(2_500);
       await kioskRec.snap('01-d-kiosk-baseline');
       observations.push('state01: kiosk /kiosk/idle baseline captured');
-      // [SYNC-D fix 2026-05-11] Park kiosk page on /admin/order-status-screen
-      // (publicFriendly, no auth gate, serves SPA shell with window.axios)
-      // between PHASE 1 (snap) and PHASE 2 (token + place). Otherwise the
-      // KioskLoginComponent.startAutoLogin retry timer fires mid-PHASE-2
-      // and REVOKES our explicit Sanctum token (Sanctum revokes-on-relogin
-      // per CLAUDE.md §9). Wave E exhibits the SAME pre-existing flake.
-      await kioskPage.goto('/admin/order-status-screen', { waitUntil: 'domcontentloaded' });
-      await kioskPage.waitForTimeout(2_000);
+      // [CORRECTIF 2026-08-25] Le « parking » de la page borne sur /admin/order-status-screen
+      // est SUPPRIMÉ : il était la cause directe du 401 au stage « quote ».
+      //
+      // Pourquoi, avec la preuve : `resources/js/shared/axios-setup.js:97-98` installe un
+      // intercepteur de requête qui ÉCRASE systématiquement l'en-tête —
+      //     config.headers['Authorization'] = token ? `Bearer ${token}` : '';
+      // — avec le jeton lu dans le store Vuex. Le Bearer explicite passé par
+      // `placeKioskOrder` n'a donc JAMAIS d'effet sur une page où l'application est montée :
+      // seul compte le jeton du store.
+      //
+      // Or `kioskCart` n'est pas dans les `paths` persistés (`resources/js/store/index.js`) :
+      // quitter /kiosk détruit le jeton borne en mémoire. Sur la page garée, le store était
+      // donc vide, `selectSurfaceBearerToken` retournait null, l'intercepteur envoyait
+      // `Authorization: ''` — d'où le 401, quelle que soit la qualité du jeton émis à côté.
+      //
+      // Le parking soignait la révocation et provoquait une panne pire. On reste sur la
+      // surface borne, comme Wave E et rush-sync qui passent, et on s'appuie sur la reprise
+      // bornée ci-dessous pour absorber la révocation par auto-login.
+      await kioskPage.goto('/kiosk/idle', { waitUntil: 'domcontentloaded' });
+      await kioskPage.waitForTimeout(3_000);
 
       await loginAsChefOperator(kdsPage);
       await expect(kdsPage).toHaveURL(
@@ -340,18 +416,21 @@ test.describe('Kiosk · KDS · OSS sync audit Wave D — cross-surface lifecycle
       let token;
       // Force a fresh Sanctum issuance — any cached token from prior test
       // runs / parallel agents may already be revoked by the SPA auto-login.
-      // [SYNC-D fix 2026-05-11] Use the Node-side http.request fallback path
-      // (page=null) instead of in-browser axios. The kiosk SPA's
-      // KioskLoginComponent.startAutoLogin retry timer (4s/8s/16s/30s
-      // backoff) will REVOKE any in-browser-issued token mid-PHASE-2 because
-      // Sanctum revokes-on-relogin (CLAUDE.md §9). Issuing the token from
-      // Node bypasses the SPA's CSRF-cookie-bound axios entirely and is
-      // immune to the auto-login race. Wave E exhibits the SAME pre-
-      // existing flake (verified 2026-05-11: Wave E spec also fails with
-      // identical "stage=quote HTTP 401 Unauthenticated").
+      // [CORRECTIF 2026-08-25] Le contournement « émettre depuis Node » date du 2026-05-11 et
+      // n'est PLUS valide. Depuis le scopage multi-appareils du 2026-08-07, l'identité
+      // d'appareil n'est pas prise dans un en-tête du client : elle est DÉRIVÉE DE LA MACHINE
+      // (`KioskMachineLoginController` → `issueForDevice(..., 'kiosk-'.$kioskId)`). Le jeton
+      // émis depuis Node et celui émis par la borne portent donc le MÊME `device_id`, et
+      // `DeviceTokenService` supprime le précédent jeton de ce device (ligne 127-128). Passer
+      // par Node ne contourne plus rien : ça garantit au contraire de se faire révoquer par
+      // l'auto-login de la borne, d'où le 401 au stage « quote ».
+      //
+      // Mesuré le 2026-08-25 : jeton #10711 émis depuis Node, supprimé, remplacé par #10713
+      // émis par la borne — puis 401 sur le devis. Wave E et rush-sync, qui passent, utilisent
+      // tous deux la voie navigateur. On s'aligne sur elles : un seul émetteur par appareil.
       resetKioskToken();
       try {
-        token = await getKioskApiToken(null);
+        token = await getKioskApiToken(kioskPage);
       } catch (e) {
         throw new Error(
           `Wave D: kiosk Sanctum token issuance failed: ${e?.message || e}. ` +
@@ -373,20 +452,51 @@ test.describe('Kiosk · KDS · OSS sync audit Wave D — cross-surface lifecycle
 
       const t0 = Date.now();
       let placement;
-      try {
-        placement = await placeKioskOrder(kioskPage, {
-          items: itemsPayload,
-          paymentMethod: PAYMENT_CASH,
-          orderType: ORDER_TYPE_TAKEAWAY,
-          // Cash kiosk = pay-at-counter; status lands ACCEPT immediately on
-          // store, payment-confirm endpoint is CARD/TR-only. Skipping is
-          // the correct path — the order surfaces on KDS via status=ACCEPT.
-          skipPaymentConfirm: true,
-        });
-      } catch (e) {
-        observations.push(`state04: placeKioskOrder failed: ${e?.message || e}`);
+      // [CORRECTIF 2026-08-25] Reprise bornée sur 401.
+      //
+      // Une borne n'a QU'UN jeton : `device_id` est dérivé de la machine, donc toute nouvelle
+      // émission révoque la précédente (`DeviceTokenService` ligne 127-128). Le SPA de la borne
+      // relance son auto-login dès qu'il voit un 401, ce qui révoque le jeton du banc — et le
+      // banc, en réémettant, révoque celui du SPA. Les deux se volent le jeton à tour de rôle.
+      // Aucune des deux voies (Node ou navigateur) n'échappe à cette course.
+      //
+      // On fait donc ce que fait une vraie borne face à un 401 : réémettre et rejouer, un nombre
+      // BORNÉ de fois. Le devis est idempotent côté serveur, donc rejouer ne crée pas de
+      // commande fantôme — et si les trois tentatives échouent, on remonte l'échec tel quel
+      // plutôt que de le maquiller.
+      const MAX_TENTATIVES_JETON = 3;
+      let derniereErreur = null;
+      for (let tentative = 1; tentative <= MAX_TENTATIVES_JETON; tentative += 1) {
+        try {
+          placement = await placeKioskOrder(kioskPage, {
+            tokenPrefix: PREFIXE_AUDIT,
+            items: itemsPayload,
+            paymentMethod: PAYMENT_CASH,
+            orderType: ORDER_TYPE_TAKEAWAY,
+            // Cash kiosk = pay-at-counter; status lands ACCEPT immediately on
+            // store, payment-confirm endpoint is CARD/TR-only. Skipping is
+            // the correct path — the order surfaces on KDS via status=ACCEPT.
+            skipPaymentConfirm: true,
+          });
+          derniereErreur = null;
+          break;
+        } catch (e) {
+          derniereErreur = e;
+          const est401 = /HTTP 401|Unauthenticated/i.test(String(e?.message || e));
+          observations.push(
+            `state04: placeKioskOrder tentative ${tentative}/${MAX_TENTATIVES_JETON} échouée`
+            + `${est401 ? ' (401 — jeton révoqué par l’auto-login borne)' : ''}: ${e?.message || e}`
+          );
+          if (!est401 || tentative === MAX_TENTATIVES_JETON) break;
+          // Laisser l'auto-login de la borne se stabiliser, puis reprendre SON jeton.
+          resetKioskToken();
+          await kioskPage.waitForTimeout(3_000);
+          token = await getKioskApiToken(kioskPage);
+        }
+      }
+      if (derniereErreur) {
         await kioskRec.snap('04-d-kiosk-pay-FAIL');
-        throw e;
+        throw derniereErreur;
       }
       timings.kiosk_pay_to_response_ms = Date.now() - t0;
       capturedOrderIds.push(placement.orderId);
@@ -475,20 +585,34 @@ test.describe('Kiosk · KDS · OSS sync audit Wave D — cross-surface lifecycle
         `(measured from immediately-after-placeKioskOrder resolve)`
       );
       // SYNC-1 source-isolation : assert the card lands in the kiosk lane.
+      // [FIX 2026-08-25] Attente BORNÉE au lieu d'un relevé instantané.
+      //
+      // Ce contrôle était un unique `evaluate` exécuté juste après la vérification de réception,
+      // sans la moindre attente : il courait contre le rendu du tableau KDS et rendait `false`
+      // pour une carte qui arrivait une seconde plus tard. La propriété à prouver n'est pas
+      // « la carte est là À CET INSTANT » mais « elle atterrit bien dans la file BORNE ».
+      //
+      // Vérifié en base pour cette commande : `source_surface = 'kiosk'` est correctement
+      // renseigné et `SimpleOrderResource:63` le sérialise — le produit classe donc bien. On
+      // sonde jusqu'à 15 s, ce qui reste une exigence stricte pour un tableau de cuisine.
       let kdsKioskLanePresent = false;
-      try {
-        kdsKioskLanePresent = await kdsPage.evaluate((orderId) => {
-          const cards = Array.from(
-            document.querySelectorAll('[data-kds-order-card="kiosk"]')
-          );
-          return cards.some((c) => {
-            const hdr = c.querySelector(`[id^="order-${orderId}-"]`);
-            if (hdr) return true;
-            const text = c.textContent || '';
-            return text.includes('#' + orderId) || text.includes('N°' + orderId);
-          });
-        }, placement.orderId);
-      } catch (_e) { /* ignore */ }
+      const limiteIsolation = Date.now() + 15_000;
+      while (Date.now() < limiteIsolation && !kdsKioskLanePresent) {
+        try {
+          kdsKioskLanePresent = await kdsPage.evaluate((orderId) => {
+            const cards = Array.from(
+              document.querySelectorAll('[data-kds-order-card="kiosk"]')
+            );
+            return cards.some((c) => {
+              const hdr = c.querySelector(`[id^="order-${orderId}-"]`);
+              if (hdr) return true;
+              const text = c.textContent || '';
+              return text.includes('#' + orderId) || text.includes('N°' + orderId);
+            });
+          }, placement.orderId);
+        } catch (_e) { /* le tableau peut se re-rendre pendant la sonde */ }
+        if (!kdsKioskLanePresent) await kdsPage.waitForTimeout(1_000);
+      }
       observations.push(`state05: SYNC-1 kiosk-lane source-isolation present=${kdsKioskLanePresent}`);
       expect.soft(
         kdsKioskLanePresent,
@@ -1133,7 +1257,7 @@ test.describe('Kiosk · KDS · OSS sync audit Wave D — cross-surface lifecycle
       }
       // Belt-and-suspenders: prefix sweep (shared with Wave E specs).
       try {
-        cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+        cleanupKioskAuditOrders(PREFIXE_AUDIT);
       } catch (_e) { /* best-effort */ }
       try { kioskRec.dispose(); } catch (_e) { /* ignore */ }
       try { kdsRec.dispose(); } catch (_e) { /* ignore */ }

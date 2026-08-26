@@ -1,0 +1,254 @@
+{
+  "start_ts": "2026-08-25T11:54:22.385Z",
+  "captures": [
+    {
+      "slug": "A01-kiosk-idle",
+      "file": "A01-kiosk-idle.png",
+      "ts": "2026-08-25T11:54:27.378Z",
+      "url": "http://127.0.0.1:8766/kiosk/idle"
+    },
+    {
+      "slug": "A02-kiosk-confirmation",
+      "file": "A02-kiosk-confirmation.png",
+      "ts": "2026-08-25T11:54:35.341Z",
+      "url": "http://127.0.0.1:8766/kiosk/idle"
+    },
+    {
+      "slug": "A03-kds-initial",
+      "file": "A03-kds-initial.png",
+      "ts": "2026-08-25T11:54:45.394Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A04-kds-order-visible",
+      "file": "A04-kds-order-visible.png",
+      "ts": "2026-08-25T11:54:45.564Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A05-kds-after-preparing",
+      "file": "A05-kds-after-preparing.png",
+      "ts": "2026-08-25T11:54:52.458Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A06-kds-after-prepared",
+      "file": "A06-kds-after-prepared.png",
+      "ts": "2026-08-25T11:54:55.396Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A07-oss-pret-column",
+      "file": "A07-oss-pret-column.png",
+      "ts": "2026-08-25T11:55:03.434Z",
+      "url": "http://127.0.0.1:8766/admin/order-status-screen"
+    },
+    {
+      "slug": "A08-oss-after-pickup",
+      "file": "A08-oss-after-pickup.png",
+      "ts": "2026-08-25T11:55:11.043Z",
+      "url": "http://127.0.0.1:8766/admin/order-status-screen"
+    },
+    {
+      "slug": "B01-kds-pos-order-visible",
+      "file": "B01-kds-pos-order-visible.png",
+      "ts": "2026-08-25T11:55:29.809Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "B02-kds-after-preparing",
+      "file": "B02-kds-after-preparing.png",
+      "ts": "2026-08-25T11:55:35.902Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "B03-kds-after-prepared",
+      "file": "B03-kds-after-prepared.png",
+      "ts": "2026-08-25T11:55:38.820Z",
+      "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+    },
+    {
+      "slug": "B04-oss-pret-column",
+      "file": "B04-oss-pret-column.png",
+      "ts": "2026-08-25T11:55:46.660Z",
+      "url": "http://127.0.0.1:8766/admin/order-status-screen"
+    },
+    {
+      "slug": "B05-oss-after-pickup",
+      "file": "B05-oss-after-pickup.png",
+      "ts": "2026-08-25T11:55:54.128Z",
+      "url": "http://127.0.0.1:8766/admin/order-status-screen"
+    }
+  ],
+  "latencies": {
+    "flowA_place_ms": 4772,
+    "flowA_kiosk_to_kds_ms": 6901,
+    "flowA_bump_accept_to_preparing_ms": 802,
+    "flowA_bump_preparing_to_prepared_ms": 891,
+    "flowA_pickup_to_remove_ms": 7471,
+    "flowB_seed_ms": 826,
+    "flowB_pos_to_kds_ms": 6863,
+    "flowB_bump_accept_to_preparing_ms": 1039,
+    "flowB_bump_preparing_to_prepared_ms": 856,
+    "flowB_pickup_to_remove_ms": 7411
+  },
+  "flowA": {
+    "steps": [
+      {
+        "slug": "A01-kiosk-idle",
+        "file": "A01-kiosk-idle.png",
+        "ts": "2026-08-25T11:54:27.378Z",
+        "url": "http://127.0.0.1:8766/kiosk/idle"
+      },
+      {
+        "slug": "A02-kiosk-confirmation",
+        "file": "A02-kiosk-confirmation.png",
+        "ts": "2026-08-25T11:54:35.341Z",
+        "url": "http://127.0.0.1:8766/kiosk/idle"
+      },
+      {
+        "slug": "A03-kds-initial",
+        "file": "A03-kds-initial.png",
+        "ts": "2026-08-25T11:54:45.394Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A04-kds-order-visible",
+        "file": "A04-kds-order-visible.png",
+        "ts": "2026-08-25T11:54:45.564Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A05-kds-after-preparing",
+        "file": "A05-kds-after-preparing.png",
+        "ts": "2026-08-25T11:54:52.458Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A06-kds-after-prepared",
+        "file": "A06-kds-after-prepared.png",
+        "ts": "2026-08-25T11:54:55.396Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A07-oss-pret-column",
+        "file": "A07-oss-pret-column.png",
+        "ts": "2026-08-25T11:55:03.434Z",
+        "url": "http://127.0.0.1:8766/admin/order-status-screen"
+      },
+      {
+        "slug": "A08-oss-after-pickup",
+        "file": "A08-oss-after-pickup.png",
+        "ts": "2026-08-25T11:55:11.043Z",
+        "url": "http://127.0.0.1:8766/admin/order-status-screen"
+      }
+    ],
+    "consoleErrors": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-08-25T11:54:24.709Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-08-25T11:54:25.819Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-08-25T11:54:30.892Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:54:36.436Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:54:37.376Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:54:43.858Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:00.729Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:09.313Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:16.200Z"
+      }
+    ],
+    "networkFails": [],
+    "orderId": 6909,
+    "queueNumber": "A0112",
+    "orderSerial": "2508266909",
+    "ossReadyAppeared": true,
+    "complete": true
+  },
+  "flowB": {
+    "steps": [
+      {
+        "slug": "B01-kds-pos-order-visible",
+        "file": "B01-kds-pos-order-visible.png",
+        "ts": "2026-08-25T11:55:29.809Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "B02-kds-after-preparing",
+        "file": "B02-kds-after-preparing.png",
+        "ts": "2026-08-25T11:55:35.902Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "B03-kds-after-prepared",
+        "file": "B03-kds-after-prepared.png",
+        "ts": "2026-08-25T11:55:38.820Z",
+        "url": "http://127.0.0.1:8766/admin/kitchen-display-system"
+      },
+      {
+        "slug": "B04-oss-pret-column",
+        "file": "B04-oss-pret-column.png",
+        "ts": "2026-08-25T11:55:46.660Z",
+        "url": "http://127.0.0.1:8766/admin/order-status-screen"
+      },
+      {
+        "slug": "B05-oss-after-pickup",
+        "file": "B05-oss-after-pickup.png",
+        "ts": "2026-08-25T11:55:54.128Z",
+        "url": "http://127.0.0.1:8766/admin/order-status-screen"
+      }
+    ],
+    "consoleErrors": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:20.876Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:21.836Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:28.243Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:44.004Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "ts": "2026-08-25T11:55:52.373Z"
+      }
+    ],
+    "networkFails": [],
+    "orderId": 6910,
+    "queueNumber": "P86F9",
+    "orderSerial": "WPCROSS-POS-B-FLOW-6B3C",
+    "ossReadyAppeared": true,
+    "complete": true
+  },
+  "attestations": {}
+}

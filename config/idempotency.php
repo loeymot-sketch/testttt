@@ -54,6 +54,25 @@ return [
         // réel. Requis ici = la clé devient OBLIGATOIRE (422 si absente), plus de bypass silencieux.
         // Sentinelle IdempotencyRequiredRoutesCoverageTest rouge depuis le 08-03 → verte.
         'api/frontend/order/*/mollie-checkout',
+
+        // [FIX 2026-08-25] Trois routes portaient l'intergiciel `idempotency` sans figurer ici :
+        // la clé restait donc FACULTATIVE, et un appelant qui l'omet traversait sans dédup.
+        //   · pos-loyalty/credit-manual  → crédite des points au comptoir (de la valeur)
+        //   · pos-loyalty/deduct-manual  → en déduit
+        //   · raw-materials/{id}/adjust  → corrige un stock matière, avec raison obligatoire
+        // Un double appui sur l'un des deux premiers crédite ou débite deux fois un client ;
+        // sur le troisième, il fausse un inventaire.
+        //
+        // Vérifié avant d'exiger la clé, pour ne casser aucune interface : les trois appelants
+        // l'envoient DÉJÀ — `PosLoyaltyIdentifyModal.vue:722,756` (`cleIdempotence`) et
+        // `RawMaterialAdjustComponent.vue:290` (`buildIdempotencyHeaders`). Les inscrire ici ne
+        // change donc rien au parcours réel : ça supprime seulement le bypass silencieux.
+        //
+        // C'est la sentinelle `IdempotencyRequiredRoutesCoverageTest` qui les a signalées — elle
+        // était rouge et personne n'avait donné suite.
+        'api/admin/pos-loyalty/credit-manual',
+        'api/admin/pos-loyalty/deduct-manual',
+        'api/admin/raw-materials/*/adjust',
         // [GOAL-CMS-2026-05-18 C-P0-H heal] — close header-omission bypass on
         // every route declared with `idempotency` middleware. Source: R3
         // T-1.4.2 Sec S-1 + sentinel `IdempotencyRequiredRoutesCoverageTest`

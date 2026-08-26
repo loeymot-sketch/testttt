@@ -23,17 +23,45 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { loginAsKiosk } = require('./helpers/login');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
+
+// [FIX 2026-08-25] `prefers-reduced-motion: reduce` pour tout ce fichier.
+//
+// La tuile « À emporter » de la borne porte une animation d'ambiance PERMANENTE
+// (`cay-pulse 2.6s infinite`, KioskIdleScreenComponent.vue:845). Playwright refuse de cliquer
+// un élément dont la boîte ne se stabilise jamais : « element is not stable », puis timeout —
+// le banc mourait sans que le produit ait le moindre tort.
+//
+// On ne force PAS le clic (`force: true` masquerait une vraie non-cliquabilité). On active le
+// mode mouvement réduit, que le composant honore DÉJÀ explicitement : sous
+// `prefers-reduced-motion`, `.kiosk-order-type-card--takeaway` reçoit `animation: none`
+// (lignes 937 et 950). La tuile se stabilise, le clic redevient possible, et on éprouve au
+// passage le chemin d'accessibilité qu'une borne doit respecter.
+// ⚠️ `test.use({ reducedMotion: 'reduce' })` est SANS EFFET dans ce dépôt — mesuré le
+// 2026-08-25 sur Playwright 1.58.2 : `matchMedia('(prefers-reduced-motion: reduce)').matches`
+// restait `false`. On passe donc par `page.emulateMedia`, qui lui est vérifié : il fait bien
+// tomber l'animation de la tuile à `animationName: none`. Ne pas « simplifier » en revenant au
+// `test.use` : il échoue en silence, et le banc repart en timeout sans rien expliquer.
+test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+});
+
 const {
   placeKioskOrder,
   cleanupKioskAuditOrders,
   resetKioskToken,
   getKioskApiToken,
   PAYMENT_CARD,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const SHOT_DIR = path.resolve(
   __dirname,
@@ -144,6 +172,37 @@ async function openItemWizard(page, itemId, categoryId) {
 }
 
 // URL #1 : idle — splash + tap-to-start + lang select
+
+/**
+ * [FIX 2026-08-25] Résolution dynamique d'un article À ASSISTANT.
+ *
+ * Le cas URL-3 demandait « item 24 dans la catégorie 1 ». L'article 24 (« Galette Cayenne »)
+ * existe bien, mais il est en catégorie 2 : la carte n'apparaissait donc JAMAIS dans la
+ * catégorie ouverte, et l'assistant ne pouvait pas s'ouvrir. Un banc ne doit pas coder un
+ * couple (article, catégorie) qui se désynchronise au premier remaniement du menu.
+ *
+ * Deux modèles de liaison coexistent pour les profils : par ARTICLE (`custom`) ou par
+ * CATÉGORIE (`sandwich`, `tacos`). On accepte les deux.
+ */
+function resoudreArticleAvecAssistant(gabarit) {
+  const out = execFileSync('php', ['artisan', 'tinker', '--execute', `
+    $it = DB::table('items')
+      ->join('item_wizard_profiles as p', function ($j) {
+        $j->on('p.item_id', '=', 'items.id')
+          ->orOn('p.item_category_id', '=', 'items.item_category_id');
+      })
+      ->where('items.status', 5)
+      ->where('p.template', '${gabarit}')
+      ->orderBy('items.id')
+      ->first(['items.id as id', 'items.name as name', 'items.item_category_id as cat']);
+    echo 'WIZ_START=' . json_encode($it) . '=WIZ_END';
+  `], { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 30000 });
+  const m = out.match(/WIZ_START=(.*?)=WIZ_END/s);
+  if (!m || m[1] === 'null') return null;
+  const o = JSON.parse(m[1]);
+  return { itemId: Number(o.id), categoryId: Number(o.cat), name: String(o.name) };
+}
+
 test.describe('Wave P-2 Kiosk — page-by-page audit', () => {
   test.setTimeout(180_000);
 
@@ -196,7 +255,10 @@ test.describe('Wave P-2 Kiosk — page-by-page audit', () => {
     try {
       await loginAsKiosk(page);
       await gotoCategoriesViaTakeaway(page);
-      const opened = await openItemWizard(page, 24, 1);
+      const cible = resoudreArticleAvecAssistant('sandwich');
+      expect(cible, 'aucun article actif porteur d\'un profil « sandwich »').not.toBeNull();
+      console.log(`URL-3 article résolu : #${cible.itemId} « ${cible.name} » (cat ${cible.categoryId})`);
+      const opened = await openItemWizard(page, cible.itemId, cible.categoryId);
       await snap('url-03-wizard-sandwich-step1');
       console.log(`url-03 wizard opened=${opened} url=${page.url()}`);
 
@@ -224,7 +286,7 @@ test.describe('Wave P-2 Kiosk — page-by-page audit', () => {
       }
 
       const txt = await page.locator('body').innerText().catch(() => '');
-      expect(opened, 'sandwich wizard should open for item 24').toBeTruthy();
+      expect(opened, `l'assistant doit s'ouvrir pour l'article #${cible.itemId} « ${cible.name} »`).toBeTruthy();
       expect(I18N_LEAK_RE.test(txt)).toBeFalsy();
     } finally { dispose(); }
   });
@@ -387,10 +449,13 @@ test.describe('Wave P-2 Kiosk — page-by-page audit', () => {
       let placedSerial = null;
       try {
         const result = await placeKioskOrder(page, {
+          tokenPrefix: PREFIXE_AUDIT,
           items: [{
             item_id: 35,                                       // Petite Frites
             quantity: 1,
-            item_variations: [{ id: 130, quantity: 1 }],       // Nature
+            // [FIX 2026-08-25] La variation 130 n'existe plus : le devis répondait 422 et
+            // l'échec n'était que journalisé. L'article résolu n'exige aucune variation.
+            item_variations: [],
             item_extras: [],
             item_addons: [],
           }],

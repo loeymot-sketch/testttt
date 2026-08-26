@@ -47,6 +47,148 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-25 — GOAL `CONSOLIDATION_V1_PRODUCTION_20260825` LANCÉ : W0/W1/W2/W5 fermées, deux P0 trouvés**
+>
+> HEAD **`43b120c7d`** inchangé · branche `pos/category-first-caisse-2026-06-23` · **rien commité,
+> rien poussé** · filet `backup/pre-consolidation-2026-08-25` posé sans changer de branche active.
+>
+> **DEUX P0 TROUVÉS EN CHERCHANT AUTRE CHOSE — aucun débloqué sans votre accord**
+> · **File `notifications` orpheline** : 1 490 travaux `SendFcmNotificationJob`, `attempts=0`
+>   (jamais tentés). Aucun worker ne l'écoute (`--queue=high,default` en local ET en prod), et les
+>   **trois** sondes de santé comptaient littéralement `default`+`high` → faux vert sur les trois
+>   surfaces. Sondes rendues honnêtes (`queue.monitored_queues` + sentinelle qui DÉCOUVRE les
+>   `onQueue()` du code). `/api/healthz` : `queue_pending` **0 → 1490**.
+>   ⛔ Worker NON rebranché : le faire enverrait 1 490 push sur des commandes vieilles de semaines.
+> · **Playwright visait un AUTRE worktree** : défaut `localhost:8000` = `.claude/worktrees/goal-caisse-vision-2026-08-24`
+>   (HEAD `6b9f4a965`), **89 fichiers / 15 356 lignes d'écart** avec l'arbre principal servi sur `:8766`.
+>   Preuve : même route, `queue_pending` 0 vs 1490. Garde d'identité posée dans `global-setup.js`,
+>   prouvée (`:8000` rejeté, `:8766` accepté, zéro résidu).
+>
+> **AUTRES VRAIS DÉFAUTS CORRIGÉS**
+> · `foodking:ensure-admin` n'avait **aucune garde de production** (mot de passe par défaut `123456`)
+>   → refus explicite en prod, `--force` pour l'intention délibérée. ROUGE → VERT.
+> · Alertes SLA **sans borne basse** : 344 commandes remontaient, **les 344** de plus de 24 h, la plus
+>   ancienne 75 jours. Fenêtre bornée (`config/dashboard.php`, défaut 24 h). Effet : **344 → 0** de bruit.
+> · **11 articles vendables invisibles en cuisine** (`kds_station = none`), dont 7 boissons alors que
+>   8 boissons identiques sont en `bar`, et « Frites Seules ». ⛔ Aucun poste réattribué — décision owner.
+> · Cliquet d'autorisation FormRequest **64 → 62**.
+> · Trois citations de ligne périmées corrigées dans `CLAUDE.md` et `CONSTITUTION.md`.
+>
+> **CE QUE J'AI CORRIGÉ CHEZ MOI** (consigné : un audit qui ne publie que ses succès ment sur son
+> taux d'erreur) — « 8 specs partagent le préfixe » → **17** · « gates DROP_TABLE dangereux » →
+> **caducs, les tables n'existent plus** · « HealthzController ne teste rien » → **comportement
+> documenté, escalade retirée** · deux de mes propres sentinelles défaillantes (cliquet qui ne
+> mordait pas, faux positif sur commentaires), trouvées par test négatif avant livraison · une
+> sentinelle écrite en PHPUnit sur des données vivantes alors que les tests tournent en sqlite
+> `:memory:` — supprimée et refaite en Vitest.
+>
+> **PREUVES** · Vitest **445 fichiers / 3 644 passés / 0 échec** · PHPUnit base **5 194 passés**
+> (⚠️ le cycle précédent notait 4 862 : écart non expliqué, je ne l'invente pas) · zone gelée
+> **0 ligne** · chaîne NF525 8 095 → 8 119, **ajout seul**, `z_reports` stable à 33 ·
+> **44+ tests créés**, chaque sentinelle prouvée mordante par test négatif.
+>
+> ⚠️ **PRÉCISION D'ENVIRONNEMENT (à ne pas perdre)** : `.env` de cet arbre porte `APP_ENV=local`
+> et `DB_DATABASE=foodking_e2e`. **Tous les volumes ci-dessus (344, 1 490, 27, 11) sont des mesures
+> LOCALES**, pas des chiffres de production. Les DÉFAUTS de code et de configuration, eux, valent
+> partout — notamment le worker de production qui n'écoute pas `notifications`. Premier geste sur
+> le serveur : **mesurer**, pas corriger (`php artisan foodking:commandes-figees`,
+> `Queue::size()` sur `queue.monitored_queues`).
+>
+> ⚠️ **HYPOTHÈSE OUVERTE sur la vague D** : les deux worktrees partagent la base mais pas le code —
+> `KitchenDisplaySystemComponent.vue` diffère de **29 lignes**. Le rouge de la vague D a pu être
+> mesuré sur l'autre composant KDS. **À rejouer sous `PLAYWRIGHT_BASE_URL=http://127.0.0.1:8766`
+> AVANT de chercher un défaut dans le code KDS.**
+>
+> ✅ **W11ter — ROUTES MESURÉES AU 3e ESSAI : 3 specs corrigées, 1 reste.** J'ai construit le
+> résolveur que je disais nécessaire (appariement d'accolades + recomposition parent/enfant +
+> routes Blade de `web.php` + exclusion des statiques). Résultats successifs : **0** (attrape-tout
+> `/:pathMatch(.*)*` appariait tout) → **45** (enfants relatifs jamais recomposés) → **2** (juste).
+> Trouvé : **`/admin/stock-rupture-dashboard`**, morte et **déjà documentée CLAUDE.md:346**
+> (« 404 → route réelle `admin.stock.rupture` ») — **3 specs y allaient encore**, corrigées.
+> Reste `/admin/delivery-boys/create` (1 spec) : le routeur n'a que `""`, `show/:id`,
+> `show/:id/:orderId` — le bon chemin ne se devine pas. Cliquet à **1**, prouvé mordant.
+> **DÉRIVE COMPLÈTE : contrats 0 · disposition 14 · sélecteurs 23 · routes 1** — 4 dimensions,
+> 4 cliquets adossés à la source.
+> ⚠️ **Sur 5 relevés, mon 1er chiffre a été faux 5 fois** (16, 18, 132, 0, 45) : toujours parce que
+> l'instrument mesurait autre chose que ce que je croyais. Seul le **test négatif** l'a détecté.
+> Une sentinelle qu'on n'a pas vue échouer n'est pas une preuve.
+>
+> ❌ **W11bis — RÉTRACTÉ (remplacé par W11ter ci-dessus)** : J'ai annoncé « 0 chemin mort »,
+> puis « 45 » — **les deux faux**. Le routeur a un attrape-tout `path: "/:pathMatch(.*)*"`
+> (`router/index.js:158`) qui appariait tout (test incapable d'échouer), puis mon extraction à plat
+> ignorait les routes ENFANTS à chemin relatif (`/admin/settings` + `children: [{path:"taxes"}]`).
+> Mesurer juste exigerait de recomposer l'arbre de routes — hors de portée d'une regex.
+> **Vérification retirée**, échec documenté. C'est la 4e fois du jour que le test négatif attrape
+> mon propre instrument. Dérive mesurée : contrats **0** · disposition **14** · sélecteurs **23** ·
+> routes **non mesuré**.
+>
+> 🔴 **W11 — LA CLASSE GÉNÉRALISÉE : 23 sélecteurs que rien ne pose.** Balayage `resources/**` +
+> `public/js/**` contre `tests/e2e/**` : **23** sélecteurs cherchés par des specs, posés par AUCUN
+> fichier produit (`kiosk-cart-validate`, `kiosk-tap-to-start`, `receipt-close`,
+> `stock-rupture-dashboard`…). Cliquet à 23 (`tests/js/e2eSelecteursMorts.spec.js`, prouvé mordant).
+> ⚠️ Chiffre corrigé **deux fois** : 132 → 55 (gabarits `` `kds-cols-${n}` `` — `kds-cols-4` EST posé)
+> → 23 (specs mobile exclues, leurs sélecteurs existent dans `mobile/`, codebase séparé §3bis).
+> **TROIS relevés, trois fois le même mécanisme** : le produit évolue légitimement, le harnais reste
+> figé, le test ACCUSE le produit. Les trois cliquets sont adossés à la SOURCE.
+> ⚠️ Et mon premier chiffre a été surestimé **à chaque fois** (16→12, 18→14, 132→23) : c'est le test
+> négatif, systématiquement, qui a corrigé — pas la confiance.
+>
+> 🔴 **W10bis — DEUXIÈME CAUSE SYSTÉMIQUE : 14 specs visent une interface morte.** Relevé complet :
+> **14** specs affirment contre `data-kds-order-card`, **0** ne force la V1, **3** visent la V2.
+> Cliquet à 14 (`tests/js/e2eSelecteursKdsV2.spec.js`, prouvé mordant). ⛔ Aucune spec migrée —
+> choisir ce qu'un test doit prouver est une décision owner.
+> **Deux causes systémiques le même jour** — une route durcie sans que les specs suivent
+> (12 corrigées, cliquet 0), une interface refondue sans que les specs suivent (14 identifiées).
+> Même schéma : le produit bouge légitimement, le harnais reste figé, et les tests **accusent le
+> produit**. Les deux cliquets sont donc adossés à la SOURCE (`config/idempotency.php` d'un côté,
+> le composant de l'autre) : si elle rebouge, ils le diront.
+>
+> ✅✅ **W10 — SYNC-1 RÉSOLU : LA VAGUE D N'AVAIT AUCUN DÉFAUT PRODUIT.** Sonde corrigée : la page
+> KDS **reçoit** bien la commande (`source_surface="kiosk"`, `status=4`) et l'**affiche**
+> (« NOUVELLE BORNE N°A0132 … EN ATTENTE ENCAISSEMENT »). Mais `KitchenDisplaySystemComponent:137`
+> rend `<KdsV2Grid v-if="useV2Layout">` — **`true` par défaut** — et `KdsV2Grid.vue` ne pose
+> **aucun** `data-kds-order-card`. **La spec vise un balisage V1 mort depuis la refonte.**
+> Déclic : l'absence du message « Aucune commande borne en cours. » prouvait que la colonne
+> entière n'était pas rendue. Les DEUX causes de la vague D étaient donc dans le harnais.
+> ⚠️ Décision owner : viser les sélecteurs V2 (recommandé), forcer la V1, ou les deux.
+> Dossier : `reports/audit/VAGUE_D_CAUSES_REELLES_2026-08-25.md`.
+>
+> ✅ **W8 — DETTE D'IDEMPOTENCE SOLDÉE, ET LA « LENTEUR DE SYNCHRO » N'EXISTAIT PAS.**
+> 12 specs corrigées, cliquet à **0**, prouvé mordant. Vague D rejouée : `state07` et `state09`
+> passent de **422 à 202**, et surtout l'OSS passe de `pickedUp=false / 12 114 ms` à
+> **`TRUE / 13 ms`** (puis 12 600 ms → **3 ms**). La synchro n'était pas lente : **la transition
+> qu'elle devait propager n'avait jamais eu lieu**. Trois ordres de grandeur. Il ne reste plus
+> QU'UN état rouge : la prise en charge initiale de la carte borne par le KDS (SYNC-1).
+> ⚠️ Le chiffre de la dette a été faux 4 fois (16 → 18 → 13 → 12 réelles) ; chaque correction est
+> venue d'un contre-exemple cherché exprès. Et je me suis piégé moi-même : mon commentaire
+> contenait une séquence ouvrant un commentaire de bloc, qui avalait la ligne d'en-tête et
+> produisait 8 faux positifs sur des fichiers déjà réparés. Dépouilleur durci (lignes avant blocs).
+>
+> 🔴 **W7 — VAGUE D REJOUÉE SUR LE BON SERVEUR.** Mon hypothèse « c'était le mauvais worktree »
+> est **FAUSSE** : `data-kds-order-card="kiosk"` est identique dans les deux arbres, le diff de
+> 29 lignes ne touche que l'affichage des extras. Mais la campagne a livré mieux :
+> **18 specs sur 26 appellent `kds-order/change-status` SANS `X-Idempotency-Key`** → 422 garanti,
+> et l'échec **ressemble à un défaut de synchro cuisine**. Une part majeure du pourrissement E2E
+> s'explique probablement là. Vague D corrigée + sentinelle `e2eRoutesIdempotentesEnTete.spec.js`
+> (cliquet 18, prouvée mordante). La spec affirmait aussi « port 6001 down » — **faux**, il répond
+> HTTP 200. Échec résiduel : carte KDS absente avec **7 hypothèses éliminées** (statut, libération
+> board `payment_status=15`, nom de champ, station, socket, branche, worktree) → défaut de **rendu**,
+> confirmé. ⚠️ J'ai failli rapporter `status=16` comme cause : c'est le nettoyage qui **annule**
+> (NF525, on ne supprime pas). Dossier : `reports/audit/VAGUE_D_CAUSES_REELLES_2026-08-25.md`.
+>
+> 🔴 **CORRECTION LA PLUS IMPORTANTE — le verdict GPT EXISTE.** J'ai affirmé quatre fois que le
+> canal GPT n'avait rien produit : **faux**. `GPT_FINAL_AUDIT_CAISSE-SUPERVISOR-CONTROL-20260823.md`
+> porte **`VERDICT: REWORK`** + 6 constats, via un canal de repli (`foodking-complex-implementer`) ;
+> la Roue a **`VERDICT: PASS`**. L'échec HTTP 400 que j'avais trouvé ne concernait que `gpt-5.5-pro`.
+> **Vérifié ce jour : les 6 constats sont CLOS dans le code.** G1 se reformule en « REWORK →
+> RÉSOLU, 6 constats vérifiés » — clôture plus solide. Preuve :
+> `reports/audit/CORRECTION_VERDICT_GPT_EXISTE_2026-08-25.md`.
+>
+> **RESTE OUVERT** · vagues E2E D et F · boucle de convergence E2E · W3 ergonomie (bloquée G3/G4) ·
+> W6 montée Laravel (bloquée G5) · **7 décisions propriétaire** — voir
+> `reports/execution/RUN_CONSOLIDATION_V1_PRODUCTION_20260825.md`.
+
+
 > **2026-08-22 (soir) — GOAL CAISSE DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI**
 >
 > HEAD prod **`ac700e41c`** (== origin), avance rapide `e1ef70887..ac700e41c`, 7 commits, aucun
@@ -3685,6 +3827,26 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 ---
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
+
+### 🎯 GOAL ÉCRIT, NON LANCÉ — `plans/GOAL_CONSOLIDATION_V1_PRODUCTION_2026-08-25.md`
+Rédigé le **2026-08-25** (HEAD `43b120c7d`, branche `pos/category-first-caisse-2026-06-23`),
+44 995 octets, via la compétence `ultra-architect-planify`. **Il attend le « lance le GOAL ».**
+
+Il reprend exactement ce que le cycle `CAISSE-SUPERVISOR-CONTROL-20260823` a laissé ouvert :
+**6 systèmes · 19 sous-systèmes · 61 tâches · 7 vagues · 7 gates propriétaire**.
+Tous les ancrages ont été vérifiés par exécution réelle de `find`/`ls`/`grep`/`composer audit`.
+
+- **Exécutable tout de suite** : W1 (vérité documentaire) · W2 (harnais E2E — la plus importante) ·
+  W4 (borne & cuisine) · W5 (durcissement runtime).
+- **Bloqué sur gate** : W3 attend **G3** (grille de vente sous la ligne de flottaison) et **G4**
+  (portée de la recherche caisse) · W6 attend **G5** (montée Laravel 9 EOL) · W7 attend **G7** (poussée/étiquette).
+- **Décisions propriétaire en attente** : G1 clôture du cycle caisse **sans** verdict GPT (le canal
+  n'a jamais produit de sortie — HTTP 400 prouvé) · G2 gate UX Roue · G6 dette de gates (dont `DROP_TABLE`).
+- **Arbre de travail** : décision `include-in-scope` — 74 modifiés + 46 non suivis **préservés**,
+  aucun nettoyage Git/DB autorisé. Diff zone gelée = **0 ligne**.
+- **Bases à ne pas dégrader** : PHPUnit 4862 passés / sortie 0 · Vitest 3609 passés · 7 avis composer ·
+  9/11 specs E2E restaurées.
+
 
 ### 🎯✅ GOAL TERMINÉ — `plans/GOAL_CONFORT_MAX_ET_BASE_PROUVEE_2026-08-15.md`
 **Owner a dit "lance le goal" (2026-08-15 soirée) — 7/7 VAGUES FERMÉES.** Synthèse complète en

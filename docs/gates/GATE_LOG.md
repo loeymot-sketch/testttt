@@ -110,6 +110,7 @@ Rappel des **Absolute Prohibitions** : pas de remplissage du champ d’approbati
 
 La **reprise de boucle** reste conditionnée par le protocole §Resumption Protocol du même fichier (approbation humaine dans le brief, décision dans ce log, relecture du brief levé, plan à jour).
 
+| 2026-08-23 | `GATE-WHEEL-EXPERIENCE-UX-SIGNOFF-2026-08-23` | docs/gates/GATE_WHEEL_EXPERIENCE_UX_SIGNOFF_2026-08-23.md | `resources/views/admin/wheel/`, `public/images/wheel/` (UX acceptance only; no frozen path) | `PENDING_HUMAN_GATE` | (à approuver) | GOAL-WHEEL-EXPERIENCE-20260823 |
 | 2026-05-02 | `GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK_2026-05-02` | docs/gates/GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK_2026-05-02.md | app/Services/Pricing/PricingService.php | `PENDING_HUMAN_GATE` | (à approuver) | CV1-LIFECYCLE-UX-001 task 2.2 |
 | 2026-05-02 | `GATE_SCHEMA_STOCK_MOVEMENT_IDEMPOTENCY_KEY_UNIQUE_2026-05-02` | docs/gates/GATE_SCHEMA_STOCK_MOVEMENT_IDEMPOTENCY_KEY_UNIQUE_2026-05-02.md | database/migrations (DDL) + app/Services/Stock/StockService.php (small) | `PENDING_HUMAN_GATE` | (à approuver) | CV1-LIFECYCLE-UX-001 task 2.6 |
 | 2026-05-02 | `GATE_DROP_TABLE_DELIVERY_BOYS_V1_2026-05-02` | docs/gates/GATE_DROP_TABLE_DELIVERY_BOYS_V1_2026-05-02.md | resources/js/components/admin/deliveryBoys/** + tables delivery_boys | `PENDING_HUMAN_GATE` | (à approuver) | CV1-V1-CLOSEOUT-001 Lot B livraison |

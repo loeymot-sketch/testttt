@@ -545,7 +545,13 @@ test.describe('iter15 mega — Wave C (kiosk roundtrip → KDS + POS suivi)', ()
             const results = [];
             for (const payload of payloads) {
               try {
-                const res = await window.axios.post(`admin/kds-order/change-status/${id}`, payload);
+                const res = await window.axios.post(`admin/kds-order/change-status/${id}`, payload,
+          // [GOAL CONSOLIDATION 2026-08-25] En-tête OBLIGATOIRE : `config/idempotency.php`
+          // liste la route `kds-order/change-status/{id}` dans required_routes (un double
+          // bump enverrait deux notifications client). Sans l'en-tête → 422, et l'échec
+          // ressemble trompeusement à un défaut de synchro cuisine.
+          { headers: { 'X-Idempotency-Key': `idem-kds-${Date.now()}-${Math.random().toString(16).slice(2)}` } }
+        );
                 results.push({ ok: true, status: res.status, payload });
                 await new Promise((r) => setTimeout(r, 500));
               } catch (e) {

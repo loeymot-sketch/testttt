@@ -18,23 +18,53 @@
       (PaymentComponent / pos-wizard.js / admin-pos-v4.blade.php untouched).
     -->
     <div
-      v-if="!isOnline"
+      v-if="!isOnline || queueDepth > 0 || quarantineDepth > 0"
       class="pos-offline-banner"
+      :class="{ 'pos-offline-banner--quarantine': isOnline && quarantineDepth > 0 }"
       role="alert"
       aria-live="polite"
       data-testid="pos-offline-banner"
     >
-      <strong class="pos-offline-banner__label">&#x26A0; MODE DÉGRADÉ</strong>
-      <span class="pos-offline-banner__detail">
-        Commandes en file d'attente (<span data-testid="pos-offline-queue-depth">{{ queueDepth }}</span>)
+      <strong class="pos-offline-banner__label">
+        <!-- Hors connexion est l'état le plus urgent pour le caissier : il prime sur la
+             quarantaine, qui est un contrôle différé. -->
+        {{ !isOnline ? '⚠ HORS CONNEXION' : (quarantineDepth > 0 ? '⛔ CONTRÔLE REQUIS' : '⚠ MODE DÉGRADÉ') }}
+      </strong>
+      <!--
+        [REPLAN_8 2026-08-24] Les trois messages COEXISTENT au lieu de s'écraser.
+        Avant, `quarantineDepth > 0` mettait le message hors-ligne en `v-else-if` : or une entrée
+        en quarantaine n'est JAMAIS retirée (aucun chemin ne la supprime), donc dès qu'un poste en
+        avait une, l'avertissement « Hors connexion : aucune commande n'est enregistrée
+        localement » devenait définitivement invisible — exactement quand il compte le plus.
+      -->
+      <span
+        v-if="!isOnline"
+        class="pos-offline-banner__detail pos-offline-banner__detail--offline"
+        data-testid="pos-offline-detail"
+      >
+        Hors connexion : aucune commande n’est enregistrée localement. Vérifiez l’enregistrement serveur avant tout encaissement.
+      </span>
+      <span v-if="quarantineDepth > 0" class="pos-offline-banner__detail" data-testid="pos-offline-quarantine-detail">
+        {{ quarantineDepth }} ancienne(s) commande(s) locale(s) non rejouée(s). Vérifiez avec un responsable avant de servir ou d’encaisser.
+      </span>
+      <span v-if="isOnline && quarantineDepth === 0 && queueDepth > 0" class="pos-offline-banner__detail">
+        Commandes signées en attente (<span data-testid="pos-offline-queue-depth">{{ queueDepth }}</span>)
       </span>
       <button
+        v-if="queueDepth > 0"
         type="button"
         class="pos-offline-banner__sync"
-        :disabled="queueDepth === 0"
+        :disabled="isFlushing"
         data-testid="pos-offline-sync"
         @click="tryManualFlush"
-      >Synchroniser</button>
+      >{{ isFlushing ? 'Synchronisation…' : 'Synchroniser' }}</button>
+      <button
+        v-if="quarantineDepth > 0"
+        type="button"
+        class="pos-offline-banner__sync pos-offline-banner__sync--secondary"
+        data-testid="pos-offline-copy-diagnostic"
+        @click="copyOfflineQuarantineDiagnostic"
+      >Copier le diagnostic</button>
     </div>
     <a href="#pos-cart" class="pos-v5-skip-link sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
     <!-- [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the
@@ -109,6 +139,12 @@
                           :title="`${queueDepth} commande(s) en attente de synchronisation`"
                           data-testid="pos-queue-depth-badge"
                         >&#128230; {{ queueDepth }}</span>
+                        <span
+                          v-if="quarantineDepth > 0"
+                          class="pos-queue-depth-badge pos-queue-depth-badge--quarantine"
+                          :title="`${quarantineDepth} ancienne(s) commande(s) locale(s) à vérifier`"
+                          data-testid="pos-quarantine-depth-badge"
+                        >⛔ {{ quarantineDepth }}</span>
                     </div>
                 </div>
             </div>
@@ -1058,21 +1094,28 @@
                         👤 {{ $t('label.pos_customer_identity_label') || 'Nom du client (imprimé sur le ticket cuisine)' }}
                     </div>
                     <div class="flex gap-2">
+                        <label for="pos-customer-name" class="sr-only">{{ $t('label.name') }}</label>
                         <input
+                            id="pos-customer-name"
                             type="text"
                             v-model="checkoutProps.form.pos_customer_name"
                             maxlength="60"
+                            autocomplete="name"
                             :placeholder="$t('label.pos_customer_name_placeholder')"
                             data-testid="pos-customer-name"
-                            class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                            class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                         />
+                        <label for="pos-customer-phone" class="sr-only">{{ $t('label.phone') }}</label>
                         <input
+                            id="pos-customer-phone"
                             type="tel"
                             v-model="checkoutProps.form.pos_customer_phone"
                             maxlength="30"
+                            autocomplete="tel"
+                            inputmode="tel"
                             :placeholder="$t('label.pos_customer_phone_placeholder')"
                             data-testid="pos-customer-phone"
-                            class="w-40 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                            class="w-40 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                         />
                     </div>
                 </div>
@@ -1111,19 +1154,26 @@
                         <!-- Row 1: Nom + Téléphone -->
                         <div class="flex gap-2">
                             <div class="flex-1">
+                                <label for="pos-delivery-name" class="sr-only">Nom du client livré</label>
                                 <input
+                                    id="pos-delivery-name"
                                     type="text"
                                     v-model="deliveryInline.name"
                                     placeholder="Nom du client"
-                                    class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                    autocomplete="name"
+                                    class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                                 />
                             </div>
                             <div class="flex-1">
+                                <label for="pos-delivery-phone" class="sr-only">Téléphone du client livré</label>
                                 <input
+                                    id="pos-delivery-phone"
                                     type="tel"
                                     v-model="deliveryInline.phone"
                                     placeholder="Téléphone"
-                                    class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                    autocomplete="tel"
+                                    inputmode="tel"
+                                    class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                                 />
                             </div>
                         </div>
@@ -1132,7 +1182,9 @@
                             <div class="flex items-center gap-2">
                                 <div class="relative flex-1">
                                     <i class="fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                    <label for="pos-delivery-address" class="sr-only">Adresse de livraison</label>
                                     <input
+                                        id="pos-delivery-address"
                                         ref="deliveryAddressInput"
                                         type="text"
                                         v-model="deliveryInline.addressText"
@@ -1142,8 +1194,11 @@
                                         @keydown.enter.prevent="deliveryNavSelect"
                                         @keydown.esc="deliveryInline.suggestions = []"
                                         placeholder="Adresse de livraison..."
-                                        autocomplete="off"
-                                        class="w-full h-10 text-sm rounded-lg border pl-8 pr-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                        autocomplete="street-address"
+                                        role="combobox"
+                                        aria-autocomplete="list"
+                                        :aria-expanded="deliveryInline.suggestions.length > 0 ? 'true' : 'false'"
+                                        class="w-full h-10 text-sm rounded-lg border pl-8 pr-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                                         :class="deliveryInline.confirmed ? 'border-green-400 bg-green-50' : ''"
                                     />
                                     <i v-if="deliveryInline.confirmed" class="fa-solid fa-circle-check absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-sm"></i>
@@ -1153,6 +1208,7 @@
                                     v-if="deliveryInline.confirmed"
                                     @click.prevent="resetDeliveryInline"
                                     type="button"
+                                    aria-label="Effacer l’adresse de livraison"
                                     class="h-10 w-10 flex items-center justify-center rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition flex-shrink-0"
                                     title="Effacer"
                                 >
@@ -1189,7 +1245,9 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <div class="relative flex-1">
+                                        <label for="pos-delivery-manual-km" class="sr-only">Distance de livraison en kilomètres</label>
                                         <input
+                                            id="pos-delivery-manual-km"
                                             type="number"
                                             min="0"
                                             step="0.1"
@@ -1198,7 +1256,7 @@
                                             @keydown.enter.prevent="confirmDeliveryManual"
                                             placeholder="Distance en km"
                                             data-testid="pos-delivery-manual-km"
-                                            class="w-full h-9 text-sm rounded-lg border pl-3 pr-9 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                            class="w-full h-9 text-sm rounded-lg border pl-3 pr-9 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                                         />
                                         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">km</span>
                                     </div>
@@ -1418,13 +1476,17 @@
                         </li>
                     </ul>
                 </div>
+                <label for="pos-discount-input" class="sr-only">{{ $t('label.discount') }}</label>
                 <input
+                    id="pos-discount-input"
                     v-on:keypress="floatNumber($event)"
                     v-model="discount"
                     type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
                     :placeholder="$t('label.add_discount')"
                     data-testid="pos-discount-input"
-                    class="w-full h-full border-t border-b px-3 text-sm border-[var(--pos-v5-border)] focus:outline-none focus:border-[var(--pos-v5-brand-red)]"
+                    class="w-full h-full border-t border-b px-3 text-sm border-[var(--pos-v5-border)] focus:outline-none focus:border-[var(--pos-v5-brand-red)] focus-visible:ring-2 focus-visible:ring-[var(--pos-v5-brand-red)]"
                 />
                 <!--
                   [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a
@@ -1563,10 +1625,12 @@
                 <form @submit.prevent="saveCustomer">
                     <div class="row mb-3">
                         <div class="col-12 sm:col-6">
-                            <label class="db-field-title required">{{ $t("label.name") }}</label>
+                            <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                             <input type="text" v-model="customerProps.form.name"
                                 v-bind:class="errors.name ? 'invalid' : ''" id="name"
-                                class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]" />
+                                autocomplete="name"
+                                :aria-invalid="errors.name ? 'true' : 'false'"
+                                class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
                             <small class="db-field-alert" v-if="errors.name">{{
                                 errors.name[0]
                                 }}</small>
@@ -1576,7 +1640,7 @@
                             <div :class="errors.phone ? 'invalid' : ''"
                                 class="w-full h-12 rounded-lg border px-4 flex items-center border-[#D9DBE9]">
                                 <div class="w-fit flex-shrink-0 dropdown-group">
-                                    <button type="button" class="flex items-center gap-1 dropdown-btn">
+                                    <button type="button" class="flex items-center gap-1 dropdown-btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Choisir l’indicatif téléphonique">
                                         {{ flag }}
                                         <span class="whitespace-nowrap flex-shrink-0 text-xs">
                                             {{
@@ -1588,18 +1652,22 @@
                                     </button>
                                 </div>
                                 <input v-model="customerProps.form.phone" v-on:keypress="phoneNumber($event)"
-                                    v-bind:class="errors.phone ? 'invalid' : ''" type="text" id="phone"
-                                    class="pl-2 text-sm w-full h-full" />
+                                    v-bind:class="errors.phone ? 'invalid' : ''" type="tel" id="phone"
+                                    autocomplete="tel" inputmode="tel"
+                                    :aria-invalid="errors.phone ? 'true' : 'false'"
+                                    class="pl-2 text-sm w-full h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
                             </div>
                             <small class="db-field-alert" v-if="errors.phone">
                                 {{ errors.phone[0] }}
                             </small>
                         </div>
                         <div class="col-12 sm:col-6">
-                            <label class="db-field-title required">{{ $t("label.email") }}</label>
+                            <label for="email" class="db-field-title required">{{ $t("label.email") }}</label>
                             <input type="email" id="email" v-model="customerProps.form.email"
                                 v-bind:class="errors.email ? 'invalid' : ''"
-                                class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]" />
+                                autocomplete="email"
+                                :aria-invalid="errors.email ? 'true' : 'false'"
+                                class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
                             <small class="db-field-alert" v-if="errors.email">{{
                                 errors.email[0]
                                 }}</small>
@@ -1609,7 +1677,8 @@
                             <!-- [W11 FIX] type="password" to prevent shoulder-surfing on shared POS terminals -->
                             <input v-model="customerProps.form.password" v-bind:class="errors.password ? 'invalid' : ''"
                                 type="password" id="password"
-                                class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"
+                                :aria-invalid="errors.password ? 'true' : 'false'"
+                                class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                 autocomplete="new-password" />
                             <small class="db-field-alert" v-if="errors.password">{{ errors.password[0] }}</small>
                         </div>
@@ -2083,11 +2152,9 @@ import PosV5QtyStepper from "./v5/PosV5QtyStepper.vue";
 import PosV5SearchInput from "./v5/PosV5SearchInput.vue";
 // [Sprint 1A 2026-05-16] Dialog session caisse (fond de caisse, mouvements, clôture).
 import PosCashDrawerSessionDialog from "../cash/PosCashDrawerSessionDialog.vue";
-// [POS-OFFLINE-WIRE 2026-05-17] Offline replay queue (helper + composable landed
-// in V1.0.2 with 16/16 unit-test coverage; this commit wires it into the Caisse
-// shell so the cashier sees MODE DÉGRADÉ + queue depth + manual flush. Server
-// remains SSOT for fiscal_sequence_no (NF525 CLAUDE.md §8) — we only stash
-// item_id / quantity / option_ids / total_cents until reconnect.
+// File locale de reprise : seules les commandes disposant d'un devis serveur
+// signé et encore frais sont rejouables. Les anciennes entrées V1 restent
+// visibles en quarantaine, sans suppression ni POST automatique.
 import { usePosOfflineState } from "../../../composables/usePosOfflineState";
 // [CAISSE-ZOOM 2026-06-25] Zoom auto ~67% de la page caisse (réplique le Ctrl+-
 // navigateur que l'owner appliquait à la main) — appliqué au montage, retiré au
@@ -2135,22 +2202,28 @@ export default {
         // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Rupture produits (86).
         AvailabilityTogglePanel,
     },
-    // [POS-OFFLINE-WIRE 2026-05-17] Composition-API bridge: expose the offline
-    // composable refs (isOnline, queueDepth) and helpers (enqueueOrder,
-    // tryFlush, bindAutoFlush) so the Options API template + methods can
-    // consume them as `this.isOnline`, `this.queueDepth`, etc.
-    // onScopeDispose inside the composable handles window-listener cleanup.
+    // Composition-API bridge for network state, quarantine and signed replay.
     setup() {
         const {
             isOnline,
             queueDepth,
+            quarantineDepth,
+            quarantinedEntries,
             isFlushing,
-            enqueueOrder,
             refresh,
             tryFlush,
             bindAutoFlush,
         } = usePosOfflineState();
-        return { isOnline, queueDepth, isFlushing, enqueueOrder, refreshOfflineQueue: refresh, tryFlush, bindAutoFlush };
+        return {
+            isOnline,
+            queueDepth,
+            quarantineDepth,
+            quarantinedEntries,
+            isFlushing,
+            refreshOfflineQueue: refresh,
+            tryFlush,
+            bindAutoFlush,
+        };
     },
     data() {
         return {
@@ -3096,12 +3169,8 @@ export default {
             // [WEB-PAYEE-MUETTE 2026-08-10] Et les web DÉJÀ PAYÉES parties en cuisine.
             this.loadPaidWebOrders();
         }, 400);
-        // [POS-OFFLINE-WIRE 2026-05-17] Bind axios.post as the replay transport
-        // and run an opportunistic flush every 30s while the page is open. The
-        // composable also auto-flushes on the `online` event — interval covers
-        // the case where network came back without a clean offline→online edge
-        // (e.g. flaky DNS, captive portal) and gives an upper bound on stale
-        // cash sales sitting in IndexedDB.
+        // Signed-replay transport only. Legacy V1 entries are filtered into
+        // quarantine before any mount/timer/online POST.
         this.bindAutoFlush(axios.post);
         this._posOfflineFlushTimer = setInterval(() => {
             try { this.tryFlush(axios.post); } catch (_e) { /* defensive */ }
@@ -5671,11 +5740,6 @@ export default {
             // browser reports offline (navigator.onLine === false), do NOT
             // open the payment modal — server-side capture is impossible and
             // PaymentComponent would loop on its own axios.post failing.
-            // Instead, enqueue the assembled checkout payload (idempotency_key
-            // stamped above is harmless — composable replay generates its own
-            // stable X-Idempotency-Key per entry, server is SSOT on fiscal seq
-            // at replay time per NF525 CLAUDE.md §8) and toast soft so the
-            // cashier knows the order will sync when network returns.
             // [P0 ARGENT 2026-08-08] CETTE DÉRIVATION PRENAIT L'ARGENT POUR UNE COMMANDE QUI
             // N'EXISTERAIT JAMAIS. Deux raisons indépendantes, chacune suffisante :
             //
@@ -5719,11 +5783,46 @@ export default {
                         alertService.success(`${res.synced} commande(s) synchronisée(s).`);
                     }
                     if (res.failed > 0) {
-                        alertService.warning(`${res.failed} commande(s) en échec, retentée(s) plus tard.`);
+                        alertService.warning(`${res.failed} commande(s) n’ont pas été synchronisées.`);
+                    }
+                    if (res.quarantined > 0) {
+                        alertService.warning(`${res.quarantined} commande(s) locale(s) nécessitent un contrôle responsable.`);
                     }
                 }
             } catch (_e) {
                 alertService.error('Erreur lors de la synchronisation manuelle.');
+            }
+        },
+        copyOfflineQuarantineDiagnostic: async function () {
+            const entries = Array.isArray(this.quarantinedEntries) ? this.quarantinedEntries : [];
+            const diagnostic = JSON.stringify({
+                generated_at: new Date().toISOString(),
+                branch_id: this.checkoutProps?.form?.branch_id || null,
+                entries: entries.map((entry) => ({
+                    idempotency_key: entry.idempotencyKey,
+                    saved_at: entry.savedAt,
+                    attempts: entry.attempts,
+                    last_failed_at: entry.lastFailedAt,
+                    reason: entry.quarantineReason,
+                })),
+            }, null, 2);
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(diagnostic);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = diagnostic;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    textarea.remove();
+                }
+                alertService.success('Diagnostic copié. Transmettez-le au responsable avant toute action.');
+            } catch (_e) {
+                alertService.error('Impossible de copier le diagnostic. Prévenez le responsable et conservez cet écran ouvert.');
             }
         },
         totalItems: function () {
@@ -7065,6 +7164,11 @@ export default {
 }
 .pos-offline-banner__label { letter-spacing: 0.5px; }
 .pos-offline-banner__detail { flex: 1; }
+.pos-offline-banner--quarantine {
+  background: #FDE8E8;
+  color: #7F1D1D;
+  border-bottom-color: #B91C1C;
+}
 .pos-offline-banner__sync {
   padding: 6px 14px;
   background: #1A1A1A;
@@ -7077,7 +7181,13 @@ export default {
   transition: background 120ms ease;
 }
 .pos-offline-banner__sync:hover:not(:disabled) { background: #333; }
+.pos-offline-banner__sync:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
 .pos-offline-banner__sync:disabled { opacity: 0.5; cursor: not-allowed; }
+.pos-offline-banner__sync--secondary {
+  background: transparent;
+  color: currentColor;
+  border: 1px solid currentColor;
+}
 
 .pos-queue-depth-badge {
   display: inline-flex;
@@ -7091,6 +7201,11 @@ export default {
   font-size: 12px;
   font-weight: 700;
   margin-left: 6px;
+}
+.pos-queue-depth-badge--quarantine {
+  background: rgba(185, 28, 28, 0.12);
+  color: #991B1B;
+  border-color: rgba(185, 28, 28, 0.4);
 }
 
 /* [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog styles for

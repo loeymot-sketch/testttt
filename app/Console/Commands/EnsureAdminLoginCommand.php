@@ -22,12 +22,38 @@ class EnsureAdminLoginCommand extends Command
     protected $signature = 'foodking:ensure-admin
                             {--email=admin@lecayenne.fr : Email administrateur}
                             {--password=123456 : Mot de passe (dev uniquement)}
-                            {--dry-run : Afficher sans modifier}';
+                            {--dry-run : Afficher sans modifier}
+                            {--force : Autoriser l\'exécution en production (intention explicite)}';
 
     protected $description = 'Crée ou met à jour l’admin (email + mot de passe + statut actif + rôle Admin) pour débloquer le login';
 
     public function handle(): int
     {
+        // [GOAL CONSOLIDATION_V1_PRODUCTION_20260825 — T-5.3.1] Garde de production.
+        //
+        // Cette commande CRÉE ou RÉINITIALISE un compte administrateur, avec un mot de passe
+        // dont le défaut est `123456`. Sans garde, un `php artisan foodking:ensure-admin` lancé
+        // par réflexe — ou par un script de déploiement hérité — pose sur la machine qui sert un
+        // administrateur joignable avec un mot de passe connu de tous.
+        //
+        // Même failure-mode explicite que les gardes d'amorçage d'AppServiceProvider (CLAUDE.md
+        // §8) : on refuse bruyamment plutôt que d'agir en silence. `--dry-run` ne lève PAS la
+        // garde : l'autoriser entretiendrait l'habitude de lancer cette commande en production.
+        if (app()->environment('production') && ! $this->option('force')) {
+            $this->error(
+                'REFUS : foodking:ensure-admin est bloquée en production. Cette commande crée ou '
+                .'réinitialise un compte administrateur (mot de passe par défaut : 123456), ce qui '
+                .'équivaut à une élévation de privilège en une commande.'
+            );
+            $this->line('');
+            $this->warn(
+                'Si l\'intention est délibérée : relancez avec --force ET un --password explicite. '
+                .'Tracez la raison dans le journal d\'exploitation.'
+            );
+
+            return 1;
+        }
+
         $email    = (string) $this->option('email');
         $password = (string) $this->option('password');
         $dry      = (bool) $this->option('dry-run');

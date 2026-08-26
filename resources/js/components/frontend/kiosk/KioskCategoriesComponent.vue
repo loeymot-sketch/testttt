@@ -190,15 +190,18 @@
                     <button type="button"
                       class="kiosk-product-add"
                       @click.stop="onProductCardActivate(product, $event)"
+                      @keydown.enter.stop.prevent="onProductCardActivate(product, $event)"
+                      @keydown.space.stop.prevent="onProductCardActivate(product, $event)"
                       :disabled="!!loadingItemId || !isProductCatalogAllowed(product)"
                       :aria-label="$t('kiosk.catalog.add', { name: sanitizeItemName(product.name) })"
+                      :aria-describedby="`kiosk-product-meta-${product.id}`"
                       :data-testid="`kiosk-product-add-${product.id}`">
                       <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner" aria-hidden="true"></span>
                       <span v-else aria-hidden="true">+</span>
                     </button>
                   </div>
 
-                  <div class="kiosk-product-copy">
+                  <div class="kiosk-product-copy" :id="`kiosk-product-meta-${product.id}`">
                     <h2 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h2>
                     <div v-if="productBadges(product).length" class="kiosk-product-flag-row" aria-hidden="false">
                       <KsBadge
@@ -498,6 +501,21 @@ export default {
       return '';
     },
     onProductCardActivate(product, evt) {
+      // [REPLAN_8 2026-08-24] `.prevent` sur `keydown.space` déplace l'activation du keyup natif
+      // vers le keydown : un bouton natif ne répète PAS sur Espace maintenu, un handler keydown
+      // si. Sans cette garde, un doigt posé sur la barre d'espace ajouterait le produit autant de
+      // fois que le clavier répète. `repeat` distingue la frappe des répétitions automatiques.
+      if (evt && evt.repeat) {
+        if (typeof evt.preventDefault === 'function') evt.preventDefault();
+        return;
+      }
+      // Le clic est déjà gardé par `:disabled="!!loadingItemId"`, mais la carte extérieure
+      // (`@click` ligne 166) ne l'est pas : on refuse toute activation pendant un chargement en
+      // cours, quel que soit le chemin d'entrée.
+      if (this.loadingItemId) {
+        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+        return;
+      }
       if (!this.isProductCatalogAllowed(product)) {
         if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
         return;
@@ -1234,10 +1252,10 @@ export default {
   transform: scale(0.98);
 }
 
-/* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */
-.kiosk-product-card:focus-visible {
+/* Le contrôle natif « ajouter » fournit le parcours clavier de toute carte. */
+.kiosk-product-add:focus-visible {
   outline: var(--kiosk-focus-width) solid var(--kiosk-focus-ring);
-  outline-offset: 3px;
+  outline-offset: 5px;
 }
 
 .kiosk-product-media {

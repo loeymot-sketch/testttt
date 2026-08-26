@@ -205,6 +205,8 @@
           class="kiosk-order-type-card kiosk-order-type-card--dine-in"
           data-testid="kiosk-order-type-dine-in"
           @click.stop="selectOrderTypeAndStart(orderTypes.KIOSK)"
+          @keydown.enter.stop.prevent="activerAuClavier($event, orderTypes.KIOSK)"
+          @keydown.space.stop.prevent="activerAuClavier($event, orderTypes.KIOSK)"
           @touchstart.stop
         >
           <span class="kiosk-order-type-icon" aria-hidden="true">
@@ -224,6 +226,8 @@
           class="kiosk-order-type-card kiosk-order-type-card--takeaway"
           data-testid="kiosk-order-type-takeaway"
           @click.stop="selectOrderTypeAndStart(orderTypes.TAKEAWAY)"
+          @keydown.enter.stop.prevent="activerAuClavier($event, orderTypes.TAKEAWAY)"
+          @keydown.space.stop.prevent="activerAuClavier($event, orderTypes.TAKEAWAY)"
           @touchstart.stop
         >
           <!-- indicateur tactile « touchez pour commander » (décoratif) -->
@@ -454,6 +458,20 @@ export default {
       const s = Math.min(w / 1080, h / 1920);
       this.stageScale = (isFinite(s) && s > 0) ? s : 1;
     },
+    /**
+     * [REPLAN_8 2026-08-24] Activation clavier des tuiles de type de commande.
+     *
+     * `.prevent` sur `keydown.space` déplace l'activation du keyup natif vers le keydown :
+     * un bouton natif NE répète PAS sur Espace maintenu, mais un handler keydown, si. Sans
+     * garde, un doigt posé sur la barre d'espace sur la borne émettrait `start-order` à chaque
+     * répétition du clavier — donc plusieurs départs de commande. `$event.repeat` distingue la
+     * première frappe des répétitions automatiques ; on ignore les secondes.
+     */
+    activerAuClavier(evenement, typeCommande) {
+        if (evenement && evenement.repeat) return;
+        this.selectOrderTypeAndStart(typeCommande);
+    },
+
     selectOrderTypeAndStart(orderType) {
       // Navigation + reset panier + setOrderType : uniquement via le parent
       // `KioskAppComponent.startOrder` pour éviter un double `router.push`

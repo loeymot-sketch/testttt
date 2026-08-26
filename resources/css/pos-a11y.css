@@ -47,3 +47,20 @@ textarea:focus-visible,
     outline: 3px solid #1d4ed8 !important;
     outline-offset: 2px !important;
 }
+
+/*
+ * [REPLAN_8 2026-08-24] Anneau de focus sur le menu latéral admin.
+ *
+ * Mesuré au navigateur sur /admin/pos : sur 39 arrêts de tabulation, 16 ne montraient AUCUN
+ * anneau — tous des liens `<a class="db-sidebar-nav-menu">`. Les règles ci-dessus couvraient
+ * `button`, `[role="button"]` et les champs de saisie, mais pas les liens de navigation.
+ * Un caissier qui tabule ne voyait donc pas où il était et validait à l'aveugle.
+ *
+ * Même anneau que partout ailleurs dans le fichier (#1d4ed8, 3px, offset 2px) : on n'invente
+ * pas un second langage visuel pour le focus.
+ */
+.db-sidebar-nav-menu:focus-visible,
+.db-sidebar-nav-dropdown-menu:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+}

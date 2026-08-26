@@ -64,7 +64,7 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
      *   - ItemCategoryRequest, ItemAttributeRequest, ItemExtraRequest, ItemAddonRequest,
      *     ItemVariationRequest, MenuTemplateRequest, OfferItemRequest (catalog family)
      */
-    private const RETURN_TRUE_BASELINE = 64;
+    private const RETURN_TRUE_BASELINE = 62;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {

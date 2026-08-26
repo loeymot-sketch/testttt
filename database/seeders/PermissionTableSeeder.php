@@ -711,6 +711,31 @@ class PermissionTableSeeder extends Seeder
         ];
 
         $permissions = AppLibrary::associativeToNumericArrayBuilder($permissions);
-        Permission::insert($permissions);
+
+        // [FIX 2026-08-25] `insert()` → `upsert()` : ce seeder n'était pas rejouable.
+        //
+        // Le défaut, reproduit : la migration `2026_08_13_190000_grant_pos_flyer_print_to_cashier`
+        // crée la permission `pos-flyer-print` (guard `sanctum` ET `web`) via `updateOrCreate`.
+        // Cette même permission figure ligne 132 de la liste ci-dessus. Sur toute base DÉJÀ
+        // MIGRÉE, l'insert en masse violait donc l'index unique `(name, guard_name)` posé par
+        // `2022_05_01_142407_create_permission_tables` — et faisait échouer l'insertion des
+        // QUATRE-VINGTS permissions d'un coup, pas seulement de la ligne fautive.
+        //
+        // Portée réelle, au-delà des tests : `php artisan db:seed` et `migrate --seed` plantaient
+        // sur toute installation dont les migrations étaient passées. Trois tests le signalaient
+        // (`RolePermissionSeederTest`) sans que la cause soit remontée.
+        //
+        // `upsert` sur la clé unique rend le seeder idempotent : rejouable autant de fois qu'on
+        // veut, et il RATTRAPE au passage les libellés/URL d'une permission créée par une
+        // migration avec des valeurs minimales.
+        Permission::upsert(
+            $permissions,
+            ['name', 'guard_name'],
+            ['title', 'url', 'parent', 'updated_at']
+        );
+
+        // Spatie met les permissions en cache : sans invalidation, les rôles seedés juste après
+        // pourraient se voir refuser une permission qui vient pourtant d'être écrite.
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

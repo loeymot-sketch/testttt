@@ -88,36 +88,48 @@ const { execFileSync } = require('child_process');
 const {
   loginAsPosOperator,
   loginAsChefOperator,
+  loginAsAdmin,
 } = require('./helpers/login');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 const {
   getKioskApiToken,
   placeKioskOrder,
-  cleanupKioskAuditOrders,
   resetKioskToken,
-  PAYMENT_CASH,
+  assertDedicatedE2EWriteScope,
+  cleanupKioskAuditOrders,
   KIOSK_AUDIT_PREFIX,
+  PAYMENT_CASH,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
+
+function loadNumericEnum(relativePath) {
+  const source = fs.readFileSync(path.resolve(__dirname, relativePath), 'utf8');
+  const entries = [...source.matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*:\s*(\d+)\s*,?$/gm)]
+    .map((match) => [match[1], Number(match[2])]);
+  if (entries.length === 0) {
+    throw new Error(`Unable to load canonical numeric enum from ${relativePath}`);
+  }
+  return Object.freeze(Object.fromEntries(entries));
+}
+
+const orderStatusEnum = loadNumericEnum('../../resources/js/enums/modules/orderStatusEnum.js');
+const orderTypeEnum = loadNumericEnum('../../resources/js/enums/modules/orderTypeEnum.js');
+const paymentStatusEnum = loadNumericEnum('../../resources/js/enums/modules/paymentStatusEnum.js');
+const posPaymentMethodEnum = loadNumericEnum('../../resources/js/enums/modules/posPaymentMethodEnum.js');
 
 const SCREENSHOT_DIR = path.resolve(
   __dirname,
   '__screenshots__/test-e2e-pos-kds-sync-E'
 );
 
-// Mirror resources/js/enums/modules/orderStatusEnum.js.
-const ORDER_STATUS = Object.freeze({
-  PENDING: 1,
-  ACCEPT: 4,
-  PREPARING: 7,
-  PREPARED: 8,
-  DELIVERED: 13,
-  CANCELED: 16,
-});
-
-// Frites Seules — id 361, 2.00€ TTC. Verified via tinker 2026-05-10:
-//   DB::table('items')->where('name','like','%Frites%')->get();
-const ITEM_FRITES_SEULES = 361;
+const ORDER_STATUS = orderStatusEnum;
+let TEST_ITEM = null;
+const createdOrderIds = new Set();
 
 // V1 ships in "à emporter only" mode (pos.pos_dine_in_enabled=false, see
 // memory `feedback_v1_dine_in_disabled_2026-05-06`). The backend rejects
@@ -126,7 +138,7 @@ const ITEM_FRITES_SEULES = 361;
 // (`Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à emporter).`).
 // kiosk-order.js defaults orderType=25 because it predates the V1 lock-down;
 // we override to 10 (TAKEAWAY) here.
-const ORDER_TYPE_TAKEAWAY = 10;
+const ORDER_TYPE_TAKEAWAY = orderTypeEnum.TAKEAWAY;
 
 function artisan(code) {
   return execFileSync('php', ['artisan', 'tinker', '--execute', code], {
@@ -154,7 +166,10 @@ function fetchOrderById(orderId) {
   try {
     const out = artisan(`
       $row = DB::table('orders')->where('id', ${Number(orderId)})
-        ->first(['id','status','total','order_serial_no','queue_number','source','token','order_type']);
+        ->first([
+          'id','status','payment_status','pos_payment_method','fiscal_sequence_no',
+          'total','order_serial_no','queue_number','source','token','order_type'
+        ]);
       echo json_encode($row);
     `);
     return parseLastJsonLine(out);
@@ -163,23 +178,89 @@ function fetchOrderById(orderId) {
   }
 }
 
-function safeCancelOrder(orderId) {
-  if (!orderId) return;
-  try {
-    artisan(`
-      $id = (int) ${Number(orderId)};
-      $order = DB::table('orders')->where('id', $id)->first();
-      if ($order && (int) $order->status !== ${ORDER_STATUS.CANCELED}
-                 && (int) $order->status !== ${ORDER_STATUS.DELIVERED}) {
-        DB::table('orders')->where('id', $id)->update([
-          'status' => ${ORDER_STATUS.CANCELED},
-          'updated_at' => now(),
-        ]);
-      }
-    `);
-  } catch (_e) {
-    /* best-effort cleanup */
+function verifyDedicatedTestDatabase() {
+  const out = artisan(`
+    echo json_encode([
+      'database' => (string) DB::connection()->getDatabaseName(),
+    ]);
+  `);
+  const identity = parseLastJsonLine(out);
+  assertDedicatedE2EWriteScope(identity.database);
+  return identity;
+}
+
+function resolveAvailableBranchItem(branchId) {
+  const out = artisan(`
+    $branchId = (int) ${Number(branchId)};
+    $driver = DB::connection()->getDriverName();
+    $item = \\App\\Models\\Item::withoutGlobalScopes()
+      ->where('status', \\App\\Enums\\Status::ACTIVE)
+      ->where(function ($q) {
+        $q->whereNull('is_available')->orWhere('is_available', true);
+      })
+      ->where(function ($q) use ($driver) {
+        $q->whereNull('channels');
+        if ($driver === 'sqlite') {
+          $q->orWhere('channels', 'like', '%"kiosk"%');
+        } else {
+          $q->orWhereJsonContains('channels', 'kiosk');
+        }
+      })
+      ->where(function ($q) use ($branchId) {
+        $q->whereNotExists(function ($sub) use ($branchId) {
+          $sub->select(DB::raw(1))->from('item_branch_availability')
+            ->whereColumn('item_branch_availability.item_id', 'items.id')
+            ->where('item_branch_availability.branch_id', $branchId);
+        })->orWhereExists(function ($sub) use ($branchId) {
+          $sub->select(DB::raw(1))->from('item_branch_availability')
+            ->whereColumn('item_branch_availability.item_id', 'items.id')
+            ->where('item_branch_availability.branch_id', $branchId)
+            ->where('item_branch_availability.is_available', true);
+        });
+      })
+      ->orderBy('id')
+      ->first(['id', 'name']);
+    echo json_encode($item ? ['id' => (int) $item->id, 'name' => (string) $item->name] : null);
+  `);
+  return parseLastJsonLine(out);
+}
+
+async function cancelOrderThroughPosApi(page, orderId) {
+  if (!orderId) return { ok: true, skipped: true };
+  const order = fetchOrderById(orderId);
+  if (!order || [
+    ORDER_STATUS.CANCELED,
+    ORDER_STATUS.REJECTED,
+    ORDER_STATUS.RETURNED,
+    ORDER_STATUS.DELIVERED,
+  ].includes(Number(order.status))) {
+    return { ok: true, skipped: true, status: order?.status ?? null };
   }
+
+  return page.evaluate(async ({ id, canceledStatus, idempotencyKey }) => {
+    try {
+      const response = await window.axios.post(
+        `admin/pos-order/change-status/${id}`,
+        {
+          id,
+          status: canceledStatus,
+          reason: 'Wave E canonical afterAll cleanup',
+        },
+        { headers: { 'X-Idempotency-Key': idempotencyKey } },
+      );
+      return { ok: response.status >= 200 && response.status < 300, status: response.status };
+    } catch (error) {
+      return {
+        ok: false,
+        status: error?.response?.status || 0,
+        error: error?.response?.data?.message || error?.message || String(error),
+      };
+    }
+  }, {
+    id: Number(orderId),
+    canceledStatus: ORDER_STATUS.CANCELED,
+    idempotencyKey: `e2e-wave-e-cancel-${orderId}-${Date.now()}`,
+  });
 }
 
 // Verify a kiosk machine seed exists for branch 1. Fail-fast — do NOT
@@ -205,7 +286,7 @@ function verifyKioskMachineSeed() {
 // hit (no testid on the accordion buttons). Mirrors Wave D pattern.
 async function kdsAdvanceStatus(chefPage, orderId, expectedStatus, nextStatus) {
   return chefPage.evaluate(
-    async ({ orderId, expectedStatus, nextStatus }) => {
+    async ({ orderId, expectedStatus, nextStatus, idempotencyKey }) => {
       try {
         const response = await window.axios.post(
           `admin/kds-order/change-status/${orderId}`,
@@ -213,7 +294,8 @@ async function kdsAdvanceStatus(chefPage, orderId, expectedStatus, nextStatus) {
             id: orderId,
             expected_status: expectedStatus,
             status: nextStatus,
-          }
+          },
+          { headers: { 'X-Idempotency-Key': idempotencyKey } },
         );
         window.dispatchEvent(
           new CustomEvent('realtime-order-update', {
@@ -232,8 +314,39 @@ async function kdsAdvanceStatus(chefPage, orderId, expectedStatus, nextStatus) {
         };
       }
     },
-    { orderId, expectedStatus, nextStatus }
+    {
+      orderId,
+      expectedStatus,
+      nextStatus,
+      idempotencyKey: `e2e-wave-e-kds-${orderId}-${expectedStatus}-${nextStatus}-${Date.now()}`,
+    }
   );
+}
+
+async function reloadPosTracker(page) {
+  const ordersResponse = page.waitForResponse(
+    (response) => response.request().method() === 'GET'
+      && /\/api\/admin\/pos-order(?:\?|$)/.test(response.url()),
+    { timeout: 25_000 },
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const response = await ordersResponse;
+  expect(response.status(), 'Le rechargement du suivi POS doit recevoir sa liste de commandes').toBeLessThan(400);
+  await expect(page.locator('.pos-tracker-loading')).toBeHidden({ timeout: 20_000 });
+  const probe = await page.evaluate(async () => {
+    const probeResponse = await window.axios.get('admin/pos-order');
+    return {
+      status: probeResponse.status,
+      data: probeResponse.data,
+    };
+  });
+  expect(probe.status, 'Le probe applicatif du suivi POS doit réussir').toBeLessThan(400);
+  expect(Array.isArray(probe.data?.data), 'Le probe applicatif POS doit retourner un tableau data').toBe(true);
+  return {
+    url: response.url(),
+    status: probe.status,
+    rows: probe.data.data,
+  };
 }
 
 test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
@@ -241,6 +354,9 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
   test.setTimeout(360_000);
 
   test.beforeAll(() => {
+    const database = verifyDedicatedTestDatabase();
+    // eslint-disable-next-line no-console
+    console.log(`[Wave E] dedicated database: ${JSON.stringify(database)}`);
     // Pre-flight: kiosk machine seed must exist.
     const seed = verifyKioskMachineSeed();
     if (!seed || !seed.ok) {
@@ -250,22 +366,45 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         `php artisan db:seed --class=KioskMachineSeeder. Got: ${JSON.stringify(seed)}`
       );
     }
-    // Cleanup prior Wave E orphans.
-    try {
-      const cleanup = cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
-      // eslint-disable-next-line no-console
-      console.log(`[Wave E] beforeAll cleanup: ${JSON.stringify(cleanup)}`);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn(`[Wave E] cleanup warning: ${e?.message || e}`);
+    TEST_ITEM = resolveAvailableBranchItem(seed.branch_id);
+    if (!TEST_ITEM?.id) {
+      throw new Error(
+        `Wave E pre-flight failed: no active kiosk item available for branch ${seed.branch_id}.`
+      );
     }
     // Reset token cache to ensure a fresh Sanctum issuance.
     resetKioskToken();
   });
 
+  test.afterAll(async ({ browser }, testInfo) => {
+    testInfo.setTimeout(120_000);
+    const cleanupContext = createdOrderIds.size > 0 ? await browser.newContext() : null;
+    const cleanupPage = cleanupContext ? await cleanupContext.newPage() : null;
+    const apiFailures = [];
+    let canonicalSweep;
+    try {
+      if (cleanupPage) {
+        await loginAsAdmin(cleanupPage);
+        for (const orderId of createdOrderIds) {
+          const result = await cancelOrderThroughPosApi(cleanupPage, orderId);
+          if (!result.ok) apiFailures.push({ order_id: orderId, ...result });
+        }
+      }
+    } finally {
+      await cleanupContext?.close().catch(() => {});
+      canonicalSweep = cleanupKioskAuditOrders(PREFIXE_AUDIT);
+    }
+    expect(apiFailures, 'Wave E doit exposer toute annulation POS échouée').toEqual([]);
+    expect(canonicalSweep.remaining_active_order_ids, 'Aucune commande Wave E préfixée ne doit rester active').toEqual([]);
+  });
+
   test('Wave E : kiosk pay → KDS pile → POS suivi → lifecycle → cancel', async ({
     browser,
   }) => {
+    // Fixed screenshot paths are intentionally retained as an audit history,
+    // but a prior run must never make this run red (stale network JSON) or
+    // green (stale PNG count). Timestamp-gate every end-of-run artifact check.
+    const runStartedAt = Date.now();
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
     clearFoodKingRateLimits();
 
@@ -288,7 +427,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
     const kdsRec = attachMegaAuditRecorder(kdsPage, SCREENSHOT_DIR);
     const posRec = attachMegaAuditRecorder(posPage, SCREENSHOT_DIR);
 
-    // Order ids tracked for afterAll cleanup.
+    // Order ids tracked for the separately-budgeted canonical afterAll cleanup.
     const capturedOrderIds = [];
     const observations = [];
     const timings = {};
@@ -340,7 +479,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
 
       const itemsPayload = [
         {
-          item_id: ITEM_FRITES_SEULES,
+          item_id: TEST_ITEM.id,
           quantity: 1,
           item_variations: [],
           item_extras: [],
@@ -352,16 +491,18 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       let placement;
       try {
         placement = await placeKioskOrder(kioskPage, {
+          tokenPrefix: PREFIXE_AUDIT,
           items: itemsPayload,
           paymentMethod: PAYMENT_CASH,
           orderType: ORDER_TYPE_TAKEAWAY,
           // CASH on kiosk = pay-at-counter; order is persisted at store stage
-          // with status=ACCEPT, payment_status=PAID (cash), no TPE round-trip.
+          // with status=ACCEPT, payment_status=PENDING_COUNTER and
+          // pos_payment_method=COUNTER_DEFERRED, with no TPE round-trip.
           // payment-confirm endpoint is CARD/TICKET_RESTAURANT-only (see
           // PaymentConfirmRequest::rules — Rule::in([CARD, TICKET_RESTAURANT])
           // AND requires amount_cents not surfaced by this helper). Skipping
-          // it for cash is the correct path — the order still surfaces on KDS
-          // because status=ACCEPT.
+          // it for cash is the correct path — the cashier later promotes the
+          // payment through the canonical counter-collect endpoint.
           skipPaymentConfirm: true,
         });
       } catch (e) {
@@ -373,6 +514,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       const t_kiosk_resolved = Date.now();
 
       capturedOrderIds.push(placement.orderId);
+      createdOrderIds.add(placement.orderId);
 
       observations.push(
         `state04: kiosk order placed orderId=${placement.orderId} ` +
@@ -424,6 +566,14 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           Number(dbOrder.source),
           `SYNC-E-1: DB source must be SOURCE_KIOSK (5) for kiosk-placed order; got ${dbOrder.source}`
         ).toBe(5);
+        expect(
+          placement.queueNumber,
+          'SYNC-E identity: le helper doit préserver le queue_number alphanumérique, jamais NaN/null'
+        ).toMatch(/^A\d+$/);
+        expect(
+          placement.queueNumber,
+          'SYNC-E identity: le queue_number de la réponse API doit être identique à la base'
+        ).toBe(String(dbOrder.queue_number));
       } else {
         observations.push(`state04: WARN DB probe returned null for order_id=${placement.orderId}`);
       }
@@ -441,16 +591,9 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       try {
         await kdsPage.waitForFunction(
           (orderId) => {
-            // The kiosk-source card sits under [data-kds-order-card="kiosk"].
-            const cards = Array.from(
-              document.querySelectorAll('[data-kds-order-card="kiosk"]')
-            );
-            return cards.some((c) => {
-              const hdr = c.querySelector(`[id^="order-${orderId}-"]`);
-              if (hdr) return true;
-              const text = c.textContent || '';
-              return text.includes('#' + orderId) || text.includes('N°' + orderId);
-            });
+            const card = document.querySelector(`[data-order-id="${orderId}"]`);
+            const source = card?.querySelector('.kds-card__source-label')?.textContent || '';
+            return !!card && /borne/i.test(source);
           },
           placement.orderId,
           { timeout: 8_000 }
@@ -468,16 +611,11 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           // Re-verify after reload — purely for evidence (does NOT count
           // toward the 8s budget).
           const reloadHasCard = await kdsPage.evaluate((orderId) => {
-            const cards = Array.from(
-              document.querySelectorAll('[data-kds-order-card="kiosk"]')
-            );
-            return cards.some((c) => {
-              const hdr = c.querySelector(`[id^="order-${orderId}-"]`);
-              if (hdr) return true;
-              const text = c.textContent || '';
-              return text.includes('#' + orderId) || text.includes('N°' + orderId);
-            });
+            const card = document.querySelector(`[data-order-id="${orderId}"]`);
+            const source = card?.querySelector('.kds-card__source-label')?.textContent || '';
+            return !!card && /borne/i.test(source);
           }, placement.orderId);
+          kdsPickedUp = reloadHasCard;
           observations.push(`state05: post-reload kiosk-lane card present=${reloadHasCard}`);
         } catch (_e2) {
           /* ignore reload error */
@@ -488,6 +626,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         `state05: SYNC-E-1 kdsPickedUp=${kdsPickedUp} latency_ms=${timings.sync_e1_kiosk_pay_to_kds_ms} ` +
         `(measured from immediately-after-placeKioskOrder resolve)`
       );
+      expect(kdsPickedUp, 'SYNC-E-1: la commande borne doit être visible au KDS, au plus tard après le repli de rafraîchissement').toBe(true);
       await kdsRec.snap(
         kdsPickedUp ? '05-e-kds-after-kiosk-pay-within-8s' : '05-e-kds-after-kiosk-pay-DEBUG'
       );
@@ -516,8 +655,8 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           'PosSyncService disabled in dev + Pusher unreachable. Fallback reload to capture useful PNG.'
         );
         try {
-          await posPage.reload({ waitUntil: 'domcontentloaded' });
-          await posPage.waitForTimeout(3_000);
+          await reloadPosTracker(posPage);
+          posPickedUp = await posPage.locator(`[data-testid="tracker-order-${placement.orderId}"]`).isVisible();
         } catch (_e2) {
           /* ignore */
         }
@@ -526,6 +665,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       observations.push(
         `state06: SYNC-E-2 posPickedUp=${posPickedUp} latency_ms=${timings.sync_e2_kiosk_pay_to_pos_ms}`
       );
+      expect(posPickedUp, 'SYNC-E-2: la commande borne doit être visible dans le suivi POS après le repli de rafraîchissement').toBe(true);
 
       // SYNC-E-1 source-isolation : verify the source-pill class on the
       // POS suivi card resolves to kiosk. AND verify SYNC-E-5 leg 3 :
@@ -554,20 +694,16 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       observations.push(
         `state06: POS card source_pill="${posCardSourceLabel}" total_text="${posCardTotalText}"`
       );
-      // Soft-assert source classification (P1 — if classification fails the
-      // adversarial reviewer flags the badge logic, but it's not P0).
-      if (posCardSourceLabel) {
-        expect.soft(
-          /kiosk/i.test(posCardSourceLabel),
-          `SYNC-E-1 source-isolation: POS suivi card source pill should include "kiosk" classification; got "${posCardSourceLabel}"`
-        ).toBe(true);
-      }
+      expect(
+        /kiosk/i.test(posCardSourceLabel || ''),
+        `SYNC-E-1 source-isolation: POS suivi card source pill should include "kiosk" classification; got "${posCardSourceLabel}"`
+      ).toBe(true);
       // SYNC-E-5 leg 3 : POS card total === placement.totalAmount.
       if (posCardTotalText) {
         const m = posCardTotalText.match(/(\d+(?:[.,]\d+)?)/);
         const posCardTotal = m ? parseFloat(m[1].replace(',', '.')) : null;
         if (posCardTotal !== null) {
-          expect.soft(
+          expect(
             Math.abs(placement.totalAmount - posCardTotal) < 0.01,
             `SYNC-E-5 leg 3: POS card total (${posCardTotal}) should equal T_kiosk_paid (${placement.totalAmount})`
           ).toBe(true);
@@ -610,6 +746,8 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         observations.push(`state07: retry result=${JSON.stringify(r1b)}`);
         await kdsPage.waitForTimeout(2_000);
       }
+      expect(inProgressResult, `SYNC-E-3: transition PREPARING refusée: ${JSON.stringify(inProgressResult)}`).toMatchObject({ ok: true });
+      expect(Number(fetchOrderById(placement.orderId)?.status)).toBe(ORDER_STATUS.PREPARING);
       // Force fresh DOM read before snap — in dev with Pusher down, the KDS
       // SPA may not re-render after a status change until the next polling
       // tick (10-13s), causing identical screenshots across consecutive
@@ -621,45 +759,42 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       await kdsRec.snap('07-e-kds-mark-preparing');
 
       // ================================================================
-      // PHASE 6 — POS suivi reflects PREPARING ≤5s (SYNC-E-3 leg A)
-      // State 08 — observed in-place (no goto reload).
+      // PHASE 6 — POS preserves the financial-control lane while KDS prepares
+      // (SYNC-E-3 leg A). A PENDING_COUNTER order MUST remain in "À encaisser"
+      // whatever its kitchen status; moving it to the blue PREPARING lane would
+      // hide the unpaid-money signal. The refreshed API row proves POS received
+      // PREPARING, while the amber card + cash badge prove the UI kept the
+      // financial priority intact.
       // ================================================================
       let posReflectsPreparing = false;
-      try {
-        await posPage.waitForFunction(
-          (orderId) => {
-            const card = document.querySelector(
-              `[data-testid="tracker-order-${orderId}"]`
-            );
-            if (!card) return false;
-            return (
-              card.className &&
-              card.className.indexOf('pos-tracker-card--primary') !== -1
-            );
-          },
-          placement.orderId,
-          { timeout: 5_000 }
-        );
-        posReflectsPreparing = true;
-      } catch (_e) {
-        observations.push(
-          'state08: SYNC-E-3-A REALTIME TIMEOUT — POS suivi did not reflect PREPARING within 5s. ' +
-          'Same dev-env caveat as Wave D-004: PosSyncService disabled, broadcast unreachable. ' +
-          'Fallback reload to capture state.'
-        );
-        try {
-          await posPage.reload({ waitUntil: 'networkidle' });
-          await posPage.waitForTimeout(1_500);
-        } catch (_e2) {
-          /* ignore */
-        }
-      }
+      const preparingReload = await reloadPosTracker(posPage);
+      const preparingApiOrder = preparingReload.rows.find(
+        (order) => Number(order.id) === Number(placement.orderId)
+      );
+      const preparingCashCard = posPage.locator(
+        `[data-testid="tracker-order-${placement.orderId}"].pos-tracker-card--amber`
+      );
+      const preparingCashBadge = posPage.locator(
+        `[data-testid="tracker-cash-badge-${placement.orderId}"]`
+      );
+      const preparingApiMatches = Number(preparingApiOrder?.status) === ORDER_STATUS.PREPARING
+        && preparingApiOrder?.is_cash_pending === true;
+      const preparingUiMatches = await preparingCashCard.isVisible().catch(() => false)
+        && await preparingCashBadge.isVisible().catch(() => false);
+      posReflectsPreparing = preparingApiMatches && preparingUiMatches;
       timings.sync_e3_a_kds_to_pos_preparing_ms = Date.now() - tInProgressTransition;
       observations.push(
         `state08: SYNC-E-3-A posReflectsPreparing=${posReflectsPreparing} ` +
+        `api_status=${preparingApiOrder?.status ?? 'missing'} ` +
+        `cash_pending=${preparingApiOrder?.is_cash_pending ?? 'missing'} ` +
         `latency_ms=${timings.sync_e3_a_kds_to_pos_preparing_ms}`
       );
-      await posRec.snap('08-e-pos-suivi-reflects-preparing');
+      expect(
+        posReflectsPreparing,
+        `SYNC-E-3-A: l'API POS doit exposer PREPARING et la carte doit rester à encaisser; ` +
+        `api=${JSON.stringify(preparingApiOrder || null)}`
+      ).toBe(true);
+      await posRec.snap('08-e-pos-preserves-cash-control-during-preparing');
 
       // ================================================================
       // PHASE 7 — KDS chef advances PREPARING → PREPARED (state 09)
@@ -668,17 +803,17 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       const tPreparedTransition = Date.now();
       const fresh2 = fetchOrderById(placement.orderId);
       const expectedFromPreparing = fresh2 ? Number(fresh2.status) : ORDER_STATUS.PREPARING;
-      const r2 = await kdsAdvanceStatus(
+      let preparedResult = await kdsAdvanceStatus(
         kdsPage,
         placement.orderId,
         expectedFromPreparing,
         ORDER_STATUS.PREPARED
       );
       observations.push(
-        `state09: KDS→PREPARED expected=${expectedFromPreparing} result=${JSON.stringify(r2)}`
+        `state09: KDS→PREPARED expected=${expectedFromPreparing} result=${JSON.stringify(preparedResult)}`
       );
       await kdsPage.waitForTimeout(2_000);
-      if (r2 && r2.status === 429) {
+      if (preparedResult && preparedResult.status === 429) {
         await kdsPage.waitForTimeout(1_500);
         clearFoodKingRateLimits();
         const r2b = await kdsAdvanceStatus(
@@ -687,52 +822,102 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           expectedFromPreparing,
           ORDER_STATUS.PREPARED
         );
+        preparedResult = r2b;
         observations.push(`state09: retry result=${JSON.stringify(r2b)}`);
         await kdsPage.waitForTimeout(2_000);
       }
+      expect(preparedResult, `SYNC-E-3: transition PREPARED refusée: ${JSON.stringify(preparedResult)}`).toMatchObject({ ok: true });
+      expect(Number(fetchOrderById(placement.orderId)?.status)).toBe(ORDER_STATUS.PREPARED);
       await kdsPage.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
       await kdsPage.waitForTimeout(1_500);
       await kdsRec.snap('09-e-kds-mark-prepared');
 
       // ================================================================
-      // PHASE 8 — POS suivi reflects PREPARED ≤5s (SYNC-E-3 leg B)
-      // State 10
+      // PHASE 8 — PREPARED stays cash-pending, then the cashier actually
+      // collects it. Only AFTER the canonical counter-collect POST may the
+      // prepared order move from amber "À encaisser" to green "Prêtes".
       // ================================================================
+      const preparedReload = await reloadPosTracker(posPage);
+      const preparedApiOrder = preparedReload.rows.find(
+        (order) => Number(order.id) === Number(placement.orderId)
+      );
+      const pendingPreparedCard = posPage.locator(
+        `[data-testid="tracker-order-${placement.orderId}"].pos-tracker-card--amber`
+      );
+      expect(
+        Number(preparedApiOrder?.status),
+        `SYNC-E-3-B: la liste POS doit recevoir PREPARED; api=${JSON.stringify(preparedApiOrder || null)}`
+      ).toBe(ORDER_STATUS.PREPARED);
+      expect(preparedApiOrder?.is_cash_pending).toBe(true);
+      await expect(pendingPreparedCard, 'Une commande prête mais impayée doit rester dans À encaisser').toBeVisible();
+      await expect(posPage.locator(`[data-testid="tracker-cash-badge-${placement.orderId}"]`)).toBeVisible();
+      await posRec.snap('10a-e-pos-prepared-still-cash-pending');
+
+      const collectButton = posPage.locator(`[data-testid="tracker-encaisser-${placement.orderId}"]`);
+      await expect(collectButton, 'Le CTA Encaisser doit rester disponible quand le plat est prêt').toBeVisible();
+      await collectButton.click();
+      const collectModal = posPage.locator('[data-testid="pos-counter-collect-modal"]');
+      const collectConfirm = posPage.locator('[data-testid="pos-counter-collect-confirm"]');
+      await expect(collectModal).toBeVisible({ timeout: 5_000 });
+      await expect(collectConfirm, 'Le montant exact prérempli doit permettre une validation en un geste').toBeEnabled();
+
+      const [collectResponse] = await Promise.all([
+        posPage.waitForResponse(
+          (response) => response.request().method() === 'POST'
+            && response.url().includes(`/api/admin/pos/counter-collect/${placement.orderId}/confirm`),
+          { timeout: 20_000 },
+        ),
+        collectConfirm.click(),
+      ]);
+      expect(
+        collectResponse.ok(),
+        `L'encaissement canonique doit réussir: HTTP ${collectResponse.status()} ${await collectResponse.text().catch(() => '')}`
+      ).toBe(true);
+      await expect(collectModal).toBeHidden({ timeout: 10_000 });
+
+      await expect.poll(
+        () => {
+          const order = fetchOrderById(placement.orderId);
+          return {
+            status: Number(order?.status),
+            payment_status: Number(order?.payment_status),
+            pos_payment_method: Number(order?.pos_payment_method),
+          };
+        },
+        { timeout: 15_000, message: 'L’encaissement doit promouvoir le paiement, sceller la vente et préserver PREPARED' },
+      ).toMatchObject({
+        status: ORDER_STATUS.PREPARED,
+        payment_status: paymentStatusEnum.PAID,
+        pos_payment_method: posPaymentMethodEnum.CASH,
+      });
+      const collectedOrder = fetchOrderById(placement.orderId);
+      expect(
+        Number(collectedOrder?.fiscal_sequence_no),
+        'L’encaissement comptoir doit allouer un numéro fiscal positif'
+      ).toBeGreaterThan(0);
+
       let posReflectsPrepared = false;
       try {
-        await posPage.waitForFunction(
-          (orderId) => {
-            const card = document.querySelector(
-              `[data-testid="tracker-order-${orderId}"]`
-            );
-            if (!card) return false;
-            return (
-              card.className &&
-              card.className.indexOf('pos-tracker-card--green') !== -1
-            );
-          },
-          placement.orderId,
-          { timeout: 5_000 }
-        );
+        await expect(
+          posPage.locator(`[data-testid="tracker-order-${placement.orderId}"].pos-tracker-card--green`)
+        ).toBeVisible({ timeout: 5_000 });
         posReflectsPrepared = true;
       } catch (_e) {
-        observations.push(
-          'state10: SYNC-E-3-B REALTIME TIMEOUT — POS suivi did not reflect PREPARED within 5s. ' +
-          'Fallback reload to capture state.'
-        );
-        try {
-          await posPage.reload({ waitUntil: 'networkidle' });
-          await posPage.waitForTimeout(1_500);
-        } catch (_e2) {
-          /* ignore */
-        }
+        observations.push('state10: événement temps réel non reçu; rafraîchissement de secours après encaissement.');
+        await reloadPosTracker(posPage);
+        posReflectsPrepared = await posPage
+          .locator(`[data-testid="tracker-order-${placement.orderId}"].pos-tracker-card--green`)
+          .isVisible();
       }
       timings.sync_e3_b_kds_to_pos_prepared_ms = Date.now() - tPreparedTransition;
       observations.push(
-        `state10: SYNC-E-3-B posReflectsPrepared=${posReflectsPrepared} ` +
+        `state10: SYNC-E-3-B collected=true posReflectsPrepared=${posReflectsPrepared} ` +
+        `fiscal_sequence_no=${collectedOrder?.fiscal_sequence_no ?? 'missing'} ` +
         `latency_ms=${timings.sync_e3_b_kds_to_pos_prepared_ms}`
       );
-      await posRec.snap('10-e-pos-suivi-reflects-prepared');
+      expect(posReflectsPrepared, 'SYNC-E-3-B: après encaissement, la commande PREPARED doit rejoindre Prêtes').toBe(true);
+      await expect(posPage.locator(`[data-testid="tracker-cash-badge-${placement.orderId}"]`)).toBeHidden();
+      await posRec.snap('10-e-pos-collected-and-ready');
 
       // ================================================================
       // PHASE 9 — Terminal transition : POS marks SERVED (state 11)
@@ -761,6 +946,11 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         }
       }
       observations.push(`state11: posMarkServed=${posMarkServed}`);
+      expect(posMarkServed, 'SYNC-E terminal: le CTA POS doit permettre de servir la commande préparée').toBe(true);
+      await expect.poll(
+        () => Number(fetchOrderById(placement.orderId)?.status),
+        { timeout: 10_000, message: 'La transition POS vers DELIVERED doit être persistée' },
+      ).toBe(ORDER_STATUS.DELIVERED);
       // Snap the surface that owns the terminal action — POS in our case.
       await posRec.snap('11-e-kds-mark-served-or-pos-deliver');
 
@@ -772,15 +962,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       try {
         await kdsPage.waitForFunction(
           (orderId) => {
-            const cards = Array.from(
-              document.querySelectorAll('[data-kds-order-card="kiosk"]')
-            );
-            return !cards.some((c) => {
-              const hdr = c.querySelector(`[id^="order-${orderId}-"]`);
-              if (hdr) return true;
-              const text = c.textContent || '';
-              return text.includes('#' + orderId) || text.includes('N°' + orderId);
-            });
+            return !document.querySelector(`[data-order-id="${orderId}"]`);
           },
           placement.orderId,
           { timeout: 5_000 }
@@ -793,6 +975,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         try {
           await kdsPage.reload({ waitUntil: 'domcontentloaded' });
           await kdsPage.waitForTimeout(2_500);
+          kdsCardRemoved = !(await kdsPage.locator(`[data-order-id="${placement.orderId}"]`).isVisible().catch(() => false));
         } catch (_e2) {
           /* ignore */
         }
@@ -801,6 +984,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       observations.push(
         `state12: kdsCardRemoved=${kdsCardRemoved} latency_ms=${timings.sync_kds_remove_ms}`
       );
+      expect(kdsCardRemoved, 'SYNC-E terminal: la commande servie doit quitter la grille KDS active').toBe(true);
       await kdsPage.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
       await kdsPage.waitForTimeout(1_500);
       await kdsRec.snap('12-e-kds-removes-from-active');
@@ -837,13 +1021,15 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       }
       const concurrentPromises = [
         placeKioskOrder(kioskPage, {
-          items: [{ item_id: ITEM_FRITES_SEULES, quantity: 1, item_variations: [], item_extras: [], item_addons: [] }],
+          tokenPrefix: PREFIXE_AUDIT,
+          items: [{ item_id: TEST_ITEM.id, quantity: 1, item_variations: [], item_extras: [], item_addons: [], instruction: 'Wave E concurrence A' }],
           paymentMethod: PAYMENT_CASH,
           orderType: ORDER_TYPE_TAKEAWAY,
           skipPaymentConfirm: true,
         }).catch((e) => ({ error: e?.message || String(e), stage: e?.stage })),
         placeKioskOrder(kioskPage2, {
-          items: [{ item_id: ITEM_FRITES_SEULES, quantity: 1, item_variations: [], item_extras: [], item_addons: [] }],
+          tokenPrefix: PREFIXE_AUDIT,
+          items: [{ item_id: TEST_ITEM.id, quantity: 1, item_variations: [], item_extras: [], item_addons: [], instruction: 'Wave E concurrence B' }],
           paymentMethod: PAYMENT_CASH,
           orderType: ORDER_TYPE_TAKEAWAY,
           skipPaymentConfirm: true,
@@ -855,10 +1041,12 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       const concIds = [];
       if (concA && concA.orderId) {
         capturedOrderIds.push(concA.orderId);
+        createdOrderIds.add(concA.orderId);
         concIds.push(concA.orderId);
       }
       if (concB && concB.orderId) {
         capturedOrderIds.push(concB.orderId);
+        createdOrderIds.add(concB.orderId);
         concIds.push(concB.orderId);
       }
       observations.push(
@@ -879,20 +1067,15 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
 
       // SYNC-E-4 asserts (weak form): 2 distinct order ids, distinct
       // idempotency keys, no merge.
-      if (concIds.length === 2) {
-        expect(
-          concIds[0],
-          `SYNC-E-4: concurrent kiosk placements must produce 2 distinct order ids; got ${JSON.stringify(concIds)}`
-        ).not.toBe(concIds[1]);
-        expect(
-          concA.idempotencyKey,
-          'SYNC-E-4: concurrent kiosk placements must use distinct idempotency keys'
-        ).not.toBe(concB.idempotencyKey);
-      } else {
-        observations.push(
-          `state13: WARN concurrent placements produced only ${concIds.length} successful order(s); SYNC-E-4 weakened to documentary`
-        );
-      }
+      expect(concIds, `SYNC-E-4: deux créations concurrentes doivent réussir; A=${concA?.error || 'ok'}, B=${concB?.error || 'ok'}`).toHaveLength(2);
+      expect(
+        concIds[0],
+        `SYNC-E-4: concurrent kiosk placements must produce 2 distinct order ids; got ${JSON.stringify(concIds)}`
+      ).not.toBe(concIds[1]);
+      expect(
+        concA.idempotencyKey,
+        'SYNC-E-4: concurrent kiosk placements must use distinct idempotency keys'
+      ).not.toBe(concB.idempotencyKey);
 
       // Wait for KDS to absorb concurrent orders. In dev (Pusher down) the
       // polling fallback is ~10-13s — wait up to 15s for visibility BEFORE
@@ -904,38 +1087,31 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       try {
         await kdsPage.waitForFunction(
           (ids) => {
-            const cards = Array.from(
-              document.querySelectorAll('[data-kds-order-card="kiosk"]')
-            );
-            // Look for at least one concurrent order id on the kiosk lane.
-            return ids.some((id) =>
-              cards.some((c) => {
-                const hdr = c.querySelector(`[id^="order-${id}-"]`);
-                if (hdr) return true;
-                const text = c.textContent || '';
-                return text.includes('#' + id) || text.includes('N°' + id);
-              })
-            );
+            return ids.every((id) => {
+              const card = document.querySelector(`[data-order-id="${id}"]`);
+              const source = card?.querySelector('.kds-card__source-label')?.textContent || '';
+              return !!card && /borne/i.test(source);
+            });
           },
           concIds,
           { timeout: 15_000 }
         );
-        kdsKioskCardsAfter = await kdsPage.evaluate(() => {
-          return document.querySelectorAll('[data-kds-order-card="kiosk"]').length;
-        });
+        kdsKioskCardsAfter = await kdsPage.evaluate((ids) => (
+          ids.filter((id) => document.querySelector(`[data-order-id="${id}"]`)).length
+        ), concIds);
       } catch (_e) {
-        kdsKioskCardsAfter = await kdsPage.evaluate(() => {
-          return document.querySelectorAll('[data-kds-order-card="kiosk"]').length;
-        });
-        observations.push(
-          `state13: WARN KDS did not surface concurrent kiosk orders within 15s ` +
-          `(polling fallback latency). Snapping current empty state.`
-        );
+        await kdsPage.reload({ waitUntil: 'domcontentloaded' });
+        await kdsPage.waitForTimeout(2_500);
+        kdsKioskCardsAfter = await kdsPage.evaluate((ids) => (
+          ids.filter((id) => document.querySelector(`[data-order-id="${id}"]`)).length
+        ), concIds);
+        observations.push(`state13: polling hors budget; cartes après rafraîchissement=${kdsKioskCardsAfter}`);
       }
       observations.push(
         `state13: KDS kiosk-lane card count after concurrent placements=${kdsKioskCardsAfter} ` +
         `wait_ms=${Date.now() - tWaitConc} concurrent_ids=${JSON.stringify(concIds)}`
       );
+      expect(kdsKioskCardsAfter, 'SYNC-E-4: les deux commandes concurrentes doivent apparaître séparément au KDS').toBe(2);
       // Source-isolation snap: capture BOTH surfaces to evidence the
       // borne-vs-POS source classification. KDS dev-polling means the
       // concurrent kiosk card may not yet be on the KDS lane, so we also
@@ -956,6 +1132,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
       // ================================================================
       const targetCancelId = concIds[0] || null;
       if (targetCancelId) {
+        await reloadPosTracker(posPage);
         const tCancel = Date.now();
         let cancelDispatched = false;
         try {
@@ -963,29 +1140,19 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           const cancelBtn = posPage
             .locator(`[data-testid="tracker-cancel-${targetCancelId}"]`)
             .first();
-          if (await cancelBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-            await cancelBtn.click({ timeout: 4_000, force: true });
-            await posPage.waitForTimeout(1_000);
-            // Cancel dialog reason input + confirm button.
-            const reasonInput = posPage.locator('[data-testid="tracker-cancel-reason"]').first();
-            if (await reasonInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-              await reasonInput.fill('Wave E SYNC-E-CANCEL operator-driven kiosk cancel');
-              await posPage.waitForTimeout(300);
-            }
-            const confirmBtn = posPage.locator('[data-testid="tracker-cancel-confirm"]').first();
-            if (await confirmBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-              await confirmBtn.click({ timeout: 4_000, force: true });
-              cancelDispatched = true;
-              await posPage.waitForTimeout(2_000);
-            }
-          } else {
-            observations.push(
-              `state14: tracker-cancel button not visible for order ${targetCancelId}; ` +
-              `POS suivi may have moved it to a non-cancellable column. Falling back to direct DB cancel for cleanup parity.`
-            );
-            safeCancelOrder(targetCancelId);
-            cancelDispatched = true;
-          }
+          await expect(cancelBtn, `Bouton annuler absent pour la commande ${targetCancelId}`).toBeVisible({ timeout: 10_000 });
+          await cancelBtn.click({ timeout: 4_000, force: true });
+          const reasonInput = posPage.locator('[data-testid="tracker-cancel-reason"]').first();
+          await expect(reasonInput).toBeVisible({ timeout: 5_000 });
+          await reasonInput.fill('Wave E SYNC-E-CANCEL operator-driven kiosk cancel');
+          const confirmBtn = posPage.locator('[data-testid="tracker-cancel-confirm"]').first();
+          await expect(confirmBtn).toBeEnabled({ timeout: 5_000 });
+          await confirmBtn.click({ timeout: 4_000, force: true });
+          cancelDispatched = true;
+          await expect.poll(
+            () => Number(fetchOrderById(targetCancelId)?.status),
+            { timeout: 10_000, message: `La commande ${targetCancelId} doit être annulée en base` },
+          ).toBe(ORDER_STATUS.CANCELED);
         } catch (e) {
           observations.push(`state14: cancel dispatch error=${e?.message || e}`);
         }
@@ -995,15 +1162,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         try {
           await kdsPage.waitForFunction(
             (orderId) => {
-              const cards = Array.from(
-                document.querySelectorAll('[data-kds-order-card="kiosk"]')
-              );
-              return !cards.some((c) => {
-                const hdr = c.querySelector(`[id^="order-${orderId}-"]`);
-                if (hdr) return true;
-                const text = c.textContent || '';
-                return text.includes('#' + orderId) || text.includes('N°' + orderId);
-              });
+              return !document.querySelector(`[data-order-id="${orderId}"]`);
             },
             targetCancelId,
             { timeout: 5_000 }
@@ -1017,6 +1176,7 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           try {
             await kdsPage.reload({ waitUntil: 'domcontentloaded' });
             await kdsPage.waitForTimeout(2_500);
+            kdsCancelRemoved = !(await kdsPage.locator(`[data-order-id="${targetCancelId}"]`).isVisible().catch(() => false));
           } catch (_e2) {
             /* ignore */
           }
@@ -1026,6 +1186,8 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           `state14: SYNC-E-CANCEL cancelDispatched=${cancelDispatched} kdsCancelRemoved=${kdsCancelRemoved} ` +
           `latency_ms=${timings.sync_e_cancel_kds_remove_ms} target_order_id=${targetCancelId}`
         );
+        expect(cancelDispatched, 'SYNC-E-CANCEL: l’annulation opérateur doit être envoyée').toBe(true);
+        expect(kdsCancelRemoved, 'SYNC-E-CANCEL: la commande annulée doit quitter le KDS après repli').toBe(true);
       } else {
         observations.push('state14: SYNC-E-CANCEL SKIPPED — no concurrent order id available to cancel');
       }
@@ -1054,13 +1216,15 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
             fs.readFileSync(path.join(SCREENSHOT_DIR, nf), 'utf8')
           );
           for (const entry of arr) {
+            if (Number(entry.ts || 0) < runStartedAt - 1_000) continue;
             if (
               entry.status >= 400 &&
               entry.status !== 304 &&
               entry.status !== 401
             ) {
-              // Skip benign validation (422) + idempotency conflict (409).
-              if (entry.status === 422 || entry.status === 409) continue;
+              // Dev fixture: the seeded language row references an absent
+              // flag image. Keep it explicit and narrow; no generic 4xx is hidden.
+              if (entry.status === 404 && /\/storage\/1\/english\.png$/.test(entry.url || '')) continue;
               if (
                 entry.status === 429 &&
                 /change-status/.test(entry.url || '')
@@ -1085,10 +1249,12 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
           console.log(`  - ${s.file} :: ${s.method} ${s.status} ${s.url}`);
         }
       }
+      expect(swept, `Wave E ne doit masquer aucune erreur réseau inattendue: ${JSON.stringify(swept.slice(0, 10))}`).toHaveLength(0);
 
       const written = fs
         .readdirSync(SCREENSHOT_DIR)
-        .filter((f) => f.endsWith('.png'));
+        .filter((f) => f.endsWith('.png'))
+        .filter((f) => fs.statSync(path.join(SCREENSHOT_DIR, f)).mtimeMs >= runStartedAt - 1_000);
       // eslint-disable-next-line no-console
       console.log(`[Wave E] obs:\n  ${observations.join('\n  ')}`);
       // eslint-disable-next-line no-console
@@ -1102,21 +1268,6 @@ test.describe('Kiosk · Backend · KDS · POS suivi sync audit Wave E', () => {
         `Wave E expects >=14 PNGs (one per chronological state across 3 surfaces; 15 with the 13b-e companion POS source-isolation capture), got ${written.length}`
       ).toBeGreaterThanOrEqual(14);
     } finally {
-      // ----------------------------------------------------------------
-      // CLEANUP — cancel every order this run created so the live KDS
-      // pile is not polluted for downstream rounds / human ops.
-      // ----------------------------------------------------------------
-      for (const oid of capturedOrderIds) {
-        safeCancelOrder(oid);
-      }
-      try {
-        const finalCleanup = cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
-        // eslint-disable-next-line no-console
-        console.log(`[Wave E] afterAll cleanup: ${JSON.stringify(finalCleanup)}`);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn(`[Wave E] afterAll cleanup error: ${e?.message || e}`);
-      }
       try { kioskRec.dispose(); } catch (_e) { /* ignore */ }
       try { kdsRec.dispose(); } catch (_e) { /* ignore */ }
       try { posRec.dispose(); } catch (_e) { /* ignore */ }

@@ -1,0 +1,1 @@
+Implement the public client page first. Preserve its server API shape and every existing state transition; improve visual hierarchy, animation choreography, accessibility and recovery feedback only. Treat every client-visible reward as server-owned data. Preserve unrelated dirty changes in the external site repository.

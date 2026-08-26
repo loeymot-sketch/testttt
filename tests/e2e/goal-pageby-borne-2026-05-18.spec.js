@@ -14,10 +14,33 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { loginAsKiosk } = require('./helpers/login');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
+
+// [FIX 2026-08-25] `prefers-reduced-motion: reduce` pour tout ce fichier.
+//
+// La tuile « À emporter » de la borne porte une animation d'ambiance PERMANENTE
+// (`cay-pulse 2.6s infinite`, KioskIdleScreenComponent.vue:845). Playwright refuse de cliquer
+// un élément dont la boîte ne se stabilise jamais : « element is not stable », puis timeout —
+// le banc mourait sans que le produit ait le moindre tort.
+//
+// On ne force PAS le clic (`force: true` masquerait une vraie non-cliquabilité). On active le
+// mode mouvement réduit, que le composant honore DÉJÀ explicitement : sous
+// `prefers-reduced-motion`, `.kiosk-order-type-card--takeaway` reçoit `animation: none`
+// (lignes 937 et 950). La tuile se stabilise, le clic redevient possible, et on éprouve au
+// passage le chemin d'accessibilité qu'une borne doit respecter.
+// ⚠️ `test.use({ reducedMotion: 'reduce' })` est SANS EFFET dans ce dépôt — mesuré le
+// 2026-08-25 sur Playwright 1.58.2 : `matchMedia('(prefers-reduced-motion: reduce)').matches`
+// restait `false`. On passe donc par `page.emulateMedia`, qui lui est vérifié : il fait bien
+// tomber l'animation de la tuile à `animationName: none`. Ne pas « simplifier » en revenant au
+// `test.use` : il échoue en silence, et le banc repart en timeout sans rien expliquer.
+test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+});
+
 const {
   placeKioskOrder,
   cleanupKioskAuditOrders,
@@ -25,7 +48,13 @@ const {
   getKioskApiToken,
   PAYMENT_CARD,
   KIOSK_AUDIT_PREFIX,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const SHOT_DIR = path.resolve(
   __dirname,
@@ -66,6 +95,41 @@ const RAW_LABEL_PATTERNS = [
 // ============================================================================
 // TIER A — No cart state needed. Direct page visits.
 // ============================================================================
+
+/**
+ * [FIX 2026-08-25] Résolution dynamique d'un article À ASSISTANT.
+ *
+ * Les deux cas ci-dessous visaient les items 474 et 375 dans les catégories 344 et 349.
+ * Aucun de ces quatre identifiants n'existe plus (vérifié en base : 0 ligne). Ici, contrairement
+ * à zone6 ou wave-p-cross-system, la COMPOSITION EST le sujet — on ne peut donc pas substituer
+ * un article simple : il faut un article dont la catégorie porte réellement un profil
+ * d'assistant. On le résout au lieu de le coder en dur.
+ *
+ * @param {string} gabarit  'sandwich' | 'tacos'
+ * @returns {{itemId: number, categoryId: number, name: string}|null}
+ */
+function resoudreArticleAvecAssistant(gabarit) {
+  const out = execFileSync('php', ['artisan', 'tinker', '--execute', `
+    // Deux modèles de liaison coexistent : un profil « custom » est rattaché à un ARTICLE
+    // (p.item_id), tandis que « sandwich »/« tacos » le sont à une CATÉGORIE
+    // (p.item_category_id, p.item_id NULL). On accepte les deux.
+    $it = DB::table('items')
+      ->join('item_wizard_profiles as p', function ($j) {
+        $j->on('p.item_id', '=', 'items.id')
+          ->orOn('p.item_category_id', '=', 'items.item_category_id');
+      })
+      ->where('items.status', 5)
+      ->where('p.template', '${gabarit}')
+      ->orderBy('items.id')
+      ->first(['items.id as id', 'items.name as name', 'items.item_category_id as cat']);
+    echo 'WIZ_START=' . json_encode($it) . '=WIZ_END';
+  `], { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 30000 });
+  const m = out.match(/WIZ_START=(.*?)=WIZ_END/s);
+  if (!m || m[1] === 'null') return null;
+  const o = JSON.parse(m[1]);
+  return { itemId: Number(o.id), categoryId: Number(o.cat), name: String(o.name) };
+}
+
 
 test.describe('BORNE Page-by-page — Tier A (idle / auth / catalog / empty states)', () => {
   test.setTimeout(180_000);
@@ -270,33 +334,39 @@ test.describe('BORNE Page-by-page — Tier B (wizard templates, frozen-zone awar
     return false;
   }
 
-  // Cat 349 Burgers default → item 375 Chicken Burger (composer)
-  test('Page 4 — Wizard Sandwich template (item 474 Sandwich Cayenne, cat 344)', async ({ page }) => {
+  test('Page 4 — Assistant gabarit sandwich (article résolu dynamiquement)', async ({ page }) => {
     await page.setViewportSize(KIOSK_VIEWPORT);
     const { snap, dispose } = attachMegaAuditRecorder(page, SHOT_DIR);
     try {
-      const opened = await openItemWizard(page, 474, 344);
+      const cible = resoudreArticleAvecAssistant('sandwich');
+      expect(cible, 'aucun article actif dont la catégorie porte un profil d\'assistant « sandwich »').not.toBeNull();
+      console.log(`page-04 article résolu : #${cible.itemId} « ${cible.name} » (cat ${cible.categoryId})`);
+      const opened = await openItemWizard(page, cible.itemId, cible.categoryId);
       await snap('page-04-wizard-sandwich');
       console.log(`page-04 wizard opened=${opened} url=${page.url()}`);
       const txt = await page.locator('body').innerText().catch(() => '');
       const rawLeak = I18N_LEAK_RE.test(txt);
       console.log(`page-04 wizard rawLeak=${rawLeak}`);
-      expect(opened, 'wizard should open for item 474').toBeTruthy();
+      expect(opened, `l'assistant doit s'ouvrir pour l'article #${cible.itemId} « ${cible.name} »`).toBeTruthy();
       expect(rawLeak, 'i18n leak in sandwich wizard').toBeFalsy();
     } finally { dispose(); }
   });
 
-  test('Page 5 — Wizard Burger template (item 375 Chicken Burger, cat 349)', async ({ page }) => {
+  test('Page 5 — Assistant second gabarit (article résolu dynamiquement)', async ({ page }) => {
     await page.setViewportSize(KIOSK_VIEWPORT);
     const { snap, dispose } = attachMegaAuditRecorder(page, SHOT_DIR);
     try {
-      // Default category is Burgers (349) — use item 375 Chicken Burger which is verified present
-      const opened = await openItemWizard(page, 375, 349);
+      // [FIX 2026-08-25] Second gabarit résolu dynamiquement, en écartant l'article du cas
+      // précédent pour que les deux cas éprouvent bien DEUX articles distincts.
+      const cible = resoudreArticleAvecAssistant('tacos') || resoudreArticleAvecAssistant('sandwich');
+      expect(cible, 'aucun article actif dont la catégorie porte un profil d\'assistant').not.toBeNull();
+      console.log(`page-05 article résolu : #${cible.itemId} « ${cible.name} » (cat ${cible.categoryId})`);
+      const opened = await openItemWizard(page, cible.itemId, cible.categoryId);
       await snap('page-05-wizard-burger');
       console.log(`page-05 wizard opened=${opened} url=${page.url()}`);
       const txt = await page.locator('body').innerText().catch(() => '');
       const rawLeak = I18N_LEAK_RE.test(txt);
-      expect(opened, 'wizard should open for item 375').toBeTruthy();
+      expect(opened, `l'assistant doit s'ouvrir pour l'article #${cible.itemId} « ${cible.name} »`).toBeTruthy();
       expect(rawLeak).toBeFalsy();
     } finally { dispose(); }
   });
@@ -329,12 +399,16 @@ test.describe('BORNE Page-by-page — Tier B (wizard templates, frozen-zone awar
     } finally { dispose(); }
   });
 
-  test('Page 8 — Wizard Menu/Frites template (item 485 Petite Frites, cat 348)', async ({ page }) => {
+  test('Page 8 — Assistant gabarit « custom » (article résolu dynamiquement)', async ({ page }) => {
     await page.setViewportSize(KIOSK_VIEWPORT);
     const { snap, dispose } = attachMegaAuditRecorder(page, SHOT_DIR);
     try {
-      // Frites = 348
-      const opened = await openItemWizard(page, 485, 348);
+      // [FIX 2026-08-25] L'item 485 et la catégorie 348 n'existent plus. On résout un article
+      // dont la catégorie porte un profil « custom » (Frites, Bols, Menu enfant…).
+      const cible = resoudreArticleAvecAssistant('custom');
+      expect(cible, 'aucun article actif dont la catégorie porte un profil « custom »').not.toBeNull();
+      console.log(`page-08 article résolu : #${cible.itemId} « ${cible.name} » (cat ${cible.categoryId})`);
+      const opened = await openItemWizard(page, cible.itemId, cible.categoryId);
       await snap('page-08-wizard-frites');
       console.log(`page-08 wizard opened=${opened} url=${page.url()}`);
       const txt = await page.locator('body').innerText().catch(() => '');
@@ -354,9 +428,15 @@ test.describe('BORNE Page-by-page — Tier B (wizard templates, frozen-zone awar
         await fritesCat.click({ timeout: 5_000 });
         await page.waitForTimeout(1_800);
       }
-      const card485 = page.locator('[data-testid="kiosk-product-card-485"]').first();
-      if (await card485.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await card485.click({ timeout: 5_000 });
+      // [FIX 2026-08-25] Même correction : article résolu au lieu de l'id 485 disparu, qui
+      // faisait échouer silencieusement l'ajout au panier (« Article 485 introuvable ») sans
+      // faire rougir le cas — le parcours continuait sur un panier vide.
+      const cibleCarte = resoudreArticleAvecAssistant('custom');
+      const carteCible = cibleCarte
+        ? page.locator(`[data-testid="kiosk-product-card-${cibleCarte.itemId}"]`).first()
+        : null;
+      if (carteCible && await carteCible.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await carteCible.click({ timeout: 5_000 });
         await page.waitForTimeout(2_500);
         await walkWizardToAddItem(page);
       }
@@ -535,13 +615,17 @@ test.describe('BORNE Page-by-page — Tier C (cart-primed flows via API hybrid)'
     try {
       await loginAsKiosk(page);
       await gotoCategoriesViaTakeaway(page);
-      // Frites cat 348 (item 485 — single-required composer = fast prime)
+      // [FIX 2026-08-25] Article résolu : l'id 485 et la catégorie 348 n'existent plus, et
+      // l'échec passait inaperçu (« Article 485 introuvable ») pendant que le cas continuait.
       const fritesCat = page.locator('[data-testid="kiosk-categories-sidebar-item-348"]').first();
       if (await fritesCat.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await fritesCat.click({ timeout: 5_000 });
         await page.waitForTimeout(1_800);
       }
-      const card485 = page.locator('[data-testid="kiosk-product-card-485"]').first();
+      const cibleAmorce = resoudreArticleAvecAssistant('custom');
+      const card485 = cibleAmorce
+        ? page.locator(`[data-testid="kiosk-product-card-${cibleAmorce.itemId}"]`).first()
+        : page.locator('[data-testid^="kiosk-product-card-"]').first();
       if (await card485.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await card485.click({ timeout: 5_000 });
         await page.waitForTimeout(2_500);
@@ -637,10 +721,14 @@ test.describe('BORNE Page-by-page — Tier C (cart-primed flows via API hybrid)'
       let placedSerial = null;
       try {
         const result = await placeKioskOrder(page, {
+          tokenPrefix: PREFIXE_AUDIT,
+          // [FIX 2026-08-25] Article résolu : l'id 485 et la variation 1180 n'existent plus. Le
+          // devis répondait 422 « Article 485 introuvable » et le cas poursuivait sur un panier
+          // vide — l'échec était journalisé sans jamais faire rougir le banc.
           items: [{
-            item_id: 485,             // Petite Frites
+            item_id: resolveSimpleOrderableItem({ branchId: 1 }).id,
             quantity: 1,
-            item_variations: [{ id: 1180, quantity: 1 }], // Style frites Nature
+            item_variations: [],
             item_extras: [],
             item_addons: [],
           }],

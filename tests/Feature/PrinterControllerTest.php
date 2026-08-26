@@ -29,9 +29,15 @@ class PrinterControllerTest extends TestCase
         // for THIS test class only. Production .env stays closed by default.
         // The dedicated security sentinel (PrinterHostAllowlistSentinelTest)
         // verifies the blocklist with a *cleared* allowlist.
+        // [FIX 2026-08-25] Format host+port obligatoire depuis le durcissement de
+        // `App\Rules\SafeRemoteHost` : une entrée en CIDR nu est désormais REFUSÉE, parce
+        // qu'elle ouvrirait les 65535 ports d'une plage privée entière — pour une imprimante
+        // ESC/POS on n'a besoin que de 9100-9103. Les tests portaient encore l'ancien format et
+        // recevaient donc un 422 dont le message disait exactement quoi faire ; personne n'y
+        // avait donné suite. On aligne sur le format attendu, sans élargir la portée.
         config(['security.safe_remote_host_allowlist' => [
-            '127.0.0.0/8',
-            '192.168.0.0/16',
+            '127.0.0.0/8:9100-9103',
+            '192.168.0.0/16:9100-9103',
         ]]);
 
         $this->branch = Branch::factory()->create();

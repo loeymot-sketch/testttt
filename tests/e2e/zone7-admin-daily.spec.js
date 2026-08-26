@@ -321,7 +321,7 @@ test.describe('Zone 7 — Admin Daily Flow (AD01..AD09)', () => {
 
     // Visual on stock-rupture dashboard — SPA login AFTER mutate
     await loginAsAdmin(page);
-    await page.goto('/admin/stock-rupture-dashboard', { waitUntil: 'domcontentloaded' });
+    await page.goto('/admin/stock/rupture', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3_500);
     await shot(page, 'AD03-stock-rupture-dashboard.png');
   });

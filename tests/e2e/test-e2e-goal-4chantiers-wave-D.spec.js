@@ -86,7 +86,12 @@ const {
   cleanupKioskAuditOrders,
   resetKioskToken,
   PAYMENT_CASH,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const repoRoot = path.resolve(__dirname, '../..');
 const SCREENSHOT_DIR = path.join(__dirname, '__screenshots__', 'test-e2e-goal-4chantiers-wave-D');
@@ -169,6 +174,7 @@ test.describe('Wave D — Kiosk order → waiting screen → QR round trip', () 
 
       // ---- place the order (API-level, via the frozen-wizard-safe helper) ----
       const placement = await placeKioskOrder(page, {
+        tokenPrefix: PREFIXE_AUDIT,
         items: [{ item_id: ITEM_ID, quantity: 1, item_variations: [], item_extras: [], item_addons: [] }],
         paymentMethod: PAYMENT_CASH,
         orderType: 10, // TAKEAWAY — ORDER_TYPE_KIOSK(25) is rejected on kiosk tokens while pos_dine_in_enabled=false

@@ -490,11 +490,25 @@ class DashboardService
     public function slaAlerts()
     {
         try {
-            // Commandes en PREPARING depuis plus de 15 minutes
-            $timeLimit = Carbon::now()->subMinutes(15);
+            // [GOAL CONSOLIDATION_V1_PRODUCTION_20260825 — T-5.3.3] Fenêtre bornée DES DEUX CÔTÉS.
+            //
+            // Avant : seule la borne haute existait (« > 15 min »). Toute commande jamais sortie
+            // de PREPARING y restait pour l'éternité. Mesuré le 2026-08-25 : 344 lignes remontées,
+            // dont les 344 avaient plus de 24 h et la plus ancienne 75 jours. Une vraie commande
+            // en retard était donc invisible, noyée. Une alerte qui alerte toujours n'alerte plus.
+            //
+            // Une alerte SLA porte sur le service EN COURS ; au-delà de la fenêtre, c'est de la
+            // donnée morte à nettoyer côté exploitation, pas un retard à afficher au comptoir.
+            $seuilMinutes = (int) config('dashboard.sla_alerts_threshold_minutes', 15);
+            $fenetreHeures = (int) config('dashboard.sla_alerts_window_hours', 24);
+
+            $timeLimit = Carbon::now()->subMinutes($seuilMinutes);
+            $planchier = Carbon::now()->subHours($fenetreHeures);
+
             $alerts = $this->orderQuery()
                 ->where('status', OrderStatus::PREPARING)
                 ->where('updated_at', '<', $timeLimit)
+                ->where('updated_at', '>=', $planchier)
                 ->with('user')
                 ->orderBy('updated_at', 'asc')
                 ->get();

@@ -96,7 +96,11 @@ class PrinterHostAllowlistSentinelTest extends TestCase
      */
     public function test_accepts_rfc1918_with_allowlist(): void
     {
-        config(['security.safe_remote_host_allowlist' => ['192.168.1.0/24']]);
+        // [FIX 2026-08-25] Format host+port exigé depuis le durcissement de `SafeRemoteHost` :
+        // un CIDR nu ouvrirait les 65535 ports d'un sous-réseau privé. Ce cas VÉRIFIE justement
+        // qu'une entrée d'allowlist bien formée autorise l'imprimante — il doit donc utiliser le
+        // format que le produit attend, pas celui d'avant.
+        config(['security.safe_remote_host_allowlist' => ['192.168.1.0/24:9100-9103']]);
 
         $response = $this->actingAs($this->user, 'sanctum')->postJson(
             '/api/admin/printers',
