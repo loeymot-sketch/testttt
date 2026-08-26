@@ -5,8 +5,14 @@
   **Branche de base** : `pos/category-first-caisse-2026-06-23` · **Arbre principal servi** : `http://127.0.0.1:8766`
 - **Dossier de mission** : `reports/audit/onboarding-commercant-2026-08-26/` (brief, gabarits, reconnaissance `recon/Z1..Z8`,
   rapports de mission `MISSION_ONB*.md`)
-- **Mode d'emploi** : ce document est lu EN PREMIER par toute session du programme. Puis le rapport de mission du GOAL,
-  puis le GOAL. Une session = UN GOAL. Plusieurs sessions en parallèle = respecter §2 (voies, ports, registres).
+- **Mode d'emploi** : une session = **UN GOAL** et **TROIS FICHIERS**, dans cet ordre —
+  1. `reports/audit/onboarding-commercant-2026-08-26/PROTOCOLE_SESSION.md` (la **loi** : pré-vol, voies, base,
+     discipline, preuves, convergence, gates, git, interdits, corrections vérifiées — **identique pour les 14**) ;
+  2. `reports/audit/onboarding-commercant-2026-08-26/MISSION_ONBnn_*.md` (l'**état des lieux** + le journal) ;
+  3. `plans/GOAL_ONBnn_*_2026-08-26.md` (le **plan**).
+  Le prompt à coller (< 4 000 caractères) est dans
+  `reports/audit/onboarding-commercant-2026-08-26/PROMPTS_DE_LANCEMENT.md`. Cet index reste la carte du programme ;
+  le protocole prime sur les GOAL pour tout ce qui touche à l'instrument. Plusieurs sessions en parallèle : §2.
 
 ---
 
@@ -211,10 +217,16 @@ catégorie non vide bloquée ; doublons refusés ; upload > 8 Mo et `.svg` refus
 | 13 | `GOAL_ONB13_SECURITE_INTEGRITE_BACKOFFICE_2026-08-26.md` | `MISSION_ONB13_SECURITE_INTEGRITE_BACKOFFICE.md` |
 | 14 | `GOAL_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT_2026-08-26.md` | `MISSION_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT.md` |
 
-Matériel commun : `_BRIEF_COMMUN.md`, `_ZONES.md` (briefs Z1..Z8), `Z0_*.md` (cartes), `Z1/Z2/Z3/Z7_*.md` (mesures), `screens/Z*/` (captures), `_GABARIT_GOAL.md`,
-`_GABARIT_MISSION.md`, `_CONSIGNE_REDACTEUR.md`, `_FICHES_GOAL.md`, `BRAIN_ENTRY_2026-08-26.md` (bloc à coller dans `PROJECT_BRAIN.md §4`).
-**Chaque GOAL a été passé au contrôle anti-fiction** (script d'existence des chemins cités sur l'arbre principal) ; les seuls chemins absents sont marqués « À CRÉER »
-ou sont des livrables du programme lui-même.
+Matériel commun, dans `reports/audit/onboarding-commercant-2026-08-26/` :
+**`PROTOCOLE_SESSION.md`** (la loi commune — fichier n° 1 des trois, lu par les 14 sessions) ·
+**`PROMPTS_DE_LANCEMENT.md`** (les 14 blocs courts à coller, < 4 000 caractères chacun) ·
+**`AUDIT_ADVERSE_PROMPTS_2026-08-26.md`** (ce que 8 agents adverses ont trouvé — 12 défauts systématiques dont
+4 bloquants d'environnement — et la dette des 6 GOAL non relus) · `recon/_BRIEF_COMMUN.md`, `recon/_ZONES.md`
+(briefs Z1..Z8), `recon/Z0_*.md` (cartes de code), `recon/Z1|Z2|Z3|Z7_*.md` (mesures réelles), `recon/screens/Z*/`
+(captures) · `_GABARIT_GOAL.md`, `_GABARIT_MISSION.md`, `_CONSIGNE_REDACTEUR.md`, `_FICHES_GOAL.md` ·
+`BRAIN_ENTRY_2026-08-26.md` (bloc à coller dans `PROJECT_BRAIN.md §4`).
+**Contrôles passés** : anti-fiction sur les chemins cités (les seuls absents sont marqués « À CRÉER » ou sont des
+livrables du programme) ; audit adverse des prompts (8/14 relus, corrections absorbées par le protocole §14).
 
 ---
 
