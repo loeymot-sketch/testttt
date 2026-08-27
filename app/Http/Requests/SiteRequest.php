@@ -70,4 +70,44 @@ class SiteRequest extends FormRequest
             'site_default_phone_digit_length' => ['required', 'numeric'],
         ];
     }
+
+    /**
+     * [ONB-10 2026-08-27] L'interrupteur « Debug application » pouvait éteindre la caisse.
+     *
+     * `SiteService::update` écrit `APP_DEBUG=true` dans le `.env` quand cet
+     * interrupteur passe à ENABLE. Et `AppServiceProvider` REFUSE DE DÉMARRER en
+     * production si `APP_DEBUG=true` — c'est un garde-fou volontaire, contre la fuite
+     * de traces, de requêtes SQL et d'identifiants de base.
+     *
+     * Mis bout à bout, le commerçant qui coche « Activer » sur un écran de réglages
+     * ne provoque pas une fuite : il provoque l'ARRÊT COMPLET de sa caisse, à la
+     * requête suivante, sans moyen de revenir en arrière depuis l'interface — il faut
+     * se connecter à la machine et éditer le `.env` à la main. En plein service.
+     *
+     * Le commentaire du garde-fou dit lui-même que celui-ci tient lieu de pansement
+     * « en attendant » que l'écriture soit bridée à la source (backlog V1.0.2
+     * M-P0-D/E/F). C'est ce que fait ce contrôle : on refuse l'écriture plutôt que de
+     * laisser le commerçant se couper le courant. En développement, où le garde-fou ne
+     * s'applique pas, l'interrupteur continue de fonctionner normalement.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            if (! app()->environment('production')) {
+                return;
+            }
+
+            if ((int) $this->input('site_app_debug') !== \App\Enums\Activity::ENABLE) {
+                return;
+            }
+
+            $validator->errors()->add(
+                'site_app_debug',
+                'Le mode debug est interdit en production : le serveur refuserait de '
+                . 'démarrer à la requête suivante, et la caisse serait à l\'arrêt jusqu\'à '
+                . 'une intervention sur la machine. Ce réglage reste disponible en '
+                . 'développement.'
+            );
+        });
+    }
 }
