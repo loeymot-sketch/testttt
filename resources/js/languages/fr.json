@@ -1698,7 +1698,7 @@
         "pos-destroy-paid": "Supprimer une commande DÉJÀ PAYÉE",
         "pos-manage-fiscal": "Faire les clôtures Z et X",
         "pos-reopen-z": "Rouvrir une clôture Z déjà faite",
-        "pos.redeem-loyalty": "Utiliser les points de fidélité d'un client",
+        "pos_redeem-loyalty": "Utiliser les points de fidélité d'un client",
         "pos-refund": "Rembourser une commande (contre-écriture NF525)",
         "online-orders": "Voir les commandes en ligne",
         "table-orders": "Voir les commandes à table",
@@ -1757,7 +1757,7 @@
         "credit-balance-report": "Consulter le rapport des avoirs",
         "cash-sessions-report": "Consulter le rapport des sessions de caisse",
         "settings": "Accéder aux réglages",
-        "cash.reconcile.variance.override": "Valider une clôture de caisse malgré un écart"
+        "cash_reconcile_variance_override": "Valider une clôture de caisse malgré un écart"
     },
     "message": {
         "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",

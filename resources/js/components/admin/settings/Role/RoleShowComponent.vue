@@ -121,8 +121,21 @@ export default {
             if (!permission) {
                 return '';
             }
-            const cle = 'permission.' + permission.name;
+            // Le point est remplacé par un souligné AVANT la recherche.
+            //
+            // Pourquoi : `$t('permission.' + name)` interprète le point comme un
+            // niveau d'imbrication. La permission `pos.redeem-loyalty` faisait donc
+            // chercher `permission → pos → redeem-loyalty`, qui n'existe pas — et
+            // elle restait seule en anglais au milieu de douze lignes traduites.
+            // Constaté à l'écran, jamais dans un test : les douze autres passaient.
+            // La clé correspondante de fr.json porte donc `pos_redeem-loyalty`.
+            //
+            // Première tentative de correction — lire `$i18n.messages` directement —
+            // a fait repasser les treize lignes en anglais : cette table n'est pas
+            // accessible ainsi ici. Vu à l'écran, corrigé, revérifié.
+            const cle = 'permission.' + String(permission.name).replace(/\./g, '_');
             const traduit = this.$t(cle);
+
             return traduit === cle ? (permission.title || permission.name) : traduit;
         },
         list: function () {
