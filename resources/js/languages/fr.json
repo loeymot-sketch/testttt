@@ -1788,6 +1788,7 @@
         "cash_reconcile_variance_override": "Valider une clôture de caisse malgré un écart"
     },
     "message": {
+        "credit_balance_customers_only": "Ce registre ne liste que les clients : le personnel ne détient pas d'avoir.",
         "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",
         "tax_required_hint": "Obligatoire : un article sans taxe serait vendu à 0 % de TVA.",
         "are_you_sure": "Vous confirmez ?",

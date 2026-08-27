@@ -1746,6 +1746,7 @@
         "kiosk_rate_limited": "Too many orders submitted quickly. Please wait a few seconds."
     },
     "message": {
+        "credit_balance_customers_only": "This register lists customers only: staff never hold store credit.",
         "permission_required": "Permission required to access this page: {permission}",
         "item_created_success": "Product created successfully",
         "item_created_next_step": "What would you like to do next?",
