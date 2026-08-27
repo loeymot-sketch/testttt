@@ -1679,6 +1679,7 @@
     },
     "message": {
         "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",
+        "tax_required_hint": "Obligatoire : un article sans taxe serait vendu à 0 % de TVA.",
         "cash_session_reconciled": "Session de caisse réconciliée.",
         "cash_variance_reason_required": "Écart supérieur au seuil autorisé ({threshold}) — merci d'indiquer le motif.",
         "cash_variance_manager_required": "Écart supérieur au seuil autorisé ({threshold}) — seul un responsable peut valider cette clôture.",

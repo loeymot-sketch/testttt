@@ -37,12 +37,22 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="tax_id" class="db-field-title">{{ $t("label.tax") }} ({{ $t("label.including")
-                            }})</label>
+                        <!-- [ONB-02 T-2.1.3 2026-08-27] Trois défauts corrigés ici, tous
+                             constatés à l'écran et invisibles autrement :
+                             1. le champ n'était pas marqué obligatoire alors que le backend
+                                l'exige désormais — le commerçant remplissait tout puis se
+                                prenait un 422 sans avoir été prévenu ;
+                             2. le libellé « Taxe (incluant) » ne veut rien dire en français ;
+                             3. label-by="code" affichait « VAT-10% » au lieu du nom du taux :
+                                les noms lisibles du socle n'arrivaient jamais à l'écran. -->
+                        <label for="tax_id" class="db-field-title required">{{ $t("label.tax") }}</label>
                         <vue-select class="db-field-control f-b-custom-select" id="tax_id"
                             v-bind:class="errors.tax_id ? 'invalid' : ''" v-model="props.form.tax_id" :options="taxes"
-                            label-by="code" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
+                            label-by="name" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
                             placeholder="--" search-placeholder="--" />
+                        <small class="text-slate-500 block mt-1" v-if="!errors.tax_id">{{
+                            $t("message.tax_required_hint")
+                        }}</small>
                         <small class="db-field-alert" v-if="errors.tax_id">{{ errors.tax_id[0] }}</small>
                     </div>
 
