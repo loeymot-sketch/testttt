@@ -235,6 +235,14 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        // [ONB-09 2026-08-28] Le message d'envoi aux abonnés n'existait qu'en
+        // français : en anglais, `trans('all.message.email_send')` rendait la CLÉ
+        // BRUTE. On ajoute les deux nouvelles clés dans les deux langues, et la
+        // clé historique au passage — un message d'interface ne doit jamais sortir
+        // sous sa forme technique.
+        'email_send' => 'Email sent successfully.',
+        'email_send_count' => 'Email sent to :count subscriber(s).',
+        'email_no_subscriber' => 'No subscribers: nothing was sent.',
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'      => 'Order not found.',

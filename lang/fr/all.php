@@ -279,6 +279,11 @@ return [
         'check_your_email_for_code' => 'Veuillez vérifier votre email pour le code.',
         'check_your_phone_for_code' => 'Veuillez vérifier votre téléphone pour le code.',
         'email_send' => 'Email envoyé avec succès.',
+        // [ONB-09 2026-08-28] L'envoi aux abonnés annonçait « Email envoyé »
+        // même quand la liste était VIDE — le service sortait sans rien faire et
+        // le contrôleur répondait succès sans condition. On rend le compte.
+        'email_send_count' => 'Email envoyé à :count abonné(s).',
+        'email_no_subscriber' => "Aucun abonné : rien n'a été envoyé.",
         'token_created_fail' => 'Échec de création du token.',
         'email_does_not_exist' => "Cet email n'existe pas.",
         'phone_exist' => 'Ce numéro de téléphone existe déjà.',
