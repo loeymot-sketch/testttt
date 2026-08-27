@@ -49,10 +49,21 @@ class SiteRequest extends FormRequest
             'site_language_switch'           => ['required', 'numeric'],
             'site_app_debug'                 => ['required', 'numeric'],
             'site_auto_update'               => ['nullable', 'numeric'],
-            'site_google_map_key'            => ['required', 'string', 'max:190', $noEnvInjection],
+            // [ONB-10 2026-08-27] Ces deux-là étaient `required` et valent NULL sur
+            // l'installation réelle : l'écran Site entier était donc inenregistrable.
+            // Un commerçant qui voulait changer son fuseau horaire, son format de date
+            // ou la position du symbole € se prenait un 422 sur une clé d'API Google
+            // Maps qu'il n'a pas — V1 est mono-établissement, en local, livraison
+            // désactivée. Sa seule issue était d'inventer une valeur, écrite ensuite
+            // VERBATIM dans le `.env`. Une clé d'API tierce et une mention de pied de
+            // page ne conditionnent pas le fuseau horaire d'une caisse.
+            //
+            // Le garde-fou anti-injection `.env` ci-dessus reste appliqué : c'est lui
+            // qui compte, et ReglagesDuSiteEnregistrablesTest vérifie qu'il mord encore.
+            'site_google_map_key'            => ['nullable', 'string', 'max:190', $noEnvInjection],
             'site_android_app_link'          => ['nullable', 'string', 'max:190'],
             'site_ios_app_link'              => ['nullable', 'string', 'max:190'],
-            'site_copyright'                 => ['required', 'string', 'max:190'],
+            'site_copyright'                 => ['nullable', 'string', 'max:190'],
             'site_online_payment_gateway'    => ['required', 'numeric'],
             'site_default_sms_gateway'       => ['nullable', 'numeric'],
             'site_guest_login'               => ['required', 'numeric'],
