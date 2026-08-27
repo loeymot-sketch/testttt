@@ -114,24 +114,13 @@
          if (! function_exists('paymentTypeLabel')) {
              function paymentTypeLabel($order)
              {
+                // [ONB-07 2026-08-28] La table vivait ICI, en ligne dans un gabarit,
+                // comme fonction globale — troisième copie de la même correspondance.
+                // Elle est désormais dans `App\Support\LibellePaiement`, partagée avec
+                // l'export tableur qui, lui, n'en avait aucune. Libellés identiques :
+                // rien ne change sur ce PDF.
                 if ($order->transaction && $order->transaction->payment_method) {
-                    $slug = strtolower((string) $order->transaction->payment_method);
-                    $map = [
-                        'counter_cash'              => 'Espèces (Caisse)',
-                        'counter_card'              => 'Carte (Caisse)',
-                        'counter_mobile_banking'    => 'Paiement mobile (Caisse)',
-                        'counter_ticket_restaurant' => 'Titre-restaurant (Caisse)',
-                        'counter_other'             => 'Autre (Caisse)',
-                        'cash'                      => 'Espèces',
-                        'card'                      => 'Carte',
-                        'credit'                    => 'Carte',
-                        'ticket_restaurant'         => 'Titre-restaurant',
-                        'mobile_banking'            => 'Paiement mobile',
-                        'split'                     => 'Mixte',
-                        'other'                     => 'Autre',
-                        'cash_on_delivery'          => 'Espèces',
-                    ];
-                    return $map[$slug] ?? ucwords(str_replace('_', ' ', $slug));
+                    return \App\Support\LibellePaiement::pour($order->transaction->payment_method);
                 }
                 return getPaymentMethod($order);
              }
