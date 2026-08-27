@@ -13,6 +13,7 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\LanguageFileTextGetRequest;
+use App\Http\Requests\LanguageFileTextStoreRequest;
 
 
 class LanguageService
@@ -202,6 +203,40 @@ class LanguageService
      *
      * @throws \RuntimeException
      */
+    /**
+     * [ONB-13 2026-08-28] Rend un littéral ÉCHAPPÉ par le langage du fichier cible,
+     * guillemets compris — jamais une concaténation à la main.
+     *
+     * `var_export` et `json_encode` produisent l'un et l'autre une chaîne close et
+     * échappée par les règles du langage : c'est ce qui neutralise la sortie de chaîne
+     * (`"`), l'échappement (`\`) et, côté PHP, l'interpolation (`$`, `${`). Écrire
+     * `"{$value}"` à la main, comme le faisait ce service, revient à faire ce travail
+     * soi-même et à l'oublier.
+     *
+     * Les deux extensions possibles sont déjà bornées par `validateLangFilePath()`.
+     */
+    private function litteralPourFichier(string $resolvedPath, mixed $value): string
+    {
+        $texte = is_scalar($value) ? (string) $value : '';
+
+        $estJson = strtolower((string) pathinfo($resolvedPath, PATHINFO_EXTENSION)) === 'json';
+
+        if ($estJson) {
+            $encode = json_encode($texte, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            // `json_encode` ne rend `false` que sur de l'UTF-8 invalide ; on refuse
+            // plutôt que d'écrire un fichier de langue cassé.
+            if ($encode === false) {
+                throw new \RuntimeException('Traduction non encodable en JSON');
+            }
+
+            return $encode;
+        }
+
+        // PHP : littéral entre apostrophes, échappé par le langage lui-même.
+        return var_export($texte, true);
+    }
+
     private function validateLangFilePath(?string $path): string
     {
         if (!is_string($path) || $path === '') {
@@ -285,7 +320,7 @@ class LanguageService
     /**
      * @throws Exception
      */
-    public function fileTextStore(Request $request): void
+    public function fileTextStore(LanguageFileTextStoreRequest $request): void
     {
         try {
             // [GOAL-L2-HEAL-01 2026-05-24] Phase L7-2-F-03 P0: validate path
@@ -298,10 +333,18 @@ class LanguageService
             foreach ($request->all() as $key => $value) {
                 if ($key != 'x_language_file_path' && $key != 'x_language_file_name') {
                     $key = str_replace('_', ' ', $key);
+                    // [ONB-13 2026-08-28] La valeur était réinjectée VERBATIM entre
+                    // guillemets doubles : `"{$value}"`. Un guillemet dans la valeur
+                    // sortait de la chaîne, et un `$` y était interpolé — dans un
+                    // fichier `<?php return [...]` que le traducteur inclut à chaque
+                    // requête traduite. Le chemin était confiné et l'accès gardé par
+                    // `permission:settings` ; le contenu, lui, ne l'était pas.
+                    // On écrit désormais un littéral échappé par le langage cible.
+                    $litteral = $this->litteralPourFichier($resolvedPath, $value);
                     if (strpos($fileContent, "'" . $key . "'") !== false) {
-                        $fileContent = str_replace("'" . $key . "'", "\"{$value}\"", $fileContent);
+                        $fileContent = str_replace("'" . $key . "'", $litteral, $fileContent);
                     } elseif (strpos($fileContent, "\"{$key}\"") !== false) {
-                        $fileContent = str_replace("\"{$key}\"", "\"{$value}\"", $fileContent);
+                        $fileContent = str_replace("\"{$key}\"", $litteral, $fileContent);
                     }
                 }
             }
