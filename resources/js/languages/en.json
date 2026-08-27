@@ -566,7 +566,7 @@
         "pending_counter": "To collect",
         "refunded": "Refunded",
         "advanced_promo_fields": "Advanced settings",
-        "cash_collected_today": "Cash collected today",
+        "cash_collected_since_opening": "Cash collected since opening",
         "expected_in_drawer": "Expected cash in drawer",
         "cash_drawer_count_pending_note": "To compute the variance, enter the physical drawer count (coming soon).",
         "previous": "Previous",

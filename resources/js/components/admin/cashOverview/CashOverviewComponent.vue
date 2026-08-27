@@ -141,7 +141,7 @@
                                 >{{ formatMoneyEuro(cashSession.opening_amount) }}</strong>
                             </div>
                             <div>
-                                <span class="text-gray-600">{{ $t('label.cash_collected_today') }}:</span>
+                                <span class="text-gray-600">{{ $t('label.cash_collected_since_opening') }}:</span>
                                 <strong
                                     class="ml-1"
                                     data-testid="cash-overview-reconciliation-collected"
