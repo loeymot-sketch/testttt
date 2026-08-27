@@ -1517,7 +1517,7 @@
         "flyer_failed": "Échec",
         "flyer_pending": "En attente",
         "flyer_codes_disabled_title": "Les codes promo sont désactivés sur le site.",
-        "flyer_codes_disabled_body": "Le ticket s'imprimera, mais le client ne pourra pas utiliser son code tant que les codes promo ne sont pas activés (POS_COUPON_CODES_ENABLED=true).",
+        "flyer_codes_disabled_body": "Le ticket s'imprimera, mais le client ne pourra pas utiliser son code tant que les codes promo ne sont pas activés. Cette activation se fait sur la machine, pas depuis cette page : demandez-la à la personne qui a installé votre caisse (réglage POS_COUPON_CODES_ENABLED).",
         "flyer_headline": "Titre du ticket",
         "flyer_headline_hint": "S'imprime en gros en haut, c'est ce qui fait reconnaître le restaurant.",
         "flyer_discount_percent": "Remise (%)",

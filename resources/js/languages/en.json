@@ -1575,7 +1575,7 @@
         "flyer_failed": "Failed",
         "flyer_pending": "Pending",
         "flyer_codes_disabled_title": "Promo codes are disabled on the website.",
-        "flyer_codes_disabled_body": "The flyer will print, but the customer cannot redeem the code until promo codes are enabled (POS_COUPON_CODES_ENABLED=true).",
+        "flyer_codes_disabled_body": "The flyer will print, but the customer cannot redeem the code until promo codes are enabled. That switch lives on the machine, not on this page: ask whoever installed your till (setting POS_COUPON_CODES_ENABLED).",
         "flyer_headline": "Flyer title",
         "flyer_headline_hint": "Printed large at the top — this is what identifies the restaurant.",
         "flyer_discount_percent": "Discount (%)",
