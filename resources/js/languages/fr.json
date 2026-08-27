@@ -531,6 +531,13 @@
         "raw_material_adjust": "Ajustement stock"
     },
     "label": {
+        "day_monday": "Lundi",
+        "day_tuesday": "Mardi",
+        "day_wednesday": "Mercredi",
+        "day_thursday": "Jeudi",
+        "day_friday": "Vendredi",
+        "day_saturday": "Samedi",
+        "day_sunday": "Dimanche",
         "choice_optional_one": "Facultatif \u00b7 un seul choix",
         "choice_required_one": "Obligatoire \u00b7 un seul choix",
         "choice_optional_up_to": "Facultatif \u00b7 jusqu'\u00e0 {n} choix",
