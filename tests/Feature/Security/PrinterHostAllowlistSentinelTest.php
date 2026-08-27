@@ -96,7 +96,10 @@ class PrinterHostAllowlistSentinelTest extends TestCase
      */
     public function test_accepts_rfc1918_with_allowlist(): void
     {
-        config(['security.safe_remote_host_allowlist' => ['192.168.1.0/24']]);
+        // [ONB-10 2026-08-27] Meme cause que PrinterControllerTest : la regle exige
+        // desormais une plage de ports dans l'entree. Sans elle, ce test qui verifie
+        // qu'une plage AUTORISEE est ACCEPTEE recevait un 422.
+        config(['security.safe_remote_host_allowlist' => ['192.168.1.0/24:9100-9103']]);
 
         $response = $this->actingAs($this->user, 'sanctum')->postJson(
             '/api/admin/printers',
