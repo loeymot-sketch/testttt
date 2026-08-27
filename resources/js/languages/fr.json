@@ -531,6 +531,11 @@
         "raw_material_adjust": "Ajustement stock"
     },
     "label": {
+        "choice_optional_one": "Facultatif \u00b7 un seul choix",
+        "choice_required_one": "Obligatoire \u00b7 un seul choix",
+        "choice_optional_up_to": "Facultatif \u00b7 jusqu'\u00e0 {n} choix",
+        "choice_required_exactly": "Obligatoire \u00b7 exactement {n} choix",
+        "choice_required_range": "Obligatoire \u00b7 de {min} \u00e0 {max} choix",
         "kds_sync_uncertain_banner": "Synchro incertaine — données peut-être datées",
         "pos_customer_identity_label": "Nom du client (imprimé sur le ticket cuisine)",
         "pos_customer_name_placeholder": "Nom du client (optionnel)",

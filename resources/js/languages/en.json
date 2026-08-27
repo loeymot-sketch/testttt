@@ -536,6 +536,11 @@
         "raw_material_adjust": "Stock adjustment"
     },
     "label": {
+        "choice_optional_one": "Optional \u00b7 one choice",
+        "choice_required_one": "Required \u00b7 one choice",
+        "choice_optional_up_to": "Optional \u00b7 up to {n} choices",
+        "choice_required_exactly": "Required \u00b7 exactly {n} choices",
+        "choice_required_range": "Required \u00b7 {min} to {max} choices",
         "kds_sync_uncertain_banner": "Sync uncertain — data may be out of date",
         "pos_customer_identity_label": "Customer name (printed on kitchen ticket)",
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
