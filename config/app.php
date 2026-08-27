@@ -287,6 +287,9 @@ return [
         App\Providers\RouteServiceProvider::class,
         // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Binding lecteur factures IA (mock↔OpenAI).
         App\Providers\PurchasingServiceProvider::class,
+        // [ONB-04 2026-08-27] Extraction de carte par photo. Même motif que le
+        // fournisseur ci-dessus : bouchon par défaut, réel derrière deux verrous.
+        App\Providers\AssistantServiceProvider::class,
         // [UBER-PHOTO 2026-08-10] Lecteur de ticket Uber photographié (doublure locale par défaut).
         App\Providers\UberVisionServiceProvider::class,
     ],
