@@ -272,12 +272,27 @@ La marque est **partout** sur les deux surfaces client :
 Un autre restaurant qui installe ce logiciel verrait le nom d'un concurrent sur l'écran
 que ses clients regardent. C'est l'objet même du gate **G0**.
 
-## Deux mesures à consigner
+## Deux mesures — dont une que je RETIRE
 
-- le **tableau de bord met environ 18 secondes** à s'afficher ;
-- il affiche **deux fois le même chiffre sous deux noms** — « Ventes du jour » et
-  « Chiffre d'Affaires du Jour », plus « Commandes du jour » en double. C'est la
-  confirmation à l'écran des trois définitions concurrentes relevées dans le code.
+**RETIRÉ.** J'avais consigné « le tableau de bord met environ 18 secondes à s'afficher ».
+**Cette mesure ne vaut rien**, et la laisser enverrait quelqu'un optimiser au mauvais
+endroit. Vérifié ensuite : la coquille HTML répond en **36 millisecondes**, et chaque
+point d'entrée du tableau de bord émet **une seule requête SQL** (balayage N+1 refait
+après correctif : 1 requête pour les ventes, 1 pour les alertes, 1 pour les canaux).
+
+Les 18 secondes venaient de mon instrument, pas du produit : je chronométrais depuis le
+navigateur le rendu complet d'une application monopage volumineuse, dont une quinzaine
+d'appels séquentiels, sur un `php artisan serve` qui **ne traite qu'une requête à la
+fois**. C'est exactement le piège contre lequel ce programme met en garde depuis le
+matin — mesurer avec un instrument dont on n'a pas vérifié qu'il mesure la bonne chose.
+
+Une vraie mesure de lenteur du tableau de bord demanderait un serveur multi-processus et
+un chronométrage côté serveur. Elle reste **à faire**, et je ne prétends pas l'avoir faite.
+
+**MAINTENU.** Le tableau de bord affiche **deux fois le même chiffre sous deux noms** —
+« Ventes du jour » et « Chiffre d'Affaires du Jour », plus « Commandes du jour » en
+double. Constaté à l'écran, et c'est la confirmation visible des trois définitions
+concurrentes relevées dans le code.
 
 ### Complément — écrans du personnel, vérifiés au navigateur
 
