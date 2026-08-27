@@ -531,6 +531,7 @@
         "raw_material_adjust": "Ajustement stock"
     },
     "label": {
+        "kds_sans_poste": "Sans poste",
         "day_monday": "Lundi",
         "day_tuesday": "Mardi",
         "day_wednesday": "Mercredi",
