@@ -275,7 +275,7 @@
                             data-testid="pos-cash-session-open"
                             :tone="cashSessionActive ? 'ready' : 'neutral'"
                             :title="cashSessionStale
-                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôture-la pour connaître ton écart.'
+                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôturez-la pour connaître votre écart.'
                                 : $t('label.cash_session_dialog_title')"
                             @click="openCashSessionDialog"
                         >

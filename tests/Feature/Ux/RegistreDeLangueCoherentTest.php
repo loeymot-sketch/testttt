@@ -103,6 +103,69 @@ class RegistreDeLangueCoherentTest extends TestCase
         );
     }
 
+    /**
+     * [ONB-10 2026-08-28] Le tutoiement ne passe pas que par les pronoms.
+     *
+     * Le test ci-dessus ne cherche que « tu / tes / ton / ta ». Il était vert alors
+     * que `label.composer.guidance_zero_steps_option_template` disait « Préférable :
+     * **choisis** un template » — un impératif à la 2e personne du singulier, entre
+     * deux chaînes voisines qui vouvoient. Trouvé à l'écran, pas par le banc.
+     *
+     * Les verbes conjugués ne sont pas détectables par motif sans faux positifs
+     * massifs. Deux garde-fous, tous deux issus de mesures et non de suppositions :
+     *
+     *   1. la liste est NOMMÉE, et volontairement étroite. Un premier jet incluait
+     *      « clôture », « valide », « pose », « photographie » : neuf faux positifs
+     *      immédiats, tous sur le NOM (« Total clôture », « PDF Clôture du jour »).
+     *      Toute forme qui est aussi un nom courant du métier en est exclue ;
+     *   2. la forme doit être en DÉBUT DE PHRASE, là où vit un impératif. C'est ce
+     *      qui distingue « Vérifie le stock » de « Je vérifie » — un autre faux
+     *      positif mesuré.
+     *
+     * La liste grandit quand un cas est rencontré. C'est un cliquet, pas un filet :
+     * elle ne prétend pas tout attraper, elle empêche de reperdre ce qui a été vu.
+     *
+     * ⛔ N'enlève jamais une forme de cette liste pour faire passer le banc : cela
+     *    voudrait dire qu'on vient de réintroduire le tutoiement qu'elle garde.
+     */
+    private const IMPERATIFS_TUTOYANTS = [
+        'choisis', 'saisis', 'remplis',
+        'ajoute', 'sélectionne', 'selectionne', 'renseigne',
+        'scanne', 'clique', 'appuie', 'vérifie', 'verifie',
+        'complète', 'complete', 'modifie', 'supprime',
+        // Rencontré le 2026-08-28 dans « Modifie la période ou réinitialise les
+        // filtres » : la seconde forme d'une phrase à deux ordres échappait au
+        // premier passage, qui ne regarde que le début de phrase.
+        'réinitialise', 'reinitialise',
+    ];
+
+    public function test_aucune_chaine_ne_donne_d_ordre_au_singulier(): void
+    {
+        $coupables = [];
+        // Début de chaîne, ou après une fin de phrase / un deux-points / un tiret :
+        // les seules positions où un impératif se tient.
+        $motif = '/(?:^|(?<=[.!?:—–]\s)|(?<=^«\s))\s*('
+            . implode('|', self::IMPERATIFS_TUTOYANTS) . ')\b/iu';
+
+        foreach ($this->chainesFrancaises() as $cle => $valeur) {
+            if (preg_match($motif, $valeur, $m)) {
+                $coupables[] = "{$cle} — « " . trim($m[1]) . ' » : ' . mb_substr($valeur, 0, 90);
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $coupables,
+            "Des chaînes donnent un ordre au commerçant à la 2e personne du SINGULIER,\n"
+            . "alors que l'interface le vouvoie partout ailleurs. La forme attendue est\n"
+            . "« choisissez », « ajoutez », « vérifiez ».\n\n"
+            . "Si la forme signalée est en réalité un présent de 3e personne (« le client\n"
+            . "valide »), c'est la liste IMPERATIFS_TUTOYANTS qu'il faut affiner — pas la\n"
+            . "chaîne qu'il faut laisser.\n\n"
+            . implode("\n", $coupables)
+        );
+    }
+
     public function test_la_sentinelle_mord(): void
     {
         // Un contrôle négatif : la recherche doit effectivement attraper un tutoiement

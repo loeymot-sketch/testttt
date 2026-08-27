@@ -640,7 +640,7 @@
             "source_type_human": "D'où viennent les choix ?",
             "source_type_help": "Détermine la base : ‘Attribut produit’ = vos attributs (viandes, sauces…). ‘Groupe d'extras’ = vos extras. ‘Add-on’ = vos add-ons catalogue.",
             "source_ref_human": "Limiter à un groupe précis (optionnel)",
-            "source_ref_help": "Par défaut toutes les options de la source sont proposées. Choisis un groupe précis pour ne montrer qu’un sous-ensemble.",
+            "source_ref_help": "Par défaut toutes les options de la source sont proposées. Choisissez un groupe précis pour ne montrer qu’un sous-ensemble.",
             "min_select_help": "Combien d'articles le client doit minimum choisir. 0 = optionnel, 1+ = obligatoire.",
             "max_select_help": "Combien d'articles le client peut maximum choisir.",
             "visible_on_help": "Sur quels canaux cette étape apparaît (caisse interne POS et/ou borne client).",
@@ -1314,7 +1314,7 @@
         "time": "Heure",
         "order_number": "N° commande",
         "cash_overview_capped_notice": "Plus de 500 transactions sur la période — affichez seulement les plus récentes. Réduisez la plage de dates pour tout voir.",
-        "cash_overview_empty_copy": "Aucune transaction trouvée pour les filtres actuels. Modifie la période ou réinitialise les filtres.",
+        "cash_overview_empty_copy": "Aucune transaction trouvée pour les filtres actuels. Modifiez la période ou réinitialisez les filtres.",
         "or": "Ou",
         "optional": "Optionnel",
         "order_confirmed": "Commande confirmée",
@@ -1828,7 +1828,7 @@
             "template_custom": "Custom : demarrer vide et composer les pages manuellement.",
             "guidance_zero_steps_title": "Comment fonctionne le wizard ?",
             "guidance_zero_steps_intro": "Le wizard est le parcours que votre client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.",
-            "guidance_zero_steps_option_template": "Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête.",
+            "guidance_zero_steps_option_template": "Préférable : choisissez un modèle (Tacos, Sandwich…) pour partir d'une base prête.",
             "guidance_zero_steps_option_manual": "Sinon : ajoutez une page manuelle pour configurer votre propre parcours."
         },
         "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
@@ -2510,7 +2510,7 @@
         "composer_drawer_eyebrow": "Wizard produit",
         "composer_drawer_title": "Configurer les étapes",
         "open_full_page": "Ouvrir en pleine page",
-        "select_category_first": "Choisis une catégorie d'abord",
+        "select_category_first": "Choisissez une catégorie d'abord",
         "composer": {
             "diff": {
                 "title": "Différences à publier",

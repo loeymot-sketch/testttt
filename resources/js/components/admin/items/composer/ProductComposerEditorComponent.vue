@@ -180,14 +180,14 @@
                                     {{ t('message.composer.guidance_zero_steps_title', 'Comment fonctionne le wizard ?') }}
                                 </h3>
                                 <p class="mb-3 text-sm leading-relaxed text-amber-900">
-                                    {{ t('message.composer.guidance_zero_steps_intro', 'Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.') }}
+                                    {{ t('message.composer.guidance_zero_steps_intro', 'Le wizard est le parcours que votre client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.') }}
                                 </p>
                                 <ol class="mb-4 list-decimal space-y-2 pl-5 text-sm text-amber-900">
                                     <li>
-                                        {{ t('message.composer.guidance_zero_steps_option_template', "Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête.") }}
+                                        {{ t('message.composer.guidance_zero_steps_option_template', "Préférable : choisissez un modèle (Tacos, Sandwich…) pour partir d'une base prête.") }}
                                     </li>
                                     <li>
-                                        {{ t('message.composer.guidance_zero_steps_option_manual', 'Sinon : ajoute une page manuelle pour configurer ton propre parcours.') }}
+                                        {{ t('message.composer.guidance_zero_steps_option_manual', 'Sinon : ajoutez une page manuelle pour configurer votre propre parcours.') }}
                                     </li>
                                 </ol>
                                 <div class="flex flex-wrap gap-2">
