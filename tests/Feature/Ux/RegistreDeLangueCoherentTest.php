@@ -71,6 +71,38 @@ class RegistreDeLangueCoherentTest extends TestCase
         );
     }
 
+    /**
+     * [ONB-11 2026-08-27] Le produit appelle sa borne « borne », pas « Kiosk ».
+     *
+     * Mesure avant correctif : **37 chaînes disaient « Borne », 4 disaient « Kiosk »**.
+     * Même motif que le tutoiement : ce n'était pas un choix de vocabulaire, c'étaient
+     * quatre oublis. L'une d'elles cumulait trois défauts — « Kiosk », un accent
+     * manquant sur « immediatement », et « scope » au milieu d'une phrase française.
+     *
+     * Ce test ne bannit pas l'anglais du produit : « wizard » y reste, parce que c'est
+     * le mot que le propriétaire emploie lui-même. Il garde la COHÉRENCE d'un terme
+     * que le produit a déjà tranché en français, 37 fois contre 4.
+     */
+    public function test_la_borne_ne_s_appelle_pas_kiosk(): void
+    {
+        $coupables = [];
+
+        foreach ($this->chainesFrancaises() as $cle => $valeur) {
+            if (preg_match('/\bkiosks?\b/iu', $valeur)) {
+                $coupables[] = "{$cle} = " . mb_substr($valeur, 0, 80);
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $coupables,
+            "Des chaînes disent « Kiosk » alors que le produit dit « Borne » partout\n"
+            . "ailleurs (37 chaînes mesurées). Un commerçant ne devrait pas avoir à\n"
+            . "deviner que les deux mots désignent le même appareil.\n\n"
+            . implode("\n", $coupables)
+        );
+    }
+
     public function test_la_sentinelle_mord(): void
     {
         // Un contrôle négatif : la recherche doit effectivement attraper un tutoiement
