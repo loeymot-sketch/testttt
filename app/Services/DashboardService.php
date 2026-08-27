@@ -490,13 +490,34 @@ class DashboardService
     public function slaAlerts()
     {
         try {
-            // Commandes en PREPARING depuis plus de 15 minutes
-            $timeLimit = Carbon::now()->subMinutes(15);
+            // [ONB-07 T-2.1.1 2026-08-27] La fenetre est bornee DES DEUX COTES.
+            //
+            // Avant : une seule borne — `updated_at < maintenant - 15 minutes`. Toute
+            // commande jamais sortie de l'etat « en preparation », depuis le premier
+            // jour, restait donc une alerte. Mesure a l'ecran avant correctif :
+            // « 331 Alerte(s) », dont un ticket « en attente depuis 77 j 22 h ».
+            //
+            // Une alerte qui se declenche 331 fois ne se declenche plus : le cuisinier
+            // apprend a ne plus la regarder, et la seule vraie urgence se noie dans le
+            // bruit. Un compteur d'alertes n'a de valeur que s'il peut retomber a zero.
+            //
+            // La borne haute est reglable (le fichier de configuration peut ne pas
+            // exister — la valeur par defaut fait foi) et vaut 24 heures : au-dela, une
+            // commande n'est plus en retard, elle est abandonnee. Ce n'est plus une
+            // alerte de service, c'est du menage a faire.
+            $fenetreHeures = (int) config('dashboard.sla.fenetre_heures', 24);
+
+            $borneHaute = Carbon::now()->subMinutes(15);          // en retard depuis 15 min
+            $borneBasse = Carbon::now()->subHours($fenetreHeures); // mais pas depuis des jours
+
             $alerts = $this->orderQuery()
                 ->where('status', OrderStatus::PREPARING)
-                ->where('updated_at', '<', $timeLimit)
+                ->where('updated_at', '<', $borneHaute)
+                ->where('updated_at', '>=', $borneBasse)
                 ->with('user')
-                ->orderBy('updated_at', 'asc')
+                // Les plus recentes d'abord : c'est celle de tout a l'heure qu'un
+                // cuisinier doit voir en premier, pas celle d'hier soir.
+                ->orderBy('updated_at', 'desc')
                 ->get();
 
             return $alerts->map(function ($order) {
