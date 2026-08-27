@@ -114,6 +114,20 @@
         (config:cache OK : on utilise config() et non env() directement)
     --}}
     @php
+        // [ONB-01 2026-08-28] Identité imprimée sur le ticket de la BORNE. Résolue une
+        // fois ici, sur la filiale par défaut, pour que la borne cesse d'imprimer
+        // l'adresse et le téléphone inscrits dans `config/printing.php`. Le repli sur
+        // la configuration reste, il n'était simplement jamais précédé de rien.
+        // Lecture par clé primaire, mise en défaut silencieuse : ce shell sert TOUTES
+        // les pages du SPA, il ne doit jamais tomber à cause d'une lecture d'agrément.
+        $borneFiliale = null;
+        try {
+            $borneFilialeId = (int) (\Smartisan\Settings\Facades\Settings::group('site')->get('site_default_branch') ?: 1);
+            $borneFiliale = \App\Models\Branch::withoutGlobalScopes()->find($borneFilialeId);
+        } catch (\Throwable $e) {
+            $borneFiliale = null;
+        }
+
         // [2026-05-18 PR-B P0 kiosk-creds-leak heal] Gate the SPA auto-login
         // payload by (a) path filter `/kiosk*` (legacy), (b) request IP in
         // the configured allowlist OR `APP_ENV=local` (dev bypass).
@@ -195,8 +209,17 @@
                 titleSize: @json((int) config('printing.borne_ticket.title_size', 0x11)),
                 // [TICKET-PHONE 2026-07-03] Téléphone + adresse imprimés sur le ticket borne (le
                 // pont bridge.js les affiche en en-tête, design pro). Fallback config si branche vide.
-                phone: @json((string) config('printing.receipt.phone', '')),
-                address: @json((string) config('printing.receipt.address', '')),
+                //
+                // [ONB-01 2026-08-28] Le commentaire ci-dessus annonçait « Fallback config si
+                // branche vide » — mais le code ne lisait QUE la configuration et ne consultait
+                // jamais la filiale. Un nouveau commerçant remplissait son adresse et son
+                // téléphone dans Filiales, et sa borne continuait d'imprimer ceux du Cayenne
+                // (défauts : « 03 65 67 82 91 » et l'adresse d'Hénin-Beaumont,
+                // config/printing.php). Le ticket de CAISSE, lui, faisait déjà correctement le
+                // repli : `optional($branch)->address ?: config(...)`
+                // (OrderReceiptEscPosRenderer.php:74). On aligne la borne sur la caisse.
+                phone: @json((string) (optional($borneFiliale)->phone ?: config('printing.receipt.phone', ''))),
+                address: @json((string) (optional($borneFiliale)->address ?: config('printing.receipt.address', ''))),
                 // [TICKET-BORNE-COMPACT 2026-07-03] Avance papier COURTE (8) + coupe PARTIELLE :
                 // ticket compact qui ne tombe pas (reste accroché) — fini le grand espace blanc.
                 feedLines: @json((int) config('printing.cut.kiosk_client_feed_lines', 8)),
