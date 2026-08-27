@@ -183,3 +183,46 @@ En marche normale la borne reçoit un correctif direct par WebSocket : moins d'u
 Le worker de file d'attente et Soketi actuellement en marche sur cette machine ont leur répertoire de travail sur **l'arbre principal**, pas sur le worktree du programme. Toute mesure de propagation temps-réel faite ici mesurerait donc, en partie, le code de l'arbre principal.
 
 **Ce qu'il faut** : avant toute mesure de synchronisation en direct, redémarrer le worker et Soketi **depuis le worktree**, ou déclarer explicitement que la mesure porte sur l'arbre principal. Sinon on croit mesurer son propre code et on mesure celui du voisin — exactement le genre d'instrument qui donne une réponse fausse avec assurance.
+
+---
+
+## F-12 → **ONB-13** (sécurité) · le mot de passe de messagerie part en clair au navigateur
+
+**Trouvé en** ONB-13.
+
+```php
+// app/Http/Resources/MailResource.php:31
+"mail_password"   => $this->info['mail_password'],
+```
+
+L'écran de réglages de messagerie renvoie le mot de passe SMTP **en clair** au navigateur. Il finit dans la mémoire de l'onglet, dans l'onglet Réseau des outils de développement, et dans tout journal de requêtes intermédiaire.
+
+**Gravité mesurée, non enflée** : la route est réservée aux comptes qui ont le droit `settings`. Ce n'est donc pas une fuite publique. C'est un secret qui sort du serveur sans nécessité — et un mot de passe SMTP sert à envoyer du courrier au nom du restaurant.
+
+**Pourquoi je ne l'ai pas corrigé tel quel** : masquer naïvement casserait l'enregistrement. Le formulaire renvoie ce qu'il a reçu ; s'il reçoit `••••••••`, il écrira `••••••••` dans le vrai mot de passe à la première sauvegarde. Le correctif complet demande **deux** gestes coordonnés — renvoyer un masque, ET ignorer le champ à l'écriture quand il vaut le masque. C'est un travail de la voie ONB-13, pas un remplacement d'une ligne.
+
+Même motif à vérifier sur `GatewayOptionsResource.php:19`, qui renvoie `value` non masqué — utilisé par les passerelles de paiement **et** par la passerelle SMS.
+
+---
+
+## F-13 → **ONB-13** (sécurité) · 502 messages d'exception renvoyés au client
+
+**Trouvé en** ONB-13, motif systémique.
+
+502 occurrences de `getMessage()` renvoyées au client depuis `app/Http/Controllers`, dont 86 fichiers sous `Admin/`. `Handler.php` désinfecte correctement les `QueryException` — mais ce code est **mort** dès qu'un contrôleur attrape `Exception` en premier, ce qui est la norme dans ce projet.
+
+Conséquence pour un commerçant : au lieu d'un message utile, il peut recevoir un nom de classe, un fragment de SQL, ou un chemin de fichier. Exemples sur routes sensibles : `MailController.php:39`, `LicenseController.php:39`, `InterrupteurController.php:83`, et treize occurrences dans `ItemController.php`.
+
+**Ce qu'il faut** : un traitement uniforme — message métier au client, détail technique au journal. C'est une vague entière, pas un correctif ponctuel.
+
+---
+
+## F-14 → **ONB-13** · les 64 `authorize() => true` ne sont PAS un trou actif
+
+**À contre-courant de ce qu'on pourrait croire, et c'est important de l'écrire.**
+
+Sur environ 40 candidats à fort rayon d'explosion — messagerie, licence, passerelle SMS, OTP, changement de mot de passe, création de serveur/cuisinier/client, réglages de langue et de catalogue — **chacun a été vérifié un par un** : tous ont une garde compensatoire, soit un `permission:` dans le constructeur du contrôleur, soit un `can()` / `hasRole()` en ligne.
+
+**Aucun n'est exploitable aujourd'hui.** Le risque réel est un **point de défaillance unique** : le jour où quelqu'un supprime la ligne de garde du contrôleur en pensant que la FormRequest protège, plus rien ne protège. C'est un risque de maintenance, pas une faille.
+
+Le cliquet `RETURN_TRUE_BASELINE = 64` a donc toute sa raison d'être — mais il faut le lire pour ce qu'il est : un compteur de dette, pas un compteur de trous.
