@@ -1762,6 +1762,9 @@
     "message": {
         "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",
         "tax_required_hint": "Obligatoire : un article sans taxe serait vendu à 0 % de TVA.",
+        "def_total_orders": "Commandes passées sur la période, annulations comprises.",
+        "def_total_earnings": "Encaissé uniquement — concorde avec la clôture Z. Les commandes annulées ou non payées n'y sont pas.",
+        "def_sur_encaisse": "Sur les commandes encaissées uniquement.",
         "cash_session_reconciled": "Session de caisse réconciliée.",
         "cash_variance_reason_required": "Écart supérieur au seuil autorisé ({threshold}) — merci d'indiquer le motif.",
         "cash_variance_manager_required": "Écart supérieur au seuil autorisé ({threshold}) — seul un responsable peut valider cette clôture.",
