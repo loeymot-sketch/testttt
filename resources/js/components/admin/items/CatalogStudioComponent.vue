@@ -256,10 +256,13 @@ export default {
                 order_column: "id",
                 order_type: "desc",
             },
+            // [ONB-06/ROUGE 2026-08-27] `status` ajoute : sans lui, les 47 taxes
+            // INACTIVES de la base etaient chargees au meme titre que les 6 actives.
             taxesSearch: {
                 paginate: 0,
                 order_column: "id",
                 order_type: "asc",
+                status: statusEnum.ACTIVE,
             },
         };
     },
@@ -297,9 +300,24 @@ export default {
         taxes() {
             return this.$store.getters["tax/lists"] || [];
         },
+        // [ONB-06/ROUGE 2026-08-27] Ce getter mettait en echec la regle `tax_id
+        // required` posee cote backend, et c'etait le chemin le plus rapide du produit.
+        //
+        // Avant : `this.taxes[0]` — la taxe d'identifiant le plus bas. Sur toute
+        // installation issue du socle, l'id 1 est « No-VAT » a 0 %, ACTIF. Donc chaque
+        // article cree en creation rapide naissait a 0 % de TVA, sans que le commercant
+        // ait rien choisi ni rien vu — et la validation passait, puisque c'est bien une
+        // taxe reelle, active, d'identifiant non nul.
+        //
+        // Desormais : on ne propose par defaut qu'un taux STRICTEMENT POSITIF. S'il n'y
+        // en a aucun, on renvoie null et le backend refuse — mieux vaut un refus
+        // explicite qu'une vente hors taxe silencieuse. Un article exonere reste
+        // possible : il faut alors choisir le taux 0 % a la main, et c'est une decision.
         defaultTaxId() {
-            const firstTax = this.taxes[0];
-            return firstTax ? Number(firstTax.id) : null;
+            const taxable = this.taxes.find(
+                (t) => t && Number(t.tax_rate) > 0
+            );
+            return taxable ? Number(taxable.id) : null;
         },
         nextItemOrder() {
             // [STUDIO-FIX-P0] ItemRequest.php requires `order` (numeric). Compute next slot

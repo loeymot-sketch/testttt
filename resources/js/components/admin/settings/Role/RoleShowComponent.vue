@@ -30,8 +30,18 @@
                                         <i class="fa-solid fa-check custom-checkbox-icon"></i>
                                     </div>
                                 </td>
-                                <td :colspan="!permission.children ? 5 : ''" class="db-table-body-td text-base capitalize">
-                                    {{ permission.title }}</td>
+                                <!-- [ONB-06 T-2.1.2 2026-08-27] Les 80 permissions etaient
+                                     affichees en anglais brut (« POS Destroy Paid Order »,
+                                     « POS Refund (Counter-Entry NF525) ») : un patron ne peut
+                                     pas decider de donner un droit qu'il ne comprend pas.
+                                     On traduit A L'AFFICHAGE, pas en base : le seeder ne peut
+                                     pas etre rejoue sur une installation en service, alors que
+                                     cette table de correspondance vaut immediatement pour
+                                     l'existant comme pour le neuf.
+                                     `capitalize` est retire : en francais il mettrait une
+                                     majuscule a CHAQUE mot (« Voir Le Tableau De Bord »). -->
+                                <td :colspan="!permission.children ? 5 : ''" class="db-table-body-td text-base">
+                                    {{ libellePermission(permission) }}</td>
                                 <td v-if="permission.children" v-for="children in permission.children" :key="children"
                                     class="db-table-body-td text-sm">
                                     <div class="custom-checkbox">
@@ -92,6 +102,29 @@ export default {
         });
     },
     methods: {
+        /**
+         * [ONB-06 T-2.1.2 2026-08-27] Le libellé métier d'une permission.
+         *
+         * Les 80 permissions sont stockées en anglais brut (« POS Destroy Paid Order »,
+         * « POS Refund (Counter-Entry NF525) ») et étaient affichées telles quelles. Un
+         * patron ne peut pas décider d'accorder un droit qu'il ne comprend pas.
+         *
+         * On traduit ici, à l'affichage, en s'appuyant sur `name` — la clé stable —
+         * plutôt qu'en réécrivant la base : un seeder ne peut pas être rejoué sur une
+         * installation en service, alors que cette table vaut immédiatement pour
+         * l'existant comme pour le neuf.
+         *
+         * Repli explicite sur le titre anglais si une clé manque : mieux vaut un mot
+         * anglais qu'une case vide ou une clé technique affichée au commerçant.
+         */
+        libellePermission: function (permission) {
+            if (!permission) {
+                return '';
+            }
+            const cle = 'permission.' + permission.name;
+            const traduit = this.$t(cle);
+            return traduit === cle ? (permission.title || permission.name) : traduit;
+        },
         list: function () {
             this.loading.isActive = true;
             this.$store.dispatch('permission/lists', this.$route.params.id).then(res => {

@@ -58,6 +58,14 @@ class BranchRequest extends FormRequest
             'siret'         => ['nullable', 'string', 'regex:/^\d{14}$/'],
             'vat_intra'     => ['nullable', 'string', 'max:16', 'regex:/^[A-Za-z]{2}[A-Za-z0-9 ]{2,14}$/'],
             'legal_footer'  => ['nullable', 'string', 'max:500'],
+
+            // [ONB-01 / agent ROUGE 2026-08-27] Oubli du premier passage, trouvé en
+            // cherchant à casser le correctif : `register_id` est fillable sur le
+            // modèle (Branch.php:18) ET imprimé sur le ticket comme les trois autres
+            // (ReceiptDataService : 'pos_register_id'), mais n'avait aucune règle —
+            // donc jamais dans validated(), donc jamais enregistrable. J'avais comblé
+            // trois champs sur quatre et annoncé le trou bouché.
+            'register_id'   => ['nullable', 'string', 'max:32'],
         ];
     }
 

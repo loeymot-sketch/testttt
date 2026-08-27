@@ -323,9 +323,15 @@ export default {
             order_type: 'asc',
             status: statusEnum.ACTIVE
         });
+        // [ONB-06/ROUGE 2026-08-27] `status` manquait ici alors que la ligne du dessus
+        // (itemCategory/lists) l'a. Mesure sur la base de travail : 6 taxes actives et
+        // 47 INACTIVES — les 47 etaient proposees au commercant, y compris d'anciens
+        // taux et des residus d'audit. Choisir une taxe inactive passait la validation
+        // (`exists:taxes,id` ne regarde pas le statut) et facturait a son taux.
         this.$store.dispatch('tax/lists', {
             order_column: 'id',
-            order_type: 'asc'
+            order_type: 'asc',
+            status: statusEnum.ACTIVE
         });
         this.loading.isActive = false;
     },

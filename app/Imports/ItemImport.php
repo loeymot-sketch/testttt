@@ -51,7 +51,13 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
                 Rule::unique("items", "name")->whereNull('deleted_at')
             ],
             'category' => ['required', 'string'],
-            'tax' => ['nullable', 'numeric'],
+            // [ONB-02 / agent ROUGE 2026-08-27] L'import Excel n'appelle JAMAIS
+            // ItemRequest : rendre `tax_id` obligatoire là-bas ne fermait donc rien
+            // ici. Une colonne « tax » vide produisait un article à tax_id NULL, que
+            // PricingService facture ensuite à 0 % sans rien signaler. Le trou ne
+            // s'était pas bouché, il s'était déplacé — c'est un agent adverse qui l'a
+            // trouvé, pas moi.
+            'tax' => ['required', 'numeric'],
             'item_type' => ['required'],
             'price' => ['required', new IniAmount()],
             'featured' => ['required'],
@@ -66,13 +72,28 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
         return mb_convert_encoding(trim($value), 'UTF-8', 'UTF-8');
     }
 
-    private function getTaxId($tax_rate): int|null
+    /**
+     * [ONB-02 / agent ROUGE 2026-08-27] Renvoyer null revenait à créer un article
+     * hors taxe en silence. On refuse désormais, en nommant le taux introuvable :
+     * le contrôleur d'import attrape l'exception et renvoie un 422 avec ce message,
+     * donc le commerçant apprend enfin CE QUI a échoué au lieu de lire « accepté ».
+     */
+    private function getTaxId($tax_rate): int
     {
         $tax = Tax::where('tax_rate', $tax_rate)->first();
         if ($tax) {
             return $tax->id;
         }
-        return null;
+
+        $connus = Tax::query()->pluck('tax_rate')->unique()->sort()->values()
+            ->map(fn ($t) => rtrim(rtrim(number_format((float) $t, 2, ',', ''), '0'), ',') . ' %')
+            ->implode(' · ');
+
+        throw new \InvalidArgumentException(
+            "Le taux de TVA « {$tax_rate} » de votre fichier ne correspond à aucune taxe "
+            . "enregistrée. Créez-la d'abord dans Réglages → Taxes, ou utilisez un des "
+            . "taux existants : {$connus}."
+        );
     }
 
     private function getCategoryId($categoryName): int|null
