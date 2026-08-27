@@ -40,7 +40,12 @@ class PrinterController extends AdminController
         $data['branch_id'] = $this->resolveBranchId($request);
         $data['port'] = (int) ($data['port'] ?? 9100);
         $data['width_chars'] = (int) ($data['width_chars'] ?? 48);
-        $data['status'] = (int) ($data['status'] ?? 1);
+        // [ONB-10 2026-08-27] Était `?? 1`. Une imprimante créée depuis l'écran naissait
+        // donc à 1, alors que les trois chemins d'impression exigent
+        // App\Enums\Status::ACTIVE (5) : le commerçant ajoutait son imprimante, l'écran
+        // l'affichait « Actif » en vert, et aucun ticket ne sortait jamais. C'est le tout
+        // premier geste d'un nouveau commerçant, et il était sans effet.
+        $data['status'] = (int) ($data['status'] ?? \App\Enums\Status::ACTIVE);
 
         $printer = Printer::query()->create($data);
 

@@ -32,8 +32,11 @@
                         <td class="db-table-body-td">{{ printer.host }}:{{ printer.port }}</td>
                         <td class="db-table-body-td">{{ printer.width_chars }} car.</td>
                         <td class="db-table-body-td">
-                            <span :class="Number(printer.status) === 1 ? 'text-green-600' : 'text-gray-400'">
-                                {{ Number(printer.status) === 1 ? $t('label.active') : $t('label.archived') }}
+                            <!-- [ONB-10 2026-08-27] 5 = App\Enums\Status::ACTIVE. Cet écran testait
+                                 `=== 1` et affichait donc « Archivé », en gris, pour les deux
+                                 imprimantes bien actives du Cayenne. -->
+                            <span :class="Number(printer.status) === 5 ? 'text-green-600' : 'text-gray-400'">
+                                {{ Number(printer.status) === 5 ? $t('label.active') : $t('label.archived') }}
                             </span>
                         </td>
                         <td class="db-table-body-td">
@@ -138,7 +141,11 @@
                             <div class="db-field-radio-group">
                                 <div class="db-field-radio">
                                     <div class="custom-radio">
-                                        <input :value="1" v-model.number="form.status" id="p_active"
+                                        <!-- [ONB-10 2026-08-27] 5 = App\Enums\Status::ACTIVE, la
+                                             valeur que les chemins d'impression cherchent. Cet écran
+                                             écrivait 1 pour « actif » et 5 pour « archivé » : les deux
+                                             conventions étaient inversées sur la valeur 5. -->
+                                        <input :value="5" v-model.number="form.status" id="p_active"
                                                type="radio" class="custom-radio-field">
                                         <span class="custom-radio-span"></span>
                                     </div>
@@ -146,7 +153,7 @@
                                 </div>
                                 <div class="db-field-radio">
                                     <div class="custom-radio">
-                                        <input :value="5" v-model.number="form.status" type="radio"
+                                        <input :value="10" v-model.number="form.status" type="radio"
                                                id="p_archived" class="custom-radio-field">
                                         <span class="custom-radio-span"></span>
                                     </div>
@@ -187,7 +194,7 @@ import alertService from "../../../../services/alertService";
  */
 const EMPTY_FORM = {
     name: '', station: 'kitchen_hot', type: 'escpos_tcp',
-    host: '', port: 9100, width_chars: 48, status: 1,
+    host: '', port: 9100, width_chars: 48, status: 5, // [ONB-10] 5 = App\Enums\Status::ACTIVE
 };
 
 export default {
@@ -241,7 +248,7 @@ export default {
             this.form = {
                 name: printer.name, station: printer.station, type: printer.type || 'escpos_tcp',
                 host: printer.host, port: Number(printer.port) || 9100,
-                width_chars: Number(printer.width_chars) || 48, status: Number(printer.status) || 1,
+                width_chars: Number(printer.width_chars) || 48, status: Number(printer.status) || 5,
             };
             this.errors = {};
             this.modalActive = true;

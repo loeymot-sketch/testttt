@@ -55,7 +55,17 @@ class PrinterRequest extends FormRequest
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'station' => ['nullable', 'string', Rule::in(['receipt', 'kitchen_hot', 'kitchen_cold', 'bar'])],
             'width_chars' => ['nullable', 'integer', Rule::in([32, 48])],
-            'status' => ['nullable', 'integer', Rule::in([0, 1])],
+            // [ONB-10 2026-08-27] Était `Rule::in([0, 1])` — une convention booléenne
+            // que RIEN d'autre ne partageait. Les trois chemins d'impression du produit
+            // (KitchenTicketAutoPrinter, PosReceiptPrintController, et le listener
+            // d'encaissement comptoir) cherchent `status = App\Enums\Status::ACTIVE`,
+            // qui vaut 5 — et les imprimantes réelles du Cayenne sont bien à 5.
+            //
+            // Trois lectures incompatibles de la même colonne cohabitaient : le serveur
+            // n'acceptait que 0 ou 1, l'écran écrivait 5 pour « archivé » (donc 422 sur
+            // le bouton Archiver), et le contrôleur créait à 1 — une valeur qu'aucun
+            // chemin d'impression ne reconnaît. Voir ImprimanteCreeeDepuisEcranImprimeTest.
+            'status' => ['nullable', 'integer', Rule::in([\App\Enums\Status::ACTIVE, \App\Enums\Status::INACTIVE])],
             'options' => ['nullable', 'array'],
         ];
     }

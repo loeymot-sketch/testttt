@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Enums\Status;
 use App\Models\Printer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,7 +55,7 @@ class PrinterControllerTest extends TestCase
             'port' => 9100,
             'station' => 'bar',
             'width_chars' => 48,
-            'status' => 1,
+            'status' => Status::ACTIVE,
             'options' => ['cut' => true],
         ]);
 
@@ -163,7 +164,7 @@ class PrinterControllerTest extends TestCase
             'port' => 9100,
             'station' => 'receipt',
             'width_chars' => 48,
-            'status' => 1,
+            'status' => Status::ACTIVE,
             'options' => ['cut' => true],
         ], $overrides);
     }
