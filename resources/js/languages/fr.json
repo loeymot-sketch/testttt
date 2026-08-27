@@ -1548,6 +1548,11 @@
         "kds_reopen_aria": "Remettre la commande N°{queue} en préparation"
     },
     "button": {
+        "yes_delete": "Oui, supprimer",
+        "yes_logout": "Oui, déconnecter",
+        "yes_accept": "Oui, accepter",
+        "yes_cancel_order": "Oui, annuler la commande",
+        "no_back": "Non, revenir en arrière",
         "cash_reconcile_now": "Réconcilier",
         "refresh": "Actualiser",
         "add": "Ajouter",
@@ -1762,6 +1767,11 @@
     "message": {
         "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",
         "tax_required_hint": "Obligatoire : un article sans taxe serait vendu à 0 % de TVA.",
+        "are_you_sure": "Vous confirmez ?",
+        "confirm_destroy": "Cette suppression est définitive : vous ne pourrez pas revenir en arrière.",
+        "confirm_kiosk_logout": "Cette borne sera déconnectée. Vous pourrez la reconnecter ensuite depuis l'écran de la borne.",
+        "confirm_accept_order": "Une fois acceptée, cette commande ne pourra plus être annulée.",
+        "confirm_cancel_order": "Une fois annulée, cette commande ne pourra plus être acceptée.",
         "def_total_orders": "Commandes passées sur la période, annulations comprises.",
         "def_total_earnings": "Encaissé uniquement — concorde avec la clôture Z. Les commandes annulées ou non payées n'y sont pas.",
         "def_sur_encaisse": "Sur les commandes encaissées uniquement.",
