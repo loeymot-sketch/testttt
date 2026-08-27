@@ -120,4 +120,54 @@ class AlertesSlaFenetreBorneeTest extends TestCase
             "C'est la commande de tout à l'heure qu'un cuisinier doit voir en premier."
         );
     }
+
+    /**
+     * [ONB-10 2026-08-27] La borne se disait réglable sans l'être.
+     *
+     * Les tests ci-dessus passaient tous avec une fenêtre codée en dur, parce qu'ils
+     * n'exerçaient que la valeur par défaut (24 h). Le service lisait en réalité
+     * `dashboard.sla.fenetre_heures`, une clé que `config/dashboard.php` ne définit
+     * pas — il définit `dashboard.sla_alerts_window_hours`. Régler la configuration
+     * n'avait donc aucun effet, et rien ne le disait.
+     *
+     * Ces deux tests exercent la clé elle-même : ils déplacent la borne et vérifient
+     * que la même commande change de camp. Un mauvais nom de clé les fait échouer.
+     */
+    public function test_la_fenetre_est_reellement_pilotee_par_la_configuration(): void
+    {
+        $this->commandeEnPreparation(Carbon::now()->subHours(30));
+
+        // Fenêtre par défaut (24 h) : une commande de 30 h est hors champ.
+        $this->assertCount(0, $this->alertes());
+
+        // Fenêtre élargie à 48 h : la même commande redevient une alerte.
+        config(['dashboard.sla_alerts_window_hours' => 48]);
+
+        $this->assertCount(
+            1,
+            $this->alertes(),
+            "Élargir `dashboard.sla_alerts_window_hours` doit faire rentrer la commande\n"
+            . "dans la fenêtre. Si ce test échoue, le service lit une autre clé que celle\n"
+            . "que la configuration expose — la borne n'est réglable qu'en apparence."
+        );
+    }
+
+    public function test_le_seuil_de_declenchement_est_reellement_pilote_par_la_configuration(): void
+    {
+        $this->commandeEnPreparation(Carbon::now()->subMinutes(10));
+
+        // Seuil par défaut (15 min) : une commande de 10 min n'alerte pas encore.
+        $this->assertCount(0, $this->alertes());
+
+        // Seuil abaissé à 5 min : elle bascule.
+        config(['dashboard.sla_alerts_threshold_minutes' => 5]);
+
+        $this->assertCount(
+            1,
+            $this->alertes(),
+            "Abaisser `dashboard.sla_alerts_threshold_minutes` doit déclencher plus tôt.\n"
+            . "La durée d'un service est une décision d'exploitation, pas une constante\n"
+            . "technique — encore faut-il que le service lise la clé."
+        );
+    }
 }

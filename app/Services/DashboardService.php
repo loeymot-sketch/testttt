@@ -501,14 +501,24 @@ class DashboardService
             // apprend a ne plus la regarder, et la seule vraie urgence se noie dans le
             // bruit. Un compteur d'alertes n'a de valeur que s'il peut retomber a zero.
             //
-            // La borne haute est reglable (le fichier de configuration peut ne pas
-            // exister — la valeur par defaut fait foi) et vaut 24 heures : au-dela, une
+            // La borne haute est reglable et vaut 24 heures par defaut : au-dela, une
             // commande n'est plus en retard, elle est abandonnee. Ce n'est plus une
             // alerte de service, c'est du menage a faire.
-            $fenetreHeures = (int) config('dashboard.sla.fenetre_heures', 24);
+            //
+            // [ONB-10 2026-08-27] Les deux cles ci-dessous sont celles de
+            // `config/dashboard.php`, ecrit par le GOAL CONSOLIDATION_V1_PRODUCTION du
+            // 2026-08-25 (meme diagnostic, mesure de 344 commandes contre 331 ici) et
+            // encore NON COMMITE dans l'arbre principal. Je lisais auparavant
+            // `dashboard.sla.fenetre_heures` — une cle que ce fichier ne definit pas :
+            // ma borne se disait reglable sans l'etre, elle retombait toujours sur 24.
+            // Alignees ici pour que les deux travaux convergent au lieu de forker deux
+            // conventions. Le fichier peut ne pas exister : les valeurs par defaut font
+            // foi, et c'est le cas tant qu'il n'est pas commite.
+            $fenetreHeures = (int) config('dashboard.sla_alerts_window_hours', 24);
+            $seuilMinutes  = (int) config('dashboard.sla_alerts_threshold_minutes', 15);
 
-            $borneHaute = Carbon::now()->subMinutes(15);          // en retard depuis 15 min
-            $borneBasse = Carbon::now()->subHours($fenetreHeures); // mais pas depuis des jours
+            $borneHaute = Carbon::now()->subMinutes($seuilMinutes); // en retard depuis 15 min
+            $borneBasse = Carbon::now()->subHours($fenetreHeures);  // mais pas depuis des jours
 
             $alerts = $this->orderQuery()
                 ->where('status', OrderStatus::PREPARING)
