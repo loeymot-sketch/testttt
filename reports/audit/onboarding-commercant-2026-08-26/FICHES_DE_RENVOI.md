@@ -278,3 +278,29 @@ que ses clients regardent. C'est l'objet même du gate **G0**.
 - il affiche **deux fois le même chiffre sous deux noms** — « Ventes du jour » et
   « Chiffre d'Affaires du Jour », plus « Commandes du jour » en double. C'est la
   confirmation à l'écran des trois définitions concurrentes relevées dans le code.
+
+### Complément — écrans du personnel, vérifiés au navigateur
+
+**Écran de cuisine** (`/admin/kitchen-display-system`) — propre. « Aucune commande en
+cours / Les nouvelles commandes apparaîtront ici », avec une illustration. Neuf requêtes.
+Synchronisation **incrémentale** (`sync?since=…`) plutôt qu'un rechargement complet :
+c'est le bon motif pour un écran qui tourne toute la journée. Boutons en français :
+Rupture, Historique, Afficher les noms.
+
+**Écran d'appel client** (`/admin/order-status-screen`) — propre. Deux colonnes « En
+préparation » / « Prêt », états vides écrits (« Aucune commande en préparation »),
+**une seule requête**, typographie large adaptée à un affichage vu de loin, et un bouton
+plein écran. Rien à corriger.
+
+### Bilan de l'audit visuel
+
+Huit surfaces majeures regardées : tableau de bord, borne d'accueil, caisse, écran de
+cuisine, écran d'appel, catalogue, autorisations, rapport des ventes.
+
+**Deux défauts sérieux trouvés** — les 331 alertes et les 788 requêtes — **et six écrans
+innocentés**. Le rapport de un à trois est le bon signe : un audit qui trouverait un
+défaut partout ne chercherait pas, il confirmerait ce qu'il est venu prouver.
+
+Le produit est solide sur ses surfaces de service. Ce qui lui manque pour un NOUVEAU
+commerçant n'est pas de la qualité d'exécution — c'est que la marque du premier client
+est écrite dans le code, et c'est exactement l'objet du gate G0.
