@@ -142,3 +142,44 @@ Le commentaire du fichier « propre » (`:54-56`) dit que `NoDangerousFileExtens
 Grep exhaustif : **aucun compteur, aucun plafond, aucune trace** de ce qui est dépensé en appels Vision. Un commerçant qui photographie sa carte de 200 produits ne saura jamais ce que ça lui a coûté, et rien ne l'empêche de relancer cent fois.
 
 **Ce qu'il faut** avant tout appel réel (gate G-IA) : un compteur par établissement, un plafond configurable, et le refus au-delà — pas une facture surprise.
+
+---
+
+## F-10 → **ONB-10** (borne) · la borne est la seule surface sans repli de scrutation
+
+**Trouvé en** ONB-08, en mesurant la propagation d'une rupture aux quatre surfaces.
+
+| Surface | Transport | Pire cas si le WebSocket se tait |
+|---|---|---|
+| Caisse | Echo **+ scrutation 30 s** | ≤ 30 s |
+| KDS | Echo **+ scrutation 15 s** (5 s si déconnecté) | ≤ 15 s |
+| **Borne** | Echo **seul** | **jusqu'à 5 minutes** |
+| Web public | canal diffusé, aucun consommateur JS | sans objet en V1 |
+
+```js
+// resources/js/store/modules/kioskMenu.js:19
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+```
+
+En marche normale la borne reçoit un correctif direct par WebSocket : moins d'une seconde, c'est bon. Le problème est le **jour où le WebSocket se tait** — réseau du restaurant qui bronche, Soketi qui redémarre. La caisse et le KDS ont chacun leur filet ; la borne n'en a aucun. Elle continue de vendre pendant cinq minutes un produit qui n'existe plus, face au client, sans personne derrière pour rattraper.
+
+**Ce que ça coûte** : un client paie un sandwich qu'on ne peut pas lui faire. Il faut le rembourser — et un remboursement, en NF525, c'est une contre-écriture, pas une annulation.
+
+**Pourquoi je ne l'ai pas corrigé moi-même** : le critère du GOAL demande **moins de 10 secondes**. Baisser le délai du cache à 60 secondes serait un progrès de cinq fois — et ne satisferait toujours pas le critère. Un demi-correctif dans la voie d'un autre GOAL crée plus de confusion qu'il n'en résout.
+
+**Proposition chiffrée, au choix du propriétaire :**
+1. *Le moins cher* — détecter le silence du WebSocket (Echo expose son état) et invalider le cache à la reconnexion. Aucune requête supplémentaire en marche normale.
+2. *Le plus simple* — une scrutation légère des seules disponibilités toutes les 10 secondes, sur le modèle du KDS. Une requête toutes les 10 s par borne, réponse minuscule.
+3. *Le plus sûr* — les deux. C'est ce que fait déjà le KDS.
+
+**Ce qui est bien fait et qu'il ne faut pas casser** : le cache serveur (60 s) est invalidé de façon synchrone dans la même requête et n'ajoute aucun délai ; les mouvements de stock sont en ajout-seul, garantis par un hook Eloquent qui lève une exception sur `updating` et `deleting` ; un « 86 » posé à la main est collant et gagne toujours sur la réactivation automatique. Rien de tout cela n'est à toucher.
+
+---
+
+## F-11 → **moi-même / toute session qui mesure** · le worker et Soketi tournent sur l'ARBRE PRINCIPAL
+
+**Trouvé en** ONB-08.
+
+Le worker de file d'attente et Soketi actuellement en marche sur cette machine ont leur répertoire de travail sur **l'arbre principal**, pas sur le worktree du programme. Toute mesure de propagation temps-réel faite ici mesurerait donc, en partie, le code de l'arbre principal.
+
+**Ce qu'il faut** : avant toute mesure de synchronisation en direct, redémarrer le worker et Soketi **depuis le worktree**, ou déclarer explicitement que la mesure porte sur l'arbre principal. Sinon on croit mesurer son propre code et on mesure celui du voisin — exactement le genre d'instrument qui donne une réponse fausse avec assurance.
