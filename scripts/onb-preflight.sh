@@ -160,6 +160,27 @@ if [ -d "$PRINCIPAL/public/js" ]; then
     vert "assets js : synchronisés"
 fi
 
+# ------------------------------- 6bis. répertoires runtime (gitignorés → 500 sur TOUTES les pages)
+# Piège vérifié le 27/08 : storage/framework/{sessions,views,cache} et bootstrap/cache
+# sont gitignorés. Sans eux, la première requête meurt sur
+# « file_put_contents(.../storage/framework/sessions/...) : No such file or directory ».
+MANQUE_RUNTIME=""
+for d in storage/framework/sessions storage/framework/views storage/framework/cache/data \
+         storage/app/public storage/logs bootstrap/cache; do
+    if [ ! -d "$ICI/$d" ]; then
+        if [ "$MODE" = "check" ]; then
+            MANQUE_RUNTIME="$MANQUE_RUNTIME $d"
+        else
+            mkdir -p "$ICI/$d" 2>/dev/null && chmod 775 "$ICI/$d" 2>/dev/null
+        fi
+    fi
+done
+if [ -n "$MANQUE_RUNTIME" ]; then
+    rouge "répertoires runtime absents :$MANQUE_RUNTIME" "relancer sans --check (500 sur toutes les pages sinon)"
+else
+    vert "répertoires runtime (sessions, views, cache) : présents"
+fi
+
 # ---------------------------------------------------------------- 7. public/storage (sinon logos et images en 404)
 if [ -e "$ICI/public/storage" ]; then
     vert "public/storage : lié"
