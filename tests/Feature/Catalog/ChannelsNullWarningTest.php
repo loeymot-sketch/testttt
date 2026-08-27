@@ -58,7 +58,26 @@ class ChannelsNullWarningTest extends TestCase
             'is_featured'      => 1,
             'status'           => Status::ACTIVE,
             'order'            => 1,
+            // [ONB-02 T-2.1.3 2026-08-27] La taxe est désormais obligatoire : un
+            // article sans taxe était facturé à 0 % en silence par PricingService.
+            // Ce test ne porte pas sur la fiscalité, mais sa charge utile doit
+            // rester celle d'un article réel.
+            'tax_id'           => $this->taxeDeTest()->id,
         ], $overrides);
+    }
+
+    /** Un taux à 10 % stable, créé une seule fois par test. */
+    private function taxeDeTest(): \App\Models\Tax
+    {
+        return \App\Models\Tax::firstOrCreate(
+            ['code' => 'TEST-VAT-10'],
+            [
+                'name'     => 'TVA 10 % (test)',
+                'tax_rate' => 10,
+                'type'     => \App\Enums\TaxType::PERCENTAGE,
+                'status'   => Status::ACTIVE,
+            ]
+        );
     }
 
     public function test_item_store_with_null_channels_emits_warning(): void
