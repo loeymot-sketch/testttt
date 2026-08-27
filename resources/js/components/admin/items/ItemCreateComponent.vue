@@ -47,8 +47,9 @@
                                 les noms lisibles du socle n'arrivaient jamais à l'écran. -->
                         <label for="tax_id" class="db-field-title required">{{ $t("label.tax") }}</label>
                         <vue-select class="db-field-control f-b-custom-select" id="tax_id"
-                            v-bind:class="errors.tax_id ? 'invalid' : ''" v-model="props.form.tax_id" :options="taxes"
-                            label-by="name" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
+                            v-bind:class="errors.tax_id ? 'invalid' : ''" v-model="props.form.tax_id"
+                            :options="taxesLibellees"
+                            label-by="libelle" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
                             placeholder="--" search-placeholder="--" />
                         <small class="text-slate-500 block mt-1" v-if="!errors.tax_id">{{
                             $t("message.tax_required_hint")
@@ -266,6 +267,7 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import askEnum from "../../../enums/modules/askEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
+import { libelleTaxe } from "../../../services/libelleTaxe";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 
@@ -310,6 +312,25 @@ export default {
         },
         taxes: function () {
             return this.$store.getters['tax/lists'];
+        },
+        // [ONB-10 2026-08-27] Deux taxes ACTIVES s'appellent toutes deux « VAT »,
+        // pour 5 % et 10 % ; deux autres « GST ». Le libellé porte donc le taux —
+        // dérivé de `tax_rate`, la seule valeur que PricingService facture, pour
+        // qu'il ne puisse jamais contredire ce qui sera facturé.
+        //
+        // Le filtre de statut est refait ICI, en plus du `status` passé au chargement
+        // (voir `mounted`). Raison constatée à l'écran : `ItemListComponent` remplit
+        // le MÊME emplacement du magasin (`tax/lists`) SANS filtre, et écrase donc
+        // celui-ci selon l'ordre de chargement. Le formulaire proposait encore
+        // « TVA 67% » (taux réel 0 %) et « TVA 97% » (taux réel 20 %). Un filtre qui
+        // dépend de l'ordre de chargement n'est pas un filtre.
+        taxesLibellees: function () {
+            return (this.taxes || [])
+                .filter((taxe) => Number(taxe?.status) === statusEnum.ACTIVE)
+                .map((taxe) => ({
+                    ...taxe,
+                    libelle: libelleTaxe(taxe),
+                }));
         },
         wizardPerItemDemoEnabled() {
             return typeof window !== 'undefined'

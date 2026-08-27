@@ -116,7 +116,7 @@
                             }}</label>
 
                             <vue-select class="db-field-control f-b-custom-select" id="tax_id"
-                                v-model="props.search.tax_id" :options="taxes" label-by="name" value-by="id"
+                                v-model="props.search.tax_id" :options="taxesLibellees" label-by="libelle" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                                 search-placeholder="--" />
                         </div>
@@ -311,6 +311,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import ItemCreateComponent from "./ItemCreateComponent";
 import alertService from "../../../services/alertService";
 import statusEnum from "../../../enums/modules/statusEnum";
+import { libelleTaxe } from "../../../services/libelleTaxe";
 import askEnum from "../../../enums/modules/askEnum";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import PaginationTextComponent from "../components/pagination/PaginationTextComponent";
@@ -465,6 +466,15 @@ export default {
         },
         taxes: function () {
             return this.$store.getters['tax/lists'];
+        },
+        // [ONB-10 2026-08-27] Même motif que le formulaire produit : deux taxes
+        // actives s'appellent « VAT » (5 % et 10 %) et deux « GST ». Filtrer sur
+        // l'une des deux sans savoir laquelle ne veut rien dire.
+        taxesLibellees: function () {
+            return (this.taxes || []).map((taxe) => ({
+                ...taxe,
+                libelle: libelleTaxe(taxe),
+            }));
         },
         wizardPerItemDemoEnabled() {
             return typeof window !== 'undefined'
