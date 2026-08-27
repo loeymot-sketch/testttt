@@ -319,3 +319,32 @@ défaut partout ne chercherait pas, il confirmerait ce qu'il est venu prouver.
 Le produit est solide sur ses surfaces de service. Ce qui lui manque pour un NOUVEAU
 commerçant n'est pas de la qualité d'exécution — c'est que la marque du premier client
 est écrite dans le code, et c'est exactement l'objet du gate G0.
+
+---
+
+## F-15 → **ONB-10 et ONB-12** · la liste des bornes est faite d'artefacts de test de charge
+
+**Trouvé en** ouvrant l'écran `Paramètres → Bornes` pendant l'audit visuel.
+
+Un commerçant qui ouvre cette page voit **treize machines** nommées
+`KM-STRESS-B1-6a2dee22c497b`, `KM-SOAK-6a1c9ffc963dc`… Vérifié en base :
+
+| | |
+|---|---|
+| Bornes au total | **13** |
+| `KM-STRESS-*` (test de charge) | **9** |
+| `KM-SOAK-*` (test d'endurance) | **3** |
+| **Réelles** | **1** — `KIOSK-LC-001` |
+
+**Correction de ma propre consigne.** Le prompt de lancement d'ONB-10 disait « ⛔ Ne
+touche jamais aux 14 bornes, 3 imprimantes et 2 TPE existants », ce qui les présentait
+comme des données de production à préserver. C'était faux : douze sur treize sont des
+résidus de tests de performance. Une session qui aurait suivi ma consigne à la lettre
+aurait traité des artefacts de test comme du sacré — et pire, aurait pu calibrer une
+mesure de charge sur leur nombre.
+
+La consigne corrigée dit désormais la vérité : elles restent intouchables sur la base
+partagée, mais **ne les prends pas pour la réalité du terrain**.
+
+**Pour ONB-12** : c'est la même famille que les cinq filiales fictives et les 26 taxes
+`AUDIT-*`. Un nouveau commerçant qui installe ce logiciel ne doit voir aucune des trois.

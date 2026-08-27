@@ -421,7 +421,12 @@ inexistant : compte les octets reçus par nc. Le bypass d'auto-login n'a PAS d'i
 :326 valent env('APP_ENV')==='local' — pour l'éteindre, mets APP_ENV sur une valeur non-local et surtout PAS
 'production' (AppServiceProvider:190 refuse de démarrer), et déclare la bascule au journal §8. De config/printing.php
 tu ne possèdes QUE les clés d'exposition : ⛔ le bloc gaté BYPASS-P1 (l.1-14, 202-208) reste intouché.
-⛔ Ne touche jamais aux 14 bornes, 3 imprimantes et 2 TPE existants. KDS et OSS sont une autre voie : lecture + fiches.
+⛔ Ne touche jamais aux bornes, imprimantes et TPE existants. Correction du 27/08 : sur les
+13 bornes en base, **12 sont des artefacts de test de charge** (`KM-STRESS-*`, `KM-SOAK-*`) et
+**une seule est réelle** — `KIOSK-LC-001`. Ma consigne d'origine les présentait comme des données
+de production : c'était faux. Elles restent intouchables sur la base partagée, mais ne les prends
+pas pour la réalité du terrain, et ne calibre rien sur leur nombre.
+KDS et OSS sont une autre voie : lecture + fiches.
 Gates : tu proposes des options chiffrées, tu ne tranches jamais ; G-LAN rouvre une décision de sécurité déjà prise
 (allowlist fermée le 13/08) — tu ne l'ouvres pas d'autorité. ⛔ Jamais de git push.
 
