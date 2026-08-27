@@ -110,3 +110,35 @@ Parmi les 235 fichiers stagés de l'arbre principal, `resources/js/components/fr
 Le hook `pre-commit` du dépôt bloque le commit — **correctement**. Le contournement `--no-verify` est interdit par CLAUDE.md §3quater sans accord explicite.
 
 **Ce qu'il faut** : soit la case est cochée, soit ce fichier sort du commit. Décision propriétaire, personne d'autre.
+
+---
+
+## F-08 → **ONB-13** (sécurité) · une garde d'upload appliquée à un chemin, oubliée sur l'autre
+
+**Trouvé en** ONB-04, en cartographiant les deux motifs Vision existants.
+
+Deux chemins d'upload de photo, la même brique, deux traitements :
+
+```php
+// app/Http/Controllers/Admin/PurchasingScanController.php:61  — facture
+'photo' => ['required', 'file', 'max:12288', new \App\Rules\NoDangerousFileExtension()],
+
+// app/Http/Controllers/Admin/UberPhotoCaptureController.php   — ticket Uber
+'photos.*' => ['required', 'file', 'max:'.$maxKb],     // ← la règle manque
+```
+
+Le commentaire du fichier « propre » (`:54-56`) dit que `NoDangerousFileExtension` a été ajoutée par un correctif de sécurité visant les extensions `.pht`. Elle a été posée à un endroit et **pas à l'autre**.
+
+**Gravité réelle, mesurée et non enflée** : les fichiers Uber sont stockés sur le disque `local` (`$file->store('uber-tickets', 'local')`, `:89`), **hors de `public/`**. Ils ne sont donc pas atteignables en HTTP : ce n'est **pas** une exécution de code à distance. C'est une **défense en profondeur manquante** — la garde existe, elle protège un chemin, elle a été oubliée sur le second.
+
+**Ce qu'il faut** : appliquer la même règle aux deux. Le coût est d'une ligne ; l'écart, lui, est le genre qui devient une faille le jour où quelqu'un change le disque de stockage.
+
+**À ne pas copier** : ONB-04 va créer un troisième chemin d'upload (la photo de la carte). Qu'il reprenne le motif de `PurchasingScanController`, jamais celui d'Uber.
+
+---
+
+## F-09 → **ONB-04** (à traiter dans sa propre vague) · aucun compteur de dépense IA
+
+Grep exhaustif : **aucun compteur, aucun plafond, aucune trace** de ce qui est dépensé en appels Vision. Un commerçant qui photographie sa carte de 200 produits ne saura jamais ce que ça lui a coûté, et rien ne l'empêche de relancer cent fois.
+
+**Ce qu'il faut** avant tout appel réel (gate G-IA) : un compteur par établissement, un plafond configurable, et le refus au-delà — pas une facture surprise.
