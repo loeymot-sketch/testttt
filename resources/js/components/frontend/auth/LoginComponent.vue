@@ -196,23 +196,40 @@ export default {
         setupCredit: function (e) {
             // [SEC-30-2] Demo credentials read from runtime config (injected server-side)
             // Never hardcode real restaurant credentials in the JS bundle.
+            //
+            // [ONB-12 2026-08-27] Le commentaire ci-dessus disait deja la regle — et les
+            // vingt lignes suivantes la violaient : l'adresse et le mot de passe du compte
+            // administrateur seede servaient de REPLI a la configuration d'execution.
+            // Ce compte existe reellement (voir UserTableSeeder), et les chaines partaient
+            // telles quelles dans public/js/app.js — un fichier servi a TOUT visiteur.
+            //
+            // Les valeurs ne sont volontairement PAS recopiees ici : en compilation de
+            // developpement les commentaires restent dans le bundle, et documenter une
+            // fuite en la reproduisant serait la maintenir.
+            //
+            // Que les boutons de demonstration soient masques hors mode demo ne changeait
+            // rien : on n'a pas besoin du bouton, on a besoin des identifiants, et ils
+            // etaient lisibles dans un fichier public.
+            //
+            // Plus de repli. Si la configuration d'execution ne fournit pas de compte de
+            // demonstration, le bouton ne remplit rien — un champ vide est un echec
+            // visible, un identifiant en dur est une porte ouverte silencieuse.
             const demo = window.__FOODKING_RUNTIME__?.demo || {};
-            if (e === 'admin') {
-                this.form.email = demo.adminEmail || 'admin@lecayenne.fr';
-                this.form.password = demo.adminPassword || '123456';
-            } else if (e === 'customer') {
-                this.form.email = demo.customerEmail || 'walkingcustomer@example.com';
-                this.form.password = demo.customerPassword || '123456';
-            } else if (e === 'branchManager') {
-                this.form.email = demo.branchManagerEmail || 'branchmanager@example.com';
-                this.form.password = demo.branchManagerPassword || '123456';
-            } else if (e === 'posOperator') {
-                this.form.email = demo.posOperatorEmail || 'pos@lecayenne.fr';
-                this.form.password = demo.posOperatorPassword || '123456';
-            } else if (e === 'chef') {
-                this.form.email = demo.chefEmail || 'chef@example.com';
-                this.form.password = demo.chefPassword || '123456';
+            const comptes = {
+                admin:         [demo.adminEmail,         demo.adminPassword],
+                customer:      [demo.customerEmail,      demo.customerPassword],
+                branchManager: [demo.branchManagerEmail, demo.branchManagerPassword],
+                posOperator:   [demo.posOperatorEmail,   demo.posOperatorPassword],
+                chef:          [demo.chefEmail,          demo.chefPassword],
+            };
+
+            const [email, motDePasse] = comptes[e] || [];
+            if (!email || !motDePasse) {
+                return;
             }
+
+            this.form.email = email;
+            this.form.password = motDePasse;
         }
     }
 }
