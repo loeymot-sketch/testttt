@@ -177,6 +177,15 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+
+        // [ONB-01 T-1.2.1 2026-08-27] Un commerçant ne doit jamais lire une
+        // expression rationnelle : on lui dit ce qu'on attend, avec un exemple.
+        'siret' => [
+            'regex' => 'Le SIRET doit comporter exactement 14 chiffres, sans espace ni tiret.',
+        ],
+        'vat_intra' => [
+            'regex' => 'Le numéro de TVA intracommunautaire doit commencer par deux lettres de pays, par exemple FR12345678901.',
+        ],
     ],
 
     /*

@@ -738,6 +738,11 @@
         "cash_session_failure": "Opération impossible. Réessayez ou contactez un manager.",
         "scan_nfc_card": "Scanner la carte NFC",
         "siret": "SIRET",
+        "siret_placeholder": "14 chiffres, sans espace",
+        "fiscal_identity": "Identité fiscale (imprimée sur le ticket)",
+        "legal_footer": "Mention légale du ticket",
+        "legal_footer_placeholder": "Ex. : TVA non applicable, art. 293 B du CGI",
+        "vat_intra_placeholder": "Ex. : FR12345678901",
         "duplicata": "DUPLICATA #{n}",
         "remboursement": "REMBOURSEMENT",
         "status_22": "Remboursé",
@@ -1673,6 +1678,7 @@
         "kiosk_rate_limited": "Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes."
     },
     "message": {
+        "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",
         "cash_session_reconciled": "Session de caisse réconciliée.",
         "cash_variance_reason_required": "Écart supérieur au seuil autorisé ({threshold}) — merci d'indiquer le motif.",
         "cash_variance_manager_required": "Écart supérieur au seuil autorisé ({threshold}) — seul un responsable peut valider cette clôture.",

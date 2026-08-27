@@ -124,6 +124,10 @@ export default {
                     zip_code: "",
                     address: "",
                     status: statusEnum.ACTIVE,
+                    // [ONB-01 T-1.2.1 2026-08-27] lus par le moteur de ticket
+                    siret: "",
+                    vat_intra: "",
+                    legal_footer: "",
                 },
                 search: {
                     paginate: 1,
@@ -192,6 +196,11 @@ export default {
                 zip_code: branch.zip_code,
                 address: branch.address,
                 status: branch.status,
+                // [ONB-01 T-1.2.1 2026-08-27] sans ces trois lignes, ouvrir une
+                // filiale existante puis enregistrer EFFACERAIT son identité fiscale
+                siret: branch.siret ?? "",
+                vat_intra: branch.vat_intra ?? "",
+                legal_footer: branch.legal_footer ?? "",
             };
             this.loading.isActive = false;
         },
