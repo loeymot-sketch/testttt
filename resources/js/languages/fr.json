@@ -1682,6 +1682,17 @@
         "order_cancel_unauthorized": "Annulation refusée — droits insuffisants. Demande à un manager.",
         "kiosk_rate_limited": "Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes."
     },
+    "role": {
+        "Admin": "Administrateur",
+        "Branch Manager": "Responsable d'établissement",
+        "POS Operator": "Caissier",
+        "Waiter": "Serveur",
+        "Chef": "Cuisinier",
+        "Delivery Boy": "Livreur",
+        "Customer": "Client",
+        "Stuff": "Personnel (à renommer)",
+        "Tenant Admin": "Administrateur du compte"
+    },
     "permission": {
         "dashboard": "Voir le tableau de bord",
         "items": "Voir la carte",

@@ -5,7 +5,7 @@
             <div class="db-card">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('menu.role') }} &amp; {{ $t('label.permissions') }} <span
-                            class="text-primary">({{ role.name }})</span></h3>
+                            class="text-primary">({{ libelleRole(role.name) }})</span></h3>
                 </div>
                 <div class="db-table-responsive mb-8">
                     <table class="db-table stripe">
@@ -102,6 +102,16 @@ export default {
         });
     },
     methods: {
+        /** Même table de correspondance que la liste des rôles : on ne renomme rien en base. */
+        libelleRole: function (nom) {
+            if (!nom) {
+                return '';
+            }
+            const cle = 'role.' + String(nom).replace(/[.]/g, '_');
+            const traduit = this.$t(cle);
+
+            return traduit === cle ? nom : traduit;
+        },
         /**
          * [ONB-06 T-2.1.2 2026-08-27] Le libellé métier d'une permission.
          *
