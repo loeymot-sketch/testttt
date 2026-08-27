@@ -16,7 +16,20 @@ class RolePermissionTableSeeder extends Seeder
     public function run()
     {
         $adminRole = SpatieRoleLookup::byLegacyId(EnumRole::ADMIN);
-        $adminRole?->givePermissionTo(Permission::all());
+
+        // [ONB-06 F-05 2026-08-27] Filtrer par la GARDE du role.
+        //
+        // `Permission::all()` ramassait aussi les permissions declarees sur la garde
+        // `web`. La migration 2026_08_13_190000 cree volontairement `pos-flyer-print`
+        // sur les DEUX gardes — certaines routes caisse passent par une session web, et
+        // un accord sanctum seul y produirait des 403. Ce doublon est donc CORRECT.
+        //
+        // Mais l'accorder a un role `sanctum` fait lever GuardDoesNotMatch a Spatie. Le
+        // defaut etait masque par un autre : le seeder de permissions echouait avant
+        // d'arriver ici. En le rendant rejouable, celui-ci est apparu.
+        $adminRole?->givePermissionTo(
+            Permission::where('guard_name', $adminRole->guard_name)->get()
+        );
 
         // [POS-9-H.1.2] F-A2 fix: whereIn('name', ...) expects a flat list of strings.
         // The previous `['name' => 'x']` shape matched 0 rows silently — Branch Manager,
@@ -92,7 +105,9 @@ class RolePermissionTableSeeder extends Seeder
                 'pos-flyer-print',
             ];
             $branchManager->givePermissionTo(
-                Permission::whereIn('name', $branchManagerPermissionNames)->get()
+                Permission::whereIn('name', $branchManagerPermissionNames)
+                    ->where('guard_name', $branchManager->guard_name)
+                    ->get()
             );
         }
 
@@ -121,7 +136,9 @@ class RolePermissionTableSeeder extends Seeder
                 'pos-flyer-print',
             ];
             $posOperatorManager->givePermissionTo(
-                Permission::whereIn('name', $posOperatorManagerPermissionNames)->get()
+                Permission::whereIn('name', $posOperatorManagerPermissionNames)
+                    ->where('guard_name', $posOperatorManager->guard_name)
+                    ->get()
             );
         }
 
@@ -133,7 +150,9 @@ class RolePermissionTableSeeder extends Seeder
                 'order-status-screen',
             ];
             $chef->givePermissionTo(
-                Permission::whereIn('name', $chefPermissionNames)->get()
+                Permission::whereIn('name', $chefPermissionNames)
+                    ->where('guard_name', $chef->guard_name)
+                    ->get()
             );
         }
 
@@ -143,10 +162,15 @@ class RolePermissionTableSeeder extends Seeder
         // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
         $posOperatorManager = SpatieRoleLookup::byLegacyId(EnumRole::POS_OPERATOR);
         if ($posOperatorManager) {
+            // [ONB-06 F-05 2026-08-27] Filtre de garde, par coherence : aucune de ces
+            // permissions n'a de doublon `web` aujourd'hui, donc rien ne casse — mais le
+            // motif du double accord existe (migration 2026_08_13_190000) et se
+            // reproduira. Mieux vaut aligner les six attributions que d'en laisser trois
+            // attendre leur tour.
             $extraPermissions = Permission::whereIn('name', [
                 'kitchen-display-system',
                 'order-status-screen',
-            ])->get();
+            ])->where('guard_name', $posOperatorManager->guard_name)->get();
             $posOperatorManager->givePermissionTo($extraPermissions);
         }
 
@@ -160,7 +184,7 @@ class RolePermissionTableSeeder extends Seeder
                 'dashboard',
                 'kitchen-display-system',
                 'order-status-screen',
-            ])->get();
+            ])->where('guard_name', $stuff->guard_name)->get();
             $stuff->givePermissionTo($stuffPermissions);
         }
 
@@ -173,7 +197,7 @@ class RolePermissionTableSeeder extends Seeder
                 'table-orders',
                 'kitchen-display-system',
                 'order-status-screen',
-            ])->get();
+            ])->where('guard_name', $waiter->guard_name)->get();
             $waiter->givePermissionTo($waiterPermissions);
         }
     }
