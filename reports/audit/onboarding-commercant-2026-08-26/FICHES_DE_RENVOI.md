@@ -226,3 +226,55 @@ Sur environ 40 candidats à fort rayon d'explosion — messagerie, licence, pass
 **Aucun n'est exploitable aujourd'hui.** Le risque réel est un **point de défaillance unique** : le jour où quelqu'un supprime la ligne de garde du contrôleur en pensant que la FormRequest protège, plus rien ne protège. C'est un risque de maintenance, pas une faille.
 
 Le cliquet `RETURN_TRUE_BASELINE = 64` a donc toute sa raison d'être — mais il faut le lire pour ce qu'il est : un compteur de dette, pas un compteur de trous.
+
+---
+
+# AUDIT VISUEL — 2026-08-27, fait au navigateur sur :8800
+
+> ONB-11 avait marqué cette partie « NON VÉRIFIÉ » : son agent n'avait pas accès au
+> navigateur. Fait ici, écran par écran. **Deux défauts trouvés que la suite de tests
+> ne voyait pas** — et corrigés le jour même.
+
+## Ce qui était cassé, et ne l'est plus
+
+| Écran | Ce que l'œil a vu | État |
+|---|---|---|
+| Tableau de bord | **331 alertes cuisine**, dont un ticket « en attente depuis 77 j 22 h » | ✅ corrigé — `1aac5c1c3` |
+| Borne, accueil | **788 requêtes SQL** en 404 ms pour afficher le menu | ✅ corrigé — `94ea3b592` |
+| Formulaire article | Taxe sans astérisque, libellé « TAXE (INCLUANT) », liste affichant `VAT-10%` | ✅ corrigé — `d7513cffa` |
+| Autorisations | 80 permissions en anglais brut | ✅ corrigé — `3d8a99b0a` |
+| Rôles | « POS Operator », « Waiter », « Stuff » | ✅ corrigé — `abad1cb6c` |
+| Rapport des ventes | 0,00 € au-dessus d'une liste à 65,20 €, sans explication | ✅ corrigé — `87cebbdb3` |
+
+## Ce qui est bon, et qu'il ne faut pas toucher
+
+**La caisse** (`/admin/pos`) est le meilleur écran du produit. Tout est en français, les
+états vides sont écrits pour un humain — « Aucune commande prête à livrer pour le
+moment », « Aucun article. Sélectionnez un produit dans la grille » — les compteurs sont
+vivants, les images chargent, et **une seule requête** est émise. Le bandeau rouge
+« Article indisponible : Coca-Cola 33cl » prouve au passage que la propagation de
+rupture d'ONB-08 fonctionne en conditions réelles.
+
+**La borne d'accueil** est belle et entièrement en français : logo, carrousel produits,
+« Bienvenue ! », « Touchez l'écran pour commander ».
+
+Il n'y a rien à corriger sur ces deux-là, et c'est important de le dire : un audit qui
+ne trouve que des défauts finit par en inventer.
+
+## Ce qui reste, et qui appartient à ONB-12 (bloqué par G0)
+
+La marque est **partout** sur les deux surfaces client :
+
+- borne : le logo, le texte « LE CAYENNE », la baseline « TACOS · BURGERS · SANDWICHS ·
+  BOWLS », et « Bienvenue ! Le Cayenne » ;
+- caisse : « CAISSE LE CAYENNE » en dur en haut à gauche (`PosComponent.vue:80`).
+
+Un autre restaurant qui installe ce logiciel verrait le nom d'un concurrent sur l'écran
+que ses clients regardent. C'est l'objet même du gate **G0**.
+
+## Deux mesures à consigner
+
+- le **tableau de bord met environ 18 secondes** à s'afficher ;
+- il affiche **deux fois le même chiffre sous deux noms** — « Ventes du jour » et
+  « Chiffre d'Affaires du Jour », plus « Commandes du jour » en double. C'est la
+  confirmation à l'écran des trois définitions concurrentes relevées dans le code.
