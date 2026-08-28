@@ -85,6 +85,7 @@ use App\Http\Controllers\Admin\SmsGatewayController;
 use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\PurchasingScanController;
 use App\Http\Controllers\Admin\RawMaterialAdjustController;
+use App\Http\Controllers\Admin\RawMaterialController;
 use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\UnifiedStockViewController;
 use App\Http\Controllers\Admin\SubscriberController;
@@ -434,6 +435,32 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // `adjust` = écriture (gate items_create, même famille que /purchasing/scan).
     // `idempotency` : protection double-submit HTTP (opt-in via X-Idempotency-Key ;
     // no-op si l'en-tête est absent ou si `idempotency.enabled` est false).
+    /*
+     | [ONB-08 2026-08-28] LE CRUD DES MATIERES PREMIERES.
+     |
+     | Ce domaine n'exposait que `movements` (lecture) et `adjust` (correction de
+     | quantite). Les seules sources de creation etaient un seeder et une commande
+     | console : **un nouveau commercant ne pouvait declarer aucun ingredient.**
+     | C'est le blocage le plus lourd de la mission « depuis zero », et il
+     | n'apparaissait dans aucun constat de reconnaissance.
+     |
+     | Il ferme aussi le trou de `threshold_low`, qui n'avait aucun chemin
+     | d'ecriture : 55/55 et 20/20 lignes a NULL, alors que le tableau de rupture et
+     | le listener d'alerte filtrent `whereNotNull('threshold_low')` — donc 100 % des
+     | lignes exclues, et l'alerte de stock bas structurellement muette.
+     |
+     | Les gardes sont portees par le constructeur du controleur, en miroir de
+     | l'ajustement : `items_show` en lecture, `items_create` en ecriture.
+     */
+    Route::get('/raw-materials', [RawMaterialController::class, 'index'])
+        ->name('raw-materials.index');
+    Route::post('/raw-materials', [RawMaterialController::class, 'store'])
+        ->name('raw-materials.store');
+    Route::match(['put', 'patch'], '/raw-materials/{rawMaterial}', [RawMaterialController::class, 'update'])
+        ->name('raw-materials.update');
+    Route::delete('/raw-materials/{rawMaterial}', [RawMaterialController::class, 'destroy'])
+        ->name('raw-materials.destroy');
+
     Route::get('/raw-materials/{rawMaterial}/movements', [RawMaterialAdjustController::class, 'history'])
         ->name('raw-materials.movements');
     Route::post('/raw-materials/{rawMaterial}/adjust', [RawMaterialAdjustController::class, 'adjust'])

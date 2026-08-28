@@ -231,6 +231,11 @@ return [
         'open_full_page' => 'Ouvrir en page complète',
     ],
     'message' => [
+        'matiere_dune_autre_branche' => "Cette matière appartient à un autre établissement.",
+        'matiere_encore_dans_une_recette' => "Cette matière est utilisée par :n recette(s). La retirer laisserait ces recettes sans matière, et le stock ne se déduirait plus. Retirez-la d'abord des recettes.",
+        'unite_non_modifiable_avec_stock' => "Cette matière a :stock en stock, comptés en « :unite ». Changer son unité ne convertirait pas ce nombre : il deviendrait faux. Ramenez d'abord le stock à zéro, puis changez l'unité.",
+        'unite_de_matiere_inconnue' => "Cette unité n'est pas reconnue par la conversion des factures d'achat. Choisissez-en une parmi : :unites",
+        'matiere_deja_declaree' => "Vous avez déjà une matière de ce nom. Ouvrez-la pour la modifier, plutôt que d'en créer une seconde.",
         'extension_de_fichier_interdite' => "Ce type de fichier n'est pas accepté. Déposez une image (JPG, PNG) ou un tableur (XLSX, CSV) selon ce que l'écran vous demande.",
         'taxe_encore_utilisee' => "Cette taxe est encore utilisée par :n produit(s), y compris désactivés ou supprimés. Changez d'abord leur taxe, sinon ils seraient facturés à 0 % sans que rien ne le signale.",
         // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.

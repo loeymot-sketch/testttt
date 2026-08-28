@@ -235,6 +235,11 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        'matiere_dune_autre_branche' => "This material belongs to another establishment.",
+        'matiere_encore_dans_une_recette' => "This material is used by :n recipe(s). Removing it would leave those recipes without a material, and stock would stop being deducted.",
+        'unite_non_modifiable_avec_stock' => "This material holds :stock in stock, counted in \":unite\". Changing its unit would not convert that number: it would become wrong. Bring the stock to zero first.",
+        'unite_de_matiere_inconnue' => "This unit is not recognised by purchase-invoice conversion. Pick one of: :unites",
+        'matiere_deja_declaree' => "You already have a material with this name. Open it to edit, rather than creating a second one.",
         'extension_de_fichier_interdite' => "This file type is not accepted. Upload an image (JPG, PNG) or a spreadsheet (XLSX, CSV), depending on what the screen asks for.",
         'taxe_encore_utilisee' => "This tax is still used by :n product(s), including deactivated or deleted ones. Change their tax first, otherwise they would be charged at 0% with no warning.",
         // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.

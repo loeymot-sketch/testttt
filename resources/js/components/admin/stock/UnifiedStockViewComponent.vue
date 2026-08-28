@@ -129,6 +129,18 @@
                     <h2 class="usv-section-title">
                         {{ $t('admin.unified_stock.raw_title') }}
                         <span class="usv-count">({{ rawMaterials.length }})</span>
+                        <!--
+                            [ONB-08 2026-08-28] La porte vers la DECLARATION des matieres.
+                            Cet ecran-ci est en lecture seule (son docblock le dit), mais
+                            il est celui ou le commercant regarde ses matieres : c'est
+                            donc d'ici qu'il doit pouvoir en ajouter une.
+                            Sans lien, l'ecran de declaration ne serait atteignable qu'en
+                            tapant son URL — le defaut qu'on vient de corriger trois fois.
+                        -->
+                        <router-link :to="{ name: 'admin.stock.raw-materials' }"
+                            class="usv-link" data-testid="usv-raw-declare">
+                            {{ $t('label.raw_materials_manage') }}
+                        </router-link>
                     </h2>
                     <div class="usv-table usv-table--raw" role="table">
                         <div class="usv-thead" role="row">
