@@ -105,3 +105,58 @@ caisse a trois chemins de rendu qui coexistent**, et les trois portent des noms 
 J'ai modifié les deux premiers avant de trouver le troisième ; les deux ont été intégralement
 restaurés. La leçon : sur cet écran, ne pas déduire la cible du nom d'une classe — lire la
 classe portée par l'élément qui affiche le mot cherché.
+
+## §9 Amendement du 2026-08-28 (2) — « non pas encore ! »
+
+Le propriétaire a regardé l'écran et a répondu **« non pas encore ! »** à mon rapport de
+livraison. Il avait raison sur les deux points, et la cause des deux est la même : **j'ai
+écrit la table des couleurs de mémoire au lieu de lire la carte.**
+
+### Défaut 1 — cinq sauces restées blanches
+
+Les noms réels, relevés dans `item_variations` (attribut 5, « Sauce (1ère Gratuite) ») :
+
+| Sauce | Ce que j'avais écrit | Effet à l'écran |
+|---|---|---|
+| **Cayenne** | rien | blanche |
+| **Poivre** | rien | blanche |
+| **Tandoori** | rien | blanche |
+| **Spicy** | `spicy maison` seulement | blanche |
+| **Sauce fromagère maison** | `fromagère maison` seulement | blanche |
+
+Cinq oublis sur dix-neuf. C'est le taux d'erreur d'une liste écrite de tête — et il était
+évitable : la carte est en base, il suffisait de la lire. Les cinq règles sont ajoutées,
+avec la couleur de la sauce réelle (le piment de Cayenne est rouge, le tandoori brique, la
+sauce au poivre grise-brune).
+
+### Défaut 2 — le bloc « 🍟 Sauce pour frites » n'avait aucune couleur
+
+L'assistant rend les sauces par **deux chemins** : celui du sandwich et celui des frites.
+Les deux partagent la grille `.sauce-chips-grid`. Le second avait donc hérité de la
+nouvelle taille, **mais pas de la classe qui porte la couleur**. Résultat : des pastilles
+blanches juste sous des pastilles colorées, dans la même grille. C'est ce que le
+propriétaire voyait.
+
+Le §8 de ce document avertissait déjà que cet écran a plusieurs chemins de rendu qui
+portent des noms voisins. Je n'ai pas appliqué mon propre avertissement.
+
+### Vérification (les deux défauts, prouvés)
+
+- Couverture : les **19** sauces de la carte ont chacune leur règle — chaque nom réel
+  passé par le même calcul de clé que le JS, puis cherché dans le CSS. 19/19.
+- `node --check public/js/pos-wizard.js` → valide.
+- Nouvelle sentinelle `tests/js/sauceChipsCouleurs.spec.js` (5 contrôles) : elle vérifie
+  qu'**aucun** chemin ne construit une pastille sans sa classe de couleur. Contrôle
+  **structurel**, pas nominatif — il ne connaît aucune sauce et ne cassera donc pas quand
+  la carte changera.
+- **La sentinelle a été vue mordre** : défaut des frites remis → 1 échec, avec le message
+  attendu ; correctif restauré → 5/5 verts. Un banc vert qui n'a pas été vu échouer ne
+  prouve rien.
+
+### Fichiers frozen touchés
+
+- `public/css/pos-wizard.css` — cinq règles ajoutées à la suite du bloc de couleurs
+- `public/js/pos-wizard.js` — une variable + la classe posée sur la pastille des frites
+
+Aucune autre règle, aucune autre fonction. Couche d'affichage pure : aucun prix, aucune
+composition, aucune écriture fiscale n'en dépend. Rollback : `git revert <sha>`.
