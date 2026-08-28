@@ -8,7 +8,7 @@
                 <div class="catalog-control-plane__title-row">
                     <h2>{{ $t('label.catalog_subtitle') }}</h2>
                     <span class="catalog-control-plane__sync">
-                        <i class="lab lab-refresh"></i>
+                        <i class="lab lab-reset"></i>
                         {{ $t('label.catalog_pos_kiosk') }}
                     </span>
                 </div>
@@ -40,15 +40,15 @@
                     {{ $t('label.catalog_action_products') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.settings.itemCategory.list' }">
-                    <i class="lab lab-category"></i>
+                    <i class="lab lab-item-categories"></i>
                     {{ $t('label.catalog_action_categories') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.offers.list' }">
-                    <i class="lab lab-discount"></i>
+                    <i class="lab lab-discount-shape"></i>
                     {{ $t('label.catalog_action_offers') }}
                 </router-link>
                 <button type="button" class="catalog-control-plane__action" @click.prevent="focusAvailability">
-                    <i class="lab lab-toggle-on"></i>
+                    <i class="lab lab-tick-square"></i>
                     {{ $t('label.catalog_action_availability') }}
                 </button>
             </div>
@@ -252,7 +252,7 @@
                                             :aria-label="$t('label.configure_wizard')"
                                             data-testid="item-list-configure-wizard-button"
                                         >
-                                            <i class="lab lab-cog"></i>
+                                            <i class="lab lab-settings"></i>
                                             <span class="db-tooltip">{{ $t('label.configure_wizard') }}</span>
                                         </router-link>
                                     </span>
@@ -265,7 +265,7 @@
                                             @click.prevent="duplicate(item)"
                                             v-if="permissionChecker('items_create')"
                                         >
-                                            <i class="lab lab-copy"></i>
+                                            <i class="lab lab-document-text"></i>
                                             <span class="db-tooltip">{{ $t('label.duplicate') }}</span>
                                         </button>
                                     </span>
