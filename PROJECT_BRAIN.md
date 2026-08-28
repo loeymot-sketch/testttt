@@ -47,6 +47,46 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-28 — CONSOLIDATION : QUATRE LIGNES DE TRAVAIL RÉUNIES, ET QUATRE CORRECTIFS FAITS EN DOUBLE**
+>
+> Branche `release/consolidation-2026-08-28`, **138 commits** au-dessus de la ligne servie.
+> Réunit : `origin/pos/category-first-caisse` (38 commits caisse/borne d'autres sessions),
+> `goal/caisse-vision-2026-08-24` (20 correctifs, campagne AB + C/D), `goal/onboarding-commercant-2026-08-26`
+> (**les 14 missions ONB, 113 commits**), et le GOAL CONSOLIDATION du 2026-08-25 (commit local « big »).
+>
+> **CE QUI EST VÉRIFIÉ**
+> · `tests/Feature/Sentinels` : **83 échecs / 278 passés — EXACTEMENT les chiffres de la ligne servie**,
+>   suite jouée deux fois dans la même base pour établir la référence. Zéro régression. Les 83 sont
+>   environnementaux (base de test neuve, sans les données que ces bancs attendent) : la ligne servie
+>   les échoue à l'identique. Sans ce contrôle j'aurais lu « 84 échecs » et conclu au désastre.
+> · Vitest : **4034 tests, 498 fichiers, TOUT vert** (après recompilation des bundles).
+> · Zone gelée : backend **zéro ligne**. Frontend : `pos-wizard.js` seul, sous LOCK **APPROVED**
+>   (`LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26`, délégation propriétaire du 2026-08-26).
+> · NF525 : `fiscal:verify-chain --all` → **CHAIN OK sur les 6 succursales actives**.
+>
+> 🚫 **CE QUI EST VOLONTAIREMENT RESTÉ DEHORS — gate propriétaire.** Le commit local `6a2264085`
+> (carte de sauces canonique) touche `pos-wizard.js`, `pos-wizard.css` ET `admin-pos-v4.blade.php`
+> sous un LOCK qui porte encore « **brouillon, en attente de contreseing** ». CLAUDE.md §10 en fait
+> une décision humaine. Le LOCK lui-même est intégré pour être lisible avant signature.
+>
+> 🪤 **LE PIÈGE DE CETTE SESSION : une correction juste peut devenir FAUSSE en fusionnant.** ONB-10
+> avait corrigé le bandeau de caisse (« aujourd'hui » sur une somme qui ne l'était pas) en renommant
+> le libellé « depuis l'ouverture ». La ligne servie avait corrigé le même défaut autrement, en
+> séparant DEUX champs — `cash_collected` (depuis l'ouverture) et `cash_collected_in_period` (borné à
+> la période, FIX-3). Fusionnés, le libellé ONB se retrouvait collé au champ BORNÉ À LA PÉRIODE :
+> le défaut d'origine, avec un autre mot faux. **Les deux branches étaient vertes séparément.** Aucun
+> banc n'attrape ça. Quatre doublons de ce type trouvés (bandeau, identifiants de démo dans le bundle,
+> bornage SLA, seeder de permissions) — détail dans `CONSTATS_OUVERTS_2026-08-28.md` §F4.
+>
+> ⚠️ Deux bancs gardaient un DÉFAUT au lieu d'un acquis, et refusaient donc sa correction :
+> `kdsStationFiltreCouverture` affirmait que le filtre KDS n'offre pas « none » (ONB-08 l'a ajouté) ;
+> `libelleReconciliationCaisse` épinglait un libellé plutôt que l'appariement libellé/champ. Les deux
+> retournés, le second prouvé mordant (défaut réintroduit → 3 tests sur 4 tombent).
+>
+> 📌 Reste à faire, nommé : `audit-supervisor-waveA.spec.js` code en dur id=25 et id=27, **tous deux
+> en status 10 — non vendables** (relevé en base, pas deviné). Cliquet de dette relevé 24/56 → 28/65,
+> concession écrite en clair. Et les 11 constats ONB déjà ouverts, dont 5 gates propriétaire.
+
 > **2026-08-26 — LE « TAMPER » NF525 EST UN FAUX POSITIF. PROUVÉ. AUCUNE ALTÉRATION.**
 >
 > Contrôle post-déploiement demandé par le propriétaire (« deploy et vérifie si tout est bon »).

@@ -198,3 +198,73 @@ Eloquent implémente `ArrayAccess`. Vérifié à l'exécution.
 `ItemRequest:70`, `ItemVariationRequest:39` et `ItemAddonRequest:34` ne sont donc
 **pas** cassés. Le commentaire qui prétend le contraire risque de provoquer une
 « correction » inutile — et de casser ce qui marche.
+
+---
+
+# CONSTATS NÉS DE LA CONSOLIDATION DU 2026-08-28
+
+Branche `release/consolidation-2026-08-28`. Trois lignes de travail parallèles réunies :
+la ligne servie (`origin/pos/category-first-caisse`), `goal/caisse-vision-2026-08-24`,
+`goal/onboarding-commercant-2026-08-26` (les 14 missions), et le GOAL CONSOLIDATION du
+2026-08-25. Ces constats n'existaient sur AUCUNE des branches prises isolément : c'est
+la réunion qui les produit. Chacun est mesuré, aucun n'est supposé.
+
+## F1. `audit-supervisor-waveA.spec.js` commande deux articles NON VENDABLES
+
+Relevé en base `foodking_e2e` le 2026-08-28 (pas deviné — CLAUDE.md §3ter) :
+
+| id codé en dur | nom | status |
+|---|---|---|
+| 25 | Sandwich Classique | **10** ⛔ |
+| 27 | Big Tacos | **10** ⛔ |
+
+Les cinq autres identifiants de cette spec (1, 2, 22, 26, 33) existent en status 5.
+
+Un vert sur cette spec ne prouve donc rien d'un parcours client réel. Remède connu et
+déjà écrit : `resolveSimpleOrderableItem()` dans `tests/e2e/helpers/kiosk-order.js`.
+Non corrigé ici parce que la spec exige un serveur vivant pour être rejouée, et
+modifier un banc sans pouvoir le rejouer fabrique un banc au mauvais périmètre.
+
+**Conséquence acceptée** : le cliquet `e2eFixturesSansIdentifiantCode` est passé de
+24/56 à 28/65. Un cliquet qui monte est une concession ; elle est écrite en clair dans
+le fichier. La dette n'est pas neuve — ces quatre specs sont antérieures au cliquet,
+né sur une autre branche — mais elle est désormais visible et chiffrée.
+
+## F2. `caisse-vision` a modifié une zone gelée en laissant sa sentinelle rouge
+
+Le correctif AB-003 (`91fd9742c`) modifie `public/js/pos-wizard.js` — zone gelée §7 —
+sous `plans/LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26.md`, **statut APPROVED** par
+délégation explicite du propriétaire. L'override est régulier.
+
+Ce qui ne l'était pas : `frozen-zone-sha256-baseline.json` n'a jamais été mis à jour,
+alors que la sentinelle l'exige DANS LE MÊME COMMIT. `caisse-vision` était donc rouge
+sur sa propre sentinelle de zone gelée, sans que personne ne le voie. Corrigé à la
+fusion.
+
+**Ce qu'il faut en retenir** : une branche isolée peut porter une sentinelle rouge
+pendant des jours. Le motif s'est déjà produit (mémoire « sentinelle au mauvais
+périmètre »). Rien dans le protocole n'oblige aujourd'hui à jouer les sentinelles de
+zone gelée AVANT de quitter une voie.
+
+## F3. 23 des 36 clés `label.*` de la Vue Caisse manquaient en anglais
+
+Trouvé en réécrivant `libelleReconciliationCaisse.spec.js` : `cash_drawer_reconciliation`,
+`cash_sales_in_period`, `cash_reconciliation_gap`, `breakdown_by_method`, `mode_*`,
+`source_*` … L'écran entier affichait des clés brutes en anglais. **Corrigé** (ajoutées
+à `en.json`). Sans effet en V1 (FR seul, ADR-007), mais c'est le motif qu'ONB-11 a
+signalé et qu'il disait vouloir balayer systématiquement plutôt que par hasard — ici
+encore, la trouvaille est venue par accident, en posant autre chose.
+
+## F4. Deux voies ont corrigé le MÊME défaut quatre fois, sans le savoir
+
+- Bandeau de réconciliation (« aujourd'hui » sur une valeur qui ne l'est pas) : ligne
+  servie D-001 **et** ONB-10. La correction ONB était devenue fausse une fois fusionnée
+  — elle collait « depuis l'ouverture » sur le champ borné à la période.
+- Identifiants de démo dans le bundle public : SEC E-006 **et** ONB-12.
+- Bornage des alertes SLA : GOAL CONSOLIDATION T-5.3.3 **et** ONB-07.
+- Seeder de permissions non rejouable : GOAL CONSOLIDATION **et** ONB-06 F-05 — et
+  chacun voyait une moitié du problème que l'autre ne voyait pas.
+
+Quatre doublons sur trois branches en trois jours. Le coût n'est pas le travail perdu,
+c'est qu'**une correction faite en parallèle peut devenir FAUSSE en fusionnant**, et
+qu'aucun banc ne l'attrape : les deux côtés sont verts séparément.
