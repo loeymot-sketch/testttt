@@ -899,6 +899,7 @@
         "catalog_metric_categories": "categories",
         "catalog_metric_active": "active",
         "catalog_metric_unavailable": "unavailable",
+        "catalog_metric_disabled": "disabled",
         "rupture": "OUT OF STOCK",
         "catalog_action_products": "Products",
         "catalog_action_categories": "Categories",

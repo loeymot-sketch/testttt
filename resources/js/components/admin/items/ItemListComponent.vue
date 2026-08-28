@@ -32,6 +32,15 @@
                     <span>{{ unavailableItemsCount }}</span>
                     <small>{{ $t('label.catalog_metric_unavailable') }}</small>
                 </button>
+                <!-- [AUDIT-COMPTA 2026-08-29] La case qui manquait : sans elle le bandeau
+                     annonçait « 123 produits · 58 actifs · 1 indisponible » — 58 + 1 = 59,
+                     et les 64 fiches désactivées n'apparaissaient nulle part. Le clic filtre
+                     dessus, comme les tuiles voisines : compter sans pouvoir y accéder
+                     n'aurait fait que déplacer la frustration. -->
+                <button v-if="disabledItemsCount > 0" type="button" class="catalog-control-plane__metric" :title="`${disabledItemsCount} ${$t('label.catalog_metric_disabled')}`" :aria-label="`${$t('label.filter')} ${disabledItemsCount} ${$t('label.catalog_metric_disabled')}`" @click.prevent="filterDisabledItems">
+                    <span>{{ disabledItemsCount }}</span>
+                    <small>{{ $t('label.catalog_metric_disabled') }}</small>
+                </button>
             </div>
 
             <div class="catalog-control-plane__actions" :aria-label="$t('label.catalog_actions_aria')">
@@ -528,6 +537,34 @@ export default {
             }
             return this.items.filter((item) => this.isItemRuptured(item)).length;
         },
+        /**
+         * [AUDIT-COMPTA 2026-08-29] Les articles désactivés, qui n'avaient AUCUNE case.
+         *
+         * Mesuré à l'écran : le bandeau annonçait « 123 produits · 58 actifs ·
+         * 1 indisponible ». 58 + 1 = 59, pas 123 : les 64 fiches désactivées étaient dans
+         * le total et dans aucune répartition. Un bandeau dont l'arithmétique ne ferme pas
+         * fait douter de tous ses chiffres.
+         *
+         * Depuis ONB-11 la liste montre volontairement les articles désactivés — sans quoi
+         * le commerçant ne pouvait plus jamais en réactiver un. Il faut donc les COMPTER
+         * aussi, pas seulement les afficher.
+         *
+         * On soustrait plutôt que d'attendre une clé serveur supplémentaire : les trois
+         * termes viennent déjà de la même réponse, donc restent cohérents entre eux, y
+         * compris quand un filtre est appliqué. Le plancher à zéro évite d'afficher un
+         * nombre négatif si une future réponse ne fournissait qu'une partie des compteurs.
+         */
+        disabledItemsCount: function () {
+            const total = Number(this.itemsCount);
+            const actifs = Number(this.activeItemsCount);
+            const indisponibles = Number(this.unavailableItemsCount);
+
+            if (!Number.isFinite(total) || !Number.isFinite(actifs) || !Number.isFinite(indisponibles)) {
+                return 0;
+            }
+
+            return Math.max(0, total - actifs - indisponibles);
+        },
 
     },
     methods: {
@@ -573,6 +610,16 @@ export default {
         },
         filterActiveItems: function () {
             this.props.search.status = statusEnum.ACTIVE;
+            this.list();
+        },
+        /**
+         * [AUDIT-COMPTA 2026-08-29] Voir les fiches désactivées, pour pouvoir les réactiver.
+         *
+         * Même geste que `filterActiveItems` juste au-dessus : la tuile est un bouton, et
+         * cliquer un compteur doit amener à ce qu'il compte.
+         */
+        filterDisabledItems: function () {
+            this.props.search.status = statusEnum.INACTIVE;
             this.list();
         },
         focusAvailability: function () {
@@ -795,7 +842,19 @@ export default {
 }
 
 .catalog-control-plane__metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /*
+     * [AUDIT-COMPTA 2026-08-29] Quatre colonnes figées rognaient les libellés.
+     *
+     * Capture à 1280 px : « CATÉGORIE » sans son S final, « INDISPONIB… » amputé de cinq
+     * lettres — sans points de suspension, donc rien ne signalait la coupe. `minmax(0, 1fr)`
+     * autorise une colonne à devenir plus étroite que son contenu, et le texte disparaissait
+     * en silence.
+     *
+     * `auto-fit` + un plancher de 96 px : les tuiles gardent une largeur lisible et passent
+     * à la ligne quand il en faut. C'est aussi ce qui permet d'en avoir cinq depuis l'ajout
+     * de la case « désactivés », sans figer un nouveau nombre magique.
+     */
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
 }
 
 .catalog-control-plane__actions {
@@ -833,6 +892,11 @@ export default {
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
+    /* Un libellé trop long passe à la ligne plutôt que d'être coupé net : mieux vaut deux
+       lignes lisibles qu'un mot amputé sans que rien ne l'indique. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
 }
 
 .catalog-control-plane__metric--alert span {

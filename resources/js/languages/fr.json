@@ -857,6 +857,7 @@
         "catalog_metric_categories": "catégories",
         "catalog_metric_active": "actifs",
         "catalog_metric_unavailable": "indisponibles",
+        "catalog_metric_disabled": "désactivés",
         "rupture": "RUPTURE",
         "catalog_action_products": "Produits",
         "catalog_action_categories": "Catégories",
