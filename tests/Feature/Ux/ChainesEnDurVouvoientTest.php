@@ -70,19 +70,72 @@ class ChainesEnDurVouvoientTest extends TestCase
         return preg_match_all(self::MOTS_OUTILS, $texte) >= 2;
     }
 
-    /** @return string[] chemins relatifs des gabarits à inspecter */
+    /**
+     * [ONB-11 2026-08-28] ÉCRANS COMPTOIR DE LA ROUE — exemption NOMMÉE, en attente
+     * d'un arbitrage du propriétaire.
+     *
+     * Ces quatre gabarits tutoient l'équipe : « Tu vérifies, tu remets, tu appuies »,
+     * « Colle tes liens ici », « Ton Instagram ». Dix chaînes au total, vivantes.
+     *
+     * Je ne les ai PAS réécrites, et c'est délibéré. Leur en-tête les décrit comme des
+     * « écrans comptoir » destinés à l'équipe pendant le service — pas au commerçant
+     * dans son administration. Un registre familier y est défendable ; rien n'indique
+     * toutefois qu'il ait été choisi. C'est une décision de voix produit, pas une
+     * décision d'implémentation.
+     *
+     * ⛔ N'AJOUTE JAMAIS un fichier à cette liste pour faire passer le banc. Une
+     *    addition signifie « j'ai livré un écran qui tutoie » — c'est le défaut, pas
+     *    la solution. Le seul ajout légitime serait décidé par le propriétaire.
+     */
+    private const COMPTOIR_EXEMPTE = [
+        // [ONB-11 2026-08-28] ECRAN CLIENT, et non ecran commercant. « Tu gagnes a
+        // 100 % » s'adresse au client devant la borne, et la ligne porte la citation
+        // du PROPRIETAIRE lui-meme, datee du 2026-08-13 (borne.blade.php:608). Le
+        // tutoiement y est un choix assume, pas un oubli. C'est la seule exemption de
+        // cette liste qui ne soit pas en attente d'arbitrage.
+        'admin/wheel/borne.blade.php',
+        'admin/wheel/reglages.blade.php',
+        'admin/wheel/acces.blade.php',
+        'admin/wheel/lot.blade.php',
+        'admin/wheel/validation.blade.php',
+    ];
+
+    /**
+     * @return string[] gabarits à inspecter — Vue ET Blade d'administration
+     *
+     * [ONB-11 2026-08-28] Les vues BLADE ont été ajoutées après qu'un agent adverse a
+     * montré que ce banc avait exactement la maladie qu'il soigne : il ne balayait que
+     * `.vue`, pendant que dix tutoiements vivaient dans `resources/views/admin/`. La
+     * sentinelle d'origine gardait le fichier de langue, celle-ci gardait le Vue — et
+     * la porte Blade n'avait jamais été gardée.
+     */
     private function composants(): array
     {
-        $racine = resource_path('js/components');
-        $this->assertDirectoryExists($racine);
-
-        $iterateur = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($racine, \FilesystemIterator::SKIP_DOTS)
-        );
-
         $fichiers = [];
-        foreach ($iterateur as $fichier) {
-            if ($fichier->isFile() && $fichier->getExtension() === 'vue') {
+
+        foreach ([
+            [resource_path('js/components'), 'vue'],
+            [resource_path('views/admin'), 'php'],
+        ] as [$racine, $extension]) {
+            $this->assertDirectoryExists($racine);
+
+            $iterateur = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($racine, \FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterateur as $fichier) {
+                if (! $fichier->isFile() || $fichier->getExtension() !== $extension) {
+                    continue;
+                }
+                if ($extension === 'php' && ! str_ends_with($fichier->getFilename(), '.blade.php')) {
+                    continue;
+                }
+
+                $relatif = str_replace(resource_path('views') . '/', '', $fichier->getPathname());
+                if (in_array($relatif, self::COMPTOIR_EXEMPTE, true)) {
+                    continue;
+                }
+
                 $fichiers[] = $fichier->getPathname();
             }
         }
@@ -104,10 +157,18 @@ class ChainesEnDurVouvoientTest extends TestCase
         $visibles = [];
         $dansHtml = false;
         $dansBloc = false;
+        $dansBlade = false;
 
         foreach ($lignes as $index => $ligne) {
             $nue = trim($ligne);
 
+            if ($dansBlade) {
+                if (str_contains($nue, '--}}')) {
+                    $dansBlade = false;
+                }
+
+                continue;
+            }
             if ($dansHtml) {
                 if (str_contains($nue, '-->')) {
                     $dansHtml = false;
@@ -123,6 +184,17 @@ class ChainesEnDurVouvoientTest extends TestCase
                 continue;
             }
 
+            // [ONB-11 2026-08-28] Les commentaires BLADE `{{-- --}}` manquaient : quatre
+            // faux positifs mesures sur `admin/wheel/borne.blade.php`, tous dans des
+            // notes de conception citant le proprietaire. On les suit comme les
+            // commentaires HTML, meme machine a etats.
+            if (str_starts_with($nue, '{{--')) {
+                if (! str_contains($nue, '--}}')) {
+                    $dansBlade = true;
+                }
+
+                continue;
+            }
             if (str_starts_with($nue, '<!--')) {
                 if (! str_contains($nue, '-->')) {
                     $dansHtml = true;

@@ -38,6 +38,14 @@ class TicketBorneImprimeSonIdentiteTest extends TestCase
 
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
+
+        // [ONB-01 2026-08-28] L'identite de la borne est desormais mise en cache 5 min
+        // (elle etait lue a chaque chargement de page du SPA). On vide entre les tests
+        // pour qu'ils mesurent la base, pas un reste du test precedent.
+        //
+        // Consequence a connaitre en exploitation : apres modification de l'adresse
+        // dans Filiales, la borne imprime l'ancienne pendant au plus 5 minutes.
+        \Illuminate\Support\Facades\Cache::flush();
     }
 
     private function shellRendu(): string

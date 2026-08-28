@@ -8,6 +8,7 @@ use App\Models\Currency;
 use App\Models\User;
 use Dipokhalder\EnvEditor\EnvEditor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
 /**
@@ -129,12 +130,55 @@ class DebugInterditDepuisLEcranEnProductionTest extends TestCase
         $reponse = $this->actingAs($this->admin, 'sanctum')
             ->putJson('/api/admin/setting/site', $this->saisieDeLEcran());
 
-        $this->assertNotSame(
-            422,
-            $reponse->status(),
+        // [ONB-05 2026-08-28] Même correction que dans ReglagesDuSiteEnregistrablesTest :
+        // `assertNotSame(422, ...)` était vert sur un 500.
+        $this->assertTrue(
+            $reponse->status() >= 200 && $reponse->status() < 300,
             "Le garde ne doit bloquer QUE l'activation du debug. Bloquer toute la page\n"
             . "en production reproduirait le défaut qu'on vient de corriger.\n"
-            . 'Erreurs : ' . json_encode($reponse->json('errors'), JSON_UNESCAPED_UNICODE)
+            . "Code obtenu : {$reponse->status()}. Erreurs : "
+            . json_encode($reponse->json('errors'), JSON_UNESCAPED_UNICODE)
+        );
+    }
+
+    /**
+     * [ONB-05 2026-08-28 - INCOHERENCE CORRIGEE] Le garde portait sur la VALEUR, pas
+     * sur la TRANSITION - et rendait l'ecran Site inenregistrable.
+     *
+     * `site_app_debug` est `required` : le formulaire la renvoie toujours telle
+     * qu'elle est stockee. Si le reglage etait deja a ENABLE en base - le scenario
+     * decrit par le docblock lui-meme, ou l'exploitant remet APP_DEBUG=false dans le
+     * `.env` a la main sans toucher a la base - alors changer son FUSEAU HORAIRE
+     * renvoyait un 422 sur un champ qu'il n'avait pas touche.
+     *
+     * C'est exactement le defaut que le commit voisin venait de retirer pour la cle
+     * Google Maps : un ecran entier bloque par une exigence sans rapport avec ce que
+     * le commercant essaie de faire. Trouve par un agent adverse.
+     */
+    public function test_un_debug_deja_active_ne_bloque_pas_le_reste_de_l_ecran(): void
+    {
+        Settings::group('site')->set(['site_app_debug' => Activity::ENABLE]);
+
+        $this->enProduction();
+
+        $reponse = $this->actingAs($this->admin, 'sanctum')
+            ->putJson('/api/admin/setting/site', $this->saisieDeLEcran([
+                'site_app_debug'        => Activity::ENABLE,
+                'site_default_timezone' => 'Europe/Brussels',
+            ]));
+
+        $this->assertTrue(
+            $reponse->status() >= 200 && $reponse->status() < 300,
+            "Le commercant change son fuseau horaire ; il ne touche pas au debug, qui "
+            . "etait deja allume. L'ecran ne doit pas le bloquer sur un champ qu'il n'a "
+            . "pas modifie. Code obtenu : {$reponse->status()}. Erreurs : "
+            . json_encode($reponse->json('errors'), JSON_UNESCAPED_UNICODE)
+        );
+
+        $this->assertSame(
+            'Europe/Brussels',
+            Settings::group('site')->get('site_default_timezone'),
+            'Le fuseau doit avoir ete reellement enregistre.'
         );
     }
 

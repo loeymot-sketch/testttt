@@ -215,6 +215,29 @@ class LanguageService
      *
      * Les deux extensions possibles sont déjà bornées par `validateLangFilePath()`.
      */
+    /**
+     * [ONB-13 2026-08-28] Toutes les formes sous lesquelles la valeur courante peut
+     * figurer dans le fichier, de la plus specifique a la plus large.
+     *
+     * L'ordre compte : la forme ECHAPPEE d'abord, parce que c'est celle que nous
+     * ecrivons aujourd'hui ; les formes brutes ensuite, parce que les fichiers
+     * anterieurs au correctif les contiennent encore.
+     *
+     * @return string[]
+     */
+    private function aiguillesPossibles(string $resolvedPath, string $key): array
+    {
+        $echappee = $this->litteralPourFichier($resolvedPath, $key);
+
+        $aiguilles = [
+            $echappee,              // forme actuelle : var_export / json_encode
+            "'" . $key . "'",       // forme historique, apostrophes
+            '"' . $key . '"',       // forme historique, guillemets
+        ];
+
+        return array_values(array_unique($aiguilles));
+    }
+
     private function litteralPourFichier(string $resolvedPath, mixed $value): string
     {
         $texte = is_scalar($value) ? (string) $value : '';
@@ -341,10 +364,28 @@ class LanguageService
                     // `permission:settings` ; le contenu, lui, ne l'était pas.
                     // On écrit désormais un littéral échappé par le langage cible.
                     $litteral = $this->litteralPourFichier($resolvedPath, $value);
-                    if (strpos($fileContent, "'" . $key . "'") !== false) {
-                        $fileContent = str_replace("'" . $key . "'", $litteral, $fileContent);
-                    } elseif (strpos($fileContent, "\"{$key}\"") !== false) {
-                        $fileContent = str_replace("\"{$key}\"", $litteral, $fileContent);
+
+                    // [ONB-13 2026-08-28 · REGRESSION CORRIGEE] L'aiguille cherchait la
+                    // valeur courante SANS ECHAPPEMENT — `'L'addition'` — alors que le
+                    // correctif d'echappement ecrit desormais `'L\'addition'`. Des le
+                    // deuxieme enregistrement, aucune branche ne correspondait : le
+                    // fichier etait reecrit a l'identique et le controleur repondait
+                    // succes. Toute traduction portant une apostrophe devenait
+                    // SILENCIEUSEMENT immodifiable — 27 dans `lang/fr/all.php`.
+                    //
+                    // Trouve par un agent adverse lance sur mon propre travail. Mon banc
+                    // ne pouvait pas le voir : il n'ecrivait qu'UNE passe, jamais un
+                    // aller-retour.
+                    //
+                    // On cherche donc la valeur sous TOUTES les formes qu'elle a pu
+                    // prendre dans le fichier : brute entre apostrophes ou guillemets
+                    // (l'ecriture historique), et echappee par le langage cible
+                    // (l'ecriture actuelle).
+                    foreach ($this->aiguillesPossibles($resolvedPath, $key) as $aiguille) {
+                        if (strpos($fileContent, $aiguille) !== false) {
+                            $fileContent = str_replace($aiguille, $litteral, $fileContent);
+                            break;
+                        }
                     }
                 }
             }

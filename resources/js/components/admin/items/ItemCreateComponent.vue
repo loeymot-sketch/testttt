@@ -325,12 +325,35 @@ export default {
         // « TVA 67% » (taux réel 0 %) et « TVA 97% » (taux réel 20 %). Un filtre qui
         // dépend de l'ordre de chargement n'est pas un filtre.
         taxesLibellees: function () {
-            return (this.taxes || [])
-                .filter((taxe) => Number(taxe?.status) === statusEnum.ACTIVE)
-                .map((taxe) => ({
-                    ...taxe,
-                    libelle: libelleTaxe(taxe),
-                }));
+            const toutes = this.taxes || [];
+            const actives = toutes.filter((t) => Number(t?.status) === statusEnum.ACTIVE);
+
+            // [ONB-02 2026-08-28 · REGRESSION CORRIGEE] Ne filtrer QUE les actives
+            // vidait le champ obligatoire pour tout produit rattaché à une taxe
+            // inactive — 64 sur la base de travail. Le commerçant venu renommer un
+            // article trouvait « Taxe * » vide, et le geste naturel pour le remplir
+            // CHANGEAIT SON TAUX DE TVA. C'était pire que le défaut d'origine.
+            //
+            // On garde donc la taxe COURANTE dans la liste même si elle est inactive,
+            // signalée comme telle : le commerçant voit ce qui est réellement appliqué
+            // et choisit de le changer, au lieu d'y être poussé sans le savoir. Les
+            // NOUVELLES sélections restent bornées aux taxes actives.
+            //
+            // Trouvé par un agent adverse lancé sur mon propre travail.
+            const courante = Number(this.props?.form?.tax_id);
+            const dejaLa = actives.some((t) => Number(t.id) === courante);
+            const heritee = (! dejaLa && Number.isFinite(courante) && courante > 0)
+                ? toutes.find((t) => Number(t.id) === courante)
+                : null;
+
+            const liste = heritee ? [heritee, ...actives] : actives;
+
+            return liste.map((taxe) => ({
+                ...taxe,
+                libelle: (heritee && Number(taxe.id) === courante)
+                    ? `${libelleTaxe(taxe)} — inactive`
+                    : libelleTaxe(taxe),
+            }));
         },
         wizardPerItemDemoEnabled() {
             return typeof window !== 'undefined'

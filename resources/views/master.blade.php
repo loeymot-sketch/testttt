@@ -120,10 +120,33 @@
         // la configuration reste, il n'était simplement jamais précédé de rien.
         // Lecture par clé primaire, mise en défaut silencieuse : ce shell sert TOUTES
         // les pages du SPA, il ne doit jamais tomber à cause d'une lecture d'agrément.
+        // [ONB-01 2026-08-28 · DEUX DEFAUTS CORRIGES, trouves par un agent adverse]
+        //
+        // 1. `withoutGlobalScopes()` a ete RETIRE. Je l'avais mis en croyant neutraliser
+        //    `BranchScope` — mais `Branch` ne l'enregistre pas (le modele est meme
+        //    listE comme exempte dans CLAUDE.md §9). Le seul scope qu'il retirait etait
+        //    `SoftDeletingScope` : une filiale SUPPRIMEE etait donc ressuscitee, et son
+        //    adresse partait sur le ticket client. Chemin atteignable : sans
+        //    `site_default_branch`, le repli `?: 1` vise la filiale 1, que rien
+        //    n'empeche de supprimer quand le reglage est nul.
+        //    Sans le retrait, une filiale supprimee n'est pas trouvee et le repli
+        //    config s'applique — ce qui est le comportement voulu.
+        //
+        // 2. La lecture est MISE EN CACHE 5 minutes. Elle est faite en tete du shell,
+        //    donc a chaque chargement complet de page du SPA — administration, caisse,
+        //    KDS, ecran client — alors que ces valeurs ne servent qu'au ticket de la
+        //    borne. Le meme fichier met deja en cache son autre requete `Branch`, avec
+        //    un commentaire explicite ; je n'avais pas suivi la discipline du fichier.
         $borneFiliale = null;
         try {
             $borneFilialeId = (int) (\Smartisan\Settings\Facades\Settings::group('site')->get('site_default_branch') ?: 1);
-            $borneFiliale = \App\Models\Branch::withoutGlobalScopes()->find($borneFilialeId);
+            $borneFiliale = \Illuminate\Support\Facades\Cache::remember(
+                'borne.identite.filiale.' . $borneFilialeId,
+                300,
+                fn () => \App\Models\Branch::query()
+                    ->select(['id', 'phone', 'address'])
+                    ->find($borneFilialeId)
+            );
         } catch (\Throwable $e) {
             $borneFiliale = null;
         }

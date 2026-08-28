@@ -536,6 +536,8 @@
         "raw_material_adjust": "Stock adjustment"
     },
     "label": {
+        "choice_optional_unlimited": "Optional · no limit",
+        "choice_required_at_least": "Required · at least {n}",
         "kds_sans_poste": "No station",
         "day_monday": "Monday",
         "day_tuesday": "Tuesday",

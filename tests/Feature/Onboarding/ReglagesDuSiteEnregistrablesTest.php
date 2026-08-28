@@ -7,6 +7,7 @@ use App\Models\Currency;
 use App\Models\User;
 use Dipokhalder\EnvEditor\EnvEditor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
 /**
@@ -98,13 +99,31 @@ class ReglagesDuSiteEnregistrablesTest extends TestCase
         $reponse = $this->actingAs($this->admin, 'sanctum')
             ->putJson('/api/admin/setting/site', $this->saisieDeLEcran());
 
-        $this->assertNotSame(
-            422,
-            $reponse->status(),
-            "L'écran Site refuse d'être enregistré tant que le commerçant n'a pas fourni\n"
-            . "une clé d'API Google Maps et une mention de copyright. Il ne peut donc pas\n"
-            . "changer son fuseau horaire, son format de date ni la position du symbole €.\n"
-            . 'Erreurs renvoyées : ' . json_encode($reponse->json('errors'), JSON_UNESCAPED_UNICODE)
+        // [ONB-05 2026-08-28] Cette assertion disait `assertNotSame(422, ...)`. Un agent
+        // adverse lancé sur mon propre travail a montré qu'elle etait verte sur un
+        // HTTP 500 : `SiteResource` lisait 22 clés SANS GARDE et le semoir de test n'en
+        // fournit qu'une poignée. Le banc s'appelait « le site s'enregistre » et le site
+        // ne s'est jamais enregistré une seule fois.
+        //
+        // On exige donc le VRAI succès, et surtout la PERSISTANCE : un 2xx ne prouve
+        // rien si rien n'a été écrit.
+        $this->assertTrue(
+            $reponse->status() >= 200 && $reponse->status() < 300,
+            "L'écran Site doit s'enregistrer sans clé Google Maps ni copyright.\n"
+            . "Code obtenu : {$reponse->status()}. Erreurs : "
+            . json_encode($reponse->json('errors'), JSON_UNESCAPED_UNICODE)
+        );
+
+        $this->assertSame(
+            'Europe/Paris',
+            Settings::group('site')->get('site_default_timezone'),
+            "Le fuseau horaire doit être RELU depuis les réglages après enregistrement.\n"
+            . 'Un code 2xx ne prouve rien si rien n\'a été écrit.'
+        );
+        $this->assertSame(
+            'd-m-Y',
+            Settings::group('site')->get('site_date_format'),
+            'Le format de date non plus.'
         );
     }
 

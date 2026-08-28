@@ -101,6 +101,29 @@ class SiteRequest extends FormRequest
                 return;
             }
 
+            // [ONB-05 2026-08-28 · INCOHERENCE CORRIGEE] Le garde portait sur la
+            // VALEUR, pas sur la TRANSITION. Or `site_app_debug` est `required` : le
+            // formulaire la renvoie toujours telle qu'elle est stockee. Si le reglage
+            // etait deja a ENABLE en base — cas exact du scenario decrit dans le
+            // docblock, ou l'exploitant remet APP_DEBUG=false dans le `.env` a la main
+            // sans toucher a la base — alors CHANGER SON FUSEAU HORAIRE renvoyait un
+            // 422 sur un champ qu'il n'a pas touche. C'est le defaut meme que le
+            // commit voisin venait de retirer pour la cle Google Maps.
+            //
+            // On ne bloque donc que l'ALLUMAGE. Laisser un reglage deja allume ne
+            // rouvre rien : le garde-fou de demarrage empeche de toute facon
+            // l'application de tourner en production avec APP_DEBUG=true, donc si elle
+            // tourne, le `.env` est deja a false et la valeur en base n'est qu'un
+            // reste.
+            //
+            // Trouve par un agent adverse lance sur mon propre travail.
+            $stocke = (int) (\Smartisan\Settings\Facades\Settings::group('site')
+                ->get('site_app_debug') ?? \App\Enums\Activity::DISABLE);
+
+            if ($stocke === \App\Enums\Activity::ENABLE) {
+                return;
+            }
+
             $validator->errors()->add(
                 'site_app_debug',
                 'Le mode debug est interdit en production : le serveur refuserait de '

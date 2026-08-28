@@ -18,11 +18,35 @@ export function regleDeChoix(min, max, t) {
     // Les valeurs par défaut reprennent celles du formulaire de création
     // (min_select: 0, max_select: 1) pour qu'une ligne incomplète en base se lise
     // comme ce que le formulaire aurait produit, plutôt que comme « 0 - 0 ».
-    const bas = Number.isFinite(Number(min)) ? Math.max(0, Number(min)) : 0;
-    const hautBrut = Number.isFinite(Number(max)) ? Number(max) : 1;
-    // Un maximum de 0 ou inférieur au minimum n'a pas de sens : on l'aligne sur le
-    // minimum plutôt que d'afficher une plage impossible au commerçant.
-    const haut = Math.max(bas, hautBrut > 0 ? hautBrut : 1);
+    // `Number(null)` et `Number('')` valent 0, tous deux finis : sans ce test
+    // explicite, une valeur ABSENTE serait lue comme un zéro DÉLIBÉRÉ — et les deux
+    // ne veulent pas dire la même chose du tout (voir plus bas). C'est le même piège
+    // que celui rencontré sur le libellé de taxe le même jour.
+    const absent = (v) => v === null || v === undefined || String(v).trim() === '';
+
+    const bas = absent(min) || ! Number.isFinite(Number(min))
+        ? 0
+        : Math.max(0, Number(min));
+
+    // Absent : on reprend le défaut du formulaire de création (max_select: 1), pour
+    // qu'une ligne ancienne se lise comme ce que le formulaire aurait produit.
+    const hautBrut = absent(max) || ! Number.isFinite(Number(max)) ? 1 : Number(max);
+
+    // [ONB-02 2026-08-28 · ERREUR CORRIGÉE] Je traitais `max_select = 0` comme une
+    // valeur absurde et j'affichais « un seul choix ». C'est faux : côté serveur,
+    // `MultiVariationConstraint.php:233` fait `if ($max > 0 && $totalQty > $max)` —
+    // **zéro signifie SANS PLAFOND**. L'écran annonçait donc une contrainte qui
+    // n'existe pas, et mon propre test verrouillait l'erreur. Trouvé par un agent
+    // adverse lancé sur mon travail.
+    if (hautBrut <= 0) {
+        return bas === 0
+            ? t('label.choice_optional_unlimited')
+            : t('label.choice_required_at_least', { n: bas });
+    }
+
+    // Un maximum inférieur au minimum reste une plage impossible : on l'aligne sur le
+    // minimum plutôt que d'afficher « de 3 à 1 » au commerçant.
+    const haut = Math.max(bas, hautBrut);
 
     if (haut === 1) {
         return bas === 0 ? t("label.choice_optional_one") : t("label.choice_required_one");

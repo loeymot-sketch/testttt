@@ -161,6 +161,56 @@ class EcritureFichierLangueEchappeeTest extends TestCase
     }
 
     /**
+     * [ONB-13 2026-08-28] L'ALLER-RETOUR — le test qui manquait, et dont l'absence a
+     * laissé passer une régression que j'avais moi-même introduite.
+     *
+     * L'écran de traduction poste la valeur COURANTE comme clé : chaque enregistrement
+     * cherche dans le fichier la chaîne telle qu'elle s'y trouve. Mon échappement
+     * écrivait la forme échappée pendant que l'aiguille cherchait la forme brute. Dès
+     * le DEUXIÈME enregistrement, rien ne correspondait : le fichier était réécrit à
+     * l'identique et le contrôleur répondait succès. Toute traduction portant une
+     * apostrophe devenait silencieusement immodifiable — 27 dans `lang/fr/all.php`.
+     *
+     * Le banc d'origine n'écrivait qu'UNE passe. Une passe ne prouve rien sur un
+     * mécanisme qui relit ce qu'il vient d'écrire.
+     */
+    public function test_une_traduction_a_apostrophe_reste_modifiable_au_second_passage(): void
+    {
+        $premiere = "L'addition, s'il vous plait";
+        $seconde  = "L'addition arrive";
+
+        $this->ecrire($this->fichierPhp, 'Bienvenue', $premiere);
+        $rendu = include $this->fichierPhp;
+        $this->assertSame($premiere, $rendu['accueil'] ?? null);
+
+        // Second tour : la clé est désormais la valeur présente dans le fichier.
+        // C'est exactement le geste du commerçant qui corrige sa traduction.
+        $this->ecrire($this->fichierPhp, str_replace(' ', '_', $premiere), $seconde);
+
+        $rendu = include $this->fichierPhp;
+        $this->assertSame(
+            $seconde,
+            $rendu['accueil'] ?? null,
+            "La traduction n'a pas change au second enregistrement : l'aiguille ne "
+            . "retrouve plus la valeur echappee qu'elle a elle-meme ecrite. Le fichier "
+            . "est reecrit a l'identique et l'ecran annonce un succes."
+        );
+    }
+
+    /** Meme exigence quand la valeur porte un antislash. */
+    public function test_une_traduction_a_antislash_reste_modifiable(): void
+    {
+        $premiere = 'Chemin C:\\Temp et retour';
+        $seconde  = 'Chemin corrige';
+
+        $this->ecrire($this->fichierPhp, 'Bienvenue', $premiere);
+        $this->ecrire($this->fichierPhp, str_replace(' ', '_', $premiere), $seconde);
+
+        $rendu = include $this->fichierPhp;
+        $this->assertSame($seconde, $rendu['accueil'] ?? null);
+    }
+
+    /**
      * Contrôle négatif : l'échappement ne doit pas dispenser de la validation. Un
      * saut de ligne permettrait d'écrire une instruction indépendante — même
      * raisonnement que le garde-fou anti-injection du `.env` ailleurs dans ce dépôt.

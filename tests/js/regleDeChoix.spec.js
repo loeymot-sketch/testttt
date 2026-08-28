@@ -51,12 +51,30 @@ describe('ONB-10 · règle de choix lisible', () => {
     it('ne rend jamais une plage impossible', () => {
         // Un maximum inférieur au minimum ne doit pas produire « 3 à 1 » à l'écran.
         expect(regleDeChoix(3, 1, t)).toBe('label.choice_required_exactly({"n":3})');
-        // Un maximum de 0 non plus.
-        expect(regleDeChoix(0, 0, t)).toBe('label.choice_optional_one');
+    });
+
+    /**
+     * [ONB-02 2026-08-28 · ERREUR CORRIGEE] Ce banc verrouillait une AFFIRMATION FAUSSE.
+     *
+     * Il exigeait que `max = 0` s'affiche « un seul choix ». Or cote serveur,
+     * `MultiVariationConstraint.php:233` fait `if ($max > 0 && $totalQty > $max)` :
+     * **zero signifie SANS PLAFOND**. L'ecran annoncait donc au commercant une
+     * contrainte qui n'existe pas — et mon test garantissait qu'elle continue de
+     * s'afficher.
+     *
+     * C'est le pire genre de banc vert : il ne se contente pas de rater un defaut, il
+     * le protege. Trouve par un agent adverse lance sur mon propre travail.
+     */
+    it('un maximum de zero signifie SANS PLAFOND, pas « un seul choix »', () => {
+        expect(regleDeChoix(0, 0, t)).toBe('label.choice_optional_unlimited');
+        expect(regleDeChoix(2, 0, t)).toBe('label.choice_required_at_least({"n":2})');
+        expect(regleDeChoix(0, null, t)).not.toBe('label.choice_optional_unlimited');
     });
 
     it('les cinq clés existent en français ET en anglais', () => {
         const cles = [
+            'choice_optional_unlimited',
+            'choice_required_at_least',
             'choice_optional_one',
             'choice_required_one',
             'choice_optional_up_to',
