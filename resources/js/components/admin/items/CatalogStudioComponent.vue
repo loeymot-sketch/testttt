@@ -136,8 +136,14 @@
                             </div>
                         </div>
                         <div class="catalog-studio__product-actions">
+                            <!-- [ONB-03 2026-08-28] `wizardPerItemDemoEnabled` ajouté : le
+                                 bouton ne regardait que la permission, alors que le routeur
+                                 REDIRIGE vers le catalogue quand le drapeau est éteint — et
+                                 il l'est par défaut. Un bouton visible qui ne mène nulle
+                                 part est pire qu'un bouton absent : le commerçant croit
+                                 avoir raté quelque chose. -->
                             <button
-                                v-if="canComposeCatalog"
+                                v-if="canComposeCatalog && wizardPerItemDemoEnabled"
                                 type="button"
                                 class="db-table-action view"
                                 :title="t('studio.product_composer_button', 'Composer / wizard')"
@@ -281,6 +287,18 @@ export default {
         },
         canComposeCatalog() {
             return appService.permissionChecker("catalog.compose");
+        },
+        // [ONB-03 2026-08-28] Le drapeau manquait ICI, et seulement ici. Cinq autres
+        // endroits le vérifient déjà — MenuComponent, ItemCreateComponent,
+        // ProductComposerSummaryComponent, ItemListComponent et le routeur lui-même
+        // (itemRoutes.js:15, qui redirige vers le catalogue quand il est éteint).
+        // Le bouton engrenage du Studio, lui, ne regardait que la permission ; or
+        // `catalog.compose` est donnée à l'Admin dès l'installation, et le drapeau
+        // vaut FALSE par défaut. Sur une installation neuve, cliquer l'engrenage
+        // ouvrait donc un panneau qui affichait… le catalogue lui-même, sans un mot.
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
         },
         canEditCategory() {
             return appService.permissionChecker("settings");

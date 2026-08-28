@@ -83,6 +83,12 @@ function mountStudio(selectedCategoryId = 42) {
 describe('CatalogStudio category wizard entry', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // [ONB-03 2026-08-28] Le drapeau `wizard_per_item_demo` n'etait pas pose : ce
+        // banc mesurait donc le Studio dans un etat ou le bouton composeur ne devrait
+        // PAS s'afficher, puisque le routeur redirige quand il est eteint. On le pose
+        // ici — c'est l'etat d'une installation ou la fonctionnalite est activee, et
+        // c'est bien ce que ce banc veut verifier : un bouton par produit.
+        window.foodkingConfig = { features: { wizard_per_item_demo: true } };
     });
 
     it('shows the category wizard button when a category is selected', async () => {
@@ -117,5 +123,19 @@ describe('CatalogStudio category wizard entry', () => {
 
         const productWizardButtons = wrapper.findAll('[data-testid^="catalog-studio-product-wizard-"]');
         expect(productWizardButtons.length).toBe(products.length);
+    });
+
+    // [ONB-03 2026-08-28] Le pendant, qui manquait : drapeau eteint, aucun bouton.
+    // Il l'est PAR DEFAUT (config/catalog_v15.php, .env.example), et le routeur
+    // redirige alors vers le catalogue. Un bouton visible qui ne mene nulle part est
+    // pire qu'un bouton absent : le commercant croit avoir rate quelque chose.
+    it('hides the per-product composer button when the demo flag is off', async () => {
+        window.foodkingConfig = { features: { wizard_per_item_demo: false } };
+
+        const { wrapper } = mountStudio(42);
+        await flushPromises();
+
+        const productWizardButtons = wrapper.findAll('[data-testid^="catalog-studio-product-wizard-"]');
+        expect(productWizardButtons.length).toBe(0);
     });
 });
