@@ -430,7 +430,7 @@ class ItemService
                     $oldVariations = $item->variations->pluck('id')->toArray();
                     $decodedVariations = $this->safeJsonDecode($request->variations, true);
                     if ($decodedVariations === null) {
-                        throw new Exception('Invalid variations JSON format', 422);
+                        throw new Exception(trans('all.message.declinaisons_illisibles'), 422);
                     }
                     foreach ($decodedVariations as $variation) {
                         if (isset($variation['id'])) {
@@ -631,7 +631,7 @@ class ItemService
                 ]);
 
                 if (! $fresh) {
-                    throw new Exception('Duplicated item could not be reloaded.', 422);
+                    throw new Exception(trans('all.message.duplication_incomplete'), 422);
                 }
 
                 $this->prepareAddonsForItemResource($fresh);

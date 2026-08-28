@@ -231,6 +231,19 @@ return [
         'open_full_page' => 'Ouvrir en page complète',
     ],
     'message' => [
+        // [ONB-11 2026-08-28] Quatre exceptions arrivaient en anglais dans un bandeau
+        // rouge, sans dire QUOI FAIRE. Chacune nomme desormais le geste qui debloque.
+        'langue_par_defaut' => "Cette langue est la langue par défaut : désignez-en une autre comme langue par défaut avant de la supprimer.",
+        'droit_fiscal_requis' => "Vous n'avez pas le droit « gestion fiscale de la caisse ». Demandez-le à un administrateur.",
+        'caisse_sans_etablissement' => "Votre compte n'est rattaché à aucun établissement. Un rapport fiscal appartient toujours à une caisse : demandez à un administrateur de vous rattacher.",
+        'declinaisons_illisibles' => "Les déclinaisons n'ont pas pu être enregistrées. Vérifiez que chaque ligne porte un nom ET un prix, puis réessayez.",
+        'duplication_incomplete' => "Le produit a été dupliqué mais n'a pas pu être rouvert. Fermez cette fenêtre et rafraîchissez la liste : la copie devrait s'y trouver.",
+        // [ONB-09 2026-08-28] Une notification ENREGISTREE n'est pas une notification RECUE.
+        'push_saved' => "Notification enregistrée.",
+        'push_no_device' => "Notification enregistrée, mais AUCUN appareil ne l'a reçue : personne n'a encore installé l'application ou autorisé les notifications.",
+        'push_all_failed' => "Notification enregistrée, mais AUCUN des :n appareils ne l'a reçue. Vérifiez la configuration Firebase dans les réglages.",
+        'push_partial' => "Envoyée à :ok appareil(s). :ko n'ont pas pu être atteints (jeton expiré ou appareil hors ligne).",
+        'push_sent' => "Envoyée à :n appareil(s).",
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'     => 'Commande introuvable.',

@@ -235,6 +235,19 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        // [ONB-11 2026-08-28] Quatre exceptions arrivaient en anglais dans un bandeau
+        // rouge, sans dire QUOI FAIRE. Chacune nomme desormais le geste qui debloque.
+        'langue_par_defaut' => "This is the default language: set another one as default before deleting it.",
+        'droit_fiscal_requis' => "You do not have the « pos fiscal management » permission. Ask an administrator for it.",
+        'caisse_sans_etablissement' => "Your account is not attached to any branch. A fiscal report always belongs to a till: ask an administrator to attach you.",
+        'declinaisons_illisibles' => "The variations could not be saved. Check that every row has both a name and a price, then try again.",
+        'duplication_incomplete' => "The product was duplicated but could not be reopened. Close this window and refresh the list: the copy should be there.",
+        // [ONB-09 2026-08-28] Une notification ENREGISTREE n'est pas une notification RECUE.
+        'push_saved' => "Notification saved.",
+        'push_no_device' => "Notification saved, but NO device received it: nobody has installed the app or allowed notifications yet.",
+        'push_all_failed' => "Notification saved, but NONE of the :n devices received it. Check the Firebase configuration in settings.",
+        'push_partial' => "Sent to :ok device(s). :ko could not be reached (expired token or device offline).",
+        'push_sent' => "Sent to :n device(s).",
         // [ONB-09 2026-08-28] Le message d'envoi aux abonnés n'existait qu'en
         // français : en anglais, `trans('all.message.email_send')` rendait la CLÉ
         // BRUTE. On ajoute les deux nouvelles clés dans les deux langues, et la

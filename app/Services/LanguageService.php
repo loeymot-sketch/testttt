@@ -118,7 +118,7 @@ class LanguageService
                 }
                 $language->delete();
             } else {
-                throw new Exception("Default language not deletable", 422);
+                throw new Exception(trans('all.message.langue_par_defaut'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

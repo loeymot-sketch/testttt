@@ -170,8 +170,30 @@ class UnifiedStockViewService
     {
         $drinkItems = Item::query()
             ->where('status', Status::ACTIVE)
+            // [ONB-11 2026-08-28] Le mot « boisson » etait ECRIT EN DUR. Rien n'oblige
+            // un restaurateur a nommer sa categorie ainsi : « Softs », « Canettes »,
+            // « Bieres » sont des noms parfaitement normaux, et rien a l'ecran ne les
+            // lui deconseille. Sa section restait VIDE, sous un message qui accusait
+            // un filtre qu'il n'avait pas pose et qu'il ne pouvait pas retirer.
+            //
+            // La regle de nommage devient un reglage (`config/stock.php`). Elle reste
+            // imparfaite : la bonne reponse serait un attribut porte par la categorie,
+            // ce qui demande une migration, donc le gate proprietaire G-DATA.
             ->whereHas('category', function ($query): void {
-                $query->where('slug', 'like', 'boisson%')->orWhere('name', 'like', 'Boisson%');
+                $prefixes = (array) config('stock.categories_revendues', ['boisson']);
+
+                $query->where(function ($q) use ($prefixes): void {
+                    foreach ($prefixes as $prefixe) {
+                        $prefixe = trim((string) $prefixe);
+
+                        if ($prefixe === '') {
+                            continue;
+                        }
+
+                        $q->orWhereRaw('LOWER(slug) LIKE ?', [mb_strtolower($prefixe) . '%'])
+                          ->orWhereRaw('LOWER(name) LIKE ?', [mb_strtolower($prefixe) . '%']);
+                    }
+                });
             })
             ->orderBy('name')
             ->get(['id', 'name']);
