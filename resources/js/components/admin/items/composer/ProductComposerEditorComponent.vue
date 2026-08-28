@@ -59,7 +59,7 @@
                             data-testid="admin-composer-back"
                             @click="returnToItem"
                         >
-                            <i class="lab lab-arrow-left" aria-hidden="true"></i>
+                            <i class="lab lab-back-bold" aria-hidden="true"></i>
                             {{ t('label.composer.back_to_product', 'Retour fiche produit') }}
                         </button>
                         <button
@@ -70,7 +70,7 @@
                             :disabled="savingDraft"
                             @click="unpublish"
                         >
-                            <i class="lab lab-close-circle" aria-hidden="true"></i>
+                            <i class="lab lab-close-circle-line" aria-hidden="true"></i>
                             {{ t('label.composer.unpublish', 'Depublier') }}
                         </button>
                     </div>

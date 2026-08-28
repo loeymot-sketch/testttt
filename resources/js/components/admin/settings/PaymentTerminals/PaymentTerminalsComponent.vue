@@ -6,7 +6,7 @@
             <h3 class="db-card-title">{{ $t("menu.payment_terminals") }}</h3>
             <div class="db-card-filter">
                 <button type="button" class="db-btn py-2 text-white bg-primary" @click="openCreate">
-                    <i class="lab lab-add"></i>
+                    <i class="lab lab-plus"></i>
                     <span>{{ $t("button.add") }}</span>
                 </button>
             </div>
