@@ -47,6 +47,80 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-28 — AUDIT SUPERVISEUR DE LA CAISSE : CONVERGENCE, PUIS DÉPLOIEMENT VÉRIFIÉ**
+>
+> **DÉPLOYÉ EN PRODUCTION** — `dae9917d2` sur `pos/category-first-caisse-2026-06-23`, VPS à
+> l'arbre propre, assets recompilés sur place, caches vidés. Vérifié sur le CONTENU SERVI, pas
+> sur ce que je croyais avoir poussé : `/login` répond 200 avec `app.js`,
+> `authEndpoint:"/api/broadcasting/auth"` est bien RELATIF dans le bundle,
+> `Intl.NumberFormat` présent ×2 dans `pos-wizard.js`, `xl:flex-wrap` dans le bundle KDS,
+> en-tête `img-src … https://vps-418872ac.vps.ovh.net` dérivé de l'APP_URL de production.
+> NF525 : **CHAIN OK**.
+>
+> **CONVERGENCE ATTEINTE** — la règle demande deux rondes consécutives identiques ; il y en a
+> eu **trois**. Sur les cinq vagues : 0 requête en échec (contre 67 au départ), 0 violation de
+> politique (19), 0 erreur console (62), 0 libellé de traduction non résolu.
+>
+> **17 correctifs**, chacun tenu par un test tué par mutation — 24 mutants posés, 24 tués.
+> Le panier PERDAIT un ingrédient (deux lignes différentes s'affichaient à l'identique) · le
+> `×2` d'un supplément disparaissait en cuisine · la bannière de caisse annonçait 7,50 €
+> quand la page montrait 5,00 € (P0) · sept lignes « À encaisser » sur des commandes ANNULÉES ·
+> « 0 à encaisser » et « 2 à encaisser » à 40 px d'écart · trois boutons « Encaisser »
+> identiques pour trois montants · l'assistant affichait « €7.40 » sur une caisse française.
+>
+> 🔴 **CE QUE CET AUDIT A COÛTÉ À SES PROPRES AFFIRMATIONS** — c'est la partie qui sert le plus
+> à la suite, et chaque point a produit un garde-fou permanent, pas seulement un correctif :
+> **quatre défauts trouvés visaient des correctifs déjà livrés dans cette même mission** (dont
+> le P0 : j'avais restreint un chiffre à la période sans toucher au libellé) · **deux visaient
+> le harnais** (Playwright sans locale ni fuseau — aucune conclusion sur les dates n'était
+> fiable ; un compteur annonçant « 24 tables » sur une page qui en affiche une) · **un test
+> committé ne testait rien** (adresse absolue → autre origine → page NON connectée → « pas
+> d'en-tête d'admin » trivialement vrai ; il porte désormais un garde qui refuse de conclure
+> sans session) · **un constat porté deux rondes était FAUX** (« deux lots en 404 face client »
+> = artefact de worktree) · **la couverture se surestimait de 50 %** (5 états sur 10 étaient
+> des doublons au bit près, dont un IMPOSSIBLE à atteindre par construction) · **un détecteur
+> fabriquait 25 faux positifs** (il comptait les noms de routes de la Debugbar comme des clés
+> non résolues).
+>
+> 🔒 **ZONE GELÉE, PROCÉDURE COMPLÈTE** — `public/js/pos-wizard.js` touché sous
+> `plans/LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26.md`, committé SÉPARÉMENT puis cité par le
+> patch. Le hook a bloqué trois fois avant que la forme soit juste ; `--no-verify` n'a JAMAIS
+> été utilisé. Empreinte SHA-256 de la sentinelle alignée sur le seul fichier autorisé.
+> Justification : le gel porte sur LE DESIGN, le format d'un nombre n'en fait pas partie — et
+> ce fichier était le DERNIER endroit du produit encore en format anglais, le backend ayant
+> convergé le 2026-05-23.
+>
+> 💣 **UNE MINE DÉSAMORCÉE** — la CSP en `report_only` masquait que son durcissement aurait
+> BLOQUÉ `/api/broadcasting/auth` : cuisine et mur client cessant de recevoir les commandes, le
+> repli par sondage déjà désactivé, et les écrans continuant d'afficher « Mis à jour à
+> l'instant » sur des données figées. Deux corrections de natures différentes, et la
+> distinction est tout le sujet : l'adresse du temps réel n'avait AUCUNE raison d'être absolue
+> (rendue relative) ; celle des images de la roue l'est DÉLIBÉRÉMENT (vitrine servie par un
+> autre domaine), c'est la politique qui devait l'admettre. Le mode reste `report_only` : le
+> durcissement est une décision d'exploitation, et un test le verrouille.
+>
+> ⚠️ **FUSION AVEC LA CONSOLIDATION (121 commits)** — une autre session avait déjà intégré une
+> version antérieure de ce travail. Un seul conflit (`fr.json`, chacun ses clés) résolu HUNK
+> PAR HUNK. Et un piège exact de la mémoire : ma capture a rougi sur le libellé
+> « Suppléments » — non par régression, mais parce que l'autre session avait justement
+> DÉSAMBIGUÏSÉ `addons` → « Produits associés » et `extras` → « Suppléments ». C'était MON test
+> qui était périmé. Avant de valider, les 17 correctifs ont été vérifiés UN PAR UN par leur
+> marque dans le code, pas en lisant un compteur de tests.
+>
+> **Vérification** : Vitest **501 fichiers / 4046 verts** sur la base fusionnée. Zones gelées :
+> une seule touchée, sous LOCK. PHPUnit : 11 rouges **antérieurs** à ce travail — 10 passent en
+> isolation (ordonnancement), le 11ᵉ est réel mais daté du 2026-08-14 sur des routes que le
+> diff ne touche pas. Signalé, pas corrigé en douce.
+>
+> **RESTE, ET C'EST UNE DÉCISION PROPRIÉTAIRE** : AB-004. La mesure manquante est posée et dit
+> plus que le constat (141 px cachés en 1024×600, mais AUSSI 67 px en 1366×768 dès qu'il y a
+> une vraie composition). Le bandeau blanc est corrigé. Ce qui manque — rendre sa place au
+> corps du panier — rouvrirait un arbitrage DÉJÀ TRANCHÉ en faveur du champ « Nom du client »,
+> le nom qui s'imprime sur le ticket cuisine.
+>
+> Rapports : `reports/test-e2e/supervisor-caisse-2026-08-24/{RONDE-3,RONDE-4,CONVERGENCE_FINAL}.md`
+
+
 > **2026-08-28 — CONSOLIDATION : QUATRE LIGNES DE TRAVAIL RÉUNIES, ET QUATRE CORRECTIFS FAITS EN DOUBLE**
 >
 > Branche `release/consolidation-2026-08-28`, **138 commits** au-dessus de la ligne servie.
