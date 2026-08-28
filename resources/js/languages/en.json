@@ -1770,6 +1770,7 @@
         "kiosk_rate_limited": "Too many orders submitted quickly. Please wait a few seconds."
     },
     "message": {
+        "push_no_device": "Notification saved, but no device received it.",
         "login_unreachable": "The server could not be reached. Check your connection; if the problem persists, contact your installer.",
         "flip_created": "{item} created successfully.",
         "flip_updated": "{item} updated successfully.",

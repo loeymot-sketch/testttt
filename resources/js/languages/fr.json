@@ -1211,7 +1211,7 @@
         "has_menu": "Propose un menu",
         "header": "En-tête",
         "hello": "Bonjour",
-        "home": "Accueil",
+        "home": "Domicile",
         "image": "Image",
         "images": "Images",
         "in_minute": "( en minutes )",
@@ -1467,7 +1467,7 @@
         "website": "Site web",
         "welcome_back": "Bon retour",
         "wizard_template": "Modèle de parcours",
-        "work": "Work",
+        "work": "Travail",
         "xlsx": "xlsx",
         "yes": "Oui",
         "your_address": "Your Adresse",
@@ -1813,6 +1813,7 @@
         "cash_reconcile_variance_override": "Valider une clôture de caisse malgré un écart"
     },
     "message": {
+        "push_no_device": "Notification enregistr\u00e9e, mais aucun appareil ne l'a re\u00e7ue.",
         "login_unreachable": "Impossible de joindre le serveur. V\u00e9rifiez votre connexion ; si le probl\u00e8me persiste, contactez votre installateur.",
         "flip_created": "{item} : cr\u00e9ation enregistr\u00e9e.",
         "flip_updated": "{item} : modification enregistr\u00e9e.",
