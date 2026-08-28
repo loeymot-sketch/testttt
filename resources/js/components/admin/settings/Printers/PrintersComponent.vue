@@ -144,6 +144,29 @@
                                 data-testid="printer-width-error">{{ errors.width_chars[0] }}</small>
                         </div>
 
+                        <!-- [ONB-10 2026-08-28] LE CHAMP QUI MANQUAIT.
+                             Le serveur peut exiger l'établissement quand il y en a
+                             plusieurs. Sans ce champ NI son message, le patron
+                             cliquait « Enregistrer » et rien ne se passait — un refus
+                             muet sur un champ invisible. C'est exactement le défaut
+                             que cet écran corrigeait pour la largeur. -->
+                        <div class="form-col-12 sm:form-col-6" v-if="filiales.length > 1">
+                            <label for="p_branch" class="db-field-title required">
+                                {{ $t('label.branch') }}
+                            </label>
+                            <select
+                                v-model="form.branch_id"
+                                id="p_branch"
+                                class="db-field-control"
+                                data-testid="printer-branch"
+                            >
+                                <option :value="null">—</option>
+                                <option v-for="f in filiales" :key="f.id" :value="f.id">{{ f.name }}</option>
+                            </select>
+                            <small class="db-field-alert" v-if="errors.branch_id"
+                                data-testid="printer-branch-error">{{ errors.branch_id[0] }}</small>
+                        </div>
+
                         <div class="form-col-12">
                             <label class="db-field-title">{{ $t('label.status') }}</label>
                             <div class="db-field-radio-group">
@@ -204,6 +227,9 @@ import { statutImprimante, imprimanteActive } from '../../../../services/statutI
 const EMPTY_FORM = {
     name: '', station: 'kitchen_hot', type: 'escpos_tcp',
     host: '', port: 9100, width_chars: 48, status: 5, // [ONB-10] 5 = App\Enums\Status::ACTIVE
+    // [ONB-10 2026-08-28] `null` et non `0` : le serveur se replie sur la
+    // filiale unique quand il n'y en a qu'une, et n'exige un choix que sinon.
+    branch_id: null,
 };
 
 export default {
@@ -218,13 +244,34 @@ export default {
             editingId: null,
             testingId: null,
             form: { ...EMPTY_FORM },
+            filiales: [],
             errors: {},
         };
     },
     mounted() {
         this.fetch();
+        this.chargerLesFiliales();
     },
     methods: {
+        /**
+         * [ONB-10 2026-08-28] Charge les établissements pour offrir le choix.
+         *
+         * Le sélecteur ne s'affiche que s'il y en a PLUSIEURS : avec un seul, le
+         * serveur le prend d'office et demander de choisir parmi un élément unique
+         * serait une corvée sans objet.
+         */
+        async chargerLesFiliales() {
+            try {
+                const res = await axios.get('admin/setting/branch');
+                const liste = res?.data?.data || res?.data || [];
+                this.filiales = (Array.isArray(liste) ? liste : [])
+                    .filter((f) => f && f.id && f.name)
+                    .map((f) => ({ id: f.id, name: f.name }));
+            } catch (_) {
+                this.filiales = [];
+            }
+        },
+
         // Le gabarit ne voit pas les imports de module : on expose la normalisation
         // en méthode, sinon `imprimanteActive` y vaut `undefined` au rendu.
         imprimanteActive,

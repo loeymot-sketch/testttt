@@ -132,21 +132,30 @@ class LaJourneeDunNouveauCommercantTest extends TestCase
      * elle est satisfaite par tous les échecs sauf un.** Ici on vérifie d'abord que la
      * cible existe, ensuite seulement ce qu'elle répond.
      */
-    private function routeExistante(string $uri): string
+    private function routeExistante(string $uri, string $methode = 'POST'): string
     {
         $nue = ltrim($uri, '/');
 
         $connue = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
-            ->contains(function ($route) use ($nue) {
+            ->contains(function ($route) use ($nue, $methode) {
                 $motif = preg_replace('#\{[^}]+\}#', '[^/]+', $route->uri());
 
-                return (bool) preg_match('#^' . $motif . '$#', $nue);
+                if (! preg_match('#^' . $motif . '$#', $nue)) {
+                    return false;
+                }
+
+                // [corrigé après audit adverse] La version précédente ne vérifiait
+                // que l'URI. Une route enregistrée en GET seule laissait donc passer
+                // un `postJson` : le banc mesurait un 405 au lieu du comportement
+                // visé. Le garde-fou était réel, mais à moitié — et un garde-fou à
+                // moitié rassure sans protéger.
+                return in_array(strtoupper($methode), $route->methods(), true);
             });
 
         $this->assertTrue(
             $connue,
-            "L'URL `{$nue}` n'est enregistrée nulle part.\n"
-            . 'Ce banc mesurerait un 404 au lieu du comportement visé.'
+            "Aucune route `{$methode} {$nue}` n'est enregistrée.\n"
+            . 'Ce banc mesurerait un 404 ou un 405 au lieu du comportement visé.'
         );
 
         return '/' . $nue;
@@ -163,7 +172,7 @@ class LaJourneeDunNouveauCommercantTest extends TestCase
         // LE PIÈGE HISTORIQUE : rouvrir la fiche et corriger un détail effaçait
         // l'identité fiscale, parce que la ressource ne renvoyait pas ces champs et
         // que le formulaire reposait son repli `?? ""`.
-        $lecture = $this->getJson($this->routeExistante('api/admin/setting/branch/show/' . $branche->id));
+        $lecture = $this->getJson($this->routeExistante('api/admin/setting/branch/show/' . $branche->id, 'GET'));
         $lecture->assertOk();
 
         $relu = $lecture->json('data') ?? $lecture->json();
@@ -181,6 +190,56 @@ class LaJourneeDunNouveauCommercantTest extends TestCase
         $this->assertSame('12345678901234', $relu['siret']);
         $this->assertSame('CAISSE-01', $relu['register_id']);
 
+        // ET LE SECOND ENREGISTREMENT, qui est tout l'objet de l'étape.
+        //
+        // Un audit adverse a relevé, à juste titre, que la version précédente
+        // annonçait « elle survit à un second enregistrement » sans jamais en faire
+        // un : elle créait la filiale en base et se contentait de la relire. Elle
+        // prouvait que la ressource expose les champs — utile, mais pas ce qui était
+        // écrit au-dessus.
+        //
+        // Ici le patron rouvre sa fiche et corrige UN détail sans retoucher
+        // l'identité fiscale, exactement comme il le ferait à l'écran.
+        $correction = $this->putJson(
+            $this->routeExistante('api/admin/setting/branch/' . $branche->id, 'PUT'),
+            [
+                // Le formulaire renvoie l'intégralité de la fiche ; on reproduit ce
+                // que l'écran enverrait, en ne changeant QUE le nom. Les champs
+                // d'identité fiscale ne sont volontairement PAS transmis : c'est
+                // précisément le cas qui les effaçait.
+                'name'     => 'Chez Sami',
+                'city'     => (string) ($relu['city'] ?? 'Lyon'),
+                'state'    => (string) ($relu['state'] ?? 'Rhone'),
+                'zip_code' => (string) ($relu['zip_code'] ?? '69000'),
+                'address'  => (string) ($relu['address'] ?? '1 rue du Test'),
+                'status'   => (int) ($relu['status'] ?? \App\Enums\Status::ACTIVE),
+            ]
+        );
+
+        if (in_array($correction->status(), [200, 201, 202], true)) {
+            $apres = $this->getJson(
+                $this->routeExistante('api/admin/setting/branch/show/' . $branche->id, 'GET')
+            )->json('data');
+
+            $this->assertSame(
+                '12345678901234',
+                $apres['siret'] ?? null,
+                "Le SIRET a été effacé par un enregistrement qui ne le concernait pas.\n"
+                . "C'est le défaut historique : la ressource ne renvoyait pas le champ,\n"
+                . 'le formulaire reposait son repli `?? ""`, et le ticket sortait non conforme.'
+            );
+
+            $this->assertSame('CAISSE-01', $apres['register_id'] ?? null);
+        } else {
+            // Le formulaire de filiale exige beaucoup de champs ; si l'écriture est
+            // refusée ici, on le DIT plutôt que de laisser croire à une preuve.
+            $this->markTestIncomplete(
+                'Le second enregistrement de filiale a été refusé (' . $correction->status()
+                . ') : la survie de l\'identité fiscale n\'est PAS prouvée par ce parcours. '
+                . 'Elle l\'est isolément par IdentiteFiscaleSurvitAUnSecondEnregistrementTest.'
+            );
+        }
+
         return $branche;
     }
 
@@ -188,15 +247,14 @@ class LaJourneeDunNouveauCommercantTest extends TestCase
 
     private function etape2_taxe(): Tax
     {
-        $taxe = Tax::factory()->create(['tax_rate' => 10, 'status' => Status::ACTIVE]);
-
-        $this->assertGreaterThan(
-            0,
-            (float) $taxe->tax_rate,
-            "Sans taux strictement positif, `PricingService` facture à 0 % en silence."
-        );
-
-        return $taxe;
+        // Pas d'assertion ici : affirmer que 10 > 0 sur une valeur qu'on vient
+        // d'écrire soi-même ne peut rougir sous AUCUNE mutation du code de
+        // production. Un audit adverse l'a relevé, et c'était juste : c'était un
+        // maillon décoratif.
+        //
+        // Ce qui compte vraiment — que la taxe soit rattachée au produit et non
+        // nulle — est vérifié plus bas, sur le produit réellement créé par l'API.
+        return Tax::factory()->create(['tax_rate' => 10, 'status' => Status::ACTIVE]);
     }
 
     // ════════════════════════════════════════════════════════ 3. le catalogue

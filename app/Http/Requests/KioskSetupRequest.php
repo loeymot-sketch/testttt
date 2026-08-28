@@ -22,6 +22,8 @@ class KioskSetupRequest extends FormRequest
             // Elle etait ecrite en dur dans le gabarit ; elle devient un choix du
             // commercant, eteint par defaut.
             'kiosk_halal_stamp'     => ['nullable', 'boolean'],
+            // [ONB-12 2026-08-28] Chemin ou URL du logo d'accueil borne.
+            'kiosk_attract_logo'    => ['nullable', 'string', 'max:500'],
             // PIN must be exactly 4 digits — validated as string to preserve leading zeros
             'kiosk_admin_pin'       => ['nullable', 'string', 'regex:/^\d{4}$/'],
         ];

@@ -3,11 +3,33 @@
 return [
     'item_match' => "L'article ne correspond pas.",
     'user_match' => 'Utilisateur non trouvé.',
+    // [ONB-11 2026-08-28] Les libelles de statut du JOURNAL D'ACTIVITE.
+    //
+    // Ce tableau etait VIDE — meme en francais. `OrderService:2650` ecrit
+    // « Nouveau statut: %s » dans `action_logs` avec trans('all.order.status.X'),
+    // et `trans()` rend la CLE quand elle manque. Mesure sur la base en service :
+    // 469 entrees de la forme « Nouveau statut: all.order.status.16 ».
+    //
+    // Le journal d'activite est ce que le commercant lit pour savoir qui a change
+    // quoi. Le rendre illisible revient a ne pas en avoir.
+    //
+    // Les libelles reprennent EXACTEMENT ceux que le caissier lit deja a l'ecran
+    // (PosOrdersTrackerComponent::staleStatusLabel) : deux mots pour un meme etat
+    // serait pire que pas de mot du tout.
     'order' => [
         'status' => [
-            '' => '',
+            1 => 'En attente',
+            4 => 'Acceptée',
+            7 => 'En préparation',
+            8 => 'Prête',
+            10 => 'En livraison',
+            13 => 'Livrée',
+            16 => 'Annulée',
+            19 => 'Refusée',
+            22 => 'Retournée',
         ],
     ],
+
     'label' => [
         // [ultra-goal A8 heal 2026-05-13] OSS (Order Status Screen) labels.
         'oss_main_aria' => 'Écran de statut des commandes — commandes en préparation et prêtes',

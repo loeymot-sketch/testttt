@@ -74,6 +74,46 @@ cuisine. Ce GOAL rend les trois questions du commerçant évidentes et prouvées
 - Un article de test doit avoir une station ≠ `none` pour être visible en cuisine (piège du résolveur E2E, BRAIN 25/08).
 - `:8000` = autre worktree ; ta session = **:8808**.
 
+
+### 8.9 Le seuil d'alerte de stock — le jumeau qui manquait
+
+Corrigé le 2026-08-28, après avoir été **consigné sans être corrigé** la veille.
+
+`stock_levels.threshold_low` était **lu** à deux endroits :
+
+- `StockRuptureDashboardController::lowAlerts()` — `whereNotNull('threshold_low')`
+  puis `whereColumn('on_hand', '<=', 'threshold_low')` ;
+- `NotifyStockLowOnStockLevelChanged` — la notification de stock bas.
+
+Et **écrit par personne**. Aucune route, aucun écran, aucune commande. Mesuré en
+lecture sur la base en service : **55 lignes, 0 seuil.**
+
+La section « alertes stock bas » du tableau de bord ne pouvait donc
+**structurellement rien afficher**, et l'alerte était muette — non pas parce que tout
+allait bien, mais parce que personne ne pouvait dire à partir de quand ça n'allait
+plus. *C'est le pire genre de silence : celui qui ressemble à une bonne nouvelle.*
+
+**La chaîne complète, pas seulement l'API.** La vue conso unifiée affichait déjà une
+colonne « Seuil » — qui ne pouvait montrer qu'un tiret sur les 55 lignes. Une colonne
+qui ne peut afficher qu'un tiret est une promesse non tenue. Le champ y est désormais
+saisissable, avec son message de refus visible, et la ligne porte l'identifiant du
+**niveau de stock** (distinct de celui de l'article, sans quoi l'écran viserait la
+mauvaise ligne).
+
+Le banc ne prouve pas seulement l'écriture : il vérifie que **l'alerte s'allume
+ensuite**. Un banc d'écriture seule laisserait passer le cas où la valeur atterrit
+dans une colonne que le tableau de bord ne regarde pas. Prouvé dans les deux sens —
+en cassant l'écriture, puis en inversant le filtre d'alerte.
+
+Le plafond à 100 000 n'est pas cosmétique : un seuil absurde mettrait toute la carte
+en alerte en permanence, ce qui revient exactement à n'avoir aucune alerte.
+
+**Motif.** Septième exemplaire cette semaine de *la chaîne complète sauf l'écran où un
+humain saisit la vérité* — allergènes, poste de cuisine, matières premières, seuil
+matière, tampon halal, logo d'accueil, et maintenant seuil de stock. Le motif est
+assez régulier pour mériter d'être cherché systématiquement : **partout où une valeur
+est lue par un filtre, demander qui l'écrit.**
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 Audit adverse en lecture seule le 2026-08-28, chaque verdict adossé à un

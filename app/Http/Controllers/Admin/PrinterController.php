@@ -97,6 +97,29 @@ class PrinterController extends AdminController
             return $userBranchId;
         }
 
-        return (int) $request->validated('branch_id');
+        $choisie = (int) $request->validated('branch_id');
+
+        if ($choisie > 0) {
+            return $choisie;
+        }
+
+        // [ONB-10 2026-08-28] Repli sur la filiale UNIQUE.
+        //
+        // Pas de `withoutGlobalScopes()` : `Branch` ne porte pas `BranchScope`
+        // (auto-reference, exempte §9), seulement `SoftDeletes`. Le contourner
+        // ferait compter les filiales SUPPRIMEES — une filiale effacee ne doit pas
+        // obliger le patron a choisir. Releve par WithoutGlobalScopesAuditSentinel,
+        // qui a donc trouve un vrai defaut de sens, pas une question de style.
+        //
+        // `printers.branch_id` porte une cle etrangere : partir a 0 faisait
+        // echouer l'insertion. En V1 LOCAL il n'y a qu'un etablissement, et le
+        // proprietaire n'a aucune raison d'avoir a le designer. On ne lui demande
+        // de choisir que lorsqu'il y a vraiment plusieurs possibilites — c'est la
+        // regle `requiredIf` de PrinterRequest qui s'en charge alors.
+        $seule = \App\Models\Branch::query()->count() === 1
+            ? (int) \App\Models\Branch::query()->value('id')
+            : 0;
+
+        return $seule;
     }
 }

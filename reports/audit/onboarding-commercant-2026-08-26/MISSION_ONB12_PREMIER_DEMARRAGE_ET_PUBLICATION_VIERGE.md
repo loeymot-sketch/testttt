@@ -140,6 +140,144 @@ enregistrement efface le choix. C'est le défaut exact corrigé sur l'identité 
 Le sens inverse est couvert aussi : **une affirmation qu'on ne peut plus retirer n'est
 pas un réglage, c'est un piège.**
 
+### 8.5 Audit visuel de la borne — et ce qu'il a révélé
+
+`CLAUDE.md §6` rend la vérification visuelle obligatoire dès qu'un écran est touché.
+Faite le 2026-08-28 sur `http://127.0.0.1:8800/kiosk/idle`, en mesurant le DOM et le
+réseau plutôt qu'en se fiant à l'allure générale.
+
+**Le risque réel du changement était le suivant** : le carrousel passait d'une liste en
+dur à un appel réseau. Si `frontend/item/featured-items` avait exigé un jeton que l'écran
+d'accueil n'a pas, la vitrine aurait été **définitivement vide en production** — un
+correctif pire que le défaut. Mesure : `200 /api/frontend/item/featured-items`. La route
+est publique, l'appel aboutit, huit diapositives portent les produits réels du
+commerçant avec leurs photos.
+
+Écran intact par ailleurs : logo, accroche « NOS INCONTOURNABLES », libellé produit,
+huit puces de progression, appel à l'action, français résolu, aucun libellé brut. Le
+tampon halal est absent — cohérent, la migration n'a pas encore été jouée sur cette base.
+
+Deux `401` observés (`frontend/kiosk-event`, `login`) : la télémétrie borne et sa propre
+authentification, absentes en capture sans appareil déclaré. **Préexistants, sans rapport
+avec ce changement.**
+
+L'écran de connexion a été capturé aussi, parce que retoucher `fr.json` peut casser
+toute l'application d'un seul caractère : français résolu, aucune clé brute, aucune
+erreur console.
+
+### 8.6 ⚠️ RÉSIDU DE TEST VISIBLE PAR LES CLIENTS — constat, pas correctif
+
+L'audit visuel a fait apparaître, dans la rotation de la borne :
+
+> **`E2E_PLAYWRIGHT_STUDIO_ITEM`** — `items.id = 161`, `status = 5` (ACTIF),
+> `is_featured = 5` (OUI), `deleted_at = NULL`.
+
+Ce n'est **pas** une conséquence de ce changement : l'article était déjà actif et mis en
+avant, donc **déjà visible aux clients dans le menu de la borne**. Le changement le rend
+seulement plus visible, en le faisant tourner sur l'écran d'accueil.
+
+Deux autres résidus sont inertes car inactifs (`status = 10`) : `Burger borne
+AUDIT-KIOSK-MULTI CE2EE3` (#202) et `Dessert borne AUDIT-KIOSK-MULTI CE2EE3` (#203).
+
+**Même famille que les 12 bornes `KM-STRESS-*` / `KM-SOAK-*` sur 13, les cinq filiales
+fictives et les 26 taxes `AUDIT-*`** déjà recensées. Le nettoyage est une **décision
+propriétaire** : supprimer une donnée en service ne se fait pas sans son accord, et
+filtrer sur un motif de nom dans le code masquerait aussi de vrais produits nommés
+bizarrement. Consigné ici pour qu'il ne se perde pas.
+
+### 8.7 DEUX AUDITS ADVERSES — ce qu'ils ont trouvé contre moi
+
+Deux agents lancés en lecture seule sur mes propres commits du jour. Ils ont trouvé
+**sept défauts réels**, dont un que je n'avais pas vu et qui manquait l'objectif même
+de la mission. Tout est corrigé et prouvé ; c'est consigné ici parce que le motif
+compte plus que les correctifs.
+
+#### 1. Le logo déposé était toujours en dur — et mon cliquet annonçait « 0 »
+
+`brandLogo: ATTRACT_BASE + 'logo.webp'` n'était **jamais** réassigné. La marque
+déposée « LE CAYENNE ® », mascotte et baseline comprises, restait **l'élément le plus
+grand de l'écran client** de tout nouveau commerçant — après un commit intitulé « la
+borne montre la carte du commerçant ».
+
+Et mon propre cliquet rendait « 0 marqueur », parce que sa regex cherchait
+`cayenne.webp` et pas `logo.webp`. **Une sentinelle au mauvais périmètre, la mienne.**
+C'est le motif que je documente depuis des jours, et je venais de le reproduire dans
+le banc censé le prévenir. Un cliquet qui rend « 0 » en ne regardant pas l'essentiel
+est pire qu'aucun cliquet : il rassure.
+
+Le cliquet surveille désormais **tout actif servi depuis `/images/kiosk-attract/`** —
+c'est le dossier entier qui porte l'identité d'un établissement précis.
+
+Conséquence secondaire relevée par l'audit : `brandLogo` étant toujours vrai, le repli
+`<h1 v-else>{{ restaurantName }}</h1>` était **du code mort**. Le nom du commerçant ne
+pouvait jamais s'afficher.
+
+#### 2. Mon filtre d'images ne filtrait rien
+
+`.filter(i => i.thumb)` était censé écarter les produits sans photo. Mais
+`Item::getThumbAttribute()` renvoie **toujours** une chaîne, et retombe sur
+`item-default.svg` — un carré gris 200×200. Ce substitut s'affichait donc **plein cadre
+(900×884), agrandi et animé**, sur l'écran client. Mon commentaire au-dessus du filtre
+(« on ne garde que ceux qui ont une photo ») était factuellement faux.
+
+L'audit a aussi mesuré la résolution : les vignettes font 320×320, parfois 168×180,
+pour un cadre de 900 px — un étirement de 3× à 5×. La vitrine prend désormais `cover`
+(pleine taille) et écarte explicitement les trois substituts connus.
+
+Effet de bord vérifié en capture : `E2E_PLAYWRIGHT_STUDIO_ITEM`, résidu de test actif
+et mis en avant, **a disparu de la rotation** — il n'a pas de vraie photo.
+
+#### 3. L'état vide promettait des produits au-dessus d'un trou
+
+Le gabarit est en positionnement absolu. Masquer la vitrine sans masquer sa légende
+laissait « Nos incontournables » suivi d'environ **1020 px de fond vide**. La légende
+part maintenant avec la vitrine.
+
+#### 4. Mes bancs prouvaient du texte, pas du comportement
+
+Huit bancs lisant le fichier source avec `fs.readFileSync`, en 5 ms. L'audit a désigné
+la mutation qu'ils ne voyaient pas : **supprimer `this.chargerLaVitrine()`** du
+montage. Le carrousel resterait vide à vie ; les huit restaient verts.
+
+Expérience faite : appel retiré → **11 bancs textuels verts, 3 bancs de comportement
+rouges**. Un banc qui lit du texte prouve qu'une ligne existe, jamais qu'elle
+s'exécute. `laVitrineDeLaBorneSeChargeVraiment.spec.js` monte le composant.
+
+#### 5. Le maillon « la borne lit » n'était pas couvert
+
+Mon docblock annonçait quatre maillons. Il y avait trois tests, tous sur
+`KioskSetupResource` (l'écran d'administration). La borne, elle, lit `SettingResource`.
+Supprimer cette ligne-là laissait **3 verts PHP et 8 verts JS** pendant que le tampon
+ne s'affichait plus jamais. Chaîne refermée d'un côté, rouverte de l'autre.
+
+#### 6. La migration écrivait un format que le paquet ne produit jamais
+
+Le paquet enveloppe les valeurs (`{"$value": .., "$cast": null}`). J'écrivais un
+scalaire nu : ça ne cassait rien **par accident**. Pire, mon lecteur de test faisait
+`(int) json_decode(...)` sur l'enveloppe — ce qui rend **1** pour un tableau non vide.
+Il annonçait donc « tampon déclaré » pour un commerçant qui l'avait **éteint**. Le banc
+aurait validé l'inverse de ce qu'il prétendait mesurer.
+
+Migration et banc passent désormais par `Settings::group()->set()`.
+
+#### 7. Ma correction du logo a dégradé l'écran de l'établissement en service
+
+Trouvé par **mon propre audit visuel après correction** : en remplaçant le logo en dur
+par le logo général des réglages, l'établissement existant se retrouvait avec un logo
+sur fond blanc posé sur le fond orange de l'attract. J'avais réglé un problème de
+marque pour les futurs commerçants et abîmé l'écran de l'actuel.
+
+Même remède que pour le tampon : un réglage **dédié** (`kiosk_attract_logo`), trois
+crans de repli (dédié → général → nom en toutes lettres), et la migration qui déclare
+le visuel que l'installation en service utilise déjà.
+
+---
+
+**Ce que je retiens.** Les deux audits n'ont pas trouvé des broutilles : ils ont trouvé
+que **le commit manquait son objectif principal** sur l'élément le plus visible de
+l'écran, pendant que mon propre banc annonçait la victoire. Sans eux, la mission aurait
+été déclarée avancée sur la foi d'un cliquet aveugle.
+
 ### 8.5 Ce qui reste, et qui exige la signature
 
 - **G0 lui-même.** Tant qu'il n'est pas signé, aucun GOAL ne touche `CONSTITUTION.md` et

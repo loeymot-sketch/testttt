@@ -408,6 +408,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
+    // [ONB-08 2026-08-28] Le seuil d'alerte de stock devient saisissable.
+    // Il etait LU par `lowAlerts` et par NotifyStockLowOnStockLevelChanged, et
+    // ECRIT par personne : 55 lignes en base, 0 seuil. La section « alertes stock
+    // bas » ne pouvait donc structurellement rien afficher.
+    Route::put('/stock/levels/{stockLevel}/seuil', [StockRuptureDashboardController::class, 'definirLeSeuil'])
+        ->whereNumber('stockLevel')
+        ->name('stock.levels.seuil');
     // [PHASE 3d — VUE CONSO & STOCK UNIFIÉE 2026-07-24] Lecture seule : matières
     // premières + boissons dans un seul tableau + section « à acheter ». Gate
     // items_show (écran de lecture, comme catalog-overview). ADDITIF, HORS NF525.

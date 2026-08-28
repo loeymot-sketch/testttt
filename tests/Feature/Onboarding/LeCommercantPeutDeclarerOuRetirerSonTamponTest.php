@@ -143,4 +143,42 @@ class LeCommercantPeutDeclarerOuRetirerSonTamponTest extends TestCase
             "La case s'affiche sous « label.kiosk_halal_stamp » au lieu d'un libellé."
         );
     }
+
+    public function test_la_borne_lit_bien_le_reglage_qu_elle_est_censee_lire(): void
+    {
+        // ═══ LE MAILLON QUE MON PREMIER BANC N'A PAS COUVERT ═══
+        //
+        // Un audit adverse l'a relevé : mes trois tests interrogeaient
+        // `/api/admin/setting/kiosk-setup` (KioskSetupResource). Mais la BORNE lit
+        // `/api/frontend/setting` (SettingResource). Supprimer la ligne du second
+        // laissait mes 3 verts PHP et 8 verts JS intacts pendant que le tampon ne
+        // s'affichait plus jamais.
+        //
+        // Mon docblock annonçait quatre maillons dont « la borne le LIT ». Il y
+        // avait trois tests, et aucun ne couvrait celui-là. Une chaîne refermée
+        // d'un côté, rouverte de l'autre — le motif exact que ce commit prétend
+        // fermer.
+        $this->putJson('/api/admin/setting/kiosk-setup', [
+            'kiosk_welcome_title' => 'Bienvenue',
+            'kiosk_halal_stamp'   => 1,
+        ])->assertSuccessful();
+
+        $vuParLaBorne = $this->getJson('/api/frontend/setting');
+        $vuParLaBorne->assertOk();
+
+        $donnees = $vuParLaBorne->json('data') ?? $vuParLaBorne->json();
+
+        $this->assertArrayHasKey(
+            'kiosk_halal_stamp',
+            $donnees,
+            "La borne ne reçoit pas le réglage : le commerçant peut le cocher autant\n"
+            . "qu'il veut, son écran client n'en saura jamais rien."
+        );
+
+        $this->assertSame(
+            1,
+            (int) $donnees['kiosk_halal_stamp'],
+            "Le réglage arrive à la borne avec la mauvaise valeur."
+        );
+    }
 }

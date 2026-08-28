@@ -72,6 +72,26 @@
                             <small class="db-field-alert" v-if="errors.kiosk_tap_hint">{{ errors.kiosk_tap_hint[0] }}</small>
                         </div>
 
+                        <!-- [ONB-12 2026-08-28] Logo dédié à l'écran d'accueil borne.
+                             Le logo général est conçu pour un fond clair ; l'accueil
+                             borne est orange plein cadre. Sans réglage séparé, l'un
+                             des deux écrans est toujours moche. -->
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="kiosk_attract_logo" class="db-field-title">
+                                {{ $t('label.kiosk_attract_logo') }}
+                            </label>
+                            <input
+                                v-model="form.kiosk_attract_logo"
+                                type="text"
+                                id="kiosk_attract_logo"
+                                class="db-field-control"
+                                data-testid="kiosk-attract-logo"
+                                placeholder="/images/kiosk-attract/logo.webp"
+                            />
+                            <small class="db-field-alert" v-if="errors.kiosk_attract_logo">{{ errors.kiosk_attract_logo[0] }}</small>
+                            <p class="text-xs text-gray-400 mt-1">{{ $t('label.kiosk_attract_logo_hint') }}</p>
+                        </div>
+
                         <!-- [ONB-12 2026-08-28] L'ECRAN QUI MANQUAIT.
                              Le tampon « 100 % Halal » etait ecrit en dur dans la borne :
                              tout commercant installant le produit portait sur son ecran
@@ -139,6 +159,7 @@ export default {
                 kiosk_tap_hint:         '',
                 kiosk_admin_pin:        '',
                 kiosk_halal_stamp:      false,
+                kiosk_attract_logo:     '',
             },
             errors: {}
         };
@@ -159,6 +180,7 @@ export default {
                     // Le choix enregistre doit revenir a l'ecran, sinon rouvrir la
                     // page et enregistrer autre chose l'effacerait en silence.
                     kiosk_halal_stamp:      Boolean(Number(d.kiosk_halal_stamp ?? 0)),
+                    kiosk_attract_logo:     d.kiosk_attract_logo ?? '',
                 };
                 this.loading.isActive = false;
             }).catch(() => {

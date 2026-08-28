@@ -112,7 +112,7 @@
       </div>
 
       <!-- ===== EYEBROW ===== -->
-      <div class="cay-eyebrow">
+      <div v-if="products.length" class="cay-eyebrow">
         <span class="cay-eyebrow-dot"></span>
         <span class="cay-eyebrow-text">{{ text('kiosk.idle_screen.eyebrow', 'Nos incontournables') }}</span>
         <span class="cay-eyebrow-dot"></span>
@@ -313,7 +313,22 @@ export default {
       // poids réseau vs PNG, ~8 Mo → ~2,9 Mo sur l'écran d'accueil). Le PNG
       // reste sur disque : `onAttractImgError` y retombe si le navigateur ne
       // décode pas le WebP (repli automatique, 0 régression).
-      brandLogo: ATTRACT_BASE + 'logo.webp',
+      // [ONB-12 2026-08-28 — corrigé le même jour après audit adverse]
+      //
+      // Cette ligne valait `ATTRACT_BASE + 'logo.webp'` : la marque déposée
+      // « LE CAYENNE ® », mascotte et baseline comprises, en dur et en haut de
+      // l'écran client. C'était **l'élément le plus grand de la borne**, et il
+      // survivait au commit censé sortir Le Cayenne de cet écran.
+      //
+      // Pire : mon propre cliquet annonçait « 0 marqueur » parce que sa regex
+      // cherchait `cayenne.webp` et pas `logo.webp`. Une sentinelle au mauvais
+      // périmètre rassure sans protéger — c'est le motif que je documente depuis
+      // des jours, et je venais de le reproduire.
+      //
+      // Le logo vient désormais des réglages. À défaut, `v-else` affiche le NOM
+      // du commerçant, ce qui n'était jusqu'ici jamais atteignable : `brandLogo`
+      // étant toujours vrai, ce repli était du code mort.
+      brandLogo: null,
       // [ONB-12 2026-08-28] La vitrine vient de la CARTE DU COMMERÇANT.
       //
       // Huit produits de Le Cayenne étaient écrits ici en dur, avec leurs photos.
@@ -564,15 +579,40 @@ export default {
      * l'écran garde son logo, son accueil et son invite. Aucune reprise sur la
      * carte d'un autre établissement.
      */
+    /**
+     * [ONB-12 2026-08-28 — ajouté après audit adverse] Retient une VRAIE photo.
+     *
+     * La version précédente filtrait sur `i.thumb`, en croyant écarter les
+     * produits sans image. Elle n'écartait rien : `Item::getThumbAttribute()`
+     * renvoie **toujours** une chaîne, et retombe sur `item-default.svg` — un
+     * carré gris 200×200 avec un « + ». Ce substitut s'affichait donc plein
+     * cadre (900×884), agrandi et animé, sur l'écran client.
+     *
+     * On préfère `cover` (pleine taille) à `thumb` (320×320, parfois 168×180),
+     * parce que le cadre fait 900 px de large : une vignette y est étirée de 3×.
+     * Et on écarte explicitement les trois substituts connus — mieux vaut une
+     * diapositive de moins qu'un rectangle gris qui tourne en vitrine.
+     */
+    imageUtilisable(article) {
+      const SUBSTITUTS = ['item-default.svg', 'item/cover.png', 'item/thumb.png'];
+      const estReelle = (url) => typeof url === 'string'
+        && url.length > 0
+        && !SUBSTITUTS.some((sub) => url.includes(sub));
+
+      if (estReelle(article?.cover)) return article.cover;
+      if (estReelle(article?.thumb)) return article.thumb;
+
+      return null;
+    },
     async chargerLaVitrine() {
       try {
         const res = await axios.get('frontend/item/featured-items');
         const items = res?.data?.data || res?.data || [];
 
         this.products = (Array.isArray(items) ? items : [])
-          .filter((i) => i && i.thumb && i.name)
-          .slice(0, 8)
-          .map((i) => ({ name: i.name, img: i.thumb }));
+          .map((i) => ({ name: i?.name, img: this.imageUtilisable(i) }))
+          .filter((p) => p.name && p.img)
+          .slice(0, 8);
 
         this.heroIdx = 0;
       } catch (_) {
@@ -593,6 +633,14 @@ export default {
         // [KIOSK-12-1] Use logo_full_path (alias of theme_logo added in SettingResource)
         this.restaurantName = data.company_name || data.site_name || this.$t('kiosk.idle_screen.default_restaurant_name');
         this.restaurantLogo = data.logo_full_path || data.theme_logo || null;
+
+        // [ONB-12 2026-08-28] Le bandeau de marque de l'écran d'accueil suit le
+        // même réglage que le reste : c'est le logo du commerçant, ou rien.
+        // [ONB-12 2026-08-28] Trois crans, du plus specifique au plus general :
+        //   1. le logo DEDIE a l'accueil borne (fond orange plein cadre)
+        //   2. a defaut, le logo general de l'etablissement
+        //   3. a defaut, rien — et `v-else` affiche le NOM en toutes lettres
+        this.brandLogo = data.kiosk_attract_logo || data.logo_full_path || data.theme_logo || null;
 
         // [KIOSK-12-1] Kiosk idle video — null means animated gradient fallback
         this.videoSrc = data.kiosk_idle_video || null;

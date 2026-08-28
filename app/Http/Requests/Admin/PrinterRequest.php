@@ -31,8 +31,25 @@ class PrinterRequest extends FormRequest
             // règle). En modification la valeur existante sert de repli, d'où le
             // `isMethod('POST')`.
             'branch_id' => [
+                // [ONB-10 2026-08-28, corrige le meme jour apres audit adverse]
+                //
+                // Premiere version : obligatoire des que l'acteur avait
+                // `branch_id = 0`. C'etait le compte PROPRIETAIRE, et l'ecran
+                // n'envoie pas ce champ ni n'affiche son erreur : le patron
+                // cliquait « Enregistrer » et rien ne se passait, sans un mot.
+                // J'avais remplace un defaut par un pire.
+                //
+                // On n'exige un choix que s'il y en a vraiment un. Avec une seule
+                // filiale — le cas de V1 LOCAL — `resolveBranchId()` la prend
+                // d'office : demander de choisir parmi un element unique est une
+                // corvee, pas une protection.
                 Rule::requiredIf(fn () => $this->isMethod('POST')
-                    && (int) ($this->user()?->branch_id ?? 0) === 0),
+                    && (int) ($this->user()?->branch_id ?? 0) === 0
+                    // `!== 1` et non `> 1` : sans AUCUNE filiale, le repli n'a rien
+                    // a prendre et l'insertion repartait a 0, donc en violation de
+                    // cle etrangere. On exige alors le champ pour que le refus soit
+                    // un message nomme plutot qu'un plantage.
+                    && \App\Models\Branch::query()->count() !== 1),
                 'nullable',
                 'integer',
                 'exists:branches,id',

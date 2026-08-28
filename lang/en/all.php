@@ -1,7 +1,37 @@
 <?php
 
 return [
+    // [ONB-02 2026-08-28] Root keys emitted by ItemService, ItemExtraService,
+    // ItemAddonService and OfferItemService (10 live call sites, all in the
+    // merchant's catalogue path). Missing here, they surfaced as the raw keys
+    // `all.item_match` / `all.user_match` to anyone served in English.
+    'item_match' => 'This product does not match.',
+    'user_match' => 'User not found.',
+
+    // [ONB-11 2026-08-28] Activity-log status labels. See lang/fr/all.php.
+    'order' => [
+        'status' => [
+            1 => 'Pending',
+            4 => 'Accepted',
+            7 => 'Preparing',
+            8 => 'Ready',
+            10 => 'Out for delivery',
+            13 => 'Delivered',
+            16 => 'Cancelled',
+            19 => 'Rejected',
+            22 => 'Returned',
+        ],
+    ],
+
     'label' => [
+        // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
+        'fee_percent' => 'Fee (%)',
+        'fee_fixed' => 'Fixed fee',
+        'serial_number' => 'Serial number',
+        'gateway' => 'Gateway',
+        'archived' => 'Archived',
+        'no_data' => 'No data',
+
         // [ultra-goal A8 heal 2026-05-13] OSS (Order Status Screen) labels.
         'oss_main_aria' => 'Order status screen — orders in preparation and ready for pickup',
         'oss_popular_region_aria' => 'Popular items today',
@@ -235,6 +265,10 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
+        'kds_reopen_invalid_state' => 'Only an order marked Ready can be sent back to preparation.',
+        'kds_reopen_success' => 'Order sent back to preparation.',
+
         'matiere_dune_autre_branche' => "This material belongs to another establishment.",
         'matiere_encore_dans_une_recette' => "This material is used by :n recipe(s). Removing it would leave those recipes without a material, and stock would stop being deducted.",
         'unite_non_modifiable_avec_stock' => "This material holds :stock in stock, counted in \":unite\". Changing its unit would not convert that number: it would become wrong. Bring the stock to zero first.",

@@ -45,15 +45,40 @@ return new class extends Migration
             return;
         }
 
-        $etablissementEnService = DB::table('items')->whereNull('deleted_at')->exists();
+        // Le critere : un etablissement DEJA EN SERVICE a une carte active. Le
+        // filtre `status` manquait dans la premiere version alors que le docblock
+        // disait « actifs » — un commentaire qui affirmait plus que le code.
+        $etablissementEnService = DB::table('items')
+            ->whereNull('deleted_at')
+            ->where('status', \App\Enums\Status::ACTIVE)
+            ->exists();
 
-        DB::table($table)->insert([
-            'key'        => self::CLE,
-            'payload'    => json_encode($etablissementEnService ? 1 : 0),
-            'group'      => self::GROUPE,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // [corrige apres audit adverse] On passe par l'API du paquet plutot que
+        // par un `insert` brut. Le paquet enveloppe les valeurs
+        // (`{"$value": .., "$cast": null}`) et les desenveloppe a la lecture :
+        // ecrire un scalaire nu marchait PAR ACCIDENT, en s'appuyant sur le fait
+        // que le desenveloppage est sans effet sur un non-tableau. Une migration
+        // ne doit pas dependre d'un detail d'implementation qu'elle ne controle
+        // pas — et le premier enregistrement admin reecrivait la ligne au bon
+        // format, donc deux formats coexistaient selon l'historique de l'install.
+        $aDeclarer = [self::CLE => $etablissementEnService ? 1 : 0];
+
+        // [ONB-12 2026-08-28] Meme principe pour le logo d'accueil.
+        //
+        // L'ecran d'accueil servait un logo EN DUR depuis `/images/kiosk-attract/`,
+        // concu pour son fond orange. Le sortir vers la donnee est juste — mais le
+        // remplacer par le logo GENERAL degraderait l'ecran de l'etablissement qui
+        // tourne, dont le logo general est sur fond blanc.
+        //
+        // On DECLARE donc le visuel qu'il utilise deja, s'il existe sur le disque.
+        // Une installation vierge n'herite de rien.
+        $logoLivre = public_path('images/kiosk-attract/logo.webp');
+
+        if ($etablissementEnService && is_file($logoLivre)) {
+            $aDeclarer['kiosk_attract_logo'] = '/images/kiosk-attract/logo.webp';
+        }
+
+        \Settings::group(self::GROUPE)->set($aDeclarer);
     }
 
     public function down(): void

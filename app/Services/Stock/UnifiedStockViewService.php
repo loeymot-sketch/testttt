@@ -245,6 +245,10 @@ class UnifiedStockViewService
 
             $rows[] = [
                 'id' => $itemId,
+                // [ONB-08 2026-08-28] L'identifiant de la LIGNE DE STOCK, distinct de
+                // celui de l'article. L'ecran affichait la colonne « Seuil » sans
+                // pouvoir la modifier, faute de savoir quelle ligne viser.
+                'stock_level_id' => (int) $level->id,
                 'name' => (string) $item->name,
                 'unit' => 'u',
                 'on_hand' => $stock,

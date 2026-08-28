@@ -116,12 +116,21 @@ describe("la rotation d'accueil de la borne ne nomme plus un autre établissemen
             .replace(/\/\/[^\n]*/g, '')
             .replace(/<!--[\s\S]*?-->/g, '');
 
-        // [ONB-12 2026-08-28] Le cliquet est passé de 3 à 0 : la vitrine et le
-        // tampon sont sortis vers la donnée. Ce qui subsiste (`tamponHalal`) est un
-        // nom de variable française, pas une affirmation affichée — d'où le filtre
-        // sur les identifiants, sans quoi le cliquet mesurerait le vocabulaire du
-        // code au lieu de ce que le client lit.
-        const marqueurs = (s.match(/Le Cayenne|cayenne\.webp|>\s*Halal\s*</g) || []);
+        // [ONB-12 2026-08-28 — ÉLARGI le même jour après audit adverse]
+        //
+        // La première version de ce cliquet cherchait `Le Cayenne|cayenne.webp|Halal`
+        // et annonçait fièrement « 0 ». Elle passait à côté de la plus grosse
+        // identité en dur de l'écran : `brandLogo: ATTRACT_BASE + 'logo.webp'`, la
+        // MARQUE DÉPOSÉE, mascotte comprise, en haut et en grand sur chaque borne.
+        //
+        // Un cliquet qui rend « 0 » en ne regardant pas l'essentiel est pire qu'aucun
+        // cliquet : il rassure. C'est le motif « sentinelle au mauvais périmètre »,
+        // et celle-ci était la mienne.
+        //
+        // On surveille désormais TOUT actif servi depuis le dossier d'attract, quel
+        // que soit son nom de fichier — c'est le dossier entier qui porte l'identité
+        // d'un établissement particulier.
+        const marqueurs = (s.match(/Le Cayenne|>\s*Halal\s*</g) || []);
 
         expect(
             marqueurs.length,
@@ -129,6 +138,74 @@ describe("la rotation d'accueil de la borne ne nomme plus un autre établissemen
             + `Attendu : 0. Trouvé : ${marqueurs.length} → ${marqueurs.join(', ')}\n`
             + 'Sortir la marque vers la donnée, ne jamais la réécrire en dur.',
         ).toBe(0);
+
+        // ET SURTOUT : aucun visuel de marque servi depuis le dossier d'attract.
+        const sansCommentaires = s
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .replace(/^\s*\/\/.*$/gm, '')
+            .replace(/<!--[\s\S]*?-->/g, '');
+
+        const visuels = (sansCommentaires.match(/ATTRACT_BASE\s*\+\s*'[^']+'/g) || []);
+
+        expect(
+            visuels.length,
+            'Un visuel de marque est servi en dur depuis `/images/kiosk-attract/`.\n'
+            + `Trouvé : ${visuels.join(', ')}\n`
+            + "Ce dossier porte l'identité d'un établissement précis : logo déposé,\n"
+            + 'mascotte, photos de SA carte. Rien de tout cela ne doit être imposé à\n'
+            + 'un autre commerçant. Le logo vient des réglages, la vitrine de la carte.',
+        ).toBe(0);
+    });
+
+    it("le bandeau de marque affiche le logo du commerçant, jamais un logo livré", () => {
+        const s = source();
+
+        expect(
+            s,
+            '`brandLogo` doit démarrer vide : toute valeur par défaut est le logo\n'
+            + "de quelqu'un d'autre sur l'écran client d'un nouveau commerçant.",
+        ).toMatch(/brandLogo:\s*null/);
+
+        // On vérifie que le logo VIENT des réglages, sans épingler l'ordre exact des
+        // replis : la première version de ce banc figeait l'expression littérale et
+        // rougissait dès qu'on ajoutait un cran, sur du code correct. L'ordre précis
+        // est couvert par le banc de comportement, qui monte le composant.
+        expect(
+            s,
+            'Le logo doit être lu depuis les réglages, comme le reste de la marque.',
+        ).toMatch(/this\.brandLogo\s*=\s*data\./);
+    });
+
+    it("la vitrine écarte les images de substitution au lieu de les afficher en grand", () => {
+        const s = source();
+
+        // `Item::getThumbAttribute()` renvoie TOUJOURS une chaîne et retombe sur
+        // `item-default.svg` : filtrer sur `i.thumb` n'écartait donc rien, et un
+        // carré gris 200×200 s'affichait plein cadre (900×884), agrandi et animé.
+        expect(
+            s,
+            "Le filtre de la vitrine ne reconnaît pas les images de substitution :\n"
+            + 'un rectangle gris tournerait en vitrine à la place des plats.',
+        ).toContain('item-default.svg');
+
+        expect(
+            s,
+            'La vitrine doit préférer `cover` (pleine taille) à `thumb` : le cadre\n'
+            + 'fait 900 px de large, une vignette 320 px y est étirée de trois fois.',
+        ).toMatch(/estReelle\(article\?\.cover\)/);
+    });
+
+    it("sans produit, la légende ne promet pas des produits au-dessus du vide", () => {
+        const s = source();
+
+        // Le gabarit est en positionnement absolu : masquer la vitrine sans masquer
+        // sa légende laissait « Nos incontournables » suivi d'environ 1020 px de
+        // fond vide. Une promesse au-dessus d'un trou.
+        expect(
+            s,
+            "La légende « Nos incontournables » s'affiche même sans vitrine :\n"
+            + 'elle annonce des produits au-dessus d\'un millier de pixels vides.',
+        ).toMatch(/<div v-if="products\.length" class="cay-eyebrow"/);
     });
 
     it('la vitrine vient de la carte du commerçant, pas d\'une liste écrite en dur', () => {

@@ -118,6 +118,12 @@ class SettingResource extends JsonResource
             // La migration 2026_08_28_120000 declare la valeur des installations
             // existantes pour ne rien leur retirer en silence.
             'kiosk_halal_stamp'                    => (int) (bool) ($this->info['kiosk_halal_stamp'] ?? 0),
+            // [ONB-12 2026-08-28] Logo DEDIE a l'ecran d'accueil de la borne.
+            // Le logo general des reglages est concu pour un fond clair ; l'attract
+            // est orange plein cadre. Sans reglage separe, l'un des deux ecrans est
+            // toujours moche. Vide par defaut : on retombe alors sur le logo general,
+            // puis sur le NOM du commercant en toutes lettres.
+            'kiosk_attract_logo'=> $this->info['kiosk_attract_logo'] ?? null,
 
             // [PHASE-37] Kiosk multi-language settings
             'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),

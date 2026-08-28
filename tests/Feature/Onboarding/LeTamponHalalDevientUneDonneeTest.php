@@ -71,7 +71,22 @@ class LeTamponHalalDevientUneDonneeTest extends TestCase
             ->where('key', self::CLE)
             ->value('payload');
 
-        return $brut === null ? null : (int) json_decode($brut, true);
+        if ($brut === null) {
+            return null;
+        }
+
+        $decode = json_decode($brut, true);
+
+        // [corrige apres audit adverse] Le paquet enveloppe les valeurs :
+        // `{"$value": 0, "$cast": null}`. Un `(int)` direct sur ce tableau rend
+        // **1**, parce qu'un tableau non vide caste a 1. Mon lecteur annoncait
+        // donc « tampon declare » pour un commercant qui l'avait ETEINT — le banc
+        // aurait valide l'inverse de ce qu'il pretendait mesurer.
+        if (is_array($decode)) {
+            $decode = $decode['$value'] ?? reset($decode);
+        }
+
+        return (int) $decode;
     }
 
     public function test_une_installation_vierge_n_affirme_rien(): void
@@ -117,13 +132,10 @@ class LeTamponHalalDevientUneDonneeTest extends TestCase
         DB::table($this->tableDesReglages())
             ->where('group', self::GROUPE)->where('key', self::CLE)->delete();
 
-        DB::table($this->tableDesReglages())->insert([
-            'key'        => self::CLE,
-            'payload'    => json_encode(0),
-            'group'      => self::GROUPE,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // On ecrit par l'API du paquet, comme le fait l'ecran d'administration :
+        // inserer une ligne a la main figeait un format que l'application ne
+        // produit jamais, et le banc verrouillait alors le mauvais format.
+        \Settings::group(self::GROUPE)->set([self::CLE => 0]);
 
         $migration = require base_path(
             'database/migrations/2026_08_28_120000_declare_le_tampon_halal_des_installations_existantes.php'
@@ -141,6 +153,52 @@ class LeTamponHalalDevientUneDonneeTest extends TestCase
             DB::table($this->tableDesReglages())
                 ->where('group', self::GROUPE)->where('key', self::CLE)->count(),
             'La migration a créé un doublon du réglage.'
+        );
+    }
+
+    public function test_une_installation_en_service_garde_aussi_son_logo_d_accueil(): void
+    {
+        // MÊME PRINCIPE QUE LE TAMPON, et né de la même erreur.
+        //
+        // L'audit visuel après correction a montré que remplacer le logo EN DUR par
+        // le logo GÉNÉRAL dégradait l'écran de l'établissement en service : son logo
+        // général est sur fond blanc, et l'accueil borne est orange plein cadre.
+        // J'avais réglé un problème de marque pour les futurs commerçants et abîmé
+        // l'écran de l'actuel.
+        //
+        // La migration déclare donc le visuel qu'il utilise DÉJÀ.
+        Item::factory()->create(['status' => \App\Enums\Status::ACTIVE]);
+
+        $this->rejouerLaMigration();
+
+        $declare = \Settings::group(self::GROUPE)->get('kiosk_attract_logo');
+
+        if (is_file(public_path('images/kiosk-attract/logo.webp'))) {
+            $this->assertSame(
+                '/images/kiosk-attract/logo.webp',
+                $declare,
+                "L'établissement en service perd son logo d'accueil au profit d'un\n"
+                . 'logo générique mal adapté au fond de la borne.'
+            );
+        } else {
+            $this->assertNull(
+                $declare,
+                "Le visuel n'existe pas sur le disque : rien ne doit être déclaré,\n"
+                . 'sinon la borne pointerait vers une image absente.'
+            );
+        }
+    }
+
+    public function test_une_installation_vierge_n_herite_d_aucun_logo(): void
+    {
+        $this->assertSame(0, Item::query()->count());
+
+        $this->rejouerLaMigration();
+
+        $this->assertNull(
+            \Settings::group(self::GROUPE)->get('kiosk_attract_logo'),
+            "Un nouveau commerçant hérite du logo d'un autre établissement sur son\n"
+            . "écran client — c'est précisément ce que ce chantier corrige."
         );
     }
 }
