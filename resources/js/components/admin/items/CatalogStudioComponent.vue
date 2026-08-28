@@ -26,6 +26,22 @@
                     <i class="lab lab-line-import"></i>
                     <span>{{ $t("label.menu_import_title") }}</span>
                 </router-link>
+                <!--
+                    [ONB-05 2026-08-28] La page TVA n'avait AUCUN lien.
+                    `grep admin.settings.tax` hors routeur rendait une seule ligne, dans
+                    le menu Réglages, gardée par `!isSettingHidden('tax')` — et `tax`
+                    est masqué. Il fallait connaître l'URL.
+                    Sans taux de TVA, `PricingService` facture à 0 % : c'est le trou
+                    qu'ONB-02 a passé la nuit à fermer. On pose l'accès ici, là où le
+                    commerçant pense au prix, avec la MÊME permission que la route.
+                    Le dé-masquage du menu reste à ONB-05 (gate G-CACHE).
+                -->
+                <router-link v-if="canCreateCategory" :to="{ name: 'admin.settings.tax' }"
+                    class="db-btn py-2 bg-slate-500 text-white"
+                    data-testid="catalog-studio-taxes">
+                    <i class="lab lab-taxes"></i>
+                    <span>{{ $t("label.tax") }}</span>
+                </router-link>
                 <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">
