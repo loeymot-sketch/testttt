@@ -104,14 +104,45 @@ C'est le résultat le plus utile de l'audit, et il porte sur mon propre travail.
 | `InvalidArgumentException` n'est ni `HttpException` ni `QueryException` → `parent::render` → **HTTP 500** | L'écran affichait « Server Error » en anglais. Le message qui nomme la matière et les deux unités n'était lu par PERSONNE | `HttpException(422)`, l'idiome déjà présent (`PurchasingScanController` fait `abort_if($x, 422, …)`) |
 | **Mon banc était au mauvais périmètre** : il appelle la méthode privée par réflexion, donc il mesurait le calcul, jamais ce que le commerçant reçoit | Le défaut ci-dessus a vécu une nuit sous un banc vert | `LeRefusDeReceptionEstLisibleParLeCommercantTest` (3) passe par la ROUTE. Prouvé en remettant l'ancienne exception : « Failed asserting that 500 is identical to 422 » |
 
-### 8.3 Ce qui reste — classé par coût pour un commerçant qui compte son stock
+### 8.3 Le blocage n°1 — LEVÉ le 2026-08-28
 
-1. **`RawMaterial` n'a AUCUN CRUD.** `routes/api.php:436-438` = `movements` + `adjust`, rien d'autre. Les seules sources de création sont un seeder et une commande console. **Un nouveau commerçant ne peut déclarer aucun ingrédient** — le domaine entier est livré par le seed Le Cayenne. C'est le blocage n°1 de la mission « depuis zéro », et il est plus grave que tous les constats §2.3 réunis.
-2. **`raw_material_recipe_lines` (126 lignes en base) n'a ni contrôleur ni composant.** Le commerçant ne peut pas dire « 1 burger = 150 g de viande » : la déduction de stock repose sur des recettes qu'il ne verra jamais.
-3. **Réparer les 11 stocks négatifs** (Poulet **-9 600 g**). Le correctif de conversion arrête l'hémorragie, il ne recoud pas. Tant que ce n'est pas fait, « Conso & Stock » continue d'annoncer des ruptures que la borne dément — donc le correctif reste invisible pour l'utilisateur. **Décision propriétaire** : c'est de la donnée d'exploitation, pas du code.
-4. **Ouvrir un chemin d'écriture pour `threshold_low`.** Sans lui, le widget stock-bas, le listener et `low-alerts` sont trois instruments branchés sur une colonne toujours NULL.
-5. **Affecter un poste aux 11 articles** — le champ existe désormais dans le formulaire produit (livré ce soir, ONB-02) : c'est devenu un travail de données, plus de code.
-6. **Trois FormRequest** (`RawMaterialAdjust`, `PurchasingScan`/`Apply`, `SetMaxDailyQty`), et trancher le sort de `setMaxDailyQty` — point d'entrée sans écran : lui en donner un, ou le retirer.
-7. **Normaliser `raw_materials.unit`** : `string(16)` libre, sans validation ni écran d'édition. La comparaison d'unités repose sur deux champs non contraints.
+**`RawMaterial` n'avait aucun CRUD.** `routes/api.php:436-441` n'exposait que
+`movements` (lecture) et `adjust` (correction de quantité) ; les seules sources de
+création étaient `RawMaterialBaselineSeeder` et une commande console. **Un nouveau
+commerçant ne pouvait déclarer aucun ingrédient** — le domaine entier lui arrivait
+pré-rempli avec celui de Le Cayenne.
 
-**État final ONB-08 : le P0 de conversion est CLOS et prouvé aux deux bouts (calcul et route) ; un constat P1 est RÉFUTÉ (la cuisine ne perd rien, elle route mal) ; le seuil bas est confirmé PIRE que décrit (100 % des lignes exclues, sur un commentaire faux). Le blocage majeur de la mission « depuis zéro » n'est dans aucun constat §2.3 : `RawMaterial` n'a pas de CRUD.**
+Ce blocage n'apparaissait dans AUCUN constat §2.3. Il a été trouvé en demandant à un
+auditeur « qu'est-ce qui empêche un commerçant de partir de rien ».
+
+⚠️ Le commentaire de `RawMaterialAdjustComponent` (`stockRoutes.js:10-14`) affirmait
+être « la seule porte d'écriture manquante du domaine matière première ». C'était
+faux : la déclaration en était une autre, et elle manquait depuis plus longtemps.
+
+| Livrable | Fichiers | Preuve |
+|---|---|---|
+| CRUD complet, gardé `items_show` / `items_create` | `RawMaterialController`, `RawMaterialRequest`, 4 routes | `UnCommercantPeutDeclarerSesIngredientsTest` (11) |
+| Écran de déclaration + sa **porte** depuis Conso & Stock | `RawMaterialListComponent.vue`, `stockRoutes.js` | `tests/js/lEcranDesMatieresDistingueVideEtZero.spec.js` (8) |
+
+**`threshold_low` a enfin un chemin d'écriture** — le trou du §8.1 est donc fermé du
+même coup. Mais avec un piège qu'il fallait éviter : en ouvrant ce chemin, il devenait
+facile d'écrire `0` là où le commerçant laisse le champ vide. Ce serait **pire que
+l'état d'avant** — au lieu d'une alerte muette sur 100 % des lignes, il en recevrait
+une au premier gramme manquant, sur chaque matière, sans l'avoir demandée. Vide part
+en `null`, revient vide, s'affiche « Aucune alerte », et les deux moitiés sont testées.
+
+**Trois refus, chacun pour une raison mesurée** : changer l'unité d'une matière qui a
+du stock (le stock est un nombre sans son unité — 3 kg deviendraient 3 g, le facteur
+mille exact qui a mis onze matières en négatif) ; une unité hors conversion ; une
+matière encore utilisée par une recette (la déduction de stock cesserait en silence,
+motif du `tax_id` orphelin).
+
+### 8.4 Ce qui reste — classé par coût pour un commerçant qui compte son stock
+1. **`raw_material_recipe_lines` (126 lignes en base) n'a ni contrôleur ni composant.** Le commerçant ne peut pas dire « 1 burger = 150 g de viande » : la déduction de stock repose sur des recettes qu'il ne verra jamais.
+2. **Réparer les 11 stocks négatifs** (Poulet **-9 600 g**). Le correctif de conversion arrête l'hémorragie, il ne recoud pas. Tant que ce n'est pas fait, « Conso & Stock » continue d'annoncer des ruptures que la borne dément — donc le correctif reste invisible pour l'utilisateur. **Décision propriétaire** : c'est de la donnée d'exploitation, pas du code.
+3. ~~Ouvrir un chemin d'écriture pour `threshold_low`~~ — **FAIT** (§8.3). Reste à faire de même pour `stock_levels.threshold_low`, côté produits revendus : 55/55 lignes toujours NULL.
+4. **Affecter un poste aux 11 articles** — le champ existe désormais dans le formulaire produit (livré ce soir, ONB-02) : c'est devenu un travail de données, plus de code.
+5. **Trois FormRequest** (`RawMaterialAdjust`, `PurchasingScan`/`Apply`, `SetMaxDailyQty`), et trancher le sort de `setMaxDailyQty` — point d'entrée sans écran : lui en donner un, ou le retirer.
+6. ~~Normaliser `raw_materials.unit`~~ — **PARTIELLEMENT FAIT** : la colonne reste `string(16)` libre en base, mais `RawMaterialRequest` borne désormais la saisie aux unités que la conversion sait traiter, et `PurchaseService` accepte les variantes d'écriture d'un OCR (accents, synonymes). Reste le cas des lignes déjà en base avec une unité hors liste.
+
+**État final ONB-08 : le P0 de conversion est CLOS et prouvé aux deux bouts (calcul ET route HTTP) ; le blocage majeur de la mission « depuis zéro » est LEVÉ — un commerçant peut déclarer ses matières, et `threshold_low` a enfin un chemin d'écriture. Un constat P1 est RÉFUTÉ (la cuisine ne perd rien, elle route mal). Restent : les recettes sans écran, les 11 stocks négatifs à réparer (décision propriétaire, c'est de la donnée), et trois FormRequest — renvoyés à ONB-13, qui les audite.**
