@@ -1,24 +1,24 @@
 {
-  "_meta": {
-    "purpose": "SHA-256 baseline for CLAUDE.md §7 frozen-zone files. FrozenZoneSha256BaselineSentinelTest enforces these — any silent drift fails CI.",
-    "created": "2026-05-29",
-    "audit_session": "supervisor-audit-2026-05-29 / Round 1 + Round 2",
-    "update_rule": "Update ONLY when an LOCK_*.md doc explicitly authorizes a frozen-zone touch, AND owner has countersigned per CLAUDE.md §10 human-gate. Re-run the test to capture the new hash and commit baseline alongside the LOCK doc.",
-    "last_authorized_update": "2026-08-19 — plans/LOCK_CAISSE_ANNULATION_ET_CARTE_2026-08-19.md (gate owner obtenu en seance) : PaymentComponent.vue (retrait du champ 4 chiffres carte, pave numerique reserve aux especes, canConfirmCard assoupli) et OrderStateMachine.php (+ PREPARED->CANCELED, + OUT_FOR_DELIVERY->CANCELED)."
-  },
-  "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "f445b1a8194dc03ababe6abdea6fec078f05ca951675af57b9dc9b3bc2058307",
-  "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "b3afbf982b744e39e573b6d368ec63da788a4d374e67433a8f46956ac7be6dc1",
-  "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "b2845a326baaee0051439e8cd8a88cf1962d8704686703bf81f8cbb4f3fad2ff",
-  "resources/js/components/admin/pos/PaymentComponent.vue": "6e124048635c2af76b0c59955b025270bf46c4f62bdaa0f58f83d16fd6c97604",
-  "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": "1a23064ef92b42550fbf98210347818daf58b3fa35360e647eaf87e25dc5303c",
-  "public/js/pos-wizard.js": "24eaac96230b4f37fa26a24a2a71e2a05d6d81c9f7679a128f3b5835464560d3",
-  "public/css/pos-wizard.css": "857e00680ea813b5a902dbf8365f77eb34400a179a66e8d0ecd6905527f98626",
-  "resources/views/admin-pos-v4.blade.php": "47535c19c7c06ed2a863f03d3bee8335280838740fe30eb51e8044809d48c956",
-  "app/Services/Fiscal/FiscalSequenceService.php": "1d8626b81d83d014a9e4562f47357eb0f1e1588f479c4fcd390cba3cdb3302f3",
-  "app/Services/Fiscal/ZReportService.php": "45ba3e83ecf4519f879d60bebe82ac565b4ff808653811b647325ac7999fc54e",
-  "app/Services/Fiscal/AuditLogService.php": "0e57d0da91b9297ba8f21b2d0279295179009071f9dc07bf7ad841fc048d6d58",
-  "app/Models/Scopes/BranchScope.php": "eff306115030b5d7ef8cd69f6d3da98567839e00ed1b2f086c0be2d6a6cd953c",
-  "app/Http/Middleware/IdempotencyKeyMiddleware.php": "0c25898a8150b021f4f787c7eb92d9d0fbbd8503cb863362a120c3c35206673b",
-  "app/Services/Pricing/PricingService.php": "5508364978ea3f1e0534c9024e084aaa9f7bbfff784ce2cbb362efbeb3d3f075",
-  "app/Domain/Order/OrderStateMachine.php": "2add313a915195733d71b4dcbc1b61e66ba4b95085e8daaeaa3a6d360921ea6b"
+    "_meta": {
+        "purpose": "SHA-256 baseline for CLAUDE.md §7 frozen-zone files. FrozenZoneSha256BaselineSentinelTest enforces these — any silent drift fails CI.",
+        "created": "2026-05-29",
+        "audit_session": "supervisor-audit-2026-05-29 / Round 1 + Round 2",
+        "update_rule": "Update ONLY when an LOCK_*.md doc explicitly authorizes a frozen-zone touch, AND owner has countersigned per CLAUDE.md §10 human-gate. Re-run the test to capture the new hash and commit baseline alongside the LOCK doc.",
+        "last_authorized_update": "2026-08-28 — docs/locks/LOCK_POS_WIZARD_SAUCES_CANONIQUES_2026-08-28.md (contreseing propriétaire obtenu en session). Wizard caisse : carte de sauces canonique servie par config/pos_sauces.php, tuiles colorées pleine largeur, et alignement du repli ALL_SAUCES qui listait 6 sauces inexistantes en base."
+    },
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "fcbe3755aa9c118e7bf1feafac293b993073262126228e09c861eae69ee256ac",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "b3afbf982b744e39e573b6d368ec63da788a4d374e67433a8f46956ac7be6dc1",
+    "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "b2845a326baaee0051439e8cd8a88cf1962d8704686703bf81f8cbb4f3fad2ff",
+    "resources/js/components/admin/pos/PaymentComponent.vue": "6e124048635c2af76b0c59955b025270bf46c4f62bdaa0f58f83d16fd6c97604",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": "1a23064ef92b42550fbf98210347818daf58b3fa35360e647eaf87e25dc5303c",
+    "public/js/pos-wizard.js": "2a5b27aa36eb049a8f56a558ff16f34370446ee109cb1257b8cfe764e6b34a04",
+    "public/css/pos-wizard.css": "66195e477069a9142457a8c58dc7a8b6a8e8bfed896dce61d605253096814942",
+    "resources/views/admin-pos-v4.blade.php": "625e3222c8c810541e9e21d2b59f6dbed2f8a9e248692a68c079e357d212b9cc",
+    "app/Services/Fiscal/FiscalSequenceService.php": "1d8626b81d83d014a9e4562f47357eb0f1e1588f479c4fcd390cba3cdb3302f3",
+    "app/Services/Fiscal/ZReportService.php": "45ba3e83ecf4519f879d60bebe82ac565b4ff808653811b647325ac7999fc54e",
+    "app/Services/Fiscal/AuditLogService.php": "0e57d0da91b9297ba8f21b2d0279295179009071f9dc07bf7ad841fc048d6d58",
+    "app/Models/Scopes/BranchScope.php": "eff306115030b5d7ef8cd69f6d3da98567839e00ed1b2f086c0be2d6a6cd953c",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php": "0c25898a8150b021f4f787c7eb92d9d0fbbd8503cb863362a120c3c35206673b",
+    "app/Services/Pricing/PricingService.php": "5508364978ea3f1e0534c9024e084aaa9f7bbfff784ce2cbb362efbeb3d3f075",
+    "app/Domain/Order/OrderStateMachine.php": "2add313a915195733d71b4dcbc1b61e66ba4b95085e8daaeaa3a6d360921ea6b"
 }

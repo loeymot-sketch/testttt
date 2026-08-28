@@ -9,6 +9,7 @@ use App\Models\KioskMachine;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -49,11 +50,19 @@ class ItemResource extends JsonResource
         $choiceAvailability = $branchId !== null
             ? app(ChoiceAvailabilityResolver::class)->snapshotForItem($this->resource, $branchId, $surface)
             : ['variations' => [], 'extras' => [], 'addons' => []];
-        $variations = $this->variations->each(function ($variation) use ($choiceAvailability) {
-            $availability = $choiceAvailability['variations'][(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null];
-            $variation->setAttribute('is_available', $availability['is_available']);
-            $variation->setAttribute('unavailable_reason', $availability['unavailable_reason']);
-        });
+        // [GOAL WIZARD-CAISSE 2026-08-28 · owner] Ordre CANONIQUE des sauces.
+        // Chaque article porte sa propre copie des sauces dans `item_variations`
+        // et l'ordre rendu suivait l'ordre d'INSERTION : quatre ordres différents
+        // coexistaient pour un menu unique, d'où « pas le même ordre d'un
+        // sandwich à l'autre ». Le tri est appliqué ICI (et dans
+        // NormalItemResource pour la borne) pour que caisse et borne montrent
+        // exactement la même liste, sans réécrire les identifiants en base.
+        $variations = SauceCatalog::sortVariations($this->variations)
+            ->each(function ($variation) use ($choiceAvailability) {
+                $availability = $choiceAvailability['variations'][(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+                $variation->setAttribute('is_available', $availability['is_available']);
+                $variation->setAttribute('unavailable_reason', $availability['unavailable_reason']);
+            });
         $extras = $this->extras->each(function ($extra) use ($choiceAvailability) {
             $availability = $choiceAvailability['extras'][(int) $extra->id] ?? ['is_available' => true, 'unavailable_reason' => null];
             $extra->setAttribute('is_available', $availability['is_available']);

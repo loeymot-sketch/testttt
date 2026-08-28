@@ -1594,51 +1594,112 @@
     margin: 0 0 8px;
 }
 
-/* --- C1: Sauces en chips compacts --- */
+/* --- Sauces : tuiles colorées pleine largeur ---------------------------
+   [GOAL WIZARD-CAISSE 2026-08-28 · owner] Avant : des puces `inline-flex` de
+   12 px, `flex-wrap`, 5 px de padding — flottant dans un cadre à moitié vide
+   alors que la colonne crudités JUSTE À CÔTÉ rendait des boutons pleine
+   largeur de 10 px de padding. Demande propriétaire : la sauce occupe le même
+   espace que les crudités, les tuiles grandissent au maximum de leur cadre, et
+   chaque sauce porte SA couleur.
+
+   Les couleurs arrivent en variables inline (--sauce-bg/-fg/-border) posées
+   par renderSauceTile() depuis config/pos_sauces.php : AUCUNE couleur de sauce
+   n'est écrite en dur ici, sinon ajouter une sauce demanderait d'éditer deux
+   fichiers et les deux dériveraient.
+
+   Pas de hauteur maximale ni de scroll interne sur la grille : masquer une
+   partie des sauces est précisément le défaut signalé (« sur une commande tu
+   trouves pas la sauce »). Le bloc grandit, la modale scrolle déjà. */
 .sauce-chips-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 8px;
     padding: 4px 0;
+    align-content: start;
 }
 
 .sauce-chip {
-    display: inline-flex;
+    /* Fond neutre si l'injection serveur a échoué — jamais de tuile invisible. */
+    --sauce-bg: #FFFFFF;
+    --sauce-fg: #1B1B3A;
+    --sauce-border: #D9DBE9;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 5px 12px;
-    border: 1.5px solid #D9DBE9;
-    border-radius: 20px;
-    background: white;
+    justify-content: center;
+    gap: 3px;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 6px;
+    border: 2px solid var(--sauce-border);
+    border-radius: 12px;
+    background: var(--sauce-bg);
+    color: var(--sauce-fg);
     font-size: 12px;
-    font-weight: 600;
-    color: #1B1B3A;
+    font-weight: 700;
     font-family: 'Rubik', sans-serif;
+    line-height: 1.15;
     cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+    text-align: center;
+    white-space: normal;
+    word-break: break-word;
+    box-sizing: border-box;
+}
+
+.sauce-chip__dot {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.sauce-chip__label {
+    display: block;
+    width: 100%;
 }
 
 .sauce-chip:hover {
-    border-color: #E93C3C;
-    background: #FFF5F5;
+    border-color: #1B1B3A;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(27, 27, 58, 0.16);
 }
 
+/* Sélection : la couleur de la sauce reste visible (c'est le repère du
+   caissier), on ajoute un anneau sombre + une coche, on ne repeint PAS la
+   tuile en rouge comme avant — sinon toutes les sauces choisies deviennent
+   identiques et la couleur ne sert plus à rien. */
 .sauce-chip.selected {
-    background: #E93C3C;
-    border-color: #E93C3C;
-    color: white;
+    border-color: #1B1B3A;
+    box-shadow: 0 0 0 3px rgba(27, 27, 58, 0.18);
+    transform: none;
 }
 
-.sauce-chip .chip-free {
+.sauce-chip.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #1B1B3A;
+}
+
+.sauce-chip .chip-free,
+.sauce-chip .chip-paid {
     font-size: 10px;
-    opacity: 0.85;
+    font-weight: 700;
+    opacity: 0.9;
+    letter-spacing: 0.02em;
 }
 
 .sauce-chip .chip-paid {
-    font-size: 10px;
-    opacity: 0.85;
+    color: #B02020;
 }
+
+/* Une tuile claire (Blanche, Mayonnaise, Sans sauce) sur fond blanc : le
+   liseré calculé la détache déjà, la coche de sélection reste lisible car
+   --sauce-fg est contrasté par construction dans config/pos_sauces.php. */
 
 /* --- C2: Viandes en grille 3 colonnes --- */
 .pos-wizard.single-page .wizard-viande-list {

@@ -2,7 +2,7 @@
 
 **ID :** `LOCK_POS_WIZARD_SAUCES_CANONIQUES_2026-08-28.md`
 **Date :** 2026-08-28
-**Statut :** **BROUILLON — en attente de contreseing propriétaire (§10)**
+**Statut :** **SIGNÉ — contreseing propriétaire obtenu le 2026-08-28 (§10)**
 **Portée :** chirurgicale (3 fichiers gelés, 217 lignes ajoutées / 50 retirées)
 
 ## Fichiers gelés touchés (CLAUDE.md §7)
@@ -172,8 +172,19 @@ citation du LOCK, pas par un contournement.
 > propre demande du 2026-08-28, mais la règle exige que vous le confirmiez une
 > fois le changement écrit et mesuré, pas seulement demandé.
 
-- [ ] **Propriétaire — lu et approuvé.** Date : ____________
-- [ ] Baseline SHA-256 mise à jour dans le commit du correctif
-- [ ] LOCK passé à **CLÔTURÉ** après livraison
+- [x] **Propriétaire — lu et approuvé.** Date : **2026-08-28**
+      (contreseing donné en session, après présentation des SHA-256, du diff
+      fichier par fichier et des critères d'acceptation mesurés)
+- [x] Baseline SHA-256 mise à jour dans le commit du correctif
+      (`tests/Feature/Sentinels/frozen-zone-sha256-baseline.json` — sentinelle
+      `FrozenZoneSha256BaselineSentinelTest` repassée VERTE)
+- [x] LOCK passé à **CLÔTURÉ** après livraison
 
-**Statut actuel : BROUILLON — le correctif n'est PAS commité.**
+**Statut actuel : CLÔTURÉ — correctif commité en local.**
+
+⚠️ **NON POUSSÉ, sur décision du propriétaire.** La branche locale est 38 commits
+derrière `origin/pos/category-first-caisse-2026-06-23` à cause d'une fusion
+laissée inachevée par une session antérieure (marqueurs de conflit stagés dans
+`PROJECT_BRAIN.md`, SHA `6aad72ca` = tête distante). Décision du 2026-08-28 :
+**ne pas y toucher**. Le push, la fusion vers `main` et le déploiement serveur
+(`scripts/deploy/deploy.sh`, en sudo sur le Hetzner) restent à faire.

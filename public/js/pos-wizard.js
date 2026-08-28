@@ -63,23 +63,29 @@
     /* ==============================
        CONFIG — SAUCES COMPLETES
        ============================== */
+    // [GOAL WIZARD-CAISSE 2026-08-28 · owner] REPLI SEULEMENT — n'est atteint que
+    // si la base ne renvoie AUCUNE sauce pour l'article. Aligné sur les sauces
+    // RÉELLEMENT servies au Cayenne (config/pos_sauces.php), dans le même ordre.
+    //
+    // Avant cet alignement, ce tableau listait Cocktail, Burger, Biggy, Poivre,
+    // BBQ — six sauces qui n'existent nulle part en base. Dormant tant que la
+    // base répond, mais une panne de données aurait fait afficher en caisse des
+    // sauces que la cuisine ne sert pas (CLAUDE.md §3bis : ne jamais inventer de
+    // produit). ⚠️ Toute modification doit suivre config/pos_sauces.php.
     const ALL_SAUCES = [
         { key: 'ketchup', name: 'Ketchup', emoji: '🍅' },
         { key: 'mayonnaise', name: 'Mayonnaise', emoji: '🥚' },
-        { key: 'algerienne', name: 'Algérienne', emoji: '🌶️' },
-        { key: 'curry', name: 'Curry', emoji: '🍛' },
-        { key: 'andalouse', name: 'Andalouse', emoji: '🌶️' },
-        { key: 'burger', name: 'Burger', emoji: '🍔' },
-        { key: 'samourai', name: 'Samouraï', emoji: '⚔️' },
-        { key: 'barbecue', name: 'Barbecue', emoji: '🔥' },
-        { key: 'cocktail', name: 'Cocktail', emoji: '🍹' },
-        { key: 'americaine', name: 'Américaine', emoji: '🇺🇸' },
-        { key: 'hannibal', name: 'Hannibal', emoji: '🦁' },
-        { key: 'harissa', name: 'Harissa', emoji: '🔥' },
         { key: 'blanche', name: 'Blanche', emoji: '🥛' },
-        { key: 'poivre', name: 'Poivre', emoji: '🫓' },
-        { key: 'biggy', name: 'Biggy', emoji: '🧄' },
-        { key: 'bbq', name: 'BBQ', emoji: '🔥' },
+        { key: 'algerienne', name: 'Algérienne', emoji: '🌶️' },
+        { key: 'samourai', name: 'Samouraï', emoji: '⚔️' },
+        { key: 'andalouse', name: 'Andalouse', emoji: '🫑' },
+        { key: 'americaine', name: 'Américaine', emoji: '🌟' },
+        { key: 'barbecue', name: 'Barbecue', emoji: '🔥' },
+        { key: 'curry', name: 'Curry', emoji: '🍛' },
+        { key: 'harissa', name: 'Harissa', emoji: '🌶️' },
+        { key: 'hannibal', name: 'Hannibal', emoji: '🦁' },
+        { key: 'fromagere', name: 'Fromagère maison', emoji: '🧀' },
+        { key: 'spicy', name: 'Spicy maison', emoji: '🥵' },
         { key: 'sans_sauce', name: 'Sans sauce', emoji: '🚫' }
     ];
 
@@ -87,6 +93,103 @@
     // Fallback values ensure the wizard works even if the config block fails to load.
     var _cfg = window.POS_WIZARD_CONFIG || {};
     var SAUCE_EXTRA_PRICE    = typeof _cfg.sauceExtraPrice   === 'number' ? _cfg.sauceExtraPrice   : 0.50;
+
+    /* ==============================
+       CATALOGUE SAUCES — couleur + emoji (SSOT serveur)
+       ==============================
+       [GOAL WIZARD-CAISSE 2026-08-28 · owner] Le catalogue vient de
+       config/pos_sauces.php, injecté par master.blade.php dans
+       POS_WIZARD_CONFIG.sauceStyles. C'est LE MÊME fichier qui pilote le tri
+       backend et la commande de réparation `foodking:sauces:sync` : une sauce
+       ajoutée là apparaît en base, dans le bon ordre, ET avec sa couleur, sans
+       toucher à ce script.
+
+       Si l'injection échoue (blade non rendue, cache vue périmé), on ne rend
+       PAS des tuiles sans couleur : on garde une teinte neutre lisible. */
+    var SAUCE_STYLES = Array.isArray(_cfg.sauceStyles) ? _cfg.sauceStyles : [];
+    var SAUCE_STYLE_FALLBACK = { bg: '#FFFFFF', fg: '#1B1B3A', emoji: '🥄' };
+
+    /** Normalisation identique à SauceCatalog::normalize() côté PHP. */
+    function normalizeSauceName(name) {
+        return normalizeStr(name)
+            .replace(/[^a-z0-9]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    var _sauceStyleIndex = null;
+    function sauceStyleIndex() {
+        if (_sauceStyleIndex) return _sauceStyleIndex;
+        _sauceStyleIndex = {};
+        SAUCE_STYLES.forEach(function (entry) {
+            (entry.aliases || []).forEach(function (alias) {
+                _sauceStyleIndex[alias] = entry;
+            });
+            _sauceStyleIndex[normalizeSauceName(entry.name)] = entry;
+        });
+        return _sauceStyleIndex;
+    }
+
+    /** Style d'une sauce d'après son libellé ; teinte neutre si hors catalogue. */
+    function sauceStyleFor(name) {
+        return sauceStyleIndex()[normalizeSauceName(name)] || SAUCE_STYLE_FALLBACK;
+    }
+
+    /**
+     * Une pastille très claire ne se distingue du fond blanc que par sa bordure.
+     * On assombrit donc la couleur de fond pour en tirer un liseré lisible —
+     * indispensable pour « Blanche » (#FFFFFF) et « Sans sauce ».
+     */
+    function shadeHex(hex, amount) {
+        var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+        if (!m) return '#D9DBE9';
+        var num = parseInt(m[1], 16);
+        var parts = [(num >> 16) & 255, (num >> 8) & 255, num & 255].map(function (c) {
+            return Math.max(0, Math.min(255, Math.round(c + (amount * 255))));
+        });
+        return '#' + parts.map(function (c) { return ('0' + c.toString(16)).slice(-2); }).join('');
+    }
+
+    /**
+     * Tuile sauce du wizard caisse (mode page unique).
+     *
+     * [GOAL WIZARD-CAISSE 2026-08-28 · owner] Remplace la « puce » de 12 px qui
+     * flottait dans un cadre à moitié vide alors que la colonne crudités, juste
+     * à côté, rendait des boutons pleine largeur. Demande explicite : la sauce
+     * occupe le MÊME espace que les crudités, et chaque sauce porte SA couleur
+     * (blanche = blanc, samouraï = orange, ketchup = rouge, fromagère = jaune…).
+     *
+     * Contrat de classes conservé à l'identique — `.sauce-chip`, `data-type`,
+     * `data-id`, `.chip-free`/`.chip-paid` — parce que la mise à jour d'état
+     * (updateSinglePageState) et la délégation de clic s'y accrochent déjà.
+     * Changer le markup sans ça casserait la sélection sans erreur visible.
+     *
+     * @param {object} sauce  variation { id, name }
+     * @param {string} key    clé de sélection ('s_12' ou 'sf_12')
+     * @param {string} type   'sauce' | 'sauce_frite'
+     * @param {number} idx    rang dans l'ordre de sélection (-1 = non choisie)
+     */
+    function renderSauceTile(sauce, key, type, idx) {
+        var style = sauceStyleFor(sauce.name);
+        var sel = idx >= 0 ? ' selected' : '';
+        var emoji = style.emoji || '🥄';
+        // Liseré tiré du fond : sans lui, « Blanche » et « Sans sauce » seraient
+        // des rectangles blancs invisibles sur un panneau blanc.
+        var border = shadeHex(style.bg, -0.18);
+        var css = '--sauce-bg:' + style.bg + ';--sauce-fg:' + style.fg + ';--sauce-border:' + border + ';';
+
+        var h = '<button type="button" class="sauce-chip' + sel + '" style="' + css + '"'
+              + ' data-type="' + type + '" data-id="' + key + '"'
+              + ' aria-pressed="' + (idx >= 0 ? 'true' : 'false') + '">';
+        h += '<span class="sauce-chip__dot" aria-hidden="true">' + emoji + '</span>';
+        h += '<span class="sauce-chip__label">' + sauce.name + '</span>';
+        // Les deux pastilles sont TOUJOURS présentes dans le DOM : updateSinglePageState
+        // se contente de basculer leur `display`, il ne sait pas les créer.
+        h += '<span class="chip-free"' + (idx === 0 ? '' : ' style="display:none"') + '>offerte</span>';
+        h += '<span class="chip-paid"' + (idx > 0 ? '' : ' style="display:none"') + '>+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>';
+        h += '</button>';
+        return h;
+    }
     var VIANDE_SUPPL_PRICE   = typeof _cfg.viandeSupplPrice  === 'number' ? _cfg.viandeSupplPrice  : 2.50;
     var FRITES_GRANDE_PRICE  = typeof _cfg.fritesGrandePrice === 'number' ? _cfg.fritesGrandePrice : 1.00;
     var FRITES_CHEDDAR_PRICE = typeof _cfg.fritesCheddarPrice === 'number' ? _cfg.fritesCheddarPrice : 1.00;
@@ -121,12 +224,14 @@
         'mexicain': '🌮', 'default': '🥩'
     };
 
+    // Aligné sur les sauces réelles (cf. ALL_SAUCES ci-dessus). Les clés sont
+    // cherchées par `includes`, d'où les alias courts conservés (« mayo », « bbq »).
     const SAUCE_EMOJIS = {
-        'ketchup': '🍅', 'mayonnaise': '🥚', 'mayo': '🥚', 'algerienne': '🌶️',
-        'curry': '🍛', 'andalouse': '🌶️', 'burger': '🍔', 'samourai': '⚔️',
-        'barbecue': '🔥', 'bbq': '🔥', 'cocktail': '🍹', 'americaine': '🇺🇸',
-        'hannibal': '🦁', 'harissa': '🔥', 'blanche': '🥛', 'poivre': '🫓',
-        'biggy': '🧄', 'sans': '🚫', 'default': '🥄'
+        'ketchup': '🍅', 'mayonnaise': '🥚', 'mayo': '🥚', 'blanche': '🥛',
+        'algerienne': '🌶️', 'samourai': '⚔️', 'andalouse': '🫑',
+        'americaine': '🌟', 'barbecue': '🔥', 'bbq': '🔥', 'curry': '🍛',
+        'harissa': '🌶️', 'hannibal': '🦁', 'fromage': '🧀', 'spicy': '🥵',
+        'sans': '🚫', 'default': '🥄'
     };
 
     function getEmoji(map, name) {
@@ -3038,12 +3143,8 @@
             sh += '<div class="sauce-chips-grid">';
             sauceVariations.forEach(function (sauce) {
                 var key = 's_' + sauce.id;
-                var sel = selections.sauces && selections.sauces[key] ? ' selected' : '';
                 var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(key) : -1;
-                var badge = idx === 0 ? ' <span class="chip-free">✓</span>' : (idx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
-                sh += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce" data-id="' + key + '">';
-                sh += sauce.name + badge;
-                sh += '</button>';
+                sh += renderSauceTile(sauce, key, 'sauce', idx);
             });
             sh += '</div>';
             sh += '</div>'; // .wizard-2col-block sauce
@@ -3312,15 +3413,10 @@
                 h += '<div class="sauce-frites-inline' + (showSauceFrites ? ' visible' : '') + '">';
                 h += '<h4>🍟 Sauce pour frites</h4>';
                 h += '<div class="sauce-chips-grid">';
-                var sfRenderCount = selections.sauceFritesOrder ? selections.sauceFritesOrder.length : 0;
                 sauceVariations.forEach(function (sauce) {
                     var key = 'sf_' + sauce.id;
-                    var sel = selections.sauceFrites && selections.sauceFrites[key] ? ' selected' : '';
                     var sfIdx = selections.sauceFritesOrder ? selections.sauceFritesOrder.indexOf(key) : -1;
-                    var badge = sfIdx === 0 ? ' <span class="chip-free">✓</span>' : (sfIdx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
-                    h += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce_frite" data-id="' + key + '">';
-                    h += sauce.name + badge;
-                    h += '</button>';
+                    h += renderSauceTile(sauce, key, 'sauce_frite', sfIdx);
                 });
                 h += '</div>';
                 h += '</div>';
@@ -3594,6 +3690,10 @@
             var sauceId = opt.getAttribute('data-id'); // string key like 's_123'
             var sel = selections.sauces && selections.sauces[sauceId];
             opt.classList.toggle('selected', !!sel);
+            // [GOAL WIZARD-CAISSE 2026-08-28] Les tuiles sauce portent aria-pressed :
+            // sans cette ligne l'attribut resterait figé sur sa valeur de rendu et un
+            // lecteur d'écran annoncerait TOUTES les sauces comme non sélectionnées.
+            if (opt.hasAttribute('aria-pressed')) opt.setAttribute('aria-pressed', sel ? 'true' : 'false');
             // For cards: update price label
             var priceLabel = opt.querySelector('.option-price');
             if (priceLabel) {
@@ -3692,6 +3792,7 @@
             var sauceId = opt.getAttribute('data-id');
             var sel = selections.sauceFrites && selections.sauceFrites[sauceId];
             opt.classList.toggle('selected', !!sel);
+            if (opt.hasAttribute('aria-pressed')) opt.setAttribute('aria-pressed', sel ? 'true' : 'false');
             var idx = selections.sauceFritesOrder ? selections.sauceFritesOrder.indexOf(sauceId) : -1;
             var priceLabel = opt.querySelector('.option-price');
             if (priceLabel) {

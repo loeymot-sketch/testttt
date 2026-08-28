@@ -314,8 +314,26 @@
         window.FK_KDS_V2_DEFAULT_ENABLED = @json((bool) config('kds.v2_default_enabled', true));
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
+        {{-- [SEC E-006 2026-08-25] The gate below MUST stay a Blade @if — never a JS ternary.
+
+             The previous form read `demo: @json((bool) config('app.demo_mode')) ? { …creds… } : null`.
+             Blade evaluated the flag, but a ternary keeps BOTH branches in the output: the page
+             shipped `demo: false ? { …every login and password… } : null` in clear text, in the
+             HTML of EVERY page extending this layout — including /admin/order-status-screen, the
+             wall customers read while they wait for their order, and /admin/pos.
+
+             A JS ternary (like a v-if or a CSS rule) hides nothing: the bytes are already on the
+             wire by the time JavaScript runs. The values must be ABSENT from the markup.
+
+             Production is excluded unconditionally, on top of the flag — DEMO=true in production
+             is already refused at boot by AppServiceProvider; this is the second lock on that door.
+
+             This block is a Blade comment on purpose: it is stripped at compile time, so the
+             explanation stays with the code without being served to every visitor.
+             Pinned by tests/Feature/Security/DemoCredentialsNotServedInHtmlTest.php. --}}
+        @if (config('app.demo_mode') && ! app()->isProduction())
         window.__FOODKING_RUNTIME__ = {
-            demo: @json((bool) config('app.demo_mode')) ? {
+            demo: {
                 adminEmail:          @json((string) config('app.demo_credentials.admin_email')),
                 adminPassword:       @json((string) config('app.demo_credentials.admin_password')),
                 customerEmail:       @json((string) config('app.demo_credentials.customer_email')),
@@ -326,8 +344,11 @@
                 posOperatorPassword: @json((string) config('app.demo_credentials.pos_operator_password')),
                 chefEmail:           @json((string) config('app.demo_credentials.chef_email')),
                 chefPassword:        @json((string) config('app.demo_credentials.chef_password')),
-            } : null,
+            },
         };
+        @else
+        window.__FOODKING_RUNTIME__ = { demo: null };
+        @endif
     </script>
 
     {{-- [POS-V4 W1-B 2026-04-26] Vendor chunking — order is critical: --}}
@@ -347,7 +368,12 @@
             sauceExtraPrice:   {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_sauce_extra_price') ?? 0.50) }},
             viandeSupplPrice:  {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_viande_suppl_price') ?? 2.50) }},
             fritesGrandePrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_grande_price') ?? 1.00) }},
-            fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
+            fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }},
+            /* [GOAL WIZARD-CAISSE 2026-08-28 · owner] Catalogue sauces (ordre + couleur)
+               servi depuis config/pos_sauces.php — SSOT unique partagée avec le tri
+               backend (SauceCatalog::sortVariations). Le wizard ne redéclare AUCUNE
+               couleur en dur : ajouter une sauce = éditer le seul fichier de config. */
+            sauceStyles: @json(\App\Support\Menu\SauceCatalog::frontPayload())
         };
     </script>
     {{-- [W5-PERF A2 2026-07-06] filemtime au lieu de time() — voir <head> : fin des ~300 Ko
