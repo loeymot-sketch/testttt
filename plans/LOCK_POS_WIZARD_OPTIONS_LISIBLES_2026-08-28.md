@@ -12,7 +12,8 @@
 
 - LOCK ID : `LOCK_POS_WIZARD_OPTIONS_LISIBLES`
 - Créé/approuvé : 2026-08-28 (instruction propriétaire directe)
-- Fichier frozen : `public/css/pos-wizard.css` — bloc `.sauce-chips-grid` / `.sauce-chip`
+- Fichiers frozen : `public/css/pos-wizard.css` (bloc `.sauce-chips-grid` / `.sauce-chip`)
+  et `public/js/pos-wizard.js` (une expression : la classe posée sur la pastille)
 
 ## §2 Changement (chirurgical, un bloc de style)
 
@@ -66,7 +67,31 @@ aucune composition, aucune écriture fiscale n'en dépend.
 
 Couche d'affichage pure. Aucun impact prix, logique, ou fiscal.
 
-## §7 Note de méthode — trois fausses pistes avant la bonne
+## §7 Amendement du 2026-08-28 — les couleurs refusées, et refaites
+
+Le propriétaire a revu le premier jet et l'a refusé, à juste titre :
+
+> « les couleurs, j'aime pas trop comment t'as fait. Je voudrais mieux mettre selon les
+> couleurs de chaque chose : ce qui est blanche ça reste blanc, harissa c'est rouge,
+> algérienne c'est orange… pourquoi t'as mis le curry en rouge ? Et je veux la même taille
+> que les crudités — l'autre, c'est en face, la même taille. »
+
+**Ce que j'avais fait** : huit teintes qui tournaient par POSITION. C'est stable, mais
+arbitraire — le curry tombait sur du rouge par le seul hasard de son rang. Une teinte
+arbitraire n'apprend rien au caissier ; il doit toujours lire le mot.
+
+**Ce qu'il fallait faire** : la couleur de la SAUCE. Le curry est jaune, la harissa rouge,
+la blanche blanche. Là, la couleur se reconnaît sans lire — c'est tout l'intérêt.
+
+Cela demande de savoir QUELLE sauce est dans la pastille : le fichier JS gelé pose donc
+désormais une classe tirée du nom (accents et casse retirés). Une expression, une variable.
+Une sauce absente de la table garde le fond blanc : mieux vaut sobre que faux.
+
+**Et la taille** : les pastilles reprennent exactement le gabarit des crudités de la colonne
+d'en face — `display:block; width:100%; padding:10px 12px`, empilées. Les deux colonnes se
+répondent au lieu de se contredire.
+
+## §8 Note de méthode — trois fausses pistes avant la bonne
 
 Écrit ici parce que ça fera gagner du temps à la prochaine personne : **l'assistant de la
 caisse a trois chemins de rendu qui coexistent**, et les trois portent des noms voisins.
