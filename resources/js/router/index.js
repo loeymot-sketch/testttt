@@ -122,6 +122,32 @@ const handlePermissionDenied = (to, next) => {
     ) {
         return next({ name: 'admin.item.show', params: { id: to.params.id } });
     }
+
+    /*
+     * [ONB-06 2026-08-28] NE PAS REDIRIGER VERS UNE ROUTE QU'IL NE PEUT PAS OUVRIR.
+     *
+     * Ce repli était toujours `admin.dashboard`. Or cette route porte
+     * `meta.permissionUrl = 'dashboard'` : un utilisateur qui ne l'a pas voyait la
+     * garde se redéclencher sur sa PROPRE CIBLE, rappeler cette fonction, et repartir
+     * vers le tableau de bord. Boucle infinie, avec un toast d'erreur à chaque tour.
+     *
+     * Ce n'est pas théorique : `RolePermissionTableSeeder` ne donne AUCUNE permission
+     * au rôle Livreur, et `LeCayenneRoleLandingUrlSeeder:31` le fait atterrir sur
+     * `delivery-boys`, qui exige la permission du même nom. Un livreur qui se
+     * connectait tournait en rond.
+     *
+     * `route.exception` est dans la liste exemptée de garde et ne porte aucune
+     * `permissionUrl` : c'est une destination TERMINALE. On y va quand le tableau de
+     * bord est hors de portée.
+     *
+     * Correctif GÉNÉRAL, et c'est voulu : donner des droits au Livreur traiterait le
+     * symptôme, mais la boucle reviendrait le jour où quelqu'un crée un rôle vide
+     * depuis l'écran des rôles.
+     */
+    if (! userHasPermission('dashboard')) {
+        return next({ name: 'route.exception' });
+    }
+
     return next({ name: 'admin.dashboard' });
 };
 
