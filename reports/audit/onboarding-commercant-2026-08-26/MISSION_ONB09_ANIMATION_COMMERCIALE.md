@@ -73,6 +73,64 @@ commerciale possible **sans jamais** sortir le prix du backend. Persona Nadia (m
 - La roue a un gate UX ouvert : ne pas modifier son UX.
 - `:8000` = autre worktree ; ta session = **:8809**.
 
+
+### 8.9 Le P0 des codes promo — instruit le 2026-08-28
+
+Le rapport de reconnaissance portait ce constat en **P0** :
+
+> « Le drapeau `pos.coupon_codes_enabled` n'agit PAS en caisse. Le mettre à vrai ne
+> débloque rien. »
+
+**Vérifié, et exact.** Le drapeau a bien 4 lecteurs — `CouponController:55`,
+`FrontendOrderService:1099`, `WheelService:813`, `PromoFlyerController:83` — tous
+**en amont du paiement**. `grep -c coupon_codes_enabled app/Services/OrderService.php`
+rend **0**. Le garde d'admission des remises (`OrderService:3700`, 7 sites d'appel)
+ne lit que `pos.manual_discount_enabled`.
+
+Vécu par l'exploitant : **le code du client est accepté au pré-contrôle, puis refusé
+au paiement.** Le drapeau créé pour éviter d'ouvrir les remises libres oblige donc à
+les ouvrir — l'inverse exact de son intention.
+
+#### Ce que l'instruction a changé au diagnostic
+
+Le rapport recommandait « faire lire le drapeau par la caisse ». Deux vérifications
+ont déplacé la question :
+
+1. **Le garde n'est pas en faute.**
+   `plans/LOCK_ZREPORT_F1_DISCOUNT_NETTING_2026_05_31.md §7` désigne explicitement
+   `manual_discount_enabled` comme l'interrupteur **unique** d'activation. Le garde
+   applique une décision prise. C'est le **commentaire de `config/pos.php`** qui
+   promettait autre chose — il annonçait que le drapeau autorise « le pré-contrôle
+   **et l'application** […] que les remises manuelles soient coupées ou non ».
+
+2. **L'obstacle fiscal invoqué n'existe plus.**
+   Le docblock du garde (`OrderService:3715-3722`) refuse les remises parce que le
+   découpage TVA/HT serait faux dans la zone gelée — le défaut **F1**. Or F1 a été
+   corrigé **le lendemain** de ce docblock, le 2026-05-31, sous clé propriétaire
+   *accordée*, et `ZReportDiscountNettingTest` le prouve (5 verts, relancés).
+
+   Mieux : la clé dit que le propriétaire a choisi de « **réactiver coupons +
+   fidélité** ». Seule la moitié fiscale a été livrée. **Le garde survit à sa propre
+   justification, périmée d'un jour.**
+
+#### Ce qui a été fait, et ce qui ne l'a pas été
+
+**Fait — la promesse fausse est retirée.** `config/pos.php` décrit désormais les 4
+lecteurs réels, dit noir sur blanc ce que le drapeau ne commande pas, et renvoie au
+dossier. *Un réglage qui ment coûte plus cher qu'un réglage absent* — même
+raisonnement que pour le wizard de catégorie, et corriger une affirmation fausse
+n'est pas une décision d'architecture.
+
+**Pas fait — le découplage.** Faire lire le drapeau par la caisse change ce qu'un
+interrupteur d'arrêt protège. C'est une décision propriétaire.
+Dossier : `docs/gates/GATE_COUPONS_EN_CAISSE_2026-08-28.md`, trois options chiffrées,
+recommandation en deux temps (passer l'origine de la remise au garde sans rien
+ouvrir, puis ouvrir).
+
+**Le banc `LeDrapeauCouponsDitCeQuIlFaitTest`** épingle l'état réel : le jour où
+quelqu'un fera lire le drapeau par la caisse, il vire au rouge et renvoie au dossier
+— pour que le découplage soit une décision, pas un effet de bord.
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 Audit adverse en lecture seule le 2026-08-28.
