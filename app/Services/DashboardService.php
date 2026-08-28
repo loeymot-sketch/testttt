@@ -471,6 +471,20 @@ class DashboardService
                 // realizedRevenue() (net). Sans ça, une commande PAYÉE puis ANNULÉE gonflait le
                 // nombre de commandes → ticket moyen sous-estimé.
                 ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
+                // [ONB-07 2026-08-28] Le NUMÉRATEUR passe par `realizedRevenue()`, qui
+                // exclut le canal Uber (non fiscalisé par conception,
+                // `Order::isRealizedRevenueRow`). Le DÉNOMINATEUR ne l'excluait pas :
+                // on divisait un chiffre d'affaires SANS Uber par un nombre de
+                // commandes AVEC Uber.
+                //
+                // Mesuré sur la base réelle au 14/08 : 154,65 € ÷ 17 = « Ticket moyen
+                // 9,10 € », là où le dénominateur cohérent (7) donne 22,09 €. Une
+                // sous-évaluation de 59 % sur le chiffre qui sert à décider d'une
+                // hausse de prix ou d'un menu.
+                ->where(function ($q): void {
+                    $q->whereNull('source_surface')
+                        ->orWhere('source_surface', '!=', 'uber_eats');
+                })
                 ->count();
 
             // Ticket Moyen
@@ -705,14 +719,22 @@ class DashboardService
             // (RETURNED + parent_order_id, already-negated total/total_tax) → a refunded
             // order nets to ~0 and a cancelled-but-paid order drops out. Mirrors the
             // Order::scopeRealizedRevenue scope used by the live dashboard queries.
-            $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
-            $realized = $orders->filter(function ($o) use ($terminal) {
-                $isLivePaidSale = (int) $o->payment_status === PaymentStatus::PAID
-                    && ! in_array((int) $o->status, $terminal, true);
-                $isRefundMirror = (int) $o->status === OrderStatus::RETURNED
-                    && $o->parent_order_id !== null;
-                return $isLivePaidSale || $isRefundMirror;
-            });
+            // [ONB-07 2026-08-28] Ce prédicat était RECOPIÉ à la main, et sa copie
+            // OMETTAIT l'exclusion du canal Uber que porte l'original
+            // (`Order::isRealizedRevenueRow`, `Order.php:375` :
+            // `source_surface !== 'uber_eats'`). Le commentaire ci-dessus affirmait
+            // pourtant « Mirrors the Order::scopeRealizedRevenue scope ».
+            //
+            // Conséquence, mesurée sur la base réelle : le PDF « Clôture du jour » du
+            // 14/08 annonçait **413,38 €** de chiffre d'affaires quand l'écran, le
+            // rapport des ventes et le Z signé en comptaient **154,65 €**. Le 12/08 :
+            // 137,00 € contre 0,00 €. C'est le document remis au comptable et archivé
+            // six ans : son CA ET sa TVA étaient surévalués du montant Uber, déjà
+            // facturé séparément par l'agrégateur — donc déclaré deux fois.
+            //
+            // On appelle la règle au lieu de la recopier. Une copie ne suit pas les
+            // corrections de l'original — c'est exactement ce qui s'est passé ici.
+            $realized = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
             $refunded = $orders->filter(fn ($o) => (int) $o->payment_status === PaymentStatus::REFUNDED);
 
             $totalCa = (float) $realized->sum('total');
