@@ -358,6 +358,7 @@
             "loading": "Chargement des commandes…",
             "empty_column": "—",
             "empty_accept": "Aucune commande à encaisser.",
+            "empty_accept_avec_anterieures": "Aucune commande à encaisser sur la journée de service — {count} antérieure(s), voir l'encaissement.",
             "empty_preparing": "Aucune commande en cuisine.",
             "empty_prepared": "Aucune commande prête.",
             "empty_on_the_way": "Aucune commande en livraison.",

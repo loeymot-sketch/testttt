@@ -1473,7 +1473,26 @@ export default {
                     highlight: true,
                     orders: b.accept,
                     emptyIcon: '✓',
-                    emptyLabel: this.$t('pos.tracker.empty_accept'),
+                    /*
+                     * [AUDIT-SUPERVISEUR 2026-08-26 · AB-002] DEUX AFFIRMATIONS CONTRADICTOIRES
+                     * SUR L'ARGENT DÛ, À QUARANTE PIXELS D'ÉCART.
+                     *
+                     * Le bandeau annonçait « 2 commande(s) à encaisser hors de ce tableau »
+                     * pendant que cette colonne affichait « 0 » et « Aucune commande à
+                     * encaisser. » Les deux chiffres sont JUSTES — le bandeau compte les
+                     * commandes antérieures à la journée de service, la colonne montre la
+                     * journée — mais rien ne le disait, et un lecteur d'écran n'entendait que
+                     * « 0 À encaisser ».
+                     *
+                     * Le message vide porte désormais la même qualification que le bandeau.
+                     * L'état vide filtré du même composant le fait déjà (« Aucune commande
+                     * Téléphone dans « À encaisser » — filtre canal actif ») : on s'aligne.
+                     */
+                    emptyLabel: this.olderPendingCount > 0
+                        ? this.$t('pos.tracker.empty_accept_avec_anterieures', {
+                            count: this.olderPendingCount,
+                        })
+                        : this.$t('pos.tracker.empty_accept'),
                 },
                 {
                     id: 'preparing',
