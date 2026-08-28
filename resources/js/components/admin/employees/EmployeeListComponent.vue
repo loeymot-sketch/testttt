@@ -39,7 +39,7 @@
                     <router-link v-if="permissionChecker('settings')" :to="{ name: 'admin.settings.role' }"
                         class="db-btn py-2 text-white bg-slate-500"
                         data-testid="employees-roles">
-                        <i class="lab lab-role"></i>
+                        <i class="lab lab-role-permissions"></i>
                         <span>{{ $t("menu.role_permissions") }}</span>
                     </router-link>
                     <EmployeeCreateComponent :props="props" v-if="permissionChecker('employees_create')" />
