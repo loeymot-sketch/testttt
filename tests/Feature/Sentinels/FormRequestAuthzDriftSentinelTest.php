@@ -64,7 +64,14 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
      *   - ItemCategoryRequest, ItemAttributeRequest, ItemExtraRequest, ItemAddonRequest,
      *     ItemVariationRequest, MenuTemplateRequest, OfferItemRequest (catalog family)
      */
-    private const RETURN_TRUE_BASELINE = 64;
+    // [ONB-13 C7 2026-08-28] 64 → 54. Le critère C7 de la mission visait ≤ 55.
+    //
+    // Dix règles sont passées de `return true` inconditionnel à un miroir EXACT de
+    // la permission que porte leur route — famille catalogue, création de comptes
+    // (Chef, Serveur), et réglages. Ce n'est pas la garde principale : le
+    // middleware du contrôleur garde déjà l'accès. C'est le second verrou, si une
+    // route est un jour recâblée sans son middleware.
+    private const RETURN_TRUE_BASELINE = 54;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {

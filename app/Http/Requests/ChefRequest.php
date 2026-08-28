@@ -14,9 +14,26 @@ class ChefRequest extends FormRequest
      *
      * @return bool
      */
+    /**
+     * [ONB-13 C7 2026-08-28] Defense en profondeur — etait `return true;`.
+     *
+     * Cette regle CREE UN UTILISATEUR, avec un role et un mot de passe. Le GOAL la
+     * designe parmi les plus exposees : une route recablee sans son middleware
+     * ouvrirait la creation de comptes a n'importe qui.
+     *
+     * Miroir exact de la permission que porte la route : ChefController:34-35.
+     * Meme motif que `EmployeeRequest`, et la famille entiere (creation ET
+     * modification) est acceptee parce que les regles servent aux deux verbes.
+     */
     public function authorize(): bool
     {
-        return true;
+        $utilisateur = $this->user();
+
+        if ($utilisateur === null) {
+            return false;
+        }
+
+        return $utilisateur->can('chefs_create') || $utilisateur->can('chefs_edit');
     }
 
     /**
