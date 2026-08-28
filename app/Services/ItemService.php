@@ -711,12 +711,57 @@ class ItemService
         }
     }
 
+    /**
+     * [ONB-07 2026-08-28] Le total du rapport articles, sur le PÉRIMÈTRE FILTRÉ.
+     *
+     * L'écran affichait `subTotal(itemsReports)` — la somme de la PAGE courante
+     * (`per_page: 10`) — sous le même libellé « Total » que l'export, qui totalise
+     * tout le catalogue. Sur 45 produits, deux nombres différents pour un seul mot,
+     * et c'est celui-là qui sert à décider d'un réassort.
+     *
+     * Ce défaut avait DÉJÀ été corrigé pour le PDF en juillet (voir le commentaire
+     * de `ItemsReportController::pdf()` : « le Total sous-comptait les unités
+     * vendues »). La correction n'avait pas été portée à l'écran.
+     *
+     * On passe par `requeteDuRapportArticles()` : le total et la liste partagent
+     * exactement les mêmes filtres et la même fenêtre. Deux requêtes construites
+     * séparément divergeraient au premier filtre ajouté d'un seul côté — c'est
+     * l'histoire de ce fichier.
+     */
+    public function totalUnitesVenduesDuRapport(PaginateRequest $request): int
+    {
+        try {
+            return (int) $this->requeteDuRapportArticles($request)
+                ->get()
+                ->sum('units_sold');
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
     public function itemReport(PaginateRequest $request)
     {
         try {
-            $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
+
+            return $this->requeteDuRapportArticles($request)->$method($methodValue);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * La requête du rapport articles, sans pagination : filtres, fenêtre de dates et
+     * tri, partagés par la liste, l'export, le PDF et le total.
+     */
+    private function requeteDuRapportArticles(PaginateRequest $request)
+    {
+        {
+            $requests = $request->all();
             // [ITEMS-SEM-01/02/NET-03 heal 2026-06-01, owner "agree with the Z"]
             // "Units sold" = SUM(order_items.quantity) — NOT COUNT of order lines —
             // scoped to the SALE date (the parent order's order_datetime, NOT
@@ -754,12 +799,7 @@ class ItemService
                             }
                         }
                     }
-                })->orderByRaw('units_sold IS NULL, units_sold DESC')->$method(
-                    $methodValue
-                );
-        } catch (Exception $exception) {
-            Log::info($exception->getMessage());
-            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+                })->orderByRaw('units_sold IS NULL, units_sold DESC');
         }
     }
 

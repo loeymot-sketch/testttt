@@ -299,6 +299,24 @@ class WheelSettingsService
         return max(0, (int) $this->get('follow_dwell', 8));
     }
 
+    /**
+     * [ONB-05 2026-08-28] LE MINIMUM DE COMMANDE, UNE SEULE PORTE D'ENTRÉE.
+     *
+     * Cette méthode n'avait qu'UN appelant (`WheelPrizeController:242`), pendant que
+     * cinq autres endroits lisaient `config('wheel.min_order_amount')` en direct —
+     * dont `WheelController:332`, qui APPLIQUE la contrainte au client.
+     *
+     * L'exploitant réglait « minimum 15 € », l'écran de contrôle affichait 15 €, et
+     * la roue continuait d'appliquer la valeur du fichier. Un réglage qui ment coûte
+     * plus cher qu'un réglage absent : il donne la certitude fausse d'avoir agi.
+     *
+     * Les replis divergeaient en prime : 10 ici, 0 chez les lecteurs directs.
+     *
+     * C'est exactement ce que le docblock de `WheelService::segments()` interdit
+     * depuis août — « lire la config en direct ailleurs, ce serait ignorer les
+     * réglages du propriétaire sur une surface et pas sur l'autre ». Le principe
+     * était écrit et appliqué aux segments ; il ne l'était pas ici.
+     */
     public function minOrder(): float
     {
         return max(0, (float) $this->get('min_order', 10));

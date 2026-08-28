@@ -128,6 +128,10 @@ export default {
                     siret: "",
                     vat_intra: "",
                     legal_footer: "",
+                    // [ONB-01 2026-08-28] Absent des défauts alors que l'hydratation le
+                    // portait déjà (`:208`) : à la CRÉATION, le champ n'existait donc
+                    // même pas dans le formulaire.
+                    register_id: "",
                 },
                 search: {
                     paginate: 1,

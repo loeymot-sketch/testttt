@@ -96,8 +96,50 @@ Temps de chargement mesurés Z2 : les 25 pages en < 1 s (serveur de dev) ; `/api
 - Filiales de démonstration (5) : ne pas les supprimer ici (ONB-12).
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Constats nouveaux : — · Décisions prises : — · Fichiers touchés : — · Demandes vers d'autres GOAL (fiches de renvoi) : ONB-05 (dé-cacher Thème, Créneaux/Horaires, retirer les 3 champs de frais d'OrderSetup, entrée de menu Horaires) · ONB-11 (« Filiales » → « Points de vente », toasts anglais) · ONB-12 (archivage des 5 filiales de démonstration) · ONB-13 (lecture des réglages par `pos@`, clé d'API sur Licence) · État final : —
+Audit adverse en lecture seule le 2026-08-28, chaque verdict adossé à un
+`fichier:ligne` réellement lu.
+
+### 8.1 Corrigé
+
+| Constat | Verdict | Preuve |
+|---|---|---|
+| P1 · Les champs fiscaux de la filiale n'étaient jamais enregistrés | **FIXÉ** | `BranchRequest.php:58-68` — les quatre ont désormais une règle, donc entrent dans `validated()` |
+| P1 · …et la lecture ne les renvoyait pas, donc le second enregistrement les EFFAÇAIT | **FIXÉ** | `BranchResource.php:54-57` ; `IdentiteFiscaleSurvitAUnSecondEnregistrementTest` |
+| P1 · Page Site inenregistrable (clé Maps et copyright obligatoires) | **FIXÉ** | `SiteRequest.php:63,66` passés `nullable`, garde anti-injection `.env` conservée |
+| P1 · `register_id` : règle, ressource, hydratation, impression sur le ticket — **et aucun champ de saisie** | **FIXÉ ce soir** | `BranchCreateComponent.vue` + défaut dans `BranchListComponent.vue` ; `tests/js/leFormulaireFilialePorteLIdentiteFiscaleComplete.spec.js` (5) |
+| P2 · Toasts « … Created Successfully » | **FIXÉ** | traduction dans `alertService.js:75-85` |
+| — · `label.legal_footer`, `legal_footer_placeholder`, `siret_placeholder` absents de l'ANGLAIS alors que le gabarit les référence | **FIXÉ ce soir** | trouvés en posant un banc sur les QUATRE champs fiscaux |
+
+⚠️ **Le banc voisin ne fermait pas le trou qu'il annonçait.**
+`BranchFiscalIdentityFormTest:53` s'appelle « les trois champs fiscaux » et boucle sur
+`['siret','vat_intra','legal_footer']` : il ne mesurait PAS `register_id`, alors que sa
+règle existait. Le trou était fermé par un banc voisin, pas par celui qui portait son
+nom. Le nouveau banc mesure les quatre, et vérifie pour chacun le champ, la liaison,
+l'affichage d'erreur, le défaut ET l'hydratation.
+
+### 8.2 Encore vrai — vérifié, pas supposé
+
+| Sév. | Constat | Preuve |
+|---|---|---|
+| **P1** | **Aucun écran d'horaires d'ouverture. Ni table, ni route, ni composant.** `grep -rl "opening_hours\|OpeningHour"` sur `app/ resources/js/ routes/` = **0 résultat**, et aucune migration ne contient « opening/hour/closure » | — |
+| **P1** | `branches.delivery_fee_base/_per_km/_minimum/_free_km` sont `fillable`, castés et **lus par `DeliveryFeeService.php:34-43`** — mais absents des règles de `BranchRequest` et de tout formulaire. **Le tarif de livraison n'est configurable nulle part.** `OrderSetupRequest.php:38-41` le documente lui-même : « sans écran d'admin » | — |
+| **P1** | Page Licence : le champ « clé de licence » écrit `MIX_API_KEY` — la clé `X-API-KEY` — dans le `.env`, en `type="text"`, et la ressource la relit **en clair** | `LicenseService.php:45`, `LicenseResource.php:28` |
+| **P1** | Onglet Zone : `google.maps.drawing.DrawingManager` appelé sans garde ni repli, alors que la bibliothèque a été retirée de l'API | `BranchShowComponent.vue:222-228` |
+| **P2** | Lecture des réglages ouverte à tout compte connecté : six contrôleurs en `->only('update')`, aucun gate sur `index` | `CompanyController:19`, `SiteController:19`, `OrderSetupController:19`, `ThemeController:19`, `OtpController:19`, `BranchController:23` |
+| **P2** | Borne : « Le Cayenne » et « Halal · Frais · Préparé minute » **écrits en dur**, concaténés au titre réglable sans clé i18n. Un nouvel établissement affiche le nom d'un autre | `KioskIdleScreenComponent.vue:346,348` |
+| **P3** | Page Site : **15** champs encore `required`, dont passerelle de paiement en ligne et connexion invité — sans objet en V1 locale | `SiteRequest.php:39-71` |
+
+Angles morts §2.4 confirmés : **thème = 3 logos, zéro couleur** (`ThemeRequest.php:33-35`), écran masqué ; Langues et Créneaux masqués (`v1-hidden-modules.js:46,52`).
+
+### 8.3 Ce qui reste — par coût pour qui configure son établissement
+
+1. **Les horaires d'ouverture n'existent pas.** C'est le premier réglage qu'un commerçant cherche, et le seul angle mort TOTAL de cette mission. Exige **G-DATA** (créer les tables).
+2. **Les frais de livraison ne sont configurables nulle part**, alors que le service les lit. Créer l'écran, ou retirer les colonnes.
+3. **Sortir « Le Cayenne » de la borne.** Pour une « publication vierge », c'est le défaut le plus visible : l'établissement de quelqu'un d'autre affiche le nom du premier.
+4. **Aucun écran « Mon établissement »** : l'identité reste éclatée entre Entreprise et Filiale, sans dire lequel s'imprime sur le ticket. Gate G-ID.
+5. **Retirer ou renommer la page Licence** : un champ étiqueté « licence » qui écrit la clé d'API en clair est un piège.
+6. **Fermer la lecture des réglages** aux comptes non habilités — six contrôleurs, une ligne chacun.
+7. **Onglet Zone** : remplacer le tracé par un rayon en km, ou retirer l'onglet.
+
+**État final ONB-01 : quatre P1 clos et verrouillés (identité fiscale enregistrable, relue, non effacée, et enfin COMPLÈTE avec le N° de caisse). Restent deux P1 qui exigent du neuf — horaires (G-DATA) et frais de livraison — et un P1 de sécurité (page Licence). La borne porte toujours le nom d'un autre établissement.**

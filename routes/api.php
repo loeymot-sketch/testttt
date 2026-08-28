@@ -76,6 +76,7 @@ use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\Assistant\MenuExtractionController;
+use App\Http\Controllers\Admin\Assistant\MissionLocaleController;
 use App\Http\Controllers\Admin\SalesReportController;
 use App\Http\Controllers\Admin\SimpleUserController;
 use App\Http\Controllers\Admin\SiteController;
@@ -1521,6 +1522,31 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('assistant/menu')->name('assistant.menu.')->group(function () {
         Route::post('/lecture', [MenuExtractionController::class, 'lire'])->name('lecture');
         Route::post('/application', [MenuExtractionController::class, 'appliquer'])->name('application');
+    });
+
+    /*
+     | [ONB-04 2026-08-28] L'ASSISTANT DE MISSIONS LOCALES
+     |
+     | Le mandat le demande en toutes lettres : « chatbot de missions locales », avec
+     | pour exemple « ajoute une sauce à tous les tacos ». Il n'existait pas.
+     |
+     | Même découpe en deux temps que l'extraction de carte, et pour la même raison :
+     |   · `lecture`     comprend la phrase et rend un PLAN. N'écrit RIEN.
+     |   · `application` REFAIT le plan depuis la phrase, puis l'exécute — jamais un
+     |                   diff reçu du navigateur, qui pourrait avoir été trafiqué en
+     |                   route sous couvert d'une confirmation humaine.
+     |
+     | L'interpréteur est DÉTERMINISTE : grammaire déclarée, aucun appel sortant,
+     | refus explicite quand il ne comprend pas. Il ne dépend donc pas du gate G-IA
+     | — et le jour où un modèle prendra le relais, il ne remplacera QUE l'étape
+     | « comprendre la phrase ».
+     |
+     | La garde `items_edit` est portée par le constructeur du contrôleur : une
+     | mission locale MODIFIE le catalogue, et `lecture` prépare cette écriture.
+     */
+    Route::prefix('assistant/mission')->name('assistant.mission.')->group(function () {
+        Route::post('/lecture', [MissionLocaleController::class, 'lire'])->name('lecture');
+        Route::post('/application', [MissionLocaleController::class, 'appliquer'])->name('application');
     });
 
     Route::prefix('sales-report')->name('sales-report.')->group(function () {

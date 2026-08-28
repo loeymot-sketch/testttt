@@ -8,6 +8,24 @@
                 <p class="catalog-studio__subtitle">{{ $t("studio.subtitle") }}</p>
             </div>
             <div class="catalog-studio__header-actions">
+                <!--
+                    [ONB-04 2026-08-28] Les deux outils d'assistance, enfin atteignables.
+                    Livrés respectivement le 27 et le 28, ni l'un ni l'autre n'avait de
+                    lien : `grep admin.items.import` hors routeur rendait zéro résultat.
+                    Une fonction sans porte n'est pas livrée.
+                -->
+                <router-link v-if="canCreateItem" :to="{ name: 'admin.items.assistant' }"
+                    class="db-btn py-2 bg-slate-700 text-white"
+                    data-testid="catalog-studio-assistant">
+                    <i class="lab lab-messages-line"></i>
+                    <span>{{ $t("label.assistant_mission_title") }}</span>
+                </router-link>
+                <router-link v-if="canCreateItem" :to="{ name: 'admin.items.import' }"
+                    class="db-btn py-2 bg-slate-500 text-white"
+                    data-testid="catalog-studio-import-carte">
+                    <i class="lab lab-line-import"></i>
+                    <span>{{ $t("label.menu_import_title") }}</span>
+                </router-link>
                 <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">

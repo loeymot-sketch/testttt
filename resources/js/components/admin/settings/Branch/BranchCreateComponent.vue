@@ -96,6 +96,27 @@
                             }}</small>
                         </div>
                         <div class="form-col-12">
+                            <!--
+                                [ONB-01 2026-08-28] Le numéro de caisse, enfin saisissable.
+                                Sa règle existait (`BranchRequest.php:68`), la ressource
+                                l'exposait, `ReceiptDataService` l'imprimait sur le ticket
+                                sous `pos_register_id`, et l'édition l'hydratait déjà — il
+                                manquait uniquement le champ. Sur un document fiscal,
+                                l'identifiant de caisse n'est pas cosmétique.
+                            -->
+                            <label for="register_id" class="db-field-title">{{
+                                $t("label.register_id")
+                            }}</label>
+                            <input v-model="props.form.register_id"
+                                v-bind:class="errors.register_id ? 'invalid' : ''" type="text"
+                                id="register_id" maxlength="32"
+                                :placeholder="$t('label.register_id_placeholder')" class="db-field-control" />
+                            <small class="db-field-alert" v-if="errors.register_id">{{
+                                errors.register_id[0]
+                            }}</small>
+                        </div>
+
+                        <div class="form-col-12">
                             <label for="legal_footer" class="db-field-title">{{
                                 $t("label.legal_footer")
                             }}</label>

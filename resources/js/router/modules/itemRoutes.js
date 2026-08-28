@@ -14,6 +14,7 @@ const WizardAdvancedLauncherComponent = () => import(/* webpackChunkName: "admin
 // appartient à ONB-05 (table `menus`), et c'est de toute façon là qu'un
 // commerçant qui construit sa carte vient chercher.
 const MenuImportComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/assistant/MenuImportComponent.vue");
+const MissionLocaleComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/assistant/MissionLocaleComponent.vue");
 
 export const isWizardPerItemDemoEnabled = () => (
     typeof window !== 'undefined'
@@ -62,6 +63,24 @@ export default [
                     auth: true,
                     permissionUrl: 'items',
                     breadcrumb: 'menu_import_title'
+                },
+            },
+            /*
+             * [ONB-04 2026-08-28] L'assistant de missions locales.
+             *
+             * Rangé dans le catalogue, et non dans les réglages : c'est là que le
+             * commerçant est quand il pense « il faudrait ajouter cette sauce
+             * partout ». Un outil rangé loin du geste qu'il sert n'est pas trouvé.
+             */
+            {
+                path: 'assistant',
+                component: MissionLocaleComponent,
+                name: 'admin.items.assistant',
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: 'items',
+                    breadcrumb: 'assistant_mission_title'
                 },
             },
             {

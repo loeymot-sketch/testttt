@@ -75,8 +75,43 @@ cuisine. Ce GOAL rend les trois questions du commerçant évidentes et prouvées
 - `:8000` = autre worktree ; ta session = **:8808**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi : ONB-05 (menu du hub, réglage seuil bas, permission) · ONB-10 (affectation des postes en lot) · ONB-02 (enum `KdsStation`, `ItemRequest`) · ONB-13 (`config/idempotency.php`, upload) · ONB-07 (définitions conso/coût matière) · voie CAISSE (cohérence des sorties de stock) · État final : —
+Audit adverse en lecture seule le 2026-08-28, chaque verdict adossé à un
+`fichier:ligne` réellement lu. Il a corrigé DEUX affirmations de la mission
+elle-même et trouvé trois défauts dans le correctif livré la nuit même.
+
+### 8.1 Les constats §2.3, rejoués contre le code d'aujourd'hui
+
+| Sév. | Constat | Verdict | Preuve |
+|---|---|---|---|
+| P0 | Une facture « 3 kg » créditait **3 grammes** — facteur mille | **FIXÉ** | `PurchaseService.php:197,250-272` ; `UneFactureEnKilosNeCreditePasDesGrammesTest` (18) |
+| P1 | `RawMaterialAdjustController` sans FormRequest | **ENCORE VRAI** | `:117` — `$request->validate([...])` en ligne |
+| P1 | `PurchasingScanController` sans FormRequest, deux fois | **ENCORE VRAI** | `:51` et `:208` |
+| P1 | `setMaxDailyQty(Request)` nu | **ENCORE VRAI, ET PIRE** | `AvailabilityController.php:118-124` — et `grep max-daily-qty resources/js/` ne rend RIEN : la route `api.php:389` n'a **aucun appelant écran**. Le quota journalier est un point d'entrée mort |
+| P1 | 11 articles vendables en `kds_station='none'` | **VRAI (compte confirmé)** | Menu, Frites, Boisson, 7 sodas, 1 artefact E2E |
+| P1 | « …donc invisibles en cuisine » | **RÉFUTÉ** | `helpers/kdsDisplay.js:36,44-46` : `STATIONS` inclut `'none'` et le filtre par défaut est `'all'`. Rien n'est invisible — les articles sont **mal routés** quand un cuisinier filtre. Nuance qui change le correctif |
+| P2 | Seuil bas sans écran | **ENCORE VRAI, ET PIRE QUE DÉCRIT** | **55/55** `stock_levels` et **20/20** `raw_materials` ont `threshold_low` **NULL**, pas 0 ; or `StockRuptureDashboardController:99` et `NotifyStockLowOnStockLevelChanged:50` filtrent `whereNotNull('threshold_low')` → **100 % des lignes exclues**. L'alerte de stock bas est structurellement muette, et le commentaire `:20-21` du listener qui affirme « threshold_low=0 » est FAUX |
+| P2 | « stock_levels 55 · sous seuil 0 » (§5) | **VRAI mais faux-vide** | Zéro sous seuil parce qu'aucun seuil n'existe, pas parce que le stock va bien |
+| P2 | `run()` sans garde de permission | **RÉFUTÉ — non-défaut** | `StockRuptureDashboardController:47` porte `permission:items_create` au constructeur |
+
+### 8.2 Trois défauts DANS LE CORRECTIF livré la nuit même
+
+C'est le résultat le plus utile de l'audit, et il porte sur mon propre travail.
+
+| Défaut | Ce que ça coûtait | Correction |
+|---|---|---|
+| `mb_strtolower` **ne dépouille pas les accents** : « pièce », « unité », « boîte », « kilo », « litre » — l'écriture normale d'un OCR français — ne correspondaient à aucune liste | La RÉCEPTION ENTIÈRE échouait sur une facture parfaitement légitime. J'avais remplacé une corruption silencieuse par un blocage bruyant : un mauvais échange, ça arrête le travail | `ECRITURES_EQUIVALENTES` + dépouillement des accents. « carton », « colis », « caisse » restent VOLONTAIREMENT inconnus : un carton contient N pièces, pas une |
+| `InvalidArgumentException` n'est ni `HttpException` ni `QueryException` → `parent::render` → **HTTP 500** | L'écran affichait « Server Error » en anglais. Le message qui nomme la matière et les deux unités n'était lu par PERSONNE | `HttpException(422)`, l'idiome déjà présent (`PurchasingScanController` fait `abort_if($x, 422, …)`) |
+| **Mon banc était au mauvais périmètre** : il appelle la méthode privée par réflexion, donc il mesurait le calcul, jamais ce que le commerçant reçoit | Le défaut ci-dessus a vécu une nuit sous un banc vert | `LeRefusDeReceptionEstLisibleParLeCommercantTest` (3) passe par la ROUTE. Prouvé en remettant l'ancienne exception : « Failed asserting that 500 is identical to 422 » |
+
+### 8.3 Ce qui reste — classé par coût pour un commerçant qui compte son stock
+
+1. **`RawMaterial` n'a AUCUN CRUD.** `routes/api.php:436-438` = `movements` + `adjust`, rien d'autre. Les seules sources de création sont un seeder et une commande console. **Un nouveau commerçant ne peut déclarer aucun ingrédient** — le domaine entier est livré par le seed Le Cayenne. C'est le blocage n°1 de la mission « depuis zéro », et il est plus grave que tous les constats §2.3 réunis.
+2. **`raw_material_recipe_lines` (126 lignes en base) n'a ni contrôleur ni composant.** Le commerçant ne peut pas dire « 1 burger = 150 g de viande » : la déduction de stock repose sur des recettes qu'il ne verra jamais.
+3. **Réparer les 11 stocks négatifs** (Poulet **-9 600 g**). Le correctif de conversion arrête l'hémorragie, il ne recoud pas. Tant que ce n'est pas fait, « Conso & Stock » continue d'annoncer des ruptures que la borne dément — donc le correctif reste invisible pour l'utilisateur. **Décision propriétaire** : c'est de la donnée d'exploitation, pas du code.
+4. **Ouvrir un chemin d'écriture pour `threshold_low`.** Sans lui, le widget stock-bas, le listener et `low-alerts` sont trois instruments branchés sur une colonne toujours NULL.
+5. **Affecter un poste aux 11 articles** — le champ existe désormais dans le formulaire produit (livré ce soir, ONB-02) : c'est devenu un travail de données, plus de code.
+6. **Trois FormRequest** (`RawMaterialAdjust`, `PurchasingScan`/`Apply`, `SetMaxDailyQty`), et trancher le sort de `setMaxDailyQty` — point d'entrée sans écran : lui en donner un, ou le retirer.
+7. **Normaliser `raw_materials.unit`** : `string(16)` libre, sans validation ni écran d'édition. La comparaison d'unités repose sur deux champs non contraints.
+
+**État final ONB-08 : le P0 de conversion est CLOS et prouvé aux deux bouts (calcul et route) ; un constat P1 est RÉFUTÉ (la cuisine ne perd rien, elle route mal) ; le seuil bas est confirmé PIRE que décrit (100 % des lignes exclues, sur un commentaire faux). Le blocage majeur de la mission « depuis zéro » n'est dans aucun constat §2.3 : `RawMaterial` n'a pas de CRUD.**

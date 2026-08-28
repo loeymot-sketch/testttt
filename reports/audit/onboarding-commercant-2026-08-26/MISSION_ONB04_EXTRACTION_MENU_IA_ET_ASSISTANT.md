@@ -85,16 +85,58 @@ Le propriétaire veut qu'un nouveau commerçant mette sa carte « avec un extrac
 | 2026-08-28 | Catégories créées AVANT les articles → une catégorie dont tous les articles échouaient survivait **vide** sur la borne | `MenuDraftApplier` (création paresseuse) | idem | **FIXÉ** |
 | 2026-08-28 | Banc **tautologique** du « double verrou » : il affirmait « deux verrous, jamais un » alors que les DEUX branches renvoient le bouchon — vert avec un verrou, zéro verrou, ou n'importe quelle condition | `ExtractionCarteBouchonTest` | Remplacé par la vérité mesurable + un garde qui ÉCHOUE le jour où une implémentation réelle apparaît (prouvé en déposant une implémentation factice) | **FIXÉ** |
 
-### 8.2 Ce qui MANQUE — dit franchement
+### 8.2 Le chatbot de missions locales — LIVRÉ le 2026-08-28
 
-**Le chatbot de missions locales n'existe pas.** Mesuré : `grep -rln "chatbot\|missions locales\|mission_locale" app/ resources/js/` → **zéro fichier**.
+Il n'existait pas (`grep` = zéro fichier), alors qu'il est explicitement au mandat
+(§0.1 « chatbot de missions locales sur le profil ») et au périmètre de ce GOAL.
 
-C'est une demande explicite du mandat (§0.1 : « chatbot de missions locales sur le profil ») et du périmètre de ce GOAL (« assistant de missions locales — *ajoute une sauce à tous les tacos* »). Il ne peut pas être présenté comme livré.
+**Il ne dépend d'aucun gate.** La doctrine du programme est « la machine propose,
+l'humain valide, le système applique ». L'interpréteur est DÉTERMINISTE : grammaire
+déclarée, aucun appel sortant, refus explicite quand il ne comprend pas. Trois
+raisons de ne pas y mettre un modèle aujourd'hui :
 
-Point important : **il ne dépend PAS du gate G-IA.** La doctrine du programme est « la machine propose, l'humain valide, le système applique ». Un interpréteur DÉTERMINISTE — grammaire déclarée, aucun appel sortant, plan affiché avant écriture, refus explicite quand il ne comprend pas — remplit la demande sans arbitrage propriétaire, et reste la bonne fondation le jour où un modèle prendra le relais de l'étape « comprendre la phrase ».
+1. G-IA n'est pas tranché, et il porte surtout sur un **plafond de dépense** que ce
+   projet n'a pas (`assistant.budget.plafond_mensuel_euros` vaut 0, délibérément).
+2. Ces missions ÉCRIVENT dans le catalogue. « J'ai compris à peu près » sur cinquante
+   produits se découvre trois jours plus tard, quand un client commande.
+3. Le jour venu, un modèle remplacera UNIQUEMENT `InterpreteDeMission` — le plan, la
+   confirmation et l'écriture validée ne bougent pas. Même architecture que
+   l'extraction de carte : contrat, bouchon, implémentation réelle plus tard.
+
+| Livrable | Fichiers | Preuve |
+|---|---|---|
+| Grammaire + refus nommant les formes comprises | `app/Services/Assistant/MissionLocale/{Mission,InterpreteDeMission}.php` | `UneMissionLocaleProposeAvantDEcrireTest` (12) |
+| Plan (diff) sans aucune écriture, exclusions dites | `PlanificateurDeMission.php` | `…::test_la_phrase_exacte_du_mandat_est_comprise_et_ne_change_rien`, `…::test_le_plan_dit_ce_qu_il_ecarte…` |
+| Application via `ItemRequest` / `ItemExtraRequest` | `ExecuteurDeMission.php` | `…::test_le_changement_de_prix_passe_par_les_regles_du_catalogue` |
+| Routes `POST admin/assistant/mission/{lecture,application}`, garde `items_edit` | `MissionLocaleController.php`, `routes/api.php` | `route:list` |
+| Écran (fil de conversation, plan, confirmation) | `resources/js/components/admin/assistant/MissionLocaleComponent.vue` | `tests/js/lAssistantDeMissionsEstAtteignableEtProposeAvantDEcrire.spec.js` (6) |
+
+**Trois missions comprises aujourd'hui** : ajouter une option (sauce, supplément…) à
+toute une catégorie, gratuite ou payante ; fixer le prix de toute une catégorie ;
+activer ou désactiver toute une catégorie. Tout le reste est refusé en NOMMANT les
+formes connues.
+
+**Ce que la construction a révélé, et qui comptait plus que le chatbot lui-même :**
+`grep -rn "admin.items.import" resources/js/` hors routeur rendait **zéro** résultat.
+L'écran d'import de carte, livré le 27, n'a JAMAIS eu de lien — atteignable seulement
+en tapant son URL, exactement ce que l'audit ONB-05 reproche à la page TVA. Les deux
+écrans ont désormais leur porte depuis le Studio, et un banc l'exige.
+
+Trois sentinelles existantes ont mordu pendant cette livraison, et elles avaient
+raison : deux classes d'icônes n'existaient pas dans la fonte (`lab-message-line`,
+`lab-upload-line`) — mes boutons auraient affiché un carré vide ; et le fil d'Ariane
+rend `$t('menu.' + breadcrumb)`, pas `label.` — la page aurait affiché sa clé brute.
+
+**Mesure honnête de ce qui reste** : la grammaire est volontairement étroite. Elle
+couvre l'exemple du mandat et deux gestes voisins. L'élargir se fait forme par forme,
+chacune avec son banc ; deviner à la place du commerçant, jamais.
 
 ### 8.3 Ce qui reste au propriétaire (ne pas trancher ici)
 
 - **G-IA** — fournisseur, clé, et surtout **plafond de dépense** : le projet n'a aujourd'hui aucun compteur de coût, et `assistant.budget.plafond_mensuel_euros` vaut 0 par défaut, ce qui est délibéré. Tant que ce n'est pas tranché, `MockMenuExtractionService` reste la seule implémentation, et un garde le vérifie désormais.
 
-**État final ONB-04 : la chaîne extraction → validation → application est LIVRÉE, éprouvée et corrigée de quatre défauts (dont un écran entièrement mort et une perte silencieuse de produit). Le chatbot de missions locales reste À CONSTRUIRE — sans gate.**
+**État final ONB-04 : les DEUX livrables du périmètre sont en place.** La chaîne
+extraction → validation → application est éprouvée et corrigée de quatre défauts
+(dont un écran entièrement mort et une perte silencieuse de produit) ; le chatbot de
+missions locales est livré, avec son écran et sa porte. Reste au propriétaire le seul
+gate G-IA — dont l'enjeu réel est le plafond de dépense, pas le fournisseur.

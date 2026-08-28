@@ -87,9 +87,55 @@ plafond quantité borne (20), fenêtre/seuil SLA (24 h / 15 min), `pos.walkin_ro
 - `:8000` = autre worktree ; ta session = **:8805**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi **reçues** (à collecter en W1 dans les §8 des autres rapports) : ONB-01 (dé-cacher Thème, Horaires ; retirer les 3 champs de frais d'OrderSetup ; entrée Horaires) · ONB-02 (dé-cacher Catégories/Attributs/Taxes ; hub Studio) · ONB-06 (dé-cacher Rôle & Autorisations) · ONB-09 (dé-cacher Coupons/Offres ; réglages promo/fidélité) · ONB-10 (entrées État du système/Outbox, allowlist imprimantes, PIN borne obligatoire).
-Fiches **émises** : ONB-13 (lecture des réglages par `pos@`, journal), ONB-11 (vocabulaire des groupes), ONB-12 (valeurs par défaut du socle) · État final : —
+Audit adverse en lecture seule le 2026-08-28. **Il a corrigé deux chiffres de la
+mission elle-même** — c'est exactement ce qu'on lui demandait.
+
+### 8.1 Les chiffres, remesurés
+
+| Question | Réponse de la mission | Réponse mesurée |
+|---|---|---|
+| Interrupteurs pilotables | 6 | **6** — inchangé. `InterrupteurService.php:43-90`, tous booléens. Aucun mécanisme typé (nombre/texte/horaire) n'existe |
+| Sous-pages Réglages cachées | « 22 » | **19 sur 31** — le chiffre 22 n'est pas reproductible. Au HEAD de référence la liste portait **23** clés, dont 4 (`permission`, `charge`, `translation`, `activity-log`) qui **ne masquaient rien** ; retirées le 2026-08-28 avec la sentinelle `clesDeMasquageMasquentQuelqueChose.spec.js` |
+| Réglages lus sans chemin d'écriture | « 45 exigent un développeur » | **~101 sur 115** clés métier lues dans `app/`. Écrivables : 6 par `InterrupteurService` + 8 par `WheelSettingsService` = **14**. Réserve honnête : ~15 des 101 sont des coupe-circuits qui ne DOIVENT pas être exposés — reste **~86** réglages d'exploitation hors d'atteinte |
+| Configuration fantôme | non mesuré | **2 réelles sur 304 clés** : `app.version` (`HealthController:35`, absente de `config/app.php` → `/health` annonce toujours `"version":"dev"`) et `permission.testing` |
+
+### 8.2 Corrigé cette nuit
+
+| Défaut | Preuve |
+|---|---|
+| **Le minimum de commande de la roue était saisi puis ignoré.** `WheelSettingsService::minOrder()` n'avait qu'UN appelant ; **cinq** autres lisaient `config('wheel.min_order_amount')` en direct — dont `WheelController:332`, qui l'APPLIQUE au client. L'exploitant réglait « minimum 15 € », un écran affichait 15 €, et la roue appliquait la valeur du fichier. Les replis divergeaient même : 10 côté service, 0 côté lecteurs directs | `UnReglageEnregistreEstCeluiQuiSAppliqueTest` (5) |
+
+Ce défaut mérite d'être nommé pour ce qu'il est : **le principe qui l'interdit est écrit
+dans le même fichier, trois cents lignes plus haut.** Docblock de
+`WheelService::segments()` : « lire la config en direct ailleurs, ce serait ignorer les
+réglages du propriétaire sur une surface et pas sur l'autre… c'est le motif du jumeau
+oublié, et il a déjà coûté deux fois ici ». Troisième fois.
+
+### 8.3 Encore vrai
+
+| Sév. | Constat | Preuve |
+|---|---|---|
+| **P1** | **Quatre pages n'ont AUCUN lien nulle part** : `admin.settings.tax`, `role`, `theme`, `timeSlot`. Référencées seulement par le menu Réglages, où elles sont masquées. **La TVA n'est atteignable qu'en tapant son URL** — or c'est le point d'entrée d'ONB-01 et ONB-02 | `MenuComponent.vue:79,83,103,111` |
+| **P1** | Page Licence : le champ « clé de licence » écrit `MIX_API_KEY` en clair | `LicenseRequest.php:54`, `LicenseService.php:45` |
+| P2 | **Trois codes PIN** (carnet, stock mobile, roue) ne viennent que du `.env` : changer un code d'accès exige un développeur | `AppServiceProvider:215`, `EnsureMobileStockPin:26`, `EnsureWheelAccess:58` |
+| P2 | PIN admin borne « 1234 » annoncé par le libellé, **aucun consommateur serveur** | `KioskSetupRequest:22`, `fr.json:1258` |
+| P2 | `item-attributes` masqué côté Réglages **et réinjecté** comme sous-item Catalogue | `v1-hidden-modules.js:36` vs `MenuComponent.vue:99` |
+| P2 | Lecture des réglages : cinq contrôleurs gardent `->only('update')` alors qu'`Interrupteur` et `KioskSetup` ont été rattrapés | — |
+
+Réglages d'exploitation les plus coûteux, sans écran : tolérance d'écart de caisse
+(`cash.variance_threshold_eur`), heures de service cuisine (`kds.scheduled_window_open/_close`),
+seuils d'alerte SLA, largeur et page de code des imprimantes (`printing.receipt.*` — changer
+d'imprimante exige un développeur), plafond de tranches de paiement, durée de validité des lots.
+
+### 8.4 Ce qui reste — par coût pour un commerçant seul
+
+1. **Rendre la page Taxes atteignable.** Sans elle, un nouvel établissement ne peut pas régler sa TVA autrement qu'en tapant une URL.
+2. **Trancher G-CACHE** : 19 pages masquées, dont les cinq que les fiches ONB-01/02/06/09 réclament. Rien de la vague A n'est visible tant que ce gate n'est pas signé.
+3. **Construire le mécanisme typé** (nombre / texte / horaire). Sans lui, ~86 réglages d'exploitation restent hors d'atteinte : le catalogue booléen ne peut pas les accueillir.
+4. **Les trois PIN** : premiers candidats du mécanisme typé.
+5. **Retirer la page Licence** (G-LIC).
+6. **Fermer la lecture des réglages** sur les cinq contrôleurs restants.
+7. **`app.version`** : `/health` annonce « dev » en production.
+
+**État final ONB-05 : un P1 corrigé (le réglage qui mentait) ; deux chiffres de la mission remesurés et corrigés ; l'inventaire des ~86 réglages hors d'atteinte est désormais fait, avec sa réserve honnête sur les ~15 qui ne doivent PAS être exposés. Le mécanisme typé — le cœur de cette mission — reste à construire, et G-CACHE reste au propriétaire.**
