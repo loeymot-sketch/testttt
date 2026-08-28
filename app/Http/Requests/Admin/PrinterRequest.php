@@ -18,7 +18,25 @@ class PrinterRequest extends FormRequest
         $branchId = $this->resolvedBranchId();
 
         return [
-            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            // [ONB-10 2026-08-28] Obligatoire pour l'admin qui CRÉE.
+            //
+            // `printers.branch_id` porte une clé étrangère vers `branches.id`, et
+            // `resolveBranchId()` renvoie `validated('branch_id')` dès que l'acteur a
+            // `branch_id = 0` — le cas de l'administrateur. Sans valeur, l'insertion
+            // partait avec 0, aucune filiale ne porte cet identifiant, et le patron
+            // recevait « SQLSTATE[23000]: Integrity constraint violation » au lieu
+            // d'un message lui disant de choisir son établissement.
+            //
+            // Jumeau exact du défaut `phone` (obligatoire en base, facultatif dans la
+            // règle). En modification la valeur existante sert de repli, d'où le
+            // `isMethod('POST')`.
+            'branch_id' => [
+                Rule::requiredIf(fn () => $this->isMethod('POST')
+                    && (int) ($this->user()?->branch_id ?? 0) === 0),
+                'nullable',
+                'integer',
+                'exists:branches,id',
+            ],
             'name' => [
                 'required',
                 'string',
@@ -76,6 +94,14 @@ class PrinterRequest extends FormRequest
             // chemin d'impression ne reconnaît. Voir ImprimanteCreeeDepuisEcranImprimeTest.
             'status' => ['nullable', 'integer', Rule::in([\App\Enums\Status::ACTIVE, \App\Enums\Status::INACTIVE])],
             'options' => ['nullable', 'array'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'branch_id.required' => "Choisissez l'établissement auquel cette imprimante appartient.",
+            'branch_id.exists' => "Cet établissement n'existe pas.",
         ];
     }
 
