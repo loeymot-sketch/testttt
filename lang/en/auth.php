@@ -2,6 +2,9 @@
 
 return [
 
+    // [ONB-11 2026-08-28] Verrouillage apres trop d'echecs : le delai doit etre DIT.
+    'trop_de_tentatives' => "Too many login attempts. Try again in :minutes minutes.",
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Language Lines

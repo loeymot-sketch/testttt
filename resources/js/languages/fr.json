@@ -43,16 +43,16 @@
                 "body": "Un groupe de choix proposé au client (ex. Taille, Cuisson). C'est la catégorie sous laquelle on trouve les variations."
             },
             "variation": {
-                "title": "Variation",
-                "body": "Une option de prix au sein d'un attribut (M +0€, L +2€). Le client choisit une variation par attribut."
+                "title": "Variante",
+                "body": "Une option de prix au sein d'un attribut (M +0 €, L +2 €). Le client en choisit une par attribut."
             },
             "extra": {
-                "title": "Extra",
-                "body": "Un supplément payant à la carte (Cheddar +0,50€). Cumulable, optionnel."
+                "title": "Supplément",
+                "body": "Un supplément payant propre à ce produit (Cheddar +0,50 €). Cumulable, facultatif."
             },
             "addon": {
-                "title": "Addon",
-                "body": "Une consigne de préparation gratuite ou rapide (Sans oignons, Bien cuit)."
+                "title": "Produit associé",
+                "body": "Un autre produit de votre carte, proposé avec celui-ci (formule, accompagnement, boisson). Son prix est celui du produit choisi."
             },
             "toggle_show": "Afficher l'aide",
             "toggle_hide": "Masquer l'aide",
@@ -456,7 +456,7 @@
         "home": "Accueil",
         "kiosk_machines": "Bornes",
         "label": "Menu",
-        "addons": "Suppléments",
+        "addons": "Produits associés",
         "addresses": "Adresses",
         "administrators": "Administrateurs",
         "analytic_section": "Section analytique",
@@ -471,7 +471,7 @@
         "dining_tables": "Tables",
         "edit_profile": "Modifier le profil",
         "employees": "Employés",
-        "extras": "Extras",
+        "extras": "Suppléments",
         "item_attributes": "Attribut d’articles",
         "items_report": "Rapport articles",
         "languages": "Langues",
@@ -531,6 +531,26 @@
         "raw_material_adjust": "Ajustement stock"
     },
     "label": {
+        "import_line": "Ligne {n}",
+        "select": "\u2014 S\u00e9lectionner \u2014",
+        "menu_import_title": "Importer ma carte depuis une photo",
+        "menu_import_intro": "Photographiez votre carte. Nous vous proposons les produits que nous y lisons ; vous corrigez, vous validez, et votre carte est cr\u00e9\u00e9e. Rien n'est enregistr\u00e9 avant votre validation.",
+        "menu_import_photo": "Photo de votre carte",
+        "menu_import_formats": "JPG, PNG, WEBP, HEIC ou PDF. 12 Mo maximum.",
+        "menu_import_read": "Lire ma carte",
+        "menu_import_reading": "Lecture en cours\u2026",
+        "menu_import_review_hint": "{n} produits ont \u00e9t\u00e9 lus. Relisez-les : vous pouvez tout corriger avant que quoi que ce soit ne soit cr\u00e9\u00e9.",
+        "menu_import_demo_notice": "Ceci est une D\u00c9MONSTRATION : la lecture par intelligence artificielle n'est pas encore activ\u00e9e sur cette installation. Les produits propos\u00e9s ci-dessous sont des exemples, pas votre carte.",
+        "menu_import_truncated": "Votre carte contient plus de produits que ce qu'une seule relecture permet de v\u00e9rifier s\u00e9rieusement. Importez-la en plusieurs fois.",
+        "menu_import_price_missing": "Prix \u00e0 saisir",
+        "menu_import_check": "\u00c0 v\u00e9rifier",
+        "menu_import_ok": "Pr\u00eat",
+        "menu_import_tax_hint": "Obligatoire. Sans TVA, vos produits seraient factur\u00e9s \u00e0 0 %.",
+        "menu_import_apply": "Cr\u00e9er ces {n} produits",
+        "menu_import_blocked": "Compl\u00e9tez la TVA, le type de produit, et tous les prix manquants pour continuer.",
+        "menu_import_refused": "Lignes non cr\u00e9\u00e9es",
+        "menu_import_again": "Importer une autre carte",
+        "menu_import_failed": "La lecture n'a pas abouti. R\u00e9essayez avec une photo plus nette, ou saisissez vos produits \u00e0 la main.",
         "choice_optional_unlimited": "Facultatif · sans limite",
         "choice_required_at_least": "Obligatoire · au moins {n}",
         "kds_sans_poste": "Sans poste",
@@ -999,10 +1019,10 @@
         "active_orders": "Commandes actives",
         "add_label": "Ajouter un libellé",
         "additional_price": "Prix additionnel",
-        "addon": "Supplément",
-        "addon_item": "Article supplémentaire",
+        "addon": "Produit associé",
+        "addon_item": "Produit à proposer",
         "view": "Voir",
-        "addons": "Suppléments",
+        "addons": "Produits associés",
         "admin": "Admin",
         "advance": "Avance",
         "all": "Tous",
@@ -1168,8 +1188,8 @@
         "estimated_delivery_time": "Temps de livraison estimé",
         "ex": "( ex. : 0,00 )",
         "exchange_rate": "Taux de change",
-        "extra": "Extra",
-        "extras": "Extras",
+        "extra": "Supplément",
+        "extras": "Suppléments",
         "facebook": "Facebook",
         "fav_icon": "Icône favorite",
         "featured": "Mis en avant",
@@ -1438,7 +1458,7 @@
         "user": "Utilisateur",
         "username": "Nom d'utilisateur",
         "variation": "Variante",
-        "veg": "Veg",
+        "veg": "V\u00e9g\u00e9tarien",
         "verify_email": "Vérifier l’email",
         "verify_number": "Vérifier le numéro",
         "filter": "Filtrer",
@@ -1563,6 +1583,7 @@
         "kds_reopen_aria": "Remettre la commande N°{queue} en préparation"
     },
     "button": {
+        "confirm": "Confirmer",
         "yes_delete": "Oui, supprimer",
         "yes_logout": "Oui, déconnecter",
         "yes_accept": "Oui, accepter",
@@ -1687,6 +1708,7 @@
         "create_anyway": "C'est un autre client, creer quand meme"
     },
     "error": {
+        "something_wrong": "L'op\u00e9ration n'a pas abouti. R\u00e9essayez ; si cela se reproduit, v\u00e9rifiez votre connexion.",
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",
         "service_unavailable": "Service indisponible — réessayez dans quelques instants.",
         "network_issue": "Problème réseau — réessayez.",
@@ -1791,6 +1813,10 @@
         "cash_reconcile_variance_override": "Valider une clôture de caisse malgré un écart"
     },
     "message": {
+        "login_unreachable": "Impossible de joindre le serveur. V\u00e9rifiez votre connexion ; si le probl\u00e8me persiste, contactez votre installateur.",
+        "flip_created": "{item} : cr\u00e9ation enregistr\u00e9e.",
+        "flip_updated": "{item} : modification enregistr\u00e9e.",
+        "flip_deleted": "{item} : suppression effectu\u00e9e.",
         "credit_balance_customers_only": "Ce registre ne liste que les clients : le personnel ne détient pas d'avoir.",
         "fiscal_identity_hint": "Ces informations apparaissent en bas de chaque ticket de caisse. Le SIRET est obligatoire sur un ticket français.",
         "tax_required_hint": "Obligatoire : un article sans taxe serait vendu à 0 % de TVA.",

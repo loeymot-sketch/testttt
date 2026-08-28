@@ -600,7 +600,12 @@ export default {
             }).then(() => {
                 this.categoryQuickForm.name = "";
                 this.showCategoryQuickForm = false;
-                alertService.successFlip(null, this.$t("menu.item_categories"));
+                // [ONB-02 2026-08-28] Etait `successFlip(null, ...)`, qui annonce une
+                // SUPPRESSION. Au tout premier geste du parcours — creer sa premiere
+                // categorie — le produit disait au commercant que ce qu'il venait de
+                // creer avait ete supprime. `false` = creation (voir le piege de
+                // signature documente dans alertService.successFlip).
+                alertService.successFlip(false, this.$t("menu.item_categories"));
                 this.refreshData();
             }).catch((err) => {
                 const msg = err?.response?.data?.message || this.$t("error.something_wrong");
@@ -624,7 +629,10 @@ export default {
             }).then(() => {
                 this.productQuickForm = { name: "", price: "", description: "", image: null, categoryId: null };
                 this.showProductQuickForm = false;
-                alertService.successFlip(null, this.$t("menu.items"));
+                // [ONB-02 2026-08-28] Etait `null`, qui annonce une SUPPRESSION.
+                // Creer son premier produit affichait « Articles : suppression
+                // effectuee. » — `false` = creation.
+                alertService.successFlip(false, this.$t("menu.items"));
                 this.refreshData();
             }).catch((err) => {
                 const errors = err?.response?.data?.errors;

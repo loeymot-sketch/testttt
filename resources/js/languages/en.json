@@ -536,6 +536,26 @@
         "raw_material_adjust": "Stock adjustment"
     },
     "label": {
+        "import_line": "Row {n}",
+        "select": "\u2014 Select \u2014",
+        "menu_import_title": "Import my menu from a photo",
+        "menu_import_intro": "Take a photo of your menu. We suggest the products we read on it; you correct them, you confirm, and your menu is created. Nothing is saved before you confirm.",
+        "menu_import_photo": "Photo of your menu",
+        "menu_import_formats": "JPG, PNG, WEBP, HEIC or PDF. 12 MB maximum.",
+        "menu_import_read": "Read my menu",
+        "menu_import_reading": "Reading\u2026",
+        "menu_import_review_hint": "{n} products were read. Review them: you can correct everything before anything is created.",
+        "menu_import_demo_notice": "This is a DEMONSTRATION: AI reading is not yet enabled on this installation. The products below are examples, not your menu.",
+        "menu_import_truncated": "Your menu has more products than one review can seriously check. Import it in several passes.",
+        "menu_import_price_missing": "Price required",
+        "menu_import_check": "Check this",
+        "menu_import_ok": "Ready",
+        "menu_import_tax_hint": "Required. Without VAT, your products would be charged at 0%.",
+        "menu_import_apply": "Create these {n} products",
+        "menu_import_blocked": "Fill in the VAT, the product type, and every missing price to continue.",
+        "menu_import_refused": "Lines not created",
+        "menu_import_again": "Import another menu",
+        "menu_import_failed": "The reading did not succeed. Try a sharper photo, or enter your products by hand.",
         "choice_optional_unlimited": "Optional · no limit",
         "choice_required_at_least": "Required · at least {n}",
         "kds_sans_poste": "No station",
@@ -1620,6 +1640,7 @@
         "flyer_duplicate_warning": "A code was just created for this first name:"
     },
     "button": {
+        "confirm": "Confirm",
         "refresh": "Refresh",
         "add": "Add",
         "save": "Save",
@@ -1749,6 +1770,10 @@
         "kiosk_rate_limited": "Too many orders submitted quickly. Please wait a few seconds."
     },
     "message": {
+        "login_unreachable": "The server could not be reached. Check your connection; if the problem persists, contact your installer.",
+        "flip_created": "{item} created successfully.",
+        "flip_updated": "{item} updated successfully.",
+        "flip_deleted": "{item} deleted successfully.",
         "credit_balance_customers_only": "This register lists customers only: staff never hold store credit.",
         "permission_required": "Permission required to access this page: {permission}",
         "item_created_success": "Product created successfully",

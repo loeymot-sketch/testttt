@@ -181,8 +181,17 @@ export default {
                     } else if (typeof data === 'string') {
                         this.errors = { validation: data };
                     } else {
+                        // [ONB-11 2026-08-28] Le repli etait « Network error — check API
+                        // URL and x-api-key. » : de l'anglais, et du vocabulaire de
+                        // developpeur, sur le TOUT PREMIER ecran du produit. On demandait
+                        // a un restaurateur de verifier une « API URL » et une
+                        // « x-api-key ». `err.message` d'axios n'est pas meilleur : il
+                        // vaut « Network Error », en anglais lui aussi.
+                        //
+                        // Le message du SERVEUR passe toujours en premier quand il existe :
+                        // lui sait ce qui a echoue.
                         this.errors = {
-                            validation: data?.message || err.message || 'Network error — check API URL and x-api-key.',
+                            validation: data?.message || this.$t('message.login_unreachable'),
                         };
                     }
                 })
