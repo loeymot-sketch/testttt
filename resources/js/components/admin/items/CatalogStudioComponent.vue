@@ -40,7 +40,7 @@
                     data-testid="catalog-studio-category-wizard-entry">
                     <div>
                         <strong>{{ selectedCategoryName }}</strong>
-                        <small>{{ t("studio.category_wizard_hint", "Ce wizard s'applique à TOUS les produits de cette catégorie.") }}</small>
+                        <small>{{ t("studio.category_wizard_hint", "⚠️ Ce parcours est enregistré mais n'est PAS encore appliqué à la borne ni à la caisse.") }}</small>
                     </div>
                     <button type="button" class="db-btn py-2 bg-rose-700 text-white"
                         data-testid="catalog-studio-category-wizard-button"
@@ -182,7 +182,7 @@
                         <p class="catalog-studio__composer-eyebrow">{{ $t("studio.composer_drawer_eyebrow") }}</p>
                         <h3>{{ composerDrawerTitle }}</h3>
                         <small v-if="composerDrawer.entityType === 'category'" class="catalog-studio__composer-help">
-                            {{ t("studio.category_wizard_hint", "Ce wizard s'applique à TOUS les produits de cette catégorie.") }}
+                            {{ t("studio.category_wizard_hint", "⚠️ Ce parcours est enregistré mais n'est PAS encore appliqué à la borne ni à la caisse.") }}
                         </small>
                     </div>
                     <div class="catalog-studio__composer-actions">

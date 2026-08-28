@@ -237,16 +237,28 @@ class ItemController extends AdminController
      *
      * On garde l'instance, on lit ses echecs, et on rend un compte rendu.
      */
-    /** Une phrase que le commercant peut lire, plutot que deux listes a recouper. */
-    private function resumeImport(int $creees, int $echecs): string
+    /** Une phrase que le commercant peut lire, plutot que trois listes a recouper. */
+    private function resumeImport(int $creees, int $echecs, int $dejaPresents = 0): string
     {
-        if ($creees === 0 && $echecs === 0) {
+        if ($creees === 0 && $echecs === 0 && $dejaPresents === 0) {
             return "Votre fichier ne contenait aucune ligne exploitable.";
         }
 
         $phrase = $creees > 0
             ? $creees . ' produit' . ($creees > 1 ? 's ajoutes.' : ' ajoute.')
             : 'Aucun produit ajoute.';
+
+        /*
+         * [ONB 2026-08-28] Dire « deja dans votre carte » AVANT « a corriger ».
+         * Sans cette phrase, redeposer un fichier corrige affichait « Aucun produit
+         * ajoute. 40 lignes a corriger », ce qui donne exactement l'impression
+         * inverse de ce qui s'est passe.
+         */
+        if ($dejaPresents > 0) {
+            $phrase .= ' ' . $dejaPresents . ' ligne' . ($dejaPresents > 1 ? 's' : '')
+                . ' deja dans votre carte, ' . ($dejaPresents > 1 ? 'ignorees' : 'ignoree')
+                . ' sans modification.';
+        }
 
         if ($echecs > 0) {
             $phrase .= ' ' . $echecs . ' ligne' . ($echecs > 1 ? 's' : '')
@@ -262,21 +274,100 @@ class ItemController extends AdminController
             $import = new ItemImport($request->file('file'));
             Excel::import($import, $request->file('file'));
 
-            $echecs = collect($import->failures())->map(fn ($echec) => [
-                'ligne'   => $echec->row(),
-                'colonne' => $echec->attribute(),
-                'raison'  => implode(' ', $echec->errors()),
-            ])->values()->all();
+            /*
+             * [ONB 2026-08-28] Une ligne DEJA PRESENTE n'est pas une ligne fautive.
+             *
+             * Le parcours normal de correction consiste a reparer quelques lignes
+             * dans SON fichier puis a redeposer le fichier entier. Toutes les lignes
+             * deja creees ressortent alors de `Rule::unique`, et etaient presentees
+             * comme 40 erreurs — la ou elles prouvent justement que le premier depot
+             * a fonctionne.
+             *
+             * On les separe. Ce que l'import accepte ou refuse est INCHANGE : seule
+             * la restitution l'est.
+             */
+            $brut = collect($import->failures());
+
+            $lignesDeja = $brut
+                ->filter(fn ($echec) => str_contains(
+                    implode(' ', $echec->errors()),
+                    ItemImport::MARQUEUR_DEJA_PRESENT
+                ))
+                ->map(fn ($echec) => $echec->row())
+                ->unique();
+
+            $enPlace = $brut
+                ->filter(fn ($echec) => $lignesDeja->contains($echec->row()))
+                ->groupBy(fn ($echec) => $echec->row())
+                ->map(fn ($groupe, $ligne) => [
+                    'ligne'  => (int) $ligne,
+                    'raison' => trim(str_replace(
+                        ItemImport::MARQUEUR_DEJA_PRESENT,
+                        '',
+                        implode(' ', $groupe->first()->errors())
+                    )),
+                ])
+                ->values()
+                ->all();
+
+            $echecs = $brut
+                ->reject(fn ($echec) => $lignesDeja->contains($echec->row()))
+                ->map(fn ($echec) => [
+                    'ligne'   => $echec->row(),
+                    'colonne' => $echec->attribute(),
+                    'raison'  => implode(' ', $echec->errors()),
+                ])
+                ->values()
+                ->all();
 
             return response()->json([
-                'status'  => true,
-                'creees'  => $import->creees,
-                'echecs'  => $echecs,
-                'message' => $this->resumeImport($import->creees, count($echecs)),
+                'status'        => true,
+                'creees'        => $import->creees,
+                'deja_presents' => $enPlace,
+                'echecs'        => $echecs,
+                'message'       => $this->resumeImport(
+                    $import->creees,
+                    count($echecs),
+                    count($enPlace)
+                ),
             ], 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    /**
+     * [ONB 2026-08-28] Les 14 allergenes de l'Annexe II du Reglement UE 1169/2011.
+     *
+     * Lus depuis la table plutot que codes en dur : `AllergensSeeder` fait deja
+     * autorite, et `ItemRequest` valide `allergen_flags.*` contre ces memes codes
+     * (`Rule::in(Allergen::pluck('code'))`). Une liste ecrite a la main ici aurait
+     * pu proposer un code que la validation refuse.
+     */
+    public function allergens(): \Illuminate\Http\JsonResponse
+    {
+        $allergenes = \App\Models\Allergen::query()
+            ->orderBy('sort')
+            ->get(['code', 'name_key', 'icon'])
+            ->map(fn ($a) => [
+                'code' => (string) $a->code,
+                'icon' => (string) ($a->icon ?? ''),
+                /*
+                 * [ONB 2026-08-28] On renvoie la CLE, pas une traduction.
+                 *
+                 * Premiere version : `trans($a->name_key)`. Elle renvoyait
+                 * « allergens.gluten » tel quel — le sous-arbre `allergens.*` n'existe
+                 * que dans `resources/js/languages/*.json`, cote NAVIGATEUR, pas dans
+                 * les fichiers de langue PHP. L'ecran aurait affiche la cle brute.
+                 *
+                 * Les traductions vivent deja la ou l'ecran les lit : on lui laisse
+                 * les resoudre avec son propre `$t`.
+                 */
+                'cle'  => (string) $a->name_key,
+            ])
+            ->values();
+
+        return response()->json(['data' => $allergenes]);
     }
 
     public function itemDetails(Item $item)

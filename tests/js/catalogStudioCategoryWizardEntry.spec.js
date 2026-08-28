@@ -114,7 +114,20 @@ describe('CatalogStudio category wizard entry', () => {
 
         expect(wrapper.find('[data-testid="catalog-studio-composer-overlay"]').exists()).toBe(true);
         expect(wrapper.vm.composerDrawerUrl).toBe('/admin/categories/42/composer');
-        expect(wrapper.text()).toContain("Ce wizard s'applique à TOUS les produits de cette catégorie.");
+        // [ONB 2026-08-28] Cette phrase affirmait « Ce wizard s'applique à TOUS les
+        // produits de cette catégorie. » C'est FAUX : `createForCategory()` écrit
+        // `item_id => null`, une contrainte SQL l'impose, et les cinq lecteurs de
+        // production interrogent tous `whereIn('item_id', …)`. Les deux méthodes
+        // capables de résoudre une catégorie n'ont aucun appelant.
+        //
+        // Le corriger exige de toucher `PricingService` (zone gelée §7) : le dossier
+        // d'arbitrage est monté (`docs/gates/GATE_WIZARD_CATEGORIE_JAMAIS_LU_2026-08-28.md`).
+        // Mais retirer une affirmation fausse de l'écran n'est pas une décision
+        // d'architecture — un bouton qui ment coûte plus cher qu'un bouton absent.
+        //
+        // On vérifie donc que l'écran porte l'avertissement, pas la promesse.
+        expect(wrapper.text()).toContain("n'est PAS encore appliqué à la borne ni à la caisse");
+        expect(wrapper.text()).not.toContain("s'applique à TOUS les produits");
     });
 
     it('exposes per-product composer buttons on product cards when catalog compose is allowed', async () => {

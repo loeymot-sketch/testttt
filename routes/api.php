@@ -871,6 +871,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/import/file', [ItemController::class, 'import']);
         Route::get('/details/{item}', [ItemController::class, 'itemDetails']);
 
+        /*
+         * [ONB 2026-08-28] Le referentiel des 14 allergenes de l'Annexe II du
+         * Reglement UE 1169/2011, pour que le formulaire produit puisse enfin les
+         * proposer. Aucune route ne les exposait : il n'y avait meme pas de quoi
+         * peupler une liste de choix.
+         *
+         * Lecture seule, et ouverte a qui peut deja voir ou modifier un produit —
+         * c'est un referentiel legal, pas une donnee du commercant.
+         */
+        Route::get('/allergens', [ItemController::class, 'allergens'])
+            ->middleware('permission:items|items_create|items_edit')
+            ->name('allergens');
+
         Route::get('/variation/{item}', [ItemVariationController::class, 'index']);
         Route::get('/variation/group-by-attribute/{item}', [ItemVariationController::class, 'listGroupByAttribute']);
         Route::post('/variation/{item}', [ItemVariationController::class, 'store']);

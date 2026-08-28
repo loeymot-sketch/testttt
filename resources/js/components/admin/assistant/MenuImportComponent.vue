@@ -269,9 +269,28 @@ export default {
             return Number(ligne.confiance) < this.seuilConfiance;
         },
 
+        /**
+         * [ONB-04 2026-08-28] Les trois appels de cet ecran etaient MORTS.
+         *
+         * `axios.defaults.baseURL` vaut deja `<hote>/api` (`axios-setup.js:75`).
+         * Ecrire `"/api/admin/..."` donnait donc `"/api/api/admin/..."` — 404 sur
+         * les trois. Tous les autres composants du depot ecrivent `"admin/..."`
+         * sans prefixe ; j'etais le seul a le poser.
+         *
+         * ET LA ROUTE DES TAXES N'EXISTE PAS sous `admin/taxes` : elle vit sous
+         * `admin/setting/tax`. Le `catch` mettait la liste a vide EN SILENCE, donc
+         * le menu deroulant TVA restait vide, donc `pretAAppliquer` restait faux,
+         * donc le bouton « Creer ces N produits » etait DEFINITIVEMENT desactive —
+         * sans un mot d'explication.
+         *
+         * Mes bancs PHPUnit etaient verts : ils tapent les routes directement. Ma
+         * capture ne montrait que l'etape 1, et son propre commentaire disait
+         * « aucun formulaire n'est soumis ». J'avais verifie que l'ecran S'AFFICHE,
+         * pas qu'il MARCHE.
+         */
         chargerTaxes() {
             axios
-                .get("/api/admin/taxes", { params: { paginate: 0 } })
+                .get("admin/setting/tax", { params: { paginate: 0 } })
                 .then((r) => {
                     this.taxes = r?.data?.data || [];
                 })
@@ -295,7 +314,7 @@ export default {
             this.erreurPhoto = "";
 
             axios
-                .post("/api/admin/assistant/menu/lecture", charge, {
+                .post("admin/assistant/menu/lecture", charge, {
                     headers: { "Content-Type": "multipart/form-data" },
                 })
                 .then((r) => {
@@ -322,7 +341,7 @@ export default {
             this.occupe = true;
 
             axios
-                .post("/api/admin/assistant/menu/application", {
+                .post("admin/assistant/menu/application", {
                     tax_id: this.taxeId,
                     item_type: this.typeArticle,
                     articles: this.lignes.map((l) => ({

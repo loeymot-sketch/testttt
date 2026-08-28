@@ -406,6 +406,8 @@ export default {
                     // append when the array is empty, so the server keeps the
                     // legacy NULL = visible-everywhere semantics.)
                     channels: [],
+                    allergen_flags: [],
+                    kds_station: 'none',
                 },
                 search: {
                     paginate: 1,
@@ -611,6 +613,16 @@ export default {
                 channels: Array.isArray(item.channels)
                     ? item.channels.filter((c) => ['kiosk', 'pos', 'web'].indexOf(c) !== -1)
                     : [],
+                /*
+                 * [ONB 2026-08-28] Hydratés depuis `SimpleItemResource`, qui les
+                 * expose depuis le même correctif. Sans cette ligne, le formulaire
+                 * afficherait des cases vides et les renverrait telles quelles :
+                 * corriger une faute dans le NOM d'un produit effacerait ses
+                 * allergènes déclarés — le défaut exact corrigé le même jour sur
+                 * `siret`, sur les réglages de borne et sur `channels`.
+                 */
+                allergen_flags: Array.isArray(item.allergen_flags) ? item.allergen_flags : [],
+                kds_station: item.kds_station || 'none',
             };
         },
         destroy: function (id) {

@@ -121,6 +121,18 @@ class MenuExtractionController extends Controller
             $morceaux[] = $dejaLa . ' déjà dans votre carte';
         }
 
+        /*
+         * [ONB 2026-08-28] Les doublons internes à la lecture, dits à part.
+         *
+         * Ils étaient comptés avec les « déjà dans votre carte » — le mot le plus
+         * rassurant possible pour désigner un produit que le commerçant vient de
+         * perdre.
+         */
+        $doublons = count($rapport['doublons_dans_la_lecture'] ?? []);
+        if ($doublons > 0) {
+            $morceaux[] = $doublons . ' à renommer (nom en double dans la lecture)';
+        }
+
         $refus = count($rapport['refus']);
         if ($refus > 0) {
             $morceaux[] = $refus . ' à corriger';

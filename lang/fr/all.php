@@ -231,6 +231,8 @@ return [
         'open_full_page' => 'Ouvrir en page complète',
     ],
     'message' => [
+        'extension_de_fichier_interdite' => "Ce type de fichier n'est pas accepté. Déposez une image (JPG, PNG) ou un tableur (XLSX, CSV) selon ce que l'écran vous demande.",
+        'taxe_encore_utilisee' => "Cette taxe est encore utilisée par :n produit(s), y compris désactivés ou supprimés. Changez d'abord leur taxe, sinon ils seraient facturés à 0 % sans que rien ne le signale.",
         // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.
         'wizard_introuvable' => "Ce parcours de personnalisation est introuvable. Rechargez la page ; s'il a été supprimé, recréez-le.",
         'wizard_sans_etape' => "Impossible de publier : ce parcours n'a aucune étape active. Activez au moins une étape avant de publier.",

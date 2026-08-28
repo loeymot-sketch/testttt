@@ -37,15 +37,79 @@ class ExtractionCarteBouchonTest extends TestCase
         );
     }
 
-    public function test_le_bouchon_reste_choisi_meme_si_on_active_le_drapeau_sans_cle(): void
+    /**
+     * [ONB 2026-08-28] CE BANC AFFIRMAIT CE QU'IL NE MESURAIT PAS.
+     *
+     * Il s'appelait « le bouchon reste choisi même si on active le drapeau sans
+     * clé » et son commentaire disait « deux verrous, jamais un ». Or
+     * `AssistantServiceProvider::register()` renvoie le bouchon dans LES DEUX
+     * branches — son propre commentaire l'assume. Le banc aurait donc été vert avec
+     * un seul verrou, avec zéro verrou, ou avec n'importe quelle condition.
+     *
+     * Pire qu'inutile : il prétendait attester la propriété de sécurité centrale du
+     * module, ce qui ferme la question pour quiconque la relit.
+     *
+     * On mesure désormais la vérité d'aujourd'hui, qui est forte et vérifiable :
+     * AUCUNE implémentation réelle n'existe, donc AUCUNE requête ne peut sortir —
+     * même drapeau levé ET clé renseignée. Le vrai double verrou sera testable le
+     * jour où il aura quelque chose à verrouiller ; le banc suivant l'exige.
+     */
+    public function test_aucune_requete_ne_peut_sortir_aujourdhui_quels_que_soient_les_reglages(): void
     {
-        // Deux verrous, jamais un : un drapeau basculé par erreur ne doit pas
-        // suffire à faire sortir une requête de la machine.
-        config(['assistant.enabled' => true, 'services.openai.key' => '']);
+        foreach ([
+            ['assistant.enabled' => false, 'services.openai.key' => ''],
+            ['assistant.enabled' => true,  'services.openai.key' => ''],
+            ['assistant.enabled' => true,  'services.openai.key' => 'sk-une-cle-qui-ressemble-a-une-vraie'],
+        ] as $reglages) {
+            config($reglages);
+            app()->forgetInstance(MenuExtractionContract::class);
 
-        $this->assertInstanceOf(
-            MockMenuExtractionService::class,
-            app(MenuExtractionContract::class)
+            $this->assertInstanceOf(
+                MockMenuExtractionService::class,
+                app(MenuExtractionContract::class),
+                "Aucune implémentation réelle n'existe tant que le gate G-IA n'est pas\n"
+                . "tranché : le conteneur doit rendre le bouchon quels que soient les\n"
+                . 'réglages, y compris avec une clé qui a l\'air vraie. Réglages : '
+                . json_encode($reglages)
+            );
+        }
+    }
+
+    /**
+     * [ONB 2026-08-28] Le garde qui mord le jour de la bascule.
+     *
+     * Tant qu'aucune implémentation réelle n'existe, le banc ci-dessus suffit. Le
+     * jour où quelqu'un en écrit une, il DOIT écrire aussi un vrai test du double
+     * verrou — et ce banc-ci échoue pour le lui rappeler, au lieu de laisser une
+     * tautologie couvrir la bascule la plus sensible du module.
+     */
+    public function test_le_jour_ou_une_implementation_reelle_arrive_le_double_verrou_devra_etre_prouve(): void
+    {
+        $implementations = [];
+
+        $dossier = app_path('Services/Menu/Vision');
+        foreach (scandir($dossier) ?: [] as $fichier) {
+            if (! str_ends_with($fichier, '.php')) {
+                continue;
+            }
+
+            $classe = 'App\\Services\\Menu\\Vision\\' . substr($fichier, 0, -4);
+
+            if (! class_exists($classe) || ! is_subclass_of($classe, MenuExtractionContract::class)) {
+                continue;
+            }
+
+            $implementations[] = $classe;
+        }
+
+        $this->assertSame(
+            [MockMenuExtractionService::class],
+            $implementations,
+            "Une implémentation de `MenuExtractionContract` autre que le bouchon vient\n"
+            . "d'apparaître. Le banc précédent ne prouve alors plus rien sur le double\n"
+            . "verrou : il faut désormais un test qui montre qu'un drapeau levé SANS clé\n"
+            . "rend toujours le bouchon, et qu'un drapeau baissé AVEC clé le rend aussi.\n"
+            . 'Vérifiez aussi le plafond de dépense — le projet n\'a aucun compteur de coût.'
         );
     }
 

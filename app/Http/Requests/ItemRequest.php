@@ -35,6 +35,29 @@ class ItemRequest extends FormRequest
      *
      * @return array
      */
+    /**
+     * [ONB 2026-08-28] Distinguer « aucun allergene » de « champ non envoye ».
+     *
+     * `$item->update($request->validated())` n'ecrit que les cles PRESENTES. Un
+     * formulaire qui n'envoie rien laisse donc la valeur en place — ce qui est le
+     * bon comportement pour un ecran qui ignore le champ, mais rend IMPOSSIBLE le
+     * retrait du dernier allergene : decocher la derniere case n'envoie aucune
+     * entree `allergen_flags[]`, donc rien ne change.
+     *
+     * L'ecran envoie donc un temoin `allergen_flags_defini` : il affirme « j'ai
+     * affiche ce champ et voici son etat complet ». Sa presence sans aucune entree
+     * signifie « aucun allergene », et non « je n'en sais rien ».
+     *
+     * Le temoin n'a pas de regle : il est absent de `validated()`, donc jamais
+     * ecrit sur le modele.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->boolean('allergen_flags_defini') && ! $this->has('allergen_flags')) {
+            $this->merge(['allergen_flags' => []]);
+        }
+    }
+
     public function rules(): array
     {
         $allergenCodes = Allergen::query()->pluck('code')->all();

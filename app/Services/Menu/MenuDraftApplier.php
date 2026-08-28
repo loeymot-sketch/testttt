@@ -59,6 +59,7 @@ class MenuDraftApplier
      *     categories_deja_la: list<string>,
      *     articles_crees: list<string>,
      *     articles_deja_la: list<string>,
+     *     doublons_dans_la_lecture: list<array{ligne:string, raison:string}>,
      *     refus: list<array{ligne:string, raison:string}>
      * }
      */
@@ -69,33 +70,46 @@ class MenuDraftApplier
             'categories_deja_la' => [],
             'articles_crees'     => [],
             'articles_deja_la'   => [],
+            // [ONB 2026-08-28] Deux lignes de MEME nom dans une seule lecture.
+            // Voir la boucle plus bas : elles etaient rangees avec les « deja la »,
+            // et la seconde disparaissait sans un mot.
+            'doublons_dans_la_lecture' => [],
             'refus'              => [],
         ];
 
-        // Les catégories d'abord : un article ne peut pas être rattaché à une
-        // catégorie qui n'existe pas encore.
-        $identifiantsParNom = [];
+        /*
+         * Les noms deja presents AVANT cette application. C'est ce qui permet de
+         * distinguer une vraie idempotence (le commercant reclique) d'un doublon
+         * interne au fichier (deux lignes de meme nom dans la meme lecture).
+         * On le fige AVANT la boucle : une fois la premiere ligne creee, la base
+         * ne sait plus faire la difference.
+         */
+        $presentsAvant = [];
+        foreach ($articles as $article) {
+            $nom = trim((string) ($article['nom'] ?? ''));
 
-        foreach ($this->nomsDeCategories($articles) as $nom) {
-            $existante = $this->categorieParNom($nom);
-
-            if ($existante !== null) {
-                $identifiantsParNom[$this->cle($nom)] = (int) $existante->id;
-                $rapport['categories_deja_la'][] = $nom;
-                continue;
-            }
-
-            try {
-                $creee = $this->categorieService->store($this->requeteCategorie($nom));
-                $identifiantsParNom[$this->cle($nom)] = (int) $creee->id;
-                $rapport['categories_creees'][] = $nom;
-            } catch (ValidationException $e) {
-                $rapport['refus'][] = ['ligne' => $nom, 'raison' => $this->premierMessage($e)];
-            } catch (\Throwable $e) {
-                Log::info('[ONB-04] catégorie refusée : ' . $e->getMessage());
-                $rapport['refus'][] = ['ligne' => $nom, 'raison' => $e->getMessage()];
+            if ($nom !== '' && $this->articleExiste($nom)) {
+                $presentsAvant[$this->cle($nom)] = true;
             }
         }
+
+        /*
+         * [ONB 2026-08-28] Les catégories sont résolues PARESSEUSEMENT.
+         *
+         * Elles étaient toutes créées d'abord, avant la moindre tentative d'écriture
+         * d'article. Une catégorie dont TOUS les articles échouaient — prix illisible,
+         * nom en double, taxe absente — restait donc en base, VIDE.
+         *
+         * Sur la fixture du bouchon, « Menus midi » n'a qu'un seul article, et c'est
+         * exactement celui que le doublon de nom fait perdre : la catégorie survivait
+         * seule. Elle s'affiche alors dans le bandeau de la borne, un client la
+         * touche, et ne voit rien.
+         *
+         * Créer au dernier moment vaut mieux que faire le ménage après : il n'y a
+         * plus rien à supprimer, donc pas de code de suppression à écrire — ce qui
+         * aurait été la partie risquée.
+         */
+        $identifiantsParNom = [];
 
         foreach ($articles as $article) {
             $nom = trim((string) ($article['nom'] ?? ''));
@@ -108,11 +122,38 @@ class MenuDraftApplier
             // « déjà là », pas comme un refus — sinon un commerçant qui reclique
             // croirait que tout a échoué.
             if ($this->articleExiste($nom)) {
+                /*
+                 * [ONB 2026-08-28] Mais « déjà là » ne doit se dire que d'un article
+                 * qui était là AVANT. Si le nom n'a été créé qu'à l'instant, par une
+                 * ligne précédente de CETTE lecture, alors la ligne courante est un
+                 * DOUBLON — un autre produit, un autre prix, une autre catégorie — et
+                 * elle est en train d'être perdue.
+                 *
+                 * Le catalogue impose l'unicité du nom : on ne peut pas créer les
+                 * deux. La seule issue honnête est de nommer la collision pour que le
+                 * commerçant renomme l'une des deux lignes, au lieu de lui affirmer
+                 * qu'il possédait déjà un produit qu'il vient de perdre.
+                 */
+                if (! isset($presentsAvant[$this->cle($nom)])) {
+                    $rapport['doublons_dans_la_lecture'][] = [
+                        'ligne'  => $nom,
+                        'raison' => "« {$nom} » apparaît plusieurs fois dans cette lecture, "
+                            . "sous des catégories ou des prix différents. Le catalogue "
+                            . "impose un nom unique : seule la première ligne a été créée. "
+                            . "Renommez la ou les suivantes, puis appliquez à nouveau.",
+                    ];
+                    continue;
+                }
+
                 $rapport['articles_deja_la'][] = $nom;
                 continue;
             }
 
-            $categorie = $identifiantsParNom[$this->cle((string) ($article['categorie'] ?? ''))] ?? null;
+            $categorie = $this->categoriePour(
+                (string) ($article['categorie'] ?? ''),
+                $identifiantsParNom,
+                $rapport
+            );
 
             if ($categorie === null) {
                 $rapport['refus'][] = [
@@ -136,20 +177,56 @@ class MenuDraftApplier
         return $rapport;
     }
 
-    /** @param array<int, array<string, mixed>> $articles @return list<string> */
-    private function nomsDeCategories(array $articles): array
+    /**
+     * [ONB 2026-08-28] Résout — et crée si besoin — la catégorie d'un article.
+     *
+     * Appelée seulement quand un article est sur le point d'y être rattaché, donc
+     * une catégorie dont aucun article n'aboutit n'est jamais créée.
+     *
+     * Le résultat est mémorisé, y compris l'échec (`false`) : sans cela, dix
+     * articles d'une même catégorie invalide produiraient dix tentatives d'écriture
+     * et dix lignes de refus identiques.
+     *
+     * @param  array<string, int|false>  $cache
+     * @param  array<string, mixed>      $rapport
+     */
+    private function categoriePour(string $nomBrut, array &$cache, array &$rapport): ?int
     {
-        $noms = [];
+        $nom = trim($nomBrut);
 
-        foreach ($articles as $article) {
-            $nom = trim((string) ($article['categorie'] ?? ''));
-
-            if ($nom !== '' && !isset($noms[$this->cle($nom)])) {
-                $noms[$this->cle($nom)] = $nom;
-            }
+        if ($nom === '') {
+            return null;
         }
 
-        return array_values($noms);
+        $cle = $this->cle($nom);
+
+        if (array_key_exists($cle, $cache)) {
+            return $cache[$cle] === false ? null : $cache[$cle];
+        }
+
+        $existante = $this->categorieParNom($nom);
+
+        if ($existante !== null) {
+            $rapport['categories_deja_la'][] = $nom;
+
+            return $cache[$cle] = (int) $existante->id;
+        }
+
+        try {
+            $creee = $this->categorieService->store($this->requeteCategorie($nom));
+            $rapport['categories_creees'][] = $nom;
+
+            return $cache[$cle] = (int) $creee->id;
+        } catch (ValidationException $e) {
+            $rapport['refus'][] = ['ligne' => $nom, 'raison' => $this->premierMessage($e)];
+        } catch (\Throwable $e) {
+            Log::info('[ONB-04] catégorie refusée : ' . $e->getMessage());
+            $rapport['refus'][] = ['ligne' => $nom, 'raison' => $e->getMessage()];
+        }
+
+        $cache[$cle] = false;
+
+        return null;
     }
 
     /**

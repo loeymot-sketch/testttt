@@ -189,6 +189,54 @@
                         <p class="text-xs text-gray-400 mt-1">{{ $t('label.channels_help') }}</p>
                     </div>
 
+                    <!--
+                        [ONB 2026-08-28] Les allergènes, enfin saisissables.
+                        Toute la chaîne existait — colonne, validation, observateur,
+                        pivot, affichage caisse et cuisine, et jusqu'au FILTRE
+                        ALLERGÈNES DE LA BORNE — sauf l'écran par lequel un humain
+                        entre la vérité. Les correspondances actuelles viennent d'un
+                        seed qui les qualifie lui-même de « guessed mappings ».
+                    -->
+                    <div class="form-col-12" data-testid="admin-item-form-allergens">
+                        <label class="db-field-title">{{ $t("label.allergens_title") }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio" v-for="allergene in allergenes" :key="allergene.code">
+                                <div class="custom-radio">
+                                    <input type="checkbox"
+                                        :id="'item-allergen-' + allergene.code"
+                                        :value="allergene.code"
+                                        v-model="props.form.allergen_flags"
+                                        class="custom-radio-field"
+                                        :data-testid="'admin-item-form-allergen-' + allergene.code">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label :for="'item-allergen-' + allergene.code" class="db-field-label">
+                                    <span v-if="allergene.icon" aria-hidden="true">{{ allergene.icon }}</span>
+                                    {{ $t(allergene.cle) }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.allergen_flags">{{ errors.allergen_flags[0] }}</small>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.allergens_help') }}</p>
+                    </div>
+
+                    <!--
+                        [ONB 2026-08-28] Le poste de cuisine : même histoire.
+                        `ItemRequest` le valide contre les quatre valeurs de l'ENUM
+                        MySQL, le KDS le lit pour router la préparation — et aucun
+                        écran ne l'écrivait, donc tout tombait sur le poste par défaut.
+                    -->
+                    <div class="form-col-12 sm:form-col-6" data-testid="admin-item-form-kds-station">
+                        <label for="kds_station" class="db-field-title">{{ $t("label.kds_station") }}</label>
+                        <select id="kds_station" v-model="props.form.kds_station" class="db-field-control">
+                            <option v-for="(libelle, valeur) in postesDeCuisine" :key="valeur" :value="valeur">
+                                {{ libelle }}
+                            </option>
+                        </select>
+                        <small class="db-field-alert" v-if="errors.kds_station">{{ errors.kds_station[0] }}</small>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.kds_station_help') }}</p>
+                    </div>
+
                     <div class="form-col-12">
                         <label for="description" class="db-field-title">{{ $t("label.description") }}</label>
                         <textarea v-model="props.form.description" v-bind:class="errors.description ? 'invalid' : ''"
@@ -270,6 +318,9 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import { libelleTaxe } from "../../../services/libelleTaxe";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
+// [ONB 2026-08-28] `axios.defaults.baseURL` vaut deja « <hote>/api »
+// (`shared/axios-setup.js:75`) : les URL s'ecrivent SANS prefixe.
+import axios from "axios";
 
 export default {
     name: "ItemCreateComponent",
@@ -296,6 +347,18 @@ export default {
                     [askEnum.YES]: this.$t("label.yes"),
                     [askEnum.NO]: this.$t("label.no")
                 }
+            },
+            /** Le referentiel des 14 allergenes, charge au montage. */
+            allergenes: [],
+            /**
+             * Les quatre valeurs de l'ENUM MySQL `items.kds_station`, ecrites ici
+             * comme dans `ItemRequest` — l'enum PHP est revendique par ONB-10.
+             */
+            postesDeCuisine: {
+                none: this.$t("label.kds_station_none"),
+                bar: this.$t("label.kds_station_bar"),
+                cuisine_chaude: this.$t("label.kds_station_hot"),
+                cuisine_froide: this.$t("label.kds_station_cold"),
             },
             image: "",
             errors: {},
@@ -377,6 +440,20 @@ export default {
             order_type: 'asc',
             status: statusEnum.ACTIVE
         });
+
+        // [ONB 2026-08-28] Le referentiel legal des allergenes. En cas d'echec on
+        // laisse la liste vide plutot que de bloquer le formulaire : ne pas pouvoir
+        // declarer un allergene est genant, ne pas pouvoir creer un produit l'est
+        // davantage. L'erreur est tracee, pas avalee.
+        axios.get("admin/item/allergens")
+            .then((reponse) => {
+                this.allergenes = Array.isArray(reponse?.data?.data) ? reponse.data.data : [];
+            })
+            .catch((erreur) => {
+                this.allergenes = [];
+                console.error("[items] référentiel allergènes indisponible", erreur);
+            });
+
         this.loading.isActive = false;
     },
     methods: {
@@ -400,6 +477,11 @@ export default {
                 status: statusEnum.ACTIVE,
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                 channels: [],
+                // [ONB 2026-08-28] Sans cette remise a zero, enchainer deux
+                // creations reporterait les allergenes du produit precedent sur
+                // le suivant — une declaration FAUSSE, plus couteuse qu'une absente.
+                allergen_flags: [],
+                kds_station: "none",
             };
             if (this.image) {
                 this.image = "";
@@ -422,6 +504,11 @@ export default {
                 status: statusEnum.ACTIVE,
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                 channels: [],
+                // [ONB 2026-08-28] Sans cette remise a zero, enchainer deux
+                // creations reporterait les allergenes du produit precedent sur
+                // le suivant — une declaration FAUSSE, plus couteuse qu'une absente.
+                allergen_flags: [],
+                kds_station: "none",
             };
             if (this.image) {
                 this.image = "";
@@ -453,6 +540,24 @@ export default {
                         fd.append('channels[]', c);
                     }
                 });
+
+                /*
+                 * [ONB 2026-08-28] Les allergènes, avec leur témoin.
+                 *
+                 * Décocher la DERNIÈRE case n'ajoute aucune entrée `allergen_flags[]`
+                 * — indiscernable, côté serveur, d'un formulaire qui ignore le champ.
+                 * Le témoin `allergen_flags_defini` lève l'ambiguïté : il affirme
+                 * « cet écran a affiché le champ, et voici son état complet ». Sans
+                 * lui, un commerçant ne pourrait jamais RETIRER un allergène déclaré
+                 * par erreur — et une déclaration fausse est pire qu'une absente.
+                 */
+                fd.append('allergen_flags_defini', '1');
+                const allergenes = Array.isArray(this.props.form.allergen_flags)
+                    ? this.props.form.allergen_flags
+                    : [];
+                allergenes.forEach((code) => fd.append('allergen_flags[]', code));
+
+                fd.append('kds_station', this.props.form.kds_station || 'none');
                 if (this.image) {
                     fd.append('image', this.image);
                 }
@@ -478,6 +583,8 @@ export default {
                         status: statusEnum.ACTIVE,
                         // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                         channels: [],
+                        allergen_flags: [],
+                        kds_station: "none",
                     };
                     this.image = "";
                     this.errors = {};

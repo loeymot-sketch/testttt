@@ -235,6 +235,8 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        'extension_de_fichier_interdite' => "This file type is not accepted. Upload an image (JPG, PNG) or a spreadsheet (XLSX, CSV), depending on what the screen asks for.",
+        'taxe_encore_utilisee' => "This tax is still used by :n product(s), including deactivated or deleted ones. Change their tax first, otherwise they would be charged at 0% with no warning.",
         // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.
         'wizard_introuvable' => "This customisation flow could not be found. Reload the page; if it was deleted, create it again.",
         'wizard_sans_etape' => "Cannot publish: this flow has no active step. Activate at least one step before publishing.",

@@ -129,7 +129,23 @@ class PurchaseService
             return;
         }
 
-        $qty = (float) $line->qty;
+        // [ONB-08 2026-08-28 · P0] La quantite partait BRUTE vers le stock, sans jamais
+        // comparer l'unite de la ligne de facture a celle de la matiere.
+        //
+        // Mesure sur la base reelle : les matieres sont stockees en `g`, `piece`,
+        // `tranche` ; les factures arrivent en `kg`, `piece`, `tranche`. Une ligne
+        // « Poulet frais 3kg » (`qty=3`, `unit='kg'`) creditait donc **3 GRAMMES** a une
+        // matiere en `g` — un facteur MILLE. Consequence deja visible : 11 des 14
+        // matieres stockees sont NEGATIVES (Poulet -9 600 g), « Conso & Stock » annonce
+        // 17 ruptures sur 20 pendant que la borne vend tous les burgers, et le cout
+        // moyen pondere (calcule plus bas avec la meme quantite) est faux du meme
+        // facteur.
+        //
+        // On convertit quand la conversion est CONNUE. Quand elle ne l'est pas, on
+        // REFUSE : crediter un nombre dont on ignore l'unite est exactement ce qui a
+        // corrompu ce stock. Un refus nomme se corrige ; une corruption silencieuse se
+        // decouvre des mois plus tard.
+        $qty = $this->quantiteDansLUniteDeLaMatiere($line, $rawMaterialId);
         $unitPrice = $line->unit_price === null ? null : (float) $line->unit_price;
 
         // État AVANT réception (nécessaire à la pondération).
@@ -170,6 +186,92 @@ class PurchaseService
      * exploitable (premier achat, ancien coût inconnu, ou dénominateur ≤ 0 —
      * on_hand est signé et peut être négatif via la conso théorique).
      */
+    /**
+     * Facteurs de conversion CONNUS, de l'unite de facture vers l'unite de matiere.
+     *
+     * Volontairement court : on n'ajoute une paire que lorsqu'elle est verifiee. Une
+     * table trop large inviterait a deviner, et deviner est precisement ce qui a
+     * corrompu ce stock.
+     */
+    private const CONVERSIONS = [
+        'kg:g'  => 1000.0,
+        'g:kg'  => 0.001,
+        'l:ml'  => 1000.0,
+        'ml:l'  => 0.001,
+        'cl:ml' => 10.0,
+        'ml:cl' => 0.1,
+    ];
+
+    /**
+     * Les unites de DENOMBREMENT : elles comptent des objets, pas des grandeurs.
+     *
+     * « 5 tranches » vers une matiere comptee en « piece » vaut 5. Aucun facteur ne
+     * peut s'y perdre, contrairement a kg/g. Mesure sur la base reelle : 5 des 10
+     * lignes d'achat sont exactement ce cas — les refuser bloquerait la reception
+     * entiere, alors qu'aucune corruption n'y est possible.
+     *
+     * `piece` est aussi la valeur de repli de `InvoiceClassificationService:108`
+     * quand l'analyse ne sait pas lire l'unite. La ranger ici evite qu'une hesitation
+     * de l'OCR ne bloque un document complet.
+     */
+    private const UNITES_DE_DENOMBREMENT = [
+        'piece', 'pieces', 'pce', 'pcs', 'p',
+        'tranche', 'tranches',
+        'unite', 'unites', 'u',
+        'portion', 'portions',
+        'sachet', 'sachets',
+        'boite', 'boites',
+        'lot', 'lots',
+    ];
+
+    /**
+     * Ramene la quantite d'une ligne de facture dans l'unite de la matiere.
+     *
+     * @throws \InvalidArgumentException quand la conversion n'est pas connue — mieux
+     *         vaut un refus nomme qu'un stock corrompu en silence.
+     */
+    private function quantiteDansLUniteDeLaMatiere($line, int $rawMaterialId): float
+    {
+        $qty = (float) $line->qty;
+
+        $uniteFacture = mb_strtolower(trim((string) ($line->unit ?? '')));
+        $uniteMatiere = mb_strtolower(trim((string) (RawMaterial::query()
+            ->whereKey($rawMaterialId)
+            ->value('unit') ?? '')));
+
+        // Unite absente d'un cote ou de l'autre, ou identique : rien a convertir.
+        if ($uniteFacture === '' || $uniteMatiere === '' || $uniteFacture === $uniteMatiere) {
+            return $qty;
+        }
+
+        // Deux unites de denombrement : un objet reste un objet. C'etait deja le
+        // comportement d'avant, et il est CORRECT ici — le defaut d'origine etait
+        // strictement dimensionnel.
+        $compteVersCompte = in_array($uniteFacture, self::UNITES_DE_DENOMBREMENT, true)
+            && in_array($uniteMatiere, self::UNITES_DE_DENOMBREMENT, true);
+
+        if ($compteVersCompte) {
+            return $qty;
+        }
+
+        $facteur = self::CONVERSIONS[$uniteFacture . ':' . $uniteMatiere] ?? null;
+
+        if ($facteur === null) {
+            $nom = (string) (RawMaterial::query()->whereKey($rawMaterialId)->value('name') ?? '#' . $rawMaterialId);
+
+            throw new \InvalidArgumentException(
+                "La ligne « {$nom} » est facturee en « {$uniteFacture} » alors que cette "
+                . "matiere se compte en « {$uniteMatiere} » : ces deux unites ne mesurent "
+                . "pas la meme chose, et aucune conversion ne peut etre devinee. "
+                . "Corrigez l'unite de la ligne, ou celle de la matiere, puis revalidez. "
+                . "La reception entiere est retenue tant que ce n'est pas fait — mieux vaut "
+                . 'un document en attente qu\'un stock fausse sans que rien ne le signale.'
+            );
+        }
+
+        return $qty * $facteur;
+    }
+
     private function weightedAverageCost(float $oldStock, ?float $oldAvg, float $qty, float $unitPrice): float
     {
         $denominator = $oldStock + $qty;

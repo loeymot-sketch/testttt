@@ -20,7 +20,15 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsEmptyRows
 {
-    use Importable, SkipsFailures;
+    use Importable, SkipsFailures, \App\Imports\Concerns\AccepteLesEnTetesExportes;
+
+    /**
+     * [ONB 2026-08-28] Marqueur porte par le message des lignes DEJA PRESENTES,
+     * pour que le controleur puisse les separer des vraies erreurs.
+     *
+     * Il n'apparait jamais a l'ecran : le controleur le retire avant d'afficher.
+     */
+    public const MARQUEUR_DEJA_PRESENT = '[[deja-present]]';
 
     /** Nombre de lignes reellement transformees en article. */
     public int $creees = 0;
@@ -49,47 +57,27 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
     /**
      * [ONB-02 2026-08-28] Accepter le fichier que l'application vient d'exporter.
      *
-     * `ItemExport::headings()` ecrit des en-tetes TRADUITS
-     * (`trans('all.label.name')` -> « Nom », « Categorie », « Prix »...), et
-     * `WithHeadingRow` les slugge : `nom`, `categorie`, `prix`. L'import, lui,
-     * cherchait `name`, `category`, `price`. AUCUNE colonne ne correspondait.
+     * `ItemExport::headings()` ecrit des en-tetes TRADUITS (« Nom », « Categorie »,
+     * « Prix »...), que `WithHeadingRow` slugge. L'import cherchait `name`,
+     * `category`, `price` : AUCUNE colonne ne correspondait.
      *
-     * Le commercant exportait sa carte, corrigeait deux prix, reimportait le meme
+     * Le commercant exportait sa carte, corrigeait deux prix, redeposait le meme
      * fichier : toutes les lignes echouaient sur `name required`, `SkipsOnFailure`
      * les avalait, et l'ecran annoncait un succes. Le SEUL moyen d'editer sa carte
      * en masse etait un aller-retour qui ne revenait jamais.
      *
-     * (Le defaut ne frappait pas que le francais : `all.label.item_category_id` donne
-     * « Item Category Id » en anglais, sluggue `item_category_id`, quand l'import
-     * attend `category` — deux colonnes ne bouclaient donc pas meme en anglais.)
+     * (Le defaut ne frappait pas que le francais : `all.label.item_category_id`
+     * donne « Item Category Id » en anglais, sluggue `item_category_id`, quand
+     * l'import attend `category`.)
      *
-     * Les alias sont DERIVES des memes cles de traduction que l'export utilise :
-     * si quelqu'un reformule un libelle, les deux bouts bougent ensemble. Une table
-     * ecrite a la main aurait derive au premier changement.
-     *
-     * @param  array<string, mixed>  $row
-     * @return array<string, mixed>
-     */
-    public function prepareForValidation($row, $index)
-    {
-        foreach (self::aliasDesColonnes() as $alias => $canonique) {
-            if (! array_key_exists($canonique, $row) && array_key_exists($alias, $row)) {
-                $row[$canonique] = $row[$alias];
-            }
-        }
-
-        return $row;
-    }
-
-    /**
-     * Alias d'en-tete -> nom de colonne attendu, pour toutes les langues installees.
+     * La resolution vit desormais dans `AccepteLesEnTetesExportes`, partagee avec
+     * l'import des categories — qui avait ete oublie lors de la premiere correction.
      *
      * @return array<string, string>
      */
-    private static function aliasDesColonnes(): array
+    protected static function correspondanceDesEnTetes(): array
     {
-        // Cle de traduction utilisee par ItemExport::headings() -> colonne attendue ici.
-        $correspondances = [
+        return [
             'all.label.name'             => 'name',
             'all.label.item_category_id' => 'category',
             'all.label.price'            => 'price',
@@ -100,23 +88,6 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
             'all.label.caution'          => 'caution',
             'all.label.description'      => 'description',
         ];
-
-        $alias = [];
-
-        foreach (['fr', 'en', 'ar', 'bn', 'de'] as $langue) {
-            foreach ($correspondances as $cle => $colonne) {
-                $libelle = trans($cle, [], $langue);
-
-                if (! is_string($libelle) || $libelle === '' || $libelle === $cle) {
-                    continue;
-                }
-
-                // Meme sluggage que celui applique par WithHeadingRow.
-                $alias[\Illuminate\Support\Str::slug($libelle, '_')] = $colonne;
-            }
-        }
-
-        return $alias;
     }
 
     public function rules(): array
@@ -126,7 +97,38 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("items", "name")->whereNull('deleted_at')
+                /*
+                 * [ONB 2026-08-28] Remplace `Rule::unique("items","name")
+                 * ->whereNull('deleted_at')` — MEME REQUETE, MEME VERDICT — pour
+                 * pouvoir en changer le MESSAGE.
+                 *
+                 * Le message par defaut de Laravel, « The name has already been
+                 * taken. », est exact et inutilisable : il presente comme une faute
+                 * ce qui est, dans le parcours normal (corriger quelques lignes puis
+                 * redeposer LE MEME fichier), la preuve que les lignes precedentes
+                 * sont bien passees. Un commercant lisait 40 erreurs la ou il en
+                 * attendait zero.
+                 *
+                 * `DB::table()` et non `Item::query()` : `Rule::unique` interroge le
+                 * constructeur NU, sans les scopes globaux. Passer par le modele
+                 * appliquerait `BranchScope` et changerait le verdict.
+                 */
+                function ($attribut, $valeur, $echec) {
+                    $existe = DB::table('items')
+                        ->where('name', $valeur)
+                        ->whereNull('deleted_at')
+                        ->exists();
+
+                    if ($existe) {
+                        $echec(
+                            self::MARQUEUR_DEJA_PRESENT
+                            . " Ce produit est deja dans votre carte : la ligne a ete "
+                            . "ignoree, rien n'a ete modifie. L'import AJOUTE des produits, "
+                            . "il ne les met pas a jour — pour changer un prix ou une "
+                            . 'description, ouvrez la fiche du produit dans Produits.'
+                        );
+                    }
+                },
             ],
             // [ONB-02 2026-08-28] La regle ne verifiait que la PRESENCE du nom.
             // Quand la categorie n'existait pas, `getCategoryId()` renvoyait null,
