@@ -85,7 +85,30 @@ final class OrderReceiptEscPosRenderer
         if (optional($branch)->email) {
             $b .= EscPosCommandBuilder::textWrap('E-mail : '.$branch->email, $w);
         }
-        $website = (string) config('printing.receipt.website', '');
+        // [ONB-05 2026-08-28] Le site web allait DIRECTEMENT a la configuration, dont
+        // le defaut vaut `lecayenne.fr` (`config/printing.php:83`). Les deux lignes
+        // au-dessus — adresse et telephone — font pourtant « etablissement d'abord,
+        // configuration ensuite ». Le champ « Site web » que le commercant remplit
+        // dans Reglages > Entreprise n'etait relu par personne, et son client
+        // repartait avec un ticket portant l'adresse web d'un AUTRE restaurant.
+        //
+        // Meme defaut que celui corrige pour la borne le 2026-08-28 (`ef2cc618c`,
+        // telephone + adresse), reste en place ici. On aligne le site web sur le
+        // meme ordre de priorite.
+        // ⚠️ Le rendu d'un ticket ne doit dependre d'AUCUNE table. Ce service tourne
+        // dans des contextes ou `settings` n'existe pas — 41 bancs de rendu l'ont
+        // montre des ma premiere version, qui appelait `Settings::group()` a nu et
+        // levait `no such table: settings`. Un ticket doit sortir meme si la base de
+        // reglages est absente ou en panne : c'est un document fiscal, pas un ecran.
+        $siteCommercant = rescue(
+            static fn (): string => (string) (
+                \Smartisan\Settings\Facades\Settings::group('company')->all()['company_website'] ?? ''
+            ),
+            '',
+            false
+        );
+
+        $website = (string) ($siteCommercant ?: config('printing.receipt.website', ''));
         if ($website !== '') {
             $b .= EscPosCommandBuilder::textWrap('Web : '.$website, $w);
         }

@@ -152,7 +152,27 @@ class WheelSettingsService
         $connues = array_keys($this->defaults());
         $aEcrire = [];
         foreach ($data as $k => $v) {
-            if (in_array($k, $connues, true)) {
+            // [ONB-09 2026-08-28] La liste blanche ne contenait QUE les 9 cles de
+            // `defaults()` — aucune `prize_*`. Or le formulaire poste
+            // `prize_<lot>_weight` et `prize_<lot>_quantity` pour chaque lot
+            // (`reglages.blade.php:289-290`), et le controleur construit pour chacune
+            // une regle de validation et six messages d'erreur en francais
+            // (`WheelSettingsController.php:98-110`).
+            //
+            // Toutes etaient donc ecartees EN SILENCE, et l'ecran affichait quand meme
+            // « Reglages enregistres. ». `prizeOverrides()` ne trouvait jamais rien et
+            // `WheelService::segments()` servait `config/wheel.php` intact : le
+            // commercant plafonnait son budget cadeaux — « 10 burgers ce mois-ci »,
+            // « Terminator a zero » — lisait un succes, et rien n'etait garde. Seul un
+            // developpeur editant le fichier de configuration pouvait borner la depense.
+            //
+            // L'INTENTION DU FILTRE EST CONSERVEE : un formulaire ne doit pas pouvoir
+            // ecrire n'importe quelle cle de reglage. On accepte donc les cles `prize_*`
+            // par leur FORME EXACTE — la meme expression que celle que `prizeOverrides()`
+            // relit — et rien d'autre.
+            $estCleDeLot = (bool) preg_match('/^prize_(.+)_(weight|quantity)$/', (string) $k);
+
+            if (in_array($k, $connues, true) || $estCleDeLot) {
                 $aEcrire[$k] = is_bool($v) ? ($v ? '1' : '0') : (string) $v;
             }
         }

@@ -5,6 +5,20 @@ use Illuminate\Support\Facades\Facade;
 return [
 
     /*
+    | [ONB-05 2026-08-28] Symbole de devise, lu par la borne.
+    |
+    | `KioskMenuService.php:186` et `PricingPreviewService.php:220` appellent
+    | `config('app.currency_symbol', '€')` — une cle qu'AUCUN fichier ne
+    | definissait. La borne affichait donc toujours l'euro, en ignorant la devise
+    | choisie dans Reglages > Site (`site_default_currency_symbol`).
+    |
+    | Le defaut reste l'euro : rien ne change tant que la variable n'est pas posee.
+    | ⏳ Faire lire le REGLAGE de l'ecran plutot qu'une variable d'environnement
+    | reste a faire — c'est un chantier de propagation, pas une cle manquante.
+    */
+    'currency_symbol' => env('APP_CURRENCY_SYMBOL', '€'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
