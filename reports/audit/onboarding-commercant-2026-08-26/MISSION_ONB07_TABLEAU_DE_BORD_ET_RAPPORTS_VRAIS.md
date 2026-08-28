@@ -75,6 +75,52 @@ depuis juin. Ce GOAL écrit le dictionnaire, le teste, et rend le Dashboard lisi
 - Le serveur de dev est mono-requête : 12 widgets = 12 requêtes en série ; mesurer par requête, pas la page.
 - `:8000` = autre worktree ; ta session = **:8807**.
 
+
+### 8.9 Le Top 5 du PDF ne comptait pas la même population que le chiffre d'affaires
+
+Trouvé le 2026-08-28 par un balayage adverse — **et c'est mon propre correctif
+inachevé.**
+
+Le même jour, j'avais remplacé la recopie du prédicat de revenu par un appel à la
+règle (`DashboardService:737`), en écrivant au-dessus, noir sur blanc :
+
+> « On appelle la règle au lieu de la recopier. Une copie ne suit pas les
+> corrections de l'original — c'est exactement ce qui s'est passé ici. »
+
+Et j'ai laissé la **même recopie** 150 lignes plus bas, dans `topItemsOfDay`, sans
+l'exclusion Uber. *Le jumeau oublié, dans le même fichier, sous l'avertissement qui
+le décrit.*
+
+Mesure de l'agent sur la base, journée du 14/08 : **17 commandes** retenues par le
+prédicat du Top 5 contre **7** pour le CA. Le document remis au comptable et archivé
+six ans présentait deux populations différentes sous deux titres voisins, sans rien
+signaler.
+
+Le banc chiffre l'écart en restaurant le défaut : **42 unités au lieu de 2**.
+
+### 8.10 Le PDF français écrivait les montants au format anglo-saxon
+
+`AppLibrary::reportCurrencyAmountFormat` rendait `1,234.56` — séparateurs `'.', ','`
+— quand l'écran affiche `1 234,56 €` via `NumberFormatter('fr_FR')`. Deux formats
+pour la même somme, dans le même produit, sur des documents que le commerçant
+compare.
+
+Pire qu'inélégant : **« 1,234.56 » se lit « 1,23 » pour un œil français** — un
+facteur mille au bas d'un document remis au comptable.
+
+### 8.11 ⚠️ CONSTAT NON CORRIGÉ — deux tuiles du même tableau de bord
+
+« Ventes du jour » filtre sur `business_date` ; « Chiffre d'Affaires du Jour » filtre
+sur `order_datetime` **et** passe par `realizedRevenue()`, qui inclut les miroirs de
+remboursement. Or `RefundWithCounterEntryService:112-133` crée le miroir **sans
+`business_date`**. Mesure : 6 miroirs, **6 à NULL**, somme −89,00 €.
+
+La tuile du haut est donc brute, celle du bas nette — et l'écart est exactement les
+remboursements du jour. Les deux sont rendues sur la même page.
+
+Le correctif touche la création des miroirs de remboursement, adjacente au domaine
+fiscal. Consigné pour arbitrage plutôt que corrigé à chaud.
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 Audit adverse en lecture seule le 2026-08-28. Consigne particulière donnée à

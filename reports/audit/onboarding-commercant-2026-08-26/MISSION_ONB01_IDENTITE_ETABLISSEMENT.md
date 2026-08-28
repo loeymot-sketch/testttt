@@ -95,6 +95,29 @@ Temps de chargement mesurés Z2 : les 25 pages en < 1 s (serveur de dev) ; `/api
 - Ne pas confondre `time_slots` (créneaux de commande) et horaires d'ouverture (à créer).
 - Filiales de démonstration (5) : ne pas les supprimer ici (ONB-12).
 
+
+### 8.9 Le ticket client imprimait le téléphone d'un autre restaurant
+
+Trouvé le 2026-08-28 par un balayage adverse en lecture seule.
+
+`config/printing.php:109` livrait `env('RECEIPT_PHONE', '03 65 67 82 91')` — le
+**vrai numéro de Le Cayenne**, vérifié en base (`branches.id=1 phone=0365678291`),
+et aucun `RECEIPT_PHONE` n'existe dans `.env`. Le rendu retombait par ailleurs sur
+la chaîne `'LE CAYENNE'` quand aucune branche n'est résolue.
+
+Un ticket de caisse est un **document fiscal**, remis au client et conservé six ans.
+Y porter les coordonnées d'un tiers n'est pas une coquetterie.
+
+Le mécanisme de repli était bon — il saute la ligne quand la valeur est vide. Seule
+la **valeur par défaut** était fautive. Elle est désormais vide, et l'en-tête est
+omis plutôt que faux : *un en-tête absent se corrige, un en-tête faux trompe.*
+
+Même traitement pour `config/printing.php:185`, qui faisait dire « LE CAYENNE » à
+l'afficheur tourné vers le client de tout établissement installant le produit.
+
+⚠️ **Manque consigné, non corrigé** : l'afficheur client n'a **aucun écran**
+d'administration — la seule voie reste le `.env`. C'est un chantier distinct.
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 Audit adverse en lecture seule le 2026-08-28, chaque verdict adossé à un

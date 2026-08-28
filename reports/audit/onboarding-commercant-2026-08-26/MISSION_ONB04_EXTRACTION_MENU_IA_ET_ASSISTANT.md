@@ -70,6 +70,38 @@ Le propriétaire veut qu'un nouveau commerçant mette sa carte « avec un extrac
 - Un doublon proposé n'est jamais fusionné automatiquement ; l'applicateur refuse une ligne invalide sans bloquer les autres.
 - `:8000` = autre worktree ; ta session = **:8804**.
 
+
+### 8.9 L'écran TVA acceptait n'importe quoi et ne réparait rien
+
+Trouvé le 2026-08-28 par un balayage adverse en lecture seule.
+
+**Un taux sans plafond.** `TaxRequest:42` portait `max:9999999999999`. Un commerçant
+qui saisit « 2000 » en pensant « 20 % » obtenait un taux de **2000 %**, accepté sans
+un mot et facturé au client. Aucun régime n'a de TVA au-delà de 100 % : borner
+n'enlève rien de réel et attrape la faute de frappe la plus naturelle qui soit.
+
+**Un statut hors énumération.** `max:24` acceptait des valeurs qu'aucun code ne sait
+lire — `App\Enums\Status` ne définit que 5 et 10.
+
+**Une taxe cassée, irréparable depuis le Dashboard.** `TaxService::store` forçait
+`type = PERCENTAGE` ; `update` ne le touchait **jamais**. Une taxe restée en montant
+fixe transforme un produit à 2,00 € en total de 22 €, et il avait fallu une
+**migration** (`2026_05_10_030000_fix_tax_misconfig_type_fixed_to_percentage`) pour
+réparer l'incident de production documenté. Le commerçant peut désormais corriger
+lui-même en réenregistrant sa taxe.
+
+### 8.10 ⚠️ CONSTAT NON CORRIGÉ — la TVA du frais de livraison est figée à 10 %
+
+`ZReportService:864` lit `Config::get('menu.settings.tax_rate', 10.0)`, alimenté par
+`config/menu.php:73` : **littéral, sans `env()`**. Aucun écrivain nulle part, aucun
+écran. 33 commandes en base portent un frais de livraison (187,40 €).
+
+Une boulangerie (5,5 %) ou un bar (20 %) signerait donc un Z dont la TVA livraison
+est dans le mauvais taux, **sans aucun moyen de le corriger hors du code source**.
+
+`ZReportService` est **zone gelée §7** : le correctif exige un `LOCK_*.md`
+contresigné. Consigné, non touché.
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 ### 8.1 Ce qui est LIVRÉ et prouvé

@@ -894,7 +894,25 @@ class DashboardService
                   ->where('payment_status', PaymentStatus::PAID)
                   // [REFUND-02 2026-07-15] Ne pas gonfler le Top produits avec des commandes
                   // payées puis annulées/refusées/retournées (ventes non réalisées).
-                  ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+                  ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
+                  // [ONB-07 2026-08-28] L'EXCLUSION UBER MANQUAIT ICI.
+                  //
+                  // Le CA imprimé au-dessus passe par `Order::isRealizedRevenueRow`,
+                  // qui écarte `source_surface = 'uber_eats'` (déjà facturé par
+                  // l'agrégateur, non fiscalisé par design). Le Top 5, lui, recopiait
+                  // le prédicat à la main et omettait cette clause.
+                  //
+                  // Mesure du 14/08 : 17 commandes retenues par le Top 5 contre 7
+                  // pour le CA. Le document remis au comptable présentait donc deux
+                  // populations différentes sous deux titres voisins.
+                  //
+                  // C'est le jumeau du défaut corrigé ligne 737 le même jour — et le
+                  // commentaire posé là-bas prévenait exactement de ça : « une copie
+                  // ne suit pas les corrections de l'original ». Elle ne l'a pas suivi.
+                  ->where(function ($u) {
+                      $u->whereNull('source_surface')
+                        ->orWhere('source_surface', '!=', 'uber_eats');
+                  });
                 if ($branchId !== null) {
                     $q->where('branch_id', $branchId);
                 }

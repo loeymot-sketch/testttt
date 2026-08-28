@@ -78,6 +78,42 @@ et les propriétaires branchent.
 - Les FormRequests de contrôleurs d'autres voies ne se branchent pas ici (fiches).
 - `:8000` = autre worktree ; ta session = **:8813**.
 
+
+### 8.9 L'assistant refusait 47 articles sur 104, et commitait la moitié du reste
+
+Trouvé le 2026-08-28 par un balayage adverse. **Deux défauts, tous deux de moi.**
+
+**Il refusait quatre catégories entières.** `requeteArticle()` rejoue l'état réel du
+produit — c'est voulu, et c'est ce qui empêche d'écraser par omission. Mais l'état
+réel n'est pas toujours valide : **47 articles** portent `is_featured = 0`, qui n'est
+ni `Ask::YES` (5) ni `Ask::NO` (10), pendant que `ItemRequest:93` porte `not_in:0`.
+
+Mesure par catégorie : Boissons **15/15**, Suppléments **10/10**, Bols **8/8**,
+Desserts **3/3** — entièrement bloquées ; Frites 2/6, Galette 1/3 — partielles.
+
+Le commerçant tapait « désactivez toutes les Boissons » et lisait « 0 modifié, 15 en
+échec », sans jamais savoir que la faute venait d'un champ qu'il n'avait **pas
+demandé de toucher**.
+
+**Le catalogue finissait à moitié modifié.** Le `try/catch` était **à l'intérieur**
+de la clôture `DB::transaction` : les échecs étaient collectés sans jamais la faire
+échouer, donc les succès partiels étaient commités.
+
+Or le docblock de la classe promet, en toutes lettres : « cinquante produits changent
+ensemble, ou aucun. Un catalogue à moitié modifié serait pire que pas modifié — le
+commerçant ne saurait pas où il en est. »
+
+*Un commentaire qui affirme un comportement que le code n'a pas.* Le motif de la
+semaine, et celui-là était de moi. La transaction lève désormais si le moindre
+changement échoue, et le rapport **dit pourquoi rien n'a bougé**.
+
+### 8.10 Ce que l'audit a déclaré sain
+
+L'agent a spécifiquement cherché si l'assistant peut écrire sans confirmation. Non :
+`lire()` n'écrit rien, `appliquer()` exige `confirmation => accepted`, **ré-interprète
+la phrase** au lieu de faire confiance au diff du navigateur, et tout repasse par les
+règles de validation. Un refus est lisible et nomme les six formes comprises.
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 Audit adverse en lecture seule le 2026-08-28. Il a **corrige deux chiffres de cette
