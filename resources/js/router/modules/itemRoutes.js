@@ -9,6 +9,11 @@ const CatalogStudioComponent = () => import(/* webpackChunkName: "admin-shell" *
 const CatalogHubComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/CatalogHubComponent.vue");
 const ProductComposerEditorComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/composer/ProductComposerEditorComponent.vue");
 const WizardAdvancedLauncherComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/demo/WizardAdvancedLauncherComponent.vue");
+// [ONB-04 2026-08-28] Import de carte par photo. Rangé sous le catalogue
+// plutôt qu'en entrée de menu : la visibilité dans le menu principal
+// appartient à ONB-05 (table `menus`), et c'est de toute façon là qu'un
+// commerçant qui construit sa carte vient chercher.
+const MenuImportComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/assistant/MenuImportComponent.vue");
 
 export const isWizardPerItemDemoEnabled = () => (
     typeof window !== 'undefined'
@@ -46,6 +51,17 @@ export default [
                     auth: true,
                     permissionUrl: 'items',
                     breadcrumb: 'catalog'
+                },
+            },
+            {
+                path: 'import-carte',
+                component: MenuImportComponent,
+                name: 'admin.items.import',
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: 'items',
+                    breadcrumb: 'menu_import_title'
                 },
             },
             {

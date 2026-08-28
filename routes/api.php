@@ -75,6 +75,7 @@ use App\Http\Controllers\Admin\PosOrderController;
 use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\Assistant\MenuExtractionController;
 use App\Http\Controllers\Admin\SalesReportController;
 use App\Http\Controllers\Admin\SimpleUserController;
 use App\Http\Controllers\Admin\SiteController;
@@ -1490,6 +1491,23 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // accountant. POST (per spec) ; permission `pos-manage-fiscal` enforced
         // in DashboardController::__construct (separate from :dashboard).
         Route::post('/eod-pdf', [DashboardController::class, 'eodPdf']);
+    });
+
+    /*
+     | [ONB-04 2026-08-28] Assistant du commerçant — lecture de carte photographiée.
+     |
+     | Deux gestes seulement, et la frontière entre eux est le sujet :
+     |   · `lecture`     lit une photo et PROPOSE. N'écrit rien en base.
+     |   · `application` reçoit ce que le commerçant a RELU et corrigé, puis crée
+     |                   le catalogue par les services existants — donc avec leurs
+     |                   règles, dont la taxe obligatoire posée par ONB-02.
+     |
+     | Les deux exigent `items_create` : lire une carte prépare une écriture au
+     | catalogue, ce n'est pas une consultation.
+     */
+    Route::prefix('assistant/menu')->name('assistant.menu.')->group(function () {
+        Route::post('/lecture', [MenuExtractionController::class, 'lire'])->name('lecture');
+        Route::post('/application', [MenuExtractionController::class, 'appliquer'])->name('application');
     });
 
     Route::prefix('sales-report')->name('sales-report.')->group(function () {
