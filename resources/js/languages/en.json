@@ -551,6 +551,12 @@
         "raw_material_adjust": "Stock adjustment"
     },
     "label": {
+        "gateway": "Gateway",
+        "fee_percent": "Fee (%)",
+        "fee_fixed": "Fixed fee",
+        "serial_number": "Serial number",
+        "archived": "Archived",
+        "no_data": "No data",
         "extra_sauce_piege": "\u26a0\ufe0f The name contains \"sauce\" and the Group field is empty: the kiosk will treat it as a sauce and will NOT show it among the extras. Fill in the Group (for example \"Extra\") so it can be sold.",
         "menu_import_choose": "Choose a photo\u2026",
         "menu_import_no_file": "No photo chosen",

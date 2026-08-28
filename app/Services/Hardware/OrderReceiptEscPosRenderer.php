@@ -66,9 +66,16 @@ final class OrderReceiptEscPosRenderer
         // celle-ci débordait le papier 58mm → ré-enroulement). Toutes les lignes sont
         // word-wrappées à la largeur pour ne JAMAIS être coupées par l'imprimante.
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::textWrap(optional($branch)->name ?: 'LE CAYENNE', $w);
-        $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        // [ONB-01 2026-08-28] Le repli valait `'LE CAYENNE'` en dur. Un ticket est
+        // un document fiscal : il ne doit jamais porter le nom d'un autre
+        // etablissement. On prend le nom de la branche, sinon le repli configure,
+        // sinon RIEN — un en-tete absent se corrige, un en-tete faux trompe.
+        $enTete = (string) (optional($branch)->name ?: config('printing.receipt.name', ''));
+        if (trim($enTete) !== '') {
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap($enTete, $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        }
         // [TICKET-ADRESSE 2026-07-03] Adresse = branche si renseignée, SINON défaut config
         // (`printing.receipt.address`) → design pro (nom/adresse/tél) même sans adresse en base.
         $address = (string) (optional($branch)->address ?: config('printing.receipt.address', ''));
@@ -76,8 +83,9 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textWrap($address, $w);
         }
         // [TICKET-PHONE 2026-07-03] Téléphone = branche si renseigné, SINON défaut config
-        // (`printing.receipt.phone`, ex. 03 65 67 82 91) → le n° apparaît TOUJOURS sur le
-        // ticket même quand la branche V1 n'a pas de téléphone en base.
+        // (`printing.receipt.phone`). [ONB-01 2026-08-28] Ce defaut valait le numero
+        // de Le Cayenne : il est desormais VIDE, et la ligne est simplement omise
+        // quand l'etablissement n'a pas renseigne le sien.
         $phone = (string) (optional($branch)->phone ?: config('printing.receipt.phone', ''));
         if (trim($phone) !== '') {
             $b .= EscPosCommandBuilder::textWrap('Tél : '.$this->formatPhone($phone), $w);

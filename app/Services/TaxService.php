@@ -67,7 +67,18 @@ class TaxService
     public function update(TaxRequest $request, Tax $tax)
     {
         try {
-            return tap($tax)->update($request->validated());
+            // [ONB-04 2026-08-28] `+ ['type' => PERCENTAGE]`, comme a la creation.
+            //
+            // Sans lui, une taxe restee en FIXED etait IRREPARABLE depuis le
+            // Dashboard : la creation forcait le type, la modification ne le
+            // touchait jamais. Il a fallu une migration pour reparer l'incident de
+            // production documente (« Frites 2,00 EUR -> TOTAL 22 EUR, TVA 20 EUR »,
+            // migration 2026_05_10_030000). Le commercant peut desormais corriger
+            // lui-meme en reenregistrant sa taxe.
+            //
+            // Le produit ne connait que les taux en pourcentage — c'est ce que la
+            // creation impose deja depuis toujours.
+            return tap($tax)->update($request->validated() + ['type' => TaxType::PERCENTAGE]);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
